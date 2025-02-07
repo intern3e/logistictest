@@ -35,6 +35,10 @@ class admincontroller extends Controller
     {
         return view('admin.dashboardadmin');
     }
+    public function history()
+    {
+        return view('admin.history');
+    }
     public function logoutadmin()
 {
     session()->flush(); // ลบข้อมูลในเซสชัน

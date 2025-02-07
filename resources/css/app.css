@@ -1,0 +1,82 @@
+body {
+    background-color: rgba(173, 216, 230, 0.3); /* สีฟ้าอ่อน โปร่งใส 30% */
+    }
+    /* ปรับแต่ง header ให้ดูหรูหรามากขึ้น */
+    .header {
+        background-color: #34495e; /* สีเทาเข้ม */
+        padding: 20px;
+        margin-top: 3%;
+        margin-left: 5%;
+        margin-right: 5%;
+        color: #fff;
+        border-radius: 10px;
+    }
+
+    .header h4 {
+        font-size: 2rem;
+        font-weight: bold;
+    }
+
+    /* ปุ่มต่างๆ */
+    .search-button {
+        background-color: #e67e22; /* สีส้ม */
+        color: white;
+    }
+
+    .search-button:hover {
+        background-color: #d35400; /* สีส้มเข้ม */
+    }
+
+    .btn-secondary, .btn-danger {
+        background-color: #e89542;
+        color: white;
+    }
+
+    .btn-secondary:hover, .btn-danger:hover {
+        background-color: #e89542;
+    }
+
+    /* ปรับแต่งตาราง */
+    .table-striped tbody tr:nth-of-type(odd) {
+        background-color: #ecf0f1; /* สีเทาอ่อนสำหรับแถวคี่ */
+    }
+
+    .table-light {
+        margin-left: 5%;
+        margin-right: 5%;
+        border-radius: 8px;
+        box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.1); /* เงาเบาๆ */
+        background-color: #ffffff;
+    }
+
+    /* ปรับแต่งช่องกรอกข้อมูล */
+    .form-control {
+        border-radius: 8px;
+        border: 1px solid #ccc;
+        padding: 10px;
+    }
+    .col-md-4{
+        margin-left:5% ;
+        margin-right:5% ;  
+    }
+    .table-bordered {
+        border: 2px solid #34495e; /* สีส้ม */
+        box-shadow: 0px 4px 10px #ccc; /* Light shadow */
+    background-color: #ffffff;
+    }
+
+    .table-bordered th, .table-bordered td {
+        border: 1px solid #34495e; /* สีส้ม */
+    }
+
+
+    /* ปรับแต่งลิงก์ */
+    a {
+        color: #1abc9c; /* สีเขียวฟ้า */
+        text-decoration: none;
+        font-weight: bold;
+    }
+
+    a:hover {
+        text-decoration: underline;
+    }

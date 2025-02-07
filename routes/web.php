@@ -14,15 +14,13 @@ use Illuminate\Support\Facades\Route;
 */
 
 use App\Http\Controllers\salecontroller;
-
-Route::get('/', [salecontroller::class, 'showLoginForm'])->name('sale.loginsale');
-Route::post('/', [salecontroller::class, 'login'])->name('sale.loginsale');
+Route::get('/', [salecontroller::class, 'home'])->name('home');
+Route::get('/loginsale', [salecontroller::class, 'showLoginForm'])->name('sale.loginsale');
+Route::post('/loginsale', [salecontroller::class, 'login'])->name('sale.loginsale');
 Route::post('/logout', [salecontroller::class, 'logout'])->name('logout');
 Route::get('/dashboard', [salecontroller::class, 'dashboard'])->name('sale.dashboard');
 Route::get('/insertdata', [salecontroller::class, 'insertdata'])->name('sale.insertdata');
 
 use App\Http\Controllers\admincontroller;
-Route::get('/admin', [admincontroller::class, 'showLoginForm'])->name('admin.loginadmin');
-Route::post('/admin', [admincontroller::class, 'login'])->name('admin.loginadmin');
-Route::post('/logoutadmin', [admincontroller::class, 'logoutadmin'])->name('logoutadmin');
 Route::get('/dashboardadmin', [admincontroller::class, 'dashboard'])->name('admin.dashboardadmin');
+Route::get('/history', [admincontroller::class, 'history'])->name('admin.history');
