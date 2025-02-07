@@ -133,7 +133,19 @@
         .delete-btn:hover {
             background-color: #c0392b;
         }
+        .insert-btn {
+            padding: 5px 10px;
+            background-color: green;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 14px;
+        }
 
+        .insert-btn:hover {
+            background-color: green;
+        }
         /* Media Queries สำหรับขนาดหน้าจอที่ต่างกัน */
         @media (max-width: 768px) {
             .container {
@@ -182,7 +194,6 @@
         <div class="header">
             ระบบเปิดบิลสินค้า
         </div>
-
         <form action="process.php" method="POST">
             <div class="text-center mb-4">
                 <h3 class="text-dark">🔹 เปิดบิลสินค้า 🔹</h3>
@@ -196,7 +207,6 @@
                     <button type="submit" class="btn-custom" style="width: 14%;height: 45px;">🔍 ค้นหา</button>
                 </div>
             </div>
-
             <!-- รหัสลูกค้า -->
             <div class="mb-3">
                 <label class="form-label">รหัสลูกค้า:</label>
@@ -222,10 +232,14 @@
             </div>
 
             <!-- ละติจูด ลองจิจูด -->
-            <div class="mb-3">
-                <label class="form-label">ละติจูด ลองจิจูด:</label>
-                <input type="text" class="form-control" name="location_coordinates">
-            </div>
+        <div class="mb-3">  
+            <label class="form-label">ละติจูด ลองจิจูด:</label>
+        <div style="display: flex; justify-content: space-between;">
+            <input type="text" class="form-control" name="location_coordinates" id="location_coordinates">
+            <button type="button" class="btn-custom" onclick="openGoogleMaps()">Google Maps</button>
+         </div>
+        </div>
+
 
             <!-- วันที่กำหนดส่ง -->
             <div class="mb-3">
@@ -238,6 +252,7 @@
             <table class="table table-bordered table-striped">
                 <thead>
                     <tr>
+                        <th>เลือกจัดส่ง</th>
                         <th>รหัสสินค้า</th>
                         <th>รายการ</th>
                         <th>จำนวน</th>
@@ -246,9 +261,10 @@
                         <th>ลบ</th>
                     </tr>
                 </thead>
-                <tbody>
+                <tbody id="table-body"> <!-- Added id="table-body" -->
                     <?php for($i = 0; $i < 7; $i++): ?>
                     <tr>
+                        <td><input type="checkbox" class="form-control1" name="status"></td>
                         <td><input type="text" class="form-control1" name="product_code[]"></td>
                         <td><input type="text" class="form-control1" name="product_name[]"></td>
                         <td><input type="number" class="form-control1" name="quantity[]"></td>
@@ -259,16 +275,54 @@
                     <?php endfor; ?>
                 </tbody>
             </table>
+            <label>
+                <input type="checkbox" name="checkall"> เลือกทั้งหมด
+            </label>
+            <button type="button" style="margin-left: 94.2%; margin-top: 2%;" class="btn btn-danger insert-btn">เพิ่ม</button>
             
             <script>
-                // Listen for the delete button click event
-                document.querySelectorAll('.delete-btn').forEach(function(button) {
-                    button.addEventListener('click', function() {
-                        var row = button.closest('tr');
-                        row.remove();
-                    });
+                document.querySelector('input[name="checkall"]').addEventListener('change', function() {
+                const checkboxes = document.querySelectorAll('input[type="checkbox"]:not([name="checkall"])');
+                checkboxes.forEach(checkbox => checkbox.checked = this.checked);
                 });
+
+                
+                document.querySelector('#table-body').addEventListener('click', function(e) {
+                    if (e.target.classList.contains('delete-btn')) {
+                        var row = e.target.closest('tr');
+                        row.remove();
+                    }
+                });
+            
+                
+                document.querySelector('.insert-btn').addEventListener('click', function() {
+                    var tableBody = document.querySelector('#table-body');
+                    var newRow = document.createElement('tr');
+                    newRow.innerHTML = `
+                        <td><input type="text" class="form-control1" name="product_code[]"></td>
+                        <td><input type="text" class="form-control1" name="product_name[]"></td>
+                        <td><input type="number" class="form-control1" name="quantity[]"></td>
+                        <td><input type="number" class="form-control1" name="price[]"></td>
+                        <td><input type="number" class="form-control1" name="total[]"></td>
+                        <td><button type="button" class="btn btn-danger delete-btn">ลบ</button></td>
+                    `;
+                    tableBody.appendChild(newRow);
+                });
+
+                function openGoogleMaps() {
+            // Open the Google Maps modal window
+            const mapWindow = window.open(
+                "https://www.google.com/maps/@13.7563,100.5018,14z",
+                "Google Maps",
+                "width=800,height=600"
+            );
+        }
+
+
+
+
             </script>
+            
 
             <!-- ช่องข้อความเพิ่มเติม -->
              <br>
