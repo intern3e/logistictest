@@ -266,7 +266,7 @@
     <table>
         <thead>
             <tr>
-                <th>ID PO</th>
+                <th>ID SO Detail</th>
                 <th>รหัสลูกค้า</th>
                 <th>ที่อยู่จัดส่ง</th>
                 <th>วันที่</th>

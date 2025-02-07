@@ -24,7 +24,7 @@
 </head>
 <body>
     <div class="button-container">
-        <a href="loginsale" class="btn btn-primary me-2">เปิดบิล</a>
+        <a href="dashboard" class="btn btn-primary me-2">เปิดบิล</a>
         <a href="dashboardadmin" class="btn btn-success m-2">จัดของ</a>
     </div>
 
