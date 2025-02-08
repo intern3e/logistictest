@@ -293,6 +293,7 @@
             </tr>`;
         }
         
+        
         tbody.innerHTML = content;
     }
     
@@ -310,6 +311,15 @@
     // เรียกใช้ฟังก์ชันเพื่อเพิ่มแถวในตาราง
     generateRows();
 </script>
+
+<!-- Popup -->
+<div class="popup-overlay" id="popup">
+    <div class="popup-content">
+        <span class="close-btn" onclick="closePopup()">&times;</span>
+        <h2>Popup</h2>
+        <p>นี่คือเนื้อหาใน Popup</p>
+    </div>
+</div>
 
 </body>
 </html>
