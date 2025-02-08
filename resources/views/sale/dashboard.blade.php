@@ -242,7 +242,6 @@
         <a href="{{ route('sale.insertdata') }}" class="btn btn-warning">➕ เพิ่มข้อมูล</a>
         
             @csrf
-            
             <a href="{{ route('home') }}" button  type="submit" class="btn btn-danger">🚪 หน้าหลัก</a>
     </div>
 </div>
@@ -255,8 +254,8 @@
     </form>
 
     <div class="search-box">
-    <input type="text" placeholder="🔍 ค้นหา ID SO detail">
-    <button type="submit">🔍 ค้นหา</button>
+        <input type="text" placeholder="🔍 ค้นหา ID SO detail">
+        <button type="submit">🔍 ค้นหา</button>
     </div>
 
 </div>
@@ -273,9 +272,7 @@
             </tr>
         </thead>
         <tbody id="table-body">
-            
-        </tbody>
-            
+            <!-- Content will be inserted dynamically here -->
         </tbody>
     </table>
 </div>
@@ -292,16 +289,27 @@
                 <td>ณฏ12345</td>
                 <td>34/4 หมู่2 ต.บางน้ำจืด อ.เมือง จ.สมุทรสาคร</td>
                 <td>29/1/2567</td>
-                <td><a href="#">📄 เพิ่มเติม</a></td>
+                <td><a href="txt" onclick="popup('txt'); return false;">📄 เพิ่มเติม</a></td>
             </tr>`;
         }
         
         tbody.innerHTML = content;
     }
     
+    function popup(url) {
+    let width = 900;
+    let height = 600;
+    let left = (screen.width - width) / 2;
+    let top = (screen.height - height) / 2;
+    
+    window.open(url, 'popupWindow', `width=${width},height=${height},left=${left},top=${top},scrollbars=yes,resizable=no,menubar=no,toolbar=no,location=no,status=no`);
+}
+
+
+
     // เรียกใช้ฟังก์ชันเพื่อเพิ่มแถวในตาราง
     generateRows();
-    </script>
+</script>
 
 </body>
 </html>

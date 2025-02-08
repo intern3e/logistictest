@@ -83,4 +83,14 @@ public function searchSo(Request $request)
             'message' => 'ไม่พบเลขที่ SO นี้ในระบบ'
         ]);
     }
-}}
+}
+
+
+public function popup()
+{
+    return view('sale.txt');  
+}
+
+}
+
+

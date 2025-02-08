@@ -20,6 +20,11 @@ Route::post('/loginsale', [salecontroller::class, 'login'])->name('sale.loginsal
 Route::post('/logout', [salecontroller::class, 'logout'])->name('logout');
 Route::get('/dashboard', [salecontroller::class, 'dashboard'])->name('sale.dashboard');
 Route::get('/insertdata', [salecontroller::class, 'insertdata'])->name('sale.insertdata');
+Route::post('/search-so', [salecontroller::class, 'search']);
+
+// Route for handling POST request to open the popup
+Route::get('/txt', [SaleController::class, 'popup'])->name('popup');
+
 
 use App\Http\Controllers\admincontroller;
 Route::get('/dashboardadmin', [admincontroller::class, 'dashboard'])->name('admin.dashboardadmin');
