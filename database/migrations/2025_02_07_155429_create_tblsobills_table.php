@@ -16,7 +16,7 @@ return new class extends Migration
             $table->string('status');
             $table->string('customer_id');
             $table->date('date_of_dali');
-            $table->string('so_detail_id');
+            $table->id('so_detail_id');
             $table->text('notes');
             
         });

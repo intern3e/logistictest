@@ -12,14 +12,13 @@ return new class extends Migration
     public function up(): void
     {
         Schema::create('tblsos', function (Blueprint $table) {
-            $table->id();
+            $table->id('so_id');
+            $table->string('customer_id');
+            $table->string('so_item_id');
             $table->timestamps();
         });
     }
 
-    /**
-     * Reverse the migrations.
-     */
     public function down(): void
     {
         Schema::dropIfExists('tblsos');

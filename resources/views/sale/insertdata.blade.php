@@ -203,7 +203,7 @@
             <div class="mb-3">
                 <label class="form-label">เลขที่ SO:</label>
                 <div style="display: flex; justify-content: space-between;">
-                    <input type="text" class="form-control" name="po_number" style="width: 80%;">
+                    <input type="text" class="form-control" name="so_number" style="width: 80%;">
                     <button type="submit" class="btn-custom" style="width: 14%;height: 45px;">🔍 ค้นหา</button>
                 
           </div>
@@ -278,6 +278,7 @@
             <th>ลบ</th>
         </tr>
     </thead>
+
 </table>
 
 <script>
