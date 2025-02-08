@@ -238,13 +238,12 @@
     <h4>📑 ระบบเปิดบิล</h4>
     <div class="buttons">
         <span>👤 ผู้ใช้: {{ session('so_number', 'Guest') }}</span>
-        
+
         <a href="{{ route('sale.insertdata') }}" class="btn btn-warning">➕ เพิ่มข้อมูล</a>
         
-        <form action="{{ route('logout') }}" method="POST">
             @csrf
-            <button type="submit" class="btn btn-danger">🚪 ออกจากระบบ</button>
-        </form>
+            
+            <a href="{{ route('home') }}" button  type="submit" class="btn btn-danger">🚪 หน้าหลัก</a>
     </div>
 </div>
 
@@ -256,7 +255,7 @@
     </form>
 
     <div class="search-box">
-    <input type="text" placeholder="🔍 ค้นหา ID PO...">
+    <input type="text" placeholder="🔍 ค้นหา ID SO detail">
     <button type="submit">🔍 ค้นหา</button>
     </div>
 

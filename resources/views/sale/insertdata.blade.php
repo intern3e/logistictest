@@ -3,6 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="csrf-token" content="{{ csrf_token() }}">
     <title>ระบบจัดเตรียมสินค้า</title>
     <style>
         /* ฟอนต์ Sarabun */
@@ -199,14 +200,23 @@
                 <h3 class="text-dark">🔹 เปิดบิลสินค้า 🔹</h3>
             </div>
 
+            <div class="mb-3">
+                <label class="form-label">เลขที่ SO:</label>
+                <div style="display: flex; justify-content: space-between;">
+                    <input type="text" class="form-control" name="po_number" style="width: 80%;">
+                    <button type="submit" class="btn-custom" style="width: 14%;height: 45px;">🔍 ค้นหา</button>
+                
+          </div>
+
+ {{-- 
             <!-- เลขที่ SO -->
             <div class="mb-3">
                 <label class="form-label">เลขที่ SO:</label>
                 <div style="display: flex; justify-content: space-between;">
                     <input type="text" class="form-control" name="po_number" style="width: 80%;">
                     <button type="submit" class="btn-custom" style="width: 14%;height: 45px;">🔍 ค้นหา</button>
-                </div>
-            </div>
+                
+    </div>
             <!-- รหัสลูกค้า -->
             <div class="mb-3">
                 <label class="form-label">รหัสลูกค้า:</label>
@@ -247,81 +257,101 @@
                 <input type="date" class="form-control" name="delivery_date">
             </div>
 
+             <!-- วันที่กำหนดส่ง -->
+             <div class="mb-3">
+                <label class="form-label">ID SO detail:</label>
+                <input type="string" class="form-control" name="so_detail_id">
+            </div> --}}
+
 
             <!-- ตารางสินค้า -->
-            <table class="table table-bordered table-striped">
-                <thead>
-                    <tr>
-                        <th>เลือกจัดส่ง</th>
-                        <th>รหัสสินค้า</th>
-                        <th>รายการ</th>
-                        <th>จำนวน</th>
-                        <th>ราคา/หน่วย</th>
-                        <th>จำนวนเงิน</th>
-                        <th>ลบ</th>
-                    </tr>
-                </thead>
-                <tbody id="table-body"> <!-- Added id="table-body" -->
-                    <?php for($i = 0; $i < 7; $i++): ?>
-                    <tr>
-                        <td><input type="checkbox" class="form-control1" name="status"></td>
-                        <td><input type="text" class="form-control1" name="product_code[]"></td>
-                        <td><input type="text" class="form-control1" name="product_name[]"></td>
-                        <td><input type="number" class="form-control1" name="quantity[]"></td>
-                        <td><input type="number" class="form-control1" name="price[]"></td>
-                        <td><input type="number" class="form-control1" name="total[]"></td>
-                        <td><button type="button" class="btn btn-danger delete-btn">ลบ</button></td>
-                    </tr>
-                    <?php endfor; ?>
-                </tbody>
-            </table>
-            <label>
-                <input type="checkbox" name="checkall"> เลือกทั้งหมด
-            </label>
-            <button type="button" style="margin-left: 94.2%; margin-top: 2%;" class="btn btn-danger insert-btn">เพิ่ม</button>
-            
-            <script>
-                document.querySelector('input[name="checkall"]').addEventListener('change', function() {
-                const checkboxes = document.querySelectorAll('input[type="checkbox"]:not([name="checkall"])');
-                checkboxes.forEach(checkbox => checkbox.checked = this.checked);
-                });
+           <!-- Table with added id to tbody -->
+<table class="table table-bordered table-striped">
+    <thead>
+        <tr>
+            <th>เลือกจัดส่ง</th>
+            <th>รหัสสินค้า</th>
+            <th>รายการ</th>
+            <th>จำนวน</th>
+            <th>ราคา/หน่วย</th>
+            <th>จำนวนเงิน</th>
+            <th>ลบ</th>
+        </tr>
+    </thead>
+</table>
 
-                
-                document.querySelector('#table-body').addEventListener('click', function(e) {
-                    if (e.target.classList.contains('delete-btn')) {
-                        var row = e.target.closest('tr');
-                        row.remove();
-                    }
-                });
-            
-                
-                document.querySelector('.insert-btn').addEventListener('click', function() {
-                    var tableBody = document.querySelector('#table-body');
-                    var newRow = document.createElement('tr');
-                    newRow.innerHTML = `
-                        <td><input type="text" class="form-control1" name="product_code[]"></td>
-                        <td><input type="text" class="form-control1" name="product_name[]"></td>
-                        <td><input type="number" class="form-control1" name="quantity[]"></td>
-                        <td><input type="number" class="form-control1" name="price[]"></td>
-                        <td><input type="number" class="form-control1" name="total[]"></td>
-                        <td><button type="button" class="btn btn-danger delete-btn">ลบ</button></td>
-                    `;
-                    tableBody.appendChild(newRow);
-                });
+<script>
+    // Fixing the fetch function to send the correct parameter
+    document.querySelector(".btn-custom").addEventListener("click", function (e) {
+        e.preventDefault(); // Prevent form submission
 
-                function openGoogleMaps() {
-            // Open the Google Maps modal window
-            const mapWindow = window.open(
-                "https://www.google.com/maps/@13.7563,100.5018,14z",
-                "Google Maps",
-                "width=800,height=600"
-            );
+        let so_number = document.querySelector('input[name="po_number"]').value;
+
+        fetch('/search-so', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRF-TOKEN': '{{ csrf_token() }}' // Laravel CSRF Token
+            },
+            body: JSON.stringify({ so: so_number }) // Sending the correct parameter
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                // Populate fields with response data
+                document.querySelector('input[name="customer_id"]').value = data.data.customer_id;
+                document.querySelector('input[name="customer_name"]').value = data.data.customer_name;
+                document.querySelector('input[name="customer_tel"]').value = data.data.customer_tel;
+                document.querySelector('input[name="customer_address"]').value = data.data.delivery_address;
+                document.querySelector('input[name="customer_la_long"]').value = data.data.customer_la_long;
+                document.querySelector('input[name="so_detail_id"]').value = data.data.so_detail_id;
+            } else {
+                alert(data.message);
+            }
+        })
+        .catch(error => console.error("Error:", error));
+    });
+
+    // Handling "select all" functionality
+    document.querySelector('input[name="checkall"]').addEventListener('change', function() {
+        const checkboxes = document.querySelectorAll('input[type="checkbox"]:not([name="checkall"])');
+        checkboxes.forEach(checkbox => checkbox.checked = this.checked);
+    });
+
+    // Adding a new row to the table
+    document.querySelector('.insert-btn').addEventListener('click', function() {
+        var tableBody = document.querySelector('#table-body'); // Corrected to #table-body
+        var newRow = document.createElement('tr');
+        newRow.innerHTML = `
+            <td><input type="checkbox" class="form-control1" name="status"></td>
+            <td><input type="text" class="form-control1" name="product_code[]"></td>
+            <td><input type="text" class="form-control1" name="product_name[]"></td>
+            <td><input type="number" class="form-control1" name="quantity[]"></td>
+            <td><input type="number" class="form-control1" name="price[]"></td>
+            <td><input type="number" class="form-control1" name="total[]"></td>
+            <td><button type="button" class="btn btn-danger delete-btn">ลบ</button></td>
+        `;
+        tableBody.appendChild(newRow);
+    });
+
+    // Delete row when clicking delete button
+    document.querySelector('#table-body').addEventListener('click', function(e) {
+        if (e.target.classList.contains('delete-btn')) {
+            var row = e.target.closest('tr');
+            row.remove();
         }
+    });
 
+    // Open Google Maps when button is clicked
+    function openGoogleMaps() {
+        const mapWindow = window.open(
+            "https://www.google.com/maps/@13.7563,100.5018,14z",
+            "Google Maps",
+            "width=800,height=600"
+        );
+    }
+</script>
 
-
-
-            </script>
             
 
             <!-- ช่องข้อความเพิ่มเติม -->
