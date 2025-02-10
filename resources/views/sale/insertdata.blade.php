@@ -195,20 +195,40 @@
         <div class="header">
             ระบบเปิดบิลสินค้า
         </div>
-        <form action="process.php" method="POST">
             <div class="text-center mb-4">
                 <h3 class="text-dark">🔹 เปิดบิลสินค้า 🔹</h3>
             </div>
 
             <div class="mb-3">
                 <label class="form-label">เลขที่ SO:</label>
-                <div style="display: flex; justify-content: space-between;">
-                    <input type="text" class="form-control" name="so_number" style="width: 80%;">
-                    <button type="submit" class="btn-custom" style="width: 14%;height: 45px;">🔍 ค้นหา</button>
-                
-          </div>
+                <form action="{{ route('sodetail') }}" method="POST">
+                    @csrf
+                    <div style="display: flex; justify-content: space-between;">
+                        <input type="text" class="form-control" id="so_number" name="so_number" style="width: 80%;" required>
+                        <button type="submit" class="btn-search" style="width: 14%; height: 45px;">🔍 ค้นหา</button>
+                    </div>
+                </form>
+            </div>
 
- {{-- 
+            <h3>รายละเอียด SO</h3>
+            @if(isset($so))
+            <div class="mb-3">
+                <label class="form-label">รหัสลูกค้า:</label>
+                <input type="text" class="form-control" name="customer_id" value="{{$so->customer_id }}" >
+            </div>
+            <div class="mb-3">
+                <label class="form-label">ชื่อลูกค้า:</label>
+                <input type="text" class="form-control" name="customer_name" value="{{ $customer_name }}" readonly>
+            </div> 
+            @endif
+            
+
+{{--             
+   
+
+           --}}
+
+ {{-- <!-- insert-->
             <!-- เลขที่ SO -->
             <div class="mb-3">
                 <label class="form-label">เลขที่ SO:</label>
@@ -254,7 +274,7 @@
             <!-- วันที่กำหนดส่ง -->
             <div class="mb-3">
                 <label class="form-label">วันที่กำหนดส่ง:</label>
-                <input type="date" class="form-control" name="delivery_date">
+                <input type="date" class="form-control" name="date_of_dali">
             </div>
 
              <!-- วันที่กำหนดส่ง -->
@@ -281,37 +301,9 @@
 
 </table>
 
+
+
 <script>
-    // Fixing the fetch function to send the correct parameter
-    document.querySelector(".btn-custom").addEventListener("click", function (e) {
-        e.preventDefault(); // Prevent form submission
-
-        let so_number = document.querySelector('input[name="po_number"]').value;
-
-        fetch('/search-so', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'X-CSRF-TOKEN': '{{ csrf_token() }}' // Laravel CSRF Token
-            },
-            body: JSON.stringify({ so: so_number }) // Sending the correct parameter
-        })
-        .then(response => response.json())
-        .then(data => {
-            if (data.success) {
-                // Populate fields with response data
-                document.querySelector('input[name="customer_id"]').value = data.data.customer_id;
-                document.querySelector('input[name="customer_name"]').value = data.data.customer_name;
-                document.querySelector('input[name="customer_tel"]').value = data.data.customer_tel;
-                document.querySelector('input[name="customer_address"]').value = data.data.delivery_address;
-                document.querySelector('input[name="customer_la_long"]').value = data.data.customer_la_long;
-                document.querySelector('input[name="so_detail_id"]').value = data.data.so_detail_id;
-            } else {
-                alert(data.message);
-            }
-        })
-        .catch(error => console.error("Error:", error));
-    });
 
     // Handling "select all" functionality
     document.querySelector('input[name="checkall"]').addEventListener('change', function() {
@@ -365,7 +357,6 @@
 
             <!-- ปุ่มเพิ่มข้อมูล -->
             <button type="submit" class="btn-custom">💎 เปิดบิล</button>
-        </form>
     </div>
 </body>
 </html>

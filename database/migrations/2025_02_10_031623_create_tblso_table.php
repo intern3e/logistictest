@@ -11,22 +11,16 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('tblorders', function (Blueprint $table) {
-            $table->string('so_detail_id');
+        Schema::create('tblsos', function (Blueprint $table) {
             $table->string('so_id');
-            $table->string('item_id');
-            $table->text('item_name');
-            $table->integer('item_quantity');
-            $table->float('item_unit_price');
+            $table->string('customer_id');
+            $table->string('so_item_id');
             $table->timestamps();
         });
     }
 
-    /**
-     * Reverse the migrations.
-     */
     public function down(): void
     {
-        Schema::dropIfExists('tblorders');
+        Schema::dropIfExists('tblsos');
     }
 };

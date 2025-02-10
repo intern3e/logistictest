@@ -11,14 +11,13 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('tblsobills', function (Blueprint $table) {
-            $table->string('so_id');
-            $table->string('status');
+        Schema::create('tblcustomers', function (Blueprint $table) {
             $table->string('customer_id');
-            $table->date('date_of_dali');
-            $table->id('so_detail_id');
-            $table->text('notes');
-            
+            $table->string('customer_name');
+            $table->string('customer_tel');
+            $table->text('customer_address');
+            $table->text('custumer_la_long');
+            $table->timestamps();
         });
     }
 
@@ -27,8 +26,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('tblsobills');
+        Schema::dropIfExists('tblcustomers');
     }
-
-    
 };

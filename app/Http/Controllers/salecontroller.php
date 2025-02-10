@@ -1,11 +1,11 @@
 <?php
 
 namespace App\Http\Controllers;
-use App\Models\bill;
-use App\Models\tblorder;
-use App\Models\tblso;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use App\Models\tblsos;
+use App\Models\tblcustomer;
+use function Laravel\Prompts\table;
 
 class salecontroller extends Controller
 {
@@ -62,28 +62,6 @@ class salecontroller extends Controller
 }
 
 
-public function searchSo(Request $request)
-{
-    // รับค่า so_id จากคำขอ (JavaScript ส่งเป็น JSON)
-    $so_number = $request->so_id;
-
-    // ค้นหาข้อมูลจากฐานข้อมูลที่มี so_id ตรงกับค่าที่ได้รับ
-    $order = tblso::where('so_id', $so_number)->first();
-
-    if ($order) {
-        // ถ้ามีข้อมูล เลือกข้อมูลที่ต้องการส่งกลับ
-        return response()->json([
-            'success' => true,
-            'data' => $order
-        ]);
-    } else {
-        // ถ้าไม่พบข้อมูล
-        return response()->json([
-            'success' => false,
-            'message' => 'ไม่พบเลขที่ SO นี้ในระบบ'
-        ]);
-    }
-}
 
 
 public function popup()
@@ -91,6 +69,35 @@ public function popup()
     return view('sale.txt');  
 }
 
-}
 
+public function findData(Request $request)
+{
+    // รับค่า 'so_number' จากฟอร์ม
+    $sonumber = $request->input('so_number');
+
+    // ค้นหาข้อมูลจากตาราง tblsos ตาม 'so_number'
+    $so = tblsos::where('so_id', $sonumber)->first();
+
+    if ($so) {
+        // ดึง 'customer_id' จาก tblsos
+        $customer_id = $so->customer_id;
+
+        // ใช้ 'customer_id' เพื่อค้นหาชื่อจากตาราง tblcustomer
+        $customer = tblcustomer::where('customer_id', $customer_id)->first();
+
+        // ตรวจสอบว่าพบข้อมูลลูกค้าหรือไม่
+        if ($customer) {
+            $customer_name = $customer->customer_name;
+        } else {
+            $customer_name = 'ไม่พบข้อมูลลูกค้า';
+        }
+
+        // ส่งข้อมูลไปยัง view
+        return view('sale.insertdata', compact('so', 'customer_name'));
+    } else {
+        // ถ้าไม่พบข้อมูล SO ที่ตรงกับหมายเลขที่กรอก
+        return redirect()->back()->with('error', 'ไม่พบข้อมูล SO ที่ตรงกับหมายเลขที่กรอก');
+    }
+}
+}
 

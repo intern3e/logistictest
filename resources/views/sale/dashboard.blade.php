@@ -214,6 +214,40 @@
             background: #27ae60;
             transform: scale(1.05);
         }
+         /* สไตล์พื้นหลังมืด */
+         .popup-overlay {
+            display: none; /* ซ่อน Popup ไว้ก่อน */
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        /* สไตล์กล่อง Popup */
+        .popup-content {
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            width: 1000px;
+            height: 600px;
+            text-align: center;
+            position: relative;
+        }
+
+        /* ปุ่มปิด */
+        .close-btn {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            cursor: pointer;
+            font-size: 18px;
+            font-weight: bold;
+        }
 
         /* Responsive Design */
         @media (max-width: 768px) {
@@ -289,37 +323,77 @@
                 <td>ณฏ12345</td>
                 <td>34/4 หมู่2 ต.บางน้ำจืด อ.เมือง จ.สมุทรสาคร</td>
                 <td>29/1/2567</td>
-                <td><a href="txt" onclick="popup('txt'); return false;">📄 เพิ่มเติม</a></td>
+                <td><a href="javascript:void(0);" onclick="openPopup()" class="view-details">📄 เพิ่มเติม</a></td>
             </tr>`;
         }
         
         
         tbody.innerHTML = content;
     }
-    
-    function popup(url) {
-    let width = 900;
-    let height = 600;
-    let left = (screen.width - width) / 2;
-    let top = (screen.height - height) / 2;
-    
-    window.open(url, 'popupWindow', `width=${width},height=${height},left=${left},top=${top},scrollbars=yes,resizable=no,menubar=no,toolbar=no,location=no,status=no`);
-}
-
-
 
     // เรียกใช้ฟังก์ชันเพื่อเพิ่มแถวในตาราง
     generateRows();
 </script>
 
 <!-- Popup -->
-<div class="popup-overlay" id="popup">
+<div class="popup-overlay" id="popup" style="display: none;"> <!-- ตั้งค่า display: none; เพื่อไม่ให้แสดงเมื่อเข้าเว็บ -->
     <div class="popup-content">
         <span class="close-btn" onclick="closePopup()">&times;</span>
-        <h2>Popup</h2>
-        <p>นี่คือเนื้อหาใน Popup</p>
+        <div class="table-container">
+    <table>
+    <thead>
+        <tr>
+            <th>สถานะ</th>
+            <th>รหัสสินค้า</th>
+            <th>รายการ</th>
+            <th>จำนวน</th>
+            <th>ราคา/หน่วย</th>
+            <th>จำนวนเงิน</th>
+        </tr>
+        <tr>    
+                <td>กำลังดำเนินการ</td>
+                <td>1123456</td>
+                <td>แผงโซล่าเซลล์ 4000W</td>
+                <td>10</td>
+                <td>29/1/2567</td>
+                <td>8000</td>
+
+            </tr>
+        <tr>    
+                <td>กำลังดำเนินการ</td>
+                <td>1123450</td>
+                <td>เหล็กเส้น 2 หุน หรือ เหล็กเส้นขนาด 6 มิล RB6 ของเราจำหน่ายเป็นเส้น ความยาวเส้นละ 10 เมตร</td>
+                <td>5</td>
+                <td>29/1/2567</td>
+                <td>300</td>
+
+            </tr>
+    </thead>
+    
     </div>
 </div>
+
+<script>
+    // ฟังก์ชันเปิด Popup
+    function openPopup() {
+        document.getElementById("popup").style.display = "flex"; // แสดง Popup
+    }
+
+    // ฟังก์ชันปิด Popup
+    function closePopup() {
+        document.getElementById("popup").style.display = "none"; // ซ่อน Popup
+    }
+
+    // ปิด Popup เมื่อคลิกนอกกล่อง
+    window.onclick = function(event) {
+        let popup = document.getElementById("popup");
+        if (event.target === popup) { // ถ้าคลิกที่พื้นหลังนอกกล่อง
+            closePopup(); // ปิด Popup
+        }
+    }
+</script>
+
+
 
 </body>
 </html>
