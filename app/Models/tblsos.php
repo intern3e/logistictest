@@ -8,7 +8,7 @@ use Illuminate\Database\Eloquent\Model;
 class tblsos extends Model
 {
     use HasFactory;
-    protected $fillable = ['so_id', 'customer_id', 'so_item_id'];
+    protected $fillable = ['so_id', 'customer_id', 'so_item'];
     public function customer()
     {
         return $this->belongsTo(tblcustomer::class, 'customer_id');

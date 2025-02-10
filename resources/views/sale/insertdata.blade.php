@@ -201,90 +201,76 @@
 
             <div class="mb-3">
                 <label class="form-label">เลขที่ SO:</label>
-                <form action="{{ route('sodetail') }}" method="POST">
-                    @csrf
-                    <div style="display: flex; justify-content: space-between;">
-                        <input type="text" class="form-control" id="so_number" name="so_number" style="width: 80%;" required>
-                        <button type="submit" class="btn-search" style="width: 14%; height: 45px;">🔍 ค้นหา</button>
-                    </div>
-                </form>
+
+                <form action="{{ route('sodetail.post') }}" method="POST">
+                @csrf
+                <div style="display: flex; justify-content: space-between;">
+                    <input type="text" class="form-control" id="so_number" name="so_number" style="width: 80%;" required value="{{ old('so_number', $so->so_id ?? '') }}">
+                    <button type="submit" class="btn-search" style="width: 14%; height: 45px;">🔍 ค้นหา</button>
+                </div>
+            </form>
             </div>
 
-            <h3>รายละเอียด SO</h3>
-            @if(isset($so))
-            <div class="mb-3">
-                <label class="form-label">รหัสลูกค้า:</label>
-                <input type="text" class="form-control" name="customer_id" value="{{$so->customer_id }}" >
-            </div>
-            <div class="mb-3">
-                <label class="form-label">ชื่อลูกค้า:</label>
-                <input type="text" class="form-control" name="customer_name" value="{{ $customer_name }}" readonly>
-            </div> 
+            
+            
+            
+            @if(session('error'))
+                <script>
+                    alert("{{ session('error') }}");
+                </script>
             @endif
             
-
-{{--             
-   
-
-           --}}
-
- {{-- <!-- insert-->
-            <!-- เลขที่ SO -->
-            <div class="mb-3">
-                <label class="form-label">เลขที่ SO:</label>
+            @if(isset($so))
+                <div class="mb-3">
+                    <label class="form-label">รหัสลูกค้า:</label>
+                    <input type="text" class="form-control" name="customer_id" value="{{$so->customer_id }}"readonly>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">ชื่อบริษัท:</label>
+                    <input type="text" class="form-control" name="customer_name" value="{{ $customer_name }}" readonly>
+                </div>
+               <div class="mb-3">
+                    <label class="form-label">เบอร์ติดต่อ:</label>
+                    <input type="text" class="form-control" name="customer_tel" value="{{$customer_tel}}" >
+                </div> 
+                <div class="mb-3"> 
+                    <label class="form-label">ที่อยู่จัดส่ง:</label>
+                    <input type="text" class="form-control" name="customer_address" value="{{ $customer_address }}" >
+                </div>
+                <div class="mb-3">  
+                    <label class="form-label">ละติจูด ลองจิจูด:</label>
                 <div style="display: flex; justify-content: space-between;">
-                    <input type="text" class="form-control" name="po_number" style="width: 80%;">
-                    <button type="submit" class="btn-custom" style="width: 14%;height: 45px;">🔍 ค้นหา</button>
+                    <input type="text" class="form-control" name="customer_la_long" id="customer_la_long" value="{{ $customer_la_long }}">
+                    <button type="button" class="btn-custom" onclick="openGoogleMaps()">Google Maps</button>
+                 </div>
+
+                 <div class="mb-3">
+                    <label class="form-label">แผนที่:</label>
+                    <iframe id="mapFrame" width="100%" height="300" style="border:0;" allowfullscreen="" loading="lazy"></iframe>
+                </div>
                 
-    </div>
-            <!-- รหัสลูกค้า -->
-            <div class="mb-3">
-                <label class="form-label">รหัสลูกค้า:</label>
-                <input type="text" class="form-control" name="customer_id">
-            </div>
+                <script>
+                    function updateMap() {
+                        let coords = document.getElementById('customer_la_long').value;
+                        if (coords) {
+                            document.getElementById('mapFrame').src = `https://www.google.com/maps?q=${coords}&output=embed`;
+                        }
+                    }
+                
+                    // อัปเดตแผนที่เมื่อมีการเปลี่ยนแปลงค่าพิกัด
+                    document.getElementById('customer_la_long').addEventListener('input', updateMap);
+                
+                    // โหลดแผนที่เริ่มต้น
+                    updateMap();
+                </script>
+                
+                </div>
 
-            <!-- ชื่อบริษัท -->
-            <div class="mb-3">
-                <label class="form-label">ชื่อบริษัท:</label>
-                <input type="text" class="form-control" name="company_name">
-            </div>
-
-            <!-- เบอร์ติดต่อ -->
-            <div class="mb-3">
-                <label class="form-label">เบอร์ติดต่อ:</label>
-                <input type="text" class="form-control" name="contact_number">
-            </div>
-
-            <!-- ที่อยู่จัดส่ง -->
-            <div class="mb-3">
-                <label class="form-label">ที่อยู่จัดส่ง:</label>
-                <input type="text" class="form-control" name="delivery_address">
-            </div>
-
-            <!-- ละติจูด ลองจิจูด -->
-        <div class="mb-3">  
-            <label class="form-label">ละติจูด ลองจิจูด:</label>
-        <div style="display: flex; justify-content: space-between;">
-            <input type="text" class="form-control" name="location_coordinates" id="location_coordinates">
-            <button type="button" class="btn-custom" onclick="openGoogleMaps()">Google Maps</button>
-         </div>
-        </div>
-
-
-            <!-- วันที่กำหนดส่ง -->
-            <div class="mb-3">
-                <label class="form-label">วันที่กำหนดส่ง:</label>
-                <input type="date" class="form-control" name="date_of_dali">
-            </div>
-
-             <!-- วันที่กำหนดส่ง -->
-             <div class="mb-3">
-                <label class="form-label">ID SO detail:</label>
-                <input type="string" class="form-control" name="so_detail_id">
-            </div> --}}
-
-
-            <!-- ตารางสินค้า -->
+                <div class="mb-3">
+                    <label class="form-label">วันที่กำหนดส่ง:</label>
+                    <input type="date" class="form-control" name="date_of_dali">
+                </div>
+                <!-- ตารางสินค้า -->
            <!-- Table with added id to tbody -->
 <table class="table table-bordered table-striped">
     <thead>
@@ -298,44 +284,111 @@
             <th>ลบ</th>
         </tr>
     </thead>
-
+    <tbody>
+        @foreach($items as $item)  
+        <tr> 
+            <td><input type="checkbox" class="form-control1" name="status"></td>
+            <td><input type="text" class="form-control1" name="item_id[]" value="{{ $item['item_id'] }}"></td>
+            <td><input type="text" class="form-control1" name="item_name[]" value="{{ $item['item_name'] }}"></td>
+            <td>
+                <input type="number" class="form-control1 item_quantity" name="item_quantity[]" 
+                value="{{ $item['item_quantity'] }}">
+            </td>
+            <td>
+                <input type="number" class="form-control1 item_unit_price" name="item_unit_price[]" 
+                value="{{ $item['item_unit_price'] }}">
+            </td>
+            <td>
+                <input type="text" class="form-control1 item_total" name="item_total[]" value="" readonly>
+            </td>
+                     
+            <td><button type="button" class="btn btn-danger delete-btn">ลบ</button></td>
+        </tr>
+        
+        @endforeach  
+    </tbody>
+    
 </table>
 
+<label>
+    <input type="checkbox" class="" name="checkall" >เลือกทั้งหมด
+</label>
+<button type="button" class="btn btn-danger insert-btn" style="margin-right: 100px">เพิ่มสินค้า</button>
 
+            <div class="mb-3">
+                <label class="form-label">เเจ้งเพิ่มเติม:</label>
+                <textarea class="form-control" name="additional_notes" rows="4"></textarea>
+            </div>
+            <br>
+
+            <button type="submit" class="btn-custom">💎 เปิดบิล</button>
+    </div> 
+            @endif
+
+            
 
 <script>
+document.addEventListener("DOMContentLoaded", function() {
+    // Set the default value for the "date_of_dali" input to tomorrow's date
+    let tomorrow = new Date();
+    tomorrow.setDate(tomorrow.getDate() + 1); // เพิ่ม 1 วัน
+    let formattedDate = tomorrow.toISOString().split('T')[0]; 
+    document.querySelector('input[name="date_of_dali"]').value = formattedDate;
 
-    // Handling "select all" functionality
-    document.querySelector('input[name="checkall"]').addEventListener('change', function() {
-        const checkboxes = document.querySelectorAll('input[type="checkbox"]:not([name="checkall"])');
-        checkboxes.forEach(checkbox => checkbox.checked = this.checked);
-    });
+    // Handling "select all" checkbox functionality
+    const selectAllCheckbox = document.querySelector('input[name="checkall"]');
+    if (selectAllCheckbox) {
+        selectAllCheckbox.addEventListener('change', function() {
+            const checkboxes = document.querySelectorAll('input[type="checkbox"]:not([name="checkall"])');
+            checkboxes.forEach(checkbox => checkbox.checked = this.checked);
+        });
+    }
 
-    // Adding a new row to the table
-    document.querySelector('.insert-btn').addEventListener('click', function() {
-        var tableBody = document.querySelector('#table-body'); // Corrected to #table-body
-        var newRow = document.createElement('tr');
-        newRow.innerHTML = `
-            <td><input type="checkbox" class="form-control1" name="status"></td>
-            <td><input type="text" class="form-control1" name="product_code[]"></td>
-            <td><input type="text" class="form-control1" name="product_name[]"></td>
-            <td><input type="number" class="form-control1" name="quantity[]"></td>
-            <td><input type="number" class="form-control1" name="price[]"></td>
-            <td><input type="number" class="form-control1" name="total[]"></td>
-            <td><button type="button" class="btn btn-danger delete-btn">ลบ</button></td>
-        `;
-        tableBody.appendChild(newRow);
-    });
+    // Handling delete row functionality
+    const tableBody = document.querySelector('table tbody');
+    if (tableBody) {
+        tableBody.addEventListener('click', function(e) {
+            if (e.target.classList.contains('delete-btn')) {
+                var row = e.target.closest('tr');
+                row.remove();
+            }
+        });
+    }
 
-    // Delete row when clicking delete button
-    document.querySelector('#table-body').addEventListener('click', function(e) {
-        if (e.target.classList.contains('delete-btn')) {
-            var row = e.target.closest('tr');
-            row.remove();
-        }
-    });
+    // Handling add new row functionality
+    const insertBtn = document.querySelector('.insert-btn');
+    if (insertBtn) {
+        insertBtn.addEventListener('click', function() {
+            var newRow = document.createElement('tr');
+            newRow.innerHTML = `
+                <td><input type="checkbox" class="form-control1" name="status"></td>
+                <td><input type="text" class="form-control1" name="item_id[]"></td>
+                <td><input type="text" class="form-control1" name="item_name[]"></td>
+                <td>
+                    <input type="number" class="form-control1 item_quantity" name="item_quantity[]" oninput="calculateTotal(this)">
+                </td>
+                <td>
+                    <input type="number" class="form-control1 item_unit_price" name="item_unit_price[]" oninput="calculateTotal(this)">
+                </td>
+                <td>
+                    <input type="text" class="form-control1 item_total" name="item_total" value="" readonly>
+                </td>                    
+                <td><button type="button" class="btn btn-danger delete-btn">ลบ</button></td>
+            `;
+            tableBody.appendChild(newRow);
+        });
+    }
 
-    // Open Google Maps when button is clicked
+    // Calculate the total price when quantity or unit price is changed
+    window.calculateTotal = function(input) {
+        var row = input.closest('tr');
+        var quantity = row.querySelector('.item_quantity').value;
+        var unitPrice = row.querySelector('.item_unit_price').value;
+        var total = quantity * unitPrice;
+        row.querySelector('.item_total').value = total.toFixed(2);
+    }
+});
+
     function openGoogleMaps() {
         const mapWindow = window.open(
             "https://www.google.com/maps/@13.7563,100.5018,14z",
@@ -343,20 +396,9 @@
             "width=800,height=600"
         );
     }
+
+
 </script>
-
-            
-
-            <!-- ช่องข้อความเพิ่มเติม -->
-             <br>
-            <div class="mb-3">
-                <label class="form-label">เเจ้งเพิ่มเติม:</label>
-                <textarea class="form-control" name="additional_notes" rows="4"></textarea>
-            </div>
-            <br>
-
-            <!-- ปุ่มเพิ่มข้อมูล -->
-            <button type="submit" class="btn-custom">💎 เปิดบิล</button>
-    </div>
+              
 </body>
 </html>

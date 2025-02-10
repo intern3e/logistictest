@@ -16,7 +16,7 @@ return new class extends Migration
             $table->string('customer_name');
             $table->string('customer_tel');
             $table->text('customer_address');
-            $table->text('custumer_la_long');
+            $table->text('customer_la_long');
             $table->timestamps();
         });
     }

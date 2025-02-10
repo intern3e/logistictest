@@ -20,9 +20,13 @@ Route::post('/loginsale', [salecontroller::class, 'login'])->name('sale.loginsal
 Route::post('/logout', [salecontroller::class, 'logout'])->name('logout');
 Route::get('/dashboard', [salecontroller::class, 'dashboard'])->name('sale.dashboard');
 Route::get('/insertdata', [salecontroller::class, 'insertdata'])->name('sale.insertdata');
-Route::post('/sodetail', [SaleController::class, 'findData'])->name('sodetail');
-Route::get('/txt', [SaleController::class, 'popup'])->name('popup');
+// Show the form (GET request)
+Route::get('/sodetail', [SaleController::class, 'showForm'])->name('sodetail');
 
+// Handle form submission (POST request)
+Route::post('/sodetail', [SaleController::class, 'findData'])->name('sodetail.post');
+
+Route::get('/txt', [SaleController::class, 'popup'])->name('popup');
 
 use App\Http\Controllers\admincontroller;
 Route::get('/dashboardadmin', [admincontroller::class, 'dashboard'])->name('admin.dashboardadmin');

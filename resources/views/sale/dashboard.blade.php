@@ -5,8 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Dashboard</title>
     <style>
-        /* --- Global Style --- */
-        body {
+  /* --- Global Style --- */
+  body {
             font-family: 'Poppins', sans-serif;
             background: linear-gradient(to right, #f0f2f5, #dfe9f3);
             margin: 0;
@@ -79,7 +79,7 @@
         /* --- Table Styling --- */
         .table-container {
             background: white;
-            margin: 40px 5%;
+            margin: 0 5%;
             padding: 20px;
             border-radius: 12px;
             box-shadow: 0px 6px 12px rgba(0, 0, 0, 0.1);
@@ -147,7 +147,6 @@
         .filter-form label {
             font-weight: bold;
             color: #2c3e50;
-            
         }
 
         .filter-form input {
@@ -173,7 +172,6 @@
         .search-box {
             flex-grow: 1;
             max-width: 200px;
-
         }
 
         .search-box input {
@@ -182,6 +180,7 @@
             margin: 0px -30%;
             background: #f8f9fa;
         }
+
         .search-box {
             display: flex;
             align-items: center;
@@ -214,8 +213,9 @@
             background: #27ae60;
             transform: scale(1.05);
         }
-         /* สไตล์พื้นหลังมืด */
-         .popup-overlay {
+
+        /* สไตล์พื้นหลังมืด */
+        .popup-overlay {
             display: none; /* ซ่อน Popup ไว้ก่อน */
             position: fixed;
             top: 0;
@@ -230,13 +230,17 @@
 
         /* สไตล์กล่อง Popup */
         .popup-content {
-            background: white;
+            background: linear-gradient(to right, #f0f2f5, #dfe9f3);
             padding: 20px;
             border-radius: 10px;
-            width: 1000px;
-            height: 600px;
+            width: 80%;
+            max-width: 1000px;
+            height: auto;
             text-align: center;
             position: relative;
+            overflow: hidden;
+            max-height: 500px; /* เพิ่มความสูงสูงสุด */
+            overflow-y: auto; /* แสดงแท็บเลื่อน */
         }
 
         /* ปุ่มปิด */
@@ -264,7 +268,7 @@
                 width: 100%;
             }
         }
-    </style>
+        </style>
 </head>
 <body>
 
@@ -323,55 +327,63 @@
                 <td>ณฏ12345</td>
                 <td>34/4 หมู่2 ต.บางน้ำจืด อ.เมือง จ.สมุทรสาคร</td>
                 <td>29/1/2567</td>
-                <td><a href="javascript:void(0);" onclick="openPopup()" class="view-details">📄 เพิ่มเติม</a></td>
-            </tr>`;
+                <td><a href="javascript:void(0);" onclick="openPopup()" class="text-decoration-none">📄 เพิ่มเติม</a></td>
+            </tr>
+            `;
         }
-        
-        
         tbody.innerHTML = content;
     }
 
-    // เรียกใช้ฟังก์ชันเพื่อเพิ่มแถวในตาราง
     generateRows();
 </script>
 
 <!-- Popup -->
-<div class="popup-overlay" id="popup" style="display: none;"> <!-- ตั้งค่า display: none; เพื่อไม่ให้แสดงเมื่อเข้าเว็บ -->
+<div class="popup-overlay" id="popup" style="display: none;">
     <div class="popup-content">
         <span class="close-btn" onclick="closePopup()">&times;</span>
         <div class="table-container">
-    <table>
-    <thead>
-        <tr>
-            <th>สถานะ</th>
-            <th>รหัสสินค้า</th>
-            <th>รายการ</th>
-            <th>จำนวน</th>
-            <th>ราคา/หน่วย</th>
-            <th>จำนวนเงิน</th>
-        </tr>
-        <tr>    
+            <table>
+                <thead>
+                    <tr>
+                        <th>สถานะ</th>
+                        <th>รหัสสินค้า</th>
+                        <th>รายการ</th>
+                        <th>จำนวน</th>
+                        <th>ราคา/หน่วย</th>
+                        <th>จำนวนเงิน</th>
+                    </tr>
+                </thead>
+                <tbody id="popup-body">
+                    <!-- Table rows will be dynamically inserted here -->
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<script>
+    function generateRowspopup() {
+        let tbody = document.getElementById("popup-body");
+        let content = "";
+        
+        for (let i = 0; i <100; i++) {
+            content += `
+            <tr>
                 <td>กำลังดำเนินการ</td>
                 <td>1123456</td>
                 <td>แผงโซล่าเซลล์ 4000W</td>
                 <td>10</td>
                 <td>29/1/2567</td>
                 <td>8000</td>
-
             </tr>
-        <tr>    
-                <td>กำลังดำเนินการ</td>
-                <td>1123450</td>
-                <td>เหล็กเส้น 2 หุน หรือ เหล็กเส้นขนาด 6 มิล RB6 ของเราจำหน่ายเป็นเส้น ความยาวเส้นละ 10 เมตร</td>
-                <td>5</td>
-                <td>29/1/2567</td>
-                <td>300</td>
+            `;
+        }
+        tbody.innerHTML = content;
+    }
 
-            </tr>
-    </thead>
-    
-    </div>
-</div>
+    // Call the function to populate the table when required
+    generateRowspopup();
+</script>
 
 <script>
     // ฟังก์ชันเปิด Popup
@@ -392,7 +404,6 @@
         }
     }
 </script>
-
 
 
 </body>
