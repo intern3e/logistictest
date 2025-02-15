@@ -199,7 +199,30 @@
     .btn-search:active {
         background-color: #d35400; /* สีเมื่อคลิก */
 }
+    .btn-primary {
+    background: #f39c12;
+    color: white;
+    font-size: 18px;
+    font-weight: bold;
+    padding: 12px 20px;
+    border-radius: 8px;
+    width: 100%;
+    transition: 0.3s;
+    border: none;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    cursor: pointer;
+}
 
+.btn-primary:hover {
+    background-color: #e67e22; 
+    transform: translateY(-2px);
+    box-shadow: 0 6px 12px rgba(0, 0, 0, 0.2);
+}
+
+.btn-primary:active {
+    background-color: #d35400; /* สีเมื่อคลิก */
+    transform: scale(0.98); 
+}
 
         /* Media Queries สำหรับขนาดหน้าจอที่ต่างกัน */
         @media (max-width: 768px) {
@@ -273,7 +296,8 @@
                     alert("{{ session('error') }}");
                 </script>
             @endif
-            <form id="billForm">
+            
+<form id="billForm">
             @if(isset($so))
                 <div class="mb-3">
                     <label class="form-label">รหัสลูกค้า:</label>
@@ -324,10 +348,8 @@
                     <label class="form-label">วันที่กำหนดส่ง:</label>
                     <input type="date" class="form-control" name="date_of_dali">
                 </div>
-                <!-- ตารางสินค้า -->
-           <!-- Table with added id to tbody -->
-<table class="table table-bordered table-striped">
-    <thead>
+    <table class="table table-bordered table-striped">
+        <thead>
         <tr>
             <th>เลือกจัดส่ง</th>
             <th>รหัสสินค้า</th>
@@ -341,7 +363,7 @@
     <tbody>
         @foreach($items as $item)  
         <tr> 
-            <td><input type="checkbox" class="form-control1" name="status"></td>
+            <td><input type="checkbox" class="form-control1" name="status[]"></td>
             <td><input type="text" class="form-control1" name="item_id[]" value="{{ $item['item_id'] }}"></td>
             <td><input type="text" class="form-control1" name="item_name[]" value="{{ $item['item_name'] }}"></td>
             <td>
@@ -362,54 +384,71 @@
         @endforeach  
     </tbody>
     
-</table>
+    </table>
 
 <div class="action-container">
-    <label>
-        <input type="checkbox" name="checkall"> เลือกทั้งหมด
-    </label>
+    <label><input type="checkbox" name="checkall"> เลือกทั้งหมด</label>
     <button type="button" class="btn btn-danger insert-btn">เพิ่มสินค้า</button>
 </div>
-
-
             <div class="mb-3">
                 <label class="form-label">เเจ้งเพิ่มเติม:</label>
                 <textarea class="form-control" name="additional_notes" rows="4"></textarea>
             </div>
             <br>
             <input type="hidden" name="so_id" value="{{ $so->so_id }}">
-            <button type="submit" class="btn btn-primary">เปิดบิล</button>
-            </form>
+            <button type="submit" class="btn btn-primary" onclick="confirmSubmit(event)">เปิดบิล</button>
+            
     </div> 
 </form>
             @endif  
 
-            
-
 <script>
 
 document.getElementById('billForm').addEventListener('submit', function (event) {
-    event.preventDefault(); // ป้องกันการ submit แบบธรรมดา
+    event.preventDefault();
 
-    let formData = new FormData(this); // เก็บข้อมูลในฟอร์ม
+    let formData = new FormData();
+    formData.append('so_id', document.querySelector('input[name="so_id"]').value);
+    formData.append('customer_id', document.querySelector('input[name="customer_id"]').value);
+    formData.append('date_of_dali', document.querySelector('input[name="date_of_dali"]').value);
+    formData.append('notes', document.querySelector('textarea[name="additional_notes"]').value);
+
+    let hasSelectedItems = false; // เช็คว่ามีสินค้าอย่างน้อย 1 รายการที่ถูกเลือกหรือไม่
+
+    document.querySelectorAll('tbody tr').forEach((row, index) => {
+        let checkbox = row.querySelector('input[name="status[]"]');
+        if (checkbox && checkbox.checked) {
+            hasSelectedItems = true;
+            formData.append(`item_id[]`, row.querySelector('input[name="item_id[]"]').value);
+            formData.append(`item_name[]`, row.querySelector('input[name="item_name[]"]').value);
+            formData.append(`item_quantity[]`, row.querySelector('input[name="item_quantity[]"]').value);
+            formData.append(`item_unit_price[]`, row.querySelector('input[name="item_unit_price[]"]').value);
+            formData.append(`status[]`, 'checked'); // ส่งเฉพาะแถวที่ติ๊ก checkbox
+        }
+    });
+
+    if (!hasSelectedItems) {
+        alert("กรุณาเลือกสินค้าอย่างน้อย 1 รายการ");
+        return;
+    }
 
     fetch('{{ route("insert.post") }}', {
         method: 'POST',
         body: formData,
         headers: {
-            'X-CSRF-TOKEN': '{{ csrf_token() }}', // ส่ง CSRF Token
+            'X-CSRF-TOKEN': '{{ csrf_token() }}',
         },
     })
-    .then((response) => response.json()) // แปลงข้อมูลที่ได้รับจากเซิร์ฟเวอร์เป็น JSON
-    .then((data) => {
+    .then(response => response.json())
+    .then(data => {
         if (data.success) {
-            alert(data.success); // แสดงข้อความสำเร็จ
+            alert(data.success);
         } else if (data.error) {
-            alert(data.error); // แสดงข้อความข้อผิดพลาด
+            alert(data.error);
         }
     })
-    .catch((error) => {
-        console.error('Error:', error); // แสดงข้อผิดพลาดในคอนโซล
+    .catch(error => {
+        console.error('Error:', error);
         alert('มีข้อผิดพลาดในการส่งข้อมูล');
     });
 });
@@ -430,12 +469,20 @@ document.addEventListener("DOMContentLoaded", function() {
             const checkboxes = document.querySelectorAll('input[type="checkbox"]:not([name="checkall"])');
             checkboxes.forEach(checkbox => checkbox.checked = this.checked);
         });
+          // เช็กสถานะของ "select all" checkbox ถ้ามี checkbox ทั้งหมดถูกติ๊ก
+    const checkboxes = document.querySelectorAll('input[type="checkbox"]:not([name="checkall"])');
+    checkboxes.forEach(checkbox => {
+    checkbox.addEventListener('change', function() {
+        // ตรวจสอบว่า checkbox ทั้งหมดถูกติ๊กหรือไม่
+        const allChecked = Array.from(checkboxes).every(checkbox => checkbox.checked);
+        selectAllCheckbox.checked = allChecked;  // ปรับสถานะ "select all" ตาม
+    });
+});
     }
 
-    // Handling delete row functionality
     const tableBody = document.querySelector('table tbody');
     if (tableBody) {
-        tableBody.addEventListener('click', function(e) {
+        tableBody.addEventListener('click', function(e) {   
             if (e.target.classList.contains('delete-btn')) {
                 var row = e.target.closest('tr');
                 row.remove();
@@ -443,7 +490,6 @@ document.addEventListener("DOMContentLoaded", function() {
         });
     }
 
-    // Handling add new row functionality
     const insertBtn = document.querySelector('.insert-btn');
     if (insertBtn) {
         insertBtn.addEventListener('click', function() {
@@ -467,7 +513,7 @@ document.addEventListener("DOMContentLoaded", function() {
         });
     }
 
-    // Calculate the total price when quantity or unit price is changed
+
     window.calculateTotal = function(input) {
         var row = input.closest('tr');
         var quantity = row.querySelector('.item_quantity').value;
@@ -498,7 +544,43 @@ document.addEventListener("DOMContentLoaded", function() {
         }
     }
 
-    window.onload = calculateTotal;
+    function confirmSubmit(event) {
+    event.preventDefault(); // ป้องกันการ submit แบบปกติ
+
+    // แสดงการแจ้งเตือน
+    let confirmation = confirm("คุณต้องการเปิดบิลใช่หรือไม่?");
+
+    if (confirmation) {
+        // หากผู้ใช้กดตกลง
+        let formData = new FormData(document.getElementById('billForm')); // เก็บข้อมูลฟอร์ม
+
+        fetch('{{ route("insert.post") }}', { // ส่งข้อมูลฟอร์มไปยังเส้นทาง insert.post
+            method: 'POST',
+            body: formData,
+            headers: {
+                'X-CSRF-TOKEN': '{{ csrf_token() }}', // ส่ง CSRF Token
+            },
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                alert(data.success); // แจ้งเตือนสำเร็จ
+                window.location.href = '/dashboard'; // เปลี่ยนเส้นทางไปยังหน้า dashboard
+            } else if (data.error) {
+                alert(data.error); // แจ้งเตือนข้อผิดพลาด
+            }
+        })
+        .catch((error) => {
+            console.error('Error:', error); // แสดงข้อผิดพลาดในคอนโซล
+            alert('มีข้อผิดพลาดในการส่งข้อมูล');
+        });
+
+    } else {
+        // หากผู้ใช้กดยกเลิก
+        alert("คุณยกเลิกการเปิดบิล.");
+    }
+}
+
 
 </script>
               

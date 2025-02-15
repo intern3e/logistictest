@@ -334,6 +334,28 @@
             <table>
                 <thead>
                     <tr>
+                        <th>ID SO Detail</th>
+                        <th>รหัสลูกค้า</th>
+                        <th>ที่อยู่จัดส่ง</th>
+                        <th>วันที่จัดส่ง</th>
+                    </tr>
+                </thead>
+                <tbody id="table-body">
+            @foreach($bill as $item)
+                <tr>
+                <td>{{ $item->so_detail_id }}</td>
+                <td>{{ $item->customer_id }}</td>
+                <td>{{ $item->customer ? $item->customer->customer_address : 'ไม่มีข้อมูล' }}</td>
+                <td>{{ $item->date_of_dali }}</td>
+                </tr>
+            @endforeach
+                    
+                </tbody>
+            </table>
+            <br>
+            <table>
+                <thead>     
+                    <tr>
                         <th>สถานะ</th>
                         <th>รหัสสินค้า</th>
                         <th>รายการ</th>
@@ -343,42 +365,18 @@
                     </tr>
                 </thead>
                 <tbody id="popup-body">
-                    <!-- Table rows will be dynamically inserted here -->
                 </tbody>
             </table>
         </div>
     </div>
 </div>
 
-<script>
-    function generateRowspopup() {
-        let tbody = document.getElementById("popup-body");
-        let content = "";
-        
-        for (let i = 0; i <100; i++) {
-            content += `
-            <tr>
-                <td>กำลังดำเนินการ</td>
-                <td>1123456</td>
-                <td>แผงโซล่าเซลล์ 4000W</td>
-                <td>10</td>
-                <td>29/1/2567</td>
-                <td>8000</td>
-            </tr>
-            `;
-        }
-        tbody.innerHTML = content;
-    }
-
-    // Call the function to populate the table when required
-    generateRowspopup();
-</script>
 
 <script>
-    // ฟังก์ชันเปิด Popup
-    function openPopup() {
-        document.getElementById("popup").style.display = "flex"; // แสดง Popup
-    }
+   function openPopup(soDetailId) {
+    // แสดง Popup
+    document.getElementById("popup").style.display = "flex";
+}
 
     // ฟังก์ชันปิด Popup
     function closePopup() {

@@ -5,6 +5,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use App\Models\tblsos;
 use App\Models\tblcustomer;
+use App\Models\bill_detail;
 use App\Models\so_item_id;
 use App\Models\Bill;
 use function Laravel\Prompts\table;
@@ -134,44 +135,91 @@ public function findData(Request $request)
 
 public function insert(Request $request)
 {
+    DB::beginTransaction();
     try {
-        // ตรวจสอบความถูกต้องของข้อมูลที่ส่งมา
         $request->validate([
             'so_id' => 'required|string|max:255',
             'customer_id' => 'required|string|max:255',
             'date_of_dali' => 'required|date',
             'notes' => 'nullable|string',
+            'item_id' => 'required|array',
+            'item_id.*' => 'string',
+            'item_name' => 'required|array',
+            'item_name.*' => 'string',
+            'item_quantity' => 'required|array',
+            'item_quantity.*' => 'integer|min:1',
+            'item_unit_price' => 'required|array',
+            'item_unit_price.*' => 'numeric|min:0',
+            'status' => 'required|array', // ต้องมี status ที่ถูกติ๊ก checkbox
         ]);
 
-        // ดึงข้อมูลจาก request
-        $so_id = $request->input('so_id');
-        $customer_id = $request->input('customer_id');
-        $date_of_dali = $request->input('date_of_dali');
-        $notes = $request->input('notes');
-
-        // ตรวจสอบว่า SO มีอยู่ในฐานข้อมูลหรือไม่
-        $so = tblsos::where('so_id', $so_id)->first();
-        if (!$so) {
-            return response()->json(['error' => 'ไม่พบข้อมูล SO'], 400);
-        }
-
-        // สร้างบิลใหม่
+        // 1️⃣ สร้างบิลใหม่
         $bill = new Bill();
-        $bill->timestamps = false;
-        $bill->so_id = $so_id;
-        $bill->status = 0; // 0 = รออนุมัติ
-        $bill->customer_id = $customer_id;
-        $bill->notes = $notes;
-        $bill->date_of_dali = $date_of_dali;
+        $bill->so_id = $request->input('so_id');
+        $bill->status = 0;
+        $bill->customer_id = $request->input('customer_id');
+        $bill->notes = $request->input('notes');
+        $bill->date_of_dali = $request->input('date_of_dali');
         $bill->save();
 
+        // 2️⃣ ใช้ so_detail_id ของบิลที่สร้าง
+        $so_detail_id = $bill->id;
 
+        // 3️⃣ บันทึกรายการสินค้าที่ติ๊ก checkbox เท่านั้น
+        $item_ids = $request->input('item_id');
+        $item_names = $request->input('item_name');
+        $item_quantities = $request->input('item_quantity');
+        $item_unit_prices = $request->input('item_unit_price');
+        $status_checked = $request->input('status', []);
+
+        foreach ($status_checked as $index => $value) {
+            $bill_detail = new Bill_detail();
+            $bill_detail->so_detail_id = $so_detail_id;
+            $bill_detail->so_id = $request->input('so_id');
+            $bill_detail->item_id = $item_ids[$index];
+            $bill_detail->item_name = $item_names[$index];
+            $bill_detail->quantity = $item_quantities[$index];
+            $bill_detail->unit_price = $item_unit_prices[$index];
+            $bill_detail->save();
+        }
+
+        DB::commit();
         return response()->json(['success' => 'เปิดบิลสำเร็จ']);
 
     } catch (\Exception $e) {
+        DB::rollBack();
         return response()->json(['error' => 'เกิดข้อผิดพลาด: ' . $e->getMessage()], 500);
     }
 }
+
+public function insertPost(Request $request) {
+    $so_id = $request->input('so_id');
+    $customer_id = $request->input('customer_id');
+    $items = $request->input('item_id'); // หรือรายการสินค้าทั้งหมดที่ส่งมา
+
+    // ทำการประมวลผลข้อมูล เช่น การบันทึกข้อมูลหรือเปิดบิล
+    // สมมติว่าบันทึกข้อมูลลงในฐานข้อมูล
+    $successMessage = "บิลเปิดสำเร็จ";
+
+    // ส่งข้อมูลกลับไปยังหน้าจอ dashboard
+    return response()->json(['success' => $successMessage]);
+}
+
+
+public function getSoDetail($so_detail_id)
+{
+    // ค้นหาข้อมูลจากฐานข้อมูลตาม so_detail_id
+    $soDetail = bill ::with('customer')->findOrFail($so_detail_id);
+
+    // ส่งข้อมูลในรูปแบบ JSON
+    return response()->json([
+        'so_detail_id' => $soDetail->so_detail_id,
+        'customer_id' => $soDetail->customer_id,
+        'customer_address' => $soDetail->customer ? $soDetail->customer->customer_address : 'ไม่มีข้อมูล',
+        'date_of_dali' => $soDetail->date_of_dali
+    ]);
+}
+
 
 
 }
