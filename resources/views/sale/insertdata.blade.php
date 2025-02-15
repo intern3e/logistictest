@@ -147,6 +147,60 @@
         .insert-btn:hover {
             background-color: green;
         }
+        .action-container {
+    display: flex;
+    justify-content: flex-end;
+    align-items: center;
+    }
+
+    .action-container label {
+        margin-top: 15px;
+        margin-right: 10px; /* เพื่อเว้นระยะระหว่าง checkbox และปุ่ม */
+    }
+
+    .insert-btn {
+        margin-top: 15px;
+        width: 150px;
+        height: 30px;
+        margin-left: 10px; /* เพิ่มระยะห่างจาก checkbox */
+    }
+    .insert-btn {
+        background-color: green;
+        color: white;
+        border: none;
+        border-radius: 5px;
+        cursor: pointer;
+        transition: background-color 0.3s ease;
+    }
+
+    .insert-btn:hover {
+        background-color: #45a049; /* สีเมื่อ hover */
+    }
+
+    .insert-btn:active {
+        background-color: #388e3c; /* สีเมื่อถูกคลิก */
+    }
+
+    .btn-search {
+        background-color: #f39c12; /* สีพื้นหลัง */
+        color: white; /* สีข้อความ */
+        border: none; /* ไม่มีขอบ */
+        border-radius: 8px; /* ขอบมน */
+        padding: 12px;
+        font-size: 16px;
+        cursor: pointer;
+        transition: background-color 0.3s ease;
+    }
+
+    .btn-search:hover {
+        background-color: #e67e22; /* สีเมื่อ hover */
+    }
+
+    .btn-search:active {
+        background-color: #d35400; /* สีเมื่อคลิก */
+}
+
+
         /* Media Queries สำหรับขนาดหน้าจอที่ต่างกัน */
         @media (max-width: 768px) {
             .container {
@@ -219,7 +273,7 @@
                     alert("{{ session('error') }}");
                 </script>
             @endif
-            
+            <form id="billForm">
             @if(isset($so))
                 <div class="mb-3">
                     <label class="form-label">รหัสลูกค้า:</label>
@@ -310,24 +364,58 @@
     
 </table>
 
-<label>
-    <input type="checkbox" class="" name="checkall" >เลือกทั้งหมด
-</label>
-<button type="button" class="btn btn-danger insert-btn" style="margin-right: 100px">เพิ่มสินค้า</button>
+<div class="action-container">
+    <label>
+        <input type="checkbox" name="checkall"> เลือกทั้งหมด
+    </label>
+    <button type="button" class="btn btn-danger insert-btn">เพิ่มสินค้า</button>
+</div>
+
 
             <div class="mb-3">
                 <label class="form-label">เเจ้งเพิ่มเติม:</label>
                 <textarea class="form-control" name="additional_notes" rows="4"></textarea>
             </div>
             <br>
-
-            <button type="submit" class="btn-custom">💎 เปิดบิล</button>
+            <input type="hidden" name="so_id" value="{{ $so->so_id }}">
+            <button type="submit" class="btn btn-primary">เปิดบิล</button>
+            </form>
     </div> 
-            @endif
+</form>
+            @endif  
 
             
 
 <script>
+
+document.getElementById('billForm').addEventListener('submit', function (event) {
+    event.preventDefault(); // ป้องกันการ submit แบบธรรมดา
+
+    let formData = new FormData(this); // เก็บข้อมูลในฟอร์ม
+
+    fetch('{{ route("insert.post") }}', {
+        method: 'POST',
+        body: formData,
+        headers: {
+            'X-CSRF-TOKEN': '{{ csrf_token() }}', // ส่ง CSRF Token
+        },
+    })
+    .then((response) => response.json()) // แปลงข้อมูลที่ได้รับจากเซิร์ฟเวอร์เป็น JSON
+    .then((data) => {
+        if (data.success) {
+            alert(data.success); // แสดงข้อความสำเร็จ
+        } else if (data.error) {
+            alert(data.error); // แสดงข้อความข้อผิดพลาด
+        }
+    })
+    .catch((error) => {
+        console.error('Error:', error); // แสดงข้อผิดพลาดในคอนโซล
+        alert('มีข้อผิดพลาดในการส่งข้อมูล');
+    });
+});
+
+
+
 document.addEventListener("DOMContentLoaded", function() {
     // Set the default value for the "date_of_dali" input to tomorrow's date
     let tomorrow = new Date();
@@ -396,7 +484,21 @@ document.addEventListener("DOMContentLoaded", function() {
             "width=800,height=600"
         );
     }
+    function calculateTotal() {
+        let quantity = document.querySelectorAll('.item_quantity');
+        let price = document.querySelectorAll('.item_unit_price');
+        let total = document.querySelectorAll('.item_total');
+        
+        for (let i = 0; i < quantity.length; i++) {
+            let itemQuantity = parseFloat(quantity[i].value) || 0;
+            let itemPrice = parseFloat(price[i].value) || 0;
+            let itemTotal = itemQuantity * itemPrice;
 
+            total[i].value = itemTotal.toFixed(2);  
+        }
+    }
+
+    window.onload = calculateTotal;
 
 </script>
               

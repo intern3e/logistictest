@@ -6,6 +6,7 @@ use Illuminate\Support\Facades\DB;
 use App\Models\tblsos;
 use App\Models\tblcustomer;
 use App\Models\so_item_id;
+use App\Models\Bill;
 use function Laravel\Prompts\table;
 
 class salecontroller extends Controller
@@ -43,10 +44,11 @@ class salecontroller extends Controller
         return back()->withErrors(['sale.loginsale' => 'SO หรือรหัสผ่านไม่ถูกต้อง']);
     }
 
-
     public function dashboard()
     {
-        return view('sale.dashboard');
+        // ดึงข้อมูลบิลพร้อมกับข้อมูลลูกค้า
+        $bill = Bill::with('customer')->get();
+        return view('sale.dashboard', compact('bill'));
     }
 
 
@@ -127,6 +129,47 @@ public function findData(Request $request)
     } else {
         // ถ้าไม่พบข้อมูล SO ที่ตรงกับหมายเลขที่กรอก
         return redirect()->route('sodetail')->with('error', 'ไม่พบข้อมูล SO ที่ตรงกับหมายเลขที่กรอก');
+    }
+}
+
+public function insert(Request $request)
+{
+    try {
+        // ตรวจสอบความถูกต้องของข้อมูลที่ส่งมา
+        $request->validate([
+            'so_id' => 'required|string|max:255',
+            'customer_id' => 'required|string|max:255',
+            'date_of_dali' => 'required|date',
+            'notes' => 'nullable|string',
+        ]);
+
+        // ดึงข้อมูลจาก request
+        $so_id = $request->input('so_id');
+        $customer_id = $request->input('customer_id');
+        $date_of_dali = $request->input('date_of_dali');
+        $notes = $request->input('notes');
+
+        // ตรวจสอบว่า SO มีอยู่ในฐานข้อมูลหรือไม่
+        $so = tblsos::where('so_id', $so_id)->first();
+        if (!$so) {
+            return response()->json(['error' => 'ไม่พบข้อมูล SO'], 400);
+        }
+
+        // สร้างบิลใหม่
+        $bill = new Bill();
+        $bill->timestamps = false;
+        $bill->so_id = $so_id;
+        $bill->status = 0; // 0 = รออนุมัติ
+        $bill->customer_id = $customer_id;
+        $bill->notes = $notes;
+        $bill->date_of_dali = $date_of_dali;
+        $bill->save();
+
+
+        return response()->json(['success' => 'เปิดบิลสำเร็จ']);
+
+    } catch (\Exception $e) {
+        return response()->json(['error' => 'เกิดข้อผิดพลาด: ' . $e->getMessage()], 500);
     }
 }
 

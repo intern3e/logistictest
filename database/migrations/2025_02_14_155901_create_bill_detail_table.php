@@ -11,18 +11,21 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('so_item_id', function (Blueprint $table) {
+        Schema::create('bill_detail', function (Blueprint $table) {
+            $table->string('so_detail_id');
             $table->string('so_id');
             $table->string('item_id');
             $table->string('item_name');
-            $table->float('item_quantity');
-            $table->float('item_unit_price');
-            $table->timestamps();
+            $table->float('quantity');
+            $table->float('unit_price');
         });
     }
 
+    /**
+     * Reverse the migrations.
+     */
     public function down(): void
     {
-        Schema::dropIfExists('so_item_id');
+        Schema::dropIfExists('bill_detail');
     }
 };

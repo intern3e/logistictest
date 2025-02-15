@@ -308,14 +308,12 @@
                 </tr>`;
             }
 
-            console.log("Generated rows: ", content); // Debugging: check generated rows in the console
             tbody.innerHTML = content;
         }
 
         generateRows();
 
         function openPopup() {
-            console.log("Opening popup..."); // Debugging: check when popup is being opened
             document.getElementById("popup").style.display = "flex";
         }
 
@@ -326,9 +324,9 @@
         window.onclick = function(event) {
             let popup = document.getElementById("popup");
             if (event.target === popup) {
-                popup.style.display = "none";
+                closePopup();
             }
-        }
+        };
 
         function exportToExcel() {
             let table = document.querySelector("table");
@@ -344,8 +342,6 @@
                 data.push(rowData);
             });
 
-            console.log("Exporting data:", data); // Debugging: check data before export
-
             let xml = createExcelXML(data);
             let blob = new Blob([xml], { type: "application/vnd.ms-excel" });
             let link = document.createElement("a");
@@ -355,6 +351,67 @@
             link.click();
             document.body.removeChild(link);
         }
+        function exportToExcel() {
+    let table = document.querySelector("table");
+    let rows = table.querySelectorAll("tr");
+    let data = [];
+    
+    // เก็บข้อมูลเฉพาะแถวที่ถูกเลือก
+    rows.forEach(row => {
+        let checkbox = row.querySelector("input[type='checkbox']");
+        if (checkbox && checkbox.checked) {
+            let rowData = [];
+            let cells = row.querySelectorAll("th, td");
+            cells.forEach(cell => {
+                rowData.push(cell.textContent.trim());
+            });
+            data.push(rowData);
+        }
+    });
+
+    // ถ้ามีข้อมูลที่เลือก
+    if (data.length > 0) {
+        let xml = createExcelXML(data);
+        let blob = new Blob([xml], { type: "application/vnd.ms-excel" });
+        let link = document.createElement("a");
+        link.href = URL.createObjectURL(blob);
+        link.download = "เอกสารจัดเตรียมสินค้า.xls";
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+    } else {
+        alert("กรุณาเลือกข้อมูลที่ต้องการพิมพ์");
+    }
+}
+
+function createExcelXML(data) {
+    const xmlHeader = `<?xml version="1.0" encoding="UTF-8"?>
+        <?mso-application progid="Excel.Sheet"?>
+        <Workbook xmlns="urn:schemas-microsoft-com:office:spreadsheet"
+                  xmlns:o="urn:schemas-microsoft-com:office:office"
+                  xmlns:x="urn:schemas-microsoft-com:office:excel"
+                  xmlns:ss="urn:schemas-microsoft-com:office:spreadsheet"
+                  xmlns:html="http://www.w3.org/TR/REC-html40">
+        <Worksheet ss:Name="Sheet1">
+            <Table>`;
+
+    const xmlFooter = `</Table></Worksheet></Workbook>`;
+
+    const headerRow = `<Row>${data[0].map(cell => 
+        `<Cell><Data ss:Type="String">${cell}</Data></Cell>`
+    ).join('')}</Row>`;
+
+    const rows = data.slice(1).reduce((acc, row) => {
+        const rowData = row.map(cell => 
+            `<Cell><Data ss:Type="String">${cell}</Data></Cell>`
+        ).join('');
+        return acc + `<Row>${rowData}</Row>`;
+    }, '');
+
+    return xmlHeader + headerRow + rows + xmlFooter;
+}
+
+
     </script>
 </body>
 </html>

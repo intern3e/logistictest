@@ -22,6 +22,8 @@ Route::get('/dashboard', [salecontroller::class, 'dashboard'])->name('sale.dashb
 Route::get('/insertdata', [salecontroller::class, 'insertdata'])->name('sale.insertdata');
 // Show the form (GET request)
 Route::get('/sodetail', [SaleController::class, 'showForm'])->name('sodetail');
+Route::post('/insert', [SaleController::class, 'insert'])->name('insert.post');
+
 
 // Handle form submission (POST request)
 Route::post('/sodetail', [SaleController::class, 'findData'])->name('sodetail.post');

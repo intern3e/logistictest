@@ -310,32 +310,21 @@
             </tr>
         </thead>
         <tbody id="table-body">
-            <!-- Content will be inserted dynamically here -->
+            @foreach($bill as $item)
+            <tr>
+                <td>{{ $item->so_detail_id }}</td>
+                <td>{{ $item->customer_id }}</td>
+                <td>{{ $item->customer ? $item->customer->customer_address : 'ไม่มีข้อมูล' }}</td> <!-- ใช้ '->' ไม่ใช่ '[]' -->
+                <td>{{ $item->date_of_dali }}</td>
+                <td><a href="javascript:void(0);" onclick="openPopup()" class="text-decoration-none">📄 เพิ่มเติม</a></td>
+            </tr>
+            @endforeach
+            
         </tbody>
     </table>
 </div>
 
-<script>
-    function generateRows() {
-        let tbody = document.getElementById("table-body");
-        let content = "";
-        
-        for (let i = 0; i < 60; i++) {
-            content += `
-            <tr>
-                <td>1123456</td>
-                <td>ณฏ12345</td>
-                <td>34/4 หมู่2 ต.บางน้ำจืด อ.เมือง จ.สมุทรสาคร</td>
-                <td>29/1/2567</td>
-                <td><a href="javascript:void(0);" onclick="openPopup()" class="text-decoration-none">📄 เพิ่มเติม</a></td>
-            </tr>
-            `;
-        }
-        tbody.innerHTML = content;
-    }
 
-    generateRows();
-</script>
 
 <!-- Popup -->
 <div class="popup-overlay" id="popup" style="display: none;">
