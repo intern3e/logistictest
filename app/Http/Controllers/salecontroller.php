@@ -205,22 +205,17 @@ public function insertPost(Request $request) {
     return response()->json(['success' => $successMessage]);
 }
 
-
-public function getSoDetail($so_detail_id)
+public function showSalesOrderDetails($soDetailId)
 {
-    // ค้นหาข้อมูลจากฐานข้อมูลตาม so_detail_id
-    $soDetail = bill ::with('customer')->findOrFail($so_detail_id);
+    // ดึงข้อมูลรายละเอียดการสั่งซื้อจากฐานข้อมูล
+    $soDetail = Bill::find($soDetailId);
 
-    // ส่งข้อมูลในรูปแบบ JSON
-    return response()->json([
-        'so_detail_id' => $soDetail->so_detail_id,
-        'customer_id' => $soDetail->customer_id,
-        'customer_address' => $soDetail->customer ? $soDetail->customer->customer_address : 'ไม่มีข้อมูล',
-        'date_of_dali' => $soDetail->date_of_dali
-    ]);
+    // ดึงข้อมูลจากตาราง bill_detail ตาม so_detail_id
+    $billDetails = $soDetail->billDetails;  // ใช้ความสัมพันธ์ที่กำหนดในโมเดล
+
+    // ส่งข้อมูลไปยัง view
+    return view('sales.dashboard', compact('soDetail', 'billDetails'));
 }
-
-
 
 }
 

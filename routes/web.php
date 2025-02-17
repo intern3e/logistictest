@@ -12,7 +12,7 @@ use Illuminate\Support\Facades\Route;
 | be assigned to the "web" middleware group. Make something great!
 |
 */
-
+use App\Models\Bill_Detail;
 use App\Http\Controllers\salecontroller;
 Route::get('/', [salecontroller::class, 'home'])->name('home');
 Route::get('/loginsale', [salecontroller::class, 'showLoginForm'])->name('sale.loginsale');
@@ -23,6 +23,12 @@ Route::get('/insertdata', [salecontroller::class, 'insertdata'])->name('sale.ins
 Route::post('/sodetail', [SaleController::class, 'findData'])->name('sodetail.post');
 Route::get('/sodetail', [SaleController::class, 'showForm'])->name('sodetail');
 Route::post('/insert', [SaleController::class, 'insert'])->name('insert.post');
+Route::get('/get-details/{id}', [saleController::class, 'getDetails']);
+
+Route::get('/get-bill-detail/{so_detail_id}', function ($so_detail_id) {
+    $billDetails = Bill_Detail::where('so_detail_id', $so_detail_id)->get();
+    return response()->json($billDetails);
+});
 
 
 

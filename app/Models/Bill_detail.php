@@ -18,4 +18,6 @@ class Bill_detail extends Model
     {
         return $this->belongsTo(Bill::class, 'so_detail_id', 'so_detail_id'); // ความสัมพันธ์กับ bill
     }
+   
+    
 }

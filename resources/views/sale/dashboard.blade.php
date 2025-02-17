@@ -302,6 +302,7 @@
     <table>
         <thead>
             <tr>
+                <th>สถานะ</th>
                 <th>ID SO Detail</th>
                 <th>รหัสลูกค้า</th>
                 <th>ที่อยู่จัดส่ง</th>
@@ -312,14 +313,30 @@
         <tbody id="table-body">
             @foreach($bill as $item)
             <tr>
+                <td>
+                    @if($item->status == 0)
+                        กำลังดำเนินการ
+                    @else
+                        {{ $item->status }}
+                        สำเร็จ
+                    @endif
+                </td>
                 <td>{{ $item->so_detail_id }}</td>
                 <td>{{ $item->customer_id }}</td>
-                <td>{{ $item->customer ? $item->customer->customer_address : 'ไม่มีข้อมูล' }}</td> <!-- ใช้ '->' ไม่ใช่ '[]' -->
+                <td>{{ $item->customer ? $item->customer->customer_address : 'ไม่มีข้อมูล' }}</td>
                 <td>{{ $item->date_of_dali }}</td>
-                <td><a href="javascript:void(0);" onclick="openPopup()" class="text-decoration-none">📄 เพิ่มเติม</a></td>
+                <td><a href="javascript:void(0);" 
+                onclick="openPopup(
+                    '{{ $item->so_detail_id }}',
+                    '{{ $item->customer_id }}',
+                    '{{ $item->customer ? $item->customer->customer_address : 'ไม่มีข้อมูล' }}',
+                    '{{ $item->date_of_dali }}'
+                )">
+                เพิ่มเติม
+             </a></td>
+             
             </tr>
             @endforeach
-            
         </tbody>
     </table>
 </div>
@@ -340,23 +357,13 @@
                         <th>วันที่จัดส่ง</th>
                     </tr>
                 </thead>
-                <tbody id="table-body">
-            @foreach($bill as $item)
-                <tr>
-                <td>{{ $item->so_detail_id }}</td>
-                <td>{{ $item->customer_id }}</td>
-                <td>{{ $item->customer ? $item->customer->customer_address : 'ไม่มีข้อมูล' }}</td>
-                <td>{{ $item->date_of_dali }}</td>
-                </tr>
-            @endforeach
-                    
+                <tbody id="popup-body-1">   
                 </tbody>
             </table>
             <br>
             <table>
                 <thead>     
                     <tr>
-                        <th>สถานะ</th>
                         <th>รหัสสินค้า</th>
                         <th>รายการ</th>
                         <th>จำนวน</th>
@@ -370,12 +377,48 @@
         </div>
     </div>
 </div>
-
-
 <script>
-   function openPopup(soDetailId) {
-    // แสดง Popup
-    document.getElementById("popup").style.display = "flex";
+function openPopup(soDetailId, customer_id, customer_address, date_of_dali) {
+    document.getElementById("popup").style.display = "flex"; // แสดง Popup
+
+    let popupBody = document.getElementById("popup-body-1");
+    popupBody.innerHTML = `
+        <tr>
+            <td>${soDetailId}</td>
+            <td>${customer_id}</td>
+            <td>${customer_address}</td>
+            <td>${date_of_dali}</td>
+        </tr>
+    `;
+
+    let secondPopupBody = document.getElementById("popup-body");
+    secondPopupBody.innerHTML = "<tr><td colspan='4'>Loading...</td></tr>";
+
+    // ใช้ fetch ดึงข้อมูลจาก Laravel
+    fetch(`/get-bill-detail/${soDetailId}`)
+        .then(response => response.json())
+        .then(data => {
+            if (data.length > 0) {
+                secondPopupBody.innerHTML = ""; // เคลียร์ข้อมูลเก่า
+                data.forEach(item => {
+                    secondPopupBody.insertAdjacentHTML("beforeend", `
+                        <tr>
+                            <td>${item.item_id}</td>
+                            <td>${item.item_name}</td>
+                            <td>${item.quantity}</td>
+                            <td>${item.unit_price}</td>
+                            <td>${calculateTotal(item.quantity, item.unit_price)}</td>
+                        </tr>
+                    `);
+                });
+            } else {
+                secondPopupBody.innerHTML = "<tr><td colspan='4'>ไม่มีข้อมูล</td></tr>";
+            }
+        })
+        .catch(error => {
+            console.error("Error fetching data:", error);
+            secondPopupBody.innerHTML = "<tr><td colspan='4'>เกิดข้อผิดพลาด</td></tr>";
+        });
 }
 
     // ฟังก์ชันปิด Popup
@@ -390,6 +433,13 @@
             closePopup(); // ปิด Popup
         }
     }
+
+    function calculateTotal(quantity, unit_price) {
+    let itemQuantity = parseFloat(quantity) || 0;
+    let itemPrice = parseFloat(unit_price) || 0;
+    return (itemQuantity * itemPrice).toFixed(2);
+}
+
 </script>
 
 

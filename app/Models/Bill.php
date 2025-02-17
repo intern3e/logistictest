@@ -11,14 +11,17 @@ class Bill extends Model
 
     protected $table = 'tblbill'; 
     protected $fillable = ['so_id', 'status', 'customer_id', 'notes', 'date_of_dali'];
-    public $timestamps = false; // ไม่ใช้ timestamps
+    
+    public $timestamps = false; // ปิด timestamps
 
     public function customer()
     {
         return $this->belongsTo(tblcustomer::class, 'customer_id', 'customer_id');
     }
-    public function billDetails() 
+    public function billDetails()
     {
-        return $this->hasMany(Bill_detail::class, 'so_detail_id', 'so_detail_id'); // ความสัมพันธ์กับ bill_detail
+        // ความสัมพันธ์ One-to-Many กับตาราง BillDetail
+        return $this->hasMany(Bill_Detail::class, 'so_detail_id');
     }
 }
+
