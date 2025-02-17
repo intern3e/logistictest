@@ -67,18 +67,131 @@
     <div class="container">
         <h2>📜 ประวัติการออกเอกสาร</h2>
         <table class="table table-striped">
+            <div class="table-container">
+        <table>
             <thead>
                 <tr>
-                    <th>#</th>
-                    <th>วันที่ออกเอกสาร</th>
-                    <th>จำนวนรายการ</th>
-                    <th>ดาวน์โหลด</th>
+                    <th>สถานะ</th>
+                    <th>บิลลำดับ</th>
+                    <th>รหัสลูกค้า</th>
+                    <th>ที่อยู่จัดส่ง</th>
+                    <th>ละติจูด ลองจิจูด</th>
+                    <th>วันที่จัดส่ง</th>
+                    <th>ผู้เปิดบิล</th>
+                    <th>ข้อมูลสินค้า</th>
                 </tr>
             </thead>
-            <tbody id="historyTable">
-                <!-- รายการเอกสารจะถูกเติมอัตโนมัติที่นี่ -->
+            <tbody id="table-body">
+                @foreach($bill as $item)
+                    @if($item->status == 1)
+                        <tr>
+                            <td><input type="checkbox" class="form-control1" name="status[]"></td>
+                            <td>{{ $item->so_detail_id }}</td>
+                            <td>{{ $item->customer_id }}</td>
+                            <td>{{ $item->customer_address }}</td>  
+                            <td>{{ $item->customer_la_long }}</td>
+                            <td>{{ $item->date_of_dali }}</td>
+                            <td>{{ $item->emp_name }}</td>
+                            <td><a href="javascript:void(0);" 
+                            onclick="openPopup(
+                                '{{ $item->so_detail_id }}',
+                                '{{ $item->customer_id }}',
+                                '{{ $item->customer_address }}',
+                                '{{ $item->date_of_dali }}'
+                            )">
+                            เพิ่มเติม
+                         </a></td>
+                        {{-- '{{ $item->customer ? $item->customer->customer_address : 'ไม่มีข้อมูล' }}',  --}}
+                        </tr>
+                    @endif
+                @endforeach
             </tbody>
         </table>
+    </div>
+
+<!-- Popup -->
+<div class="popup-overlay" id="popup" style="display: none;">
+<div class="popup-content">
+    <span class="close-btn" onclick="closePopup()">&times;</span>
+    <div class="table-container">
+        <table>
+            <thead>
+                <tr>
+                    <th>ID SO Detail</th>
+                    <th>รหัสลูกค้า</th>
+                    <th>ที่อยู่จัดส่ง</th>
+                    <th>วันที่จัดส่ง</th>
+                </tr>
+            </thead>
+            <tbody id="popup-body-1">   
+            </tbody>
+        </table>
+        <br>
+        <table>
+            <thead>     
+                <tr>
+                    <th>รหัสสินค้า</th>
+                    <th>รายการ</th>
+                    <th>จำนวน</th>
+                    <th>ราคา/หน่วย</th>
+                </tr>
+            </thead>
+            <tbody id="popup-body">
+            </tbody>
+        </table>
+    </div>
+</div>
+</div>
+
+<script>
+function openPopup(soDetailId, customer_id, customer_address, date_of_dali) {
+document.getElementById("popup").style.display = "flex"; // แสดง Popup
+
+let popupBody = document.getElementById("popup-body-1");
+popupBody.innerHTML = `
+    <tr>
+        <td>${soDetailId}</td>
+        <td>${customer_id}</td>
+        <td>${customer_address}</td>
+        <td>${date_of_dali}</td>
+    </tr>
+`;
+
+let secondPopupBody = document.getElementById("popup-body");
+secondPopupBody.innerHTML = "<tr><td colspan='4'>Loading...</td></tr>";
+
+// ใช้ fetch ดึงข้อมูลจาก Laravel
+fetch(`/get-bill-detail/${soDetailId}`)
+    .then(response => response.json())
+    .then(data => {
+        if (data.length > 0) {
+            secondPopupBody.innerHTML = ""; // เคลียร์ข้อมูลเก่า
+            data.forEach(item => {
+                secondPopupBody.insertAdjacentHTML("beforeend", `
+                    <tr>
+                        <td>${item.item_id}</td>
+                        <td>${item.item_name}</td>
+                        <td>${item.quantity}</td>
+                        <td>${item.unit_price}</td>
+                    </tr>
+                `);
+            });
+        } else {
+            secondPopupBody.innerHTML = "<tr><td colspan='4'>ไม่มีข้อมูล</td></tr>";
+        }
+    })
+    .catch(error => {
+        console.error("Error fetching data:", error);
+        secondPopupBody.innerHTML = "<tr><td colspan='4'>เกิดข้อผิดพลาด</td></tr>";
+    });
+}
+
+// ฟังก์ชันปิด Popup
+function closePopup() {
+    document.getElementById("popup").style.display = "none"; // ซ่อน Popup
+}
+
+</script>
         
         <a href="{{ route('admin.dashboardadmin') }}" ><button class="button">กลับไปหน้าหลัก</button></a>
     </div>

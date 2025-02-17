@@ -307,6 +307,7 @@
                 <th>ที่อยู่จัดส่ง</th>
                 <th>วันที่จัดส่ง</th>
                 <th>ผู้จัดบิล</th>
+                <th>เวลาออกบิล</th>
                 <th>สถานะ</th>
                 <th>ข้อมูลสินค้า</th>
             </tr>
@@ -319,10 +320,11 @@
                 <td>{{ $item->customer_address }}</td>  
                 <td>{{ $item->date_of_dali }}</td> 
                 <td>{{ $item->emp_name }}</td> 
-                <td> @if($item->status == 0)
+                <td>{{ $item->time }}</td> 
+                <td>
+                    @if($item->status == 0)
                         กำลังดำเนินการ
                     @else
-                        {{ $item->status }}
                         สำเร็จ
                     @endif
                 </td>
@@ -369,7 +371,6 @@
                         <th>รายการ</th>
                         <th>จำนวน</th>
                         <th>ราคา/หน่วย</th>
-                        <th>จำนวนเงิน</th>
                     </tr>
                 </thead>
                 <tbody id="popup-body">
@@ -408,7 +409,6 @@ function openPopup(soDetailId, customer_id, customer_address, date_of_dali) {
                             <td>${item.item_name}</td>
                             <td>${item.quantity}</td>
                             <td>${item.unit_price}</td>
-                            <td>${calculateTotal(item.quantity, item.unit_price)}</td>
                         </tr>
                     `);
                 });
@@ -435,11 +435,6 @@ function openPopup(soDetailId, customer_id, customer_address, date_of_dali) {
         }
     }
 
-    function calculateTotal(quantity, unit_price) {
-    let itemQuantity = parseFloat(quantity) || 0;
-    let itemPrice = parseFloat(unit_price) || 0;
-    return (itemQuantity * itemPrice).toFixed(2);
-}
 
 
 function searchTable() {

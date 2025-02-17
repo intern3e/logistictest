@@ -44,7 +44,8 @@ class admincontroller extends Controller
     }
     public function history()
     {
-        return view('admin.history');
+        $bill = Bill::orderBy('so_detail_id', 'desc')->get();
+        return view('admin.history', compact('bill'));
     }
     public function logoutadmin()
 {

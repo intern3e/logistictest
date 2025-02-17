@@ -262,26 +262,28 @@
                 </thead>
                 <tbody id="table-body">
                     @foreach($bill as $item)
-            <tr>
-                <td><input type="checkbox" class="form-control1" name="status[]"></td>
-                <td>{{ $item->so_detail_id }}</td>
-                <td>{{ $item->customer_id }}</td>
-                <td>{{ $item->customer_address }}</td>  
-                <td>{{ $item->customer_la_long }}</td>
-                <td>{{ $item->date_of_dali }}</td>
-                <td>{{ $item->emp_name }}</td>
-                <td><a href="javascript:void(0);" 
-                onclick="openPopup(
-                    '{{ $item->so_detail_id }}',
-                    '{{ $item->customer_id }}',
-                    '{{ $item->customer_address }}',
-                    '{{ $item->date_of_dali }}'
-                )">
-                เพิ่มเติม
-             </a></td>
-            {{-- '{{ $item->customer ? $item->customer->customer_address : 'ไม่มีข้อมูล' }}',  --}}
-            </tr>
-            @endforeach
+                        @if($item->status == 0)
+                            <tr>
+                                <td><input type="checkbox" class="form-control1" name="status[]"></td>
+                                <td>{{ $item->so_detail_id }}</td>
+                                <td>{{ $item->customer_id }}</td>
+                                <td>{{ $item->customer_address }}</td>  
+                                <td>{{ $item->customer_la_long }}</td>
+                                <td>{{ $item->date_of_dali }}</td>
+                                <td>{{ $item->emp_name }}</td>
+                                <td><a href="javascript:void(0);" 
+                                onclick="openPopup(
+                                    '{{ $item->so_detail_id }}',
+                                    '{{ $item->customer_id }}',
+                                    '{{ $item->customer_address }}',
+                                    '{{ $item->date_of_dali }}'
+                                )">
+                                เพิ่มเติม
+                             </a></td>
+                            {{-- '{{ $item->customer ? $item->customer->customer_address : 'ไม่มีข้อมูล' }}',  --}}
+                            </tr>
+                        @endif
+                    @endforeach
                 </tbody>
             </table>
         </div>
@@ -371,8 +373,8 @@
 </script>
 
 
-<script> 
-function exportToExcel() {
+<script>
+    function exportToExcel() {
     let table = document.querySelector("table");
     let rows = table.querySelectorAll("tr");
     let data = [];
@@ -387,7 +389,7 @@ function exportToExcel() {
                 rowData.push(cell.textContent.trim());
             });
             data.push(rowData);
-            checkedRows.push(row); // บันทึกแถวที่ถูกเลือก
+            checkedRows.push(row);
         }
     });
 
@@ -401,11 +403,11 @@ function exportToExcel() {
         link.click();
         document.body.removeChild(link);
 
-        // อัปเดต Status ของแถวที่ถูกเลือก
+        // Update the status of checked rows
         checkedRows.forEach(row => {
-            let statusCell = row.querySelector("td:first-child"); // คอลัมน์แรก (Status)
+            let statusCell = row.querySelector("td:first-child");
             if (statusCell) {
-                statusCell.innerHTML = "✅ พิมพ์แล้ว"; // เปลี่ยนสถานะเป็น "✅ พิมพ์แล้ว"
+                statusCell.innerHTML = "✅ พิมพ์แล้ว";
             }
         });
 
@@ -427,20 +429,32 @@ function createExcelXML(data) {
 
     const xmlFooter = `</Table></Worksheet></Workbook>`;
 
-    const headerRow = `<Row>${data[0].map(cell => 
-        `<Cell><Data ss:Type="String">${cell}</Data></Cell>`
-    ).join('')}</Row>`;
+    // Adding headers for the columns
+    const headerRow = `<Row>
+        <Cell><Data ss:Type="String">บิลลำดับ</Data></Cell>
+        <Cell><Data ss:Type="String">รหัสลูกค้า</Data></Cell>
+        <Cell><Data ss:Type="String">ที่อยู่จัดส่ง</Data></Cell>
+        <Cell><Data ss:Type="String">ละติจูด ลองจิจูด</Data></Cell>
+        <Cell><Data ss:Type="String">วันที่จัดส่ง</Data></Cell>
+        <Cell><Data ss:Type="String">ผู้เปิดบิล</Data></Cell>
+    </Row>`;
 
-    const rows = data.slice(1).reduce((acc, row) => {
+    // Adding data rows (without "เพิ่มเติม" column)
+    const rows = data.reduce((acc, row) => {
         const rowData = row.map(cell => 
             `<Cell><Data ss:Type="String">${cell}</Data></Cell>`
         ).join('');
-        return acc + `<Row>${rowData}</Row>`;
+        acc += `<Row>${rowData}</Row>`;
+        return acc;
     }, '');
 
     return xmlHeader + headerRow + rows + xmlFooter;
 }
-</script>
+
+
+
+    </script>
+    
 
 
 </body>

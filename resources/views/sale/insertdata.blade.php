@@ -501,9 +501,7 @@
                                     <td>
                                         <input type="number" class="form-control1 item_unit_price" name="item_unit_price[]" oninput="calculateTotal(this)">
                                     </td>
-                                    <td>
-                                        <input type="text" class="form-control1 item_total" name="item_total[]" value="" readonly>
-                                    </td>
+                                
                                     <td><button type="button" class="btn btn-danger delete-btn">ลบ</button></td>
                                 `;
                                 tableBody.appendChild(newRow);
