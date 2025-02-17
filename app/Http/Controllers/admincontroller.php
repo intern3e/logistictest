@@ -1,8 +1,14 @@
 <?php
 
 namespace App\Http\Controllers;
-
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
+use App\Models\tblsos;
+use App\Models\tblcustomer;
+use App\Models\bill_detail;
+use App\Models\so_item_id;
+use App\Models\Bill;
+use function Laravel\Prompts\table;
 
 class admincontroller extends Controller
 {
@@ -33,7 +39,8 @@ class admincontroller extends Controller
     }
     public function dashboard()
     {
-        return view('admin.dashboardadmin');
+        $bill = Bill::orderBy('so_detail_id', 'desc')->get();
+        return view('admin.dashboardadmin', compact('bill'));
     }
     public function history()
     {
@@ -44,4 +51,13 @@ class admincontroller extends Controller
     session()->flush(); // ลบข้อมูลในเซสชัน
     return redirect()->route("admin.loginadmin")->with('success', 'คุณได้ออกจากระบบเรียบร้อยแล้ว!');
 }
+public function getBillDetail($so_detail_id)
+    {
+        $billDetails = Bill_Detail::where('so_detail_id', $so_detail_id)->get();
+        
+        return response()->json($billDetails);
+    }
+
+
+
 }

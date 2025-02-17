@@ -343,43 +343,40 @@
                     </script>
                     
                     </div>
-
+                     <br>
                     <div class="mb-3">
                         <label class="form-label">วันที่กำหนดส่ง:</label>
+                        <br>
+                        <br>
                         <input type="date" class="form-control" name="date_of_dali">
                     </div>
-        <table class="table table-bordered table-striped">
-            <thead>
-            <tr>
-                <th>เลือกจัดส่ง</th>
-                <th>รหัสสินค้า</th>
-                <th>รายการ</th>
-                <th>จำนวน</th>
-                <th>ราคา/หน่วย</th>
-                <th>จำนวนเงิน</th>
-                <th>ลบ</th>
-            </tr>
-        </thead>
-        <tbody>
-            @foreach($items as $item)  
-            <tr> 
-                <td><input type="checkbox" class="form-control1" name="status[]"></td>
-                <td><input type="text" class="form-control1" name="item_id[]" value="{{ $item['item_id'] }}"></td>
-                <td><input type="text" class="form-control1" name="item_name[]" value="{{ $item['item_name'] }}"></td>
-                <td>
-                    <input type="number" class="form-control1 item_quantity" name="item_quantity[]" 
-                    value="{{ $item['item_quantity'] }}">
-                </td>
-                <td>
-                    <input type="number" class="form-control1 item_unit_price" name="item_unit_price[]" 
-                    value="{{ $item['item_unit_price'] }}">
-                </td>
-                <td>
-                    <input type="text" class="form-control1 item_total" name="item_total[]" value="" readonly>
-                </td>
-                
-                <td><button type="button" class="btn btn-danger delete-btn">ลบ</button></td>
-            </tr>
+                    <table class="table table-bordered table-striped">
+                    <thead>
+                    <tr>
+                        <th>เลือกจัดส่ง</th>
+                        <th>รหัสสินค้า</th>
+                        <th>รายการ</th>
+                        <th>จำนวน</th>
+                        <th>ราคา/หน่วย</th>
+                        <th>ลบ</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach($items as $item)  
+                    <tr> 
+                        <td><input type="checkbox" class="form-control1" name="status[]"readonly></td>
+                        <td><input type="text" class="form-control1" name="item_id[]" value="{{ $item['item_id'] }}"readonly></td>
+                        <td><input type="text" class="form-control1" name="item_name[]" value="{{ $item['item_name'] }}"readonly></td>
+                        <td>
+                            <input type="number" class="form-control1 item_quantity" name="item_quantity[]" 
+                            value="{{ $item['item_quantity'] }}"readonly>
+                        </td>
+                        <td>
+                            <input type="number" class="form-control1 item_unit_price" name="item_unit_price[]" 
+                            value="{{ $item['item_unit_price'] }}">
+                        </td>
+                        <td><button type="button" class="btn btn-danger delete-btn">ลบ</button></td>
+                    </tr>
             
             @endforeach  
         </tbody>
@@ -392,7 +389,15 @@
     </div>
                 <div class="mb-3">
                     <label class="form-label">เเจ้งเพิ่มเติม:</label>
+                    <br>
+                    <br>
                     <textarea class="form-control" name="additional_notes" rows="4"></textarea>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">ผู้เปิดบิล</label>
+                    <br>
+                    <br>
+                    <input type="text" class="form-control" name="emp_name">
                 </div>
                 <br>
                 <input type="hidden" name="so_id" value="{{ $so->so_id }}">

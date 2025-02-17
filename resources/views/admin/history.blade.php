@@ -79,7 +79,8 @@
                 <!-- รายการเอกสารจะถูกเติมอัตโนมัติที่นี่ -->
             </tbody>
         </table>
-        <button class="button" onclick="goBack()">🔙 กลับไปหน้าหลัก</button>
+        
+        <a href="{{ route('admin.dashboardadmin') }}" ><button class="button">กลับไปหน้าหลัก</button></a>
     </div>
 
     <script>
@@ -142,9 +143,6 @@
         return xmlHeader + headerRow + rows + xmlFooter;
     }
 
-    function goBack() {
-        window.location.href = "dashboardadmin.blade.php"; // เปลี่ยนไปยังหน้าแรก
-    }
 
     window.onload = loadHistory;
     </script>

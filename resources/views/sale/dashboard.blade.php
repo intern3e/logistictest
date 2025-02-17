@@ -292,8 +292,8 @@
     </form>
 
     <div class="search-box">
-        <input type="text" id="search-input" placeholder="🔍 ค้นหา ID SO detail">
-        <button type="button" onclick="searchTable()">🔍 ค้นหา</button>
+        <input type="text" id="search-input" placeholder=" ค้นหา เลขที่บิล" onkeyup="searchTable()">
+        <button type="button" onclick="searchTable()">ค้นหา</button>
     </div>
 
 </div>
@@ -302,29 +302,30 @@
     <table>
         <thead>
             <tr>
-                <th>สถานะ</th>
-                <th>ID SO Detail</th>
-                <th>รหัสลูกค้า</th>
+                <th>บิลลำดับที่</th>
+                <th>อ้างอิงใบสั่งขาย</th>
                 <th>ที่อยู่จัดส่ง</th>
                 <th>วันที่จัดส่ง</th>
+                <th>ผู้จัดบิล</th>
+                <th>สถานะ</th>
                 <th>ข้อมูลสินค้า</th>
             </tr>
         </thead>
         <tbody id="table-body">
             @foreach($bill as $item)
             <tr>
-                <td>
-                    @if($item->status == 0)
+            <td>{{ $item->so_detail_id }}</td> 
+                <td>{{ $item->customer_id }}</td>
+                <td>{{ $item->customer_address }}</td>  
+                <td>{{ $item->date_of_dali }}</td> 
+                <td>{{ $item->emp_name }}</td> 
+                <td> @if($item->status == 0)
                         กำลังดำเนินการ
                     @else
                         {{ $item->status }}
                         สำเร็จ
                     @endif
                 </td>
-                <td>{{ $item->so_detail_id }}</td>
-                <td>{{ $item->customer_id }}</td>
-                <td>{{ $item->customer_address }}</td>  
-                <td>{{ $item->date_of_dali }}</td>
                 <td><a href="javascript:void(0);" 
                 onclick="openPopup(
                     '{{ $item->so_detail_id }}',
@@ -454,10 +455,10 @@ function searchTable() {
         let row = rows[i];
         let cells = row.getElementsByTagName("td");
 
-        // ตรวจสอบว่าค่าของ ID SO detail อยู่ในแถวไหน
-        let soDetailId = cells[1].textContent.toLowerCase();
+        // ตรวจสอบว่าค่าของ SO Detail ID อยู่ในแถวไหน (เช่น ใช้คอลัมน์ที่ 0 หรือ 1 ขึ้นอยู่กับความต้องการ)
+        let soDetailId = cells[0].textContent.toLowerCase();  // เปลี่ยนจาก cells[1] เป็น cells[0] ถ้าค้นหาจากคอลัมน์แรก
 
-        // ถ้า ID SO detail ตรงกับข้อความที่ค้นหาให้แสดงแถว
+        // ถ้า SO Detail ID ตรงกับข้อความที่ค้นหาให้แสดงแถว
         if (soDetailId.indexOf(searchInput) > -1) {
             row.style.display = "";
         } else {

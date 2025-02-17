@@ -35,5 +35,8 @@ Route::get('/get-bill-detail/{so_detail_id}', function ($so_detail_id) {
 Route::get('/txt', [SaleController::class, 'popup'])->name('popup');
 
 use App\Http\Controllers\admincontroller;
-Route::get('/dashboardadmin', [admincontroller::class, 'dashboard'])->name('admin.dashboardadmin');
-Route::get('/history', [admincontroller::class, 'history'])->name('admin.history');
+Route::get('/dashboardadmin', [AdminController::class, 'dashboard'])->name('admin.dashboardadmin');
+Route::get('/history', [AdminController::class, 'history'])->name('admin.history');
+Route::get('/admin/get-bill-detail/{so_detail_id}', [AdminController::class, 'getBillDetail']);
+
+

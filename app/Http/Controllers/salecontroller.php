@@ -68,13 +68,6 @@ class salecontroller extends Controller
 
 
 
-
-public function popup()
-{
-    return view('sale.txt');  
-}
-
-
 // Show the form
 public function showForm()
 {
@@ -143,6 +136,7 @@ public function insert(Request $request)
             'customer_id' => 'required|string|max:255',
             'customer_address' => 'required|string|max:255',
             'customer_la_long' => 'required|string|max:255',
+            'emp_name' => 'required|string|max:255',
             'date_of_dali' => 'required|date',
             'notes' => 'nullable|string',
             'item_id' => 'required|array',
@@ -165,6 +159,7 @@ public function insert(Request $request)
         $bill->customer_la_long = $request->input('customer_la_long');
         $bill->notes = $request->input('notes');
         $bill->date_of_dali = $request->input('date_of_dali');
+        $bill->emp_name = $request->input('emp_name');
         $bill->save();
 
         $so_detail_id = $bill->id;
@@ -210,17 +205,13 @@ public function insertPost(Request $request) {
     return response()->json(['success' => $successMessage]);
 }
 
-public function showSalesOrderDetails($soDetailId)
-{
-    // ดึงข้อมูลรายละเอียดการสั่งซื้อจากฐานข้อมูล
-    $soDetail = Bill::find($soDetailId);
-    $bill = Bill::all(); 
-    // ดึงข้อมูลจากตาราง bill_detail ตาม so_detail_id
-    $billDetails = $soDetail->billDetails;  // ใช้ความสัมพันธ์ที่กำหนดในโมเดล
+public function getBillDetail($so_detail_id)
+    {
+        // ดึงข้อมูลจากฐานข้อมูลที่เกี่ยวข้องกับ so_detail_id
+        $billDetails = Bill_Detail::where('so_detail_id', $so_detail_id)->get();
 
-    // ส่งข้อมูลไปยัง view
-    return view('sales.dashboard', compact('soDetail', 'billDetails'));
-}
-
+        // ส่งข้อมูลในรูปแบบ JSON
+        return response()->json($billDetails);
+    }
 }
 

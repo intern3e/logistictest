@@ -245,131 +245,152 @@
             </div>
         </div>
 
-        <table class="table table-striped">
-            <thead>
-                <tr>
-                    <th>สถานะ</th>
-                    <th>ID PO</th>
-                    <th>รหัสลูกค้า</th>
-                    <th>ที่อยู่จัดส่ง</th>
-                    <th>วันที่</th>
-                    <th>ข้อมูลสินค้า</th>
-                </tr>
-            </thead>
-            <tbody id="table-body">
-            </tbody>
-        </table>
-    </div>
 
-    <div class="popup-overlay" id="popup" style="display: none;">
-        <div class="popup-content">
-            <span class="close-btn" onclick="closePopup()">&times;</span>
-            <div class="table-container">
-                <table>
-                    <thead>
-                        <tr>
-                            <th>สถานะ</th>
-                            <th>รหัสสินค้า</th>
-                            <th>รายการ</th>
-                            <th>จำนวน</th>
-                            <th>ราคา/หน่วย</th>
-                            <th>จำนวนเงิน</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <tr>
-                            <td>กำลังดำเนินการ</td>
-                            <td>1123456</td>
-                            <td>แผงโซล่าเซลล์ 4000W</td>
-                            <td>10</td>
-                            <td>800</td>
-                            <td>8000</td>
-                        </tr>
-                    </tbody>
-                </table>
-            </div>
+        <div class="table-container">
+            <table>
+                <thead>
+                    <tr>
+                        <th>สถานะ</th>
+                        <th>บิลลำดับ</th>
+                        <th>รหัสลูกค้า</th>
+                        <th>ที่อยู่จัดส่ง</th>
+                        <th>ละติจูด ลองจิจูด</th>
+                        <th>วันที่จัดส่ง</th>
+                        <th>ผู้เปิดบิล</th>
+                        <th>ข้อมูลสินค้า</th>
+                    </tr>
+                </thead>
+                <tbody id="table-body">
+                    @foreach($bill as $item)
+            <tr>
+                <td><input type="checkbox" class="form-control1" name="status[]"></td>
+                <td>{{ $item->so_detail_id }}</td>
+                <td>{{ $item->customer_id }}</td>
+                <td>{{ $item->customer_address }}</td>  
+                <td>{{ $item->customer_la_long }}</td>
+                <td>{{ $item->date_of_dali }}</td>
+                <td>{{ $item->emp_name }}</td>
+                <td><a href="javascript:void(0);" 
+                onclick="openPopup(
+                    '{{ $item->so_detail_id }}',
+                    '{{ $item->customer_id }}',
+                    '{{ $item->customer_address }}',
+                    '{{ $item->date_of_dali }}'
+                )">
+                เพิ่มเติม
+             </a></td>
+            {{-- '{{ $item->customer ? $item->customer->customer_address : 'ไม่มีข้อมูล' }}',  --}}
+            </tr>
+            @endforeach
+                </tbody>
+            </table>
+        </div>
+
+<!-- Popup -->
+<div class="popup-overlay" id="popup" style="display: none;">
+    <div class="popup-content">
+        <span class="close-btn" onclick="closePopup()">&times;</span>
+        <div class="table-container">
+            <table>
+                <thead>
+                    <tr>
+                        <th>ID SO Detail</th>
+                        <th>รหัสลูกค้า</th>
+                        <th>ที่อยู่จัดส่ง</th>
+                        <th>วันที่จัดส่ง</th>
+                    </tr>
+                </thead>
+                <tbody id="popup-body-1">   
+                </tbody>
+            </table>
+            <br>
+            <table>
+                <thead>     
+                    <tr>
+                        <th>รหัสสินค้า</th>
+                        <th>รายการ</th>
+                        <th>จำนวน</th>
+                        <th>ราคา/หน่วย</th>
+                    </tr>
+                </thead>
+                <tbody id="popup-body">
+                </tbody>
+            </table>
         </div>
     </div>
+</div>
 
-    <script>
-        function generateRows() {
-            let tbody = document.getElementById("table-body");
-            let content = "";
+<script>
+    function openPopup(soDetailId, customer_id, customer_address, date_of_dali) {
+    document.getElementById("popup").style.display = "flex"; // แสดง Popup
 
-            for (let i = 0; i < 10; i++) {
-                content += `
-                <tr>
-                    <td><input type="checkbox"></td>
-                    <td>12345</td>
-                    <td>ณฏ67890</td>
-                    <td>58/9 ต.บางกระเจ้า อ.พระประแดง จ.สมุทรปราการ</td>
-                    <td>30/1/2567</td>
-                    <td><a href="javascript:void(0);" onclick="openPopup()">📄 เพิ่มเติม</a></td>
-                </tr>`;
-            }
+    let popupBody = document.getElementById("popup-body-1");
+    popupBody.innerHTML = `
+        <tr>
+            <td>${soDetailId}</td>
+            <td>${customer_id}</td>
+            <td>${customer_address}</td>
+            <td>${date_of_dali}</td>
+        </tr>
+    `;
 
-            tbody.innerHTML = content;
-        }
+    let secondPopupBody = document.getElementById("popup-body");
+    secondPopupBody.innerHTML = "<tr><td colspan='4'>Loading...</td></tr>";
 
-        generateRows();
-
-        function openPopup() {
-            document.getElementById("popup").style.display = "flex";
-        }
-
-        function closePopup() {
-            document.getElementById("popup").style.display = "none";
-        }
-
-        window.onclick = function(event) {
-            let popup = document.getElementById("popup");
-            if (event.target === popup) {
-                closePopup();
-            }
-        };
-
-        function exportToExcel() {
-            let table = document.querySelector("table");
-            let rows = table.querySelectorAll("tr");
-            let data = [];
-
-            rows.forEach(row => {
-                let rowData = [];
-                let cells = row.querySelectorAll("th, td");
-                cells.forEach(cell => {
-                    rowData.push(cell.textContent.trim());
+    // ใช้ fetch ดึงข้อมูลจาก Laravel
+    fetch(`/get-bill-detail/${soDetailId}`)
+        .then(response => response.json())
+        .then(data => {
+            if (data.length > 0) {
+                secondPopupBody.innerHTML = ""; // เคลียร์ข้อมูลเก่า
+                data.forEach(item => {
+                    secondPopupBody.insertAdjacentHTML("beforeend", `
+                        <tr>
+                            <td>${item.item_id}</td>
+                            <td>${item.item_name}</td>
+                            <td>${item.quantity}</td>
+                            <td>${item.unit_price}</td>
+                        </tr>
+                    `);
                 });
-                data.push(rowData);
-            });
+            } else {
+                secondPopupBody.innerHTML = "<tr><td colspan='4'>ไม่มีข้อมูล</td></tr>";
+            }
+        })
+        .catch(error => {
+            console.error("Error fetching data:", error);
+            secondPopupBody.innerHTML = "<tr><td colspan='4'>เกิดข้อผิดพลาด</td></tr>";
+        });
+}
 
-            let xml = createExcelXML(data);
-            let blob = new Blob([xml], { type: "application/vnd.ms-excel" });
-            let link = document.createElement("a");
-            link.href = URL.createObjectURL(blob);
-            link.download = "เอกสารจัดเตรียมสินค้า.xls";
-            document.body.appendChild(link);
-            link.click();
-            document.body.removeChild(link);
-        }
-        function exportToExcel() {
+    // ฟังก์ชันปิด Popup
+    function closePopup() {
+        document.getElementById("popup").style.display = "none"; // ซ่อน Popup
+    }
+
+</script>
+
+
+<script> 
+function exportToExcel() {
     let table = document.querySelector("table");
     let rows = table.querySelectorAll("tr");
     let data = [];
-    
-    // เก็บข้อมูลเฉพาะแถวที่ถูกเลือก
+    let checkedRows = [];
+
     rows.forEach(row => {
         let checkbox = row.querySelector("input[type='checkbox']");
         if (checkbox && checkbox.checked) {
             let rowData = [];
-            let cells = row.querySelectorAll("th, td");
+            let cells = row.querySelectorAll("td");
             cells.forEach(cell => {
                 rowData.push(cell.textContent.trim());
             });
             data.push(rowData);
+            checkedRows.push(row); // บันทึกแถวที่ถูกเลือก
         }
     });
 
-    // ถ้ามีข้อมูลที่เลือก
     if (data.length > 0) {
         let xml = createExcelXML(data);
         let blob = new Blob([xml], { type: "application/vnd.ms-excel" });
@@ -379,6 +400,15 @@
         document.body.appendChild(link);
         link.click();
         document.body.removeChild(link);
+
+        // อัปเดต Status ของแถวที่ถูกเลือก
+        checkedRows.forEach(row => {
+            let statusCell = row.querySelector("td:first-child"); // คอลัมน์แรก (Status)
+            if (statusCell) {
+                statusCell.innerHTML = "✅ พิมพ์แล้ว"; // เปลี่ยนสถานะเป็น "✅ พิมพ์แล้ว"
+            }
+        });
+
     } else {
         alert("กรุณาเลือกข้อมูลที่ต้องการพิมพ์");
     }
@@ -410,8 +440,8 @@ function createExcelXML(data) {
 
     return xmlHeader + headerRow + rows + xmlFooter;
 }
+</script>
 
 
-    </script>
 </body>
 </html>
