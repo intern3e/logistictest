@@ -292,8 +292,8 @@
     </form>
 
     <div class="search-box">
-        <input type="text" placeholder="🔍 ค้นหา ID SO detail">
-        <button type="submit">🔍 ค้นหา</button>
+        <input type="text" id="search-input" placeholder="🔍 ค้นหา ID SO detail">
+        <button type="button" onclick="searchTable()">🔍 ค้นหา</button>
     </div>
 
 </div>
@@ -440,6 +440,31 @@ function openPopup(soDetailId, customer_id, customer_address, date_of_dali) {
     return (itemQuantity * itemPrice).toFixed(2);
 }
 
+
+function searchTable() {
+    // ดึงข้อมูลจากช่องค้นหา
+    let searchInput = document.getElementById("search-input").value.toLowerCase();
+    
+    // ดึงข้อมูลจาก tbody
+    let table = document.querySelector("table tbody");
+    let rows = table.getElementsByTagName("tr");
+
+    // ลูปผ่านแถวทั้งหมดในตาราง
+    for (let i = 0; i < rows.length; i++) {
+        let row = rows[i];
+        let cells = row.getElementsByTagName("td");
+
+        // ตรวจสอบว่าค่าของ ID SO detail อยู่ในแถวไหน
+        let soDetailId = cells[1].textContent.toLowerCase();
+
+        // ถ้า ID SO detail ตรงกับข้อความที่ค้นหาให้แสดงแถว
+        if (soDetailId.indexOf(searchInput) > -1) {
+            row.style.display = "";
+        } else {
+            row.style.display = "none";
+        }
+    }
+}
 </script>
 
 
