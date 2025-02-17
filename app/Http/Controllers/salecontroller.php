@@ -49,6 +49,7 @@ class salecontroller extends Controller
     {
         // ดึงข้อมูลบิลพร้อมกับข้อมูลลูกค้า
         $bill = Bill::with('customer')->get();
+        $bill = Bill::orderBy('so_detail_id', 'desc')->get();
         return view('sale.dashboard', compact('bill'));
     }
 
