@@ -323,18 +323,18 @@
                 </td>
                 <td>{{ $item->so_detail_id }}</td>
                 <td>{{ $item->customer_id }}</td>
-                <td>{{ $item->customer ? $item->customer->customer_address : 'ไม่มีข้อมูล' }}</td>
+                <td>{{ $item->customer_address }}</td>  
                 <td>{{ $item->date_of_dali }}</td>
                 <td><a href="javascript:void(0);" 
                 onclick="openPopup(
                     '{{ $item->so_detail_id }}',
                     '{{ $item->customer_id }}',
-                    '{{ $item->customer ? $item->customer->customer_address : 'ไม่มีข้อมูล' }}',
+                    '{{ $item->customer_address }}',
                     '{{ $item->date_of_dali }}'
                 )">
                 เพิ่มเติม
              </a></td>
-             
+            {{-- '{{ $item->customer ? $item->customer->customer_address : 'ไม่มีข้อมูล' }}',  --}}
             </tr>
             @endforeach
         </tbody>

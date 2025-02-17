@@ -377,7 +377,7 @@
                 <td>
                     <input type="text" class="form-control1 item_total" name="item_total[]" value="" readonly>
                 </td>
-                        
+                
                 <td><button type="button" class="btn btn-danger delete-btn">ลบ</button></td>
             </tr>
             
@@ -410,9 +410,12 @@
         let formData = new FormData();
         formData.append('so_id', document.querySelector('input[name="so_id"]').value);
         formData.append('customer_id', document.querySelector('input[name="customer_id"]').value);
+        formData.append('customer_tel', document.querySelector('input[name="customer_tel"]').value);
+        formData.append('customer_address', document.querySelector('input[name="customer_address"]').value);
+        formData.append('customer_la_long', document.querySelector('input[name="customer__la_long"]').value);
         formData.append('date_of_dali', document.querySelector('input[name="date_of_dali"]').value);
         formData.append('notes', document.querySelector('textarea[name="additional_notes"]').value);
-
+        let statuses = [];
         let hasSelectedItems = false; // เช็คว่ามีสินค้าอย่างน้อย 1 รายการที่ถูกเลือกหรือไม่
 
         document.querySelectorAll('tbody tr').forEach((row, index) => {
@@ -530,19 +533,11 @@
                 "width=800,height=600"
             );
         }
-        function calculateTotal() {
-            let quantity = document.querySelectorAll('.item_quantity');
-            let price = document.querySelectorAll('.item_unit_price');
-            let total = document.querySelectorAll('.item_total');
-            
-            for (let i = 0; i < quantity.length; i++) {
-                let itemQuantity = parseFloat(quantity[i].value) || 0;
-                let itemPrice = parseFloat(price[i].value) || 0;
-                let itemTotal = itemQuantity * itemPrice;
-
-                total[i].value = itemTotal.toFixed(2);  
-            }
-        }
+        function calculateTotal(quantity, unit_price) {
+    let itemQuantity = parseFloat(quantity) || 0;
+    let itemPrice = parseFloat(unit_price) || 0;
+    return (itemQuantity * itemPrice).toFixed(2);
+}
 
         function confirmSubmit(event) {
         event.preventDefault(); // ป้องกันการ submit แบบปกติ

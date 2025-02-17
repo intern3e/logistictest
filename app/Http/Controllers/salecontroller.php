@@ -59,11 +59,11 @@ class salecontroller extends Controller
     }
 
 
-    public function logout()
-{
-    session()->flush(); // ลบข้อมูลในเซสชัน
-    return redirect()->route("sale.loginsale")->with('success', 'คุณได้ออกจากระบบเรียบร้อยแล้ว!');
-}
+//     public function logout()
+// {
+//     session()->flush(); // ลบข้อมูลในเซสชัน
+//     return redirect()->route("sale.loginsale")->with('success', 'คุณได้ออกจากระบบเรียบร้อยแล้ว!');
+// }
 
 
 
@@ -140,6 +140,8 @@ public function insert(Request $request)
         $request->validate([
             'so_id' => 'required|string|max:255',
             'customer_id' => 'required|string|max:255',
+            'customer_address' => 'required|string|max:255',
+            'customer_la_long' => 'required|string|max:255',
             'date_of_dali' => 'required|date',
             'notes' => 'nullable|string',
             'item_id' => 'required|array',
@@ -150,22 +152,21 @@ public function insert(Request $request)
             'item_quantity.*' => 'integer|min:1',
             'item_unit_price' => 'required|array',
             'item_unit_price.*' => 'numeric|min:0',
-            'status' => 'required|array', // ต้องมี status ที่ถูกติ๊ก checkbox
+            'status' => 'required|array', 
         ]);
 
-        // 1️⃣ สร้างบิลใหม่
         $bill = new Bill();
         $bill->so_id = $request->input('so_id');
         $bill->status = 0;
         $bill->customer_id = $request->input('customer_id');
+        $bill->customer_tel = $request->input('customer_tel');
+        $bill->customer_address = $request->input('customer_address');
+        $bill->customer_la_long = $request->input('customer_la_long');
         $bill->notes = $request->input('notes');
         $bill->date_of_dali = $request->input('date_of_dali');
         $bill->save();
 
-        // 2️⃣ ใช้ so_detail_id ของบิลที่สร้าง
         $so_detail_id = $bill->id;
-
-        // 3️⃣ บันทึกรายการสินค้าที่ติ๊ก checkbox เท่านั้น
         $item_ids = $request->input('item_id');
         $item_names = $request->input('item_name');
         $item_quantities = $request->input('item_quantity');
@@ -195,6 +196,9 @@ public function insert(Request $request)
 public function insertPost(Request $request) {
     $so_id = $request->input('so_id');
     $customer_id = $request->input('customer_id');
+    $customer_tel = $request->input('customer_tel');
+    $customer_address = $request->input('customer_address');
+    $customer_la_long = $request->input('customer_la_long');
     $items = $request->input('item_id'); // หรือรายการสินค้าทั้งหมดที่ส่งมา
 
     // ทำการประมวลผลข้อมูล เช่น การบันทึกข้อมูลหรือเปิดบิล
@@ -209,7 +213,7 @@ public function showSalesOrderDetails($soDetailId)
 {
     // ดึงข้อมูลรายละเอียดการสั่งซื้อจากฐานข้อมูล
     $soDetail = Bill::find($soDetailId);
-
+    $bill = Bill::all(); 
     // ดึงข้อมูลจากตาราง bill_detail ตาม so_detail_id
     $billDetails = $soDetail->billDetails;  // ใช้ความสัมพันธ์ที่กำหนดในโมเดล
 

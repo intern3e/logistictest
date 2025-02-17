@@ -15,6 +15,9 @@ return new class extends Migration
             $table->string('so_id');
             $table->string('status');
             $table->string('customer_id');
+            $table->string('customer_tel');
+            $table->string('customer_address');
+            $table->string('customer_la_long');
             $table->string('date_of_dali');
             $table->string('so_detail_id');
             $table->text('notes');
