@@ -59,7 +59,6 @@ class salecontroller extends Controller
         return view('sale.insertdata');
     }
 
-
 //     public function logout()
 // {
 //     session()->flush(); // ลบข้อมูลในเซสชัน
@@ -74,58 +73,58 @@ public function showForm()
     return view('sale.insertdata');
 }
 
-public function findData(Request $request)
-{
-    // รับค่า 'so_number' จากฟอร์ม
-    $sonumber = $request->input('so_number');
+// public function findData(Request $request)
+// {
+//     // รับค่า 'so_number' จากฟอร์ม
+//     $sonumber = $request->input('so_number');
 
-    // ค้นหาข้อมูลจากตาราง tblsos ตาม 'so_number'
-    $so = tblsos::where('so_id', $sonumber)->first();
+//     // ค้นหาข้อมูลจากตาราง tblsos ตาม 'so_number'
+//     $so = tblsos::where('so_id', $sonumber)->first();
 
-    if ($so) {
-        // ดึง 'customer_id' จาก tblsos
-        $customer_id = $so->customer_id;
+//     if ($so) {
+//         // ดึง 'customer_id' จาก tblsos
+//         $customer_id = $so->customer_id;
 
-        // ค้นหาข้อมูลลูกค้า
-        $customer = tblcustomer::where('customer_id', $customer_id)->first();
+//         // ค้นหาข้อมูลลูกค้า
+//         $customer = tblcustomer::where('customer_id', $customer_id)->first();
 
-        // ค้นหาสินค้าทั้งหมดที่เกี่ยวข้องกับ so_id
-        $so_items = so_item_id::where('so_id', $sonumber)->get(); // ดึงข้อมูลทั้งหมด
+//         // ค้นหาสินค้าทั้งหมดที่เกี่ยวข้องกับ so_id
+//         $so_items = so_item_id::where('so_id', $sonumber)->get(); // ดึงข้อมูลทั้งหมด
 
-        // ตรวจสอบว่าพบข้อมูลลูกค้าหรือไม่
-        if ($customer) {
-            $customer_name = $customer->customer_name;
-            $customer_tel = $customer->customer_tel;
-            $customer_address = $customer->customer_address;
-            $customer_la_long = $customer->customer_la_long;
-        } else {
-            $customer_name = 'ไม่พบข้อมูลลูกค้า';
-            $customer_tel = '-'; 
-            $customer_address = '-';
-            $customer_la_long = '-';
-        }
+//         // ตรวจสอบว่าพบข้อมูลลูกค้าหรือไม่
+//         if ($customer) {
+//             $customer_name = $customer->customer_name;
+//             $customer_tel = $customer->customer_tel;
+//             $customer_address = $customer->customer_address;
+//             $customer_la_long = $customer->customer_la_long;
+//         } else {
+//             $customer_name = 'ไม่พบข้อมูลลูกค้า';
+//             $customer_tel = '-'; 
+//             $customer_address = '-';
+//             $customer_la_long = '-';
+//         }
 
-        // ตรวจสอบว่ามีสินค้าไหม
-        if ($so_items->isEmpty()) {
-            $items = [['item_id' => 'ไม่พบข้อมูลสินค้า']];
-        } else {
-            $items = $so_items->map(function ($item) {
-                return [
-                    'item_id' => $item->item_id,
-                    'item_name' => $item->item_name,  
-                    'item_quantity' => $item->item_quantity,    
-                    'item_unit_price' => $item->item_unit_price  
-                ];
-            })->toArray(); 
-        }
+//         // ตรวจสอบว่ามีสินค้าไหม
+//         if ($so_items->isEmpty()) {
+//             $items = [['item_id' => 'ไม่พบข้อมูลสินค้า']];
+//         } else {
+//             $items = $so_items->map(function ($item) {
+//                 return [
+//                     'item_id' => $item->item_id,
+//                     'item_name' => $item->item_name,  
+//                     'item_quantity' => $item->item_quantity,    
+//                     'item_unit_price' => $item->item_unit_price  
+//                 ];
+//             })->toArray(); 
+//         }
         
-        // ส่งข้อมูลไปยัง View
-        return view('sale.insertdata', compact('so', 'customer_name', 'customer_tel', 'customer_address', 'customer_la_long', 'items'));
-    } else {
-        // ถ้าไม่พบข้อมูล SO ที่ตรงกับหมายเลขที่กรอก
-        return redirect()->route('sodetail')->with('error', 'ไม่พบข้อมูล SO ที่ตรงกับหมายเลขที่กรอก');
-    }
-}
+//         // ส่งข้อมูลไปยัง View
+//         return view('sale.insertdata', compact('so', 'customer_name', 'customer_tel', 'customer_address', 'customer_la_long', 'items'));
+//     } else {
+//         // ถ้าไม่พบข้อมูล SO ที่ตรงกับหมายเลขที่กรอก
+//         return redirect()->route('sodetail')->with('error', 'ไม่พบข้อมูล SO ที่ตรงกับหมายเลขที่กรอก');
+//     }
+// }
 
 public function insert(Request $request)
 {
