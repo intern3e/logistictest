@@ -277,19 +277,22 @@
     <div class="buttons">
         <span>👤 ผู้ใช้: {{ session('emp_name', 'Guest') }}</span>
 
-        <a href="{{ route('sale.insertdata') }}" class="btn btn-warning">➕ เพิ่มข้อมูล</a>
+        <a href="{{ route('sale.insertdata') }}" class="btn btn-warning">➕ เปิดบิลSO</a>
         
             @csrf
             <a href="{{ route('home') }}" button  type="submit" class="btn btn-danger">🚪 หน้าหลัก</a>
     </div>
 </div>
 
+
 <!-- Filter & Search Section -->
 <div class="filter-container">
     <form method="GET" action="{{ route('sale.dashboard') }}" class="filter-form">
         <label for="date">📅 วันที่:</label>
         <input type="date" id="date" name="date" value="{{ request('date') }}">
+        <button type="submit">ค้นหา</button>
     </form>
+
 
     <div class="search-box">
         <input type="text" id="search-input" placeholder=" ค้นหา เลขที่บิล" onkeyup="searchTable()">
@@ -313,6 +316,7 @@
             </tr>
         </thead>
         <tbody id="table-body">
+
             @foreach($bill as $item)
             <tr>
             <td>{{ $item->so_detail_id }}</td> 
@@ -342,7 +346,12 @@
             </tr>
             @endforeach
         </tbody>
+        <button>แก้ไข</button>
     </table>
+    @if(isset($message))
+    <br>
+    <p style="text-align: center">{{ $message }}</p>
+     @endif
 </div>
 
 

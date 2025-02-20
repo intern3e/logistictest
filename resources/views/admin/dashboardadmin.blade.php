@@ -66,7 +66,35 @@
             align-items: center;
             margin-bottom: 15px;
         }
+        .top-section button {
+            padding: 8px 12px;
+            border: none;
+            background: #27ae60;
+            color: white;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: 0.3s;
+        }
+        .top-section {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin: 0px 5%;
+        }
 
+        .top-section label {
+            font-weight: bold;
+            color: #2c3e50;
+        }
+
+        .top-section input {
+            padding: 8px;
+            border-radius: 5px;
+            font-size: 1rem;
+        }
+        .top-section button:hover {
+            background: #2980b9;
+        }
         .filter-container {
             display: flex;
             align-items: center;
@@ -99,19 +127,25 @@
         }
 
         .button-group button {
-            background-color: #f39c12;
-            color: white;
-            padding: 10px 15px;
+            padding: 15px 20px;
+            border-radius: 8px;
+            font-weight: bold;
+            text-decoration: none;
             border: none;
-            border-radius: 5px;
             cursor: pointer;
-            transition: 0.3s;
+            transition: all 0.3s ease;
+        }
+        .button-group button {
+            background-color: #f39c12;
+            font-size: 16px;
+            color: white;
+            box-shadow: 0px 4px 6px rgba(0, 0, 0, 0.2);
         }
 
         .button-group button:hover {
             background-color: #e67e22;
+            transform: scale(1.05);
         }
-
         .table th, .table td {
             padding: 12px;
             border: 1px solid #dcdde1;
@@ -235,10 +269,11 @@
 
     <div class="container">
         <div class="top-section">
-            <div class="filter-container">
-                <label for="date">📅 วันที่:</label>
-                <input type="date" id="date" name="date">
-            </div>
+                <form method="GET" action="{{ route('admin.dashboardadmin') }}" class="filter-form">
+                    <label for="date">📅 วันที่:</label>
+                    <input type="date" id="date" name="date" value="{{ request('date') }}">
+                    <button type="submit">ค้นหา</button>
+                </form>
 
             <div class="button-group">
                 <button onclick="exportToExcel()">🖨 ปริ้นเอกสาร</button>
@@ -287,6 +322,10 @@
                     @endforeach
                 </tbody>
             </table>
+            @if(isset($message))
+            <br>
+            <p style="text-align: center">{{ $message }}</p>
+             @endif
         </div>
 
 <!-- Popup -->

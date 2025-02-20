@@ -45,14 +45,30 @@ class salecontroller extends Controller
         return back()->withErrors(['sale.loginsale' => 'SO หรือรหัสผ่านไม่ถูกต้อง']);
     }
 
-    public function dashboard()
+   public function dashboard(Request $request)
     {
-
+        $date = $request->get('date');
+        $message = null;  // กำหนดค่าเริ่มต้นให้กับตัวแปร $message
         
-        // ดึงข้อมูลบิลพร้อมกับข้อมูลลูกค้า
-        $bill = Bill::with('customer')->get();
-        $bill = Bill::orderBy('so_detail_id', 'desc')->get();
-        return view('sale.dashboard', compact('bill'));
+        // ถ้าผู้ใช้กรอกวันที่ ให้กรองข้อมูลที่มีวันที่ตรงกับที่เลือก
+        if ($date) {
+            $bill = Bill::whereDate('date_of_dali', $date)  // ใช้ชื่อคอลัมน์ที่ถูกต้อง
+                        ->orderBy('so_detail_id', 'desc')
+                        ->with('customer')
+                        ->get();
+            
+            // ตรวจสอบว่ามีข้อมูลหรือไม่
+            if ($bill->isEmpty()) {
+                $message = 'ไม่พบข้อมูลที่ตรงกับวันที่เลือก';
+            } 
+        } else {
+            // ถ้าไม่ได้กรอกวันที่ จะดึงข้อมูลทั้งหมด
+            $bill = Bill::orderBy('so_detail_id', 'desc')
+                        ->with('customer')
+                        ->get();
+        }
+    
+        return view('sale.dashboard', compact('bill', 'message'));
     }
 
 
