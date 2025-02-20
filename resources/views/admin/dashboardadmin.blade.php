@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html lang="th">
 <head>
+    <meta name="csrf-token" content="{{ csrf_token() }}">
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>ระบบจัดเตรียมสินค้า</title>
@@ -250,7 +251,7 @@
             <table>
                 <thead>
                     <tr>
-                        <th>สถานะ</th>
+                        <th>ปริ้นเอกสาร</th>
                         <th>บิลลำดับ</th>
                         <th>รหัสลูกค้า</th>
                         <th>ที่อยู่จัดส่ง</th>
@@ -269,7 +270,7 @@
                                 <td>{{ $item->customer_id }}</td>
                                 <td>{{ $item->customer_address }}</td>  
                                 <td>{{ $item->customer_la_long }}</td>
-                                <td>{{ $item->date_of_dali }}</td>
+                                <td>{{ \Carbon\Carbon::parse($item->date_of_dali)->format('d/m/Y') }}</td> 
                                 <td>{{ $item->emp_name }}</td>
                                 <td><a href="javascript:void(0);" 
                                 onclick="openPopup(
@@ -374,11 +375,12 @@
 
 
 <script>
-    function exportToExcel() {
+function exportToExcel() {
     let table = document.querySelector("table");
     let rows = table.querySelectorAll("tr");
     let data = [];
     let checkedRows = [];
+    let selectedSoDetailIds = []; // Array to store the selected so_detail_ids
 
     rows.forEach(row => {
         let checkbox = row.querySelector("input[type='checkbox']");
@@ -390,6 +392,10 @@
             });
             data.push(rowData);
             checkedRows.push(row);
+
+            // Collect the so_detail_id from the row
+            let soDetailId = row.querySelector("td:nth-child(2)").textContent.trim();
+            selectedSoDetailIds.push(soDetailId);
         }
     });
 
@@ -402,8 +408,7 @@
         document.body.appendChild(link);
         link.click();
         document.body.removeChild(link);
-
-        // Update the status of checked rows
+        // Update the status of checked rows to 1
         checkedRows.forEach(row => {
             let statusCell = row.querySelector("td:first-child");
             if (statusCell) {
@@ -411,9 +416,36 @@
             }
         });
 
+        // Send AJAX request to update the status in the database
+        updateStatus(selectedSoDetailIds);
+
+        // Reload the page after printing
+        location.reload();
     } else {
         alert("กรุณาเลือกข้อมูลที่ต้องการพิมพ์");
     }
+}
+
+function updateStatus(soDetailIds) {
+    fetch('/update-status', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+        },
+        body: JSON.stringify({ soDetailIds: soDetailIds })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            console.log("Status updated successfully");
+        } else {
+            console.error("Failed to update status");   
+        }
+    })
+    .catch(error => {
+        console.error("Error updating status:", error);
+    });
 }
 
 function createExcelXML(data) {
@@ -441,16 +473,21 @@ function createExcelXML(data) {
 
     // Adding data rows (without "เพิ่มเติม" column)
     const rows = data.reduce((acc, row) => {
-        const rowData = row.map(cell => 
-            `<Cell><Data ss:Type="String">${cell}</Data></Cell>`
-        ).join('');
-        acc += `<Row>${rowData}</Row>`;
-        return acc;
-    }, '');
+    // เลือกเฉพาะคอลัมน์ที่ต้องการ (ในที่นี้คอลัมน์ที่ 2 และ 4)
+    const selectedData = [row[1], row[2], row[3], row[4], row[5], row[6]];  // เลือกคอลัมน์ที่ 2 (รหัสลูกค้า) และคอลัมน์ที่ 4 (ที่อยู่จัดส่ง)
+
+    // แปลงข้อมูลที่เลือกให้เป็น XML
+    const rowData = selectedData.map(cell => 
+        `<Cell><Data ss:Type="String">${cell}</Data></Cell>`
+    ).join('');
+
+    // เพิ่มแถวลงใน XML
+    acc += `<Row>${rowData}</Row>`;
+    return acc;
+}, '');
 
     return xmlHeader + headerRow + rows + xmlFooter;
 }
-
 
 
     </script>

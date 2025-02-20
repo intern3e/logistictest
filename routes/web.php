@@ -39,5 +39,6 @@ use App\Http\Controllers\admincontroller;
 Route::get('/dashboardadmin', [AdminController::class, 'dashboard'])->name('admin.dashboardadmin');
 Route::get('/history', [AdminController::class, 'history'])->name('admin.history');
 Route::get('/admin/get-bill-detail/{so_detail_id}', [AdminController::class, 'getBillDetail']);
+Route::post('/update-status', [admincontroller::class, 'updateStatus']);
 
 

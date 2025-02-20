@@ -28,16 +28,16 @@ class salecontroller extends Controller
     public function login(Request $request)
     {
         $request->validate([
-            'so_number' => 'required|string',
+            'emp_name' => 'required|string',
             'password' => 'required|string',
         ]);
     
-        $credentials = $request->only('so_number', 'password');
+        $credentials = $request->only('emp_name', 'password');
     
-        if ($credentials['so_number'] === '1' && $credentials['password'] === '1') {
+        if ($credentials['emp_name'] === '1' && $credentials['password'] === '1') {
             session([
                 'logged_in' => true,
-                'so_number' => $credentials['so_number'], // เก็บเลข so_number
+                'emp_name' => $credentials['emp_name'], 
             ]);
             return redirect()->route('sale.dashboard')->with('success', 'ล็อกอินสำเร็จ!');
         }
@@ -47,6 +47,8 @@ class salecontroller extends Controller
 
     public function dashboard()
     {
+
+        
         // ดึงข้อมูลบิลพร้อมกับข้อมูลลูกค้า
         $bill = Bill::with('customer')->get();
         $bill = Bill::orderBy('so_detail_id', 'desc')->get();
@@ -59,11 +61,11 @@ class salecontroller extends Controller
         return view('sale.insertdata');
     }
 
-//     public function logout()
-// {
-//     session()->flush(); // ลบข้อมูลในเซสชัน
-//     return redirect()->route("sale.loginsale")->with('success', 'คุณได้ออกจากระบบเรียบร้อยแล้ว!');
-// }
+    public function logout()
+{
+    session()->flush(); // ลบข้อมูลในเซสชัน
+    return redirect()->route("sale.loginsale")->with('success', 'คุณได้ออกจากระบบเรียบร้อยแล้ว!');
+}
 
 
 

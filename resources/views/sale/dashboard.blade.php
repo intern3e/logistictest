@@ -275,7 +275,7 @@
 <div class="header">
     <h4>📑 ระบบเปิดบิล</h4>
     <div class="buttons">
-        <span>👤 ผู้ใช้: {{ session('so_number', 'Guest') }}</span>
+        <span>👤 ผู้ใช้: {{ session('emp_name', 'Guest') }}</span>
 
         <a href="{{ route('sale.insertdata') }}" class="btn btn-warning">➕ เพิ่มข้อมูล</a>
         
@@ -306,7 +306,7 @@
                 <th>อ้างอิงใบสั่งขาย</th>
                 <th>ที่อยู่จัดส่ง</th>
                 <th>วันที่จัดส่ง</th>
-                <th>ผู้จัดบิล</th>
+                <th>ผู้เปิดบิล</th>
                 <th>เวลาออกบิล</th>
                 <th>สถานะ</th>
                 <th>ข้อมูลสินค้า</th>
@@ -316,11 +316,11 @@
             @foreach($bill as $item)
             <tr>
             <td>{{ $item->so_detail_id }}</td> 
-                <td>{{ $item->customer_id }}</td>
+                <td>{{ $item->so_id }}</td>
                 <td>{{ $item->customer_address }}</td>  
-                <td>{{ $item->date_of_dali }}</td> 
+                <td>{{ \Carbon\Carbon::parse($item->date_of_dali)->format('d/m/Y') }}</td> 
                 <td>{{ $item->emp_name }}</td> 
-                <td>{{ $item->time }}</td> 
+                <td>{{ \Carbon\Carbon::parse($item->time)->format('H:i d/m/Y ') }}</td>
                 <td>
                     @if($item->status == 0)
                         กำลังดำเนินการ
@@ -329,12 +329,13 @@
                     @endif
                 </td>
                 <td><a href="javascript:void(0);" 
-                onclick="openPopup(
-                    '{{ $item->so_detail_id }}',
-                    '{{ $item->customer_id }}',
-                    '{{ $item->customer_address }}',
-                    '{{ $item->date_of_dali }}'
-                )">
+                    onclick="openPopup(
+                        '{{ $item->so_detail_id }}',
+                        '{{ $item->so_id }}',  <!-- ส่งค่า soId ไป -->
+                        '{{ $item->customer_id }}',
+                        '{{ $item->customer_address }}',
+                        '{{ \Carbon\Carbon::parse($item->date_of_dali)->format('d/m/Y') }}',
+                    )">
                 เพิ่มเติม
              </a></td>
             {{-- '{{ $item->customer ? $item->customer->customer_address : 'ไม่มีข้อมูล' }}',  --}}
@@ -354,7 +355,8 @@
             <table>
                 <thead>
                     <tr>
-                        <th>ID SO Detail</th>
+                        <th>เลขบิลที่</th>
+                        <th>SO Number</th>
                         <th>รหัสลูกค้า</th>
                         <th>ที่อยู่จัดส่ง</th>
                         <th>วันที่จัดส่ง</th>
@@ -380,13 +382,14 @@
     </div>
 </div>
 <script>
-function openPopup(soDetailId, customer_id, customer_address, date_of_dali) {
+function openPopup(soDetailId,so_id, customer_id, customer_address, date_of_dali) {
     document.getElementById("popup").style.display = "flex"; // แสดง Popup
 
     let popupBody = document.getElementById("popup-body-1");
     popupBody.innerHTML = `
         <tr>
             <td>${soDetailId}</td>
+            <td>${so_id}</td>
             <td>${customer_id}</td>
             <td>${customer_address}</td>
             <td>${date_of_dali}</td>

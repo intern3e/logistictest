@@ -42,7 +42,7 @@
                     @csrf
                     <div class="mb-3">
                         <label for="so_number" class="form-label">เลขที่ SO</label>
-                        <input type="text" class="form-control" id="so_number" name="so_number" required>
+                        <input type="text" class="form-control" id="emp_name" name="emp_name" required>
                     </div>
                     <div class="mb-3">
                         <label for="password" class="form-label">รหัสผ่าน</label>

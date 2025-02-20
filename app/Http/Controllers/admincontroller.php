@@ -59,6 +59,16 @@ public function getBillDetail($so_detail_id)
         return response()->json($billDetails);
     }
 
-
+    public function updateStatus(Request $request)
+    {
+        $soDetailIds = $request->input('soDetailIds');
+    
+        // Update the status of the selected SO details to 1
+        DB::table('tblbill')
+            ->whereIn('so_detail_id', $soDetailIds)
+            ->update(['status' => 1]);
+    
+        return response()->json(['success' => true]);
+    }
 
 }

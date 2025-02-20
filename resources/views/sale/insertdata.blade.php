@@ -39,7 +39,7 @@
         <input type="hidden" name="so_id" id="so_id" value="">
 
         <label>ผู้เปิดบิล</label>
-        <input type="text" id="emp_name" name="emp_name">
+        <input type="text" id="emp_name" name="emp_name" value="{{ session('emp_name', 'Guest') }}">        
 
             <label>รหัสลูกค้า</label>
             <input type="text" id="customer_id" name="customer_id" readonly>
