@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+    <meta name="csrf-token" content="{{ csrf_token() }}">
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>เปิดบิลสินค้า</title>
@@ -251,169 +252,147 @@ textarea {
 }
 
 
-    </style>
+    </style>    
 </head>
 <body>
     <div class="container">
     <div class="header">
         <h3 class="text-dark">🔹 เปิดบิลสินค้า 🔹</h3>
-    <div class="mb-3">
-        <label class="form-label">เลขที่ SO :</label>
-        <form id="soSearchForm">
-            <div style="display: flex; justify-content: space-between;">
-                <input type="text" class="form-control" id="so_number" name="so_number" style="width: 83%;" required>
-                <button type="submit" class="btn-search" style="width: 14%; height: 45px;">🔍 ค้นหา</button>
-            </div>
-        </form>
-    </div>
 
-    <form id="billForm">
 
-        <input type="hidden" name="so_id" id="so_id" value="">
-
-        <label>ผู้เปิดบิล :</label>
-        <input type="text" id="emp_name" name="emp_name" value="{{ session('emp_name', 'Guest') }}">        
-
-            <label>รหัสลูกค้า :</label>
-            <input type="text" id="customer_id" name="customer_id" readonly>
-
-            <label>ชื่อบริษัท :</label>
-            <input type="text" id="customer_name" name="customer_name" readonly>
-
-            <label>เบอร์ติดต่อ :</label>
-            <input type="text" id="customer_tel" name="customer_tel" >
-
-            <label>ที่อยู่จัดส่ง :</label>
-            <input type="text" id="customer_address" name="customer_address" >
-            <label >ละติจูด ลองจิจูด :</label>
-            <div class="lat-long-container">
-                <input type="text" id="customer_la_long" name="customer_la_long">
-                <button type="button" class="btn-custom" onclick="openGoogleMaps()">Google Maps</button>
-            </div>
-        </div>
-
-        <div class="mb-3">
-            <label class="form-label">แผนที่ :</label>
-            <iframe id="mapFrame" width="100%" height="300" style="border:0;" allowfullscreen="" loading="lazy"></iframe>
-        </div>
-        {{-- map --}}
-        <script>
-            function updateMap() {
-                let coords = document.getElementById('customer_la_long').value;
-                if (coords) {
-                    document.getElementById('mapFrame').src = `https://www.google.com/maps?q=${coords}&output=embed`;
-                }
-            }
-            document.getElementById('customer_la_long').addEventListener('input', updateMap);
-            updateMap();
-        </script>
-            <label>วันกำหนดส่ง</label>
-            <input type="text" id="date_of_dali" name="date_of_dali" readonly>
-            
+        <form id="billForm">
+            <input type="hidden" name="so_detail_id" value="{{ $so_detail_id }}">  <!-- ส่ง so_detail_id -->
         
-                        <table class="table table-bordered table-striped">
-                            <thead>
-                            <tr>
-                                <th>เลือกจัดส่ง</th>
-                                <th>รหัสสินค้า</th>
-                                <th>รายการ</th>
-                                <th>จำนวน</th>
-                                <th>ราคา/หน่วย</th>
-                                <th>ลบ</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <tr> 
-                                <td><input type="checkbox" class="form-control1" name="status[]"></td>
-                                <td><input type="text" class="form-control1" name="item_id[]"></td>
-                                <td><input type="text" class="form-control1" name="item_name[]" ></td>
-                                <td>
-                                    <input type="number" class="form-control1 item_quantity" name="item_quantity[]" >
-                                </td>
-                                <td>
-                                    <input type="number" class="form-control1 item_unit_price" name="item_unit_price[]" >
-                                </td>
-                                <td><button type="button" class="btn btn-danger delete-btn">ลบ</button></td>
-                            </tr>
-                        </tbody>
-                        </table>
-                        <div class="checkbox-container">
-                            <label>
-                                <input type="checkbox" name="checkall"> เลือกทั้งหมด
-                            </label>
-                            <button type="button" class="btn btn-danger insert-btn">เพิ่มสินค้า</button>
-                        </div>
-                        
+            <label>SO ID:</label>
+            <input type="text" id="so_id" name="so_id" value="{{ $so_id }}" readonly>
+        
+            <label>ผู้ขาย :</label>
+            <input type="text" id="sale_name" name="sale_name" value="{{ $sale_name }}" readonly>
+        
+            <label>ผู้เปิดบิล :</label>
+            <input type="text" id="emp_name" name="emp_name" value="{{ $emp_name }}" readonly>
+        
+            <label>รหัสลูกค้า :</label>
+            <input type="text" id="customer_id" name="customer_id" value="{{ $customer_id }}" readonly>
+        
+            <label>ชื่อบริษัท :</label>
+            <input type="text" id="customer_name" name="customer_name" value="{{ $customer_name }}" readonly>
+        
+            <label>เบอร์ติดต่อ :</label>
+            <input type="text" id="customer_tel" name="customer_tel" value="{{ $customer_tel }}" readonly>
+        
+            <label>ที่อยู่จัดส่ง :</label>
+            <input type="text" id="customer_address" name="customer_address" value="{{ $customer_address }}" readonly>
+        
+            <label>ละติจูด ลองจิจูด :</label>
+            <input type="text" id="customer_la_long" name="customer_la_long" value="{{ $customer_la_long }}" readonly>
+        
+            <label>วันกำหนดส่ง</label>
+            <input type="text" id="date_of_dali" name="date_of_dali" value="{{ \Carbon\Carbon::parse($date_of_dali)->format('d/m/Y') }}" readonly>
+        
+            <table class="table table-bordered table-striped">
+                <thead>
+                    <tr>
+                        <th>รหัสสินค้า</th>
+                        <th>รายการ</th>
+                        <th>จำนวน</th>
+                        <th>ราคา/หน่วย</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach($billItems as $item)
+                        <tr>
+                            <td><input type="text" class="form-control1" name="item_id[]" value="{{ $item->item_id }}" readonly></td>
+                            <td><input type="text" class="form-control1" name="item_name[]" value="{{ $item->item_name }}" readonly></td>
+                            <td><input type="number" class="form-control1 item_quantity" name="item_quantity[]" value="{{ $item->quantity }}"></td>
+                            <td><input type="number" class="form-control1 item_unit_price" name="item_unit_price[]" value="{{ $item->unit_price }}" readonly></td>
+                        </tr>
+                    @endforeach
+                </tbody>
+            </table>
+        
+            <label for="additional_notes">แจ้งเพิ่มเติม</label>
+            <textarea id="additional_notes" name="additional_notes" rows="4" readonly></textarea>
+        
+            <button type="button" id="updateBill" class="btn btn-success"> แก้ไขบิล</button>
+            <button type="button" id="deleteBill" class="btn btn-danger"> ลบบิล</button>
+        </form>
 
-                        
-                        <label for="additional_notes">แจ้งเพิ่มเติม</label>
-                        <textarea id="additional_notes" name="additional_notes" rows="4"></textarea>
-                        
+<script>
+    document.getElementById('updateBill').addEventListener('click', async function () {
+        const form = document.getElementById('billForm');
+        const formData = new FormData(form);
+        
+        const so_detail_id = formData.get("so_detail_id");
 
-            <button type="button" id="submitBill" class="btn btn-success"> เปิดบิล</button>
+        const items = [];
+        document.querySelectorAll('.item_quantity').forEach((input, index) => {
+            const item_id = form.querySelectorAll('[name="item_id[]"]')[index].value;
+            const quantity = input.value;
+            items.push({ item_id, quantity });
+        });
 
-    </form>
-</div>
+        console.log("ส่งข้อมูล:", { so_detail_id, items });
 
-
-    {{-- function --}}
-    <script>
-                document.getElementById('submitBill').addEventListener('click', async function (event) {
-                event.preventDefault();
-
-                let formData = new FormData(document.getElementById('billForm'));
-
-                // ตรวจสอบว่ามีสินค้าอย่างน้อย 1 รายการถูกเลือก
-                let hasSelectedItems = false;
-                document.querySelectorAll('input[name="status[]"]:checked').forEach((checkbox) => {
-                    hasSelectedItems = true;
-                });
-
-                if (!hasSelectedItems) {
-                    alert("กรุณาเลือกสินค้าอย่างน้อย 1 รายการ");
-                    return;
-                }
-
-                // รับข้อมูลสินค้าทุกตัวในตาราง
-                let itemRows = document.querySelectorAll('table tbody tr');
-                itemRows.forEach((row, index) => {
-                    let itemId = row.querySelector('input[name="item_id[]"]').value;
-                    let itemName = row.querySelector('input[name="item_name[]"]').value;
-                    let itemQuantity = row.querySelector('input[name="item_quantity[]"]').value;
-                    let itemUnitPrice = row.querySelector('input[name="item_unit_price[]"]').value;
-                    let itemStatus = row.querySelector('input[name="status[]"]').checked ? 1 : 0;
-
-                    // เก็บค่าลงใน FormData
-                    formData.append(`item_id[${index}]`, itemId);
-                    formData.append(`item_name[${index}]`, itemName);
-                    formData.append(`item_quantity[${index}]`, itemQuantity);
-                    formData.append(`item_unit_price[${index}]`, itemUnitPrice);
-                    formData.append(`status[${index}]`, itemStatus);
-                });
-
-                // ส่งข้อมูลไปยัง Controller Laravel
-                try {
-                    let response = await fetch('{{ route("insert.post") }}', {
-                        method: 'POST',
-                        body: formData,
-                        headers: {
-                            'X-CSRF-TOKEN': '{{ csrf_token() }}',
-                        },
-                    });
-
-                    let data = await response.json();
-                    if (data.success) {
-                        alert(data.success);
-                        window.location.href = '/dashboard';
-                    } else if (data.error) {
-                        alert(data.error);
-                    }
-                } catch (error) {
-                    console.error('Error:', error);
-                    alert('มีข้อผิดพลาดในการส่งข้อมูล');
-                }
+        try {
+            const response = await fetch('/update-bill', {
+                method: 'POST', 
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+                },
+                body: JSON.stringify({ so_detail_id, items })
             });
-    </script>
+
+            const result = await response.json();
+            console.log("ผลลัพธ์จากเซิร์ฟเวอร์:", result);
+
+            if (result.success) {
+                alert('บันทึกข้อมูลเรียบร้อย');
+                window.location.href = '/dashboard'; 
+            } else {
+                alert('เกิดข้อผิดพลาด: ' + result.message);
+            }
+        } catch (error) {
+            console.error('Error:', error);
+            alert('ไม่สามารถบันทึกข้อมูลได้');
+        }
+    });
+
+</script>
+
+
+<script>
+    document.getElementById('deleteBill').addEventListener('click', async function (event) {
+        event.preventDefault();
+
+        let soDetailId = "{{ $so_detail_id }}"; // ดึงค่า so_detail_id มาใช้
+        let confirmDelete = confirm("คุณต้องการลบบิลนี้ใช่หรือไม่?");
+        
+        if (!confirmDelete) return;
+
+        try {
+            let response = await fetch(`/delete-bill/${soDetailId}`, {
+                method: 'DELETE',
+                headers: {
+                    'X-CSRF-TOKEN': '{{ csrf_token() }}',
+                },
+            });
+
+            let data = await response.json();
+            if (data.success) {
+                alert(data.success);
+                window.location.href = '/dashboard';
+            } else {
+                alert(data.error);
+            }
+        } catch (error) {
+            console.error('Error:', error);
+            alert('เกิดข้อผิดพลาดในการลบบิล');
+        }
+    });
+</script>
+
 
     {{-- function --}}
     <script>

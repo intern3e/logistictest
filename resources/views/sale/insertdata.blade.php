@@ -271,8 +271,11 @@ textarea {
 
         <input type="hidden" name="so_id" id="so_id" value="">
 
-        <label>ผู้เปิดบิล :</label>
-        <input type="text" id="emp_name" name="emp_name" value="{{ session('emp_name', 'Guest') }}">        
+            <label>ผู้เปิดบิล :</label>
+            <input type="text" id="emp_name" name="emp_name" value="{{ session('emp_name', 'Guest') }}"> 
+            
+            <label>ผู้ขาย :</label>
+            <input type="text" id="sale_name" name="sale_name">          
 
             <label>รหัสลูกค้า :</label>
             <input type="text" id="customer_id" name="customer_id" readonly>
@@ -509,51 +512,51 @@ textarea {
 
     {{-- api --}}
     <script>
-       document.getElementById("soSearchForm").addEventListener("submit", async function(event) {
-    event.preventDefault();
-    let soNumber = document.getElementById("so_number").value.trim();
-    if (!soNumber) {
-        alert("กรุณากรอกเลขที่ SO");
-        return;
-    }
+            document.getElementById("soSearchForm").addEventListener("submit", async function(event) {
+            event.preventDefault();
+            let soNumber = document.getElementById("so_number").value.trim();
+            if (!soNumber) {
+                alert("กรุณากรอกเลขที่ SO");
+                return;
+            }
 
-    try {
-        let response = await fetch(`http://server_update:8000/api/getSOHD?SONum=SO${soNumber}`);
+            try {
+                let response = await fetch(`http://server_update:8000/api/getSOHD?SONum=SO${soNumber}`);
 
-        if (!response.ok) {
-            throw new Error("เกิดข้อผิดพลาดในการโหลดข้อมูล");
-        }
+                if (!response.ok) {
+                    throw new Error("เกิดข้อผิดพลาดในการโหลดข้อมูล");
+                }
 
-        let data = await response.json();
-        console.log("API Response:", data); // ตรวจสอบข้อมูล API
+                let data = await response.json();
+                console.log("API Response:", data); // ตรวจสอบข้อมูล API
 
-        if (!data || data.length === 0 || !data[0].CustID) {
-            alert("ไม่พบข้อมูลที่ตรงกับเลขที่ SO นี้");
-            return;
-        }
+                if (!data || data.length === 0 || !data[0].CustID) {
+                    alert("ไม่พบข้อมูลที่ตรงกับเลขที่ SO นี้");
+                    return;
+                }
 
-        // กำหนดค่าลงในฟอร์ม
-        document.getElementById("customer_id").value = data[0].CustID || 'ไม่พบข้อมูล';
-        document.getElementById("customer_name").value = data[0].CustName || 'ไม่พบข้อมูล';
+                // กำหนดค่าลงในฟอร์ม
+                document.getElementById("customer_id").value = data[0].CustID || 'ไม่พบข้อมูล';
+                document.getElementById("customer_name").value = data[0].CustName || 'ไม่พบข้อมูล';
 
-        // Format the ShipDate to "วันเดือนปี"
-        let shipDate = data[0].ShipDate;
-        if (shipDate) {
-            let formattedDate = new Date(shipDate);
-            let day = formattedDate.getDate().toString().padStart(2, '0'); // Ensure 2 digits
-            let month = (formattedDate.getMonth() + 1).toString().padStart(2, '0'); // Month is 0-indexed
-            let year = formattedDate.getFullYear();
-            document.getElementById("date_of_dali").value = `${day}-${month}-${year}`;
-        }
+                // Format the ShipDate to "วันเดือนปี"
+                let shipDate = data[0].ShipDate;
+                if (shipDate) {
+                    let formattedDate = new Date(shipDate);
+                    let day = formattedDate.getDate().toString().padStart(2, '0'); // Ensure 2 digits
+                    let month = (formattedDate.getMonth() + 1).toString().padStart(2, '0'); // Month is 0-indexed
+                    let year = formattedDate.getFullYear();
+                    document.getElementById("date_of_dali").value = `${day}-${month}-${year}`;
+                }
 
-        // กำหนดค่าให้ฟิลด์ so_id
-        document.getElementById("so_id").value = data[0].SONum || '';
+                // กำหนดค่าให้ฟิลด์ so_id
+                document.getElementById("so_id").value = data[0].SONum || '';
 
-    } catch (error) {
-        console.error('Error fetching data:', error);
-        alert('เกิดข้อผิดพลาดในการดึงข้อมูล');
-    }
-});
+            } catch (error) {
+                console.error('Error fetching data:', error);
+                alert('เกิดข้อผิดพลาดในการดึงข้อมูล');
+            }
+        });
     </script>
 
 

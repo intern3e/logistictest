@@ -25,7 +25,10 @@ use App\Models\Bill_Detail;
     Route::get('/sodetail', [SaleController::class, 'showForm'])->name('sodetail');
     Route::post('/insert', [SaleController::class, 'insert'])->name('insert.post');
     Route::get('/get-details/{id}', [saleController::class, 'getDetails']);
-
+    Route::get('/sale/modifydata/{id}', [salecontroller::class, 'modifyData'])->name('sale.modifydata');
+    Route::any('/update-bill', [salecontroller::class, 'updateBill']);
+    Route::delete('/delete-bill/{so_detail_id}', [salecontroller::class, 'deleteBill']);
+    
     Route::get('/get-bill-detail/{so_detail_id}', function ($so_detail_id) {
         $billDetails = Bill_Detail::where('so_detail_id', $so_detail_id)->get();
         return response()->json($billDetails);

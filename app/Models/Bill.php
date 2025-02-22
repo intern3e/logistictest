@@ -10,7 +10,7 @@ class Bill extends Model
     use HasFactory;
 
     protected $table = 'tblbill'; 
-    protected $fillable = ['so_id', 'status', 'customer_id','customer_tel','customer_address','customer_la_long' ,'notes', 'date_of_dali','emp_name'];
+    protected $fillable = ['so_id', 'status', 'customer_id','customer_tel','customer_address','customer_la_long' ,'notes', 'date_of_dali','emp_name','sale_name','so_detail_id'];
     
     public $timestamps = false; // ปิด timestamps
 

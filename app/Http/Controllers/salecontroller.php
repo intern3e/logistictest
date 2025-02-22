@@ -8,24 +8,27 @@ use App\Models\tblcustomer;
 use App\Models\bill_detail;
 use App\Models\so_item_id;
 use App\Models\Bill;
+use Illuminate\Support\Facades\Log;
+
+use function Laravel\Prompts\alert;
 use function Laravel\Prompts\table;
 
 class salecontroller extends Controller
 {
 
-    public function home()
+public function home()
     {
         return view('home');
     }
 
 
-    public function showLoginForm()
+public function showLoginForm()
     {
         return view('sale.loginsale');
     }
 
 
-    public function login(Request $request)
+public function login(Request $request)
     {
         $request->validate([
             'emp_name' => 'required|string',
@@ -45,7 +48,7 @@ class salecontroller extends Controller
         return back()->withErrors(['sale.loginsale' => 'SO หรือรหัสผ่านไม่ถูกต้อง']);
     }
 
-   public function dashboard(Request $request)
+public function dashboard(Request $request)
     {
         $date = $request->get('date');
         $message = null;  // กำหนดค่าเริ่มต้นให้กับตัวแปร $message
@@ -72,24 +75,24 @@ class salecontroller extends Controller
     }
 
 
-    public function insertdata()
+public function insertdata()
     {
         return view('sale.insertdata');
     }
 
-    public function logout()
-{
+public function logout()
+        {
     session()->flush(); // ลบข้อมูลในเซสชัน
     return redirect()->route("sale.loginsale")->with('success', 'คุณได้ออกจากระบบเรียบร้อยแล้ว!');
-}
+        }
 
 
 
 // Show the form
 public function showForm()
-{
+    {
     return view('sale.insertdata');
-}
+    }
 
 // public function findData(Request $request)
 // {
@@ -145,7 +148,7 @@ public function showForm()
 // }
 
 public function insert(Request $request)
-{
+    {
     DB::beginTransaction();
     try {
         $request->validate([
@@ -154,6 +157,7 @@ public function insert(Request $request)
             'customer_address' => 'required|string|max:255',
             'customer_la_long' => 'required|string|max:255',
             'emp_name' => 'required|string|max:255',
+            'sale_name' => 'required|string|max:255',
             'date_of_dali' => 'required|date',
             'notes' => 'nullable|string',
             'item_id' => 'required|array',
@@ -177,6 +181,7 @@ public function insert(Request $request)
         $bill->notes = $request->input('notes');
         $bill->date_of_dali = $request->input('date_of_dali');
         $bill->emp_name = $request->input('emp_name');
+        $bill->sale_name = $request->input('sale_name');
         $bill->save();
 
         $so_detail_id = $bill->id;
@@ -204,7 +209,7 @@ public function insert(Request $request)
         DB::rollBack();
         return response()->json(['error' => 'เกิดข้อผิดพลาด: ' . $e->getMessage()], 500);
     }
-}
+    }
 
 public function insertPost(Request $request) {
     $so_id = $request->input('so_id');
@@ -220,7 +225,7 @@ public function insertPost(Request $request) {
 
     // ส่งข้อมูลกลับไปยังหน้าจอ dashboard
     return response()->json(['success' => $successMessage]);
-}
+    }
 
 public function getBillDetail($so_detail_id)
     {
@@ -229,6 +234,77 @@ public function getBillDetail($so_detail_id)
 
         // ส่งข้อมูลในรูปแบบ JSON
         return response()->json($billDetails);
+    }
+public function modifyData($soDetailId)
+    {
+        // ดึงข้อมูลจาก tblbill (ข้อมูลหลัก)
+        $billDetail = Bill::where('so_detail_id', $soDetailId)->first();
+    
+        // ดึงข้อมูลสินค้าที่เกี่ยวข้องจาก bill_detail
+        $billItems = DB::table('bill_detail')
+                        ->where('so_detail_id', $soDetailId)
+                        ->select('so_detail_id', 'so_id', 'item_id', 'item_name', 'quantity', 'unit_price')
+                        ->get();
+    
+        if ($billDetail) {
+            return view('sale.modifydata', [
+                'so_detail_id' => $soDetailId,  // เพิ่มตัวแปรนี้
+                'billDetail' => $billDetail,
+                'billItems' => $billItems, // ส่งข้อมูลสินค้าไปยัง View
+                'so_id' => $billDetail->so_id,
+                'sale_name' => $billDetail->sale_name,
+                'emp_name' => $billDetail->emp_name,
+                'customer_id' => $billDetail->customer_id,
+                'customer_name' => $billDetail->customer_name,
+                'customer_sale' => $billDetail->customer_sale,
+                'customer_address' => $billDetail->customer_address,
+                'customer_tel' => $billDetail->customer_tel,
+                'customer_la_long' => $billDetail->customer_la_long,
+                'date_of_dali' => $billDetail->date_of_dali
+            ]);
+        } else {    
+            return redirect()->route('sale.dashboard')->with('error', 'ไม่พบข้อมูล');
+        }
+    }
+public function updateBill(Request $request) {
+        Log::info('📥 รับข้อมูลจาก JavaScript:', $request->all());
+    
+        $so_detail_id = $request->so_detail_id;
+        $items = $request->items;
+    
+        foreach ($items as $item) {
+            Log::info("🔄 อัปเดต item_id: {$item['item_id']} จำนวน: {$item['quantity']}");
+    
+            DB::table('bill_detail')
+                ->where('so_detail_id', $so_detail_id)
+                ->where('item_id', $item['item_id'])
+                ->update(['quantity' => $item['quantity']]);
+        }
+    
+        Log::info('✅ อัปเดตเสร็จสิ้น');
+        return response()->json(['success' => true, 'message' => 'อัปเดตข้อมูลสำเร็จ']);
+    }
+    
+public function deleteBill($so_detail_id)
+    {
+        try {
+            // หาบิลที่มี so_detail_id ตรงกัน
+            $bill = Bill::where('so_detail_id', $so_detail_id)->first();
+            
+            if (!$bill) {
+                return response()->json(['error' => 'ไม่พบบิล'], 404);
+            }
+    
+            // ลบรายการสินค้าจาก bill_detail ที่มี so_detail_id ตรงกับบิล
+            bill_detail::where('so_detail_id', $so_detail_id)->delete();
+    
+            // ลบบิลจาก tblbill โดยใช้ so_detail_id
+            Bill::where('so_detail_id', $so_detail_id)->delete();
+    
+            return response()->json(['success' => 'ลบบิลสำเร็จ']);
+        } catch (\Exception $e) {
+            return response()->json(['error' => 'เกิดข้อผิดพลาด: ' . $e->getMessage()], 500);
+        }
     }
 }
 

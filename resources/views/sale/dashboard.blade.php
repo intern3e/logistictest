@@ -268,130 +268,146 @@
                 width: 100%;
             }
         }
+        .editButton {
+        background: linear-gradient(to right, #feb47b); /* ไล่สีแบบสองโทน */
+        border: none;
+        color: white;
+        padding: 10px 20px;
+        font-size: 16px;
+        font-weight: bold;
+        border-radius: 8px;
+        cursor: pointer;
+        transition: 0.3s ease-in-out;
+        }
+
+        .editButton:hover {
+        transform: scale(1.05); /* ขยายขนาดเล็กน้อย */
+        }
+
+        .editButton:active {
+        transform: scale(0.95); /* ย่อขนาดลงตอนกด */
+        }
+
         </style>
 </head>
 <body>
 
-<div class="header">
-    <h4>📑 ระบบเปิดบิล</h4>
-    <div class="buttons">
-        <span>👤 ผู้ใช้: {{ session('emp_name', 'Guest') }}</span>
-
-        <a href="{{ route('sale.insertdata') }}" class="btn btn-warning">➕ เปิดบิลSO</a>
-        
+    <div class="header">
+        <h4>📑 ระบบเปิดบิล</h4>
+        <div class="buttons">
+            <span>👤 ผู้ใช้: {{ session('emp_name', 'Guest') }}</span>
+    
+            <a href="{{ route('sale.insertdata') }}" class="btn btn-warning">➕ เปิดบิลSO</a>
+            
             @csrf
             <a href="{{ route('home') }}" button  type="submit" class="btn btn-danger">🚪 หน้าหลัก</a>
-    </div>
-</div>
-
-
-<!-- Filter & Search Section -->
-<div class="filter-container">
-    <form method="GET" action="{{ route('sale.dashboard') }}" class="filter-form">
-        <label for="date">📅 วันที่:</label>
-        <input type="date" id="date" name="date" value="{{ request('date') }}">
-        <button type="submit">ค้นหา</button>
-    </form>
-
-
-    <div class="search-box">
-        <input type="text" id="search-input" placeholder=" ค้นหา เลขที่บิล" onkeyup="searchTable()">
-        <button type="button" onclick="searchTable()">ค้นหา</button>
-    </div>
-
-</div>
-
-<div class="table-container">
-    <table>
-        <thead>
-            <tr>
-                <th>บิลลำดับที่</th>
-                <th>อ้างอิงใบสั่งขาย</th>
-                <th>ที่อยู่จัดส่ง</th>
-                <th>วันที่จัดส่ง</th>
-                <th>ผู้เปิดบิล</th>
-                <th>เวลาออกบิล</th>
-                <th>สถานะ</th>
-                <th>ข้อมูลสินค้า</th>
-            </tr>
-        </thead>
-        <tbody id="table-body">
-
-            @foreach($bill as $item)
-            <tr>
-            <td>{{ $item->so_detail_id }}</td> 
-                <td>{{ $item->so_id }}</td>
-                <td>{{ $item->customer_address }}</td>  
-                <td>{{ \Carbon\Carbon::parse($item->date_of_dali)->format('d/m/Y') }}</td> 
-                <td>{{ $item->emp_name }}</td> 
-                <td>{{ \Carbon\Carbon::parse($item->time)->format('H:i d/m/Y ') }}</td>
-                <td>
-                    @if($item->status == 0)
-                        กำลังดำเนินการ
-                    @else
-                        สำเร็จ
-                    @endif
-                </td>
-                <td><a href="javascript:void(0);" 
-                    onclick="openPopup(
-                        '{{ $item->so_detail_id }}',
-                        '{{ $item->so_id }}',  <!-- ส่งค่า soId ไป -->
-                        '{{ $item->customer_id }}',
-                        '{{ $item->customer_address }}',
-                        '{{ \Carbon\Carbon::parse($item->date_of_dali)->format('d/m/Y') }}',
-                    )">
-                เพิ่มเติม
-             </a></td>
-            {{-- '{{ $item->customer ? $item->customer->customer_address : 'ไม่มีข้อมูล' }}',  --}}
-            </tr>
-            @endforeach
-        </tbody>
-        <button>แก้ไข</button>
-    </table>
-    @if(isset($message))
-    <br>
-    <p style="text-align: center">{{ $message }}</p>
-     @endif
-</div>
-
-
-
-<!-- Popup -->
-<div class="popup-overlay" id="popup" style="display: none;">
-    <div class="popup-content">
-        <span class="close-btn" onclick="closePopup()">&times;</span>
-        <div class="table-container">
-            <table>
-                <thead>
-                    <tr>
-                        <th>เลขบิลที่</th>
-                        <th>SO Number</th>
-                        <th>รหัสลูกค้า</th>
-                        <th>ที่อยู่จัดส่ง</th>
-                        <th>วันที่จัดส่ง</th>
-                    </tr>
-                </thead>
-                <tbody id="popup-body-1">   
-                </tbody>
-            </table>
-            <br>
-            <table>
-                <thead>     
-                    <tr>
-                        <th>รหัสสินค้า</th>
-                        <th>รายการ</th>
-                        <th>จำนวน</th>
-                        <th>ราคา/หน่วย</th>
-                    </tr>
-                </thead>
-                <tbody id="popup-body">
-                </tbody>
-            </table>
         </div>
     </div>
-</div>
-<script>
-function openPopup(soDetailId,so_id, customer_id, customer_address, date_of_dali) {
+    
+    <!-- Filter & Search Section -->
+    <div class="filter-container">
+        <form method="GET" action="{{ route('sale.dashboard') }}" class="filter-form">
+            <label for="date">📅 วันที่:</label>
+            <input type="date" id="date" name="date" value="{{ request('date') }}">
+            <button type="submit">ค้นหา</button>
+        </form>
+    
+        <div class="search-box">
+            <input type="text" id="search-input" placeholder=" ค้นหา เลขที่บิล" onkeyup="searchTable()">
+            <button type="button" onclick="searchTable()">ค้นหา</button>
+        </div>
+    </div>
+    
+    <div class="table-container">
+        <table>
+            <thead>
+                <tr>
+                    <th>บิลลำดับที่</th>
+                    <th>อ้างอิงใบสั่งขาย</th>
+                    <th>ที่อยู่จัดส่ง</th>
+                    <th>วันที่จัดส่ง</th>
+                    <th>ผู้เปิดบิล</th>
+                    <th>เวลาออกบิล</th>
+                    <th>สถานะ</th>
+                    <th>ข้อมูลสินค้า</th>
+                </tr>
+            </thead>
+            <tbody id="table-body">
+                @foreach($bill as $item)
+                <tr>
+                    <td>{{ $item->so_detail_id }}</td> 
+                    <td>{{ $item->so_id }}</td>
+                    <td>{{ $item->customer_address }}</td>  
+                    <td>{{ \Carbon\Carbon::parse($item->date_of_dali)->format('d/m/Y') }}</td> 
+                    <td>{{ $item->emp_name }}</td> 
+                    <td>{{ \Carbon\Carbon::parse($item->time)->format('H:i d/m/Y ') }}</td>
+                    <td>
+                        @if($item->status == 0)
+                            กำลังดำเนินการ
+                        @else
+                            สำเร็จ
+                        @endif
+                    </td>
+                    <td><a href="javascript:void(0);" 
+                        onclick="openPopup(
+                            '{{ $item->so_detail_id }}',
+                            '{{ $item->so_id }}',
+                            '{{ $item->customer_id }}',
+                            '{{ $item->customer_address }}',
+                            '{{ \Carbon\Carbon::parse($item->date_of_dali)->format('d/m/Y') }}',
+                            '{{ $item->sale_name}}'
+                        )">
+                    เพิ่มเติม
+                 </a></td>
+                </tr>
+                @endforeach
+            </tbody>
+        </table>
+        @if(isset($message))
+        <br>
+
+        <p style="text-align: center">{{ $message }}</p>
+             @endif
+    </div>
+    
+    <!-- Popup -->
+    <div class="popup-overlay" id="popup" style="display: none;">
+        <div class="popup-content">
+            <span class="close-btn" onclick="closePopup()">&times;</span>
+            <div class="table-container">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>เลขบิลที่</th>
+                            <th>SO Number</th>
+                            <th>รหัสลูกค้า</th>
+                            <th>ที่อยู่จัดส่ง</th>
+                            <th>วันที่จัดส่ง</th>
+                            <th>ผู้ขาย</th>
+                        </tr>
+                    </thead>
+                    <tbody id="popup-body-1">   
+                    </tbody>
+                </table>
+                <br>
+                <table>
+                    <thead>     
+                        <tr>
+                            <th>รหัสสินค้า</th>
+                            <th>รายการ</th>
+                            <th>จำนวน</th>
+                            <th>ราคา/หน่วย</th>
+                        </tr>
+                    </thead>
+                    <tbody id="popup-body">
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+function openPopup(soDetailId, so_id, customer_id, customer_address, date_of_dali,sale_name) {
     document.getElementById("popup").style.display = "flex"; // แสดง Popup
 
     let popupBody = document.getElementById("popup-body-1");
@@ -402,6 +418,7 @@ function openPopup(soDetailId,so_id, customer_id, customer_address, date_of_dali
             <td>${customer_id}</td>
             <td>${customer_address}</td>
             <td>${date_of_dali}</td>
+            <td>${sale_name}</td>
         </tr>
     `;
 
@@ -424,6 +441,19 @@ function openPopup(soDetailId,so_id, customer_id, customer_address, date_of_dali
                         </tr>
                     `);
                 });
+
+                   let existingButton = document.querySelector(".editButton");
+                if (existingButton) {
+                    existingButton.remove(); // ลบปุ่มเดิมก่อน
+                }
+
+                secondPopupBody.insertAdjacentHTML("afterend", `
+                    <div style="text-align: center; margin-top: 10px;">
+                        <a href="/sale/modifydata/${soDetailId}">
+                            <button class="editButton">แก้ไขข้อมูล</button>
+                        </a>
+                    </div>
+                `);
             } else {
                 secondPopupBody.innerHTML = "<tr><td colspan='4'>ไม่มีข้อมูล</td></tr>";
             }
@@ -433,48 +463,34 @@ function openPopup(soDetailId,so_id, customer_id, customer_address, date_of_dali
             secondPopupBody.innerHTML = "<tr><td colspan='4'>เกิดข้อผิดพลาด</td></tr>";
         });
 }
-
-    // ฟังก์ชันปิด Popup
     function closePopup() {
         document.getElementById("popup").style.display = "none"; // ซ่อน Popup
     }
-
-    // ปิด Popup เมื่อคลิกนอกกล่อง
+    
     window.onclick = function(event) {
         let popup = document.getElementById("popup");
-        if (event.target === popup) { // ถ้าคลิกที่พื้นหลังนอกกล่อง
-            closePopup(); // ปิด Popup
+        if (event.target === popup) {
+            closePopup();
         }
     }
-
-
-
-function searchTable() {
-    // ดึงข้อมูลจากช่องค้นหา
-    let searchInput = document.getElementById("search-input").value.toLowerCase();
     
-    // ดึงข้อมูลจาก tbody
-    let table = document.querySelector("table tbody");
-    let rows = table.getElementsByTagName("tr");
-
-    // ลูปผ่านแถวทั้งหมดในตาราง
-    for (let i = 0; i < rows.length; i++) {
-        let row = rows[i];
-        let cells = row.getElementsByTagName("td");
-
-        // ตรวจสอบว่าค่าของ SO Detail ID อยู่ในแถวไหน (เช่น ใช้คอลัมน์ที่ 0 หรือ 1 ขึ้นอยู่กับความต้องการ)
-        let soDetailId = cells[0].textContent.toLowerCase();  // เปลี่ยนจาก cells[1] เป็น cells[0] ถ้าค้นหาจากคอลัมน์แรก
-
-        // ถ้า SO Detail ID ตรงกับข้อความที่ค้นหาให้แสดงแถว
-        if (soDetailId.indexOf(searchInput) > -1) {
-            row.style.display = "";
-        } else {
-            row.style.display = "none";
+    function searchTable() {
+        let searchInput = document.getElementById("search-input").value.toLowerCase();
+        let table = document.querySelector("table tbody");
+        let rows = table.getElementsByTagName("tr");
+    
+        for (let i = 0; i < rows.length; i++) {
+            let row = rows[i];
+            let cells = row.getElementsByTagName("td");
+            let soDetailId = cells[0].textContent.toLowerCase(); 
+    
+            if (soDetailId.indexOf(searchInput) > -1) {
+                row.style.display = "";
+            } else {
+                row.style.display = "none";
+            }
         }
     }
-}
-</script>
-
-
-</body>
-</html>
+    </script>
+    </body>
+    </html>
