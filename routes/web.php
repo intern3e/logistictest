@@ -18,7 +18,7 @@ use App\Models\Bill_Detail;
     Route::get('/loginsale', [salecontroller::class, 'showLoginForm'])->name('sale.loginsale');
     Route::post('/loginsale', [salecontroller::class, 'login'])->name('sale.loginsale');
     Route::post('/logout', [salecontroller::class, 'logout'])->name('logout');
-    Route::get('/dashboard', [salecontroller::class, 'dashboard'])->name('sale.dashboard');
+    Route::get('/dashboard', [SaleController::class, 'dashboard'])->name('sale.dashboard');
     Route::get('/insertdata', [salecontroller::class, 'insertdata'])->name('sale.insertdata'); // GET
     Route::post('/insertdata', [salecontroller::class, 'insertData'])->name('sale.insertdata.post'); // POST
     Route::post('/sodetail', [SaleController::class, 'findData'])->name('sodetail.post');
@@ -33,10 +33,11 @@ use App\Models\Bill_Detail;
         $billDetails = Bill_Detail::where('so_detail_id', $so_detail_id)->get();
         return response()->json($billDetails);
     });
-
-
-
 Route::get('/txt', [SaleController::class, 'popup'])->name('popup');
+
+
+
+
 
 use App\Http\Controllers\admincontroller;
 Route::get('/dashboardadmin', [AdminController::class, 'dashboard'])->name('admin.dashboardadmin');
@@ -45,3 +46,14 @@ Route::get('/admin/get-bill-detail/{so_detail_id}', [AdminController::class, 'ge
 Route::post('/update-status', [admincontroller::class, 'updateStatus']);
 
 
+
+
+use App\Http\Controllers\PoController;
+Route::get('/insertpo', [PoController::class, 'insertpo'])->name('po.insertpo');
+Route::post('/insertpo', [PoController::class, 'insertpobill'])->name('insertpo.post'); 
+Route::post('/insertpo', [PoController::class, 'insertpobill'])->name('insertpo.post');
+Route::get('/bill/{po_detail_id}', [PoController::class, 'getBillDetail'])->name('getBillDetail');
+Route::get('/dashboardpo', [PoController::class, 'dashboardpo'])->name('po.dashboardpo');
+
+use App\Http\Controllers\adminpocontroller;
+Route::get('/adminpo', [adminpoController::class, 'dashboard'])->name('po.adminpo');

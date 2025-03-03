@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Dashboard</title>
+    <title>DashboardSO</title>
     <style>
   /* --- Global Style --- */
   body {
@@ -177,7 +177,7 @@
         .search-box input {
             width: 90%;
             height: 30px;
-            margin: 0px -30%;
+            margin: 0px 10px;
             background: #f8f9fa;
         }
 
@@ -269,24 +269,26 @@
             }
         }
         .editButton {
-        background: linear-gradient(to right, #feb47b); /* ไล่สีแบบสองโทน */
-        border: none;
-        color: white;
-        padding: 10px 20px;
-        font-size: 16px;
-        font-weight: bold;
-        border-radius: 8px;
-        cursor: pointer;
-        transition: 0.3s ease-in-out;
-        }
+    background: #f39c12;
+    border: none;
+    color: white;
+    padding: 10px 20px;
+    font-size: 16px;
+    font-weight: bold;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: 0.3s ease-in-out;
+    
+}
 
-        .editButton:hover {
-        transform: scale(1.05); /* ขยายขนาดเล็กน้อย */
-        }
+.editButton:hover {
+    background-color: #e67e22;
+    transform: scale(1.05);
+}
 
-        .editButton:active {
-        transform: scale(0.95); /* ย่อขนาดลงตอนกด */
-        }
+.editButton:active {
+    transform: scale(0.95); /* ย่อขนาดลงตอนกด */
+}
 
         </style>
 </head>
@@ -314,7 +316,6 @@
     
         <div class="search-box">
             <input type="text" id="search-input" placeholder=" ค้นหา เลขที่บิล" onkeyup="searchTable()">
-            <button type="button" onclick="searchTable()">ค้นหา</button>
         </div>
     </div>
     
@@ -448,7 +449,7 @@ function openPopup(soDetailId, so_id, customer_id, customer_address, date_of_dal
                 }
 
                 secondPopupBody.insertAdjacentHTML("afterend", `
-                    <div style="text-align: center; margin-top: 10px;">
+                    <div style="text-align: left; margin-top: 15px;">
                         <a href="/sale/modifydata/${soDetailId}">
                             <button class="editButton">แก้ไขข้อมูล</button>
                         </a>

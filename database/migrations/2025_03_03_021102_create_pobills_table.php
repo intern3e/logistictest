@@ -11,17 +11,17 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('tblbill', function (Blueprint $table) {
-            $table->string('so_id');
+        Schema::create('pobills', function (Blueprint $table) {
+            $table->string('po_id');
             $table->string('status');
-            $table->string('customer_id');
-            $table->string('customer_tel');
-            $table->string('customer_address');
-            $table->string('customer_la_long');
-            $table->string('date_of_dali');
-            $table->string('so_detail_id');
+            $table->string('cartype');
+            $table->string('store_name');
+            $table->string('store_tel');
+            $table->string('store_address');
+            $table->string('store_la_long');
+            $table->string('recvDate');
+            $table->string('po_detail_id');
             $table->string('emp_name');
-            $table->string('sale_name');
             $table->text('notes');
         });
     }
@@ -31,6 +31,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('tblbill');
+        Schema::dropIfExists('pobill');
     }
 };

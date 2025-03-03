@@ -9,7 +9,7 @@ use App\Models\bill_detail;
 use App\Models\so_item_id;
 use App\Models\Bill;
 use Illuminate\Support\Facades\Log;
-
+use App\Models\BillDetail;
 use function Laravel\Prompts\alert;
 use function Laravel\Prompts\table;
 
