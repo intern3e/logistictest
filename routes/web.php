@@ -12,6 +12,8 @@ use Illuminate\Support\Facades\Route;
 | be assigned to the "web" middleware group. Make something great!
 |
 */
+
+// SO system
 use App\Models\Bill_Detail;
     use App\Http\Controllers\salecontroller;
     Route::get('/', [salecontroller::class, 'home'])->name('home');
@@ -36,9 +38,6 @@ use App\Models\Bill_Detail;
 Route::get('/txt', [SaleController::class, 'popup'])->name('popup');
 
 
-
-
-
 use App\Http\Controllers\admincontroller;
 Route::get('/dashboardadmin', [AdminController::class, 'dashboard'])->name('admin.dashboardadmin');
 Route::get('/history', [AdminController::class, 'history'])->name('admin.history');
@@ -47,13 +46,28 @@ Route::post('/update-status', [admincontroller::class, 'updateStatus']);
 
 
 
-
+// PO system
 use App\Http\Controllers\PoController;
+Route::get('/dashboardpo', [PoController::class, 'dashboardpo'])->name('po.dashboardpo');
 Route::get('/insertpo', [PoController::class, 'insertpo'])->name('po.insertpo');
 Route::post('/insertpo', [PoController::class, 'insertpobill'])->name('insertpo.post'); 
 Route::post('/insertpo', [PoController::class, 'insertpobill'])->name('insertpo.post');
 Route::get('/bill/{po_detail_id}', [PoController::class, 'getBillDetail'])->name('getBillDetail');
-Route::get('/dashboardpo', [PoController::class, 'dashboardpo'])->name('po.dashboardpo');
+
 
 use App\Http\Controllers\adminpocontroller;
 Route::get('/adminpo', [adminpoController::class, 'dashboard'])->name('po.adminpo');
+Route::get('/historypo', [AdminpoController::class, 'historypo'])->name('po.historypo');
+Route::post('/update-status', [adminpocontroller::class, 'updateStatus']);
+
+
+// Doc system
+use App\Http\Controllers\doccontroller;
+Route::get('/dashboarddoc', [doccontroller::class, 'dashboarddoc'])->name('document.dashboarddoc');
+Route::get('/insertdoc', [doccontroller::class, 'insertdoc'])->name('document.insertdoc'); // GET
+Route::post('/insertdoc', [doccontroller::class, 'insertdoc'])->name('document.insertdoc.post');
+
+use App\Http\Controllers\admindoccontroller;
+Route::get('/admindoc', [admindoccontroller::class, 'dashboarddoc'])->name('document.admindoc');
+Route::get('/historydoc', [admindoccontroller::class, 'historydoc'])->name('ducument.historydoc');
+Route::post('/update-status', [admindoccontroller::class, 'updateStatus']);

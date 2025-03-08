@@ -289,6 +289,17 @@
 .editButton:active {
     transform: scale(0.95); /* ย่อขนาดลงตอนกด */
 }
+.aa {
+  padding: 20px 200px;
+  border: 1px solid #ccc;      /* เส้นขอบที่เรียบง่าย */
+  background-color: #f9f9f9;     /* สีพื้นหลังอ่อนๆ */
+  border-radius: 5px;            /* มุมโค้งมน */
+  font-size: 14px;
+  color: #333;
+  max-width: 800px;              /* กำหนดความกว้างสูงสุด */
+  margin: 10px 0;                /* ระยะห่างด้านบนและด้านล่าง */
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);  /* เงาเล็กน้อย */
+}
 
         </style>
 </head>
@@ -403,6 +414,7 @@
                     <tbody id="popup-body">
                     </tbody>
                 </table>
+            
             </div>
         </div>
     </div>
@@ -441,11 +453,21 @@ function openPopup(soDetailId, so_id, customer_id, customer_address, date_of_dal
                             <td>${item.unit_price}</td>
                         </tr>
                     `);
+                    
                 });
 
-                   let existingButton = document.querySelector(".editButton");
+       // สร้าง <textarea> ใต้ข้อมูลสินค้า
+                let textarea = document.createElement('textarea');
+                textarea.rows = 4; // จำนวนแถวของ textarea
+                textarea.cols = 50; // จำนวนคอลัมน์ของ textarea
+                textarea.placeholder = "กรอกรายละเอียดเพิ่มเติม"; // คำแนะนำใน textarea
+
+                // ใส่ข้อมูลลงใน textarea (ตัวอย่างใช้ item_name จากข้อมูลแรก)
+                textarea.value = data[0].item_name; 
+
+                let existingButton = document.querySelector(".editButton");
                 if (existingButton) {
-                    existingButton.remove(); // ลบปุ่มเดิมก่อน
+                    existingButton.remove(); 
                 }
 
                 secondPopupBody.insertAdjacentHTML("afterend", `
@@ -455,9 +477,10 @@ function openPopup(soDetailId, so_id, customer_id, customer_address, date_of_dal
                         </a>
                     </div>
                 `);
-            } else {
-                secondPopupBody.innerHTML = "<tr><td colspan='4'>ไม่มีข้อมูล</td></tr>";
-            }
+                } else {
+                    secondPopupBody.innerHTML = "<tr><td colspan='4'>ไม่มีข้อมูล</td></tr>";
+                }
+
         })
         .catch(error => {
             console.error("Error fetching data:", error);

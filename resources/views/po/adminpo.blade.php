@@ -306,7 +306,7 @@
 
             <div class="button-group">
                 <button onclick="exportToExcel()">🖨 ปริ้นเอกสาร</button>
-                <button onclick="window.location.href='history'">📜 ประวัติเอกสาร</button>
+                <button onclick="window.location.href='historypo'">📜 ประวัติเอกสาร</button>
             </div>
             
             <div class="search-box">
@@ -518,14 +518,14 @@ function exportToExcel() {
     }
 }
 
-function updateStatus(soDetailIds) {
+function updateStatus(poDetailIds) {
     fetch('/update-status', {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',
             'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
         },
-        body: JSON.stringify({ soDetailIds: soDetailIds })
+        body: JSON.stringify({ poDetailIds: poDetailIds }) 
     })
     .then(response => response.json())
     .then(data => {

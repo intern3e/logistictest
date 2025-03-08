@@ -4,7 +4,7 @@
     <meta name="csrf-token" content="{{ csrf_token() }}">
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ระบบจัดเตรียมสินค้า</title>
+    <title>ระบบจัดเตรียมDoc</title>
     <style>
         body {
             font-family: 'Poppins', sans-serif;
@@ -13,7 +13,7 @@
             padding: 0;
         }
         .header {
-            background: linear-gradient(to right, #2c3e50, #4b6584);
+            background: linear-gradient(to right, #0e50ad, #3a6073);
             padding: 15px 30px;
             color: white;
             display: flex;
@@ -42,7 +42,7 @@
             padding: 20px;
             border-radius: 8px;
             box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.1);
-            width: 90%;
+            width: 100%;
             margin: auto;
         }
         .table-container {
@@ -153,7 +153,7 @@
         }
 
         .table th {
-            background: linear-gradient(to right, #2c3e50, #4b6584);
+            background-color: #e67e22;
             color: white;
             font-weight: bold;
         }
@@ -188,7 +188,7 @@
         }
 
         th {
-            background: linear-gradient(to right, #2c3e50, #4b6584);
+            background-color: #0e50ad;
             color: white;
             text-transform: uppercase;
         }
@@ -293,20 +293,20 @@
 </head>
 <body>
     <div class="header">
-        <h2>ระบบจัดเตรียมสินค้า</h2>
+        <h2>ระบบจัดเตรียมDOC</h2>
     </div>
 
     <div class="container">
         <div class="top-section">
-                <form method="GET" action="{{ route('admin.dashboardadmin') }}" class="filter-form">
-                    <label for="date">📅 วันที่:</label>
-                    <input type="date" id="date" name="date" value="{{ request('date') }}">
-                    <button type="submit">ค้นหา</button>
-                </form>
+            <form method="GET" action="{{ route('document.admindoc') }}" class="filter-form">
+                <label for="date">📅 วันที่:</label>
+                <input type="date" id="date" name="date" value="{{ request('date') }}">
+                <button type="submit">ค้นหา</button>
+            </form>
 
             <div class="button-group">
                 <button onclick="exportToExcel()">🖨 ปริ้นเอกสาร</button>
-                <button onclick="window.location.href='history'">📜 ประวัติเอกสาร</button>
+                <button onclick="window.location.href='historypo'">📜 ประวัติเอกสาร</button>
             </div>
             
             <div class="search-box">
@@ -314,11 +314,7 @@
         </div>
         
         </div>
-        
-        
-    
-
-
+  
         <div class="table-container">
             <table>
                 <thead>
@@ -326,37 +322,54 @@
                         <th>ปริ้นเอกสาร</th>
                         <th>บิลลำดับ</th>
                         <th>รหัสลูกค้า</th>
-                        <th>เบอร์ติดต่อ</th>
                         <th>ที่อยู่จัดส่ง</th>
                         <th>ละติจูด ลองจิจูด</th>
                         <th>วันที่จัดส่ง</th>
                         <th>ผู้เปิดบิล</th>
+                        <th>ประเภทขนส่ง</th>
+                        <th>สถานะการจัดส่ง</th>
                         <th>ข้อมูลสินค้า</th>
                     </tr>
                 </thead>
-                <tbody id="table-body">
-                    @foreach($bill as $item)
+                {{-- <tbody id="table-body">
+                    @foreach($pobill as $item)
                         @if($item->status == 0)
                             <tr>
                                 <td><input type="checkbox" class="form-control1" name="status[]"></td>
-                                <td>{{ $item->so_detail_id }}</td>
-                                <td>{{ $item->customer_id }}</td>
-                                <td>{{ $item->customer_tel }}</td>  
-                                <td>{{ $item->customer_address }}</td>
-                                <td>{{ $item->customer_la_long }}</td>
-                                <td>{{ \Carbon\Carbon::parse($item->date_of_dali)->format('d/m/Y') }}</td> 
+                                <td>{{ $item->po_detail_id }}</td>
+                                <td>{{ $item->store_name }}</td>
+                                <td>{{ $item->store_address }}</td>  
+                                <td>{{ $item->store_la_long }}</td>
+                                <td>{{ \Carbon\Carbon::parse($item->recvDate)->format('d/m/Y') }}</td> 
                                 <td>{{ $item->emp_name }}</td>
+                                <td>
+                                    @if($item->cartype == 1)
+                                        มอเตอร์ไซค์
+                                    @elseif($item->cartype == 2)
+                                        รถใหญ่
+                                    @else
+                                        ไม่ทราบประเภท
+                                    @endif
+                                </td>
+                                
+                                <td>
+                                    @if($item->status == 0)
+                                        กำลังดำเนินการ
+                                    @else
+                                        สำเร็จ
+                                    @endif
+                                </td>
                                 <td><a href="javascript:void(0);" 
-                                onclick="openPopup(
-                                    '{{ $item->so_detail_id }}',
-                                    '{{ $item->customer_id }}',
-                                    '{{ $item->customer_address }}',
-                                    '{{ $item->date_of_dali }}'
-                                )">
+                                    onclick="openPopup(
+                                        '{{ $item->so_detail_id }}',
+                                        '{{ $item->so_id }}',
+                                        '{{ $item->customer_id }}',
+                                        '{{ $item->customer_address }}',
+                                        '{{ \Carbon\Carbon::parse($item->date_of_dali)->format('d/m/Y') }}',
+                                        '{{ $item->sale_name}}'
+                                    )">
                                 เพิ่มเติม
                              </a></td>
-                            {{-- '{{ $item->customer ? $item->customer->customer_address : 'ไม่มีข้อมูล' }}',  --}}
-                            </tr>
                         @endif
                     @endforeach
                 </tbody>
@@ -450,7 +463,7 @@
         document.getElementById("popup").style.display = "none"; // ซ่อน Popup
     }
 
-</script>
+</script> --}}
 
 
 <script>
@@ -505,14 +518,14 @@ function exportToExcel() {
     }
 }
 
-function updateStatus(soDetailIds) {
+function updateStatus(poDetailIds) {
     fetch('/update-status', {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',
             'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
         },
-        body: JSON.stringify({ soDetailIds: soDetailIds })
+        body: JSON.stringify({ poDetailIds: poDetailIds }) 
     })
     .then(response => response.json())
     .then(data => {
@@ -544,7 +557,6 @@ function createExcelXML(data) {
     const headerRow = `<Row>
         <Cell><Data ss:Type="String">บิลลำดับ</Data></Cell>
         <Cell><Data ss:Type="String">รหัสลูกค้า</Data></Cell>
-        <Cell><Data ss:Type="String">เบอร์ติดต่อ</Data></Cell>
         <Cell><Data ss:Type="String">ที่อยู่จัดส่ง</Data></Cell>
         <Cell><Data ss:Type="String">ละติจูด ลองจิจูด</Data></Cell>
         <Cell><Data ss:Type="String">วันที่จัดส่ง</Data></Cell>
@@ -554,7 +566,7 @@ function createExcelXML(data) {
     // Adding data rows (without "เพิ่มเติม" column)
     const rows = data.reduce((acc, row) => {
     // เลือกเฉพาะคอลัมน์ที่ต้องการ (ในที่นี้คอลัมน์ที่ 2 และ 4)
-    const selectedData = [row[1], row[2], row[3], row[4], row[5], row[6], row[7]];  // เลือกคอลัมน์ที่ 2 (รหัสลูกค้า) และคอลัมน์ที่ 4 (ที่อยู่จัดส่ง)
+    const selectedData = [row[1], row[2], row[3], row[4], row[5], row[6]];  // เลือกคอลัมน์ที่ 2 (รหัสลูกค้า) และคอลัมน์ที่ 4 (ที่อยู่จัดส่ง)
 
     // แปลงข้อมูลที่เลือกให้เป็น XML
     const rowData = selectedData.map(cell => 
@@ -592,7 +604,6 @@ function searchTable() {
 
     </script>
     
-
 
 </body>
 </html>

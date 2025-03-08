@@ -24,12 +24,17 @@
 </head>
 <body>
     <div class="button-container">
+        <label>ระบบSO</label>
         <a href="loginsale" class="btn btn-primary me-2">เปิดบิล</a>  
         <a href="dashboardadmin" class="btn btn-success m-2">จัดของ</a><br>
         <hr style="border: 10px solid #000000; width: 80%; margin: 20px auto;">
+        <label>ระบบPO</label>
         <a href="dashboardpo" class="btn btn-success m-3" style="background-color: red">รับของ</a>
         <a href="adminpo" class="btn btn-success m-3" style="background-color: green">จัดรถ</a>
-        
+        <hr style="border: 10px solid #000000; width: 80%; margin: 20px auto;">
+        <label>ระบบเอกสาร</label>
+        <a href="dashboarddoc" class="btn btn-success m-3" style="background-color: red">เปิดเอกสาร</a>
+        <a href="admindoc" class="btn btn-success m-3" style="background-color: green">จัดรถ</a>
         
     </div>
 
