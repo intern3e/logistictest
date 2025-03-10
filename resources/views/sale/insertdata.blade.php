@@ -5,251 +5,258 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>เปิดบิลสินค้า</title>
     <style>
-/* General Styles */
-/* Body */
-body {
-    font-family: 'Sarabun', sans-serif;
-    background: linear-gradient(to right, #2c3e50, #597496);
-    margin: 0;
-    padding: 20px;
-    display: flex;
-    justify-content: center;
-    align-items: flex-start;
-    min-height: 100vh;
-}
+    /* Reset CSS */
+    * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            font-family: 'Arial', sans-serif;
+            background-color:rgb(233, 233, 233);
+            padding: 20px;
+        }
 
-/* กรอบครอบฟอร์ม */
-.container {
-    background: #ffffff;
-    padding: 20px;
-    border-radius: 10px;
-    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-    width: 90%;
-    max-width: 1000px; /* ปรับขนาดความกว้างสูงสุด */
-    text-align: left;
-}
+        /* Container */
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background-color:#f9f9f9 ;
+            padding: 40px;
+            border-radius: 8px;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+        }
 
-/* Header */
-.header h3 {
-    font-size: 24px;
-    color: #333;
-    margin-bottom: 20px;
-    text-align: center;
-}
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
 
-/* Label */
-label {
-    font-size: 16px;
-    font-weight: 600;
-    margin-bottom: 8px;
-    display: block;
-}
+        .header h3 {
+            font-size: 28px;
+            color: #333;
+            font-weight: 600;
+        }
 
-/* Input Fields */
-input[type="text"], input[type="number"], input[type="date"], input[type="hidden"] {
-    width: 95%;
-    padding: 10px;
-    margin-bottom: 15px;
-    background: #f0f4f8;
-    border: 1px solid #333;
-    border-radius: 4px;
-    font-size: 14px;
-}
+        .form-label {
+        font-weight: 600;
+        margin-bottom: 10px;
+        display: block;
+        text-align: left; /* ทำให้ชิดซ้าย */
+    }
 
-/* Table Styles */
-.table {
-    width: 100%;
-    margin-top: 20px;
-    border-collapse: collapse;
-}
 
-.table th, .table td {
-    padding: 12px;
-    text-align: center;
-    border: 1px solid #ddd;
-}
+        /* Form Styling */
+        input[type="text"], input[type="number"], input[type="date"], input[type="hidden"], textarea {
+            width: 100%;
+            padding: 12px;
+            border-radius: 8px;
+            border: 1px solid #ddd;
+            margin-bottom: 20px;
+            font-size: 16px;
+            color: #333;
+        }
 
-.table th {
-    background-color: #f0f4f8;
-}
+        /* Table Styling */
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 30px;
+        }
 
-/* Buttons */
-button {
-    padding: 10px 20px;
-    font-size: 16px;
-    border-radius: 4px;
-    cursor: pointer;
-    border: none;
-}
+        th, td {
+            padding: 12px;
+            text-align: center;
+            border: 1px solid #ddd;
+        }
 
-.btn-search {
-    background-color: #4CAF50;
-    color: #fff;
-}
+        th {
+            background-color:#0071e3;
+            font-weight: bold;
+            color: #fff;
+        }
 
-.btn-search:hover {
-    background-color: #45a049;
-}
+        .btn-search, .btn-custom, .btn-danger, .btn-success {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+            
+        }
 
-.btn-danger {
-    background-color: #f44336;
-    color: white;
-}
+        .btn-search {
+            background-color: #0071e3;
+            color: #fff;
+        }
 
-.btn-danger:hover {
-    background-color: #e53935;
-}
+        .btn-search:hover {
+            background-color: #005bb5;
+        }
 
-.btn-success {
-    background-color: #4CAF50;
-    color: white;
-}
+        .btn-custom {
+            background-color: #ff6f61;
+            color: white;
+        }
 
-.btn-success:hover {
-    background-color: #45a049;
-}
+        .btn-custom:hover {
+            background-color: #e85a50;
+        }
 
-/* Google Maps iframe */
-#mapFrame {
-    border: 0;
-    border-radius: 8px;
-    width: 100%;
-    height: 300px;
-}
-
-/* Checkbox Styles */
-input[type="checkbox"] {
-    margin-right: 10px;
-}
-
-/* Table Input Fields */
-.form-control1 {
-    width: 100%;
-    padding: 8px;
-    border-radius: 4px;
-    border: 1px solid #ddd;
-}
-
-/* Additional Styles */
-.mb-3 {
-    margin-bottom: 20px;
-}
-
-.text-dark {
-    color: #333;
-}
-/* ปรับให้ label, input และปุ่มอยู่ในบรรทัดเดียวกัน */
-.lat-long-container {
-    display: flex;
-    align-items: center;
-    gap: 10px; /* ระยะห่างระหว่าง input และปุ่ม */
-}
-
-/* ปรับขนาด input ให้พอดีกับพื้นที่ */
-.lat-long-container input {
-    flex: 1; /* ให้ input ยืดตามพื้นที่ที่เหลือ */
-    padding: 10px;
-    border: 1px solid #333;
-    border-radius: 4px;
-}
-
-/* ปรับขนาดปุ่มให้ไม่กินพื้นที่เกินไป */
-.lat-long-container .btn-custom {
-    white-space: nowrap; /* ป้องกันข้อความขึ้นบรรทัดใหม่ */
-    padding: 10px 15px;
-}
-.btn-custom{
-    background-color: #f39c12;
-    color: #fff;
-}
-.btn-custom:hover {
-    background-color: #e67e22;
-}
-.btn-custom:hover{
+        .btn-danger {
             background-color: #e74c3c;
             color: white;
-            box-shadow: 0px 4px 6px rgba(0, 0, 0, 0.2);
         }
-/* ปรับช่องกรอกข้อมูลในตาราง */
-.form-control1 {
-    width: 100%;
-    padding: 8px;
-    border-radius: 5px;
-    border: 1px solid #ccc;
-    font-size: 14px;
-    text-align: center;
-    background: #f9f9f9; /* เปลี่ยนพื้นหลังให้อ่อนขึ้น */
-    transition: all 0.3s ease;
+
+        .btn-danger:hover {
+            background-color: #c0392b;
+        }
+
+        .btn-success {
+            background-color: #2ecc71;
+            color: white;
+            
+        }
+
+        .btn-success:hover {
+            background-color: #27ae60;
+        }
+
+        .checkbox-container {
+            margin-top: 20px;
+            display: flex;
+            justify-content: space-between;
+        }
+
+        .checkbox-container label {
+            font-size: 16px;
+        }
+
+        .lat-long-container {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .lat-long-container input {
+            width: 80%;
+        }
+
+        #mapFrame {
+            width: 100%;
+            height: 300px;
+            border: none;
+            border-radius: 8px;
+        }
+.input-container {
+    display: flex;
+    flex-wrap: wrap; /* ให้สามารถย้ายไปบรรทัดใหม่เมื่อไม่มีที่ว่าง */
+    gap: 65px; /* ช่องว่างระหว่าง input */
+    
 }
 
-/* เปลี่ยนสีเส้นขอบเมื่อโฟกัส */
-.form-control1:focus {
-    border-color: #4CAF50;
-    box-shadow: 0 0 5px rgba(76, 175, 80, 0.5);
-    background: #fff;
+.input-container label {
+    width: 30%; /* ขนาดของ label */
+    display: inline-block;
+    margin-bottom: 10px;
 }
-/* จัดตำแหน่ง checkbox และปุ่มให้อยู่ชิดขวา */
-.checkbox-container {
+
+.input-container input {
+    width: 68%; /* ขนาดของ input */
+    padding: 10px;
+    font-size: 16px;
+    margin-bottom: 10px;
+}
+.input-container1 {
+    display: flex;
+    margin-left:-4% ;
+    flex-direction: column; /* จัดให้อยู่เป็นแนวตั้ง */
+}
+
+.input-container1 div {
     display: flex;
     align-items: center;
-    justify-content: flex-end; /* ชิดขวา */
-    gap: 15px; /* ระยะห่างระหว่าง checkbox กับปุ่ม */
-    margin-top: 10px;
+    gap: 10px; /* ระยะห่างระหว่าง label กับ input */
 }
 
-/* ปรับระยะห่างของ checkbox */
-.checkbox-container label {
-    display: flex;
-    align-items: center;
-    font-size: 16px;
+.input-container1 label {
+    width: 120px; /* ปรับให้ label มีขนาดเท่ากัน */
+    text-align: right;
 }
 
-.insert-btn {
-    background-color: #2196F3; /* สีฟ้า */
-    color: white; /* สีข้อความ */
-    border: none;
-}
-
-.insert-btn:hover {
-    background-color: #1976D2; /* สีฟ้าเข้มเมื่อโฮเวอร์ */
-}
-/* ปรับขนาดและสไตล์ของกล่องข้อความ */
-textarea {
-    width: 95%;
+.input-container1 input {
+    width: 77%;
     padding: 10px;
-    border: 1px solid #060505;
-    border-radius: 4px;
-    font-size: 14px;
-    resize: vertical; /* ให้ปรับขนาดสูง-ต่ำได้ */
-    min-height: 100px;
-}
-/* เปลี่ยนสีพื้นหลังและข้อความของหัวตาราง */
-.table thead th {
-    background: linear-gradient(to right, #2c3e50, #4b6584);
-    color: white; /* สีตัวอักษร */
     font-size: 16px;
-    padding: 10px;
-    text-align: center;
-}
-/* เปลี่ยนขนาดและสีของปุ่ม "เปิดบิล" */
-#submitBill {
-    background-color: #28a745; /* สีเขียว */
-    color: white; /* สีข้อความ */
-    padding: 15px 300px; /* ขนาดของปุ่ม */
-    font-size: 18px; /* ขนาดฟอนต์ */
-    border-radius: 5px; /* มุมปุ่มโค้ง */
-    border: none; /* ไม่ให้ขอบ */
-    cursor: pointer;
-    margin-left: 15%;
-    margin-top:10px ;
+    box-sizing: border-box; /* ทำให้ padding ไม่ทำให้ขนาด input เปลี่ยน */
 }
 
+    .lat-long-container{
+        display: flex;
+        align-items: center;  /* จัดให้อยู่กึ่งกลางแนวตั้ง */
+        gap: 10px;  /* ระยะห่างระหว่างองค์ประกอบ */
+        width: 75%;
+    }
 
-/* เมื่อโฮเวอร์ (เอาเมาส์ไปวาง) เปลี่ยนสี */
-#submitBill:hover {
-    background-color: #218838; /* สีเขียวเข้ม */
-}
+    .lat-long-container label {
+        white-space: nowrap; /* ป้องกันข้อความขึ้นบรรทัดใหม่ */
+        font-weight: bold;
+        font-size: 16px;
+    }
 
+    .lat-long-container input {
+        flex: 1; /* ทำให้ input ขยายตัวเพื่อให้มีขนาดพอดีกับพื้นที่ */
+        padding: 10px;
+        font-size: 16px;
+        border: 1px solid #ccc;
+        border-radius: 5px;
+        min-width: 200px; /* ป้องกัน input หดเกินไป */
+    }
+
+    .btn-custom {
+        flex: 1; /* ทำให้ปุ่มมีขนาดเท่ากับ input */
+        background-color: #007bff;
+        color: white;
+        border: none;
+        font-size: 14px;
+        border-radius: 5px;
+        cursor: pointer;
+        transition: 0.3s;
+        text-align: center;
+        width: 250px;
+        height: 50px;
+    }
+
+    .btn-custom:hover {
+        background-color: #0056b3;
+    }
+
+        /* Responsive Design */
+        @media (max-width: 768px) {
+            .container {
+                padding: 20px;
+            }
+
+            .header h3 {
+                font-size: 24px;
+            }
+
+            .form-label {
+                font-size: 14px;
+            }
+
+            input, textarea {
+                font-size: 14px;
+            }
+
+            table {
+                font-size: 14px;
+            }
+
+            .checkbox-container {
+                flex-direction: column;
+            }
+        }
 
     </style>
 </head>
@@ -261,7 +268,7 @@ textarea {
         <label class="form-label">เลขที่ SO :</label>
         <form id="soSearchForm">
             <div style="display: flex; justify-content: space-between;">
-                <input type="text" class="form-control" id="so_number" name="so_number" style="width: 83%;" required>
+                <input type="text" class="form-control" id="so_number" name="so_number" style="width: 90% ;" required>
                 <button type="submit" class="btn-search" style="width: 14%; height: 45px;">🔍 ค้นหา</button>
             </div>
         </form>
@@ -269,30 +276,50 @@ textarea {
 
     <form id="billForm">
 
-        <input type="hidden" name="so_id" id="so_id" value="">
+            <input type="hidden" name="so_id" id="so_id" value="">
+    <div class="input-container">
+    <div>
+        <label>ผู้เปิดบิล :</label>
+        <input type="text" id="emp_name" name="emp_name" value="{{ session('emp_name', 'Guest') }}">
+    </div>
 
-            <label>ผู้เปิดบิล :</label>
-            <input type="text" id="emp_name" name="emp_name" value="{{ session('emp_name', 'Guest') }}"> 
-            
-            <label>ผู้ขาย :</label>
-            <input type="text" id="sale_name" name="sale_name">          
+    <div>
+        <label>ผู้ขาย :</label>
+        <input type="text" id="sale_name" name="sale_name">
+    </div>
 
-            <label>รหัสลูกค้า :</label>
-            <input type="text" id="customer_id" name="customer_id" readonly>
+    <div>
+        <label>รหัสลูกค้า :</label>
+        <input type="text" id="customer_id" name="customer_id" readonly>
+    </div>
+</div>
+<div class="input-container1">
+    <div>
+        <label>ชื่อบริษัท :</label>
+        <input type="text" id="customer_name" name="customer_name" readonly>
+    </div>
 
-            <label>ชื่อบริษัท :</label>
-            <input type="text" id="customer_name" name="customer_name" readonly>
+    <div>
+        <label>เบอร์ติดต่อ :</label>
+        <input type="text" id="customer_tel" name="customer_tel">
+    </div>
 
-            <label>เบอร์ติดต่อ :</label>
-            <input type="text" id="customer_tel" name="customer_tel" >
+    <div>
+    <label for="customer_address">(PDF) :</label>
+    <input type="file" id="customer_address" name="customer_address" accept=".pdf">
+   </div>
+   <br>
 
-            <label>ที่อยู่จัดส่ง :</label>
-            <input type="text" id="customer_address" name="customer_address" >
-            <label >ละติจูด ลองจิจูด :</label>
-            <div class="lat-long-container">
-                <input type="text" id="customer_la_long" name="customer_la_long">
-                <button type="button" class="btn-custom" onclick="openGoogleMaps()">Google Maps</button>
-            </div>
+</div>
+    <div class="form-label">
+    <div>
+        <label>ที่อยู่จัดส่ง :</label>
+        <input type="text" id="customer_address" name="customer_address "style="width: 75%">
+    </div>
+    <label>ละติจูด ลองจิจูด :</label>
+        <div style="display: flex; justify-content: space-between; width: 90%;" >
+            <input type="text" id="customer_la_long" name="customer_la_long">
+            <button type="button" class="btn-custom" onclick="openGoogleMaps()">Google Maps</button>
         </div>
 
         <div class="mb-3">
@@ -304,19 +331,21 @@ textarea {
             function updateMap() {
                 let coords = document.getElementById('customer_la_long').value;
                 if (coords) {
-                    document.getElementById('mapFrame').src = `https://www.google.com/maps?q=${coords}&output=embed`;
+                    document.getElementById('mapFrame').src =;`https://www.google.com/maps?q=${coords}&output=embed`;
                 }
             }
+ 
             document.getElementById('customer_la_long').addEventListener('input', updateMap);
             updateMap();
         </script>
+
             <label>วันกำหนดส่ง</label>
             <input type="text" id="date_of_dali" name="date_of_dali" readonly>
             
         
                         <table class="table table-bordered table-striped">
                             <thead>
-                            <tr>
+                            <tr class="">
                                 <th>เลือกจัดส่ง</th>
                                 <th>รหัสสินค้า</th>
                                 <th>รายการ</th>
@@ -344,7 +373,7 @@ textarea {
                             <label>
                                 <input type="checkbox" name="checkall"> เลือกทั้งหมด
                             </label>
-                            <button type="button" class="btn btn-danger insert-btn">เพิ่มสินค้า</button>
+                            <button type="button" class="btn btn-success insert-btn">เพิ่มสินค้า</button>
                         </div>
                         
 
@@ -353,7 +382,12 @@ textarea {
                         <textarea id="additional_notes" name="additional_notes" rows="4"></textarea>
                         
 
-            <button type="button" id="submitBill" class="btn btn-success"> เปิดบิล</button>
+                        <div style="display: flex; justify-content: center; margin-top: 20px;">
+                      <button type="button" id="submitBill" class="btn btn-success" 
+                      style="font-size: 18px; padding: 15px 30px; width: 200px; height: 50px;">
+                         เปิดบิล
+                    </button>
+</div>
 
     </form>
 </div>
@@ -387,11 +421,11 @@ textarea {
                     let itemStatus = row.querySelector('input[name="status[]"]').checked ? 1 : 0;
 
                     // เก็บค่าลงใน FormData
-                    formData.append(`item_id[${index}]`, itemId);
-                    formData.append(`item_name[${index}]`, itemName);
-                    formData.append(`item_quantity[${index}]`, itemQuantity);
-                    formData.append(`item_unit_price[${index}]`, itemUnitPrice);
-                    formData.append(`status[${index}]`, itemStatus);
+                    formData.append(item_id[${index}], itemId);
+                    formData.append(item_name[${index}], itemName);
+                    formData.append(item_quantity[${index}], itemQuantity);
+                    formData.append(item_unit_price[${index}], itemUnitPrice);
+                    formData.append(status[${index}], itemStatus);
                 });
 
                 // ส่งข้อมูลไปยัง Controller Laravel
@@ -512,34 +546,34 @@ textarea {
 
     {{-- api --}}
     <script>
-            document.getElementById("soSearchForm").addEventListener("submit", async function(event) {
+        document.getElementById("soSearchForm").addEventListener("submit", async function(event) {
             event.preventDefault();
             let soNumber = document.getElementById("so_number").value.trim();
             if (!soNumber) {
                 alert("กรุณากรอกเลขที่ SO");
                 return;
             }
-
+    
             try {
                 let response = await fetch(`http://server_update:8000/api/getSOHD?SONum=SO${soNumber}`);
-
+    
                 if (!response.ok) {
                     throw new Error("เกิดข้อผิดพลาดในการโหลดข้อมูล");
                 }
-
+    
                 let data = await response.json();
-                console.log("API Response:", data); // ตรวจสอบข้อมูล API
-
-                if (!data || data.length === 0 || !data[0].CustID) {
+                console.log("API Response:", data); // ตรวจสอบข้อมูล API 
+    
+                if (!Array.isArray(data) || data.length === 0 || !data[0].CustID) {
                     alert("ไม่พบข้อมูลที่ตรงกับเลขที่ SO นี้");
                     return;
                 }
-
+    
                 // กำหนดค่าลงในฟอร์ม
                 document.getElementById("customer_id").value = data[0].CustID || 'ไม่พบข้อมูล';
                 document.getElementById("customer_name").value = data[0].CustName || 'ไม่พบข้อมูล';
-
-                // Format the ShipDate to "วันเดือนปี"
+    
+                // Format the ShipDate to "วัน-เดือน-ปี"
                 let shipDate = data[0].ShipDate;
                 if (shipDate) {
                     let formattedDate = new Date(shipDate);
@@ -548,19 +582,19 @@ textarea {
                     let year = formattedDate.getFullYear();
                     document.getElementById("date_of_dali").value = `${day}-${month}-${year}`;
                 }
-
+    
                 // กำหนดค่าให้ฟิลด์ so_id
                 document.getElementById("so_id").value = data[0].SONum || '';
-
+    
             } catch (error) {
                 console.error('Error fetching data:', error);
-                alert('เกิดข้อผิดพลาดในการดึงข้อมูล');
+                alert('เกิดข้อผิดพลาดในการดึงข้อมูล');        
             }
         });
     </script>
-
-
+    
 
 
 </body>
 </html>
+ 

@@ -64,10 +64,20 @@ Route::post('/update-status', [adminpocontroller::class, 'updateStatus']);
 // Doc system
 use App\Http\Controllers\doccontroller;
 Route::get('/dashboarddoc', [doccontroller::class, 'dashboarddoc'])->name('document.dashboarddoc');
-Route::get('/insertdoc', [doccontroller::class, 'insertdoc'])->name('document.insertdoc'); // GET
-Route::post('/insertdoc', [doccontroller::class, 'insertdoc'])->name('document.insertdoc.post');
+Route::get('/insertdoc', [doccontroller::class, 'insertdoc'])->name('document.insertdoc');
+Route::post('/insertdocu', [DocController::class, 'insertDocu'])->name('insertdocu.post');
+
+
+
 
 use App\Http\Controllers\admindoccontroller;
 Route::get('/admindoc', [admindoccontroller::class, 'dashboarddoc'])->name('document.admindoc');
 Route::get('/historydoc', [admindoccontroller::class, 'historydoc'])->name('ducument.historydoc');
 Route::post('/update-status', [admindoccontroller::class, 'updateStatus']);
+
+
+
+//test 
+use App\Http\Controllers\text;
+Route::get('/txt1', [text::class, 'txt1'])->name('txt1');
+Route::get('/txt2', [text::class, 'txt2'])->name('txt2');

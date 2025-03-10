@@ -270,6 +270,22 @@ textarea {
     <form id="billForm">
 
         <input type="hidden" name="so_id" id="so_id" value="">
+        <input type="hidden" name="doc_id" id="doc_id" value="">
+        
+        <script>
+            document.getElementById('so_id').addEventListener('change', function() {
+                var soIdValue = this.value; // รับค่าจาก input#so_id
+                document.getElementById('doc_id').value = soIdValue; // ตั้งค่าของ doc_id ให้เหมือนกับ so_id
+            });
+        </script>
+
+        <label for="cartype" >ประเภทบิล</label>
+                        <select id="doctype" name="doctype" required>
+                            <option value="0" disabled selected>-- เลือกประเภทบิล --</option>
+                            <option value="1">ชั่วคราว</option>
+                            <option value="2">ถาวร</option>
+                        </select>
+                        
 
             <label>ผู้เปิดบิล :</label>
             <input type="text" id="emp_name" name="emp_name" value="{{ session('emp_name', 'Guest') }}"> 
@@ -312,44 +328,8 @@ textarea {
         </script>
             <label>วันกำหนดส่ง</label>
             <input type="text" id="date_of_dali" name="date_of_dali" readonly>
-            
-        
-                        <table class="table table-bordered table-striped">
-                            <thead>
-                            <tr>
-                                <th>เลือกจัดส่ง</th>
-                                <th>รหัสสินค้า</th>
-                                <th>รายการ</th>
-                                <th>จำนวน</th>
-                                <th>ราคา/หน่วย</th>
-                                <th>ลบ</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <tr> 
-                                <td><input type="checkbox" class="form-control1" name="status[]"></td>
-                                <td><input type="text" class="form-control1" name="item_id[]"></td>
-                                <td><input type="text" class="form-control1" name="item_name[]" ></td>
-                                <td>
-                                    <input type="number" class="form-control1 item_quantity" name="item_quantity[]" >
-                                </td>
-                                <td>
-                                    <input type="number" class="form-control1 item_unit_price" name="item_unit_price[]" >
-                                </td>
-                                <td><button type="button" class="btn btn-danger delete-btn">ลบ</button></td>
-                            </tr>
-                        </tbody>
-                        </table>
-                        <div class="checkbox-container">
-                            <label>
-                                <input type="checkbox" name="checkall"> เลือกทั้งหมด
-                            </label>
-                            <button type="button" class="btn btn-danger insert-btn">เพิ่มสินค้า</button>
-                        </div>
-                        
 
-                        
-                        <label for="additional_notes">แจ้งเพิ่มเติม</label>
+                        <label for="additional_notes">หมายเหตุ</label>
                         <textarea id="additional_notes" name="additional_notes" rows="4"></textarea>
                         
 
@@ -396,7 +376,7 @@ textarea {
 
                 // ส่งข้อมูลไปยัง Controller Laravel
                 try {
-                    let response = await fetch('{{ route("insert.post") }}', {
+                    let response = await fetch('{{ route("insertdocu.post") }}', {
                         method: 'POST',
                         body: formData,
                         headers: {
@@ -407,7 +387,7 @@ textarea {
                     let data = await response.json();
                     if (data.success) {
                         alert(data.success);
-                        window.location.href = '/dashboard';
+                        window.location.href = '/dashboarddoc';
                     } else if (data.error) {
                         alert(data.error);
                     }
@@ -480,18 +460,18 @@ textarea {
                 // หากผู้ใช้กดตกลง
                 let formData = new FormData(document.getElementById('billForm')); // เก็บข้อมูลฟอร์ม
 
-                fetch('{{ route("insert.post") }}', { // ส่งข้อมูลฟอร์มไปยังเส้นทาง insert.post
+                fetch('{{ route("insertdocu.post") }}', { // ส่งข้อมูลฟอร์มไปยังเส้นทาง insert.post
                     method: 'POST',
                     body: formData,
                     headers: {
-                        'X-CSRF-TOKEN': '{{ csrf_token() }}', // ส่ง CSRF Token
+                        'X-CSRF-TOKEN': '{{ csrf_token() }}', // ส่ง CSRF Tsoken
                     },
                 })
                 .then(response => response.json())
                 .then(data => {
                     if (data.success) {
                         alert(data.success); // แจ้งเตือนสำเร็จ
-                        window.location.href = '/dashboard'; // เปลี่ยนเส้นทางไปยังหน้า dashboard
+                        window.location.href = '/dashboarddoc'; // เปลี่ยนเส้นทางไปยังหน้า dashboard
                     } else if (data.error) {
                         alert(data.error); // แจ้งเตือนข้อผิดพลาด
                     }
@@ -511,7 +491,7 @@ textarea {
     </script>
 
     {{-- api --}}
-    {{-- <script>
+   <script>
             document.getElementById("soSearchForm").addEventListener("submit", async function(event) {
             event.preventDefault();
             let soNumber = document.getElementById("so_number").value.trim();
@@ -557,10 +537,11 @@ textarea {
                 alert('เกิดข้อผิดพลาดในการดึงข้อมูล');
             }
         });
-    </script> --}}
-
-
-
+    </script>
 
 </body>
 </html>
+
+
+
+

@@ -297,6 +297,16 @@
     </div>
 
     <div class="container">
+        <label for="cartype">🚗 ประเภทรถ:</label>
+        <select id="cartype" onchange="filterTable()">
+            <option value="">ทั้งหมด</option>
+            <option value="1">รถมอเตอร์ไซค์</option>
+            <option value="2">รถใหญ่</option>
+        </select>
+         </div>
+
+
+    <div class="container">
         <div class="top-section">
             <form method="GET" action="{{ route('po.adminpo') }}" class="filter-form">
                 <label for="date">📅 วันที่:</label>
@@ -462,6 +472,30 @@
     function closePopup() {
         document.getElementById("popup").style.display = "none"; // ซ่อน Popup
     }
+    function filterTable() {
+    let selectedType = document.getElementById("cartype").value; // รับค่าจาก dropdown
+    let table = document.getElementById("table-body");
+    let rows = table.getElementsByTagName("tr");
+
+    for (let i = 0; i < rows.length; i++) {
+        let typeCell = rows[i].getElementsByTagName("td")[7]; // เปลี่ยน index ให้ตรงกับ "ประเภทขนส่ง"
+        if (typeCell) {
+            let typeText = typeCell.textContent.trim(); // ดึงค่าจาก <td>
+
+            // แปลงค่า text เป็นค่าของ dropdown
+            let typeValue = "";
+            if (typeText === "มอเตอร์ไซค์") typeValue = "1";
+            if (typeText === "รถใหญ่") typeValue = "2";
+
+            // เช็คเงื่อนไขการกรอง
+            if (selectedType === "" || typeValue === selectedType) {
+                rows[i].style.display = ""; // แสดงแถว
+            } else {
+                rows[i].style.display = "none"; // ซ่อนแถว
+            }
+        }
+    }
+}
 
 </script>
 

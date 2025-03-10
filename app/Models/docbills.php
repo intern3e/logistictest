@@ -10,4 +10,5 @@ class Docbills extends Model // เปลี่ยนจาก docbills -> Docbi
     use HasFactory;
 
     protected $table = 'docbills'; // ระบุชื่อตารางในฐานข้อมูล
+    public $timestamps = false;
 }

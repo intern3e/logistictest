@@ -19,10 +19,11 @@ return new class extends Migration
             $table->string('customer_address');
             $table->string('customer_la_long');
             $table->string('date_of_dali');
-            $table->string('so_detail_id');
+            $table->string('doc_detail_id');
             $table->string('emp_name');
             $table->string('sale_name');
             $table->text('notes');
+            
         });
     }
 
