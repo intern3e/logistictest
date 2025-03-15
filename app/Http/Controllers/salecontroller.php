@@ -12,6 +12,7 @@ use Illuminate\Support\Facades\Log;
 use App\Models\BillDetail;
 use function Laravel\Prompts\alert;
 use function Laravel\Prompts\table;
+use Illuminate\Support\Facades\Storage;
 
 class salecontroller extends Controller
 {
@@ -115,7 +116,7 @@ public function showForm()
 //         // ตรวจสอบว่าพบข้อมูลลูกค้าหรือไม่
 //         if ($customer) {
 //             $customer_name = $customer->customer_name;
-//             $customer_tel = $customer->customer_tel;
+//             $customer_tel = $customer->customer_tel; 
 //             $customer_address = $customer->customer_address;
 //             $customer_la_long = $customer->customer_la_long;
 //         } else {
@@ -148,12 +149,13 @@ public function showForm()
 // }
 
 public function insert(Request $request)
-    {
+{
     DB::beginTransaction();
     try {
         $request->validate([
             'so_id' => 'required|string|max:255',
             'customer_id' => 'required|string|max:255',
+            'customer_tel' => 'nullable|string|max:255',
             'customer_address' => 'required|string|max:255',
             'customer_la_long' => 'required|string|max:255',
             'emp_name' => 'required|string|max:255',
@@ -168,9 +170,18 @@ public function insert(Request $request)
             'item_quantity.*' => 'integer|min:1',
             'item_unit_price' => 'required|array',
             'item_unit_price.*' => 'numeric|min:0',
-            'status' => 'required|array', 
+            'status' => 'nullable|array',  // อัปเดตเป็น nullable ป้องกัน error
+            'po_document' => 'nullable|mimes:pdf|max:10240',  // PDF file validation
         ]);
 
+        // **🔹 File Upload for PDF**
+        $pdfFilePath = null;
+        if ($request->hasFile('po_document')) {
+            $pdfFile = $request->file('po_document');
+            $pdfFilePath = $pdfFile->store('po_documents', 'public');
+        }
+
+        // **🔹 Insert into Bills**
         $bill = new Bill();
         $bill->so_id = $request->input('so_id');
         $bill->status = 0;
@@ -182,6 +193,7 @@ public function insert(Request $request)
         $bill->date_of_dali = $request->input('date_of_dali');
         $bill->emp_name = $request->input('emp_name');
         $bill->sale_name = $request->input('sale_name');
+        $bill->po_document_path = $pdfFilePath;
         $bill->save();
 
         $so_detail_id = $bill->id;
@@ -189,9 +201,13 @@ public function insert(Request $request)
         $item_names = $request->input('item_name');
         $item_quantities = $request->input('item_quantity');
         $item_unit_prices = $request->input('item_unit_price');
-        $status_checked = $request->input('status', []);
+        $status_checked = $request->input('status', []);  // **🔹 แก้เป็นค่าเริ่มต้น array**
 
-        foreach ($status_checked as $index => $value) {
+        // **🔹 Insert into Bill Details**
+        foreach ($item_ids as $index => $item_id) {
+            if (!isset($status_checked[$index])) {
+                continue;  // ข้ามถ้าผู้ใช้ไม่ได้ติ๊กเลือก
+            }
             $bill_detail = new Bill_detail();
             $bill_detail->so_detail_id = $so_detail_id;
             $bill_detail->so_id = $request->input('so_id');
@@ -202,14 +218,18 @@ public function insert(Request $request)
             $bill_detail->save();
         }
 
-        DB::commit();
-        return response()->json(['success' => 'เปิดบิลสำเร็จ']);
+        $documentUrl = $pdfFilePath ? Storage::url($pdfFilePath) : null;
 
+        DB::commit();
+        return response()->json(['success' => 'เปิดบิลสำเร็จ', 'pdf_url' => $documentUrl]);
     } catch (\Exception $e) {
         DB::rollBack();
+        // Log the error to help debugging
+        Log::error($e->getMessage());
         return response()->json(['error' => 'เกิดข้อผิดพลาด: ' . $e->getMessage()], 500);
     }
-    }
+}
+
 
 public function insertPost(Request $request) {
     $so_id = $request->input('so_id');

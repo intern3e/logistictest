@@ -8,10 +8,14 @@ class text extends Controller
 {
     public function txt1(Request $request)
     {
-        return view('txt');
+        return view('SOlist');
     }
     public function txt2()
     {
-        return view('txt2');
+        return view('insertSO');
+    }
+    public function txt3()
+    {
+        return view('adminSO');
     }
 }

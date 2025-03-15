@@ -230,6 +230,93 @@
     .btn-custom:hover {
         background-color: #0056b3;
     }
+    #preview {
+            display: flex;
+            gap: 10px;
+            margin-top: 10px;
+            flex-wrap: wrap;
+        }
+        .file-preview {
+            width: 100px;
+            height: 140px;
+            border: 1px solid #ccc;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            font-size: 12px;
+            text-align: center;
+            padding: 5px;
+            background: #f9f9f9;
+            position: relative;
+        }
+        .file-preview img {
+            width: 50px;
+            height: 50px;
+        }
+        .remove-btn {
+            position: absolute;
+            top: 5px;
+            right: 5px;
+            background: red;
+            color: white;
+            border: none;
+            border-radius: 50%;
+            width: 20px;
+            height: 20px;
+            cursor: pointer;
+            font-size: 14px;
+            line-height: 16px;
+            text-align: center;
+        }
+        #error-message {
+            color: red;
+            margin-top: 5px;
+        }
+        .file-preview {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        margin-top: 5px;
+        border: 1px solid #ccc;
+        padding: 5px;
+        border-radius: 5px;
+        width: fit-content;
+    }
+
+    .remove-btn {
+        background: red;
+        color: white;
+        border: none;
+        cursor: pointer;
+        padding: 5px;
+        border-radius: 50%;
+    }
+    .file-preview {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        margin-top: 5px;
+        border: 1px solid #ccc;
+        padding: 5px;
+        border-radius: 5px;
+        width: fit-content;
+    }
+
+    .remove-btn {
+        background: red;
+        color: white;
+        border: none;
+        cursor: pointer;
+        padding: 5px;
+        border-radius: 50%;
+    }
+
+    a {
+        color: blue;
+        text-decoration: underline;
+        cursor: pointer;
+    }
 
         /* Responsive Design */
         @media (max-width: 768px) {
@@ -269,125 +356,128 @@
         <form id="soSearchForm">
             <div style="display: flex; justify-content: space-between;">
                 <input type="text" class="form-control" id="so_number" name="so_number" style="width: 90% ;" required>
-                <button type="submit" class="btn-search" style="width: 14%; height: 45px;">🔍 ค้นหา</button>
             </div>
         </form>
     </div>
 
     <form id="billForm">
 
-            <input type="hidden" name="so_id" id="so_id" value="">
-    <div class="input-container">
-    <div>
-        <label>ผู้เปิดบิล :</label>
-        <input type="text" id="emp_name" name="emp_name" value="{{ session('emp_name', 'Guest') }}">
-    </div>
+                <input type="hidden" name="so_id" id="so_id" value="">
+                <div class="input-container">
+                <div>
+                    <label>ผู้เปิดบิล :</label>
+                    <input type="text" id="emp_name" name="emp_name" value="{{ session('emp_name', 'Guest') }}">
+                </div>
 
-    <div>
-        <label>ผู้ขาย :</label>
-        <input type="text" id="sale_name" name="sale_name">
-    </div>
+                <div>
+                    <label>ผู้ขาย :</label>
+                    <input type="text" id="sale_name" name="sale_name">
+                </div>
 
-    <div>
-        <label>รหัสลูกค้า :</label>
-        <input type="text" id="customer_id" name="customer_id" readonly>
-    </div>
-</div>
-<div class="input-container1">
-    <div>
-        <label>ชื่อบริษัท :</label>
-        <input type="text" id="customer_name" name="customer_name" readonly>
-    </div>
+                <div>
+                    <label>รหัสลูกค้า :</label>
+                    <input type="text" id="customer_id" name="customer_id" readonly>
+                </div>
+            </div>
+            <div class="input-container1">
+                <div>
+                    <label>ชื่อบริษัท :</label>
+                    <input type="text" id="customer_name" name="customer_name" readonly>
+                </div>
 
-    <div>
-        <label>เบอร์ติดต่อ :</label>
-        <input type="text" id="customer_tel" name="customer_tel">
-    </div>
+                <div>
+                    <label>เบอร์ติดต่อ :</label>
+                    <input type="text" id="customer_tel" name="customer_tel">
+                </div>
 
-    <div>
-    <label for="customer_address">(PDF) :</label>
-    <input type="file" id="customer_address" name="customer_address" accept=".pdf">
-   </div>
-   <br>
+                <div>
+                    <label for="po_document">อัปโหลดไฟล์ PDF :</label>
+                    <input type="file" id="po_document" name="po_document" accept=".pdf" multiple>
+                    <p id="error-message" style="color: red;"></p>
+                </div>
+                <div id="preview"></div>
+                
+            <br>
 
-</div>
-    <div class="form-label">
-    <div>
-        <label>ที่อยู่จัดส่ง :</label>
-        <input type="text" id="customer_address" name="customer_address "style="width: 75%">
-    </div>
-    <label>ละติจูด ลองจิจูด :</label>
-        <div style="display: flex; justify-content: space-between; width: 90%;" >
-            <input type="text" id="customer_la_long" name="customer_la_long">
-            <button type="button" class="btn-custom" onclick="openGoogleMaps()">Google Maps</button>
-        </div>
+            </div>
+                <div class="form-label">
+                <div>
+                    <label>ที่อยู่จัดส่ง :</label>
+                    <input type="text" id="customer_address" name="customer_address"style="width: 75%">
+                </div>
+                
+                <label>ละติจูด ลองจิจูด :</label>
+                    <div style="display: flex; justify-content: space-between; width: 90%;" >
+                        <input type="text" id="customer_la_long" name="customer_la_long">
+                        <button type="button" class="btn-custom" onclick="openGoogleMaps()">Google Maps</button>
+                    </div>
 
-        <div class="mb-3">
-            <label class="form-label">แผนที่ :</label>
-            <iframe id="mapFrame" width="100%" height="300" style="border:0;" allowfullscreen="" loading="lazy"></iframe>
-        </div>
-        {{-- map --}}
-        <script>
-            function updateMap() {
-                let coords = document.getElementById('customer_la_long').value;
-                if (coords) {
-                    document.getElementById('mapFrame').src =;`https://www.google.com/maps?q=${coords}&output=embed`;
-                }
-            }
- 
-            document.getElementById('customer_la_long').addEventListener('input', updateMap);
-            updateMap();
-        </script>
-
-            <label>วันกำหนดส่ง</label>
-            <input type="text" id="date_of_dali" name="date_of_dali" readonly>
-            
-        
-                        <table class="table table-bordered table-striped">
-                            <thead>
-                            <tr class="">
-                                <th>เลือกจัดส่ง</th>
-                                <th>รหัสสินค้า</th>
-                                <th>รายการ</th>
-                                <th>จำนวน</th>
-                                <th>ราคา/หน่วย</th>
-                                <th>ลบ</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <tr> 
-                                <td><input type="checkbox" class="form-control1" name="status[]"></td>
-                                <td><input type="text" class="form-control1" name="item_id[]"></td>
-                                <td><input type="text" class="form-control1" name="item_name[]" ></td>
-                                <td>
-                                    <input type="number" class="form-control1 item_quantity" name="item_quantity[]" >
-                                </td>
-                                <td>
-                                    <input type="number" class="form-control1 item_unit_price" name="item_unit_price[]" >
-                                </td>
-                                <td><button type="button" class="btn btn-danger delete-btn">ลบ</button></td>
-                            </tr>
-                        </tbody>
-                        </table>
-                        <div class="checkbox-container">
-                            <label>
-                                <input type="checkbox" name="checkall"> เลือกทั้งหมด
-                            </label>
-                            <button type="button" class="btn btn-success insert-btn">เพิ่มสินค้า</button>
-                        </div>
+                    <div class="mb-3">
+                        <label class="form-label">แผนที่ :</label>
+                        <iframe id="mapFrame" width="100%" height="300" style="border:0;" allowfullscreen="" loading="lazy"></iframe>
+                    </div>
+                    {{-- map --}}
+                    <script>
+                        function updateMap() {
+                            let coords = document.getElementById('customer_la_long').value;
+                            if (coords) {
+                                document.getElementById('mapFrame').src = `https://www.google.com/maps?q=${coords}&output=embed`;
+                            }
+                        }
+                    
+                        document.getElementById('customer_la_long').addEventListener('input', updateMap);
+                        updateMap();
+                    </script>
+                
+                        <label>วันกำหนดส่ง</label>
+                        <input type="text" id="date_of_dali" name="date_of_dali" readonly>
                         
+                    
+                                    <table class="table table-bordered table-striped">
+                                        <thead>
+                                        <tr class="">
+                                            <th>เลือกจัดส่ง</th>
+                                            <th>รหัสสินค้า</th>
+                                            <th>รายการ</th>
+                                            <th>จำนวน</th>
+                                            <th>ราคา/หน่วย</th>
+                                            <th>ลบ</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <tr> 
+                                            <td><input type="checkbox" class="form-control1" name="status[]"></td>
+                                            <td><input type="text" class="form-control1" name="item_id[]"></td>
+                                            <td><input type="text" class="form-control1" name="item_name[]" ></td>
+                                            <td>
+                                                <input type="number" class="form-control1 item_quantity" name="item_quantity[]" >
+                                            </td>
+                                            <td>
+                                                <input type="number" class="form-control1 item_unit_price" name="item_unit_price[]" >
+                                            </td>
+                                            <td><button type="button" class="btn btn-danger delete-btn">ลบ</button></td>
+                                        </tr>
+                                    </tbody>
+                                    </table>
+                                    <div class="checkbox-container">
+                                        <label>
+                                            <input type="checkbox" name="checkall"> เลือกทั้งหมด
+                                        </label>
+                                        <button type="button" class="btn btn-success insert-btn">เพิ่มสินค้า</button>
+                                    </div>
+                                    
 
-                        
-                        <label for="additional_notes">แจ้งเพิ่มเติม</label>
-                        <textarea id="additional_notes" name="additional_notes" rows="4"></textarea>
-                        
+                                    
+                                    <label for="additional_notes">แจ้งเพิ่มเติม</label>
+                                    <textarea id="additional_notes" name="additional_notes" rows="4"></textarea>
+                                    
 
-                        <div style="display: flex; justify-content: center; margin-top: 20px;">
-                      <button type="button" id="submitBill" class="btn btn-success" 
-                      style="font-size: 18px; padding: 15px 30px; width: 200px; height: 50px;">
-                         เปิดบิล
-                    </button>
-</div>
+                                    <div style="display: flex; justify-content: center; margin-top: 20px;">
+                                <button type="button" id="submitBill" class="btn btn-success" 
+                                style="font-size: 18px; padding: 15px 30px; width: 200px; height: 50px;">
+                                    เปิดบิล
+                                </button>
+            </div>
 
     </form>
 </div>
@@ -421,11 +511,12 @@
                     let itemStatus = row.querySelector('input[name="status[]"]').checked ? 1 : 0;
 
                     // เก็บค่าลงใน FormData
-                    formData.append(item_id[${index}], itemId);
-                    formData.append(item_name[${index}], itemName);
-                    formData.append(item_quantity[${index}], itemQuantity);
-                    formData.append(item_unit_price[${index}], itemUnitPrice);
-                    formData.append(status[${index}], itemStatus);
+                    formData.append(`item_id[${index}]`, itemId);
+                    formData.append(`item_name[${index}]`, itemName);
+                    formData.append(`item_quantity[${index}]`, itemQuantity);
+                    formData.append(`item_unit_price[${index}]`, itemUnitPrice);
+                    formData.append(`status[${index}]`, itemStatus);
+                                        
                 });
 
                 // ส่งข้อมูลไปยัง Controller Laravel
@@ -546,33 +637,37 @@
 
     {{-- api --}}
     <script>
-        document.getElementById("soSearchForm").addEventListener("submit", async function(event) {
-            event.preventDefault();
-            let soNumber = document.getElementById("so_number").value.trim();
-            if (!soNumber) {
-                alert("กรุณากรอกเลขที่ SO");
-                return;
-            }
-    
+        // ดึงค่า so_num จาก URL
+        const urlParams = new URLSearchParams(window.location.search);
+        const soNum = urlParams.get('so_num');
+
+        // ถ้ามีค่า so_num ใน URL ให้ดึงข้อมูล SO อัตโนมัติ
+        if (soNum) {
+            document.getElementById('so_number').value = soNum; // แสดงค่า so_num ใน input
+            fetchSODetails(soNum); // เรียกฟังก์ชันดึงข้อมูล SO
+        }
+
+        // ฟังก์ชันดึงข้อมูล SO จาก API
+        async function fetchSODetails(soNum) {
             try {
-                let response = await fetch(`http://server_update:8000/api/getSOHD?SONum=SO${soNumber}`);
-    
+                let response = await fetch(`http://server_update:8000/api/getSOHD?SONum=SO${soNum}`);
                 if (!response.ok) {
                     throw new Error("เกิดข้อผิดพลาดในการโหลดข้อมูล");
                 }
-    
+
                 let data = await response.json();
                 console.log("API Response:", data); // ตรวจสอบข้อมูล API 
-    
+
                 if (!Array.isArray(data) || data.length === 0 || !data[0].CustID) {
                     alert("ไม่พบข้อมูลที่ตรงกับเลขที่ SO นี้");
                     return;
                 }
-    
+
                 // กำหนดค่าลงในฟอร์ม
                 document.getElementById("customer_id").value = data[0].CustID || 'ไม่พบข้อมูล';
                 document.getElementById("customer_name").value = data[0].CustName || 'ไม่พบข้อมูล';
-    
+                document.getElementById("so_id").value = data[0].SONum || '';
+
                 // Format the ShipDate to "วัน-เดือน-ปี"
                 let shipDate = data[0].ShipDate;
                 if (shipDate) {
@@ -582,18 +677,97 @@
                     let year = formattedDate.getFullYear();
                     document.getElementById("date_of_dali").value = `${day}-${month}-${year}`;
                 }
-    
-                // กำหนดค่าให้ฟิลด์ so_id
-                document.getElementById("so_id").value = data[0].SONum || '';
-    
+
             } catch (error) {
                 console.error('Error fetching data:', error);
                 alert('เกิดข้อผิดพลาดในการดึงข้อมูล');        
             }
-        });
+        }
     </script>
-    
 
+    {{-- ดูpdfหลายหน้า --}}
+    <script>
+            const input = document.getElementById("po_document");
+            const preview = document.getElementById("preview");
+            const errorMessage = document.getElementById("error-message");
+
+            let selectedFiles = [];
+
+            input.addEventListener("change", function () {
+                const newFiles = Array.from(input.files);
+
+                // รวมไฟล์เก่ากับไฟล์ใหม่
+                let totalFiles = [...selectedFiles, ...newFiles];
+
+                if (totalFiles.length > 5) {
+                    errorMessage.textContent = "อัปโหลดได้สูงสุด 5 ไฟล์";
+                    return;
+                }
+
+                selectedFiles = totalFiles;
+                errorMessage.textContent = "";
+                preview.innerHTML = ""; // เคลียร์ตัวอย่างก่อนแสดงใหม่
+
+                updatePreview();
+                updateFileInput();
+            });
+
+            function updatePreview() {
+                preview.innerHTML = ""; // ล้างตัวอย่างทั้งหมดก่อนสร้างใหม่
+
+                selectedFiles.forEach((file, index) => {
+                    const div = document.createElement("div");
+                    div.classList.add("file-preview");
+
+                    const img = document.createElement("img");
+                    img.src = "https://cdn-icons-png.flaticon.com/512/337/337946.png"; // ไอคอน PDF
+                    img.alt = "PDF Preview";
+                    img.width = 40;
+
+                    const fileName = document.createElement("p");
+                    fileName.textContent = file.name;
+
+                    // สร้างลิงก์เปิดไฟล์ PDF
+                    const fileLink = document.createElement("a");
+                    fileLink.textContent = "ดูไฟล์";
+                    fileLink.href = "#";
+                    fileLink.style.marginLeft = "10px";
+                    fileLink.onclick = function (event) {
+                        event.preventDefault();
+                        const reader = new FileReader();
+                        reader.onload = function (e) {
+                            const pdfWindow = window.open("");
+                            pdfWindow.document.write(
+                                `<iframe src="${e.target.result}" width="100%" height="100%"></iframe>`
+                            );
+                        };
+                        reader.readAsDataURL(file);
+                    };
+
+                    // ปุ่มลบไฟล์
+                    const removeBtn = document.createElement("button");
+                    removeBtn.textContent = "×";
+                    removeBtn.classList.add("remove-btn");
+                    removeBtn.onclick = function () {
+                        selectedFiles.splice(index, 1);
+                        updatePreview();
+                        updateFileInput();
+                    };
+
+                    div.appendChild(img);
+                    div.appendChild(fileName);
+                    div.appendChild(fileLink);
+                    div.appendChild(removeBtn);
+                    preview.appendChild(div);
+                });
+            }
+
+            function updateFileInput() {
+                const dataTransfer = new DataTransfer();
+                selectedFiles.forEach((file) => dataTransfer.items.add(file));
+                input.files = dataTransfer.files;
+            }
+    </script>
 
 </body>
 </html>

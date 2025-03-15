@@ -25,11 +25,12 @@
 <body>
     <div class="button-container">
         <label>ระบบSO</label>
-        <a href="loginsale" class="btn btn-primary me-2">เปิดบิล</a>  
-        <a href="dashboardadmin" class="btn btn-success m-2">จัดของ</a><br>
+        <a href="SOlist" class="btn btn-primary me-2">SOlist</a>  
+        <a href="insertSO" class="btn btn-primary me-2">เปิดบิล</a>  
+        <a href="adminSO" class="btn btn-success m-2">จัดของ</a><br>
         <hr style="border: 10px solid #000000; width: 80%; margin: 20px auto;">
         <label>ระบบPO</label>
-        <a href="dashboardpo" class="btn btn-success m-3" style="background-color: red">รับของ</a>
+        <a href="" class="btn btn-success m-3" style="background-color: red">รับของ</a>
         <a href="adminpo" class="btn btn-success m-3" style="background-color: green">จัดรถ</a>
         <hr style="border: 10px solid #000000; width: 80%; margin: 20px auto;">
         <label>ระบบเอกสาร</label>
@@ -38,6 +39,5 @@
         
     </div>
 
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 </html>

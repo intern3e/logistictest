@@ -282,9 +282,9 @@
                     <input class="btn btn-danger" type="button" name="reset" value="reset" onclick="resetCriteria()">
                     <a href="http://server_update:8000/create_so"><input class="btn btn-secondary" type="button" name="action" value="สร้าง SO"></a>
                     <input type="hidden" id="method" name="method" value="">
-                    <a href="dashboard"><input class="btn btn-danger" type="button"  value="HOME SO"></a>
-                    <a href="dashboardpo"><input class="btn btn-danger" type="button"  value="HOME PO"></a>
-                    <a href="dashboarddoc"><input class="btn btn-danger" type="button"  value="HOME เอกสาารอื่นๆ"></a>    
+                    <a href="dashboard"><input class="btn btn-danger" type="button" style="background-color: #C599B6"  value="HOME SO"></a>
+                    <a href="dashboardpo"><input class="btn btn-danger" type="button"  style="background-color: #80CBC4" value="HOME PO"></a>
+                    <a href="dashboarddoc"><input class="btn btn-danger" type="button"   style="background-color: #E9762B" value="HOME เอกสาารอื่นๆ"></a>    
                     <input type="hidden" name="perPage" value="25">
                 </div>
             </div>

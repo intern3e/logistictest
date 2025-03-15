@@ -294,7 +294,10 @@
                                     </td>
                                     <td><button onclick="saveRemarkOnly()" class="btn btn-info">บันทึก(หมายเหตุ)</button>
                                     </td>
-                                    <td><a href="insertdata"><button class="btn btn-info" >เปิดบิล</button></a> 
+                                    <td>
+                                        <a href="insertdata?so_num=68/004921">
+                                            <button class="btn btn-info">เปิดบิล</button>
+                                        </a>
                                     </td>
                                 </tr>
                             </tbody></table>
@@ -447,5 +450,17 @@
         }
             </script>
 
+ <script>
+            // ดึงค่า so_num จาก URL
+            const urlParams = new URLSearchParams(window.location.search);
+            const soNum = urlParams.get('so_num');
 
-</body></html>
+            // ถ้ามีค่า so_num ใน URL ให้กำหนดค่าให้กับ input
+            if (soNum) {
+                document.getElementById('so_number').value = soNum;
+            }
+        </script>
+
+
+</body>
+</html>

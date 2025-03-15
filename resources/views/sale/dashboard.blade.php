@@ -6,270 +6,270 @@
     <title>DashboardSO</title>
     <style>
   /* --- Global Style --- */
-  body {
-            font-family: 'Poppins', sans-serif;
-            background: linear-gradient(to right, #f0f2f5, #dfe9f3);
-            margin: 0;
-            padding: 0;
-        }
+/* --- Global Style --- */
+body {
+    font-family: 'Poppins', sans-serif;
+    background-color: rgb(233, 233, 233); /* Light gray background */
+    margin: 0;
+    padding: 0;
+}
 
-        /* --- Header Style --- */
-        .header {
-            background: linear-gradient(to right, #2c3e50, #4b6584);
-            margin: 40px 5%;
-            padding: 20px 5%;
-            color: #fff;
-            border-radius: 10px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.2);
-        }
+/* --- Header Style --- */
+.header {
+    background: linear-gradient(to right, #2c3e50, #4b6584);
+    margin: 40px 5%;
+    padding: 20px 5%;
+    color: #fff;
+    border-radius: 10px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.2);
+}
 
-        .header h4 {
-            margin: 0;
-            font-size: 2rem;
-            font-weight: bold;
-        }
+.header h4 {
+    margin: 0;
+    font-size: 2rem;
+    font-weight: bold;
+}
 
-        /* --- Button Container --- */
-        .buttons {
-            display: flex;
-            align-items: center;
-            gap: 15px;
-        }
+/* --- Button Container --- */
+.buttons {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+}
 
-        .buttons span {
-            color: white;
-            font-weight: bold;
-        }
+.buttons span {
+    color: white;
+    font-weight: bold;
+}
 
-        .buttons a, .buttons button {
-            padding: 12px 20px;
-            border-radius: 8px;
-            font-weight: bold;
-            text-decoration: none;
-            border: none;
-            cursor: pointer;
-            transition: all 0.3s ease;
-        }
+.buttons a, .buttons button {
+    padding: 12px 20px;
+    border-radius: 8px;
+    font-weight: bold;
+    text-decoration: none;
+    border: none;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
 
-        .buttons a {
-            background-color: #f39c12;
-            color: white;
-            box-shadow: 0px 4px 6px rgba(0, 0, 0, 0.2);
-        }
+.buttons a {
+    background-color: #f39c12;
+    color: white;
+    box-shadow: 0px 4px 6px rgba(0, 0, 0, 0.2);
+}
 
-        .buttons a:hover {
-            background-color: #e67e22;
-            transform: scale(1.05);
-        }
+.buttons a:hover {
+    background-color: #e67e22;
+    transform: scale(1.05);
+}
 
-        .buttons button {
-            background-color: #e74c3c;
-            color: white;
-            box-shadow: 0px 4px 6px rgba(0, 0, 0, 0.2);
-        }
+.buttons button {
+    background-color: #e74c3c;
+    color: white;
+    box-shadow: 0px 4px 6px rgba(0, 0, 0, 0.2);
+}
 
-        .buttons button:hover {
-            background-color: #c0392b;
-            transform: scale(1.05);
-        }
+.buttons button:hover {
+    background-color: #c0392b;
+    transform: scale(1.05);
+}
 
-        /* --- Table Styling --- */
-        .table-container {
-            background: white;
-            margin: 0 5%;
-            padding: 20px;
-            border-radius: 12px;
-            box-shadow: 0px 6px 12px rgba(0, 0, 0, 0.1);
-            overflow: hidden;
-        }
+/* --- Table Styling --- */
+.table-container {
+    background: #f9f9f9; /* Light gray background for table */
+    margin: 0 5%;
+    padding: 20px;
+    border-radius: 12px;
+    box-shadow: 0px 6px 12px rgba(0, 0, 0, 0.1);
+    overflow: hidden;
+}
 
-        table {
-            width: 100%;
-            border-collapse: collapse;
-            text-align: center;
-        }
+table {
+    width: 100%;
+    border-collapse: collapse;
+    text-align: center;
+}
 
-        th, td {
-            padding: 12px;
-            border: 1px solid #2c3e50;
-            font-size: 1rem;
-        }
+th, td {
+    padding: 12px;
+    border: 1px solid #ccc; /* Light gray for borders */
+    font-size: 1rem;
+}
 
-        th {
-            background: linear-gradient(to right, #2c3e50, #4b6584);
-            color: white;
-            text-transform: uppercase;
-        }
+th {
+    background: #0071e3; /* Blue background for headers */
+    color: white;
+    text-transform: uppercase;
+}
 
-        tr:nth-child(odd) {
-            background-color: #f8f9fa;
-        }
+tr:nth-child(odd) {
+    background-color: #f8f9fa; /* Light gray for odd rows */
+}
 
-        tr:hover {
-            background-color: #e1e5ea;
-            transition: 0.2s;
-        }
+tr:hover {
+    background-color: #e1e5ea; /* Light gray on hover */
+    transition: 0.2s;
+}
 
-        /* --- Link Style --- */
-        td a {
-            color: #27ae60;
-            font-weight: bold;
-            text-decoration: none;
-        }
+/* --- Link Style --- */
+td a {
+    color: #27ae60; /* Green for links */
+    font-weight: bold;
+    text-decoration: none;
+}
 
-        td a:hover {
-            text-decoration: underline;
-        }
+td a:hover {
+    text-decoration: underline;
+}
 
-        /* Filter & Search Section */
-        .filter-container {
-            background: #ffffff;
-            padding: 15px;
-            border-radius: 10px;
-            box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.1);
-            margin: 20px 5%;
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            flex-wrap: wrap;
-        }
+/* Filter & Search Section */
+.filter-container {
+    background: #ffffff;
+    padding: 15px;
+    border-radius: 10px;
+    box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.1);
+    margin: 20px 5%;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+}
 
-        .filter-form {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            margin: 0px 5%;
-        }
+.filter-form {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin: 0px 5%;
+}
 
-        .filter-form label {
-            font-weight: bold;
-            color: #2c3e50;
-        }
+.filter-form label {
+    font-weight: bold;
+    color: #2c3e50;
+}
 
-        .filter-form input {
-            padding: 8px;
-            border-radius: 5px;
-            font-size: 1rem;
-        }
+.filter-form input {
+    padding: 8px;
+    border-radius: 5px;
+    font-size: 1rem;
+}
 
-        .filter-form button {
-            padding: 8px 12px;
-            border: none;
-            background: #27ae60;
-            color: white;
-            border-radius: 5px;
-            cursor: pointer;
-            transition: 0.3s;
-        }
+.filter-form button {
+    padding: 8px 12px;
+    border: none;
+    background: #27ae60; /* Green for button */
+    color: white;
+    border-radius: 5px;
+    cursor: pointer;
+    transition: 0.3s;
+}
 
-        .filter-form button:hover {
-            background: #2980b9;
-        }
+.filter-form button:hover {
+    background: #2980b9; /* Dark blue on hover */
+}
 
-        .search-box {
-            flex-grow: 1;
-            max-width: 200px;
-        }
+.search-box {
+    flex-grow: 1;
+    max-width: 200px;
+}
 
-        .search-box input {
-            width: 90%;
-            height: 30px;
-            margin: 0px 10px;
-            background: #f8f9fa;
-        }
+.search-box input {
+    width: 90%;
+    height: 30px;
+    margin: 0px 10px;
+    background: #f8f9fa;
+}
 
-        .search-box {
-            display: flex;
-            align-items: center;
-            transition: 0.3s;
-            max-width: 250px;
-        }
+.search-box {
+    display: flex;
+    align-items: center;
+    transition: 0.3s;
+    max-width: 250px;
+}
 
-        .search-box input {
-            flex-grow: 1;
-            padding: 5px;
-            border: none;
-            outline: none;
-            font-size: 1rem;
-            border-radius: 5px;
-            background-color: #e1e5ea;
-        }
+.search-box input {
+    flex-grow: 1;
+    padding: 5px;
+    border: none;
+    outline: none;
+    font-size: 1rem;
+    border-radius: 5px;
+    background-color: #e1e5ea;
+}
 
-        .search-box button {
-            padding: 10px 15px;
-            background: #2ecc71;
-            color: white;
-            border: none;
-            border-radius: 5px;
-            cursor: pointer;
-            transition: 0.3s;
-            font-weight: bold;
-        }
+.search-box button {
+    padding: 10px 15px;
+    background: #2ecc71; /* Green for search button */
+    color: white;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    transition: 0.3s;
+    font-weight: bold;
+}
 
-        .search-box button:hover {
-            background: #27ae60;
-            transform: scale(1.05);
-        }
+.search-box button:hover {
+    background: #27ae60; /* Darker green on hover */
+    transform: scale(1.05);
+}
 
-        /* สไตล์พื้นหลังมืด */
-        .popup-overlay {
-            display: none; /* ซ่อน Popup ไว้ก่อน */
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(0, 0, 0, 0.5);
-            display: flex;
-            justify-content: center;
-            align-items: center;
-        }
+/* Popup Styles */
+.popup-overlay {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.5);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
 
-        /* สไตล์กล่อง Popup */
-        .popup-content {
-            background: linear-gradient(to right, #f0f2f5, #dfe9f3);
-            padding: 20px;
-            border-radius: 10px;
-            width: 80%;
-            max-width: 1000px;
-            height: auto;
-            text-align: center;
-            position: relative;
-            overflow: hidden;
-            max-height: 500px; /* เพิ่มความสูงสูงสุด */
-            overflow-y: auto; /* แสดงแท็บเลื่อน */
-        }
+.popup-content {
+    background: linear-gradient(to right, #f0f2f5, #dfe9f3);
+    padding: 20px;
+    border-radius: 10px;
+    width: 80%;
+    max-width: 1000px;
+    height: auto;
+    text-align: center;
+    position: relative;
+    overflow: hidden;
+    max-height: 500px;
+    overflow-y: auto;
+}
 
-        /* ปุ่มปิด */
-        .close-btn {
-            position: absolute;
-            top: 10px;
-            right: 10px;
-            cursor: pointer;
-            font-size: 18px;
-            font-weight: bold;
-        }
+.close-btn {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    cursor: pointer;
+    font-size: 18px;
+    font-weight: bold;
+}
 
-        /* Responsive Design */
-        @media (max-width: 768px) {
-            .filter-container {
-                flex-direction: column;
-                align-items: flex-start;
-            }
+/* Responsive Design */
+@media (max-width: 768px) {
+    .filter-container {
+        flex-direction: column;
+        align-items: flex-start;
+    }
 
-            .filter-form, .search-box {
-                width: 100%;
-            }
+    .filter-form, .search-box {
+        width: 100%;
+    }
 
-            .search-box input {
-                width: 100%;
-            }
-        }
-        .editButton {
-    background: #f39c12;
+    .search-box input {
+        width: 100%;
+    }
+}
+
+.editButton {
+    background: #f39c12; /* Orange button color */
     border: none;
     color: white;
     padding: 10px 20px;
@@ -278,7 +278,6 @@
     border-radius: 8px;
     cursor: pointer;
     transition: 0.3s ease-in-out;
-    
 }
 
 .editButton:hover {
@@ -287,18 +286,19 @@
 }
 
 .editButton:active {
-    transform: scale(0.95); /* ย่อขนาดลงตอนกด */
+    transform: scale(0.95);
 }
+
 .aa {
-  padding: 20px 200px;
-  border: 1px solid #ccc;      /* เส้นขอบที่เรียบง่าย */
-  background-color: #f9f9f9;     /* สีพื้นหลังอ่อนๆ */
-  border-radius: 5px;            /* มุมโค้งมน */
-  font-size: 14px;
-  color: #333;
-  max-width: 800px;              /* กำหนดความกว้างสูงสุด */
-  margin: 10px 0;                /* ระยะห่างด้านบนและด้านล่าง */
-  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);  /* เงาเล็กน้อย */
+    padding: 20px 200px;
+    border: 1px solid #ccc;
+    background-color: #f9f9f9;
+    border-radius: 5px;
+    font-size: 14px;
+    color: #333;
+    max-width: 800px;
+    margin: 10px 0;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
 }
 
         </style>
@@ -309,11 +309,10 @@
         <h4>📑 ระบบเปิดบิล</h4>
         <div class="buttons">
             <span>👤 ผู้ใช้: {{ session('emp_name', 'Guest') }}</span>
-    
-            <a href="{{ route('sale.insertdata') }}" class="btn btn-warning">➕ เปิดบิลSO</a>
+
             
             @csrf
-            <a href="{{ route('home') }}" button  type="submit" class="btn btn-danger">🚪 หน้าหลัก</a>
+            <a href="adminSO" button  type="submit" class="btn btn-danger">🚪 หน้าหลัก</a>
         </div>
     </div>
     
@@ -390,7 +389,7 @@
                 <table>
                     <thead>
                         <tr>
-                            <th>เลขบิลที่</th>
+                            <th>เลขที่บิล</th>
                             <th>SO Number</th>
                             <th>รหัสลูกค้า</th>
                             <th>ที่อยู่จัดส่ง</th>
@@ -465,18 +464,18 @@ function openPopup(soDetailId, so_id, customer_id, customer_address, date_of_dal
                 // ใส่ข้อมูลลงใน textarea (ตัวอย่างใช้ item_name จากข้อมูลแรก)
                 textarea.value = data[0].item_name; 
 
-                let existingButton = document.querySelector(".editButton");
-                if (existingButton) {
-                    existingButton.remove(); 
-                }
+                // let existingButton = document.querySelector(".editButton");
+                // if (existingButton) {
+                //     existingButton.remove(); 
+                // }
 
-                secondPopupBody.insertAdjacentHTML("afterend", `
-                    <div style="text-align: left; margin-top: 15px;">
-                        <a href="/sale/modifydata/${soDetailId}">
-                            <button class="editButton">แก้ไขข้อมูล</button>
-                        </a>
-                    </div>
-                `);
+                // secondPopupBody.insertAdjacentHTML("afterend", `
+                //     <div style="text-align: left; margin-top: 15px;">
+                //         <a href="/sale/modifydata/${soDetailId}">
+                //             <button class="editButton">แก้ไขข้อมูล</button>
+                //         </a>
+                //     </div>
+                // `);
                 } else {
                     secondPopupBody.innerHTML = "<tr><td colspan='4'>ไม่มีข้อมูล</td></tr>";
                 }
