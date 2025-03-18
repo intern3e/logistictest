@@ -51,8 +51,8 @@ use App\Http\Controllers\PoController;
 Route::get('/dashboardpo', [PoController::class, 'dashboardpo'])->name('po.dashboardpo');
 Route::get('/insertpo', [PoController::class, 'insertpo'])->name('po.insertpo');
 Route::post('/insertpo', [PoController::class, 'insertpobill'])->name('insertpo.post'); 
-Route::post('/insertpo', [PoController::class, 'insertpobill'])->name('insertpo.post');
-Route::get('/bill/{po_detail_id}', [PoController::class, 'getBillDetail'])->name('getBillDetail');
+Route::get('/get-pobill-detail/{po_detail_id}', [PoController::class, 'getpoBillDetail'])
+     ->name('getpoBillDetail');
 
 
 use App\Http\Controllers\adminpocontroller;
@@ -65,7 +65,8 @@ Route::post('/update-status', [adminpocontroller::class, 'updateStatus']);
 use App\Http\Controllers\doccontroller;
 Route::get('/dashboarddoc', [doccontroller::class, 'dashboarddoc'])->name('document.dashboarddoc');
 Route::get('/insertdoc', [doccontroller::class, 'insertdoc'])->name('document.insertdoc');
-Route::post('/insertdocu', [DocController::class, 'insertDocu'])->name('insertdocu.post');
+Route::post('/insertdocu', [DocController::class, 'insertDocu'])->name('insertdocu');
+
 
 
 

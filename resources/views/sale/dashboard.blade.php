@@ -100,7 +100,7 @@ th, td {
 }
 
 th {
-    background: #0071e3; /* Blue background for headers */
+    background: #00389f; /* Blue background for headers */
     color: white;
     text-transform: uppercase;
 }

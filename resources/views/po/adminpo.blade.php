@@ -26,13 +26,13 @@
             box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.2);
         }
         .header button {
-            background-color: #e74c3c;
-            color: white;
-            padding: 8px 15px;
-            border: none;
-            border-radius: 5px;
-            cursor: pointer;
-            transition: 0.3s;
+        padding: 12px 20px;
+        border-radius: 8px;
+        font-weight: bold;
+        text-decoration: none;
+        border: none;
+        cursor: pointer;
+        transition: all 0.3s ease;
         }
         .header button:hover {
             background-color: #c0392b;
@@ -288,23 +288,22 @@
             border-radius: 5px;
             background-color: #e1e5ea;
         }
-
+        .container {
+        align-items: center;
+        gap: 10px; /* ระยะห่างระหว่าง label และ dropdown */
+        margin-top: 10px;
+        text-align: center;
+        width: 100%;
+        }
+        
     </style>
 </head>
 <body>
     <div class="header">
-        <h2>ระบบจัดเตรียมรถรับของ</h2>
+        <h2>ระบบจัดเตรียมรถรับของPO</h2>
+        <a href="dashboardadmin"><button >ระบบจัดเตรียมสินค้าSO</button></a>
+        <a href="adminSO"><button >หน้าหลัก</button></a>
     </div>
-
-    <div class="container">
-        <label for="cartype">🚗 ประเภทรถ:</label>
-        <select id="cartype" onchange="filterTable()">
-            <option value="">ทั้งหมด</option>
-            <option value="1">รถมอเตอร์ไซค์</option>
-            <option value="2">รถใหญ่</option>
-        </select>
-         </div>
-
 
     <div class="container">
         <div class="top-section">
@@ -317,6 +316,14 @@
             <div class="button-group">
                 <button onclick="exportToExcel()">🖨 ปริ้นเอกสาร</button>
                 <button onclick="window.location.href='historypo'">📜 ประวัติเอกสาร</button>
+                <div class="container">
+                    <label for="cartype">🚗 ประเภทรถ :</label>
+                    <select id="cartype" onchange="filterTable()">
+                        <option value="">ทั้งหมด</option>
+                        <option value="1">รถมอเตอร์ไซค์</option>
+                        <option value="2">รถใหญ่</option>
+                    </select>
+                     </div>
             </div>
             
             <div class="search-box">
@@ -330,15 +337,16 @@
                 <thead>
                     <tr>
                         <th>ปริ้นเอกสาร</th>
-                        <th>บิลลำดับ</th>
-                        <th>รหัสลูกค้า</th>
-                        <th>ที่อยู่จัดส่ง</th>
-                        <th>ละติจูด ลองจิจูด</th>
-                        <th>วันที่จัดส่ง</th>
+                        <th>เลขอ้างอิงใบรับสินค้า</th>
+                        <th>ชื่อร้านค้า</th>
+                        <th>ที่อยู่ร้านค้า</th>
+                        <th>ละติจูดลองจิจูด</th>
+                        <th>วันที่รับสินค้า</th>
                         <th>ผู้เปิดบิล</th>
                         <th>ประเภทขนส่ง</th>
                         <th>สถานะการจัดส่ง</th>
                         <th>ข้อมูลสินค้า</th>
+                        
                     </tr>
                 </thead>
                 <tbody id="table-body">
@@ -371,12 +379,12 @@
                                 </td>
                                 <td><a href="javascript:void(0);" 
                                     onclick="openPopup(
-                                        '{{ $item->so_detail_id }}',
-                                        '{{ $item->so_id }}',
-                                        '{{ $item->customer_id }}',
-                                        '{{ $item->customer_address }}',
-                                        '{{ \Carbon\Carbon::parse($item->date_of_dali)->format('d/m/Y') }}',
-                                        '{{ $item->sale_name}}'
+                                        '{{ $item->po_detail_id }}',
+                                        '{{ $item->store_name}}',
+                                        '{{ $item->store_address}}',
+                                        '{{ \Carbon\Carbon::parse($item->recvDate)->format('d/m/Y') }}',
+                                        '{{ $item->emp_name}}',
+                                        '{{ $item->cartype}}'
                                     )">
                                 เพิ่มเติม
                              </a></td>
@@ -426,47 +434,67 @@
 </div>
 
 <script>
-    function openPopup(soDetailId, customer_id, customer_address, date_of_dali) {
-    document.getElementById("popup").style.display = "flex"; // แสดง Popup
-
-    let popupBody = document.getElementById("popup-body-1");
-    popupBody.innerHTML = `
-        <tr>
-            <td>${soDetailId}</td>
-            <td>${customer_id}</td>
-            <td>${customer_address}</td>
-            <td>${date_of_dali}</td>
-        </tr>
-    `;
-
-    let secondPopupBody = document.getElementById("popup-body");
-    secondPopupBody.innerHTML = "<tr><td colspan='4'>Loading...</td></tr>";
-
-    // ใช้ fetch ดึงข้อมูลจาก Laravel
-    fetch(`/get-bill-detail/${soDetailId}`)
-        .then(response => response.json())
-        .then(data => {
-            if (data.length > 0) {
-                secondPopupBody.innerHTML = ""; // เคลียร์ข้อมูลเก่า
-                data.forEach(item => {
-                    secondPopupBody.insertAdjacentHTML("beforeend", `
-                        <tr>
-                            <td>${item.item_id}</td>
-                            <td>${item.item_name}</td>
-                            <td>${item.quantity}</td>
-                            <td>${item.unit_price}</td>
-                        </tr>
-                    `);
-                });
-            } else {
-                secondPopupBody.innerHTML = "<tr><td colspan='4'>ไม่มีข้อมูล</td></tr>";
-            }
-        })
-        .catch(error => {
-            console.error("Error fetching data:", error);
-            secondPopupBody.innerHTML = "<tr><td colspan='4'>เกิดข้อผิดพลาด</td></tr>";
-        });
-}
+    function openPopup(po_detail_id, store_name, store_address, recvDate, emp_name, cartype) {
+        document.getElementById("popup").style.display = "flex"; // แสดง Popup
+    
+        // แปลงค่า cartype
+        let cartypeText = "";
+        switch (cartype) {
+            case "1":
+                cartypeText = "มอเตอร์ไซค์";
+                break;
+            case "2":
+                cartypeText = "รถใหญ่";
+                break;
+            default:
+                cartypeText = "ไม่ระบุประเภท";
+        }
+    
+        let popupBody = document.getElementById("popup-body-1");
+        popupBody.innerHTML = `
+            <tr>
+                <td>${po_detail_id}</td>
+                <td>${store_name}</td>
+                <td>${store_address}</td>
+                <td>${recvDate}</td>
+                <td>${emp_name}</td>
+                <td>${cartypeText}</td>
+            </tr>
+        `;
+    
+    
+    
+        let secondPopupBody = document.getElementById("popup-body");
+        secondPopupBody.innerHTML = "<tr><td colspan='4'>Loading...</td></tr>";
+    
+        fetch(`/get-pobill-detail/${po_detail_id}`)
+            .then(response => response.json())
+            .then(data => {
+                console.log("API Response:", data); 
+    
+                if (Array.isArray(data) && data.length > 0) {
+                    secondPopupBody.innerHTML = ""; 
+                    
+                    data.forEach(item => {
+                        secondPopupBody.insertAdjacentHTML("beforeend", `
+                            <tr>
+                                <td>${item.item_id}</td>
+                                <td>${item.item_name}</td>
+                                <td>${item.quantity}</td>
+                                <td>${item.unit_price}</td>
+                            </tr>
+                        `);
+                    });
+    
+                } else {
+                    secondPopupBody.innerHTML = "<tr><td colspan='4'>ไม่มีข้อมูล</td></tr>";
+                }
+            })
+            .catch(error => {
+                console.error("Error fetching data:", error);
+                secondPopupBody.innerHTML = "<tr><td colspan='4'>เกิดข้อผิดพลาด</td></tr>";
+            });
+    }
 
     // ฟังก์ชันปิด Popup
     function closePopup() {

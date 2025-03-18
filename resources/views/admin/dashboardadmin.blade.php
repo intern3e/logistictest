@@ -188,7 +188,7 @@
         }
 
         th {
-            background: linear-gradient(to right, #2c3e50, #4b6584);
+            background: #00389f;
             color: white;
             text-transform: uppercase;
         }
@@ -293,8 +293,10 @@
 </head>
 <body>
     <div class="header">
-        <h2>ระบบจัดเตรียมสินค้า</h2>
+        <h2>ระบบจัดเตรียมสินค้าSO</h2>
+        <a href="adminSO"><button >หน้าหลัก</button></a>
     </div>
+<a href="adminpo"><button >ระบบจัดเตรียมรถรับของPO</button></a>
 
     <div class="container">
         <div class="top-section">

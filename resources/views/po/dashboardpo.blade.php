@@ -336,10 +336,10 @@
                 <tbody id="table-body">
                     @foreach($pobill as $item)
                     <tr>
-                        <td>{{ $item->po_detail_id }}</td> 
-                        <td>{{ $item->po_id }}</td>
-                        <td>{{ $item->store_name }}</td>
-                        <td>{{ $item->store_address }}</td>  
+                        <td>{{ $item->po_detail_id}}</td> 
+                        <td>{{ $item->po_id}}</td>
+                        <td>{{ $item->store_name}}</td>
+                        <td>{{ $item->store_address}}</td>  
                         <td>{{ \Carbon\Carbon::parse($item->recvDate)->format('d/m/Y') }}</td> 
                         <td>{{ $item->emp_name }}</td> 
                         <td>
@@ -361,15 +361,16 @@
                         </td>
                         <td><a href="javascript:void(0);" 
                             onclick="openPopup(
-                                '{{ $item->so_detail_id }}',
-                                '{{ $item->so_id }}',
-                                '{{ $item->customer_id }}',
-                                '{{ $item->customer_address }}',
-                                '{{ \Carbon\Carbon::parse($item->date_of_dali)->format('d/m/Y') }}',
-                                '{{ $item->sale_name}}'
+                                '{{ $item->po_detail_id }}',
+                                '{{ $item->store_name}}',
+                                '{{ $item->store_address}}',
+                                '{{ \Carbon\Carbon::parse($item->recvDate)->format('d/m/Y') }}',
+                                '{{ $item->emp_name}}',
+                                '{{ $item->cartype}}'
                             )">
                         เพิ่มเติม
                      </a></td>
+                    </tr>
                     </tr>
                     @endforeach
                 </tbody>
@@ -394,6 +395,7 @@
                                 <th>ที่อยู่ร้านค้า</th>
                                 <th>วันที่รับสินค้า</th>
                                 <th>ผู้เปิดบิล</th>
+                                <th>ประเภทขนส่ง</th>
                             </tr> 
                         </thead>
                         <tbody id="popup-body-1">   
@@ -417,72 +419,85 @@
         </div>
         
         <script>
-    function openPopup(po_detail_id, po_id, store_name, store_address, recvDate,cartype) {
-        document.getElementById("popup").style.display = "flex"; // แสดง Popup
-    
-        let popupBody = document.getElementById("popup-body-1");
-        popupBody.innerHTML = `
-            <tr>
-                
-            </tr>
-        `;
-    
-        let secondPopupBody = document.getElementById("popup-body");
-        secondPopupBody.innerHTML = "<tr><td colspan='4'>Loading...</td></tr>";
-    
-        // ใช้ fetch ดึงข้อมูลจาก Laravel
-        fetch(`/get-bill-detail/${soDetailId}`)
-            .then(response => response.json())
-            .then(data => {
-                if (data.length > 0) {
-                    secondPopupBody.innerHTML = ""; // เคลียร์ข้อมูลเก่า
-                    data.forEach(item => {
-                        secondPopupBody.insertAdjacentHTML("beforeend", `
-                            <tr>
-                                <td>${item.item_id}</td>
-                                <td>${item.item_name}</td>
-                                <td>${item.quantity}</td>
-                                <td>${item.unit_price}</td>
-                            </tr>
-                        `);
-                    });
-    
-                       let existingButton = document.querySelector(".editButton");
-                    if (existingButton) {
-                        existingButton.remove(); // ลบปุ่มเดิมก่อน
-                    }
-    
-                    secondPopupBody.insertAdjacentHTML("afterend", `
-                        <div style="text-align: left; margin-top: 15px;">
-                            <a href="/sale/modifydata/${soDetailId}">
-                                <button class="editButton">แก้ไขข้อมูล</button>
-                            </a>    
-                        </div>
-                    `);
-                } else {
-                    secondPopupBody.innerHTML = "<tr><td colspan='4'>ไม่มีข้อมูล</td></tr>";
-                }
-            })
-            .catch(error => {
-                console.error("Error fetching data:", error);
-                secondPopupBody.innerHTML = "<tr><td colspan='4'>เกิดข้อผิดพลาด</td></tr>";
-            });
+function openPopup(po_detail_id, store_name, store_address, recvDate, emp_name, cartype) {
+    document.getElementById("popup").style.display = "flex"; // แสดง Popup
+
+    // แปลงค่า cartype
+    let cartypeText = "";
+    switch (cartype) {
+        case "1":
+            cartypeText = "มอเตอร์ไซค์";
+            break;
+        case "2":
+            cartypeText = "รถใหญ่";
+            break;
+        default:
+            cartypeText = "ไม่ระบุประเภท";
     }
-        function closePopup() {
-            document.getElementById("popup").style.display = "none"; // ซ่อน Popup
-        }
-        
-        window.onclick = function(event) {
-            let popup = document.getElementById("popup");
-            if (event.target === popup) {
-                closePopup();
+
+    let popupBody = document.getElementById("popup-body-1");
+    popupBody.innerHTML = `
+        <tr>
+            <td>${po_detail_id}</td>
+            <td>${store_name}</td>
+            <td>${store_address}</td>
+            <td>${recvDate}</td>
+            <td>${emp_name}</td>
+            <td>${cartypeText}</td>
+        </tr>
+    `;
+
+
+
+    let secondPopupBody = document.getElementById("popup-body");
+    secondPopupBody.innerHTML = "<tr><td colspan='4'>Loading...</td></tr>";
+
+    // ✅ ใช้ po_detail_id แทน poDetailId
+    fetch(`/get-pobill-detail/${po_detail_id}`)
+        .then(response => response.json())
+        .then(data => {
+            console.log("API Response:", data); // ✅ Debug API response
+
+            if (Array.isArray(data) && data.length > 0) {
+                secondPopupBody.innerHTML = ""; // เคลียร์ข้อมูลเก่า
+                
+                data.forEach(item => {
+                    secondPopupBody.insertAdjacentHTML("beforeend", `
+                        <tr>
+                            <td>${item.item_id}</td>
+                            <td>${item.item_name}</td>
+                            <td>${item.quantity}</td>
+                            <td>${item.unit_price}</td>
+                        </tr>
+                    `);
+                });
+
+            } else {
+                secondPopupBody.innerHTML = "<tr><td colspan='4'>ไม่มีข้อมูล</td></tr>";
             }
-        }
-    </script>
+        })
+        .catch(error => {
+            console.error("Error fetching data:", error);
+            secondPopupBody.innerHTML = "<tr><td colspan='4'>เกิดข้อผิดพลาด</td></tr>";
+        });
+}
+function closePopup() {
+    document.getElementById("popup").style.display = "none"; // ซ่อน Popup
+}
+
+window.onclick = function(event) {
+    let popup = document.getElementById("popup");
+    if (event.target === popup) {
+        closePopup();
+    }
+}
+
+        </script>
+        
 
 
 {{--searchTable --}}
-     <script>
+    <script>
             function searchTable() {
                 let searchInput = document.getElementById("search-input").value.toLowerCase();
                 let table = document.querySelector("table tbody");
@@ -500,30 +515,30 @@
                     }
                 }
             }
-            window.onload = function() {
-    // Sort the rows by 'so_detail_id' in descending order on page load
-    sortTableDescByColumn(0); // Assuming 'so_detail_id' is in the first column (index 0)
-};
+             window.onload = function() {
+    // Sort  the rows by 'so_detail_id' in descending order on page load
+              sortTableDescByColumn(0); // Assuming 'so_detail_id' is in the first column (index 0)
+        };
 
-function sortTableDescByColumn(columnIndex) {
-    let table = document.querySelector("table tbody");
-    let rows = Array.from(table.querySelectorAll("tr"));
+        function sortTableDescByColumn(columnIndex) {
+            let table = document.querySelector("table tbody");
+            let rows = Array.from(table.querySelectorAll("tr"));
 
-    rows.sort(function(rowA, rowB) {
-        let cellA = rowA.cells[columnIndex].textContent.trim();
-        let cellB = rowB.cells[columnIndex].textContent.trim();
+            rows.sort(function(rowA, rowB) {
+                let cellA = rowA.cells[columnIndex].textContent.trim();
+                let cellB = rowB.cells[columnIndex].textContent.trim();
 
-        // Compare numerically or lexicographically, depending on the column type
-        if (columnIndex === 0) { // For 'so_detail_id', assuming it's numeric
-            return parseInt(cellB) - parseInt(cellA); // Sort in descending order
-        } else {
-            return cellB.localeCompare(cellA); // Sort lexicographically for text columns
+                // Compare numerically or lexicographically, depending on the column type
+                if (columnIndex === 0) { // For 'so_detail_id', assuming it's numeric
+                    return parseInt(cellB) - parseInt(cellA); // Sort in descending order
+                } else {
+                    return cellB.localeCompare(cellA); // Sort lexicographically for text columns
+                }
+            });
+
+            // Reorder the rows in the table
+            rows.forEach(row => table.appendChild(row));
         }
-    });
-
-    // Reorder the rows in the table
-    rows.forEach(row => table.appendChild(row));
-}
 
     </script>
 

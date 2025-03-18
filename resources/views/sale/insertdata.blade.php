@@ -71,7 +71,7 @@
         }
 
         th {
-            background-color:#0071e3;
+            background-color:#00389f;
             font-weight: bold;
             color: #fff;
         }
@@ -391,7 +391,7 @@
                 </div>
 
                 <div>
-                    <label for="po_document">อัปโหลดไฟล์ PDF :</label>
+                    <label for="po_document">อัปโหลดไฟล์ :</label>
                     <input type="file" id="po_document" name="po_document" accept=".pdf" multiple>
                     <p id="error-message" style="color: red;"></p>
                 </div>
