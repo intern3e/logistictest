@@ -92,19 +92,19 @@ class PoController extends Controller
         }
     }
     public function getpoBillDetail($po_detail_id)
-{
-    try {
-        $pobillDetails = PobillsDetail::where('po_detail_id', $po_detail_id)->get();
-        
-        if ($pobillDetails->isEmpty()) {
-            return response()->json(["message" => "ไม่มีข้อมูล"], 200);
-        }
+    {
+        try {
+            $pobillDetails = PobillsDetail::where('po_detail_id', $po_detail_id)->get();
+            
+            if ($pobillDetails->isEmpty()) {
+                return response()->json(["message" => "ไม่มีข้อมูล"], 200);
+            }
 
-        return response()->json($pobillDetails);
-    } catch (\Exception $e) {
-        return response()->json(["error" => $e->getMessage()], 500);
+            return response()->json($pobillDetails);
+        } catch (\Exception $e) {
+            return response()->json(["error" => $e->getMessage()], 500);
+        }
     }
-}
 
 
 }   

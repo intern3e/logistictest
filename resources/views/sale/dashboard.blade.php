@@ -333,7 +333,7 @@ td a:hover {
         <table>
             <thead>
                 <tr>
-                    <th>บิลลำดับที่</th>
+                    <th>เลขที่บิล</th>
                     <th>อ้างอิงใบสั่งขาย</th>
                     <th>ที่อยู่จัดส่ง</th>
                     <th>วันที่จัดส่ง</th>
@@ -366,7 +366,8 @@ td a:hover {
                             '{{ $item->customer_id }}',
                             '{{ $item->customer_address }}',
                             '{{ \Carbon\Carbon::parse($item->date_of_dali)->format('d/m/Y') }}',
-                            '{{ $item->sale_name}}'
+                            '{{ $item->sale_name}}',
+                            '{{ $item->po_document_path}}'
                         )">
                     เพิ่มเติม
                  </a></td>
@@ -395,6 +396,7 @@ td a:hover {
                             <th>ที่อยู่จัดส่ง</th>
                             <th>วันที่จัดส่ง</th>
                             <th>ผู้ขาย</th>
+                            <th>Pdf </th>
                         </tr>
                     </thead>
                     <tbody id="popup-body-1">   
@@ -413,13 +415,17 @@ td a:hover {
                     <tbody id="popup-body">
                     </tbody>
                 </table>
-            
+                
+              
+                
+
+
             </div>
         </div>
     </div>
     
     <script>
-function openPopup(soDetailId, so_id, customer_id, customer_address, date_of_dali,sale_name) {
+function openPopup(soDetailId, so_id, customer_id, customer_address, date_of_dali, sale_name,po_document_path) {
     document.getElementById("popup").style.display = "flex"; // แสดง Popup
 
     let popupBody = document.getElementById("popup-body-1");
@@ -431,6 +437,8 @@ function openPopup(soDetailId, so_id, customer_id, customer_address, date_of_dal
             <td>${customer_address}</td>
             <td>${date_of_dali}</td>
             <td>${sale_name}</td>
+                <td>${po_document_path}</td>
+
         </tr>
     `;
 
@@ -452,40 +460,27 @@ function openPopup(soDetailId, so_id, customer_id, customer_address, date_of_dal
                             <td>${item.unit_price}</td>
                         </tr>
                     `);
-                    
                 });
 
-       // สร้าง <textarea> ใต้ข้อมูลสินค้า
-                let textarea = document.createElement('textarea');
-                textarea.rows = 4; // จำนวนแถวของ textarea
-                textarea.cols = 50; // จำนวนคอลัมน์ของ textarea
-                textarea.placeholder = "กรอกรายละเอียดเพิ่มเติม"; // คำแนะนำใน textarea
+                let pdfPath = data[0].po_document_path; // สมมติว่า po_document_path อยู่ใน data[0]
+                secondPopupBody.insertAdjacentHTML("beforeend", `
+                    <tr>
+                        <td colspan="4">
+                         
 
-                // ใส่ข้อมูลลงใน textarea (ตัวอย่างใช้ item_name จากข้อมูลแรก)
-                textarea.value = data[0].item_name; 
-
-                // let existingButton = document.querySelector(".editButton");
-                // if (existingButton) {
-                //     existingButton.remove(); 
-                // }
-
-                // secondPopupBody.insertAdjacentHTML("afterend", `
-                //     <div style="text-align: left; margin-top: 15px;">
-                //         <a href="/sale/modifydata/${soDetailId}">
-                //             <button class="editButton">แก้ไขข้อมูล</button>
-                //         </a>
-                //     </div>
-                // `);
-                } else {
-                    secondPopupBody.innerHTML = "<tr><td colspan='4'>ไม่มีข้อมูล</td></tr>";
-                }
-
+                        </td>
+                    </tr>
+                `);
+            }  else {
+                secondPopupBody.innerHTML = "<tr><td colspan='4'>ไม่มีข้อมูล</td></tr>";
+            }
         })
         .catch(error => {
             console.error("Error fetching data:", error);
             secondPopupBody.innerHTML = "<tr><td colspan='4'>เกิดข้อผิดพลาด</td></tr>";
         });
 }
+
     function closePopup() {
         document.getElementById("popup").style.display = "none"; // ซ่อน Popup
     }
@@ -514,6 +509,7 @@ function openPopup(soDetailId, so_id, customer_id, customer_address, date_of_dal
             }
         }
     }
+    
     </script>
     </body>
     </html>

@@ -452,14 +452,13 @@ function openPopup(po_detail_id, store_name, store_address, recvDate, emp_name, 
     let secondPopupBody = document.getElementById("popup-body");
     secondPopupBody.innerHTML = "<tr><td colspan='4'>Loading...</td></tr>";
 
-    // ✅ ใช้ po_detail_id แทน poDetailId
     fetch(`/get-pobill-detail/${po_detail_id}`)
         .then(response => response.json())
         .then(data => {
-            console.log("API Response:", data); // ✅ Debug API response
+            console.log("API Response:", data); 
 
             if (Array.isArray(data) && data.length > 0) {
-                secondPopupBody.innerHTML = ""; // เคลียร์ข้อมูลเก่า
+                secondPopupBody.innerHTML = ""; 
                 
                 data.forEach(item => {
                     secondPopupBody.insertAdjacentHTML("beforeend", `

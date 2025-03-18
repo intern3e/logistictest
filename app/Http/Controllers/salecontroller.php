@@ -255,6 +255,7 @@ public function getBillDetail($so_detail_id)
         // ส่งข้อมูลในรูปแบบ JSON
         return response()->json($billDetails);
     }
+
 public function modifyData($soDetailId)
     {
         // ดึงข้อมูลจาก tblbill (ข้อมูลหลัก)
@@ -326,5 +327,25 @@ public function deleteBill($so_detail_id)
             return response()->json(['error' => 'เกิดข้อผิดพลาด: ' . $e->getMessage()], 500);
         }
     }
+    public function previewPdf($soDetailId)
+{
+    // ค้นหาไฟล์จากฐานข้อมูล
+    $document = bill::where('so_detail_id', $soDetailId)->first();
+
+    if (!$document || !Storage::exists($document->po_document_path)) {
+        abort(404, "Document not found.");
+    }
+
+    // ตรวจสอบว่าไฟล์อยู่ใน public storage หรือไม่
+    $filePath = storage_path('app/public/po_documents/' . $document->po_document_path);
+    
+    if (!file_exists($filePath)) {
+        abort(404, "File not found.");
+    }
+
+    // ส่งไฟล์ PDF ไปยังหน้าแสดงผล
+    return response()->file($filePath);
+}
+    
 }
 

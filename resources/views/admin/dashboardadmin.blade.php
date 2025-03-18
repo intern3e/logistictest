@@ -25,18 +25,41 @@
             width: 90%;
             box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.2);
         }
-        .header button {
-            background-color: #e74c3c;
-            color: white;
-            padding: 8px 15px;
-            border: none;
-            border-radius: 5px;
-            cursor: pointer;
-            transition: 0.3s;
-        }
-        .header button:hover {
-            background-color: #c0392b;
-        }
+            .header-buttons button {
+        padding: 15px 20px;
+        font-size: 16px;
+        cursor: pointer;
+        border: none;
+        border-radius: 8px;
+        font-weight: bold;
+        text-decoration: none;
+        transition: all 0.3s ease;
+        margin-right: 10px; /* Adds space between buttons */
+    }
+
+    .btn-po {
+        background-color: #4CAF50; /* Green for PO button */
+        color: white;
+    }
+
+    .btn-so {
+        background-color: #2196F3; /* Blue for SO button */
+        color: white;
+    }
+
+    .header-buttons button:hover {
+        transform: scale(1.05); /* Adds a slight grow effect when hovering */
+    }
+
+    .btn-po:hover {
+        background-color: #27ae60; /* Darker green for PO button on hover */
+    }
+
+    .btn-so:hover {
+        background-color: #00389f; /* Darker blue for SO button on hover */
+    }
+
+
         .container {
             background: white;
             padding: 20px;
@@ -294,9 +317,13 @@
 <body>
     <div class="header">
         <h2>ระบบจัดเตรียมสินค้าSO</h2>
-        <a href="adminSO"><button >หน้าหลัก</button></a>
+        <div class="header-buttons">
+            <a href="adminpo"><button class="btn-po">ระบบจัดเตรียมรถรับของPO</button></a>
+            <a href="adminSO"><button class="btn-so">หน้าหลัก</button></a>
+        </div>
     </div>
-<a href="adminpo"><button >ระบบจัดเตรียมรถรับของPO</button></a>
+    
+
 
     <div class="container">
         <div class="top-section">
@@ -353,7 +380,8 @@
                                     '{{ $item->so_detail_id }}',
                                     '{{ $item->customer_id }}',
                                     '{{ $item->customer_address }}',
-                                    '{{ $item->date_of_dali }}'
+                                    '{{ $item->date_of_dali }}',
+                                    '{{ $item->sale_name }}'
                                 )">
                                 เพิ่มเติม
                              </a></td>
@@ -405,7 +433,7 @@
 </div>
 
 <script>
-    function openPopup(soDetailId, customer_id, customer_address, date_of_dali) {
+    function openPopup(soDetailId, customer_id, customer_address, date_of_dali,sale_name) {
     document.getElementById("popup").style.display = "flex"; // แสดง Popup
 
     let popupBody = document.getElementById("popup-body-1");
@@ -415,6 +443,7 @@
             <td>${customer_id}</td>
             <td>${customer_address}</td>
             <td>${date_of_dali}</td>
+            <td>${sale_name}</td>
         </tr>
     `;
 

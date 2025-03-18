@@ -25,18 +25,61 @@
             width: 90%;
             box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.2);
         }
-        .header button {
-        padding: 12px 20px;
+        .header {
+            background: linear-gradient(to right, #0e50ad, #3a6073);
+            padding: 15px 30px;
+            color: white;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 1.2rem;
+            border-radius: 8px;
+            margin: 20px auto;
+            width: 90%;
+            box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.2);
+        }
+
+        .header-buttons {
+            display: flex;
+            gap: 10px;
+            margin-left: auto; /* This will push the buttons to the right */
+        }
+
+        .header-buttons button {
+        padding: 15px 20px;
+        font-size: 16px;
+        cursor: pointer;
+        border: none;
         border-radius: 8px;
         font-weight: bold;
         text-decoration: none;
-        border: none;
-        cursor: pointer;
         transition: all 0.3s ease;
+        margin-right: 10px; /* Adds space between buttons */
+    }
+
+        .btn-po {
+            background-color: #4CAF50; /* Green for PO button */
+            color: white;
         }
-        .header button:hover {
-            background-color: #c0392b;
+
+        .btn-so {
+            background-color: #2196F3; /* Blue for SO button */
+            color: white;
         }
+
+        .header-buttons button:hover {
+            transform: scale(1.05); /* Adds a slight grow effect when hovering */
+        }
+
+        .btn-po:hover {
+            background-color: #27ae60; /* Darker green for PO button on hover */
+        }
+
+        .btn-so:hover {
+            background-color: #00389f; /* Darker blue for SO button on hover */
+        }
+
+
         .container {
             background: white;
             padding: 20px;
@@ -288,21 +331,46 @@
             border-radius: 5px;
             background-color: #e1e5ea;
         }
-        .container {
-        align-items: center;
-        gap: 10px; /* ระยะห่างระหว่าง label และ dropdown */
-        margin-top: 10px;
-        text-align: center;
-        width: 100%;
-        }
-        
+        .cartype {
+    margin: 20px 0;
+    font-family: Arial, sans-serif;
+    }
+
+    .cartype label {
+        font-size: 16px;
+        font-weight: bold;
+        margin-right: 10px;
+        color: #333;
+    }
+
+    .cartype select {
+        padding: 8px;
+        font-size: 14px;
+        width: 200px;
+        border: 1px solid #ccc;
+        border-radius: 5px;
+        background-color: #f9f9f9;
+        transition: border-color 0.3s;
+    }
+
+    .cartype select:focus {
+        border-color: #007BFF;
+        outline: none;
+    }
+
+    .cartype option {
+        padding: 10px;
+    }
+
     </style>
 </head>
 <body>
     <div class="header">
         <h2>ระบบจัดเตรียมรถรับของPO</h2>
-        <a href="dashboardadmin"><button >ระบบจัดเตรียมสินค้าSO</button></a>
-        <a href="adminSO"><button >หน้าหลัก</button></a>
+        <div class="header-buttons">
+            <a href="dashboardadmin"><button class="btn-po">ระบบจัดเตรียมสินค้าSO</button></a>
+            <a href="adminSO"><button class="btn-so">หน้าหลัก</button></a>
+        </div>
     </div>
 
     <div class="container">
@@ -316,14 +384,14 @@
             <div class="button-group">
                 <button onclick="exportToExcel()">🖨 ปริ้นเอกสาร</button>
                 <button onclick="window.location.href='historypo'">📜 ประวัติเอกสาร</button>
-                <div class="container">
-                    <label for="cartype">🚗 ประเภทรถ :</label>
-                    <select id="cartype" onchange="filterTable()">
-                        <option value="">ทั้งหมด</option>
-                        <option value="1">รถมอเตอร์ไซค์</option>
-                        <option value="2">รถใหญ่</option>
-                    </select>
-                     </div>
+            </div>
+            <div class="cartype">
+                <label for="cartype">🚗 ประเภทรถ :</label>
+                <select id="cartype" onchange="filterTable()">
+                    <option value="">ทั้งหมด</option>
+                    <option value="1">รถมอเตอร์ไซค์</option>
+                    <option value="2">รถใหญ่</option>
+                </select>
             </div>
             
             <div class="search-box">
@@ -411,6 +479,7 @@
                         <th>ที่อยู่จัดส่ง</th>
                         <th>วันที่จัดส่ง</th>
                         <th>ผุ้ขาย</th>
+                        <th>ประเภทรถ</th>
                     </tr>
                 </thead>
                 <tbody id="popup-body-1">   
