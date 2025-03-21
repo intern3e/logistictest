@@ -6,249 +6,253 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>ระบบจัดเตรียมสินค้า</title>
     <style>
-        body {
-            font-family: 'Poppins', sans-serif;
-            background-color: #f5f7fa;
-            margin: 0;
-            padding: 0;
-        }
-        .header {
-            background: linear-gradient(to right, #2c3e50, #4b6584);
-            padding: 15px 30px;
-            color: white;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            font-size: 1.2rem;
-            border-radius: 8px;
-            margin: 20px auto;
-            width: 90%;
-            box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.2);
-        }
-            .header-buttons button {
-        padding: 15px 20px;
-        font-size: 16px;
-        cursor: pointer;
-        border: none;
-        border-radius: 8px;
-        font-weight: bold;
-        text-decoration: none;
-        transition: all 0.3s ease;
-        margin-right: 10px; /* Adds space between buttons */
-    }
+body {
+    font-family: 'Poppins', sans-serif;
+    background-color: #F5F5F7;
+    color: #1D1D1F;
+    margin: 0;
+    padding: 0;
+}
 
-    .btn-po {
-        background-color: #4CAF50; /* Green for PO button */
-        color: white;
-    }
+.header {
+    background: linear-gradient(to right, #2c3e50, #4b6584);
+    padding: 15px 30px;
+    color: white;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 1.2rem;
+    border-radius: 8px;
+    margin: 20px auto;
+    width: 90%;
+    box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.2);
+}
 
-    .btn-so {
-        background-color: #2196F3; /* Blue for SO button */
-        color: white;
-    }
+.header-buttons {
+    display: flex;
+    gap: 10px;
+    margin-left: auto;
+}
 
-    .header-buttons button:hover {
-        transform: scale(1.05); /* Adds a slight grow effect when hovering */
-    }
+.header-buttons button {
+    padding: 15px 20px;
+    font-size: 16px;
+    cursor: pointer;
+    border: none;
+    border-radius: 8px;
+    font-weight: bold;
+    text-decoration: none;
+    transition: all 0.3s ease;
+    margin-right: 10px;
+}
 
-    .btn-po:hover {
-        background-color: #27ae60; /* Darker green for PO button on hover */
-    }
+.btn-po {
+    background-color: #0071E3;
+    color: white;
+}
 
-    .btn-so:hover {
-        background-color: #00389f; /* Darker blue for SO button on hover */
-    }
+.btn-so {
+    background-color:  red;
+    color: white;
+}
+
+.header-buttons button:hover {
+    transform: scale(1.05);
+}
+
+.btn-po:hover {
+    background-color: #005BB5;
+}
+
+.btn-so:hover {
+    background-color: rgb(179, 1, 1);
+}
 
 
-        .container {
-            background: white;
-            padding: 20px;
-            border-radius: 8px;
-            box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.1);
-            width: 90%;
-            margin: auto;
-        }
-        .table-container {
-            background: white;
-            margin: 0 5%;
-            padding: 20px;
-            border-radius: 12px;
-            box-shadow: 0px 6px 12px rgba(0, 0, 0, 0.1);
-            overflow: hidden;
-        }
 
-        table {
-            width: 100%;
-            border-collapse: collapse;
-            text-align: center;
-        }
+.top-section {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin: 0 auto;
+    margin-bottom: 15px;
+    gap: 20px;
+    width: 90%;
+    padding: 15px 20px;
+    border-radius: 8px;
+    box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.1);
+    text-align: center;
+}
 
-        .top-section {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 15px;
-        }
-        .top-section button {
-            padding: 8px 12px;
-            border: none;
-            background: #27ae60;
-            color: white;
-            border-radius: 5px;
-            cursor: pointer;
-            transition: 0.3s;
-        }
-        .top-section {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            margin: 0px 5%;
-        }
+.filter-form {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
 
-        .top-section label {
-            font-weight: bold;
-            color: #2c3e50;
-        }
+.filter-form label {
+    font-weight: bold;
+    color: #1D1D1F;
+    font-size: 1rem;
+}
 
-        .top-section input {
-            padding: 8px;
-            border-radius: 5px;
-            font-size: 1rem;
-        }
-        .top-section button:hover {
-            background: #2980b9;
-        }
-        .filter-container {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-        }
+.filter-form input[type="date"] {
+    padding: 8px;
+    border-radius: 5px;
+    border: 1px solid #00000a;
+    background: #ffffffa4;
+    color: #000;
+    font-size: 1rem;
+}
 
-        .filter-container input {
-            padding: 8px;
-            border-radius: 5px;
-            border: 1px solid #ccc;
-        }
+.filter-form button {
+    padding: 8px 12px;
+    border: none;
+    background: #0071E3;
+    color: white;
+    border-radius: 5px;
+    cursor: pointer;
+    transition: 0.3s;
+    font-size: 1rem;
+}
 
-        .filter-container button {
-            background-color: #2ecc71;
-            color: white;
-            padding: 8px 15px;
-            border: none;
-            border-radius: 5px;
-            cursor: pointer;
-            transition: 0.3s;
-        }
+.filter-form button:hover {
+    background: #005BB5;
+}
 
-        .filter-container button:hover {
-            background-color: #27ae60;
-        }
+.search-box {
+    display: flex;
+    max-width: 300px;
+    width: 100%;
+    margin-left: -22%;
+}
 
-        .button-group {
-            display: flex;
-            gap: 10px;
-        }
+.search-box input {
+    flex-grow: 1;
+    padding: 8px;
+    border-radius: 5px;
+    border: 1px solid #000000;
+    background-color: #ffffff;
+    font-size: 1rem;
+    transition: border-color 0.3s;
+}
 
-        .button-group button {
-            padding: 15px 20px;
-            border-radius: 8px;
-            font-weight: bold;
-            text-decoration: none;
-            border: none;
-            cursor: pointer;
-            transition: all 0.3s ease;
-        }
-        .button-group button {
-            background-color: #f39c12;
-            font-size: 16px;
-            color: white;
-            box-shadow: 0px 4px 6px rgba(0, 0, 0, 0.2);
-        }
+.search-box input:focus {
+    border-color: #0071E3;
+    outline: none;
+}
 
-        .button-group button:hover {
-            background-color: #e67e22;
-            transform: scale(1.05);
-        }
-        .table th, .table td {
-            padding: 12px;
-            border: 1px solid #dcdde1;
-            text-align: center;
-        }
+.search-box input::placeholder {
+    color: #888;
+    font-size: 0.9rem;
+}
 
-        .table th {
-            background: linear-gradient(to right, #2c3e50, #4b6584);
-            color: white;
-            font-weight: bold;
-        }
+.button-group {
+    display: flex;
+    gap: 15px;
+    align-items: center;
+}
 
-        .table-striped tr:nth-child(odd) {
-            background-color: #f9f9f9;
-        }
+.button-group label {
+    font-weight: bold;
+    font-size: 1rem;
+}
 
-        .table-striped tr:hover {
-            background-color: #ecf0f1;
-        }
+.button-group button {
+    padding: 15px 20px;
+    border-radius: 8px;
+    font-weight: bold;
+    text-decoration: none;
+    border: none;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    background-color: #ff9d2d;
+    color: rgb(255, 255, 255);
+}
 
-        .link {
-            color: #16a085;
-            font-weight: bold;
-            text-decoration: none;
-        }
-        .link:hover {
-            text-decoration: underline;
-        }
+.button-group button:hover {
+    background-color: #b37005;
+    transform: scale(1.05);
+}
 
-        table {
-            width: 100%;
-            border-collapse: collapse;
-            text-align: center;
-        }
+.button-group a button {
+    background-color: #0071E3;
+    color: white;
+}
 
-        th, td {
-            padding: 12px;
-            border: 1px solid #2c3e50;
-            font-size: 1rem;
-        }
+.button-group a button:hover {
+    background-color: #005BB5;
+}
 
-        th {
-            background: #00389f;
-            color: white;
-            text-transform: uppercase;
-        }
+.button-group a:last-child button {
+    background-color: red;
+}
 
-        tr:nth-child(odd) {
-            background-color: #f8f9fa;
-        }
+.button-group a:last-child button:hover {
+    background-color: #ad0404;
+}
 
-        .tr {
-            background-color: #f8f9fa;
-        }
 
-        tr:hover {
-            background-color: #e1e5ea;
-            width: 70%;
-            transition: 0.2s;
-        }
 
-        td a {
-            color: #27ae60;
-            font-weight: bold;
-            text-decoration: none;
-        }
+.search-box {
+    display: flex;
+    align-items: center;
+    max-width: 250px;
+}
 
-        .search-box {
-            flex-grow: 1;
-            max-width: 200px;
-        }
+.search-box input {
+    flex-grow: 1;
+    padding: 8px;
+    border-radius: 5px;
+    border: 1px solid #6E6E73;
+    background-color: #FFFFFF;
+}
 
-        .search-box input {
-            width: 90%;
-            height: 30px;
-            margin: 0px -30%;
-            background: #f8f9fa;
-        }
+.table-container {
+    background: white;
+    margin: 0 5%;
+    padding: 20px;
+    border-radius: 12px;
+    box-shadow: 0px 6px 12px rgba(0, 0, 0, 0.1);
+    overflow: hidden;
+}
 
-        .popup-overlay {
+table {
+    width: 100%;
+    border-collapse: collapse;
+    text-align: center;
+}
+
+th, td {
+    padding: 12px;
+    border: 1px solid #2c3e50;
+    font-size: 1rem;
+}
+
+th {
+    background-color: #0071E3;
+    color: white;
+    text-transform: uppercase;
+}
+
+.table-striped tr:nth-child(odd) {
+    background-color: #F5F5F7;
+}
+
+.table-striped tr:hover {
+    background-color: #E5E5E7;
+}
+
+.link {
+    color: #0071E3;
+    font-weight: bold;
+    text-decoration: none;
+}
+
+.link:hover {
+    text-decoration: underline;
+}
+.popup-overlay {
             display: none;
             position: fixed;
             top: 0;
@@ -260,8 +264,7 @@
             justify-content: center;
             align-items: center;
         }
-
-        .popup-content {
+.popup-content {
             background: linear-gradient(to right, #f0f2f5, #dfe9f3);
             padding: 20px;
             border-radius: 10px;
@@ -274,7 +277,6 @@
             max-height: 500px;
             overflow-y: auto;
         }
-
         .close-btn {
             position: absolute;
             top: 10px;
@@ -283,40 +285,12 @@
             font-size: 18px;
             font-weight: bold;
         }
-        .search-box {
-            flex-grow: 1;
-            max-width: 200px;
-        }
-
-        .search-box input {
-            width: 90%;
-            height: 30px;
-            margin: 0px 10px;
-            background: #f8f9fa;
-        }
-
-        .search-box {
-            display: flex;
-            align-items: center;
-            transition: 0.3s;
-            max-width: 250px;
-        }
-
-        .search-box input {
-            flex-grow: 1;
-            padding: 5px;
-            border: none;
-            outline: none;
-            font-size: 1rem;
-            border-radius: 5px;
-            background-color: #e1e5ea;
-        }
-
+        
     </style>
 </head>
 <body>
     <div class="header">
-        <h2>ระบบจัดเตรียมสินค้าSO</h2>
+        <h2>ระบบจัดเตรียมเส้นทางรถของบิลSO</h2>
         <div class="header-buttons">
             <a href="adminpo"><button class="btn-po">ระบบจัดเตรียมรถรับของPO</button></a>
             <a href="adminSO"><button class="btn-so">หน้าหลัก</button></a>
@@ -325,67 +299,75 @@
     
 
 
-    <div class="container">
-        <div class="top-section">
-                <form method="GET" action="{{ route('admin.dashboardadmin') }}" class="filter-form">
-                    <label for="date">📅 วันที่:</label>
-                    <input type="date" id="date" name="date" value="{{ request('date') }}">
-                    <button type="submit">ค้นหา</button>
-                </form>
-
-            <div class="button-group">
-                <button onclick="exportToExcel()">🖨 ปริ้นเอกสาร</button>
-                <button onclick="window.location.href='history'">📜 ประวัติเอกสาร</button>
-            </div>
-            
-            <div class="search-box">
+    <div class="top-section">
+        <form method="GET" action="{{ route('admin.dashboardadmin') }}" class="filter-form">
+            <label style="color: rgb(0, 0, 0)" for="date">📅 วันที่:</label>
+            <input type="date" id="date" name="date" value="{{ request('date') }}">
+            <button type="submit">ค้นหา</button>
+        </form>
+    
+        <div class="search-box">
             <input type="text" id="search-input" placeholder=" ค้นหา เลขที่บิล" onkeyup="searchTable()">
         </div>
-        
-        </div>
-        
-        
     
-
-
+        <div class="button-group">
+            <label>
+                <input type="checkbox" id="checkAll" onclick="toggleCheckboxes()"> ทั้งหมด
+            </label>
+            <button onclick="exportToExcel()">🖨 ปริ้นเอกสารเส้นทางการเดินรถ</button>
+            <a href="history"><button>📜 ประวัติเอกสาร</button></a>
+            <a href="dashboardadminpdf"><button>ปริ้นเอกสารSO</button></a>
+        </div>
+    </div>
+    
+        
         <div class="table-container">
             <table>
                 <thead>
+                    
                     <tr>
                         <th>ปริ้นเอกสาร</th>
-                        <th>บิลลำดับ</th>
-                        <th>รหัสลูกค้า</th>
+                        <th>เลขที่บิล</th>
+                        <th>อ้างอิงใบสั่งขาย</th>
+                        <th>อ้างอิงใบสั่งซื้อ</th>
+                        <th>ชื่อลูกค้า</th>
                         <th>เบอร์ติดต่อ</th>
                         <th>ที่อยู่จัดส่ง</th>
                         <th>ละติจูด ลองจิจูด</th>
                         <th>วันที่จัดส่ง</th>
                         <th>ผู้เปิดบิล</th>
+                        <th>แจ้งเพิ่มเติม</th>
                         <th>ข้อมูลสินค้า</th>
                     </tr>
                 </thead>
                 <tbody id="table-body">
                     @foreach($bill as $item)
-                        @if($item->status == 0)
+                        @if($item->status == 0 && $item->statuspdf == 1)
                             <tr>
                                 <td><input type="checkbox" class="form-control1" name="status[]"></td>
                                 <td>{{ $item->so_detail_id }}</td>
-                                <td>{{ $item->customer_id }}</td>
+                                <td>{{ $item->so_id }}</td>
+                                <td>{{ $item->ponum }}</td>
+                                <td>{{ $item->customer_name }}</td>
                                 <td>{{ $item->customer_tel }}</td>  
                                 <td>{{ $item->customer_address }}</td>
                                 <td>{{ $item->customer_la_long }}</td>
                                 <td>{{ \Carbon\Carbon::parse($item->date_of_dali)->format('d/m/Y') }}</td> 
                                 <td>{{ $item->emp_name }}</td>
+                                <td>{{ $item->notes }}</td>
                                 <td><a href="javascript:void(0);" 
                                 onclick="openPopup(
                                     '{{ $item->so_detail_id }}',
-                                    '{{ $item->customer_id }}',
+                                    '{{ $item->so_id }}',
+                                    '{{ $item->ponum }}',
+                                    '{{ $item->customer_name }}',
+                                    '{{ $item->customer_tel }}',
                                     '{{ $item->customer_address }}',
                                     '{{ $item->date_of_dali }}',
                                     '{{ $item->sale_name }}'
                                 )">
                                 เพิ่มเติม
                              </a></td>
-                            {{-- '{{ $item->customer ? $item->customer->customer_address : 'ไม่มีข้อมูล' }}',  --}}
                             </tr>
                         @endif
                     @endforeach
@@ -405,8 +387,11 @@
             <table>
                 <thead>
                     <tr>
-                        <th>ID SO Detail</th>
-                        <th>รหัสลูกค้า</th>
+                        <th>เลขที่บิล</th>
+                        <th>อ้างอิงใบสั่งขาย</th>
+                        <th>อ้างอิงใบสั่งซื้อ</th>
+                        <th>ชื่อลูกค้า</th>
+                        <th>เบอร์โทร</th>
                         <th>ที่อยู่จัดส่ง</th>
                         <th>วันที่จัดส่ง</th>
                         <th>ผุ้ขาย</th>
@@ -433,14 +418,17 @@
 </div>
 
 <script>
-    function openPopup(soDetailId, customer_id, customer_address, date_of_dali,sale_name) {
+    function openPopup(soDetailId,so_id,ponum,customer_name,customer_tel,customer_address,date_of_dali,sale_name) {
     document.getElementById("popup").style.display = "flex"; // แสดง Popup
 
     let popupBody = document.getElementById("popup-body-1");
     popupBody.innerHTML = `
         <tr>
             <td>${soDetailId}</td>
-            <td>${customer_id}</td>
+            <td>${so_id}</td>
+            <td>${ponum}</td>
+            <td>${customer_name}</td>
+            <td>${customer_tel}</td>
             <td>${customer_address}</td>
             <td>${date_of_dali}</td>
             <td>${sale_name}</td>
@@ -536,28 +524,6 @@ function exportToExcel() {
     }
 }
 
-function updateStatus(soDetailIds) {
-    fetch('/update-status', {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
-        },
-        body: JSON.stringify({ soDetailIds: soDetailIds })
-    })
-    .then(response => response.json())
-    .then(data => {
-        if (data.success) {
-            console.log("Status updated successfully");
-        } else {
-            console.error("Failed to update status");   
-        }
-    })
-    .catch(error => {
-        console.error("Error updating status:", error);
-    });
-}
-
 function createExcelXML(data) {
     const xmlHeader = `<?xml version="1.0" encoding="UTF-8"?>
         <?mso-application progid="Excel.Sheet"?>
@@ -573,19 +539,22 @@ function createExcelXML(data) {
 
     // Adding headers for the columns
     const headerRow = `<Row>
-        <Cell><Data ss:Type="String">บิลลำดับ</Data></Cell>
-        <Cell><Data ss:Type="String">รหัสลูกค้า</Data></Cell>
+        <Cell><Data ss:Type="String">เลขที่บิล</Data></Cell>
+        <Cell><Data ss:Type="String">อ้างอิงใบสั่งขาย</Data></Cell>
+        <Cell><Data ss:Type="String">อ้างอิงใบสั่งซื้อ</Data></Cell>
+        <Cell><Data ss:Type="String">ชื่อลูกค้า</Data></Cell>
         <Cell><Data ss:Type="String">เบอร์ติดต่อ</Data></Cell>
         <Cell><Data ss:Type="String">ที่อยู่จัดส่ง</Data></Cell>
         <Cell><Data ss:Type="String">ละติจูด ลองจิจูด</Data></Cell>
         <Cell><Data ss:Type="String">วันที่จัดส่ง</Data></Cell>
         <Cell><Data ss:Type="String">ผู้เปิดบิล</Data></Cell>
+        <Cell><Data ss:Type="String">แจ้งเพิ่มเติม</Data></Cell>
     </Row>`;
 
     // Adding data rows (without "เพิ่มเติม" column)
     const rows = data.reduce((acc, row) => {
     // เลือกเฉพาะคอลัมน์ที่ต้องการ (ในที่นี้คอลัมน์ที่ 2 และ 4)
-    const selectedData = [row[1], row[2], row[3], row[4], row[5], row[6], row[7]];  // เลือกคอลัมน์ที่ 2 (รหัสลูกค้า) และคอลัมน์ที่ 4 (ที่อยู่จัดส่ง)
+    const selectedData = [row[1], row[2], row[3], row[4], row[5], row[6], row[7], row[8], row[9], row[10]];  
 
     // แปลงข้อมูลที่เลือกให้เป็น XML
     const rowData = selectedData.map(cell => 
@@ -621,8 +590,41 @@ function searchTable() {
     }
 }
 
+
+function updateStatus(soDetailIds) {
+    console.log("Updating status for:", soDetailIds); // เพิ่ม log เช็คค่า
+    fetch('/update-status', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+        },
+        body: JSON.stringify({ soDetailIds: soDetailIds })
+    })
+    .then(response => response.json())
+    .then(data => {
+        console.log("Response:", data);
+        if (data.success) {
+            console.log("Status updated successfully");
+        } else {
+            console.error("Failed to update status");
+        }
+    })
+    .catch(error => {
+        console.error("Error updating status:", error);
+    });
+}
+
+function toggleCheckboxes() {
+    var checkAllBox = document.getElementById('checkAll');
+    var checkboxes = document.querySelectorAll('input[type="checkbox"]:not(#checkAll)');
+    checkboxes.forEach(function(checkbox) {
+        checkbox.checked = checkAllBox.checked;
+    });
+}
+
     </script>
-    
+
 
 
 </body>

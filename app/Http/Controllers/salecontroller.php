@@ -154,7 +154,9 @@ public function insert(Request $request)
     try {
         $request->validate([
             'so_id' => 'required|string|max:255',
+            'ponum' => 'required|string|max:255',
             'customer_id' => 'required|string|max:255',
+            'customer_name' => 'required|string|max:255',
             'customer_tel' => 'nullable|string|max:255',
             'customer_address' => 'required|string|max:255',
             'customer_la_long' => 'required|string|max:255',
@@ -170,22 +172,19 @@ public function insert(Request $request)
             'item_quantity.*' => 'integer|min:1',
             'item_unit_price' => 'required|array',
             'item_unit_price.*' => 'numeric|min:0',
-            'status' => 'nullable|array',  // อัปเดตเป็น nullable ป้องกัน error
-            'po_document' => 'nullable|mimes:pdf|max:10240',  // PDF file validation
+            'status' => 'nullable|array',
+            'statuspdf' => 'nullable|array'
+              // อัปเดตเป็น nullable ป้องกัน error
         ]);
-
-        // **🔹 File Upload for PDF**
-        $pdfFilePath = null;
-        if ($request->hasFile('po_document')) {
-            $pdfFile = $request->file('po_document');
-            $pdfFilePath = $pdfFile->store('po_documents', 'public');
-        }
 
         // **🔹 Insert into Bills**
         $bill = new Bill();
         $bill->so_id = $request->input('so_id');
+        $bill->ponum = $request->input('ponum');
         $bill->status = 0;
+        $bill->statuspdf = 0;
         $bill->customer_id = $request->input('customer_id');
+        $bill->customer_name = $request->input('customer_name');
         $bill->customer_tel = $request->input('customer_tel');
         $bill->customer_address = $request->input('customer_address');
         $bill->customer_la_long = $request->input('customer_la_long');
@@ -193,7 +192,6 @@ public function insert(Request $request)
         $bill->date_of_dali = $request->input('date_of_dali');
         $bill->emp_name = $request->input('emp_name');
         $bill->sale_name = $request->input('sale_name');
-        $bill->po_document_path = $pdfFilePath;
         $bill->save();
 
         $so_detail_id = $bill->id;
@@ -218,15 +216,14 @@ public function insert(Request $request)
             $bill_detail->save();
         }
 
-        $documentUrl = $pdfFilePath ? Storage::url($pdfFilePath) : null;
 
         DB::commit();
-        return response()->json(['success' => 'เปิดบิลสำเร็จ', 'pdf_url' => $documentUrl]);
+        return response()->json(['success' => 'เปิดบิลสำเร็จ']);
+
     } catch (\Exception $e) {
         DB::rollBack();
-        // Log the error to help debugging
         Log::error($e->getMessage());
-        return response()->json(['error' => 'เกิดข้อผิดพลาด: ' . $e->getMessage()], 500);
+        return response()->json(['error' => 'เกิดข้อผิดพลาด:ใส่ข้อมูลให้ครบถ้วน ' . $e->getMessage()], 500);
     }
 }
 
@@ -327,25 +324,6 @@ public function deleteBill($so_detail_id)
             return response()->json(['error' => 'เกิดข้อผิดพลาด: ' . $e->getMessage()], 500);
         }
     }
-    public function previewPdf($soDetailId)
-{
-    // ค้นหาไฟล์จากฐานข้อมูล
-    $document = bill::where('so_detail_id', $soDetailId)->first();
 
-    if (!$document || !Storage::exists($document->po_document_path)) {
-        abort(404, "Document not found.");
-    }
-
-    // ตรวจสอบว่าไฟล์อยู่ใน public storage หรือไม่
-    $filePath = storage_path('app/public/po_documents/' . $document->po_document_path);
-    
-    if (!file_exists($filePath)) {
-        abort(404, "File not found.");
-    }
-
-    // ส่งไฟล์ PDF ไปยังหน้าแสดงผล
-    return response()->file($filePath);
-}
-    
 }
 

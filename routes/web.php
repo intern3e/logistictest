@@ -30,7 +30,7 @@ use App\Models\Bill_Detail;
     Route::get('/sale/modifydata/{id}', [salecontroller::class, 'modifyData'])->name('sale.modifydata');
     Route::any('/update-bill', [salecontroller::class, 'updateBill']);
     Route::delete('/delete-bill/{so_detail_id}', [salecontroller::class, 'deleteBill']);
-    Route::get('pdf-preview/{soDetailId}', [salecontroller::class, 'previewPdf']);
+
 
     Route::get('/get-bill-detail/{so_detail_id}', function ($so_detail_id) {
         $billDetails = Bill_Detail::where('so_detail_id', $so_detail_id)->get();
@@ -39,11 +39,15 @@ use App\Models\Bill_Detail;
 Route::get('/txt', [SaleController::class, 'popup'])->name('popup');
 
 
+
+
 use App\Http\Controllers\admincontroller;
 Route::get('/dashboardadmin', [AdminController::class, 'dashboard'])->name('admin.dashboardadmin');
 Route::get('/history', [AdminController::class, 'history'])->name('admin.history');
 Route::get('/admin/get-bill-detail/{so_detail_id}', [AdminController::class, 'getBillDetail']);
 Route::post('/update-status', [admincontroller::class, 'updateStatus']);
+Route::get('/dashboardadminpdf', [AdminController::class, 'dashboardpdf'])->name('admin.dashboardadminpdf');
+Route::post('/update-statuspdfso', [admincontroller::class, 'updateStatuspdf']);
 
 
 
@@ -59,14 +63,17 @@ Route::get('/get-pobill-detail/{po_detail_id}', [PoController::class, 'getpoBill
 use App\Http\Controllers\adminpocontroller;
 Route::get('/adminpo', [adminpoController::class, 'dashboard'])->name('po.adminpo');
 Route::get('/historypo', [AdminpoController::class, 'historypo'])->name('po.historypo');
-Route::post('/update-status', [adminpocontroller::class, 'updateStatus']);
+Route::post('/update-statuspo', [adminpocontroller::class, 'updateStatus']);
 
 
 // Doc system
-use App\Http\Controllers\doccontroller;
-Route::get('/dashboarddoc', [doccontroller::class, 'dashboarddoc'])->name('document.dashboarddoc');
-Route::get('/insertdoc', [doccontroller::class, 'insertdoc'])->name('document.insertdoc');
+use App\Http\Controllers\DocController;
+Route::get('/dashboarddoc', [DocController::class, 'dashboarddoc'])->name('document.dashboarddoc');
+Route::get('/insertdoc', [DocController::class, 'insertdoc'])->name('document.insertdoc');
 Route::post('/insertdocu', [DocController::class, 'insertDocu'])->name('insertdocu');
+
+
+
 
 
 
@@ -75,7 +82,7 @@ Route::post('/insertdocu', [DocController::class, 'insertDocu'])->name('insertdo
 use App\Http\Controllers\admindoccontroller;
 Route::get('/admindoc', [admindoccontroller::class, 'dashboarddoc'])->name('document.admindoc');
 Route::get('/historydoc', [admindoccontroller::class, 'historydoc'])->name('ducument.historydoc');
-Route::post('/update-status', [admindoccontroller::class, 'updateStatus']);
+Route::post('/update-statusdoc', [admindoccontroller::class, 'updateStatus']);
 
 
 

@@ -6,6 +6,8 @@ use Illuminate\Http\Request;
 use App\Models\Docbills;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Validator;
+
 
 class DocController extends Controller
 {
@@ -24,42 +26,42 @@ class DocController extends Controller
     {
         return view('document.insertdoc');
     }
-
     public function insertDocu(Request $request)
     {
-        // Validate incoming request data
-        $request->validate([
-            'so_id' => 'required|string|max:255',
-            'doc_id' => 'required|string|max:255',
-            'so_number' => 'required|string|max:255',
-            'doctype' => 'required|integer',
-            'customer_id' => 'nullable|string|max:255',
-            'customer_name' => 'nullable|string|max:255',
+        $validator = Validator::make($request->all(), [
+            'so_id' => 'nullable',
+            'doctype' => 'required',
+            'emp_name' => 'required',
+            'customer_id' => 'required',
+            'customer_name' => 'required',
+            'customer_tel' => 'nullable|string',
+            'customer_address' => 'nullable|string',
+            'customer_la_long' => 'nullable|string',
+            'date_of_dali' => 'nullable|date',
             'additional_notes' => 'nullable|string',
         ]);
-    
+
+        if ($validator->fails()) {
+            return response()->json(['error' => $validator->errors()->first()], 400);
+        }
+
         try {
-            DB::beginTransaction();
-    
-            // Insert the data into the database
-            $bill = Docbills::create([
+            DB::table('docbills')->insert([
                 'so_id' => $request->so_id,
-                'doc_id' => $request->doc_id,
-                'so_number' => $request->so_number,
                 'doctype' => $request->doctype,
+                'emp_name' => $request->emp_name,
                 'customer_id' => $request->customer_id,
                 'customer_name' => $request->customer_name,
-                'additional_notes' => $request->additional_notes,
-                'created_at' => now(),
-                'updated_at' => now(),
+                'customer_tel' => $request->customer_tel,
+                'customer_address' => $request->customer_address,
+                'customer_la_long' => $request->customer_la_long,   
+                'revdate' => $request->date_of_dali,
+                'notes' => $request->additional_notes,
             ]);
-    
-            DB::commit();
-            return response()->json(['success' => 'Bill opened successfully']);
+
+            return response()->json(['success' => 'บันทึกข้อมูลสำเร็จ']);
         } catch (\Exception $e) {
-            DB::rollBack();
-            Log::error('Error occurred while opening the bill: ' . $e->getMessage());
-            return response()->json(['error' => 'Error occurred while opening the bill. Please try again later.'], 500);
+            return response()->json(['error' => 'เกิดข้อผิดพลาดในการบันทึกข้อมูล: ' . $e->getMessage()], 500);
         }
     }
 }

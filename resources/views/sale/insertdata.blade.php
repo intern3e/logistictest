@@ -368,6 +368,11 @@
                     <label>ผู้เปิดบิล :</label>
                     <input type="text" id="emp_name" name="emp_name" value="{{ session('emp_name', 'Guest') }}">
                 </div>
+                
+                <div>
+                    <label for="po_document">เลขที่ PO</label>
+                    <input type="text" id="ponum" name="ponum" value="123" readonly>
+                </div>
 
                 <div>
                     <label>ผู้ขาย :</label>
@@ -389,14 +394,6 @@
                     <label>เบอร์ติดต่อ :</label>
                     <input type="text" id="customer_tel" name="customer_tel">
                 </div>
-
-                <div>
-                    <label for="po_document">อัปโหลดไฟล์ :</label>
-                    <input type="file" id="po_document" name="po_document" accept=".pdf" multiple>
-                    <p id="error-message" style="color: red;"></p>
-                </div>
-                <div id="preview"></div>
-                
             <br>
 
             </div>
@@ -412,10 +409,11 @@
                         <button type="button" class="btn-custom" onclick="openGoogleMaps()">Google Maps</button>
                     </div>
 
-                    <div class="mb-3">
-                        <label class="form-label">แผนที่ :</label>
-                        <iframe id="mapFrame" width="100%" height="300" style="border:0;" allowfullscreen="" loading="lazy"></iframe>
-                    </div>
+                <div class="mb-3">
+                    <label class="form-label">แผนที่ :</label>
+                    <iframe id="mapFrame" width="100%" height="300" style="border:0;" allowfullscreen="" loading="lazy"></iframe>
+                </div>
+
                     {{-- map --}}
                     <script>
                         function updateMap() {
@@ -469,7 +467,7 @@
 
                                     
                                     <label for="additional_notes">แจ้งเพิ่มเติม</label>
-                                    <textarea id="additional_notes" name="additional_notes" rows="4"></textarea>
+                                    <textarea id="notes" name="notes" rows="4"></textarea>
                                     
 
                                     <div style="display: flex; justify-content: center; margin-top: 20px;">
@@ -532,7 +530,7 @@
                     let data = await response.json();
                     if (data.success) {
                         alert(data.success);
-                        window.location.href = '/dashboard';
+                        window.location.href = '/SOlist';
                     } else if (data.error) {
                         alert(data.error);
                     }
@@ -650,6 +648,7 @@
         // ฟังก์ชันดึงข้อมูล SO จาก API
         async function fetchSODetails(soNum) {
             try {
+                // let response = await fetch(`http://server_update:8000/api/getSOHD?SONum=SO${soNum}`);
                 let response = await fetch(`http://server_update:8000/api/getSOHD?SONum=SO${soNum}`);
                 if (!response.ok) {
                     throw new Error("เกิดข้อผิดพลาดในการโหลดข้อมูล");

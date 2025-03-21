@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>DashboardSO</title>
+    <title>📑 ระบบเปิดบิล</title>
     <style>
   /* --- Global Style --- */
 /* --- Global Style --- */
@@ -335,6 +335,8 @@ td a:hover {
                 <tr>
                     <th>เลขที่บิล</th>
                     <th>อ้างอิงใบสั่งขาย</th>
+                    <th>อ้างอิงใบสั่งซื้อ</th>
+                    <th>ชื่อลูกค้า</th>
                     <th>ที่อยู่จัดส่ง</th>
                     <th>วันที่จัดส่ง</th>
                     <th>ผู้เปิดบิล</th>
@@ -348,6 +350,8 @@ td a:hover {
                 <tr>
                     <td>{{ $item->so_detail_id }}</td> 
                     <td>{{ $item->so_id }}</td>
+                    <td>{{ $item->ponum }}</td>
+                    <td>{{ $item->customer_name }}</td>  
                     <td>{{ $item->customer_address }}</td>  
                     <td>{{ \Carbon\Carbon::parse($item->date_of_dali)->format('d/m/Y') }}</td> 
                     <td>{{ $item->emp_name }}</td> 
@@ -363,11 +367,12 @@ td a:hover {
                         onclick="openPopup(
                             '{{ $item->so_detail_id }}',
                             '{{ $item->so_id }}',
-                            '{{ $item->customer_id }}',
+                            '{{ $item->ponum }}',
+                            '{{ $item->customer_name }}',
                             '{{ $item->customer_address }}',
                             '{{ \Carbon\Carbon::parse($item->date_of_dali)->format('d/m/Y') }}',
                             '{{ $item->sale_name}}',
-                            '{{ $item->po_document_path}}'
+                            '{{ $item->notes}}',
                         )">
                     เพิ่มเติม
                  </a></td>
@@ -391,12 +396,12 @@ td a:hover {
                     <thead>
                         <tr>
                             <th>เลขที่บิล</th>
-                            <th>SO Number</th>
-                            <th>รหัสลูกค้า</th>
+                            <th>อ้างอิงใบสั่งขาย</th>
+                            <th>อ้างอิงใบสั่งซื้อ</th>
+                            <th>ชื่อลูกค้า</th>
                             <th>ที่อยู่จัดส่ง</th>
                             <th>วันที่จัดส่ง</th>
                             <th>ผู้ขาย</th>
-                            <th>Pdf </th>
                         </tr>
                     </thead>
                     <tbody id="popup-body-1">   
@@ -415,7 +420,9 @@ td a:hover {
                     <tbody id="popup-body">
                     </tbody>
                 </table>
-                
+                <br>
+                <textarea id="popup-body-3" readonly>
+                </textarea>
               
                 
 
@@ -425,7 +432,7 @@ td a:hover {
     </div>
     
     <script>
-function openPopup(soDetailId, so_id, customer_id, customer_address, date_of_dali, sale_name,po_document_path) {
+function openPopup(soDetailId, so_id, ponum, customer_name, customer_address, date_of_dali, sale_name, notes) {
     document.getElementById("popup").style.display = "flex"; // แสดง Popup
 
     let popupBody = document.getElementById("popup-body-1");
@@ -433,17 +440,19 @@ function openPopup(soDetailId, so_id, customer_id, customer_address, date_of_dal
         <tr>
             <td>${soDetailId}</td>
             <td>${so_id}</td>
-            <td>${customer_id}</td>
+            <td>${ponum}</td>
+            <td>${customer_name}</td>
             <td>${customer_address}</td>
             <td>${date_of_dali}</td>
             <td>${sale_name}</td>
-                <td>${po_document_path}</td>
-
         </tr>
     `;
 
     let secondPopupBody = document.getElementById("popup-body");
     secondPopupBody.innerHTML = "<tr><td colspan='4'>Loading...</td></tr>";
+
+    let thirdPopupBody = document.getElementById("popup-body-3"); // ดึง textarea จริงๆ มาใช้
+    thirdPopupBody.value = notes || "ไม่มีหมายเหตุ"; // ใช้ค่า notes ที่ส่งมา ถ้าไม่มีให้แสดง "ไม่มีหมายเหตุ"
 
     // ใช้ fetch ดึงข้อมูลจาก Laravel
     fetch(`/get-bill-detail/${soDetailId}`)
@@ -462,22 +471,19 @@ function openPopup(soDetailId, so_id, customer_id, customer_address, date_of_dal
                     `);
                 });
 
-                let pdfPath = data[0].po_document_path; // สมมติว่า po_document_path อยู่ใน data[0]
-                secondPopupBody.insertAdjacentHTML("beforeend", `
-                    <tr>
-                        <td colspan="4">
-                         
-
-                        </td>
-                    </tr>
-                `);
-            }  else {
+                // อัปเดต textarea เฉพาะถ้า notes ยังไม่มีค่า
+                if (!notes) {
+                    thirdPopupBody.value = data[0].notes || "ไม่มีหมายเหตุ";
+                }
+            } else {
                 secondPopupBody.innerHTML = "<tr><td colspan='4'>ไม่มีข้อมูล</td></tr>";
+                thirdPopupBody.value = "ไม่มีหมายเหตุ";
             }
         })
         .catch(error => {
             console.error("Error fetching data:", error);
             secondPopupBody.innerHTML = "<tr><td colspan='4'>เกิดข้อผิดพลาด</td></tr>";
+            thirdPopupBody.value = "เกิดข้อผิดพลาดในการโหลดหมายเหตุ";
         });
 }
 

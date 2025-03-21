@@ -26,15 +26,24 @@ class AdminpoController extends Controller
     }
    
     public function updateStatus(Request $request)
-    {
-        $poDetailIds  = $request->input('poDetailIds');
-    
-        // Update the status of the selected SO details to 1
-        DB::table('pobills')
-            ->whereIn('po_detail_id', $poDetailIds )
-            ->update(['status' => 1]);
-    
-        return response()->json(['success' => true]);
+{
+    // ตรวจสอบว่ามีค่า soDetailIds ส่งมาหรือไม่
+    $poDetailIds = $request->input('poDetailIds');
+    if (empty($poDetailIds)) {
+        return response()->json(['success' => false, 'message' => 'No PO Detail IDs provided'], 400);
     }
+
+    try {
+        // อัปเดตสถานะจาก 0 เป็น 1
+        DB::table('pobills')
+            ->whereIn('po_detail_id', $poDetailIds)
+            ->update(['status' => 1]);
+
+        return response()->json(['success' => true]);
+    } catch (\Exception $e) {
+        // จัดการข้อผิดพลาดที่เกิดขึ้น
+        return response()->json(['success' => false, 'message' => 'Failed to update status', 'error' => $e->getMessage()], 500);
+    }
+}
     
 }

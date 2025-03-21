@@ -295,9 +295,8 @@ option {
     </div>
 
     <form id="billForm">
-
+        @csrf
         <input type="hidden" name="so_id" id="so_id" value="">
-        <input type="hidden" name="doc_id" id="doc_id" value="">
         
         <script>
             document.getElementById('so_id').addEventListener('change', function() {
@@ -325,10 +324,10 @@ option {
             <input type="text" id="sale_name" name="sale_name">          
 
             <label>รหัสลูกค้า :</label>
-            <input type="text" id="customer_id" name="customer_id" readonly>
+            <input type="text" id="customer_id" name="customer_id" >
 
             <label>ชื่อบริษัท :</label>
-            <input type="text" id="customer_name" name="customer_name" readonly>
+            <input type="text" id="customer_name" name="customer_name" >
 
             <label>เบอร์ติดต่อ :</label>
             <input type="text" id="customer_tel" name="customer_tel" >
@@ -360,11 +359,11 @@ option {
             <label>วันกำหนดส่ง</label>
             <input type="text" id="date_of_dali" name="date_of_dali" readonly>
 
-                        <label for="additional_notes">หมายเหตุ</label>
-                        <textarea id="additional_notes" name="additional_notes" rows="4"></textarea>
+            <label for="additional_notes">หมายเหตุ</label>
+            <textarea id="additional_notes" name="additional_notes" rows="4"></textarea>
                         
 
-            <button type="button" id="submitBill" class="btn btn-success" onclick="submitForm(event)">เปิดบิล</button>
+            <button type="button" id="submitBilldoc" class="btn btn-success" onclick="submitForm(event)">เปิดบิล</button>
 
 
     </form>
@@ -379,42 +378,85 @@ option {
                     "width=800,height=600"
                 );
             }
-            function submitForm() {
-        const formData = new FormData(document.getElementById('billForm'));
+    </script>
 
-        fetch('/insertdocu', {
-    method: 'POST',
-    body: formData,
-    headers: {
-        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
-    },
-})
-.then(response => {
-    if (!response.ok) {
-        throw new Error('Server error');
-    }
-    const contentType = response.headers.get('content-type');
-    if (!contentType || !contentType.includes('application/json')) {
-        return response.text().then(html => {
-            throw new TypeError('Server returned HTML: ' + html);
+
+<script>
+document.getElementById('submitBilldoc').addEventListener('click', async function (event) {
+    event.preventDefault();
+
+    let formData = new FormData(document.getElementById('billForm'));
+
+    try {
+        let response = await fetch('{{ route("insertdocu") }}', {
+            method: 'POST',
+            body: formData,
+            headers: {
+                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
+            },
         });
-    }
-    return response.json();
-})
-.then(data => {
-    if (data.success) {
-        alert(data.success);
-        window.location.href = '/dashboarddoc';
-    } else if (data.error) {
-        alert(data.error);
-    }
-})
-.catch(error => {
-    console.error('Error:', error);
-    alert('มีข้อผิดพลาดในการส่งข้อมูล: ' + error.message);
-});
-    }
 
+        if (!response.ok) {
+            let errorText = await response.text();
+            console.error('Server error:', errorText);
+            alert('เกิดข้อผิดพลาดในการส่งข้อมูล: ' + errorText);
+            return;
+        }
+
+        let data = await response.json();
+        if (data.success) {
+            alert(data.success);
+            window.location.href = '/dashboarddoc';
+        } else {
+            alert(data.error);
+        }
+    } catch (error) {
+        console.error('Fetch error:', error);
+        alert('มีข้อผิดพลาดในการเชื่อมต่อเซิร์ฟเวอร์');
+    }
+});
+</script>
+
+
+
+    <script>
+            function submitForm(event) {
+    event.preventDefault(); // ป้องกันการ submit แบบปกติ
+
+    const formData = new FormData(document.getElementById('billForm'));
+
+    fetch('/insertdocu', {
+        method: 'POST',
+        body: formData,
+        headers: {
+            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
+        },
+    })
+    .then(response => {
+        if (!response.ok) {
+            throw new Error('Server error');
+        }
+        const contentType = response.headers.get('content-type');
+        if (!contentType || !contentType.includes('application/json')) {
+            return response.text().then(html => {
+                throw new TypeError('Server returned HTML: ' + html);
+            });
+        }
+        return response.json();
+    })
+    .then(data => {
+        if (data.success) {
+            alert(data.success);
+            window.location.href = '/dashboarddoc';
+        } else if (data.error) {
+            alert(data.error);
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('มีข้อผิดพลาดในการส่งข้อมูล: ' + error.message);
+    });
+}
     </script>
 
     {{-- api --}}

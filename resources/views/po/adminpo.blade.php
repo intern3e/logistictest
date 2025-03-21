@@ -257,12 +257,12 @@
         }
 
         .search-box {
-            flex-grow: 1;
-            max-width: 200px;
+            display: flex;
+            max-width: 300px;
+            width: 100%; /* Allow input to stretch to the available space */
         }
 
         .search-box input {
-            width: 90%;
             height: 30px;
             margin: 0px -30%;
             background: #f8f9fa;
@@ -303,34 +303,7 @@
             font-size: 18px;
             font-weight: bold;
         }
-        .search-box {
-            flex-grow: 1;
-            max-width: 200px;
-        }
-
-        .search-box input {
-            width: 90%;
-            height: 30px;
-            margin: 0px 10px;
-            background: #f8f9fa;
-        }
-
-        .search-box {
-            display: flex;
-            align-items: center;
-            transition: 0.3s;
-            max-width: 250px;
-        }
-
-        .search-box input {
-            flex-grow: 1;
-            padding: 5px;
-            border: none;
-            outline: none;
-            font-size: 1rem;
-            border-radius: 5px;
-            background-color: #e1e5ea;
-        }
+   
         .cartype {
     margin: 20px 0;
     font-family: Arial, sans-serif;
@@ -373,18 +346,16 @@
         </div>
     </div>
 
-    <div class="container">
         <div class="top-section">
             <form method="GET" action="{{ route('po.adminpo') }}" class="filter-form">
                 <label for="date">📅 วันที่:</label>
                 <input type="date" id="date" name="date" value="{{ request('date') }}">
                 <button type="submit">ค้นหา</button>
             </form>
-
-            <div class="button-group">
-                <button onclick="exportToExcel()">🖨 ปริ้นเอกสาร</button>
-                <button onclick="window.location.href='historypo'">📜 ประวัติเอกสาร</button>
+            <div class="search-box">
+                <input type="text" id="search-input" placeholder=" ค้นหา เลขที่บิล" onkeyup="searchTable()">
             </div>
+
             <div class="cartype">
                 <label for="cartype">🚗 ประเภทรถ :</label>
                 <select id="cartype" onchange="filterTable()">
@@ -393,10 +364,11 @@
                     <option value="2">รถใหญ่</option>
                 </select>
             </div>
+            <div class="button-group">
+                <button onclick="exportToExcel()">🖨 ปริ้นเอกสาร</button>
+                <button onclick="window.location.href='historypo'">📜 ประวัติเอกสาร</button>
+            </div>
             
-            <div class="search-box">
-            <input type="text" id="search-input" placeholder=" ค้นหา เลขที่บิล" onkeyup="searchTable()">
-        </div>
         
         </div>
   
@@ -474,7 +446,7 @@
             <table>
                 <thead>
                     <tr>
-                        <th>ID SO Detail</th>
+                        <th>เลขที่บิล</th>
                         <th>รหัสลูกค้า</th>
                         <th>ที่อยู่จัดส่ง</th>
                         <th>วันที่จัดส่ง</th>
@@ -603,7 +575,7 @@ function exportToExcel() {
     let rows = table.querySelectorAll("tr");
     let data = [];
     let checkedRows = [];
-    let selectedSoDetailIds = []; // Array to store the selected so_detail_ids
+    let poDetailIds = []; 
 
     rows.forEach(row => {
         let checkbox = row.querySelector("input[type='checkbox']");
@@ -616,9 +588,9 @@ function exportToExcel() {
             data.push(rowData);
             checkedRows.push(row);
 
-            // Collect the so_detail_id from the row
-            let soDetailId = row.querySelector("td:nth-child(2)").textContent.trim();
-            selectedSoDetailIds.push(soDetailId);
+            // Collect the po_detail_id from the row
+            let poDetailId = row.querySelector("td:nth-child(2)").textContent.trim();
+            poDetailIds.push(poDetailId); 
         }
     });
 
@@ -631,6 +603,7 @@ function exportToExcel() {
         document.body.appendChild(link);
         link.click();
         document.body.removeChild(link);
+
         // Update the status of checked rows to 1
         checkedRows.forEach(row => {
             let statusCell = row.querySelector("td:first-child");
@@ -639,8 +612,8 @@ function exportToExcel() {
             }
         });
 
-        // Send AJAX request to update the status in the database
-        updateStatus(selectedSoDetailIds);
+        // ส่งค่าไป updateStatus
+        updateStatus(poDetailIds);
 
         // Reload the page after printing
         location.reload();
@@ -649,27 +622,6 @@ function exportToExcel() {
     }
 }
 
-function updateStatus(poDetailIds) {
-    fetch('/update-status', {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
-        },
-        body: JSON.stringify({ poDetailIds: poDetailIds }) 
-    })
-    .then(response => response.json())
-    .then(data => {
-        if (data.success) {
-            console.log("Status updated successfully");
-        } else {
-            console.error("Failed to update status");   
-        }
-    })
-    .catch(error => {
-        console.error("Error updating status:", error);
-    });
-}
 
 function createExcelXML(data) {
     const xmlHeader = `<?xml version="1.0" encoding="UTF-8"?>
@@ -722,10 +674,10 @@ function searchTable() {
         let cells = row.getElementsByTagName("td");
 
         // Get the content of the second column (บิลลำดับ)
-        let soDetailId = cells[1] ? cells[1].textContent.toLowerCase() : '';
+        let poDetailId = cells[1] ? cells[1].textContent.toLowerCase() : '';
 
         // Search for the text inside the selected column (บิลลำดับ)
-        if (soDetailId.indexOf(searchInput) > -1) {
+        if (poDetailId.indexOf(searchInput) > -1) {
             row.style.display = "";
         } else {
             row.style.display = "none";
@@ -733,6 +685,30 @@ function searchTable() {
     }
 }
 
+
+function updateStatus(poDetailIds) {
+    console.log("Updating status for:", poDetailIds); // เพิ่ม log เช็คค่า
+    fetch('/update-statuspo', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+        },
+        body: JSON.stringify({ poDetailIds: poDetailIds })
+    })
+    .then(response => response.json())
+    .then(data => {
+        console.log("Response:", data);
+        if (data.success) {
+            console.log("Status updated successfully");
+        } else {
+            console.error("Failed to update status");
+        }
+    })
+    .catch(error => {
+        console.error("Error updating status:", error);
+    });
+}
     </script>
     
 

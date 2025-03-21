@@ -9,29 +9,20 @@ return new class extends Migration
     /**
      * Run the migrations.
      */
-    public function up(): void
+    public function up()
     {
         Schema::create('docbills', function (Blueprint $table) {
-            $table->string('doc_id');
-            $table->string('status');
-            $table->string('customer_id');
-            $table->string('customer_tel');
-            $table->string('customer_address');
-            $table->string('customer_la_long');
-            $table->string('date_of_dali');
-            $table->string('doc_detail_id');
-            $table->string('emp_name');
-            $table->string('sale_name');
-            $table->text('notes');
-            
+            $table->id('doc_id'); 
+            $table->string('so_id')->nullable();
+            $table->integer('doctype');
+            $table->string('customer_id')->nullable();
+            $table->string('customer_name')->nullable();
+            $table->text('additional_notes')->nullable();
         });
     }
 
-    /**
-     * Reverse the migrations.
-     */
-    public function down(): void
+    public function down()
     {
-        Schema::dropIfExists('tblbill');
+        Schema::dropIfExists('docbills');
     }
 };

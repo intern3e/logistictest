@@ -295,8 +295,7 @@ select#cartype option:checked {
     <div class="header">
         <h3 class="text-dark"> เปิดบิลPO </h3>
     <div class="mb-3">
-
-
+        
         <label class="form-label">เลขที่ PO :</label>
         <form id="poSearchForm">
             <div style="display: flex; justify-content: space-between;">

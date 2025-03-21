@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>DashboardDOC</title>
+    <title>📑 ระบบDoc</title>
     <style>
   /* --- Global Style --- */
   body {
@@ -322,36 +322,21 @@
                 <tr>
                     <th>บิลลำดับที่</th>
                     <th>เลขอ้างอิงใบรับสินค้า</th>
-                    <th>ชื่อร้านค้า</th>
-                    <th>ที่อยู่ร้านค้า</th>
-                    <th>วันที่รับสินค้า</th>
+                    <th>ชื่อ</th>
+                    <th>ที่อยู่</th>
                     <th>ผู้เปิดบิล</th>
-                    <th>ประเภทขนส่ง</th>
                     <th>สถานะการจัดส่ง</th>
                     <th>ข้อมูลสินค้า</th>
                 </tr>
             </thead>
                 </div>     
-{{-- <tr>
                 <tbody id="table-body">
                     @foreach($docbill as $item)
-                    
-                        <td>{{ $item->po_detail_id }}</td> 
-                        <td>{{ $item->po_id }}</td>
-                        <td>{{ $item->store_name }}</td>
-                        <td>{{ $item->store_address }}</td>  
-                        <td>{{ \Carbon\Carbon::parse($item->recvDate)->format('d/m/Y') }}</td> 
-                        <td>{{ $item->emp_name }}</td> 
-                        <td>
-                            @if($item->cartype == 1)
-                                มอเตอร์ไซค์
-                            @elseif($item->cartype == 2)
-                                รถใหญ่
-                            @else
-                                ไม่ทราบประเภท
-                            @endif
-                        </td>
-                        
+                        <td>{{ $item->doc_id }}</td> 
+                        <td>{{ $item->so_id }}</td>
+                        <td>{{ $item->customer_name }}</td>
+                        <td>{{ $item->customer_address }}</td>  
+                        <td>{{ $item->emp_name }}</td>  
                         <td>
                             @if($item->status == 0)
                                 กำลังดำเนินการ
@@ -370,8 +355,8 @@
                             )">
                         เพิ่มเติม
                      </a></td>
-                    </tr> --}}
-                    {{-- @endforeach
+                    </tr> 
+                    @endforeach
                 </tbody>
             </table>
             @if(isset($message))
@@ -478,7 +463,7 @@
                 closePopup();
             }
         }
-    </script> --}}
+    </script> 
 
 
 {{--searchTable --}}
@@ -504,27 +489,6 @@
     // Sort the rows by 'so_detail_id' in descending order on page load
     sortTableDescByColumn(0); // Assuming 'so_detail_id' is in the first column (index 0)
 };
-
-function sortTableDescByColumn(columnIndex) {
-    let table = document.querySelector("table tbody");
-    let rows = Array.from(table.querySelectorAll("tr"));
-
-    rows.sort(function(rowA, rowB) {
-        let cellA = rowA.cells[columnIndex].textContent.trim();
-        let cellB = rowB.cells[columnIndex].textContent.trim();
-
-        // Compare numerically or lexicographically, depending on the column type
-        if (columnIndex === 0) { // For 'so_detail_id', assuming it's numeric
-            return parseInt(cellB) - parseInt(cellA); // Sort in descending order
-        } else {
-            return cellB.localeCompare(cellA); // Sort lexicographically for text columns
-        }
-    });
-
-    // Reorder the rows in the table
-    rows.forEach(row => table.appendChild(row));
-}
-
     </script>
 
 
