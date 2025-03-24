@@ -170,8 +170,6 @@ public function insert(Request $request)
             'item_name.*' => 'string',
             'item_quantity' => 'required|array',
             'item_quantity.*' => 'integer|min:1',
-            'item_unit_price' => 'required|array',
-            'item_unit_price.*' => 'numeric|min:0',
             'status' => 'nullable|array',
             'statuspdf' => 'nullable|array'
               // อัปเดตเป็น nullable ป้องกัน error
@@ -198,7 +196,6 @@ public function insert(Request $request)
         $item_ids = $request->input('item_id');
         $item_names = $request->input('item_name');
         $item_quantities = $request->input('item_quantity');
-        $item_unit_prices = $request->input('item_unit_price');
         $status_checked = $request->input('status', []);  // **🔹 แก้เป็นค่าเริ่มต้น array**
 
         // **🔹 Insert into Bill Details**
@@ -212,7 +209,6 @@ public function insert(Request $request)
             $bill_detail->item_id = $item_ids[$index];
             $bill_detail->item_name = $item_names[$index];
             $bill_detail->quantity = $item_quantities[$index];
-            $bill_detail->unit_price = $item_unit_prices[$index];
             $bill_detail->save();
         }
 

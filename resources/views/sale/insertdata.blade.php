@@ -371,7 +371,7 @@
                 
                 <div>
                     <label for="po_document">เลขที่ PO</label>
-                    <input type="text" id="ponum" name="ponum" value="123" readonly>
+                    <input type="text" id="ponum" name="ponum"  readonly>
                 </div>
 
                 <div>
@@ -438,11 +438,10 @@
                                             <th>รหัสสินค้า</th>
                                             <th>รายการ</th>
                                             <th>จำนวน</th>
-                                            <th>ราคา/หน่วย</th>
                                             <th>ลบ</th>
                                         </tr>
                                     </thead>
-                                    <tbody>
+                                    <tbody id = "detail">
                                         <tr> 
                                             <td><input type="checkbox" class="form-control1" name="status[]"></td>
                                             <td><input type="text" class="form-control1" name="item_id[]"></td>
@@ -450,9 +449,7 @@
                                             <td>
                                                 <input type="number" class="form-control1 item_quantity" name="item_quantity[]" >
                                             </td>
-                                            <td>
-                                                <input type="number" class="form-control1 item_unit_price" name="item_unit_price[]" >
-                                            </td>
+                                            
                                             <td><button type="button" class="btn btn-danger delete-btn">ลบ</button></td>
                                         </tr>
                                     </tbody>
@@ -461,7 +458,7 @@
                                         <label>
                                             <input type="checkbox" name="checkall"> เลือกทั้งหมด
                                         </label>
-                                        <button type="button" class="btn btn-success insert-btn">เพิ่มสินค้า</button>
+                                        <button type="button" class="btn btn-success insert-btn">เพิ่มสินค้า</button> 
                                     </div>
                                     
 
@@ -505,14 +502,14 @@
                     let itemId = row.querySelector('input[name="item_id[]"]').value;
                     let itemName = row.querySelector('input[name="item_name[]"]').value;
                     let itemQuantity = row.querySelector('input[name="item_quantity[]"]').value;
-                    let itemUnitPrice = row.querySelector('input[name="item_unit_price[]"]').value;
+                
                     let itemStatus = row.querySelector('input[name="status[]"]').checked ? 1 : 0;
 
                     // เก็บค่าลงใน FormData
                     formData.append(`item_id[${index}]`, itemId);
                     formData.append(`item_name[${index}]`, itemName);
                     formData.append(`item_quantity[${index}]`, itemQuantity);
-                    formData.append(`item_unit_price[${index}]`, itemUnitPrice);
+              
                     formData.append(`status[${index}]`, itemStatus);
                                         
                 });
@@ -572,9 +569,7 @@
                             <td>
                                 <input type="number" class="form-control1 item_quantity" name="item_quantity[]" oninput="calculateTotal(this)">
                             </td>
-                            <td>
-                                <input type="number" class="form-control1 item_unit_price" name="item_unit_price[]" oninput="calculateTotal(this)">
-                            </td>
+                         
                         
                             <td><button type="button" class="btn btn-danger delete-btn">ลบ</button></td>
                         `;
@@ -644,129 +639,68 @@
             document.getElementById('so_number').value = soNum; // แสดงค่า so_num ใน input
             fetchSODetails(soNum); // เรียกฟังก์ชันดึงข้อมูล SO
         }
-
-        // ฟังก์ชันดึงข้อมูล SO จาก API
-        async function fetchSODetails(soNum) {
-            try {
-                // let response = await fetch(`http://server_update:8000/api/getSOHD?SONum=SO${soNum}`);
-                let response = await fetch(`http://server_update:8000/api/getSOHD?SONum=SO${soNum}`);
-                if (!response.ok) {
-                    throw new Error("เกิดข้อผิดพลาดในการโหลดข้อมูล");
-                }
-
-                let data = await response.json();
-                console.log("API Response:", data); // ตรวจสอบข้อมูล API 
-
-                if (!Array.isArray(data) || data.length === 0 || !data[0].CustID) {
-                    alert("ไม่พบข้อมูลที่ตรงกับเลขที่ SO นี้");
-                    return;
-                }
-
-                // กำหนดค่าลงในฟอร์ม
-                document.getElementById("customer_id").value = data[0].CustID || 'ไม่พบข้อมูล';
-                document.getElementById("customer_name").value = data[0].CustName || 'ไม่พบข้อมูล';
-                document.getElementById("so_id").value = data[0].SONum || '';
-
-                // Format the ShipDate to "วัน-เดือน-ปี"
-                let shipDate = data[0].ShipDate;
-                if (shipDate) {
-                    let formattedDate = new Date(shipDate);
-                    let day = formattedDate.getDate().toString().padStart(2, '0'); // Ensure 2 digits
-                    let month = (formattedDate.getMonth() + 1).toString().padStart(2, '0'); // Month is 0-indexed
-                    let year = formattedDate.getFullYear();
-                    document.getElementById("date_of_dali").value = `${day}-${month}-${year}`;
-                }
-
-            } catch (error) {
-                console.error('Error fetching data:', error);
-                alert('เกิดข้อผิดพลาดในการดึงข้อมูล');        
+    // ฟังก์ชันดึงข้อมูล SO จาก API
+         async function fetchSODetails(soNum) {
+        try {
+            let response = await fetch(`http://server_update:8000/api/getSODetail?SONum=${soNum}`);
+            if (!response.ok) {
+                throw new Error("เกิดข้อผิดพลาดในการโหลดข้อมูล");
             }
+
+            let data = await response.json();
+            console.log("API Response:", data); // ตรวจสอบข้อมูล API 
+
+            if (!data.SoDetail || data.SoDetail.length === 0) {
+                alert("ไม่พบข้อมูลที่ตรงกับเลขที่ SO นี้: " + soNum);
+                return;
+            }
+
+            const soDetails = data.SoDetail;
+            const SoStatus = data.SoStatus;
+
+            // แสดงข้อมูลทั่วไป
+            document.getElementById('so_id').value = SoStatus.SONum;  
+            document.getElementById('ponum').value = soDetails.CustPONo;  
+            document.getElementById('customer_id').value = SoStatus.CustID; 
+            document.getElementById('customer_name').value = soDetails.CustName;  
+            document.getElementById('customer_address').value = soDetails.CustAddr1;  
+            document.getElementById('customer_tel').value = soDetails.ContTel;  
+            document.getElementById('sale_name').value = SoStatus.createdBy; 
+            document.getElementById('notes').value = soDetails.BillRemark;
+
+            // แสดงวันที่จัดส่ง
+            let deliveryDate = SoStatus.DeliveryDate;
+            if (deliveryDate) {
+                let formattedDate = new Date(deliveryDate);
+                let day = formattedDate.getDate().toString().padStart(2, '0');
+                let month = (formattedDate.getMonth() + 1).toString().padStart(2, '0');
+                let year = formattedDate.getFullYear();
+                document.getElementById("date_of_dali").value = `${day}-${month}-${year}`;
+            }
+            const POLists = data.POLists;
+// const tableBody = document.querySelector('table tbody');
+
+// POLists.forEach((po) => {
+//     po.ms_podt.forEach((item) => {
+//         // สร้างแถวใหม่ในตาราง
+//         let newRow = document.createElement('tr');
+//         newRow.innerHTML = `
+//         <td><input type="checkbox" class="form-control1" name="status[]"></td>
+//             <td>${item.GoodID}</td>
+//             <td>${item.GoodName}</td>
+//             <td>${item.GoodQty2}</td>
+//         <td><button type="button" class="btn btn-danger delete-btn">ลบ</button></td>
+    
+//         `;
+        
+
+        } catch (error) {
+            console.error('Error fetching data:', error);
+            alert('เกิดข้อผิดพลาดในการดึงข้อมูล:');        
         }
+    }
     </script>
 
-    {{-- ดูpdfหลายหน้า --}}
-    <script>
-            const input = document.getElementById("po_document");
-            const preview = document.getElementById("preview");
-            const errorMessage = document.getElementById("error-message");
-
-            let selectedFiles = [];
-
-            input.addEventListener("change", function () {
-                const newFiles = Array.from(input.files);
-
-                // รวมไฟล์เก่ากับไฟล์ใหม่
-                let totalFiles = [...selectedFiles, ...newFiles];
-
-                if (totalFiles.length > 5) {
-                    errorMessage.textContent = "อัปโหลดได้สูงสุด 5 ไฟล์";
-                    return;
-                }
-
-                selectedFiles = totalFiles;
-                errorMessage.textContent = "";
-                preview.innerHTML = ""; // เคลียร์ตัวอย่างก่อนแสดงใหม่
-
-                updatePreview();
-                updateFileInput();
-            });
-
-            function updatePreview() {
-                preview.innerHTML = ""; // ล้างตัวอย่างทั้งหมดก่อนสร้างใหม่
-
-                selectedFiles.forEach((file, index) => {
-                    const div = document.createElement("div");
-                    div.classList.add("file-preview");
-
-                    const img = document.createElement("img");
-                    img.src = "https://cdn-icons-png.flaticon.com/512/337/337946.png"; // ไอคอน PDF
-                    img.alt = "PDF Preview";
-                    img.width = 40;
-
-                    const fileName = document.createElement("p");
-                    fileName.textContent = file.name;
-
-                    // สร้างลิงก์เปิดไฟล์ PDF
-                    const fileLink = document.createElement("a");
-                    fileLink.textContent = "ดูไฟล์";
-                    fileLink.href = "#";
-                    fileLink.style.marginLeft = "10px";
-                    fileLink.onclick = function (event) {
-                        event.preventDefault();
-                        const reader = new FileReader();
-                        reader.onload = function (e) {
-                            const pdfWindow = window.open("");
-                            pdfWindow.document.write(
-                                `<iframe src="${e.target.result}" width="100%" height="100%"></iframe>`
-                            );
-                        };
-                        reader.readAsDataURL(file);
-                    };
-
-                    // ปุ่มลบไฟล์
-                    const removeBtn = document.createElement("button");
-                    removeBtn.textContent = "×";
-                    removeBtn.classList.add("remove-btn");
-                    removeBtn.onclick = function () {
-                        selectedFiles.splice(index, 1);
-                        updatePreview();
-                        updateFileInput();
-                    };
-
-                    div.appendChild(img);
-                    div.appendChild(fileName);
-                    div.appendChild(fileLink);
-                    div.appendChild(removeBtn);
-                    preview.appendChild(div);
-                });
-            }
-
-            function updateFileInput() {
-                const dataTransfer = new DataTransfer();
-                selectedFiles.forEach((file) => dataTransfer.items.add(file));
-                input.files = dataTransfer.files;
-            }
-    </script>
 
 </body>
 </html>
