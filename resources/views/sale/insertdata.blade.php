@@ -360,275 +360,205 @@
         </form>
     </div>
 
-    <form id="billForm">
+<form id="billForm">
+    <input type="hidden" name="so_id" id="so_id" value="">
+    <div class="input-container">
+        <div>
+            <label>ผู้เปิดบิล :</label>
+            <input type="text" id="emp_name" name="emp_name" value="{{ session('emp_name', 'Guest') }}">
+        </div>
+        
+        <div>
+            <label for="po_document">เลขที่ PO</label>
+            <input type="text" id="ponum" name="ponum" readonly>
+        </div>
 
-                <input type="hidden" name="so_id" id="so_id" value="">
-                <div class="input-container">
-                <div>
-                    <label>ผู้เปิดบิล :</label>
-                    <input type="text" id="emp_name" name="emp_name" value="{{ session('emp_name', 'Guest') }}">
-                </div>
-                
-                <div>
-                    <label for="po_document">เลขที่ PO</label>
-                    <input type="text" id="ponum" name="ponum"  readonly>
-                </div>
+        <div>
+            <label>ผู้ขาย :</label>
+            <input type="text" id="sale_name" name="sale_name">
+        </div>
 
-                <div>
-                    <label>ผู้ขาย :</label>
-                    <input type="text" id="sale_name" name="sale_name">
-                </div>
+        <div>
+            <label>รหัสลูกค้า :</label>
+            <input type="text" id="customer_id" name="customer_id" readonly>
+        </div>
+    </div>
+    <div class="input-container1">
+        <div>
+            <label>ชื่อบริษัท :</label>
+            <input type="text" id="customer_name" name="customer_name" readonly>
+        </div>
 
-                <div>
-                    <label>รหัสลูกค้า :</label>
-                    <input type="text" id="customer_id" name="customer_id" readonly>
-                </div>
-            </div>
-            <div class="input-container1">
-                <div>
-                    <label>ชื่อบริษัท :</label>
-                    <input type="text" id="customer_name" name="customer_name" readonly>
-                </div>
+        <div>
+            <label>เบอร์ติดต่อ :</label>
+            <input type="text" id="customer_tel" name="customer_tel">
+        </div>
+        <br>
+    </div>
+    <div class="form-label">
+        <div>
+            <label>ที่อยู่จัดส่ง :</label>
+            <input type="text" id="customer_address" name="customer_address" style="width: 75%">
+        </div>
+        
+        <label>ละติจูด ลองจิจูด :</label>
+        <div style="display: flex; justify-content: space-between; width: 90%;" >
+            <input type="text" id="customer_la_long" name="customer_la_long">
+            <button type="button" class="btn-custom" onclick="openGoogleMaps()">Google Maps</button>
+        </div>
 
-                <div>
-                    <label>เบอร์ติดต่อ :</label>
-                    <input type="text" id="customer_tel" name="customer_tel">
-                </div>
-            <br>
+        <div class="mb-3">
+            <label class="form-label">แผนที่ :</label>
+            <iframe id="mapFrame" width="100%" height="300" style="border:0;" allowfullscreen="" loading="lazy"></iframe>
+        </div>
 
-            </div>
-                <div class="form-label">
-                <div>
-                    <label>ที่อยู่จัดส่ง :</label>
-                    <input type="text" id="customer_address" name="customer_address"style="width: 75%">
-                </div>
-                
-                <label>ละติจูด ลองจิจูด :</label>
-                    <div style="display: flex; justify-content: space-between; width: 90%;" >
-                        <input type="text" id="customer_la_long" name="customer_la_long">
-                        <button type="button" class="btn-custom" onclick="openGoogleMaps()">Google Maps</button>
-                    </div>
-
-                <div class="mb-3">
-                    <label class="form-label">แผนที่ :</label>
-                    <iframe id="mapFrame" width="100%" height="300" style="border:0;" allowfullscreen="" loading="lazy"></iframe>
-                </div>
-
-                    {{-- map --}}
-                    <script>
-                        function updateMap() {
-                            let coords = document.getElementById('customer_la_long').value;
-                            if (coords) {
-                                document.getElementById('mapFrame').src = `https://www.google.com/maps?q=${coords}&output=embed`;
-                            }
-                        }
-                    
-                        document.getElementById('customer_la_long').addEventListener('input', updateMap);
-                        updateMap();
-                    </script>
-                
-                        <label>วันกำหนดส่ง</label>
-                        <input type="text" id="date_of_dali" name="date_of_dali" readonly>
-                        
-                    
-                                    <table class="table table-bordered table-striped">
-                                        <thead>
-                                        <tr class="">
-                                            <th>เลือกจัดส่ง</th>
-                                            <th>รหัสสินค้า</th>
-                                            <th>รายการ</th>
-                                            <th>จำนวน</th>
-                                            <th>ลบ</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody id = "detail">
-                                        <tr> 
-                                            <td><input type="checkbox" class="form-control1" name="status[]"></td>
-                                            <td><input type="text" class="form-control1" name="item_id[]"></td>
-                                            <td><input type="text" class="form-control1" name="item_name[]" ></td>
-                                            <td>
-                                                <input type="number" class="form-control1 item_quantity" name="item_quantity[]" >
-                                            </td>
-                                            
-                                            <td><button type="button" class="btn btn-danger delete-btn">ลบ</button></td>
-                                        </tr>
-                                    </tbody>
-                                    </table>
-                                    <div class="checkbox-container">
-                                        <label>
-                                            <input type="checkbox" name="checkall"> เลือกทั้งหมด
-                                        </label>
-                                        <button type="button" class="btn btn-success insert-btn">เพิ่มสินค้า</button> 
-                                    </div>
-                                    
-
-                                    
-                                    <label for="additional_notes">แจ้งเพิ่มเติม</label>
-                                    <textarea id="notes" name="notes" rows="4"></textarea>
-                                    
-
-                                    <div style="display: flex; justify-content: center; margin-top: 20px;">
-                                <button type="button" id="submitBill" class="btn btn-success" 
-                                style="font-size: 18px; padding: 15px 30px; width: 200px; height: 50px;">
-                                    เปิดบิล
-                                </button>
-            </div>
-
-    </form>
-</div>
-
-
-    {{-- function --}}
-    <script>
-                document.getElementById('submitBill').addEventListener('click', async function (event) {
-                event.preventDefault();
-
-                let formData = new FormData(document.getElementById('billForm'));
-
-                // ตรวจสอบว่ามีสินค้าอย่างน้อย 1 รายการถูกเลือก
-                let hasSelectedItems = false;
-                document.querySelectorAll('input[name="status[]"]:checked').forEach((checkbox) => {
-                    hasSelectedItems = true;
-                });
-
-                if (!hasSelectedItems) {
-                    alert("กรุณาเลือกสินค้าอย่างน้อย 1 รายการ");
-                    return;
+        <script>
+            function updateMap() {
+                let coords = document.getElementById('customer_la_long').value;
+                if (coords) {
+                    document.getElementById('mapFrame').src = `https://www.google.com/maps?q=${coords}&output=embed`;
                 }
+            }
 
-                // รับข้อมูลสินค้าทุกตัวในตาราง
-                let itemRows = document.querySelectorAll('table tbody tr');
-                itemRows.forEach((row, index) => {
-                    let itemId = row.querySelector('input[name="item_id[]"]').value;
-                    let itemName = row.querySelector('input[name="item_name[]"]').value;
-                    let itemQuantity = row.querySelector('input[name="item_quantity[]"]').value;
-                
-                    let itemStatus = row.querySelector('input[name="status[]"]').checked ? 1 : 0;
+            document.getElementById('customer_la_long').addEventListener('input', updateMap);
+            updateMap();
+        </script>
+        
+        <label>วันกำหนดส่ง</label>
+        <input type="text" id="date_of_dali" name="date_of_dali" readonly>
 
-                    // เก็บค่าลงใน FormData
-                    formData.append(`item_id[${index}]`, itemId);
-                    formData.append(`item_name[${index}]`, itemName);
-                    formData.append(`item_quantity[${index}]`, itemQuantity);
-              
-                    formData.append(`status[${index}]`, itemStatus);
-                                        
-                });
+        <table class="table table-bordered table-striped">
+            <thead>
+                <tr>
+                    <th>เลือกจัดส่ง</th>
+                    <th>รหัสสินค้า</th>
+                    <th>รายการ</th>
+                    <th>จำนวน</th>
+                    <th>ลบ</th>
+                </tr>
+            </thead>
+            <tbody id="detail"></tbody>
+        </table>
+        <div class="checkbox-container">
+            <label>
+                <input type="checkbox" name="checkall"> เลือกทั้งหมด
+            </label>
+            <button type="button" class="btn btn-success insert-btn">เพิ่มสินค้า</button> 
+        </div>
+        
+        <label for="additional_notes">แจ้งเพิ่มเติม</label>
+        <textarea id="notes" name="notes" rows="4"></textarea>
 
-                // ส่งข้อมูลไปยัง Controller Laravel
-                try {
-                    let response = await fetch('{{ route("insert.post") }}', {
-                        method: 'POST',
-                        body: formData,
-                        headers: {
-                            'X-CSRF-TOKEN': '{{ csrf_token() }}',
-                        },
-                    });
+        <div style="display: flex; justify-content: center; margin-top: 20px;">
+            <button type="button" id="submitBill" class="btn btn-success" 
+            style="font-size: 18px; padding: 15px 30px; width: 200px; height: 50px;">
+                เปิดบิล
+            </button>
+        </div>
+    </form>
 
-                    let data = await response.json();
-                    if (data.success) {
-                        alert(data.success);
-                        window.location.href = '/SOlist';
-                    } else if (data.error) {
-                        alert(data.error);
-                    }
-                } catch (error) {
-                    console.error('Error:', error);
-                    alert('มีข้อผิดพลาดในการส่งข้อมูล');
+    <script>
+      document.getElementById('submitBill').addEventListener('click', async function (event) {
+    event.preventDefault();
+
+    let formData = new FormData(document.getElementById('billForm'));
+
+    // ตรวจสอบว่ามีสินค้าอย่างน้อย 1 รายการถูกเลือก
+    let hasSelectedItems = false;
+    document.querySelectorAll('input[name="status[]"]:checked').forEach((checkbox) => {
+        hasSelectedItems = true;
+    });
+
+    if (!hasSelectedItems) {
+        alert("กรุณาเลือกสินค้าอย่างน้อย 1 รายการ");
+        return;
+    }
+
+    // รับข้อมูลสินค้าที่ถูกเลือก
+    let itemRows = document.querySelectorAll('table tbody tr');
+    itemRows.forEach((row, index) => {
+        let itemStatus = row.querySelector('input[name="status[]"]').checked ? 1 : 0;
+
+        if (itemStatus) { // เฉพาะสินค้าที่เลือก (checked)
+            let itemId = row.querySelector('input[name="item_id[]"]').value;
+            let itemName = row.querySelector('input[name="item_name[]"]').value;
+            let itemQuantity = row.querySelector('input[name="item_quantity[]"]').value;
+
+            // เก็บค่าลงใน FormData
+            formData.append(`item_id[${index}]`, itemId);
+            formData.append(`item_name[${index}]`, itemName);
+            formData.append(`item_quantity[${index}]`, itemQuantity);
+            formData.append(`status[${index}]`, itemStatus);
+        }
+    });
+
+    // ส่งข้อมูลไปยัง Controller Laravel
+    try {
+        let response = await fetch('{{ route("insert.post") }}', {
+            method: 'POST',
+            body: formData,
+            headers: {
+                'X-CSRF-TOKEN': '{{ csrf_token() }}',
+            },
+        });
+
+        let data = await response.json();
+        if (data.success) {
+            alert(data.success);
+            window.location.href = '/SOlist';
+        } else if (data.error) {
+            alert(data.error);
+        }
+    } catch (error) {
+        console.error('Error:', error);
+        alert('มีข้อผิดพลาดในการส่งข้อมูล');
+    }
+});
+
+        const selectAllCheckbox = document.querySelector('input[name="checkall"]');
+        if (selectAllCheckbox) {
+            selectAllCheckbox.addEventListener('change', function() {
+                const checkboxes = document.querySelectorAll('input[type="checkbox"]:not([name="checkall"])');
+                checkboxes.forEach(checkbox => checkbox.checked = this.checked);
+            });
+        }
+
+        const tableBody = document.querySelector('table tbody');
+        if (tableBody) {
+            tableBody.addEventListener('click', function(e) {
+                if (e.target.classList.contains('delete-btn')) {
+                    var row = e.target.closest('tr');
+                    row.remove();
                 }
             });
+        }
+
+        const insertBtn = document.querySelector('.insert-btn');
+        if (insertBtn) {
+            insertBtn.addEventListener('click', function() {
+                var newRow = document.createElement('tr');
+                newRow.innerHTML = `
+                    <td><input type="checkbox" class="form-control1" name="status[]"></td>
+                    <td><input type="text" class="form-control1" name="item_id[]"></td>
+                    <td><input type="text" class="form-control1" name="item_name[]"></td>
+                    <td>
+                        <input type="number" class="form-control1 item_quantity" name="item_quantity[]" >
+                    </td>
+                    <td><button type="button" class="btn btn-danger delete-btn">ลบ</button></td>
+                `;
+                tableBody.appendChild(newRow);
+            });
+        }
+
+        function openGoogleMaps() {
+            const mapWindow = window.open(
+                "https://www.google.com/maps/@13.7563,100.5018,14z",
+                "Google Maps",
+                "width=800,height=600"
+            );
+        }
     </script>
 
-    {{-- function --}}
-    <script>
-                const selectAllCheckbox = document.querySelector('input[name="checkall"]');
-                if (selectAllCheckbox) {
-                    selectAllCheckbox.addEventListener('change', function() {
-                        const checkboxes = document.querySelectorAll('input[type="checkbox"]:not([name="checkall"])');
-                        checkboxes.forEach(checkbox => checkbox.checked = this.checked);
-                    });
-                }
-        
-                const tableBody = document.querySelector('table tbody');
-                if (tableBody) {
-                    tableBody.addEventListener('click', function(e) {
-                        if (e.target.classList.contains('delete-btn')) {
-                            var row = e.target.closest('tr');
-                            row.remove();
-                        }
-                    });
-                }
-        
-                const insertBtn = document.querySelector('.insert-btn');
-                if (insertBtn) {
-                    insertBtn.addEventListener('click', function() {
-                        var newRow = document.createElement('tr');
-                        newRow.innerHTML = `
-                            <td><input type="checkbox" class="form-control1" name="status[]"></td>
-                            <td><input type="text" class="form-control1" name="item_id[]"></td>
-                            <td><input type="text" class="form-control1" name="item_name[]"></td>
-                            <td>
-                                <input type="number" class="form-control1 item_quantity" name="item_quantity[]" oninput="calculateTotal(this)">
-                            </td>
-                         
-                        
-                            <td><button type="button" class="btn btn-danger delete-btn">ลบ</button></td>
-                        `;
-                        tableBody.appendChild(newRow);
-                    });
-                    
-                }
-        
-                    
-
-        
-            function openGoogleMaps() {
-                const mapWindow = window.open(
-                    "https://www.google.com/maps/@13.7563,100.5018,14z",
-                    "Google Maps",
-                    "width=800,height=600"
-                );
-            }
-                function confirmSubmit(event) {
-                event.preventDefault(); // ป้องกันการ submit แบบปกติ
-
-                // แสดงการแจ้งเตือน
-                let confirmation = confirm("คุณต้องการเปิดบิลใช่หรือไม่?");
-
-                if (confirmation) {
-                // หากผู้ใช้กดตกลง
-                let formData = new FormData(document.getElementById('billForm')); // เก็บข้อมูลฟอร์ม
-
-                fetch('{{ route("insert.post") }}', { // ส่งข้อมูลฟอร์มไปยังเส้นทาง insert.post
-                    method: 'POST',
-                    body: formData,
-                    headers: {
-                        'X-CSRF-TOKEN': '{{ csrf_token() }}', // ส่ง CSRF Token
-                    },
-                })
-                .then(response => response.json())
-                .then(data => {
-                    if (data.success) {
-                        alert(data.success); // แจ้งเตือนสำเร็จ
-                        window.location.href = '/dashboard'; // เปลี่ยนเส้นทางไปยังหน้า dashboard
-                    } else if (data.error) {
-                        alert(data.error); // แจ้งเตือนข้อผิดพลาด
-                    }
-                })
-                .catch((error) => {
-                    console.error('Error:', error); // แสดงข้อผิดพลาดในคอนโซล
-                    alert('มีข้อผิดพลาดในการส่งข้อมูล');
-                });
-
-                } else {
-                // หากผู้ใช้กดยกเลิก
-                alert("คุณยกเลิกการเปิดบิล.");
-                }
-                }
-
-
-    </script>
-
-    {{-- api --}}
     <script>
         // ดึงค่า so_num จาก URL
         const urlParams = new URLSearchParams(window.location.search);
@@ -639,68 +569,68 @@
             document.getElementById('so_number').value = soNum; // แสดงค่า so_num ใน input
             fetchSODetails(soNum); // เรียกฟังก์ชันดึงข้อมูล SO
         }
-    // ฟังก์ชันดึงข้อมูล SO จาก API
-         async function fetchSODetails(soNum) {
-        try {
-            let response = await fetch(`http://server_update:8000/api/getSODetail?SONum=${soNum}`);
-            if (!response.ok) {
-                throw new Error("เกิดข้อผิดพลาดในการโหลดข้อมูล");
+
+        // ฟังก์ชันดึงข้อมูล SO จาก API
+        async function fetchSODetails(soNum) {
+            try {
+                let response = await fetch(`http://server_update:8000/api/getSODetail?SONum=${soNum}`);
+                if (!response.ok) {
+                    throw new Error("เกิดข้อผิดพลาดในการโหลดข้อมูล");
+                }
+
+                let data = await response.json();
+                console.log("API Response:", data); // ตรวจสอบข้อมูล API 
+
+                if (!data.SoDetail || data.SoDetail.length === 0) {
+                    alert("ไม่พบข้อมูลที่ตรงกับเลขที่ SO นี้: " + soNum);
+                    return;
+                }
+
+                const soDetails = data.SoDetail;
+                const SoStatus = data.SoStatus;
+
+                // แสดงข้อมูลทั่วไป
+                document.getElementById('so_id').value = SoStatus.SONum;  
+                document.getElementById('ponum').value = soDetails.CustPONo;  
+                document.getElementById('customer_id').value = SoStatus.CustID; 
+                document.getElementById('customer_name').value = soDetails.CustName;  
+                document.getElementById('customer_address').value = soDetails.CustAddr1;  
+                document.getElementById('customer_tel').value = soDetails.ContTel;  
+                document.getElementById('sale_name').value = SoStatus.createdBy; 
+                document.getElementById('notes').value = soDetails.BillRemark;
+
+                // แสดงวันที่จัดส่ง
+                let deliveryDate = SoStatus.DeliveryDate;
+                if (deliveryDate) {
+                    let formattedDate = new Date(deliveryDate);
+                    let day = formattedDate.getDate().toString().padStart(2, '0');
+                    let month = (formattedDate.getMonth() + 1).toString().padStart(2, '0');
+                    let year = formattedDate.getFullYear();
+                    document.getElementById("date_of_dali").value = `${day}-${month}-${year}`;
+                }
+
+                const POLists = data.POLists;
+                const tableBody = document.querySelector('#detail');
+
+                POLists.forEach((po) => {
+                    po.ms_podt.forEach((item) => {
+                        let newRow = document.createElement('tr');
+                        newRow.innerHTML = `
+                            <td><input type="checkbox" class="form-control1" name="status[]"></td>
+                            <td><input type="text" class="form-control1" name="item_id[]" value="${item.GoodID}"></td>
+                            <td><input type="text" class="form-control1" name="item_name[]" value="${item.GoodName}"></td>
+                            <td><input type="number" class="form-control1 item_quantity" name="item_quantity[]" value="${item.GoodQty2}" ></td>
+                            <td><button type="button" class="btn btn-danger delete-btn">ลบ</button></td>
+                        `;
+                        tableBody.appendChild(newRow);
+                    });
+                });
+            } catch (error) {
+                console.error(error);
             }
-
-            let data = await response.json();
-            console.log("API Response:", data); // ตรวจสอบข้อมูล API 
-
-            if (!data.SoDetail || data.SoDetail.length === 0) {
-                alert("ไม่พบข้อมูลที่ตรงกับเลขที่ SO นี้: " + soNum);
-                return;
-            }
-
-            const soDetails = data.SoDetail;
-            const SoStatus = data.SoStatus;
-
-            // แสดงข้อมูลทั่วไป
-            document.getElementById('so_id').value = SoStatus.SONum;  
-            document.getElementById('ponum').value = soDetails.CustPONo;  
-            document.getElementById('customer_id').value = SoStatus.CustID; 
-            document.getElementById('customer_name').value = soDetails.CustName;  
-            document.getElementById('customer_address').value = soDetails.CustAddr1;  
-            document.getElementById('customer_tel').value = soDetails.ContTel;  
-            document.getElementById('sale_name').value = SoStatus.createdBy; 
-            document.getElementById('notes').value = soDetails.BillRemark;
-
-            // แสดงวันที่จัดส่ง
-            let deliveryDate = SoStatus.DeliveryDate;
-            if (deliveryDate) {
-                let formattedDate = new Date(deliveryDate);
-                let day = formattedDate.getDate().toString().padStart(2, '0');
-                let month = (formattedDate.getMonth() + 1).toString().padStart(2, '0');
-                let year = formattedDate.getFullYear();
-                document.getElementById("date_of_dali").value = `${day}-${month}-${year}`;
-            }
-            const POLists = data.POLists;
-// const tableBody = document.querySelector('table tbody');
-
-// POLists.forEach((po) => {
-//     po.ms_podt.forEach((item) => {
-//         // สร้างแถวใหม่ในตาราง
-//         let newRow = document.createElement('tr');
-//         newRow.innerHTML = `
-//         <td><input type="checkbox" class="form-control1" name="status[]"></td>
-//             <td>${item.GoodID}</td>
-//             <td>${item.GoodName}</td>
-//             <td>${item.GoodQty2}</td>
-//         <td><button type="button" class="btn btn-danger delete-btn">ลบ</button></td>
-    
-//         `;
-        
-
-        } catch (error) {
-            console.error('Error fetching data:', error);
-            alert('เกิดข้อผิดพลาดในการดึงข้อมูล:');        
         }
-    }
     </script>
-
+</form>
 
 </body>
 </html>

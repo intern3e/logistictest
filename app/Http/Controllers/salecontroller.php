@@ -169,7 +169,7 @@ public function insert(Request $request)
             'item_name' => 'required|array',
             'item_name.*' => 'string',
             'item_quantity' => 'required|array',
-            'item_quantity.*' => 'integer|min:1',
+            'item_quantity.*' => 'string',
             'status' => 'nullable|array',
             'statuspdf' => 'nullable|array'
               // อัปเดตเป็น nullable ป้องกัน error
