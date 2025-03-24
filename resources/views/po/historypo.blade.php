@@ -170,69 +170,61 @@ a:hover {
         </div>
   
         <div class="table-container">
-            <table>
-                <thead>
+    <table>
+        <thead>
+            <tr>
+                <th>ปริ้นเอกสาร</th>
+                <th>เลขอ้างอิงใบรับสินค้า</th>
+                <th>ชื่อร้านค้า</th>
+                <th>ที่อยู่ร้านค้า</th>
+                <th>ละติจูดลองจิจูด</th>
+                <th>วันที่รับสินค้า</th>
+                <th>ผู้เปิดบิล</th>
+                <th>ประเภทขนส่ง</th>
+                <th>ข้อมูลสินค้า</th>
+            </tr>
+        </thead>
+        <tbody id="table-body">
+            @foreach($pobill as $item)
+                @if($item->status == 0)
                     <tr>
-                        <th>ปริ้นเอกสาร</th>
-                        <th>บิลลำดับ</th>
-                        <th>รหัสลูกค้า</th>
-                        <th>ที่อยู่จัดส่ง</th>
-                        <th>ละติจูด ลองจิจูด</th>
-                        <th>วันที่จัดส่ง</th>
-                        <th>ผู้เปิดบิล</th>
-                        <th>ประเภทขนส่ง</th>
-                        <th>สถานะการจัดส่ง</th>
-                        <th>ข้อมูลสินค้า</th>
-                    </tr>
-                </thead>
-                <tbody id="table-body">
-                    @foreach($pobill as $item)
-                        @if($item->status == 1)
-                            <tr>
-                                <td><input type="checkbox" class="form-control1" name="status[]"></td>
-                                <td>{{ $item->po_detail_id }}</td>
-                                <td>{{ $item->store_name }}</td>
-                                <td>{{ $item->store_address }}</td>  
-                                <td>{{ $item->store_la_long }}</td>
-                                <td>{{ \Carbon\Carbon::parse($item->recvDate)->format('d/m/Y') }}</td> 
-                                <td>{{ $item->emp_name }}</td>
-                                <td>
-                                    @if($item->cartype == 1)
-                                        มอเตอร์ไซค์
-                                    @elseif($item->cartype == 2)
-                                        รถใหญ่
-                                    @else
-                                        ไม่ทราบประเภท
-                                    @endif
-                                </td>
-                                
-                                <td>
-                                    @if($item->status == 0)
-                                        กำลังดำเนินการ
-                                    @else
-                                        สำเร็จ
-                                    @endif
-                                </td>
-                                <td><a href="javascript:void(0);" 
-                                    onclick="openPopup(
-                                        '{{ $item->so_detail_id }}',
-                                        '{{ $item->so_id }}',
-                                        '{{ $item->customer_id }}',
-                                        '{{ $item->customer_address }}',
-                                        '{{ \Carbon\Carbon::parse($item->date_of_dali)->format('d/m/Y') }}',
-                                        '{{ $item->sale_name}}'
-                                    )">
-                                เพิ่มเติม
-                             </a></td>
-                        @endif
-                    @endforeach
-                </tbody>
-            </table>
-            @if(isset($message))
-            <br>
-            <p style="text-align: center">{{ $message }}</p>
-             @endif
-        </div>
+                        <td><input type="checkbox" class="form-control1" name="status[]"></td>
+                        <td>{{ $item->po_detail_id }}</td>
+                        <td>{{ $item->store_name }}</td>
+                        <td>{{ $item->store_address }}</td>  
+                        <td>{{ $item->store_la_long }}</td>
+                        <td>{{ \Carbon\Carbon::parse($item->recvDate)->format('d/m/Y') }}</td> 
+                        <td>{{ $item->emp_name }}</td>
+                        <td>
+                            @if($item->cartype == 1)
+                                มอเตอร์ไซค์
+                            @elseif($item->cartype == 2)
+                                รถใหญ่
+                            @else
+                                ไม่ทราบประเภท
+                            @endif
+                        </td>
+                        <td><a href="javascript:void(0);" 
+                            onclick="openPopup(
+                                '{{ $item->po_detail_id }}',
+                                '{{ $item->store_name}}',
+                                '{{ $item->store_address}}',
+                                '{{ \Carbon\Carbon::parse($item->recvDate)->format('d/m/Y') }}',
+                                '{{ $item->emp_name}}',
+                                '{{ $item->cartype}}'
+                            )">
+                        เพิ่มเติม
+                     </a></td>
+                @endif
+            @endforeach
+        </tbody>
+    </table>
+    @if(isset($message))
+    <br>
+    <p style="text-align: center">{{ $message }}</p>
+    @endif
+</div>
+
 
 
     <!-- Popup -->

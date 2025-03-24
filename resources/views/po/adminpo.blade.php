@@ -222,19 +222,28 @@
             width: 100%;
             border-collapse: collapse;
             text-align: center;
+            
         }
-
+        td {
+            word-wrap: break-word; /* ให้ข้อความยาวเกินไปหักบรรทัด */
+            max-width: 150px; /* กำหนดความกว้างสูงสุดของคอลัมน์ */
+            overflow-wrap: break-word; /* ถ้าข้อความยาวเกินไปก็จะหักบรรทัด */
+            
+            
+        }
         th, td {
-            padding: 12px;
-            border: 1px solid #2c3e50;
-            font-size: 1rem;
+            padding: 8px;
+            border: 1px solid #ddd;
+            word-wrap: break-word; /* ทำให้ข้อความยาวเกินไปสามารถหักบรรทัดได้ */
         }
 
         th {
             background-color: #0e50ad;
             color: white;
             text-transform: uppercase;
-        }
+            word-wrap: break-word;
+            width: 20ch; /* กำหนดความกว้างเป็น 20 ตัวอักษร */
+         }
 
         tr:nth-child(odd) {
             background-color: #f8f9fa;
@@ -264,7 +273,6 @@
 
         .search-box input {
             height: 30px;
-            margin: 0px -30%;
             background: #f8f9fa;
         }
 
@@ -334,6 +342,36 @@
     .cartype option {
         padding: 10px;
     }
+    /* ปรับปรุงให้ responsive สำหรับหน้าจอขนาดเล็ก */
+@media (max-width: 768px) {
+    table th, table td {
+        padding: 12px 8px; /* ปรับระยะห่างสำหรับมือถือ */
+    }
+
+    table {
+        width: 100%;
+        overflow-x: auto;
+    }
+
+    th, td {
+        white-space: nowrap; /* ป้องกันการหักบรรทัด */
+    }
+
+    .table-container {
+        padding: 10px;
+        -webkit-overflow-scrolling: touch;
+    }
+}
+
+@media (max-width: 480px) {
+    th, td {
+        font-size: 12px; /* ปรับขนาดตัวอักษรให้เล็กลง */
+    }
+
+    .table-container {
+        padding: 5px;
+    }
+}
 
     </style>
 </head>
@@ -372,71 +410,62 @@
         
         </div>
   
-        <div class="table-container">
-            <table>
-                <thead>
+       <div class="table-container">
+    <table>
+        <thead>
+            <tr>
+                <th>ปริ้นเอกสาร</th>
+                <th>เลขอ้างอิงใบรับสินค้า</th>
+                <th>ชื่อร้านค้า</th>
+                <th>ที่อยู่ร้านค้า</th>
+                <th>ละติจูดลองจิจูด</th>
+                <th>วันที่รับสินค้า</th>
+                <th>ผู้เปิดบิล</th>
+                <th>ประเภทขนส่ง</th>
+                <th>ข้อมูลสินค้า</th>
+            </tr>
+        </thead>
+        <tbody id="table-body">
+            @foreach($pobill as $item)
+                @if($item->status == 0)
                     <tr>
-                        <th>ปริ้นเอกสาร</th>
-                        <th>เลขอ้างอิงใบรับสินค้า</th>
-                        <th>ชื่อร้านค้า</th>
-                        <th>ที่อยู่ร้านค้า</th>
-                        <th>ละติจูดลองจิจูด</th>
-                        <th>วันที่รับสินค้า</th>
-                        <th>ผู้เปิดบิล</th>
-                        <th>ประเภทขนส่ง</th>
-                        <th>สถานะการจัดส่ง</th>
-                        <th>ข้อมูลสินค้า</th>
-                        
-                    </tr>
-                </thead>
-                <tbody id="table-body">
-                    @foreach($pobill as $item)
-                        @if($item->status == 0)
-                            <tr>
-                                <td><input type="checkbox" class="form-control1" name="status[]"></td>
-                                <td>{{ $item->po_detail_id }}</td>
-                                <td>{{ $item->store_name }}</td>
-                                <td>{{ $item->store_address }}</td>  
-                                <td>{{ $item->store_la_long }}</td>
-                                <td>{{ \Carbon\Carbon::parse($item->recvDate)->format('d/m/Y') }}</td> 
-                                <td>{{ $item->emp_name }}</td>
-                                <td>
-                                    @if($item->cartype == 1)
-                                        มอเตอร์ไซค์
-                                    @elseif($item->cartype == 2)
-                                        รถใหญ่
-                                    @else
-                                        ไม่ทราบประเภท
-                                    @endif
-                                </td>
-                                
-                                <td>
-                                    @if($item->status == 0)
-                                        กำลังดำเนินการ
-                                    @else
-                                        สำเร็จ
-                                    @endif
-                                </td>
-                                <td><a href="javascript:void(0);" 
-                                    onclick="openPopup(
-                                        '{{ $item->po_detail_id }}',
-                                        '{{ $item->store_name}}',
-                                        '{{ $item->store_address}}',
-                                        '{{ \Carbon\Carbon::parse($item->recvDate)->format('d/m/Y') }}',
-                                        '{{ $item->emp_name}}',
-                                        '{{ $item->cartype}}'
-                                    )">
-                                เพิ่มเติม
-                             </a></td>
-                        @endif
-                    @endforeach
-                </tbody>
-            </table>
-            @if(isset($message))
-            <br>
-            <p style="text-align: center">{{ $message }}</p>
-             @endif
-        </div>
+                        <td><input type="checkbox" class="form-control1" name="status[]"></td>
+                        <td>{{ $item->po_detail_id }}</td>
+                        <td>{{ $item->store_name }}</td>
+                        <td>{{ $item->store_address }}</td>  
+                        <td>{{ $item->store_la_long }}</td>
+                        <td>{{ \Carbon\Carbon::parse($item->recvDate)->format('d/m/Y') }}</td> 
+                        <td>{{ $item->emp_name }}</td>
+                        <td>
+                            @if($item->cartype == 1)
+                                มอเตอร์ไซค์
+                            @elseif($item->cartype == 2)
+                                รถใหญ่
+                            @else
+                                ไม่ทราบประเภท
+                            @endif
+                        </td>
+                        <td><a href="javascript:void(0);" 
+                            onclick="openPopup(
+                                '{{ $item->po_detail_id }}',
+                                '{{ $item->store_name}}',
+                                '{{ $item->store_address}}',
+                                '{{ \Carbon\Carbon::parse($item->recvDate)->format('d/m/Y') }}',
+                                '{{ $item->emp_name}}',
+                                '{{ $item->cartype}}'
+                            )">
+                        เพิ่มเติม
+                     </a></td>
+                @endif
+            @endforeach
+        </tbody>
+    </table>
+    @if(isset($message))
+    <br>
+    <p style="text-align: center">{{ $message }}</p>
+    @endif
+</div>
+
 
 <!-- Popup -->
 <div class="popup-overlay" id="popup" style="display: none;">
@@ -709,6 +738,27 @@ function updateStatus(poDetailIds) {
         console.error("Error updating status:", error);
     });
 }
+function sortTableDescending() {
+    let table = document.querySelector("table tbody");
+    let rows = Array.from(table.getElementsByTagName("tr"));
+    
+    // Sort rows by po_detail_id (ที่คอลัมน์ที่ 2) in descending order
+    rows.sort((a, b) => {
+        let poDetailIdA = a.cells[1].textContent.trim();
+        let poDetailIdB = b.cells[1].textContent.trim();
+        
+        return poDetailIdB - poDetailIdA;  // เปลี่ยนเป็น b - a เพื่อให้เรียงจากมากไปน้อย
+    });
+
+    // Append the sorted rows back into the table body
+    rows.forEach(row => table.appendChild(row));
+}
+
+// เรียกใช้ฟังก์ชัน sort เมื่อโหลดหน้า
+window.onload = function() {
+    sortTableDescending();
+};
+
     </script>
     
 

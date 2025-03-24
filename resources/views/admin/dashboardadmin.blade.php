@@ -52,7 +52,7 @@ body {
 }
 
 .btn-so {
-    background-color:  red;
+    background-color: red;
     color: white;
 }
 
@@ -67,8 +67,6 @@ body {
 .btn-so:hover {
     background-color: rgb(179, 1, 1);
 }
-
-
 
 .top-section {
     display: flex;
@@ -124,7 +122,7 @@ body {
     display: flex;
     max-width: 300px;
     width: 100%;
-    margin-left: -22%;
+    margin-left: auto;
 }
 
 .search-box input {
@@ -192,8 +190,6 @@ body {
     background-color: #ad0404;
 }
 
-
-
 .search-box {
     display: flex;
     align-items: center;
@@ -215,6 +211,7 @@ body {
     border-radius: 12px;
     box-shadow: 0px 6px 12px rgba(0, 0, 0, 0.1);
     overflow: hidden;
+    overflow-x: auto; /* ให้ตารางเลื่อนในแนวนอนได้ */
 }
 
 table {
@@ -227,6 +224,9 @@ th, td {
     padding: 12px;
     border: 1px solid #2c3e50;
     font-size: 1rem;
+    max-width: 100px; /* กำหนดความกว้างสูงสุด */
+    word-wrap: break-word; /* ถ้าข้อความยาวเกินจะขึ้นบรรทัดใหม่ */
+    word-break: break-word; /* หักคำเมื่อข้อความยาวเกิน */
 }
 
 th {
@@ -243,6 +243,8 @@ th {
     background-color: #E5E5E7;
 }
 
+
+
 .link {
     color: #0071E3;
     font-weight: bold;
@@ -252,39 +254,108 @@ th {
 .link:hover {
     text-decoration: underline;
 }
+
 .popup-overlay {
-            display: none;
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(0, 0, 0, 0.5);
-            display: flex;
-            justify-content: center;
-            align-items: center;
-        }
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.5);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
 .popup-content {
-            background: linear-gradient(to right, #f0f2f5, #dfe9f3);
-            padding: 20px;
-            border-radius: 10px;
-            width: 80%;
-            max-width: 1000px;
-            height: auto;
-            text-align: center;
-            position: relative;
-            overflow: hidden;
-            max-height: 500px;
-            overflow-y: auto;
-        }
-        .close-btn {
-            position: absolute;
-            top: 10px;
-            right: 10px;
-            cursor: pointer;
-            font-size: 18px;
-            font-weight: bold;
-        }
+    background: linear-gradient(to right, #f0f2f5, #dfe9f3);
+    padding: 20px;
+    border-radius: 10px;
+    width: 80%;
+    max-width: 1000px;
+    height: auto;
+    text-align: center;
+    position: relative;
+    overflow: hidden;
+    max-height: 500px;
+    overflow-y: auto;
+}
+
+.close-btn {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    cursor: pointer;
+    font-size: 18px;
+    font-weight: bold;
+}
+
+.table-container {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    margin: 30px;
+}
+
+@media (max-width: 768px) {
+    .header, .top-section, .filter-form, .button-group {
+        flex-direction: column;
+        align-items: stretch;
+        width: 100%;
+        gap: 10px;
+    }
+
+    .header-buttons {
+        width: 100%;
+        margin-left: 0;
+    }
+
+    .header-buttons button {
+        width: 100%;
+        padding: 12px 0;
+        font-size: 14px;
+    }
+
+    table {
+        width: 100%;
+    }
+
+    th, td {
+        font-size: 12px;
+        padding: 8px;
+    }
+
+    .search-box {
+        max-width: 100%;
+    }
+
+    .button-group button {
+        width: 100%;
+        padding: 12px 0;
+    }
+}
+
+@media (max-width: 480px) {
+    th, td {
+        font-size: 10px;
+        padding: 4px;
+    }
+
+    /* Hide some columns if necessary */
+    td:nth-child(10), td:nth-child(11), td:nth-child(12) {
+        display: none;
+    }
+
+    .search-box input {
+        font-size: 0.9rem;
+    }
+
+    .popup-content {
+        width: 90%;
+        padding: 10px;
+    }
+}
+    
         
     </style>
 </head>
@@ -311,9 +382,6 @@ th {
         </div>
     
         <div class="button-group">
-            <label>
-                <input type="checkbox" id="checkAll" onclick="toggleCheckboxes()"> ทั้งหมด
-            </label>
             <button onclick="exportToExcel()">🖨 ปริ้นเอกสารเส้นทางการเดินรถ</button>
             <a href="history"><button>📜 ประวัติเอกสาร</button></a>
             <a href="dashboardadminpdf"><button>ปริ้นเอกสารSO</button></a>
@@ -324,7 +392,9 @@ th {
         <div class="table-container">
             <table>
                 <thead>
-                    
+                <label>
+                <input type="checkbox" id="checkAll" onclick="toggleCheckboxes()"> ทั้งหมด
+            </label>
                     <tr>
                         <th>ปริ้นเอกสาร</th>
                         <th>เลขที่บิล</th>
