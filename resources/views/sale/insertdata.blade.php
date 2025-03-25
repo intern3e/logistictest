@@ -379,6 +379,11 @@
         </div>
 
         <div>
+            <label>อัปโหลดเอกสาร PO :</label>
+            <input type="file" id="POdocument" name="POdocument">
+        </div>
+
+        <div>
             <label>รหัสลูกค้า :</label>
             <input type="text" id="customer_id" name="customer_id" readonly>
         </div>
@@ -433,7 +438,7 @@
                     <th>เลือกจัดส่ง</th>
                     <th>รหัสสินค้า</th>
                     <th>รายการ</th>
-                    <th>จำนวน</th>
+                    <th>จำนวนสินค้า</th>
                     <th>ลบ</th>
                 </tr>
             </thead>
@@ -550,13 +555,31 @@
             });
         }
 
-        function openGoogleMaps() {
-            const mapWindow = window.open(
-                "https://www.google.com/maps/@13.7563,100.5018,14z",
-                "Google Maps",
-                "width=800,height=600"
-            );
-        }
+        let mapWindow;
+let closeTimer;
+
+function openGoogleMaps() {
+    const screenWidth = window.screen.width;
+    const screenHeight = window.screen.height;
+    const windowWidth = 800;
+    const windowHeight = 600;
+
+    // ชิดขวา: left = ความกว้างหน้าจอ - ความกว้างของหน้าต่าง
+    const leftPosition = screenWidth - windowWidth;
+    // อยู่กลางแนวตั้ง: top = (ความสูงหน้าจอ - ความสูงของหน้าต่าง) / 2
+    const topPosition = (screenHeight - windowHeight) / 2;
+
+    // เปิดหน้าต่างใหม่
+    const mapWindow = window.open(
+        "https://www.google.com/maps/@13.7563,100.5018,14z",
+        "Google Maps",
+        `width=${windowWidth},height=${windowHeight},left=${leftPosition},top=${topPosition}`
+    );
+}
+
+
+
+
     </script>
 
     <script>

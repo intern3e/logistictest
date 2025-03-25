@@ -21,7 +21,7 @@ class admindoccontroller extends Controller
     }
     public function historydoc()
     {
-        $docbill = docbills::orderBy('doc_detail_id', 'desc')->get();
+        $docbill = docbills::orderBy('doc_id', 'desc')->get();
         return view('document.historydoc', compact('docbill'));
     }
    
@@ -31,7 +31,7 @@ class admindoccontroller extends Controller
     
         // Update the status of the selected SO details to 1
         DB::table('docbills')
-            ->whereIn('doc_detail_id', $docDetailIds )
+            ->whereIn('doc_id', $docDetailIds )
             ->update(['status' => 1]);
     
         return response()->json(['success' => true]);

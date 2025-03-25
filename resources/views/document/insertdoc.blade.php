@@ -305,23 +305,20 @@ option {
             });
         </script>
 
-        <label for="cartype" >ประเภทบิล</label>
+        <label for="doctype" >ประเภทบิล</label>
                         <select id="doctype" name="doctype" required>
-                            <option value="1">บิลชั่วคราวเพื่อขาย</option> 
-                            <option value="2">บิลชั่วคราว Project</option> 
-                            <option value="3">บิลชั่วคราวส่งแล้วจบเลย</option> 
-                            <option value="4">เก็บเช็ค</option> 
-                            <option value="5">วางบิล</option> 
-                            <option value="6">รับของ</option> 
-                            <option value="7">เปลี่ยนของ</option> 
-                            <option value="8">คำสั่งพิเศษอื่นๆ</option> 
+                            <option value="บิลชั่วคราวเพื่อขาย">บิลชั่วคราวเพื่อขาย</option> 
+                            <option value="บิลชั่วคราว Project">บิลชั่วคราว Project</option> 
+                            <option value="บิลชั่วคราวส่งแล้วจบเลย">บิลชั่วคราวส่งแล้วจบเลย</option> 
+                            <option value="เก็บเช็ค">เก็บเช็ค</option> 
+                            <option value="วางบิล">วางบิล</option> 
+                            <option value="รับของ">รับของ</option> 
+                            <option value="เปลี่ยนของ">เปลี่ยนของ</option> 
+                            <option value="คำสั่งพิเศษอื่นๆ">คำสั่งพิเศษอื่นๆ</option> 
                         </select>
                         
             <label>ผู้เปิดบิล :</label>
             <input type="text" id="emp_name" name="emp_name" value="{{ session('emp_name', 'Guest') }}"> 
-            
-            <label>ผู้สร้าง :</label>
-            <input type="text" id="sale_name" name="sale_name">          
 
             <label>รหัสลูกค้า :</label>
             <input type="text" id="customer_id" name="customer_id" >
@@ -334,6 +331,7 @@ option {
 
             <label>ที่อยู่จัดส่ง :</label>
             <input type="text" id="customer_address" name="customer_address" >
+
             <label >ละติจูด ลองจิจูด :</label>
             <div class="lat-long-container">
                 <input type="text" id="customer_la_long" name="customer_la_long">
@@ -357,10 +355,10 @@ option {
             updateMap();
         </script>
             <label>วันกำหนดส่ง</label>
-            <input type="text" id="date_of_dali" name="date_of_dali" readonly>
+            <input type="text" id="revdate" name="revdate" >
 
-            <label for="additional_notes">หมายเหตุ</label>
-            <textarea id="additional_notes" name="additional_notes" rows="4"></textarea>
+            <label for="notes">หมายเหตุ</label>
+            <textarea id="notes" name="notes" rows="4"></textarea>
                         
 
             <button type="button" id="submitBilldoc" class="btn btn-success" onclick="submitForm(event)">เปิดบิล</button>
@@ -406,7 +404,7 @@ document.getElementById('submitBilldoc').addEventListener('click', async functio
         let data = await response.json();
         if (data.success) {
             alert(data.success);
-            window.location.href = '/dashboarddoc';
+            window.location.href = '/SOlist';
         } else {
             alert(data.error);
         }
@@ -419,45 +417,6 @@ document.getElementById('submitBilldoc').addEventListener('click', async functio
 
 
 
-    <script>
-            function submitForm(event) {
-    event.preventDefault(); // ป้องกันการ submit แบบปกติ
-
-    const formData = new FormData(document.getElementById('billForm'));
-
-    fetch('/insertdocu', {
-        method: 'POST',
-        body: formData,
-        headers: {
-            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
-        },
-    })
-    .then(response => {
-        if (!response.ok) {
-            throw new Error('Server error');
-        }
-        const contentType = response.headers.get('content-type');
-        if (!contentType || !contentType.includes('application/json')) {
-            return response.text().then(html => {
-                throw new TypeError('Server returned HTML: ' + html);
-            });
-        }
-        return response.json();
-    })
-    .then(data => {
-        if (data.success) {
-            alert(data.success);
-            window.location.href = '/dashboarddoc';
-        } else if (data.error) {
-            alert(data.error);
-        }
-    })
-    .catch(error => {
-        console.error('Error:', error);
-        alert('มีข้อผิดพลาดในการส่งข้อมูล: ' + error.message);
-    });
-}
-    </script>
 
     {{-- api --}}
    <script>
@@ -495,7 +454,7 @@ document.getElementById('submitBilldoc').addEventListener('click', async functio
                     let day = formattedDate.getDate().toString().padStart(2, '0'); // Ensure 2 digits
                     let month = (formattedDate.getMonth() + 1).toString().padStart(2, '0'); // Month is 0-indexed
                     let year = formattedDate.getFullYear();
-                    document.getElementById("date_of_dali").value = `${day}-${month}-${year}`;
+                    document.getElementById("revdate").value = `${day}-${month}-${year}`;
                 }
 
                 // กำหนดค่าให้ฟิลด์ so_id

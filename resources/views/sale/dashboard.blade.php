@@ -373,6 +373,7 @@ td a:hover {
                             '{{ \Carbon\Carbon::parse($item->date_of_dali)->format('d/m/Y') }}',
                             '{{ $item->sale_name}}',
                             '{{ $item->notes}}',
+                            '{{ $item->POdocument}}',
                         )">
                     เพิ่มเติม
                  </a></td>
@@ -402,6 +403,7 @@ td a:hover {
                             <th>ที่อยู่จัดส่ง</th>
                             <th>วันที่จัดส่ง</th>
                             <th>ผู้ขาย</th>
+                            <th>เอกสารPO</th>
                         </tr>
                     </thead>
                     <tbody id="popup-body-1">   
@@ -432,8 +434,14 @@ td a:hover {
     </div>
     
     <script>
-function openPopup(soDetailId, so_id, ponum, customer_name, customer_address, date_of_dali, sale_name, notes) {
+function openPopup(soDetailId, so_id, ponum, customer_name, customer_address, date_of_dali, sale_name, notes,POdocument) {
     document.getElementById("popup").style.display = "flex"; // แสดง Popup
+    let poDocumentButton = POdocument 
+        ? `<a href="storage/po_documents/${POdocument}" target="_blank">
+              <button>ดูเอกสาร</button>
+           </a>` 
+        : "ไม่มีเอกสาร";
+
 
     let popupBody = document.getElementById("popup-body-1");
     popupBody.innerHTML = `
@@ -445,6 +453,7 @@ function openPopup(soDetailId, so_id, ponum, customer_name, customer_address, da
             <td>${customer_address}</td>
             <td>${date_of_dali}</td>
             <td>${sale_name}</td>
+            <td>${poDocumentButton}</td>
         </tr>
     `;
 

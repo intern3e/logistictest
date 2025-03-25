@@ -171,8 +171,8 @@ public function insert(Request $request)
             'item_quantity' => 'required|array',
             'item_quantity.*' => 'string',
             'status' => 'nullable|array',
-            'statuspdf' => 'nullable|array'
-              // อัปเดตเป็น nullable ป้องกัน error
+            'statuspdf' => 'nullable|array',
+            'POdocument' => 'required|file|mimes:pdf,doc,docx|max:2048' // ตรวจสอบว่าเป็นไฟล์
         ]);
 
         // **🔹 Insert into Bills**
@@ -190,13 +190,27 @@ public function insert(Request $request)
         $bill->date_of_dali = $request->input('date_of_dali');
         $bill->emp_name = $request->input('emp_name');
         $bill->sale_name = $request->input('sale_name');
+
+        // **🔹 อัปโหลดไฟล์ POdocument**
+        if ($request->hasFile('POdocument')) {
+            $file = $request->file('POdocument');
+            $filename = time() . '_' . $file->getClientOriginalName(); // ตั้งชื่อไฟล์ใหม่
+            $path = 'public/po_documents';
+            
+            // บันทึกไฟล์ลง storage
+            $file->storeAs($path, $filename);
+            
+            // บันทึกชื่อไฟล์ลงฐานข้อมูล
+            $bill->POdocument = $filename;
+        }
+
         $bill->save();
 
         $so_detail_id = $bill->id;
         $item_ids = $request->input('item_id');
         $item_names = $request->input('item_name');
         $item_quantities = $request->input('item_quantity');
-        $status_checked = $request->input('status', []);  // **🔹 แก้เป็นค่าเริ่มต้น array**
+        $status_checked = $request->input('status', []);
 
         // **🔹 Insert into Bill Details**
         foreach ($item_ids as $index => $item_id) {
@@ -211,7 +225,6 @@ public function insert(Request $request)
             $bill_detail->quantity = $item_quantities[$index];
             $bill_detail->save();
         }
-
 
         DB::commit();
         return response()->json(['success' => 'เปิดบิลสำเร็จ']);

@@ -293,7 +293,7 @@
 </head>
 <body>
     <div class="header">
-        <h2>ระบบจัดเตรียมDOC</h2>
+        <h2>ประวัติเอกสาร</h2>
     </div>
 
     <div class="container">
@@ -306,7 +306,7 @@
 
             <div class="button-group">
                 <button onclick="exportToExcel()">🖨 ปริ้นเอกสาร</button>
-                <button onclick="window.location.href='historydoc'">📜 ประวัติเอกสาร</button>
+                <button onclick="window.location.href='admindoc'">📜เอกสารล่าสุด</button>
             </div>
             
             <div class="search-box">
@@ -332,7 +332,7 @@
                 </thead>
                 <tbody id="table-body">
                     @foreach($docbill as $item)
-                    @if($item->status == 0)
+                    @if($item->status == 1)
                     <tr>
                         <td><input type="checkbox" class="form-control1" name="status[]"></td>
                         <td>{{ $item->doc_id }}</td>
@@ -506,27 +506,6 @@ function exportToExcel() {
     }
 }
 
-function updateStatus(docDetailIds) {
-    fetch('/update-statusdoc', {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
-        },
-        body: JSON.stringify({ docDetailIds: docDetailIds }) 
-    })
-    .then(response => response.json())
-    .then(data => {
-        if (data.success) {
-            console.log("Status updated successfully");
-        } else {
-            console.error("Failed to update status");   
-        }
-    })
-    .catch(error => {
-        console.error("Error updating status:", error);
-    });
-}
 
 function createExcelXML(data) {
     const xmlHeader = `<?xml version="1.0" encoding="UTF-8"?>
@@ -557,7 +536,7 @@ function createExcelXML(data) {
     // Adding data rows (without "เพิ่มเติม" column)
     const rows = data.reduce((acc, row) => {
     // เลือกเฉพาะคอลัมน์ที่ต้องการ (ในที่นี้คอลัมน์ที่ 2 และ 4)
-    const selectedData = [row[1], row[2], row[3], row[4], row[5], row[6], row[7], row[8]];   // เลือกคอลัมน์ที่ 2 (รหัสลูกค้า) และคอลัมน์ที่ 4 (ที่อยู่จัดส่ง)
+    const selectedData = [row[1], row[2], row[3], row[4], row[5], row[6], row[7], row[8]];  // เลือกคอลัมน์ที่ 2 (รหัสลูกค้า) และคอลัมน์ที่ 4 (ที่อยู่จัดส่ง)
 
     // แปลงข้อมูลที่เลือกให้เป็น XML
     const rowData = selectedData.map(cell => 

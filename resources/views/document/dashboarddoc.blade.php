@@ -320,95 +320,95 @@
         <table>
             <thead>
                 <tr>
-                    <th>บิลลำดับที่</th>
-                    <th>เลขอ้างอิงใบรับสินค้า</th>
+                    <th>เลขที่บิล</th>
+                    <th>เลขที่อ้างอิง</th>
                     <th>ชื่อ</th>
                     <th>ที่อยู่</th>
+                    <th>ประเภทบิล</th>
                     <th>ผู้เปิดบิล</th>
-                    <th>สถานะการจัดส่ง</th>
-                    <th>ข้อมูลสินค้า</th>
+                    <th>วันที่จัดส่ง</th>
+                    <th>ข้อมูลรายละเอียด</th>
                 </tr>
             </thead>
-                </div>     
-                <tbody id="table-body">
-                    @foreach($docbill as $item)
-                        <td>{{ $item->doc_id }}</td> 
-                        <td>{{ $item->so_id }}</td>
-                        <td>{{ $item->customer_name }}</td>
-                        <td>{{ $item->customer_address }}</td>  
-                        <td>{{ $item->emp_name }}</td>  
-                        <td>
-                            @if($item->status == 0)
-                                กำลังดำเนินการ
-                            @else
-                                สำเร็จ
-                            @endif
-                        </td>
-                        <td><a href="javascript:void(0);" 
-                            onclick="openPopup(
-                                '{{ $item->so_detail_id }}',
-                                '{{ $item->so_id }}',
-                                '{{ $item->customer_id }}',
-                                '{{ $item->customer_address }}',
-                                '{{ \Carbon\Carbon::parse($item->date_of_dali)->format('d/m/Y') }}',
-                                '{{ $item->sale_name}}'
-                            )">
-                        เพิ่มเติม
-                     </a></td>
-                    </tr> 
-                    @endforeach
-                </tbody>
-            </table>
-            @if(isset($message))
-            <br>
+            <tbody id="table-body">
+                @foreach($docbill as $item)
+                @if($item->status == 0)
+                <tr>
+                    <td>{{ $item->doc_id }}</td>
+                    <td>{{ $item->so_id }}</td>
+                    <td>{{ $item->customer_name }}</td>
+                    <td>{{ $item->customer_address }}</td>
+                    <td>{{ $item->doctype }}</td>
+                    <td>{{ $item->emp_name }}</td>
+                    <td>{{ \Carbon\Carbon::parse($item->revdate)->format('d/m/Y') }}</td>
+                    <td>
+                        <a href="javascript:void(0);" onclick="openPopup(
+                        '{{ $item->doc_id }}',
+                        '{{ $item->customer_name }}',
+                        '{{ $item->customer_address }}',
+                        '{{ $item->revdate }}',
+                        '{{ $item->emp_name }}',
+                        '{{ $item->notes }}',
+                        )">
+                            เพิ่มเติม
+                        </a>
+                    </td>
+                </tr>
+                @endif
+                @endforeach
+            </tbody>
+        </table>
     
-            <p style="text-align: center">{{ $message }}</p>
-                 @endif
-        </div>
-        
-        <!-- Popup -->
-        <div class="popup-overlay" id="popup" style="display: none;">
-            <div class="popup-content">
-                <span class="close-btn" onclick="closePopup()">&times;</span>
-                <div class="table-container">
-                    <table>
-                        <thead>
-                             <tr>
-                                <th>เลขบิลPO</th>
-                                <th>ชื่อร้านค้า</th>
-                                <th>ที่อยู่ร้านค้า</th>
-                                <th>วันที่รับสินค้า</th>
-                                <th>ผู้เปิดบิล</th>
-                            </tr> 
-                        </thead>
-                        <tbody id="popup-body-1">   
-                        </tbody>
-                    </table>
-                    <br>
-                    <table>
-                        <thead>     
-                            <tr>
-                                <th>รหัสสินค้า</th>
-                                <th>รายการ</th>
-                                <th>จำนวน</th>
-                                <th>ราคา/หน่วย</th>
-                            </tr>
-                        </thead>
-                        <tbody id="popup-body">
-                        </tbody>
-                    </table>
-                </div>
+        @if(isset($message))
+        <br>
+        <p style="text-align: center">{{ $message }}</p>
+        @endif
+    </div>
+    
+    <!-- Popup -->
+    <div class="popup-overlay" id="popup" style="display: none;">
+        <div class="popup-content">
+            <span class="close-btn" onclick="closePopup()">&times;</span>
+            <div class="table-container">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>เลขที่บิล</th>
+                            <th>ชื่อ</th>
+                            <th>ที่อยู่</th>
+                            <th>วันที่จัดส่ง</th>
+                            <th>ผู้เปิดบิล</th>
+                        </tr>
+                    </thead>
+                    <tbody id="popup-body-1">
+                    </tbody>
+                </table>
+                <br>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>แจ้งเพิ่มเติม</th>
+                        </tr>
+                    </thead>
+                    <tbody id="popup-body">
+                    </tbody>
+                </table>
             </div>
         </div>
-        
-        <script>
-    function openPopup(po_detail_id, po_id, store_name, store_address, recvDate,cartype) {
+    </div>
+    
+    <script>
+    function openPopup(doc_id,customer_name,customer_address,revdate,emp_name) {
         document.getElementById("popup").style.display = "flex"; // แสดง Popup
     
         let popupBody = document.getElementById("popup-body-1");
         popupBody.innerHTML = `
             <tr>
-                
+                <td>${doc_id}</td>
+                <td>${customer_name}</td>
+                <td>${customer_address}</td>
+                <td>${revdate}</td>
+                <td>${emp_name}</td>
             </tr>
         `;
     
@@ -416,7 +416,7 @@
         secondPopupBody.innerHTML = "<tr><td colspan='4'>Loading...</td></tr>";
     
         // ใช้ fetch ดึงข้อมูลจาก Laravel
-        fetch(`/get-bill-detail/${soDetailId}`)
+        fetch(`/get-docbill-detail/${doc_id}`)
             .then(response => response.json())
             .then(data => {
                 if (data.length > 0) {
@@ -424,26 +424,11 @@
                     data.forEach(item => {
                         secondPopupBody.insertAdjacentHTML("beforeend", `
                             <tr>
-                                <td>${item.item_id}</td>
-                                <td>${item.item_name}</td>
-                                <td>${item.quantity}</td>
-                                <td>${item.unit_price}</td>
+                                <td>${item.notes}</td>
                             </tr>
                         `);
                     });
     
-                       let existingButton = document.querySelector(".editButton");
-                    if (existingButton) {
-                        existingButton.remove(); // ลบปุ่มเดิมก่อน
-                    }
-    
-                    secondPopupBody.insertAdjacentHTML("afterend", `
-                        <div style="text-align: left; margin-top: 15px;">
-                            <a href="/sale/modifydata/${soDetailId}">
-                                <button class="editButton">แก้ไขข้อมูล</button>
-                            </a>    
-                        </div>
-                    `);
                 } else {
                     secondPopupBody.innerHTML = "<tr><td colspan='4'>ไม่มีข้อมูล</td></tr>";
                 }
@@ -453,19 +438,18 @@
                 secondPopupBody.innerHTML = "<tr><td colspan='4'>เกิดข้อผิดพลาด</td></tr>";
             });
     }
-        function closePopup() {
-            document.getElementById("popup").style.display = "none"; // ซ่อน Popup
+    
+    function closePopup() {
+        document.getElementById("popup").style.display = "none"; // ซ่อน Popup
+    }
+    
+    window.onclick = function(event) {
+        let popup = document.getElementById("popup");
+        if (event.target === popup) {
+            closePopup();
         }
-        
-        window.onclick = function(event) {
-            let popup = document.getElementById("popup");
-            if (event.target === popup) {
-                closePopup();
-            }
-        }
-    </script> 
-
-
+    }
+    </script>
 {{--searchTable --}}
      <script>
             function searchTable() {
