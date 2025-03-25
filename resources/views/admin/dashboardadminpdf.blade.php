@@ -348,7 +348,6 @@
                 <thead>
                     <tr>
                         <th>ปริ้นเอกสาร</th>
-                        <th>ปริ้นเอกสารPO</th>
                         <th>เลขที่บิล</th>
                         <th>อ้างอิงใบสั่งขาย</th>
                         <th>อ้างอิงใบสั่งซื้อ</th>
@@ -365,18 +364,18 @@
                         @if($item->statuspdf == 0)
                             <tr>
                                 <td><input type="checkbox" class="form-control1" name="statupdf[]"></td>
-                                <td>
-                                    @if($item->POdocument)
-                                        <a href="{{ asset('storage/po_documents/' . $item->POdocument) }}" download>
-                                            <button>ดาวน์โหลด</button>
-                                        </a>
-                                    @else
-                                        ไม่มีไฟล์
-                                    @endif
-                                </td>
                                 <td>{{ $item->so_detail_id }}</td>  
                                 <td>{{ $item->so_id }}</td>
-                                <td>{{ $item->ponum }}</td>  
+                                <td>
+                                    {{ $item->ponum }}
+                                    @if($item->POdocument)
+                                    <a href="{{ asset('storage/po_documents/' . $item->POdocument) }}" download>
+                                        <button >ดาวน์โหลด</button>
+                                    </a>
+                                @else
+                                <p style="color: red;">ไม่มีไฟล์</p>
+                                @endif
+                                </td>  
                                 <td>{{ $item->customer_name}}</td>
                                 <td>{{ $item->customer_tel }}</td>
                                 <td>{{ \Carbon\Carbon::parse($item->date_of_dali)->format('d/m/Y') }}</td> 
@@ -564,7 +563,7 @@ function updateStatuspdf() {
         console.error("Error updating status:", error);
         alert("เกิดข้อผิดพลาดในการอัปเดตสถานะ");
     });
-}
+}   
     </script>
     
 
