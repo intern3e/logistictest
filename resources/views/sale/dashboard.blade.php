@@ -416,7 +416,6 @@ td a:hover {
                             <th>รหัสสินค้า</th>
                             <th>รายการ</th>
                             <th>จำนวน</th>
-                            <th>ราคา/หน่วย</th>
                         </tr>
                     </thead>
                     <tbody id="popup-body">
@@ -455,7 +454,9 @@ function openPopup(soDetailId, so_id, ponum, customer_name, customer_address, da
             <td>${sale_name}</td>
             <td>${poDocumentButton}</td>
         </tr>
+         
     `;
+    
 
     let secondPopupBody = document.getElementById("popup-body");
     secondPopupBody.innerHTML = "<tr><td colspan='4'>Loading...</td></tr>";
@@ -475,8 +476,8 @@ function openPopup(soDetailId, so_id, ponum, customer_name, customer_address, da
                             <td>${item.item_id}</td>
                             <td>${item.item_name}</td>
                             <td>${item.quantity}</td>
-                            <td>${item.unit_price}</td>
                         </tr>
+                        
                     `);
                 });
 
@@ -493,8 +494,19 @@ function openPopup(soDetailId, so_id, ponum, customer_name, customer_address, da
             console.error("Error fetching data:", error);
             secondPopupBody.innerHTML = "<tr><td colspan='4'>เกิดข้อผิดพลาด</td></tr>";
             thirdPopupBody.value = "เกิดข้อผิดพลาดในการโหลดหมายเหตุ";
-        });
+        });  
+        let deleteButtonHTML = `
+        <button onclick="deleteBill(${soDetailId})" style="background-color: red; color: white;">ลบบิล</button>
+    `;
+    popupBody.insertAdjacentHTML("beforeend", `
+        <tr>
+            <td colspan="8" style="text-align: center;">
+                ${deleteButtonHTML}
+            </td>
+        </tr>
+    `);
 }
+
 
     function closePopup() {
         document.getElementById("popup").style.display = "none"; // ซ่อน Popup
@@ -524,7 +536,37 @@ function openPopup(soDetailId, so_id, ponum, customer_name, customer_address, da
             }
         }
     }
-    
+    function deleteBill(soDetailId) {
+    // Ask for confirmation before deleting
+    const confirmation = confirm("คุณต้องการลบบิลนี้หรือไม่?");
+    if (confirmation) {
+        fetch(`/delete-bill/${soDetailId}`, {
+            method: 'DELETE',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRF-TOKEN': '{{ csrf_token() }}'
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                alert(data.success); // Show success message
+                closePopup(); // Close the popup after successful delete
+                location.reload(); // Reload the page to reflect the changes
+            } else {
+                alert(data.error); // Show error message if deletion fails
+            }
+        })
+        .catch(error => {
+            console.error("Error deleting bill:", error);
+            alert("เกิดข้อผิดพลาดในการลบบิล");
+        });
+    }
+}
     </script>
+
+
+
+
     </body>
     </html>
