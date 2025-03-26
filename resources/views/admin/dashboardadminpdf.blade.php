@@ -363,19 +363,19 @@
                     @foreach($bill as $item)
                         @if($item->statuspdf == 0)
                             <tr>
-                                <td><input type="checkbox" class="form-control1" name="statupdf[]"></td>
+                                <td><input type="checkbox" class="form-control1" name="statupdf[]" value="{{ $item->so_id }}"></td>
                                 <td>{{ $item->so_detail_id }}</td>  
                                 <td>{{ $item->so_id }}</td>
                                 <td>
                                     {{ $item->ponum }}
                                     @if($item->POdocument)
-                                    <a href="{{ asset('storage/po_documents/' . $item->POdocument) }}" download>
-                                        <button >ดาวน์โหลด</button>
-                                    </a>
-                                @else
-                                <p style="color: red;">ไม่มีไฟล์</p>
-                                @endif
-                                </td>  
+                                        <a href="{{ asset('storage/po_documents/' . $item->POdocument) }}" download>
+                                            <button onclick="copyBothAndCheckBox('{{ $item->so_id }}')">ดาวน์โหลด</button>
+                                        </a>
+                                    @else
+                                        <p style="color: red;">ไม่มีไฟล์</p>
+                                    @endif
+                                </td> 
                                 <td>{{ $item->customer_name}}</td>
                                 <td>{{ $item->customer_tel }}</td>
                                 <td>{{ \Carbon\Carbon::parse($item->date_of_dali)->format('d/m/Y') }}</td> 
@@ -553,7 +553,6 @@ function updateStatuspdf() {
     .then(response => response.json())
     .then(data => {
         if (data.success) {
-            alert("สถานะเอกสารถูกอัปเดตสำเร็จ");
             location.reload(); // Optionally reload the page to reflect changes
         } else {
             alert("ไม่สามารถอัปเดตสถานะได้");
@@ -565,7 +564,44 @@ function updateStatuspdf() {
     });
 }   
     </script>
-    
+
+
+<script>
+    function copyBothAndCheckBox(so_id) {
+        // คัดลอกข้อมูลทั้งสองไปยังคลิปบอร์ด
+        const textToCopy = `${so_id}`;
+        
+        // คัดลอกไปยังคลิปบอร์ด
+        navigator.clipboard.writeText(textToCopy)
+            .then(() => {
+            })
+            .catch((err) => {
+                console.error("เกิดข้อผิดพลาดในการคัดลอกข้อความ:", err);
+                alert("ไม่สามารถคัดลอกข้อความได้");
+            });
+
+        // หา checkbox โดยใช้ so_id
+        const checkbox = document.querySelector(`input[name='statupdf[]'][value='${so_id}']`);
+        
+        if (checkbox) {
+            // ทำให้ checkbox ถูกเช็ค
+            checkbox.checked = true;
+        } else {
+            console.log("ไม่พบ checkbox ที่มีค่า so_detail_id ตรงกับที่เลือก");
+        }
+
+        // คลิกปุ่มปริ้นเอกสารSO อัตโนมัติ
+        const printButton = document.querySelector("button[onclick='updateStatuspdf()']");
+        if (printButton) {
+            printButton.click(); // กดปุ่มปริ้นเอกสารSO
+            console.log("Bot กดปุ่มปริ้นเอกสารSO แล้ว!");
+        } else {
+            console.log("ไม่พบปุ่มปริ้นเอกสารSO");
+        }
+    }
+</script>
+
+
 
 
 </body>
