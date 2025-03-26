@@ -592,7 +592,7 @@ function createCSV() {
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
-    a.download = "เอกสารจัดเตรียมสินค้า.csv";
+    a.download = "เอกสารเส้นทางเดินรถของSO.csv";
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);

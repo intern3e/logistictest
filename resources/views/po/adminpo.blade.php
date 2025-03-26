@@ -403,7 +403,7 @@
                 </select>
             </div>
             <div class="button-group">
-                <button onclick="exportToExcel()">🖨 ปริ้นเอกสาร</button>
+                <button onclick="createCSV()">ดาวน์โหลด CSV</button>
                 <button onclick="window.location.href='historypo'">📜 ประวัติเอกสาร</button>
             </div>
             
@@ -412,10 +412,12 @@
   
        <div class="table-container">
     <table>
+        <input type="checkbox" id="checkAll" onclick="toggleCheckboxes()"> ทั้งหมด
         <thead>
             <tr>
                 <th>ปริ้นเอกสาร</th>
                 <th>เลขอ้างอิงใบรับสินค้า</th>
+                <th>เลขที่บิล</th>
                 <th>ชื่อร้านค้า</th>
                 <th>ที่อยู่ร้านค้า</th>
                 <th>ละติจูดลองจิจูด</th>
@@ -429,7 +431,10 @@
             @foreach($pobill as $item)
                 @if($item->status == 0)
                     <tr>
-                        <td><input type="checkbox" class="form-control1" name="status[]"></td>
+                        <td>
+                            <input type="checkbox" class="form-control1" name="status[]" data-po-detail-id="{{ $item->po_detail_id }}">
+                        </td>
+                        <td>{{ $item->po_id }}</td>
                         <td>{{ $item->po_detail_id }}</td>
                         <td>{{ $item->store_name }}</td>
                         <td>{{ $item->store_address }}</td>  
@@ -447,7 +452,8 @@
                         </td>
                         <td><a href="javascript:void(0);" 
                             onclick="openPopup(
-                                '{{ $item->po_detail_id }}',
+                                '{{ $item->po_id }}',
+                                '{{ $item->po_detail_id }}',    
                                 '{{ $item->store_name}}',
                                 '{{ $item->store_address}}',
                                 '{{ \Carbon\Carbon::parse($item->recvDate)->format('d/m/Y') }}',
@@ -475,6 +481,7 @@
             <table>
                 <thead>
                     <tr>
+                        <th>เลขอ้างอิงใบรับสินค้า</th>
                         <th>เลขที่บิล</th>
                         <th>รหัสลูกค้า</th>
                         <th>ที่อยู่จัดส่ง</th>
@@ -493,7 +500,6 @@
                         <th>รหัสสินค้า</th>
                         <th>รายการ</th>
                         <th>จำนวน</th>
-                        <th>ราคา/หน่วย</th>
                     </tr>
                 </thead>
                 <tbody id="popup-body">
@@ -504,7 +510,7 @@
 </div>
 
 <script>
-    function openPopup(po_detail_id, store_name, store_address, recvDate, emp_name, cartype) {
+    function openPopup(po_id,po_detail_id, store_name, store_address, recvDate, emp_name, cartype) {
         document.getElementById("popup").style.display = "flex"; // แสดง Popup
     
         // แปลงค่า cartype
@@ -523,6 +529,7 @@
         let popupBody = document.getElementById("popup-body-1");
         popupBody.innerHTML = `
             <tr>
+                <td>${po_id}</td>
                 <td>${po_detail_id}</td>
                 <td>${store_name}</td>
                 <td>${store_address}</td>
@@ -551,7 +558,6 @@
                                 <td>${item.item_id}</td>
                                 <td>${item.item_name}</td>
                                 <td>${item.quantity}</td>
-                                <td>${item.unit_price}</td>
                             </tr>
                         `);
                     });
@@ -599,100 +605,6 @@
 
 
 <script>
-function exportToExcel() {
-    let table = document.querySelector("table");
-    let rows = table.querySelectorAll("tr");
-    let data = [];
-    let checkedRows = [];
-    let poDetailIds = []; 
-
-    rows.forEach(row => {
-        let checkbox = row.querySelector("input[type='checkbox']");
-        if (checkbox && checkbox.checked) {
-            let rowData = [];
-            let cells = row.querySelectorAll("td");
-            cells.forEach(cell => {
-                rowData.push(cell.textContent.trim());
-            });
-            data.push(rowData);
-            checkedRows.push(row);
-
-            // Collect the po_detail_id from the row
-            let poDetailId = row.querySelector("td:nth-child(2)").textContent.trim();
-            poDetailIds.push(poDetailId); 
-        }
-    });
-
-    if (data.length > 0) {
-        let xml = createExcelXML(data);
-        let blob = new Blob([xml], { type: "application/vnd.ms-excel" });
-        let link = document.createElement("a");
-        link.href = URL.createObjectURL(blob);
-        link.download = "เอกสารจัดเตรียมสินค้า.xls";
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-
-        // Update the status of checked rows to 1
-        checkedRows.forEach(row => {
-            let statusCell = row.querySelector("td:first-child");
-            if (statusCell) {
-                statusCell.innerHTML = "✅ พิมพ์แล้ว";
-            }
-        });
-
-        // ส่งค่าไป updateStatus
-        updateStatus(poDetailIds);
-
-        // Reload the page after printing
-        location.reload();
-    } else {
-        alert("กรุณาเลือกข้อมูลที่ต้องการพิมพ์");
-    }
-}
-
-
-function createExcelXML(data) {
-    const xmlHeader = `<?xml version="1.0" encoding="UTF-8"?>
-        <?mso-application progid="Excel.Sheet"?>
-        <Workbook xmlns="urn:schemas-microsoft-com:office:spreadsheet"
-                  xmlns:o="urn:schemas-microsoft-com:office:office"
-                  xmlns:x="urn:schemas-microsoft-com:office:excel"
-                  xmlns:ss="urn:schemas-microsoft-com:office:spreadsheet"
-                  xmlns:html="http://www.w3.org/TR/REC-html40">
-        <Worksheet ss:Name="Sheet1">
-            <Table>`;
-
-    const xmlFooter = `</Table></Worksheet></Workbook>`;
-
-    // Adding headers for the columns
-    const headerRow = `<Row>
-        <Cell><Data ss:Type="String">บิลลำดับ</Data></Cell>
-        <Cell><Data ss:Type="String">รหัสลูกค้า</Data></Cell>
-        <Cell><Data ss:Type="String">ที่อยู่จัดส่ง</Data></Cell>
-        <Cell><Data ss:Type="String">ละติจูด ลองจิจูด</Data></Cell>
-        <Cell><Data ss:Type="String">วันที่จัดส่ง</Data></Cell>
-        <Cell><Data ss:Type="String">ผู้เปิดบิล</Data></Cell>
-    </Row>`;
-
-    // Adding data rows (without "เพิ่มเติม" column)
-    const rows = data.reduce((acc, row) => {
-    // เลือกเฉพาะคอลัมน์ที่ต้องการ (ในที่นี้คอลัมน์ที่ 2 และ 4)
-    const selectedData = [row[1], row[2], row[3], row[4], row[5], row[6]];  // เลือกคอลัมน์ที่ 2 (รหัสลูกค้า) และคอลัมน์ที่ 4 (ที่อยู่จัดส่ง)
-
-    // แปลงข้อมูลที่เลือกให้เป็น XML
-    const rowData = selectedData.map(cell => 
-        `<Cell><Data ss:Type="String">${cell}</Data></Cell>`
-    ).join('');
-
-    // เพิ่มแถวลงใน XML
-    acc += `<Row>${rowData}</Row>`;
-    return acc;
-}, '');
-
-    return xmlHeader + headerRow + rows + xmlFooter;
-}
-
 function searchTable() {
     let searchInput = document.getElementById("search-input").value.toLowerCase();
     let table = document.querySelector("table tbody");
@@ -729,6 +641,7 @@ function updateStatus(poDetailIds) {
     .then(data => {
         console.log("Response:", data);
         if (data.success) {
+            location.reload();
             console.log("Status updated successfully");
         } else {
             console.error("Failed to update status");
@@ -757,10 +670,77 @@ function sortTableDescending() {
 // เรียกใช้ฟังก์ชัน sort เมื่อโหลดหน้า
 window.onload = function() {
     sortTableDescending();
-};
-
+}
     </script>
+<script>
     
+    function createCSV() {
+    const headers = [
+        "เลขที่บิล", "เลขอ้างอิงใบรับสินค้า", "ชื่อร้านค้า", "ที่อยู่ร้านค้า",
+        "ละติจูดลองจิจูด", "วันที่รับสินค้า", "ผู้เปิดบิล", "ประเภทขนส่ง"
+    ];
+
+    let data = [];
+    let selectedpoDetailIds = []; // เก็บ so_detail_id ของแถวที่เลือก
+
+    let checkboxes = document.querySelectorAll("input[type='checkbox']:checked");
+
+    checkboxes.forEach(checkbox => {
+        let row = checkbox.closest("tr");
+        if (!row) return;
+
+        let cells = row.querySelectorAll("td");
+        let rowData = [];
+
+        // ดึงข้อมูลจากแต่ละเซลล์ (ข้าม checkbox column)
+        cells.forEach((cell, index) => {
+            if (index > 0 && index <= 8) { 
+                rowData.push(`"${cell.textContent.trim()}"`);
+            }
+        });
+
+        // ดึงค่า so_detail_id แล้วเก็บไว้
+        let poDetailId = checkbox.getAttribute("data-po-detail-id");
+        if (poDetailId) {
+            selectedpoDetailIds.push(poDetailId);
+        }
+
+        data.push(rowData.join(","));
+    });
+
+    if (data.length === 0) {
+        alert("กรุณาเลือกข้อมูลที่ต้องการพิมพ์ CSV");
+        return;
+    }
+
+    const csvContent = "\uFEFF" + [headers.join(","), ...data].join("\n");
+
+    const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "เอกสารเส้นทางเดินรถของPO.csv";
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+
+    // หลังจากดาวน์โหลด CSV แล้ว อัปเดตสถานะของข้อมูลที่เลือก
+    if (selectedpoDetailIds.length > 0) {
+        updateStatus(selectedpoDetailIds);
+    }
+}
+
+
+function toggleCheckboxes() {
+    var checkAllBox = document.getElementById('checkAll');
+    var checkboxes = document.querySelectorAll('input[type="checkbox"]:not(#checkAll)');
+    checkboxes.forEach(function(checkbox) {
+        checkbox.checked = checkAllBox.checked;
+    });
+}
+
+</script>  
 
 </body>
 </html>

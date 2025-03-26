@@ -293,7 +293,7 @@
 </head>
 <body>
     <div class="header">
-        <h2>ระบบจัดเตรียมDOC</h2>
+        <h2>ระบบจัดเส้นทางเอกสารเพิ่มเติม</h2>
     </div>
 
     <div class="container">
@@ -305,7 +305,7 @@
             </form>
 
             <div class="button-group">
-                <button onclick="exportToExcel()">🖨 ปริ้นเอกสาร</button>
+                <button onclick="createCSV()">ดาวน์โหลด CSV</button>
                 <button onclick="window.location.href='historydoc'">📜 ประวัติเอกสาร</button>
             </div>
             
@@ -316,6 +316,7 @@
         </div>
         <div class="table-container">
             <table>
+                <input type="checkbox" id="checkAll" onclick="toggleCheckboxes()"> ทั้งหมด
                 <thead>
                     <tr>
                         <th>ปริ้นเอกสาร</th>
@@ -334,7 +335,9 @@
                     @foreach($docbill as $item)
                     @if($item->status == 0)
                     <tr>
-                        <td><input type="checkbox" class="form-control1" name="status[]"></td>
+                        <td>
+                            <input type="checkbox" class="form-control1" name="status[]" data-doc-detail-id="{{ $item->doc_id }}">
+                        </td>
                         <td>{{ $item->doc_id }}</td>
                         <td>{{ $item->so_id }}</td>
                         <td>{{ $item->customer_name }}</td>
@@ -455,56 +458,6 @@
 
 
 <script>
-function exportToExcel() {
-    let table = document.querySelector("table");
-    let rows = table.querySelectorAll("tr");
-    let data = [];
-    let checkedRows = [];
-    let selectedSoDetailIds = []; // Array to store the selected so_detail_ids
-
-    rows.forEach(row => {
-        let checkbox = row.querySelector("input[type='checkbox']");
-        if (checkbox && checkbox.checked) {
-            let rowData = [];
-            let cells = row.querySelectorAll("td");
-            cells.forEach(cell => {
-                rowData.push(cell.textContent.trim());
-            });
-            data.push(rowData);
-            checkedRows.push(row);
-
-            // Collect the so_detail_id from the row
-            let soDetailId = row.querySelector("td:nth-child(2)").textContent.trim();
-            selectedSoDetailIds.push(soDetailId);
-        }
-    });
-
-    if (data.length > 0) {
-        let xml = createExcelXML(data);
-        let blob = new Blob([xml], { type: "application/vnd.ms-excel" });
-        let link = document.createElement("a");
-        link.href = URL.createObjectURL(blob);
-        link.download = "เอกสารจัดเตรียมสินค้า.xls";
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-        // Update the status of checked rows to 1
-        checkedRows.forEach(row => {
-            let statusCell = row.querySelector("td:first-child");
-            if (statusCell) {
-                statusCell.innerHTML = "✅ พิมพ์แล้ว";
-            }
-        });
-
-        // Send AJAX request to update the status in the database
-        updateStatus(selectedSoDetailIds);
-
-        // Reload the page after printing
-        location.reload();
-    } else {
-        alert("กรุณาเลือกข้อมูลที่ต้องการพิมพ์");
-    }
-}
 
 function updateStatus(docDetailIds) {
     fetch('/update-statusdoc', {
@@ -518,6 +471,7 @@ function updateStatus(docDetailIds) {
     .then(response => response.json())
     .then(data => {
         if (data.success) {
+            location.reload();
             console.log("Status updated successfully");
         } else {
             console.error("Failed to update status");   
@@ -528,49 +482,6 @@ function updateStatus(docDetailIds) {
     });
 }
 
-function createExcelXML(data) {
-    const xmlHeader = `<?xml version="1.0" encoding="UTF-8"?>
-        <?mso-application progid="Excel.Sheet"?>
-        <Workbook xmlns="urn:schemas-microsoft-com:office:spreadsheet"
-                  xmlns:o="urn:schemas-microsoft-com:office:office"
-                  xmlns:x="urn:schemas-microsoft-com:office:excel"
-                  xmlns:ss="urn:schemas-microsoft-com:office:spreadsheet"
-                  xmlns:html="http://www.w3.org/TR/REC-html40">
-        <Worksheet ss:Name="Sheet1">
-            <Table>`;
-
-    const xmlFooter = `</Table></Worksheet></Workbook>`;
-
-    // Adding headers for the columns
-    const headerRow = `<Row>
-        <Cell><Data ss:Type="String">เลขที่บิล</Data></Cell>
-        <Cell><Data ss:Type="String">เลขที่อ้างอิง</Data></Cell>
-        <Cell><Data ss:Type="String">ชื่อ</Data></Cell>
-        <Cell><Data ss:Type="String">ที่อยู่จัดส่ง</Data></Cell>
-        <Cell><Data ss:Type="String">ละติจูด ลองจิจูด</Data></Cell>
-        <Cell><Data ss:Type="String">ประเภทบิล</Data></Cell>
-        <Cell><Data ss:Type="String">ผู้เปิดบิล</Data></Cell>
-        <Cell><Data ss:Type="String">วันที่จัดส่ง</Data></Cell>
-        
-    </Row>`;
-
-    // Adding data rows (without "เพิ่มเติม" column)
-    const rows = data.reduce((acc, row) => {
-    // เลือกเฉพาะคอลัมน์ที่ต้องการ (ในที่นี้คอลัมน์ที่ 2 และ 4)
-    const selectedData = [row[1], row[2], row[3], row[4], row[5], row[6], row[7], row[8]];   // เลือกคอลัมน์ที่ 2 (รหัสลูกค้า) และคอลัมน์ที่ 4 (ที่อยู่จัดส่ง)
-
-    // แปลงข้อมูลที่เลือกให้เป็น XML
-    const rowData = selectedData.map(cell => 
-        `<Cell><Data ss:Type="String">${cell}</Data></Cell>`
-    ).join('');
-
-    // เพิ่มแถวลงใน XML
-    acc += `<Row>${rowData}</Row>`;
-    return acc;
-}, '');
-
-    return xmlHeader + headerRow + rows + xmlFooter;
-}
 
 function searchTable() {
     let searchInput = document.getElementById("search-input").value.toLowerCase();
@@ -594,7 +505,76 @@ function searchTable() {
 }
 
     </script>
-    
+
+<script>
+     
+     function createCSV() {
+    const headers = [
+        "เลขที่บิล", "เลขที่อ้างอิง", "ชื่อ", "ที่อยู่",
+        "ละติจูดลองจิจูด", "ประเภทบิล", "ผู้เปิดบิล", "วันที่จัด"
+    ];
+
+    let data = [];
+    let selecteddocDetailIds = []; // เก็บ so_detail_id ของแถวที่เลือก
+
+    let checkboxes = document.querySelectorAll("input[type='checkbox']:checked");
+
+    checkboxes.forEach(checkbox => {
+        let row = checkbox.closest("tr");
+        if (!row) return;
+
+        let cells = row.querySelectorAll("td");
+        let rowData = [];
+
+        // ดึงข้อมูลจากแต่ละเซลล์ (ข้าม checkbox column)
+        cells.forEach((cell, index) => {
+            if (index > 0 && index <= 8) { 
+                rowData.push(`"${cell.textContent.trim()}"`);
+            }
+        });
+
+        // ดึงค่า so_detail_id แล้วเก็บไว้
+        let docDetailId = checkbox.getAttribute("data-doc-detail-id");
+        if (docDetailId) {
+            selecteddocDetailIds.push(docDetailId);
+        }
+
+        data.push(rowData.join(","));
+    });
+
+    if (data.length === 0) {
+        alert("กรุณาเลือกข้อมูลที่ต้องการพิมพ์ CSV");
+        return;
+    }
+
+    const csvContent = "\uFEFF" + [headers.join(","), ...data].join("\n");
+
+    const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "เอกสารเส้นทางเดินรถของเอกสารเพิ่มเติม.csv";
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+
+
+    if (selecteddocDetailIds.length > 0) {
+        updateStatus(selecteddocDetailIds);
+    }
+}
+
+
+function toggleCheckboxes() {
+    var checkAllBox = document.getElementById('checkAll');
+    var checkboxes = document.querySelectorAll('input[type="checkbox"]:not(#checkAll)');
+    checkboxes.forEach(function(checkbox) {
+        checkbox.checked = checkAllBox.checked;
+    });
+}
+
+</script>
 
 </body>
 </html>
