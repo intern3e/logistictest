@@ -205,20 +205,25 @@ body {
 }
 
 .table-container {
-    background: white;
-    margin: 0 5%;
-    padding: 20px;
-    border-radius: 12px;
-    box-shadow: 0px 6px 12px rgba(0, 0, 0, 0.1);
-    overflow: hidden;
-    overflow-x: auto; /* ให้ตารางเลื่อนในแนวนอนได้ */
-}
+            background: #f9f9f9; /* Light gray background for table */
+            margin: 2% 5%;
+            padding: 40px;
+            border-radius: 12px;
+            box-shadow: 0px 6px 12px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+            width: 100%;
+            max-width: 100%; /* Ensure table doesn't overflow the container */
+            transform: scale(0.9); /* Scale down the table to fit the screen */
+            transform-origin: top left; /* Keep the table scaling from the top-left corner */
+        }
 
-table {
-    width: 100%;
-    border-collapse: collapse;
-    text-align: center;
-}
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            text-align: center;
+            word-wrap: break-word; /* Ensure text wraps within table cells */
+            font-size: 1rem; /* Adjust the font size to make it smaller */
+        }
 
 th, td {
     padding: 12px;
@@ -228,7 +233,6 @@ th, td {
     word-wrap: break-word; /* ถ้าข้อความยาวเกินจะขึ้นบรรทัดใหม่ */
     word-break: break-word; /* หักคำเมื่อข้อความยาวเกิน */
 }
-
 th {
     background-color: #0071E3;
     color: white;

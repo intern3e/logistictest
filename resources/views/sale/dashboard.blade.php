@@ -77,32 +77,40 @@ body {
     transform: scale(1.05);
 }
 
+
 /* --- Table Styling --- */
 .table-container {
     background: #f9f9f9; /* Light gray background for table */
     margin: 0 5%;
-    padding: 20px;
+    padding: 10px;
     border-radius: 12px;
     box-shadow: 0px 6px 12px rgba(0, 0, 0, 0.1);
     overflow: hidden;
+    width: 99%;
+    max-width: 100%; /* Ensure table doesn't overflow the container */
+    transform: scale(0.9); /* Scale down the table to fit the screen */
+    transform-origin: top left; /* Keep the table scaling from the top-left corner */
 }
 
 table {
     width: 100%;
     border-collapse: collapse;
     text-align: center;
+    word-wrap: break-word; /* Ensure text wraps within table cells */
+    font-size: 1rem; /* Adjust the font size to make it smaller */
 }
 
 th, td {
     padding: 12px;
     border: 1px solid #ccc; /* Light gray for borders */
     font-size: 1rem;
+    white-space: normal; /* Allow wrapping of text in cells */
 }
+
 
 th {
     background: #00389f; /* Blue background for headers */
     color: white;
-    text-transform: uppercase;
 }
 
 tr:nth-child(odd) {
@@ -300,6 +308,30 @@ td a:hover {
     margin: 10px 0;
     box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
 }
+#delete-btn {
+    background-color: #dc3545; /* สีแดงเข้ม */
+    color: white;
+    border: none;
+    padding: 10px 20px;
+    font-size: 16px;
+    font-weight: bold;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: background-color 0.3s, transform 0.2s;
+}
+
+#delete-btn:hover {
+    background-color: #c82333; /* สีแดงเข้มขึ้นเมื่อ hover */
+    transform: scale(1.05);
+}
+
+#delete-btn:active {
+    background-color: #a71d2a; /* สีแดงเข้มขึ้นเมื่อกด */
+    transform: scale(0.95);
+}
+
+
+
 
         </style>
 </head>
@@ -422,9 +454,12 @@ td a:hover {
                     </tbody>
                 </table>
                 <br>
-                <textarea id="popup-body-3" readonly>
+                <textarea id="popup-body-3" readonl style="width: 600px; height: 70px;">
                 </textarea>
-              
+                <div>
+                    <br>
+                <button id="delete-btn" style="background-color: red; color: white;">ลบบิล</button>
+               </div>
                 
 
 
@@ -433,17 +468,14 @@ td a:hover {
     </div>
     
     <script>
-function openPopup(soDetailId, so_id, ponum, customer_name, customer_address, date_of_dali, sale_name, notes,POdocument) {
-    document.getElementById("popup").style.display = "flex"; // แสดง Popup
+function openPopup(soDetailId, so_id, ponum, customer_name, customer_address, date_of_dali, sale_name, notes, POdocument) {
+    document.getElementById("popup").style.display = "flex";
+
     let poDocumentButton = POdocument 
-        ? `<a href="storage/po_documents/${POdocument}" target="_blank">
-              <button>ดูเอกสาร</button>
-           </a>` 
+        ? `<a href="storage/po_documents/${POdocument}" target="_blank"><button>ดูเอกสาร</button></a>` 
         : "ไม่มีเอกสาร";
 
-
-    let popupBody = document.getElementById("popup-body-1");
-    popupBody.innerHTML = `
+    document.getElementById("popup-body-1").innerHTML = `
         <tr>
             <td>${soDetailId}</td>
             <td>${so_id}</td>
@@ -454,22 +486,19 @@ function openPopup(soDetailId, so_id, ponum, customer_name, customer_address, da
             <td>${sale_name}</td>
             <td>${poDocumentButton}</td>
         </tr>
-         
     `;
-    
 
     let secondPopupBody = document.getElementById("popup-body");
-    secondPopupBody.innerHTML = "<tr><td colspan='4'>Loading...</td></tr>";
+    secondPopupBody.innerHTML = "<tr><td colspan='3'>Loading...</td></tr>";
 
-    let thirdPopupBody = document.getElementById("popup-body-3"); // ดึง textarea จริงๆ มาใช้
-    thirdPopupBody.value = notes || "ไม่มีหมายเหตุ"; // ใช้ค่า notes ที่ส่งมา ถ้าไม่มีให้แสดง "ไม่มีหมายเหตุ"
+    let thirdPopupBody = document.getElementById("popup-body-3");
+    thirdPopupBody.value = notes || "ไม่มีหมายเหตุ";
 
-    // ใช้ fetch ดึงข้อมูลจาก Laravel
     fetch(`/get-bill-detail/${soDetailId}`)
         .then(response => response.json())
         .then(data => {
             if (data.length > 0) {
-                secondPopupBody.innerHTML = ""; // เคลียร์ข้อมูลเก่า
+                secondPopupBody.innerHTML = "";
                 data.forEach(item => {
                     secondPopupBody.insertAdjacentHTML("beforeend", `
                         <tr>
@@ -477,34 +506,24 @@ function openPopup(soDetailId, so_id, ponum, customer_name, customer_address, da
                             <td>${item.item_name}</td>
                             <td>${item.quantity}</td>
                         </tr>
-                        
                     `);
                 });
-
-                // อัปเดต textarea เฉพาะถ้า notes ยังไม่มีค่า
                 if (!notes) {
                     thirdPopupBody.value = data[0].notes || "ไม่มีหมายเหตุ";
                 }
             } else {
-                secondPopupBody.innerHTML = "<tr><td colspan='4'>ไม่มีข้อมูล</td></tr>";
+                secondPopupBody.innerHTML = "<tr><td colspan='3'>ไม่มีข้อมูล</td></tr>";
                 thirdPopupBody.value = "ไม่มีหมายเหตุ";
             }
         })
         .catch(error => {
             console.error("Error fetching data:", error);
-            secondPopupBody.innerHTML = "<tr><td colspan='4'>เกิดข้อผิดพลาด</td></tr>";
+            secondPopupBody.innerHTML = "<tr><td colspan='3'>เกิดข้อผิดพลาด</td></tr>";
             thirdPopupBody.value = "เกิดข้อผิดพลาดในการโหลดหมายเหตุ";
-        });  
-        let deleteButtonHTML = `
-        <button onclick="deleteBill(${soDetailId})" style="background-color: red; color: white;">ลบบิล</button>
-    `;
-    popupBody.insertAdjacentHTML("beforeend", `
-        <tr>
-            <td colspan="8" style="text-align: center;">
-                ${deleteButtonHTML}
-            </td>
-        </tr>
-    `);
+        });
+
+    // ตั้งค่า onclick ให้ปุ่มลบใหม่ทุกครั้งที่เปิด Popup
+    document.getElementById("delete-btn").setAttribute("onclick", `deleteBill(${soDetailId})`);
 }
 
 
