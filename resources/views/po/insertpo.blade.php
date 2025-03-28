@@ -313,7 +313,7 @@ select#cartype option:checked {
             <input type="text" id="emp_name" name="emp_name" value="{{ session('emp_name', 'Guest') }}"> 
 
             <label>ชื่อร้านค้า :</label>
-            <input type="text" id="store_name" name="store_name" readonly>
+            <input type="text" id="store_name" name="store_name" >
 
             <label>เบอร์ติดต่อ :</label>
             <input type="text" id="store_tel" name="store_tel" >
@@ -430,7 +430,15 @@ if (response.ok) {
 } else {
     let errorText = await response.text();
     console.error('Server error:', errorText);  // พิมพ์ข้อผิดพลาดที่ได้รับจากเซิร์ฟเวอร์
-    alert('กรุณาใส่ข้อมูลให้ครบ');
+
+    // Example of how you can improve the error message
+    if (errorText.includes('missing')) {
+        alert('กรุณาใส่ข้อมูลให้ครบ เช่น เลขที่ PO, รายการสินค้า หรือ ข้อมูลการติดต่อ');
+    } else if (errorText.includes('invalid')) {
+        alert('ข้อมูลที่กรอกไม่ถูกต้อง กรุณาตรวจสอบใหม่');
+    } else {
+        alert('เกิดข้อผิดพลาดในการส่งข้อมูล');
+    }
 }
             });
     </script>
@@ -486,50 +494,65 @@ if (response.ok) {
   
 
 <script>
-    document.getElementById("poSearchForm").addEventListener("submit", async function(event) {
-        event.preventDefault();
-        let poNumber = document.getElementById("po_number").value.trim();
-        if (!poNumber) {
-            alert("กรุณากรอกเลขที่ po");
+document.getElementById("poSearchForm").addEventListener("submit", async function(event) {
+    event.preventDefault();
+    let poNumber = document.getElementById("po_number").value.trim();
+    if (!poNumber) {
+        alert("กรุณากรอกเลขที่ po");
+        return;
+    }
+
+    try {
+        let response = await fetch(`http://server_update:8000/api/getPODetail?PONum=${poNumber}`);
+
+        if (!response.ok) {
+            throw new Error("เกิดข้อผิดพลาดในการโหลดข้อมูล");
+        }
+
+        let data = await response.json();
+        console.log("API Response:", data); // ตรวจสอบข้อมูล API
+
+        if (!data || !data.DocuNo || !data.ms_podt || data.ms_podt.length === 0) {
+            alert("ไม่พบข้อมูลที่ตรงกับเลขที่ PO นี้");
             return;
         }
-    
-        try {
-            // แก้ไขตัวแปรจาก soNumber เป็น poNumber
-            let response = await fetch(`http://server_update:8000/api/getSOHD?SONum=SO${poNumber}`);
-    
-            if (!response.ok) {
-                throw new Error("เกิดข้อผิดพลาดในการโหลดข้อมูล");
-            }
-    
-            let data = await response.json();
-            console.log("API Response:", data); // ตรวจสอบข้อมูล API
-    
-            if (!data || data.length === 0 || !data[0].CustID) {
-                alert("ไม่พบข้อมูลที่ตรงกับเลขที่ PO นี้");
-                return;
-            }
-    
-            // กำหนดค่าลงในฟอร์ม
-            document.getElementById("store_name").value = data[0].CustName || 'ไม่พบข้อมูล';
-            document.getElementById("recvDate").value = formatDate(data[0].ShipDate);
-    
-            // กำหนดค่าให้ฟิลด์ po_id
-            document.getElementById("po_id").value = data[0].SONum || '';
-    
-        } catch (error) {
-            console.error('Error fetching data:', error);
-            alert('เกิดข้อผิดพลาดในการดึงข้อมูล');
-        }
-    });
-    
-    function formatDate(dateString) {
-        let date = new Date(dateString);
-        let day = date.getDate().toString().padStart(2, '0');
-        let month = (date.getMonth() + 1).toString().padStart(2, '0');
-        let year = date.getFullYear();
-        return `${day}-${month}-${year}`;
+
+        // กำหนดค่าลงในฟอร์ม
+        document.getElementById("recvDate").value = formatDate(data.ShipDate);
+        document.getElementById("po_id").value = data.DocuNo || '';
+        document.getElementById("store_tel").value = data.Contact || '';
+
+        // Clear existing rows in the table before inserting new ones
+        let tbody = document.querySelector('table tbody');
+        tbody.innerHTML = '';
+
+        // Loop through ms_podt to show product details in the table
+        data.ms_podt.forEach(item => {
+            let row = `
+                <tr>
+                    <td><input type="text" class="form-control1" name="item_id[]" value="${item.GoodID}" readonly></td>
+                    <td><input type="text" class="form-control1" name="item_name[]" value="${item.GoodName}" readonly></td>
+                    <td><input type="number" class="form-control1 item_quantity" name="item_quantity[]" value="${item.GoodQty2}" readonly></td>
+                    <td><input type="number" class="form-control1 item_unit_price" name="item_unit_price[]" value="${item.GoodPrice2}" readonly></td>
+                </tr>
+            `;
+            tbody.innerHTML += row; // Add the row to the table
+        });
+
+    } catch (error) {
+        console.error('Error fetching data:', error);
+        alert('เกิดข้อผิดพลาดในการดึงข้อมูล');
     }
+});
+
+function formatDate(dateString) {
+    let date = new Date(dateString);
+    let day = date.getDate().toString().padStart(2, '0');
+    let month = (date.getMonth() + 1).toString().padStart(2, '0');
+    let year = date.getFullYear();
+    return `${day}-${month}-${year}`;
+}
+
     </script>
     
 

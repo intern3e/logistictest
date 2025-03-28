@@ -41,9 +41,9 @@ class PoController extends Controller
                 'item_name' => 'required|array',
                 'item_name.*' => 'string',
                 'item_quantity' => 'required|array',
-                'item_quantity.*' => 'integer|min:1',
+                'item_quantity.*' => 'string',
                 'item_unit_price' => 'required|array',
-                'item_unit_price.*' => 'numeric|min:0',
+                'item_unit_price.*' => 'string',
                 'cartype' => 'required|string|max:255',
                 'store_tel' => 'nullable|string|max:255' ,
                 'status' => 'required|max:255', 
@@ -65,6 +65,9 @@ class PoController extends Controller
     
             // Get Pobills ID
             $po_detail_id = $pobill->id;
+            $po_detail_id = $pobill->id;
+            $po_detail_id_padded = str_pad($po_detail_id, 6, '0', STR_PAD_LEFT);
+    
     
             // Get items data
             $item_ids = $request->input('item_id');
@@ -74,7 +77,7 @@ class PoController extends Controller
             // Save items to Pobills_Detail table
             foreach ($item_ids as $index => $item_id) {
                 $pobill_detail = new PobillsDetail();
-                $pobill_detail->po_detail_id = $po_detail_id;
+                $pobill_detail->po_detail_id = $po_detail_id_padded;
                 $pobill_detail->po_id = $request->input('po_id');
                 $pobill_detail->item_id = $item_id;
                 $pobill_detail->item_name = $item_names[$index];

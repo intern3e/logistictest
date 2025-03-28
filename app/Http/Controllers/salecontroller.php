@@ -172,7 +172,7 @@ public function insert(Request $request)
             'item_quantity.*' => 'string',
             'status' => 'nullable|array',
             'statuspdf' => 'nullable|array',
-            'POdocument' => 'required|file|mimes:pdf,doc,docx|max:2048' // ตรวจสอบว่าเป็นไฟล์
+            'POdocument' => 'required|max:2048' 
         ]);
 
         // **🔹 Insert into Bills**
@@ -207,6 +207,9 @@ public function insert(Request $request)
         $bill->save();
 
         $so_detail_id = $bill->id;
+        $so_detail_id_padded = str_pad($so_detail_id, 6, '0', STR_PAD_LEFT);
+
+        $so_detail_id = $bill->id;
         $item_ids = $request->input('item_id');
         $item_names = $request->input('item_name');
         $item_quantities = $request->input('item_quantity');
@@ -218,7 +221,7 @@ public function insert(Request $request)
                 continue;  // ข้ามถ้าผู้ใช้ไม่ได้ติ๊กเลือก
             }
             $bill_detail = new Bill_detail();
-            $bill_detail->so_detail_id = $so_detail_id;
+            $bill_detail->so_detail_id = $so_detail_id_padded;
             $bill_detail->so_id = $request->input('so_id');
             $bill_detail->item_id = $item_ids[$index];
             $bill_detail->item_name = $item_names[$index];
