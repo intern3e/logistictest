@@ -346,6 +346,7 @@
     max-width: 1000px; /* กำหนดขนาดสูงสุด */
     position: relative;
     box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.3);
+    margin-left: 13vw;
 }
 
 .close {
@@ -416,20 +417,23 @@
                         @if($item->statuspdf == 0)
                             <tr>
                             <td>
-                                <input type="checkbox" class="form-control1" name="statupdf[]" value="{{ $item->so_id }}" id="checkbox_{{ $item->so_id }}">
+                                <input type="checkbox" class="form-control1" name="statupdf[]" value="{{ $item->so_id }}" id="checkbox_{{ $item->so_detail_id }}">
                             </td>
                                 <td>{{ $item->so_detail_id }}</td>  
                                 <td>{{ $item->so_id }}</td>
                                 <td>
-                    {{ $item->ponum }}
-                    @if($item->POdocument)
-                        <button onclick="processAndOpenFile('{{ $item->ponum }}', '{{ asset('storage/po_documents/' . $item->POdocument) }}')">
-                            เลือกดูไฟล์
-                        </button>
-                    @else
-                        <p style="color: red;">ไม่มีไฟล์</p>
-                    @endif
+                                    {{ $item->ponum }} 
+                                    @if($item->POdocument)
+                                    <button onclick="copyPonumAndProcessFile('{{ $item->ponum }}', '{{ asset('storage/po_documents/' . $item->POdocument) }}', '{{ $item->so_detail_id }}')">
+                                        เลือกดูไฟล์
+                                    </button>
+                                    @else
+                                         <button onclick="copyPonumAndCheckBox('{{ $item->ponum }}', '{{ $item->so_detail_id }}')" style="color: red;">
+                                    ไม่มีไฟล์
+                                </button>
+                                    @endif
                 </td>
+                
 
                 <!-- Modal -->
                 <div id="fileModal" class="modal" style="display: none;">
@@ -438,7 +442,8 @@
                         <iframe id="fileFrame" src="" width="100%" height="500px"></iframe>
                     </div>
                 </div>
-
+                {{-- <cr-icon-button id="print" title="Print" aria-label="Print" iron-icon="pdf-cr23:print" role="button" tabindex="0" aria-disabled="false">
+                </cr-icon-button> --}}
                                 <td>{{ $item->customer_name}}</td>
                                 <td>{{ $item->customer_tel }}</td>
                                 <td>{{ \Carbon\Carbon::parse($item->date_of_dali)->format('d/m/Y') }}</td> 
@@ -626,54 +631,96 @@ function updateStatuspdf() {
         alert("เกิดข้อผิดพลาดในการอัปเดตสถานะ");
     });
 }   
+ 
     </script>
 
-
 <script>
-
-   function processAndOpenFile(so_id, fileUrl) {
-    // เก็บค่า so_id เพื่อใช้ตอนปิด Modal
-    soIdToProcess = so_id;
-
-    // เปิด Modal พร้อมไฟล์
-    document.getElementById("fileFrame").src = fileUrl;
-    document.getElementById("fileModal").style.display = "block";
-
-    // ทำให้ checkbox ที่ตรงกับ so_id ถูกเลือก
-    const checkbox = document.getElementById("checkbox_" + so_id);
-    if (checkbox) {
-        checkbox.checked = true;
+    function copyPonumAndProcessFile(ponum, fileUrl, soId) {
+        // Copy the ponum to clipboard
+        const tempInput = document.createElement('input');
+        tempInput.value = ponum;
+        document.body.appendChild(tempInput);
+        tempInput.select();
+        document.execCommand('copy');
+        document.body.removeChild(tempInput);
+        
+        // Process and open the file
+        processAndOpenFile(ponum, fileUrl, soId);
     }
+    
+    function processAndOpenFile(ponum, fileUrl, soId) {
+        // Save soId for later processing
+        soIdToProcess = soId;
+    
+        // Open the modal and display the file
+        document.getElementById("fileFrame").src = fileUrl;
+        document.getElementById("fileModal").style.display = "block";
+    }
+    
+    function closeModal() {
+        document.getElementById("fileModal").style.display = "none";
+        document.getElementById("fileFrame").src = ""; // Clear URL when closing modal
+    
+        if (soIdToProcess) {
+            let checkbox = document.getElementById("checkbox_" + soIdToProcess);
+            if (checkbox) {
+                checkbox.checked = true;
+                console.log("Checked the checkbox automatically! ✅");
+            } else {
+                console.log("Checkbox for so_id not found.");
+            }
+    
+            // Auto-click the print button
+            const printButton = document.querySelector("button[onclick='updateStatuspdf()']");
+            if (printButton) {
+                printButton.click();
+                console.log("Clicked the print button for PO document! 🖨️");
+            }
+    
+            soIdToProcess = null; // Reset
+        }
+    }
+    
+    // Close the modal if clicked outside
+    window.onclick = function(event) {
+        let modal = document.getElementById("fileModal");
+        if (event.target === modal) {
+            closeModal();
+        }
+    };
+
+    function copyPonumAndCheckBox(ponum, soId) {
+    // Copy the ponum to clipboard
+    const tempInput = document.createElement('input');
+    tempInput.value = ponum;
+    document.body.appendChild(tempInput);
+    tempInput.select();
+    document.execCommand('copy');
+    document.body.removeChild(tempInput);
+
+    // Process and check the checkbox for SO
+    checkAndClickCheckbox(soId);
 }
 
-function closeModal() {
-    document.getElementById("fileModal").style.display = "none";
-    document.getElementById("fileFrame").src = ""; // เคลียร์ URL เมื่อปิด Modal
+function checkAndClickCheckbox(soId) {
+    // Automatically check the checkbox for the provided soId
+    let checkbox = document.getElementById("checkbox_" + soId);
+    if (checkbox) {
+        checkbox.checked = true;
+        console.log("Checked the checkbox automatically! ✅");
 
-    if (soIdToProcess) {
-        // กดปุ่มปริ้นอัตโนมัติ
+        // Auto-click the print button
         const printButton = document.querySelector("button[onclick='updateStatuspdf()']");
         if (printButton) {
             printButton.click();
-            console.log("Bot กดปุ่มปริ้นเอกสารSO แล้ว!");
-        } else {
-            console.log("ไม่พบปุ่มปริ้นเอกสารSO");
+            console.log("Clicked the print button for SO document! 🖨️");
         }
-
-        // เคลียร์ค่า soIdToProcess หลังทำงานเสร็จ
-        soIdToProcess = null;
+    } else {
+        console.log("Checkbox for so_id not found.");
     }
 }
 
-// ปิด Modal เมื่อคลิกข้างนอก
-window.onclick = function(event) {
-    let modal = document.getElementById("fileModal");
-    if (event.target === modal) {
-        closeModal();
-    }
-};
-
-</script>
+    </script>
 
 
 
