@@ -323,8 +323,46 @@
             outline: none;
             font-size: 1rem;
             border-radius: 5px;
+            
             background-color: #e1e5ea;
         }
+.modal {
+    display: none;
+    position: fixed;
+    z-index: 1000;
+    top: 10px;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(157, 206, 255, 0.5);
+    display: flex;
+    align-items: center;
+}
+
+.modal-content {
+    background: rgb(255, 255, 255);
+    padding: 10px;
+    border-radius: 10px;
+    width: 70%;
+    max-width: 1000px; /* กำหนดขนาดสูงสุด */
+    position: relative;
+    box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.3);
+}
+
+.close {
+    position: absolute;
+    top: 10px;
+    right: 15px;
+    font-size: 20px;
+    cursor: pointer;
+    color: rgb(255, 255, 255);
+}
+
+@media (max-width: 768px) {
+    .modal-content {
+        width: 90%;
+        height: 80%;
+    }
+}
 
     </style>
 </head>
@@ -377,19 +415,30 @@
                     @foreach($bill as $item)
                         @if($item->statuspdf == 0)
                             <tr>
-                                <td><input type="checkbox" class="form-control1" name="statupdf[]" value="{{ $item->so_id }}"></td>
+                            <td>
+                                <input type="checkbox" class="form-control1" name="statupdf[]" value="{{ $item->so_id }}" id="checkbox_{{ $item->so_id }}">
+                            </td>
                                 <td>{{ $item->so_detail_id }}</td>  
                                 <td>{{ $item->so_id }}</td>
                                 <td>
-                                    {{ $item->ponum }}
-                                    @if($item->POdocument)
-                                        <a href="{{ asset('storage/po_documents/' . $item->POdocument) }}" download>
-                                            <button onclick="copyBothAndCheckBox('{{ $item->so_id }}')">ดาวน์โหลด</button>
-                                        </a>
-                                    @else
-                                        <p style="color: red;">ไม่มีไฟล์</p>
-                                    @endif
-                                </td> 
+                    {{ $item->ponum }}
+                    @if($item->POdocument)
+                        <button onclick="processAndOpenFile('{{ $item->ponum }}', '{{ asset('storage/po_documents/' . $item->POdocument) }}')">
+                            เลือกดูไฟล์
+                        </button>
+                    @else
+                        <p style="color: red;">ไม่มีไฟล์</p>
+                    @endif
+                </td>
+
+                <!-- Modal -->
+                <div id="fileModal" class="modal" style="display: none;">
+                    <div class="modal-content">
+                        <span class="close" onclick="closeModal()">&times;</span>
+                        <iframe id="fileFrame" src="" width="100%" height="500px"></iframe>
+                    </div>
+                </div>
+
                                 <td>{{ $item->customer_name}}</td>
                                 <td>{{ $item->customer_tel }}</td>
                                 <td>{{ \Carbon\Carbon::parse($item->date_of_dali)->format('d/m/Y') }}</td> 
@@ -581,40 +630,50 @@ function updateStatuspdf() {
 
 
 <script>
-    function copyBothAndCheckBox(so_id) {
-        // คัดลอกข้อมูลทั้งสองไปยังคลิปบอร์ด
-        const textToCopy = `${so_id}`;
-        
-        // คัดลอกไปยังคลิปบอร์ด
-        navigator.clipboard.writeText(textToCopy)
-            .then(() => {
-            })
-            .catch((err) => {
-                console.error("เกิดข้อผิดพลาดในการคัดลอกข้อความ:", err);
-                alert("ไม่สามารถคัดลอกข้อความได้");
-            });
 
-        // หา checkbox โดยใช้ so_id
-        const checkbox = document.querySelector(`input[name='statupdf[]'][value='${so_id}']`);
-        
-        if (checkbox) {
-            // ทำให้ checkbox ถูกเช็ค
-            checkbox.checked = true;
-        } else {
-            console.log("ไม่พบ checkbox ที่มีค่า so_detail_id ตรงกับที่เลือก");
-        }
+   function processAndOpenFile(so_id, fileUrl) {
+    // เก็บค่า so_id เพื่อใช้ตอนปิด Modal
+    soIdToProcess = so_id;
 
-        // คลิกปุ่มปริ้นเอกสารSO อัตโนมัติ
+    // เปิด Modal พร้อมไฟล์
+    document.getElementById("fileFrame").src = fileUrl;
+    document.getElementById("fileModal").style.display = "block";
+
+    // ทำให้ checkbox ที่ตรงกับ so_id ถูกเลือก
+    const checkbox = document.getElementById("checkbox_" + so_id);
+    if (checkbox) {
+        checkbox.checked = true;
+    }
+}
+
+function closeModal() {
+    document.getElementById("fileModal").style.display = "none";
+    document.getElementById("fileFrame").src = ""; // เคลียร์ URL เมื่อปิด Modal
+
+    if (soIdToProcess) {
+        // กดปุ่มปริ้นอัตโนมัติ
         const printButton = document.querySelector("button[onclick='updateStatuspdf()']");
         if (printButton) {
-            printButton.click(); // กดปุ่มปริ้นเอกสารSO
+            printButton.click();
             console.log("Bot กดปุ่มปริ้นเอกสารSO แล้ว!");
         } else {
             console.log("ไม่พบปุ่มปริ้นเอกสารSO");
         }
-    }
-</script>
 
+        // เคลียร์ค่า soIdToProcess หลังทำงานเสร็จ
+        soIdToProcess = null;
+    }
+}
+
+// ปิด Modal เมื่อคลิกข้างนอก
+window.onclick = function(event) {
+    let modal = document.getElementById("fileModal");
+    if (event.target === modal) {
+        closeModal();
+    }
+};
+
+</script>
 
 
 
