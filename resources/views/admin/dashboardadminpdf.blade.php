@@ -424,9 +424,10 @@
                                 <td>
                                     {{ $item->ponum }} 
                                     @if($item->POdocument)
-                                    <button onclick="copyPonumAndProcessFile('{{ $item->ponum }}', '{{ asset('storage/po_documents/' . $item->POdocument) }}', '{{ $item->so_detail_id }}')">
-                                        เลือกดูไฟล์
-                                    </button>
+                                    <button onclick="openFileInNewTab('{{ asset('storage/po_documents/' . $item->POdocument) }}')">
+    เลือกดูไฟล์
+</button>
+
                                     @else
                                          <button onclick="copyPonumAndCheckBox('{{ $item->ponum }}', '{{ $item->so_detail_id }}')" style="color: red;">
                                     ไม่มีไฟล์
@@ -435,13 +436,13 @@
                 </td>
                 
 
-                <!-- Modal -->
+                <!-- Modal
                 <div id="fileModal" class="modal" style="display: none;">
                     <div class="modal-content">
                         <span class="close" onclick="closeModal()">&times;</span>
                         <iframe id="fileFrame" src="" width="100%" height="500px"></iframe>
                     </div>
-                </div>
+                </div> -->
                 {{-- <cr-icon-button id="print" title="Print" aria-label="Print" iron-icon="pdf-cr23:print" role="button" tabindex="0" aria-disabled="false">
                 </cr-icon-button> --}}
                                 <td>{{ $item->customer_name}}</td>
@@ -720,6 +721,13 @@ function checkAndClickCheckbox(soId) {
     }
 }
 
+function openFileInNewTab(fileUrl) {
+    if (fileUrl) {
+        window.open(fileUrl, '_blank');
+    } else {
+        alert("ไม่พบไฟล์สำหรับรายการนี้");
+    }
+}
     </script>
 
 
