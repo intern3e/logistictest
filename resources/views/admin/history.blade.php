@@ -590,10 +590,20 @@ function createCSV() {
     const csvContent = "\uFEFF" + [headers.join(","), ...data].join("\n");
 
     const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+
+    // ดึงวันเวลาปัจจุบันและฟอร์แมตเป็น DD-MM-YYYY
+    let now = new Date();
+    let day = String(now.getDate()).padStart(2, "0");
+    let month = String(now.getMonth() + 1).padStart(2, "0"); // เดือนเริ่มที่ 0
+    let year = now.getFullYear();
+    let formattedDate = `${day}-${month}-${year}`;
+
+    const filename = `เอกสารเส้นทางเดินรถของSO_${formattedDate}.csv`;
+
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
-    a.download = "ประวัติเอกสารเส้นทางเดินรถของSO.csv";
+    a.download = filename;
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
@@ -604,6 +614,7 @@ function createCSV() {
         updateStatus(selectedSoDetailIds);
     }
 }
+
 
 function searchTable() {
     let searchInput = document.getElementById("search-input").value.toLowerCase();
