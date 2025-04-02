@@ -155,6 +155,7 @@ public function insert(Request $request)
         $request->validate([
             'so_id' => 'required|string|max:255',
             'ponum' => 'required|string|max:255',
+            'billtype' => 'required|string|max:255',
             'customer_id' => 'required|string|max:255',
             'customer_name' => 'required|string|max:255',
             'customer_tel' => 'nullable|string|max:255',
@@ -190,6 +191,7 @@ public function insert(Request $request)
         $bill->date_of_dali = $request->input('date_of_dali');
         $bill->emp_name = $request->input('emp_name');
         $bill->sale_name = $request->input('sale_name');
+        $bill->billtype = $request->input('billtype');
 
         // **🔹 อัปโหลดไฟล์ POdocument**
         if ($request->hasFile('POdocument')) {

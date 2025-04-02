@@ -391,7 +391,7 @@
     <div class="header">
         <h2>ระบบจัดเตรียมรถรับของPO</h2>
         <div class="header-buttons">
-            <a href="dashboardadmin"><button class="btn-po">ระบบจัดเตรียมสินค้าSO</button></a>
+            <a href="dashboardadminpdf"><button class="btn-po">ระบบจัดเตรียมสินค้าSO</button></a>
             <a href="adminSO"><button class="btn-so">หน้าหลัก</button></a>
         </div>
     </div>
@@ -594,7 +594,7 @@
     let rows = table.getElementsByTagName("tr");
 
     for (let i = 0; i < rows.length; i++) {
-        let typeCell = rows[i].getElementsByTagName("td")[7]; // เปลี่ยน index ให้ตรงกับ "ประเภทขนส่ง"
+        let typeCell = rows[i].getElementsByTagName("td")[8]; // เปลี่ยน index ให้ตรงกับ "ประเภทขนส่ง"
         if (typeCell) {
             let typeText = typeCell.textContent.trim(); // ดึงค่าจาก <td>
 

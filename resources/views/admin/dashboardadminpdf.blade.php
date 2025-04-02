@@ -410,6 +410,7 @@
                 <th>วันที่จัดส่ง</th>
                 <th>ผู้ขาย</th>
                 <th>ผู้เปิดบิล</th>
+                <th>ประเภทบิล</th>
                 <th>ข้อมูลสินค้า</th>
             </tr>
         </thead>
@@ -443,6 +444,7 @@
                                 <td>{{ \Carbon\Carbon::parse($item->date_of_dali)->format('d/m/Y') }}</td> 
                                 <td>{{ $item->sale_name }}</td>
                                 <td>{{ $item->emp_name }}</td>
+                                <td>{{ $item->billtype }}</td>
                                 <td><a href="javascript:void(0);" 
                                 onclick="openPopup(
                                     '{{ $item->so_detail_id }}',

@@ -372,6 +372,7 @@ td a:hover {
                     <th>ที่อยู่จัดส่ง</th>
                     <th>วันที่จัดส่ง</th>
                     <th>ผู้เปิดบิล</th>
+                    <th>ประเภทบิล</th>
                     <th>เวลาออกบิล</th>
                     <th>สถานะ</th>
                     <th>ข้อมูลสินค้า</th>
@@ -387,6 +388,7 @@ td a:hover {
                     <td>{{ $item->customer_address }}</td>  
                     <td>{{ \Carbon\Carbon::parse($item->date_of_dali)->format('d/m/Y') }}</td> 
                     <td>{{ $item->emp_name }}</td> 
+                    <td>{{ $item->billtype }}</td>
                     <td>{{ \Carbon\Carbon::parse($item->time)->format('H:i d/m/Y ') }}</td>
                     <td>
                         @if($item->status == 0)

@@ -432,6 +432,12 @@
         <label>วันกำหนดส่ง</label>
         <input type="text" id="date_of_dali" name="date_of_dali" readonly>
 
+        <label for="billtype" >ประเภทบิล</label>
+        <select id="billtype" name="billtype" required>
+            <option value="ขายเชื่อ">ขายเชื่อ</option> 
+            <option value="ขายสด">ขายสด</option> 
+        </select>
+
         <table class="table table-bordered table-striped">
             <thead>
                 <tr>

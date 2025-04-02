@@ -411,6 +411,7 @@ th {
                         <th>ละติจูด ลองจิจูด</th>
                         <th>วันที่จัดส่ง</th>
                         <th>ผู้เปิดบิล</th>
+                        <th>ประเภทบิล</th>
                         <th>แจ้งเพิ่มเติม</th>
                         <th>ข้อมูลสินค้า</th>
                     </tr>
@@ -431,6 +432,7 @@ th {
                                 <td>{{ $item->customer_la_long }}</td>
                                 <td>{{ \Carbon\Carbon::parse($item->date_of_dali)->format('d/m/Y') }}</td> 
                                 <td>{{ $item->emp_name }}</td>
+                                <td>{{ $item->billtype }}</td>
                                 <td>{{ $item->notes }}</td>
                                 <td><a href="javascript:void(0);" 
                                 onclick="openPopup(
@@ -555,7 +557,7 @@ function createCSV() {
     const headers = [
         "เลขที่บิล", "อ้างอิงใบสั่งขาย", "อ้างอิงใบสั่งซื้อ", "ชื่อลูกค้า",
         "เบอร์ติดต่อ", "ที่อยู่จัดส่ง", "ละติจูด ลองจิจูด", "วันที่จัดส่ง", 
-        "ผู้เปิดบิล"
+        "ผู้เปิดบิล","ประเภทบิล",'หมายเหตุ'
     ];
 
     let data = [];
@@ -572,7 +574,7 @@ function createCSV() {
 
         // ดึงข้อมูลจากแต่ละเซลล์ (ข้าม checkbox column)
         cells.forEach((cell, index) => {
-            if (index > 0 && index <= 9) { 
+            if (index > 0 && index <=11) { 
                 rowData.push(`"${cell.textContent.trim()}"`);
             }
         });
