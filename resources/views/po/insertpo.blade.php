@@ -9,7 +9,7 @@
 /* Body */
 body {
     font-family: 'Sarabun', sans-serif;
-    background: linear-gradient(to right, #3a7bd5, #3a6073);
+    background: linear-gradient(to right, #3a7bd5, #3a6073); /* โทนสีฟ้าและเขียว */
     margin: 0;
     padding: 20px;
     display: flex;
@@ -25,7 +25,7 @@ body {
     border-radius: 10px;
     box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
     width: 90%;
-    max-width: 1000px; /* ปรับขนาดความกว้างสูงสุด */
+    max-width: 1000px;
     text-align: left;
 }
 
@@ -83,7 +83,7 @@ button {
 }
 
 .btn-search {
-    background-color: #4CAF50;
+    background-color: #4CAF50; /* สีเขียว */
     color: #fff;
 }
 
@@ -92,7 +92,7 @@ button {
 }
 
 .btn-danger {
-    background-color: #f44336;
+    background-color: #f44336; /* สีแดง */
     color: white;
 }
 
@@ -101,7 +101,7 @@ button {
 }
 
 .btn-success {
-    background-color: #4CAF50;
+    background-color: #4CAF50; /* สีเขียว */
     color: white;
 }
 
@@ -138,16 +138,17 @@ input[type="checkbox"] {
 .text-dark {
     color: #333;
 }
+
 /* ปรับให้ label, input และปุ่มอยู่ในบรรทัดเดียวกัน */
 .lat-long-container {
     display: flex;
     align-items: center;
-    gap: 10px; /* ระยะห่างระหว่าง input และปุ่ม */
+    gap: 10px;
 }
 
 /* ปรับขนาด input ให้พอดีกับพื้นที่ */
 .lat-long-container input {
-    flex: 1; /* ให้ input ยืดตามพื้นที่ที่เหลือ */
+    flex: 1;
     padding: 10px;
     border: 1px solid #333;
     border-radius: 4px;
@@ -155,21 +156,25 @@ input[type="checkbox"] {
 
 /* ปรับขนาดปุ่มให้ไม่กินพื้นที่เกินไป */
 .lat-long-container .btn-custom {
-    white-space: nowrap; /* ป้องกันข้อความขึ้นบรรทัดใหม่ */
+    white-space: nowrap;
     padding: 10px 15px;
 }
-.btn-custom{
-    background-color: #f39c12;
+
+.btn-custom {
+    background-color: #f39c12; /* สีส้ม */
     color: #fff;
 }
+
 .btn-custom:hover {
     background-color: #e67e22;
 }
-.btn-custom:hover{
-            background-color: #e74c3c;
-            color: white;
-            box-shadow: 0px 4px 6px rgba(0, 0, 0, 0.2);
-        }
+
+.btn-custom:hover {
+    background-color: #e74c3c;
+    color: white;
+    box-shadow: 0px 4px 6px rgba(0, 0, 0, 0.2);
+}
+
 /* ปรับช่องกรอกข้อมูลในตาราง */
 .form-control1 {
     width: 100%;
@@ -178,22 +183,23 @@ input[type="checkbox"] {
     border: 1px solid #ccc;
     font-size: 14px;
     text-align: center;
-    background: #f9f9f9; /* เปลี่ยนพื้นหลังให้อ่อนขึ้น */
+    background: #f9f9f9;
     transition: all 0.3s ease;
 }
 
 /* เปลี่ยนสีเส้นขอบเมื่อโฟกัส */
 .form-control1:focus {
-    border-color: #4CAF50;
+    border-color: #4CAF50; /* สีเขียวเมื่อโฟกัส */
     box-shadow: 0 0 5px rgba(76, 175, 80, 0.5);
     background: #fff;
 }
+
 /* จัดตำแหน่ง checkbox และปุ่มให้อยู่ชิดขวา */
 .checkbox-container {
     display: flex;
     align-items: center;
-    justify-content: flex-end; /* ชิดขวา */
-    gap: 15px; /* ระยะห่างระหว่าง checkbox กับปุ่ม */
+    justify-content: flex-end;
+    gap: 15px;
     margin-top: 10px;
 }
 
@@ -206,13 +212,14 @@ input[type="checkbox"] {
 
 .insert-btn {
     background-color: #2196F3; /* สีฟ้า */
-    color: white; /* สีข้อความ */
+    color: white;
     border: none;
 }
 
 .insert-btn:hover {
-    background-color: #1976D2; /* สีฟ้าเข้มเมื่อโฮเวอร์ */
+    background-color: #1976D2;
 }
+
 /* ปรับขนาดและสไตล์ของกล่องข้อความ */
 textarea {
     width: 95%;
@@ -220,35 +227,37 @@ textarea {
     border: 1px solid #060505;
     border-radius: 4px;
     font-size: 14px;
-    resize: vertical; /* ให้ปรับขนาดสูง-ต่ำได้ */
+    resize: vertical;
     min-height: 100px;
 }
+
 /* เปลี่ยนสีพื้นหลังและข้อความของหัวตาราง */
 .table thead th {
-    background: linear-gradient(to right, #2c3e50, #4b6584);
-    color: white; /* สีตัวอักษร */
+    background: linear-gradient(to right, #2c3e50, #4b6584); /* โทนสีน้ำเงินเข้ม */
+    color: white;
     font-size: 16px;
     padding: 10px;
     text-align: center;
 }
+
 /* เปลี่ยนขนาดและสีของปุ่ม "เปิดบิล" */
 #submitBill {
     background-color: #28a745; /* สีเขียว */
-    color: white; /* สีข้อความ */
-    padding: 15px 300px; /* ขนาดของปุ่ม */
-    font-size: 18px; /* ขนาดฟอนต์ */
-    border-radius: 5px; /* มุมปุ่มโค้ง */
-    border: none; /* ไม่ให้ขอบ */
+    color: white;
+    padding: 15px 300px;
+    font-size: 18px;
+    border-radius: 5px;
+    border: none;
     cursor: pointer;
     margin-left: 15%;
-    margin-top:10px ;
+    margin-top: 10px;
 }
-
 
 /* เมื่อโฮเวอร์ (เอาเมาส์ไปวาง) เปลี่ยนสี */
 #submitBill:hover {
-    background-color: #218838; /* สีเขียวเข้ม */
+    background-color: #218838;
 }
+
 /* Style the label */
 label[for="cartype"] {
     font-weight: bold;
@@ -265,8 +274,8 @@ select#cartype {
     background-color: #fff;
     color: #333;
     width: 100%;
-    max-width: 300px; /* Adjust max width as needed */
-    box-sizing: border-box; /* Ensure padding does not affect width */
+    max-width: 300px;
+    box-sizing: border-box;
     transition: border-color 0.3s ease;
 }
 
@@ -284,7 +293,7 @@ select#cartype option:disabled {
 
 /* Style for selected option */
 select#cartype option:checked {
-    background-color: #f39c12;
+    background-color: #f39c12; /* สีส้ม */
     color: #fff;
 }
 

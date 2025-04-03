@@ -6,181 +6,283 @@
     <title>เปิดบิลสินค้า</title>
     <style>
     /* Reset CSS */
-    * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-        body {
-            font-family: 'Arial', sans-serif;
-            background-color:rgb(233, 233, 233);
-            padding: 20px;
-        }
+/* Reset CSS */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+body {
+    font-family: 'Arial', sans-serif;
+    background-color: #f4f5fc; /* เปลี่ยนเป็นสีพื้นหลังอ่อน */
+    padding: 20px;
+}
 
-        /* Container */
-        .container {
-            max-width: 1200px;
-            margin: 0 auto;
-            background-color:#f9f9f9 ;
-            padding: 40px;
-            border-radius: 8px;
-            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
-        }
+/* Container */
+.container {
+    max-width: 1200px;
+    margin: 0 auto;
+    background-color: #fff; /* สีพื้นหลังของฟอร์ม */
+    padding: 40px;
+    border-radius: 10px;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+}
 
-        .header {
-            text-align: center;
-            margin-bottom: 30px;
-        }
+/* Header */
+.header {
+    text-align: center;
+    margin-bottom: 30px;
+}
 
-        .header h3 {
-            font-size: 28px;
-            color: #333;
-            font-weight: 600;
-        }
+.header h3 {
+    font-size: 32px;
+    color: #00389f;
+    font-weight: 600;
+}
 
-        .form-label {
-        font-weight: 600;
-        margin-bottom: 10px;
-        display: block;
-        text-align: left; /* ทำให้ชิดซ้าย */
+/* Form Label */
+.form-label {
+    font-weight: 600;
+    margin-bottom: 10px;
+    display: block;
+    text-align: left;
+    color: #333;
+}
+
+/* Input Styling */
+input[type="text"], input[type="number"], input[type="date"], input[type="hidden"], textarea {
+    width: 100%;
+    padding: 12px;
+    border-radius: 8px;
+    border: 1px solid #ddd;
+    margin-bottom: 20px;
+    font-size: 16px;
+    color: #333;
+    transition: border-color 0.3s ease;
+}
+
+input[type="text"]:focus, input[type="number"]:focus, input[type="date"]:focus {
+    border-color: #0071e3;
+    outline: none;
+}
+
+/* Select Styling */
+select {
+    width: 100%;
+    padding: 12px;
+    border-radius: 8px;
+    border: 1px solid #ddd;
+    margin-bottom: 20px;
+    font-size: 16px;
+    color: #333;
+    background-color: #f8f9fa;
+}
+
+/* Button Styling */
+button, .btn {
+    padding: 12px 25px;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    font-size: 16px;
+    transition: all 0.3s ease;
+}
+
+.btn-success {
+    background-color: #28a745;
+    color: white;
+}
+
+.btn-success:hover {
+    background-color: #218838;
+}
+
+.btn-custom {
+    background-color: #007bff;
+    color: white;
+}
+
+.btn-custom:hover {
+    background-color: #0056b3;
+}
+
+.btn-danger {
+    background-color: #e74c3c;
+    color: white;
+}
+
+.btn-danger:hover {
+    background-color: #c0392b;
+}
+
+input[type="checkbox"]:checked + label {
+    font-weight: bold;
+}
+
+/* Table Styling */
+table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 30px;
+}
+
+th, td {
+    padding: 12px;
+    text-align: center;
+    border: 1px solid #ddd;
+    font-size: 16px;
+}
+
+th {
+    background-color: #00389f;
+    color: white;
+    font-weight: bold;
+}
+
+tr:hover {
+    background-color: #f1f1f1;
+}
+
+/* Checkbox and File Input */
+.checkbox-container {
+    margin-top: 20px;
+    display: flex;
+    justify-content: space-between;
+}
+
+.checkbox-container label {
+    font-size: 16px;
+}
+
+.lat-long-container {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.lat-long-container input {
+    width: 80%;
+}
+
+#mapFrame {
+    width: 100%;
+    height: 300px;
+    border: none;
+    border-radius: 8px;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+    .container {
+        padding: 20px;
     }
 
+    .header h3 {
+        font-size: 24px;
+    }
 
-        /* Form Styling */
-        input[type="text"], input[type="number"], input[type="date"], input[type="hidden"], textarea {
-            width: 100%;
-            padding: 12px;
-            border-radius: 8px;
-            border: 1px solid #ddd;
-            margin-bottom: 20px;
-            font-size: 16px;
-            color: #333;
-        }
+    .form-label {
+        font-size: 14px;
+    }
 
-        /* Table Styling */
-        table {
-            width: 100%;
-            border-collapse: collapse;
-            margin-top: 30px;
-        }
+    input, textarea, select {
+        font-size: 14px;
+    }
 
-        th, td {
-            padding: 12px;
-            text-align: center;
-            border: 1px solid #ddd;
-        }
+    table {
+        font-size: 14px;
+    }
 
-        th {
-            background-color:#00389f;
-            font-weight: bold;
-            color: #fff;
-        }
+    .checkbox-container {
+        flex-direction: column;
+    }
+}
 
-        .btn-search, .btn-custom, .btn-danger, .btn-success {
-            padding: 10px 20px;
-            border: none;
-            border-radius: 5px;
-            cursor: pointer;
-            font-size: 16px;
-            
-        }
+/* File Preview */
+#preview {
+    display: flex;
+    gap: 10px;
+    margin-top: 10px;
+    flex-wrap: wrap;
+}
 
-        .btn-search {
-            background-color: #0071e3;
-            color: #fff;
-        }
+.file-preview {
+    width: 100px;
+    height: 140px;
+    border: 1px solid #ccc;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    font-size: 12px;
+    text-align: center;
+    padding: 5px;
+    background: #f9f9f9;
+    position: relative;
+}
 
-        .btn-search:hover {
-            background-color: #005bb5;
-        }
+.file-preview img {
+    width: 50px;
+    height: 50px;
+}
 
-        .btn-custom {
-            background-color: #ff6f61;
-            color: white;
-        }
+.remove-btn {
+    position: absolute;
+    top: 5px;
+    right: 5px;
+    background: red;
+    color: white;
+    border: none;
+    border-radius: 50%;
+    width: 20px;
+    height: 20px;
+    cursor: pointer;
+    font-size: 14px;
+    line-height: 16px;
+    text-align: center;
+}
 
-        .btn-custom:hover {
-            background-color: #e85a50;
-        }
+a {
+    color: blue;
+    text-decoration: underline;
+    cursor: pointer;
+}
 
-        .btn-danger {
-            background-color: #e74c3c;
-            color: white;
-        }
-
-        .btn-danger:hover {
-            background-color: #c0392b;
-        }
-
-        .btn-success {
-            background-color: #2ecc71;
-            color: white;
-            
-        }
-
-        .btn-success:hover {
-            background-color: #27ae60;
-        }
-
-        .checkbox-container {
-            margin-top: 20px;
-            display: flex;
-            justify-content: space-between;
-        }
-
-        .checkbox-container label {
-            font-size: 16px;
-        }
-
-        .lat-long-container {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-
-        .lat-long-container input {
-            width: 80%;
-        }
-
-        #mapFrame {
-            width: 100%;
-            height: 300px;
-            border: none;
-            border-radius: 8px;
-        }
+/* Input Container */
 .input-container {
     display: flex;
-    flex-wrap: wrap; /* ให้สามารถย้ายไปบรรทัดใหม่เมื่อไม่มีที่ว่าง */
-    gap: 65px; /* ช่องว่างระหว่าง input */
-    
+    flex-wrap: wrap;
+    gap: 65px;
 }
 
 .input-container label {
-    width: 30%; /* ขนาดของ label */
+    width: 30%;
     display: inline-block;
     margin-bottom: 10px;
 }
 
 .input-container input {
-    width: 68%; /* ขนาดของ input */
+    width: 68%;
     padding: 10px;
     font-size: 16px;
     margin-bottom: 10px;
 }
+
+/* Specific Flexbox Styling */
 .input-container1 {
     display: flex;
-    margin-left:-4% ;
-    flex-direction: column; /* จัดให้อยู่เป็นแนวตั้ง */
+    margin-left: -4%;
+    flex-direction: column;
 }
 
 .input-container1 div {
     display: flex;
     align-items: center;
-    gap: 10px; /* ระยะห่างระหว่าง label กับ input */
+    gap: 10px;
 }
 
 .input-container1 label {
-    width: 120px; /* ปรับให้ label มีขนาดเท่ากัน */
+    width: 120px;
     text-align: right;
 }
 
@@ -188,162 +290,9 @@
     width: 77%;
     padding: 10px;
     font-size: 16px;
-    box-sizing: border-box; /* ทำให้ padding ไม่ทำให้ขนาด input เปลี่ยน */
+    box-sizing: border-box;
 }
 
-    .lat-long-container{
-        display: flex;
-        align-items: center;  /* จัดให้อยู่กึ่งกลางแนวตั้ง */
-        gap: 10px;  /* ระยะห่างระหว่างองค์ประกอบ */
-        width: 75%;
-    }
-
-    .lat-long-container label {
-        white-space: nowrap; /* ป้องกันข้อความขึ้นบรรทัดใหม่ */
-        font-weight: bold;
-        font-size: 16px;
-    }
-
-    .lat-long-container input {
-        flex: 1; /* ทำให้ input ขยายตัวเพื่อให้มีขนาดพอดีกับพื้นที่ */
-        padding: 10px;
-        font-size: 16px;
-        border: 1px solid #ccc;
-        border-radius: 5px;
-        min-width: 200px; /* ป้องกัน input หดเกินไป */
-    }
-
-    .btn-custom {
-        flex: 1; /* ทำให้ปุ่มมีขนาดเท่ากับ input */
-        background-color: #007bff;
-        color: white;
-        border: none;
-        font-size: 14px;
-        border-radius: 5px;
-        cursor: pointer;
-        transition: 0.3s;
-        text-align: center;
-        width: 250px;
-        height: 50px;
-    }
-
-    .btn-custom:hover {
-        background-color: #0056b3;
-    }
-    #preview {
-            display: flex;
-            gap: 10px;
-            margin-top: 10px;
-            flex-wrap: wrap;
-        }
-        .file-preview {
-            width: 100px;
-            height: 140px;
-            border: 1px solid #ccc;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            font-size: 12px;
-            text-align: center;
-            padding: 5px;
-            background: #f9f9f9;
-            position: relative;
-        }
-        .file-preview img {
-            width: 50px;
-            height: 50px;
-        }
-        .remove-btn {
-            position: absolute;
-            top: 5px;
-            right: 5px;
-            background: red;
-            color: white;
-            border: none;
-            border-radius: 50%;
-            width: 20px;
-            height: 20px;
-            cursor: pointer;
-            font-size: 14px;
-            line-height: 16px;
-            text-align: center;
-        }
-        #error-message {
-            color: red;
-            margin-top: 5px;
-        }
-        .file-preview {
-        display: flex;
-        align-items: center;
-        gap: 10px;
-        margin-top: 5px;
-        border: 1px solid #ccc;
-        padding: 5px;
-        border-radius: 5px;
-        width: fit-content;
-    }
-
-    .remove-btn {
-        background: red;
-        color: white;
-        border: none;
-        cursor: pointer;
-        padding: 5px;
-        border-radius: 50%;
-    }
-    .file-preview {
-        display: flex;
-        align-items: center;
-        gap: 10px;
-        margin-top: 5px;
-        border: 1px solid #ccc;
-        padding: 5px;
-        border-radius: 5px;
-        width: fit-content;
-    }
-
-    .remove-btn {
-        background: red;
-        color: white;
-        border: none;
-        cursor: pointer;
-        padding: 5px;
-        border-radius: 50%;
-    }
-
-    a {
-        color: blue;
-        text-decoration: underline;
-        cursor: pointer;
-    }
-
-        /* Responsive Design */
-        @media (max-width: 768px) {
-            .container {
-                padding: 20px;
-            }
-
-            .header h3 {
-                font-size: 24px;
-            }
-
-            .form-label {
-                font-size: 14px;
-            }
-
-            input, textarea {
-                font-size: 14px;
-            }
-
-            table {
-                font-size: 14px;
-            }
-
-            .checkbox-container {
-                flex-direction: column;
-            }
-        }
 
     </style>
 </head>

@@ -385,7 +385,7 @@ td a:hover {
                     <td>{{ $item->so_id }}</td>
                     <td>{{ $item->ponum }}</td>
                     <td>{{ $item->customer_name }}</td>  
-                    <td>{{ $item->customer_address }}</td>  
+                    <td>{!! nl2br(e(wordwrap($item->customer_address, 110, "\n", true))) !!}</td>
                     <td>{{ \Carbon\Carbon::parse($item->date_of_dali)->format('d/m/Y') }}</td> 
                     <td>{{ $item->emp_name }}</td> 
                     <td>{{ $item->billtype }}</td>

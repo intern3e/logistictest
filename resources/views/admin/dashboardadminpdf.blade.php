@@ -426,13 +426,14 @@
                         <td>    
                             {{ $item->ponum }} 
                             @if($item->POdocument)
-                            <button id="download" onclick="openFileInNewTab('{{ asset('storage/po_documents/' . $item->POdocument) }}', '{{ $item->ponum }}', '{{ $item->so_detail_id }}', '{{ $item->so_id }}')">
+                            <button style="background-color: #27ae60; color: rgb(255, 255, 255); id="download" onclick="openFileInNewTab('{{ asset('storage/po_documents/' . $item->POdocument) }}', '{{ $item->ponum }}', '{{ $item->so_detail_id }}', '{{ $item->so_id }}')">
                         เลือกดูไฟล์
                     </button>
                         @else
-                            <button id="download" onclick="copyPonumAndCheckBox('{{ $item->ponum }}', '{{ $item->so_detail_id }}')" style="color: red;">
-                                ไม่มีไฟล์
-                            </button>
+                        <button style="background-color: red; color: rgb(255, 255, 255);" onclick="copyPonumAndCheckBox('{{ $item->so_id }}', '{{ $item->so_detail_id }}')">
+                        ไม่มีไฟล์
+                        </button>
+                                                
                         @endif
                         </td>
                 
@@ -440,7 +441,7 @@
                 {{-- <cr-icon-button id="print" title="Print" aria-label="Print" iron-icon="pdf-cr23:print" role="button" tabindex="0" aria-disabled="false">
                 </cr-icon-button> --}}
                                 <td>{{ $item->customer_name}}</td>
-                                <td>{{ $item->customer_tel }}</td>
+                                <td>{!! nl2br(e(str_replace(',', "\n", $item->customer_tel))) !!}</td>
                                 <td>{{ \Carbon\Carbon::parse($item->date_of_dali)->format('d/m/Y') }}</td> 
                                 <td>{{ $item->sale_name }}</td>
                                 <td>{{ $item->emp_name }}</td>
@@ -745,6 +746,36 @@ function updateStatuspdf() {
         console.log("Print button not found.");
     }
 }
+function copyPonumAndCheckBox(so_id, so_detail_id) {
+    // ทำให้ checkbox ถูกเลือก
+    const checkbox = document.getElementById('checkbox_' + so_detail_id);
+    if (checkbox) {
+        checkbox.checked = true;
+        console.log("Checkbox checked for:", so_detail_id);
+    } else {
+        console.log("Checkbox not found for:", so_detail_id);
+    }
+
+    // คัดลอกค่า so_id ที่ถูกปรับแล้วไปยังคลิปบอร์ด
+    const soIdToCopy = so_id.replace(/^SO/, ''); // เอาคำว่า "SO" ออก
+    navigator.clipboard.writeText(soIdToCopy).then(function() {
+        console.log("Copied so_id:", soIdToCopy);
+    }).catch(function(err) {
+        console.error("Failed to copy so_id:", err);
+    });
+
+    // กดปุ่ม "ปริ้นเอกสารSO"
+    const printButton = document.querySelector("button[onclick='updateStatuspdf()']");
+    if (printButton) {
+        printButton.click();
+        console.log("Clicked the print button for SO document! 🖨️");
+    } else {
+        console.log("Print button not found.");
+    }
+}
+
+
+
 </script>
 
 </body>
