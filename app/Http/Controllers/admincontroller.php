@@ -138,4 +138,30 @@ public function updateStatuspdf(Request $request)
         return response()->json(['success' => false, 'message' => 'Failed to update status', 'error' => $e->getMessage()], 500);
     }
 }
+public function updateBillId(Request $request)
+{
+    $request->validate([
+        'so_id' => 'required|exists:tblbill,so_id',  // Changed to so_id
+        'billid' => 'required|string|max:50'
+    ]);
+
+    try {
+        $affectedRows = DB::table('tblbill')
+            ->where('so_id', $request->so_id)
+            ->update(['billid' => $request->billid]);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Updated '.$affectedRows.' records successfully'
+        ]);
+
+    } catch (\Exception $e) {
+        return response()->json([
+            'success' => false,
+            'message' => 'Failed to update bill ID',
+            'error' => $e->getMessage()
+        ], 500);
+    }
+}
+
 }

@@ -458,10 +458,6 @@ td a:hover {
                 <br>
                 <textarea id="popup-body-3" readonl style="width: 600px; height: 70px;">
                 </textarea>
-                <div>
-                    <br>
-                <button id="delete-btn" style="background-color: red; color: white;">ลบบิล</button>
-               </div>
                 
 
 

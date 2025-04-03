@@ -154,7 +154,7 @@ public function insert(Request $request)
     try {
         $request->validate([
             'so_id' => 'required|string|max:255',
-            'ponum' => 'required|string|max:255',
+            'ponum' => 'string|max:255',
             'billtype' => 'required|string|max:255',
             'customer_id' => 'required|string|max:255',
             'customer_name' => 'required|string|max:255',
@@ -165,6 +165,7 @@ public function insert(Request $request)
             'sale_name' => 'required|string|max:255',
             'date_of_dali' => 'required|date',
             'notes' => 'nullable|string',
+            'billid' => 'nullable|string',
             'item_id' => 'required|array',
             'item_id.*' => 'string',
             'item_name' => 'required|array',
@@ -173,7 +174,7 @@ public function insert(Request $request)
             'item_quantity.*' => 'string',
             'status' => 'nullable|array',
             'statuspdf' => 'nullable|array',
-            'POdocument' => 'required|max:2048' 
+            'POdocument' => 'max:2048' 
         ]);
 
         // **🔹 Insert into Bills**
@@ -192,6 +193,7 @@ public function insert(Request $request)
         $bill->emp_name = $request->input('emp_name');
         $bill->sale_name = $request->input('sale_name');
         $bill->billtype = $request->input('billtype');
+        $bill->billid = $request->input('billid');
 
         // **🔹 อัปโหลดไฟล์ POdocument**
         if ($request->hasFile('POdocument')) {

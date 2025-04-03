@@ -411,6 +411,8 @@
                 <th>ผู้ขาย</th>
                 <th>ผู้เปิดบิล</th>
                 <th>ประเภทบิล</th>
+                <th>เลขที่เอกสาร</th>
+                <th>ยืนยัน</th> 
                 <th>ข้อมูลสินค้า</th>
             </tr>
         </thead>
@@ -446,6 +448,12 @@
                                 <td>{{ $item->sale_name }}</td>
                                 <td>{{ $item->emp_name }}</td>
                                 <td>{{ $item->billtype }}</td>
+                                <td>
+                                    <input type="text" class="billid" value="{{ $item->billid ?? '' }}">
+                                </td>
+                                <td>
+                                    <button class="buttonbill" data-soid="{{ $item->so_id }}">เพิ่มเลขที่เอกสาร</button>
+                                </td>
                                 <td><a href="javascript:void(0);" 
                                 onclick="openPopup(
                                     '{{ $item->so_detail_id }}',
@@ -563,7 +571,49 @@
 
 </script>
 
+<script>
+document.addEventListener("DOMContentLoaded", function() {
+    document.querySelectorAll(".buttonbill").forEach(button => {
+        button.addEventListener("click", function() {
+            const row = this.closest("tr");
+            const so_id = this.getAttribute("data-soid");
+            const billidInput = row.querySelector(".billid");
+            const billid = billidInput.value.trim();
 
+            if (!billid) {
+                alert("กรุณากรอกเลขที่เอกสาร");
+                billidInput.focus();
+                return;
+            }
+
+            fetch("/update-billid", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    "X-CSRF-TOKEN": document.querySelector('meta[name="csrf-token"]').content,
+                    "Accept": "application/json"
+                },
+                body: JSON.stringify({
+                    so_id: so_id,  // Using so_id instead of soDetailIds
+                    billid: billid
+                })
+            })
+            .then(async response => {
+                const data = await response.json();
+                if (!response.ok) {
+                    throw new Error(data.message || 'Failed to update');
+                }
+                alert(data.message || "บันทึกข้อมูลเรียบร้อยแล้ว");
+            })
+            .catch(error => {
+                console.error("Error:", error);
+                alert("เกิดข้อผิดพลาด: " + error.message);
+            });
+        });
+    });
+});
+    </script>
+    
 <script>
 
 function searchTable() {
