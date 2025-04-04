@@ -5,293 +5,161 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>เปิดบิลสินค้า</title>
     <style>
-    /* Reset CSS */
-/* Reset CSS */
-* {
-    margin: 0;
-    padding: 0;
-    box-sizing: border-box;
-}
-body {
-    font-family: 'Arial', sans-serif;
-    background-color: #f4f5fc; /* เปลี่ยนเป็นสีพื้นหลังอ่อน */
-    padding: 20px;
-}
-
-/* Container */
-.container {
-    max-width: 1200px;
-    margin: 0 auto;
-    background-color: #fff; /* สีพื้นหลังของฟอร์ม */
-    padding: 40px;
-    border-radius: 10px;
-    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
-}
-
-/* Header */
-.header {
-    text-align: center;
-    margin-bottom: 30px;
-}
-
-.header h3 {
-    font-size: 32px;
-    color: #00389f;
-    font-weight: 600;
-}
-
-/* Form Label */
-.form-label {
-    font-weight: 600;
-    margin-bottom: 10px;
-    display: block;
-    text-align: left;
-    color: #333;
-}
-
-/* Input Styling */
-input[type="text"], input[type="number"], input[type="date"], input[type="hidden"], textarea {
-    width: 100%;
-    padding: 12px;
-    border-radius: 8px;
-    border: 1px solid #ddd;
-    margin-bottom: 20px;
-    font-size: 16px;
-    color: #333;
-    transition: border-color 0.3s ease;
-}
-
-input[type="text"]:focus, input[type="number"]:focus, input[type="date"]:focus {
-    border-color: #0071e3;
-    outline: none;
-}
-
-/* Select Styling */
-select {
-    width: 100%;
-    padding: 12px;
-    border-radius: 8px;
-    border: 1px solid #ddd;
-    margin-bottom: 20px;
-    font-size: 16px;
-    color: #333;
-    background-color: #f8f9fa;
-}
-
-/* Button Styling */
-button, .btn {
-    padding: 12px 25px;
-    border: none;
-    border-radius: 5px;
-    cursor: pointer;
-    font-size: 16px;
-    transition: all 0.3s ease;
-}
-
-.btn-success {
-    background-color: #28a745;
-    color: white;
-}
-
-.btn-success:hover {
-    background-color: #218838;
-}
-
-.btn-custom {
-    background-color: #007bff;
-    color: white;
-}
-
-.btn-custom:hover {
-    background-color: #0056b3;
-}
-
-.btn-danger {
-    background-color: #e74c3c;
-    color: white;
-}
-
-.btn-danger:hover {
-    background-color: #c0392b;
-}
-
-input[type="checkbox"]:checked + label {
-    font-weight: bold;
-}
-
-/* Table Styling */
-table {
-    width: 100%;
-    border-collapse: collapse;
-    margin-top: 30px;
-}
-
-th, td {
-    padding: 12px;
-    text-align: center;
-    border: 1px solid #ddd;
-    font-size: 16px;
-}
-
-th {
-    background-color: #00389f;
-    color: white;
-    font-weight: bold;
-}
-
-tr:hover {
-    background-color: #f1f1f1;
-}
-
-/* Checkbox and File Input */
-.checkbox-container {
-    margin-top: 20px;
-    display: flex;
-    justify-content: space-between;
-}
-
-.checkbox-container label {
-    font-size: 16px;
-}
-
-.lat-long-container {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-}
-
-.lat-long-container input {
-    width: 80%;
-}
-
-#mapFrame {
-    width: 100%;
-    height: 300px;
-    border: none;
-    border-radius: 8px;
-}
-
-/* Responsive Design */
-@media (max-width: 768px) {
-    .container {
+    body {
+        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        margin: 0;
         padding: 20px;
+        background-color: rgb(233, 233, 233); /* Light gray background */
     }
 
-    .header h3 {
-        font-size: 24px;
+    .container {
+        background: #ffffff;
+        border-radius: 12px;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        padding: 30px;
+        max-width: 1000px;
+        margin: auto;
     }
 
-    .form-label {
-        font-size: 14px;
+    .header {
+        margin-bottom: 30px;
     }
 
-    input, textarea, select {
-        font-size: 14px;
+    h2.text-dark {
+        color: #333333;
+        border-bottom: 2px solid #007bff;
+        padding-bottom: 10px;
+    }
+
+    .form-label, label {
+        font-weight: bold;
+        margin-top: 15px;
+        display: block;
+        color: #333;
+    }
+
+    input[type="text"], input[type="number"], input[type="file"], select, textarea {
+        width: 100%;
+        padding: 10px;
+        margin-top: 5px;
+        margin-bottom: 15px;
+        border: 1px solid #ccc;
+        border-radius: 8px;
+        box-sizing: border-box;
+    }
+
+    input[readonly] {
+        background-color: #f1f1f1;
+    }
+
+    .input-container, .input-container1 {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 10px;
+    }
+    .checkbox-container {
+        margin-top: 20px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+    }
+
+    .btn, .btn-success, .btn-danger {
+        padding: 10px 20px;
+        border-radius: 8px;
+        border: none;
+        cursor: pointer;
+        font-weight: bold;
+    }
+
+    .btn-success {
+        background-color: #28a745;
+        color: white;
+    }
+
+    .btn-danger {
+        background-color: #dc3545;
+        color: white;
+    }
+
+    .btn-custom {
+        background-color: #007bff;
+        color: white;
+        border: none;
+        padding: 8px 16px;
+        border-radius: 6px;
+        cursor: pointer;
+        margin-left: 10px;
+    }
+
+    .btn-custom:hover {
+        background-color: #0056b3;
     }
 
     table {
-        font-size: 14px;
+        width: 100%;
+        border-collapse: collapse;
+        margin-top: 15px;
+        background-color: #fff;
     }
 
-    .checkbox-container {
+    table th, table td {
+        border: 1px solid #dee2e6;
+        padding: 10px;
+        text-align: center;
+    }
+
+    table thead {
+        background-color:#0056b3;
+        color: #fff;
+    }
+
+    textarea {
+        resize: vertical;
+    }
+
+    iframe {
+        border-radius: 8px;
+        margin-top: 15px;
+    }
+
+    @media (max-width: 768px) {
+        .input-container, .input-container1 {
+            grid-template-columns: 1fr;
+        }
+
+        .btn-custom {
+            margin-top: 10px;
+        }
+    }
+    .form-section {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 20px;
+        margin-bottom: 20px;
+    }
+
+    .form-group {
+        flex: 1;
+        min-width: 250px;
+        display: flex;
         flex-direction: column;
     }
-}
 
-/* File Preview */
-#preview {
-    display: flex;
-    gap: 10px;
-    margin-top: 10px;
-    flex-wrap: wrap;
-}
+    .form-group label {
+        margin-bottom: 5px;
+        font-weight: bold;
+    }
 
-.file-preview {
-    width: 100px;
-    height: 140px;
-    border: 1px solid #ccc;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    font-size: 12px;
-    text-align: center;
-    padding: 5px;
-    background: #f9f9f9;
-    position: relative;
-}
+    .form-group input,
+    .form-group select {
+        padding: 10px;
+        font-size: 16px;
+        border: 1px solid #ccc;
+        border-radius: 10px;
+    }
+</style>
 
-.file-preview img {
-    width: 50px;
-    height: 50px;
-}
-
-.remove-btn {
-    position: absolute;
-    top: 5px;
-    right: 5px;
-    background: red;
-    color: white;
-    border: none;
-    border-radius: 50%;
-    width: 20px;
-    height: 20px;
-    cursor: pointer;
-    font-size: 14px;
-    line-height: 16px;
-    text-align: center;
-}
-
-a {
-    color: blue;
-    text-decoration: underline;
-    cursor: pointer;
-}
-
-/* Input Container */
-.input-container {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 65px;
-}
-
-.input-container label {
-    width: 30%;
-    display: inline-block;
-    margin-bottom: 10px;
-}
-
-.input-container input {
-    width: 68%;
-    padding: 10px;
-    font-size: 16px;
-    margin-bottom: 10px;
-}
-
-/* Specific Flexbox Styling */
-.input-container1 {
-    display: flex;
-    margin-left: -4%;
-    flex-direction: column;
-}
-
-.input-container1 div {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-}
-
-.input-container1 label {
-    width: 120px;
-    text-align: right;
-}
-
-.input-container1 input {
-    width: 77%;
-    padding: 10px;
-    font-size: 16px;
-    box-sizing: border-box;
-}
 
 
     </style>
@@ -299,12 +167,12 @@ a {
 <body>
     <div class="container">
     <div class="header">
-        <h3 class="text-dark"> เปิดบิลสินค้า </h3>
+        <h2 class="text-dark"> เปิดบิลสินค้า </h2>
     <div class="mb-3">
         <label class="form-label">เลขที่ SO :</label>
         <form id="soSearchForm">
             <div style="display: flex; justify-content: space-between;">
-                <input type="text" class="form-control" id="so_number" name="so_number" style="width: 90% ;" required>
+                <input type="text" class="form-control" id="so_number" name="so_number" style="width: 100% ;" required>
             </div>
         </form>
     </div>
@@ -329,15 +197,12 @@ a {
 
         <div>
             <label>อัปโหลดเอกสาร PO :</label>
-            <input type="file" id="POdocument" name="POdocument">
+            <input type="file" id="POdocument" name="POdocument" accept="application/pdf,image/*">
         </div>
-
         <div>
             <label>รหัสลูกค้า :</label>
             <input type="text" id="customer_id" name="customer_id" readonly>
         </div>
-    </div>
-    <div class="input-container1">
         <div>
             <label>ชื่อบริษัท :</label>
             <input type="text" id="customer_name" name="customer_name" readonly>
@@ -347,16 +212,22 @@ a {
             <label>เบอร์ติดต่อ :</label>
             <input type="text" id="customer_tel" name="customer_tel">
         </div>
-        <br>
+                   <!-- แสดงรูปหรือ PDF -->
+        <div id="filePreviewContainer">
+            <iframe id="pdfPreview" width="100%" height="300px" style="display: none; border: 1px solid #ccc;"></iframe>
+            <img id="imagePreview" style="max-width: 100%; max-height: 400px; display: none; border: 1px solid #ccc;" />
+        </div>
     </div>
     <div class="form-label">
-        <div>
-            <label>ที่อยู่จัดส่ง :</label>
-            <input type="text" id="customer_address" name="customer_address" style="width: 75%">
-        </div>
+
+    <div style="margin-bottom: 20px;">
+    <label for="customer_address">ที่อยู่จัดส่ง :</label>
+    <textarea id="customer_address" name="customer_address" rows="4" style="width: 100%; padding: 10px; font-size: 16px; border-radius: 10px; border: 1px solid #ccc;"></textarea>
+    </div>
+
         
         <label>ละติจูด ลองจิจูด :</label>
-        <div style="display: flex; justify-content: space-between; width: 90%;" >
+        <div style="display: flex; justify-content: space-between; width: 100%;" >
             <input type="text" id="customer_la_long" name="customer_la_long">
             <button type="button" class="btn-custom" onclick="openGoogleMaps()">Google Maps</button>
         </div>
@@ -364,9 +235,11 @@ a {
         <div class="mb-3">
             <label class="form-label">แผนที่ :</label>
             <iframe id="mapFrame" width="100%" height="300" style="border:0;" allowfullscreen="" loading="lazy"></iframe>
+            
         </div>
 
         <script>
+            
             function updateMap() {
                 let coords = document.getElementById('customer_la_long').value;
                 if (coords) {
@@ -377,15 +250,22 @@ a {
             document.getElementById('customer_la_long').addEventListener('input', updateMap);
             updateMap();
         </script>
-        
-        <label>วันกำหนดส่ง</label>
-        <input type="text" id="date_of_dali" name="date_of_dali" readonly>
 
-        <label for="billtype" >ประเภทบิล</label>
-        <select id="billtype" name="billtype" required>
-            <option value="ขายเชื่อ">ขายเชื่อ</option> 
-            <option value="ขายสด">ขายสด</option> 
-        </select>
+        <div class="form-section">
+            <div class="form-group">
+                <label for="date_of_dali">วันกำหนดส่ง</label>
+                <input type="text" id="date_of_dali" name="date_of_dali" readonly>
+            </div>
+
+            <div class="form-group">
+                <label for="billtype">ประเภทบิล</label>
+                <select id="billtype" name="billtype" required>
+                    <option value="" disabled selected>-- กรุณาเลือกประเภทบิล --</option>
+                    <option value="ขายเชื่อ">ขายเชื่อ</option> 
+                    <option value="ขายสด">ขายสด</option> 
+                </select>
+            </div>
+        </div>
 
         <table class="table table-bordered table-striped">
             <thead>
@@ -590,16 +470,14 @@ function openGoogleMaps() {
                 const SOLists = data.SOLists; 
 const tableBody = document.querySelector('#detail');
 
-
 SOLists.forEach((soItem) => {  
     if (soItem.ms_sodt) { // ตรวจสอบว่ามีข้อมูล ms_sodt หรือไม่
         soItem.ms_sodt.forEach((item) => { 
             let newRow = document.createElement('tr');
-            let goodName = item.GoodName ? item.GoodName.replace(/"/g, '&quot;') : "ไม่มีข้อมูล";
             newRow.innerHTML = `
                 <td><input type="checkbox" class="form-control1" name="status[]"></td>
                 <td><input type="text" class="form-control1" name="item_id[]" value="${item.GoodID}"readonly></td>
-                 <td><input type="text" class="form-control1" name="item_name[]" value="${goodName}" readonly></td>
+                <td><input type="text" class="form-control1" name="item_name[]" value="${item.GoodName}"readonly></td>
                 <td><input type="text" class="form-control1 item_quantity" name="item_quantity[]" value="${item.GoodQty2}" ></td>
                 <td><button type="button" class="btn btn-danger delete-btn">ลบ</button></td>
             `;
@@ -611,7 +489,42 @@ SOLists.forEach((soItem) => {
                 console.error(error);
             }
         }
+        
     </script>
+
+<script>
+    document.getElementById("POdocument").addEventListener("change", function () {
+        const file = this.files[0];
+        const pdfFrame = document.getElementById("pdfPreview");
+        const image = document.getElementById("imagePreview");
+
+        if (!file) {
+            pdfFrame.style.display = "none";
+            image.style.display = "none";
+            return;
+        }
+
+        const fileURL = URL.createObjectURL(file);
+
+        if (file.type === "application/pdf") {
+            // แสดง PDF
+            pdfFrame.src = fileURL;
+            pdfFrame.style.display = "block";
+            image.style.display = "none";
+        } else if (file.type.startsWith("image/")) {
+            // แสดงรูปภาพ
+            image.src = fileURL;
+            image.style.display = "block";
+            pdfFrame.style.display = "none";
+        } else {
+            alert("กรุณาเลือกเฉพาะไฟล์ PDF หรือรูปภาพ");
+            pdfFrame.style.display = "none";
+            image.style.display = "none";
+        }
+    });
+</script>
+
+
 </form>
 
 </body>
