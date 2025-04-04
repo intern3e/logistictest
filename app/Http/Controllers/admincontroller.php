@@ -152,7 +152,6 @@ public function updateBillId(Request $request)
 
         return response()->json([
             'success' => true,
-            'message' => 'Updated '.$affectedRows.' records successfully'
         ]);
 
     } catch (\Exception $e) {

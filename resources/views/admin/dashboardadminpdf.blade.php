@@ -364,6 +364,12 @@
         height: 80%;
     }
 }
+.billid {
+    width: 70px; /* ปรับความกว้าง */
+    height: 25px; /* ปรับความสูง */
+    font-size: 12px; /* ปรับขนาดตัวอักษร */
+    padding: 2px 5px; /* ปรับระยะห่างภายใน */
+}
 
     </style>
 </head>
@@ -387,7 +393,7 @@
                 </form>
 
             <div class="button-group">
-                <button onclick="updateStatuspdf()">ปริ้นเอกสารSO</button>
+                <button id="summitso" onclick="updateStatuspdf()">ปริ้นเอกสารSO</button>
                 <a href="dashboardadmin"><button style="background-color: red">ปริ้นเอกสารเส้นทางการเดินรถ</button></a>
             </div>
             
@@ -412,7 +418,6 @@
                 <th>ผู้เปิดบิล</th>
                 <th>ประเภทบิล</th>
                 <th>เลขที่เอกสาร</th>
-                <th>ยืนยัน</th> 
                 <th>ข้อมูลสินค้า</th>
             </tr>
         </thead>
@@ -428,12 +433,20 @@
                         <td>    
                             {{ $item->ponum }} 
                             @if($item->POdocument)
-                            <button style="background-color: #27ae60; color: rgb(255, 255, 255); id="download" onclick="openFileInNewTab('{{ asset('storage/po_documents/' . $item->POdocument) }}', '{{ $item->ponum }}', '{{ $item->so_detail_id }}', '{{ $item->so_id }}')">
-                        เลือกดูไฟล์
-                    </button>
-                        @else
-                        <button style="background-color: red; color: rgb(255, 255, 255);" onclick="copyPonumAndCheckBox('{{ $item->so_id }}', '{{ $item->so_detail_id }}')">
-                        ไม่มีไฟล์
+                            <button id="download"
+                            style="background-color: #27ae60; color: white;"
+                            onclick="openFileInNewTab('{{ asset('storage/po_documents/' . $item->POdocument) }}', 
+                                     '{{ $item->ponum }}', 
+                                       '{{ $item->so_detail_id }}', 
+                                       '{{ $item->so_id }}',
+                                       '{{ $item->billid ?? '' }}')">
+                                เลือกดูไฟล์
+                            </button>
+    
+                            @else
+                            <button style="background-color: red; color: white;"
+                            onclick="copyPonumAndCheckBox('{{ $item->so_id }}', '{{ $item->so_detail_id }}', '{{ $item->billid ?? '' }}')">
+                            ไม่มีไฟล์
                         </button>
                                                 
                         @endif
@@ -447,12 +460,10 @@
                                 <td>{{ \Carbon\Carbon::parse($item->date_of_dali)->format('d/m/Y') }}</td> 
                                 <td>{{ $item->sale_name }}</td>
                                 <td>{{ $item->emp_name }}</td>
-                                <td>{{ $item->billtype }}</td>
+                                <td id="billtype">{{ $item->billtype }}</td>
                                 <td>
-                                    <input type="text" class="billid" value="{{ $item->billid ?? '' }}">
-                                </td>
-                                <td>
-                                    <button class="buttonbill" data-soid="{{ $item->so_id }}">เพิ่มเลขที่เอกสาร</button>
+                                    <input type="text" class="billid" id="billid" value="{{ $item->billid ?? '' }}">
+                                    <button class="buttonbill" id="buttonbill" data-soid="{{ $item->so_id }}">เลขที่เอกสาร</button>
                                 </td>
                                 <td><a href="javascript:void(0);" 
                                 onclick="openPopup(
@@ -539,7 +550,7 @@
     secondPopupBody.innerHTML = "<tr><td colspan='4'>Loading...</td></tr>";
 
     // ใช้ fetch ดึงข้อมูลจาก Laravel
-    fetch(`/get-bill-detail/${soDetailId}`)
+    fetch(/get-bill-detail/${soDetailId})
         .then(response => response.json())
         .then(data => {
             if (data.length > 0) {
@@ -603,7 +614,6 @@ document.addEventListener("DOMContentLoaded", function() {
                 if (!response.ok) {
                     throw new Error(data.message || 'Failed to update');
                 }
-                alert(data.message || "บันทึกข้อมูลเรียบร้อยแล้ว");
             })
             .catch(error => {
                 console.error("Error:", error);
@@ -615,7 +625,6 @@ document.addEventListener("DOMContentLoaded", function() {
     </script>
     
 <script>
-
 function searchTable() {
     let searchInput = document.getElementById("search-input").value.toLowerCase();
     let table = document.querySelector("table tbody");
@@ -770,61 +779,67 @@ function updateStatuspdf() {
 
 
 <script>
- function openFileInNewTab(url, ponum, so_detail_id, so_id) {
-    // ทำให้ checkbox ถูกเลือก
-    document.getElementById('checkbox_' + so_detail_id).checked = true;
-
-    // ดึงหมายเลขหลังจาก "SO" และคัดลอกเฉพาะส่วนที่ต้องการ
-    var soIdToCopy = so_id.replace(/^SO/, '');  // เอาคำว่า "SO" ออก
-
-    // คัดลอกค่า so_id ที่ถูกปรับแล้วไปยังคลิปบอร์ด
-    navigator.clipboard.writeText(soIdToCopy).then(function() {
-        console.log('คัดลอก SO ID:', soIdToCopy);
-    }).catch(function(err) {
-        console.error('ไม่สามารถคัดลอกได้:', err);
-    });
-
-    // เปิดไฟล์ในแท็บใหม่
-    window.open(url, '_blank');
-
-    // คลิกปุ่มปริ้นเอกสารSO
-    const printButton = document.querySelector("button[onclick='updateStatuspdf()']");
-    if (printButton) {
-        printButton.click();
-        console.log("Clicked the print button for SO document! 🖨️");
-    } else {
-        console.log("Print button not found.");
+    function openFileInNewTab(url, ponum, so_detail_id, so_id, billid) {
+        // ทำให้ checkbox ถูกเลือก
+        document.getElementById('checkbox_' + so_detail_id).checked = true;
+    
+        // กำหนดค่าที่ต้องการคัดลอก: ถ้า billid ไม่มีค่าหรือว่าง ให้ใช้ so_id
+        var copyValue = billid && billid.trim() !== '' ? billid : so_id.replace(/^SO/, ''); 
+    
+        // คัดลอกค่าลงคลิปบอร์ด
+        navigator.clipboard.writeText(copyValue).then(() => {
+            console.log('คัดลอก:', copyValue);
+        }).catch(err => {
+            console.error('ไม่สามารถคัดลอกได้:', err);
+        });
+    
+        // เปิดไฟล์ในแท็บใหม่
+        window.open(url, '_blank');
+    
+    //     // หน่วงเวลา 10 วินาที แล้วกดปุ่มปริ้น
+    //     setTimeout(() => {
+    //         const printButton = document.querySelector("button[onclick='updateStatuspdf()']");
+    //         if (printButton) {
+    //             printButton.click();
+    //             console.log("Clicked the print button for SO document! 🖨️");
+    //         } else {
+    //             console.log("Print button not found.");
+    //         }
+    //     }, 20000); // 10 วินาที
+     }
+    
+    function copyPonumAndCheckBox(so_id, so_detail_id, billid) {
+        // ทำให้ checkbox ถูกเลือก
+        const checkbox = document.getElementById('checkbox_' + so_detail_id);
+        if (checkbox) {
+            checkbox.checked = true;
+            console.log("Checkbox checked for:", so_detail_id);
+        } else {
+            console.log("Checkbox not found for:", so_detail_id);
+        }
+    
+        // กำหนดค่าที่จะคัดลอก: ถ้า billid มีค่าให้ใช้ billid, ถ้าไม่มีให้ใช้ so_id
+        const copyValue = billid && billid.trim() !== '' ? billid : so_id.replace(/^SO/, '');
+    
+        // คัดลอกค่าลงคลิปบอร์ด
+        navigator.clipboard.writeText(copyValue).then(() => {
+            console.log("Copied value:", copyValue);
+        }).catch(err => {
+            console.error("Failed to copy value:", err);
+        });
+    
+        // หน่วงเวลา 10 วินาทีแล้วคลิกปุ่มปริ้นเอกสาร SO
+    //     setTimeout(function() {
+    //         const printButton = document.querySelector("button[onclick='updateStatuspdf()']");
+    //         if (printButton) {
+    //             printButton.click();
+    //             console.log("Clicked the print button for SO document! 🖨️");
+    //         } else {
+    //             console.log("Print button not found.");
+    //         }
+    //     }, 20000); // 10 วินาที
     }
-}
-function copyPonumAndCheckBox(so_id, so_detail_id) {
-    // ทำให้ checkbox ถูกเลือก
-    const checkbox = document.getElementById('checkbox_' + so_detail_id);
-    if (checkbox) {
-        checkbox.checked = true;
-        console.log("Checkbox checked for:", so_detail_id);
-    } else {
-        console.log("Checkbox not found for:", so_detail_id);
-    }
-
-    // คัดลอกค่า so_id ที่ถูกปรับแล้วไปยังคลิปบอร์ด
-    const soIdToCopy = so_id.replace(/^SO/, ''); // เอาคำว่า "SO" ออก
-    navigator.clipboard.writeText(soIdToCopy).then(function() {
-        console.log("Copied so_id:", soIdToCopy);
-    }).catch(function(err) {
-        console.error("Failed to copy so_id:", err);
-    });
-
-    // กดปุ่ม "ปริ้นเอกสารSO"
-    const printButton = document.querySelector("button[onclick='updateStatuspdf()']");
-    if (printButton) {
-        printButton.click();
-        console.log("Clicked the print button for SO document! 🖨️");
-    } else {
-        console.log("Print button not found.");
-    }
-}
-
-
+    
 
 </script>
 
