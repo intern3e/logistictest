@@ -759,7 +759,23 @@ function updateStatuspdf() {
         .then(data => {
             console.log(data);
             if (data.success) {
-                alert("เพิ่มข้อมูลเลขที่บิลลงในเอกสาร PO เรียบร้อยแล้ว");
+            } else {
+                alert("เกิดข้อผิดพลาดในการเพิ่มข้อมูลลงในเอกสาร PO: " + (data.error || ''));
+            }
+        })
+        .catch(error => {
+            console.error("Error:", error);
+            alert("เกิดข้อผิดพลาดในการเพิ่มเลขที่บิลลงในเอกสาร PO");
+        });
+}
+function addSoDetailIdToDocument(so_detail_id, POdocument) {
+    console.log(`กำลังเพิ่ม ${so_detail_id} ลงในเอกสาร PO: ${POdocument}`);
+
+    fetch(`/add-so-detail-id-to-pdf/${so_detail_id}/${POdocument}`)
+        .then(response => response.json())
+        .then(data => {
+            console.log(data);
+            if (data.success) {
             } else {
                 alert("เกิดข้อผิดพลาดในการเพิ่มข้อมูลลงในเอกสาร PO: " + (data.error || ''));
             }
