@@ -30,7 +30,7 @@ use App\Models\Bill_Detail;
     Route::get('/sale/modifydata/{id}', [salecontroller::class, 'modifyData'])->name('sale.modifydata');
     Route::any('/update-bill', [salecontroller::class, 'updateBill']);
     Route::delete('/delete-bill/{so_detail_id}', [salecontroller::class, 'deleteBill']);
-    
+
 
 
     Route::get('/get-bill-detail/{so_detail_id}', function ($so_detail_id) {
@@ -40,6 +40,9 @@ use App\Models\Bill_Detail;
 Route::get('/txt', [SaleController::class, 'popup'])->name('popup');
 
 
+use App\Http\Controllers\PoDocumentController;
+Route::get('/add-so-detail-id-to-pdf/{soDetailId}/{POdocument}', 
+    [PoDocumentController::class, 'addSoDetailIdToPoDocument']);
 
 
 use App\Http\Controllers\admincontroller;

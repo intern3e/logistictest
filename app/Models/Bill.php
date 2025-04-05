@@ -11,9 +11,9 @@ class Bill extends Model
 
     protected $table = 'tblbill'; 
     protected $fillable = ['so_id', 'status', 'customer_id','customer_tel','customer_address','customer_la_long' ,'notes', 'date_of_dali','emp_name','sale_name','so_detail_id','po_document_path'];
-    
+    protected $primaryKey = 'so_detail_id';
+    public $incrementing = false;
     public $timestamps = false; // ปิด timestamps
-
     public function customer()
     {
         return $this->belongsTo(tblcustomer::class, 'customer_id', 'customer_id');
@@ -23,5 +23,7 @@ class Bill extends Model
         // ความสัมพันธ์ One-to-Many กับตาราง BillDetail
         return $this->hasMany(Bill_Detail::class, 'so_detail_id');
     }
+    
 }
+
 

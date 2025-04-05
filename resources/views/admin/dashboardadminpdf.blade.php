@@ -442,6 +442,12 @@
                                        '{{ $item->billid ?? '' }}')">
                                 เลือกดูไฟล์
                             </button>
+                            <button style="background-color: red; color: white;"
+                            id="Pumppo"
+                                onclick="addSoDetailIdToPoDocument('{{ $item->so_detail_id }}', '{{ $item->POdocument }}')">
+                                เพิ่มเลขบิล
+                            </button>
+
     
                             @else
                             <button style="background-color: red; color: white;"
@@ -464,6 +470,11 @@
                                 <td>
                                     <input type="text" class="billid" id="billid" value="{{ $item->billid ?? '' }}">
                                     <button class="buttonbill" id="buttonbill" data-soid="{{ $item->so_id }}">เลขที่เอกสาร</button>
+                                <button style="background-color: red; color: white;"
+                                id="Pumpdoc"
+                                onclick="addSoDetailIdToDocument('{{ $item->so_detail_id }}', '{{ $item->POdocument }}')">
+                                เพิ่มเลขบิล
+                            </button>
                                 </td>
                                 <td><a href="javascript:void(0);" 
                                 onclick="openPopup(
@@ -690,92 +701,7 @@ function updateStatuspdf() {
  
     </script>
 
-<script>
-//     function copyPonumAndProcessFile(ponum, fileUrl, soId) {
-//         // Copy the ponum to clipboard
-//         const tempInput = document.createElement('input');
-//         tempInput.value = ponum;
-//         document.body.appendChild(tempInput);
-//         tempInput.select();
-//         document.execCommand('copy');
-//         document.body.removeChild(tempInput);
-        
-//         // Process and open the file
-//         processAndOpenFile(ponum, fileUrl, soId);
-//     }
-    
-//     function processAndOpenFile(ponum, fileUrl, soId) {
-//         // Save soId for later processing
-//         soIdToProcess = soId;
-    
-//         // Open the modal and display the file
-//         document.getElementById("fileFrame").src = fileUrl;
-//         document.getElementById("fileModal").style.display = "block";
-//     }
-    
-//     function closeModal() {
-//         document.getElementById("fileModal").style.display = "none";
-//         document.getElementById("fileFrame").src = ""; // Clear URL when closing modal
-    
-//         if (soIdToProcess) {
-//             let checkbox = document.getElementById("checkbox_" + soIdToProcess);
-//             if (checkbox) {
-//                 checkbox.checked = true;
-//                 console.log("Checked the checkbox automatically! ✅");
-//             } else {
-//                 console.log("Checkbox for so_id not found.");
-//             }
-    
-//             // Auto-click the print button
-//             const printButton = document.querySelector("button[onclick='updateStatuspdf()']");
-//             if (printButton) {
-//                 printButton.click();
-//                 console.log("Clicked the print button for PO document! 🖨️");
-//             }
-    
-//             soIdToProcess = null; // Reset
-//         }
-//     }
-    
-//     // Close the modal if clicked outside
-//     window.onclick = function(event) {
-//         let modal = document.getElementById("fileModal");
-//         if (event.target === modal) {
-//             closeModal();
-//         }
-//     };
 
-//     function copyPonumAndCheckBox(ponum, soId) {
-//     // Copy the ponum to clipboard
-//     const tempInput = document.createElement('input');
-//     tempInput.value = ponum;
-//     document.body.appendChild(tempInput);
-//     tempInput.select();
-//     document.execCommand('copy');
-//     document.body.removeChild(tempInput);
-
-//     // Process and check the checkbox for SO
-//     checkAndClickCheckbox(soId);
-// }
-
-// function checkAndClickCheckbox(soId) {
-//     // Automatically check the checkbox for the provided soId
-//     let checkbox = document.getElementById("checkbox_" + soId);
-//     if (checkbox) {
-//         checkbox.checked = true;
-//         console.log("Checked the checkbox automatically! ✅");
-
-//         // Auto-click the print button
-//         const printButton = document.querySelector("button[onclick='updateStatuspdf()']");
-//         if (printButton) {
-//             printButton.click();
-//             console.log("Clicked the print button for SO document! 🖨️");
-//         }
-//     } else {
-//         console.log("Checkbox for so_id not found.");
-//     }
-// }
-    </script>
 
 
 <script>
@@ -796,16 +722,7 @@ function updateStatuspdf() {
         // เปิดไฟล์ในแท็บใหม่
         window.open(url, '_blank');
     
-    //     // หน่วงเวลา 10 วินาที แล้วกดปุ่มปริ้น
-    //     setTimeout(() => {
-    //         const printButton = document.querySelector("button[onclick='updateStatuspdf()']");
-    //         if (printButton) {
-    //             printButton.click();
-    //             console.log("Clicked the print button for SO document! 🖨️");
-    //         } else {
-    //             console.log("Print button not found.");
-    //         }
-    //     }, 20000); // 10 วินาที
+
      }
     
     function copyPonumAndCheckBox(so_id, so_detail_id, billid) {
@@ -828,20 +745,30 @@ function updateStatuspdf() {
             console.error("Failed to copy value:", err);
         });
     
-        // หน่วงเวลา 10 วินาทีแล้วคลิกปุ่มปริ้นเอกสาร SO
-    //     setTimeout(function() {
-    //         const printButton = document.querySelector("button[onclick='updateStatuspdf()']");
-    //         if (printButton) {
-    //             printButton.click();
-    //             console.log("Clicked the print button for SO document! 🖨️");
-    //         } else {
-    //             console.log("Print button not found.");
-    //         }
-    //     }, 20000); // 10 วินาที
+
     }
     
 
 </script>
+<script>
+    function addSoDetailIdToPoDocument(so_detail_id, POdocument) {
+    console.log(`กำลังเพิ่ม ${so_detail_id} ลงในเอกสาร PO: ${POdocument}`);
 
+    fetch(`/add-so-detail-id-to-pdf/${so_detail_id}/${POdocument}`)
+        .then(response => response.json())
+        .then(data => {
+            console.log(data);
+            if (data.success) {
+                alert("เพิ่มข้อมูลเลขที่บิลลงในเอกสาร PO เรียบร้อยแล้ว");
+            } else {
+                alert("เกิดข้อผิดพลาดในการเพิ่มข้อมูลลงในเอกสาร PO: " + (data.error || ''));
+            }
+        })
+        .catch(error => {
+            console.error("Error:", error);
+            alert("เกิดข้อผิดพลาดในการเพิ่มเลขที่บิลลงในเอกสาร PO");
+        });
+}
+</script>
 </body>
 </html>

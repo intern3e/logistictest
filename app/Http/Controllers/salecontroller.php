@@ -71,7 +71,7 @@ public function dashboard(Request $request)
                         ->with('customer')
                         ->get();
         }
-    
+
         return view('sale.dashboard', compact('bill', 'message'));
     }
 
@@ -177,8 +177,44 @@ public function insert(Request $request)
             'POdocument' => 'max:2048' 
         ]);
 
+        // สร้าง so_detail_id แบบ 3E(เลขท้ายพ.ศ.)(เดือน)X0001
+        $currentYear = date('Y') + 543;
+        $currentYear = substr($currentYear, -2); 
+        $currentMonth = date('m'); // เดือนปัจจุบัน 2 หลัก (เช่น 04)
+        $prefix = "3E{$currentYear}{$currentMonth}X"; // สร้าง prefix เช่น 3E6804X
+        
+        // หาเลข running number ล่าสุด
+        $latestBill = Bill::where('so_detail_id', 'like', $prefix . '%')
+                        ->orderBy(DB::raw('CAST(SUBSTRING(so_detail_id, 8) AS UNSIGNED)'), 'desc')
+                        ->first();
+        
+        if ($latestBill) {
+            // ถ้ามีแล้ว ดึงเลขล่าสุดและเพิ่มอีก 1
+            $latestNumber = (int) substr($latestBill->so_detail_id, -4);
+            $nextNumber = $latestNumber + 1;
+        } else {
+            // ถ้ายังไม่มี เริ่มที่ 1
+            $nextNumber = 1;
+        }
+        
+        // สร้าง so_detail_id ในรูปแบบที่ต้องการ (เช่น 3E6804X0001)
+        $so_detail_id = $prefix . str_pad($nextNumber, 4, '0', STR_PAD_LEFT);
+
+        // ตรวจสอบว่ามี so_detail_id นี้อยู่แล้วหรือไม่ เพื่อป้องกันการซ้ำ
+        $exists = Bill::where('so_detail_id', $so_detail_id)->exists();
+        if ($exists) {
+            // ถ้ามีแล้ว ให้เพิ่มเลขต่อไปเรื่อยๆ จนกว่าจะไม่ซ้ำ
+            $i = $nextNumber + 1;
+            do {
+                $so_detail_id = $prefix . str_pad($i, 4, '0', STR_PAD_LEFT);
+                $exists = Bill::where('so_detail_id', $so_detail_id)->exists();
+                $i++;
+            } while ($exists);
+        }
+
         // **🔹 Insert into Bills**
         $bill = new Bill();
+        $bill->so_detail_id = $so_detail_id; // ใช้ so_detail_id ที่สร้างขึ้นใหม่
         $bill->so_id = $request->input('so_id');
         $bill->ponum = $request->input('ponum');
         $bill->status = 0;
@@ -194,7 +230,7 @@ public function insert(Request $request)
         $bill->sale_name = $request->input('sale_name');
         $bill->billtype = $request->input('billtype');
         $bill->billid = $request->input('billid');
-
+            
         // **🔹 อัปโหลดไฟล์ POdocument**
         if ($request->hasFile('POdocument')) {
             $file = $request->file('POdocument');
@@ -208,12 +244,9 @@ public function insert(Request $request)
             $bill->POdocument = $filename;
         }
 
+        // บันทึกข้อมูล bill
         $bill->save();
-
-        $so_detail_id = $bill->id;
-        $so_detail_id_padded = str_pad($so_detail_id, 6, '0', STR_PAD_LEFT);
-
-        $so_detail_id = $bill->id;
+        
         $item_ids = $request->input('item_id');
         $item_names = $request->input('item_name');
         $item_quantities = $request->input('item_quantity');
@@ -225,16 +258,16 @@ public function insert(Request $request)
                 continue;  // ข้ามถ้าผู้ใช้ไม่ได้ติ๊กเลือก
             }
             $bill_detail = new Bill_detail();
-            $bill_detail->so_detail_id = $so_detail_id_padded;
+            $bill_detail->so_detail_id = $so_detail_id; // ใช้ $so_detail_id ที่สร้างใหม่
             $bill_detail->so_id = $request->input('so_id');
             $bill_detail->item_id = $item_ids[$index];
             $bill_detail->item_name = $item_names[$index];
             $bill_detail->quantity = $item_quantities[$index];
             $bill_detail->save();
         }
-
         DB::commit();
         return response()->json(['success' => 'เปิดบิลสำเร็จ']);
+        Log::info('so_detail_id: ' . $so_detail_id);
 
     } catch (\Exception $e) {
         DB::rollBack();
@@ -242,7 +275,6 @@ public function insert(Request $request)
         return response()->json(['error' => 'เกิดข้อผิดพลาด:ใส่ข้อมูลให้ครบถ้วน ' . $e->getMessage()], 500);
     }
 }
-
 
 public function insertPost(Request $request) {
     $so_id = $request->input('so_id');

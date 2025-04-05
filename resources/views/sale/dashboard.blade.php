@@ -79,26 +79,7 @@ body {
 
 
 /* --- Table Styling --- */
-.table-container {
-    background: #f9f9f9; /* Light gray background for table */
-    margin: 0 5%;
-    padding: 10px;
-    border-radius: 12px;
-    box-shadow: 0px 6px 12px rgba(0, 0, 0, 0.1);
-    overflow: hidden;
-    width: 99%;
-    max-width: 100%; /* Ensure table doesn't overflow the container */
-    transform: scale(0.9); /* Scale down the table to fit the screen */
-    transform-origin: top left; /* Keep the table scaling from the top-left corner */
-}
 
-table {
-    width: 100%;
-    border-collapse: collapse;
-    text-align: center;
-    word-wrap: break-word; /* Ensure text wraps within table cells */
-    font-size: 1rem; /* Adjust the font size to make it smaller */
-}
 
 th, td {
     padding: 12px;
@@ -348,242 +329,244 @@ td a:hover {
         </div>
     </div>
     
-    <!-- Filter & Search Section -->
-    <div class="filter-container">
-        <form method="GET" action="{{ route('sale.dashboard') }}" class="filter-form">
-            <label for="date">📅 วันที่:</label>
-            <input type="date" id="date" name="date" value="{{ request('date') }}">
-            <button type="submit">ค้นหา</button>
-        </form>
-    
-        <div class="search-box">
-            <input type="text" id="search-input" placeholder=" ค้นหา เลขที่บิล" onkeyup="searchTable()">
-        </div>
-    </div>
-    
-    <div class="table-container">
-        <table>
-            <thead>
-                <tr>
-                    <th>เลขที่บิล</th>
-                    <th>อ้างอิงใบสั่งขาย</th>
-                    <th>อ้างอิงใบสั่งซื้อ</th>
-                    <th>ชื่อลูกค้า</th>
-                    <th>ที่อยู่จัดส่ง</th>
-                    <th>วันที่จัดส่ง</th>
-                    <th>ผู้เปิดบิล</th>
-                    <th>ประเภทบิล</th>
-                    <th>เวลาออกบิล</th>
-                    <th>สถานะ</th>
-                    <th>ข้อมูลสินค้า</th>
-                </tr>
-            </thead>
-            <tbody id="table-body">
-                @foreach($bill as $item)
-                <tr>
-                    <td>{{ $item->so_detail_id }}</td> 
-                    <td>{{ $item->so_id }}</td>
-                    <td>{{ $item->ponum }}</td>
-                    <td>{{ $item->customer_name }}</td>  
-                    <td>{!! nl2br(e(wordwrap($item->customer_address, 110, "\n", true))) !!}</td>
-                    <td>{{ \Carbon\Carbon::parse($item->date_of_dali)->format('d/m/Y') }}</td> 
-                    <td>{{ $item->emp_name }}</td> 
-                    <td>{{ $item->billtype }}</td>
-                    <td>{{ \Carbon\Carbon::parse($item->time)->format('H:i d/m/Y ') }}</td>
-                    <td>
-                        @if($item->status == 0)
-                            กำลังดำเนินการ
-                        @else
-                            สำเร็จ
-                        @endif
-                    </td>
-                    <td><a href="javascript:void(0);" 
-                        onclick="openPopup(
-                            '{{ $item->so_detail_id }}',
-                            '{{ $item->so_id }}',
-                            '{{ $item->ponum }}',
-                            '{{ $item->customer_name }}',
-                            '{{ $item->customer_address }}',
-                            '{{ \Carbon\Carbon::parse($item->date_of_dali)->format('d/m/Y') }}',
-                            '{{ $item->sale_name}}',
-                            '{{ $item->notes}}',
-                            '{{ $item->POdocument}}',
-                        )">
-                    เพิ่มเติม
-                 </a></td>
-                </tr>
-                @endforeach
-            </tbody>
-        </table>
-        @if(isset($message))
-        <br>
-
-        <p style="text-align: center">{{ $message }}</p>
-             @endif
-    </div>
-    
-    <!-- Popup -->
-    <div class="popup-overlay" id="popup" style="display: none;">
-        <div class="popup-content">
-            <span class="close-btn" onclick="closePopup()">&times;</span>
-            <div class="table-container">
-                <table>
-                    <thead>
-                        <tr>
-                            <th>เลขที่บิล</th>
-                            <th>อ้างอิงใบสั่งขาย</th>
-                            <th>อ้างอิงใบสั่งซื้อ</th>
-                            <th>ชื่อลูกค้า</th>
-                            <th>ที่อยู่จัดส่ง</th>
-                            <th>วันที่จัดส่ง</th>
-                            <th>ผู้ขาย</th>
-                            <th>เอกสารPO</th>
-                        </tr>
-                    </thead>
-                    <tbody id="popup-body-1">   
-                    </tbody>
-                </table>
-                <br>
-                <table>
-                    <thead>     
-                        <tr>
-                            <th>รหัสสินค้า</th>
-                            <th>รายการ</th>
-                            <th>จำนวน</th>
-                        </tr>
-                    </thead>
-                    <tbody id="popup-body">
-                    </tbody>
-                </table>
-                <br>
-                <textarea id="popup-body-3" readonl style="width: 600px; height: 70px;">
-                </textarea>
-                
-
-
+    <body>
+        
+        <!-- Filter & Search Section -->
+        <div class="filter-container">
+            <form method="GET" action="{{ route('sale.dashboard') }}" class="filter-form">
+                <label for="date">📅 วันที่:</label>
+                <input type="date" id="date" name="date" value="{{ request('date') }}">
+                <button type="submit">ค้นหา</button>
+            </form>
+        
+            <div class="search-box">
+                <input type="text" id="search-input" placeholder=" ค้นหา เลขที่บิล" onkeyup="searchTable()">
             </div>
         </div>
-    </div>
+        
+        <div class="table-container">
+            <table>
+                <thead>
+                    <tr>
+                        <th>เลขที่บิล</th>
+                        <th>อ้างอิงใบสั่งขาย</th>
+                        <th>อ้างอิงใบสั่งซื้อ</th>
+                        <th>ชื่อลูกค้า</th>
+                        <th>ที่อยู่จัดส่ง</th>
+                        <th>วันที่จัดส่ง</th>
+                        <th>ผู้เปิดบิล</th>
+                        <th>ประเภทบิล</th>
+                        <th>เวลาออกบิล</th>
+                        <th>สถานะ</th>
+                        <th>ข้อมูลสินค้า</th>
+                    </tr>
+                </thead>
+                <tbody id="table-body">
+                    @foreach($bill as $item)
+                    
+                    <tr>
+                        <td>{{ $item->so_detail_id }}</td>
+                        <td>{{ $item->so_id }}</td>
+                        <td>{{ $item->ponum }}</td>
+                        <td>{{ $item->customer_name }}</td>  
+                        <td>{!! nl2br(e(wordwrap($item->customer_address, 110, "\n", true))) !!}</td>
+                        <td>{{ \Carbon\Carbon::parse($item->date_of_dali)->format('d/m/Y') }}</td> 
+                        <td>{{ $item->emp_name }}</td> 
+                        <td>{{ $item->billtype }}</td>
+                        <td>{{ \Carbon\Carbon::parse($item->time)->format('H:i d/m/Y ') }}</td>
+                        <td>
+                            @if($item->status == 0)
+                                กำลังดำเนินการ
+                            @else
+                                สำเร็จ
+                            @endif
+                        </td>
+                        <td><a href="javascript:void(0);" 
+                            onclick="openPopup(
+                                '{{ $item->so_detail_id }}',
+                                '{{ $item->so_id }}',
+                                '{{ $item->ponum }}',
+                                '{{ $item->customer_name }}',
+                                '{{ $item->customer_address }}',
+                                '{{ \Carbon\Carbon::parse($item->date_of_dali)->format('d/m/Y') }}',
+                                '{{ $item->sale_name}}',
+                                '{{ $item->notes}}',
+                                '{{ $item->POdocument}}',
+                            )">
+                        เพิ่มเติม
+                     </a></td>
+                    </tr>
+                    @endforeach
+                </tbody>
+            </table>
+            @if(isset($message))
+            <br>
     
-    <script>
+            <p style="text-align: center">{{ $message }}</p>
+                 @endif
+        </div>
+        
+        <!-- Popup -->
+        <div class="popup-overlay" id="popup" style="display: none;">
+            <div class="popup-content">
+                <span class="close-btn" onclick="closePopup()">&times;</span>
+                <div class="table-container">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>เลขที่บิล</th>
+                                <th>อ้างอิงใบสั่งขาย</th>
+                                <th>อ้างอิงใบสั่งซื้อ</th>
+                                <th>ชื่อลูกค้า</th>
+                                <th>ที่อยู่จัดส่ง</th>
+                                <th>วันที่จัดส่ง</th>
+                                <th>ผู้ขาย</th>
+                                <th>เอกสารPO</th>
+                            </tr>
+                        </thead>
+                        <tbody id="popup-body-1">   
+                        </tbody>
+                    </table>
+                    <br>
+                    <table>
+                        <thead>     
+                            <tr>
+                                <th>รหัสสินค้า</th>
+                                <th>รายการ</th>
+                                <th>จำนวน</th>
+                            </tr>
+                        </thead>
+                        <tbody id="popup-body">
+                        </tbody>
+                    </table>
+                    <br>
+                    <textarea id="popup-body-3" readonly style="width: 600px; height: 70px;">
+                    </textarea>
+                </div>
+            </div>
+        </div>
+        
+        <script>
+
 function openPopup(soDetailId, so_id, ponum, customer_name, customer_address, date_of_dali, sale_name, notes, POdocument) {
     document.getElementById("popup").style.display = "flex";
 
     let poDocumentButton = POdocument 
-        ? `<a href="storage/po_documents/${POdocument}" target="_blank"><button>ดูเอกสาร</button></a>` 
+        ? `
+            <a href="/storage/po_documents/${POdocument}" target="_blank">
+                <button>ดูเอกสาร</button>
+            </a>
+          `
         : "ไม่มีเอกสาร";
-
-    document.getElementById("popup-body-1").innerHTML = `
-        <tr>
-            <td>${soDetailId}</td>
-            <td>${so_id}</td>
-            <td>${ponum}</td>
-            <td>${customer_name}</td>
-            <td>${customer_address}</td>
-            <td>${date_of_dali}</td>
-            <td>${sale_name}</td>
-            <td>${poDocumentButton}</td>
-        </tr>
-    `;
-
-    let secondPopupBody = document.getElementById("popup-body");
-    secondPopupBody.innerHTML = "<tr><td colspan='3'>Loading...</td></tr>";
-
-    let thirdPopupBody = document.getElementById("popup-body-3");
-    thirdPopupBody.value = notes || "ไม่มีหมายเหตุ";
-
-    fetch(`/get-bill-detail/${soDetailId}`)
-        .then(response => response.json())
-        .then(data => {
-            if (data.length > 0) {
-                secondPopupBody.innerHTML = "";
-                data.forEach(item => {
-                    secondPopupBody.insertAdjacentHTML("beforeend", `
-                        <tr>
-                            <td>${item.item_id}</td>
-                            <td>${item.item_name}</td>
-                            <td>${item.quantity}</td>
-                        </tr>
-                    `);
-                });
-                if (!notes) {
-                    thirdPopupBody.value = data[0].notes || "ไม่มีหมายเหตุ";
+    
+    
+                document.getElementById("popup-body-1").innerHTML = `
+                    <tr>
+                        <td>${soDetailId}</td>
+                        <td>${so_id}</td>
+                        <td>${ponum}</td>
+                        <td>${customer_name}</td>
+                        <td>${customer_address}</td>
+                        <td>${date_of_dali}</td>
+                        <td>${sale_name}</td>
+                        <td>${poDocumentButton}</td>
+                    </tr>
+                `;
+    
+                let secondPopupBody = document.getElementById("popup-body");
+                secondPopupBody.innerHTML = "<tr><td colspan='3'>Loading...</td></tr>";
+    
+                let thirdPopupBody = document.getElementById("popup-body-3");
+                thirdPopupBody.value = notes || "ไม่มีหมายเหตุ";
+    
+                fetch(`/get-bill-detail/${soDetailId}`)
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.length > 0) {
+                            secondPopupBody.innerHTML = "";
+                            data.forEach(item => {
+                                secondPopupBody.insertAdjacentHTML("beforeend", `
+                                    <tr>
+                                        <td>${item.item_id}</td>
+                                        <td>${item.item_name}</td>
+                                        <td>${item.quantity}</td>
+                                    </tr>
+                                `);
+                            });
+                            if (!notes) {
+                                thirdPopupBody.value = data[0].notes || "ไม่มีหมายเหตุ";
+                            }
+                        } else {
+                            secondPopupBody.innerHTML = "<tr><td colspan='3'>ไม่มีข้อมูล</td></tr>";
+                            thirdPopupBody.value = "ไม่มีหมายเหตุ";
+                        }
+                    })
+                    .catch(error => {
+                        console.error("Error fetching data:", error);
+                        secondPopupBody.innerHTML = "<tr><td colspan='3'>เกิดข้อผิดพลาด</td></tr>";
+                        thirdPopupBody.value = "เกิดข้อผิดพลาดในการโหลดหมายเหตุ";
+                    });
+            }
+    
+            function closePopup() {
+                document.getElementById("popup").style.display = "none"; // ซ่อน Popup
+            }
+    
+            window.onclick = function(event) {
+                let popup = document.getElementById("popup");
+                if (event.target === popup) {
+                    closePopup();
                 }
-            } else {
-                secondPopupBody.innerHTML = "<tr><td colspan='3'>ไม่มีข้อมูล</td></tr>";
-                thirdPopupBody.value = "ไม่มีหมายเหตุ";
             }
-        })
-        .catch(error => {
-            console.error("Error fetching data:", error);
-            secondPopupBody.innerHTML = "<tr><td colspan='3'>เกิดข้อผิดพลาด</td></tr>";
-            thirdPopupBody.value = "เกิดข้อผิดพลาดในการโหลดหมายเหตุ";
-        });
-
-    // ตั้งค่า onclick ให้ปุ่มลบใหม่ทุกครั้งที่เปิด Popup
-    document.getElementById("delete-btn").setAttribute("onclick", `deleteBill(${soDetailId})`);
-}
-
-
-    function closePopup() {
-        document.getElementById("popup").style.display = "none"; // ซ่อน Popup
-    }
     
-    window.onclick = function(event) {
-        let popup = document.getElementById("popup");
-        if (event.target === popup) {
-            closePopup();
-        }
-    }
+            function searchTable() {
+                let searchInput = document.getElementById("search-input").value.toLowerCase();
+                let table = document.querySelector("table tbody");
+                let rows = table.getElementsByTagName("tr");
     
-    function searchTable() {
-        let searchInput = document.getElementById("search-input").value.toLowerCase();
-        let table = document.querySelector("table tbody");
-        let rows = table.getElementsByTagName("tr");
+                for (let i = 0; i < rows.length; i++) {
+                    let row = rows[i];
+                    let cells = row.getElementsByTagName("td");
+                    let soDetailId = cells[0].textContent.toLowerCase(); 
     
-        for (let i = 0; i < rows.length; i++) {
-            let row = rows[i];
-            let cells = row.getElementsByTagName("td");
-            let soDetailId = cells[0].textContent.toLowerCase(); 
-    
-            if (soDetailId.indexOf(searchInput) > -1) {
-                row.style.display = "";
-            } else {
-                row.style.display = "none";
+                    if (soDetailId.indexOf(searchInput) > -1) {
+                        row.style.display = "";
+                    } else {
+                        row.style.display = "none";
+                    }
+                }
             }
-        }
-    }
-    function deleteBill(soDetailId) {
-    // Ask for confirmation before deleting
-    const confirmation = confirm("คุณต้องการลบบิลนี้หรือไม่?");
-    if (confirmation) {
-        fetch(`/delete-bill/${soDetailId}`, {
-            method: 'DELETE',
-            headers: {
-                'Content-Type': 'application/json',
-                'X-CSRF-TOKEN': '{{ csrf_token() }}'
+    
+            function deleteBill(soDetailId) {
+                // Ask for confirmation before deleting
+                const confirmation = confirm("คุณต้องการลบบิลนี้หรือไม่?");
+                if (confirmation) {
+                    fetch(`/delete-bill/${soDetailId}`, {
+                        method: 'DELETE',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-CSRF-TOKEN': '{{ csrf_token() }}'
+                        }
+                    })
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.success) {
+                            alert(data.success); // Show success message
+                            closePopup(); // Close the popup after successful delete
+                            location.reload(); // Reload the page to reflect the changes
+                        } else {
+                            alert(data.error); // Show error message if deletion fails
+                        }
+                    })
+                    .catch(error => {
+                        console.error("Error deleting bill:", error);
+                        alert("เกิดข้อผิดพลาดในการลบบิล");
+                    });
+                }
             }
-        })
-        .then(response => response.json())
-        .then(data => {
-            if (data.success) {
-                alert(data.success); // Show success message
-                closePopup(); // Close the popup after successful delete
-                location.reload(); // Reload the page to reflect the changes
-            } else {
-                alert(data.error); // Show error message if deletion fails
-            }
-        })
-        .catch(error => {
-            console.error("Error deleting bill:", error);
-            alert("เกิดข้อผิดพลาดในการลบบิล");
-        });
-    }
-}
-    </script>
-
-
-
-
+        </script>
+    
     </body>
     </html>
+    
+

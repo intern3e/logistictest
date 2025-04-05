@@ -474,10 +474,11 @@ SOLists.forEach((soItem) => {
     if (soItem.ms_sodt) { // ตรวจสอบว่ามีข้อมูล ms_sodt หรือไม่
         soItem.ms_sodt.forEach((item) => { 
             let newRow = document.createElement('tr');
+            const safeGoodName = item.GoodName.replace(/"/g, '&quot;');
             newRow.innerHTML = `
                 <td><input type="checkbox" class="form-control1" name="status[]"></td>
                 <td><input type="text" class="form-control1" name="item_id[]" value="${item.GoodID}"readonly></td>
-                <td><input type="text" class="form-control1" name="item_name[]" value="${item.GoodName}"readonly></td>
+                <td><input type="text" class="form-control1" name="item_name[]" value="${safeGoodName}"readonly></td>
                 <td><input type="text" class="form-control1 item_quantity" name="item_quantity[]" value="${item.GoodQty2}" ></td>
                 <td><button type="button" class="btn btn-danger delete-btn">ลบ</button></td>
             `;
