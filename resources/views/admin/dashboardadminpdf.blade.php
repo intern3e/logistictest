@@ -477,121 +477,121 @@
                             </button>
                                 </td>
                                 <td><a href="javascript:void(0);" 
-                                onclick="openPopup(
-                                    '{{ $item->so_detail_id }}',
-                                    '{{ $item->so_id }}',
-                                    '{{ $item->ponum }}',
-                                    '{{ $item->customer_name}}',
-                                    '{{ $item->customer_tel}}',
-                                    '{{ \Carbon\Carbon::parse($item->date_of_dali)->format('d/m/Y') }}',
-                                    '{{ $item->sale_name }}',
-                                    '{{ $item->emp_name}}',
-                                    
-                                )">
-                                เพิ่มเติม
-                             </a></td>
-                            </tr>
-                        @endif
-                    @endforeach
-                </tbody>
-            </table>
-            @if(isset($message))
-            <br>
-            <p style="text-align: center">{{ $message }}</p>
-             @endif
-        </div>
-
-<!-- Popup -->
-<div class="popup-overlay" id="popup" style="display: none;">
-    <div class="popup-content">
-        <span class="close-btn" onclick="closePopup()">&times;</span>
-        <div class="table-container">
-            <table>
-                <thead>
-                    <tr>
-                        <th>เลขที่บิล</th>
-                        <th>อ้างอิงใบสั่งขาย</th>
-                        <th>อ้างอิงใบสั่งซื้อ</th>
-                        <th>ชื่อลูกค้า</th>
-                        <th>เบอร์ติดต่อ</th>
-                        <th>วันที่จัดส่ง</th>
-                        <th>ผู้ขาย</th>
-                        <th>ผู้เปิดบิล</th>
-                    </tr>
-                </thead>
-                <tbody id="popup-body-1">   
-                </tbody>
-            </table>
-            <br>
-            <table>
-                <thead>     
-                    <tr>
-                        <th>รหัสสินค้า</th>
-                        <th>รายการ</th>
-                        <th>จำนวน</th>
-                        <th>ราคา/หน่วย</th>
-                    </tr>
-                </thead>
-                <tbody id="popup-body">
-                </tbody>
-            </table>
+                                    onclick="openPopup(
+                                        '{{ $item->so_detail_id }}',
+                                        '{{ $item->so_id }}',
+                                        '{{ $item->ponum }}',
+                                        '{{ $item->customer_name }}',
+                                        '{{ $item->customer_tel }}',
+                                        '{{ $item->customer_address }}',
+                                        '{{ $item->date_of_dali }}',
+                                        '{{ $item->sale_name }}'
+                                    )">
+                                    เพิ่มเติม
+                                 </a></td>
+                                </tr>
+                            @endif
+                        @endforeach
+                    </tbody>
+                </table>
+                @if(isset($message))
+                <br>
+                <p style="text-align: center">{{ $message }}</p>
+                 @endif
+            </div>
+    
+    <!-- Popup -->
+    <div class="popup-overlay" id="popup" style="display: none;">
+        <div class="popup-content">
+            <span class="close-btn" onclick="closePopup()">&times;</span>
+            <div class="table-container">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>เลขที่บิล</th>
+                            <th>อ้างอิงใบสั่งขาย</th>
+                            <th>อ้างอิงใบสั่งซื้อ</th>
+                            <th>ชื่อลูกค้า</th>
+                            <th>เบอร์โทร</th>
+                            <th>ที่อยู่จัดส่ง</th>
+                            <th>วันที่จัดส่ง</th>
+                            <th>ผุ้ขาย</th>
+                        </tr>
+                    </thead>
+                    <tbody id="popup-body-1">   
+                    </tbody>
+                </table>
+                <br>
+                <table>
+                    <thead>     
+                        <tr>
+                            <th>รหัสสินค้า</th>
+                            <th>รายการ</th>
+                            <th>จำนวน</th>
+                            <th>ราคา/หน่วย</th>
+                        </tr>
+                    </thead>
+                    <tbody id="popup-body">
+                    </tbody>
+                </table>
+            </div>
         </div>
     </div>
-</div>
-
-<script>
-    function openPopup(soDetailId,so_id,ponum,customer_name,customer_tel,date_of_dali,sale_name,emp_name) {
-    document.getElementById("popup").style.display = "flex"; // แสดง Popup
-
-    let popupBody = document.getElementById("popup-body-1");
-    popupBody.innerHTML = `
-        <tr>
-            <td>${soDetailId}</td>
-            <td>${so_id}</td>
-            <td>${ponum}</td>
-            <td>${customer_name}</td>
-            <td>${customer_tel}</td>
-            <td>${date_of_dali}</td>
-            <td>${sale_name}</td>
-            <td>${emp_name}</td>
-        </tr>
-    `;
-
-    let secondPopupBody = document.getElementById("popup-body");
-    secondPopupBody.innerHTML = "<tr><td colspan='4'>Loading...</td></tr>";
-
-    // ใช้ fetch ดึงข้อมูลจาก Laravel
-    fetch(/get-bill-detail/${soDetailId})
-        .then(response => response.json())
-        .then(data => {
-            if (data.length > 0) {
-                secondPopupBody.innerHTML = ""; // เคลียร์ข้อมูลเก่า
-                data.forEach(item => {
-                    secondPopupBody.insertAdjacentHTML("beforeend", `
-                        <tr>
-                            <td>${item.item_id}</td>
-                            <td>${item.item_name}</td>
-                            <td>${item.quantity}</td>
-                            <td>${item.unit_price}</td>
-                        </tr>
-                    `);
-                });
-            } else {
-                secondPopupBody.innerHTML = "<tr><td colspan='4'>ไม่มีข้อมูล</td></tr>";
-            }
-        })
-        .catch(error => {
-            console.error("Error fetching data:", error);
-            secondPopupBody.innerHTML = "<tr><td colspan='4'>เกิดข้อผิดพลาด</td></tr>";
-        });
-}
-
-    // ฟังก์ชันปิด Popup
-    function closePopup() {
-        document.getElementById("popup").style.display = "none"; // ซ่อน Popup
+    
+    <script>
+        function openPopup(soDetailId,so_id,ponum,customer_name,customer_tel,customer_address,date_of_dali,sale_name) {
+        document.getElementById("popup").style.display = "flex"; // แสดง Popup
+    
+        let popupBody = document.getElementById("popup-body-1");
+        popupBody.innerHTML = `
+            <tr>
+                <td>${soDetailId}</td>
+                <td>${so_id}</td>
+                <td>${ponum}</td>
+                <td>${customer_name}</td>
+                <td>${customer_tel}</td>
+                <td>${customer_address}</td>
+                <td>${date_of_dali}</td>
+                <td>${sale_name}</td>
+            </tr>
+        `;
+    
+        let secondPopupBody = document.getElementById("popup-body");
+        secondPopupBody.innerHTML = "<tr><td colspan='4'>Loading...</td></tr>";
+    
+        // ใช้ fetch ดึงข้อมูลจาก Laravel
+        fetch(`/get-bill-detail/${soDetailId}`)
+            .then(response => response.json())
+            .then(data => {
+                if (data.length > 0) {
+                    secondPopupBody.innerHTML = ""; // เคลียร์ข้อมูลเก่า
+                    data.forEach(item => {
+                        secondPopupBody.insertAdjacentHTML("beforeend", `
+                            <tr>
+                                <td>${item.item_id}</td>
+                                <td>${item.item_name}</td>
+                                <td>${item.quantity}</td>
+                                <td>${item.unit_price}</td>
+                            </tr>
+                        `);
+                    });
+                } else {
+                    secondPopupBody.innerHTML = "<tr><td colspan='4'>ไม่มีข้อมูล</td></tr>";
+                }
+            })
+            .catch(error => {
+                console.error("Error fetching data:", error);
+                secondPopupBody.innerHTML = "<tr><td colspan='4'>เกิดข้อผิดพลาด</td></tr>";
+            });
     }
-
-</script>
+    
+        // ฟังก์ชันปิด Popup
+        function closePopup() {
+            document.getElementById("popup").style.display = "none"; // ซ่อน Popup
+        }
+    
+    </script>
+    
 
 <script>
 document.addEventListener("DOMContentLoaded", function() {
