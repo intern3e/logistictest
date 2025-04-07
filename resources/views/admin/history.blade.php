@@ -16,7 +16,7 @@ body {
 
 .header {
     background: linear-gradient(to right, #2c3e50, #4b6584);
-    padding: 15px 30px;
+    padding: 1px 30px;
     color: white;
     display: flex;
     justify-content: space-between;

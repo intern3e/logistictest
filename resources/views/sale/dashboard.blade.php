@@ -360,77 +360,61 @@ textarea {
         </div>
     </div>
     
-    <script>
-function openPopup(soDetailId, so_id, ponum, customer_name, customer_address, date_of_dali, sale_name, notes, POdocument) {
-    document.getElementById("popup").style.display = "flex";
-
-    let poDocumentButton = POdocument 
-        ? <a href="storage/po_documents/${POdocument}" target="_blank"><button>ดูเอกสาร</button></a> 
-        : "ไม่มีเอกสาร";
-
-    document.getElementById("popup-body-1").innerHTML = `
-        <tr>
-            <td>${soDetailId}</td>
-            <td>${so_id}</td>
-            <td>${ponum}</td>
-            <td>${customer_name}</td>
-            <td>${customer_address}</td>
-            <td>${date_of_dali}</td>
-            <td>${sale_name}</td>
-            <td>${poDocumentButton}</td>
-        </tr>
-    `;
-
-    let secondPopupBody = document.getElementById("popup-body");
-    secondPopupBody.innerHTML = "<tr><td colspan='3'>Loading...</td></tr>";
-
-    let thirdPopupBody = document.getElementById("popup-body-3");
-    thirdPopupBody.value = notes || "ไม่มีหมายเหตุ";
-
-    fetch(/get-bill-detail/${soDetailId})
-        .then(response => response.json())
-        .then(data => {
-            if (data.length > 0) {
-                secondPopupBody.innerHTML = "";
-                data.forEach(item => {
-                    secondPopupBody.insertAdjacentHTML("beforeend", `
-                        <tr>
-                            <td>${item.item_id}</td>
-                            <td>${item.item_name}</td>
-                            <td>${item.quantity}</td>
-                        </tr>
-                    `);
-                });
-                if (!notes) {
-                    thirdPopupBody.value = data[0].notes || "ไม่มีหมายเหตุ";
+   
+ <script>
+        function openPopup(soDetailId,so_id,ponum,customer_name,customer_tel,customer_address,date_of_dali,sale_name) {
+        document.getElementById("popup").style.display = "flex"; // แสดง Popup
+    
+        let popupBody = document.getElementById("popup-body-1");
+        popupBody.innerHTML = `
+            <tr>
+                <td>${soDetailId}</td>
+                <td>${so_id}</td>
+                <td>${ponum}</td>
+                <td>${customer_name}</td>
+                <td>${customer_tel}</td>
+                <td>${customer_address}</td>
+                <td>${date_of_dali}</td>
+                <td>${sale_name}</td>
+            </tr>
+        `;
+    
+        let secondPopupBody = document.getElementById("popup-body");
+        secondPopupBody.innerHTML = "<tr><td colspan='4'>Loading...</td></tr>";
+    
+        // ใช้ fetch ดึงข้อมูลจาก Laravel
+        fetch(`/get-bill-detail/${soDetailId}`)
+            .then(response => response.json())
+            .then(data => {
+                if (data.length > 0) {
+                    secondPopupBody.innerHTML = ""; // เคลียร์ข้อมูลเก่า
+                    data.forEach(item => {
+                        secondPopupBody.insertAdjacentHTML("beforeend", `
+                            <tr>
+                                <td>${item.item_id}</td>
+                                <td>${item.item_name}</td>
+                                <td>${item.quantity}</td>
+                                <td>${item.unit_price}</td>
+                            </tr>
+                        `);
+                    });
+                } else {
+                    secondPopupBody.innerHTML = "<tr><td colspan='4'>ไม่มีข้อมูล</td></tr>";
                 }
-            } else {
-                secondPopupBody.innerHTML = "<tr><td colspan='3'>ไม่มีข้อมูล</td></tr>";
-                thirdPopupBody.value = "ไม่มีหมายเหตุ";
-            }
-        })
-        .catch(error => {
-            console.error("Error fetching data:", error);
-            secondPopupBody.innerHTML = "<tr><td colspan='3'>เกิดข้อผิดพลาด</td></tr>";
-            thirdPopupBody.value = "เกิดข้อผิดพลาดในการโหลดหมายเหตุ";
-        });
-
-    // ตั้งค่า onclick ให้ปุ่มลบใหม่ทุกครั้งที่เปิด Popup
-    document.getElementById("delete-btn").setAttribute("onclick", deleteBill(${soDetailId}));
-}
-
-
-    function closePopup() {
-        document.getElementById("popup").style.display = "none"; // ซ่อน Popup
+            })
+            .catch(error => {
+                console.error("Error fetching data:", error);
+                secondPopupBody.innerHTML = "<tr><td colspan='4'>เกิดข้อผิดพลาด</td></tr>";
+            });
     }
     
-    window.onclick = function(event) {
-        let popup = document.getElementById("popup");
-        if (event.target === popup) {
-            closePopup();
+        // ฟังก์ชันปิด Popup
+        function closePopup() {
+            document.getElementById("popup").style.display = "none"; // ซ่อน Popup
         }
-    }
     
+    </script>
+<script>
     function searchTable() {
         let searchInput = document.getElementById("search-input").value.toLowerCase();
         let table = document.querySelector("table tbody");
