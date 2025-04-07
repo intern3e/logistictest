@@ -6,284 +6,196 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>เปิดบิลสินค้า</title>
     <style>
-                /* General Styles */
-                /* Body */
-                body {
-                    font-family: 'Sarabun', sans-serif;
-                    background: linear-gradient(to right, #2c3e50, #597496);
-                    margin: 0;
-                    padding: 20px;
-                    display: flex;
-                    justify-content: center;
-                    align-items: flex-start;
-                    min-height: 100vh;
-                }
+    body {
+        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        margin: 0;
+        padding: 20px;
+        background-color: rgb(233, 233, 233); /* Light gray background */
+    }
 
-                /* กรอบครอบฟอร์ม */
-                .container {
-                    background: #ffffff;
-                    padding: 20px;
-                    border-radius: 10px;
-                    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-                    width: 90%;
-                    max-width: 1000px; /* ปรับขนาดความกว้างสูงสุด */
-                    text-align: left;
-                }
+    .container {
+        background: #ffffff;
+        border-radius: 12px;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        padding: 30px;
+        max-width: 1000px;
+        margin: auto;
+    }
 
-                /* Header */
-                .header h3 {
-                    font-size: 24px;
-                    color: #333;
-                    margin-bottom: 20px;
-                    text-align: center;
-                }
+    .header {
+        margin-bottom: 30px;
+    }
 
-                /* Label */
-                label {
-                    font-size: 16px;
-                    font-weight: 600;
-                    margin-bottom: 8px;
-                    display: block;
-                }
+    h2.text-dark {
+        color: #333333;
+        border-bottom: 2px solid rgb(30, 62, 122);
+        padding-bottom: 10px;
+    }
 
-                /* Input Fields */
-                input[type="text"], input[type="number"], input[type="date"], input[type="hidden"] {
-                    width: 95%;
-                    padding: 10px;
-                    margin-bottom: 15px;
-                    background: #f0f4f8;
-                    border: 1px solid #333;
-                    border-radius: 4px;
-                    font-size: 14px;
-                }
+    .form-label, label {
+        font-weight: bold;
+        margin-top: 15px;
+        display: block;
+        color: #333;
+    }
 
-                /* Table Styles */
-                .table {
-                    width: 100%;
-                    margin-top: 20px;
-                    border-collapse: collapse;
-                }
+    input[type="text"], input[type="number"], input[type="file"], select, textarea {
+        width: 100%;
+        padding: 10px;
+        margin-top: 5px;
+        margin-bottom: 15px;
+        border: 1px solid #ccc;
+        border-radius: 8px;
+        box-sizing: border-box;
+    }
 
-                .table th, .table td {
-                    padding: 12px;
-                    text-align: center;
-                    border: 1px solid #ddd;
-                }
+    input[readonly] {
+        background-color: #f1f1f1;
+    }
 
-                .table th {
-                    background-color: #f0f4f8;
-                }
+    .input-container, .input-container1 {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 10px;
+    }
+    .checkbox-container {
+        margin-top: 20px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+    }
 
-                /* Buttons */
-                button {
-                    padding: 10px 20px;
-                    font-size: 16px;
-                    border-radius: 4px;
-                    cursor: pointer;
-                    border: none;
-                }
+    .btn, .btn-success, .btn-danger {
+        padding: 10px 20px;
+        border-radius: 8px;
+        border: none;
+        cursor: pointer;
+        font-weight: bold;
+    }
 
-                .btn-search {
-                    background-color: #4CAF50;
-                    color: #fff;
-                }
+    .btn-success {
+        background-color: #28a745;
+        color: white;
+    }
 
-                .btn-search:hover {
-                    background-color: #45a049;
-                }
+    .btn-danger {
+        background-color: #dc3545;
+        color: white;
+    }
 
-                .btn-danger {
-                    background-color: #f44336;
-                    color: white;
-                }
+    .btn-custom {
+        background-color: #007bff;
+        color: white;
+        border: none;
+        padding: 8px 16px;
+        border-radius: 6px;
+        cursor: pointer;
+        margin-left: 10px;
+    }
 
-                .btn-danger:hover {
-                    background-color: #e53935;
-                }
+    .btn-custom:hover {
+        background-color: #0056b3;
+    }
 
-                .btn-success {
-                    background-color: #4CAF50;
-                    color: white;
-                }
+    table {
+        width: 100%;
+        border-collapse: collapse;
+        margin-top: 15px;
+        background-color: #fff;
+    }
 
-                .btn-success:hover {
-                    background-color: #45a049;
-                }
+    table th, table td {
+        border: 1px solid #dee2e6;
+        padding: 10px;
+        text-align: center;
+    }
 
-                /* Google Maps iframe */
-                #mapFrame {
-                    border: 0;
-                    border-radius: 8px;
-                    width: 100%;
-                    height: 300px;
-                }
+    table thead {
+        background-color:rgb(30, 62, 122);
+        color: #fff;
+    }
 
-                /* Checkbox Styles */
-                input[type="checkbox"] {
-                    margin-right: 10px;
-                }
+    textarea {
+        resize: vertical;
+    }
 
-                /* Table Input Fields */
-                .form-control1 {
-                    width: 100%;
-                    padding: 8px;
-                    border-radius: 4px;
-                    border: 1px solid #ddd;
-                }
+    iframe {
+        border-radius: 8px;
+        margin-top: 15px;
+    }
 
-                /* Additional Styles */
-                .mb-3 {
-                    margin-bottom: 20px;
-                }
+    @media (max-width: 768px) {
+        .input-container, .input-container1 {
+            grid-template-columns: 1fr;
+        }
 
-                .text-dark {
-                    color: #333;
-                }
-                /* ปรับให้ label, input และปุ่มอยู่ในบรรทัดเดียวกัน */
-                .lat-long-container {
-                    display: flex;
-                    align-items: center;
-                    gap: 10px; /* ระยะห่างระหว่าง input และปุ่ม */
-                }
+        .btn-custom {
+            margin-top: 10px;
+        }
+    }
+    .form-section {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 20px;
+        margin-bottom: 20px;
+    }
 
-                /* ปรับขนาด input ให้พอดีกับพื้นที่ */
-                .lat-long-container input {
-                    flex: 1; /* ให้ input ยืดตามพื้นที่ที่เหลือ */
-                    padding: 10px;
-                    border: 1px solid #333;
-                    border-radius: 4px;
-                }
+    .form-group {
+        flex: 1;
+        min-width: 250px;
+        display: flex;
+        flex-direction: column;
+    }
 
-                /* ปรับขนาดปุ่มให้ไม่กินพื้นที่เกินไป */
-                .lat-long-container .btn-custom {
-                    white-space: nowrap; /* ป้องกันข้อความขึ้นบรรทัดใหม่ */
-                    padding: 10px 15px;
-                }
-                .btn-custom{
-                    background-color: #f39c12;
-                    color: #fff;
-                }
-                .btn-custom:hover {
-                    background-color: #e67e22;
-                }
-                .btn-custom:hover{
-                            background-color: #e74c3c;
-                            color: white;
-                            box-shadow: 0px 4px 6px rgba(0, 0, 0, 0.2);
-                        }
-                /* ปรับช่องกรอกข้อมูลในตาราง */
-                .form-control1 {
-                    width: 100%;
-                    padding: 8px;
-                    border-radius: 5px;
-                    border: 1px solid #ccc;
-                    font-size: 14px;
-                    text-align: center;
-                    background: #f9f9f9; /* เปลี่ยนพื้นหลังให้อ่อนขึ้น */
-                    transition: all 0.3s ease;
-                }
+    .form-group label {
+        margin-bottom: 5px;
+        font-weight: bold;
+    }
 
-                /* เปลี่ยนสีเส้นขอบเมื่อโฟกัส */
-                .form-control1:focus {
-                    border-color: #4CAF50;
-                    box-shadow: 0 0 5px rgba(76, 175, 80, 0.5);
-                    background: #fff;
-                }
-                /* จัดตำแหน่ง checkbox และปุ่มให้อยู่ชิดขวา */
-                .checkbox-container {
-                    display: flex;
-                    align-items: center;
-                    justify-content: flex-end; /* ชิดขวา */
-                    gap: 15px; /* ระยะห่างระหว่าง checkbox กับปุ่ม */
-                    margin-top: 10px;
-                }
+    .form-group input,
+    .form-group select {
+        padding: 10px;
+        font-size: 16px;
+        border: 1px solid #ccc;
+        border-radius: 10px;
+    }
 
-                /* ปรับระยะห่างของ checkbox */
-                .checkbox-container label {
-                    display: flex;
-                    align-items: center;
-                    font-size: 16px;
-                }
-
-                .insert-btn {
-                    background-color: #2196F3; /* สีฟ้า */
-                    color: white; /* สีข้อความ */
-                    border: none;
-                }
-
-                .insert-btn:hover {
-                    background-color: #1976D2; /* สีฟ้าเข้มเมื่อโฮเวอร์ */
-                }
-                /* ปรับขนาดและสไตล์ของกล่องข้อความ */
-                textarea {
-                    width: 95%;
-                    padding: 10px;
-                    border: 1px solid #060505;
-                    border-radius: 4px;
-                    font-size: 14px;
-                    resize: vertical; /* ให้ปรับขนาดสูง-ต่ำได้ */
-                    min-height: 100px;
-                }
-                /* เปลี่ยนสีพื้นหลังและข้อความของหัวตาราง */
-                .table thead th {
-                    background: linear-gradient(to right, #2c3e50, #4b6584);
-                    color: white; /* สีตัวอักษร */
-                    font-size: 16px;
-                    padding: 10px;
-                    text-align: center;
-                }
-                /* เปลี่ยนขนาดและสีของปุ่ม "เปิดบิล" */
-                #submitBill {
-                    background-color: #28a745; /* สีเขียว */
-                    color: white; /* สีข้อความ */
-                    padding: 15px 300px; /* ขนาดของปุ่ม */
-                    font-size: 18px; /* ขนาดฟอนต์ */
-                    border-radius: 5px; /* มุมปุ่มโค้ง */
-                    border: none; /* ไม่ให้ขอบ */
-                    cursor: pointer;
-                    margin-left: 15%;
-                    margin-top:10px ;
-                }
-
-
-                /* เมื่อโฮเวอร์ (เอาเมาส์ไปวาง) เปลี่ยนสี */
-                #submitBill:hover {
-                    background-color: #218838; /* สีเขียวเข้ม */
-                }
-                label {
-    font-size: 16px;
-    color: #333;
-    margin-bottom: 8px;
-    display: block;
-}
-
-#doctype {
-    width: 97%;
+/* Style the select element */
+select#cartype {
     padding: 10px;
-    font-size: 14px;
+    font-size: 1rem;
     border: 1px solid #ccc;
     border-radius: 5px;
-    background-color: #f9f9f9;
-    transition: border-color 0.3s;
+    background-color: #fff;
+    color: #333;
+    width: 100%;
+    max-width: 300px;
+    box-sizing: border-box;
+    transition: border-color 0.3s ease;
 }
 
-#doctype:focus {
-    border-color: #4A90E2;
+/* Add focus effect */
+select#cartype:focus {
+    border-color: #333;
     outline: none;
 }
 
-option {
-    padding: 10px;
-    font-size: 14px;
+/* Style for disabled and selected option */
+select#cartype option:disabled {
+    color: #ccc;
 }
 
-
+/* Style for selected option */
+select#cartype option:checked {
+    background-color: #f39c12; /* สีส้ม */
+    color: #fff;
+}
     </style>
 </head>
 <body>
     <div class="container">
     <div class="header">
-        <h3 class="text-dark"> เปิดบิลDoc</h3>
+        <h3 class="text-dark">สร้างเอกสาร</h3>
     <div class="mb-3">
         <label class="form-label">เลขที่ SO :</label>
         <form id="soSearchForm">
@@ -320,11 +232,12 @@ option {
             <label>ผู้เปิดบิล :</label>
             <input type="text" id="emp_name" name="emp_name" value="{{ session('emp_name', 'Guest') }}"> 
 
-            <label>รหัสลูกค้า :</label>
-            <input type="text" id="customer_id" name="customer_id" >
 
             <label>ชื่อบริษัท :</label>
             <input type="text" id="customer_name" name="customer_name" >
+
+            <label>ชื่อผู้ติดต่อ :</label>
+            <input type="text" id="contact_name" name="contact_name" >
 
             <label>เบอร์ติดต่อ :</label>
             <input type="text" id="customer_tel" name="customer_tel" >
@@ -355,13 +268,13 @@ option {
             updateMap();
         </script>
             <label>วันกำหนดส่ง</label>
-            <input type="text" id="revdate" name="revdate" >
+            <input type="date" id="revdate" name="revdate" >
 
             <label for="notes">หมายเหตุ</label>
             <textarea id="notes" name="notes" rows="4"></textarea>
                         
 
-            <button type="button" id="submitBilldoc" class="btn btn-success" onclick="submitForm(event)">เปิดบิล</button>
+            <button type="button" id="submitBilldoc" class="btn btn-success" onclick="submitForm(event)">สร้างเอกสาร</button>
 
 
     </form>
@@ -447,7 +360,6 @@ document.getElementById('submitBilldoc').addEventListener('click', async functio
                 const SoStatus = data.SoStatus;
 
                 document.getElementById('so_id').value = SoStatus.SONum;  
-                document.getElementById('customer_id').value = SoStatus.CustID; 
                 document.getElementById('customer_name').value = soDetails.CustName;  
                 document.getElementById('customer_address').value = soDetails.CustAddr1;  
                 document.getElementById('customer_tel').value = soDetails.ContTel;  

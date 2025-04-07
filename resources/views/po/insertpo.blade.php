@@ -27,7 +27,7 @@
 
     h2.text-dark {
         color: #333333;
-        border-bottom: 2px solid #fa7d00;
+        border-bottom: 2px solid rgb(30, 62, 122);
         padding-bottom: 10px;
     }
 
@@ -110,7 +110,7 @@
     }
 
     table thead {
-        background-color:#de8b47;
+        background-color:rgb(30, 62, 122);
         color: #fff;
     }
 
@@ -202,7 +202,7 @@ select#cartype option:checked {
         <form id="poSearchForm">
             <div style="display: flex; justify-content: space-between;">
                 <input type="text" class="form-control" id="po_number" name="po_number" style="width: 83%;" required>
-                <button type="submit" class="btn-search" style="width: 14%; height: 45px;">🔍 ค้นหา</button>
+                <button type="submit" class="btn-search" style="width: 14%; height: 45px;  background-color:rgb(30, 62, 122); color:#fff;">🔍 ค้นหา</button>
             </div>
         </form>
     </div>

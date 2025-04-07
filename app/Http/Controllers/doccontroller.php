@@ -33,26 +33,60 @@ class DocController extends Controller
             'so_id' => 'nullable',
             'doctype' => 'required',
             'emp_name' => 'required',
-            'customer_id' => 'required',
+            'contact_name' => 'required',
             'customer_name' => 'required',
-            'customer_tel' => 'nullable|string',
+            'customer_tel' => 'required|string',
             'customer_address' => 'nullable|string',
-            'customer_la_long' => 'nullable|string',
+            'customer_la_long' => 'required|string',
             'revdate' => 'required',
-            'additional_notes' => 'nullable|string',
+            'notes' => 'required|string',
         ]);
 
         if ($validator->fails()) {
             return response()->json(['error' => $validator->errors()->first()], 400);
+        }
+        $currentYear = date('Y') + 543;
+        $currentYear = substr($currentYear, -2); 
+        $currentMonth = date('m'); // เดือนปัจจุบัน 2 หลัก (เช่น 04)
+        $prefix = "T{$currentYear}{$currentMonth}X"; // สร้าง prefix เช่น 3E6804X
+        
+        // หาเลข running number ล่าสุด
+        $latestBill =Docbills::where('doc_id', 'like', $prefix . '%')
+                        ->orderBy(DB::raw('CAST(SUBSTRING(doc_id, 8) AS UNSIGNED)'), 'desc')
+                        ->first();
+        
+        if ($latestBill) {
+            // ถ้ามีแล้ว ดึงเลขล่าสุดและเพิ่มอีก 1
+            $latestNumber = (int) substr($latestBill->doc_id, -4);
+            $nextNumber = $latestNumber + 1;
+        } else {
+            // ถ้ายังไม่มี เริ่มที่ 1
+            $nextNumber = 1;
+        }
+        
+        // สร้าง doc_id ในรูปแบบที่ต้องการ (เช่น )
+        $doc_id = $prefix . str_pad($nextNumber, 4, '0', STR_PAD_LEFT);
+
+        // ตรวจสอบว่ามี doc_id นี้อยู่แล้วหรือไม่ เพื่อป้องกันการซ้ำ
+        $exists = Docbills::where('doc_id', $doc_id)->exists();
+        if ($exists) {
+            // ถ้ามีแล้ว ให้เพิ่มเลขต่อไปเรื่อยๆ จนกว่าจะไม่ซ้ำ
+            $i = $nextNumber + 1;
+            do {
+                $doc_id= $prefix . str_pad($i, 4, '0', STR_PAD_LEFT);
+                $exists = Docbills::where('doc_id', $doc_id)->exists();
+                $i++;
+            } while ($exists);
         }
 
         try {
             DB::table('docbills')->insert([
                 'so_id' => $request->so_id,
                 'doctype' => $request->doctype,
+                'doc_id' => $doc_id,
                 'emp_name' => $request->emp_name,
                 'status' => 0,
-                'customer_id' => $request->customer_id,
+                'contact_name' => $request->contact_name,
                 'customer_name' => $request->customer_name,
                 'customer_tel' => $request->customer_tel,
                 'customer_address' => $request->customer_address,

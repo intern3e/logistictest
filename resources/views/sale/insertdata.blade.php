@@ -27,7 +27,7 @@
 
     h2.text-dark {
         color: #333333;
-        border-bottom: 2px solid #007bff;
+        border-bottom: 2px solid #3f865d;
         padding-bottom: 10px;
     }
 
@@ -110,7 +110,7 @@
     }
 
     table thead {
-        background-color:#0056b3;
+        background-color: #3f865d ;
         color: #fff;
     }
 

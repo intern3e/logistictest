@@ -5,309 +5,240 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>📑 ระบบDoc</title>
     <style>
-  /* --- Global Style --- */
-  body {
-            font-family: 'Poppins', sans-serif;
-            background: linear-gradient(to right, #f0f2f5, #dfe9f3);
-            margin: 0;
-            padding: 0;
-        }
+  /* รีเซ็ตสไตล์พื้นฐาน */
+{
 
-        /* --- Header Style --- */
-        .header {
-            background: linear-gradient(to right, #0e50ad, #3a6073);
-            margin: 40px 5%;
-            padding: 20px 5%;
-            color: #fff;
-            border-radius: 10px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.2);
-        }
+box-sizing: border-box;
+margin: 0;
+padding: 0; 
+}
 
-        .header h4 {
-            margin: 0;
-            font-size: 2rem;
-            font-weight: bold;
-        }
+/* สไตล์สำหรับ body */
+body {
+font-family: 'Arial', sans-serif;
+background-color:rgb(255, 255, 255);
+color: #343a40;
+line-height: 1.6;
+padding: 20px;
+}
 
-        /* --- Button Container --- */
-        .buttons {
-            display: flex;
-            align-items: center;
-            gap: 15px;
-        }
+/* ส่วนหัวของหน้า */
+.header {
+background-color: #343a40;
+color: #ffffff;
+padding: 15px;
+border-radius: 5px;
+margin-bottom: 20px;
+display: flex;
+justify-content: space-between;
+align-items: center;
+}
 
-        .buttons span {
-            color: white;
-            font-weight: bold;
-        }
+.header h2 {
+margin: 0;
+}
 
-        .buttons a, .buttons button {
-            padding: 12px 20px;
-            border-radius: 8px;
-            font-weight: bold;
-            text-decoration: none;
-            border: none;
-            cursor: pointer;
-            transition: all 0.3s ease;
-        }
+.header .buttons {
+display: flex;
+align-items: center;
+}
 
-        .buttons a {
-            background-color: #27ae60;
-            color: white;
-            box-shadow: 0px 4px 6px rgba(0, 0, 0, 0.2);
-        }
+.header .buttons span {
+margin-right: 15px;
+}
 
-        .buttons a:hover {
-            background-color: #31e47c; /* Deep Blue */
-            color: white;
-            transform: scale(1.05);
-        }
+.header .buttons a {
+background-color: #3bd315;
+color: #ffffff;
+padding: 8px 15px;
+text-decoration: none;
+border-radius: 5px;
+margin-right: 10px; /* เพิ่มระยะห่าง */
+}
 
-        .buttons button {
-            background-color: #e74c3c;
-            color: white;
-            box-shadow: 0px 4px 6px rgba(0, 0, 0, 0.2);
-        }
+.header .buttons a:hover {
+background-color: #15b800;
+}
 
-        .buttons button:hover {
-            background-color: #c0392b;
-            transform: scale(1.05);
-        }
+/* คอนเทนเนอร์สำหรับฟิลเตอร์และการค้นหา */
+.filter-container {
+display: flex;
+flex-wrap: wrap;
+justify-content: space-between;
+margin-bottom: 20px;
+width: 100%;
+margin-left: auto;
+margin-right: auto;
+}
 
-        /* --- Table Styling --- */
-        .table-container {
-            background: #f9f9f9; /* Light gray background for table */
-            margin: 2% 5%;
-            padding: 10px;
-            border-radius: 12px;
-            box-shadow: 0px 6px 12px rgba(0, 0, 0, 0.1);
-            overflow: hidden;
-            width: 99%;
-            max-width: 100%; /* Ensure table doesn't overflow the container */
-            transform: scale(0.9); /* Scale down the table to fit the screen */
-            transform-origin: top left; /* Keep the table scaling from the top-left corner */
-        }
+.filter-form {
+display: flex;
+align-items: center;
+margin-bottom: 10px;
+}
 
-        table {
-            width: 100%;
-            border-collapse: collapse;
-            text-align: center;
-            word-wrap: break-word; /* Ensure text wraps within table cells */
-            font-size: 1rem; /* Adjust the font size to make it smaller */
-        }
+.filter-form label {
+margin-right: 10px;
+}
 
-        th, td {
-            padding: 12px;
-            border: 1px solid #ccc; /* Light gray for borders */
-            font-size: 1rem;
-            white-space: normal; /* Allow wrapping of text in cells */
-        }
+.filter-form input[type="date"] {
+padding: 8px;
+margin-right: 10px;
+border: 1px solid #ced4da;
+border-radius: 5px;
+}
 
-        th {
-            background-color: #0e50ad;
-            color: white;
-            text-transform: uppercase;
-        }
+.filter-form button {
+padding: 8px 15px;
+background-color: #007bff;
+color: #ffffff;
+border: none;
+border-radius: 5px;
+cursor: pointer;
+}
 
-        tr:nth-child(odd) {
-            background-color: #f8f9fa;
-        }
+.filter-form button:hover {
+background-color: #0056b3;
+}
 
-        tr:hover {
-            background-color: #e1e5ea;
-            transition: 0.2s;
-        }
+.search-box {
+display: flex;
+align-items: center;
+margin-bottom: 10px;
+}
 
-        /* --- Link Style --- */
-        td a {
-            color: #27ae60;
-            font-weight: bold;
-            text-decoration: none;
-        }
+.search-box input {
+padding: 8px;
+width: 200px;
+border: 1px solid #ced4da;
+border-radius: 5px;
+}
 
-        td a:hover {
-            text-decoration: underline;
-        }
+/* คอนเทนเนอร์สำหรับตาราง */
+.table-container {
+overflow-x: auto;
+}
 
-        /* Filter & Search Section */
-        .filter-container {
-            background: #ffffff;
-            padding: 15px;
-            border-radius: 10px;
-            box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.1);
-            margin: 20px 5%;
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            flex-wrap: wrap;
-        }
+table {
+width: 100%;
+margin-left: auto;
+margin-right: auto;
+border-collapse: collapse;
+background-color: #ffffff;
+border-radius: 5px;
+overflow: hidden;
+box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+}
 
-        .filter-form {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            margin: 0px 5%;
-        }
 
-        .filter-form label {
-            font-weight: bold;
-            color: #2c3e50;
-        }
+table th, table td {
+padding: 12px;
+text-align: center; /* จัดข้อความให้อยู่ตรงกลางแนวนอน */
+vertical-align: middle; /* จัดข้อความให้อยู่ตรงกลางแนวตั้ง */
+border: 1px solid #dee2e6; /* เพิ่มเส้นขอบให้กับเซลล์ */
+font-size: 14px; /* ปรับขนาดตัวอักษรที่นี่ */
+}
 
-        .filter-form input {
-            padding: 8px;
-            border-radius: 5px;
-            font-size: 1rem;
-        }
 
-        .filter-form button {
-            padding: 8px 12px;
-            border: none;
-            background: #27ae60;
-            color: white;
-            border-radius: 5px;
-            cursor: pointer;
-            transition: 0.3s;
-        }
+table th {
+background-color: #343a40;
+color: #ffffff;
+}
 
-        .filter-form button:hover {
-            background: #2980b9;
-        }
+table tbody tr:nth-child(even) {
+background-color: #f2f2f2;
+}
 
-        .search-box {
-            flex-grow: 1;
-            max-width: 200px;
-        }
+table tbody tr:hover {
+background-color: #e9ecef;
+}
 
-        .search-box input {
-            width: 90%;
-            height: 30px;
-            margin: 0px 10px;
-            background: #f8f9fa;
-        }
+table a {
+color: #007bff;
+text-decoration: none;
+}
 
-        .search-box {
-            display: flex;
-            align-items: center;
-            transition: 0.3s;
-            max-width: 250px;
-        }
+table a:hover {
+text-decoration: underline;
+}
 
-        .search-box input {
-            flex-grow: 1;
-            padding: 5px;
-            border: none;
-            outline: none;
-            font-size: 1rem;
-            border-radius: 5px;
-            background-color: #e1e5ea;
-        }
+/* สไตล์สำหรับป็อปอัป */
+.popup-overlay {
+position: fixed;
+top: 0;
+left: 0;
+width: 100%;
+height: 100%;
+background-color: rgba(0, 0, 0, 0.5);
+display: none;
+justify-content: center;
+align-items: center;
+z-index: 1000;
+}
 
-        .search-box button {
-            padding: 10px 15px;
-            background: #2ecc71;
-            color: white;
-            border: none;
-            border-radius: 5px;
-            cursor: pointer;
-            transition: 0.3s;
-            font-weight: bold;
-        }
+.popup-content {
+background-color: #ffffff;
+padding: 20px;
+border-radius: 5px;
+width: 100%;
+max-width: 1000px;
+position: relative;
+box-shadow: 0 0 15px rgba(0, 0, 0, 0.2);
+}
 
-        .search-box button:hover {
-            background: #27ae60;
-            transform: scale(1.05);
-        }
+.close-btn {
+position: absolute;
+top: 0;
+right: 15px;
+font-size: 20px;
+cursor: pointer;
+color: #343a40;
+}
 
-        /* สไตล์พื้นหลังมืด */
-        .popup-overlay {
-            display: none; /* ซ่อน Popup ไว้ก่อน */
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(0, 0, 0, 0.5);
-            display: flex;
-            justify-content: center;
-            align-items: center;
-        }
+.close-btn:hover {
+color: #000000;
+}
 
-        /* สไตล์กล่อง Popup */
-        .popup-content {
-            background: linear-gradient(to right, #f0f2f5, #dfe9f3);
-            padding: 20px;
-            border-radius: 10px;
-            width: 80%;
-            max-width: 1000px;
-            height: auto;
-            text-align: center;
-            position: relative;
-            overflow: hidden;
-            max-height: 500px; /* เพิ่มความสูงสูงสุด */
-            overflow-y: auto; /* แสดงแท็บเลื่อน */
-        }
+.popup-content table {
+width: 100%;
+margin-bottom: 20px;
+}
 
-        /* ปุ่มปิด */
-        .close-btn {
-            position: absolute;
-            top: 10px;
-            right: 10px;
-            cursor: pointer;
-            font-size: 18px;
-            font-weight: bold;
-        }
+textarea {
+width: 100%;
+padding: 10px;
+border: 1px solid #ced4da;
+border-radius: 5px;
+resize: none;
+}
 
-        /* Responsive Design */
-        @media (max-width: 768px) {
-            .filter-container {
-                flex-direction: column;
-                align-items: flex-start;
-            }
+/* การปรับสไตล์สำหรับหน้าจอขนาดเล็ก */
+@media (max-width: 768px) {
+.filter-container {
+    flex-direction: column;
+}
 
-            .filter-form, .search-box {
-                width: 100%;
-            }
+.filter-form, .search-box {
+    width: 100%;
+}
 
-            .search-box input {
-                width: 100%;
-            }
-        }
-        .editButton {
-        background: linear-gradient(to right, #feb47b); /* ไล่สีแบบสองโทน */
-        border: none;
-        color: white;
-        padding: 10px 20px;
-        font-size: 16px;
-        font-weight: bold;
-        border-radius: 8px;
-        cursor: pointer;
-        transition: 0.3s ease-in-out;
-        }
-
-        .editButton:hover {
-        transform: scale(1.05); /* ขยายขนาดเล็กน้อย */
-        }
-
-        .editButton:active {
-        transform: scale(0.95); /* ย่อขนาดลงตอนกด */
-        }
+.search-box input {
+    width: 100%;
+}
+}
 
         </style>
 </head>
 <body>
     <div class="header">
-        <h4>📑 ระบบDoc</h4>
+        <h2>📑 ระบบDoc</h2>
         <div class="buttons">
             <span>👤 ผู้ใช้: {{ session('emp_name', 'Guest') }}</span>
     
             <a href="{{ route('document.insertdoc') }}" class="btn btn-warning">➕ เปิดบิลdoc</a>
             
             @csrf
-            <a href="{{ route('home') }}" button  type="submit" class="btn btn-danger">🚪 หน้าหลัก</a>
+            <a href="{{ route('home') }}" button  type="submit" class="btn btn-danger"style="background-color:red;">🚪 หน้าหลัก</a>
         </div>
     </div>
     

@@ -62,14 +62,10 @@ class PoController extends Controller
             $pobill->recvDate = $request->input('recvDate');
             $pobill->emp_name = $request->input('emp_name');
             $pobill->save();
+            
     
             // Get Pobills ID
             $po_detail_id = $pobill->id;
-            $po_detail_id = $pobill->id;
-            $po_detail_id_padded = str_pad($po_detail_id, 6, '0', STR_PAD_LEFT);
-    
-    
-            // Get items data
             $item_ids = $request->input('item_id');
             $item_names = $request->input('item_name');
             $item_quantities = $request->input('item_quantity');
@@ -77,7 +73,7 @@ class PoController extends Controller
             // Save items to Pobills_Detail table
             foreach ($item_ids as $index => $item_id) {
                 $pobill_detail = new PobillsDetail();
-                $pobill_detail->po_detail_id = $po_detail_id_padded;
+                $pobill_detail->po_detail_id = $po_detail_id;
                 $pobill_detail->po_id = $request->input('po_id');
                 $pobill_detail->item_id = $item_id;
                 $pobill_detail->item_name = $item_names[$index];
