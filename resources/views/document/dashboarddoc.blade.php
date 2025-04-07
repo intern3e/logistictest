@@ -164,52 +164,55 @@ text-decoration: underline;
 
 /* สไตล์สำหรับป็อปอัป */
 .popup-overlay {
-position: fixed;
-top: 0;
-left: 0;
-width: 100%;
-height: 100%;
-background-color: rgba(0, 0, 0, 0.5);
-display: none;
-justify-content: center;
-align-items: center;
-z-index: 1000;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.5);
+    display: none;
+    justify-content: center;
+    align-items: center;
+    z-index: 1000;
 }
 
 .popup-content {
-background-color: #ffffff;
-padding: 20px;
-border-radius: 5px;
-width: 100%;
-max-width: 1000px;
-position: relative;
-box-shadow: 0 0 15px rgba(0, 0, 0, 0.2);
+    background-color: #ffffff;
+    padding: 20px;
+    border-radius: 5px;
+    width: 100%;
+    max-width: 1000px;
+    max-height: 70%;
+    overflow-y: auto;
+    position: relative;
+    box-shadow: 0 0 15px rgba(0, 0, 0, 0.2);
 }
 
+
 .close-btn {
-position: absolute;
-top: 0;
-right: 15px;
-font-size: 20px;
-cursor: pointer;
-color: #343a40;
+    position: absolute;
+    top: 0;
+    right: 5px;
+    font-size: 20px;
+    cursor: pointer;
+    color: #343a40;
 }
 
 .close-btn:hover {
-color: #000000;
+    color: #000000;
 }
 
 .popup-content table {
-width: 100%;
-margin-bottom: 20px;
+    width: 100%;
+    margin-bottom: 20px;
 }
 
 textarea {
-width: 100%;
-padding: 10px;
-border: 1px solid #ced4da;
-border-radius: 5px;
-resize: none;
+    width: 100%;
+    padding: 10px;
+    border: 1px solid #ced4da;
+    border-radius: 5px;
+    resize: none;
 }
 
 /* การปรับสไตล์สำหรับหน้าจอขนาดเล็ก */
@@ -244,11 +247,31 @@ resize: none;
     
     <!-- Filter & Search Section -->
     <div class="filter-container">
-        <form method="GET" action="{{ route('document.dashboarddoc') }}" class="filter-form">
+        <form method="GET" action="{{ route('document.dashboarddoc') }}" class="filter-form" id="autoSearchForm">
             <label for="date">📅 วันที่:</label>
-            <input type="date" id="date" name="date" value="{{ request('date') }}">
-            <button type="submit">ค้นหา</button>
+            <input type="date" id="date" name="date" value="{{ request('date', \Carbon\Carbon::today()->format('Y-m-d')) }}">
+            <button type="submit" style="display: none;">ค้นหา</button>
         </form>
+    
+    
+    <script>
+        const form = document.getElementById('autoSearchForm');
+        const dateInput = document.getElementById('date');
+    
+        // ส่งฟอร์มเมื่อเปลี่ยนวันที่
+        dateInput.addEventListener('change', () => {
+            form.submit();
+        });
+    
+        // ส่งฟอร์มอัตโนมัติเมื่อเข้าหน้าเว็บครั้งแรกเท่านั้น
+        window.addEventListener('load', () => {
+            if (!sessionStorage.getItem('hasAutoSubmitted')) {
+                sessionStorage.setItem('hasAutoSubmitted', 'true');
+                form.submit();
+            }
+        });
+    </script>
+    
     
         <div class="search-box">
             <input type="text" id="search-input" placeholder=" ค้นหา เลขที่บิล" onkeyup="searchTable()">

@@ -19,10 +19,28 @@ class AdminpoController extends Controller
         $pobill = Pobills::all();  // Fetch the data
         return view('po.adminpo', compact('pobill'));  // Pass data to the view
     }
-    public function historypo()
+    public function historypo(Request $request)
     {
-        $pobill = poBills::orderBy('po_detail_id', 'desc')->get();
-        return view('po.historypo', compact('pobill'));
+        $date = $request->get('date');
+        $message = null;  // กำหนดค่าเริ่มต้นให้กับตัวแปร $message
+        
+        // ถ้าผู้ใช้กรอกวันที่ ให้กรองข้อมูลที่มีวันที่ตรงกับที่เลือก
+        if ($date) {
+            $pobill = Pobills::whereDate('time', $date)  // ใช้ชื่อคอลัมน์ที่ถูกต้อง
+                        ->orderBy('po_detail_id', 'desc')
+                        ->get();
+            
+            // ตรวจสอบว่ามีข้อมูลหรือไม่
+            if ($pobill->isEmpty()) {
+                $message = 'ไม่พบข้อมูลที่ตรงกับวันที่เลือก';
+            } 
+        } else {
+            // ถ้าไม่ได้กรอกวันที่ จะดึงข้อมูลทั้งหมด
+            $pobill = Pobills::orderBy('po_detail_id', 'desc')
+                        ->get();
+        }
+
+        return view('po.historypo', compact('pobill', 'message'));
     }
    
     public function updateStatus(Request $request)

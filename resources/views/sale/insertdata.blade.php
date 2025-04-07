@@ -274,6 +274,7 @@
                     <th>รหัสสินค้า</th>
                     <th>รายการ</th>
                     <th>จำนวน</th>
+                    <th>ราคาต่อหน่วย</th>
                     <th>ลบ</th>
                 </tr>
             </thead>
@@ -323,11 +324,13 @@
             let itemId = row.querySelector('input[name="item_id[]"]').value;
             let itemName = row.querySelector('input[name="item_name[]"]').value;
             let itemQuantity = row.querySelector('input[name="item_quantity[]"]').value;
+            let unit_price = row.querySelector('input[name="unit_price[]"]').value;
 
             // เก็บค่าลงใน FormData
             formData.append(`item_id[${index}]`, itemId);
             formData.append(`item_name[${index}]`, itemName);
             formData.append(`item_quantity[${index}]`, itemQuantity);
+            formData.append(`unit_price[${index}]`, unit_price);
             formData.append(`status[${index}]`, itemStatus);
         }
     });
@@ -383,6 +386,9 @@
                     <td><input type="text" class="form-control1" name="item_name[]"></td>
                     <td>
                         <input type="number" class="form-control1 item_quantity" name="item_quantity[]" >
+                    </td>
+                    <td>
+                        <input type="number" class="form-control1 " name="unit_price[]" >
                     </td>
                     <td><button type="button" class="btn btn-danger delete-btn">ลบ</button></td>
                 `;
@@ -452,7 +458,10 @@ function openGoogleMaps() {
                 document.getElementById('ponum').value = soDetails.CustPONo;  
                 document.getElementById('customer_id').value = SoStatus.CustID; 
                 document.getElementById('customer_name').value = soDetails.CustName;  
-                document.getElementById('customer_address').value = soDetails.CustAddr1;  
+                document.getElementById('customer_address').value = 
+                [soDetails.ShipToAddr1,soDetails.CustAddr1, soDetails.ContDistrict, soDetails.ContAmphur, soDetails.ContProvince, soDetails.ContPostCode]
+                .filter(Boolean) // กรองค่าที่เป็น null หรือ undefined หรือว่าง
+                .join(', ');
                 document.getElementById('customer_tel').value = soDetails.ContTel;  
                 document.getElementById('sale_name').value = SoStatus.createdBy; 
          
@@ -480,6 +489,7 @@ SOLists.forEach((soItem) => {
                 <td><input type="text" class="form-control1" name="item_id[]" value="${item.GoodID}"readonly></td>
                 <td><input type="text" class="form-control1" name="item_name[]" value="${safeGoodName}"readonly></td>
                 <td><input type="text" class="form-control1 item_quantity" name="item_quantity[]" value="${item.GoodQty2}" ></td>
+                <td><input type="text" class="form-control1" name="unit_price[]" value="${item.GoodPrice2}"readonly></td>
                 <td><button type="button" class="btn btn-danger delete-btn">ลบ</button></td>
             `;
             tableBody.appendChild(newRow);

@@ -375,13 +375,7 @@ th {
     
 
 
-    <div class="top-section">
-        <form method="GET" action="{{ route('admin.dashboardadmin') }}" class="filter-form">
-            <label style="color: rgb(0, 0, 0)" for="date">📅 วันที่:</label>
-            <input type="date" id="date" name="date" value="{{ request('date') }}">
-            <button type="submit">ค้นหา</button>
-        </form>
-    
+    <div class="top-section">    
         <div class="search-box">
             <input type="text" id="search-input" placeholder=" ค้นหา เลขที่บิล" onkeyup="searchTable()">
         </div>

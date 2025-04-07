@@ -17,10 +17,28 @@ class DocController extends Controller
         return view('document.dashboarddoc');
     }
 
-    public function dashboarddoc()
+    public function dashboarddoc(Request $request)
     {
-        $docbill = Docbills::all();
-        return view('document.dashboarddoc', compact('docbill'));
+        $date = $request->get('date');
+        $message = null;  // กำหนดค่าเริ่มต้นให้กับตัวแปร $message
+        
+        // ถ้าผู้ใช้กรอกวันที่ ให้กรองข้อมูลที่มีวันที่ตรงกับที่เลือกs
+        if ($date) {
+            $docbill = Docbills::whereDate('time', $date)  // ใช้ชื่อคอลัมน์ที่ถูกต้อง
+                        ->orderBy('doc_id', 'desc')
+                        ->get();
+            
+            // ตรวจสอบว่ามีข้อมูลหรือไม่
+            if ($docbill->isEmpty()) {
+                $message = 'ไม่พบข้อมูลที่ตรงกับวันที่เลือก';
+            } 
+        } else {
+            // ถ้าไม่ได้กรอกวันที่ จะดึงข้อมูลทั้งหมด
+            $docbill = Docbills::orderBy('doc_id', 'desc')
+                        ->get();
+        }
+
+        return view('document.dashboarddoc', compact('docbill', 'message'));
     }
 
     public function insertdoc()

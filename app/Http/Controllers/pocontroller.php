@@ -12,13 +12,30 @@ class PoController extends Controller
     {
         return view('po.dashboardpo');
     }
-    public function dashboardpo()
+
+    public function dashboardpo(Request $request)
     {
-        $pobill = Pobills::all();
+        $date = $request->get('date');
+        $message = null;  // กำหนดค่าเริ่มต้นให้กับตัวแปร $message
+        
+        // ถ้าผู้ใช้กรอกวันที่ ให้กรองข้อมูลที่มีวันที่ตรงกับที่เลือก
+        if ($date) {
+            $pobill = Pobills::whereDate('time', $date)  // ใช้ชื่อคอลัมน์ที่ถูกต้อง
+                        ->orderBy('po_detail_id', 'desc')
+                        ->get();
+            
+            // ตรวจสอบว่ามีข้อมูลหรือไม่
+            if ($pobill->isEmpty()) {
+                $message = 'ไม่พบข้อมูลที่ตรงกับวันที่เลือก';
+            } 
+        } else {
+            // ถ้าไม่ได้กรอกวันที่ จะดึงข้อมูลทั้งหมด
+            $pobill = Pobills::orderBy('po_detail_id', 'desc')
+                        ->get();
+        }
 
-        return view('po.dashboardpo', compact('pobill'));
+        return view('po.dashboardpo', compact('pobill', 'message'));
     }
-
     public function insertpo()
     {
         return view('po.insertpo');

@@ -386,12 +386,6 @@
 
     <div class="container">
         <div class="top-section">
-                <form method="GET" action="{{ route('admin.dashboardadmin') }}" class="filter-form">
-                    <label for="date">📅 วันที่:</label>
-                    <input type="date" id="date" name="date" value="{{ request('date') }}">
-                    <button type="submit">ค้นหา</button>
-                </form>
-
             <div class="button-group">
                 <button id="summitso" onclick="updateStatuspdf()">ปริ้นเอกสารSO</button>
                 <a href="dashboardadmin"><button style="background-color: red">ปริ้นเอกสารเส้นทางการเดินรถ</button></a>

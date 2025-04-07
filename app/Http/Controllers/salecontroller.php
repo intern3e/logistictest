@@ -56,7 +56,7 @@ public function dashboard(Request $request)
         
         // ถ้าผู้ใช้กรอกวันที่ ให้กรองข้อมูลที่มีวันที่ตรงกับที่เลือก
         if ($date) {
-            $bill = Bill::whereDate('date_of_dali', $date)  // ใช้ชื่อคอลัมน์ที่ถูกต้อง
+            $bill = Bill::whereDate('time', $date)  // ใช้ชื่อคอลัมน์ที่ถูกต้อง
                         ->orderBy('so_detail_id', 'desc')
                         ->with('customer')
                         ->get();
@@ -95,58 +95,6 @@ public function showForm()
     return view('sale.insertdata');
     }
 
-// public function findData(Request $request)
-// {
-//     // รับค่า 'so_number' จากฟอร์ม
-//     $sonumber = $request->input('so_number');
-
-//     // ค้นหาข้อมูลจากตาราง tblsos ตาม 'so_number'
-//     $so = tblsos::where('so_id', $sonumber)->first();
-
-//     if ($so) {
-//         // ดึง 'customer_id' จาก tblsos
-//         $customer_id = $so->customer_id;
-
-//         // ค้นหาข้อมูลลูกค้า
-//         $customer = tblcustomer::where('customer_id', $customer_id)->first();
-
-//         // ค้นหาสินค้าทั้งหมดที่เกี่ยวข้องกับ so_id
-//         $so_items = so_item_id::where('so_id', $sonumber)->get(); // ดึงข้อมูลทั้งหมด
-
-//         // ตรวจสอบว่าพบข้อมูลลูกค้าหรือไม่
-//         if ($customer) {
-//             $customer_name = $customer->customer_name;
-//             $customer_tel = $customer->customer_tel; 
-//             $customer_address = $customer->customer_address;
-//             $customer_la_long = $customer->customer_la_long;
-//         } else {
-//             $customer_name = 'ไม่พบข้อมูลลูกค้า';
-//             $customer_tel = '-'; 
-//             $customer_address = '-';
-//             $customer_la_long = '-';
-//         }
-
-//         // ตรวจสอบว่ามีสินค้าไหม
-//         if ($so_items->isEmpty()) {
-//             $items = [['item_id' => 'ไม่พบข้อมูลสินค้า']];
-//         } else {
-//             $items = $so_items->map(function ($item) {
-//                 return [
-//                     'item_id' => $item->item_id,
-//                     'item_name' => $item->item_name,  
-//                     'item_quantity' => $item->item_quantity,    
-//                     'item_unit_price' => $item->item_unit_price  
-//                 ];
-//             })->toArray(); 
-//         }
-        
-//         // ส่งข้อมูลไปยัง View
-//         return view('sale.insertdata', compact('so', 'customer_name', 'customer_tel', 'customer_address', 'customer_la_long', 'items'));
-//     } else {
-//         // ถ้าไม่พบข้อมูล SO ที่ตรงกับหมายเลขที่กรอก
-//         return redirect()->route('sodetail')->with('error', 'ไม่พบข้อมูล SO ที่ตรงกับหมายเลขที่กรอก');
-//     }
-// }
 
 public function insert(Request $request)
 {
@@ -172,6 +120,8 @@ public function insert(Request $request)
             'item_name.*' => 'string',
             'item_quantity' => 'required|array',
             'item_quantity.*' => 'string',
+            'unit_price' => 'required|array',
+            'unit_price.*' => 'string',
             'status' => 'nullable|array',
             'statuspdf' => 'nullable|array',
             'POdocument' => 'max:2048' 
@@ -250,6 +200,7 @@ public function insert(Request $request)
         $item_ids = $request->input('item_id');
         $item_names = $request->input('item_name');
         $item_quantities = $request->input('item_quantity');
+        $unit_price = $request->input('unit_price');
         $status_checked = $request->input('status', []);
 
         // **🔹 Insert into Bill Details**
@@ -263,10 +214,11 @@ public function insert(Request $request)
             $bill_detail->item_id = $item_ids[$index];
             $bill_detail->item_name = $item_names[$index];
             $bill_detail->quantity = $item_quantities[$index];
+            $bill_detail->unit_price = $unit_price[$index];
             $bill_detail->save();
         }
         DB::commit();
-        return response()->json(['success' => 'เปิดบิลสำเร็จ']);
+        return response()->json(['success' => 'เปิดบิลสำเร็จ เลขที่บิล:' . $so_detail_id]);
         Log::info('so_detail_id: ' . $so_detail_id);
 
     } catch (\Exception $e) {

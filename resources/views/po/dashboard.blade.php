@@ -288,12 +288,32 @@
 @endif
 
 <!-- Filter & Search Section -->
-<div class="filter-container">
-    <form method="GET" action="{{ route('sale.dashboard') }}" class="filter-form">
+  <div class="filter-container">
+    <form method="GET" action="{{ route('po.dashboardpo') }}" class="filter-form" id="autoSearchForm">
         <label for="date">📅 วันที่:</label>
-        <input type="date" id="date" name="date" value="{{ request('date') }}">
-        <button type="submit">กรอง</button>
+        <input type="date" id="date" name="date" value="{{ request('date', \Carbon\Carbon::today()->format('Y-m-d')) }}">
+        <button type="submit" style="display: none;">ค้นหา</button>
     </form>
+</div>
+
+<script>
+    const form = document.getElementById('autoSearchForm');
+    const dateInput = document.getElementById('date');
+
+    // ส่งฟอร์มเมื่อเปลี่ยนวันที่
+    dateInput.addEventListener('change', () => {
+        form.submit();
+    });
+
+    // ส่งฟอร์มอัตโนมัติเมื่อเข้าหน้าเว็บครั้งแรกเท่านั้น
+    window.addEventListener('load', () => {
+        if (!sessionStorage.getItem('hasAutoSubmitted')) {
+            sessionStorage.setItem('hasAutoSubmitted', 'true');
+            form.submit();
+        }
+    });
+</script>
+
 
     <div class="search-box">
         <input type="text" id="search-input" placeholder=" ค้นหา เลขที่บิล" onkeyup="searchTable()">

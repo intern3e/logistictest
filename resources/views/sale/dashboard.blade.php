@@ -181,14 +181,17 @@ table a:hover {
     border-radius: 5px;
     width: 100%;
     max-width: 1000px;
+    max-height: 70%;
+    overflow-y: auto;
     position: relative;
     box-shadow: 0 0 15px rgba(0, 0, 0, 0.2);
 }
 
+
 .close-btn {
     position: absolute;
     top: 0;
-    right: 15px;
+    right: 5px;
     font-size: 20px;
     cursor: pointer;
     color: #343a40;
@@ -237,22 +240,43 @@ textarea {
         <div class="buttons">
             <span>👤 ผู้ใช้: {{ session('emp_name', 'Guest') }}</span>
             @csrf
-            <a href="adminSO" button  type="submit" class="btn btn-danger">🚪 หน้าหลัก</a>
+            <a href="SOlist" button  type="submit" class="btn btn-danger">🚪 หน้าหลัก</a>
         </div>
     </div>
     
     <!-- Filter & Search Section -->
     <div class="filter-container">
-    <form method="GET" action="{{ route('sale.dashboard') }}" class="filter-form">
-    <label for="date">📅 วันที่:</label>
-    <input type="date" id="date" name="date" value="{{ request('date', \Carbon\Carbon::today()->format('Y-m-d')) }}">
-    <button type="submit">ค้นหา</button>
-</form>
-
+        <form method="GET" action="{{ route('sale.dashboard') }}" class="filter-form" id="autoSearchForm">
+            <label for="date">📅 วันที่:</label>
+            <input type="date" id="date" name="date" value="{{ request('date', \Carbon\Carbon::today()->format('Y-m-d')) }}">
+            <button type="submit" style="display: none;">ค้นหา</button>
+        </form>
+  
     
-        <div class="search-box">
-            <input type="text" id="search-input" placeholder=" ค้นหา เลขที่บิล" onkeyup="searchTable()">
-        </div>
+    <script>
+        const form = document.getElementById('autoSearchForm');
+        const dateInput = document.getElementById('date');
+    
+        // ส่งฟอร์มเมื่อเปลี่ยนวันที่
+        dateInput.addEventListener('change', () => {
+            form.submit();
+        });
+    
+        // ส่งฟอร์มอัตโนมัติเมื่อเข้าหน้าเว็บครั้งแรกเท่านั้น
+        window.addEventListener('load', () => {
+            if (!sessionStorage.getItem('hasAutoSubmitted')) {
+                sessionStorage.setItem('hasAutoSubmitted', 'true');
+                form.submit();
+            }
+        });
+    </script>
+    
+    
+    
+    
+    <div class="search-box">
+        <input type="text" id="search-input" placeholder=" ค้นหา เลขที่บิล" onkeyup="searchTable()">
+    </div>
     </div>
     
     <div class="table-container">
@@ -301,8 +325,8 @@ textarea {
                             '{{ $item->customer_address }}',
                             '{{ \Carbon\Carbon::parse($item->date_of_dali)->format('d/m/Y') }}',
                             '{{ $item->sale_name}}',
-                            '{{ $item->notes}}',
                             '{{ $item->POdocument}}',
+                            '{{ $item->notes}}',
                         )">
                     เพิ่มเติม
                  </a></td>
@@ -345,13 +369,14 @@ textarea {
                             <th>รหัสสินค้า</th>
                             <th>รายการ</th>
                             <th>จำนวน</th>
+                            <th>ราคาต่อหน่วย</th>
                         </tr>
                     </thead>
                     <tbody id="popup-body">
                     </tbody>
                 </table>
                 <br>
-                <textarea id="popup-body-3" readonl style="width: 950px; height: 70px;">
+                <textarea id="popup-body-3" readonl style="width: 950px; height: 70px;" readonly>
                 </textarea>
                 
 
@@ -362,7 +387,7 @@ textarea {
     
    
  <script>
-        function openPopup(soDetailId,so_id,ponum,customer_name,customer_tel,customer_address,date_of_dali,sale_name) {
+        function openPopup(soDetailId,so_id,ponum,customer_name,customer_address,date_of_dali,sale_name,POdocument,notes) {
         document.getElementById("popup").style.display = "flex"; // แสดง Popup
     
         let popupBody = document.getElementById("popup-body-1");
@@ -372,13 +397,13 @@ textarea {
                 <td>${so_id}</td>
                 <td>${ponum}</td>
                 <td>${customer_name}</td>
-                <td>${customer_tel}</td>
                 <td>${customer_address}</td>
                 <td>${date_of_dali}</td>
                 <td>${sale_name}</td>
+               <td><a href="/storage/po_documents/${POdocument}" target="_blank">${POdocument}</a></td>
             </tr>
         `;
-    
+        document.getElementById("popup-body-3").value = notes;
         let secondPopupBody = document.getElementById("popup-body");
         secondPopupBody.innerHTML = "<tr><td colspan='4'>Loading...</td></tr>";
     
@@ -407,14 +432,22 @@ textarea {
                 secondPopupBody.innerHTML = "<tr><td colspan='4'>เกิดข้อผิดพลาด</td></tr>";
             });
     }
-    
-        // ฟังก์ชันปิด Popup
-        function closePopup() {
-            document.getElementById("popup").style.display = "none"; // ซ่อน Popup
-        }
+       
+           // ฟังก์ชั่นปิด Popup
+function closePopup() {
+    document.getElementById('popup').style.display = 'none';
+}
+
+// ฟังก์ชั่นปิด Popup เมื่อคลิกนอกพื้นที่ของ Popup
+window.onclick = function(event) {
+    var popup = document.getElementById('popup');
+    if (event.target === popup) {
+        closePopup();
+    }
+}
     
     </script>
-<script>
+ <script>
     function searchTable() {
         let searchInput = document.getElementById("search-input").value.toLowerCase();
         let table = document.querySelector("table tbody");
@@ -432,34 +465,11 @@ textarea {
             }
         }
     }
-    function deleteBill(soDetailId) {
-    // Ask for confirmation before deleting
-    const confirmation = confirm("คุณต้องการลบบิลนี้หรือไม่?");
-    if (confirmation) {
-        fetch(/delete-bill/${soDetailId}, {
-            method: 'DELETE',
-            headers: {
-                'Content-Type': 'application/json',
-                'X-CSRF-TOKEN': '{{ csrf_token() }}'
-            }
-        })
-        .then(response => response.json())
-        .then(data => {
-            if (data.success) {
-                alert(data.success); // Show success message
-                closePopup(); // Close the popup after successful delete
-                location.reload(); // Reload the page to reflect the changes
-            } else {
-                alert(data.error); // Show error message if deletion fails
-            }
-        })
-        .catch(error => {
-            console.error("Error deleting bill:", error);
-            alert("เกิดข้อผิดพลาดในการลบบิล");
-        });
-    }
-}
-    </script>
+    window.onload = function() {
+// Sort the rows by 'so_detail_id' in descending order on page load
+sortTableDescByColumn(0); // Assuming 'so_detail_id' is in the first column (index 0)
+};
+</script>
 
 
 
