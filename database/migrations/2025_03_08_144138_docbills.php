@@ -12,12 +12,11 @@ return new class extends Migration
     public function up()
     {
         Schema::create('docbills', function (Blueprint $table) {
-            $table->id('doc_id'); 
-            $table->string('so_id')->nullable();
+            $table->string('doc_id'); 
             $table->integer('doctype');
             $table->string('customer_id')->nullable();
             $table->string('customer_name')->nullable();
-            $table->text('additional_notes')->nullable();
+            $table->text('notes')->nullable();
         });
     }
 

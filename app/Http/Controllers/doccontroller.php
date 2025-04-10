@@ -47,89 +47,113 @@ class DocController extends Controller
     }
     public function insertDocu(Request $request)
     {
-        $validator = Validator::make($request->all(), [
-            'so_id' => 'nullable',
-            'doctype' => 'required',
-            'emp_name' => 'required',
-            'contact_name' => 'required',
-            'customer_name' => 'required',
-            'customer_tel' => 'required|string',
-            'customer_address' => 'nullable|string',
-            'customer_la_long' => 'required|string',
-            'revdate' => 'required',
-            'notes' => 'required|string',
-        ]);
-
-        if ($validator->fails()) {
-            return response()->json(['error' => $validator->errors()->first()], 400);
-        }
-        $currentYear = date('Y') + 543;
-        $currentYear = substr($currentYear, -2); 
-        $currentMonth = date('m'); // เดือนปัจจุบัน 2 หลัก (เช่น 04)
-        $prefix = "T{$currentYear}{$currentMonth}X"; // สร้าง prefix เช่น 3E6804X
-        
-        // หาเลข running number ล่าสุด
-        $latestBill =Docbills::where('doc_id', 'like', $prefix . '%')
-                        ->orderBy(DB::raw('CAST(SUBSTRING(doc_id, 8) AS UNSIGNED)'), 'desc')
-                        ->first();
-        
-        if ($latestBill) {
-            // ถ้ามีแล้ว ดึงเลขล่าสุดและเพิ่มอีก 1
-            $latestNumber = (int) substr($latestBill->doc_id, -4);
-            $nextNumber = $latestNumber + 1;
-        } else {
-            // ถ้ายังไม่มี เริ่มที่ 1
-            $nextNumber = 1;
-        }
-        
-        // สร้าง doc_id ในรูปแบบที่ต้องการ (เช่น )
-        $doc_id = $prefix . str_pad($nextNumber, 4, '0', STR_PAD_LEFT);
-
-        // ตรวจสอบว่ามี doc_id นี้อยู่แล้วหรือไม่ เพื่อป้องกันการซ้ำ
-        $exists = Docbills::where('doc_id', $doc_id)->exists();
-        if ($exists) {
-            // ถ้ามีแล้ว ให้เพิ่มเลขต่อไปเรื่อยๆ จนกว่าจะไม่ซ้ำ
-            $i = $nextNumber + 1;
-            do {
-                $doc_id= $prefix . str_pad($i, 4, '0', STR_PAD_LEFT);
-                $exists = Docbills::where('doc_id', $doc_id)->exists();
-                $i++;
-            } while ($exists);
-        }
-
+        DB::beginTransaction();
         try {
-            DB::table('docbills')->insert([
-                'so_id' => $request->so_id,
-                'doctype' => $request->doctype,
-                'doc_id' => $doc_id,
-                'emp_name' => $request->emp_name,
-                'status' => 0,
-                'contact_name' => $request->contact_name,
-                'customer_name' => $request->customer_name,
-                'customer_tel' => $request->customer_tel,
-                'customer_address' => $request->customer_address,
-                'customer_la_long' => $request->customer_la_long,   
-                'revdate' => $request->revdate,
-                'notes' => $request->notes,
+            $request->validate([
+                'emp_name' => 'required|string|max:255',
+                'doctype' => 'required|string|max:255',
+                'com_name' => 'required|string|max:255',
+                'contact_name' => 'required|string|max:255',
+                'contact_tel' => 'nullable|string|max:255',
+                'com_address' => 'required|string|max:255',
+                'com_la_long' => 'required|string|max:255',
+                'time' => 'required|date',
+                'notes' => 'nullable|string',
+                'item_name' => 'required|array',
+                'item_name.*' => 'string',
+                'item_quantity' => 'required|array',
+                'item_quantity.*' => 'string',
+                'unit_price' => 'required|array',
+                'unit_price.*' => 'string',
+                'status' => 'nullable|array',
+                'amount' => 'required',
             ]);
-
-            return response()->json(['success' => 'บันทึกข้อมูลสำเร็จ']);
-        } catch (\Exception $e) {
-            return response()->json(['error' => 'เกิดข้อผิดพลาดในการบันทึกข้อมูล: ' . $e->getMessage()], 500);
-        }
-    }
-    public function getdocBillDetail($doc_id)
-    {
-        try {
-            $docbillDetails = docbills::where('doc_id', $doc_id)->get();
+            $currentYear = date('Y') + 543;
+            $currentYear = substr($currentYear, -2); 
+            $currentMonth = date('m'); 
+            $prefix = "T{$currentYear}{$currentMonth}X"; 
             
-            if ($docbillDetails->isEmpty()) {
-                return response()->json([]);
+            $latestBill = Docbills::where('doc_id', 'like', $prefix . '%')
+                            ->orderBy(DB::raw('CAST(SUBSTRING(doc_id, 8) AS UNSIGNED)'), 'desc')
+                            ->first();
+            
+            if ($latestBill) {
+                $latestNumber = (int) substr($latestBill->doc_id, -4);
+                $nextNumber = $latestNumber + 1;
+            } else {
+                $nextNumber = 1;
             }
+            
+            $doc_id = $prefix . str_pad($nextNumber, 4, '0', STR_PAD_LEFT);
+    
+           
+            $exists = Docbills::where('doc_id', $doc_id)->exists();
+            if ($exists) {
+                $i = $nextNumber + 1;
+                do {
+                    $doc_id = $prefix . str_pad($i, 4, '0', STR_PAD_LEFT);
+                    $exists = Docbills::where('docid', $doc_id)->exists();
+                    $i++;
+                } while ($exists);
+            }
+    
+            // **🔹 Insert into Bills**
+            $doc = new Docbills();
+            $doc->doc_id = $doc_id; // ใช้ so_detail_id ที่สร้างขึ้นใหม่
+            $doc->status = 0;
+            $doc->emp_name = $request->input('emp_name');
+            $doc->com_name = $request->input('com_name');
+            $doc->contact_name = $request->input('contact_name');
+            $doc->contact_tel = $request->input('contact_tel');
+            $doc->com_address = $request->input('com_address');
+            $doc->com_la_long = $request->input('com_la_long');
+            $doc->notes = $request->input('notes');
+            $doc->time = $request->input('time');
+            $doc->doctype = $request->input('doctype'); 
+            $doc->amount = $request->input('amount'); 
 
-            return response()->json($docbillDetails);
+            $doc->save();
+            $item_names = $request->input('item_name');
+            $item_quantities = $request->input('item_quantity');
+            $unit_price = $request->input('unit_price');
+            $status_checked = $request->input('status', []);
+
+            foreach ($item_names as $index => $item_name) {  // เปลี่ยนชื่อจาก $item_names เป็น $item_name
+                if (!isset($status_checked[$index])) {
+                    continue;  // ถ้าสถานะไม่ถูกเลือกข้ามไป
+                }
+
+                $doc_detail = new docbillsdetail();
+                $doc_detail->doc_id = $doc_id; 
+                $doc_detail->item_name = $item_name;  // ใช้ $item_name ที่ได้จาก foreach
+                $doc_detail->quantity = $item_quantities[$index];
+                $doc_detail->unit_price = $unit_price[$index];
+                $doc_detail->save();  // บันทึกข้อมูลลงในฐานข้อมูล
+            }
+            DB::commit();
+            return response()->json(['success' => 'เปิดบิลสำเร็จ เลขที่บิล:' . $doc_id]);
+            Log::info('doc_id: ' . $doc_id);
+    
         } catch (\Exception $e) {
-            return response()->json(["error" => $e->getMessage()], 500);
+            DB::rollBack();
+            Log::error($e->getMessage());
+            return response()->json(['error' => 'เกิดข้อผิดพลาด:ใส่ข้อมูลให้ครบถ้วน ' . $e->getMessage()], 500);
         }
     }
+
+    public function getDocBillDetail($doc_id)
+{
+    try {
+        // ดึงข้อมูลรายละเอียดของบิลจาก docbillsdetail
+        $doc_details = Docbillsdetail::where('doc_id', $doc_id)->get();
+        
+        if ($doc_details->isEmpty()) {
+            return response()->json([], 200); // ส่งคืน array ว่าง ถ้าไม่มีข้อมูล
+        }
+
+        return response()->json($doc_details, 200);
+    } catch (\Exception $e) {
+        return response()->json(['error' => 'เกิดข้อผิดพลาด'], 500);
+    }
+}
 }

@@ -4,7 +4,12 @@
     <meta name="csrf-token" content="{{ csrf_token() }}">
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ระบบจัดเตรียมDoc</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/0.4.1/html2canvas.min.js"></script>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<!-- <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script> -->
+
     <style>
         body {
             font-family: 'Poppins', sans-serif;
@@ -13,7 +18,7 @@
             padding: 0;
         }
         .header {
-            background: linear-gradient(to right, #0e50ad, #3a6073);
+            background-color: #343a40;
             padding: 15px 30px;
             color: white;
             display: flex;
@@ -200,7 +205,7 @@
         }
 
         th {
-            background-color: #0e50ad;
+            background-color: #343a40;
             color: white;
             text-transform: uppercase;
         }
@@ -315,7 +320,7 @@
         <input type="date" id="date" name="date" value="{{ request('date', \Carbon\Carbon::today()->format('Y-m-d')) }}">
         <button type="submit" style="display: none;">ค้นหา</button>
     </form>
-</div>
+
 
 <script>
     const form = document.getElementById('autoSearchForm');
@@ -347,60 +352,67 @@
         
         </div>
         <div class="table-container">
-            <table>
-                <input type="checkbox" id="checkAll" onclick="toggleCheckboxes()"> ทั้งหมด
-                <thead>
-                    <tr>
-                        <th>ปริ้นเอกสาร</th>
-                        <th>เลขที่บิล</th>
-                        <th>เลขที่อ้างอิง</th>
-                        <th>ชื่อ</th>
-                        <th>ที่อยู่</th>
-                        <th>ละติจูด ลองจิจูด</th>
-                        <th>ประเภทบิล</th>
-                        <th>ผู้เปิดบิล</th>
-                        <th>วันที่จัดส่ง</th>
-                        <th>ข้อมูลรายละเอียด</th>
-                    </tr>
-                </thead>
-                <tbody id="table-body">
-                    @foreach($docbill as $item)
-                    @if($item->status == 0)
-                    <tr>
-                        <td>
-                            <input type="checkbox" class="form-control1" name="status[]" data-doc-detail-id="{{ $item->doc_id }}">
-                        </td>
-                        <td>{{ $item->doc_id }}</td>
-                        <td>{{ $item->so_id }}</td>
-                        <td>{{ $item->customer_name }}</td>
-                        <td>{{ $item->customer_address }}</td>
-                        <td>{{ $item->customer_la_long }}</td>
-                        <td>{{ $item->doctype }}</td>
-                        <td>{{ $item->emp_name }}</td>
-                        <td>{{ \Carbon\Carbon::parse($item->revdate)->format('d/m/Y') }}</td>
-                        <td>
-                            <a href="javascript:void(0);" onclick="openPopup(
-                            '{{ $item->doc_id }}',
-                            '{{ $item->customer_name }}',
-                            '{{ $item->customer_address }}',
-                            '{{ $item->revdate }}',
-                            '{{ $item->emp_name }}',
-                            '{{ $item->notes }}',
-                            )">
-                                เพิ่มเติม
-                            </a>
-                        </td>
-                    </tr>
-                    @endif
-                    @endforeach
-                </tbody>
-            </table>
-        
-            @if(isset($message))
-            <br>
-            <p style="text-align: center">{{ $message }}</p>
+    <table>
+        <input type="checkbox" id="checkAll" onclick="toggleCheckboxes()"> ทั้งหมด
+        <thead>
+            <tr>
+                <th>ปริ้นเอกสาร</th>
+                <th>เลขที่บิล</th>
+                <th>บริษัท</th>
+                <th>ที่อยู่</th>
+                <th>ละติจูด ลองจิจูด</th>
+                <th>ผู้ติดต่อ</th>
+                <th>เบอร์โทร</th>
+                <th>ประเภทงาน</th>
+                <th>ผู้เปิดบิล</th>
+                <th>วันที่</th>
+                <th>ข้อมูลรายละเอียด</th>
+                <th>pdf</th>
+            </tr>
+        </thead>
+        <tbody id="table-body">
+            @foreach($docbill as $item)
+            @if($item->status == 0)
+            <tr>
+                <td>
+                    <input type="checkbox" class="form-control1" name="status[]" data-doc-detail-id="{{ $item->doc_id }}">
+                </td>
+                <td>{{ $item->doc_id }}</td>
+                <td>{{ $item->com_name }}</td>
+                <td>{{ $item->com_address }}</td>
+                <td>{{ $item->com_la_long }}</td>
+                <td>{{ $item->contact_name }}</td>
+                <td>{{ $item->contact_tel}}</td>
+                <td>{{ $item->doctype }}</td>
+                <td>{{ $item->emp_name }}</td>
+                <td>{{ \Carbon\Carbon::parse($item->time)->format('d/m/Y') }}</td>
+                <td>
+                    <a href="javascript:void(0);" onclick="openPopup(
+                        '{{ $item->doc_id }}',
+                        '{{ $item->com_name }}',
+                        '{{ $item->com_address }}',
+                        '{{ $item->contact_name}}',
+                        '{{ $item->contact_tel}}',
+                        '{{ $item->amount}}',
+                        '{{ $item->notes }}',
+                    )">
+                        เพิ่มเติม
+                    </a>
+                </td>
+                <td>
+                    <button onclick="downloadRowPDF(this)" class="btn btn-sm btn-outline-danger">📄</button>
+                </td>
+            </tr>
             @endif
-        </div>
+            @endforeach
+        </tbody>
+    </table>
+
+    @if(isset($message))
+    <br>
+    <p style="text-align: center">{{ $message }}</p>
+    @endif
+</div>
         
         <!-- Popup -->
         <div class="popup-overlay" id="popup" style="display: none;">
@@ -411,10 +423,11 @@
                         <thead>
                             <tr>
                                 <th>เลขที่บิล</th>
-                                <th>ชื่อ</th>
+                                <th>บริษัท</th>
                                 <th>ที่อยู่</th>
-                                <th>วันที่จัดส่ง</th>
-                                <th>ผู้เปิดบิล</th>
+                                <th>ผู้ติดต่อ</th>
+                                <th>เบอร์โทร</th>
+                                <th>รวมทั้งหมด</th>
                             </tr>
                         </thead>
                         <tbody id="popup-body-1">
@@ -422,191 +435,261 @@
                     </table>
                     <br>
                     <table>
-                        <thead>
-                            <tr>
-                                <th>แจ้งเพิ่มเติม</th>
-                            </tr>
-                        </thead>
-                        <tbody id="popup-body">
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-        </div>
+                <thead>     
+                    <tr>
+                        <th>รายการ</th>
+                        <th>จำนวน</th>
+                        <th>ราคา/หน่วย</th>
+                    </tr>
+                </thead>
+                <tbody id="popup-body">
+                </tbody>
+            </table>
+             <br>
+                <textarea id="popup-body-3" readonl style="width: 950px; height: 70px;" readonly>
+                </textarea>
+        </div> 
+    </div>
+</div>
         
         <script>
-        function openPopup(doc_id,customer_name,customer_address,revdate,emp_name) {
-            document.getElementById("popup").style.display = "flex"; // แสดง Popup
-        
-            let popupBody = document.getElementById("popup-body-1");
-            popupBody.innerHTML = `
-                <tr>
-                    <td>${doc_id}</td>
-                    <td>${customer_name}</td>
-                    <td>${customer_address}</td>
-                    <td>${revdate}</td>
-                    <td>${emp_name}</td>
-                </tr>
-            `;
-        
-            let secondPopupBody = document.getElementById("popup-body");
-            secondPopupBody.innerHTML = "<tr><td colspan='4'>Loading...</td></tr>";
-        
-            // ใช้ fetch ดึงข้อมูลจาก Laravel
-            fetch(`/get-docbill-detail/${doc_id}`)
-                .then(response => response.json())
-                .then(data => {
-                    if (data.length > 0) {
-                        secondPopupBody.innerHTML = ""; // เคลียร์ข้อมูลเก่า
-                        data.forEach(item => {
-                            secondPopupBody.insertAdjacentHTML("beforeend", `
-                                <tr>
-                                    <td>${item.notes}</td>
-                                </tr>
-                            `);
-                        });
-        
-                    } else {
-                        secondPopupBody.innerHTML = "<tr><td colspan='4'>ไม่มีข้อมูล</td></tr>";
-                    }
-                })
-                .catch(error => {
-                    console.error("Error fetching data:", error);
-                    secondPopupBody.innerHTML = "<tr><td colspan='4'>เกิดข้อผิดพลาด</td></tr>";
-                });
-        }
-        
-        function closePopup() {
-            document.getElementById("popup").style.display = "none"; // ซ่อน Popup
-        }
-        
-        window.onclick = function(event) {
-            let popup = document.getElementById("popup");
-            if (event.target === popup) {
-                closePopup();
+            function openPopup(doc_id,com_name,com_address,contact_name,contact_tel,amount,notes) {
+                document.getElementById("popup").style.display = "flex"; // แสดง Popup
+            
+                let popupBody = document.getElementById("popup-body-1");
+                popupBody.innerHTML = `
+                    <tr>
+                        <td>${doc_id}</td>
+                        <td>${com_name}</td>
+                        <td>${com_address}</td>
+                        <td>${contact_name}</td>
+                        <td>${contact_tel}</td>
+                        <td>${amount}</td>
+                    </tr>
+                `;
+                document.getElementById("popup-body-3").value = notes;
+                let secondPopupBody = document.getElementById("popup-body");
+                secondPopupBody.innerHTML = "<tr><td colspan='4'>กำลังโหลดข้อมูล...</td></tr>";
+                
+                // ดึงข้อมูลรายการสินค้าจาก Laravel Controller
+                fetch(`/get-docbill-detail/${doc_id}`)
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.length > 0) {
+                            secondPopupBody.innerHTML = ""; // เคลียร์ข้อมูลเก่า
+                            data.forEach(item => {
+                                secondPopupBody.insertAdjacentHTML("beforeend", `
+                                    <tr>
+                                        <td>${item.item_name}</td>
+                                        <td>${item.quantity}</td>
+                                        <td>${item.unit_price}</td>
+                                    </tr>
+                                `);
+                            });
+                        } else {
+                            secondPopupBody.innerHTML = "<tr><td colspan='4'>ไม่มีข้อมูล</td></tr>";
+                        }
+                    })
+                    .catch(error => {
+                        console.error("Error fetching data:", error);
+                        secondPopupBody.innerHTML = "<tr><td colspan='4'>เกิดข้อผิดพลาดในการโหลดข้อมูล</td></tr>";
+                    });
             }
-        }
-        </script>
 
-
-<script>
-
-function updateStatus(docDetailIds) {
-    fetch('/update-statusdoc', {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
-        },
-        body: JSON.stringify({ docDetailIds: docDetailIds }) 
-    })
-    .then(response => response.json())
-    .then(data => {
-        if (data.success) {
-            location.reload();
-            console.log("Status updated successfully");
-        } else {
-            console.error("Failed to update status");   
-        }
-    })
-    .catch(error => {
-        console.error("Error updating status:", error);
-    });
-}
-
-
-function searchTable() {
-    let searchInput = document.getElementById("search-input").value.toLowerCase();
-    let table = document.querySelector("table tbody");
-    let rows = table.getElementsByTagName("tr");
-
-    for (let i = 0; i < rows.length; i++) {
-        let row = rows[i];
-        let cells = row.getElementsByTagName("td");
-
-        // Get the content of the second column (บิลลำดับ)
-        let soDetailId = cells[1] ? cells[1].textContent.toLowerCase() : '';
-
-        // Search for the text inside the selected column (บิลลำดับ)
-        if (soDetailId.indexOf(searchInput) > -1) {
-            row.style.display = "";
-        } else {
-            row.style.display = "none";
-        }
+    // ฟังก์ชันปิด Popup
+    function closePopup() {
+        document.getElementById("popup").style.display = "none"; // ซ่อน Popup
     }
-}
 
-    </script>
-
-<script>
-     
-     function createCSV() {
-    const headers = [
-        "เลขที่บิล", "เลขที่อ้างอิง", "ชื่อ", "ที่อยู่",
-        "ละติจูดลองจิจูด", "ประเภทบิล", "ผู้เปิดบิล", "วันที่จัด"
-    ];
-
-    let data = [];
-    let selecteddocDetailIds = []; // เก็บ so_detail_id ของแถวที่เลือก
-
-    let checkboxes = document.querySelectorAll("input[type='checkbox']:checked");
-
-    checkboxes.forEach(checkbox => {
-        let row = checkbox.closest("tr");
-        if (!row) return;
-
-        let cells = row.querySelectorAll("td");
-        let rowData = [];
-
-        // ดึงข้อมูลจากแต่ละเซลล์ (ข้าม checkbox column)
-        cells.forEach((cell, index) => {
-            if (index > 0 && index <= 8) { 
-                rowData.push(`"${cell.textContent.trim()}"`);
+            
+            window.onclick = function(event) {
+                let popup = document.getElementById("popup");
+                if (event.target === popup) {
+                    closePopup();
+                }
             }
+            </script>
+    
+    
+    <script>
+    
+    function updateStatus(docDetailIds) {
+        fetch('/update-statusdoc', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+            },
+            body: JSON.stringify({ docDetailIds: docDetailIds }) 
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                location.reload();
+                console.log("Status updated successfully");
+            } else {
+                console.error("Failed to update status");   
+            }
+        })
+        .catch(error => {
+            console.error("Error updating status:", error);
         });
-
-        // ดึงค่า so_detail_id แล้วเก็บไว้
-        let docDetailId = checkbox.getAttribute("data-doc-detail-id");
-        if (docDetailId) {
-            selecteddocDetailIds.push(docDetailId);
+    }
+    
+    
+    function searchTable() {
+        let searchInput = document.getElementById("search-input").value.toLowerCase();
+        let table = document.querySelector("table tbody");
+        let rows = table.getElementsByTagName("tr");
+    
+        for (let i = 0; i < rows.length; i++) {
+            let row = rows[i];
+            let cells = row.getElementsByTagName("td");
+    
+            // Get the content of the second column (บิลลำดับ)
+            let soDetailId = cells[1] ? cells[1].textContent.toLowerCase() : '';
+    
+            // Search for the text inside the selected column (บิลลำดับ)
+            if (soDetailId.indexOf(searchInput) > -1) {
+                row.style.display = "";
+            } else {
+                row.style.display = "none";
+            }
         }
-
-        data.push(rowData.join(","));
-    });
-
-    if (data.length === 0) {
-        alert("กรุณาเลือกข้อมูลที่ต้องการพิมพ์ CSV");
-        return;
     }
-
-    const csvContent = "\uFEFF" + [headers.join(","), ...data].join("\n");
-
-    const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = "เอกสารเส้นทางเดินรถของเอกสารเพิ่มเติม.csv";
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
-
-
-    if (selecteddocDetailIds.length > 0) {
-        updateStatus(selecteddocDetailIds);
+    
+        </script>
+    
+    <script>
+         
+         function createCSV() {
+        const headers = [
+            "เลขที่บิล", "เลขที่อ้างอิง", "ชื่อ", "ที่อยู่",
+            "ละติจูดลองจิจูด", "ประเภทบิล", "ผู้เปิดบิล", "วันที่จัด"
+        ];
+    
+        let data = [];
+        let selecteddocDetailIds = []; // เก็บ so_detail_id ของแถวที่เลือก
+    
+        let checkboxes = document.querySelectorAll("input[type='checkbox']:checked");
+    
+        checkboxes.forEach(checkbox => {
+            let row = checkbox.closest("tr");
+            if (!row) return;
+    
+            let cells = row.querySelectorAll("td");
+            let rowData = [];
+    
+            // ดึงข้อมูลจากแต่ละเซลล์ (ข้าม checkbox column)
+            cells.forEach((cell, index) => {
+                if (index > 0 && index <= 8) { 
+                    rowData.push(`"${cell.textContent.trim()}"`);
+                }
+            });
+    
+            // ดึงค่า so_detail_id แล้วเก็บไว้
+            let docDetailId = checkbox.getAttribute("data-doc-detail-id");
+            if (docDetailId) {
+                selecteddocDetailIds.push(docDetailId);
+            }
+    
+            data.push(rowData.join(","));
+        });
+    
+        if (data.length === 0) {
+            alert("กรุณาเลือกข้อมูลที่ต้องการพิมพ์ CSV");
+            return;
+        }
+    
+        const csvContent = "\uFEFF" + [headers.join(","), ...data].join("\n");
+    
+        const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = "เอกสารเส้นทางเดินรถของเอกสารเพิ่มเติม.csv";
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+    
+    
+        if (selecteddocDetailIds.length > 0) {
+            updateStatus(selecteddocDetailIds);
+        }
     }
-}
-
-
-function toggleCheckboxes() {
-    var checkAllBox = document.getElementById('checkAll');
-    var checkboxes = document.querySelectorAll('input[type="checkbox"]:not(#checkAll)');
-    checkboxes.forEach(function(checkbox) {
-        checkbox.checked = checkAllBox.checked;
-    });
-}
-
-</script>
-
+    
+    
+    function toggleCheckboxes() {
+        var checkAllBox = document.getElementById('checkAll');
+        var checkboxes = document.querySelectorAll('input[type="checkbox"]:not(#checkAll)');
+        checkboxes.forEach(function(checkbox) {
+            checkbox.checked = checkAllBox.checked;
+        });
+    }
+    </script>
+    <script>
+    async function downloadRowPDF(button) {
+        const { jsPDF } = window.jspdf;
+    
+        // หาแถวที่ปุ่มนั้นอยู่
+        const row = button.closest("tr");
+        const cells = row.querySelectorAll("td");
+    
+        // ดึงข้อมูลจากแต่ละเซลล์
+        const doc_id = cells[1].innerText.trim();
+        const so_id = cells[2].innerText.trim();
+        const name = cells[3].innerText.trim();
+        const address = cells[4].innerText.trim();
+        const revdate = cells[8].innerText.trim(); // Updated to reference the correct cell (revdate is now in the 9th column)
+        const type = cells[6].innerText.trim();
+        const emp = cells[7].innerText.trim();
+        
+    
+        // สร้าง container ชั่วคราวสำหรับ render
+        const pdfContainer = document.createElement("div");
+        pdfContainer.style.position = "relative"; 
+        pdfContainer.style.padding = "20px";
+        pdfContainer.style.width = "500px";
+        pdfContainer.style.background = "#fff";
+        pdfContainer.style.fontFamily = "'Arial', sans-serif";
+        pdfContainer.style.lineHeight = "1.6";
+        pdfContainer.innerHTML = `
+            <h2 style="text-align: center; font-size: 22px; color: #343a40;">📄 ใบสรุปรายการบิล</h2>
+            <hr>
+              <p style="font-size: 12px;"><strong>ประเภทบิล:</strong> ${type}</p>
+            <div style="font-size: 12px; position: absolute; top: 5px; right: 20px; border: 1px solid #000; padding: 10px; text-align: center;">
+                <p style="margin: 0;"><strong>เลขที่บิล</strong></p>
+                <p style="margin: 0;">${doc_id}</p>
+            </div>
+            <p style="font-size: 12px; display: inline-block; margin-right: 2px;"><strong>ชื่อ:</strong></p>
+            <p style="font-size: 12px; display: inline-block; border-bottom: 1px solid #000; padding-bottom: 3px;width: 350px;">${name}</p>
+    
+            <p style="font-size: 12px; display: inline-block; margin-right: 2px;"><strong>วันเวลาส่ง:</strong></p>
+            <p style="font-size: 12px; display: inline-block; border-bottom: 1px solid #000; padding-bottom: 3px;">${revdate}</p>
+            <p style="font-size: 12px;  inline-block; border-bottom: 1px solid #000; padding-bottom: 3px;width: 500px;"><strong>ที่อยู่:</strong> ${address}</p>
+            <p style="font-size: 12px;"><strong>ประเภทบิล:</strong> ${type}</p>
+            <p style="font-size: 12px;"><strong>ผู้เปิดบิล:</strong> ${emp}</p>
+    
+            <hr>
+        `;
+        document.body.appendChild(pdfContainer);
+    
+        // แปลงเป็นภาพแล้วใส่ลง PDF
+        await html2canvas(pdfContainer).then(canvas => {
+            const imgData = canvas.toDataURL("image/png");
+            const pdf = new jsPDF();
+            const pdfWidth = pdf.internal.pageSize.getWidth();
+            const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
+    
+            const margin = 10;
+            pdf.addImage(imgData, "PNG", margin, margin, pdfWidth - 2 * margin, pdfHeight - 2 * margin);
+            pdf.save(`Doc-${doc_id}.pdf`);
+        });
+    
+        // ลบ element ชั่วคราว
+        document.body.removeChild(pdfContainer);
+    }
+    </script>
 </body>
 </html>

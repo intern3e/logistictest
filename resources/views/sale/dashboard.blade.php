@@ -270,10 +270,6 @@ textarea {
             }
         });
     </script>
-    
-    
-    
-    
     <div class="search-box">
         <input type="text" id="search-input" placeholder=" ค้นหา เลขที่บิล" onkeyup="searchTable()">
     </div>
@@ -378,9 +374,6 @@ textarea {
                 <br>
                 <textarea id="popup-body-3" readonl style="width: 950px; height: 70px;" readonly>
                 </textarea>
-                
-
-
             </div>
         </div>
     </div>
