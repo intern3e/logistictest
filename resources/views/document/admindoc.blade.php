@@ -4,307 +4,274 @@
     <meta name="csrf-token" content="{{ csrf_token() }}">
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/0.4.1/html2canvas.min.js"></script>
+    <!-- <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/0.4.1/html2canvas.min.js"></script>
 
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script> -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-<!-- <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script> -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 
     <style>
-        body {
-            font-family: 'Poppins', sans-serif;
-            background-color: #f5f7fa;
-            margin: 0;
-            padding: 0;
-        }
-        .header {
-            background-color: #343a40;
-            padding: 15px 30px;
-            color: white;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            font-size: 1.2rem;
-            border-radius: 8px;
-            margin: 20px auto;
-            width: 90%;
-            box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.2);
-        }
-        .header button {
-            background-color: #e74c3c;
-            color: white;
-            padding: 8px 15px;
-            border: none;
-            border-radius: 5px;
-            cursor: pointer;
-            transition: 0.3s;
-        }
-        .header button:hover {
-            background-color: #c0392b;
-        }
-        .container {
-            background: white;
-            padding: 20px;
-            border-radius: 8px;
-            box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.1);
-            width: 100%;
-            margin: auto;
-        }
-        .table-container {
-            background: #f9f9f9; /* Light gray background for table */
-            margin: 2% 5%;
-            border-radius: 12px;
-            box-shadow: 0px 6px 12px rgba(0, 0, 0, 0.1);
-            overflow: hidden;
-            width: 99%;
-            max-width: 100%; /* Ensure table doesn't overflow the container */
-            transform: scale(0.9); /* Scale down the table to fit the screen */
-            transform-origin: top left; /* Keep the table scaling from the top-left corner */
-        }
+       /* ===== Base ===== */
+body {
+    font-family: 'Poppins', sans-serif;
+    background-color: #f5f7fa;
+    margin: 0;
+    padding: 0;
+    color: #2c3e50;
+}
 
-        table {
-            width: 100%;
-            border-collapse: collapse;
-            text-align: center;
-            word-wrap: break-word; /* Ensure text wraps within table cells */
-            font-size: 1rem; /* Adjust the font size to make it smaller */
-        }
+/* ===== Header ===== */
+.header {
+    background-color: #343a40;
+    padding: 15px 30px;
+    color: white;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 1.2rem;
+    border-radius: 8px;
+    margin: 20px auto;
+    width: 90%;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+}
 
-        th, td {
-            padding: 12px;
-            border: 1px solid #ccc; /* Light gray for borders */
-            font-size: 1rem;
-            white-space: normal; /* Allow wrapping of text in cells */
-        }
+.header button {
+    background-color: #e74c3c;
+    color: white;
+    padding: 8px 15px;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    transition: background 0.3s, transform 0.2s;
+}
 
-        .top-section {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 15px;
-        }
-        .top-section button {
-            padding: 8px 12px;
-            border: none;
-            background: #27ae60;
-            color: white;
-            border-radius: 5px;
-            cursor: pointer;
-            transition: 0.3s;
-        }
-        .top-section {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            margin: 0px 5%;
-        }
+.header button:hover {
+    background-color: #c0392b;
+    transform: translateY(-2px);
+}
 
-        .top-section label {
-            font-weight: bold;
-            color: #2c3e50;
-        }
+/* ===== Container ===== */
+.container {
+    background: white;
+    padding: 30px;
+    border-radius: 12px;
+    box-shadow: 0 6px 18px rgba(0, 0, 0, 0.1);
+    width: 90%;
+    margin: 20px auto;
+}
 
-        .top-section input {
-            padding: 8px;
-            border-radius: 5px;
-            font-size: 1rem;
-        }
-        .top-section button:hover {
-            background: #2980b9;
-        }
-        .filter-container {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-        }
+/* ===== Table Container ===== */
+.table-container {
+    background: #ffffff;
+    margin: 20px auto;
+    border-radius: 12px;
+    box-shadow: 0 6px 18px rgba(0, 0, 0, 0.1);
+    overflow-x: auto;
+    width: 95%;
+    padding: 20px;
+}
 
-        .filter-container input {
-            padding: 8px;
-            border-radius: 5px;
-            border: 1px solid #ccc;
-        }
+/* ===== Table ===== */
+table {
+    width: 100%;
+    border-collapse: collapse;
+    text-align: center;
+    font-size: 0.95rem;
+}
 
-        .filter-container button {
-            background-color: #2ecc71;
-            color: white;
-            padding: 8px 15px;
-            border: none;
-            border-radius: 5px;
-            cursor: pointer;
-            transition: 0.3s;
-        }
+th, td {
+    padding: 15px;
+    border: 1px solid #e0e0e0;
+    white-space: normal;
+}
 
-        .filter-container button:hover {
-            background-color: #27ae60;
-        }
+th {
+    background-color: #343a40;
+    color: white;
+    text-transform: uppercase;
+}
 
-        .button-group {
-            display: flex;
-            gap: 10px;
-        }
+tr:nth-child(odd) {
+    background-color: #f8f9fa;
+}
 
-        .button-group button {
-            padding: 15px 20px;
-            border-radius: 8px;
-            font-weight: bold;
-            text-decoration: none;
-            border: none;
-            cursor: pointer;
-            transition: all 0.3s ease;
-        }
-        .button-group button {
-            background-color: #f39c12;
-            font-size: 16px;
-            color: white;
-            box-shadow: 0px 4px 6px rgba(0, 0, 0, 0.2);
-        }
+tr:hover {
+    background-color: #e1e5ea;
+    transition: background 0.3s;
+}
 
-        .button-group button:hover {
-            background-color: #e67e22;
-            transform: scale(1.05);
-        }
-        .table th, .table td {
-            padding: 12px;
-            border: 1px solid #dcdde1;
-            text-align: center;
-        }
+td a {
+    color: #27ae60;
+    font-weight: bold;
+    text-decoration: none;
+}
 
-        .table th {
-            background-color: #e67e22;
-            color: white;
-            font-weight: bold;
-        }
+td a:hover {
+    text-decoration: underline;
+}
 
-        .table-striped tr:nth-child(odd) {
-            background-color: #f9f9f9;
-        }
+/* ===== Top Section ===== */
+.top-section {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin: 0 5% 20px;
+    flex-wrap: wrap;
+    gap: 15px;
+}
 
-        .table-striped tr:hover {
-            background-color: #ecf0f1;
-        }
+.top-section label {
+    font-weight: bold;
+}
 
-        .link {
-            color: #16a085;
-            font-weight: bold;
-            text-decoration: none;
-        }
-        .link:hover {
-            text-decoration: underline;
-        }
+.top-section input {
+    padding: 8px;
+    border-radius: 5px;
+    border: 1px solid #ccc;
+    font-size: 1rem;
+}
 
-        table {
-            width: 100%;
-            border-collapse: collapse;
-            text-align: center;
-        }
+.top-section button {
+    padding: 8px 15px;
+    background: #27ae60;
+    color: white;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    transition: background 0.3s, transform 0.2s;
+}
 
-        th, td {
-            padding: 12px;
-            border: 1px solid #2c3e50;
-            font-size: 1rem;
-        }
+.top-section button:hover {
+    background: #219150;
+    transform: translateY(-2px);
+}
 
-        th {
-            background-color: #343a40;
-            color: white;
-            text-transform: uppercase;
-        }
+/* ===== Filter Container ===== */
+.filter-container {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
 
-        tr:nth-child(odd) {
-            background-color: #f8f9fa;
-        }
+.filter-container input {
+    padding: 8px;
+    border-radius: 5px;
+    border: 1px solid #ccc;
+}
 
-        .tr {
-            background-color: #f8f9fa;
-        }
+.filter-container button {
+    background-color: #2ecc71;
+    color: white;
+    padding: 8px 15px;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    transition: background 0.3s;
+}
 
-        tr:hover {
-            background-color: #e1e5ea;
-            width: 70%;
-            transition: 0.2s;
-        }
+.filter-container button:hover {
+    background-color: #27ae60;
+}
 
-        td a {
-            color: #27ae60;
-            font-weight: bold;
-            text-decoration: none;
-        }
+/* ===== Button Group ===== */
+.button-group {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+}
 
-        .search-box {
-            flex-grow: 1;
-            max-width: 200px;
-        }
+.button-group button {
+    padding: 12px 20px;
+    border-radius: 8px;
+    font-weight: bold;
+    border: none;
+    background-color: #f39c12;
+    color: white;
+    cursor: pointer;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.2);
+    transition: background 0.3s, transform 0.2s;
+}
 
-        .search-box input {
-            width: 90%;
-            height: 30px;
-            margin: 0px -30%;
-            background: #f8f9fa;
-        }
+.button-group button:hover {
+    background-color: #e67e22;
+    transform: scale(1.05);
+}
 
-        .popup-overlay {
-            display: none;
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(0, 0, 0, 0.5);
-            display: flex;
-            justify-content: center;
-            align-items: center;
-        }
+/* ===== Search Box ===== */
+.search-box {
+    display: flex;
+    align-items: center;
+    max-width: 250px;
+    flex-grow: 1;
+}
 
-        .popup-content {
-            background: linear-gradient(to right, #f0f2f5, #dfe9f3);
-            padding: 20px;
-            border-radius: 10px;
-            width: 80%;
-            max-width: 1000px;
-            height: auto;
-            text-align: center;
-            position: relative;
-            overflow: hidden;
-            max-height: 500px;
-            overflow-y: auto;
-        }
+.search-box input {
+    width: 100%;
+    padding: 8px;
+    border: none;
+    border-radius: 5px;
+    background-color: #e1e5ea;
+    font-size: 1rem;
+}
 
-        .close-btn {
-            position: absolute;
-            top: 10px;
-            right: 10px;
-            cursor: pointer;
-            font-size: 18px;
-            font-weight: bold;
-        }
-        .search-box {
-            flex-grow: 1;
-            max-width: 200px;
-        }
+/* ===== Links ===== */
+.link {
+    color: #16a085;
+    font-weight: bold;
+    text-decoration: none;
+}
 
-        .search-box input {
-            width: 90%;
-            height: 30px;
-            margin: 0px 10px;
-            background: #f8f9fa;
-        }
+.link:hover {
+    text-decoration: underline;
+}
 
-        .search-box {
-            display: flex;
-            align-items: center;
-            transition: 0.3s;
-            max-width: 250px;
-        }
+/* ===== Popup ===== */
+.popup-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.5);
+    justify-content: center;
+    align-items: center;
+}
 
-        .search-box input {
-            flex-grow: 1;
-            padding: 5px;
-            border: none;
-            outline: none;
-            font-size: 1rem;
-            border-radius: 5px;
-            background-color: #e1e5ea;
-        }
+.popup-content {
+    background: linear-gradient(to right, #f0f2f5, #dfe9f3);
+    padding: 30px;
+    border-radius: 10px;
+    width: 90%;
+    max-width: 800px;
+    max-height: 80vh;
+    overflow-y: auto;
+    position: relative;
+    text-align: center;
+}
+
+.close-btn {
+    position: absolute;
+    top: 15px;
+    right: 15px;
+    cursor: pointer;
+    font-size: 20px;
+    font-weight: bold;
+    color: #333;
+}
+
+/* ===== Responsive ===== */
+@media (max-width: 768px) {
+    .header, .container, .table-container {
+        width: 95%;
+    }
+
+    .top-section {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .button-group {
+        justify-content: center;
+    }
+}
 
     </style>
 </head>
@@ -387,17 +354,10 @@
                 <td>{{ $item->emp_name }}</td>
                 <td>{{ \Carbon\Carbon::parse($item->time)->format('d/m/Y') }}</td>
                 <td>
-                    <a href="javascript:void(0);" onclick="openPopup(
-                        '{{ $item->doc_id }}',
-                        '{{ $item->com_name }}',
-                        '{{ $item->com_address }}',
-                        '{{ $item->contact_name}}',
-                        '{{ $item->contact_tel}}',
-                        '{{ $item->amount}}',
-                        '{{ $item->notes }}',
-                    )">
-                        เพิ่มเติม
-                    </a>
+                <a href="javascript:void(0);" onclick="openPopup('{{ $item->doc_id }}', '{{ $item->com_name }}', '{{ $item->com_address }}', '{{ $item->contact_name }}', '{{ $item->contact_tel }}', '{{ $item->amount }}', '{{ $item->notes }}')">
+                    เพิ่มเติม
+                </a>
+
                 </td>
                 <td>
                     <button onclick="downloadRowPDF(this)" class="btn btn-sm btn-outline-danger">📄</button>
@@ -437,6 +397,7 @@
                     <table>
                 <thead>     
                     <tr>
+                        <th>ลำดับ</th>
                         <th>รายการ</th>
                         <th>จำนวน</th>
                         <th>ราคา/หน่วย</th>
@@ -477,15 +438,17 @@
                     .then(data => {
                         if (data.length > 0) {
                             secondPopupBody.innerHTML = ""; // เคลียร์ข้อมูลเก่า
-                            data.forEach(item => {
-                                secondPopupBody.insertAdjacentHTML("beforeend", `
-                                    <tr>
-                                        <td>${item.item_name}</td>
-                                        <td>${item.quantity}</td>
-                                        <td>${item.unit_price}</td>
-                                    </tr>
-                                `);
-                            });
+                            data.forEach((item, index) => {
+                            secondPopupBody.insertAdjacentHTML("beforeend", `
+                                <tr>
+                                    <td>${index + 1}</td>
+                                    <td>${item.item_name}</td>
+                                    <td>${item.quantity}</td>
+                                    <td>${item.unit_price}</td>
+                                </tr>
+                            `);
+                        });
+
                         } else {
                             secondPopupBody.innerHTML = "<tr><td colspan='4'>ไม่มีข้อมูล</td></tr>";
                         }
@@ -628,68 +591,216 @@
         });
     }
     </script>
-    <script>
-    async function downloadRowPDF(button) {
-        const { jsPDF } = window.jspdf;
+<script>
     
-        // หาแถวที่ปุ่มนั้นอยู่
-        const row = button.closest("tr");
-        const cells = row.querySelectorAll("td");
-    
-        // ดึงข้อมูลจากแต่ละเซลล์
-        const doc_id = cells[1].innerText.trim();
-        const so_id = cells[2].innerText.trim();
-        const name = cells[3].innerText.trim();
-        const address = cells[4].innerText.trim();
-        const revdate = cells[8].innerText.trim(); // Updated to reference the correct cell (revdate is now in the 9th column)
-        const type = cells[6].innerText.trim();
-        const emp = cells[7].innerText.trim();
-        
-    
-        // สร้าง container ชั่วคราวสำหรับ render
-        const pdfContainer = document.createElement("div");
-        pdfContainer.style.position = "relative"; 
-        pdfContainer.style.padding = "20px";
-        pdfContainer.style.width = "500px";
-        pdfContainer.style.background = "#fff";
-        pdfContainer.style.fontFamily = "'Arial', sans-serif";
-        pdfContainer.style.lineHeight = "1.6";
-        pdfContainer.innerHTML = `
-            <h2 style="text-align: center; font-size: 22px; color: #343a40;">📄 ใบสรุปรายการบิล</h2>
-            <hr>
-              <p style="font-size: 12px;"><strong>ประเภทบิล:</strong> ${type}</p>
-            <div style="font-size: 12px; position: absolute; top: 5px; right: 20px; border: 1px solid #000; padding: 10px; text-align: center;">
-                <p style="margin: 0;"><strong>เลขที่บิล</strong></p>
-                <p style="margin: 0;">${doc_id}</p>
-            </div>
-            <p style="font-size: 12px; display: inline-block; margin-right: 2px;"><strong>ชื่อ:</strong></p>
-            <p style="font-size: 12px; display: inline-block; border-bottom: 1px solid #000; padding-bottom: 3px;width: 350px;">${name}</p>
-    
-            <p style="font-size: 12px; display: inline-block; margin-right: 2px;"><strong>วันเวลาส่ง:</strong></p>
-            <p style="font-size: 12px; display: inline-block; border-bottom: 1px solid #000; padding-bottom: 3px;">${revdate}</p>
-            <p style="font-size: 12px;  inline-block; border-bottom: 1px solid #000; padding-bottom: 3px;width: 500px;"><strong>ที่อยู่:</strong> ${address}</p>
-            <p style="font-size: 12px;"><strong>ประเภทบิล:</strong> ${type}</p>
-            <p style="font-size: 12px;"><strong>ผู้เปิดบิล:</strong> ${emp}</p>
-    
-            <hr>
-        `;
-        document.body.appendChild(pdfContainer);
-    
-        // แปลงเป็นภาพแล้วใส่ลง PDF
-        await html2canvas(pdfContainer).then(canvas => {
-            const imgData = canvas.toDataURL("image/png");
-            const pdf = new jsPDF();
-            const pdfWidth = pdf.internal.pageSize.getWidth();
-            const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
-    
-            const margin = 10;
-            pdf.addImage(imgData, "PNG", margin, margin, pdfWidth - 2 * margin, pdfHeight - 2 * margin);
-            pdf.save(`Doc-${doc_id}.pdf`);
-        });
-    
-        // ลบ element ชั่วคราว
-        document.body.removeChild(pdfContainer);
+async function downloadRowPDF(button) {
+    const { jsPDF } = window.jspdf;
+
+    const row = button.closest("tr");
+    const cells = row.querySelectorAll("td");
+
+    const doc_id = cells[1].innerText.trim();
+    const name = cells[2].innerText.trim();
+    const address = cells[3].innerText.trim();
+    const type = cells[7].innerText.trim();
+    const emp = cells[8].innerText.trim();
+    const revdate = cells[9].innerText.trim();
+    const contact_tel = cells[6].innerText.trim();
+    const contact_name = cells[5].innerText.trim();
+
+    let popupAmount = '', popupNotes = '';
+
+    const link = row.querySelector('a[onclick^="openPopup"]');
+    if (link) {
+        const onclickAttr = link.getAttribute('onclick');
+        const args = [...onclickAttr.matchAll(/'([^']*)'/g)].map(match => match[1]);
+        popupAmount = args[5] || '';
+        popupNotes = args[6] || '';
     }
-    </script>
+
+    let tableRowsHtml = '';
+    try {
+        const response = await fetch(`/get-docbill-detail/${doc_id}`);
+        const data = await response.json();
+
+        if (data.length > 0) {
+    data.forEach((item, index) => {
+        tableRowsHtml += `
+            <tr>
+                <td style="border: 1px solid #000; padding: 8px;">${index + 1}</td>
+                <td style="border: 1px solid #000; padding: 8px;">${item.item_name}</td>
+                <td style="border: 1px solid #000; padding: 8px; text-align: center;">${item.quantity}</td>
+            </tr>
+        `;
+    });
+
+        } else {
+            tableRowsHtml = `
+                <tr>
+                    <td colspan="3" style="border: 1px solid #000; padding: 8px; text-align: center;">
+                        ไม่มีข้อมูลสินค้า
+                    </td>
+                </tr>
+            `;
+        }
+    } catch (error) {
+        console.error("Error fetching data:", error);
+        tableRowsHtml = `
+            <tr>
+                <td colspan="3" style="border: 1px solid #000; padding: 8px; text-align: center;">
+                    เกิดข้อผิดพลาดในการโหลดข้อมูลสินค้า
+                </td>
+            </tr>
+        `;
+    }
+
+    const pdfContainer = document.createElement("div");
+    pdfContainer.style.position = "relative";
+    pdfContainer.style.padding = "20px";
+    pdfContainer.style.width = "1123px";
+    pdfContainer.style.background = "#fff";
+    pdfContainer.style.fontFamily = "'Arial', sans-serif";
+    pdfContainer.style.lineHeight = "1.6";
+
+    pdfContainer.innerHTML  = 
+    `
+<div style="display: flex; flex-direction: column; min-height: 1650px;">
+
+  <!-- ส่วนหัวเอกสาร -->
+
+<div style="flex: 1;">
+  <div style="display: flex; flex-direction: column; margin-bottom: 5px; width: calc(100% - 200px); position: relative; top: -20px; gap: 10px;">
+    <!-- Title and Bill Type in the same row -->
+  <div style="display: flex; align-items: center; gap: 80px;">
+  <h2 style="margin: 0; font-size: 50px; color: #343a40;">ใบส่งของชั่วคราว</h2>
+  <p style="font-size: 26px; margin: 0;"><strong>( ประเภทบิล:</strong> ${type} )</p>
+</div>
+    <!-- Company Name Section -->
+    <div style="border: 1px solid #343a40; padding: 8px 12px; display: flex; justify-content: center; align-items: center;">
+      <h2 style="margin: 0; font-size: 26px; color: #343a40;">บริษัท ทริปเปิ้ล อี เทรดดิ้ง จำกัด</h2>
+    </div>
+  </div>
+  <hr>
+
+   <div style="font-size: 24px; position: absolute; top: 0px; right: 20px; border: 1px solid #000; padding: 10px; text-align: center; width: 150px;">
+  <p style="margin: 0;"><strong>เลขที่บิล</strong></p>
+  <p style="margin: 0;">${doc_id}</p>
+</div>
+
+<p style="font-size: 24px; margin: 0; text-align: right; position: absolute; top: 120px; right: 20px;">
+  <strong>วันที่:</strong> ${revdate}
+</p>
+
+    <p style="font-size: 20px; border-bottom: 1px solid #000; padding-bottom: 3px; width: 1123px;">
+    <strong>บริษัท :  </strong> ${name}
+</p>
+
+<p style="font-size: 20px; border-bottom: 1px solid #000; padding-bottom: 3px; width: 1123px;">
+    <strong>ที่อยู่ :  </strong> ${address}
+</p>
+
+<p style="font-size: 20px; border-bottom: 1px solid #000; padding-bottom: 3px; width: 1123px;">
+    <strong>ชื่อผู้ติดต่อ :  </strong> ${contact_name}
+</p>
+
+<p style="font-size: 20px; border-bottom: 1px solid #000; padding-bottom: 3px; width: 1123px;">
+    <strong>โทร :  </strong> ${contact_tel}
+</p>
+
+<p style="font-size: 20px; border-bottom: 1px solid #000; padding-bottom: 3px; width: 1123px;">
+    <strong>หมายเหตุ :  </strong> ${popupNotes}
+</p>
+
+<p  style="font-size: 20px; border-bottom: 1px solid #000; padding-bottom: 3px; width: 1123px;">
+    <strong>ผู้เปิดบิล:</strong> ${emp}
+</p>
+
+    <table class="product-table" style="width: 100%; border-collapse: collapse; font-size: 20px;">
+      <thead>
+        <tr>
+       <th style="border: 1px solid #fff; padding: 8px; width: 10%;">ลำดับ</th>
+          <th style="border: 1px solid #fff; padding: 8px; width: 60%;">รายการ</th>
+          <th style="border: 1px solid #fff; padding: 8px; width: 30%;">จำนวน</th>
+        </tr>
+      </thead>
+      <tbody>
+        ${tableRowsHtml}
+      </tbody>
+    </table>
+
+  </div>
+
+  <!-- ส่วนลายเซ็น -->
+  <div>
+    <p style="font-size: 20px; display: inline-block; margin-right: 5px;"><strong>ชื่อผู้รับ:</strong></p>
+    <p style="font-size: 20px; display: inline-block; border-bottom: 1px solid #000; padding-bottom: 3px; width:400px; margin-right: 170px;">&nbsp;</p>
+    <p style="font-size: 20px; display: inline-block; margin-right: 5px;"><strong>ชื่อผู้ส่ง:</strong></p>
+    <p style="font-size: 20px; display: inline-block; border-bottom: 1px solid #000; padding-bottom: 3px; width:400px;">&nbsp;</p>
+  </div>
+
+</div>
+
+
+`;
+// รีเซ็ตปุ่มก่อนเริ่ม
+button.textContent = 'สร้าง PDF';
+button.classList.remove('btn-success');
+button.classList.add('btn-outline-danger');
+button.disabled = false;
+
+// ดำเนินการต่อ
+document.body.appendChild(pdfContainer);
+
+await html2canvas(pdfContainer, { scale: 0.7 }).then(async (canvas) => {
+    const imgData = canvas.toDataURL("image/jpeg", 0.7); // เปลี่ยน PNG เป็น JPEG และกำหนด quality
+    const pdf = new jsPDF();
+    const pdfWidth = pdf.internal.pageSize.getWidth();
+    const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
+
+    const margin = 10;
+    pdf.addImage(imgData, "JPEG", margin, margin, pdfWidth - 2 * margin, pdfHeight - 2 * margin);
+
+    const pdfBlob = pdf.output("blob");
+    const blobUrl = URL.createObjectURL(pdfBlob);
+
+    const newTab = window.open(blobUrl, '_blank');
+
+
+
+    if (newTab) {
+        button.textContent = '✅ สำเร็จ';
+        button.classList.remove('btn-outline-danger');
+        button.classList.add('btn-success');
+        button.disabled = true;
+
+        // เรียก API บันทึกสถานะไปยัง database
+        try {
+            await fetch('/api/save-button-status', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    buttonId: 'your-button-id', // ตรงนี้เปลี่ยนเป็น ID เฉพาะของปุ่ม หรือข้อมูลที่ใช้ระบุตัว
+                    status: 'success'
+                }),
+            });
+        } catch (error) {
+            console.error('Error saving button status:', error);
+        }
+
+    } else {
+        alert('กรุณาอนุญาต popup จากเบราว์เซอร์ของคุณ');
+    }
+});
+
+document.body.removeChild(pdfContainer);
+
+    
+}
+
+
+</script>
+
 </body>
 </html>

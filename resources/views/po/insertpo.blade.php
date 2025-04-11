@@ -215,7 +215,7 @@ select#cartype option:checked {
             <input type="text" id="emp_name" name="emp_name" value="{{ session('emp_name', 'Guest') }}"> 
 
             <label>ชื่อร้านค้า :</label>
-            <input type="text" id="store_name" name="store_name" >
+            <input type="text" id="store_name" name="store_name" readonly>
 
             <label>เบอร์ติดต่อ :</label>
             <input type="text" id="store_tel" name="store_tel" >
@@ -422,7 +422,12 @@ document.getElementById("poSearchForm").addEventListener("submit", async functio
         // กำหนดค่าลงในฟอร์ม
         document.getElementById("recvDate").value = formatDate(data.ShipDate);
         document.getElementById("po_id").value = data.DocuNo || '';
-        document.getElementById("store_tel").value = data.Contact || '';
+        document.getElementById("store_tel").value = data.ContTel || '';
+        document.getElementById('store_name').value = data.VendorName;  
+        document.getElementById('store_address').value = 
+        [data.ContAddr1,data.ContDistrict,data.ContAmphur, data.ContProvince, data.ContPostCode]
+        .filter(Boolean) // กรองค่าที่เป็น null หรือ undefined หรือว่าง
+        .join(', ');
 
         // Clear existing rows in the table before inserting new ones
         let tbody = document.querySelector('table tbody');

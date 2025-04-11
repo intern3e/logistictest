@@ -179,34 +179,41 @@
             <input type="date" id="time" name="time">
         </div>
        
-
         <div class="form-group">
             <label for="doctype">ประเภทบิล</label>
-           <select id="doctype" name="doctype" required onchange="toggleOtherInput()">
-    <option value="" disabled selected>-- กรุณาเลือกประเภทบิล --</option>
-    <option value="รับของ">รับของ</option>
-    <option value="ส่งของ">ส่งของ</option>
-    <option value="รับของ+ส่งของ">รับของ+ส่งของ</option>
-    <option value="อื่นๆ">อื่นๆ</option>
-</select>
-
-<input type="text" id="other_input" name="other_input" style="display:none;" placeholder="กรุณากรอกข้อมูล">
-
-<script>
-    function toggleOtherInput() {
-        var doctype = document.getElementById("doctype").value;
-        var otherInput = document.getElementById("other_input");
-
-        // แสดงช่อง input เมื่อเลือก "อื่นๆ" และซ่อนเมื่อไม่เลือก
-        if (doctype === "อื่นๆ") {
-            otherInput.style.display = "block";
-        } else {
-            otherInput.style.display = "none";
-        }
-    }
-</script>
-
+            <select id="doctype" name="doctype" required onchange="toggleOtherInput()">
+                <option value="" disabled selected>-- กรุณาเลือกประเภทบิล --</option>
+                <option value="รับของ">รับของ</option>
+                <option value="ส่งของ">ส่งของ</option>
+                <option value="รับของ+ส่งของ">รับของ+ส่งของ</option>
+                <option value="อื่นๆ" id="other_option">อื่นๆ</option>
+            </select>
+        
+            <input type="text" id="other_input" name="other_input" style="display:none;" placeholder="กรุณากรอกข้อมูล" oninput="updateOtherOption()">
         </div>
+        
+        <script>
+            function toggleOtherInput() {
+                var doctype = document.getElementById("doctype").value;
+                var otherInput = document.getElementById("other_input");
+        
+                if (doctype === "อื่นๆ") {
+                    otherInput.style.display = "block";
+                } else {
+                    otherInput.style.display = "none";
+                }
+            }
+        
+            function updateOtherOption() {
+                var otherInput = document.getElementById("other_input").value;
+                var otherOption = document.getElementById("other_option");
+        
+                // อัปเดตค่าของ option "อื่นๆ" ด้วยค่าที่กรอก
+                otherOption.value = otherInput;
+                otherOption.text = otherInput || "อื่นๆ"; // ถ้าว่างให้ใช้ "อื่นๆ"
+            }
+        </script>
+    
 
         <div>
             <label>บริษัท:</label>

@@ -390,7 +390,7 @@
                 <button id="summitso" onclick="updateStatuspdf()">ปริ้นเอกสารSO</button>
                 <a href="dashboardadmin"><button style="background-color: red">ปริ้นเอกสารเส้นทางการเดินรถ</button></a>
             </div>
-            
+
             <div class="search-box">
             <input type="text" id="search-input" placeholder=" ค้นหา เลขที่บิล" onkeyup="searchTable()">
         </div>
@@ -416,7 +416,7 @@
             </tr>
         </thead>
         <tbody id="table-body">
-        @foreach($bill->sortBy('so_detail_id') as $item) <!-- เรียงลำดับจากเก่าไปใหม่ -->
+        @foreach($bill->sortBy('so_detail_id') as $item) 
                 @if($item->statuspdf == 0)
                     <tr>
                         <td>
@@ -427,6 +427,12 @@
                         <td>    
                             {{ $item->ponum }} 
                             @if($item->POdocument)
+                            
+                            <button style="background-color: red; color: white;"
+                            id="Pumppo"
+                                onclick="addSoDetailIdToPoDocument('{{ $item->so_detail_id }}', '{{ $item->POdocument }}')">
+                                เพิ่มเลขบิล
+                            </button>
                             <button id="download"
                             style="background-color: #27ae60; color: white;"
                             onclick="openFileInNewTab('{{ asset('storage/po_documents/' . $item->POdocument) }}', 
@@ -436,25 +442,14 @@
                                        '{{ $item->billid ?? '' }}')">
                                 เลือกดูไฟล์
                             </button>
-                            <button style="background-color: red; color: white;"
-                            id="Pumppo"
-                                onclick="addSoDetailIdToPoDocument('{{ $item->so_detail_id }}', '{{ $item->POdocument }}')">
-                                เพิ่มเลขบิล
-                            </button>
-
-    
                             @else
-                            <button style="background-color: red; color: white;"
+                            <button id="downloadnoPO" style="background-color: red; color: white;"
                             onclick="copyPonumAndCheckBox('{{ $item->so_id }}', '{{ $item->so_detail_id }}', '{{ $item->billid ?? '' }}')">
                             ไม่มีไฟล์
                         </button>
-                                                
+                                        
                         @endif
                         </td>
-                
-            
-                {{-- <cr-icon-button id="print" title="Print" aria-label="Print" iron-icon="pdf-cr23:print" role="button" tabindex="0" aria-disabled="false">
-                </cr-icon-button> --}}
                                 <td>{{ $item->customer_name}}</td>
                                 <td>{!! nl2br(e(str_replace(',', "\n", $item->customer_tel))) !!}</td>
                                 <td>{{ \Carbon\Carbon::parse($item->date_of_dali)->format('d/m/Y') }}</td> 
@@ -464,11 +459,15 @@
                                 <td>
                                     <input type="text" class="billid" id="billid" value="{{ $item->billid ?? '' }}">
                                     <button class="buttonbill" id="buttonbill" data-soid="{{ $item->so_id }}">เลขที่เอกสาร</button>
-                                <button style="background-color: red; color: white;"
-                                id="Pumpdoc"
-                                onclick="addSoDetailIdToDocument('{{ $item->so_detail_id }}', '{{ $item->POdocument }}')">
-                                เพิ่มเลขบิล
-                            </button>
+
+
+                                    <button style="background-color: red; color: white;"
+                                    id="Pumppo"
+                                        onclick="addIdToDocument('{{ $item->so_detail_id }}', '{{ $item->billid }}')">
+                                        เพิ่มเลขบิล
+                                    </button>
+                                <button class="billid"  id="downloadbill"style="background-color: #27ae60; color: white;">โหลดไฟล์</button>
+
                                 </td>
                                 <td><a href="javascript:void(0);" 
                                     onclick="openPopup(
@@ -762,21 +761,21 @@ function updateStatuspdf() {
             alert("เกิดข้อผิดพลาดในการเพิ่มเลขที่บิลลงในเอกสาร PO");
         });
 }
-function addSoDetailIdToDocument(so_detail_id, POdocument) {
-    console.log(`กำลังเพิ่ม ${so_detail_id} ลงในเอกสาร PO: ${POdocument}`);
+function addIdToDocument(so_detail_id, billid) {
+    console.log(`กำลังเพิ่ม ${so_detail_id} ลงในเอกสารbill: ${billid}`);
 
-    fetch(`/add-so-detail-id-to-pdf/${so_detail_id}/${POdocument}`)
+    fetch(`/add-so-detail-id-to-pdf/${so_detail_id}/${billid}`)
         .then(response => response.json())
         .then(data => {
             console.log(data);
             if (data.success) {
             } else {
-                alert("เกิดข้อผิดพลาดในการเพิ่มข้อมูลลงในเอกสาร PO: " + (data.error || ''));
+                alert("เกิดข้อผิดพลาดในการเพิ่มข้อมูลลงในเอกสาร bill: " + (data.error || ''));
             }
         })
         .catch(error => {
             console.error("Error:", error);
-            alert("เกิดข้อผิดพลาดในการเพิ่มเลขที่บิลลงในเอกสาร PO");
+            alert("เกิดข้อผิดพลาดในการเพิ่มเลขที่บิลลงในเอกสาร bill");
         });
 }
 </script>

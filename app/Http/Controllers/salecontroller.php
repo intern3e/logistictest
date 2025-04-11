@@ -13,6 +13,9 @@ use App\Models\BillDetail;
 use function Laravel\Prompts\alert;
 use function Laravel\Prompts\table;
 use Illuminate\Support\Facades\Storage;
+use Intervention\Image\Facades\Image;
+use FPDF;
+use Barryvdh\DomPDF\Facade as PDF;
 
 class salecontroller extends Controller
 {
@@ -95,8 +98,7 @@ public function showForm()
     return view('sale.insertdata');
     }
 
-
-public function insert(Request $request)
+    public function insert(Request $request)
 {
     DB::beginTransaction();
     try {

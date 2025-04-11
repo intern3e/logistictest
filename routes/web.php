@@ -45,7 +45,10 @@ Route::get('/txt', [SaleController::class, 'popup'])->name('popup');
 use App\Http\Controllers\PoDocumentController;
 Route::get('/add-so-detail-id-to-pdf/{soDetailId}/{POdocument}', 
     [PoDocumentController::class, 'addSoDetailIdToPoDocument']);
+Route::get('/add-so-detail-id-to-bill/{so_detail_id}/{filename}', 
+    [PoDocumentController::class, 'addIdToDocument']);
 
+    
 
 use App\Http\Controllers\admincontroller;
 Route::get('/dashboardadmin', [AdminController::class, 'dashboard'])->name('admin.dashboardadmin');
@@ -80,9 +83,6 @@ Route::get('/dashboarddoc', [DocController::class, 'dashboarddoc'])->name('docum
 Route::get('/insertdoc', [DocController::class, 'insertdoc'])->name('document.insertdoc');
 Route::post('/insertdocu', [DocController::class, 'insertDocu'])->name('insertdocu');
 Route::get('/get-docbill-detail/{doc_id}', [DocController::class, 'getdocBillDetail'])->name('getdocBillDetail');
-
-
-
 
 
 
