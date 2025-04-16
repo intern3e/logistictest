@@ -290,7 +290,6 @@ textarea {
             <th>ผู้เปิดบิล</th>
             <th>วันที่</th>
             <th>ข้อมูลรายละเอียด</th>
-            <th>pdf</th>
         </tr>
     </thead>
     <tbody id="table-body">
@@ -312,15 +311,12 @@ textarea {
                     '{{ $item->com_address }}',
                     '{{ $item->contact_name}}',
                     '{{ $item->contact_tel}}',
-                    '{{ $item->amount}}',
                     '{{ $item->notes }}',
                 )">
                     เพิ่มเติม
                 </a>
             </td>
-            <td>
-                <button onclick="downloadRowPDF(this)" class="btn btn-sm btn-outline-danger">📄</button>
-            </td>
+
         </tr>
         @endif
         @endforeach
@@ -346,7 +342,6 @@ textarea {
                             <th>ที่อยู่</th>
                             <th>ผู้ติดต่อ</th>
                             <th>เบอร์โทร</th>
-                            <th>รวมทั้งหมด</th>
                         </tr>
                     </thead>
                     <tbody id="popup-body-1">
@@ -357,8 +352,7 @@ textarea {
             <thead>     
                 <tr>
                     <th>รายการ</th>
-                    <th>จำนวน</th>
-                    <th>ราคา/หน่วย</th>
+                    <th>จำนวน</th>      
                 </tr>
             </thead>
             <tbody id="popup-body">
@@ -372,7 +366,7 @@ textarea {
 </div>
     
     <script>
-        function openPopup(doc_id,com_name,com_address,contact_name,contact_tel,amount,notes) {
+        function openPopup(doc_id,com_name,com_address,contact_name,contact_tel,notes) {
             document.getElementById("popup").style.display = "flex"; // แสดง Popup
         
             let popupBody = document.getElementById("popup-body-1");
@@ -383,7 +377,6 @@ textarea {
                     <td>${com_address}</td>
                     <td>${contact_name}</td>
                     <td>${contact_tel}</td>
-                    <td>${amount}</td>
                 </tr>
             `;
             document.getElementById("popup-body-3").value = notes;
@@ -401,7 +394,6 @@ textarea {
                                 <tr>
                                     <td>${item.item_name}</td>
                                     <td>${item.quantity}</td>
-                                    <td>${item.unit_price}</td>
                                 </tr>
                             `);
                         });

@@ -3,6 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.4.0/jspdf.umd.min.js"></script>
     <title>เปิดบิลสินค้า</title>
     <style>
     body {
@@ -197,7 +198,7 @@
 
         <div>
             <label>อัปโหลดเอกสาร PO :</label>
-            <input type="file" id="POdocument" name="POdocument" accept="application/pdf,image/*">
+            <input type="file" id="POdocument"> 
         </div>
         <div>
             <label>รหัสลูกค้า :</label>
@@ -215,7 +216,7 @@
                    <!-- แสดงรูปหรือ PDF -->
         <div id="filePreviewContainer">
             <iframe id="pdfPreview" width="100%" height="300px" style="display: none; border: 1px solid #ccc;"></iframe>
-            <img id="imagePreview" style="max-width: 100%; max-height: 400px; display: none; border: 1px solid #ccc;" />
+            
         </div>
     </div>
     <div class="form-label">
@@ -299,10 +300,14 @@
     </form>
 
     <script>
-      document.getElementById('submitBill').addEventListener('click', async function (event) {
+document.getElementById('submitBill').addEventListener('click', async function (event) {
     event.preventDefault();
 
-    let formData = new FormData(document.getElementById('billForm'));
+    let formData = new FormData(document.getElementById('billForm'));                         
+    if (convertedPDFBlob) {
+    formData.append('POdocument', convertedPDFBlob, originalFilename || 'upload.pdf');
+}
+
 
     // ตรวจสอบว่ามีสินค้าอย่างน้อย 1 รายการถูกเลือก
     let hasSelectedItems = false;
@@ -414,118 +419,165 @@ function openGoogleMaps() {
     const mapWindow = window.open(
         "https://www.google.com/maps/@13.7563,100.5018,14z",
         "Google Maps",
-        width=${windowWidth},height=${windowHeight},left=${leftPosition},top=${topPosition}
+        `width=${windowWidth},height=${windowHeight},left=${leftPosition},top=${topPosition}`
     );
 }
+
     </script>
-  <script>
-    // ดึงค่า so_num จาก URL
-    const urlParams = new URLSearchParams(window.location.search);
-    const soNum = urlParams.get('so_num');
 
-    // ถ้ามีค่า so_num ใน URL ให้ดึงข้อมูล SO อัตโนมัติ
-    if (soNum) {
-        document.getElementById('so_number').value = soNum; // แสดงค่า so_num ใน input
-        fetchSODetails(soNum); // เรียกฟังก์ชันดึงข้อมูล SO
-    }
+    <script>
+        // ดึงค่า so_num จาก URL
+        const urlParams = new URLSearchParams(window.location.search);
+        const soNum = urlParams.get('so_num');
 
-    // ฟังก์ชันดึงข้อมูล SO จาก API
-    async function fetchSODetails(soNum) {
-        try {
-            let response = await fetch(`http://server_update:8000/api/getSODetail?SONum=${soNum}`);
-            if (!response.ok) {
-                throw new Error("เกิดข้อผิดพลาดในการโหลดข้อมูล");
-            }
+        // ถ้ามีค่า so_num ใน URL ให้ดึงข้อมูล SO อัตโนมัติ
+        if (soNum) {
+            document.getElementById('so_number').value = soNum; // แสดงค่า so_num ใน input
+            fetchSODetails(soNum); // เรียกฟังก์ชันดึงข้อมูล SO
+        }
 
-            let data = await response.json();
-            console.log("API Response:", data); // ตรวจสอบข้อมูล API 
+        // ฟังก์ชันดึงข้อมูล SO จาก API
+        async function fetchSODetails(soNum) {
+            try {
+                let response = await fetch(`http://server_update:8000/api/getSODetail?SONum=${soNum}`);
+                if (!response.ok) {
+                    throw new Error("เกิดข้อผิดพลาดในการโหลดข้อมูล");
+                }
 
-            if (!data.SoDetail || data.SoDetail.length === 0) {
-                alert("ไม่พบข้อมูลที่ตรงกับเลขที่ SO นี้: " + soNum);
-                return;
-            }
+                let data = await response.json();
+                console.log("API Response:", data); // ตรวจสอบข้อมูล API 
 
-            const soDetails = data.SoDetail;
-            const SoStatus = data.SoStatus;
+                if (!data.SoDetail || data.SoDetail.length === 0) {
+                    alert("ไม่พบข้อมูลที่ตรงกับเลขที่ SO นี้: " + soNum);
+                    return;
+                }
 
-            // แสดงข้อมูลทั่วไป
-            document.getElementById('so_id').value = SoStatus.SONum;  
-            document.getElementById('ponum').value = soDetails.CustPONo;  
-            document.getElementById('customer_id').value = SoStatus.CustID; 
-            document.getElementById('customer_name').value = soDetails.CustName;  
-            document.getElementById('customer_address').value = 
-            [soDetails.ShipToAddr1,soDetails.CustAddr1, soDetails.ContDistrict, soDetails.ContAmphur, soDetails.ContProvince, soDetails.ContPostCode]
-            .filter(Boolean) // กรองค่าที่เป็น null หรือ undefined หรือว่าง
-            .join(', ');
-            document.getElementById('customer_tel').value = soDetails.ContTel;  
-            document.getElementById('sale_name').value = SoStatus.createdBy; 
-     
+                const soDetails = data.SoDetail;
+                const SoStatus = data.SoStatus;
 
-            // แสดงวันที่จัดส่ง
-            let deliveryDate = SoStatus.DeliveryDate;
-            if (deliveryDate) {
-                let formattedDate = new Date(deliveryDate);
-                let day = formattedDate.getDate().toString().padStart(2, '0');
-                let month = (formattedDate.getMonth() + 1).toString().padStart(2, '0');
-                let year = formattedDate.getFullYear();
-                document.getElementById("date_of_dali").value = `${day}-${month}-${year}`;
-            }
+                // แสดงข้อมูลทั่วไป
+                document.getElementById('so_id').value = SoStatus.SONum;  
+                document.getElementById('ponum').value = soDetails.CustPONo;  
+                document.getElementById('customer_id').value = SoStatus.CustID; 
+                document.getElementById('customer_name').value = soDetails.CustName;  
+                document.getElementById('customer_address').value = 
+                [soDetails.ShipToAddr1,soDetails.CustAddr1, soDetails.ContDistrict, soDetails.ContAmphur, soDetails.ContProvince, soDetails.ContPostCode]
+                .filter(Boolean) // กรองค่าที่เป็น null หรือ undefined หรือว่าง
+                .join(', ');
+                document.getElementById('customer_tel').value = soDetails.ContTel;  
+                document.getElementById('sale_name').value = SoStatus.createdBy; 
+         
 
-            const SOLists = data.SOLists; 
+                // แสดงวันที่จัดส่ง
+                let deliveryDate = SoStatus.DeliveryDate;
+                if (deliveryDate) {
+                    let formattedDate = new Date(deliveryDate);
+                    let day = formattedDate.getDate().toString().padStart(2, '0');
+                    let month = (formattedDate.getMonth() + 1).toString().padStart(2, '0');
+                    let year = formattedDate.getFullYear();
+                    document.getElementById("date_of_dali").value = `${day}-${month}-${year}`;
+                }
+
+                const SOLists = data.SOLists; 
 const tableBody = document.querySelector('#detail');
 
 SOLists.forEach((soItem) => {  
-if (soItem.ms_sodt) { // ตรวจสอบว่ามีข้อมูล ms_sodt หรือไม่
-    soItem.ms_sodt.forEach((item) => { 
-        let newRow = document.createElement('tr');
-        const safeGoodName = item.GoodName.replace(/"/g, '&quot;');
-        newRow.innerHTML = `
-            <td><input type="checkbox" class="form-control1" name="status[]"></td>
-            <td><input type="text" class="form-control1" name="item_id[]" value="${item.GoodID}"readonly></td>
-            <td><input type="text" class="form-control1" name="item_name[]" value="${safeGoodName}"readonly></td>
-            <td><input type="text" class="form-control1 item_quantity" name="item_quantity[]" value="${item.GoodQty2}" ></td>
-            <td><input type="text" class="form-control1" name="unit_price[]" value="${item.GoodPrice2}"readonly></td>
-            <td><button type="button" class="btn btn-danger delete-btn">ลบ</button></td>
-        `;
-        tableBody.appendChild(newRow);
-    });
-}
-});
-        } catch (error) {
-            console.error(error);
-        }
+    if (soItem.ms_sodt) { // ตรวจสอบว่ามีข้อมูล ms_sodt หรือไม่
+        soItem.ms_sodt.forEach((item) => { 
+            let newRow = document.createElement('tr');
+            const safeGoodName = item.GoodName.replace(/"/g, '&quot;');
+            newRow.innerHTML = `
+                <td><input type="checkbox" class="form-control1" name="status[]"></td>
+                <td><input type="text" class="form-control1" name="item_id[]" value="${item.GoodID}"readonly></td>
+                <td><input type="text" class="form-control1" name="item_name[]" value="${safeGoodName}"readonly></td>
+                <td><input type="text" class="form-control1 item_quantity" name="item_quantity[]" value="${item.GoodQty2}" ></td>
+                <td><input type="text" class="form-control1" name="unit_price[]" value="${item.GoodPrice2}"readonly></td>
+                <td><button type="button" class="btn btn-danger delete-btn">ลบ</button></td>
+            `;
+            tableBody.appendChild(newRow);
+        });
     }
-    
-</script>
+});
+            } catch (error) {
+                console.error(error);
+            }
+        }
+        
+    </script>
 
 <script>
-document.getElementById("POdocument").addEventListener("change", function () {
-    const file = this.files[0];
-    const pdfFrame = document.getElementById("pdfPreview");
-    const image = document.getElementById("imagePreview");
+    let convertedPDFBlob = null; // PDF Blob ที่จะถูกส่งไป backend
+    let originalFilename = ''; // เก็บชื่อไฟล์ต้นฉบับไว้ตั้งชื่อ
 
-    if (!file) {
-        pdfFrame.style.display = "none";
-        image.style.display = "none";
-        return;
+    document.getElementById('POdocument').addEventListener('change', async function(event) {
+        const file = event.target.files[0];
+        const pdfPreview = document.getElementById('pdfPreview');
+
+        if (file) {
+            const fileType = file.type;
+            originalFilename = file.name;
+
+            pdfPreview.style.display = 'none';
+            convertedPDFBlob = null;
+
+            if (fileType === 'application/pdf') {
+                convertedPDFBlob = file;
+                const fileURL = URL.createObjectURL(file);
+                pdfPreview.src = fileURL;
+                pdfPreview.style.display = 'block';
+            } else if (fileType.startsWith('image/')) {
+                const reader = new FileReader();
+                reader.onload = async function(e) {
+                    const imgData = e.target.result;
+                    const { jsPDF } = window.jspdf;
+                    const pdf = new jsPDF();
+                    const img = new Image();
+                    img.src = imgData;
+
+                    img.onload = function() {
+                    const imgWidth = 190;
+                    const imgHeight = (img.height / img.width) * imgWidth;
+                    pdf.addImage(img, 'JPEG', 10, 10, imgWidth, imgHeight);
+
+                    convertedPDFBlob = pdf.output('blob'); // <-- ได้ blob แล้ว
+                    const pdfURL = URL.createObjectURL(convertedPDFBlob);
+                    pdfPreview.src = pdfURL;
+                    pdfPreview.style.display = 'block';
+                };
+                };
+                reader.readAsDataURL(file);
+            } else {
+                alert('ไฟล์ที่คุณอัปโหลดไม่รองรับ กรุณาอัปโหลด PDF หรือรูปภาพ');
+                event.target.value = '';
+            }
+        }
+    });
+
+    // ฟังก์ชันสำหรับส่งไป backend
+    async function uploadFile() {
+    const formData = new FormData();
+
+    if (convertedPDFBlob) {
+        formData.append("POdocument", convertedPDFBlob);
+        
     }
 
-    const fileURL = URL.createObjectURL(file);
+    try {
+        const response = await fetch('route("insert.post")', {
+            method: 'POST',
+            body: formData
+        });
 
-    if (file.type === "application/pdf") {
-        // แสดง PDF
-        pdfFrame.src = fileURL;
-        pdfFrame.style.display = "block";
-        image.style.display = "none";
-    } else if (file.type.startsWith("image/")) {
-        // แสดงรูปภาพ
-        image.src = fileURL;
-        image.style.display = "block";
-        pdfFrame.style.display = "none";
-    } else {
-        alert("กรุณาเลือกเฉพาะไฟล์ PDF หรือรูปภาพ");
-        pdfFrame.style.display = "none";
-        image.style.display = "none";
+        const result = await response.json();
+        alert("อัปโหลดสำเร็จ: " + JSON.stringify(result));
+    } catch (err) {
+        console.error("Upload error", err);
+        alert("เกิดข้อผิดพลาดในการอัปโหลด");
     }
-});
+}
 </script>
+
+
+</body>
+</html>
+ 

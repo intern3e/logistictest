@@ -458,7 +458,7 @@
                                 <td id="billtype">{{ $item->billtype }}</td>
                                 <td>
                                     <input type="text" class="billid" id="billid" value="{{ $item->billid ?? '' }}">
-                                    <button class="buttonbill" id="buttonbill" data-soid="{{ $item->so_id }}">เลขที่เอกสาร</button>
+                                    <button class="buttonbill" id="buttonbill" data-soid="{{ $item->so_id }}">เพิ่มเลขที่เอกสาร</button>
 
 
                                     <button style="background-color: red; color: white;"
@@ -466,7 +466,18 @@
                                         onclick="addIdToDocument('{{ $item->so_detail_id }}', '{{ $item->billid }}')">
                                         เพิ่มเลขบิล
                                     </button>
-                                <button class="billid"  id="downloadbill"style="background-color: #27ae60; color: white;">โหลดไฟล์</button>
+                                    <button id="downloadbill"
+                                        style="background-color: #27ae60; color: white;"
+                                        onclick="openFileInNewTabbill(
+                                            '{{ asset('storage/doc_document/' . $item->billid . '.pdf') }}', 
+                                            '{{ $item->ponum }}', 
+                                            '{{ $item->so_detail_id }}', 
+                                            '{{ $item->so_id }}',
+                                            '{{ $item->billid ?? '' }}'
+                                        )">
+                                        เลือกดูไฟล์
+                                    </button>
+
 
                                 </td>
                                 <td><a href="javascript:void(0);" 
@@ -761,10 +772,12 @@ function updateStatuspdf() {
             alert("เกิดข้อผิดพลาดในการเพิ่มเลขที่บิลลงในเอกสาร PO");
         });
 }
+</script>
+<script>
 function addIdToDocument(so_detail_id, billid) {
     console.log(`กำลังเพิ่ม ${so_detail_id} ลงในเอกสารbill: ${billid}`);
 
-    fetch(`/add-so-detail-id-to-pdf/${so_detail_id}/${billid}`)
+    fetch(`/add-so-detail-id-to-bill/${so_detail_id}/${billid}`)
         .then(response => response.json())
         .then(data => {
             console.log(data);
@@ -778,6 +791,24 @@ function addIdToDocument(so_detail_id, billid) {
             alert("เกิดข้อผิดพลาดในการเพิ่มเลขที่บิลลงในเอกสาร bill");
         });
 }
+function openFileInNewTabbill(url, ponum, so_detail_id, so_id, billid) {
+        // ทำให้ checkbox ถูกเลือก
+        document.getElementById('checkbox_' + so_detail_id).checked = true;
+    
+        // กำหนดค่าที่ต้องการคัดลอก: ถ้า billid ไม่มีค่าหรือว่าง ให้ใช้ so_id
+        var copyValue = billid && billid.trim() !== '' ? billid : so_id.replace(/^SO/, ''); 
+    
+        // คัดลอกค่าลงคลิปบอร์ด
+        navigator.clipboard.writeText(copyValue).then(() => {
+            console.log('คัดลอก:', copyValue);
+        }).catch(err => {
+            console.error('ไม่สามารถคัดลอกได้:', err);
+        });
+    
+        // เปิดไฟล์ในแท็บใหม่
+        window.open(url, '_blank');
+
+     }
 </script>
 </body>
 </html>

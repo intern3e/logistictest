@@ -126,7 +126,7 @@ public function showForm()
             'unit_price.*' => 'string',
             'status' => 'nullable|array',
             'statuspdf' => 'nullable|array',
-            'POdocument' => 'max:2048' 
+            'POdocument' => 'nullable|file|mimes:pdf|max:10240'
         ]);
 
         // สร้าง so_detail_id แบบ 3E(เลขท้ายพ.ศ.)(เดือน)X0001
@@ -183,19 +183,19 @@ public function showForm()
         $bill->billtype = $request->input('billtype');
         $bill->billid = $request->input('billid');
             
-        // **🔹 อัปโหลดไฟล์ POdocument**
         if ($request->hasFile('POdocument')) {
             $file = $request->file('POdocument');
-            $filename = time() . '_' . $file->getClientOriginalName(); // ตั้งชื่อไฟล์ใหม่
+            $originalName = $file->getClientOriginalName();
+            $extension = strtolower($file->getClientOriginalExtension());
+
+            // เปลี่ยนนามสกุลเป็น .pdf เสมอ เพราะ frontend แปลงมาแล้ว
+            $filename = $so_detail_id . '_' . pathinfo($originalName, PATHINFO_FILENAME) . '.pdf';
+
             $path = 'public/po_documents';
-            
-            // บันทึกไฟล์ลง storage
             $file->storeAs($path, $filename);
-            
-            // บันทึกชื่อไฟล์ลงฐานข้อมูล
+
             $bill->POdocument = $filename;
         }
-
         // บันทึกข้อมูล bill
         $bill->save();
         

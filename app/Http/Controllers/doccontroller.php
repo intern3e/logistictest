@@ -59,14 +59,6 @@ class DocController extends Controller
                 'com_la_long' => 'required|string|max:255',
                 'time' => 'required|date',
                 'notes' => 'nullable|string',
-                'item_name' => 'required|array',
-                'item_name.*' => 'string',
-                'item_quantity' => 'required|array',
-                'item_quantity.*' => 'string',
-                'unit_price' => 'required|array',
-                'unit_price.*' => 'string',
-                'status' => 'nullable|array',
-                'amount' => 'required',
             ]);
             $currentYear = date('Y') + 543;
             $currentYear = substr($currentYear, -2); 
@@ -110,25 +102,22 @@ class DocController extends Controller
             $doc->notes = $request->input('notes');
             $doc->time = $request->input('time');
             $doc->doctype = $request->input('doctype'); 
-            $doc->amount = $request->input('amount'); 
 
             $doc->save();
-            $item_names = $request->input('item_name');
-            $item_quantities = $request->input('item_quantity');
-            $unit_price = $request->input('unit_price');
+            $item_names = $request->input('item_name', []);
+            $item_quantities = $request->input('item_quantity', []);
             $status_checked = $request->input('status', []);
 
-            foreach ($item_names as $index => $item_name) {  // เปลี่ยนชื่อจาก $item_names เป็น $item_name
-                if (!isset($status_checked[$index])) {
-                    continue;  // ถ้าสถานะไม่ถูกเลือกข้ามไป
+            if (is_array($item_names) && count($item_names) > 0) {
+                foreach ($item_names as $index => $item_name) {
+                    if (!empty($item_name)) {
+                        $doc_detail = new docbillsdetail();
+                        $doc_detail->doc_id = $doc_id;
+                        $doc_detail->item_name = $item_name;
+                        $doc_detail->quantity = $item_quantities[$index] ?? 0;
+                        $doc_detail->save();
+                    }
                 }
-
-                $doc_detail = new docbillsdetail();
-                $doc_detail->doc_id = $doc_id; 
-                $doc_detail->item_name = $item_name;  // ใช้ $item_name ที่ได้จาก foreach
-                $doc_detail->quantity = $item_quantities[$index];
-                $doc_detail->unit_price = $unit_price[$index];
-                $doc_detail->save();  // บันทึกข้อมูลลงในฐานข้อมูล
             }
             DB::commit();
             return response()->json(['success' => 'เปิดบิลสำเร็จ เลขที่บิล:' . $doc_id]);

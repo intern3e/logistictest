@@ -178,6 +178,13 @@
             <label for="time">วันที่</label>
             <input type="date" id="time" name="time">
         </div>
+        
+        <script>
+            window.addEventListener('DOMContentLoaded', () => {
+                const today = new Date().toISOString().split('T')[0];
+                document.getElementById('time').value = today;
+            });
+        </script>
        
         <div class="form-group">
             <label for="doctype">ประเภทบิล</label>
@@ -272,17 +279,12 @@
                     <th>เลือกจัดส่ง</th>
                     <th>รายการ</th>
                     <th>จำนวน</th>
-                    <th>ราคาต่อหน่วย</th>
-                    <th>จำนวนเงิน</th>
                     <th>ลบ</th>
                 </tr>
             </thead>
             <tbody id="detail"></tbody>
         </table>
-        <div style="text-align: right; margin-top: 10px; font-size: 18px;">
-            <strong>รวมทั้งหมด: <span id="amount">0.00</span> บาท</strong>
-            <input type="hidden" name="amount" id="amountInput">
-        </div>
+
         <div class="checkbox-container">
             <label>
                 <input type="checkbox" name="checkall"> เลือกทั้งหมด
@@ -301,94 +303,45 @@
         </div>
     </form>
 
-<script>
-function calculatePrice(input) {
-    const row = input.closest('tr');
-    const quantityInput = row.querySelector('input[name="item_quantity[]"]');
-    const unitPriceInput = row.querySelector('input[name="unit_price[]"]');
-    const priceInput = row.querySelector('input[name="price[]"]');
-
-    const quantity = parseFloat(quantityInput.value) || 0;
-    const unitPrice = parseFloat(unitPriceInput.value) || 0;
-    const total = quantity * unitPrice;
-
-    priceInput.value = total.toFixed(2);
-
-    updateTotalAmount(); // 🔁 คำนวณรวมใหม่ทุกครั้ง
-}
-
-function updateTotalAmount() {
-    let total = 0;
-    document.querySelectorAll('input[name="price[]"]').forEach(input => {
-        const val = parseFloat(input.value);
-        if (!isNaN(val)) {
-            total += val;
-        }
-    });
-    document.getElementById('amount').textContent = total.toFixed(2);
-    document.getElementById('amountInput').value = total.toFixed(2);
-}
-</script>
-
     <script>
-      document.getElementById('submitBill').addEventListener('click', async function (event) {
-    event.preventDefault();
+        document.getElementById('submitBill').addEventListener('click', async function (event) {
+            event.preventDefault();
+    
+            let formData = new FormData(document.getElementById('billForm'));
+    
+            // รับข้อมูลสินค้าทั้งหมดโดยไม่เช็ค checkbox
+            let itemRows = document.querySelectorAll('table tbody tr');
+            itemRows.forEach((row, index) => {
+                let itemName = row.querySelector('input[name="item_name[]"]').value;
+                let itemQuantity = row.querySelector('input[name="item_quantity[]"]').value;
 
-    let formData = new FormData(document.getElementById('billForm'));
-
-    // ตรวจสอบว่ามีสินค้าอย่างน้อย 1 รายการถูกเลือก
-    let hasSelectedItems = false;
-    document.querySelectorAll('input[name="status[]"]:checked').forEach((checkbox) => {
-        hasSelectedItems = true;
-    });
-
-    if (!hasSelectedItems) {
-        alert("กรุณาเลือกสินค้าอย่างน้อย 1 รายการ");
-        return;
-    }
-
-    // รับข้อมูลสินค้าที่ถูกเลือก
-    let itemRows = document.querySelectorAll('table tbody tr');
-    itemRows.forEach((row, index) => {
-        let itemStatus = row.querySelector('input[name="status[]"]').checked ? 1 : 0;
-
-        if (itemStatus) { // เฉพาะสินค้าที่เลือก (checked)
-            let itemName = row.querySelector('input[name="item_name[]"]').value;
-            let itemQuantity = row.querySelector('input[name="item_quantity[]"]').value;
-            let unit_price = row.querySelector('input[name="unit_price[]"]').value;
-            let price = row.querySelector('input[name="price[]"]').value;
-
-            // เก็บค่าลงใน FormData
-            formData.append(`item_name[${index}]`, itemName);
-            formData.append(`item_quantity[${index}]`, itemQuantity);
-            formData.append(`unit_price[${index}]`, unit_price);
-            formData.append(`price[${index}]`, price);
-            formData.append(`status[${index}]`, itemStatus);
-        }
-    });
-
-    // ส่งข้อมูลไปยัง Controller Laravel
-    try {
-        let response = await fetch('{{ route("insertdocu") }}', {
-            method: 'POST',
-            body: formData,
-            headers: {
-                'X-CSRF-TOKEN': '{{ csrf_token() }}',
-            },
+    
+                formData.append(`item_name[${index}]`, itemName);
+                formData.append(`item_quantity[${index}]`, itemQuantity);
+            });
+    
+            // ส่งข้อมูลไปยัง Controller Laravel
+            try {
+                let response = await fetch('{{ route("insertdocu") }}', {
+                    method: 'POST',
+                    body: formData,
+                    headers: {
+                        'X-CSRF-TOKEN': '{{ csrf_token() }}',
+                    },
+                });
+    
+                let data = await response.json();
+                if (data.success) {
+                    alert(data.success);
+                    window.location.href = 'dashboarddoc';
+                } else if (data.error) {
+                    alert(data.error);
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                alert('มีข้อผิดพลาดในการส่งข้อมูล');
+            }
         });
-
-        let data = await response.json();
-        if (data.success) {
-            alert(data.success);
-            window.location.href = 'dashboarddoc';
-        } else if (data.error) {
-            alert(data.error);
-        }
-    } catch (error) {
-        console.error('Error:', error);
-        alert('มีข้อผิดพลาดในการส่งข้อมูล');
-    }
-});
 
         const selectAllCheckbox = document.querySelector('input[name="checkall"]');
         if (selectAllCheckbox) {
@@ -417,12 +370,6 @@ function updateTotalAmount() {
                     <td><input type="text" class="form-control1" name="item_name[]"></td>
                     <td>
                         <input type="number" class="form-control1 item_quantity" name="item_quantity[]" >
-                    </td>
-                    <td>
-                        <input type="number" class="form-control1 " name="unit_price[]" >
-                    </td>
-                    <td>
-                        <input type="number" class="form-control1" name="price[]" readonly>
                     </td>
                     <td><button type="button" class="btn btn-danger delete-btn">ลบ</button></td>
                 `;

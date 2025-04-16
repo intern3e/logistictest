@@ -40,9 +40,9 @@ class PoDocumentController extends Controller
                 $pdf->useTemplate($templateId);
                 
                 // เพิ่ม SO ID ที่หัวกระดาษทุกหน้า
-                $pdf->SetFont('Arial', '', 12);
+                $pdf->SetFont('Arial', '',10);
                 $pdf->SetTextColor(0, 0, 0); // สีดำ
-                $pdf->SetXY(150, 10);
+                $pdf->SetXY(150, 1);
                 $pdf->Cell(50, 10, "{$so_detail_id}", 0, 0, 'R');
             }
 
@@ -66,12 +66,12 @@ class PoDocumentController extends Controller
             ]);
         }
     }
-    public function addIdToPoDocument($so_detail_id, $billid): JsonResponse
+    public function addIdToDocument($so_detail_id, $billid): JsonResponse
     {
         try {
             ob_start();
 
-            $filePath = storage_path("app/public/doc_documents/{$billid}");
+            $filePath = storage_path("app/public/doc_document/{$billid}.pdf");
             Log::info("กำลังเปิดไฟล์ PDF: " . $filePath);
 
             if (!file_exists($filePath)) {
@@ -98,13 +98,13 @@ class PoDocumentController extends Controller
                 $pdf->useTemplate($templateId);
                 
                 // เพิ่ม SO ID ที่หัวกระดาษทุกหน้า
-                $pdf->SetFont('Arial', '', 12);
+                $pdf->SetFont('Arial', '', 10);
                 $pdf->SetTextColor(0, 0, 0); // สีดำ
-                $pdf->SetXY(150, 10);
+                $pdf->SetXY(150, 1);
                 $pdf->Cell(50, 10, "{$so_detail_id}", 0, 0, 'R');
             }
 
-            $outputPath = storage_path("app/public/doc_documents/{$billid}");
+            $outputPath = storage_path("app/public/doc_document/{$billid}.pdf");
             $pdf->Output('F', $outputPath);
 
             ob_end_clean();
