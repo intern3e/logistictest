@@ -67,8 +67,7 @@ use App\Http\Controllers\PoController;
 Route::get('/dashboardpo', [PoController::class, 'dashboardpo'])->name('po.dashboardpo');
 Route::get('/insertpo', [PoController::class, 'insertpo'])->name('po.insertpo');
 Route::post('/insertpo', [PoController::class, 'insertpobill'])->name('insertpo.post'); 
-Route::get('/get-pobill-detail/{po_detail_id}', [PoController::class, 'getpoBillDetail'])
-     ->name('getpoBillDetail');
+Route::get('/get-pobill-detail/{po_detail_id}', [PoController::class, 'getpoBillDetail'])->name('getpoBillDetail');
 
 
 use App\Http\Controllers\adminpocontroller;

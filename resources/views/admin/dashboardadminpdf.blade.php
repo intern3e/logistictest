@@ -462,7 +462,7 @@
 
 
                                     <button style="background-color: red; color: white;"
-                                    id="Pumppo"
+                                    id="Pumpbill"
                                         onclick="addIdToDocument('{{ $item->so_detail_id }}', '{{ $item->billid }}')">
                                         เพิ่มเลขบิล
                                     </button>

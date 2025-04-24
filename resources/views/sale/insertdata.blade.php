@@ -261,7 +261,6 @@
             <div class="form-group">
                 <label for="billtype">ประเภทบิล</label>
                 <select id="billtype" name="billtype" required>
-                    <option value="" disabled selected>-- กรุณาเลือกประเภทบิล --</option>
                     <option value="ขายเชื่อ">ขายเชื่อ</option> 
                     <option value="ขายสด">ขายสด</option> 
                 </select>

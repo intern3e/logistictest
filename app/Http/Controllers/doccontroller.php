@@ -120,7 +120,7 @@ class DocController extends Controller
                 }
             }
             DB::commit();
-            return response()->json(['success' => 'เปิดบิลสำเร็จ เลขที่บิล:' . $doc_id]);
+            return response()->json(['success' => 'สร้างเอกสารสำเร็จ เลขที่เอกสาร:' . $doc_id]);
             Log::info('doc_id: ' . $doc_id);
     
         } catch (\Exception $e) {

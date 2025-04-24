@@ -278,6 +278,7 @@ td a:hover {
 <body>
     <div class="header">
         <h2>ระบบจัดเส้นทางเอกสารเพิ่มเติม</h2>
+        <a href="adminSO"><button class="btn-so">หน้าหลัก</button></a>
     </div>
 
     <div class="container">
@@ -804,3 +805,6 @@ document.body.removeChild(pdfContainer);
 
 </body>
 </html>
+
+
+

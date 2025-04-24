@@ -613,7 +613,7 @@
     let rows = table.getElementsByTagName("tr");
 
     for (let i = 0; i < rows.length; i++) {
-        let typeCell = rows[i].getElementsByTagName("td")[7]; // เปลี่ยน index ให้ตรงกับ "ประเภทขนส่ง"
+        let typeCell = rows[i].getElementsByTagName("td")[8]; // เปลี่ยน index ให้ตรงกับ "ประเภทขนส่ง"
         if (typeCell) {
             let typeText = typeCell.textContent.trim(); // ดึงค่าจาก <td>
 

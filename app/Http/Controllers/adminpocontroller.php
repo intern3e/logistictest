@@ -1,7 +1,6 @@
 <?php
 
 namespace App\Http\Controllers;
-
 use Illuminate\Http\Request;
 use App\Models\Pobills;
 use Illuminate\Support\Facades\DB;
@@ -9,10 +8,24 @@ use Illuminate\Support\Facades\DB;
 class AdminpoController extends Controller
 {
     public function dashboard(Request $request)
-    {
-        $pobill = Pobills::all();  // Fetch the data
-        return view('po.adminpo', compact('pobill'));  // Pass data to the view
+{
+    $date = $request->get('date');
+    $message = null;
+
+    if ($date) {
+        $pobill = Pobills::whereDate('time', $date)
+                    ->orderBy('po_detail_id', 'desc')
+                    ->get();
+
+        if ($pobill->isEmpty()) {
+            $message = 'ไม่พบข้อมูลที่ตรงกับวันที่เลือก';
+        }
+    } else {
+        $pobill = Pobills::orderBy('po_detail_id', 'desc')->get();
     }
+
+    return view('po.adminpo', compact('pobill', 'message'));
+}
 
     public function dashboardpo()
     {

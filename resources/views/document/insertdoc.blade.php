@@ -159,6 +159,26 @@
         border-radius: 10px;
     }
 </style>
+<style>
+    .autocomplete-list {
+        position: absolute;
+        z-index: 1000;
+        background: white;
+        border: 1px solid #ccc;
+        width: 100%;
+        max-height: 250px;
+        overflow-y: auto;
+        font-size: 16px;
+        border-radius: 6px;
+    }
+    .autocomplete-list li {
+        padding: 10px;
+        cursor: pointer;
+    }
+    .autocomplete-list li:hover {
+        background-color: #f0f0f0;
+    }
+    </style>
 
 
 </head>
@@ -185,7 +205,7 @@
                 document.getElementById('time').value = today;
             });
         </script>
-       
+    
         <div class="form-group">
             <label for="doctype">ประเภทบิล</label>
             <select id="doctype" name="doctype" required onchange="toggleOtherInput()">
@@ -220,13 +240,73 @@
                 otherOption.text = otherInput || "อื่นๆ"; // ถ้าว่างให้ใช้ "อื่นๆ"
             }
         </script>
+
+        
+<div style="position: relative; margin-bottom: 20px;">
+    <label for="com_name">บริษัท:</label>
+    <input type="text" id="com_name" name="com_name"style="width: 100%; padding: 10px; font-size: 16px;" autocomplete="off">
+    <ul id="autocomplete_list" class="autocomplete-list" style="display: none;"></ul>
+    <button type="button" id="search" style="margin-top: 10px;">🔍 ค้นหา</button>
+</div>
+
+
+<script>
+    let allCompanies = [];
+    
+    document.getElementById("search").addEventListener("click", async () => {
+        let keyword = document.getElementById("com_name").value.trim();
+    
+        if (!keyword) {
+            alert("กรุณากรอกชื่อบริษัท");
+            return;
+        }
+    
+        try {
+            const response = await fetch(`http://server_update:8000/api/getCustAndVendor?keySearch=${encodeURIComponent(keyword)}`);
+            if (!response.ok) throw new Error("เกิดข้อผิดพลาดในการโหลดข้อมูล");
+    
+            const data = await response.json();
+            allCompanies = [...(data.Customer || []), ...(data.Supplier || [])];
+    
+            showAutocompleteResults(allCompanies);
+    
+        } catch (err) {
+            console.error(err);
+            alert("เกิดข้อผิดพลาดในการดึงข้อมูล");
+        }
+    });
+    
+    function showAutocompleteResults(companies) {
+        const listEl = document.getElementById("autocomplete_list");
+        listEl.innerHTML = "";
+        listEl.style.display = "block";
+    
+        companies.forEach(company => {
+            const name = (company.CustName || company.VendorName || company.SupName || "").trim();
+            const addr = (company.ContAddr1 || "").trim();
+            const item = document.createElement("li");
+            item.textContent = `${name} [${addr}]`;
+            item.addEventListener("click", () => {
+                document.getElementById("com_name").value = name;
+                document.getElementById("com_address").value = addr;
+                listEl.style.display = "none";
+            });
+            listEl.appendChild(item);
+        });
+    }
+    
+    // ปิด dropdown ถ้าคลิกนอก
+    document.addEventListener("click", function(e) {
+        const list = document.getElementById("autocomplete_list");
+        if (!document.getElementById("com_name").contains(e.target) && !list.contains(e.target)) {
+            list.style.display = "none";
+        }
+    });
+    </script>
     
 
-        <div>
-            <label>บริษัท:</label>
-            <input type="text" id="com_name" name="com_name" >
-        </div>
 
+    
         <div>
             <label>ชื่อผู้ติดต่อ:</label>
             <input type="text" id="contact_name" name="contact_name" >
@@ -236,7 +316,7 @@
             <label>เบอร์ติดต่อ :</label>
             <input type="text" id="contact_tel" name="contact_tel">
         </div>
-       
+    
     </div>
 
     <div class="form-label">
@@ -376,10 +456,8 @@
                 tableBody.appendChild(newRow);
                 updateTotalAmount();
                 const quantityInput = newRow.querySelector('input[name="item_quantity[]"]');
-                const unitPriceInput = newRow.querySelector('input[name="unit_price[]"]');
-
                 quantityInput.addEventListener('input', () => calculatePrice(quantityInput));
-                unitPriceInput.addEventListener('input', () => calculatePrice(unitPriceInput));
+
             });
         }
 
