@@ -213,6 +213,18 @@
             <label>เบอร์ติดต่อ :</label>
             <input type="text" id="customer_tel" name="customer_tel">
         </div>
+
+        
+        <div class="form-group">
+            <label for="formtype">ประเภทเอกสาร</label>
+            <select id="formtype" name="formtype" required>
+                <option value="1">1</option> 
+                <option value="2">2</option> 
+                <option value="3">3</option> 
+                <option value="4">4</option> 
+           
+            </select>
+        </div>
                    <!-- แสดงรูปหรือ PDF -->
         <div id="filePreviewContainer">
             <iframe id="pdfPreview" width="100%" height="300px" style="display: none; border: 1px solid #ccc;"></iframe>
@@ -576,6 +588,8 @@ SOLists.forEach((soItem) => {
 }
 </script>
 
+<script>
+</script>
 
 </body>
 </html>

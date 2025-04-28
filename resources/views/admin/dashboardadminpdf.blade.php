@@ -80,6 +80,7 @@
             max-width: 100%; /* Ensure table doesn't overflow the container */
             transform: scale(0.9); /* Scale down the table to fit the screen */
             transform-origin: top left; /* Keep the table scaling from the top-left corner */
+            overflow-x: auto; 
         }
 
         table {
@@ -458,7 +459,7 @@
                                 <td id="billtype">{{ $item->billtype }}</td>
                                 <td>
                                     <input type="text" class="billid" id="billid" value="{{ $item->billid ?? '' }}">
-                                    <button class="buttonbill" id="buttonbill" data-soid="{{ $item->so_id }}">เพิ่มเลขที่เอกสาร</button>
+                                    <button class="buttonbill" id="buttonbill" data-sodetailid="{{ $item->so_detail_id }}">เพิ่มเลขที่เอกสาร</button>
 
 
                                     <button style="background-color: red; color: white;"
@@ -602,7 +603,7 @@ document.addEventListener("DOMContentLoaded", function() {
     document.querySelectorAll(".buttonbill").forEach(button => {
         button.addEventListener("click", function() {
             const row = this.closest("tr");
-            const so_id = this.getAttribute("data-soid");
+            const so_detail_id = this.getAttribute("data-sodetailid");
             const billidInput = row.querySelector(".billid");
             const billid = billidInput.value.trim();
 
@@ -620,7 +621,7 @@ document.addEventListener("DOMContentLoaded", function() {
                     "Accept": "application/json"
                 },
                 body: JSON.stringify({
-                    so_id: so_id,  // Using so_id instead of soDetailIds
+                    so_detail_id: so_detail_id,  // Using so_id instead of soDetailIds
                     billid: billid
                 })
             })

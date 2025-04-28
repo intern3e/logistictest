@@ -163,17 +163,25 @@ public function updateStatuspdf(Request $request)
 public function updateBillId(Request $request)
 {
     $request->validate([
-        'so_id' => 'required|exists:tblbill,so_id',  // Changed to so_id
+        'so_detail_id' => 'required|exists:tblbill,so_detail_id',
         'billid' => 'required|string|max:50'
     ]);
 
     try {
         $affectedRows = DB::table('tblbill')
-            ->where('so_id', $request->so_id)
+            ->where('so_detail_id', $request->so_detail_id)
             ->update(['billid' => $request->billid]);
+
+        if ($affectedRows === 0) {
+            return response()->json([
+                'success' => false,
+                'message' => 'No records updated. Maybe bill ID is the same or SO Detail ID not found.',
+            ], 404);
+        }
 
         return response()->json([
             'success' => true,
+            'affectedRows' => $affectedRows,
         ]);
 
     } catch (\Exception $e) {
@@ -184,5 +192,6 @@ public function updateBillId(Request $request)
         ], 500);
     }
 }
+
 
 }

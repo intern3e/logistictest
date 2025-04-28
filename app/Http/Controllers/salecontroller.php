@@ -93,10 +93,7 @@ public function logout()
 
 
 // Show the form
-public function showForm()
-    {
-    return view('sale.insertdata');
-    }
+
 
     public function insert(Request $request)
 {
@@ -181,6 +178,7 @@ public function showForm()
         $bill->emp_name = $request->input('emp_name');
         $bill->sale_name = $request->input('sale_name');
         $bill->billtype = $request->input('billtype');
+        $bill->formtype = $request->input('formtype');
         $bill->billid = $request->input('billid');
             
         if ($request->hasFile('POdocument')) {

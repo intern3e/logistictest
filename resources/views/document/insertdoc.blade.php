@@ -27,7 +27,7 @@
 
     h2.text-dark {
         color: #333333;
-        border-bottom: 2px solid #3f865d;
+        border-bottom: 2px solid#2c3e50;
         padding-bottom: 10px;
     }
 
@@ -110,7 +110,7 @@
     }
 
     table thead {
-        background-color: #3f865d ;
+        background-color:#2c3e50 ;
         color: #fff;
     }
 
@@ -244,11 +244,42 @@
         
 <div style="position: relative; margin-bottom: 20px;">
     <label for="com_name">บริษัท:</label>
-    <input type="text" id="com_name" name="com_name"style="width: 100%; padding: 10px; font-size: 16px;" autocomplete="off">
+    <input type="text" id="com_name" name="com_name" style="width: 100%; padding: 10px; font-size: 16px;" autocomplete="off">
     <ul id="autocomplete_list" class="autocomplete-list" style="display: none;"></ul>
-    <button type="button" id="search" style="margin-top: 10px;">🔍 ค้นหา</button>
+    <button type="button" id="search" style="position: absolute; right: 10px; top: 10px; display: none;">🔍 ค้นหา</button>
+    <p id="no_data_message" style=" display: none;">ไม่มีข้อมูล</p> <!-- ข้อความไม่มีข้อมูล -->
 </div>
 
+<script>
+    document.getElementById('com_name').addEventListener('input', function() {
+        const inputText = document.getElementById('com_name').value;
+        const noDataMessage = document.getElementById('no_data_message');
+        if (inputText.length >= 3) { // ตรวจสอบว่ามีอักษรครบ 3 ตัว
+            document.getElementById('search').click(); // สั่งกดปุ่ม search
+            // สมมติว่าได้ข้อมูลจาก API หรือระบบค้นหา
+            const searchResults = []; // ตัวอย่างข้อมูลที่ค้นเจอ
+            if (searchResults.length === 0) {
+                noDataMessage.style.display = 'block'; // แสดงข้อความ "ไม่มีข้อมูล"
+            } else {
+                noDataMessage.style.display = 'none'; // ซ่อนข้อความ "ไม่มีข้อมูล" เมื่อเจอข้อมูล
+                // แสดงผลข้อมูลใน autocomplete list (สามารถทำได้ตามต้องการ)
+            }
+        } else {
+            noDataMessage.style.display = 'none'; // ซ่อนข้อความ "ไม่มีข้อมูล" ถ้าไม่มีคำค้นหาครบ 3 ตัว
+        }
+    });
+
+    document.getElementById('com_name').addEventListener('keydown', function(event) {
+        if (event.key === 'Enter') {
+            event.preventDefault(); // ป้องกันการ submit form ถ้ามี
+            document.getElementById('search').click(); // สั่งกดปุ่ม search
+        }
+    });
+</script>
+
+
+
+    
 
 <script>
     let allCompanies = [];

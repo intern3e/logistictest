@@ -35,6 +35,7 @@ use App\Models\Bill_Detail;
 
 
 
+
     Route::get('/get-bill-detail/{so_detail_id}', function ($so_detail_id) {
         $billDetails = Bill_Detail::where('so_detail_id', $so_detail_id)->get();
         return response()->json($billDetails);
