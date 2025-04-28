@@ -89,11 +89,19 @@ public function logout()
     session()->flush(); // ลบข้อมูลในเซสชัน
     return redirect()->route("sale.loginsale")->with('success', 'คุณได้ออกจากระบบเรียบร้อยแล้ว!');
         }
+        public function fetchFormType(Request $request)
+{
+    $customer_id = $request->input('customer_id');
 
+    // ค้นหาข้อมูล formtype จากฐานข้อมูล
+    $bill = DB::table('tblbill')->where('customer_id', $customer_id)->first();
 
-
-// Show the form
-
+    if ($bill) {
+        return response()->json(['formtype' => $bill->formtype]);
+    } else {
+        return response()->json(['formtype' => null]); // ถ้าไม่พบข้อมูล
+    }
+}
 
     public function insert(Request $request)
 {
@@ -160,6 +168,11 @@ public function logout()
                 $i++;
             } while ($exists);
         }
+        $customer_id = $request->input('customer_id');
+        $formType = $request->input('formtype');
+        DB::table('tblbill')
+            ->where('customer_id', $customer_id)
+            ->update(['formtype' => $formType]);
 
         // **🔹 Insert into Bills**
         $bill = new Bill();

@@ -3,6 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="csrf-token" content="{{ csrf_token() }}">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.4.0/jspdf.umd.min.js"></script>
     <title>เปิดบิลสินค้า</title>
     <style>
@@ -204,6 +205,7 @@
             <label>รหัสลูกค้า :</label>
             <input type="text" id="customer_id" name="customer_id" readonly>
         </div>
+        
         <div>
             <label>ชื่อบริษัท :</label>
             <input type="text" id="customer_name" name="customer_name" readonly>
@@ -214,17 +216,50 @@
             <input type="text" id="customer_tel" name="customer_tel">
         </div>
 
-        
         <div class="form-group">
             <label for="formtype">ประเภทเอกสาร</label>
             <select id="formtype" name="formtype" required>
-                <option value="1">1</option> 
-                <option value="2">2</option> 
-                <option value="3">3</option> 
-                <option value="4">4</option> 
-           
+                <option value="ไม่มีข้อมูล" disabled selected>ไม่มีข้อมูล</option>
+                <option value="1">1</option>
+                <option value="2">2</option>
+                <option value="3">3</option>
+                <option value="4">4</option>
             </select>
         </div>
+        
+        <script>
+        function fetchFormType() {
+            console.log('fetchFormType called'); // ตรวจสอบการเรียกฟังก์ชัน
+        
+            var customer_id = document.getElementById("customer_id").value;
+        
+            if (customer_id) {  // ตรวจสอบว่า customer_id มีค่า
+                // ส่งคำขอไปยัง Controller
+                fetch('/fetch-formtype', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+                    },
+                    body: JSON.stringify({ customer_id: customer_id })
+                })
+                .then(response => response.json())  // แปลงคำตอบเป็น JSON
+                .then(data => {
+                    console.log('Response from server:', data); // ตรวจสอบข้อมูลจากเซิร์ฟเวอร์
+        
+                    if (data.formtype) {  // ถ้าเจอ formtype จากเซิร์ฟเวอร์
+                        document.getElementById("formtype").value = data.formtype;
+                    } else {  // ถ้าไม่เจอ formtype
+                        document.getElementById("formtype").value = 'ไม่มีข้อมูล';  // กำหนดค่าเป็น "ไม่มีข้อมูล"
+                    }
+                })
+                .catch(error => console.error('Error:', error));  // จับข้อผิดพลาด
+            } else {
+                // หากไม่มี customer_id, กำหนดค่าให้เป็น "ไม่มีข้อมูล"
+                document.getElementById("formtype").value = 'ไม่มีข้อมูล';
+            }
+        }
+        </script>
                    <!-- แสดงรูปหรือ PDF -->
         <div id="filePreviewContainer">
             <iframe id="pdfPreview" width="100%" height="300px" style="display: none; border: 1px solid #ccc;"></iframe>
@@ -318,6 +353,8 @@ document.getElementById('submitBill').addEventListener('click', async function (
     if (convertedPDFBlob) {
     formData.append('POdocument', convertedPDFBlob, originalFilename || 'upload.pdf');
 }
+    let formType = document.getElementById('formtype').value;
+    formData.append('formtype', formType);
 
 
     // ตรวจสอบว่ามีสินค้าอย่างน้อย 1 รายการถูกเลือก
@@ -467,9 +504,14 @@ function openGoogleMaps() {
                 const SoStatus = data.SoStatus;
 
                 // แสดงข้อมูลทั่วไป
+                // สมมติว่าคุณได้ customer_id จาก API
+
+
+
                 document.getElementById('so_id').value = SoStatus.SONum;  
                 document.getElementById('ponum').value = soDetails.CustPONo;  
                 document.getElementById('customer_id').value = SoStatus.CustID; 
+                fetchFormType();
                 document.getElementById('customer_name').value = soDetails.CustName;  
                 document.getElementById('customer_address').value = 
                 [soDetails.ShipToAddr1,soDetails.CustAddr1, soDetails.ContDistrict, soDetails.ContAmphur, soDetails.ContProvince, soDetails.ContPostCode]
@@ -589,6 +631,7 @@ SOLists.forEach((soItem) => {
 </script>
 
 <script>
+
 </script>
 
 </body>

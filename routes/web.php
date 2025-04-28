@@ -30,6 +30,13 @@ use App\Models\Bill_Detail;
     Route::get('/sale/modifydata/{id}', [salecontroller::class, 'modifyData'])->name('sale.modifydata');
     Route::any('/update-bill', [salecontroller::class, 'updateBill']);
     Route::delete('/delete-bill/{so_detail_id}', [salecontroller::class, 'deleteBill']);
+    Route::post('/fetch-formtype', [salecontroller::class, 'fetchFormType']);
+
+
+
+
+
+
 
 
 
