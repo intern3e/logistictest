@@ -217,7 +217,7 @@
         </div>
 
         <div class="form-group">
-            <label for="formtype">แบบฟอร์มเอกสาร</label>
+            <label for="formtype">แบบฟอร์มเอกสาร :</label>
             <select id="formtype" name="formtype" required>
                 <option value="ไม่มีข้อมูล" disabled selected>ไม่มีข้อมูล</option>
                 <option value="1">1</option>
