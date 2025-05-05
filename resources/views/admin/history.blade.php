@@ -378,6 +378,7 @@ th {
             <label for="date">📅 วันที่:</label>
             <input type="date" id="date" name="date" value="{{ request('date', \Carbon\Carbon::today()->format('Y-m-d')) }}">
             <button type="submit" style="display: none;">ค้นหา</button>
+            <button id="summitbackso" onclick="updateStatuspdfback()">คืนสถานะงาน</button>
         </form>
 
     
@@ -404,9 +405,7 @@ th {
             <input type="text" id="search-input" placeholder=" ค้นหา เลขที่บิล" onkeyup="searchTable()">
         </div>
     
-        <div class="button-group">
-            <button onclick="createCSV()">ดาวน์โหลด CSV</button>
-        </div>
+
     </div>
     
         
@@ -565,76 +564,89 @@ th {
 </script>
 
 
+
 <script>
 
-function createCSV() {
-    const headers = [
-        "เลขที่บิล", "อ้างอิงใบสั่งขาย", "อ้างอิงใบสั่งซื้อ", "ชื่อลูกค้า",
-        "เบอร์ติดต่อ", "ที่อยู่จัดส่ง", "ละติจูด ลองจิจูด", "วันที่จัดส่ง", 
-        "ผู้เปิดบิล"
-    ];
-
-    let data = [];
-    let selectedSoDetailIds = []; // เก็บ so_detail_id ของแถวที่เลือก
-
-    let checkboxes = document.querySelectorAll("input[type='checkbox']:checked");
-
-    checkboxes.forEach(checkbox => {
-        let row = checkbox.closest("tr");
-        if (!row) return;
-
-        let cells = row.querySelectorAll("td");
-        let rowData = [];
-
-        // ดึงข้อมูลจากแต่ละเซลล์ (ข้าม checkbox column)
-        cells.forEach((cell, index) => {
-            if (index > 0 && index <= 9) { 
-                rowData.push(`"${cell.textContent.trim()}"`);
+    function createJSON() {
+        let jsonData = [];
+        let selectedSoDetailIds = [];
+    
+        let checkboxes = document.querySelectorAll("input[type='checkbox']:checked");
+    
+        checkboxes.forEach(checkbox => {
+            let row = checkbox.closest("tr");
+            if (!row) return;
+    
+            let cells = row.querySelectorAll("td");
+    
+            // ดึงค่าจากเซลล์ตาม index (อย่าลืมเช็กว่า index ตรงกับตารางจริง)
+            let billNo        = cells[4].textContent.trim(); // เลขที่บิล
+            let orderDate     = cells[9].textContent.trim(); // วันที่จัดส่ง
+            let phone         = cells[6].textContent.trim(); // เบอร์ติดต่อ
+            let address       = cells[7].textContent.trim(); // ที่อยู่จัดส่ง
+            let customerName  = cells[5].textContent.trim(); // ชื่อลูกค้า
+            let latlong       = cells[8].textContent.trim(); // ละติจูด ลองจิจูด
+    
+            // แยกละติจูดกับลองจิจูด
+            let [lat, lng] = latlong.split(",").map(val => parseFloat(val.trim()));
+    
+            let order = {
+                orderNo: billNo,
+                date: formatDate(orderDate),
+                phone: phone,
+                location: {
+                    address: address,
+                    locationName: `${customerName} (${phone})`,
+                    latitude: lat,
+                    longitude: lng
+                }
+            };
+    
+            let soDetailId = checkbox.getAttribute("data-so-detail-id");
+            if (soDetailId) {
+                selectedSoDetailIds.push(soDetailId);
             }
+    
+            jsonData.push(order);
         });
-
-        // ดึงค่า so_detail_id แล้วเก็บไว้
-        let soDetailId = checkbox.getAttribute("data-so-detail-id");
-        if (soDetailId) {
-            selectedSoDetailIds.push(soDetailId);
+    
+        if (jsonData.length === 0) {
+            alert("กรุณาเลือกข้อมูลที่ต้องการพิมพ์ JSON");
+            return;
         }
-
-        data.push(rowData.join(","));
-    });
-
-    if (data.length === 0) {
-        alert("กรุณาเลือกข้อมูลที่ต้องการพิมพ์ CSV");
-        return;
+    
+        const output = { orders: jsonData };
+        const jsonContent = JSON.stringify(output, null, 2);
+        const blob = new Blob([jsonContent], { type: "application/json;charset=utf-8;" });
+    
+        let now = new Date();
+        let day = String(now.getDate()).padStart(2, "0");
+        let month = String(now.getMonth() + 1).padStart(2, "0");
+        let year = now.getFullYear();
+        let formattedDate = `${day}-${month}-${year}`;
+    
+        const filename = `เอกสารเส้นทางเดินรถของSO_${formattedDate}.json`;
+    
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = filename;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+    
+        if (selectedSoDetailIds.length > 0) {
+            updateStatus(selectedSoDetailIds);
+        }
     }
-
-    const csvContent = "\uFEFF" + [headers.join(","), ...data].join("\n");
-
-    const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
-
-    // ดึงวันเวลาปัจจุบันและฟอร์แมตเป็น DD-MM-YYYY
-    let now = new Date();
-    let day = String(now.getDate()).padStart(2, "0");
-    let month = String(now.getMonth() + 1).padStart(2, "0"); // เดือนเริ่มที่ 0
-    let year = now.getFullYear();
-    let formattedDate = `${day}-${month}-${year}`;
-
-    const filename = `เอกสารเส้นทางเดินรถของSO_${formattedDate}.csv`;
-
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = filename;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
-
-    // หลังจากดาวน์โหลด CSV แล้ว อัปเดตสถานะของข้อมูลที่เลือก
-    if (selectedSoDetailIds.length > 0) {
-        updateStatus(selectedSoDetailIds);
+    
+    // ฟังก์ชันแปลงวันที่จาก DD/MM/YYYY → YYYY-MM-DD
+    function formatDate(input) {
+        let [d, m, y] = input.split("/");
+        return `${y}-${m}-${d}`;
     }
-}
-
+    
 
 function searchTable() {
     let searchInput = document.getElementById("search-input").value.toLowerCase();
@@ -694,7 +706,47 @@ function toggleCheckboxes() {
 }
 
     </script>
+<script>
+function updateStatuspdfback() {
+    let selectedIds = [];
+    let checkboxes = document.querySelectorAll("input[name='status[]']:checked");
 
+    checkboxes.forEach(checkbox => {
+        let row = checkbox.closest('tr');
+        let soDetailId = row.querySelector('td:nth-child(2)').textContent; // Get so_detail_id from second column
+        selectedIds.push(soDetailId);
+    });
 
+    if (selectedIds.length === 0) {
+        alert("กรุณาเลือกบิลที่ต้องการอัปเดต");
+        return;
+    }
+
+    // Proceed to update
+    console.log("Updating status for:", selectedIds); // Log the selected IDs
+
+    fetch('/update-statuspdfsoback', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+        },
+        body: JSON.stringify({ soDetailIds: selectedIds })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            location.reload(); // Optionally reload the page to reflect changes
+        } else {
+            alert("ไม่สามารถอัปเดตสถานะได้");
+        }
+    })
+    .catch(error => {
+        console.error("Error updating status:", error);
+        alert("เกิดข้อผิดพลาดในการอัปเดตสถานะ");
+    });
+}   
+ 
+    </script>
 </body>
 </html>

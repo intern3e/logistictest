@@ -30,21 +30,25 @@ class PoDocumentController extends Controller
                 ob_end_clean();
                 return response()->json(['success' => false, 'error' => 'ไม่สามารถโหลดไฟล์ PDF']);
             }
-
+    
             // วนลูปทุกหน้าเพื่อเพิ่ม SO ID
             for ($pageNo = 1; $pageNo <= $pageCount; $pageNo++) {
-                $templateId = $pdf->importPage($pageNo);
-                $size = $pdf->getTemplateSize($templateId);
-                
-                $pdf->addPage($size['orientation'], [$size['width'], $size['height']]);
-                $pdf->useTemplate($templateId);
-                
-                // เพิ่ม SO ID ที่หัวกระดาษทุกหน้า
-                $pdf->SetFont('Arial', '',10);
-                $pdf->SetTextColor(0, 0, 0); // สีดำ
-                $pdf->SetXY(150, 1);
-                $pdf->Cell(50, 10, "{$so_detail_id}", 0, 0, 'R');
-            }
+    $templateId = $pdf->importPage($pageNo);
+    $size = $pdf->getTemplateSize($templateId);
+
+    $pdf->SetMargins(0, 0, 0);
+    $pdf->AddPage($size['orientation'], [$size['width'], $size['height']]);
+    $pdf->useTemplate($templateId);
+
+    $pdf->SetFont('Helvetica', 'I', 8);
+    $pdf->SetTextColor(130,130, 130);
+
+    // คำนวณตำแหน่งใหม่ (หน่วย pt)
+    $x = 15; // ≈ 2 cm
+    $y = $size['height'] - 4; // ≈ 3 cm ขึ้นจากล่าง
+
+    $pdf->Text($x, $y, "{$so_detail_id}");
+}
 
             $outputPath = storage_path("app/public/po_documents/{$POdocument}");
             $pdf->Output('F', $outputPath);
@@ -98,8 +102,8 @@ class PoDocumentController extends Controller
                 $pdf->useTemplate($templateId);
                 
                 // เพิ่ม SO ID ที่หัวกระดาษทุกหน้า
-                $pdf->SetFont('Arial', '', 10);
-                $pdf->SetTextColor(0, 0, 0); // สีดำ
+                $pdf->SetFont('Helvetica', 'I', 8);
+                $pdf->SetTextColor(130,130, 130); // สีดำ
                 $pdf->SetXY(150, 1);
                 $pdf->Cell(50, 10, "{$so_detail_id}", 0, 0, 'R');
             }

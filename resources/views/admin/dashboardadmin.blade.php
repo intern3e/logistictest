@@ -381,7 +381,7 @@ th {
         </div>
     
         <div class="button-group">
-            <button onclick="createCSV()">ดาวน์โหลด CSV</button>
+            <button id="printroutejson" onclick="createJSON()">ดาวน์โหลด เส้นทาง</button>
             <a href="history"><button>📜 ประวัติเอกสาร</button></a>
             <a href="dashboardadminpdf"><button>ปริ้นเอกสารSO</button></a>
         </div>
@@ -399,6 +399,7 @@ th {
                         <th>เลขที่บิล</th>
                         <th>อ้างอิงใบสั่งขาย</th>
                         <th>อ้างอิงใบสั่งซื้อ</th>
+                        <th>อ้างอิงใบส่งของ</th>
                         <th>ชื่อลูกค้า</th>
                         <th>เบอร์ติดต่อ</th>
                         <th>ที่อยู่จัดส่ง</th>
@@ -420,6 +421,7 @@ th {
                                 <td>{{ $item->so_detail_id }}</td>
                                 <td>{{ $item->so_id }}</td>
                                 <td>{{ $item->ponum }}</td>
+                                <td>{{ $item->billid }}</td>
                                 <td>{{ $item->customer_name }}</td>
                                 <td>{{ $item->customer_tel }}</td>  
                                 <td>{{ $item->customer_address }}</td>
@@ -547,15 +549,9 @@ th {
 
 <script>
 
-function createCSV() {
-    const headers = [
-        "เลขที่บิล", "อ้างอิงใบสั่งขาย", "อ้างอิงใบสั่งซื้อ", "ชื่อลูกค้า",
-        "เบอร์ติดต่อ", "ที่อยู่จัดส่ง", "ละติจูด ลองจิจูด", "วันที่จัดส่ง", 
-        "ผู้เปิดบิล","ประเภทบิล",'หมายเหตุ'
-    ];
-
-    let data = [];
-    let selectedSoDetailIds = []; // เก็บ so_detail_id ของแถวที่เลือก
+function createJSON() {
+    let jsonData = [];
+    let selectedSoDetailIds = [];
 
     let checkboxes = document.querySelectorAll("input[type='checkbox']:checked");
 
@@ -564,41 +560,54 @@ function createCSV() {
         if (!row) return;
 
         let cells = row.querySelectorAll("td");
-        let rowData = [];
 
-        // ดึงข้อมูลจากแต่ละเซลล์ (ข้าม checkbox column)
-        cells.forEach((cell, index) => {
-            if (index > 0 && index <=11) { 
-                rowData.push(`"${cell.textContent.trim()}"`);
+        // ดึงค่าจากเซลล์ตาม index (อย่าลืมเช็กว่า index ตรงกับตารางจริง)
+        let billNo        = cells[4].textContent.trim(); // เลขที่บิล
+        let orderDate     = cells[9].textContent.trim(); // วันที่จัดส่ง
+        let phone         = cells[6].textContent.trim(); // เบอร์ติดต่อ
+        let address       = cells[7].textContent.trim(); // ที่อยู่จัดส่ง
+        let customerName  = cells[5].textContent.trim(); // ชื่อลูกค้า
+        let latlong       = cells[8].textContent.trim(); // ละติจูด ลองจิจูด
+
+        // แยกละติจูดกับลองจิจูด
+        let [lat, lng] = latlong.split(",").map(val => parseFloat(val.trim()));
+
+        let order = {
+            orderNo: billNo,
+            date: formatDate(orderDate),
+            phone: phone,
+            location: {
+                address: address,
+                locationName: `${customerName} (${phone})`,
+                latitude: lat,
+                longitude: lng
             }
-        });
+        };
 
-        // ดึงค่า so_detail_id แล้วเก็บไว้
         let soDetailId = checkbox.getAttribute("data-so-detail-id");
         if (soDetailId) {
             selectedSoDetailIds.push(soDetailId);
         }
 
-        data.push(rowData.join(","));
+        jsonData.push(order);
     });
 
-    if (data.length === 0) {
-        alert("กรุณาเลือกข้อมูลที่ต้องการพิมพ์ CSV");
+    if (jsonData.length === 0) {
+        alert("กรุณาเลือกข้อมูลที่ต้องการพิมพ์ JSON");
         return;
     }
 
-    const csvContent = "\uFEFF" + [headers.join(","), ...data].join("\n");
+    const output = { orders: jsonData };
+    const jsonContent = JSON.stringify(output, null, 2);
+    const blob = new Blob([jsonContent], { type: "application/json;charset=utf-8;" });
 
-    const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
-
-    // ดึงวันเวลาปัจจุบันและฟอร์แมตเป็น DD-MM-YYYY
     let now = new Date();
     let day = String(now.getDate()).padStart(2, "0");
-    let month = String(now.getMonth() + 1).padStart(2, "0"); // เดือนเริ่มที่ 0
+    let month = String(now.getMonth() + 1).padStart(2, "0");
     let year = now.getFullYear();
     let formattedDate = `${day}-${month}-${year}`;
 
-    const filename = `เอกสารเส้นทางเดินรถของSO_${formattedDate}.csv`;
+    const filename = `เอกสารเส้นทางเดินรถของSO_${formattedDate}.json`;
 
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
@@ -609,10 +618,15 @@ function createCSV() {
     document.body.removeChild(a);
     URL.revokeObjectURL(url);
 
-    // หลังจากดาวน์โหลด CSV แล้ว อัปเดตสถานะของข้อมูลที่เลือก
     if (selectedSoDetailIds.length > 0) {
         updateStatus(selectedSoDetailIds);
     }
+}
+
+// ฟังก์ชันแปลงวันที่จาก DD/MM/YYYY → YYYY-MM-DD
+function formatDate(input) {
+    let [d, m, y] = input.split("/");
+    return `${y}-${m}-${d}`;
 }
 
 

@@ -249,6 +249,8 @@
         
                     if (data.formtype) {  // ถ้าเจอ formtype จากเซิร์ฟเวอร์
                         document.getElementById("formtype").value = data.formtype;
+                        document.getElementById("customer_la_long").value = data.customer_la_long;
+                        updateMap();
                     } else {  // ถ้าไม่เจอ formtype
                         document.getElementById("formtype").value = 'ไม่มีข้อมูล';  // กำหนดค่าเป็น "ไม่มีข้อมูล"
                     }
@@ -272,8 +274,6 @@
     <label for="customer_address">ที่อยู่จัดส่ง :</label>
     <textarea id="customer_address" name="customer_address" rows="4" style="width: 100%; padding: 10px; font-size: 16px; border-radius: 10px; border: 1px solid #ccc;"></textarea>
     </div>
-
-        
         <label>ละติจูด ลองจิจูด :</label>
         <div style="display: flex; justify-content: space-between; width: 100%;" >
             <input type="text" id="customer_la_long" name="customer_la_long">
@@ -311,6 +311,13 @@
                     <option value="ขายเชื่อ">ขายเชื่อ</option> 
                     <option value="ขายสด">ขายสด</option> 
                 </select>
+            </div>
+        </div>
+
+        <div class="form-section">
+            <div class="form-group">
+                <label for="billid">เลขที่บิลส่งของ:</label>
+                <input type="text" id="billid" name="billid" required>
             </div>
         </div>
 
@@ -387,7 +394,6 @@ document.getElementById('submitBill').addEventListener('click', async function (
             formData.append(`status[${index}]`, itemStatus);
         }
     });
-
     // ส่งข้อมูลไปยัง Controller Laravel
     try {
         let response = await fetch('{{ route("insert.post") }}', {
@@ -470,7 +476,6 @@ function openGoogleMaps() {
         `width=${windowWidth},height=${windowHeight},left=${leftPosition},top=${topPosition}`
     );
 }
-
     </script>
 
     <script>
@@ -505,9 +510,6 @@ function openGoogleMaps() {
 
                 // แสดงข้อมูลทั่วไป
                 // สมมติว่าคุณได้ customer_id จาก API
-
-
-
                 document.getElementById('so_id').value = SoStatus.SONum;  
                 document.getElementById('ponum').value = soDetails.CustPONo;  
                 document.getElementById('customer_id').value = SoStatus.CustID; 
@@ -515,6 +517,10 @@ function openGoogleMaps() {
                 document.getElementById('customer_name').value = soDetails.CustName;  
                 document.getElementById('customer_address').value = 
                 [soDetails.ShipToAddr1,soDetails.CustAddr1, soDetails.ContDistrict, soDetails.ContAmphur, soDetails.ContProvince, soDetails.ContPostCode]
+                .filter(Boolean) // กรองค่าที่เป็น null หรือ undefined หรือว่าง
+                .join(', ');
+                document.getElementById('customer_la_long').value = 
+                [soDetails.Latitude,soDetails.Longitude,]
                 .filter(Boolean) // กรองค่าที่เป็น null หรือ undefined หรือว่าง
                 .join(', ');
                 document.getElementById('customer_tel').value = soDetails.ContTel;  

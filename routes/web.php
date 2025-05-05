@@ -65,6 +65,7 @@ Route::get('/admin/get-bill-detail/{so_detail_id}', [AdminController::class, 'ge
 Route::post('/update-status', [admincontroller::class, 'updateStatus']);
 Route::get('/dashboardadminpdf', [AdminController::class, 'dashboardpdf'])->name('admin.dashboardadminpdf');
 Route::post('/update-statuspdfso', [admincontroller::class, 'updateStatuspdf']);
+Route::post('/update-statuspdfsoback', [admincontroller::class, 'updateStatuspdfback']);
 Route::post('/update-billid', [AdminController::class, 'updateBillId'])->name('update.billid');
 
 

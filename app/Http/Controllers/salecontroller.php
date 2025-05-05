@@ -93,11 +93,17 @@ public function logout()
 {
     $customer_id = $request->input('customer_id');
 
-    // ค้นหาข้อมูล formtype จากฐานข้อมูล
-    $bill = DB::table('tblbill')->where('customer_id', $customer_id)->first();
+    // ค้นหาข้อมูล formtype จากฐานข้อมูล โดยการจัดเรียงตามเวลา (ล่าสุด)
+    $bill = DB::table('tblbill')
+                ->where('customer_id', $customer_id)
+                ->orderBy('time', 'desc') // หรือจะใช้ 'so_detail_id' ก็ได้ ถ้าเพิ่มขึ้นเรื่อยๆ
+                ->first(); // ดึงแถวล่าสุด
 
     if ($bill) {
-        return response()->json(['formtype' => $bill->formtype]);
+        return response()->json([
+            'formtype' => $bill->formtype,
+            'customer_la_long' => $bill->customer_la_long
+        ]);
     } else {
         return response()->json(['formtype' => null]); // ถ้าไม่พบข้อมูล
     }
@@ -120,7 +126,7 @@ public function logout()
             'sale_name' => 'required|string|max:255',
             'date_of_dali' => 'required|date',
             'notes' => 'nullable|string',
-            'billid' => 'nullable|string',
+            'billid' => 'required|string|max:255',
             'item_id' => 'required|array',
             'item_id.*' => 'string',
             'item_name' => 'required|array',
@@ -170,9 +176,9 @@ public function logout()
         }
         $customer_id = $request->input('customer_id');
         $formType = $request->input('formtype');
-        DB::table('tblbill')
-            ->where('customer_id', $customer_id)
-            ->update(['formtype' => $formType]);
+        $customer_la_long = $request->input('customer_la_long');
+
+
 
         // **🔹 Insert into Bills**
         $bill = new Bill();

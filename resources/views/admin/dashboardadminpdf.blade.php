@@ -389,7 +389,8 @@
         <div class="top-section">
             <div class="button-group">
                 <button id="summitso" onclick="updateStatuspdf()">ปริ้นเอกสารSO</button>
-                <a href="dashboardadmin"><button style="background-color: red">ปริ้นเอกสารเส้นทางการเดินรถ</button></a>
+                <a href="dashboardadmin"><button id="printroute" style="background-color: red">ปริ้นเอกสารเส้นทางการเดินรถ</button></a>
+                <a href="history"><button>📜 ประวัติเอกสาร</button></a>
             </div>
 
             <div class="search-box">
@@ -399,12 +400,14 @@
         </div>
         
         <div class="table-container">
+            <input type="checkbox" id="checkAll" onclick="toggleCheckboxes()"> ทั้งหมด
     <table>
         <thead>
             <tr>
                 <th>ปริ้นเอกสาร</th>
                 <th>เลขที่บิล</th>
                 <th>อ้างอิงใบสั่งขาย</th>
+                <th>อ้างอิงใบส่งของ</th>
                 <th>อ้างอิงใบสั่งซื้อ</th>
                 <th>ชื่อลูกค้า</th>
                 <th>เบอร์ติดต่อ</th>
@@ -448,8 +451,10 @@
                             onclick="copyPonumAndCheckBox('{{ $item->so_id }}', '{{ $item->so_detail_id }}', '{{ $item->billid ?? '' }}')">
                             ไม่มีไฟล์
                         </button>
+                        
                                         
                         @endif
+                        <td>{{ $item->billid }}</td>
                         </td>
                                 <td>{{ $item->customer_name}}</td>
                                 <td>{!! nl2br(e(str_replace(',', "\n", $item->customer_tel))) !!}</td>
@@ -459,7 +464,7 @@
                                 <td id="billtype">{{ $item->billtype }}</td>
                                 <td>
                                     <input type="text" class="billid" id="billid" value="{{ $item->billid ?? '' }}">
-                                    <button class="buttonbill" id="buttonbill" data-sodetailid="{{ $item->so_detail_id }}">เพิ่มเลขที่เอกสาร</button>
+                                    
 
 
                                     <button style="background-color: red; color: white;"
@@ -662,8 +667,6 @@ function searchTable() {
     }
 }
 
-
-
 function updateStatuspdf() {
     let selectedIds = [];
     let checkboxes = document.querySelectorAll("input[name='statupdf[]']:checked");
@@ -675,7 +678,6 @@ function updateStatuspdf() {
     });
 
     if (selectedIds.length === 0) {
-        alert("กรุณาเลือกบิลที่ต้องการอัปเดต");
         return;
     }
 
@@ -810,6 +812,14 @@ function openFileInNewTabbill(url, ponum, so_detail_id, so_id, billid) {
         window.open(url, '_blank');
 
      }
+     function toggleCheckboxes() {
+    var checkAllBox = document.getElementById('checkAll');
+    var checkboxes = document.querySelectorAll('input[type="checkbox"]:not(#checkAll)');
+    checkboxes.forEach(function(checkbox) {
+        checkbox.checked = checkAllBox.checked;
+    });
+}
+
 </script>
 </body>
 </html>
