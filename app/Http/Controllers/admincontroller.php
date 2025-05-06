@@ -88,6 +88,31 @@ class admincontroller extends Controller
         return view('admin.dashboardadminpdf', compact('bill', 'message'));
     }
 
+    public function adminroute(Request $request)
+    {
+        $date = $request->get('date');
+        $message = null;  // กำหนดค่าเริ่มต้นให้กับตัวแปร $message
+        
+        // ถ้าผู้ใช้กรอกวันที่ ให้กรองข้อมูลที่มีวันที่ตรงกับที่เลือก
+        if ($date) {
+            $bill = Bill::whereDate('date_of_dali', $date)  // ใช้ชื่อคอลัมน์ที่ถูกต้อง
+                        ->orderBy('so_detail_id', 'desc')
+                        ->with('customer')
+                        ->get();
+            
+            // ตรวจสอบว่ามีข้อมูลหรือไม่
+            if ($bill->isEmpty()) {
+                $message = 'ไม่พบข้อมูลที่ตรงกับวันที่เลือก';
+            } 
+        } else {
+            // ถ้าไม่ได้กรอกวันที่ จะดึงข้อมูลทั้งหมด
+            $bill = Bill::orderBy('so_detail_id', 'desc')
+                        ->with('customer')
+                        ->get();
+        }
+    
+        return view('admin.adminroute', compact('bill', 'message'));
+    }
 
     public function history(Request $request)
     {
@@ -216,6 +241,25 @@ public function updateBillId(Request $request)
         ], 500);
     }
 }
+public function updateStatuspdf2(Request $request)
+{
+    // ตรวจสอบว่ามีค่า soDetailIds ส่งมาหรือไม่
+    $soDetailIds = $request->input('soDetailIds');
+    if (empty($soDetailIds)) {
+        return response()->json(['success' => false, 'message' => 'No SO Detail IDs provided'], 400);
+    }
 
+    try {
+        // อัปเดตสถานะจาก 0 เป็น 1
+        DB::table('tblbill')
+            ->whereIn('so_detail_id', $soDetailIds)
+            ->update(['statuspdf' => 2]);
+
+        return response()->json(['success' => true]);
+    } catch (\Exception $e) {
+        // จัดการข้อผิดพลาดที่เกิดขึ้น
+        return response()->json(['success' => false, 'message' => 'Failed to update status', 'error' => $e->getMessage()], 500);
+    }
+}
 
 }

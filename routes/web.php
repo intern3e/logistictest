@@ -31,18 +31,6 @@ use App\Models\Bill_Detail;
     Route::any('/update-bill', [salecontroller::class, 'updateBill']);
     Route::delete('/delete-bill/{so_detail_id}', [salecontroller::class, 'deleteBill']);
     Route::post('/fetch-formtype', [salecontroller::class, 'fetchFormType']);
-
-
-
-
-
-
-
-
-
-
-
-
     Route::get('/get-bill-detail/{so_detail_id}', function ($so_detail_id) {
         $billDetails = Bill_Detail::where('so_detail_id', $so_detail_id)->get();
         return response()->json($billDetails);
@@ -67,6 +55,8 @@ Route::get('/dashboardadminpdf', [AdminController::class, 'dashboardpdf'])->name
 Route::post('/update-statuspdfso', [admincontroller::class, 'updateStatuspdf']);
 Route::post('/update-statuspdfsoback', [admincontroller::class, 'updateStatuspdfback']);
 Route::post('/update-billid', [AdminController::class, 'updateBillId'])->name('update.billid');
+Route::get('/adminroute', [AdminController::class, 'adminroute'])->name('admin.adminroute');
+Route::post('/update-statuspdfso2', [admincontroller::class, 'updateStatuspdf2']);
 
 
 

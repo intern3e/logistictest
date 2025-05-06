@@ -169,7 +169,8 @@
             </div>						<input type="button" name="search" value="Search" onclick="submitForm(this.name)">
                                         <input type="button" name="reset" value="Reset" onclick="resetCriteria()">
                                         <input type="button" name="importBills" id="importBills" value="Import Bills" onclick="javaImportBills();">
-                                        <a href="dashboardadminpdf"><input type="button" name="adminso" id="adminso" value="จัดของ"></a>
+                                        <a href="adminroute"><input type="button" name="adminso" id="adminso" value="จัดของ"></a>
+                                        <a href="dashboardadminpdf"><input type="button" name="bot" id="bot" value="บอท"></a>
                                         <input type="hidden" name="lastUpdate" id="lastUpdate" value="">
                                         <input type="hidden" name="completedBills" id="completedBills" value="">
                                         <input type="hidden" name="action" id="action" value="">

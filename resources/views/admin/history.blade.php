@@ -378,10 +378,10 @@ th {
             <label for="date">📅 วันที่:</label>
             <input type="date" id="date" name="date" value="{{ request('date', \Carbon\Carbon::today()->format('Y-m-d')) }}">
             <button type="submit" style="display: none;">ค้นหา</button>
-            <button id="summitbackso" onclick="updateStatuspdfback()">คืนสถานะงาน</button>
-        </form>
-
-    
+            
+        </form> 
+        <button id="summitbackso" onclick="updateStatuspdfback()">คืนสถานะงาน</button>
+        <a href="adminroute"><button>ครวจสอบเอกสาร</button></a>
     <script>
         const form = document.getElementById('autoSearchForm');
         const dateInput = document.getElementById('date');
@@ -432,7 +432,7 @@ th {
                 </thead>
                 <tbody id="table-body">
                     @foreach($bill as $item)
-                        @if($item->status == 1 && $item->statuspdf == 1)
+                        @if($item->status == 1 && $item->statuspdf == 2)
                             <tr>
                                 <td>
                                     <input type="checkbox" class="form-control1" name="status[]" data-so-detail-id="{{ $item->so_detail_id }}">

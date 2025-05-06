@@ -383,7 +383,7 @@ th {
         <div class="button-group">
             <button id="printroutejson" onclick="createJSON()">ดาวน์โหลด เส้นทาง</button>
             <a href="history"><button>📜 ประวัติเอกสาร</button></a>
-            <a href="dashboardadminpdf"><button>ปริ้นเอกสารSO</button></a>
+            <a href="adminroute"><button>ครวจสอบเอกสาร</button></a>
         </div>
     </div>
     
@@ -413,7 +413,7 @@ th {
                 </thead>
                 <tbody id="table-body">
                     @foreach($bill as $item)
-                        @if($item->status == 0 && $item->statuspdf == 1)
+                        @if($item->status == 0 && $item->statuspdf == 2)
                             <tr>
                                 <td>
                                     <input type="checkbox" class="form-control1" name="status[]" data-so-detail-id="{{ $item->so_detail_id }}">
