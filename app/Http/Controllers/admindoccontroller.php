@@ -37,7 +37,29 @@ class admindoccontroller extends Controller
 
         return view('document.admindoc', compact('docbill', 'message'));
     }
+    public function dashboarddocroute(Request $request)
+    {
+        $date = $request->get('date');
+        $message = null;  // กำหนดค่าเริ่มต้นให้กับตัวแปร $message
+        
+        // ถ้าผู้ใช้กรอกวันที่ ให้กรองข้อมูลที่มีวันที่ตรงกับที่เลือกs
+        if ($date) {
+            $docbill = Docbills::whereDate('time', $date)  
+                        ->orderBy('doc_id', 'desc')
+                        ->get();
+            
+            // ตรวจสอบว่ามีข้อมูลหรือไม่
+            if ($docbill->isEmpty()) {
+                $message = 'ไม่พบข้อมูลที่ตรงกับวันที่เลือก';
+            } 
+        } else {
+            // ถ้าไม่ได้กรอกวันที่ จะดึงข้อมูลทั้งหมด
+            $docbill = Docbills::orderBy('doc_id', 'desc')
+                        ->get();
+        }
 
+        return view('document.admindocroute', compact('docbill', 'message'));
+    }
     public function historydoc(Request $request)
     {
         $date = $request->get('date');
@@ -73,5 +95,15 @@ class admindoccontroller extends Controller
     
         return response()->json(['success' => true]);
     }
+      public function statuspdfdoc(Request $request)
+    {
+        $docDetailIds  = $request->input('docDetailIds');
     
+        // Update the status of the selected SO details to 1
+        DB::table('docbills')
+            ->whereIn('doc_id', $docDetailIds )
+            ->update(['statuspdf' => 1]);
+    
+        return response()->json(['success' => true]);
+    }
 }

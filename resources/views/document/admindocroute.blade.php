@@ -277,9 +277,10 @@ td a:hover {
 </head>
 <body>
     <div class="header">
-        <h2>ระบบจัดบิลชั่วคราว</h2>
+        <h2>ระบบจัดเส้นทางบิลชั่วคราว</h2>
         <a href="adminSO"><button class="btn-so">หน้าหลัก</button></a>
     </div>
+
     <div class="container">
         <div class="top-section">
     <form method="GET" action="{{ route('document.admindoc') }}" class="filter-form" id="autoSearchForm">
@@ -287,27 +288,29 @@ td a:hover {
         <input type="date" id="date" name="date" value="{{ request('date', \Carbon\Carbon::today()->format('Y-m-d')) }}">
         <button type="submit" style="display: none;">ค้นหา</button>
     </form>
-    <script>
-        const form = document.getElementById('autoSearchForm');
-        const dateInput = document.getElementById('date');
-        // ส่งฟอร์มเมื่อเปลี่ยนวันที่
-        dateInput.addEventListener('change', () => {
-            form.submit();
-        });
 
-        // ส่งฟอร์มอัตโนมัติเมื่อเข้าหน้าเว็บครั้งแรกเท่านั้น
-        window.addEventListener('load', () => {
-            if (!sessionStorage.getItem('hasAutoSubmitted')) {
-                sessionStorage.setItem('hasAutoSubmitted', 'true');
-                form.submit();
-            }
-        });
-    </script>
+
+<script>
+    const form = document.getElementById('autoSearchForm');
+    const dateInput = document.getElementById('date');
+
+    // ส่งฟอร์มเมื่อเปลี่ยนวันที่
+    dateInput.addEventListener('change', () => {
+        form.submit();
+    });
+
+    // ส่งฟอร์มอัตโนมัติเมื่อเข้าหน้าเว็บครั้งแรกเท่านั้น
+    window.addEventListener('load', () => {
+        if (!sessionStorage.getItem('hasAutoSubmitted')) {
+            sessionStorage.setItem('hasAutoSubmitted', 'true');
+            form.submit();
+        }
+    });
+</script>
             <div class="button-group">
-                <button onclick="updateStatuspdf()">สถานะ</button>
+                <button onclick="createJSON()">ดาวน์โหลด JSON</button>
                 <button onclick="window.location.href='historydoc'">📜 ประวัติเอกสาร</button>
             </div>
-            
             <div class="search-box">
             <input type="text" id="search-input" placeholder=" ค้นหา เลขที่บิล" onkeyup="searchTable()">
         </div>
@@ -329,15 +332,16 @@ td a:hover {
                 <th>ผู้เปิดบิล</th>
                 <th>วันที่</th>
                 <th>ข้อมูลรายละเอียด</th>
-                <th>pdf</th>
+         
             </tr>
         </thead>
         <tbody id="table-body">
             @foreach($docbill as $item)
-            @if($item->statuspdf == 0)
+            @if($item->status == 0 && $item->statuspdf == 1)
             <tr>
                 <td>
-                    <input type="checkbox" class="form-control1" name="status[]" data-doc-detail-id="{{ $item->doc_id }}">
+                <input type="checkbox" class="form-control1" name="status[]" data-doc-id="{{ $item->doc_id }}">
+
                 </td>
                 <td>{{ $item->doc_id }}</td>
                 <td>{{ $item->com_name }}</td>
@@ -347,7 +351,6 @@ td a:hover {
                         $text = $item->com_la_long;
                         $split_text = str_split($text, 40); // แบ่งข้อความเป็นชิ้น ๆ ที่ไม่เกิน 40 ตัว
                     @endphp
-                    
                     @foreach ($split_text as $line)
                         {{ $line }}<br> <!-- แสดงแต่ละบรรทัด -->
                     @endforeach
@@ -363,9 +366,7 @@ td a:hover {
                 </a>
 
                 </td>
-                <td>
-                    <button onclick="downloadRowPDF(this)" class="btn btn-sm btn-outline-danger">📄</button>
-                </td>
+            
             </tr>
             @endif
             @endforeach
@@ -463,58 +464,153 @@ td a:hover {
                     });
             }
 
-        // ฟังก์ชันปิด Popup
-        function closePopup() {
-            document.getElementById("popup").style.display = "none"; // ซ่อน Popup
-        }
-
-                
-                window.onclick = function(event) {
-                    let popup = document.getElementById("popup");
-                    if (event.target === popup) {
-                        closePopup();
-                    }
-                }
-        </script>
-    
-    
-
-<script>
-function updateStatuspdf() {
-    const docDetailIds = [];
-    
-    // Collect the selected checkbox document detail IDs
-    document.querySelectorAll('input[name="status[]"]:checked').forEach((checkbox) => {
-        docDetailIds.push(checkbox.getAttribute('data-doc-detail-id'));
-    });
-    
-    if (docDetailIds.length === 0) {
-        alert("กรุณาเลือกเอกสารก่อน");
-        return;
+    // ฟังก์ชันปิด Popup
+    function closePopup() {
+        document.getElementById("popup").style.display = "none"; // ซ่อน Popup
     }
 
-    fetch('/update-statuspdfdoc', {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
-        },
-        body: JSON.stringify({ docDetailIds: docDetailIds }) 
-    })
-    .then(response => response.json())
-    .then(data => {
-        if (data.success) {
-            location.reload();
-            console.log("Status updated successfully");
-        } else {
-            console.error("Failed to update status");   
+            
+            window.onclick = function(event) {
+                let popup = document.getElementById("popup");
+                if (event.target === popup) {
+                    closePopup();
+                }
+            }
+            </script>
+    
+    
+    <script>
+    
+    function updateStatus(docDetailIds) {
+        fetch('/update-statusdoc', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+            },
+            body: JSON.stringify({ docDetailIds: docDetailIds }) 
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                location.reload();
+                console.log("Status updated successfully");
+            } else {
+                console.error("Failed to update status");   
+            }
+        })
+        .catch(error => {
+            console.error("Error updating status:", error);
+        });
+    }
+    
+    
+    function searchTable() {
+        let searchInput = document.getElementById("search-input").value.toLowerCase();
+        let table = document.querySelector("table tbody");
+        let rows = table.getElementsByTagName("tr");
+    
+        for (let i = 0; i < rows.length; i++) {
+            let row = rows[i];
+            let cells = row.getElementsByTagName("td");
+    
+            // Get the content of the second column (บิลลำดับ)
+            let soDetailId = cells[1] ? cells[1].textContent.toLowerCase() : '';
+    
+            // Search for the text inside the selected column (บิลลำดับ)
+            if (soDetailId.indexOf(searchInput) > -1) {
+                row.style.display = "";
+            } else {
+                row.style.display = "none";
+            }
         }
-    })
-    .catch(error => {
-        console.error("Error updating status:", error);
-    });
+    }
+    
+        </script>
+    
+    <script>
+    
+    function createJSON() {
+        let jsonData = [];
+        let selectedDocIds = []; // เปลี่ยนชื่อ array
+
+        let checkboxes = document.querySelectorAll("input[type='checkbox']:checked");
+
+        checkboxes.forEach(checkbox => {
+            let row = checkbox.closest("tr");
+            if (!row) return;
+
+            let cells = row.querySelectorAll("td");
+
+            let billNo        = cells[4].textContent.trim();
+            let orderDate     = cells[9].textContent.trim();
+            let phone         = cells[6].textContent.trim();
+            let address       = cells[7].textContent.trim();
+            let customerName  = cells[5].textContent.trim();
+            let latlong       = cells[8].textContent.trim();
+
+            let [lat, lng] = latlong.split(",").map(val => parseFloat(val.trim()));
+
+            let order = {
+                orderNo: billNo,
+                date: formatDate(orderDate),
+                phone: phone,
+                location: {
+                    address: address,
+                    locationName: `${customerName} (${phone})`,
+                    latitude: lat,
+                    longitude: lng
+                }
+            };
+
+            // เปลี่ยนจาก data-so-detail-id เป็น data-doc-id
+            let docId = checkbox.getAttribute("data-doc-id");
+            if (docId) {
+                selectedDocIds.push(docId);
+            }
+
+            jsonData.push(order);
+        });
+
+        if (jsonData.length === 0) {
+            alert("กรุณาเลือกข้อมูลที่ต้องการพิมพ์ JSON");
+            return;
+        }
+
+        const output = { orders: jsonData };
+        const jsonContent = JSON.stringify(output, null, 2);
+        const blob = new Blob([jsonContent], { type: "application/json;charset=utf-8;" });
+
+        let now = new Date();
+        let day = String(now.getDate()).padStart(2, "0");
+        let month = String(now.getMonth() + 1).padStart(2, "0");
+        let year = now.getFullYear();
+        let formattedDate = `${day}-${month}-${year}`;
+
+        const filename = `เอกสารเส้นทางเดินรถของเอกสารเพิ่มเติม_${formattedDate}.json`;
+
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = filename;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+
+        // เรียกฟังก์ชันอัปเดต status โดยใช้ selectedDocIds
+        if (selectedDocIds.length > 0) {
+            updateStatus(selectedDocIds);
+        }
+    }
+    function formatDate(input) {
+    let [d, m, y] = input.split("/");
+    return `${y}-${m}-${d}`;
 }
-   function toggleCheckboxes() {
+</script>
+
+<script>
+     function toggleCheckboxes() {
         var checkAllBox = document.getElementById('checkAll');
         var checkboxes = document.querySelectorAll('input[type="checkbox"]:not(#checkAll)');
         checkboxes.forEach(function(checkbox) {
@@ -522,178 +618,6 @@ function updateStatuspdf() {
         });
     }
 </script>
-
-<script>
-    async function downloadRowPDF(button) {
-        const { jsPDF } = window.jspdf;
-        if (!jsPDF || !window.html2canvas) {
-            alert("ไม่พบ library jsPDF หรือ html2canvas");
-            return;
-        }
-
-        const row = button.closest("tr");
-        const cells = row.querySelectorAll("td");
-
-        const doc_id = cells[1].innerText.trim();
-        const name = cells[2].innerText.trim();
-        const address = cells[3].innerText.trim();
-        const type = cells[7].innerText.trim();
-        const emp = cells[8].innerText.trim();
-        const revdate = cells[9].innerText.trim();
-        const contact_tel = cells[6].innerText.trim();
-        const contact_name = cells[5].innerText.trim();
-
-        let popupAmount = '', popupNotes = '';
-        const link = row.querySelector('a[onclick^="openPopup"]');
-        if (link) {
-            const onclickAttr = link.getAttribute('onclick');
-            const args = [...onclickAttr.matchAll(/'([^']*)'/g)].map(match => match[1]);
-            popupAmount = args[5] || '';
-            popupNotes = args[6] || '';
-        }
-
-        let tableRowsHtml = '';
-        try {
-            const response = await fetch(`/get-docbill-detail/${doc_id}`);
-            const data = await response.json();
-
-            if (data.length > 0) {
-                data.forEach((item, index) => {
-                    tableRowsHtml += `
-                        <tr>
-                            <td style="border: 1px solid #000; padding: 8px;">${index + 1}</td>
-                            <td style="border: 1px solid #000; padding: 8px;">${item.item_name}</td>
-                            <td style="border: 1px solid #000; padding: 8px; text-align: center;">${item.quantity}</td>
-                        </tr>
-                    `;
-                });
-            } else {
-                tableRowsHtml = `
-                    <tr>
-                        <td colspan="3" style="border: 1px solid #000; padding: 8px; text-align: center;">
-                            ไม่มีข้อมูลสินค้า
-                        </td>
-                    </tr>
-                `;
-            }
-        } catch (error) {
-            console.error("Error fetching data:", error);
-            tableRowsHtml = `
-                <tr>
-                    <td colspan="3" style="border: 1px solid #000; padding: 8px; text-align: center;">
-                        เกิดข้อผิดพลาดในการโหลดข้อมูลสินค้า
-                    </td>
-                </tr>
-            `;
-        }
-
-        const pdfContainer = document.createElement("div");
-        pdfContainer.style.position = "relative";
-        pdfContainer.style.padding = "20px";
-        pdfContainer.style.width = "1123px";
-        pdfContainer.style.background = "#fff";
-        pdfContainer.style.fontFamily = "'Arial', sans-serif";
-        pdfContainer.style.lineHeight = "1.6";
-
-        pdfContainer.innerHTML = `
-        <div style="display: flex; flex-direction: column; min-height: 1650px;">
-          <div style="flex: 1;">
-            <div style="display: flex; flex-direction: column; margin-bottom: 5px; width: calc(100% - 200px); gap: 10px;">
-              <div style="display: flex; align-items: center; gap: 80px;">
-                <h2 style="margin: 0; font-size: 50px; color: #343a40;">ใบส่งของชั่วคราว</h2>
-                <p style="font-size: 26px; margin: 0;"><strong>( ประเภทบิล:</strong> ${type} )</p>
-              </div>
-              <div style="border: 1px solid #343a40; padding: 8px 12px; display: flex; justify-content: center; align-items: center;">
-                <h2 style="margin: 0; font-size: 26px; color: #343a40;">บริษัท ทริปเปิ้ล อี เทรดดิ้ง จำกัด</h2>
-              </div>
-            </div>
-            <hr>
-
-            <div style="font-size: 24px; position: absolute; top: 0px; right: 20px; border: 1px solid #000; padding: 10px; text-align: center; width: 150px;">
-              <p style="margin: 0;"><strong>เลขที่บิล</strong></p>
-              <p style="margin: 0;">${doc_id}</p>
-            </div>
-
-            <p style="font-size: 24px; margin: 0; text-align: right; position: absolute; top: 120px; right: 20px;">
-              <strong>วันที่:</strong> ${revdate}
-            </p>
-
-            <p style="font-size: 20px; border-bottom: 1px solid #000; padding-bottom: 3px;">
-              <strong>บริษัท :  </strong> ${name}
-            </p>
-
-            <p style="font-size: 20px; border-bottom: 1px solid #000; padding-bottom: 3px;">
-              <strong>ที่อยู่ :  </strong> ${address}
-            </p>
-
-            <p style="font-size: 20px; border-bottom: 1px solid #000; padding-bottom: 3px;">
-              <strong>ชื่อผู้ติดต่อ :  </strong> ${contact_name}
-            </p>
-
-            <p style="font-size: 20px; border-bottom: 1px solid #000; padding-bottom: 3px;">
-              <strong>โทร :  </strong> ${contact_tel}
-            </p>
-
-            <p style="font-size: 20px; border-bottom: 1px solid #000; padding-bottom: 3px;">
-              <strong>หมายเหตุ :  </strong> ${popupNotes}
-            </p>
-
-            <p style="font-size: 20px; border-bottom: 1px solid #000; padding-bottom: 3px;">
-              <strong>ผู้เปิดบิล:</strong> ${emp}
-            </p>
-
-            <table style="width: 100%; border-collapse: collapse; font-size: 20px;">
-              <thead>
-                <tr>
-                  <th style="border: 1px solid #000; padding: 8px; width: 10%;">ลำดับ</th>
-                  <th style="border: 1px solid #000; padding: 8px; width: 60%;">รายการ</th>
-                  <th style="border: 1px solid #000; padding: 8px; width: 30%;">จำนวน</th>
-                </tr>
-              </thead>
-              <tbody>
-                ${tableRowsHtml}
-              </tbody>
-            </table>
-          </div>
-
-          <div>
-            <p style="font-size: 20px; display: inline-block; margin-right: 5px;"><strong>ชื่อผู้รับ:</strong></p>
-            <p style="font-size: 20px; display: inline-block; border-bottom: 1px solid #000; padding-bottom: 3px; width:400px; margin-right: 130px;">&nbsp;</p>
-            <p style="font-size: 20px; display: inline-block; margin-right: 5px;"><strong>ชื่อผู้ส่ง:</strong></p>
-            <p style="font-size: 20px; display: inline-block; border-bottom: 1px solid #000; padding-bottom: 3px; width:400px;">&nbsp;</p>
-          </div>
-        </div>
-        `;
-
-        document.body.appendChild(pdfContainer);
-
-        await html2canvas(pdfContainer, { scale: 2 }).then(async (canvas) => {
-            const imgData = canvas.toDataURL("image/jpeg", 1.0);
-            const pdf = new jsPDF({
-                orientation: "portrait",
-                unit: "px",
-                format: [canvas.width, canvas.height]
-            });
-
-            pdf.addImage(imgData, "JPEG", 0, 0, canvas.width, canvas.height);
-
-            const pdfBlob = pdf.output("blob");
-            const blobUrl = URL.createObjectURL(pdfBlob);
-
-            window.open(blobUrl, '_blank');
-
-            // ลบ container หลังใช้เสร็จ
-            pdfContainer.remove();
-
-            // แก้ไขปุ่ม
-            button.textContent = 'สร้าง PDF';
-            button.disabled = false;
-        });
-    }
-</script>
-
-
-
 </body>
 </html>
 

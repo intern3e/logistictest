@@ -90,8 +90,10 @@ Route::post('/fetch-doclalong', [doccontroller::class, 'fetchFormType']);
 
 use App\Http\Controllers\admindoccontroller;
 Route::get('/admindoc', [admindoccontroller::class, 'dashboarddoc'])->name('document.admindoc');
+Route::get('/admindocroute', [admindoccontroller::class, 'dashboarddocroute'])->name('document.admindocroute');
 Route::get('/historydoc', [admindoccontroller::class, 'historydoc'])->name('ducument.historydoc');
 Route::post('/update-statusdoc', [admindoccontroller::class, 'updateStatus']);
+Route::post('/update-statuspdfdoc', [admindoccontroller::class, 'statuspdfdoc']);
 
 
 

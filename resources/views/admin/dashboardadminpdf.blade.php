@@ -389,6 +389,7 @@
             <div class="button-group">
                 <button id="summitso" onclick="updateStatuspdf()">ปริ้นเอกสารSO</button>
                 <a href="dashboardadmin"><button id="printroute" style="background-color: red">ปริ้นเอกสารเส้นทางการเดินรถ</button></a>
+                <a href="admindoc"><button id="printdoc" style="background-color: green">ปริ้นเอกสารบิลชั่วคราว</button></a>
                 <a href="history"><button>📜 ประวัติเอกสาร</button></a>
             </div>
 

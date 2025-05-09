@@ -94,6 +94,7 @@ class DocController extends Controller
             $doc = new Docbills();
             $doc->doc_id = $doc_id; // ใช้ so_detail_id ที่สร้างขึ้นใหม่
             $doc->status = 0;
+            $doc->statuspdf = 0;
             $doc->id_com = $request->input('id_com');
             $doc->emp_name = $request->input('emp_name');
             $doc->com_name = $request->input('com_name');
