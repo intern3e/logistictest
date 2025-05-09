@@ -3,6 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="csrf-token" content="{{ csrf_token() }}">
     <title>เปิดบิลสินค้า</title>
     <style>
     body {
@@ -158,13 +159,11 @@
         border: 1px solid #ccc;
         border-radius: 10px;
     }
-</style>
-<style>
+
     .autocomplete-list {
         position: absolute;
         z-index: 1000;
         background: white;
-        border: 1px solid #ccc;
         width: 100%;
         max-height: 250px;
         overflow-y: auto;
@@ -195,14 +194,14 @@
         </div>
 
         <div class="form-group">
-            <label for="time">วันที่</label>
-            <input type="date" id="time" name="time">
+            <label for="datestamp">วันที่</label>
+            <input type="date" id="datestamp" name="datestamp">
         </div>
         
         <script>
             window.addEventListener('DOMContentLoaded', () => {
-                const today = new Date().toISOString().split('T')[0];
-                document.getElementById('time').value = today;
+                const today = new Date().toISOString().split('T')[0]; // ดึงแค่วันที่
+                document.getElementById('datestamp').value = today;
             });
         </script>
     
@@ -241,13 +240,15 @@
             }
         </script>
 
+    <input type="hidden" id="id_com" name="id_com">
+
+
         
 <div style="position: relative; margin-bottom: 20px;">
     <label for="com_name">บริษัท:</label>
     <input type="text" id="com_name" name="com_name" style="width: 100%; padding: 10px; font-size: 16px;" autocomplete="off">
     <ul id="autocomplete_list" class="autocomplete-list" style="display: none;"></ul>
     <button type="button" id="search" style="position: absolute; right: 10px; top: 10px; display: none;">🔍 ค้นหา</button>
-    <p id="no_data_message" style=" display: none;">ไม่มีข้อมูล</p> <!-- ข้อความไม่มีข้อมูล -->
 </div>
 
 <script>
@@ -313,13 +314,16 @@
         listEl.style.display = "block";
     
         companies.forEach(company => {
+            const idcust = (company.CustCode || company.VendorCode || company.SupCode || "").trim();
             const name = (company.CustName || company.VendorName || company.SupName || "").trim();
             const addr = (company.ContAddr1 || "").trim();
             const item = document.createElement("li");
             item.textContent = `${name} [${addr}]`;
             item.addEventListener("click", () => {
+                document.getElementById("id_com").value = idcust;
                 document.getElementById("com_name").value = name;
                 document.getElementById("com_address").value = addr;
+                fetchFormType()
                 listEl.style.display = "none";
             });
             listEl.appendChild(item);
@@ -515,7 +519,43 @@ function openGoogleMaps() {
 }
     </script>
 </form>
-
+<script>
+    function fetchFormType() {
+        console.log("ตรวจสอบ id_com:", document.getElementById("id_com").value);
+        console.log('fetchdoclalong called');
+    
+        var id_com = document.getElementById("id_com").value;
+    
+        if (id_com) {
+            fetch('/fetch-doclalong', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+                },
+                body: JSON.stringify({ id_com: id_com }) // ใช้ id_com ที่รับมา
+            })
+            .then(response => response.json())
+            .then(data => {
+                console.log('Response from server:', data);
+    
+                if (data.com_la_long) {
+                    document.getElementById("com_la_long").value = data.com_la_long;
+                    updateMap(); // เรียกฟังก์ชันอัปเดตแผนที่ (คุณต้องแน่ใจว่ามีฟังก์ชันนี้ด้วย)
+                } else {
+                    document.getElementById("com_la_long").value = 'ไม่มีข้อมูล';
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                document.getElementById("com_la_long").value = 'ไม่มีข้อมูล';
+            });
+        } else {
+            document.getElementById("com_la_long").value = 'ไม่มีข้อมูล';
+        }
+    }
+    </script>
+    
 </body>
 </html>
  

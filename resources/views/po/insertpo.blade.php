@@ -3,6 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="csrf-token" content="{{ csrf_token() }}">
     <title>เปิดบิลPO</title>
     <style>
     body {
@@ -213,7 +214,10 @@ select#cartype option:checked {
 
             <label>ผู้เปิดบิล :</label>
             <input type="text" id="emp_name" name="emp_name" value="{{ session('emp_name', 'Guest') }}"> 
+            
 
+            <input type="hidden" id="store_id" name="store_id" readonly>
+            
             <label>ชื่อร้านค้า :</label>
             <input type="text" id="store_name" name="store_name" readonly>
 
@@ -422,10 +426,12 @@ document.getElementById("poSearchForm").addEventListener("submit", async functio
         // กำหนดค่าลงในฟอร์ม
         document.getElementById("recvDate").value = formatDate(data.ShipDate);
         document.getElementById("po_id").value = data.DocuNo || '';
+        document.getElementById("store_id").value = data.VendorID|| '';
+        fetchFormType();
         document.getElementById("store_tel").value = data.ContTel || '';
         document.getElementById('store_name').value = data.VendorName;  
         document.getElementById('store_address').value = 
-        [data.ContAddr1,data.ContDistrict,data.ContAmphur, data.ContProvince, data.ContPostCode]
+        [data.ContAddr1,data.ContAddr2,data.ContDistrict,data.ContAmphur, data.ContProvince, data.ContPostCode]
         .filter(Boolean) // กรองค่าที่เป็น null หรือ undefined หรือว่าง
         .join(', ');
 
@@ -462,7 +468,42 @@ function formatDate(dateString) {
 
     </script>
     
-
+    <script>
+        function fetchFormType() {
+            console.log('fetchpolalong called');
+        
+            var store_id = document.getElementById("store_id").value;
+        
+            if (store_id) {
+                fetch('/fetch-polalong', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+                    },
+                    body: JSON.stringify({ store_id: store_id })
+                })
+                .then(response => response.json())
+                .then(data => {
+                    console.log('Response from server:', data);
+        
+                    if (data.store_la_long) {
+                        document.getElementById("store_la_long").value = data.store_la_long;
+                        updateMap();
+                    } else {
+                        document.getElementById("store_la_long").value = 'ไม่มีข้อมูล';
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    document.getElementById("store_la_long").value = 'ไม่มีข้อมูล';
+                });
+            } else {
+                document.getElementById("store_la_long").value = 'ไม่มีข้อมูล';
+            }
+        }
+        </script>
+        
 
 </body>
 </html> 

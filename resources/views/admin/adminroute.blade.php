@@ -378,7 +378,6 @@
     <div class="header">
         <h2>ระบบตรวจเช็คเอกสาร</h2>
         <div class="header-buttons">
-            <a href="adminpo"><button class="btn-po">ระบบจัดเตรียมรถรับของPO</button></a>
             <a href="adminSO"><button class="btn-so">หน้าหลัก</button></a>
         </div>
     </div>
@@ -389,7 +388,6 @@
         <div class="top-section">
             <div class="button-group">
                 <button id="summitso" onclick="updateStatuspdf2()">ยืนยัน</button>
-                <a href="dashboardadmin"><button id="printroute" style="background-color: red">ปริ้นเอกสารเส้นทางการเดินรถ</button></a>
                 <a href="history"><button>📜 ประวัติเอกสาร</button></a>
             </div>
 

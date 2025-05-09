@@ -690,57 +690,7 @@ function toggleCheckboxes() {
     </script>
 
 
-    <script>
-function checkTimeAndClick() {
-    const now = new Date();
-    const hours = now.getHours();
-    const minutes = now.getMinutes();
-
-    if (hours === 16 && minutes === 05) {
-        let checkAll = document.getElementById("checkAll");
-        if (checkAll) {
-            checkAll.click(); // กดปุ่ม Checkbox "ทั้งหมด"
-            console.log("Bot กดเลือก Checkbox ทั้งหมดแล้ว!");
-
-            // รออีก 1 วินาทีให้กระบวนการการกด Checkbox เสร็จ
-            setTimeout(() => {
-                let printButton = document.querySelector("button[onclick='createCSV()']");
-                if (printButton) {
-                    printButton.click(); // กดปุ่มปริ้นเอกสาร
-                    console.log("Bot กดปุ่มปริ้นเอกสารเส้นทางการเดินรถแล้ว!");
-                }
-            }, 1000); // รอ 1 วินาทีหลังจากกด Checkbox
-        }
-    }
-}
-
-// ตั้งเวลาให้เริ่มทำงานทุกวันเวลา 10:36 น. (เวลา 10:36 จะมีการตรวจสอบว่าเป็นเวลาที่กำหนด)
-function scheduleDailyTask() {
-    const now = new Date();
-    const targetHour = 16;
-    const targetMinute = 05;
-
-    const targetTime = new Date(now);
-    targetTime.setHours(targetHour, targetMinute, 0, 0);
-
-    if (now > targetTime) {
-        // หากเวลาผ่านไปแล้วสำหรับวันนี้ ให้ตั้งเวลาสำหรับวันถัดไป
-        targetTime.setDate(now.getDate() + 1);
-    }
-
-    const timeToWait = targetTime - now; // คำนวณเวลาที่ต้องรอ
-
-    // ตั้งเวลาให้เริ่มทำงานตามเวลาที่คำนวณ
-    setTimeout(() => {
-        checkTimeAndClick(); // เรียกฟังก์ชันตรวจสอบและทำงาน
-        setInterval(checkTimeAndClick, 86400000); // หลังจากนั้นจะทำงานทุกๆ 24 ชั่วโมง (86400000 ms)
-    }, timeToWait);
-}
-
-// เรียกฟังก์ชันเพื่อให้เริ่มทำงาน
-scheduleDailyTask();
-</script>
-
+    
 
 </body>
 </html>

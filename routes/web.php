@@ -57,6 +57,8 @@ Route::post('/update-statuspdfsoback', [admincontroller::class, 'updateStatuspdf
 Route::post('/update-billid', [AdminController::class, 'updateBillId'])->name('update.billid');
 Route::get('/adminroute', [AdminController::class, 'adminroute'])->name('admin.adminroute');
 Route::post('/update-statuspdfso2', [admincontroller::class, 'updateStatuspdf2']);
+Route::post('/update-delivery-date', [App\Http\Controllers\admincontroller::class, 'updateDeliveryDate'])->name('update.delivery.date');
+
 
 
 
@@ -67,7 +69,7 @@ Route::get('/dashboardpo', [PoController::class, 'dashboardpo'])->name('po.dashb
 Route::get('/insertpo', [PoController::class, 'insertpo'])->name('po.insertpo');
 Route::post('/insertpo', [PoController::class, 'insertpobill'])->name('insertpo.post'); 
 Route::get('/get-pobill-detail/{po_detail_id}', [PoController::class, 'getpoBillDetail'])->name('getpoBillDetail');
-
+Route::post('/fetch-polalong', [pocontroller::class, 'fetchFormType']);
 
 use App\Http\Controllers\adminpocontroller;
 Route::get('/adminpo', [adminpoController::class, 'dashboard'])->name('po.adminpo');
@@ -81,7 +83,7 @@ Route::get('/dashboarddoc', [DocController::class, 'dashboarddoc'])->name('docum
 Route::get('/insertdoc', [DocController::class, 'insertdoc'])->name('document.insertdoc');
 Route::post('/insertdocu', [DocController::class, 'insertDocu'])->name('insertdocu');
 Route::get('/get-docbill-detail/{doc_id}', [DocController::class, 'getdocBillDetail'])->name('getdocBillDetail');
-
+Route::post('/fetch-doclalong', [doccontroller::class, 'fetchFormType']);
 
 
 

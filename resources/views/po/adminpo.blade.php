@@ -391,7 +391,7 @@
     <div class="header">
         <h2>ระบบจัดเตรียมรถรับของPO</h2>
         <div class="header-buttons">
-            <a href="dashboardadminpdf"><button class="btn-po">ระบบจัดเตรียมสินค้าSO</button></a>
+            <a href="admindoc"><button class="btn-po">ระบบเส้นทางเอกสารเพิ่มเติม</button></a>
             <a href="adminSO"><button class="btn-so">หน้าหลัก</button></a>
         </div>
     </div>
@@ -432,7 +432,7 @@
                 </select>
             </div>
             <div class="button-group">
-                <button onclick="createCSV()">ดาวน์โหลด CSV</button>
+                <button id="printroutepojson" onclick="createJSON()">ดาวน์โหลด เส้นทาง</button>
                 <button onclick="window.location.href='historypo'">📜 ประวัติเอกสาร</button>
             </div>
             
@@ -567,9 +567,6 @@
                 <td>${cartypeText}</td>
             </tr>
         `;
-    
-    
-    
         let secondPopupBody = document.getElementById("popup-body");
         secondPopupBody.innerHTML = "<tr><td colspan='4'>Loading...</td></tr>";
     
@@ -634,30 +631,85 @@
 
 
 <script>
-function searchTable() {
-    let searchInput = document.getElementById("search-input").value.toLowerCase();
-    let table = document.querySelector("table tbody");
-    let rows = table.getElementsByTagName("tr");
+function createJSON() {
+    let jsonData = [];
+    let selectedPoDetailIds = [];
 
-    for (let i = 0; i < rows.length; i++) {
-        let row = rows[i];
-        let cells = row.getElementsByTagName("td");
+    let checkboxes = document.querySelectorAll("input[type='checkbox']:checked:not(#checkAll)");
 
-        // Get the content of the second column (บิลลำดับ)
-        let poDetailId = cells[1] ? cells[1].textContent.toLowerCase() : '';
+    checkboxes.forEach(checkbox => {
+        let row = checkbox.closest("tr");
+        if (!row) return;
 
-        // Search for the text inside the selected column (บิลลำดับ)
-        if (poDetailId.indexOf(searchInput) > -1) {
-            row.style.display = "";
-        } else {
-            row.style.display = "none";
+        let cells = row.querySelectorAll("td");
+        let billNo       = cells[4].textContent.trim(); // เลขที่บิล
+        let orderDate    = cells[6].textContent.trim(); // วันที่จัดส่ง (ปรับ index ให้ตรงกับตารางจริง)
+        let phone        = cells[7].textContent.trim(); // เบอร์ติดต่อ
+        let address      = cells[5].textContent.trim(); // ที่อยู่จัดส่ง
+        let customerName = cells[3].textContent.trim(); // ชื่อลูกค้า
+        let latlong      = cells[8].textContent.trim(); // ละติจูด ลองจิจูด
+
+        // แยกละติจูดกับลองจิจูด
+        let [lat, lng] = latlong.split(",").map(val => parseFloat(val.trim()));
+
+        let order = {
+            orderNo: billNo,
+            date: formatDate(orderDate),
+            phone: phone,
+            location: {
+                address: address,
+                locationName: `${customerName} (${phone})`,
+                latitude: lat,
+                longitude: lng
+            }
+        };
+
+        // อ่าน po_detail_id จาก attribute
+        let poDetailId = checkbox.getAttribute("data-po-detail-id");
+        if (poDetailId) {
+            selectedPoDetailIds.push(poDetailId);
         }
+
+        jsonData.push(order);
+    });
+
+    if (jsonData.length === 0) {
+        alert("กรุณาเลือกข้อมูลที่ต้องการพิมพ์ JSON");
+        return;
+    }
+
+    const output = { orders: jsonData };
+    const jsonContent = JSON.stringify(output, null, 2);
+    const blob = new Blob([jsonContent], { type: "application/json;charset=utf-8;" });
+
+    let now = new Date();
+    let day = String(now.getDate()).padStart(2, "0");
+    let month = String(now.getMonth() + 1).padStart(2, "0");
+    let year = now.getFullYear();
+    let formattedDate = `${day}-${month}-${year}`;
+
+    const filename = `เอกสารเส้นทางเดินรถของPO_${formattedDate}.json`;
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+
+    if (selectedPoDetailIds.length > 0) {
+        updateStatus(selectedPoDetailIds);
     }
 }
 
+function formatDate(input) {
+    let [d, m, y] = input.split("/");
+    return `${y}-${m}-${d}`;
+}
 
 function updateStatus(poDetailIds) {
-    console.log("Updating status for:", poDetailIds); // เพิ่ม log เช็คค่า
+    console.log("Updating status for:", poDetailIds);
     fetch('/update-statuspo', {
         method: 'POST',
         headers: {
@@ -668,10 +720,8 @@ function updateStatus(poDetailIds) {
     })
     .then(response => response.json())
     .then(data => {
-        console.log("Response:", data);
         if (data.success) {
             location.reload();
-            console.log("Status updated successfully");
         } else {
             console.error("Failed to update status");
         }
@@ -680,96 +730,39 @@ function updateStatus(poDetailIds) {
         console.error("Error updating status:", error);
     });
 }
-function sortTableDescending() {
-    let table = document.querySelector("table tbody");
-    let rows = Array.from(table.getElementsByTagName("tr"));
-    
-    // Sort rows by po_detail_id (ที่คอลัมน์ที่ 2) in descending order
-    rows.sort((a, b) => {
-        let poDetailIdA = a.cells[1].textContent.trim();
-        let poDetailIdB = b.cells[1].textContent.trim();
-        
-        return poDetailIdB - poDetailIdA;  // เปลี่ยนเป็น b - a เพื่อให้เรียงจากมากไปน้อย
-    });
-
-    // Append the sorted rows back into the table body
-    rows.forEach(row => table.appendChild(row));
-}
-
-// เรียกใช้ฟังก์ชัน sort เมื่อโหลดหน้า
-window.onload = function() {
-    sortTableDescending();
-}
-    </script>
-<script>
-    
-    function createCSV() {
-    const headers = [
-        "เลขที่บิล", "เลขอ้างอิงใบรับสินค้า", "ชื่อร้านค้า", "ที่อยู่ร้านค้า",
-        "ละติจูดลองจิจูด", "วันที่รับสินค้า", "ผู้เปิดบิล", "ประเภทขนส่ง"
-    ];
-
-    let data = [];
-    let selectedpoDetailIds = []; // เก็บ so_detail_id ของแถวที่เลือก
-
-    let checkboxes = document.querySelectorAll("input[type='checkbox']:checked");
-
-    checkboxes.forEach(checkbox => {
-        let row = checkbox.closest("tr");
-        if (!row) return;
-
-        let cells = row.querySelectorAll("td");
-        let rowData = [];
-
-        // ดึงข้อมูลจากแต่ละเซลล์ (ข้าม checkbox column)
-        cells.forEach((cell, index) => {
-            if (index > 0 && index <= 8) { 
-                rowData.push(`"${cell.textContent.trim()}"`);
-            }
-        });
-
-        // ดึงค่า so_detail_id แล้วเก็บไว้
-        let poDetailId = checkbox.getAttribute("data-po-detail-id");
-        if (poDetailId) {
-            selectedpoDetailIds.push(poDetailId);
-        }
-
-        data.push(rowData.join(","));
-    });
-
-    if (data.length === 0) {
-        alert("กรุณาเลือกข้อมูลที่ต้องการพิมพ์ CSV");
-        return;
-    }
-
-    const csvContent = "\uFEFF" + [headers.join(","), ...data].join("\n");
-
-    const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = "เอกสารเส้นทางเดินรถของPO.csv";
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
-
-    // หลังจากดาวน์โหลด CSV แล้ว อัปเดตสถานะของข้อมูลที่เลือก
-    if (selectedpoDetailIds.length > 0) {
-        updateStatus(selectedpoDetailIds);
-    }
-}
-
 
 function toggleCheckboxes() {
-    var checkAllBox = document.getElementById('checkAll');
-    var checkboxes = document.querySelectorAll('input[type="checkbox"]:not(#checkAll)');
-    checkboxes.forEach(function(checkbox) {
-        checkbox.checked = checkAllBox.checked;
+    const checkAllBox = document.getElementById('checkAll');
+    const checkboxes = document.querySelectorAll('input[type="checkbox"]:not(#checkAll)');
+    checkboxes.forEach(cb => cb.checked = checkAllBox.checked);
+}
+
+function searchTable() {
+    let searchInput = document.getElementById("search-input").value.toLowerCase();
+    let rows = document.querySelectorAll("table tbody tr");
+
+    rows.forEach(row => {
+        let poDetailId = row.cells[1]?.textContent.toLowerCase() || '';
+        row.style.display = poDetailId.includes(searchInput) ? "" : "none";
     });
 }
 
-</script>  
+function sortTableDescending() {
+    let tbody = document.querySelector("table tbody");
+    let rows = Array.from(tbody.querySelectorAll("tr"));
 
+    rows.sort((a, b) => {
+        let idA = parseInt(a.cells[2].textContent.trim());
+        let idB = parseInt(b.cells[2].textContent.trim());
+        return idB - idA;
+    });
+
+    rows.forEach(r => tbody.appendChild(r));
+}
+
+window.onload = function() {
+    sortTableDescending();
+};
+</script>
 </body>
 </html>

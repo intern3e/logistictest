@@ -52,12 +52,13 @@ class DocController extends Controller
             $request->validate([
                 'emp_name' => 'required|string|max:255',
                 'doctype' => 'required|string|max:255',
+                'id_com' => 'required|string|max:255',
                 'com_name' => 'required|string|max:255',
                 'contact_name' => 'required|string|max:255',
                 'contact_tel' => 'nullable|string|max:255',
                 'com_address' => 'required|string|max:255',
                 'com_la_long' => 'required|string|max:255',
-                'time' => 'required|date',
+                'datestamp' => 'required|date', 
                 'notes' => 'nullable|string',
             ]);
             $currentYear = date('Y') + 543;
@@ -88,11 +89,12 @@ class DocController extends Controller
                     $i++;
                 } while ($exists);
             }
-    
+           
             // **🔹 Insert into Bills**
             $doc = new Docbills();
             $doc->doc_id = $doc_id; // ใช้ so_detail_id ที่สร้างขึ้นใหม่
             $doc->status = 0;
+            $doc->id_com = $request->input('id_com');
             $doc->emp_name = $request->input('emp_name');
             $doc->com_name = $request->input('com_name');
             $doc->contact_name = $request->input('contact_name');
@@ -100,7 +102,7 @@ class DocController extends Controller
             $doc->com_address = $request->input('com_address');
             $doc->com_la_long = $request->input('com_la_long');
             $doc->notes = $request->input('notes');
-            $doc->time = $request->input('time');
+            $doc->datestamp = $request->input('datestamp');
             $doc->doctype = $request->input('doctype'); 
 
             $doc->save();
@@ -144,5 +146,21 @@ class DocController extends Controller
     } catch (\Exception $e) {
         return response()->json(['error' => 'เกิดข้อผิดพลาด'], 500);
     }
+}public function fetchFormType(Request $request)
+{
+    $id_com= $request->input('id_com');
+    $docbills= DB::table('docbills')
+                ->where('id_com', $id_com)
+                ->orderBy('time', 'desc') // หรือจะใช้ 'so_detail_id' ก็ได้ ถ้าเพิ่มขึ้นเรื่อยๆ
+                ->first(); // ดึงแถวล่าสุด
+
+    if ($docbills) {
+        return response()->json([
+            'com_la_long' => $docbills ->com_la_long
+        ]);
+    } else {
+        return response()->json(['com_la_long' => null]); // ถ้าไม่พบข้อมูล
+    }
 }
+
 }

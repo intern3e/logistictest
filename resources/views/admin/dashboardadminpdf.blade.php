@@ -378,7 +378,6 @@
     <div class="header">
         <h2>ระบบปริ้นเอกสารของบิลSO</h2>
         <div class="header-buttons">
-            <a href="adminpo"><button class="btn-po">ระบบจัดเตรียมรถรับของPO</button></a>
             <a href="adminSO"><button class="btn-so">หน้าหลัก</button></a>
         </div>
     </div>

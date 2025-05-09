@@ -1,5 +1,6 @@
 <?php
 
+
 namespace App\Http\Controllers;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -9,6 +10,7 @@ use App\Models\bill_detail;
 use App\Models\so_item_id;
 use App\Models\Bill;
 use function Laravel\Prompts\table;
+use Illuminate\Support\Facades\Validator;
 
 class admincontroller extends Controller
 {
@@ -261,5 +263,61 @@ public function updateStatuspdf2(Request $request)
         return response()->json(['success' => false, 'message' => 'Failed to update status', 'error' => $e->getMessage()], 500);
     }
 }
+public function updateDeliveryDate(Request $request) 
+{
+    try {
+        // ตรวจสอบข้อมูลที่ส่งมา
+        $validator = Validator::make($request->all(), [
+            'so_detail_id' => 'required',
+            'new_date' => 'required|date_format:Y-m-d',
+        ]);
 
+        if ($validator->fails()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'ข้อมูลไม่ถูกต้อง: ' . $validator->errors()->first()
+            ], 422);
+        }
+
+        // ตรวจสอบก่อนว่ามีข้อมูลในฐานข้อมูลหรือไม่
+        $existing = DB::table('tblbill')
+            ->where('so_detail_id', $request->so_detail_id)
+            ->first();
+
+        if (!$existing) {
+            return response()->json([
+                'success' => false,
+                'message' => 'ไม่พบข้อมูลที่ต้องการอัปเดต'
+            ], 404);
+        }
+
+        // อัปเดตข้อมูล
+        $updated = DB::table('tblbill')
+            ->where('so_detail_id', $request->so_detail_id)
+            ->update([
+                'date_of_dali' => $request->new_date,
+                'time' => now() // หรือใช้ $request->new_date หากไม่ต้องการเวลา ณ ขณะนั้น
+            ]);
+
+        if ($updated) {
+            return response()->json([
+                'success' => true,
+                'message' => 'อัปเดตวันที่ส่งของเรียบร้อยแล้ว'
+            ]);
+        } else {
+            return response()->json([
+                'success' => false,
+                'message' => 'ไม่สามารถอัปเดตข้อมูลได้'
+            ], 500);
+        }
+    } catch (\Exception $e) {
+        // บันทึกข้อผิดพลาดลง log
+        \Log::error('Error updating delivery date: ' . $e->getMessage());
+
+        return response()->json([
+            'success' => false,
+            'message' => 'เกิดข้อผิดพลาด: ' . $e->getMessage()
+        ], 500);
+    }
+}
 }

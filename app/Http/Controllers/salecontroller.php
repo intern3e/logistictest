@@ -89,11 +89,9 @@ public function logout()
     session()->flush(); // ลบข้อมูลในเซสชัน
     return redirect()->route("sale.loginsale")->with('success', 'คุณได้ออกจากระบบเรียบร้อยแล้ว!');
         }
-        public function fetchFormType(Request $request)
+public function fetchFormType(Request $request)
 {
     $customer_id = $request->input('customer_id');
-
-    // ค้นหาข้อมูล formtype จากฐานข้อมูล โดยการจัดเรียงตามเวลา (ล่าสุด)
     $bill = DB::table('tblbill')
                 ->where('customer_id', $customer_id)
                 ->orderBy('time', 'desc') // หรือจะใช้ 'so_detail_id' ก็ได้ ถ้าเพิ่มขึ้นเรื่อยๆ

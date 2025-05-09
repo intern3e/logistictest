@@ -636,9 +636,7 @@ SOLists.forEach((soItem) => {
 }
 </script>
 
-<script>
 
-</script>
 
 </body>
 </html>

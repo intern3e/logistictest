@@ -348,7 +348,16 @@ td a:hover {
                 <td>{{ $item->doc_id }}</td>
                 <td>{{ $item->com_name }}</td>
                 <td>{{ $item->com_address }}</td>
-                <td>{{ $item->com_la_long }}</td>
+                <td>
+                    @php
+                        $text = $item->com_la_long;
+                        $split_text = str_split($text, 40); // แบ่งข้อความเป็นชิ้น ๆ ที่ไม่เกิน 40 ตัว
+                    @endphp
+                    
+                    @foreach ($split_text as $line)
+                        {{ $line }}<br> <!-- แสดงแต่ละบรรทัด -->
+                    @endforeach
+                </td>
                 <td>{{ $item->contact_name }}</td>
                 <td>{{ $item->contact_tel}}</td>
                 <td>{{ $item->doctype }}</td>
@@ -593,215 +602,195 @@ td a:hover {
     }
     </script>
 <script>
+    async function downloadRowPDF(button) {
+        const { jsPDF } = window.jspdf;
     
-async function downloadRowPDF(button) {
-    const { jsPDF } = window.jspdf;
-
-    const row = button.closest("tr");
-    const cells = row.querySelectorAll("td");
-
-    const doc_id = cells[1].innerText.trim();
-    const name = cells[2].innerText.trim();
-    const address = cells[3].innerText.trim();
-    const type = cells[7].innerText.trim();
-    const emp = cells[8].innerText.trim();
-    const revdate = cells[9].innerText.trim();
-    const contact_tel = cells[6].innerText.trim();
-    const contact_name = cells[5].innerText.trim();
-
-    let popupAmount = '', popupNotes = '';
-
-    const link = row.querySelector('a[onclick^="openPopup"]');
-    if (link) {
-        const onclickAttr = link.getAttribute('onclick');
-        const args = [...onclickAttr.matchAll(/'([^']*)'/g)].map(match => match[1]);
-        popupAmount = args[5] || '';
-        popupNotes = args[6] || '';
-    }
-
-    let tableRowsHtml = '';
-    try {
-        const response = await fetch(`/get-docbill-detail/${doc_id}`);
-        const data = await response.json();
-
-        if (data.length > 0) {
-    data.forEach((item, index) => {
-        tableRowsHtml += `
-            <tr>
-                <td style="border: 1px solid #000; padding: 8px;">${index + 1}</td>
-                <td style="border: 1px solid #000; padding: 8px;">${item.item_name}</td>
-                <td style="border: 1px solid #000; padding: 8px; text-align: center;">${item.quantity}</td>
-            </tr>
-        `;
-    });
-
-        } else {
+        const row = button.closest("tr");
+        const cells = row.querySelectorAll("td");
+    
+        const doc_id = cells[1].innerText.trim();
+        const name = cells[2].innerText.trim();
+        const address = cells[3].innerText.trim();
+        const type = cells[7].innerText.trim();
+        const emp = cells[8].innerText.trim();
+        const revdate = cells[9].innerText.trim();
+        const contact_tel = cells[6].innerText.trim();
+        const contact_name = cells[5].innerText.trim();
+    
+        let popupAmount = '', popupNotes = '';
+        const link = row.querySelector('a[onclick^="openPopup"]');
+        if (link) {
+            const onclickAttr = link.getAttribute('onclick');
+            const args = [...onclickAttr.matchAll(/'([^']*)'/g)].map(match => match[1]);
+            popupAmount = args[5] || '';
+            popupNotes = args[6] || '';
+        }
+    
+        let tableRowsHtml = '';
+        try {
+            const response = await fetch(`/get-docbill-detail/${doc_id}`);
+            const data = await response.json();
+    
+            if (data.length > 0) {
+                data.forEach((item, index) => {
+                    tableRowsHtml += `
+                        <tr>
+                            <td style="border: 1px solid #000; padding: 8px;">${index + 1}</td>
+                            <td style="border: 1px solid #000; padding: 8px;">${item.item_name}</td>
+                            <td style="border: 1px solid #000; padding: 8px; text-align: center;">${item.quantity}</td>
+                        </tr>
+                    `;
+                });
+            } else {
+                tableRowsHtml = `
+                    <tr>
+                        <td colspan="3" style="border: 1px solid #000; padding: 8px; text-align: center;">
+                            ไม่มีข้อมูลสินค้า
+                        </td>
+                    </tr>
+                `;
+            }
+        } catch (error) {
+            console.error("Error fetching data:", error);
             tableRowsHtml = `
                 <tr>
                     <td colspan="3" style="border: 1px solid #000; padding: 8px; text-align: center;">
-                        ไม่มีข้อมูลสินค้า
+                        เกิดข้อผิดพลาดในการโหลดข้อมูลสินค้า
                     </td>
                 </tr>
             `;
         }
-    } catch (error) {
-        console.error("Error fetching data:", error);
-        tableRowsHtml = `
-            <tr>
-                <td colspan="3" style="border: 1px solid #000; padding: 8px; text-align: center;">
-                    เกิดข้อผิดพลาดในการโหลดข้อมูลสินค้า
-                </td>
-            </tr>
-        `;
-    }
-
-    const pdfContainer = document.createElement("div");
-    pdfContainer.style.position = "relative";
-    pdfContainer.style.padding = "20px";
-    pdfContainer.style.width = "1123px";
-    pdfContainer.style.background = "#fff";
-    pdfContainer.style.fontFamily = "'Arial', sans-serif";
-    pdfContainer.style.lineHeight = "1.6";
-
-    pdfContainer.innerHTML  = 
-    `
-<div style="display: flex; flex-direction: column; min-height: 1650px;">
-
-  <!-- ส่วนหัวเอกสาร -->
-
-<div style="flex: 1;">
-  <div style="display: flex; flex-direction: column; margin-bottom: 5px; width: calc(100% - 200px); position: relative; top: -20px; gap: 10px;">
-    <!-- Title and Bill Type in the same row -->
-  <div style="display: flex; align-items: center; gap: 80px;">
-  <h2 style="margin: 0; font-size: 50px; color: #343a40;">ใบส่งของชั่วคราว</h2>
-  <p style="font-size: 26px; margin: 0;"><strong>( ประเภทบิล:</strong> ${type} )</p>
-</div>
-    <!-- Company Name Section -->
-    <div style="border: 1px solid #343a40; padding: 8px 12px; display: flex; justify-content: center; align-items: center;">
-      <h2 style="margin: 0; font-size: 26px; color: #343a40;">บริษัท ทริปเปิ้ล อี เทรดดิ้ง จำกัด</h2>
-    </div>
-  </div>
-  <hr>
-
-   <div style="font-size: 24px; position: absolute; top: 0px; right: 20px; border: 1px solid #000; padding: 10px; text-align: center; width: 150px;">
-  <p style="margin: 0;"><strong>เลขที่บิล</strong></p>
-  <p style="margin: 0;">${doc_id}</p>
-</div>
-
-<p style="font-size: 24px; margin: 0; text-align: right; position: absolute; top: 120px; right: 20px;">
-  <strong>วันที่:</strong> ${revdate}
-</p>
-
-    <p style="font-size: 20px; border-bottom: 1px solid #000; padding-bottom: 3px; width: 1123px;">
-    <strong>บริษัท :  </strong> ${name}
-</p>
-
-<p style="font-size: 20px; border-bottom: 1px solid #000; padding-bottom: 3px; width: 1123px;">
-    <strong>ที่อยู่ :  </strong> ${address}
-</p>
-
-<p style="font-size: 20px; border-bottom: 1px solid #000; padding-bottom: 3px; width: 1123px;">
-    <strong>ชื่อผู้ติดต่อ :  </strong> ${contact_name}
-</p>
-
-<p style="font-size: 20px; border-bottom: 1px solid #000; padding-bottom: 3px; width: 1123px;">
-    <strong>โทร :  </strong> ${contact_tel}
-</p>
-
-<p style="font-size: 20px; border-bottom: 1px solid #000; padding-bottom: 3px; width: 1123px;">
-    <strong>หมายเหตุ :  </strong> ${popupNotes}
-</p>
-
-<p  style="font-size: 20px; border-bottom: 1px solid #000; padding-bottom: 3px; width: 1123px;">
-    <strong>ผู้เปิดบิล:</strong> ${emp}
-</p>
-
-    <table class="product-table" style="width: 100%; border-collapse: collapse; font-size: 20px;">
-      <thead>
-        <tr>
-       <th style="border: 1px solid #fff; padding: 8px; width: 10%;">ลำดับ</th>
-          <th style="border: 1px solid #fff; padding: 8px; width: 60%;">รายการ</th>
-          <th style="border: 1px solid #fff; padding: 8px; width: 30%;">จำนวน</th>
-        </tr>
-      </thead>
-      <tbody>
-        ${tableRowsHtml}
-      </tbody>
-    </table>
-
-  </div>
-
-  <!-- ส่วนลายเซ็น -->
-  <div>
-    <p style="font-size: 20px; display: inline-block; margin-right: 5px;"><strong>ชื่อผู้รับ:</strong></p>
-    <p style="font-size: 20px; display: inline-block; border-bottom: 1px solid #000; padding-bottom: 3px; width:400px; margin-right: 170px;">&nbsp;</p>
-    <p style="font-size: 20px; display: inline-block; margin-right: 5px;"><strong>ชื่อผู้ส่ง:</strong></p>
-    <p style="font-size: 20px; display: inline-block; border-bottom: 1px solid #000; padding-bottom: 3px; width:400px;">&nbsp;</p>
-  </div>
-
-</div>
-
-
-`;
-// รีเซ็ตปุ่มก่อนเริ่ม
-button.textContent = 'สร้าง PDF';
-button.classList.remove('btn-success');
-button.classList.add('btn-outline-danger');
-button.disabled = false;
-
-// ดำเนินการต่อ
-document.body.appendChild(pdfContainer);
-
-await html2canvas(pdfContainer, { scale: 0.7 }).then(async (canvas) => {
-    const imgData = canvas.toDataURL("image/jpeg", 0.7); // เปลี่ยน PNG เป็น JPEG และกำหนด quality
-    const pdf = new jsPDF();
-    const pdfWidth = pdf.internal.pageSize.getWidth();
-    const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
-
-    const margin = 10;
-    pdf.addImage(imgData, "JPEG", margin, margin, pdfWidth - 2 * margin, pdfHeight - 2 * margin);
-
-    const pdfBlob = pdf.output("blob");
-    const blobUrl = URL.createObjectURL(pdfBlob);
-
-    const newTab = window.open(blobUrl, '_blank');
-
-
-
-    if (newTab) {
-        button.textContent = '✅ สำเร็จ';
-        button.classList.remove('btn-outline-danger');
-        button.classList.add('btn-success');
-        button.disabled = true;
-
-        // เรียก API บันทึกสถานะไปยัง database
-        try {
-            await fetch('/api/save-button-status', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({
-                    buttonId: 'your-button-id', // ตรงนี้เปลี่ยนเป็น ID เฉพาะของปุ่ม หรือข้อมูลที่ใช้ระบุตัว
-                    status: 'success'
-                }),
-            });
-        } catch (error) {
-            console.error('Error saving button status:', error);
-        }
-
-    } else {
-        alert('กรุณาอนุญาต popup จากเบราว์เซอร์ของคุณ');
-    }
-});
-
-document.body.removeChild(pdfContainer);
-
     
-}
-
-
-</script>
+        const pdfContainer = document.createElement("div");
+        pdfContainer.style.position = "relative";
+        pdfContainer.style.padding = "20px";
+        pdfContainer.style.width = "1123px";
+        pdfContainer.style.background = "#fff";
+        pdfContainer.style.fontFamily = "'Arial', sans-serif";
+        pdfContainer.style.lineHeight = "1.6";
+    
+        pdfContainer.innerHTML = `
+    <div style="display: flex; flex-direction: column; min-height: 1650px;">
+      <div style="flex: 1;">
+        <div style="display: flex; flex-direction: column; margin-bottom: 5px; width: calc(100% - 200px); gap: 10px;">
+          <div style="display: flex; align-items: center; gap: 80px;">
+            <h2 style="margin: 0; font-size: 50px; color: #343a40;">ใบส่งของชั่วคราว</h2>
+            <p style="font-size: 26px; margin: 0;"><strong>( ประเภทบิล:</strong> ${type} )</p>
+          </div>
+          <div style="border: 1px solid #343a40; padding: 8px 12px; display: flex; justify-content: center; align-items: center;">
+            <h2 style="margin: 0; font-size: 26px; color: #343a40;">บริษัท ทริปเปิ้ล อี เทรดดิ้ง จำกัด</h2>
+          </div>
+        </div>
+        <hr>
+    
+        <div style="font-size: 24px; position: absolute; top: 0px; right: 20px; border: 1px solid #000; padding: 10px; text-align: center; width: 150px;">
+          <p style="margin: 0;"><strong>เลขที่บิล</strong></p>
+          <p style="margin: 0;">${doc_id}</p>
+        </div>
+    
+        <p style="font-size: 24px; margin: 0; text-align: right; position: absolute; top: 120px; right: 20px;">
+          <strong>วันที่:</strong> ${revdate}
+        </p>
+    
+        <p style="font-size: 20px; border-bottom: 1px solid #000; padding-bottom: 3px; width: 1123px;">
+          <strong>บริษัท :  </strong> ${name}
+        </p>
+    
+        <p style="font-size: 20px; border-bottom: 1px solid #000; padding-bottom: 3px; width: 1123px;">
+          <strong>ที่อยู่ :  </strong> ${address}
+        </p>
+    
+        <p style="font-size: 20px; border-bottom: 1px solid #000; padding-bottom: 3px; width: 1123px;">
+          <strong>ชื่อผู้ติดต่อ :  </strong> ${contact_name}
+        </p>
+    
+        <p style="font-size: 20px; border-bottom: 1px solid #000; padding-bottom: 3px; width: 1123px;">
+          <strong>โทร :  </strong> ${contact_tel}
+        </p>
+    
+        <p style="font-size: 20px; border-bottom: 1px solid #000; padding-bottom: 3px; width: 1123px;">
+          <strong>หมายเหตุ :  </strong> ${popupNotes}
+        </p>
+    
+        <p style="font-size: 20px; border-bottom: 1px solid #000; padding-bottom: 3px; width: 1123px;">
+          <strong>ผู้เปิดบิล:</strong> ${emp}
+        </p>
+    
+        <table style="width: 100%; border-collapse: collapse; font-size: 20px;">
+          <thead>
+            <tr>
+              <th style="border: 1px solid #000; padding: 8px; width: 10%;">ลำดับ</th>
+              <th style="border: 1px solid #000; padding: 8px; width: 60%;">รายการ</th>
+              <th style="border: 1px solid #000; padding: 8px; width: 30%;">จำนวน</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${tableRowsHtml}
+          </tbody>
+        </table>
+      </div>
+    
+      <div>
+        <p style="font-size: 20px; display: inline-block; margin-right: 5px;"><strong>ชื่อผู้รับ:</strong></p>
+        <p style="font-size: 20px; display: inline-block; border-bottom: 1px solid #000; padding-bottom: 3px; width:400px; margin-right: 130px;">&nbsp;</p>
+        <p style="font-size: 20px; display: inline-block; margin-right: 5px;"><strong>ชื่อผู้ส่ง:</strong></p>
+        <p style="font-size: 20px; display: inline-block; border-bottom: 1px solid #000; padding-bottom: 3px; width:400px;">&nbsp;</p>
+      </div>
+    </div>
+    `;
+    
+        button.textContent = 'สร้าง PDF';
+        button.classList.remove('btn-success');
+        button.classList.add('btn-outline-danger');
+        button.disabled = false;
+    
+        document.body.appendChild(pdfContainer);
+    
+        await html2canvas(pdfContainer, { scale: 2 }).then(async (canvas) => {
+            const imgData = canvas.toDataURL("image/jpeg", 1.0);
+            const pdf = new jsPDF({
+                orientation: "portrait",
+                unit: "px",
+                format: [canvas.width, canvas.height]
+            });
+    
+            pdf.addImage(imgData, "JPEG", 0, 0, canvas.width, canvas.height);
+    
+            const pdfBlob = pdf.output("blob");
+            const blobUrl = URL.createObjectURL(pdfBlob);
+    
+            const newTab = window.open(blobUrl, '_blank');
+    
+            if (newTab) {
+                button.textContent = '✅ สำเร็จ';
+                button.classList.remove('btn-outline-danger');
+                button.classList.add('btn-success');
+                button.disabled = true;
+    
+                try {
+                    await fetch('/api/save-button-status', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify({
+                            buttonId: doc_id,
+                            status: 'success'
+                        }),
+                    });
+                } catch (error) {
+                    console.error('Error saving button status:', error);
+                }
+    
+            } else {
+                alert('กรุณาอนุญาต popup จากเบราว์เซอร์ของคุณ');
+            }
+        });
+    
+        document.body.removeChild(pdfContainer);
+    }
+    </script>
+    
 
 </body>
 </html>

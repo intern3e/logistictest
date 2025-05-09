@@ -4,6 +4,7 @@
     <meta name="csrf-token" content="{{ csrf_token() }}">
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <title>ระบบจัดเตรียมสินค้า</title>
     <style>
 body {
@@ -380,8 +381,13 @@ th {
             <button type="submit" style="display: none;">ค้นหา</button>
             
         </form> 
-        <button id="summitbackso" onclick="updateStatuspdfback()">คืนสถานะงาน</button>
-        <a href="adminroute"><button>ครวจสอบเอกสาร</button></a>
+            <div class="button-group">
+                <button id="summitbackso" onclick="updateStatuspdfback()" style="background-color: orange;">คืนสถานะงาน</button>
+                <a href="adminroute">
+                    <button>ตรวจสอบเอกสาร</button>
+                </a>
+            </div>
+        
     <script>
         const form = document.getElementById('autoSearchForm');
         const dateInput = document.getElementById('date');
@@ -444,7 +450,29 @@ th {
                                 <td>{{ $item->customer_tel }}</td>  
                                 <td>{{ $item->customer_address }}</td>
                                 <td>{{ $item->customer_la_long }}</td>
-                                <td>{{ \Carbon\Carbon::parse($item->date_of_dali)->format('d/m/Y') }}</td> 
+                                <td>
+                                    <div class="date-container">
+                                        <span class="date-display" id="date-display-{{ $item->so_detail_id }}">
+                                            {{ \Carbon\Carbon::parse($item->date_of_dali)->format('d/m/Y') }}
+                                        </span>
+                                        <div class="date-edit-form" id="date-edit-form-{{ $item->so_detail_id }}" style="display:none;">
+                                            <input type="date" class="form-control form-control-sm" id="new-date-{{ $item->so_detail_id }}" 
+                                                value="{{ \Carbon\Carbon::parse($item->date_of_dali)->format('Y-m-d') }}"
+                                                onchange="validateDateFormat(this)">
+                                            <div class="mt-1">
+                                                <button type="button" class="btn btn-sm btn-success" 
+                                                        onclick="saveNewDate('{{ $item->so_detail_id }}')">บันทึก</button>
+                                                <button type="button" class="btn btn-sm btn-secondary" 
+                                                        onclick="cancelEdit('{{ $item->so_detail_id }}')">ยกเลิก</button>
+                                            </div>
+                                        </div>
+                                        <button type="button" class="btn btn-sm btn-primary edit-date-btn" 
+                                                id="edit-btn-{{ $item->so_detail_id }}"
+                                                onclick="showEditForm('{{ $item->so_detail_id }}')">
+                                            <i class="fas fa-edit"></i> แก้ไข
+                                        </button>
+                                    </div>
+                                </td>
                                 <td>{{ $item->emp_name }}</td>
                                 <td>{{ $item->notes }}</td>
                                 <td><a href="javascript:void(0);" 
@@ -470,7 +498,113 @@ th {
             <p style="text-align: center">{{ $message }}</p>
              @endif
         </div>
+        <script>
+            function showEditForm(soDetailId) {
+                // Hide the display elements and show the edit form
+                document.getElementById('date-display-' + soDetailId).style.display = 'none';
+                document.getElementById('edit-btn-' + soDetailId).style.display = 'none';
+                document.getElementById('date-edit-form-' + soDetailId).style.display = 'block';
+            }
+            
+            function cancelEdit(soDetailId) {
+                // Show the display elements and hide the edit form
+                document.getElementById('date-display-' + soDetailId).style.display = 'inline';
+                document.getElementById('edit-btn-' + soDetailId).style.display = 'inline-block';
+                document.getElementById('date-edit-form-' + soDetailId).style.display = 'none';
+            }
+        
+            // ตรวจสอบรูปแบบวันที่
+            function validateDateFormat(inputElement) {
+                let dateValue = inputElement.value;
+                
+                // ถ้าค่าไม่ถูกต้องหรือไม่มีค่า
+                if (!dateValue || dateValue.includes('undefined')) {
+                    // กำหนดค่าเป็นวันที่ปัจจุบัน
+                    let today = new Date();
+                    let yyyy = today.getFullYear();
+                    let mm = String(today.getMonth() + 1).padStart(2, '0');
+                    let dd = String(today.getDate()).padStart(2, '0');
+                    inputElement.value = yyyy + '-' + mm + '-' + dd;
+                }
+            }
+        
+            function saveNewDate(soDetailId) {
+                let newDate = document.getElementById('new-date-' + soDetailId).value;
+        
+                // ตรวจสอบรูปแบบวันที่ก่อนส่งข้อมูล
+                if (!newDate || newDate === 'undefined') {
+                    alert('กรุณาระบุวันที่ให้ถูกต้อง');
+                    return;
+                }
+        
+                // Make an AJAX request to update the date
+                $.ajax({
+                    url: "{{ route('update.delivery.date') }}", 
+                    method: "POST",
+                    data: {
+                        so_detail_id: soDetailId,
+                        new_date: newDate,
+                        _token: "{{ csrf_token() }}"
+                    },
+                    headers: {
+                        'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
+                    },
+                    success: function(response) {
+                        if (response.success) {
+                            // Format the date for display (d/m/Y)
+                            let formattedDate = formatDate(newDate);
+                            
+                            // Update the displayed date
+                            document.getElementById('date-display-' + soDetailId).innerText = formattedDate;
+                            
+                            // Show success message
+                            alert("วันที่ถูกอัพเดทเรียบร้อยแล้ว");
 
+                            
+                            // Switch back to display mode
+                            cancelEdit(soDetailId);
+                            window.location.reload()
+                        } else {
+                            alert("เกิดข้อผิดพลาด: " + response.message);
+                        }
+                    },
+                    error: function(xhr) {
+                        alert("เกิดข้อผิดพลาด: " + xhr.responseText);
+                    }
+                });
+            }
+            
+            // Helper function to format date as d/m/Y
+            function formatDate(dateString) {
+                if (!dateString || dateString === 'undefined') {
+                    return '';
+                }
+                
+                try {
+                    // ถ้าวันที่เป็นรูปแบบ YYYY-MM-DD
+                    if (dateString.includes('-') && dateString.split('-').length === 3) {
+                        let parts = dateString.split('-');
+                        let day = parts[2].padStart(2, '0');
+                        let month = parts[1].padStart(2, '0');
+                        let year = parts[0];
+                        return day + '/' + month + '/' + year;
+                    }
+                    
+                    let date = new Date(dateString);
+                    if (isNaN(date.getTime())) { // ตรวจสอบว่าวันที่ถูกต้อง
+                        return dateString;
+                    }
+                    
+                    let day = String(date.getDate()).padStart(2, '0');
+                    let month = String(date.getMonth() + 1).padStart(2, '0');
+                    let year = date.getFullYear();
+                    return day + '/' + month + '/' + year;
+                } catch (e) {
+                    console.error("Error formatting date:", e);
+                    return dateString;
+                }
+            }
+        </script>
 <!-- Popup -->
 <div class="popup-overlay" id="popup" style="display: none;">
     <div class="popup-content">

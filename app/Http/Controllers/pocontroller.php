@@ -47,6 +47,7 @@ class PoController extends Controller
         try {
             $request->validate([
                 'po_id' => 'required|string|max:255',
+                'store_id' => 'required|string|max:255',
                 'store_name' => 'required|string|max:255',
                 'store_address' => 'required|string|max:255',
                 'store_la_long' => 'required|string|max:255',
@@ -69,6 +70,7 @@ class PoController extends Controller
             // Save to Pobills table
             $pobill = new Pobills();
             $pobill->po_id = $request->input('po_id');
+            $pobill->store_id = $request->input('store_id');
             $pobill->status = $request->input('status');
             $pobill->cartype = $request->input('cartype');
             $pobill->store_name = $request->input('store_name'); 
@@ -122,5 +124,21 @@ class PoController extends Controller
         }
     }
 
+public function fetchFormType(Request $request)
+{
+    $store_id= $request->input('store_id');
+    $pobills = DB::table('pobills')
+                ->where('store_id', $store_id)
+                ->orderBy('time', 'desc') // หรือจะใช้ 'so_detail_id' ก็ได้ ถ้าเพิ่มขึ้นเรื่อยๆ
+                ->first(); // ดึงแถวล่าสุด
+
+    if ($pobills) {
+        return response()->json([
+            'store_la_long' => $pobills->store_la_long
+        ]);
+    } else {
+        return response()->json(['store_la_long' => null]); // ถ้าไม่พบข้อมูล
+    }
+}
 
 }   
