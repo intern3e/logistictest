@@ -284,7 +284,12 @@
                     <input type="hidden" id="method" name="method" value="">
                     <a href="dashboard"><input class="btn btn-danger" type="button" style="background-color: #C599B6"  value="HOME SO"></a>
                     <a href="dashboardpo"><input class="btn btn-danger" type="button"  style="background-color: #80CBC4" value="HOME PO"></a>
-                    <a href="dashboarddoc"><input class="btn btn-danger" type="button"   style="background-color: #E9762B" value="HOME เอกสาารอื่นๆ"></a>    
+                    <a href="dashboarddoc"><input class="btn btn-danger" type="button"   style="background-color: #E9762B" value="HOME เอกสาารอื่นๆ"></a>   
+                 <a href="alertaccount" title="บัญชี" class="notification-icon" style="position: relative; display: inline-block;">
+                <input class="btn btn-danger" type="button" style="background-color: pink" value="บัญชี">
+                <span class="notification-badge" id="alertAccountBadge" style="position: absolute; top: -5px; right: -5px; background-color: rgb(255, 0, 0); color: white; border-radius: 50%; width: 20px; height: 20px; display: none; text-align: center; line-height: 20px;">0</span>
+            </a>
+            
                     <input type="hidden" name="perPage" value="25">
                 </div>
             </div>
@@ -676,6 +681,32 @@
             }
         }
         initDropdown(document.getElementById('SOStatus'), "");
+
+
+async function checkForAccountAlerts() {
+    try {
+        const response = await fetch('/alertaccount/count'); // เปลี่ยน endpoint ตามระบบของคุณ
+        const data = await response.json();
+
+        const badge = document.getElementById('alertAccountBadge');
+        
+        if (data.count > 0) {
+            badge.textContent = data.count;
+            badge.style.display = 'block';
+        } else {
+            badge.style.display = 'none';
+        }
+    } catch (error) {
+        console.error('ไม่สามารถเช็คการแจ้งเตือนได้:', error);
+    }
+}
+
+// เรียกตอนโหลดหน้า
+checkForAccountAlerts();
+
+// หรือให้เช็คซ้ำทุก 30 วินาที
+setInterval(checkForAccountAlerts, 1000);
+
     </script>
 
 

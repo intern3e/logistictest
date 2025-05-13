@@ -302,7 +302,7 @@ th {
         </thead>
         <tbody id="table-body">
         @foreach($bill->sortBy('so_detail_id') as $item) 
-                @if($item->statuspdf == 1)
+                @if($item->statuspdf == 1 || $item->statuspdf == 4)
                     <tr>
                         <td>
                         <input type="checkbox" class="form-control1" name="statupdf[]" value="{{ $item->so_id }}" id="checkbox_{{ $item->so_detail_id }}">

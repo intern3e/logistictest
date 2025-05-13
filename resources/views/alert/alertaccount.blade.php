@@ -365,9 +365,9 @@ th {
 </head>
 <body>
     <div class="header" >
-        <h2>แจ้งเตือนเซลล์</h2>
+        <h2>แจ้งเตือนบัญชี</h2>
         <div class="header-buttons">
-            <a href="dashboard"><button class="btn-so">หน้าหลัก</button></a>
+            <a href="adminSO"><button class="btn-so">หน้าหลัก</button></a>
         </div>
     </div>
     <div class="top-section">    
@@ -400,11 +400,11 @@ th {
                 </thead>
                 <tbody id="table-body">
                     @foreach($bill as $item)
-                        @if($item->NG != null )
+                        @if($item->formtype == 1 && $item->statuspdf == 1)
                             <tr>
                                 <td>
-                                <button class="updateNGButton" data-so-detail-id="{{ $item->so_detail_id }}">
-                        ล้าง
+                                <button class="finish" data-so-detail-id="{{ $item->so_detail_id }}">
+                        เสร็จสิ้น
                     </button></td>
                                 <td>{{ $item->so_detail_id }}</td>
                                 <td>{{ $item->so_id }}</td>
@@ -534,11 +534,11 @@ th {
 
 
 <script>
-    document.querySelectorAll('.updateNGButton').forEach(button => {
+    document.querySelectorAll('.finish').forEach(button => {
         button.addEventListener('click', function() {
             var soDetailId = this.getAttribute('data-so-detail-id');
 
-            fetch('{{ route('update.ng') }}', {
+            fetch('{{ route('finish.ng') }}', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',

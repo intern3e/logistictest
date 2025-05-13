@@ -92,6 +92,23 @@ Route::post('/update-statuspdfdoc', [admindoccontroller::class, 'statuspdfdoc'])
 use App\Http\Controllers\alertcontroller;
 Route::get('/alertsale', [alertcontroller::class, 'dashboard'])->name('alert.alertsale');
 Route::post('/update-ng', [alertcontroller::class, 'updateNG'])->name('update.ng');
+Route::get('/alertaccount', [alertcontroller::class, 'dashboardaccount'])->name('alert.alertaccount');
+Route::post('/finish', [alertcontroller::class, 'finish'])->name('finish.ng');
+
+Route::get('/alertsale/count', function () {
+    $count = DB::table('tblbill')->where('NG', false)->count(); // เปลี่ยน 'alerts' เป็นชื่อตารางจริงของคุณ
+    return response()->json(['count' => $count]);
+});
+Route::get('/alertaccount/count', function () {
+    // คัดกรองข้อมูลที่ตรงตามเงื่อนไข formtype == 1 และ statuspdf == 1
+    $count = DB::table('tblbill')
+                ->where('formtype', 1)   // ตรวจสอบว่า formtype เท่ากับ 1
+                ->where('statuspdf', 1)  // ตรวจสอบว่า statuspdf เท่ากับ 1
+                ->count();               // นับจำนวนที่ตรงเงื่อนไข
+
+    return response()->json(['count' => $count]);
+});
+
 //test 
 use App\Http\Controllers\text;
 Route::get('/SOlist', [text::class, 'txt1'])->name('txt1');

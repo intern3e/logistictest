@@ -45,7 +45,7 @@
         .header .buttons a {
             background-color: #e74c3c;
             color: #fff;
-            padding: 10px 18px;
+            padding: 8px 18px;
             border-radius: 8px;
             text-decoration: none;
             font-weight: 500;
@@ -203,6 +203,33 @@
   overflow-wrap: break-word;
 }
 
+.notification-icon {
+    position: relative;
+    display: inline-block;
+    padding: 5px;
+    border-radius: 5px;
+}
+
+.notification-badge {
+    position: absolute;
+    top: -5px;
+    right: -18px;
+    background-color: rgb(255, 0, 0); /* เปลี่ยนเป็นสีเหลือง */
+    color: white;
+    border-radius: 50%;
+    width: 20px; 
+    height: 20px; 
+    display: none;
+    text-align: center;
+    line-height: 20px;
+}
+
+.notification-icon img {
+    width: 24px;
+    height: 24px;
+}
+
+
     </style>
 </head>
 <body>
@@ -214,10 +241,53 @@
             @csrf
             
             <a href="SOlist" button  type="submit" class="btn btn-danger">🚪 หน้าหลัก</a>
+       <a href="alertsale" title="แจ้งเตือนนะจ๊ะ" class="notification-icon" style="background-color: rgb(245, 245, 69); padding: 5px; border-radius: 5px; display: inline-block;">
+             <img src="https://cdn-icons-png.flaticon.com/512/2645/2645897.png" alt="แจ้งเตือน">
+            <span class="notification-badge" id="alertBadge">0</span>
+        </a>
+
         </div>
-        <a href="alertsale">แจ้งเตือนนะจ๊ะ</a>
     </div>
-    
+<script>
+  let isChecking = false;
+
+  async function checkForAlerts() {
+    if (isChecking) return; // ป้องกันเรียกซ้ำซ้อน
+    isChecking = true;
+
+    try {
+      const response = await fetch('/alertsale/count', {
+        headers: {
+          'X-Requested-With': 'XMLHttpRequest',
+        }
+      });
+
+      if (!response.ok) throw new Error("Response ไม่โอเค");
+
+      const data = await response.json();
+      const badge = document.getElementById('alertBadge');
+
+      if (data.count > 0) {
+        badge.textContent = data.count;
+        badge.style.display = 'block';
+      } else {
+        badge.style.display = 'none';
+      }
+    } catch (error) {
+      console.error('ไม่สามารถเช็คการแจ้งเตือนได้:', error);
+    } finally {
+      isChecking = false;
+    }
+  }
+
+  // เรียกตอนโหลดหน้า
+  checkForAlerts();
+
+  // เรียกซ้ำทุก 1 วิ
+  setInterval(checkForAlerts, 1000);
+</script>
+
+
     <!-- Filter & Search Section -->
     <div class="filter-container">
         <form method="GET" action="{{ route('sale.dashboard') }}" class="filter-form" id="autoSearchForm">

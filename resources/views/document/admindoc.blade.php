@@ -11,267 +11,284 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 
     <style>
-       /* ===== Base ===== */
+  /* ===== Base ===== */
 body {
-    font-family: 'Poppins', sans-serif;
-    background-color: #f5f7fa;
-    margin: 0;
-    padding: 0;
-    color: #2c3e50;
+  font-family: 'Poppins', sans-serif;
+  background-color: #f5f7fa;
+  margin: 0;
+  padding: 0;
+  color: #2c3e50;
 }
 
 /* ===== Header ===== */
 .header {
-    background-color: #343a40;
-    padding: 15px 30px;
-    color: white;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    font-size: 1.2rem;
-    border-radius: 8px;
-    margin: 20px auto;
-    width: 90%;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+  background-color: #343a40;
+  padding: 0px 30px;
+  color: white;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 1.2rem;
+  border-radius: 8px;
+  margin: 20px auto;
+  width: 90%;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
 }
 
 .header button {
-    background-color: #e74c3c;
-    color: white;
-    padding: 8px 15px;
-    border: none;
-    border-radius: 5px;
-    cursor: pointer;
-    transition: background 0.3s, transform 0.2s;
+  background-color: #e74c3c;
+  color: white;
+  padding: 8px 15px;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+  transition: background 0.3s, transform 0.2s;
 }
 
 .header button:hover {
-    background-color: #c0392b;
-    transform: translateY(-2px);
+  background-color: #c0392b;
+  transform: translateY(-2px);
 }
 
 /* ===== Container ===== */
 .container {
-    background: white;
-    padding: 30px;
-    border-radius: 12px;
-    box-shadow: 0 6px 18px rgba(0, 0, 0, 0.1);
-    width: 90%;
-    margin: 20px auto;
+  background: white;
+  padding: 30px;
+  border-radius: 12px;
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.1);
+  width: 90%;
+  margin: 20px auto;
+  box-sizing: border-box;
 }
 
 /* ===== Table Container ===== */
 .table-container {
-    background: #ffffff;
-    margin: 20px auto;
-    border-radius: 12px;
-    box-shadow: 0 6px 18px rgba(0, 0, 0, 0.1);
-    overflow-x: auto;
-    width: 95%;
-    padding: 20px;
+  background: #ffffff;
+  margin: 20px auto;
+  border-radius: 12px;
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.1);
+  overflow-x: auto;
+  width: 100%;
+  padding: 20px;
+  box-sizing: border-box;
 }
 
-/* ===== Table ===== */
 table {
-    width: 100%;
-    border-collapse: collapse;
-    text-align: center;
-    font-size: 0.95rem;
+width: 100%;
+margin-left: auto;
+margin-right: auto;
+border-collapse: collapse;
+background-color: #fff;
+border-radius: 5px;
+overflow: hidden;
+box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
 }
 
-th, td {
-    padding: 15px;
-    border: 1px solid #e0e0e0;
-    white-space: normal;
+
+table th, table td {
+padding: 8px;
+text-align: center; /* จัดข้อความให้อยู่ตรงกลางแนวนอน */
+vertical-align: middle; /* จัดข้อความให้อยู่ตรงกลางแนวตั้ง */
+border: 1px solid #dee2e6; /* เพิ่มเส้นขอบให้กับเซลล์ */
+font-size: 14px; /* ปรับขนาดตัวอักษรที่นี่ */
 }
 
-th {
-    background-color: #343a40;
-    color: white;
-    text-transform: uppercase;
+
+table th {
+background-color: #343a40;
+color: #ffffff;
 }
 
-tr:nth-child(odd) {
-    background-color: #f8f9fa;
+table tbody tr:nth-child(even) {
+background-color: #f2f2f2;
 }
 
-tr:hover {
-    background-color: #e1e5ea;
-    transition: background 0.3s;
+table tbody tr:hover {
+background-color: #e9ecef;
 }
 
-td a {
-    color: #27ae60;
-    font-weight: bold;
-    text-decoration: none;
+table a {
+color: #007bff;
+text-decoration: none;
 }
 
-td a:hover {
-    text-decoration: underline;
-}
-
+table a:hover {
+text-decoration: underline;
+}   
 /* ===== Top Section ===== */
 .top-section {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin: 0 5% 20px;
-    flex-wrap: wrap;
-    gap: 15px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin: 0 5% 20px;
+  flex-wrap: wrap;
+  gap: 15px;
 }
 
 .top-section label {
-    font-weight: bold;
+  font-weight: bold;
 }
 
 .top-section input {
-    padding: 8px;
-    border-radius: 5px;
-    border: 1px solid #ccc;
-    font-size: 1rem;
+  padding: 8px;
+  border-radius: 5px;
+  border: 1px solid #ccc;
+  font-size: 1rem;
 }
 
 .top-section button {
-    padding: 8px 15px;
-    background: #27ae60;
-    color: white;
-    border: none;
-    border-radius: 5px;
-    cursor: pointer;
-    transition: background 0.3s, transform 0.2s;
+  padding: 8px 15px;
+  background: #27ae60;
+  color: white;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+  transition: background 0.3s, transform 0.2s;
 }
 
 .top-section button:hover {
-    background: #219150;
-    transform: translateY(-2px);
+  background: #219150;
+  transform: translateY(-2px);
 }
 
 /* ===== Filter Container ===== */
 .filter-container {
-    display: flex;
-    align-items: center;
-    gap: 10px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
 }
 
 .filter-container input {
-    padding: 8px;
-    border-radius: 5px;
-    border: 1px solid #ccc;
+  padding: 8px;
+  border-radius: 5px;
+  border: 1px solid #ccc;
 }
 
 .filter-container button {
-    background-color: #2ecc71;
-    color: white;
-    padding: 8px 15px;
-    border: none;
-    border-radius: 5px;
-    cursor: pointer;
-    transition: background 0.3s;
+  background-color: #2ecc71;
+  color: white;
+  padding: 8px 15px;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+  transition: background 0.3s;
 }
 
 .filter-container button:hover {
-    background-color: #27ae60;
+  background-color: #27ae60;
 }
 
 /* ===== Button Group ===== */
 .button-group {
-    display: flex;
-    gap: 10px;
-    flex-wrap: wrap;
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
 }
 
 .button-group button {
-    padding: 12px 20px;
-    border-radius: 8px;
-    font-weight: bold;
-    border: none;
-    background-color: #f39c12;
-    color: white;
-    cursor: pointer;
-    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.2);
-    transition: background 0.3s, transform 0.2s;
+  padding: 12px 20px;
+  border-radius: 8px;
+  font-weight: bold;
+  border: none;
+  background-color: #f39c12;
+  color: white;
+  cursor: pointer;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.2);
+  transition: background 0.3s, transform 0.2s;
 }
 
 .button-group button:hover {
-    background-color: #e67e22;
-    transform: scale(1.05);
+  background-color: #e67e22;
+  transform: scale(1.05);
 }
 
 /* ===== Search Box ===== */
 .search-box {
-    display: flex;
-    align-items: center;
-    max-width: 250px;
-    flex-grow: 1;
+  display: flex;
+  align-items: center;
+  max-width: 250px;
+  flex-grow: 1;
 }
 
 .search-box input {
-    width: 100%;
-    padding: 8px;
-    border: none;
-    border-radius: 5px;
-    background-color: #e1e5ea;
-    font-size: 1rem;
+  width: 100%;
+  padding: 8px;
+  border: none;
+  border-radius: 5px;
+  background-color: #e1e5ea;
+  font-size: 1rem;
 }
 
 /* ===== Links ===== */
 .link {
-    color: #16a085;
-    font-weight: bold;
-    text-decoration: none;
+  color: #16a085;
+  font-weight: bold;
+  text-decoration: none;
 }
 
 .link:hover {
-    text-decoration: underline;
+  text-decoration: underline;
 }
 
 /* ===== Popup ===== */
 .popup-overlay {
-    display: none;
-    position: fixed;
-    inset: 0;
-    background: rgba(0, 0, 0, 0.5);
-    justify-content: center;
-    align-items: center;
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.5);
+  justify-content: center;
+  align-items: center;
 }
 
 .popup-content {
-    background: linear-gradient(to right, #f0f2f5, #dfe9f3);
-    padding: 30px;
-    border-radius: 10px;
-    width: 90%;
-    max-width: 800px;
-    max-height: 80vh;
-    overflow-y: auto;
-    position: relative;
-    text-align: center;
+  background: linear-gradient(to right, #f0f2f5, #dfe9f3);
+  padding: 30px;
+  border-radius: 10px;
+  width: 90%;
+  max-width: 800px;
+  max-height: 80vh;
+  overflow-y: auto;
+  position: relative;
+  text-align: center;
 }
 
 .close-btn {
-    position: absolute;
-    top: 15px;
-    right: 15px;
-    cursor: pointer;
-    font-size: 20px;
-    font-weight: bold;
-    color: #333;
+  position: absolute;
+  top: 15px;
+  right: 15px;
+  cursor: pointer;
+  font-size: 20px;
+  font-weight: bold;
+  color: #333;
 }
 
 /* ===== Responsive ===== */
 @media (max-width: 768px) {
-    .header, .container, .table-container {
-        width: 95%;
-    }
+  .header,
+  .container,
+  .table-container {
+    width: 95%;
+    padding: 10px;
+  }
 
-    .top-section {
-        flex-direction: column;
-        align-items: stretch;
-    }
+  .top-section {
+    flex-direction: column;
+    align-items: stretch;
+  }
 
-    .button-group {
-        justify-content: center;
-    }
+  .button-group {
+    justify-content: center;
+  }
+
+  table {
+    font-size: 0.85rem;
+  }
+
+  th, td {
+    padding: 10px;
+  }
 }
+
     </style>
 </head>
 <body>
@@ -321,7 +338,6 @@ td a:hover {
                 <th>เลขที่บิล</th>
                 <th>บริษัท</th>
                 <th>ที่อยู่</th>
-                <th>ละติจูด ลองจิจูด</th>
                 <th>ผู้ติดต่อ</th>
                 <th>เบอร์โทร</th>
                 <th>ประเภทงาน</th>
@@ -340,17 +356,7 @@ td a:hover {
                 </td>
                 <td>{{ $item->doc_id }}</td>
                 <td>{{ $item->com_name }}</td>
-                <td>{{ $item->com_address }}</td>
-                <td>
-                    @php
-                        $text = $item->com_la_long;
-                        $split_text = str_split($text, 40); // แบ่งข้อความเป็นชิ้น ๆ ที่ไม่เกิน 40 ตัว
-                    @endphp
-                    
-                    @foreach ($split_text as $line)
-                        {{ $line }}<br> <!-- แสดงแต่ละบรรทัด -->
-                    @endforeach
-                </td>
+                <td>{{ $item->com_address }}</td>   
                 <td>{{ $item->contact_name }}</td>
                 <td>{{ $item->contact_tel}}</td>
                 <td>{{ $item->doctype }}</td>

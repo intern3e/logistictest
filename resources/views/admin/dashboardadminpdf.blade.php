@@ -14,7 +14,7 @@
         }
         .header {
             background: linear-gradient(to right, #2c3e50, #4b6584);
-            padding: 15px 30px;
+            padding: 0px 30px;
             color: white;
             display: flex;
             justify-content: space-between;
@@ -81,21 +81,6 @@
             transform: scale(0.9); /* Scale down the table to fit the screen */
             transform-origin: top left; /* Keep the table scaling from the top-left corner */
             overflow-x: auto; 
-        }
-
-        table {
-            width: 100%;
-            border-collapse: collapse;
-            text-align: center;
-            word-wrap: break-word; /* Ensure text wraps within table cells */
-            font-size: 1rem; /* Adjust the font size to make it smaller */
-        }
-
-        th, td {
-            padding: 12px;
-            border: 1px solid #ccc; /* Light gray for borders */
-            font-size: 1rem;
-            white-space: normal; /* Allow wrapping of text in cells */
         }
 
         .top-section {
@@ -216,13 +201,17 @@
         table {
             width: 100%;
             border-collapse: collapse;
-            text-align: center;
+            background-color: #fff;
+            border-radius: 6px;
+            overflow: hidden;
+            box-shadow: 0 2px 15px rgba(0,0,0,0.05);
         }
 
         th, td {
-            padding: 12px;
-            border: 1px solid #2c3e50;
-            font-size: 1rem;
+             padding: 9px;
+            text-align: center;
+            border: 1px solid #e1e4e8;
+            font-size: 14px;
         }
 
         th {
@@ -389,7 +378,6 @@
             <div class="button-group">
                 <button id="summitso" onclick="updateStatuspdf()">ปริ้นเอกสารSO</button>
                 <a href="dashboardadmin"><button id="printroute" style="background-color: red">ปริ้นเอกสารเส้นทางการเดินรถ</button></a>
-                <a href="admindoc"><button id="printdoc" style="background-color: green">ปริ้นเอกสารบิลชั่วคราว</button></a>
                 <a href="history"><button>📜 ประวัติเอกสาร</button></a>
             </div>
 
@@ -409,8 +397,7 @@
                 <th>อ้างอิงใบสั่งขาย</th>
                 <th>อ้างอิงใบส่งของ</th>
                 <th>อ้างอิงใบสั่งซื้อ</th>
-                <th>ชื่อลูกค้า</th>
-                <th>เบอร์ติดต่อ</th>
+            
                 <th>วันที่จัดส่ง</th>
                 <th>ผู้ขาย</th>
                 <th>ผู้เปิดบิล</th>
@@ -456,8 +443,6 @@
                         @endif
                         <td>{{ $item->billid }}</td>
                         </td>
-                                <td>{{ $item->customer_name}}</td>
-                                <td>{!! nl2br(e(str_replace(',', "\n", $item->customer_tel))) !!}</td>
                                 <td>{{ \Carbon\Carbon::parse($item->date_of_dali)->format('d/m/Y') }}</td> 
                                 <td>{{ $item->sale_name }}</td>
                                 <td>{{ $item->emp_name }}</td>
@@ -519,12 +504,9 @@
                     <thead>
                         <tr>
                             <th>เลขที่บิล</th>
-                            <th>อ้างอิงใบสั่งขาย</th>
-                            <th>อ้างอิงใบสั่งซื้อ</th>
                             <th>ชื่อลูกค้า</th>
                             <th>เบอร์โทร</th>
                             <th>ที่อยู่จัดส่ง</th>
-                            <th>วันที่จัดส่ง</th>
                             <th>ผุ้ขาย</th>
                         </tr>
                     </thead>
@@ -556,12 +538,9 @@
         popupBody.innerHTML = `
             <tr>
                 <td>${soDetailId}</td>
-                <td>${so_id}</td>
-                <td>${ponum}</td>
                 <td>${customer_name}</td>
                 <td>${customer_tel}</td>
                 <td>${customer_address}</td>
-                <td>${date_of_dali}</td>
                 <td>${sale_name}</td>
             </tr>
         `;

@@ -28,12 +28,38 @@ public function updateNG(Request $request)
         $item->NG = null;
         $item->save();
         return response()->json(['status' => 'success', 'message' => 'เสร็จสิ้น']);
-        window.location.reload();
+      
     }
 
     // หากไม่พบข้อมูล
     return response()->json(['status' => 'error', 'message' => 'so_detail_id not found']);
 }
+ public function dashboardaccount(Request $request)
+    {
 
+        $bill = Bill::orderBy('so_detail_id', 'desc')
+                        ->with('customer')
+                        ->get();
+        $items = $bill; // เพิ่มบรรทัดนี้
+        return view('alert.alertaccount', compact('bill'));
+    }
+public function finish(Request $request)
+{
+    // ตรวจสอบว่าได้ส่ง so_detail_id มาหรือไม่
+    $soDetailId = $request->input('so_detail_id');
 
+    // ค้นหาข้อมูลในฐานข้อมูลโดยใช้ so_detail_id
+    $item = bill::where('so_detail_id', $soDetailId)->first();
+
+    if ($item) {
+        // หากพบข้อมูล ให้ทำการอัปเดตค่า NG เป็น null
+        $item->statuspdf = 4;
+        $item->save();
+        return response()->json(['status' => 'success', 'message' => 'เสร็จสิ้น']);
+    
+    }
+
+    // หากไม่พบข้อมูล
+    return response()->json(['status' => 'error', 'message' => 'so_detail_id not found']);
+}
 }

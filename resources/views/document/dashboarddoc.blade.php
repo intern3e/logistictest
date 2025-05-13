@@ -126,7 +126,7 @@ width: 100%;
 margin-left: auto;
 margin-right: auto;
 border-collapse: collapse;
-background-color: #ffffff;
+background-color: #fff;
 border-radius: 5px;
 overflow: hidden;
 box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
