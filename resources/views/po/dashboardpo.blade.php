@@ -5,280 +5,211 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>📑 ระบบPO</title>
     <style>
-/* รีเซ็ตสไตล์พื้นฐาน */
-{
-
-box-sizing: border-box;
-margin: 0;
-padding: 0; 
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
 }
 
-/* สไตล์สำหรับ body */
 body {
-font-family: 'Arial', sans-serif;
-background-color:rgb(255, 255, 255);
-color: #343a40;
-line-height: 1.6;
-padding: 20px;
+  font-family: 'Segoe UI', Arial, sans-serif;
+  background-color: #f7f9fc;
+  color: #343a40;
+  line-height: 1.6;
+  padding: 20px;
 }
 
-/* ส่วนหัวของหน้า */
 .header {
-background-color: rgb(30, 62, 122);
-color: #ffffff;
-padding: 15px;
-border-radius: 5px;
-margin-bottom: 20px;
-display: flex;
-justify-content: space-between;
-align-items: center;
+  background: linear-gradient(90deg, #1e3e7a 0%, #1e3e7a 65%, #355ca8 100%);
+  color: #fff;
+  padding: 15px;
+  border-radius: 6px;
+  margin-bottom: 30px;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: center;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
 }
 
 .header h2 {
-margin: 0;
+  font-size: 24px;
 }
 
-.header .buttons {
-display: flex;
-align-items: center;
+.buttons {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  align-items: center;
 }
 
-.header .buttons span {
-margin-right: 15px;
+.buttons span {
+  margin-right: 10px;
+  font-weight: 500;
 }
 
-.header .buttons a {
-background-color: #3bd315;
-color: #ffffff;
-padding: 8px 15px;
-text-decoration: none;
-border-radius: 5px;
-margin-right: 10px; /* เพิ่มระยะห่าง */
+.buttons a {
+  text-decoration: none;
+  padding: 6px 12px;
+  border-radius: 6px;
+  font-weight: bold;
+  transition: all 0.2s ease;
+  font-size: 14px;
 }
 
-.header .buttons a:hover {
-background-color: #15b800;
+.buttons a:first-of-type {
+  background-color: rgb(36, 180, 0);
+  color: white;
 }
 
-/* คอนเทนเนอร์สำหรับฟิลเตอร์และการค้นหา */
+.buttons a:first-of-type:hover {
+  background-color: #1f9f00;
+}
+
+.buttons a:last-of-type {
+  background-color: #dc3545;
+  color: white;
+}
+
+.buttons a:last-of-type:hover {
+  background-color: #c82333;
+}
+
 .filter-container {
-display: flex;
-flex-wrap: wrap;
-justify-content: space-between;
-margin-bottom: 20px;
-width: 100%;
-margin-left: auto;
-margin-right: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+  margin-bottom: 20px;
 }
 
-.filter-form {
-display: flex;
-align-items: center;
-margin-bottom: 10px;
+@media (min-width: 768px) {
+  .filter-container {
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: center;
+  }
 }
 
-.filter-form label {
-margin-right: 10px;
-}
-
-.filter-form input[type="date"] {
-padding: 8px;
-margin-right: 10px;
-border: 1px solid #ced4da;
-border-radius: 5px;
-}
-
-.filter-form button {
-padding: 8px 15px;
-background-color: #007bff;
-color: #ffffff;
-border: none;
-border-radius: 5px;
-cursor: pointer;
-}
-
-.filter-form button:hover {
-background-color: #0056b3;
-}
-
-.search-box {
-display: flex;
-align-items: center;
-margin-bottom: 10px;
+.filter-form input[type='date'],
+.search-box input {
+  padding: 6px 10px;
+  border: 1px solid #ced4da;
+  border-radius: 6px;
+  font-size: 14px;
+  max-width: 100%;
 }
 
 .search-box input {
-padding: 8px;
-width: 200px;
-border: 1px solid #ced4da;
-border-radius: 5px;
+  width: 200px;
 }
 
-/* คอนเทนเนอร์สำหรับตาราง */
 .table-container {
-overflow-x: auto;
+  overflow-x: auto;
+  margin-top: 10px;
 }
 
 table {
-width: 100%;
-margin-left: auto;
-margin-right: auto;
-border-collapse: collapse;
-background-color: #ffffff;
-border-radius: 5px;
-overflow: hidden;
-box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+  width: 100%;
+  border-collapse: collapse;
+  background-color: white;
+  border-radius: 6px;
+  overflow: hidden;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
 }
 
-
-table th, table td {
-padding: 12px;
-text-align: center; /* จัดข้อความให้อยู่ตรงกลางแนวนอน */
-vertical-align: middle; /* จัดข้อความให้อยู่ตรงกลางแนวตั้ง */
-border: 1px solid #dee2e6; /* เพิ่มเส้นขอบให้กับเซลล์ */
-font-size: 14px; /* ปรับขนาดตัวอักษรที่นี่ */
+th,
+td {
+  padding: 8px 8px;
+  text-align: center;
+  border: 1px solid #e0e0e0;
+  font-size: 13px;
+  word-break: break-word;
+  white-space: normal;
+  max-width: 180px;
 }
 
-
-table th {
-background-color: rgb(30, 62, 122);
-color: #ffffff;
+th {
+  background-color: #1e3e7a;
+  color: white;
+  white-space: nowrap;
 }
 
-table tbody tr:nth-child(even) {
-background-color: #f2f2f2;
+tbody tr:nth-child(even) {
+  background-color: #f2f2f2;
 }
 
-table tbody tr:hover {
-background-color: #e9ecef;
+tbody tr:hover {
+  background-color: #e9ecef;
 }
 
 table a {
-color: #007bff;
-text-decoration: none;
+  color: #007bff;
+  text-decoration: none;
 }
 
 table a:hover {
-text-decoration: underline;
+  text-decoration: underline;
 }
 
-/* สไตล์สำหรับป็อปอัป */
 .popup-overlay {
-position: fixed;
-top: 0;
-left: 0;
-width: 100%;
-height: 100%;
-background-color: rgba(0, 0, 0, 0.5);
-display: none;
-justify-content: center;
-align-items: center;
-z-index: 1000;
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.6);
+  display: none;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+  padding: 10px;
 }
 
 .popup-content {
-background-color: #ffffff;
-padding: 20px;
-border-radius: 5px;
-width: 100%;
-max-width: 1000px;
-position: relative;
-box-shadow: 0 0 15px rgba(0, 0, 0, 0.2);
+  background: white;
+  padding: 30px 20px 20px 20px;
+  border-radius: 8px;
+  max-width: 1000px;
+  width: 100%;
+  max-height: 80vh;
+  overflow-y: auto;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+  position: relative;
+  word-break: break-word;
+}
+
+.popup-content table th,
+.popup-content table td {
+  padding: 6px 8px;
+  font-size: 14px;
+  word-break: break-word;
+  white-space: normal;
 }
 
 .close-btn {
-position: absolute;
-top: 0;
-right: 15px;
-font-size: 20px;
-cursor: pointer;
-color: #343a40;
+  position: absolute;
+  top: 10px;
+  right: 15px;
+  font-size: 20px;
+  cursor: pointer;
+  color: #333;
 }
 
 .close-btn:hover {
-color: #000000;
-}
-
-.popup-content table {
-width: 100%;
-margin-bottom: 20px;
+  color: #000;
 }
 
 textarea {
-width: 100%;
-padding: 10px;
-border: 1px solid #ced4da;
-border-radius: 5px;
-resize: none;.popup-overlay {
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background-color: rgba(0, 0, 0, 0.5);
-    display: none;
-    justify-content: center;
-    align-items: center;
-    z-index: 1000;
+  width: 100%;
+  border-radius: 5px;
+  border: 1px solid #ccc;
+  padding: 10px;
+  resize: none;
+  font-size: 14px;
+  margin-top: 10px;
 }
 
-.popup-content {
-    background-color: #ffffff;
-    padding: 20px;
-    border-radius: 5px;
-    width: 100%;
-    max-width: 1000px;
-    max-height: 70%;
-    overflow-y: auto;
-    position: relative;
-    box-shadow: 0 0 15px rgba(0, 0, 0, 0.2);
-}
-
-
-.close-btn {
-    position: absolute;
-    top: 0;
-    right: 5px;
-    font-size: 20px;
-    cursor: pointer;
-    color: #343a40;
-}
-
-.close-btn:hover {
-    color: #000000;
-}
-
-.popup-content table {
-    width: 100%;
-    margin-bottom: 20px;
-}
-
-textarea {
-    width: 100%;
-    padding: 10px;
-    border: 1px solid #ced4da;
-    border-radius: 5px;
-    resize: none;
-}
-}
-
-/* การปรับสไตล์สำหรับหน้าจอขนาดเล็ก */
-@media (max-width: 768px) {
-.filter-container {
-    flex-direction: column;
-}
-
-.filter-form, .search-box {
-    width: 100%;
-}
-
-.search-box input {
-    width: 100%;
-}
-}
-
-
-        </style>
+  </style>
 </head>
 <body>
     <div class="header">
@@ -329,7 +260,6 @@ textarea {
                     <th>บิลลำดับที่</th>
                     <th>เลขอ้างอิงใบรับสินค้า</th>
                     <th>ชื่อร้านค้า</th>
-                    <th>ที่อยู่ร้านค้า</th>
                     <th>วันที่รับสินค้า</th>
                     <th>ผู้เปิดบิล</th>
                     <th>ประเภทขนส่ง</th>
@@ -345,7 +275,6 @@ textarea {
                         <td>{{ $item->po_detail_id}}</td> 
                         <td>{{ $item->po_id}}</td>
                         <td>{{ $item->store_name}}</td>
-                        <td>{{ $item->store_address}}</td>  
                         <td>{{ \Carbon\Carbon::parse($item->recvDate)->format('d/m/Y') }}</td> 
                         <td>{{ $item->emp_name }}</td> 
                         <td>

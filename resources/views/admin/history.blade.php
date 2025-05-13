@@ -36,7 +36,7 @@ body {
 }
 
 .header-buttons button {
-    padding: 15px 20px;
+    padding: 8px 8px;
     font-size: 16px;
     cursor: pointer;
     border: none;
@@ -158,7 +158,7 @@ body {
 }
 
 .button-group button {
-    padding: 15px 20px;
+    padding: 10px 20px;
     border-radius: 8px;
     font-weight: bold;
     text-decoration: none;
@@ -227,7 +227,7 @@ body {
         }
 
 th, td {
-    padding: 12px;
+    padding: 8px;
     border: 1px solid #2c3e50;
     font-size: 1rem;
     max-width: 100px; /* กำหนดความกว้างสูงสุด */
@@ -428,11 +428,8 @@ th {
                         <th>อ้างอิงใบสั่งซื้อ</th>
                         <th>ชื่อลูกค้า</th>
                         <th>เบอร์ติดต่อ</th>
-                        <th>ที่อยู่จัดส่ง</th>
-                        <th>ละติจูด ลองจิจูด</th>
                         <th>วันที่จัดส่ง</th>
                         <th>ผู้เปิดบิล</th>
-                        <th>แจ้งเพิ่มเติม</th>
                         <th>ข้อมูลสินค้า</th>
                     </tr>
                 </thead>
@@ -448,8 +445,6 @@ th {
                                 <td>{{ $item->ponum }}</td>
                                 <td>{{ $item->customer_name }}</td>
                                 <td>{{ $item->customer_tel }}</td>  
-                                <td>{{ $item->customer_address }}</td>
-                                <td>{{ $item->customer_la_long }}</td>
                                 <td>
                                     <div class="date-container">
                                         <span class="date-display" id="date-display-{{ $item->so_detail_id }}">
@@ -474,7 +469,6 @@ th {
                                     </div>
                                 </td>
                                 <td>{{ $item->emp_name }}</td>
-                                <td>{{ $item->notes }}</td>
                                 <td><a href="javascript:void(0);" 
                                 onclick="openPopup(
                                     '{{ $item->so_detail_id }}',
@@ -614,8 +608,6 @@ th {
                 <thead>
                     <tr>
                         <th>เลขที่บิล</th>
-                        <th>อ้างอิงใบสั่งขาย</th>
-                        <th>อ้างอิงใบสั่งซื้อ</th>
                         <th>ชื่อลูกค้า</th>
                         <th>เบอร์โทร</th>
                         <th>ที่อยู่จัดส่ง</th>
@@ -651,8 +643,6 @@ th {
     popupBody.innerHTML = `
         <tr>
             <td>${soDetailId}</td>
-            <td>${so_id}</td>
-            <td>${ponum}</td>
             <td>${customer_name}</td>
             <td>${customer_tel}</td>
             <td>${customer_address}</td>

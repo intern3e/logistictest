@@ -44,7 +44,6 @@ Route::get('/add-so-detail-id-to-pdf/{soDetailId}/{POdocument}',
 Route::get('/add-so-detail-id-to-bill/{so_detail_id}/{filename}', 
     [PoDocumentController::class, 'addIdToDocument']);
 
-    
 
 use App\Http\Controllers\admincontroller;
 Route::get('/dashboardadmin', [AdminController::class, 'dashboard'])->name('admin.dashboardadmin');
@@ -58,9 +57,6 @@ Route::post('/update-billid', [AdminController::class, 'updateBillId'])->name('u
 Route::get('/adminroute', [AdminController::class, 'adminroute'])->name('admin.adminroute');
 Route::post('/update-statuspdfso2', [admincontroller::class, 'updateStatuspdf2']);
 Route::post('/update-delivery-date', [App\Http\Controllers\admincontroller::class, 'updateDeliveryDate'])->name('update.delivery.date');
-
-
-
 
 
 // PO system
@@ -86,8 +82,6 @@ Route::get('/get-docbill-detail/{doc_id}', [DocController::class, 'getdocBillDet
 Route::post('/fetch-doclalong', [doccontroller::class, 'fetchFormType']);
 
 
-
-
 use App\Http\Controllers\admindoccontroller;
 Route::get('/admindoc', [admindoccontroller::class, 'dashboarddoc'])->name('document.admindoc');
 Route::get('/admindocroute', [admindoccontroller::class, 'dashboarddocroute'])->name('document.admindocroute');
@@ -95,8 +89,9 @@ Route::get('/historydoc', [admindoccontroller::class, 'historydoc'])->name('ducu
 Route::post('/update-statusdoc', [admindoccontroller::class, 'updateStatus']);
 Route::post('/update-statuspdfdoc', [admindoccontroller::class, 'statuspdfdoc']);
 
-
-
+use App\Http\Controllers\alertcontroller;
+Route::get('/alertsale', [alertcontroller::class, 'dashboard'])->name('alert.alertsale');
+Route::post('/update-ng', [alertcontroller::class, 'updateNG'])->name('update.ng');
 //test 
 use App\Http\Controllers\text;
 Route::get('/SOlist', [text::class, 'txt1'])->name('txt1');

@@ -5,233 +5,205 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>📑 ระบบเปิดบิล</title>
     <style>
-/* รีเซ็ตสไตล์พื้นฐาน */
-{
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
 
-    box-sizing: border-box;
-    margin: 0;
-    padding: 0; 
+        body {
+            font-family: 'Segoe UI', 'Arial', sans-serif;
+            background-color: #f4f7f9;
+            color: #2c3e50;
+            line-height: 1.6;
+            padding: 20px;
+        }
+
+        .header {
+            background: linear-gradient(99deg, #3f865d 0%, #3f865d 65%, rgb(45, 79, 68) 100%);
+            color: #fff;
+            padding: 15px;
+            border-radius: 6px;
+            margin-bottom: 30px;
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        }
+
+        .header h2 {
+            font-size: 26px;
+            font-weight: bold;
+        }
+
+        .header .buttons span {
+            margin-right: 15px;
+            font-weight: 500;
+        }
+
+        .header .buttons a {
+            background-color: #e74c3c;
+            color: #fff;
+            padding: 10px 18px;
+            border-radius: 8px;
+            text-decoration: none;
+            font-weight: 500;
+            transition: background-color 0.3s, transform 0.2s;
+        }
+
+        .header .buttons a:hover {
+            background-color: #c0392b;
+            transform: scale(1.03);
+        }
+
+        .filter-container {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: space-between;
+            margin-bottom: 25px;
+            gap: 20px;
+        }
+
+        .filter-form label,
+        .search-box input {
+            font-size: 15px;
+        }
+
+        .filter-form input[type="date"],
+        .search-box input {
+            padding: 10px 14px;
+            border: 1px solid #ced4da;
+            border-radius: 8px;
+            outline: none;
+            background-color: #ffffff;
+        }
+
+        .search-box input {
+            width: 280px;
+        }
+
+        .table-container {
+            overflow-x: auto;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            background-color: #fff;
+            border-radius: 6px;
+            overflow: hidden;
+            box-shadow: 0 2px 15px rgba(0,0,0,0.05);
+        }
+
+        th, td {
+            padding: 9px;
+            text-align: center;
+            border: 1px solid #e1e4e8;
+            font-size: 14px;
+        }
+
+        th {
+            background: linear-gradient(99deg, #3f865d 0%, #3f865d 65%);
+            color: white;
+        }
+
+        tbody tr:nth-child(even) {
+            background-color: #f9f9f9;
+        }
+
+        tbody tr:hover {
+            background-color: #eef2f3;
+        }
+
+        table a {
+            color: #2980b9;
+            text-decoration: none;
+            font-weight: 500;
+        }
+
+        table a:hover {
+            text-decoration: underline;
+        }
+
+        .popup-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
+
+        .popup-content {
+            background-color: white;
+            padding: 30px;
+            border-radius: 12px;
+            width: 95%;
+            max-width: 1050px;
+            max-height: 85%;
+            overflow-y: auto;
+            position: relative;
+            box-shadow: 0 0 25px rgba(0, 0, 0, 0.25);
+        }
+
+        .popup-content table th {
+            white-space: nowrap;
+            font-size: 14px;
+            padding: 10px 12px;
+        }
+
+        .popup-content .table-container {
+            overflow-x: auto;
+        }
+
+        .popup-content table {
+            min-width: 950px;
+        }
+
+        .close-btn {
+            position: absolute;
+            top: 12px;
+            right: 18px;
+            font-size: 24px;
+            cursor: pointer;
+            color: #2c3e50;
+        }
+
+        .close-btn:hover {
+            color: #000;
+        }
+
+        textarea {
+            width: 100%;
+            height: 90px;
+            padding: 12px;
+            border: 1px solid #ced4da;
+            border-radius: 8px;
+            resize: none;
+            font-size: 14px;
+            background-color: #fefefe;
+        }
+
+        @media (max-width: 768px) {
+            .filter-container {
+                flex-direction: column;
+            }
+
+            .search-box input {
+                width: 100%;
+            }
+        }
+        td.wrap-text {
+  max-width: 250px;
+  overflow-wrap: break-word;
 }
 
-/* สไตล์สำหรับ body */
-body {
-    font-family: 'Arial', sans-serif;
-    background-color:rgb(255, 255, 255);
-    color: #343a40;
-    line-height: 1.6;
-    padding: 20px;
-}
-
-/* ส่วนหัวของหน้า */
-.header {
-    background-color: #3f865d ;
-    color: #ffffff;
-    padding: 15px;
-    border-radius: 5px;
-    margin-bottom: 20px;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-}
-
-.header h2 {
-    margin: 0;
-}
-
-.header .buttons {
-    display: flex;
-    align-items: center;
-}
-
-.header .buttons span {
-    margin-right: 15px;
-}
-
-.header .buttons a {
-    background-color: #dc3545;
-    color: #ffffff;
-    padding: 8px 15px;
-    text-decoration: none;
-    border-radius: 5px;
-}
-
-.header .buttons a:hover {
-    background-color: #c82333;
-}
-
-/* คอนเทนเนอร์สำหรับฟิลเตอร์และการค้นหา */
-.filter-container {
-    display: flex;
-    flex-wrap: wrap;
-    justify-content: space-between;
-    margin-bottom: 20px;
-    width: 100%;
-    margin-left: auto;
-    margin-right: auto;
-}
-
-.filter-form {
-    display: flex;
-    align-items: center;
-    margin-bottom: 10px;
-}
-
-.filter-form label {
-    margin-right: 10px;
-}
-
-.filter-form input[type="date"] {
-    padding: 8px;
-    margin-right: 10px;
-    border: 1px solid #ced4da;
-    border-radius: 5px;
-}
-
-.filter-form button {
-    padding: 8px 15px;
-    background-color: #007bff;
-    color: #ffffff;
-    border: none;
-    border-radius: 5px;
-    cursor: pointer;
-}
-
-.filter-form button:hover {
-    background-color: #0056b3;
-}
-
-.search-box {
-    display: flex;
-    align-items: center;
-    margin-bottom: 10px;
-}
-
-.search-box input {
-    padding: 8px;
-    width: 200px;
-    border: 1px solid #ced4da;
-    border-radius: 5px;
-}
-
-/* คอนเทนเนอร์สำหรับตาราง */
-.table-container {
-    overflow-x: auto;
-}
-
-table {
-    width: 100%;
-    margin-left: auto;
-    margin-right: auto;
-    border-collapse: collapse;
-    background-color: #ffffff;
-    border-radius: 5px;
-    overflow: hidden;
-    box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
-}
-
-
-table th, table td {
-    padding: 12px;
-    text-align: center; /* จัดข้อความให้อยู่ตรงกลางแนวนอน */
-    vertical-align: middle; /* จัดข้อความให้อยู่ตรงกลางแนวตั้ง */
-    border: 1px solid #dee2e6; /* เพิ่มเส้นขอบให้กับเซลล์ */
-    font-size: 14px; /* ปรับขนาดตัวอักษรที่นี่ */
-}
-
-
-table th {
-    background-color: #3f865d ;
-    color: #ffffff;
-}
-
-table tbody tr:nth-child(even) {
-    background-color: #f2f2f2;
-}
-
-table tbody tr:hover {
-    background-color: #e9ecef;
-}
-
-table a {
-    color: #007bff;
-    text-decoration: none;
-}
-
-table a:hover {
-    text-decoration: underline;
-}
-
-/* สไตล์สำหรับป็อปอัป */
-.popup-overlay {
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background-color: rgba(0, 0, 0, 0.5);
-    display: none;
-    justify-content: center;
-    align-items: center;
-    z-index: 1000;
-}
-
-.popup-content {
-    background-color: #ffffff;
-    padding: 20px;
-    border-radius: 5px;
-    width: 100%;
-    max-width: 1000px;
-    max-height: 70%;
-    overflow-y: auto;
-    position: relative;
-    box-shadow: 0 0 15px rgba(0, 0, 0, 0.2);
-}
-
-
-.close-btn {
-    position: absolute;
-    top: 0;
-    right: 5px;
-    font-size: 20px;
-    cursor: pointer;
-    color: #343a40;
-}
-
-.close-btn:hover {
-    color: #000000;
-}
-
-.popup-content table {
-    width: 100%;
-    margin-bottom: 20px;
-}
-
-textarea {
-    width: 100%;
-    padding: 10px;
-    border: 1px solid #ced4da;
-    border-radius: 5px;
-    resize: none;
-}
-
-/* การปรับสไตล์สำหรับหน้าจอขนาดเล็ก */
-@media (max-width: 768px) {
-    .filter-container {
-        flex-direction: column;
-    }
-
-    .filter-form, .search-box {
-        width: 100%;
-    }
-
-    .search-box input {
-        width: 100%;
-    }
-}
-
-
-
-        </style>
+    </style>
 </head>
 <body>
 
@@ -240,8 +212,10 @@ textarea {
         <div class="buttons">
             <span>👤 ผู้ใช้: {{ session('emp_name', 'Guest') }}</span>
             @csrf
+            
             <a href="SOlist" button  type="submit" class="btn btn-danger">🚪 หน้าหลัก</a>
         </div>
+        <a href="alertsale">แจ้งเตือนนะจ๊ะ</a>
     </div>
     
     <!-- Filter & Search Section -->
@@ -282,8 +256,8 @@ textarea {
                     <th>เลขที่บิล</th>
                     <th>อ้างอิงใบสั่งขาย</th>
                     <th>อ้างอิงใบสั่งซื้อ</th>
+                    <th>อ้างอิงใบส่งของ</th>
                     <th>ชื่อลูกค้า</th>
-                    <th>ที่อยู่จัดส่ง</th>
                     <th>วันที่จัดส่ง</th>
                     <th>ผู้เปิดบิล</th>
                     <th>ประเภทบิล</th>
@@ -299,8 +273,8 @@ textarea {
                     <td>{{ $item->so_detail_id }}</td> 
                     <td>{{ $item->so_id }}</td>
                     <td>{{ $item->ponum }}</td>
-                    <td>{{ $item->customer_name }}</td>  
-                    <td>{!! nl2br(e(wordwrap($item->customer_address, 100, "\n", true))) !!}</td>
+                    <td>{{ $item->billid }}</td>
+                    <td class="wrap-text">{{ $item->customer_name }}</td>
                     <td>{{ \Carbon\Carbon::parse($item->date_of_dali)->format('d/m/Y') }}</td> 
                     <td>{{ $item->emp_name }}</td> 
                     <td>{{ $item->billtype }}</td>
@@ -346,12 +320,10 @@ textarea {
                     <thead>
                         <tr>
                             <th>เลขที่บิล</th>
-                            <th>อ้างอิงใบสั่งขาย</th>
-                            <th>อ้างอิงใบสั่งซื้อ</th>
                             <th>ชื่อลูกค้า</th>
                             <th>ที่อยู่จัดส่ง</th>
                             <th>วันที่จัดส่ง</th>
-                            <th>ผู้ขาย</th>
+                            <th style="white-space: nowrap;">ผู้เปิด</th>
                             <th>เอกสารPO</th>
                         </tr>
                     </thead>
@@ -372,7 +344,7 @@ textarea {
                     </tbody>
                 </table>
                 <br>
-                <textarea id="popup-body-3" readonl style="width: 950px; height: 70px;" readonly>
+                <textarea id="popup-body-3" readonl style="width: 990px; height: 70px;" readonly>
                 </textarea>
             </div>
         </div>
@@ -387,13 +359,11 @@ textarea {
         popupBody.innerHTML = `
             <tr>
                 <td>${soDetailId}</td>
-                <td>${so_id}</td>
-                <td>${ponum}</td>
                 <td>${customer_name}</td>
                 <td>${customer_address}</td>
                 <td>${date_of_dali}</td>
                 <td>${sale_name}</td>
-               <td><a href="/storage/po_documents/${POdocument}" target="_blank">${POdocument}</a></td>
+               <td><a href="/storage/po_documents/${POdocument}" target="_blank">ดูไฟล์</a></td>
             </tr>
         `;
         document.getElementById("popup-body-3").value = notes;
@@ -463,9 +433,6 @@ window.onclick = function(event) {
 sortTableDescByColumn(0); // Assuming 'so_detail_id' is in the first column (index 0)
 };
 </script>
-
-
-
 
     </body>
     </html>

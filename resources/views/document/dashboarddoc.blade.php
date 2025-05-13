@@ -25,13 +25,15 @@ padding: 20px;
 /* ส่วนหัวของหน้า */
 .header {
 background-color: #343a40;
-color: #ffffff;
-padding: 15px;
-border-radius: 5px;
-margin-bottom: 20px;
-display: flex;
-justify-content: space-between;
-align-items: center;
+color: #fff;
+  padding: 15px;
+  border-radius: 6px;
+  margin-bottom: 30px;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: center;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
 }
 
 .header h2 {
@@ -48,7 +50,7 @@ margin-right: 15px;
 }
 
 .header .buttons a {
-background-color: #3bd315;
+background-color: rgb(36, 180, 0);
 color: #ffffff;
 padding: 8px 15px;
 text-decoration: none;
@@ -132,7 +134,7 @@ box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
 
 
 table th, table td {
-padding: 12px;
+padding: 8px;
 text-align: center; /* จัดข้อความให้อยู่ตรงกลางแนวนอน */
 vertical-align: middle; /* จัดข้อความให้อยู่ตรงกลางแนวตั้ง */
 border: 1px solid #dee2e6; /* เพิ่มเส้นขอบให้กับเซลล์ */
@@ -283,7 +285,6 @@ textarea {
         <tr>
             <th>เลขที่บิล</th>
             <th>บริษัท</th>
-            <th>ที่อยู่</th>
             <th>ผู้ติดต่อ</th>
             <th>เบอร์โทร</th>
             <th>ประเภทงาน</th>
@@ -294,11 +295,9 @@ textarea {
     </thead>
     <tbody id="table-body">
         @foreach($docbill as $item)
-        @if($item->status == 0)
         <tr>
             <td>{{ $item->doc_id }}</td>
             <td>{{ $item->com_name }}</td>
-            <td>{{ $item->com_address }}</td>
             <td>{{ $item->contact_name }}</td>
             <td>{{ $item->contact_tel}}</td>
             <td>{{ $item->doctype }}</td>
@@ -318,7 +317,6 @@ textarea {
             </td>
 
         </tr>
-        @endif
         @endforeach
     </tbody>
 </table>
@@ -359,7 +357,7 @@ textarea {
             </tbody>
         </table>
          <br>
-            <textarea id="popup-body-3" readonl style="width: 950px; height: 70px;" readonly>
+            <textarea id="popup-body-3" readonl style="width: 970px; height: 70px;" readonly>
             </textarea>
     </div> 
 </div>

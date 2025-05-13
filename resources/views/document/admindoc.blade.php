@@ -272,7 +272,6 @@ td a:hover {
         justify-content: center;
     }
 }
-
     </style>
 </head>
 <body>
