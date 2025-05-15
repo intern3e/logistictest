@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 use Illuminate\Http\Request;
 use App\Models\Pobills;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Validator;
 
 class AdminpoController extends Controller
 {
@@ -76,5 +77,77 @@ class AdminpoController extends Controller
         return response()->json(['success' => false, 'message' => 'Failed to update status', 'error' => $e->getMessage()], 500);
     }
 }
-    
+public function updateStatuspoback(Request $request)
+{
+    // ตรวจสอบว่ามีค่า soDetailIds ส่งมาหรือไม่
+    $poDetailIds = $request->input('poDetailIds');
+    if (empty($poDetailIds)) {
+        return response()->json(['success' => false, 'message' => 'No SO Detail IDs provided'], 400);
+    }
+
+    try {
+        // อัปเดตสถานะจาก 0 เป็น 1
+        DB::table('pobills')
+            ->whereIn('po_detail_id', $poDetailIds)
+            ->update(['status' => 0]);
+
+        return response()->json(['success' => true]);
+    } catch (\Exception $e) {
+        // จัดการข้อผิดพลาดที่เกิดขึ้น
+        return response()->json(['success' => false, 'message' => 'Failed to update status', 'error' => $e->getMessage()], 500);
+    }
+} 
+public function updateDeliveryDate(Request $request) 
+{
+    try {
+        $validator = Validator::make($request->all(), [
+            'po_detail_id' => 'required',
+            'new_date' => 'required|date_format:Y-m-d',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'ข้อมูลไม่ถูกต้อง: ' . $validator->errors()->first()
+            ], 422);
+        }
+
+        $existing = DB::table('pobills')
+            ->where('po_detail_id', $request->po_detail_id)
+            ->first();
+
+        if (!$existing) {
+            return response()->json([
+                'success' => false,
+                'message' => 'ไม่พบข้อมูลที่ต้องการอัปเดต'
+            ], 404);
+        }
+
+        $updated = DB::table('pobills')
+            ->where('po_detail_id', $request->po_detail_id)
+            ->update([
+                'recvDate' => $request->new_date,
+                'time' => now() // ใช้เวลา ณ ขณะนั้น
+            ]);
+
+        if ($updated) {
+            return response()->json([
+                'success' => true,
+                'message' => 'อัปเดตวันที่ส่งของเรียบร้อยแล้ว'
+            ]);
+        } else {
+            return response()->json([
+                'success' => false,
+                'message' => 'ไม่สามารถอัปเดตข้อมูลได้'
+            ], 500);
+        }
+    } catch (\Exception $e) {
+        \Log::error('Error updating delivery date: ' . $e->getMessage());
+
+        return response()->json([
+            'success' => false,
+            'message' => 'เกิดข้อผิดพลาด: ' . $e->getMessage()
+        ], 500);
+    }
+}
 }

@@ -33,8 +33,7 @@ use App\Models\Bill_Detail;
     Route::post('/fetch-formtype', [salecontroller::class, 'fetchFormType']);
     Route::get('/get-bill-detail/{so_detail_id}', function ($so_detail_id) {
         $billDetails = Bill_Detail::where('so_detail_id', $so_detail_id)->get();
-        return response()->json($billDetails);
-    });
+        return response()->json($billDetails);});
 Route::get('/txt', [SaleController::class, 'popup'])->name('popup');
 
 
@@ -56,7 +55,7 @@ Route::post('/update-statuspdfsoback', [admincontroller::class, 'updateStatuspdf
 Route::post('/update-billid', [AdminController::class, 'updateBillId'])->name('update.billid');
 Route::get('/adminroute', [AdminController::class, 'adminroute'])->name('admin.adminroute');
 Route::post('/update-statuspdfso2', [admincontroller::class, 'updateStatuspdf2']);
-Route::post('/update-delivery-date', [App\Http\Controllers\admincontroller::class, 'updateDeliveryDate'])->name('update.delivery.date');
+Route::post('/update-delivery-date', [admincontroller::class, 'updateDeliveryDate'])->name('update.delivery.date');
 
 
 // PO system
@@ -67,11 +66,13 @@ Route::post('/insertpo', [PoController::class, 'insertpobill'])->name('insertpo.
 Route::get('/get-pobill-detail/{po_detail_id}', [PoController::class, 'getpoBillDetail'])->name('getpoBillDetail');
 Route::post('/fetch-polalong', [pocontroller::class, 'fetchFormType']);
 
+
 use App\Http\Controllers\adminpocontroller;
 Route::get('/adminpo', [adminpoController::class, 'dashboard'])->name('po.adminpo');
 Route::get('/historypo', [AdminpoController::class, 'historypo'])->name('po.historypo');
 Route::post('/update-statuspo', [adminpocontroller::class, 'updateStatus']);
-
+Route::post('/update-statuspoback', [adminpocontroller::class, 'updateStatuspoback']);
+Route::post('/updatepo-delivery-date', [AdminPoController::class, 'updateDeliveryDate'])->name('updatepo.delivery.date');
 
 // Doc system
 use App\Http\Controllers\DocController;
@@ -88,6 +89,8 @@ Route::get('/admindocroute', [admindoccontroller::class, 'dashboarddocroute'])->
 Route::get('/historydoc', [admindoccontroller::class, 'historydoc'])->name('ducument.historydoc');
 Route::post('/update-statusdoc', [admindoccontroller::class, 'updateStatus']);
 Route::post('/update-statuspdfdoc', [admindoccontroller::class, 'statuspdfdoc']);
+Route::post('/update-statusdocback', [admindoccontroller::class, 'updateStatusdocback']);
+Route::post('/updatedoc-delivery-date', [AdmindocController::class, 'updateDeliveryDate'])->name('updatedoc.delivery.date');
 
 use App\Http\Controllers\alertcontroller;
 Route::get('/alertsale', [alertcontroller::class, 'dashboard'])->name('alert.alertsale');
@@ -96,9 +99,25 @@ Route::get('/alertaccount', [alertcontroller::class, 'dashboardaccount'])->name(
 Route::post('/finish', [alertcontroller::class, 'finish'])->name('finish.ng');
 
 Route::get('/alertsale/count', function () {
-    $count = DB::table('tblbill')->where('NG', false)->count(); // เปลี่ยน 'alerts' เป็นชื่อตารางจริงของคุณ
-    return response()->json(['count' => $count]);
+    // นับจาก tblbill
+    $count1 = DB::table('tblbill')->whereNotNull('NG')->count();
+
+    // นับจาก pobills
+    $count2 = DB::table('pobills')->whereNotNull('NG')->count();
+
+    // นับจาก docbills
+    $count3 = DB::table('docbills')->whereNotNull('NG')->count();
+
+    $total = $count1 + $count2 + $count3;
+
+    return response()->json([
+        'count' => $total,
+        'from_tblbill' => $count1,
+        'from_pobills' => $count2,
+        'from_docbills' => $count3,
+    ]);
 });
+
 Route::get('/alertaccount/count', function () {
     // คัดกรองข้อมูลที่ตรงตามเงื่อนไข formtype == 1 และ statuspdf == 1
     $count = DB::table('tblbill')

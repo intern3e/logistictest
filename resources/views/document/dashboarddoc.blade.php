@@ -386,7 +386,7 @@ textarea {
                 .then(response => response.json())
                 .then(data => {
                     if (data.length > 0) {
-                        secondPopupBody.innerHTML = ""; // เคลียร์ข้อมูลเก่า
+                        secondPopupBody.innerHTML = ""; 
                         data.forEach(item => {
                             secondPopupBody.insertAdjacentHTML("beforeend", `
                                 <tr>
@@ -443,7 +443,5 @@ function closePopup() {
     sortTableDescByColumn(0); // Assuming 'so_detail_id' is in the first column (index 0)
 };
     </script>
-
-
     </body>
     </html>

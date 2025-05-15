@@ -396,40 +396,7 @@
         </div>
     </div>
     <div class="top-section">
-        <form method="GET" action="{{ route('po.adminpo') }}" class="filter-form" id="autoSearchForm">
-            <label for="date">📅 วันที่:</label>
-            <input type="date" id="date" name="date" value="{{ request('date', \Carbon\Carbon::today()->format('Y-m-d')) }}">
-            <button type="submit" style="display: none;">ค้นหา</button>
-        </form>
-    
-    <script>
-        const form = document.getElementById('autoSearchForm');
-        const dateInput = document.getElementById('date');
-    
-        // ส่งฟอร์มเมื่อเปลี่ยนวันที่
-        dateInput.addEventListener('change', () => {
-            form.submit();
-        });
-    
-        // ส่งฟอร์มอัตโนมัติเมื่อเข้าหน้าเว็บครั้งแรกเท่านั้น
-        window.addEventListener('load', () => {
-            if (!sessionStorage.getItem('hasAutoSubmitted')) {
-                sessionStorage.setItem('hasAutoSubmitted', 'true');
-                form.submit();
-            }
-        });
-    </script>
             <div class="search-box">
-                <input type="text" id="search-input" placeholder=" ค้นหา เลขที่บิล" onkeyup="searchTable()">
-            </div>
-        
-            <div class="cartype">
-                <label for="cartype">🚗 ประเภทรถ :</label>
-                <select id="cartype" onchange="filterTable()">
-                    <option value="">ทั้งหมด</option>
-                    <option value="1">รถมอเตอร์ไซค์</option>
-                    <option value="2">รถใหญ่</option>
-                </select>
             </div>
             <div class="button-group">
                 <button id="printroutepojson" onclick="createJSON()">ดาวน์โหลด เส้นทาง</button>

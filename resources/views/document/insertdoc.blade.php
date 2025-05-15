@@ -421,9 +421,7 @@
     <script>
         document.getElementById('submitBill').addEventListener('click', async function (event) {
             event.preventDefault();
-    
             let formData = new FormData(document.getElementById('billForm'));
-    
             // รับข้อมูลสินค้าทั้งหมดโดยไม่เช็ค checkbox
             let itemRows = document.querySelectorAll('table tbody tr');
             itemRows.forEach((row, index) => {
@@ -497,28 +495,28 @@
         }
 
         let mapWindow;
-let closeTimer;
+        let closeTimer;
 
-function openGoogleMaps() {
-    const screenWidth = window.screen.width;
-    const screenHeight = window.screen.height;
-    const windowWidth = 800;
-    const windowHeight = 600;
+            function openGoogleMaps() {
+                const screenWidth = window.screen.width;
+                const screenHeight = window.screen.height;
+                const windowWidth = 800;
+                const windowHeight = 600;
 
-    // ชิดขวา: left = ความกว้างหน้าจอ - ความกว้างของหน้าต่าง
-    const leftPosition = screenWidth - windowWidth;
-    // อยู่กลางแนวตั้ง: top = (ความสูงหน้าจอ - ความสูงของหน้าต่าง) / 2
-    const topPosition = (screenHeight - windowHeight) / 2;
+                // ชิดขวา: left = ความกว้างหน้าจอ - ความกว้างของหน้าต่าง
+                const leftPosition = screenWidth - windowWidth;
+                // อยู่กลางแนวตั้ง: top = (ความสูงหน้าจอ - ความสูงของหน้าต่าง) / 2
+                const topPosition = (screenHeight - windowHeight) / 2;
 
-    // เปิดหน้าต่างใหม่
-    const mapWindow = window.open(
-        "https://www.google.com/maps/@13.7563,100.5018,14z",
-        "Google Maps",
-        `width=${windowWidth},height=${windowHeight},left=${leftPosition},top=${topPosition}`
-    );
-}
+                // เปิดหน้าต่างใหม่
+                const mapWindow = window.open(
+                    "https://www.google.com/maps/@13.7563,100.5018,14z",
+                    "Google Maps",
+                    `width=${windowWidth},height=${windowHeight},left=${leftPosition},top=${topPosition}`
+                );
+            }
     </script>
-</form>
+
 <script>
     function fetchFormType() {
         console.log("ตรวจสอบ id_com:", document.getElementById("id_com").value);
@@ -554,7 +552,7 @@ function openGoogleMaps() {
             document.getElementById("com_la_long").value = 'ไม่มีข้อมูล';
         }
     }
-    </script>
+</script>
     
 </body>
 </html>

@@ -398,41 +398,80 @@ th {
                         <th>ข้อมูลสินค้า</th>
                     </tr>
                 </thead>
-                <tbody id="table-body">
-                    @foreach($bill as $item)
-                        @if($item->NG != null )
-                            <tr>
-                                <td>
-                                <button class="updateNGButton" data-so-detail-id="{{ $item->so_detail_id }}">
-                        ล้าง
-                    </button></td>
-                                <td>{{ $item->so_detail_id }}</td>
-                                <td>{{ $item->so_id }}</td>
-                                <td>{{ $item->ponum }}</td>
-                                <td>{{ $item->billid }}</td>
-                                <td>{{ $item->customer_name }}</td>
-                                <td>{{ $item->customer_tel }}</td>  
-                                <td>{{ \Carbon\Carbon::parse($item->date_of_dali)->format('d/m/Y') }}</td> 
-                                <td>{{ $item->emp_name }}</td>
-                                <td>{{ $item->billtype }}</td>
-                                <td>{{ $item->notes }}</td>
-                                <td><a href="javascript:void(0);" 
-                                onclick="openPopup(
-                                    '{{ $item->so_detail_id }}',
-                                    '{{ $item->so_id }}',
-                                    '{{ $item->ponum }}',
-                                    '{{ $item->customer_name }}',
-                                    '{{ $item->customer_tel }}',
-                                    '{{ $item->customer_address }}',
-                                    '{{ $item->date_of_dali }}',
-                                    '{{ $item->sale_name }}'
-                                )">
-                                เพิ่มเติม
-                             </a></td>
-                            </tr>
-                        @endif
-                    @endforeach
-                </tbody>
+               <tbody id="table-body">
+    @foreach($items as $item)
+        @php
+            // หา id ที่จะใช้แสดงและส่งใน data attribute
+            $detailId = $item->so_detail_id ?? $item->po_detail_id ?? $item->doc_id ?? '';
+            // กรณีต้องการแสดงข้อมูลอื่น ๆ แบบทั่วไป ให้กำหนด fallback
+            $soId = $item->so_id ?? '';
+            $ponum = $item->ponum ?? '';
+            $billid = $item->billid ?? '';
+            $customerName = $item->customer_name ?? '';
+            $customerTel = $item->customer_tel ?? '';
+            $customerAddress = $item->customer_address ?? '';
+            $dateOfDali = isset($item->date_of_dali) ? \Carbon\Carbon::parse($item->date_of_dali)->format('d/m/Y') : '';
+            $empName = $item->emp_name ?? '';
+            $billtype = $item->billtype ?? '';
+            $notes = $item->notes ?? '';
+            $saleName = $item->sale_name ?? '';
+        @endphp
+
+        @if($item->NG != null)
+            <tr>
+                <td>
+                    @php
+    if (isset($item->so_detail_id)) {
+        $detailId = $item->so_detail_id;
+        $table = 'tblbill';
+    } elseif (isset($item->po_detail_id)) {
+        $detailId = $item->po_detail_id;
+        $table = 'pobills';
+    } elseif (isset($item->doc_id)) {
+        $detailId = $item->doc_id;
+        $table = 'docbills';
+    } else {
+        $detailId = '';
+        $table = '';
+    }
+@endphp
+
+<button class="updateNGButton"
+        data-id="{{ $detailId }}"
+        data-table="{{ $table }}">
+    ล้าง
+</button>
+                </td>
+                <td>{{ $detailId }}</td>
+                <td>{{ $soId }}</td>
+                <td>{{ $ponum }}</td>
+                <td>{{ $billid }}</td>
+                <td>{{ $customerName }}</td>
+                <td>{{ $customerTel }}</td>
+                <td>{{ $dateOfDali }}</td>
+                <td>{{ $empName }}</td>
+                <td>{{ $billtype }}</td>
+                <td>{{ $notes }}</td>
+                <td>
+                    <a href="javascript:void(0);" 
+                       onclick="openPopup(
+                           '{{ $detailId }}',
+                           '{{ $soId }}',
+                           '{{ $ponum }}',
+                           '{{ $customerName }}',
+                           '{{ $customerTel }}',
+                           '{{ $customerAddress }}',
+                           '{{ $dateOfDali }}',
+                           '{{ $saleName }}'
+                       )">
+                        เพิ่มเติม
+                    </a>
+                </td>
+            </tr>
+        @endif
+    @endforeach
+</tbody>
+
             </table>
             @if(isset($message))
             <br>
@@ -534,31 +573,36 @@ th {
 
 
 <script>
-    document.querySelectorAll('.updateNGButton').forEach(button => {
-        button.addEventListener('click', function() {
-            var soDetailId = this.getAttribute('data-so-detail-id');
+document.querySelectorAll('.updateNGButton').forEach(button => {
+    button.addEventListener('click', function () {
+        const id = this.getAttribute('data-id');
+        const table = this.getAttribute('data-table');
 
-            fetch('{{ route('update.ng') }}', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'X-CSRF-TOKEN': '{{ csrf_token() }}'
-                },
-                body: JSON.stringify({ so_detail_id: soDetailId })
-            })
-            .then(response => response.json())
-            .then(data => {
-                if (data.status === 'success') {
-                    alert(data.message);
-                    window.location.reload();
-                } else {
-                    alert(data.message);
-                }
-            })
-            .catch(error => console.error('Error:', error));
+        console.log("กำลังล้าง NG ของ ID:", id, "จากตาราง:", table);
+
+        fetch('{{ route("update.ng") }}', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRF-TOKEN': '{{ csrf_token() }}'
+            },
+            body: JSON.stringify({ id: id, table: table })
+        })
+        .then(response => response.json())
+        .then(data => {
+            alert(data.message);
+            if (data.status === 'success') {
+                window.location.reload();
+            }
+        })
+        .catch(error => {
+            console.error('เกิดข้อผิดพลาด:', error);
         });
     });
+});
 </script>
+
+
 
 
 

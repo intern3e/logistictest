@@ -9,4 +9,5 @@ class Pobills extends Model
 {
     use HasFactory;
     public $timestamps = false;
+    protected $primaryKey = 'po_detail_id';
 }
