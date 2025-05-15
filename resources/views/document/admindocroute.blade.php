@@ -517,19 +517,22 @@ td a:hover {
 
             let cells = row.querySelectorAll("td");
 
-            let billNo        = cells[4].textContent.trim();
-            let orderDate     = cells[9].textContent.trim();
-            let phone         = cells[6].textContent.trim();
-            let address       = cells[7].textContent.trim();
-            let customerName  = cells[5].textContent.trim();
-            let latlong       = cells[8].textContent.trim();
+            let billNo        = cells[1].textContent.trim(); // doc_id
+            let customerName  = cells[2].textContent.trim(); // com_name
+            let address       = cells[3].textContent.trim(); // com_address
+            let latlong       = cells[4].textContent.trim(); // com_la_long
+            let contact_name  = cells[5].textContent.trim(); // contact_name
+            let phone         = cells[6].textContent.trim(); // contact_tel
+            let empName       = cells[8].textContent.trim(); // emp_name
+            let orderDate     = cells[9].textContent.trim(); // time
 
             let [lat, lng] = latlong.split(",").map(val => parseFloat(val.trim()));
 
             let order = {
-                orderNo: billNo,
+                orderNo: `${billNo},(${empName}),(${contact_name})`,
                 date: formatDate(orderDate),
                 phone: phone,
+                type:"D",
                 location: {
                     address: address,
                     locationName: `${customerName} (${phone})`,
@@ -562,7 +565,7 @@ td a:hover {
         let year = now.getFullYear();
         let formattedDate = `${day}-${month}-${year}`;
 
-        const filename = `เอกสารเส้นทางเดินรถของเอกสารเพิ่มเติม_${formattedDate}.json`;
+        const filename = `เอกสารเส้นทางเดินรถของบิลชั่วคราว_${formattedDate}.json`;
 
         const url = URL.createObjectURL(blob);
         const a = document.createElement("a");

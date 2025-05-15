@@ -568,14 +568,15 @@ function createJSON() {
         let address       = cells[7].textContent.trim(); // ที่อยู่จัดส่ง
         let customerName  = cells[5].textContent.trim(); // ชื่อลูกค้า
         let latlong       = cells[8].textContent.trim(); // ละติจูด ลองจิจูด
-
+        let empName       = cells[10].textContent.trim(); 
         // แยกละติจูดกับลองจิจูด
         let [lat, lng] = latlong.split(",").map(val => parseFloat(val.trim()));
 
         let order = {
-            orderNo: billNo,
+            orderNo: `${billNo},(${empName})`,
             date: formatDate(orderDate),
             phone: phone,
+            type:"D", 
             location: {
                 address: address,
                 locationName: `${customerName} (${phone})`,

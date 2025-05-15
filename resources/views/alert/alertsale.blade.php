@@ -6,360 +6,356 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>ระบบจัดเตรียมสินค้า</title>
     <style>
-body {
-    font-family: 'Poppins', sans-serif;
-    background-color: #F5F5F7;
-    color: #1D1D1F;
-    margin: 0;
-    padding: 0;
-}
+                body {
+                    font-family: 'Poppins', sans-serif;
+                    background-color: #F5F5F7;
+                    color: #1D1D1F;
+                    margin: 0;
+                    padding: 0;
+                }
 
-.header {
-    background: linear-gradient(to right, #2c3e50, #4b6584);
-    padding: 15px 30px;
-    color: white;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    font-size: 1.2rem;
-    border-radius: 8px;
-    margin: 20px auto;
-    width: 90%;
-    box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.2);
-}
+                .header {
+                    background: linear-gradient(to right, #2c3e50, #4b6584);
+                    padding: 15px 30px;
+                    color: white;
+                    display: flex;
+                    justify-content: space-between;
+                    align-items: center;
+                    font-size: 1.2rem;
+                    border-radius: 8px;
+                    margin: 20px auto;
+                    width: 90%;
+                    box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.2);
+                }
 
-.header-buttons {
-    display: flex;
-    gap: 10px;
-    margin-left: auto;
-}
+                .header-buttons {
+                    display: flex;
+                    gap: 10px;
+                    margin-left: auto;
+                }
 
-.header-buttons button {
-    padding: 15px 20px;
-    font-size: 16px;
-    cursor: pointer;
-    border: none;
-    border-radius: 8px;
-    font-weight: bold;
-    text-decoration: none;
-    transition: all 0.3s ease;
-    margin-right: 10px;
-}
+                .header-buttons button {
+                    padding: 15px 20px;
+                    font-size: 16px;
+                    cursor: pointer;
+                    border: none;
+                    border-radius: 8px;
+                    font-weight: bold;
+                    text-decoration: none;
+                    transition: all 0.3s ease;
+                    margin-right: 10px;
+                }
 
-.btn-po {
-    background-color: #0071E3;
-    color: white;
-}
+                .btn-po {
+                    background-color: #0071E3;
+                    color: white;
+                }
 
-.btn-so {
-    background-color: red;
-    color: white;
-}
+                .btn-so {
+                    background-color: red;
+                    color: white;
+                }
 
-.header-buttons button:hover {
-    transform: scale(1.05);
-}
+                .header-buttons button:hover {
+                    transform: scale(1.05);
+                }
 
-.btn-po:hover {
-    background-color: #005BB5;
-}
+                .btn-po:hover {
+                    background-color: #005BB5;
+                }
 
-.btn-so:hover {
-    background-color: rgb(179, 1, 1);
-}
+                .btn-so:hover {
+                    background-color: rgb(179, 1, 1);
+                }
 
-.top-section {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin: 0 auto;
-    margin-bottom: 15px;
-    gap: 20px;
-    width: 90%;
-    padding: 15px 20px;
-    border-radius: 8px;
-    box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.1);
-    text-align: center;
-}
+                .top-section {
+                    display: flex;
+                    justify-content: space-between;
+                    align-items: center;
+                    margin: 0 auto;
+                    margin-bottom: 15px;
+                    gap: 20px;
+                    width: 90%;
+                    padding: 15px 20px;
+                    border-radius: 8px;
+                    box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.1);
+                    text-align: center;
+                }
 
-.filter-form {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-}
+                .filter-form {
+                    display: flex;
+                    align-items: center;
+                    gap: 10px;
+                }
 
-.filter-form label {
-    font-weight: bold;
-    color: #1D1D1F;
-    font-size: 1rem;
-}
+                .filter-form label {
+                    font-weight: bold;
+                    color: #1D1D1F;
+                    font-size: 1rem;
+                }
 
-.filter-form input[type="date"] {
-    padding: 8px;
-    border-radius: 5px;
-    border: 1px solid #00000a;
-    background: #ffffffa4;
-    color: #000;
-    font-size: 1rem;
-}
+                .filter-form input[type="date"] {
+                    padding: 8px;
+                    border-radius: 5px;
+                    border: 1px solid #00000a;
+                    background: #ffffffa4;
+                    color: #000;
+                    font-size: 1rem;
+                }
 
-.filter-form button {
-    padding: 8px 12px;
-    border: none;
-    background: #0071E3;
-    color: white;
-    border-radius: 5px;
-    cursor: pointer;
-    transition: 0.3s;
-    font-size: 1rem;
-}
+                .filter-form button {
+                    padding: 8px 12px;
+                    border: none;
+                    background: #0071E3;
+                    color: white;
+                    border-radius: 5px;
+                    cursor: pointer;
+                    transition: 0.3s;
+                    font-size: 1rem;
+                }
 
-.filter-form button:hover {
-    background: #005BB5;
-}
+                .filter-form button:hover {
+                    background: #005BB5;
+                }
 
-.search-box {
-    display: flex;
-    max-width: 300px;
-    width: 100%;
-    margin-left: auto;
-}
+                .search-box {
+                    display: flex;
+                    max-width: 300px;
+                    width: 100%;
+                    margin-left: auto;
+                }
 
-.search-box input {
-    flex-grow: 1;
-    padding: 8px;
-    border-radius: 5px;
-    border: 1px solid #000000;
-    background-color: #ffffff;
-    font-size: 1rem;
-    transition: border-color 0.3s;
-}
+                .search-box input {
+                    flex-grow: 1;
+                    padding: 8px;
+                    border-radius: 5px;
+                    border: 1px solid #000000;
+                    background-color: #ffffff;
+                    font-size: 1rem;
+                    transition: border-color 0.3s;
+                }
 
-.search-box input:focus {
-    border-color: #0071E3;
-    outline: none;
-}
+                .search-box input:focus {
+                    border-color: #0071E3;
+                    outline: none;
+                }
 
-.search-box input::placeholder {
-    color: #888;
-    font-size: 0.9rem;
-}
+                .search-box input::placeholder {
+                    color: #888;
+                    font-size: 0.9rem;
+                }
 
-.button-group {
-    display: flex;
-    gap: 15px;
-    align-items: center;
-}
+                .button-group {
+                    display: flex;
+                    gap: 15px;
+                    align-items: center;
+                }
 
-.button-group label {
-    font-weight: bold;
-    font-size: 1rem;
-}
+                .button-group label {
+                    font-weight: bold;
+                    font-size: 1rem;
+                }
 
-.button-group button {
-    padding: 15px 20px;
-    border-radius: 8px;
-    font-weight: bold;
-    text-decoration: none;
-    border: none;
-    cursor: pointer;
-    transition: all 0.3s ease;
-    background-color: #ff9d2d;
-    color: rgb(255, 255, 255);
-}
+                .button-group button {
+                    padding: 15px 20px;
+                    border-radius: 8px;
+                    font-weight: bold;
+                    text-decoration: none;
+                    border: none;
+                    cursor: pointer;
+                    transition: all 0.3s ease;
+                    background-color: #ff9d2d;
+                    color: rgb(255, 255, 255);
+                }
 
-.button-group button:hover {
-    background-color: #b37005;
-    transform: scale(1.05);
-}
+                .button-group button:hover {
+                    background-color: #b37005;
+                    transform: scale(1.05);
+                }
 
-.button-group a button {
-    background-color: #0071E3;
-    color: white;
-}
+                .button-group a button {
+                    background-color: #0071E3;
+                    color: white;
+                }
 
-.button-group a button:hover {
-    background-color: #005BB5;
-}
+                .button-group a button:hover {
+                    background-color: #005BB5;
+                }
 
-.button-group a:last-child button {
-    background-color: red;
-}
+                .button-group a:last-child button {
+                    background-color: red;
+                }
 
-.button-group a:last-child button:hover {
-    background-color: #ad0404;
-}
+                .button-group a:last-child button:hover {
+                    background-color: #ad0404;
+                }
 
-.search-box {
-    display: flex;
-    align-items: center;
-    max-width: 250px;
-}
+                .search-box {
+                    display: flex;
+                    align-items: center;
+                    max-width: 250px;
+                }
 
-.search-box input {
-    flex-grow: 1;
-    padding: 8px;
-    border-radius: 5px;
-    border: 1px solid #6E6E73;
-    background-color: #FFFFFF;
-}
+                .search-box input {
+                    flex-grow: 1;
+                    padding: 8px;
+                    border-radius: 5px;
+                    border: 1px solid #6E6E73;
+                    background-color: #FFFFFF;
+                }
+                .table-container {
+                            background: #f9f9f9; /* Light gray background for table */
+                            margin: 2% 5%;
+                            padding: 40px;
+                            border-radius: 12px;
+                            box-shadow: 0px 6px 12px rgba(0, 0, 0, 0.1);
+                            overflow: hidden;
+                            width: 100%;
+                            max-width: 100%; /* Ensure table doesn't overflow the container */
+                            transform: scale(0.9); /* Scale down the table to fit the screen */
+                            transform-origin: top left; /* Keep the table scaling from the top-left corner */
+                        }
 
-.table-container {
-            background: #f9f9f9; /* Light gray background for table */
-            margin: 2% 5%;
-            padding: 40px;
-            border-radius: 12px;
-            box-shadow: 0px 6px 12px rgba(0, 0, 0, 0.1);
-            overflow: hidden;
-            width: 100%;
-            max-width: 100%; /* Ensure table doesn't overflow the container */
-            transform: scale(0.9); /* Scale down the table to fit the screen */
-            transform-origin: top left; /* Keep the table scaling from the top-left corner */
-        }
+                        table {
+                            width: 100%;
+                            border-collapse: collapse;
+                            text-align: center;
+                            word-wrap: break-word; /* Ensure text wraps within table cells */
+                            font-size: 1rem; /* Adjust the font size to make it smaller */
+                        }
 
-        table {
-            width: 100%;
-            border-collapse: collapse;
-            text-align: center;
-            word-wrap: break-word; /* Ensure text wraps within table cells */
-            font-size: 1rem; /* Adjust the font size to make it smaller */
-        }
+                th, td {
+                    padding: 12px;
+                    border: 1px solid #2c3e50;
+                    font-size: 1rem;
+                    max-width: 100px; /* กำหนดความกว้างสูงสุด */
+                    word-wrap: break-word; /* ถ้าข้อความยาวเกินจะขึ้นบรรทัดใหม่ */
+                    word-break: break-word; /* หักคำเมื่อข้อความยาวเกิน */
+                }
 
-th, td {
-    padding: 12px;
-    border: 1px solid #2c3e50;
-    font-size: 1rem;
-    max-width: 100px; /* กำหนดความกว้างสูงสุด */
-    word-wrap: break-word; /* ถ้าข้อความยาวเกินจะขึ้นบรรทัดใหม่ */
-    word-break: break-word; /* หักคำเมื่อข้อความยาวเกิน */
-}
+                th {
+                    background-color: red;
+                    color: white;
+                    text-transform: uppercase;
+                }
 
-th {
-    background-color: red;
-    color: white;
-    text-transform: uppercase;
-}
+                .table-striped tr:nth-child(odd) {
+                    background-color: #F5F5F7;
+                }
 
-.table-striped tr:nth-child(odd) {
-    background-color: #F5F5F7;
-}
+                .table-striped tr:hover {
+                    background-color: #E5E5E7;
+                }
+                .link {
+                    color: #0071E3;
+                    font-weight: bold;
+                    text-decoration: none;
+                }
 
-.table-striped tr:hover {
-    background-color: #E5E5E7;
-}
+                .link:hover {
+                    text-decoration: underline;
+                }
 
+                .popup-overlay {
+                    display: none;
+                    position: fixed;
+                    top: 0;
+                    left: 0;
+                    width: 100%;
+                    height: 100%;
+                    background: rgba(0, 0, 0, 0.5);
+                    display: flex;
+                    justify-content: center;
+                    align-items: center;
+                }
 
+                .popup-content {
+                    background: linear-gradient(to right, #f0f2f5, #dfe9f3);
+                    padding: 20px;
+                    border-radius: 10px;
+                    width: 80%;
+                    max-width: 1000px;
+                    height: auto;
+                    text-align: center;
+                    position: relative;
+                    overflow: hidden;
+                    max-height: 500px;
+                    overflow-y: auto;
+                }
 
-.link {
-    color: #0071E3;
-    font-weight: bold;
-    text-decoration: none;
-}
+                .close-btn {
+                    position: absolute;
+                    top: 10px;
+                    right: 10px;
+                    cursor: pointer;
+                    font-size: 18px;
+                    font-weight: bold;
+                }
 
-.link:hover {
-    text-decoration: underline;
-}
+                .table-container {
+                    overflow-x: auto;
+                    -webkit-overflow-scrolling: touch;
+                    margin: 30px;
+                }
 
-.popup-overlay {
-    display: none;
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background: rgba(0, 0, 0, 0.5);
-    display: flex;
-    justify-content: center;
-    align-items: center;
-}
+                @media (max-width: 768px) {
+                    .header, .top-section, .filter-form, .button-group {
+                        flex-direction: column;
+                        align-items: stretch;
+                        width: 100%;
+                        gap: 10px;
+                    }
 
-.popup-content {
-    background: linear-gradient(to right, #f0f2f5, #dfe9f3);
-    padding: 20px;
-    border-radius: 10px;
-    width: 80%;
-    max-width: 1000px;
-    height: auto;
-    text-align: center;
-    position: relative;
-    overflow: hidden;
-    max-height: 500px;
-    overflow-y: auto;
-}
+                    .header-buttons {
+                        width: 100%;
+                        margin-left: 0;
+                    }
 
-.close-btn {
-    position: absolute;
-    top: 10px;
-    right: 10px;
-    cursor: pointer;
-    font-size: 18px;
-    font-weight: bold;
-}
+                    .header-buttons button {
+                        width: 100%;
+                        padding: 12px 0;
+                        font-size: 14px;
+                    }
 
-.table-container {
-    overflow-x: auto;
-    -webkit-overflow-scrolling: touch;
-    margin: 30px;
-}
+                    table {
+                        width: 100%;
+                    }
 
-@media (max-width: 768px) {
-    .header, .top-section, .filter-form, .button-group {
-        flex-direction: column;
-        align-items: stretch;
-        width: 100%;
-        gap: 10px;
-    }
+                    th, td {
+                        font-size: 12px;
+                        padding: 8px;
+                    }
 
-    .header-buttons {
-        width: 100%;
-        margin-left: 0;
-    }
+                    .search-box {
+                        max-width: 100%;
+                    }
 
-    .header-buttons button {
-        width: 100%;
-        padding: 12px 0;
-        font-size: 14px;
-    }
+                    .button-group button {
+                        width: 100%;
+                        padding: 12px 0;
+                    }
+                }
 
-    table {
-        width: 100%;
-    }
+                @media (max-width: 480px) {
+                    th, td {
+                        font-size: 10px;
+                        padding: 4px;
+                    }
 
-    th, td {
-        font-size: 12px;
-        padding: 8px;
-    }
+                    /* Hide some columns if necessary */
+                    td:nth-child(10), td:nth-child(11), td:nth-child(12) {
+                        display: none;
+                    }
 
-    .search-box {
-        max-width: 100%;
-    }
+                    .search-box input {
+                        font-size: 0.9rem;
+                    }
 
-    .button-group button {
-        width: 100%;
-        padding: 12px 0;
-    }
-}
-
-@media (max-width: 480px) {
-    th, td {
-        font-size: 10px;
-        padding: 4px;
-    }
-
-    /* Hide some columns if necessary */
-    td:nth-child(10), td:nth-child(11), td:nth-child(12) {
-        display: none;
-    }
-
-    .search-box input {
-        font-size: 0.9rem;
-    }
-
-    .popup-content {
-        width: 90%;
-        padding: 10px;
-    }
-}
+                    .popup-content {
+                        width: 90%;
+                        padding: 10px;
+                    }
+                }
 
     </style>
 </head>
@@ -415,32 +411,30 @@ th {
             $billtype = $item->billtype ?? '';
             $notes = $item->notes ?? '';
             $saleName = $item->sale_name ?? '';
-        @endphp
-
-        @if($item->NG != null)
-            <tr>
-                <td>
-                    @php
-    if (isset($item->so_detail_id)) {
-        $detailId = $item->so_detail_id;
-        $table = 'tblbill';
-    } elseif (isset($item->po_detail_id)) {
-        $detailId = $item->po_detail_id;
-        $table = 'pobills';
-    } elseif (isset($item->doc_id)) {
-        $detailId = $item->doc_id;
-        $table = 'docbills';
-    } else {
-        $detailId = '';
-        $table = '';
-    }
-@endphp
-
-<button class="updateNGButton"
-        data-id="{{ $detailId }}"
-        data-table="{{ $table }}">
-    ล้าง
-</button>
+            @endphp
+                    @if($item->NG != null)
+                        <tr>
+                            <td>
+                                @php
+                if (isset($item->so_detail_id)) {
+                    $detailId = $item->so_detail_id;
+                    $table = 'tblbill';
+                } elseif (isset($item->po_detail_id)) {
+                    $detailId = $item->po_detail_id;
+                    $table = 'pobills';
+                } elseif (isset($item->doc_id)) {
+                    $detailId = $item->doc_id;
+                    $table = 'docbills';
+                } else {
+                    $detailId = '';
+                    $table = '';
+                }
+            @endphp
+            <button class="updateNGButton"
+                    data-id="{{ $detailId }}"
+                    data-table="{{ $table }}">
+                ล้าง
+            </button>
                 </td>
                 <td>{{ $detailId }}</td>
                 <td>{{ $soId }}</td>

@@ -277,11 +277,6 @@
         }
     });
 </script>
-
-
-
-    
-
 <script>
     let allCompanies = [];
     

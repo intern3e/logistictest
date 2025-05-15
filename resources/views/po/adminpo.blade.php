@@ -416,10 +416,11 @@
                 <th>เลขที่บิล</th>
                 <th>ชื่อร้านค้า</th>
                 <th>ที่อยู่ร้านค้า</th>
+                <th>เบอร์โทร</th>
                 <th>ละติจูดลองจิจูด</th>
                 <th>วันที่รับสินค้า</th>
                 <th>ผู้เปิดบิล</th>
-                <th>ประเภทขนส่ง</th>
+                <th>เบอร์โทร</th>
                 <th>ข้อมูลสินค้า</th>
             </tr>
         </thead>
@@ -434,6 +435,7 @@
                         <td>{{ $item->po_detail_id }}</td>
                         <td>{{ $item->store_name }}</td>
                         <td>{{ $item->store_address }}</td>  
+                        <td>{{ $item->store_tel }}</td>  
                         <td>{{ $item->store_la_long }}</td>
                         <td>{{ \Carbon\Carbon::parse($item->recvDate)->format('d/m/Y') }}</td> 
                         <td>{{ $item->emp_name }}</td>
@@ -609,20 +611,23 @@ function createJSON() {
         if (!row) return;
 
         let cells = row.querySelectorAll("td");
-        let billNo       = cells[4].textContent.trim(); // เลขที่บิล
-        let orderDate    = cells[6].textContent.trim(); // วันที่จัดส่ง (ปรับ index ให้ตรงกับตารางจริง)
-        let phone        = cells[7].textContent.trim(); // เบอร์ติดต่อ
-        let address      = cells[5].textContent.trim(); // ที่อยู่จัดส่ง
-        let customerName = cells[3].textContent.trim(); // ชื่อลูกค้า
-        let latlong      = cells[8].textContent.trim(); // ละติจูด ลองจิจูด
+        let billNo       = cells[1].textContent.trim(); // po_id
+        let orderDate    = cells[7].textContent.trim(); // recvDate
+        let phone        = cells[5].textContent.trim(); // store_tel
+        let address      = cells[4].textContent.trim(); // store_address
+        let customerName = cells[3].textContent.trim(); // store_name
+        let latlong      = cells[6].textContent.trim(); // store_la_long
+        let empName      = cells[8].textContent.trim(); 
+
 
         // แยกละติจูดกับลองจิจูด
         let [lat, lng] = latlong.split(",").map(val => parseFloat(val.trim()));
 
         let order = {
-            orderNo: billNo,
+            orderNo: `${billNo},(${empName})`,
             date: formatDate(orderDate),
             phone: phone,
+            type:"P",
             location: {
                 address: address,
                 locationName: `${customerName} (${phone})`,

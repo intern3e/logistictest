@@ -6,255 +6,255 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>ระบบจัดเตรียมสินค้า</title>
     <style>
-/* RESET */
-* {
-  box-sizing: border-box;
-  margin: 0;
-  padding: 0;
-}
+        /* RESET */
+        * {
+          box-sizing: border-box;
+          margin: 0;
+          padding: 0;
+        }
 
-body {
-  font-family: 'Segoe UI', sans-serif;
-  background-color: #f4f6f8;
-  color: #333;
-  padding: 20px;
-}
+        body {
+          font-family: 'Segoe UI', sans-serif;
+          background-color: #f4f6f8;
+          color: #333;
+          padding: 20px;
+        }
 
-.header {
-  background: linear-gradient(90deg, #2c3e50 0%, #4b6584 100%);
-  padding: 20px 30px;
-  color: #fff;
-  border-radius: 10px;
-  margin-bottom: 30px;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  box-shadow: 0 4px 12px rgba(0,0,0,0.1);
-}
+        .header {
+          background: linear-gradient(90deg, #2c3e50 0%, #4b6584 100%);
+          padding: 20px 30px;
+          color: #fff;
+          border-radius: 10px;
+          margin-bottom: 30px;
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+        }
 
-.header h2 {
-  font-size: 24px;
-}
+        .header h2 {
+          font-size: 24px;
+        }
 
-.header-buttons a button {
-  padding: 10px 16px;
-  font-size: 14px;
-  border: none;
-  border-radius: 6px;
-  font-weight: 600;
-  cursor: pointer;
-  margin-left: 10px;
-  transition: 0.3s;
-  background-color: #3498db;
-  color: #fff;
-}
+        .header-buttons a button {
+          padding: 10px 16px;
+          font-size: 14px;
+          border: none;
+          border-radius: 6px;
+          font-weight: 600;
+          cursor: pointer;
+          margin-left: 10px;
+          transition: 0.3s;
+          background-color: #3498db;
+          color: #fff;
+        }
 
-.header-buttons a button:hover {
-  background-color: #2c80b4;
-}
+        .header-buttons a button:hover {
+          background-color: #2c80b4;
+        }
 
-.container {
-  background: #fff;
-  padding: 25px;
-  border-radius: 10px;
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
-}
+        .container {
+          background: #fff;
+          padding: 25px;
+          border-radius: 10px;
+          box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+        }
 
-.top-section {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 20px;
-  flex-wrap: wrap;
-  gap: 10px;
-}
+        .top-section {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          margin-bottom: 20px;
+          flex-wrap: wrap;
+          gap: 10px;
+        }
 
-.button-group {
-  display: flex;
-  gap: 10px;
-  flex-wrap: wrap;
-}
+        .button-group {
+          display: flex;
+          gap: 10px;
+          flex-wrap: wrap;
+        }
 
-#summitso {
-  background-color: #27ae60;
-  color: white;
-  border: none;
-  padding: 10px 18px;
-  border-radius: 6px;
-  font-weight: bold;
-  cursor: pointer;
-  transition: 0.3s;
-}
+        #summitso {
+          background-color: #27ae60;
+          color: white;
+          border: none;
+          padding: 10px 18px;
+          border-radius: 6px;
+          font-weight: bold;
+          cursor: pointer;
+          transition: 0.3s;
+        }
 
-#summitso:hover {
-  background-color: #1f8a4d;
-}
+        #summitso:hover {
+          background-color: #1f8a4d;
+        }
 
-.button-group a button {
-  background-color: #f39c12;
-  color: white;
-  border: none;
-  padding: 10px 18px;
-  border-radius: 6px;
-  font-weight: bold;
-  cursor: pointer;
-  transition: 0.3s;
-}
+        .button-group a button {
+          background-color: #f39c12;
+          color: white;
+          border: none;
+          padding: 10px 18px;
+          border-radius: 6px;
+          font-weight: bold;
+          cursor: pointer;
+          transition: 0.3s;
+        }
 
-.button-group a button:hover {
-  background-color: #d68910;
-}
+        .button-group a button:hover {
+          background-color: #d68910;
+        }
 
-.search-box input {
-  padding: 9px 14px;
-  border-radius: 6px;
-  border: 1px solid #ccc;
-  background-color: #eef1f4;
-  width: 250px;
-  font-size: 14px;
-}
+        .search-box input {
+          padding: 9px 14px;
+          border-radius: 6px;
+          border: 1px solid #ccc;
+          background-color: #eef1f4;
+          width: 250px;
+          font-size: 14px;
+        }
 
-.table-container {
-  margin-top: 20px;
-  overflow-x: auto;
-}
+        .table-container {
+          margin-top: 20px;
+          overflow-x: auto;
+        }
 
-.table-container table {
-  width: 100%;
-  border-collapse: collapse;
-  font-size: 14px;
-  background-color: #fff;
-  border-radius: 10px;
-  overflow: hidden;
-  box-shadow: 0 2px 10px rgba(0,0,0,0.05);
-}
+        .table-container table {
+          width: 100%;
+          border-collapse: collapse;
+          font-size: 14px;
+          background-color: #fff;
+          border-radius: 10px;
+          overflow: hidden;
+          box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+        }
 
-th, td {
-  padding: 10px 12px;
-  border: 1px solid #e0e0e0;
-  text-align: center;
-  vertical-align: middle;
-  word-break: break-word;
-  white-space: normal;
-  max-width: 180px;
-}
+        th, td {
+          padding: 10px 12px;
+          border: 1px solid #e0e0e0;
+          text-align: center;
+          vertical-align: middle;
+          word-break: break-word;
+          white-space: normal;
+          max-width: 180px;
+        }
 
-th {
-  background-color: #2c3e50;
-  color: white;
-  text-transform: uppercase;
-  font-size: 13px;
-}
+        th {
+          background-color: #2c3e50;
+          color: white;
+          text-transform: uppercase;
+          font-size: 13px;
+        }
 
-tr:nth-child(even) {
-  background-color: #f9f9f9;
-}
+        tr:nth-child(even) {
+          background-color: #f9f9f9;
+        }
 
-tr:hover {
-  background-color: #eef2f5;
-}
+        tr:hover {
+          background-color: #eef2f5;
+        }
 
-td a {
-  color: #2980b9;
-  font-weight: 500;
-  text-decoration: none;
-}
+        td a {
+          color: #2980b9;
+          font-weight: 500;
+          text-decoration: none;
+        }
 
-td a:hover {
-  text-decoration: underline;
-}
+        td a:hover {
+          text-decoration: underline;
+        }
 
-.popup-overlay {
-  display: none;
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  background-color: rgba(0, 0, 0, 0.5);
-  justify-content: center;
-  align-items: center;
-  z-index: 1000;
-  padding: 20px;
-}
+        .popup-overlay {
+          display: none;
+          position: fixed;
+          top: 0;
+          left: 0;
+          width: 100%;
+          height: 100%;
+          background-color: rgba(0, 0, 0, 0.5);
+          justify-content: center;
+          align-items: center;
+          z-index: 1000;
+          padding: 20px;
+        }
 
-.popup-content {
-  background-color: #fff;
-  padding: 25px;
-  border-radius: 10px;
-  width: 95%;
-  max-width: 1000px;
-  max-height: 80vh;
-  overflow-y: auto;
-  position: relative;
-  box-shadow: 0 0 20px rgba(0, 0, 0, 0.2);
-}
+        .popup-content {
+          background-color: #fff;
+          padding: 25px;
+          border-radius: 10px;
+          width: 95%;
+          max-width: 1000px;
+          max-height: 80vh;
+          overflow-y: auto;
+          position: relative;
+          box-shadow: 0 0 20px rgba(0, 0, 0, 0.2);
+        }
 
-.close-btn {
-  position: absolute;
-  top: 15px;
-  right: 20px;
-  font-size: 20px;
-  cursor: pointer;
-  color: #444;
-}
+        .close-btn {
+          position: absolute;
+          top: 15px;
+          right: 20px;
+          font-size: 20px;
+          cursor: pointer;
+          color: #444;
+        }
 
-textarea {
-  width: 100%;
-  height: 80px;
-  padding: 10px;
-  border-radius: 6px;
-  border: 1px solid #ccc;
-  resize: none;
-  margin-top: 10px;
-  font-size: 14px;
-  background-color: #fefefe;
-}
+        textarea {
+          width: 100%;
+          height: 80px;
+          padding: 10px;
+          border-radius: 6px;
+          border: 1px solid #ccc;
+          resize: none;
+          margin-top: 10px;
+          font-size: 14px;
+          background-color: #fefefe;
+        }
 
-@media (max-width: 768px) {
-  .top-section {
-    flex-direction: column;
-    align-items: stretch;
-  }
+        @media (max-width: 768px) {
+          .top-section {
+            flex-direction: column;
+            align-items: stretch;
+          }
 
-  .search-box input {
-    width: 100%;
-  }
+          .search-box input {
+            width: 100%;
+          }
 
-  .button-group {
-    width: 100%;
-    justify-content: center;
-  }
+          .button-group {
+            width: 100%;
+            justify-content: center;
+          }
 
-  .button-group button,
-  .button-group a button {
-    width: 100%;
-    text-align: center;
-  }
+          .button-group button,
+          .button-group a button {
+            width: 100%;
+            text-align: center;
+          }
 
-  th, td {
-    font-size: 12px;
-    max-width: 100px;
-    padding: 8px;
-  }
-}
-th {
-  background-color: #2c3e50;
-  color: white;
-  text-transform: uppercase;
-  font-size: 13px;
+          th, td {
+            font-size: 12px;
+            max-width: 100px;
+            padding: 8px;
+          }
+        }
+        th {
+          background-color: #2c3e50;
+          color: white;
+          text-transform: uppercase;
+          font-size: 13px;
 
-  white-space: nowrap;     /* 👈 ห้ามขึ้นบรรทัดใหม่ */
-  overflow: hidden;
-  text-overflow: ellipsis; /* 👈 ถ้ายาวเกิน ให้ขึ้น ... */
-  max-width: 150px;         /* 👈 ปรับตามความกว้างที่ต้องการ */
-}
-.nowrap {
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  max-width: 180px;
-}
+          white-space: nowrap;     
+          overflow: hidden;
+          text-overflow: ellipsis; 
+          max-width: 150px;         
+        }
+        .nowrap {
+          white-space: nowrap;
+          overflow: hidden;
+          text-overflow: ellipsis;
+          max-width: 180px;
+        }
 
     </style>
 
