@@ -220,13 +220,13 @@
             <label for="formtype">แบบฟอร์มเอกสาร :</label>
             <select id="formtype" name="formtype" required>
                 <option value="ไม่มีข้อมูล" disabled selected>ไม่มีข้อมูล</option>
-                <option value="1">1</option>
-                <option value="2">2</option>
-                <option value="3">3</option>
-                <option value="4">4</option>
+                <option value="บิล/PO3">บิล/PO3</option>
+                <option value="บิล/PO3/วางบิล">บิล/PO3/วางบิล</option>
+                <option value="บิล/PO3/วางบิล/สำเนาหน้าบิล2">บิล/PO3/วางบิล/สำเนาหน้าบิล2</option>
+                <option value="บิล/PO3/สำเนาบิล2">บิล/PO3/สำเนาบิล2</option>
+                <option value="บิล/PO3/บัญชี">บิล/PO3/บัญชี</option>
             </select>
         </div>
-        
         <script>
         function fetchFormType() {
             console.log('fetchFormType called'); // ตรวจสอบการเรียกฟังก์ชัน
@@ -536,24 +536,29 @@ function openGoogleMaps() {
                     let year = formattedDate.getFullYear();
                     document.getElementById("date_of_dali").value = `${day}-${month}-${year}`;
                 }
-
                 const SOLists = data.SOLists; 
 const tableBody = document.querySelector('#detail');
+let itemCounter = 1; // ต้องอยู่ข้างนอก เพื่อให้รันต่อเนื่อง
 
 SOLists.forEach((soItem) => {  
-    if (soItem.ms_sodt) { // ตรวจสอบว่ามีข้อมูล ms_sodt หรือไม่
+    if (soItem.ms_sodt) {
         soItem.ms_sodt.forEach((item) => { 
             let newRow = document.createElement('tr');
+
             const safeGoodName = item.GoodName.replace(/"/g, '&quot;');
+            const itemId = `53-${String(itemCounter).padStart(4, '0')}`; // เช่น 53-0001
+
             newRow.innerHTML = `
                 <td><input type="checkbox" class="form-control1" name="status[]"></td>
-                <td><input type="text" class="form-control1" name="item_id[]" value="${item.GoodID}"readonly></td>
-                <td><input type="text" class="form-control1" name="item_name[]" value="${safeGoodName}"readonly></td>
-                <td><input type="text" class="form-control1 item_quantity" name="item_quantity[]" value="${item.GoodQty2}" ></td>
-                <td><input type="text" class="form-control1" name="unit_price[]" value="${item.GoodPrice2}"readonly></td>
+                <td><input type="text" class="form-control1" name="item_id[]" value="${itemId}" readonly></td>
+                <td><input type="text" class="form-control1" name="item_name[]" value="${safeGoodName}" readonly></td>
+                <td><input type="text" class="form-control1 item_quantity" name="item_quantity[]" value="${item.GoodQty2}"></td>
+                <td><input type="text" class="form-control1" name="unit_price[]" value="${item.GoodPrice2}" readonly></td>
                 <td><button type="button" class="btn btn-danger delete-btn">ลบ</button></td>
             `;
+
             tableBody.appendChild(newRow);
+            itemCounter++; // เพิ่มลำดับต่อรายการ
         });
     }
 });

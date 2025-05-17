@@ -289,6 +289,7 @@ text-decoration: underline;
   }
 }
 
+
     </style>
 </head>
 <body>
@@ -301,7 +302,7 @@ text-decoration: underline;
 
     
             <div class="button-group">
-                <button onclick="updateStatuspdf()">สถานะ</button>
+                <button id="submit" onclick="updateStatuspdf()">สถานะ</button>
                 <button onclick="window.location.href='historydoc'">📜 ประวัติเอกสาร</button>
             </div>
             
@@ -350,7 +351,7 @@ text-decoration: underline;
 
                 </td>
                 <td>
-                    <button onclick="downloadRowPDF(this)" class="btn btn-sm btn-outline-danger">📄</button>
+                    <button id = "download"onclick="downloadRowPDF(this)" class="btn btn-sm btn-outline-danger">📄</button>
                 </td>
             </tr>
             @endif
@@ -377,7 +378,6 @@ text-decoration: underline;
                                 <th>ที่อยู่</th>
                                 <th>ผู้ติดต่อ</th>
                                 <th>เบอร์โทร</th>
-                                <th>รวมทั้งหมด</th>
                             </tr>
                         </thead>
                         <tbody id="popup-body-1">
@@ -397,7 +397,7 @@ text-decoration: underline;
                 </tbody>
             </table>
              <br>
-                <textarea id="popup-body-3" readonl style="width: 950px; height: 70px;" readonly>
+                <textarea id="popup-body-3" readonl style="width: 700px; height: 70px;" readonly>
                 </textarea>
         </div> 
     </div>
@@ -415,7 +415,6 @@ text-decoration: underline;
                         <td>${com_address}</td>
                         <td>${contact_name}</td>
                         <td>${contact_tel}</td>
-                        <td>${amount}</td>
                     </tr>
                 `;
                 document.getElementById("popup-body-3").value = notes;
@@ -523,11 +522,11 @@ function updateStatuspdf() {
         const doc_id = cells[1].innerText.trim();
         const name = cells[2].innerText.trim();
         const address = cells[3].innerText.trim();
-        const type = cells[7].innerText.trim();
-        const emp = cells[8].innerText.trim();
-        const revdate = cells[9].innerText.trim();
-        const contact_tel = cells[6].innerText.trim();
-        const contact_name = cells[5].innerText.trim();
+        const type = cells[6].innerText.trim();
+        const emp = cells[7].innerText.trim();
+        const revdate = cells[8].innerText.trim();
+        const contact_tel = cells[5].innerText.trim();
+        const contact_name = cells[4].innerText.trim();
 
         let popupAmount = '', popupNotes = '';
         const link = row.querySelector('a[onclick^="openPopup"]');
@@ -535,7 +534,7 @@ function updateStatuspdf() {
             const onclickAttr = link.getAttribute('onclick');
             const args = [...onclickAttr.matchAll(/'([^']*)'/g)].map(match => match[1]);
             popupAmount = args[5] || '';
-            popupNotes = args[6] || '';
+            popupNotes = args[1] || '';
         }
 
         let tableRowsHtml = '';
@@ -546,17 +545,17 @@ function updateStatuspdf() {
             if (data.length > 0) {
                 data.forEach((item, index) => {
                     tableRowsHtml += `
-                        <tr>
-                            <td style="border: 1px solid #000; padding: 8px;">${index + 1}</td>
-                            <td style="border: 1px solid #000; padding: 8px;">${item.item_name}</td>
-                            <td style="border: 1px solid #000; padding: 8px; text-align: center;">${item.quantity}</td>
-                        </tr>
+                      <tr style="background-color: #fff; border: 1px solid #red;">
+                  <td style="border: 1px solid #000; padding: 8px; font-size: 18px;">${index + 1}</td>
+                  <td style="border: 1px solid #000; padding: 8px; text-align: left; font-size: 18px;">${item.item_name}</td>
+                  <td style="border: 1px solid #000; padding: 8px; text-align: center; font-size: 20px;">${item.quantity}</td>
+              </tr>
                     `;
                 });
             } else {
                 tableRowsHtml = `
                     <tr>
-                        <td colspan="3" style="border: 1px solid #000; padding: 8px; text-align: center;">
+                        <td colspan="3" style="border: 1px solid 	#555555; padding: 8px; text-align: center;">
                             ไม่มีข้อมูลสินค้า
                         </td>
                     </tr>
@@ -566,7 +565,7 @@ function updateStatuspdf() {
             console.error("Error fetching data:", error);
             tableRowsHtml = `
                 <tr>
-                    <td colspan="3" style="border: 1px solid #000; padding: 8px; text-align: center;">
+                    <td colspan="3" style="border: 1px solid 	#555555; padding: 8px; text-align: center;">
                         เกิดข้อผิดพลาดในการโหลดข้อมูลสินค้า
                     </td>
                 </tr>
@@ -604,37 +603,38 @@ function updateStatuspdf() {
               <strong>วันที่:</strong> ${revdate}
             </p>
 
-            <p style="font-size: 20px; border-bottom: 1px solid #000; padding-bottom: 3px;">
-              <strong>บริษัท :  </strong> ${name}
+            <p class="print-line" style="font-size: 20px; border-bottom: 3px dotted #555; padding-bottom: 3px;">
+              <strong>บริษัท : </strong> ${name}
             </p>
 
-            <p style="font-size: 20px; border-bottom: 1px solid #000; padding-bottom: 3px;">
+            <p class="print-line" style="font-size: 20px; border-bottom: 3px dotted #555; padding-bottom: 3px;">
               <strong>ที่อยู่ :  </strong> ${address}
             </p>
 
-            <p style="font-size: 20px; border-bottom: 1px solid #000; padding-bottom: 3px;">
+            <p class="print-line" style="font-size: 20px; border-bottom: 3px dotted #555; padding-bottom: 3px;">
               <strong>ชื่อผู้ติดต่อ :  </strong> ${contact_name}
             </p>
 
-            <p style="font-size: 20px; border-bottom: 1px solid #000; padding-bottom: 3px;">
+            <p class="print-line" style="font-size: 20px; border-bottom: 3px dotted #555; padding-bottom: 3px;">
               <strong>โทร :  </strong> ${contact_tel}
             </p>
 
-            <p style="font-size: 20px; border-bottom: 1px solid #000; padding-bottom: 3px;">
+            <p class="print-line" style="font-size: 20px; border-bottom: 3px dotted #555; padding-bottom: 3px;">
               <strong>หมายเหตุ :  </strong> ${popupNotes}
             </p>
 
-            <p style="font-size: 20px; border-bottom: 1px solid #000; padding-bottom: 3px;">
+            <p class="print-line" style="font-size: 20px; border-bottom: 3px dotted #555; padding-bottom: 3px;">
               <strong>ผู้เปิดบิล:</strong> ${emp}
             </p>
 
+
             <table style="width: 100%; border-collapse: collapse; font-size: 20px;">
               <thead>
-                <tr>
-                  <th style="border: 1px solid #000; padding: 8px; width: 10%;">ลำดับ</th>
-                  <th style="border: 1px solid #000; padding: 8px; width: 60%;">รายการ</th>
-                  <th style="border: 1px solid #000; padding: 8px; width: 30%;">จำนวน</th>
-                </tr>
+              <tr>
+              <th style="border: 1px solid 	#000; padding: 8px; width: 10%; background-color: #f2f2f2; color: #333; font-size: 20px;">ลำดับ</th>
+              <th style="border: 1px solid 	#000; padding: 8px; width: 60%; background-color: #f2f2f2; color: #333; font-size: 20px;">รายการ</th>
+              <th style="border: 1px solid 	#000; padding: 8px; width: 30%; background-color: #f2f2f2; color: #333; font-size: 20px;">จำนวน</th>
+            </tr>
               </thead>
               <tbody>
                 ${tableRowsHtml}
@@ -650,31 +650,72 @@ function updateStatuspdf() {
           </div>
         </div>
         `;
+document.body.appendChild(pdfContainer);
 
-        document.body.appendChild(pdfContainer);
+const MAX_FILE_SIZE = 500 * 1024; // 500 KB
+const pageWidth = 595.28;
+const pageHeight = 841.89;
 
-        await html2canvas(pdfContainer, { scale: 2 }).then(async (canvas) => {
-            const imgData = canvas.toDataURL("image/jpeg", 1.0);
-            const pdf = new jsPDF({
-                orientation: "portrait",
-                unit: "px",
-                format: [canvas.width, canvas.height]
-            });
+function resizeCanvas(originalCanvas, scaleFactor) {
+  const resizedCanvas = document.createElement('canvas');
+  resizedCanvas.width = originalCanvas.width * scaleFactor;
+  resizedCanvas.height = originalCanvas.height * scaleFactor;
+  const ctx = resizedCanvas.getContext('2d');
+  ctx.drawImage(originalCanvas, 0, 0, resizedCanvas.width, resizedCanvas.height);
+  return resizedCanvas;
+}
 
-            pdf.addImage(imgData, "JPEG", 0, 0, canvas.width, canvas.height);
+const canvas = await html2canvas(pdfContainer, {
+  scale: 1.5, // ไม่สูงเกินไป
+  backgroundColor: "#FFFFFF",
+  useCORS: true
+});
 
-            const pdfBlob = pdf.output("blob");
-            const blobUrl = URL.createObjectURL(pdfBlob);
+let quality = 0.7;
+let pdfBlob;
+let imgData;
 
-            window.open(blobUrl, '_blank');
+do {
+  const resized = resizeCanvas(canvas, 1);
+  imgData = resized.toDataURL("image/jpeg", quality);
 
-            // ลบ container หลังใช้เสร็จ
-            pdfContainer.remove();
+  const pdf = new jspdf.jsPDF("p", "pt", "a4");
 
-            // แก้ไขปุ่ม
-            button.textContent = 'สร้าง PDF';
-            button.disabled = false;
-        });
+  let imgWidth = pageWidth;
+  let imgHeight = (resized.height * imgWidth) / resized.width;
+
+  if (imgHeight > pageHeight) {
+    imgHeight = pageHeight;
+    imgWidth = (resized.width * imgHeight) / resized.height;
+  }
+
+  const marginX = (pageWidth - imgWidth) / 2;
+  const marginY = (pageHeight - imgHeight) / 2;
+
+  pdf.addImage(imgData, "JPEG", marginX, marginY, imgWidth, imgHeight);
+  pdfBlob = pdf.output("blob");
+
+  if (pdfBlob.size > MAX_FILE_SIZE) {
+    quality -= 0.05;
+  } else {
+    break;
+  }
+} while (quality > 0.4);
+
+console.log("Final PDF size (KB):", (pdfBlob.size / 1024).toFixed(2));
+window.open(URL.createObjectURL(pdfBlob), "_blank");
+
+pdfContainer.remove();
+button.textContent = "สร้าง PDF";
+button.disabled = false;
+
+// ✅ เช็ค checkbox อัตโนมัติในแถวเดียวกับปุ่ม
+const checkbox = row.querySelector('input[type="checkbox"].form-control1[name="status[]"]');
+if (checkbox) {
+  checkbox.checked = true;
+}
+
+
     }
 </script>
 

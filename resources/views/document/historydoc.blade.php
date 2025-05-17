@@ -324,15 +324,12 @@
                 <th>ปริ้นเอกสาร</th>
                 <th>เลขที่บิล</th>
                 <th>บริษัท</th>
-                <th>ที่อยู่</th>
-                <th>ละติจูด ลองจิจูด</th>
                 <th>ผู้ติดต่อ</th>
                 <th>เบอร์โทร</th>
                 <th>ประเภทงาน</th>
                 <th>ผู้เปิดบิล</th>
                 <th>วันที่</th>
                 <th>ข้อมูลรายละเอียด</th>
-                <th>pdf</th>
             </tr>
         </thead>
         <tbody id="table-body">
@@ -490,7 +487,7 @@
                                 <th>ที่อยู่</th>
                                 <th>ผู้ติดต่อ</th>
                                 <th>เบอร์โทร</th>
-                                <th>รวมทั้งหมด</th>
+                          
                             </tr>
                         </thead>
                         <tbody id="popup-body-1">
@@ -510,7 +507,7 @@
                 </tbody>
             </table>
              <br>
-                <textarea id="popup-body-3" readonl style="width: 950px; height: 70px;" readonly>
+                <textarea id="popup-body-3" readonl style="width: 700px; height: 70px;" readonly>
                 </textarea>
         </div> 
     </div>
@@ -528,7 +525,6 @@
                         <td>${com_address}</td>
                         <td>${contact_name}</td>
                         <td>${contact_tel}</td>
-                        <td>${amount}</td>
                     </tr>
                 `;
                 document.getElementById("popup-body-3").value = notes;

@@ -7,385 +7,331 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>ระบบจัดเตรียมสินค้า</title>
 <style>
-        body {
-            font-family: 'Poppins', sans-serif;
-            background-color: #f5f7fa;
-            margin: 0;
-            padding: 0;
-        }
-        .header {
-            background: linear-gradient(to right, #0e50ad, #3a6073);
-            padding: 15px 30px;
-            color: white;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            font-size: 1.2rem;
-            border-radius: 8px;
-            margin: 20px auto;
-            width: 90%;
-            box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.2);
-        }
-        .header {
-            background: linear-gradient(to right, #0e50ad, #3a6073);
-            padding: 15px 30px;
-            color: white;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            font-size: 1.2rem;
-            border-radius: 8px;
-            margin: 20px auto;
-            width: 90%;
-            box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.2);
-        }
+      body {
+    font-family: 'Poppins', sans-serif;
+    background-color: #f5f7fa;
+    margin: 0;
+    padding: 0;
+}
 
-        .header-buttons {
-            display: flex;
-            gap: 10px;
-            margin-left: auto; /* This will push the buttons to the right */
-        }
+/* Header */
+.header {
+    background: linear-gradient(to right, #0e50ad, #3a6073);
+    padding: 0px 30px;
+    color: white;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 1.2rem;
+    border-radius: 8px;
+    margin: 20px auto;
+    width: 90%;
+    box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.2);
+}
 
-        .header-buttons button {
-        padding: 15px 20px;
-        font-size: 16px;
-        cursor: pointer;
-        border: none;
-        border-radius: 8px;
-        font-weight: bold;
-        text-decoration: none;
-        transition: all 0.3s ease;
-        margin-right: 10px; /* Adds space between buttons */
-    }
+.header-buttons {
+    display: flex;
+    gap: 10px;
+    margin-left: auto;
+}
 
-        .btn-po {
-            background-color: #4CAF50; /* Green for PO button */
-            color: white;
-        }
+.header-buttons button {
+    padding: 10px 20px;
+    font-size: 16px;
+    cursor: pointer;
+    border: none;
+    border-radius: 8px;
+    font-weight: bold;
+    transition: all 0.3s ease;
+    margin-right: 10px;
+}
 
-        .btn-so {
-            background-color: #2196F3; /* Blue for SO button */
-            color: white;
-        }
+.btn-po {
+    background-color: #4CAF50;
+    color: white;
+}
 
-        .header-buttons button:hover {
-            transform: scale(1.05); /* Adds a slight grow effect when hovering */
-        }
+.btn-po:hover {
+    background-color: #27ae60;
+}
 
-        .btn-po:hover {
-            background-color: #27ae60; /* Darker green for PO button on hover */
-        }
+.btn-so {
+    background-color: #2196F3;
+    color: white;
+}
 
-        .btn-so:hover {
-            background-color: #00389f; /* Darker blue for SO button on hover */
-        }
+.btn-so:hover {
+    background-color: #00389f;
+}
 
+.header-buttons button:hover {
+    transform: scale(1.05);
+}
 
-        .container {
-            background: white;
-            padding: 20px;
-            border-radius: 8px;
-            box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.1);
-            width: 100%;
-            margin: auto;
-        }
-        .table-container {
-            background: #f9f9f9; /* Light gray background for table */
-            margin: 2% 5%;
-            padding: 10px;
-            border-radius: 12px;
-            box-shadow: 0px 6px 12px rgba(0, 0, 0, 0.1);
-            overflow: hidden;
-            width: 99%;
-            max-width: 100%; /* Ensure table doesn't overflow the container */
-            transform: scale(0.9); /* Scale down the table to fit the screen */
-            transform-origin: top left; /* Keep the table scaling from the top-left corner */
-        }
+/* Container */
+.container {
+    background: white;
+    padding: 20px;
+    border-radius: 8px;
+    box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.1);
+    width: 100%;
+    margin: auto;
+}
 
-        table {
-            width: 100%;
-            border-collapse: collapse;
-            text-align: center;
-            word-wrap: break-word; /* Ensure text wraps within table cells */
-            font-size: 1rem; /* Adjust the font size to make it smaller */
-        }
+/* Top Section */
+.top-section {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    margin: 0px 5%;
+    margin-bottom: 15px;
+}
 
-        th, td {
-            padding: 12px;
-            border: 1px solid #ccc; /* Light gray for borders */
-            font-size: 1rem;
-            white-space: normal; /* Allow wrapping of text in cells */
-        }
+.top-section label {
+    font-weight: bold;
+    color: #2c3e50;
+}
 
-        .top-section {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 15px;
-        }
-        .top-section button {
-            padding: 8px 12px;
-            border: none;
-            background: #27ae60;
-            color: white;
-            border-radius: 5px;
-            cursor: pointer;
-            transition: 0.3s;
-        }
-        .top-section {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            margin: 0px 5%;
-        }
+.top-section input {
+    padding: 8px;
+    border-radius: 5px;
+    font-size: 1rem;
+}
 
-        .top-section label {
-            font-weight: bold;
-            color: #2c3e50;
-        }
+.top-section button {
+    padding: 8px 12px;
+    border: none;
+    background: #27ae60;
+    color: white;
+    border-radius: 5px;
+    cursor: pointer;
+    transition: 0.3s;
+}
 
-        .top-section input {
-            padding: 8px;
-            border-radius: 5px;
-            font-size: 1rem;
-        }
-        .top-section button:hover {
-            background: #2980b9;
-        }
-        .filter-container {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-        }
+.top-section button:hover {
+    background: #2980b9;
+}
 
-        .filter-container input {
-            padding: 8px;
-            border-radius: 5px;
-            border: 1px solid #ccc;
-        }
+/* Filter */
+.filter-container {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
 
-        .filter-container button {
-            background-color: #2ecc71;
-            color: white;
-            padding: 8px 15px;
-            border: none;
-            border-radius: 5px;
-            cursor: pointer;
-            transition: 0.3s;
-        }
+.filter-container input {
+    padding: 8px;
+    border-radius: 5px;
+    border: 1px solid #ccc;
+}
 
-        .filter-container button:hover {
-            background-color: #27ae60;
-        }
+.filter-container button {
+    background-color: #2ecc71;
+    color: white;
+    padding: 8px 15px;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    transition: 0.3s;
+}
 
-        .button-group {
-            display: flex;
-            gap: 10px;
-        }
+.filter-container button:hover {
+    background-color: #27ae60;
+}
 
-        .button-group button {
-            padding: 15px 20px;
-            border-radius: 8px;
-            font-weight: bold;
-            text-decoration: none;
-            border: none;
-            cursor: pointer;
-            transition: all 0.3s ease;
-        }
-        .button-group button {
-            background-color: #f39c12;
-            font-size: 16px;
-            color: white;
-            box-shadow: 0px 4px 6px rgba(0, 0, 0, 0.2);
-        }
+/* Button Group */
+.button-group {
+    display: flex;
+    gap: 10px;
+}
 
-        .button-group button:hover {
-            background-color: #e67e22;
-            transform: scale(1.05);
-        }
-        .table th, .table td {
-            padding: 12px;
-            border: 1px solid #dcdde1;
-            text-align: center;
-        }
+.button-group button {
+    padding: 10px 20px;
+    border-radius: 8px;
+    font-weight: bold;
+    font-size: 16px;
+    background-color: #f39c12;
+    color: white;
+    border: none;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    box-shadow: 0px 4px 6px rgba(0, 0, 0, 0.2);
+}
 
-        .table th {
-            background-color: #e67e22;
-            color: white;
-            font-weight: bold;
-        }
+.button-group button:hover {
+    background-color: #e67e22;
+    transform: scale(1.05);
+}
 
-        .table-striped tr:nth-child(odd) {
-            background-color: #f9f9f9;
-        }
+/* Table */
+.table-container {
+    background: #f9f9f9;
+    margin: 2% 5%;
+    padding: 10px;
+    border-radius: 12px;
+    box-shadow: 0px 6px 12px rgba(0, 0, 0, 0.1);
+    overflow: hidden;
+    width: 99%;
+    max-width: 100%;
+    transform: scale(0.9);
+    transform-origin: top left;
+}
 
-        .table-striped tr:hover {
-            background-color: #ecf0f1;
-        }
+table {
+    width: 100%;
+    border-collapse: collapse;
+    text-align: center;
+}
 
-        .link {
-            color: #16a085;
-            font-weight: bold;
-            text-decoration: none;
-        }
-        .link:hover {
-            text-decoration: underline;
-        }
+th, td {
+    padding: 8px;
+    border: 1px solid #ddd;
+    word-wrap: break-word;
+    overflow-wrap: break-word;
+    max-width: 150px;
+}
 
-        table {
-            width: 100%;
-            border-collapse: collapse;
-            text-align: center;
-            
-        }
-        td {
-            word-wrap: break-word; /* ให้ข้อความยาวเกินไปหักบรรทัด */
-            max-width: 150px; /* กำหนดความกว้างสูงสุดของคอลัมน์ */
-            overflow-wrap: break-word; /* ถ้าข้อความยาวเกินไปก็จะหักบรรทัด */
-            
-            
-        }
-        th, td {
-            padding: 8px;
-            border: 1px solid #ddd;
-            word-wrap: break-word; /* ทำให้ข้อความยาวเกินไปสามารถหักบรรทัดได้ */
-        }
+th {
+    background-color: #0e50ad;
+    color: white;
+    text-transform: uppercase;
+    width: 20ch;
+}
 
-        th {
-            background-color: #0e50ad;
-            color: white;
-            text-transform: uppercase;
-            word-wrap: break-word;
-            width: 20ch; /* กำหนดความกว้างเป็น 20 ตัวอักษร */
-         }
+td a {
+    color: #27ae60;
+    font-weight: bold;
+    text-decoration: none;
+}
 
-        tr:nth-child(odd) {
-            background-color: #f8f9fa;
-        }
+.table-striped tr:nth-child(odd),
+tr:nth-child(odd),
+.tr {
+    background-color: #f8f9fa;
+}
 
-        .tr {
-            background-color: #f8f9fa;
-        }
+.table-striped tr:hover,
+tr:hover {
+    background-color: #e1e5ea;
+    transition: 0.2s;
+}
 
-        tr:hover {
-            background-color: #e1e5ea;
-            width: 70%;
-            transition: 0.2s;
-        }
+/* Link */
+.link {
+    color: #16a085;
+    font-weight: bold;
+    text-decoration: none;
+}
 
-        td a {
-            color: #27ae60;
-            font-weight: bold;
-            text-decoration: none;
-        }
+.link:hover {
+    text-decoration: underline;
+}
 
-        .search-box {
-            display: flex;
-            max-width: 300px;
-            width: 100%; /* Allow input to stretch to the available space */
-        }
+/* Search */
+.search-box {
+    display: flex;
+    max-width: 300px;
+    width: 100%;
+}
 
-        .search-box input {
-            height: 30px;
-            background: #f8f9fa;
-        }
+.search-box input {
+    height: 30px;
+    background: #f8f9fa;
+}
 
-        .popup-overlay {
-            display: none;
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(0, 0, 0, 0.5);
-            display: flex;
-            justify-content: center;
-            align-items: center;
-        }
+/* Popup */
+.popup-overlay {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.5);
+    justify-content: center;
+    align-items: center;
+}
 
-        .popup-content {
-            background: linear-gradient(to right, #f0f2f5, #dfe9f3);
-            padding: 20px;
-            border-radius: 10px;
-            width: 80%;
-            max-width: 1000px;
-            height: auto;
-            text-align: center;
-            position: relative;
-            overflow: hidden;
-            max-height: 500px;
-            overflow-y: auto;
-        }
+.popup-content {
+    background: linear-gradient(to right, #f0f2f5, #dfe9f3);
+    padding: 20px;
+    border-radius: 10px;
+    width: 80%;
+    max-width: 1000px;
+    max-height: 500px;
+    overflow-y: auto;
+    text-align: center;
+    position: relative;
+}
 
-        .close-btn {
-            position: absolute;
-            top: 10px;
-            right: 10px;
-            cursor: pointer;
-            font-size: 18px;
-            font-weight: bold;
-        }
-   
-        .cartype {
+.close-btn {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    cursor: pointer;
+    font-size: 18px;
+    font-weight: bold;
+}
+
+/* Car Type Select */
+.cartype {
     margin: 20px 0;
     font-family: Arial, sans-serif;
+}
+
+.cartype label {
+    font-size: 16px;
+    font-weight: bold;
+    margin-right: 10px;
+    color: #333;
+}
+
+.cartype select {
+    padding: 8px;
+    font-size: 14px;
+    width: 200px;
+    border: 1px solid #ccc;
+    border-radius: 5px;
+    background-color: #f9f9f9;
+    transition: border-color 0.3s;
+}
+
+.cartype select:focus {
+    border-color: #007BFF;
+    outline: none;
+}
+
+.cartype option {
+    padding: 10px;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    table th, table td {
+        padding: 12px 8px;
+        white-space: nowrap;
     }
 
-    .cartype label {
-        font-size: 16px;
-        font-weight: bold;
-        margin-right: 10px;
-        color: #333;
+    table {
+        overflow-x: auto;
     }
 
-    .cartype select {
-        padding: 8px;
-        font-size: 14px;
-        width: 200px;
-        border: 1px solid #ccc;
-        border-radius: 5px;
-        background-color: #f9f9f9;
-        transition: border-color 0.3s;
-    }
-
-    .cartype select:focus {
-        border-color: #007BFF;
-        outline: none;
-    }
-
-    .cartype option {
+    .table-container {
         padding: 10px;
+        -webkit-overflow-scrolling: touch;
     }
-    /* ปรับปรุงให้ responsive สำหรับหน้าจอขนาดเล็ก */
-        @media (max-width: 768px) {
-            table th, table td {
-                padding: 12px 8px; /* ปรับระยะห่างสำหรับมือถือ */
-            }
+}
 
-            table {
-                width: 100%;
-                overflow-x: auto;
-            }
+@media (max-width: 480px) {
+    th, td {
+        font-size: 12px;
+    }
 
-            th, td {
-                white-space: nowrap; /* ป้องกันการหักบรรทัด */
-            }
-
-            .table-container {
-                padding: 10px;
-                -webkit-overflow-scrolling: touch;
-            }
-        }
-
-        @media (max-width: 480px) {
-            th, td {
-                font-size: 12px; /* ปรับขนาดตัวอักษรให้เล็กลง */
-            }
-
-            .table-container {
-                padding: 5px;
-            }
-        }
+    .table-container {
+        padding: 5px;
+    }
+}
 
 </style>
 </head>

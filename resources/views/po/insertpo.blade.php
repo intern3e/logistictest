@@ -426,7 +426,7 @@ document.getElementById("poSearchForm").addEventListener("submit", async functio
         // กำหนดค่าลงในฟอร์ม
         document.getElementById("recvDate").value = formatDate(data.ShipDate);
         document.getElementById("po_id").value = data.DocuNo || '';
-        document.getElementById("store_id").value = data.VendorID|| '';
+        document.getElementById("store_id").value = data.VendorCode|| '';
         fetchFormType();
         document.getElementById("store_tel").value = data.ContTel || '';
         document.getElementById('store_name').value = data.VendorName;  
@@ -440,16 +440,21 @@ document.getElementById("poSearchForm").addEventListener("submit", async functio
         tbody.innerHTML = '';
 
         // Loop through ms_podt to show product details in the table
+        let itemCounter = 1; // เริ่มลำดับที่ 1 หรือค่าที่คุณต้องการ
+
         data.ms_podt.forEach(item => {
+            const itemId = `53-${String(itemCounter).padStart(4, '0')}`; // สร้างรหัส item_id เช่น 53-0001
+
             let row = `
                 <tr>
-                    <td><input type="text" class="form-control1" name="item_id[]" value="${item.GoodID}" readonly></td>
+                    <td><input type="text" class="form-control1" name="item_id[]" value="${itemId}" readonly></td>
                     <td><input type="text" class="form-control1" name="item_name[]" value="${item.GoodName}" readonly></td>
                     <td><input type="number" class="form-control1 item_quantity" name="item_quantity[]" value="${item.GoodQty2}" readonly></td>
                     <td><input type="number" class="form-control1 item_unit_price" name="item_unit_price[]" value="${item.GoodPrice2}" readonly></td>
                 </tr>
             `;
-            tbody.innerHTML += row; // Add the row to the table
+            tbody.innerHTML += row;
+            itemCounter++; // เพิ่มลำดับ
         });
 
     } catch (error) {

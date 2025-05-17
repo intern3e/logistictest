@@ -84,7 +84,7 @@ class PoController extends Controller
             
     
             // Get Pobills ID
-            $po_detail_id = $pobill->id;
+            $po_detail_id = $pobill->po_detail_id; 
             $item_ids = $request->input('item_id');
             $item_names = $request->input('item_name');
             $item_quantities = $request->input('item_quantity');

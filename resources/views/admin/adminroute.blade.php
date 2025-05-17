@@ -183,7 +183,7 @@
           padding: 25px;
           border-radius: 10px;
           width: 95%;
-          max-width: 1000px;
+          max-width: 1150px;
           max-height: 80vh;
           overflow-y: auto;
           position: relative;
@@ -255,6 +255,10 @@
           text-overflow: ellipsis;
           max-width: 180px;
         }
+        .bg-yellow {
+    background-color: yellow;
+}
+
 
     </style>
 
@@ -275,7 +279,6 @@
                 <button id="summitso" onclick="updateStatuspdf2()">ยืนยัน</button>
                 <a href="history"><button>📜 ประวัติเอกสาร</button></a>
             </div>
-
             <div class="search-box">
             <input type="text" id="search-input" placeholder=" ค้นหา เลขที่บิล" onkeyup="searchTable()">
         </div>
@@ -310,7 +313,9 @@
                         <td class="nowrap">{{ $item->so_detail_id }}</td>
                         <td>{{ $item->so_id }}</td>
                         <td class="nowrap">{{ $item->ponum }}</td>
-                        <td>{{ $item->billid }}</td>
+                        <td class="{{ $item->formtype == "บิล/PO3/บัญชี" ? 'bg-yellow' : '' }}">
+                    {{ $item->billid }}
+                </td>
                         <td>{{ $item->customer_name}}</td>
                         <td class="tel-column">{!! nl2br(e(str_replace(',', "\n", $item->customer_tel))) !!}</td>
                         <td class="nowrap">{{ \Carbon\Carbon::parse($item->date_of_dali)->format('d/m/Y') }}</td>

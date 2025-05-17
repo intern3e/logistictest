@@ -121,12 +121,14 @@ Route::get('/alertsale/count', function () {
 Route::get('/alertaccount/count', function () {
     // คัดกรองข้อมูลที่ตรงตามเงื่อนไข formtype == 1 และ statuspdf == 1
     $count = DB::table('tblbill')
-                ->where('formtype', 1)   // ตรวจสอบว่า formtype เท่ากับ 1
-                ->where('statuspdf', 1)  // ตรวจสอบว่า statuspdf เท่ากับ 1
-                ->count();               // นับจำนวนที่ตรงเงื่อนไข
+                ->where('formtype', "บิล/PO3/บัญชี")   
+                ->where('statuspdf', 1)  
+                ->count();              
 
     return response()->json(['count' => $count]);
 });
+Route::get('/getall-bill-detail/{id}', [alertcontroller::class, 'getBillDetail']);
+
 
 //test 
 use App\Http\Controllers\text;

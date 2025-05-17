@@ -199,11 +199,15 @@
         </div>
         
         <script>
-            window.addEventListener('DOMContentLoaded', () => {
-                const today = new Date().toISOString().split('T')[0]; // ดึงแค่วันที่
-                document.getElementById('datestamp').value = today;
-            });
-        </script>
+    window.addEventListener('DOMContentLoaded', () => {
+        const tomorrow = new Date();
+        tomorrow.setDate(tomorrow.getDate() + 1); // เพิ่ม 1 วัน
+
+        const formatted = tomorrow.toISOString().split('T')[0]; // แปลงเป็น YYYY-MM-DD
+        document.getElementById('datestamp').value = formatted;
+    });
+</script>
+
     
         <div class="form-group">
             <label for="doctype">ประเภทบิล</label>

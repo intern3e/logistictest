@@ -5,6 +5,8 @@ use App\Models\Bill;
 use App\Models\docBills;
 use App\Models\pobills;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
+
 
 class alertcontroller extends Controller
 {
@@ -93,4 +95,29 @@ public function finish(Request $request)
     // หากไม่พบข้อมูล
     return response()->json(['status' => 'error', 'message' => 'so_detail_id not found']);
 }
+public function getBillDetail(Request $request, $id)
+{
+    try {
+        $results = collect();
+
+        // ค้นหาใน bill_detail (tblbill)
+        $tblbill = DB::table('bill_detail')->where('so_detail_id', $id)->get();
+
+        // ค้นหาใน pobills_detail (pobills)
+        $pobills = DB::table('pobills_detail')->where('po_detail_id', $id)->get();
+
+        // ค้นหาใน doc_detail (docbills)
+        $docbills = DB::table('doc_detail')->where('doc_id', $id)->get();
+
+        // รวมข้อมูลทั้งหมด
+        $results = $results->merge($tblbill)->merge($pobills)->merge($docbills);
+
+        return response()->json($results);
+
+    } catch (\Exception $e) {
+        \Log::error('getBillDetail error: ' . $e->getMessage());
+        return response()->json(['error' => 'Server error'], 500);
+    }
+}
+
 }

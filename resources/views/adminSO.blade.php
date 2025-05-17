@@ -171,6 +171,7 @@
                                         <input type="button" name="importBills" id="importBills" value="Import Bills" onclick="javaImportBills();">
                                         <a href="adminroute"><input type="button" name="adminso" id="adminso" value="จัดของ"></a>
                                         <a href="dashboardadminpdf"><input type="button" name="bot" id="bot" value="บอท"></a>
+                                        <a href="admindoc"><input type="button" name="botprint" id="botprint" value="บอทใบชั่วคราว"></a>
                                         <input type="hidden" name="lastUpdate" id="lastUpdate" value="">
                                         <input type="hidden" name="completedBills" id="completedBills" value="">
                                         <input type="hidden" name="action" id="action" value="">

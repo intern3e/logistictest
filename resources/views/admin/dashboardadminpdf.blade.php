@@ -26,7 +26,7 @@
             box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.2);
         }
             .header-buttons button {
-        padding: 15px 20px;
+        padding: 8px 20px;
         font-size: 16px;
         cursor: pointer;
         border: none;
@@ -150,7 +150,7 @@
         }
 
         .button-group button {
-            padding: 15px 20px;
+            padding: 10px 20px;
             border-radius: 8px;
             font-weight: bold;
             text-decoration: none;
@@ -270,7 +270,7 @@
             padding: 20px;
             border-radius: 10px;
             width: 80%;
-            max-width: 1000px;
+            max-width: 1150px;
             height: auto;
             text-align: center;
             position: relative;
@@ -373,7 +373,6 @@
     
 
 
-    <div class="container">
         <div class="top-section">
             <div class="button-group">
                 <button id="summitso" onclick="updateStatuspdf()">ปริ้นเอกสารSO</button>

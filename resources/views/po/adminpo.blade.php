@@ -14,20 +14,7 @@
         }
         .header {
             background: linear-gradient(to right, #0e50ad, #3a6073);
-            padding: 15px 30px;
-            color: white;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            font-size: 1.2rem;
-            border-radius: 8px;
-            margin: 20px auto;
-            width: 90%;
-            box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.2);
-        }
-        .header {
-            background: linear-gradient(to right, #0e50ad, #3a6073);
-            padding: 15px 30px;
+            padding: 0px 30px;
             color: white;
             display: flex;
             justify-content: space-between;
@@ -46,7 +33,7 @@
         }
 
         .header-buttons button {
-        padding: 15px 20px;
+        padding: 10px 20px;
         font-size: 16px;
         cursor: pointer;
         border: none;
@@ -101,20 +88,6 @@
             transform-origin: top left; /* Keep the table scaling from the top-left corner */
         }
 
-        table {
-            width: 100%;
-            border-collapse: collapse;
-            text-align: center;
-            word-wrap: break-word; /* Ensure text wraps within table cells */
-            font-size: 1rem; /* Adjust the font size to make it smaller */
-        }
-
-        th, td {
-            padding: 12px;
-            border: 1px solid #ccc; /* Light gray for borders */
-            font-size: 1rem;
-            white-space: normal; /* Allow wrapping of text in cells */
-        }
         .top-section {
             display: flex;
             justify-content: space-between;
@@ -182,7 +155,7 @@
         }
 
         .button-group button {
-            padding: 15px 20px;
+            padding: 10px 20px;
             border-radius: 8px;
             font-weight: bold;
             text-decoration: none;
