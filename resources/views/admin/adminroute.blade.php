@@ -310,7 +310,7 @@
                         <td>
                         <input type="checkbox" class="form-control1" name="statupdf[]" value="{{ $item->so_id }}" id="checkbox_{{ $item->so_detail_id }}">
                         </td>
-                        <td class="nowrap">{{ $item->so_detail_id }}</td>
+                        <td class="nowrap {{ $item->formtype == "บิล/PO3/บัญชี" ? 'bg-yellow' : '' }}">{{ $item->so_detail_id }}</td>
                         <td>{{ $item->so_id }}</td>
                         <td class="nowrap">{{ $item->ponum }}</td>
                         <td class="{{ $item->formtype == "บิล/PO3/บัญชี" ? 'bg-yellow' : '' }}">

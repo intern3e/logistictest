@@ -61,7 +61,6 @@ public function dashboard(Request $request)
         if ($date) {
             $bill = Bill::whereDate('time', $date)  // ใช้ชื่อคอลัมน์ที่ถูกต้อง
                         ->orderBy('so_detail_id', 'desc')
-                        ->with('customer')
                         ->get();
             
             // ตรวจสอบว่ามีข้อมูลหรือไม่
@@ -71,7 +70,6 @@ public function dashboard(Request $request)
         } else {
             // ถ้าไม่ได้กรอกวันที่ จะดึงข้อมูลทั้งหมด
             $bill = Bill::orderBy('so_detail_id', 'desc')
-                        ->with('customer')
                         ->get();
         }
 

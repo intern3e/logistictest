@@ -48,7 +48,6 @@ class admincontroller extends Controller
         if ($date) {
             $bill = Bill::whereDate('date_of_dali', $date)  // ใช้ชื่อคอลัมน์ที่ถูกต้อง
                         ->orderBy('so_detail_id', 'desc')
-                        ->with('customer')
                         ->get();
             
             // ตรวจสอบว่ามีข้อมูลหรือไม่
@@ -58,7 +57,6 @@ class admincontroller extends Controller
         } else {
             // ถ้าไม่ได้กรอกวันที่ จะดึงข้อมูลทั้งหมด
             $bill = Bill::orderBy('so_detail_id', 'desc')
-                        ->with('customer')
                         ->get();
         }
     
@@ -73,7 +71,6 @@ class admincontroller extends Controller
         if ($date) {
             $bill = Bill::whereDate('date_of_dali', $date)  // ใช้ชื่อคอลัมน์ที่ถูกต้อง
                         ->orderBy('so_detail_id', 'desc')
-                        ->with('customer')
                         ->get();
             
             // ตรวจสอบว่ามีข้อมูลหรือไม่
@@ -83,7 +80,6 @@ class admincontroller extends Controller
         } else {
             // ถ้าไม่ได้กรอกวันที่ จะดึงข้อมูลทั้งหมด
             $bill = Bill::orderBy('so_detail_id', 'desc')
-                        ->with('customer')
                         ->get();
         }
     
@@ -99,7 +95,6 @@ class admincontroller extends Controller
         if ($date) {
             $bill = Bill::whereDate('date_of_dali', $date)  // ใช้ชื่อคอลัมน์ที่ถูกต้อง
                         ->orderBy('so_detail_id', 'desc')
-                        ->with('customer')
                         ->get();
             
             // ตรวจสอบว่ามีข้อมูลหรือไม่
@@ -109,7 +104,6 @@ class admincontroller extends Controller
         } else {
             // ถ้าไม่ได้กรอกวันที่ จะดึงข้อมูลทั้งหมด
             $bill = Bill::orderBy('so_detail_id', 'desc')
-                        ->with('customer')
                         ->get();
         }
     
@@ -125,7 +119,6 @@ class admincontroller extends Controller
         if ($date) {
             $bill = Bill::whereDate('time', $date)  // ใช้ชื่อคอลัมน์ที่ถูกต้อง
                         ->orderBy('so_detail_id', 'desc')
-                        ->with('customer')
                         ->get();
             
             // ตรวจสอบว่ามีข้อมูลหรือไม่
@@ -135,7 +128,6 @@ class admincontroller extends Controller
         } else {
             // ถ้าไม่ได้กรอกวันที่ จะดึงข้อมูลทั้งหมด
             $bill = Bill::orderBy('so_detail_id', 'desc')
-                        ->with('customer')
                         ->get();
         }
 

@@ -71,7 +71,6 @@ class alertcontroller extends Controller
     {
 
         $bill = Bill::orderBy('so_detail_id', 'desc')
-                        ->with('customer')
                         ->get();
         $items = $bill; // เพิ่มบรรทัดนี้
         return view('alert.alertaccount', compact('bill'));
