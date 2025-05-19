@@ -255,10 +255,21 @@
           text-overflow: ellipsis;
           max-width: 180px;
         }
-        .bg-yellow {
-    background-color: yellow;
+.bg-red { background-color: #ef4444; }      /* สีแดงเข้มขึ้น */
+.bg-green { background-color: #22c55e; }    /* สีเขียวเข้มขึ้น */
+.bg-blue { background-color: #3b82f6; }     /* สีฟ้าเข้มขึ้น */
+.bg-purple { background-color: #a855f7; }   /* สีม่วงเข้มขึ้น */
+.bg-yellow {background-color: #fde047;}
+
+@keyframes blink-yellow {
+  0%, 100% { background-color: #fde047; } /* เหลือง */
+  50% { background-color: #fad103; }         /* ขาว */
 }
 
+.bg-yellow1 {
+  background-color: #fde047;
+  animation: blink-yellow 1s infinite;
+}
 
     </style>
 
@@ -310,12 +321,27 @@
                         <td>
                         <input type="checkbox" class="form-control1" name="statupdf[]" value="{{ $item->so_id }}" id="checkbox_{{ $item->so_detail_id }}">
                         </td>
-                        <td class="nowrap {{ $item->formtype == "บิล/PO3/บัญชี" ? 'bg-yellow' : '' }}">{{ $item->so_detail_id }}</td>
-                        <td>{{ $item->so_id }}</td>
+                    @php
+                        $bgColor = match($item->formtype) {
+                            'บิล/PO3' => 'bg-red',
+                            'บิล/PO3/วางบิล' => 'bg-green',
+                            'บิล/PO3/วางบิล/สำเนาหน้าบิล2' => 'bg-blue',
+                            'บิล/PO3/สำเนาบิล2' => 'bg-purple',
+                            'บิล/PO3/บัญชี' => 'bg-yellow',
+                            default => ''
+                        };
+                    @endphp
+
+                    <td class="nowrap {{ $bgColor }}" title="{{ $item->formtype }}">
+                        <span title="{{ $item->formtype }}">{{ $item->so_detail_id }}</span>
+                    </td>
+                    <td>{{ $item->so_id }}</td>
+
                         <td class="nowrap">{{ $item->ponum }}</td>
-                        <td class="{{ $item->formtype == "บิล/PO3/บัญชี" ? 'bg-yellow' : '' }}">
-                    {{ $item->billid }}
-                </td>
+                        <td class="{{ ($item->formtype == 'บิล/PO3/บัญชี' && $item->statuspdf == 1) ? 'bg-yellow1' : '' }}">
+                        {{ $item->billid }}
+                    </td>
+
                         <td>{{ $item->customer_name}}</td>
                         <td class="tel-column">{!! nl2br(e(str_replace(',', "\n", $item->customer_tel))) !!}</td>
                         <td class="nowrap">{{ \Carbon\Carbon::parse($item->date_of_dali)->format('d/m/Y') }}</td>
