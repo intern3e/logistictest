@@ -19,7 +19,7 @@
     <div class="container">
         <div class="top-section">
             <div class="button-group">
-                <button onclick="createJSON()">ดาวน์โหลด JSON</button>
+                <button id="printroutedocjson" onclick="createJSON()">ดาวน์โหลด JSON</button>
                 <button onclick="window.location.href='historydoc'">📜 ประวัติเอกสาร</button>
             </div>
             <div class="search-box">

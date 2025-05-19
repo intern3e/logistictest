@@ -12,7 +12,7 @@
     <div class="header">
         <h2>ระบบจัดเตรียมรถรับของPO</h2>
         <div class="header-buttons">
-            <a href="admindocroute"><button class="btn-po">ระบบเส้นทางเอกสารเพิ่มเติม</button></a>
+            <a id="godoc" href="admindocroute"><button class="btn-po">ระบบเส้นทางเอกสารเพิ่มเติม</button></a>
             <a href="adminSO"><button class="btn-so">หน้าหลัก</button></a>
         </div>
     </div>

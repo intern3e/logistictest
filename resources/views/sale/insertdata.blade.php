@@ -8,8 +8,6 @@
     <link rel="stylesheet" href="{{ asset('css/insertdata.blade.css') }}">
     <title>เปิดบิลสินค้า</title>
 
-
-
 </head>
 <body>
     <div class="container">
