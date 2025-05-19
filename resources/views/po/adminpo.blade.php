@@ -6,7 +6,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>ระบบจัดเตรียมสินค้า</title>
     <link rel="stylesheet" href="{{ asset('css/adminpo.blade.css') }}">
-  
 </head>
 <body>
     <div class="header">
@@ -23,10 +22,7 @@
                 <button id="printroutepojson" onclick="createJSON()">ดาวน์โหลด เส้นทาง</button>
                 <button onclick="window.location.href='historypo'">📜 ประวัติเอกสาร</button>
             </div>
-            
-        
         </div>
-  
        <div class="table-container">
     <table>
         <input type="checkbox" id="checkAll" onclick="toggleCheckboxes()"> ทั้งหมด
