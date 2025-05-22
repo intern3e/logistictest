@@ -40,7 +40,7 @@
             <input type="text" id="store_tel" name="store_tel" >
 
             <label>ที่อยู่ :</label>
-            <input type="text" id="store_address" name="store_address" >
+            <input type="text" id="store_address" name="store_address" readonly >
 
             <label >ละติจูด ลองจิจูด :</label>
             <div class="lat-long-container"style="display: flex; justify-content: space-between; width: 100%;">
@@ -65,7 +65,7 @@
             updateMap();
         </script>
             <label>วันกำหนดรับ</label>
-            <input type="text" id="recvDate" name="recvDate" readonly>
+            <input type="text" id="recvDate" name="recvDate" >
             
         
                         <table class="table table-bordered table-striped">
@@ -100,7 +100,7 @@
                         
                         
                         <label for="additional_notes">แจ้งเพิ่มเติม</label>
-                        <textarea id="additional_notes" name="additional_notes" rows="4"></textarea>
+                        <textarea id="notes" name="notes" rows="4"></textarea>
                     
              <div style="display: flex; justify-content: center; margin-top: 20px;">
             <button type="button" id="submitBillpo" class="btn btn-success" 

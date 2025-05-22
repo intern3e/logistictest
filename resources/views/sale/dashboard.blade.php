@@ -98,7 +98,7 @@
         <table>
             <thead>
                 <tr>
-                    <th>เลขที่บิล</th>
+                    <th>REF</th>
                     <th>อ้างอิงใบสั่งขาย</th>
                     <th>อ้างอิงใบสั่งซื้อ</th>
                     <th>อ้างอิงใบส่งของ</th>
@@ -164,7 +164,7 @@
                 <table>
                     <thead>
                         <tr>
-                            <th>เลขที่บิล</th>
+                            <th>REF</th>
                             <th>ชื่อลูกค้า</th>
                             <th>ที่อยู่จัดส่ง</th>
                             <th>วันที่จัดส่ง</th>
@@ -189,7 +189,7 @@
                     </tbody>
                 </table>
                 <br>
-                <textarea id="popup-body-3" readonl style="width: 990px; height: 70px;" readonly>
+                <textarea id="popup-body-3" readonly style="width: 990px; height: 70px;" readonly>
                 </textarea>
             </div>
         </div>

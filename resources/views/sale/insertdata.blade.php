@@ -145,7 +145,7 @@
         <div class="form-section">
             <div class="form-group">
                 <label for="date_of_dali">วันกำหนดส่ง</label>
-                <input type="text" id="date_of_dali" name="date_of_dali" readonly>
+                <input type="text" id="date_of_dali" name="date_of_dali" >
             </div>
 
             <div class="form-group">

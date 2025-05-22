@@ -68,7 +68,7 @@
                 <tbody id="table-body">
                     @foreach($pobill as $item)
                     <tr>
-                        <td>{{ $item->po_detail_id}}</td> 
+                        <td>{{ count($pobill) - $loop->index }}</td>
                         <td>{{ $item->po_id}}</td>
                         <td>{{ $item->store_name}}</td>
                         <td>{{ \Carbon\Carbon::parse($item->recvDate)->format('d/m/Y') }}</td> 
@@ -93,11 +93,13 @@
                         <td><a href="javascript:void(0);" 
                             onclick="openPopup(
                                 '{{ $item->po_detail_id }}',
+                                '{{ $item->po_id }}',
                                 '{{ $item->store_name}}',
                                 '{{ $item->store_address}}',
                                 '{{ \Carbon\Carbon::parse($item->recvDate)->format('d/m/Y') }}',
                                 '{{ $item->emp_name}}',
-                                '{{ $item->cartype}}'
+                                '{{ $item->cartype}}',
+                                '{{ $item->notes}}',
                             )">
                         เพิ่มเติม
                      </a></td>
@@ -145,12 +147,15 @@
                         <tbody id="popup-body">
                         </tbody>
                     </table>
+                     <br>
+                <textarea id="popup-body-3" readonly style="width: 960px; height: 70px;" readonly>
+                </textarea>
                 </div>
             </div>
         </div>
         
         <script>
-function openPopup(po_detail_id, store_name, store_address, recvDate, emp_name, cartype) {
+function openPopup(po_detail_id, po_id, store_name, store_address, recvDate, emp_name, cartype,notes) {
     document.getElementById("popup").style.display = "flex"; // แสดง Popup
 
     // แปลงค่า cartype
@@ -169,7 +174,7 @@ function openPopup(po_detail_id, store_name, store_address, recvDate, emp_name, 
     let popupBody = document.getElementById("popup-body-1");
     popupBody.innerHTML = `
         <tr>
-            <td>${po_detail_id}</td>
+            <td>${po_id}</td>
             <td>${store_name}</td>
             <td>${store_address}</td>
             <td>${recvDate}</td>
@@ -177,8 +182,7 @@ function openPopup(po_detail_id, store_name, store_address, recvDate, emp_name, 
             <td>${cartypeText}</td>
         </tr>
     `;
-
-
+    document.getElementById("popup-body-3").value = notes;
 
     let secondPopupBody = document.getElementById("popup-body");
     secondPopupBody.innerHTML = "<tr><td colspan='4'>Loading...</td></tr>";
@@ -236,7 +240,7 @@ window.onclick = function(event) {
                 for (let i = 0; i < rows.length; i++) {
                     let row = rows[i];
                     let cells = row.getElementsByTagName("td");
-                    let soDetailId = cells[0].textContent.toLowerCase(); 
+                    let soDetailId = cells[1].textContent.toLowerCase(); 
             
                     if (soDetailId.indexOf(searchInput) > -1) {
                         row.style.display = "";
