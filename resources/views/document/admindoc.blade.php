@@ -61,7 +61,7 @@
                 <td>{{ $item->contact_tel}}</td>
                 <td>{{ $item->doctype }}</td>
                 <td>{{ $item->emp_name }}</td>
-                <td>{{ \Carbon\Carbon::parse($item->time)->format('d/m/Y') }}</td>
+                <td>{{ \Carbon\Carbon::parse($item->datestamp)->format('d/m/Y') }}</td>
                 <td>
                 <a href="javascript:void(0);" onclick="openPopup('{{ $item->doc_id }}', '{{ $item->com_name }}', '{{ $item->com_address }}', '{{ $item->contact_name }}', '{{ $item->contact_tel }}', '{{ $item->amount }}', '{{ $item->notes }}')">
                     เพิ่มเติม

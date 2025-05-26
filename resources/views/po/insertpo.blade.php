@@ -6,7 +6,7 @@
     <meta name="csrf-token" content="{{ csrf_token() }}">
     <link rel="stylesheet" href="{{ asset('css/insertpo.blade.css') }}">
     <title>เปิดบิลPO</title>
-  
+
 </head>
 <body>
     <div class="container">
@@ -18,7 +18,7 @@
         <form id="poSearchForm">
             <div style="display: flex; justify-content: space-between;">
                 <input type="text" class="form-control" id="po_number" name="po_number" style="width: 83%;" required>
-                <button type="submit" class="btn-search" style="width: 14%; height: 45px;  background-color:rgb(30, 62, 122); color:#fff;">🔍 ค้นหา</button>
+                <button type="submit" class="btn-search" style="width: 14%; height: 30px;  background-color:rgb(30, 62, 122); color:#fff;">🔍 ค้นหา</button>
             </div>
         </form>
     </div>
@@ -41,6 +41,21 @@
 
             <label>ที่อยู่ :</label>
             <input type="text" id="store_address" name="store_address" readonly >
+             
+                <div class="form-row-inline">
+            <div class="form-group-inline">
+                <label for="recvDate">วันกำหนดรับ :</label>
+                <input type="text" id="recvDate" name="recvDate">
+            </div>
+            <div class="form-group-inline">
+                <label for="cartype">ประเภทรถ :</label>
+                <select id="cartype" name="cartype" required>
+                    <option value="0" disabled selected>-- เลือกประเภทรถ --</option>
+                    <option value="1">รถมอเตอร์ไซค์</option>
+                    <option value="2">รถใหญ่</option>
+                </select>
+            </div>
+        </div>
 
             <label >ละติจูด ลองจิจูด :</label>
             <div class="lat-long-container"style="display: flex; justify-content: space-between; width: 100%;">
@@ -48,6 +63,9 @@
                 <button type="button" class="btn-custom" onclick="openGoogleMaps()">Google Maps</button>
             </div>
         </div>
+
+         <label for="additional_notes">รายละเอียดเพิ่มเติม :</label>
+        <textarea id="notes" name="notes" rows="2" style="font-size: 14px; padding: 6px; height: 32px;"></textarea>
 
         <div class="mb-3">
             <label class="form-label">แผนที่ :</label>
@@ -64,8 +82,6 @@
             document.getElementById('store_la_long').addEventListener('input', updateMap);
             updateMap();
         </script>
-            <label>วันกำหนดรับ</label>
-            <input type="text" id="recvDate" name="recvDate" >
             
         
                         <table class="table table-bordered table-striped">
@@ -91,16 +107,8 @@
                         </tbody>
                         </table>
                         
-                        <label for="cartype" >ประเภทรถ</label>
-                        <select id="cartype" name="cartype" required>
-                            <option value="0" disabled selected>-- เลือกประเภทรถ --</option>
-                            <option value="1">รถมอเตอร์ไซค์</option>
-                            <option value="2">รถใหญ่</option>
-                        </select>
                         
-                        
-                        <label for="additional_notes">แจ้งเพิ่มเติม</label>
-                        <textarea id="notes" name="notes" rows="4"></textarea>
+
                     
              <div style="display: flex; justify-content: center; margin-top: 20px;">
             <button type="button" id="submitBillpo" class="btn btn-success" 

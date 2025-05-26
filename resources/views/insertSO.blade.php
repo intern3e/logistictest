@@ -1,11 +1,9 @@
-
-
 <html lang="en"><head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
 
     <!-- CSRF Token -->
-    <meta name="csrf-token" content="ex7i8gpx2CqIgN6D6MtCQoNU2qBJMv0amRWw6mOg">
+    <meta name="csrf-token" content="VeNkvJLsB8Xs6ezptOWJhpZh4gc7qhld1wqv0xJU">
 
     <title>ใบสั่งขาย - 3E</title>
 
@@ -85,56 +83,40 @@
             /* aligns top of sub menu with top of list item */
         }
     </style>
-        <style>
-        .labelText {
-            text-align: right;
-            color: blue;
-            border-width: 0px;
-            border-style: solid;
-            border-color: black;
-        }
+     <style>
+    
+.btn_button {
+    background-color: #d8ebf2;
+    border: none;
+    cursor: pointer;
+    transition: background-color 0.3s ease;
+}
 
-        .content_showso {
-            margin: 5px 5px;
-        }
+.btn_button:hover {
+    background-color: #7fd7f2;
+    border-radius: 5px;
+}
 
-        .content_tb_sreachso {
-            color: rgb(24, 24, 179);
-        }
+.btn_button1 {
+    background-color: #d5d5d5;
+    border: none;
+    cursor: pointer;
+    transition: background-color 0.3s ease;
+}
 
-        .btn_button {
-            background-color: rgb(216, 235, 242);
-            border: 0;
-        }
+.btn_button1:hover {
+    background-color: #a7a7a7;
+}
 
-        .btn_button:hover {
-            background-color: rgb(127, 215, 242);
-            border: 0;
-            border-radius: 5px;
-        }
+.table th,
+.table td {
+    padding: 5px !important;
+}
 
-        .btn_button1 {
-            background-color: rgb(213, 213, 213);
-            border: 0;
-        }
+.td_PO {
+    width: 90px !important;
+}
 
-        .btn_button1:hover {
-            background-color: rgb(167, 167, 167);
-            border: 0;
-        }
-
-        .size_card {
-            width: 200px;
-        }
-
-        .table th,
-        .table td {
-            padding: 5px !important;
-        }
-
-        .td_PO {
-            width: 90px !important;
-        }
     </style>
     <style>
         .tooltipDate {
@@ -198,26 +180,25 @@
             <div class="ml-auto p-2">
                 <div class="d-flex align-items-center">
                     <div class="col">
-                                                                                    <button style="margin:2px" disabled="" class="badge badge-success">complete</button>
-                                                                        </div>
+                                                                                                </div>
                     <div class="col">
                         <p>เครื่องปริ้น</p>
                     </div>
                     <div class="col"><select id="selectPrinterDevice" onchange="setPrinter(this)" name=""><option value="0"></option><option value="\\ว้าล\TSC TTP-247">ของนอก</option><option value="TSC TTP-247 internal">ภานใน</option><option value="TSC TTP-247 store">สโตว์</option></select></div>
-                    <div class="col"><button style="margin:2px" class="btn btn-info" onclick="printSO('68/004921')">print</button></div>
+                    <div class="col"><button style="margin:2px" class="btn btn-info" onclick="printSO('68/010675')">print</button></div>
                 </div>
             </div>
         </div>
         <form action="http://server_update:8000/completeSOPO" method="POST" id="completeSOPO">
-            <input type="hidden" name="_token" value="ex7i8gpx2CqIgN6D6MtCQoNU2qBJMv0amRWw6mOg">            <input id="SONum_Complete" name="SONum" type="hidden" value="68/004921">
+            <input type="hidden" name="_token" value="VeNkvJLsB8Xs6ezptOWJhpZh4gc7qhld1wqv0xJU">            <input id="SONum_Complete" name="SONum" type="hidden" value="68/010675">
         </form>
         <form action="http://server_update:8000/saveSOPO" method="POST" id="saveSOPO">
-            <input type="hidden" name="_token" value="ex7i8gpx2CqIgN6D6MtCQoNU2qBJMv0amRWw6mOg">            <input id="ResponseBy" name="ResponseBy" type="hidden" value="">
+            <input type="hidden" name="_token" value="VeNkvJLsB8Xs6ezptOWJhpZh4gc7qhld1wqv0xJU">            <input id="ResponseBy" name="ResponseBy" type="hidden" value="">
             <input id="SONum" name="SONum" type="hidden" value="">
             <input id="Remark" name="Remark" type="hidden" value="">
             <input id="deletePolist" name="deletePolist" type="hidden" value="">
             <input id="newPolist" name="newPolist" type="hidden" value="">
-            <input id="lastUpdate" name="lastUpdate" type="hidden" value="2025-03-10 15:18:38">
+            <input id="lastUpdate" name="lastUpdate" type="hidden" value="2025-05-26 13:37:53">
         </form>
         <!--------------------------------- กรอบค้นหา So ---------------------------------------->
         <div style="border: 2px solid rgb(150, 149, 149);padding: 10px; border-radius: 25px;">
@@ -233,19 +214,19 @@
                                         <div class="labelText">SO</div>
                                     </td>
                                     <td>
-                                        <input class="form-control" type="text" name="SOCode" id="SOCode" style="width: 100%;color:black;background-color:white;" value="68/004921" readonly="">
+                                        <input class="form-control" type="text" name="SOCode" id="SOCode" style="width: 100%;color:black;background-color:#FF99FF;" value="68/010675" readonly="">
                                     </td>
                                     <td>
                                         <div class="labelText">สถานะใบสั่งขาย</div>
                                     </td>
-                                    <td><input class="form-control" type="text" name="" id="" readonly="" style="width: 110px;" value="PARTIAL"></td>
+                                    <td><input class="form-control" type="text" name="" id="" readonly="" style="width: 110px;" value="FULL"></td>
                                     <td>
-                                        <div class="labelText">ผู้รับผิดชอบ : <b>sukanay charinram</b>
+                                        <div class="labelText">ผู้รับผิดชอบ : <b>test101</b>
                                         </div>
                                     </td>
                                     <td>
 
-                                        <select class="form-control" id="SOResponseBy" name="SOResponseBy"><option value="0"></option><option value="106">am3e</option><option value="33">Aor</option><option value="13">ARTEE3E</option><option value="35">Atitaya</option><option value="27">benjaporn poontawee</option><option value="34">Benz</option><option value="14">BOBOMAN</option><option value="121">bot_1</option><option value="122">bot_2</option><option value="37">chanuporn pawamateesakul</option><option value="98">Chirun</option><option value="117">Ckakkrawal  Kaewsuya</option><option value="90">Fanta</option><option value="30">FILM</option><option value="111">Hoshi 3E_battery</option><option value="42">Jiab</option><option value="95">Jittraporn(JU)</option><option value="113">JOYINDY</option><option value="68">kaew</option><option value="105">kanitin2</option><option value="53">kanyavee ผึ้ง</option><option value="31">kung</option><option value="76">maneerat(Innovation)</option><option value="47">MUK</option><option value="28">ning</option><option value="38">NOEY</option><option value="2">Nuttavat Boonrod</option><option value="115">PAILIN LANONGKAN</option><option value="89">Pamika (May EITA)</option><option value="10">Patipan</option><option value="102">Phakpapha</option><option value="12">Pirun Klangprapun</option><option value="101">prang</option><option value="75">pumpui</option><option value="43">rungpairin</option><option value="11">Sirinapa N.</option><option value="91">Sittasri(TENT EITA)</option><option value="16">sukanay charinram</option><option value="40">Suprinya Yothong</option><option value="8">sysadmin</option><option value="108">tae</option><option value="94">tanaporn</option><option value="97">tanaporn นาย</option><option value="119">tip3e</option><option value="46">toomtam-sale</option><option value="21">yam3E</option><option value="24">Ying_EEE</option><option value="56">Yok</option><option value="72">กชกรณ์ ใยรัก หมี</option><option value="114">กวาง</option><option value="62">กวาง &lt;กุลธวัช&gt;</option><option value="71">กิ๊บ</option><option value="93">กุลธวัช (บัญชี)</option><option value="3">ขม</option><option value="57">ขิม</option><option value="69">คณิติน</option><option value="51">คุณฉัตร</option><option value="104">จิธาณ์ฒฐ์ ธีรโซติวัฒรกุล(บอย)</option><option value="15">จุฑามาศ</option><option value="29">ชัญญานุช ศรีสำราญ (นุช)</option><option value="85">ญาณวรุตม์  รามพัด (นน)</option><option value="20">ณัฎฐ์ชญาภา ทวีพิศาลชัย</option><option value="50">ตวงรัตน์ อ่อนเบา</option><option value="67">ตาลนอก</option><option value="107">ทิพ</option><option value="41">น้อย บัญชี</option><option value="100">นัชชา บรรจงกะเสนา ณ อยุธยา</option><option value="87">นัท</option><option value="118">นันทกานต์ ภัทรเจริญพงษ์</option><option value="26">นิธิ ดาราฉาย</option><option value="61">นุ้ย &lt;เอก&gt;</option><option value="18">ปรรวี นาประจักษ์</option><option value="52">ปอ</option><option value="84">ปาลิตา อังศุภศิริกุล (ปุ๊ก)</option><option value="55">ผักบุ้ง</option><option value="92">ผึ้ง กุลธวัช</option><option value="66">ฝ้าย</option><option value="103">พลอย ปณิ</option><option value="39">มล</option><option value="9">มินตรา</option><option value="88">รัศมี สุปัญโญ</option><option value="74">ลูกกอล์ฟ</option><option value="44">ลูกน้ำ แก้วใส</option><option value="70">ลูกหมี</option><option value="58">ศศิธร  อ้นฟอง</option><option value="120">ศิริ</option><option value="32">สตางค์เอตะ(เฮียท๊อป)</option><option value="79">สุธนัย</option><option value="19">สุภาภรณ์ อินทร์แก้ว</option><option value="17">สุวิจักขณ์</option><option value="48">หทัยชนก สันธนาคร</option><option value="73">หทัยทิพย์</option><option value="65">หมิง</option><option value="64">หมู</option><option value="86">หมูหวาน</option><option value="59">อ้อม</option><option value="25">อัช</option><option value="83">เจนจิรา (เอย)</option><option value="109">เชร์</option><option value="110">เตย (Eita)</option><option value="116">เบล</option><option value="36">เมย์ (กุลธวัช)</option><option value="77">เหมยเคนดี้</option><option value="54">เอ๊กซ์(กุลธวัช)</option><option value="22">เอกลักษณ์ นิยมจันทร์</option><option value="49">แตงโม</option><option value="1">แอม</option></select>
+                                        <select class="form-control" id="SOResponseBy" name="SOResponseBy"><option value="0"></option><option value="106">am3e</option><option value="13">ARTEE3E</option><option value="27">benjaporn poontawee</option><option value="34">Benz</option><option value="14">BOBOMAN</option><option value="121">bot_1</option><option value="122">bot_2</option><option value="37">chanuporn pawamateesakul</option><option value="98">Chirun</option><option value="117">Ckakkrawal  Kaewsuya</option><option value="90">Fanta</option><option value="30">FILM</option><option value="42">Jiab</option><option value="95">Jittraporn(JU)</option><option value="113">JOYINDY</option><option value="68">kaew</option><option value="105">kanitin2</option><option value="53">kanyavee ผึ้ง</option><option value="31">kung</option><option value="76">maneerat(Innovation)</option><option value="47">MUK</option><option value="38">NOEY</option><option value="2">Nuttavat Boonrod</option><option value="115">PAILIN LANONGKAN</option><option value="89">Pamika (May EITA)</option><option value="10">Patipan</option><option value="12">Pirun Klangprapun</option><option value="101">prang</option><option value="75">pumpui</option><option value="11">Sirinapa N.</option><option value="91">Sittasri(TENT EITA)</option><option value="16">sukanay charinram</option><option value="40">Suprinya Yothong</option><option value="8">sysadmin</option><option value="94">tanaporn</option><option value="123">test101</option><option value="21">yam3E</option><option value="24">Ying_EEE</option><option value="56">Yok</option><option value="114">กวาง</option><option value="62">กวาง &lt;กุลธวัช&gt;</option><option value="124">กัญธ์วริน แก้วใส (ปีใหม่)</option><option value="71">กิ๊บ</option><option value="93">กุลธวัช (บัญชี)</option><option value="127">กุลสตรี มาย</option><option value="3">ขม</option><option value="57">ขิม</option><option value="69">คณิติน</option><option value="51">คุณฉัตร</option><option value="104">จิธาณ์ฒฐ์ ธีรโซติวัฒรกุล(บอย)</option><option value="15">จุฑามาศ</option><option value="29">ชัญญานุช ศรีสำราญ (นุช)</option><option value="50">ตวงรัตน์ อ่อนเบา</option><option value="67">ตาลนอก</option><option value="41">น้อย บัญชี</option><option value="100">นัชชา บรรจงกะเสนา ณ อยุธยา</option><option value="118">นันทกานต์ ภัทรเจริญพงษ์</option><option value="61">นุ้ย &lt;เอก&gt;</option><option value="18">ปรรวี นาประจักษ์</option><option value="52">ปอ</option><option value="84">ปาลิตา อังศุภศิริกุล (ปุ๊ก)</option><option value="55">ผักบุ้ง</option><option value="92">ผึ้ง กุลธวัช</option><option value="66">ฝ้าย</option><option value="39">มล</option><option value="125">มัลลิกา (ทิพ)</option><option value="9">มินตรา</option><option value="126">รัตนา ขำกล่ำ</option><option value="88">รัศมี สุปัญโญ</option><option value="79">สุธนัย</option><option value="19">สุภาภรณ์ อินทร์แก้ว</option><option value="65">หมิง</option><option value="64">หมู</option><option value="86">หมูหวาน</option><option value="59">อ้อม</option><option value="83">เจนจิรา (เอย)</option><option value="109">เชร์</option><option value="110">เตย (Eita)</option><option value="116">เบล</option><option value="36">เมย์ (กุลธวัช)</option><option value="77">เหมยเคนดี้</option><option value="54">เอ๊กซ์(กุลธวัช)</option><option value="22">เอกลักษณ์ นิยมจันทร์</option></select>
 
                                     </td>
                                 </tr>
@@ -254,7 +235,7 @@
                                         <div class="labelText">PO อ้างอิง</div>
                                     </td>
                                     <td>
-                                        <input class="form-control" style="" type="text" name="" id="" readonly="" value="PO-25001441">
+                                        <input class="form-control" style="" type="text" name="" id="" readonly="" value="123456789">
                                     </td>
                                     <td colspan="4">
                                         <table>
@@ -263,10 +244,10 @@
                                                     <div class="labelText">รหัสลูกค้า</div>
                                                 </td>
                                                 <td>
-                                                    <input class="form-control" type="text" name="" id="" readonly="" value="CUS-06226" style="width: 100px;margin-right: 2px;">
+                                                    <input class="form-control" type="text" name="" id="" readonly="" value="CUS-16224" style="width: 100px;margin-right: 2px;">
                                                 </td>
                                                 <td>
-                                                    <input class="form-control" type="text" name="" id="" disabled="" style="width: 280px" value="อีสเทิร์น  โพลีแพค  จำกัด">
+                                                    <input class="form-control" type="text" name="" id="" disabled="" style="width: 280px" value="คณิติน เทพปิยะวงศ์">
                                                 </td>
                                             </tr>
                                         </tbody></table>
@@ -276,14 +257,14 @@
                                     <td>
                                         <div class="labelText">วันส่งของ </div>
                                     </td>
-                                    <td><input class="form-control" type="text" value="2025-03-12" style="width: 120px;margin-top: 2px;" readonly=""></td>
+                                    <td><input class="form-control" type="text" value="2025-05-27" style="width: 120px;margin-top: 2px;" readonly=""></td>
                                     <td>
                                         <div class="labelText">วิธีการส่ง</div>
                                     </td>
                                     <td>
                                         <input class="form-control" type="text" value="" style="width: 110px;" readonly="">
                                     </td>
-                                    <td class="labelText">Sale:sukanay charinram</td>
+                                    <td class="labelText">Sale:test101</td>
                                 </tr>
                                 <tr>
                                     <td>
@@ -293,11 +274,6 @@
                                         <textarea class="form-control" id="SORemark" style="margin-top: 3px; text-align:left" rows="3"></textarea>
                                     </td>
                                     <td><button onclick="saveRemarkOnly()" class="btn btn-info">บันทึก(หมายเหตุ)</button>
-                                    </td>
-                                    <td>
-                                        <a href="insertdata?so_num=68/004921">
-                                            <button class="btn btn-info">เปิดบิล</button>
-                                        </a>
                                     </td>
                                 </tr>
                             </tbody></table>
@@ -312,9 +288,84 @@
         <br>
         <div style="border: 5px solid rgb(150, 149, 149);padding: 10px;">
             <div class="row" style="padding: 0px 10px;">
+                                                        <div class="card size_card">
+                        <div class="card-body" style="padding: 5px !important">
+                            <table>
+                                <tbody><tr>
+                                    <td>
+
+                                        <input style="" class="form-control" type="text" name="deliveryCode" id="deliveryCode" readonly="" value="46805-02637">
+                                    </td>
+                                    <td>
+                                        <button type="button" class="btn_button1" onclick="window.open('http://server_update:8000/popupWindows/SODetailMyAccount?BillNo=46805-02637','welcome','width=1000,height=500,menubar=no,status=no,location=no,toolbar=no,scrollbars=yes')">Details</button>
+                                    </td>
+                                    
+                                    <td>
+                                        <button class="btn btn-info openBillBtn">เปิดบิล</button>
+                                    </td>
+                                </tr>
+                            </tbody></table>
+                        </div>
+                    </div>
+                                                        <div class="card size_card">
+                        <div class="card-body" style="padding: 5px !important">
+                            <table>
+                                <tbody><tr>
+                                    <td>
+
+                                        <input style="" class="form-control" type="text" name="deliveryCode" id="deliveryCode" readonly="" value="46805-02638">
+                                    </td>
+                                    <td>
+                                        <button type="button" class="btn_button1" onclick="window.open('http://server_update:8000/popupWindows/SODetailMyAccount?BillNo=46805-02638','welcome','width=1000,height=500,menubar=no,status=no,location=no,toolbar=no,scrollbars=yes')">Details</button>
+                                    </td>
+                                    <td>
+                                        <button class="btn btn-info openBillBtn">เปิดบิล</button>
+                                    </td>
+                                </tr>
+                            </tbody></table>
+                        </div>
+                    </div>
+                                                        <div class="card size_card">
+                        <div class="card-body" style="padding: 5px !important">
+                            <table>
+                                <tbody><tr>
+                                    <td>
+
+                                        <input style="" class="form-control" type="text" name="deliveryCode" id="deliveryCode" readonly="" value="46805-02639">
+                                    </td>
+                                    <td>
+                                        <button type="button" class="btn_button1" onclick="window.open('http://server_update:8000/popupWindows/SODetailMyAccount?BillNo=46805-02639','welcome','width=1000,height=500,menubar=no,status=no,location=no,toolbar=no,scrollbars=yes')">Details</button>
+                                    </td>
+                                     <td>
+                                        <button class="btn btn-info openBillBtn">เปิดบิล</button>
+                                    </td>
+                                </tr>
+                            </tbody></table>
+                        </div>
+                    </div>
                             </div>
         </div>
         <br>
+<script>
+window.addEventListener('DOMContentLoaded', function () {
+    const soCode = document.getElementById('SOCode')?.value || '';
+
+    document.querySelectorAll('.openBillBtn').forEach(button => {
+        button.addEventListener('click', function () {
+            // หาค่า deliveryCode ในแถวเดียวกับปุ่ม
+            const deliveryCode = this.closest('tr').querySelector('input[name="deliveryCode"]').value;
+
+            // สร้าง URL สำหรับไปหน้า insertdata พร้อม query string
+            const url = `/insertdata?so_num=${encodeURIComponent(soCode)}&billid=${encodeURIComponent(deliveryCode)}`;
+
+            // ไปยัง URL นั้น
+            window.location.href = url;
+        });
+    });
+});
+
+</script>
+
         <!-------------------------- ตาราง ข้อมูล po ----------------------------->
         <div class="row">
             <div class="col">
@@ -327,25 +378,13 @@
                             <th style="width:120px;text-align:center">วันส่งของ</th>
                             <th style="width:120px;text-align:center">วิธีรับของ</th>
                             <th style="text-align:center">Detail</th>
-                                                        <th style="width:100px;text-align:center">ราคา</th>
+                                                                                                                    <th style="width:100px;text-align:center">ราคา</th>
                         </tr></thead>
                         <tbody>
-                                                                                            <tr>
-                                    <td style="background-color:inherit;width: 90px;"><a href="javascript:window.open('http://server-3e/3e/polist.php?method=search&amp;rowPerPage=5&amp;currentPage=0&amp;PONum=6803-01107','PO','width=1300,height=600')">6803-01107</a>
-                                    </td>
-                                    <td style="">VEN-00023.1</td>
-                                    <td>ธีรชัยไพศาล คอร์ปอเรชั่น จำกัด</td>
-                                    <td>2025-03-14</td>
-                                    <td>ร้านค้าจัดส่งให้</td>
-                                    <td><button type="button" class="btn_button1" onclick="window.open('http://server_update:8000/popupWindows/PODetailMyAccount?PONum=6803-01107','welcome','width=1000,height=500,menubar=no,status=no,location=no,toolbar=no,scrollbars=yes')">Details</button>
-                                    </td>
-
-                                                                        <td id="tdPO6803-01107"><div style="text-align:center">436.93</div></td>
-                                </tr>
-                                
-                                                        <script>getPONetAmnt('PO6803-01107')</script>
+                                                        <script>getPONetAmnt('')</script>
                         </tbody>
                     </table>
+                                            <button type="button" class="btn_button1" name="addPO" id="addPO" value="เพิ่ม PO" onclick="addPO('POList');">เพิ่ม PO</button>
                                     </div>
             </div>
         </div>
@@ -381,7 +420,7 @@
     <script>
         async function saveRemarkOnly() {
             let Remark = document.getElementById('SORemark').value
-            let SONum = "68/004921"
+            let SONum = "68/010675"
             let token = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
             let response = await fetch("http://server_update:8000/api/saveRemarkSOPO", {
                 headers: {
@@ -418,7 +457,7 @@
                 },
                 method: 'POST',
                 body: JSON.stringify({
-                    "SONum": "68/004921",
+                    "SONum": "68/010675",
                     "PrinterName": PrinterName
                 })
             })
@@ -450,17 +489,5 @@
         }
             </script>
 
- <script>
-            // ดึงค่า so_num จาก URL
-            const urlParams = new URLSearchParams(window.location.search);
-            const soNum = urlParams.get('so_num');
 
-            // ถ้ามีค่า so_num ใน URL ให้กำหนดค่าให้กับ input
-            if (soNum) {
-                document.getElementById('so_number').value = soNum;
-            }
-        </script>
-
-
-</body>
-</html>
+</body></html>

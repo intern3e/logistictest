@@ -23,7 +23,7 @@
     <!-- Filter & Search Section -->
     <div class="filter-container">
         <form method="GET" action="{{ route('document.dashboarddoc') }}" class="filter-form" id="autoSearchForm">
-            <label for="date">📅 วันที่:</label>
+            <label for="date">📅 วันที่: เดือน / วัน / ปี</label>
             <input type="date" id="date" name="date" value="{{ request('date', \Carbon\Carbon::today()->format('Y-m-d')) }}">
             <button type="submit" style="display: none;">ค้นหา</button>
         </form>

@@ -376,7 +376,7 @@ th {
 
     <div class="top-section">
         <form method="GET" action="{{ route('admin.history') }}" class="filter-form" id="autoSearchForm">
-            <label for="date">📅 วันที่:</label>
+            <label for="date">📅 วันที่: เดือน / วัน / ปี</label>
             <input type="date" id="date" name="date" value="{{ request('date', \Carbon\Carbon::today()->format('Y-m-d')) }}">
             <button type="submit" style="display: none;">ค้นหา</button>
             
@@ -423,7 +423,7 @@ th {
             </label>
                     <tr>
                         <th>ปริ้นเอกสาร</th>
-                        <th>เลขที่บิล</th>
+                        <th>REF</th>
                         <th>อ้างอิงใบสั่งขาย</th>
                         <th>อ้างอิงใบสั่งซื้อ</th>
                         <th>ชื่อลูกค้า</th>
@@ -607,7 +607,7 @@ th {
             <table>
                 <thead>
                     <tr>
-                        <th>เลขที่บิล</th>
+                        <th>REF</th>
                         <th>ชื่อลูกค้า</th>
                         <th>เบอร์โทร</th>
                         <th>ที่อยู่จัดส่ง</th>
@@ -782,7 +782,7 @@ function searchTable() {
         let cells = row.getElementsByTagName("td");
 
         // Get the content of the second column (บิลลำดับ)
-        let soDetailId = cells[1] ? cells[1].textContent.toLowerCase() : '';
+        let soDetailId = cells[2] ? cells[1].textContent.toLowerCase() : '';
 
         // Search for the text inside the selected column (บิลลำดับ)
         if (soDetailId.indexOf(searchInput) > -1) {

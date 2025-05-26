@@ -453,7 +453,7 @@ th {
             </label>
                     <tr>
                         <th>ลบ</th>
-                        <th>เลขที่บิล</th>
+                        <th>REF</th>
                         <th>อ้างอิงใบสั่งขาย</th>
                         <th>อ้างอิงใบสั่งซื้อ</th>
                         <th>อ้างอิงใบส่งของ</th>
@@ -493,7 +493,8 @@ th {
                                     '{{ $item->customer_tel }}',
                                     '{{ $item->customer_address }}',
                                     '{{ $item->date_of_dali }}',
-                                    '{{ $item->sale_name }}'
+                                    '{{ $item->sale_name }}',
+                                    '{{ $item->notes }}'
                                 )">
                                 เพิ่มเติม
                              </a></td>
@@ -516,7 +517,7 @@ th {
             <table>
                 <thead>
                     <tr>
-                        <th>เลขที่บิล</th>
+                        <th>REF</th>
                         <th>อ้างอิงใบสั่งขาย</th>
                         <th>อ้างอิงใบสั่งซื้อ</th>
                         <th>ชื่อลูกค้า</th>
@@ -542,12 +543,15 @@ th {
                 <tbody id="popup-body">
                 </tbody>
             </table>
+            <br>
+                <textarea id="popup-body-3" readonly style="width: 960px; height: 70px;" readonly>
+                </textarea>
         </div>
     </div>
 </div>
 
 <script>
-    function openPopup(soDetailId,so_id,ponum,customer_name,customer_tel,customer_address,date_of_dali,sale_name) {
+    function openPopup(soDetailId,so_id,ponum,customer_name,customer_tel,customer_address,date_of_dali,sale_name,notes) {
     document.getElementById("popup").style.display = "flex"; // แสดง Popup
 
     let popupBody = document.getElementById("popup-body-1");
@@ -563,7 +567,7 @@ th {
             <td>${sale_name}</td>
         </tr>
     `;
-
+    document.getElementById("popup-body-3").value = notes;
     let secondPopupBody = document.getElementById("popup-body");
     secondPopupBody.innerHTML = "<tr><td colspan='4'>Loading...</td></tr>";
 

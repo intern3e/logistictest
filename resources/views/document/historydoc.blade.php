@@ -19,8 +19,8 @@
 
     <div class="container">
         <div class="top-section">
-    <form method="GET" action="{{ route('document.admindoc') }}" class="filter-form" id="autoSearchForm">
-        <label for="date">📅 วันที่:</label>
+    <form method="GET" action="{{ route('document.historydoc') }}" class="filter-form" id="autoSearchForm">
+        <label for="date">📅 วันที่: เดือน / วัน / ปี</label>
         <input type="date" id="date" name="date" value="{{ request('date', \Carbon\Carbon::today()->format('Y-m-d')) }}">
         <button type="submit" style="display: none;">ค้นหา</button>
     </form>

@@ -6,7 +6,260 @@
     <meta name="csrf-token" content="{{ csrf_token() }}">
     <link rel="stylesheet" href="{{ asset('css/insertdoc.blade.css') }}">
     <title>เปิดบิลสินค้า</title>
-  
+      <style>
+        
+body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    margin: 0;
+    padding: 5px;
+    background-color: rgb(233, 233, 233);
+}
+
+.container {
+    background: #ffffff;
+    border-radius: 8px;
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.1);
+    padding: 10px;
+    max-width: 1000px;
+    margin: auto;
+}
+
+.header {
+    margin-bottom: 10px;
+}
+
+h2.text-dark {
+    color: #333333;
+    border-bottom: 1px solid #333333;
+    padding-bottom: 4px;
+    margin-bottom: 10px;
+    font-size: 28px;
+}
+
+.form-label, label {
+    font-weight: bold;
+    margin-top: 4px;
+    margin-bottom: 2px;
+    display: block;
+    color: #333;
+    font-size: 14px;
+    line-height: 1.2;
+}
+
+input[type="text"],
+input[type="number"],
+input[type="file"],
+select,
+textarea {
+    width: 100%;
+    padding: 5px 6px;
+    margin-top: 2px;
+    margin-bottom: 6px;
+    border: 1px solid #ccc;
+    border-radius: 5px;
+    box-sizing: border-box;
+    font-size: 14px;
+    line-height: 1.2;
+}
+
+input[readonly] {
+    background-color: #f1f1f1;
+}
+
+.input-container,
+.input-container1 {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+}
+
+.checkbox-container {
+    margin-top: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.btn,
+.btn-success,
+.btn-danger {
+    padding: 5px 10px;
+    border-radius: 4px;
+    border: none;
+    cursor: pointer;
+    font-weight: bold;
+    font-size: 14px;
+    margin-top: 4px;
+}
+
+.btn-success {
+    background-color: #28a745;
+    color: white;
+}
+
+.btn-danger {
+    background-color: #dc3545;
+    color: white;
+}
+
+.btn-custom {
+    background-color: #007bff;
+    color: white;
+    border: none;
+    padding: 4px 8px;
+    border-radius: 4px;
+    cursor: pointer;
+    margin-left: 4px;
+    font-size: 14px;
+}
+
+.btn-custom:hover {
+    background-color: #0056b3;
+}
+
+table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 8px;
+    background-color: #fff;
+    font-size: 14px;
+}
+
+table th,
+table td {
+    border: 1px solid #dee2e6;
+    padding: 4px 6px;
+    text-align: center;
+}
+
+table thead {
+    background-color:#333333;
+    color: #fff;
+}
+
+textarea {
+    resize: vertical;
+}
+
+textarea#notes,
+textarea#customer_address {
+    padding: 5px;
+    font-size: 13px;
+    border-radius: 5px;
+    height: 50px;
+    line-height: 1.2;
+    margin-bottom: 6px;
+}
+
+iframe {
+    border-radius: 4px;
+    margin-top: 8px;
+}
+
+@media (max-width: 768px) {
+    .input-container,
+    .input-container1 {
+        grid-template-columns: 1fr;
+    }
+
+    .btn-custom {
+        margin-top: 6px;
+    }
+}
+
+.form-section {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin-bottom: 10px;
+}
+
+.form-group {
+    flex: 1;
+    min-width: 200px;
+    display: flex;
+    flex-direction: column;
+    line-height: 1.2;
+    margin-bottom: 8px;
+}
+
+.form-group label {
+    margin-bottom: 2px;
+    font-weight: bold;
+    font-size: 14px;
+}
+
+.form-group input,
+.form-group select {
+    padding: 5px;
+    font-size: 14px;
+    border: 1px solid #ccc;
+    border-radius: 6px;
+}
+
+select#cartype {
+    padding: 5px;
+    font-size: 14px;
+    border: 1px solid #ccc;
+    border-radius: 5px;
+    background-color: #fff;
+    color: #333;
+    width: 100%;
+    max-width: 300px;
+    box-sizing: border-box;
+    transition: border-color 0.3s ease;
+    margin-bottom: 6px;
+}
+
+select#cartype:focus {
+    border-color: #333;
+    outline: none;
+}
+
+select#cartype option:disabled {
+    color: #ccc;
+}
+
+select#cartype option:checked {
+    background-color: #f39c12;
+    color: #fff;
+}
+.form-row-inline {
+    display: flex;
+    gap: 15px; /* ระยะห่างระหว่างกล่อง */
+    flex-wrap: wrap; /* เวลาหน้าจอเล็กจะเลื่อนลงบรรทัดใหม่ */
+}
+
+.form-group-inline {
+    flex: 1; /* ให้แต่ละกล่องกินพื้นที่เท่ากัน */
+    display: flex;
+    flex-direction: column;
+}
+
+.form-group-inline label {
+    font-weight: bold;
+    margin-bottom: 4px;
+    font-size: 14px;
+    color: #333;
+}
+
+.form-group-inline input,
+.form-group-inline select {
+    width: 100%;
+    padding: 6px 8px;
+    font-size: 14px;
+    border: 1px solid #ccc;
+    border-radius: 6px;
+    box-sizing: border-box;
+}
+
+@media (max-width: 600px) {
+    .form-row-inline {
+        flex-direction: column;
+    }
+}
+ </style>
+
 </head>
 <body>
     <div class="container">
@@ -21,7 +274,7 @@
         </div>
 
         <div class="form-group">
-            <label for="datestamp">วันที่</label>
+            <label for="datestamp">วันที่ :</label>
             <input type="date" id="datestamp" name="datestamp">
         </div>
         
@@ -37,13 +290,13 @@
 
     
         <div class="form-group">
-            <label for="doctype">ประเภทบิล</label>
+            <label for="doctype">ประเภทบิล :</label>
             <select id="doctype" name="doctype" required onchange="toggleOtherInput()">
                 <option value="" disabled selected>-- กรุณาเลือกประเภทบิล --</option>
                 <option value="รับของ">รับของ</option>
                 <option value="ส่งของ">ส่งของ</option>
-                <option value="รับของ+ส่งของ">รับของ+ส่งของ</option>
-                <option value="อื่นๆ" id="other_option">อื่นๆ</option>
+                <option value="รับของ+ส่งของ">รับและส่งของ</option>
+                <option value="อื่นๆ" id="other_option">อื่น ๆ</option>
             </select>
         
             <input type="text" id="other_input" name="other_input" style="display:none;" placeholder="กรุณากรอกข้อมูล" oninput="updateOtherOption()">
@@ -75,101 +328,112 @@
 
 
         
-<div style="position: relative; margin-bottom: 20px;">
-    <label for="com_name">บริษัท:</label>
-    <input type="text" id="com_name" name="com_name" style="width: 100%; padding: 10px; font-size: 16px;" autocomplete="off">
+<div style="position: relative;">
+    <label for="com_name">บริษัท :</label>
+    <input type="text" id="com_name" name="com_name"
+        style="width: 100%; height: 30px; padding: 4px 10px; font-size: 14px;" autocomplete="off">
     <ul id="autocomplete_list" class="autocomplete-list" style="display: none;"></ul>
-    <button type="button" id="search" style="position: absolute; right: 10px; top: 10px; display: none;">🔍 ค้นหา</button>
+    <div id="no_data_message" style="color: red; font-size: 12px; display: none;">ไม่มีข้อมูล</div>
+    <button type="button" id="search"
+        style="position: absolute; right: 10px; top: 4px; height: 24px; font-size: 12px; display: none;">🔍 ค้นหา</button>
 </div>
 
 <script>
-    document.getElementById('com_name').addEventListener('input', function() {
+    let allCompanies = [];
+
+    document.getElementById('com_name').addEventListener('input', function () {
         const inputText = document.getElementById('com_name').value;
         const noDataMessage = document.getElementById('no_data_message');
-        if (inputText.length >= 3) { // ตรวจสอบว่ามีอักษรครบ 3 ตัว
-            document.getElementById('search').click(); // สั่งกดปุ่ม search
-            // สมมติว่าได้ข้อมูลจาก API หรือระบบค้นหา
-            const searchResults = []; // ตัวอย่างข้อมูลที่ค้นเจอ
-            if (searchResults.length === 0) {
-                noDataMessage.style.display = 'block'; // แสดงข้อความ "ไม่มีข้อมูล"
-            } else {
-                noDataMessage.style.display = 'none'; // ซ่อนข้อความ "ไม่มีข้อมูล" เมื่อเจอข้อมูล
-                // แสดงผลข้อมูลใน autocomplete list (สามารถทำได้ตามต้องการ)
-            }
+
+        if (inputText.length >= 3) {
+            document.getElementById('search').click();
         } else {
-            noDataMessage.style.display = 'none'; // ซ่อนข้อความ "ไม่มีข้อมูล" ถ้าไม่มีคำค้นหาครบ 3 ตัว
+            noDataMessage.style.display = 'none'; // ซ่อนข้อความ "ไม่มีข้อมูล" ถ้าพิมพ์ไม่ถึง 3 ตัว
+            document.getElementById("autocomplete_list").style.display = "none";
         }
     });
 
-    document.getElementById('com_name').addEventListener('keydown', function(event) {
+    document.getElementById('com_name').addEventListener('keydown', function (event) {
         if (event.key === 'Enter') {
-            event.preventDefault(); // ป้องกันการ submit form ถ้ามี
-            document.getElementById('search').click(); // สั่งกดปุ่ม search
+            event.preventDefault();
+            document.getElementById('search').click();
         }
     });
-</script>
-<script>
-    let allCompanies = [];
-    
+
     document.getElementById("search").addEventListener("click", async () => {
-        let keyword = document.getElementById("com_name").value.trim();
-    
+        const keyword = document.getElementById("com_name").value.trim();
+        const noDataMessage = document.getElementById("no_data_message");
+
         if (!keyword) {
             alert("กรุณากรอกชื่อบริษัท");
             return;
         }
-    
+
         try {
             const response = await fetch(`http://server_update:8000/api/getCustAndVendor?keySearch=${encodeURIComponent(keyword)}`);
             if (!response.ok) throw new Error("เกิดข้อผิดพลาดในการโหลดข้อมูล");
-    
+
             const data = await response.json();
             allCompanies = [...(data.Customer || []), ...(data.Supplier || [])];
-    
-            showAutocompleteResults(allCompanies);
-    
+
+            if (allCompanies.length === 0) {
+                noDataMessage.style.display = "block";
+                document.getElementById("autocomplete_list").style.display = "none";
+            } else {
+                noDataMessage.style.display = "none";
+                showAutocompleteResults(allCompanies);
+            }
+
         } catch (err) {
             console.error(err);
             alert("เกิดข้อผิดพลาดในการดึงข้อมูล");
         }
     });
-    
+
     function showAutocompleteResults(companies) {
         const listEl = document.getElementById("autocomplete_list");
         listEl.innerHTML = "";
         listEl.style.display = "block";
-    
+
         companies.forEach(company => {
-            const idcust = (company.CustCode || company.VendorCode || company.SupCode || "").trim();
-            const name = (company.CustName || company.VendorName || company.SupName || "").trim();
-            const addr = (company.ContAddr1 || "").trim();
+            const idcust = (company.CustCode || company.VendorCode || "").trim();
+            const name = (company.CustName || company.VendorName ||  "").trim();
+            const addr = [
+            company.ContAddr1,
+            company.ContAddr2,
+            company.ContDistrict,
+            company.ContAmphur,
+            company.ContProvince,
+            company.ContPostCode
+            ]
+            .filter(part => part && part.trim() !== "")  
+            .join(" ")  
+            .trim();
             const item = document.createElement("li");
             item.textContent = `${name} [${addr}]`;
             item.addEventListener("click", () => {
                 document.getElementById("id_com").value = idcust;
                 document.getElementById("com_name").value = name;
                 document.getElementById("com_address").value = addr;
-                fetchFormType()
                 listEl.style.display = "none";
             });
             listEl.appendChild(item);
         });
     }
-    
+
     // ปิด dropdown ถ้าคลิกนอก
-    document.addEventListener("click", function(e) {
+    document.addEventListener("click", function (e) {
         const list = document.getElementById("autocomplete_list");
         if (!document.getElementById("com_name").contains(e.target) && !list.contains(e.target)) {
             list.style.display = "none";
         }
     });
-    </script>
-    
+</script>
 
 
     
         <div>
-            <label>ชื่อผู้ติดต่อ:</label>
+            <label>ชื่อผู้ติดต่อ :</label>
             <input type="text" id="contact_name" name="contact_name" >
         </div>
 
@@ -180,13 +444,20 @@
     
     </div>
 
-    <div class="form-label">
-    <div style="margin-bottom: 20px;">
-    <label for="com_address">ที่อยู่จัดส่ง :</label>
-    <textarea id="com_address" name="com_address" rows="4" style="width: 100%; padding: 10px; font-size: 16px; border-radius: 10px; border: 1px solid #ccc;"></textarea>
+     <label for="additional_notes">รายละเอียดเพิ่มเติม :</label>
+    <textarea id="notes" name="notes" rows="2" style="font-size: 14px; padding: 6px; height: 32px;"></textarea>
+
+      <div class="form-label">
+    <div style="margin-bottom: 10px;">
+        <label for="com_address">ที่อยู่จัดส่ง :</label>
+        <textarea
+            id="com_address"
+            name="com_address"
+            rows="2"
+            style="width: 100%; padding: 6px; font-size: 14px; border-radius: 8px; border: 1px solid #ccc; height: 32px; resize: vertical;"></textarea>
     </div>
 
-        
+
         <label>ละติจูด ลองจิจูด :</label>
         <div style="display: flex; justify-content: space-between; width: 100%;" >
             <input type="text" id="com_la_long" name="com_la_long">
@@ -232,9 +503,6 @@
             </label>
             <button type="button" class="btn btn-success insert-btn">เพิ่มสินค้า</button> 
         </div>
-        
-        <label for="notes">แจ้งเพิ่มเติม</label>
-        <textarea id="notes" name="notes" rows="4"></textarea>
 
         <div style="display: flex; justify-content: center; margin-top: 20px;">
             <button type="button" id="submitBill" class="btn btn-success" 

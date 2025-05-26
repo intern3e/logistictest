@@ -66,7 +66,7 @@
     <!-- Filter & Search Section -->
     <div class="filter-container">
         <form method="GET" action="{{ route('sale.dashboard') }}" class="filter-form" id="autoSearchForm">
-            <label for="date">📅 วันที่:</label>
+            <label for="date">📅 วันที่: เดือน / วัน / ปี</label>
             <input type="date" id="date" name="date" value="{{ request('date', \Carbon\Carbon::today()->format('Y-m-d')) }}">
             <button type="submit" style="display: none;">ค้นหา</button>
         </form>
@@ -264,7 +264,7 @@ window.onclick = function(event) {
         for (let i = 0; i < rows.length; i++) {
             let row = rows[i];
             let cells = row.getElementsByTagName("td");
-            let soDetailId = cells[0].textContent.toLowerCase(); 
+            let soDetailId = cells[1].textContent.toLowerCase(); 
     
             if (soDetailId.indexOf(searchInput) > -1) {
                 row.style.display = "";
