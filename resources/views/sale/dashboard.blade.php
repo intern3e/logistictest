@@ -3,14 +3,14 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>📑 ระบบเปิดบิล</title>
+    <title>ข้อมูลจัดส่ง</title>
     <link rel="stylesheet" href="{{ asset('css/dashboard.blade.css') }}">
 
 </head>
 <body>
 
     <div class="header">
-        <h2>📑 ระบบเปิดบิล</h2>
+        <h2>ข้อมูลจัดส่ง</h2>
         <div class="buttons">
             <span>👤 ผู้ใช้: {{ session('emp_name', 'Guest') }}</span>
             @csrf

@@ -111,9 +111,6 @@ billidInput.addEventListener('input', () => {
     </div>
 </div>
 
-        <label for="additional_notes">รายละเอียดเพิ่มเติม :</label>
-        <textarea id="notes" name="notes" rows="2" style="font-size: 14px; padding: 6px; height: 30px;"></textarea>
-
        <div class="mb-3" style="display: flex; gap: 20px; align-items: center;">
     <!-- ฝั่งอัปโหลดเอกสาร -->
     <div style="flex: 1;">
@@ -237,11 +234,13 @@ billidInput.addEventListener('input', () => {
             <tbody id="detail"></tbody>
         </table>
         </div>
+          <label for="additional_notes">รายละเอียดเพิ่มเติม :</label>
+        <textarea id="notes" name="notes" rows="2" style="font-size: 14px; padding: 6px; height: 60px;"></textarea>
         
         <div style="display: flex; justify-content: center; margin-top: 20px;">
             <button type="button" id="submitBill" class="btn btn-success" 
             style="font-size: 18px; padding: 15px 30px; width: 200px; height: 50px;">
-                เปิดบิล
+                บันทึก
             </button>
         </div>
     </form>
@@ -317,7 +316,7 @@ function openGoogleMaps() {
 </script>
 
 
-<input type="text" id="billid" name="billid" style="width: 100%;" required>
+
 
 <script>
     // ดึงค่า so_num จาก URL

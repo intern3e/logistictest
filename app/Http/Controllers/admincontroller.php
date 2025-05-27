@@ -312,4 +312,28 @@ public function updateDeliveryDate(Request $request)
         ], 500);
     }
 }
+public function upload(Request $request)
+{
+    $request->validate([
+        'pdf_file' => 'required|mimes:pdf|max:10240' // รับเฉพาะ PDF ขนาดไม่เกิน 10MB
+    ]);
+
+    $file = $request->file('pdf_file');
+
+    // ดึงชื่อไฟล์ต้นฉบับ เช่น 46805-00708.pdf
+    $originalName = $file->getClientOriginalName();
+
+    // กำหนด path ปลายทาง เช่น storage/app/public/doc_document
+    $destinationPath = storage_path('app/public/doc_document');
+
+    // สร้างโฟลเดอร์ถ้ายังไม่มี
+    if (!file_exists($destinationPath)) {
+        mkdir($destinationPath, 0777, true);
+    }
+
+    // ย้ายไฟล์โดยไม่เปลี่ยนชื่อ
+    $file->move($destinationPath, $originalName);
+
+    return back()->with('success', 'อัปโหลดไฟล์ ' . $originalName . ' เรียบร้อยแล้ว!');
+}
 }

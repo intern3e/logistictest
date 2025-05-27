@@ -444,8 +444,7 @@ select#cartype option:checked {
     
     </div>
 
-     <label for="additional_notes">รายละเอียดเพิ่มเติม :</label>
-    <textarea id="notes" name="notes" rows="2" style="font-size: 14px; padding: 6px; height: 32px;"></textarea>
+     
 
       <div class="form-label">
     <div style="margin-bottom: 10px;">
@@ -504,10 +503,13 @@ select#cartype option:checked {
             <button type="button" class="btn btn-success insert-btn">เพิ่มสินค้า</button> 
         </div>
 
+        <label for="additional_notes">รายละเอียดเพิ่มเติม :</label>
+    <textarea id="notes" name="notes" rows="2" style="font-size: 14px; padding: 6px; height: 60px;"></textarea>
+
         <div style="display: flex; justify-content: center; margin-top: 20px;">
             <button type="button" id="submitBill" class="btn btn-success" 
             style="font-size: 18px; padding: 15px 30px; width: 200px; height: 50px;">
-                สร้างเอกสาร
+            บันทึก
             </button>
         </div>
     </form>

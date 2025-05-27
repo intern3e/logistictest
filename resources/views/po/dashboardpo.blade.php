@@ -4,12 +4,12 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="stylesheet" href="{{ asset('css/dashboardpo.blade.css') }}">
-    <title>📑 ระบบPO</title>
+    <title>ข้อมูลรับของ PO</title>
  
 </head>
 <body>
     <div class="header">
-        <h2>📑 ระบบPO</h2>
+        <h2> ข้อมูลรับของ PO</h2>
         <div class="buttons">
             <span>👤 ผู้ใช้: {{ session('emp_name', 'Guest') }}</span>
     

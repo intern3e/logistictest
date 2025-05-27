@@ -3,13 +3,13 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>📑 ระบบDoc</title>
+    <title> ระเอกสารชั่วคราว</title>
      <link rel="stylesheet" href="{{ asset('css/dashboarddoc.blade.css') }}">
  
 </head>
 <body>
     <div class="header">
-        <h2>📑 ระบบDoc</h2>
+        <h2> เอกสารชั่วคราว</h2>
         <div class="buttons">
             <span>👤 ผู้ใช้: {{ session('emp_name', 'Guest') }}</span>
     

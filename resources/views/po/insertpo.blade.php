@@ -64,8 +64,7 @@
             </div>
         </div>
 
-         <label for="additional_notes">รายละเอียดเพิ่มเติม :</label>
-        <textarea id="notes" name="notes" rows="2" style="font-size: 14px; padding: 6px; height: 32px;"></textarea>
+       
 
         <div class="mb-3">
             <label class="form-label">แผนที่ :</label>
@@ -108,12 +107,13 @@
                         </table>
                         
                         
-
+  <label for="additional_notes">รายละเอียดเพิ่มเติม :</label>
+        <textarea id="notes" name="notes" rows="2" style="font-size: 14px; padding: 6px; height: 60px;"></textarea>
                     
              <div style="display: flex; justify-content: center; margin-top: 20px;">
             <button type="button" id="submitBillpo" class="btn btn-success" 
             style="font-size: 18px; padding: 15px 30px; width: 200px; height: 50px;">
-                เปิดบิล
+                บันทึก
             </button>
 
     </form>

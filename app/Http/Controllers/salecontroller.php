@@ -105,8 +105,9 @@ public function fetchFormType(Request $request)
     }
 }
 
-    public function insert(Request $request)
-{
+  public function insert(Request $request)
+{date_default_timezone_set('Asia/Bangkok');
+
     DB::beginTransaction();
     try {
         $request->validate([
@@ -137,39 +138,36 @@ public function fetchFormType(Request $request)
         ]);
 
         // สร้าง so_detail_id แบบ 3E(เลขท้ายพ.ศ.)(เดือน)X0001
-        $currentYear = date('Y') + 543;
-        $currentYear = substr($currentYear, -2); 
-        $currentMonth = date('m'); // เดือนปัจจุบัน 2 หลัก (เช่น 04)
-        $prefix = "3E{$currentYear}{$currentMonth}X"; // สร้าง prefix เช่น 3E6804X
-        
-        // หาเลข running number ล่าสุด
-        $latestBill = Bill::where('so_detail_id', 'like', $prefix . '%')
-                        ->orderBy(DB::raw('CAST(SUBSTRING(so_detail_id, 8) AS UNSIGNED)'), 'desc')
-                        ->first();
-        
-        if ($latestBill) {
-            // ถ้ามีแล้ว ดึงเลขล่าสุดและเพิ่มอีก 1
-            $latestNumber = (int) substr($latestBill->so_detail_id, -4);
-            $nextNumber = $latestNumber + 1;
-        } else {
-            // ถ้ายังไม่มี เริ่มที่ 1
-            $nextNumber = 1;
-        }
-        
-        // สร้าง so_detail_id ในรูปแบบที่ต้องการ (เช่น 3E6804X0001)
-        $so_detail_id = $prefix . str_pad($nextNumber, 4, '0', STR_PAD_LEFT);
+ $currentYear = date('y');           // เช่น 25 (ปี ค.ศ. 2025)
+$currentMonth = date('m');          // เช่น 05
+$currentTime = date('Hi');          // เช่น 1620
+$prefix = "{$currentYear}{$currentMonth}-{$currentTime}-"; // เช่น 2505-1620-
 
-        // ตรวจสอบว่ามี so_detail_id นี้อยู่แล้วหรือไม่ เพื่อป้องกันการซ้ำ
+// หาเลข running number ล่าสุดที่มี prefix ตรงกัน
+$latestBill = Bill::where('so_detail_id', 'like', $prefix . '%')
+    ->orderBy(DB::raw('CAST(SUBSTRING(so_detail_id, -4) AS UNSIGNED)'), 'desc')
+    ->first();
+
+if ($latestBill) {
+    $latestNumber = (int) substr($latestBill->so_detail_id, -4);
+    $nextNumber = $latestNumber + 1;
+} else {
+    $nextNumber = 1;
+}
+
+// สร้าง so_detail_id ที่สมบูรณ์
+$so_detail_id = $prefix . str_pad($nextNumber, 4, '0', STR_PAD_LEFT);
+
+// ตรวจสอบว่ามี so_detail_id นี้อยู่แล้วหรือไม่
+$exists = Bill::where('so_detail_id', $so_detail_id)->exists();
+if ($exists) {
+    $i = $nextNumber + 1;
+    do {
+        $so_detail_id = $prefix . str_pad($i, 4, '0', STR_PAD_LEFT);
         $exists = Bill::where('so_detail_id', $so_detail_id)->exists();
-        if ($exists) {
-            // ถ้ามีแล้ว ให้เพิ่มเลขต่อไปเรื่อยๆ จนกว่าจะไม่ซ้ำ
-            $i = $nextNumber + 1;
-            do {
-                $so_detail_id = $prefix . str_pad($i, 4, '0', STR_PAD_LEFT);
-                $exists = Bill::where('so_detail_id', $so_detail_id)->exists();
-                $i++;
-            } while ($exists);
-        }
+        $i++;
+    } while ($exists);
+}
         $customer_id = $request->input('customer_id');
         $formType = $request->input('formtype');
         $customer_la_long = $request->input('customer_la_long');
@@ -241,64 +239,7 @@ public function fetchFormType(Request $request)
         Log::error($e->getMessage());
         return response()->json(['error' => 'เกิดข้อผิดพลาด:ใส่ข้อมูลให้ครบถ้วน ' . $e->getMessage()], 500);
     }
-}
-
-public function insertPost(Request $request) {
-    $so_id = $request->input('so_id');
-    $customer_id = $request->input('customer_id');
-    $customer_tel = $request->input('customer_tel');
-    $customer_address = $request->input('customer_address');
-    $customer_la_long = $request->input('customer_la_long');
-    $items = $request->input('item_id'); // หรือรายการสินค้าทั้งหมดที่ส่งมา
-
-    // ทำการประมวลผลข้อมูล เช่น การบันทึกข้อมูลหรือเปิดบิล
-    // สมมติว่าบันทึกข้อมูลลงในฐานข้อมูล
-    $successMessage = "บิลเปิดสำเร็จ";
-
-    // ส่งข้อมูลกลับไปยังหน้าจอ dashboard
-    return response()->json(['success' => $successMessage]);
-    }
-
-public function getBillDetail($so_detail_id)
-    {
-        // ดึงข้อมูลจากฐานข้อมูลที่เกี่ยวข้องกับ so_detail_id
-        $billDetails = Bill_Detail::where('so_detail_id', $so_detail_id)->get();
-
-        // ส่งข้อมูลในรูปแบบ JSON
-        return response()->json($billDetails);
-    }
-
-public function modifyData($soDetailId)
-    {
-        // ดึงข้อมูลจาก tblbill (ข้อมูลหลัก)
-        $billDetail = Bill::where('so_detail_id', $soDetailId)->first();
-    
-        // ดึงข้อมูลสินค้าที่เกี่ยวข้องจาก bill_detail
-        $billItems = DB::table('bill_detail')
-                        ->where('so_detail_id', $soDetailId)
-                        ->select('so_detail_id', 'so_id', 'item_id', 'item_name', 'quantity', 'unit_price')
-                        ->get();
-    
-        if ($billDetail) {
-            return view('sale.modifydata', [
-                'so_detail_id' => $soDetailId,  // เพิ่มตัวแปรนี้
-                'billDetail' => $billDetail,
-                'billItems' => $billItems, // ส่งข้อมูลสินค้าไปยัง View
-                'so_id' => $billDetail->so_id,
-                'sale_name' => $billDetail->sale_name,
-                'emp_name' => $billDetail->emp_name,
-                'customer_id' => $billDetail->customer_id,
-                'customer_name' => $billDetail->customer_name,
-                'customer_sale' => $billDetail->customer_sale,
-                'customer_address' => $billDetail->customer_address,
-                'customer_tel' => $billDetail->customer_tel,
-                'customer_la_long' => $billDetail->customer_la_long,
-                'date_of_dali' => $billDetail->date_of_dali
-            ]);
-        } else {    
-            return redirect()->route('sale.dashboard')->with('error', 'ไม่พบข้อมูล');
-        }
-    }
+}      
 public function updateBill(Request $request) {
         Log::info('📥 รับข้อมูลจาก JavaScript:', $request->all());
     

@@ -56,6 +56,11 @@ Route::post('/update-billid', [AdminController::class, 'updateBillId'])->name('u
 Route::get('/adminroute', [AdminController::class, 'adminroute'])->name('admin.adminroute');
 Route::post('/update-statuspdfso2', [admincontroller::class, 'updateStatuspdf2']);
 Route::post('/update-delivery-date', [admincontroller::class, 'updateDeliveryDate'])->name('update.delivery.date');
+Route::get('/upload', function () {
+    return view('upload');
+});
+
+Route::post('/upload-pdf', [App\Http\Controllers\admincontroller::class, 'upload'])->name('upload.pdf');
 
 
 // PO system

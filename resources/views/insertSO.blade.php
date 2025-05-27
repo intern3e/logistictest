@@ -154,6 +154,20 @@
         }
 
     </style>
+    <style>
+    .btn-info.openBillBtn {
+        padding: 4px 8px;
+        font-size: 14px;
+    }
+
+    #deliveryCode.form-control {
+        height: 30px;
+        font-size: 12px;
+        padding: 4px 8px;
+    }
+</style>
+
+
     <link href="http://server_update:8000/css/app.css" rel="stylesheet">
     <script>
     async function getPONetAmnt(PONum) {
@@ -301,13 +315,13 @@
                                     </td>
                                     
                                     <td>
-                                        <button class="btn btn-info openBillBtn">เปิดบิล</button>
+                                        <button class="btn btn-info openBillBtn">บันทึกข้อมูลจัดส่ง</button>
                                     </td>
                                 </tr>
                             </tbody></table>
                         </div>
                     </div>
-                                                        <div class="card size_card">
+                                                        <div class="card sizeph_card">
                         <div class="card-body" style="padding: 5px !important">
                             <table>
                                 <tbody><tr>
@@ -319,7 +333,7 @@
                                         <button type="button" class="btn_button1" onclick="window.open('http://server_update:8000/popupWindows/SODetailMyAccount?BillNo=46805-02638','welcome','width=1000,height=500,menubar=no,status=no,location=no,toolbar=no,scrollbars=yes')">Details</button>
                                     </td>
                                     <td>
-                                        <button class="btn btn-info openBillBtn">เปิดบิล</button>
+                                        <button class="btn btn-info openBillBtn">บันทึกข้อมูลจัดส่ง</button>
                                     </td>
                                 </tr>
                             </tbody></table>
@@ -337,9 +351,9 @@
                                         <button type="button" class="btn_button1" onclick="window.open('http://server_update:8000/popupWindows/SODetailMyAccount?BillNo=46805-02639','welcome','width=1000,height=500,menubar=no,status=no,location=no,toolbar=no,scrollbars=yes')">Details</button>
                                     </td>
                                      <td>
-                                        <button class="btn btn-info openBillBtn">เปิดบิล</button>
+                                        <button class="btn btn-info openBillBtn">บันทึกข้อมูลจัดส่ง</button>
                                     </td>
-                                </tr>
+                                </tr>   
                             </tbody></table>
                         </div>
                     </div>

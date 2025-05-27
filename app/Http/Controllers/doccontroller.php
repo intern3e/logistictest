@@ -64,7 +64,7 @@ class DocController extends Controller
             $currentYear = date('Y') + 543;
             $currentYear = substr($currentYear, -2); 
             $currentMonth = date('m'); 
-            $prefix = "T{$currentYear}{$currentMonth}X"; 
+            $prefix = "SP{$currentYear}{$currentMonth}X"; 
             
             $latestBill = Docbills::where('doc_id', 'like', $prefix . '%')
                             ->orderBy(DB::raw('CAST(SUBSTRING(doc_id, 8) AS UNSIGNED)'), 'desc')

@@ -449,7 +449,11 @@
                                 <td>
                                     <input type="text" class="billid" id="billid" value="{{ $item->billid ?? '' }}" readonly >
                                     
-
+                                    <form action="{{ route('upload.pdf') }}" method="POST" enctype="multipart/form-data">
+                                        @csrf
+                                        <input type="file" name="pdf_file" accept="application/pdf" required>
+                                        <button type="submit">อัปโหลด PDF</button>
+                                    </form>
 
                                     <button style="background-color: red; color: white;"
                                     id="Pumpbill"
