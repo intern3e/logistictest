@@ -8,7 +8,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
 
-class alertcontroller extends Controller
+class AlertController extends Controller
 {
     public function dashboard(Request $request)
 {

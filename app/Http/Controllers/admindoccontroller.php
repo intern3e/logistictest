@@ -7,7 +7,7 @@ use Illuminate\Support\Facades\DB;
 use App\Models\Docbills;
 use Illuminate\Support\Facades\Validator;
 
-class admindoccontroller extends Controller
+class AdmindocController extends Controller
 {
     public function dashboard(Request $request)
         {

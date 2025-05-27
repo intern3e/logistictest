@@ -12,7 +12,7 @@ use App\Models\Bill;
 use function Laravel\Prompts\table;
 use Illuminate\Support\Facades\Validator;
 
-class admincontroller extends Controller
+class AdminController extends Controller
 {
     
     public function showLoginForm()

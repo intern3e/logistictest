@@ -20,13 +20,13 @@
         <!-- SO -->
         <div style="flex: 1; min-width: 200px;">
           <label class="form-label" for="so_number">เลขที่ SO :</label>
-          <input type="text" class="form-control" id="so_number" name="so_number" style="width: 100%;" required>
+          <input type="text" class="form-control" id="so_number" name="so_number" style="width: 100%;" required readonly>
         </div>
 
         <!-- บิล -->
         <div style="flex: 1; min-width: 200px;">
           <label for="billid">เลขที่บิลส่งของ:</label>
-          <input type="text" id="billid" name="billid" style="width: 100%;" required>
+          <input type="text" id="billid" name="billid" style="width: 100%;" readonly required>
         </div>
       </div>
 
@@ -38,7 +38,7 @@
        
     <div class="inline-group">
         <label>ผู้เปิดบิล :</label>
-        <input type="text" id="emp_name" name="emp_name" value="{{ session('emp_name', 'Guest') }}">
+        <input type="text" id="emp_name" name="emp_name" value="{{ session('emp_name', 'Guest') }}" readonly>
     </div>
     
     <div class="inline-group">

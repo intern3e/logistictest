@@ -17,7 +17,7 @@ use Intervention\Image\Facades\Image;
 use FPDF;
 use Barryvdh\DomPDF\Facade as PDF;
 
-class salecontroller extends Controller
+class SaleController extends Controller
 {
 
 public function home()

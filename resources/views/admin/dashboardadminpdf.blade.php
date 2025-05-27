@@ -392,7 +392,7 @@
         <thead>
             <tr>
                 <th>ปริ้นเอกสาร</th>
-                <th>REF</th>
+                <th>เลขที่บิล</th>
                 <th>อ้างอิงใบสั่งขาย</th>
                 <th>อ้างอิงใบส่งของ</th>
                 <th>อ้างอิงใบสั่งซื้อ</th>
@@ -447,7 +447,7 @@
                                 <td>{{ $item->emp_name }}</td>
                                 <td id="billtype">{{ $item->billtype }}</td>
                                 <td>
-                                    <input type="text" class="billid" id="billid" value="{{ $item->billid ?? '' }}">
+                                    <input type="text" class="billid" id="billid" value="{{ $item->billid ?? '' }}" readonly >
                                     
 
 
@@ -502,7 +502,7 @@
                 <table>
                     <thead>
                         <tr>
-                            <th>REF</th>
+                            <th>เลขที่บิล</th>
                             <th>ชื่อลูกค้า</th>
                             <th>เบอร์โทร</th>
                             <th>ที่อยู่จัดส่ง</th>
@@ -690,51 +690,67 @@ function updateStatuspdf() {
 
 
 <script>
-    function openFileInNewTab(url, ponum, so_detail_id, so_id, billid) {
-        // ทำให้ checkbox ถูกเลือก
-        document.getElementById('checkbox_' + so_detail_id).checked = true;
-    
-        // กำหนดค่าที่ต้องการคัดลอก: ถ้า billid ไม่มีค่าหรือว่าง ให้ใช้ so_id
-        var copyValue = billid && billid.trim() !== '' ? billid : so_id.replace(/^SO/, ''); 
-    
-        // คัดลอกค่าลงคลิปบอร์ด
-        navigator.clipboard.writeText(copyValue).then(() => {
-            console.log('คัดลอก:', copyValue);
-        }).catch(err => {
-            console.error('ไม่สามารถคัดลอกได้:', err);
-        });
-    
-        // เปิดไฟล์ในแท็บใหม่
-        window.open(url, '_blank');
-    
-
-     }
-    
-    function copyPonumAndCheckBox(so_id, so_detail_id, billid) {
-        // ทำให้ checkbox ถูกเลือก
-        const checkbox = document.getElementById('checkbox_' + so_detail_id);
-        if (checkbox) {
-            checkbox.checked = true;
-            console.log("Checkbox checked for:", so_detail_id);
-        } else {
-            console.log("Checkbox not found for:", so_detail_id);
-        }
-    
-        // กำหนดค่าที่จะคัดลอก: ถ้า billid มีค่าให้ใช้ billid, ถ้าไม่มีให้ใช้ so_id
-        const copyValue = billid && billid.trim() !== '' ? billid : so_id.replace(/^SO/, '');
-    
-        // คัดลอกค่าลงคลิปบอร์ด
-        navigator.clipboard.writeText(copyValue).then(() => {
-            console.log("Copied value:", copyValue);
-        }).catch(err => {
-            console.error("Failed to copy value:", err);
-        });
-    
-
+function openFileInNewTab(url, ponum, so_detail_id, so_id, billid) {
+    // ตรวจสอบ checkbox
+    var checkbox = document.getElementById('checkbox_' + so_detail_id);
+    if (checkbox) {
+        checkbox.checked = true;
+    } else {
+        console.warn('ไม่พบ checkbox สำหรับ so_detail_id:', so_detail_id);
     }
-    
 
-</script>
+    // เตรียมค่าเพื่อคัดลอก
+    var soIdStr = String(so_id || '');
+    var copyValue = (billid && billid.trim() !== '') ? billid : soIdStr.replace(/^SO/, '');
+
+    // ฟังก์ชัน fallback หาก Clipboard API ใช้ไม่ได้
+    function fallbackCopyTextToClipboard(text) {
+        var textArea = document.createElement("textarea");
+        textArea.value = text;
+        textArea.style.position = "fixed";  // ป้องกัน scroll
+        document.body.appendChild(textArea);
+        textArea.focus();
+        textArea.select();
+
+        try {
+            var successful = document.execCommand('copy');
+            if (successful) {
+          
+            } else {
+                alert('ไม่สามารถคัดลอกเลขได้ (fallback)');
+            }
+        } catch (err) {
+            console.error('Fallback: ไม่สามารถคัดลอกได้', err);
+            alert('เบราว์เซอร์ของคุณไม่รองรับการคัดลอก');
+        }
+
+        document.body.removeChild(textArea);
+    }
+
+    // ใช้ Clipboard API ถ้าใช้ได้
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(copyValue).then(() => {
+            console.log('คัดลอกสำเร็จ:', copyValue);
+            alert('คัดลอกเลขอ้างอิง: ' + copyValue);
+        }).catch(err => {
+            console.error('Clipboard API ล้มเหลว:', err);
+            fallbackCopyTextToClipboard(copyValue);
+        });
+    } else {
+        // ใช้ fallback
+        fallbackCopyTextToClipboard(copyValue);
+    }
+
+    // เปิดลิงก์
+    if (url && url.trim() !== '') {
+        window.open(url, '_blank');
+    } else {
+        console.warn('URL ว่างหรือไม่ถูกต้อง:', url);
+        alert('ไม่สามารถเปิดไฟล์ได้: URL ว่าง');
+    }
+}
+
+ </script>
 <script>
     function addSoDetailIdToPoDocument(so_detail_id, POdocument) {
     console.log(`กำลังเพิ่ม ${so_detail_id} ลงในเอกสาร PO: ${POdocument}`);
