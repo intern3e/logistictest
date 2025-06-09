@@ -433,10 +433,24 @@
                                 เลือกดูไฟล์
                             </button>
                             @else
-                            <button id="downloadnoPO" style="background-color: red; color: white;"
+                             <button id="downloadnoPO" style="background-color: red; color: white;"
                             onclick="copyPonumAndCheckBox('{{ $item->so_id }}', '{{ $item->so_detail_id }}', '{{ $item->billid ?? '' }}')">
                             ไม่มีไฟล์
                         </button>
+<script>
+    function copyPonumAndCheckBox(so_id, so_detail_id, billid) {
+        if (!billid) {
+            return; // ไม่ทำอะไรถ้าไม่มี billid
+        }
+
+        navigator.clipboard.writeText(billid).catch(() => {});
+
+        const checkbox = document.querySelector(`input[type="checkbox"][data-detail-id="${so_detail_id}"]`);
+        if (checkbox) {
+            checkbox.checked = true;
+        }
+    }
+</script>
                         
                                         
                         @endif
@@ -449,10 +463,11 @@
                                 <td>
                                     <input type="text" class="billid" id="billid" value="{{ $item->billid ?? '' }}" readonly >
                                     
-                                    <form action="{{ route('upload.pdf') }}" method="POST" enctype="multipart/form-data">
+                                    
+                  		<form action="{{ route('upload.pdf') }}" method="POST" enctype="multipart/form-data">
                                         @csrf
-                                        <input type="file" name="pdf_file" accept="application/pdf" required>
-                                        <button type="submit">อัปโหลด PDF</button>
+                                        <input type="file" name="pdffile" id="pdffile" accept="application/pdf" required>
+                                        <button type="submit" id="subpdffile">อัปโหลด PDF</button>
                                     </form>
 
                                     <button style="background-color: red; color: white;"
@@ -793,23 +808,61 @@ function addIdToDocument(so_detail_id, billid) {
         });
 }
 function openFileInNewTabbill(url, ponum, so_detail_id, so_id, billid) {
-        // ทำให้ checkbox ถูกเลือก
-        document.getElementById('checkbox_' + so_detail_id).checked = true;
-    
-        // กำหนดค่าที่ต้องการคัดลอก: ถ้า billid ไม่มีค่าหรือว่าง ให้ใช้ so_id
-        var copyValue = billid && billid.trim() !== '' ? billid : so_id.replace(/^SO/, ''); 
-    
-        // คัดลอกค่าลงคลิปบอร์ด
-        navigator.clipboard.writeText(copyValue).then(() => {
-            console.log('คัดลอก:', copyValue);
-        }).catch(err => {
-            console.error('ไม่สามารถคัดลอกได้:', err);
-        });
-    
-        // เปิดไฟล์ในแท็บใหม่
-        window.open(url, '_blank');
+    // ทำให้ checkbox ถูกเลือก
+    var checkbox = document.getElementById('checkbox_' + so_detail_id);
+    if (checkbox) {
+        checkbox.checked = true;
+    }
 
-     }
+    // กำหนดค่าที่ต้องการคัดลอก
+    var copyValue = billid && billid.trim() !== '' ? billid : so_id.replace(/^SO/, '');
+
+    // คัดลอกค่าลงคลิปบอร์ด พร้อม fallback
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(copyValue).then(() => {
+            console.log('คัดลอกสำเร็จ:', copyValue);
+        }).catch(err => {
+            fallbackCopyTextToClipboard(copyValue);
+        });
+    } else {
+        fallbackCopyTextToClipboard(copyValue);
+    }
+
+    // เปิดไฟล์ในแท็บใหม่
+    window.open(url, '_blank');
+}
+
+// ฟังก์ชัน fallback สำหรับการคัดลอก
+function fallbackCopyTextToClipboard(text) {
+    var textArea = document.createElement("textarea");
+    textArea.value = text;
+
+    // ป้องกันการแสดงผล
+    textArea.style.position = "fixed";
+    textArea.style.top = 0;
+    textArea.style.left = 0;
+    textArea.style.width = "1px";
+    textArea.style.height = "1px";
+    textArea.style.padding = 0;
+    textArea.style.border = "none";
+    textArea.style.outline = "none";
+    textArea.style.boxShadow = "none";
+    textArea.style.background = "transparent";
+
+    document.body.appendChild(textArea);
+    textArea.focus();
+    textArea.select();
+
+    try {
+        var successful = document.execCommand('copy');
+        console.log('Fallback copy ' + (successful ? 'สำเร็จ' : 'ล้มเหลว'), text);
+    } catch (err) {
+        console.error('Fallback copy ล้มเหลว:', err);
+    }
+
+    document.body.removeChild(textArea);
+}
+
      function toggleCheckboxes() {
     var checkAllBox = document.getElementById('checkAll');
     var checkboxes = document.querySelectorAll('input[type="checkbox"]:not(#checkAll)');

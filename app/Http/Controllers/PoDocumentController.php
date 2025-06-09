@@ -44,9 +44,8 @@ class PoDocumentController extends Controller
     $pdf->SetTextColor(130,130, 130);
 
     // คำนวณตำแหน่งใหม่ (หน่วย pt)
-    $x = 15; // ≈ 2 cm
-    $y = $size['height'] - 4; // ≈ 3 cm ขึ้นจากล่าง
-
+    $x = 175;               // ใกล้ขอบขวา (A4 กว้าง 210 mm)
+    $y = 4;                 // อยู่ห่างจากขอบบน 2 mm
     $pdf->Text($x, $y, "{$so_detail_id}");
 }
 
@@ -103,8 +102,8 @@ class PoDocumentController extends Controller
                 
                 // เพิ่ม SO ID ที่หัวกระดาษทุกหน้า
                 $pdf->SetFont('Helvetica', 'I', 8);
-                $pdf->SetTextColor(130,130, 130); // สีดำ
-                $pdf->SetXY(150, 1);
+                $pdf->SetTextColor(0,0,0); // สีดำ
+                $pdf->SetXY(155, 4);
                 $pdf->Cell(50, 10, "{$so_detail_id}", 0, 0, 'R');
             }
 
@@ -128,4 +127,4 @@ class PoDocumentController extends Controller
             ]);
         }
     }
-}
+}   

@@ -315,10 +315,10 @@ public function updateDeliveryDate(Request $request)
 public function upload(Request $request)
 {
     $request->validate([
-        'pdf_file' => 'required|mimes:pdf|max:10240' // รับเฉพาะ PDF ขนาดไม่เกิน 10MB
+        'pdffile' => 'required|mimes:pdf|max:10240' 
     ]);
 
-    $file = $request->file('pdf_file');
+    $file = $request->file('pdffile');
 
     // ดึงชื่อไฟล์ต้นฉบับ เช่น 46805-00708.pdf
     $originalName = $file->getClientOriginalName();
