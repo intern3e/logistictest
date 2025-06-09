@@ -115,7 +115,7 @@
 
                 @foreach($bill as $item)
                 <tr>
-                    <td>{{ $item->so_detail_id }}</td> 
+                    <td style="font-size: 10px;">{{ $item->so_detail_id }}</td>
                     <td>{{ $item->so_id }}</td>
                     <td>{{ $item->ponum }}</td>
                     <td>{{ $item->billid }}</td>
@@ -124,7 +124,7 @@
                     <td>{{ $item->emp_name }}</td> 
                     <td>{{ $item->billtype }}</td>
                     <td>{{ \Carbon\Carbon::parse($item->time)->format('H:i d/m/Y ') }}</td>
-                    <td>
+                    <td style="font-size: 12px;">
                         @if($item->status == 0)
                             กำลังดำเนินการ
                         @else

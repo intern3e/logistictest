@@ -192,7 +192,7 @@ public function updateStatuspdfback(Request $request)
         DB::table('tblbill')
             ->whereIn('so_detail_id', $soDetailIds)
             ->update([
-                'statuspdf' => 0,
+                'statuspdf' => 1,
                 'status' => 0
             ]);
 

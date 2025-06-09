@@ -43,10 +43,11 @@
             <input type="text" id="store_address" name="store_address" readonly >
              
                 <div class="form-row-inline">
-            <div class="form-group-inline">
-                <label for="recvDate">วันกำหนดรับ :</label>
-                <input type="text" id="recvDate" name="recvDate">
+                <div class="form-group-inline">
+            <label for="recvDate">วันกำหนดรับ :</label>
+            <input type="date" id="recvDate" name="recvDate">
             </div>
+
             <div class="form-group-inline">
                 <label for="cartype">ประเภทรถ :</label>
                 <select id="cartype" name="cartype" required>
@@ -60,9 +61,10 @@
             <label >ละติจูด ลองจิจูด :</label>
             <div class="lat-long-container"style="display: flex; justify-content: space-between; width: 100%;">
                 <input type="text" id="store_la_long" name="store_la_long">
-                <button type="button" class="btn-custom" onclick="openGoogleMaps()">Google Maps</button>
             </div>
         </div>
+        <button type="button" class="btn-custom" onclick="openGoogleMaps()">Google Maps</button>
+        <br>
 
        
 

@@ -460,8 +460,8 @@ select#cartype option:checked {
         <label>ละติจูด ลองจิจูด :</label>
         <div style="display: flex; justify-content: space-between; width: 100%;" >
             <input type="text" id="com_la_long" name="com_la_long">
-            <button type="button" class="btn-custom" onclick="openGoogleMaps()">Google Maps</button>
         </div>
+          <button type="button" class="btn-custom" onclick="openGoogleMaps()">Google Maps</button>
 
         <div class="mb-3">
             <label class="form-label">แผนที่ :</label>
@@ -487,7 +487,6 @@ select#cartype option:checked {
         <table class="table table-bordered table-striped">
             <thead>
                 <tr>
-                    <th>เลือกจัดส่ง</th>
                     <th>รายการ</th>
                     <th>จำนวน</th>
                     <th>ลบ</th>
@@ -498,7 +497,7 @@ select#cartype option:checked {
 
         <div class="checkbox-container">
             <label>
-                <input type="checkbox" name="checkall"> เลือกทั้งหมด
+              
             </label>
             <button type="button" class="btn btn-success insert-btn">เพิ่มสินค้า</button> 
         </div>
@@ -575,7 +574,6 @@ select#cartype option:checked {
             insertBtn.addEventListener('click', function() {
                 var newRow = document.createElement('tr');
                 newRow.innerHTML = `
-                    <td><input type="checkbox" class="form-control1" name="status[]"></td>
                     <td><input type="text" class="form-control1" name="item_name[]"></td>
                     <td>
                         <input type="number" class="form-control1 item_quantity" name="item_quantity[]" >

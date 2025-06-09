@@ -36,6 +36,7 @@
       <!-- ส่วนอื่นๆ คงเดิม -->
 
        
+   <div class="form-row">
     <div class="inline-group">
         <label>ผู้เปิดบิล :</label>
         <input type="text" id="emp_name" name="emp_name" value="{{ session('emp_name', 'Guest') }}" readonly>
@@ -43,7 +44,7 @@
     
     <div class="inline-group">
         <label>ผู้ขาย :</label>
-        <input type="text" id="sale_name" name="sale_name"readonly>
+        <input type="text" id="sale_name" name="sale_name" readonly>
     </div>
 
     <div class="inline-group">
@@ -52,28 +53,31 @@
     </div>
 
     <div class="inline-group">
-  <label for="billtype">ประเภทบิล :</label>
-  <select id="billtype" name="billtype" required>
-    <option value="">เลือกประเภทบิล</option>
-    <option value="ขายเชื่อ">ขายเชื่อ</option>
-    <option value="ขายสด">ขายสด</option>
-  </select>
+        <label for="billtype">ประเภทบิล :</label>
+        <input type="text" id="billtype" name="billtype" placeholder="ประเภทบิล" readonly>
+    </div>
+
+    <div class="inline-group">
+        <label>รหัสลูกค้า :</label>
+        <input type="text" id="customer_id" name="customer_id" readonly>
+    </div>
 </div>
+
 
 <script>
 // สมมติว่าค่า billid ถูก set มาแล้ว
 const billidInput = document.getElementById('billid');
-const billtypeSelect = document.getElementById('billtype');
+const billtypeInput = document.getElementById('billtype');
 
 // ฟังก์ชันตรวจสอบ
 function checkBillid() {
   const billidValue = billidInput.value.toLowerCase().trim(); // แปลงเป็น lowercase และตัดช่องว่างข้างหน้า-หลัง
   if (billidValue.startsWith('cs')) {  // ถ้า **ขึ้นต้น** ด้วย 'cs'
-    billtypeSelect.value = 'ขายสด';   // ตั้งค่าเป็น "ขายสด"
+    billtypeInput.value = 'ขายสด';    // ตั้งค่าเป็น "ขายสด"
   } else if (billidValue.length > 0) {
-    billtypeSelect.value = 'ขายเชื่อ'; // ถ้าไม่ขึ้นต้นด้วย 'cs' แต่มีค่า ให้เป็น "ขายเชื่อ"
+    billtypeInput.value = 'ขายเชื่อ'; // ถ้าไม่ขึ้นต้นด้วย 'cs' แต่มีค่า ให้เป็น "ขายเชื่อ"
   } else {
-    billtypeSelect.value = '';         // ถ้าว่าง ให้เป็น option แรก (เลือกประเภทบิล)
+    billtypeInput.value = '';          // ถ้าว่าง ให้เป็นค่าว่าง
   }
 }
 
@@ -82,17 +86,12 @@ window.addEventListener('load', () => {
   checkBillid();
 });
 
-// หรือถ้าต้องการให้เช็คทุกครั้งที่เปลี่ยนค่า billid
+// เช็คทุกครั้งที่เปลี่ยนค่า billid
 billidInput.addEventListener('input', () => {
   checkBillid();
 });
-
 </script>
 
-    <div class="inline-group">
-        <label>รหัสลูกค้า :</label>
-        <input type="text" id="customer_id" name="customer_id" readonly>
-    </div>
 
  <div class="mb-3" style="display: flex; flex-wrap: wrap; gap: 20px; align-items: center;">
     <div style="flex: 2; min-width: 150px;">
@@ -107,7 +106,7 @@ billidInput.addEventListener('input', () => {
 
     <div style="flex: 1; min-width: 50px;">
         <label for="date_of_dali">วันกำหนดส่ง :</label>
-        <input type="text" id="date_of_dali" name="date_of_dali" style="width: 40%;">
+        <input type="text" id="date_of_dali" name="date_of_dali" style="width: 40%;" readonly required >
     </div>
 </div>
 
@@ -174,13 +173,14 @@ billidInput.addEventListener('input', () => {
 
     <div >
     <label for="customer_address">ที่อยู่จัดส่ง :</label>
-    <textarea id="customer_address" name="customer_address" rows="4" style="width: 100%; padding: 10px; font-size: 14px; border-radius: 10px; border: 1px solid #ccc; height: 50px"></textarea>
+    {{-- <textarea id="customer_address" name="customer_address" rows="4" readonly required style="width: 100%; padding: 10px; font-size: 14px; border-radius: 10px; border: 1px solid #ccc; height: 50px" ></textarea> --}}
+    <input type="text" id="customer_address" name="customer_address" style="width: 100%; padding: 10px; font-size: 14px; border-radius: 6px; border: 1px solid #ccc; height: 30px"  readonly required >
     </div>
         <label>ละติจูด ลองจิจูด :</label>
         <div style="display: flex; justify-content: space-between; width: 100%;" >
             <input type="text" id="customer_la_long" name="customer_la_long">
-            <button type="button" class="btn-custom" onclick="openGoogleMaps()">Google Maps</button>
         </div>
+         <button type="button" class="btn-custom" onclick="openGoogleMaps()">Google Maps</button>
 
       <div class="mb-3" style="display: flex; gap: 20px; align-items: flex-start; flex-wrap: wrap;">
 

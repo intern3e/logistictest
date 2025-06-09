@@ -130,7 +130,7 @@
             </tbody>
         </table>
          <br>
-            <textarea id="popup-body-3" readonl style="width: 970px; height: 70px;" readonly>
+            <textarea id="popup-body-3" readonl style="width: 950px; height: 70px;" readonly>
             </textarea>
     </div> 
 </div>

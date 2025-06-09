@@ -357,6 +357,60 @@
                             </tbody></table>
                         </div>
                     </div>
+                                                                            <div class="card size_card">
+                        <div class="card-body" style="padding: 5px !important">
+                            <table>
+                                <tbody><tr>
+                                    <td>
+
+                                        <input style="" class="form-control" type="text" name="deliveryCode" id="deliveryCode" readonly="" value="46805-02639">
+                                    </td>
+                                    <td>
+                                        <button type="button" class="btn_button1" onclick="window.open('http://server_update:8000/popupWindows/SODetailMyAccount?BillNo=46805-02639','welcome','width=1000,height=500,menubar=no,status=no,location=no,toolbar=no,scrollbars=yes')">Details</button>
+                                    </td>
+                                     <td>
+                                        <button class="btn btn-info openBillBtn">บันทึกข้อมูลจัดส่ง</button>
+                                    </td>
+                                </tr>   
+                            </tbody></table>
+                        </div>
+                    </div>
+                                                                            <div class="card size_card">
+                        <div class="card-body" style="padding: 5px !important">
+                            <table>
+                                <tbody><tr>
+                                    <td>
+
+                                        <input style="" class="form-control" type="text" name="deliveryCode" id="deliveryCode" readonly="" value="46805-02639">
+                                    </td>
+                                    <td>
+                                        <button type="button" class="btn_button1" onclick="window.open('http://server_update:8000/popupWindows/SODetailMyAccount?BillNo=46805-02639','welcome','width=1000,height=500,menubar=no,status=no,location=no,toolbar=no,scrollbars=yes')">Details</button>
+                                    </td>
+                                     <td>
+                                        <button class="btn btn-info openBillBtn">บันทึกข้อมูลจัดส่ง</button>
+                                    </td>
+                                </tr>   
+                            </tbody></table>
+                        </div>
+                    </div>
+                                                                            <div class="card size_card">
+                        <div class="card-body" style="padding: 5px !important">
+                            <table>
+                                <tbody><tr>
+                                    <td>
+
+                                        <input style="" class="form-control" type="text" name="deliveryCode" id="deliveryCode" readonly="" value="46805-02639">
+                                    </td>
+                                    <td>
+                                        <button type="button" class="btn_button1" onclick="window.open('http://server_update:8000/popupWindows/SODetailMyAccount?BillNo=46805-02639','welcome','width=1000,height=500,menubar=no,status=no,location=no,toolbar=no,scrollbars=yes')">Details</button>
+                                    </td>
+                                     <td>
+                                        <button class="btn btn-info openBillBtn">บันทึกข้อมูลจัดส่ง</button>
+                                    </td>
+                                </tr>   
+                            </tbody></table>
+                        </div>
+                    </div>
                             </div>
         </div>
         <br>

@@ -89,7 +89,7 @@
         background-color: #007bff;
         color: white;
         border: none;
-        padding: 4px 8px;
+        padding: 6px 8px;
         border-radius: 4px;
         cursor: pointer;
         margin-left: 4px;
@@ -167,9 +167,32 @@
     }
 .inline-group {
         display: inline-block;
-        margin-right: 20px; /* ระยะห่างระหว่างกลุ่ม */
+        margin-right: 15px; /* ระยะห่างระหว่างกลุ่ม */
     }
     select {
         width: 145px; /* หรือใช้ min-width: 200px; */
         padding: 6px 10px;
     }
+
+.form-row {
+    display: flex;
+    flex-wrap: nowrap; /* ไม่ให้ขึ้นบรรทัดใหม่ */
+    gap: 10px; /* ระยะห่างระหว่างแต่ละ group */
+    align-items: center;
+}
+
+.inline-group {
+    display: flex;
+    flex-direction: column;
+}
+
+.inline-group label {
+    font-size: 12px;
+    margin-bottom: 2px;
+}
+
+.inline-group input {
+    padding: 4px 8px;
+    min-width: 120px;
+}
+
