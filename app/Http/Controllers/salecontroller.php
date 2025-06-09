@@ -105,8 +105,9 @@ public function fetchFormType(Request $request)
     }
 }
 
-  public function insert(Request $request)
-{date_default_timezone_set('Asia/Bangkok');
+ public function insert(Request $request)
+{
+    date_default_timezone_set('Asia/Bangkok');
 
     DB::beginTransaction();
     try {
@@ -137,46 +138,37 @@ public function fetchFormType(Request $request)
             'POdocument' => 'nullable|file|mimes:pdf|max:10240'
         ]);
 
-        // สร้าง so_detail_id แบบ 3E(เลขท้ายพ.ศ.)(เดือน)X0001
- $currentYear = date('y');           // เช่น 25 (ปี ค.ศ. 2025)
-$currentMonth = date('m');          // เช่น 05
-$currentTime = date('Hi');          // เช่น 1620
-$prefix = "{$currentYear}{$currentMonth}-{$currentTime}-"; // เช่น 2505-1620-
+        // 🔸 รหัสเดือนปัจจุบัน: 2505 (yyMM)
+        $prefix = date('ym'); // เช่น 2505
 
-// หาเลข running number ล่าสุดที่มี prefix ตรงกัน
-$latestBill = Bill::where('so_detail_id', 'like', $prefix . '%')
-    ->orderBy(DB::raw('CAST(SUBSTRING(so_detail_id, -4) AS UNSIGNED)'), 'desc')
-    ->first();
+        // 🔸 ดึงเลขล่าสุดในเดือนเดียวกัน
+        $searchPattern = $prefix . '-%'; // ค้นหาเฉพาะเดือนนั้น
+        $latestBill = Bill::where('so_detail_id', 'like', $searchPattern)
+            ->orderBy(DB::raw('CAST(SUBSTRING(so_detail_id, -4) AS UNSIGNED)'), 'desc')
+            ->first();
 
-if ($latestBill) {
-    $latestNumber = (int) substr($latestBill->so_detail_id, -4);
-    $nextNumber = $latestNumber + 1;
-} else {
-    $nextNumber = 1;
-}
+        if ($latestBill) {
+            $latestNumber = (int) substr($latestBill->so_detail_id, -4);
+            $nextNumber = $latestNumber + 1;
+        } else {
+            $nextNumber = 1;
+        }
 
-// สร้าง so_detail_id ที่สมบูรณ์
-$so_detail_id = $prefix . str_pad($nextNumber, 4, '0', STR_PAD_LEFT);
+        // 🔸 ใช้ datetime stamp แยกเพื่อให้ไม่ซ้ำ แต่ไม่เกี่ยวกับการรันเลข
+        $datetimePart = date('dHi'); // เช่น 29120133
 
-// ตรวจสอบว่ามี so_detail_id นี้อยู่แล้วหรือไม่
-$exists = Bill::where('so_detail_id', $so_detail_id)->exists();
-if ($exists) {
-    $i = $nextNumber + 1;
-    do {
-        $so_detail_id = $prefix . str_pad($i, 4, '0', STR_PAD_LEFT);
-        $exists = Bill::where('so_detail_id', $so_detail_id)->exists();
-        $i++;
-    } while ($exists);
-}
-        $customer_id = $request->input('customer_id');
-        $formType = $request->input('formtype');
-        $customer_la_long = $request->input('customer_la_long');
+        // 🔸 สร้าง so_detail_id: 2505-29120133-0001
+        $so_detail_id = "{$prefix}-{$datetimePart}-" . str_pad($nextNumber, 4, '0', STR_PAD_LEFT);
 
+        // 🔸 ป้องกันการชน (ซ้ำ) กรณีเขียนซ้อนเร็วมาก
+        while (Bill::where('so_detail_id', $so_detail_id)->exists()) {
+            $nextNumber++;
+            $so_detail_id = "{$prefix}-{$datetimePart}-" . str_pad($nextNumber, 4, '0', STR_PAD_LEFT);
+        }
 
-
-        // **🔹 Insert into Bills**
+        // 🔸 Insert into Bills
         $bill = new Bill();
-        $bill->so_detail_id = $so_detail_id; // ใช้ so_detail_id ที่สร้างขึ้นใหม่
+        $bill->so_detail_id = $so_detail_id;
         $bill->so_id = $request->input('so_id');
         $bill->ponum = $request->input('ponum');
         $bill->status = 0;
@@ -193,36 +185,33 @@ if ($exists) {
         $bill->billtype = $request->input('billtype');
         $bill->formtype = $request->input('formtype');
         $bill->billid = $request->input('billid');
-            
+
+        // 🔸 จัดการไฟล์เอกสาร
         if ($request->hasFile('POdocument')) {
             $file = $request->file('POdocument');
             $originalName = $file->getClientOriginalName();
-            $extension = strtolower($file->getClientOriginalExtension());
-
-            // เปลี่ยนนามสกุลเป็น .pdf เสมอ เพราะ frontend แปลงมาแล้ว
             $filename = $so_detail_id . '_' . pathinfo($originalName, PATHINFO_FILENAME) . '.pdf';
 
-            $path = 'public/po_documents';
-            $file->storeAs($path, $filename);
-
+            $file->storeAs('public/po_documents', $filename);
             $bill->POdocument = $filename;
         }
-        // บันทึกข้อมูล bill
+
         $bill->save();
-        
+
+        // 🔸 Insert into Bill Details
         $item_ids = $request->input('item_id');
         $item_names = $request->input('item_name');
         $item_quantities = $request->input('item_quantity');
         $unit_price = $request->input('unit_price');
         $status_checked = $request->input('status', []);
 
-        // **🔹 Insert into Bill Details**
         foreach ($item_ids as $index => $item_id) {
             if (!isset($status_checked[$index])) {
-                continue;  // ข้ามถ้าผู้ใช้ไม่ได้ติ๊กเลือก
+                continue; // ถ้าไม่ได้ติ๊กเลือก
             }
+
             $bill_detail = new Bill_detail();
-            $bill_detail->so_detail_id = $so_detail_id; // ใช้ $so_detail_id ที่สร้างใหม่
+            $bill_detail->so_detail_id = $so_detail_id;
             $bill_detail->so_id = $request->input('so_id');
             $bill_detail->item_id = $item_ids[$index];
             $bill_detail->item_name = $item_names[$index];
@@ -230,17 +219,17 @@ if ($exists) {
             $bill_detail->unit_price = $unit_price[$index];
             $bill_detail->save();
         }
+
         DB::commit();
-        return response()->json(['success' => 'เปิดบิลสำเร็จ เลขที่บิล:' . $so_detail_id]);
         Log::info('so_detail_id: ' . $so_detail_id);
+        return response()->json(['success' => 'เปิดบิลสำเร็จ เลขที่บิล: ' . $so_detail_id]);
 
     } catch (\Exception $e) {
         DB::rollBack();
         Log::error($e->getMessage());
-        return response()->json(['error' => 'เกิดข้อผิดพลาด:ใส่ข้อมูลให้ครบถ้วน ' . $e->getMessage()], 500);
+        return response()->json(['error' => 'เกิดข้อผิดพลาด: ' . $e->getMessage()], 500);
     }
-}      
-public function updateBill(Request $request) {
+}public function updateBill(Request $request) {
         Log::info('📥 รับข้อมูลจาก JavaScript:', $request->all());
     
         $so_detail_id = $request->so_detail_id;
