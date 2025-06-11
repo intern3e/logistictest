@@ -64,7 +64,6 @@
             </div>
         </div>
         <button type="button" class="btn-custom" onclick="openGoogleMaps()">Google Maps</button>
-        <br>
 
        
 
@@ -88,10 +87,10 @@
                         <table class="table table-bordered table-striped">
                             <thead>
                             <tr>
-                                <th>รหัสสินค้า</th>
-                                <th>รายการ</th>
-                                <th>จำนวน</th>
-                                <th>ราคา/หน่วย</th>
+                              <th style="width: 15%;">รหัสสินค้า</th>
+                            <th style="width: 50%;">รายการ</th>
+                            <th style="width: 15%;">จำนวน</th>
+                            <th style="width: 20%;">ราคาต่อหน่วย</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -275,10 +274,16 @@ document.getElementById("poSearchForm").addEventListener("submit", async functio
 
             let row = `
                 <tr>
-                    <td><input type="text" class="form-control1" name="item_id[]" value="${itemId}" readonly></td>
+                            <td style="text-align: center; vertical-align: middle;">
+                        <input type="text" class="form-control1" name="item_id[]" value="${itemId}" readonly style="text-align: center;">
+                    </td>
                     <td><input type="text" class="form-control1" name="item_name[]" value="${item.GoodName}" readonly></td>
-                    <td><input type="number" class="form-control1 item_quantity" name="item_quantity[]" value="${item.GoodQty2}" readonly></td>
-                    <td><input type="number" class="form-control1 item_unit_price" name="item_unit_price[]" value="${item.GoodPrice2}" readonly></td>
+                     <td style="text-align: center; vertical-align: middle;">
+                        <input type="text" class="form-control1 item_quantity" name="item_quantity[]" value="${parseFloat(item.GoodQty2).toFixed(2)}" readonly style="text-align: center;">
+                    </td>
+                    <td style="text-align: center; vertical-align: middle;">
+                        <input type="text" class="form-control1" name="unit_price[]" value="${parseFloat(item.GoodPrice2).toFixed(2)}" readonly style="text-align: center;">
+                    </td>
                 </tr>
             `;
             tbody.innerHTML += row;

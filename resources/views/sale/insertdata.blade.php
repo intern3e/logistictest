@@ -224,12 +224,12 @@ billidInput.addEventListener('input', () => {
 
         <table class="table table-bordered table-striped">
             <thead>
-                <tr>
-                    <th>รหัสสินค้า</th>
-                    <th>รายการ</th>
-                    <th>จำนวน</th>
-                    <th>ราคาต่อหน่วย</th>
-                </tr>
+                 <tr>
+            <th style="width: 15%;">รหัสสินค้า</th>
+            <th style="width: 50%;">รายการ</th>
+            <th style="width: 15%;">จำนวน</th>
+            <th style="width: 20%;">ราคาต่อหน่วย</th>
+               </tr>
             </thead>
             <tbody id="detail"></tbody>
         </table>
@@ -411,10 +411,17 @@ function openGoogleMaps() {
                 const itemId = `53-${String(itemCounter).padStart(4, '0')}`; // เช่น 53-0001
 
                 newRow.innerHTML = `
-                    <td><input type="text" class="form-control1" name="item_id[]" value="${itemId}" readonly></td>
+                    <td style="text-align: center; vertical-align: middle;">
+                        <input type="text" class="form-control1" name="item_id[]" value="${itemId}" readonly style="text-align: center;">
+                    </td>
                     <td><input type="text" class="form-control1" name="item_name[]" value="${safeGoodName}" readonly></td>
-                    <td><input type="text" class="form-control1 item_quantity" name="item_quantity[]" value="${item.GoodQty2}" readonly></td>
-                    <td><input type="text" class="form-control1" name="unit_price[]" value="${item.GoodPrice2}" readonly></td>
+                    <td style="text-align: center; vertical-align: middle;">
+                        <input type="text" class="form-control1 item_quantity" name="item_quantity[]" value="${parseFloat(item.GoodQty2).toFixed(2)}" readonly style="text-align: center;">
+                    </td>
+                    <td style="text-align: center; vertical-align: middle;">
+                        <input type="text" class="form-control1" name="unit_price[]" value="${parseFloat(item.GoodPrice2).toFixed(2)}" readonly style="text-align: center;">
+                    </td>
+
                 `;
                 tableBody.appendChild(newRow);
                 itemCounter++;

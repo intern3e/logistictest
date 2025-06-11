@@ -487,9 +487,9 @@ select#cartype option:checked {
         <table class="table table-bordered table-striped">
             <thead>
                 <tr>
-                    <th>รายการ</th>
-                    <th>จำนวน</th>
-                    <th>ลบ</th>
+            <th style="width: 50%;">รายการ</th>
+            <th style="width: 15%;">จำนวน</th>
+            <th style="width: 15%;">ลบ</th>
                 </tr>
             </thead>
             <tbody id="detail"></tbody>
@@ -575,8 +575,8 @@ select#cartype option:checked {
                 var newRow = document.createElement('tr');
                 newRow.innerHTML = `
                     <td><input type="text" class="form-control1" name="item_name[]"></td>
-                    <td>
-                        <input type="number" class="form-control1 item_quantity" name="item_quantity[]" >
+                   <td style="text-align: center;">
+                        <input type="number" class="form-control1 item_quantity" name="item_quantity[]" step="0.01" style="text-align: center;">
                     </td>
                     <td><button type="button" class="btn btn-danger delete-btn">ลบ</button></td>
                 `;

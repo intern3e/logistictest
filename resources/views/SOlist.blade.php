@@ -282,11 +282,13 @@
                     <input class="btn btn-danger" type="button" name="reset" value="reset" onclick="resetCriteria()">
                     <a href="http://server_update:8000/create_so"><input class="btn btn-secondary" type="button" name="action" value="สร้าง SO"></a>
                     <input type="hidden" id="method" name="method" value="">
+                    {{-- ไปเพิ่มเซิฟหลัก --}}
                     <a href="dashboard"><input class="btn btn-danger" type="button" style="background-color: #C599B6"  value="ข้อมูลจัดส่ง"></a>
                     <a href="dashboardpo"><input class="btn btn-danger" type="button"  style="background-color: #80CBC4" value="ข้อมูลรับของ PO"></a>
                     <a href="dashboarddoc"><input class="btn btn-danger" type="button"   style="background-color: #E9762B" value="เอกสารชั่วคราว"></a>   
                  <a href="alertaccount" title="บัญชี" class="notification-icon" style="position: relative; display: inline-block;">
                 <input class="btn btn-danger" type="button" style="background-color: pink" value="บัญชี">
+                    {{-- ไปเพิ่มเซิฟหลัก --}}
                 <span class="notification-badge" id="alertAccountBadge" style="position: absolute; top: -5px; right: -5px; background-color: rgb(255, 0, 0); color: white; border-radius: 50%; width: 20px; height: 20px; display: none; text-align: center; line-height: 20px;">0</span>
             </a>
             

@@ -750,7 +750,7 @@ function openFileInNewTab(url, ponum, so_detail_id, so_id, billid) {
     if (navigator.clipboard && navigator.clipboard.writeText) {
         navigator.clipboard.writeText(copyValue).then(() => {
             console.log('คัดลอกสำเร็จ:', copyValue);
-            alert('คัดลอกเลขอ้างอิง: ' + copyValue);
+           
         }).catch(err => {
             console.error('Clipboard API ล้มเหลว:', err);
             fallbackCopyTextToClipboard(copyValue);
