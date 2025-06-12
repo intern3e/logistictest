@@ -309,6 +309,7 @@
                 <th>ชื่อลูกค้า</th>
                 <th>เบอร์ติดต่อ</th>
                 <th>วันที่จัดส่ง</th>
+                <th>ผู้เปิดบิล</th>
                 <th>ประเภทบิล</th>
                 <th>แจ้งเพิ่มเติม</th>
                 <th>ข้อมูลสินค้า</th>
@@ -347,6 +348,7 @@
                         <td class="nowrap">{{ \Carbon\Carbon::parse($item->date_of_dali)->format('d/m/Y') }}</td>
                         <td>{{ $item->sale_name }}</td>
                         <td id="billtype">{{ $item->billtype }}</td>
+                         <td>{{ $item->notes }}</td>
                         </td>
                         <td><a href="javascript:void(0);" 
                                     onclick="openPopup(

@@ -360,6 +360,12 @@
     font-size: 12px; /* ปรับขนาดตัวอักษร */
     padding: 2px 5px; /* ปรับระยะห่างภายใน */
 }
+.bg-red { background-color: #ef4444; color: white; }     /* สีแดง */
+.bg-green { background-color: #22c55e; color: white; }   /* สีเขียว */
+.bg-blue { background-color: #3b82f6; color: white; }    /* สีฟ้า */
+.bg-purple { background-color: #a855f7; color: white; }  /* สีม่วง */
+.bg-yellow { background-color: #fde047; color: black; }  /* สีเหลือง - ใช้สีดำจะอ่านง่ายกว่า */
+
 
     </style>
 </head>
@@ -393,6 +399,7 @@
             <tr>
                 <th>ปริ้นเอกสาร</th>
                 <th>เลขที่บิล</th>
+                <th>ประเภทบิล</th>
                 <th>อ้างอิงใบสั่งขาย</th>
                 <th>อ้างอิงใบส่งของ</th>
                 <th>อ้างอิงใบสั่งซื้อ</th>
@@ -413,6 +420,20 @@
                         <input type="checkbox" class="form-control1" name="statupdf[]" value="{{ $item->so_id }}" id="checkbox_{{ $item->so_detail_id }}">
                         </td>
                         <td>{{ $item->so_detail_id }}</td>  
+                       @php
+                        $bgColor = match($item->formtype) {
+                            'บิล/PO3' => 'bg-red',
+                            'บิล/PO3/วางบิล' => 'bg-green',
+                            'บิล/PO3/วางบิล/สำเนาหน้าบิล2' => 'bg-blue',
+                            'บิล/PO3/สำเนาบิล2' => 'bg-purple',
+                            'บิล/PO3/บัญชี' => 'bg-yellow',
+                            default => ''
+                        };
+                    @endphp
+
+                    <td class="{{ $bgColor }}">{{ $item->formtype }}</td>
+
+                        
                         <td>{{ $item->so_id }}</td>
                         <td>    
                             {{ $item->ponum }} 
