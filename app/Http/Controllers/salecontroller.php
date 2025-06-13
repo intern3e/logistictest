@@ -135,7 +135,9 @@ public function fetchFormType(Request $request)
             'unit_price.*' => 'string',
             'status' => 'nullable|array',
             'statuspdf' => 'nullable|array',
-            'POdocument' => 'nullable|file|mimes:pdf|max:10240'
+            'POdocument' => 'nullable|file|mimes:pdf|max:10240',
+            'formtype' => ['required', 'string', 'max:255', 'not_in:ไม่มีข้อมูล'],
+            'formtype.not_in' => 'กรุณาเลือกประเภทฟอร์มให้ถูกต้อง',
         ]);
 
         // 🔸 รหัสเดือนปัจจุบัน: 2505 (yyMM)
@@ -271,4 +273,5 @@ public function deleteBill($so_detail_id)
     }
 
 }
+
 

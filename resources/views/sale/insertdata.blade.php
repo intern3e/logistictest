@@ -57,10 +57,7 @@
         <input type="text" id="billtype" name="billtype" placeholder="ประเภทบิล" readonly>
     </div>
 
-    <div class="inline-group">
-        <label>รหัสลูกค้า :</label>
-        <input type="text" id="customer_id" name="customer_id" readonly>
-    </div>
+                 
 </div>
 
 

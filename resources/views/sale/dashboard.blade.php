@@ -4,7 +4,261 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>ข้อมูลจัดส่ง</title>
-    <link rel="stylesheet" href="{{ asset('css/dashboard.blade.css') }}">
+    {{-- <link rel="stylesheet" href="{{ asset('css/dashboard.blade.css') }}"> --}}
+<style>
+    * {
+        box-sizing: border-box;
+    }
+
+    body {
+        font-family: 'Segoe UI', 'Roboto', sans-serif;
+        background-color: #f0f2f5;
+        color: #2c3e50;
+        margin: 0;
+        padding: 0;
+        line-height: 1.6;
+    }
+
+     a {
+        color: #007bff;
+        text-decoration: none;
+        font-weight: 500;
+    }
+
+    a:hover {
+        text-decoration: underline;
+    }
+
+    /* HEADER */
+    .header {
+        background: linear-gradient(99deg, #3f865d 0%, #3f865d 65%, rgb(45, 79, 68) 100%);
+        color: #fff;
+        border-radius: 6px;
+        padding: 8px 30px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        flex-wrap: wrap;
+        border-bottom: 3px solid #2e594f;
+        box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2); อ
+    }
+
+    .header h2 {
+        font-size: 26px;
+        margin: 0;
+        font-weight: 600;
+    }
+
+    .buttons {
+        display: flex;
+        align-items: center;
+        gap: 15px;
+        flex-wrap: wrap;
+    }
+
+    .buttons span {
+        font-weight: 500;
+        font-size: 15px;
+    }
+
+    .btn {
+        padding: 8px 16px;
+        border-radius: 6px;
+        font-size: 14px;
+        background-color: #c0392b;
+        color: white;
+        transition: background-color 0.3s ease;
+    }
+
+    .btn:hover {
+        background-color: #a93226;
+    }
+
+    .notification-icon img {
+        width: 22px;
+        height: 22px;
+    }
+
+    .notification-badge {
+        background-color: red;
+        color: white;
+        font-size: 12px;
+        padding: 2px 6px;
+        border-radius: 50%;
+        margin-left: 4px;
+        vertical-align: top;
+    }
+
+    /* FILTER SECTION */
+    .filter-container {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        flex-wrap: wrap;
+        background-color: #ffffff;
+        padding: 10px 24px;
+        margin-top: 10px;
+        border-bottom: 1px solid #ddd;
+    }
+
+    .filter-form label {
+        font-weight: 600;
+    }
+
+    .filter-form input[type="date"] {
+        padding: 6px 12px;
+        border-radius: 6px;
+        border: 1px solid #ccc;
+        background-color: #f9f9f9;
+    }
+
+    .search-box input {
+        padding: 6px 12px;
+        border: 1px solid #ccc;
+        border-radius: 6px;
+        background-color: #fdfdfd;
+    }
+
+    /* TABLE */
+    .table-container {
+        margin: 20px;
+        overflow-x: auto;
+    }
+
+    table {
+        width: 100%;
+        border-collapse: collapse;
+        background-color: white;
+        font-size: 14px;
+        border-radius: 10px;
+        overflow: hidden;
+        min-width: 1000px;
+    }
+
+/* ตั้งค่าหลักให้ข้อมูลกลางและขนาดกะทัดรัด */
+th, td {
+    padding: 6px 8px;
+    border: 1px solid #e1e1e1;
+    text-align: center;
+    vertical-align: middle;
+    font-size: 13px;
+    line-height: 1.4;
+}
+
+/* เฉพาะคอลัมน์ “ชื่อลูกค้า” ชิดซ้าย */
+th.customer-name,
+td.customer-name {
+    text-align: left !important;
+}
+
+
+    th {
+        background-color: #3f865d;
+        color: #fff;
+        font-weight: 600;
+        white-space: nowrap;
+    }
+
+    tr:nth-child(even) {
+        background-color: #f7fdf9;
+    }
+
+    .wrap-text {
+        word-break: break-word;
+    }
+
+    /* Make "ชื่อลูกค้า" LEFT aligned */
+    td.customer-name,
+    th.customer-name {
+        text-align: left !important;
+    }
+
+    /* POPUP */
+    .popup-overlay {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background-color: rgba(0, 0, 0, 0.5);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        z-index: 1000;
+        padding: 20px;
+    }
+
+    .popup-content {
+        background-color: #ffffff;
+        padding: 25px;
+        border-radius: 12px;
+        width: 100%;
+        max-width: 1200px;
+        box-shadow: 0 6px 14px rgba(0, 0, 0, 0.25);
+        overflow-y: auto;
+        max-height: 90vh;
+    }
+
+    .close-btn {
+        font-size: 24px;
+        font-weight: bold;
+        float: right;
+        cursor: pointer;
+        color: #999;
+    }
+
+    .close-btn:hover {
+        color: #e74c3c;
+    }
+
+    textarea {
+        font-family: inherit;
+        font-size: 14px;
+        padding: 10px;
+        width: 100%;
+        border-radius: 6px;
+        border: 1px solid #ccc;
+        resize: vertical;
+        background-color: #f9f9f9;
+    }
+
+    /* RESPONSIVE */
+    @media (max-width: 768px) {
+        .header {
+            flex-direction: column;
+            align-items: flex-start;
+        }
+
+        .filter-container {
+            flex-direction: column;
+            align-items: flex-start;
+        }
+
+        .buttons {
+            flex-direction: column;
+            align-items: flex-start;
+        }
+
+        table {
+            font-size: 12px;
+        }
+
+        .popup-content {
+            padding: 15px;
+        }
+    }
+    
+</style>
+<style>
+.wrap-text {
+    text-align: left;
+    white-space: normal;
+    word-wrap: break-word;
+    padding: 10px; /* ซ้าย-ขวา-บน-ล่าง เว้น 10px */
+}
+
+</style>
+
 
 </head>
 <body>
@@ -65,11 +319,6 @@
 
     <!-- Filter & Search Section -->
     <div class="filter-container">
-        <form method="GET" action="{{ route('sale.dashboard') }}" class="filter-form" id="autoSearchForm">
-            <label for="date">📅 วันที่: เดือน / วัน / ปี</label>
-            <input type="date" id="date" name="date" value="{{ request('date', \Carbon\Carbon::today()->format('Y-m-d')) }}">
-            <button type="submit" style="display: none;">ค้นหา</button>
-        </form>
   
     
     <script>
@@ -119,7 +368,9 @@
                     <td>{{ $item->so_id }}</td>
                     <td>{{ $item->ponum }}</td>
                     <td>{{ $item->billid }}</td>
-                    <td class="wrap-text">{{ $item->customer_name }}</td>
+                    <td class="wrap-text" style="text-align: left; white-space: normal; word-wrap: break-word;">
+                        {{ $item->customer_name }}
+                    </td>
                     <td>{{ \Carbon\Carbon::parse($item->date_of_dali)->format('d/m/Y') }}</td> 
                     <td>{{ $item->emp_name }}</td> 
                     <td>{{ $item->billtype }}</td>
@@ -189,7 +440,7 @@
                     </tbody>
                 </table>
                 <br>
-                <textarea id="popup-body-3" readonly style="width: 990px; height: 70px;" readonly>
+                <textarea id="popup-body-3" readonly style="width: 1050px; height: 70px;" readonly>
                 </textarea>
             </div>
         </div>

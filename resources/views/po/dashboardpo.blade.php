@@ -3,9 +3,187 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <link rel="stylesheet" href="{{ asset('css/dashboardpo.blade.css') }}">
+    {{-- <link rel="stylesheet" href="{{ asset('css/dashboardpo.blade.css') }}"> --}}
     <title>ข้อมูลรับของ PO</title>
- 
+ <style>
+    * {
+        box-sizing: border-box;
+    }
+
+    body {
+        font-family: 'Segoe UI', 'Roboto', sans-serif;
+        background-color: #f5f5f5;
+        margin: 0;
+        padding: 0;
+    }
+
+    .header {
+        background: linear-gradient(90deg, #1e3e7a 0%, #1e3e7a 65%, #355ca8 100%);
+        color: #fff;
+          border-radius: 6px;
+        padding: 12px 24px;
+        border-bottom: 4px solid #17305a;
+        box-shadow: 0 3px 8px rgba(0, 0, 0, 0.2);
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        flex-wrap: wrap;
+    }
+
+    .header h2 {
+        font-size: 24px;
+        margin: 0;
+    }
+
+    .buttons {
+        display: flex;
+        gap: 12px;
+        align-items: center;
+    }
+
+    .btn {
+        padding: 6px 14px;
+        border-radius: 4px;
+        color: #fff;
+        text-decoration: none;
+        font-weight: bold;
+    }
+
+    .btn-warning {
+        background-color: #f0ad4e;
+    }
+
+    .btn-danger {
+        background-color: #d9534f;
+    }
+
+    .filter-container {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        flex-wrap: wrap;
+        background-color: #ffffff;
+        padding: 10px 24px;
+        margin-top: 10px;
+        border-bottom: 1px solid #ddd;
+    }
+
+    .filter-form {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        font-size: 15px;
+    }
+
+    .search-box {
+        margin-left: auto;
+    }
+
+    #search-input {
+        padding: 6px 10px;
+        border: 1px solid #ccc;
+        border-radius: 4px;
+    }
+
+    .table-container {
+        padding: 20px;
+        overflow-x: auto;
+    }
+
+  table {
+        width: 100%;
+        border-collapse: collapse;
+        background-color: white;
+        font-size: 14px;
+        border-radius: 10px;
+        overflow: hidden;
+        min-width: 1000px;
+    }
+
+/* ตั้งค่าหลักให้ข้อมูลกลางและขนาดกะทัดรัด */
+th, td {
+    padding: 6px 8px;
+    border: 1px solid #e1e1e1;
+    text-align: center;
+    vertical-align: middle;
+    font-size: 13px;
+    line-height: 1.4;
+}
+
+    table thead {
+        background-color: #1e3e7a;
+        color: white;
+    }
+
+    table tbody tr:nth-child(even) {
+        background-color: #f9f9f9;
+    }
+
+    table tbody tr:hover {
+        background-color: #eef7f0;
+    }
+    
+    a {
+        color: #007bff;
+        text-decoration: none;
+        font-weight: 500;
+    }
+
+    a:hover {
+        text-decoration: underline;
+    }
+
+    /* POPUP */
+    .popup-overlay {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background-color: rgba(0, 0, 0, 0.5);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        z-index: 1000;
+        padding: 20px;
+    }
+
+    .popup-content {
+        background-color: #ffffff;
+        padding: 25px;
+        border-radius: 12px;
+        width: 100%;
+        max-width: 1200px;
+        box-shadow: 0 6px 14px rgba(0, 0, 0, 0.25);
+        overflow-y: auto;
+        max-height: 90vh;
+    }
+
+
+    .close-btn {
+        float: right;
+        font-size: 24px;
+        cursor: pointer;
+        color: #333;
+    }
+
+    textarea {
+        font-family: 'Segoe UI', sans-serif;
+        font-size: 14px;
+        padding: 10px;
+        border: 1px solid #ccc;
+        border-radius: 4px;
+    }
+</style>
+<style>
+.wrap-text {
+    text-align: left;
+    white-space: normal;
+    word-wrap: break-word;
+    padding: 10px; /* ซ้าย-ขวา-บน-ล่าง เว้น 10px */
+}
+
+</style>
 </head>
 <body>
     <div class="header">
@@ -70,7 +248,7 @@
                     <tr>
                         <td>{{ count($pobill) - $loop->index }}</td>
                         <td>{{ $item->po_id}}</td>
-                        <td>{{ $item->store_name}}</td>
+                        <td class="wrap-text">{{ $item->store_name }}</td>
                         <td>{{ \Carbon\Carbon::parse($item->recvDate)->format('d/m/Y') }}</td> 
                         <td>{{ $item->emp_name }}</td> 
                         <td>
@@ -148,7 +326,7 @@
                         </tbody>
                     </table>
                      <br>
-                <textarea id="popup-body-3" readonly style="width: 960px; height: 70px;" readonly>
+                <textarea id="popup-body-3" readonly style="width: 1050px; height: 70px;" readonly>
                 </textarea>
                 </div>
             </div>
