@@ -277,6 +277,14 @@ td.customer-name {
 
         </div>
     </div>
+    
+    <div class="filter-container">
+        <form method="GET" action="{{ route('sale.dashboard') }}" class="filter-form" id="autoSearchForm">
+             <label for="date">📅 วันที่: เดือน / วัน / ปี</label>
+            <input type="date" id="date" name="date" value="{{ request('date', \Carbon\Carbon::today()->format('Y-m-d')) }}">
+            <button type="submit" style="display: none;">ค้นหา</button>
+        </form>
+        
 <script>
   let isChecking = false;
 
@@ -338,6 +346,7 @@ td.customer-name {
             }
         });
     </script>
+    </div>
     <div class="search-box">
         <input type="text" id="search-input" placeholder=" ค้นหา เลขที่บิล" onkeyup="searchTable()">
     </div>
