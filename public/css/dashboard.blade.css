@@ -1,4 +1,4 @@
-<style>
+
     * {
         box-sizing: border-box;
     }
@@ -232,14 +232,9 @@ textarea {
     box-sizing: border-box;
 }
 
-</style>
-
-<style>
 .wrap-text {
     text-align: left;
     white-space: normal;
     word-wrap: break-word;
     padding: 10px; /* ซ้าย-ขวา-บน-ล่าง เว้น 10px */
 }
-
-</style>
