@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title> ระเอกสารชั่วคราว</title>
      {{-- <link rel="stylesheet" href="{{ asset('css/dashboarddoc.blade.css') }}"> --}}
-  <style>
+<style>
     * {
         box-sizing: border-box;
     }
@@ -15,19 +15,37 @@
         background-color: #f5f5f5;
         margin: 0;
         padding: 0;
+        color: #2c3e50;
+        line-height: 1.6;
+    }
+
+    a {
+        color: #007bff;
+        text-decoration: none;
+        font-weight: 500;
+    }
+
+    a:hover {
+        text-decoration: underline;
+    }
+
+    /* HEADER */
+    .container {
+        padding: 0 20px;
     }
 
     .header {
         background-color: #343a40;
         color: #fff;
-          border-radius: 6px;
-        padding: 12px 24px;
-        border-bottom: 4px solid #17305a;
-        box-shadow: 0 3px 8px rgba(0, 0, 0, 0.2);
+        border-radius: 6px;
+        padding: 8px 30px;
         display: flex;
         justify-content: space-between;
         align-items: center;
         flex-wrap: wrap;
+        border-bottom: 4px solid #17305a;
+        box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+        margin: 20px;
     }
 
     .header h2 {
@@ -47,6 +65,8 @@
         color: #fff;
         text-decoration: none;
         font-weight: bold;
+        font-size: 14px;
+        transition: 0.3s;
     }
 
     .btn-warning {
@@ -57,6 +77,11 @@
         background-color: #d9534f;
     }
 
+    .btn:hover {
+        opacity: 0.9;
+    }
+
+    /* FILTER */
     .filter-container {
         display: flex;
         justify-content: space-between;
@@ -75,6 +100,17 @@
         font-size: 15px;
     }
 
+    .filter-form label {
+        font-weight: 600;
+    }
+
+    .filter-form input[type="date"] {
+        padding: 6px 12px;
+        border-radius: 6px;
+        border: 1px solid #ccc;
+        background-color: #f9f9f9;
+    }
+
     .search-box {
         margin-left: auto;
     }
@@ -85,12 +121,13 @@
         border-radius: 4px;
     }
 
+    /* TABLE */
     .table-container {
         padding: 20px;
         overflow-x: auto;
     }
 
-  table {
+    table {
         width: 100%;
         border-collapse: collapse;
         background-color: white;
@@ -100,18 +137,22 @@
         min-width: 1000px;
     }
 
-/* ตั้งค่าหลักให้ข้อมูลกลางและขนาดกะทัดรัด */
-th, td {
-    padding: 6px 8px;
-    border: 1px solid #e1e1e1;
-    text-align: center;
-    vertical-align: middle;
-    font-size: 13px;
-    line-height: 1.4;
-}
+    th, td {
+        padding: 6px 8px;
+        border: 1px solid #e1e1e1;
+        text-align: center;
+        vertical-align: middle;
+        font-size: 13px;
+        line-height: 1.4;
+    }
+
+    th.customer-name,
+    td.customer-name {
+        text-align: left !important;
+    }
 
     table thead {
-       background-color: #343a40;
+        background-color: #343a40;
         color: white;
     }
 
@@ -122,18 +163,14 @@ th, td {
     table tbody tr:hover {
         background-color: #eef7f0;
     }
-    
-    a {
-        color: #007bff;
-        text-decoration: none;
-        font-weight: 500;
+
+    .wrap-text {
+        text-align: left;
+        white-space: normal;
+        word-wrap: break-word;
+        padding: 10px;
     }
 
-    a:hover {
-        text-decoration: underline;
-    }
-
-    
     /* POPUP */
     .popup-overlay {
         position: fixed;
@@ -160,13 +197,15 @@ th, td {
         max-height: 90vh;
     }
 
-
-
     .close-btn {
         float: right;
         font-size: 24px;
         cursor: pointer;
         color: #333;
+    }
+
+    .close-btn:hover {
+        color: #e74c3c;
     }
 
     textarea {
@@ -175,17 +214,11 @@ th, td {
         padding: 10px;
         border: 1px solid #ccc;
         border-radius: 4px;
+        resize: vertical;
+        width: 100%;
     }
 </style>
-<style>
-.wrap-text {
-    text-align: left;
-    white-space: normal;
-    word-wrap: break-word;
-    padding: 10px; /* ซ้าย-ขวา-บน-ล่าง เว้น 10px */
-}
 
-</style>
 </head>
 <body>
     <div class="header">
@@ -310,7 +343,7 @@ th, td {
             </tbody>
         </table>
          <br>
-            <textarea id="popup-body-3" readonl style="width: 1050px; height: 70px;" readonly>
+            <textarea id="popup-body-3" readonly></textarea>
             </textarea>
     </div> 
 </div>

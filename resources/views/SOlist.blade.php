@@ -283,19 +283,7 @@
                     <a href="http://server_update:8000/create_so"><input class="btn btn-secondary" type="button" name="action" value="สร้าง SO"></a>
                     <input type="hidden" id="method" name="method" value="">
                     {{-- ไปเพิ่มเซิฟหลัก --}}
-                    <script>
-    // สร้างวันที่วันนี้ในรูปแบบ YYYY-MM-DD
-    const today = new Date().toISOString().split('T')[0];
-
-    // ตั้งค่า href พร้อมพารามิเตอร์วันที่
-    document.addEventListener("DOMContentLoaded", function () {
-        document.getElementById("btn-dashboard").href = `dashboard?date=${today}`;
-        document.getElementById("btn-dashboardpo").href = `dashboardpo?date=${today}`;
-        document.getElementById("btn-dashboarddoc").href = `dashboarddoc?date=${today}`;
-    });
-</script>
-
-<a id="btn-dashboard">
+                   <a id="btn-dashboard">
     <input class="btn btn-danger" type="button" style="background-color: #C599B6" value="ข้อมูลจัดส่ง">
 </a>
 <a id="btn-dashboardpo">
@@ -304,6 +292,19 @@
 <a id="btn-dashboarddoc">
     <input class="btn btn-danger" type="button" style="background-color: #E9762B" value="เอกสารชั่วคราว">
 </a>
+
+<script>
+    document.addEventListener("DOMContentLoaded", function () {
+        // ดึงวันที่ปัจจุบันในรูปแบบ YYYY-MM-DD
+        const today = new Date().toISOString().split('T')[0];
+
+        // เพิ่มพารามิเตอร์วันที่เข้าไปในลิงก์
+        document.getElementById("btn-dashboard").href = `dashboard?date=${today}`;
+        document.getElementById("btn-dashboardpo").href = `dashboardpo?date=${today}`;
+        document.getElementById("btn-dashboarddoc").href = `dashboarddoc?date=${today}`;
+    });
+</script>
+                 <a href="alertaccount" title="บัญชี" class="notification-icon" style="position: relative; display: inline-block;">
                 <input class="btn btn-danger" type="button" style="background-color: pink" value="บัญชี">
                 
                     {{-- ไปเพิ่มเซิฟหลัก --}}

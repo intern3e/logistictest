@@ -6,11 +6,10 @@
     <meta name="csrf-token" content="{{ csrf_token() }}">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.4.0/jspdf.umd.min.js"></script>
     <link rel="stylesheet" href="{{ asset('css/insertdata.blade.css') }}">
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.4.120/pdf.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.4.120/pdf.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-
+      <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.14.305/pdf.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    
     <title>เปิดบิลสินค้า</title>
 
 </head>
@@ -62,7 +61,10 @@
         <input type="text" id="billtype" name="billtype" placeholder="ประเภทบิล" readonly>
     </div>
 
-                 
+    <div class="inline-group">
+        <label>รหัสลูกค้า :</label>
+        <input type="text" id="customer_id" name="customer_id" readonly>
+    </div>
 </div>
 
 
@@ -436,246 +438,86 @@ function openGoogleMaps() {
 </script>
 
 
-<!-- <script>
-        let convertedPDFBlob = null; // PDF Blob ที่จะถูกส่งไป backend
-        let originalFilename = ''; // เก็บชื่อไฟล์ต้นฉบับไว้ตั้งชื่อ
-
-        document.getElementById('POdocument').addEventListener('change', async function(event) {
-            const file = event.target.files[0];
-            const pdfPreview = document.getElementById('pdfPreview');
-
-            if (file) {
-                const fileType = file.type;
-                originalFilename = file.name;
-
-                pdfPreview.style.display = 'none';
-                convertedPDFBlob = null;
-
-                if (fileType === 'application/pdf') {
-                    convertedPDFBlob = file;
-                    const fileURL = URL.createObjectURL(file);
-                    pdfPreview.src = fileURL;
-                    pdfPreview.style.display = 'block';
-                } else if (fileType.startsWith('image/')) {
-                    const reader = new FileReader();
-                    reader.onload = async function(e) {
-                        const imgData = e.target.result;
-                        const { jsPDF } = window.jspdf;
-                        const pdf = new jsPDF();
-                        const img = new Image();
-                        img.src = imgData;
-
-                        img.onload = function() {
-                        const imgWidth = 190;
-                        const imgHeight = (img.height / img.width) * imgWidth;
-                        pdf.addImage(img, 'JPEG', 10, 10, imgWidth, imgHeight);
-
-                        convertedPDFBlob = pdf.output('blob'); // <-- ได้ blob แล้ว
-                        const pdfURL = URL.createObjectURL(convertedPDFBlob);
-                        pdfPreview.src = pdfURL;
-                        pdfPreview.style.display = 'block';
-                    };
-                    };
-                    reader.readAsDataURL(file);
-                } else {
-                    alert('ไฟล์ที่คุณอัปโหลดไม่รองรับ กรุณาอัปโหลด PDF หรือรูปภาพ');
-                    event.target.value = '';
-                }
-            }
-        });
-
-        // ฟังก์ชันสำหรับส่งไป backend
-        async function uploadFile() {
-        const formData = new FormData();
-
-        if (convertedPDFBlob) {
-            formData.append("POdocument", convertedPDFBlob);
-            
-        }
-
-        try {
-            const response = await fetch('route("insert.post")', {
-                method: 'POST',
-                body: formData
-            });
-
-            const result = await response.json();
-            alert("อัปโหลดสำเร็จ: " + JSON.stringify(result));
-        } catch (err) {
-            console.error("Upload error", err);
-            alert("เกิดข้อผิดพลาดในการอัปโหลด");
-        }
-    }
-</script> -->
 <script>
-    let convertedPDFBlob = null;
-    let originalFilename = '';
+const fileInput = document.getElementById('POdocument');
+const pdfPreview = document.getElementById('pdfPreview');
 
-    document.getElementById('POdocument').addEventListener('change', async function (event) {
-        const file = event.target.files[0];
-        const pdfPreview = document.getElementById('pdfPreview');
+let convertedPDFBlob = null;
+let originalFilename = '';
 
-        if (!file) return;
+fileInput.addEventListener('change', async function () {
+    const file = fileInput.files[0];
+    if (!file) return;
 
-        const fileType = file.type;
-        originalFilename = file.name;
-        pdfPreview.style.display = 'none';
-        convertedPDFBlob = null;
+    const ext = file.name.split('.').pop().toLowerCase();
+    originalFilename = file.name;
 
-        if (fileType === 'application/pdf') {
-            // 🔁 Convert PDF -> Image -> New PDF (A4)
-            const reader = new FileReader();
-            reader.onload = async function (e) {
-                const pdfData = new Uint8Array(e.target.result);
-                const pdf = await pdfjsLib.getDocument({ data: pdfData }).promise;
-                const page = await pdf.getPage(1);
-
-                const viewport = page.getViewport({ scale: 2 });
-                const canvas = document.createElement("canvas");
-                const context = canvas.getContext("2d");
-                canvas.width = viewport.width;
-                canvas.height = viewport.height;
-
-                await page.render({ canvasContext: context, viewport: viewport }).promise;
-
-                const imgData = canvas.toDataURL("image/jpeg");
-
-                const { jsPDF } = window.jspdf;
-                const newPdf = new jsPDF({
-                    orientation: 'portrait',
-                    unit: 'mm',
-                    format: 'a4'
-                });
-
-                const pageWidth = 210;
-                const pageHeight = 297;
-
-                let imgWidth = pageWidth - 20;
-                let imgHeight = (canvas.height / canvas.width) * imgWidth;
-                if (imgHeight > pageHeight - 20) {
-                    imgHeight = pageHeight - 20;
-                    imgWidth = (canvas.width / canvas.height) * imgHeight;
-                }
-
-                const x = (pageWidth - imgWidth) / 2;
-                const y = (pageHeight - imgHeight) / 2;
-
-                newPdf.addImage(imgData, 'JPEG', x, y, imgWidth, imgHeight);
-                convertedPDFBlob = newPdf.output('blob');
-
-                const pdfURL = URL.createObjectURL(convertedPDFBlob);
-                pdfPreview.src = pdfURL;
-                pdfPreview.style.display = 'block';
-            };
-            reader.readAsArrayBuffer(file);
-
-        } else if (fileType.startsWith('image/')) {
-            // 🖼 Image -> PDF A4
-            const reader = new FileReader();
-            reader.onload = function (e) {
-                const imgData = e.target.result;
-                const { jsPDF } = window.jspdf;
-                const pdf = new jsPDF({
-                    orientation: 'portrait',
-                    unit: 'mm',
-                    format: 'a4'
-                });
-
-                const img = new Image();
-                img.src = imgData;
-                img.onload = function () {
-                    const pageWidth = 210;
-                    const pageHeight = 297;
-                    let imgWidth = pageWidth - 20;
-                    let imgHeight = (img.height / img.width) * imgWidth;
-
-                    if (imgHeight > pageHeight - 20) {
-                        imgHeight = pageHeight - 20;
-                        imgWidth = (img.width / img.height) * imgHeight;
-                    }
-
-                    const x = (pageWidth - imgWidth) / 2;
-                    const y = (pageHeight - imgHeight) / 2;
-
-                    pdf.addImage(img, 'JPEG', x, y, imgWidth, imgHeight);
-                    convertedPDFBlob = pdf.output('blob');
-
-                    const pdfURL = URL.createObjectURL(convertedPDFBlob);
-                    pdfPreview.src = pdfURL;
-                    pdfPreview.style.display = 'block';
-                };
-            };
-            reader.readAsDataURL(file);
-        } else {
-            alert("กรุณาอัปโหลด PDF หรือ รูปภาพเท่านั้น");
-            event.target.value = '';
-        }
-    });
-</script>
-
-<script>
-    document.getElementById('uploadPDF').addEventListener('change', async function (event) {
-        const file = event.target.files[0];
-        if (!file || file.type !== 'application/pdf') {
-            alert("กรุณาอัปโหลดไฟล์ PDF เท่านั้น");
-            return;
-        }
-
+    if (ext === 'pdf') {
         const reader = new FileReader();
         reader.onload = async function (e) {
-            const pdfData = new Uint8Array(e.target.result);
-            const pdf = await pdfjsLib.getDocument({ data: pdfData }).promise;
-            const { jsPDF } = window.jspdf;
-            const newPdf = new jsPDF({
-                orientation: 'portrait',
-                unit: 'mm',
-                format: 'a4',
-                compress: true,
-                pdfVersion: '1.4' // 👈 บังคับให้เป็น PDF เวอร์ชัน 1.4
-            });
+            const base64 = e.target.result.split(',')[1];
+            const pdf = await pdfjsLib.getDocument({ data: atob(base64) }).promise;
 
-            const pageCount = pdf.numPages;
-
-            for (let pageNum = 1; pageNum <= pageCount; pageNum++) {
+            const canvases = [];
+            for (let pageNum = 1; pageNum <= pdf.numPages; pageNum++) {
                 const page = await pdf.getPage(pageNum);
-                const viewport = page.getViewport({ scale: 2 });
-
-                const canvas = document.createElement("canvas");
-                const context = canvas.getContext("2d");
+                const viewport = page.getViewport({ scale: 5 });
+                const canvas = document.createElement('canvas');
                 canvas.width = viewport.width;
                 canvas.height = viewport.height;
-
+                const context = canvas.getContext('2d');
                 await page.render({ canvasContext: context, viewport }).promise;
-
-                const imgData = canvas.toDataURL("image/jpeg");
-
-                const pageWidth = 210;
-                const pageHeight = 297;
-                let imgWidth = pageWidth - 20;
-                let imgHeight = (canvas.height / canvas.width) * imgWidth;
-                if (imgHeight > pageHeight - 20) {
-                    imgHeight = pageHeight - 20;
-                    imgWidth = (canvas.width / canvas.height) * imgHeight;
-                }
-
-                const x = (pageWidth - imgWidth) / 2;
-                const y = (pageHeight - imgHeight) / 2;
-
-                if (pageNum > 1) newPdf.addPage();
-                newPdf.addImage(imgData, 'JPEG', x, y, imgWidth, imgHeight);
+                canvases.push(canvas);
             }
 
-            const blob = newPdf.output('blob');
-            const url = URL.createObjectURL(blob);
-            document.getElementById('pdfPreview').src = url;
+            // สร้าง PDF ใหม่จาก canvas หน้าแรก
+            const canvas = canvases[0];
+            const imgData = canvas.toDataURL('image/jpeg', 1.0);
+            const { jsPDF } = window.jspdf;
+            const pdfDoc = new jsPDF('p', 'mm', 'a4');
+            const pageWidth = pdfDoc.internal.pageSize.getWidth();
+            const pageHeight = pdfDoc.internal.pageSize.getHeight();
+            pdfDoc.addImage(imgData, 'JPEG', 0, 0, pageWidth, pageHeight);
+            convertedPDFBlob = pdfDoc.output('blob');
 
-            // หากต้องการดาวน์โหลด
-            // newPdf.save("converted.pdf");
+            const blobUrl = URL.createObjectURL(convertedPDFBlob);
+            pdfPreview.src = blobUrl;
         };
+        reader.readAsDataURL(file);
+    } else if (['jpg', 'jpeg', 'png'].includes(ext)) {
+        const reader = new FileReader();
+        reader.onload = function (e) {
+            const img = new Image();
+            img.src = e.target.result;
+            img.onload = function () {
+                const canvas = document.createElement('canvas');
+                canvas.width = img.width;
+                canvas.height = img.height;
+                const ctx = canvas.getContext('2d');
+                ctx.drawImage(img, 0, 0);
 
-        reader.readAsArrayBuffer(file);
-    });
+                const imgData = canvas.toDataURL('image/jpeg', 1.0);
+                const { jsPDF } = window.jspdf;
+                const pdf = new jsPDF('p', 'mm', 'a4');
+                const pageWidth = pdf.internal.pageSize.getWidth();
+                const pageHeight = pdf.internal.pageSize.getHeight();
+                pdf.addImage(imgData, 'JPEG', 0, 0, pageWidth, pageHeight);
+                convertedPDFBlob = pdf.output('blob');
+
+                const blobUrl = URL.createObjectURL(convertedPDFBlob);
+                pdfPreview.src = blobUrl;
+            };
+        };
+        reader.readAsDataURL(file);
+    } else {
+        alert('ไฟล์ไม่รองรับ กรุณาอัปโหลด PDF หรือรูปภาพ');
+        fileInput.value = '';
+        convertedPDFBlob = null;
+        pdfPreview.src = '';
+    }
+});
 </script>
+
 <script>
     window.addEventListener('DOMContentLoaded', function () {
         const urlParams = new URLSearchParams(window.location.search);

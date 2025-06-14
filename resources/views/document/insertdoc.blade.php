@@ -575,9 +575,10 @@ select#cartype option:checked {
                 var newRow = document.createElement('tr');
                 newRow.innerHTML = `
                     <td><input type="text" class="form-control1" name="item_name[]"></td>
-                   <td style="text-align: center;">
-                        <input type="number" class="form-control1 item_quantity" name="item_quantity[]" step="0.01" style="text-align: center;">
-                    </td>
+                  <td style="text-align: center;">
+                    <input type="number" class="form-control1 item_quantity" name="item_quantity[]" step="0.01" style="text-align: center;">
+                </td>
+
                     <td><button type="button" class="btn btn-danger delete-btn">ลบ</button></td>
                 `;
                 tableBody.appendChild(newRow);
@@ -610,6 +611,25 @@ select#cartype option:checked {
                 );
             }
     </script>
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    const qtyInputs = document.querySelectorAll('.item_quantity');
+
+    qtyInputs.forEach(input => {
+        // เมื่อออกจากช่อง input ให้บังคับแสดงทศนิยม 2 ตำแหน่ง
+        input.addEventListener('blur', function () {
+            if (this.value !== '') {
+                this.value = parseFloat(this.value).toFixed(2);
+            }
+        });
+
+        // เมื่อโหลดหน้า ถ้ามีค่าก็จัดรูปแบบ
+        if (input.value !== '') {
+            input.value = parseFloat(input.value).toFixed(2);
+        }
+    });
+});
+</script>
 
 <script>
     function fetchFormType() {
