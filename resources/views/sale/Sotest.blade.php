@@ -67,11 +67,7 @@
             [$lat, $long] = explode(',', $item->customer_la_long);
             $lat = floatval(trim($lat));
             $long = floatval(trim($long));
-
-            if (
-                $lat >= $zoneALatMin && $lat <= $zoneALatMax &&
-                $long >= $zoneALongMin && $long <= $zoneALongMax
-            ) {
+            if ($lat >= $zoneALatMin && $lat <= $zoneALatMax && $long >= $zoneALongMin && $long <= $zoneALongMax) {
                 $grouped['Zone A (ภายในกรอบสีแดง)'][] = $item;
             } else {
                 $grouped['อื่น ๆ'][] = $item;
@@ -86,25 +82,18 @@
     <h3>{{ $zoneName }}</h3>
     <table>
       <thead>
-        <tr>
-          <th>ข้อมูลลูกค้า</th>
-        </tr>
+        <tr><th>ข้อมูลลูกค้า</th></tr>
       </thead>
       <tbody>
         @forelse($items as $item)
           <tr>
             <td>
               {{ $item->customer_name }}<br>
-              <a href="https://www.google.com/maps/search/?api=1&query={{ urlencode($item->customer_address) }}" target="_blank">
-                {{ $item->customer_address }}
-              </a><br>
-              @if(str_contains($item->customer_la_long, ','))
-                <a href="https://www.google.com/maps?q={{ $item->customer_la_long }}" target="_blank">
-                  {{ $item->customer_la_long }}
-                </a>
-              @else
-                {{ $item->customer_la_long }}
-              @endif
+              <span id="addr-{{ $loop->index }}">📍 กำลังดึงที่อยู่...</span><br>
+              <small style="color: gray">{{ $item->customer_la_long }}</small>
+              <script>
+                reverseGeocodeOSM("{{ $item->customer_la_long }}", "addr-{{ $loop->index }}");
+              </script>
             </td>
           </tr>
         @empty
@@ -150,7 +139,6 @@
   function searchTable() {
     let input = document.getElementById("search-input").value.toLowerCase();
     let tables = document.querySelectorAll(".table-container table");
-
     tables.forEach(table => {
       let rows = table.getElementsByTagName("tr");
       for (let i = 1; i < rows.length; i++) {
@@ -159,6 +147,37 @@
         row.style.display = cellText.includes(input) ? "" : "none";
       }
     });
+  }
+
+  async function reverseGeocodeOSM(latlong, elementId) {
+    const [lat, lon] = latlong.split(',');
+    const url = `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lon}&zoom=18&addressdetails=1`;
+    try {
+      const response = await fetch(url, {
+        headers: {
+          'User-Agent': 'MyDeliveryApp/1.0',
+          'Accept-Language': 'th'
+        }
+      });
+      const data = await response.json();
+      const addr = data.address;
+      const moo = addr.quarter || addr.neighbourhood || addr.village || 'ไม่ระบุ';
+      const house = addr.house_number || '';
+      const road = addr.road || addr.footway || addr.path || 'ไม่ระบุ';
+      const subdistrict = addr.subdistrict || addr.suburb || 'ไม่ระบุ';
+      const district = addr.city_district || addr.county || 'ไม่ระบุ';
+      const province = addr.state || 'ไม่ระบุ';
+      const postcode = addr.postcode || 'ไม่ระบุ';
+
+      const houseAndRoad = (house ? house : '') + (road !== 'ไม่ระบุ' ? ` ถนน${road}` : '');
+      const mooDisplay = moo !== 'ไม่ระบุ' && !moo.includes('หมู่') ? `หมู่ที่ ${moo}` : moo;
+
+      const fullAddress = `📌 ${mooDisplay}, ${houseAndRoad.trim() || 'ไม่ระบุ'}, ต.${subdistrict}, อ.${district}, จ.${province}, ${postcode}`;
+      document.getElementById(elementId).textContent = fullAddress;
+    } catch (e) {
+      console.error('Reverse geocode failed', e);
+      document.getElementById(elementId).textContent = '📌 ไม่พบที่อยู่';
+    }
   }
 </script>
 

@@ -370,15 +370,14 @@ function openGoogleMaps() {
             const billData = data.Bills[0][billId];
             const items = billData.items;
             
-            let deliveryDate = SoStatus.DeliveryDate;
+            let deliveryDate = billData.SendDate;
             if (deliveryDate) {
-                let formattedDate = new Date(deliveryDate);
-                let day = formattedDate.getDate().toString().padStart(2, '0');
-                let month = (formattedDate.getMonth() + 1).toString().padStart(2, '0');
-                let year = formattedDate.getFullYear();
+                let [datePart] = deliveryDate.split(" "); // เอาแค่ส่วนวันที่
+                let [year, month, day] = datePart.split("-"); // แยกปี-เดือน-วัน
+            
                 document.getElementById("date_of_dali").value = `${day}-${month}-${year}`;
             }
-            // document.getElementById('date_of_dali').value = billData.Duedate;
+
             let itemCounter = 1;
             const tableBody = document.getElementById('detail'); // แก้เป็น id จริงของ <tbody>
 
