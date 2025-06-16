@@ -38,7 +38,7 @@
             <tr>
                 <th>ปริ้นเอกสาร</th>
                 <th>REF.</th>
-                <th>ฟอมเอกสาร</th>
+                <th>ฟอร์มเอกสาร</th>
                 <th>เลชใบสั่งซื้อ</th>
                 <th>เลชPoลูกค้า</th>
                 <th>เลขใบส่งของ</th>
@@ -70,7 +70,7 @@
                         };
                     @endphp
 
-                  <td class="{{ $bgColor }}">{{ $item->formtype }}</td>
+                  <td id= "formtype" class="{{ $bgColor }}">{{ $item->formtype }}</td> 
 
 <td>{{ $item->so_id }}</td>
 
@@ -178,7 +178,7 @@
                                 }
                                 </script>
 
-
+{{-- 
                                     <td>
                             <div class="bill-actions-condensed">
                                     <input type="text" class="billid-input-condensed" id="billid" value="{{ $item->customer_id ?? '' }}" readonly>
@@ -203,7 +203,7 @@
                                             )">เลือกดูไฟล์</button>
                                     </div>
                                 </div>
-                                    </td>
+                                    </td> --}}
                                 </tr>
                                 
                             @endif

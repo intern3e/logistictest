@@ -178,7 +178,7 @@ billidInput.addEventListener('input', () => {
     <div >
     <label for="customer_address">ที่อยู่จัดส่ง :</label>
     {{-- <textarea id="customer_address" name="customer_address" rows="4" readonly required style="width: 100%; padding: 10px; font-size: 14px; border-radius: 10px; border: 1px solid #ccc; height: 50px" ></textarea> --}}
-    <input type="text" id="customer_address" name="customer_address" style="width: 100%; padding: 10px; font-size: 14px; border-radius: 6px; border: 1px solid #ccc; height: 30px"  readonly required >
+    <input type="text" id="customer_address" name="customer_address" style="width: 100%; padding: 10px; font-size: 14px; border-radius: 6px; border: 1px solid #ccc; height: 30px"  required >
     </div>
         <label>ละติจูด ลองจิจูด :</label>
         <div style="display: flex; justify-content: space-between; width: 100%;" >
@@ -326,6 +326,7 @@ function openGoogleMaps() {
     // ดึงค่า so_num จาก URL
     const urlParams = new URLSearchParams(window.location.search);
     const soNum = urlParams.get('so_num');
+     const billId = urlParams.get('billid');
 
     // ถ้ามีค่า so_num ใน URL ให้ดึงข้อมูล SO อัตโนมัติ
     if (soNum) {
@@ -366,8 +367,9 @@ function openGoogleMaps() {
                 .join(', ');
             document.getElementById('customer_tel').value = soDetails.ContTel;  
             document.getElementById('sale_name').value = SoStatus.createdBy; 
-
-            // แสดงวันที่จัดส่ง
+            const billData = data.Bills[0][billId];
+            const items = billData.items;
+            
             let deliveryDate = SoStatus.DeliveryDate;
             if (deliveryDate) {
                 let formattedDate = new Date(deliveryDate);
@@ -376,41 +378,13 @@ function openGoogleMaps() {
                 let year = formattedDate.getFullYear();
                 document.getElementById("date_of_dali").value = `${day}-${month}-${year}`;
             }
+            // document.getElementById('date_of_dali').value = billData.Duedate;
+            let itemCounter = 1;
+            const tableBody = document.getElementById('detail'); // แก้เป็น id จริงของ <tbody>
 
-            // ดึงค่า billid จาก input
-            const billidInput = document.getElementById('billid').value.trim();
-            if (!billidInput) {
-                alert("กรุณากรอก Bill ID");
-                return;
-            }
-
-            const tableBody = document.querySelector('#detail');
-            tableBody.innerHTML = ''; // ล้างตารางเดิมก่อน
-
-            let itemCounter = 1; // นับรายการสินค้า
-
-            // ตรวจสอบ Bills มีข้อมูลไหม
-            if (!data.Bills || data.Bills.length === 0) {
-                alert("ไม่พบข้อมูล Bills");
-                return;
-            }
-
-            // Bills เป็น array ของ object, เลือกตัวแรก
-            const billsObj = data.Bills[0];
-
-            // หา key ที่ตรงกับ billidInput
-            const items = billsObj[billidInput];
-
-            if (!items || items.length === 0) {
-                alert(`ไม่พบข้อมูลสินค้าใน Bills ของ Bill ID: ${billidInput}`);
-                return;
-            }
-
-            // วน loop แสดงแต่ละรายการใน items
             items.forEach(item => {
                 let newRow = document.createElement('tr');
 
-                // ป้องกันเครื่องหมาย " ในชื่อสินค้า
                 const safeGoodName = item.GoodName.replace(/"/g, '&quot;');
                 const itemId = `53-${String(itemCounter).padStart(4, '0')}`; // เช่น 53-0001
 
@@ -425,12 +399,10 @@ function openGoogleMaps() {
                     <td style="text-align: center; vertical-align: middle;">
                         <input type="text" class="form-control1" name="unit_price[]" value="${parseFloat(item.GoodPrice2).toFixed(2)}" readonly style="text-align: center;">
                     </td>
-
                 `;
                 tableBody.appendChild(newRow);
                 itemCounter++;
             });
-
         } catch (error) {
             console.error(error);
         }
