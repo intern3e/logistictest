@@ -9,6 +9,7 @@
       <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.14.305/pdf.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+
     
     <title>เปิดบิลสินค้า</title>
 
@@ -100,7 +101,7 @@ billidInput.addEventListener('input', () => {
  <div class="mb-3" style="display: flex; flex-wrap: wrap; gap: 20px; align-items: center;">
     <div style="flex: 2; min-width: 150px;">
         <label for="customer_name">ชื่อบริษัท :</label>
-        <input type="text" id="customer_name" name="customer_name" readonly style="width: 100%;">
+        <input type="text" id="customer_name" name="customer_name" style="width: 100%;">
     </div>
 
     <div style="flex: 1; min-width: 100px;">
@@ -429,28 +430,26 @@ fileInput.addEventListener('change', async function () {
             const base64 = e.target.result.split(',')[1];
             const pdf = await pdfjsLib.getDocument({ data: atob(base64) }).promise;
 
-            const canvases = [];
+            const { jsPDF } = window.jspdf;
+            const pdfDoc = new jsPDF('p', 'mm', 'a4');
+
             for (let pageNum = 1; pageNum <= pdf.numPages; pageNum++) {
                 const page = await pdf.getPage(pageNum);
-                const viewport = page.getViewport({ scale: 5 });
+                const viewport = page.getViewport({ scale: 2 });
                 const canvas = document.createElement('canvas');
                 canvas.width = viewport.width;
                 canvas.height = viewport.height;
                 const context = canvas.getContext('2d');
                 await page.render({ canvasContext: context, viewport }).promise;
-                canvases.push(canvas);
+
+                const imgData = canvas.toDataURL('image/jpeg', 1.0);
+                if (pageNum > 1) pdfDoc.addPage();
+                const pageWidth = pdfDoc.internal.pageSize.getWidth();
+                const pageHeight = pdfDoc.internal.pageSize.getHeight();
+                pdfDoc.addImage(imgData, 'JPEG', 0, 0, pageWidth, pageHeight);
             }
 
-            // สร้าง PDF ใหม่จาก canvas หน้าแรก
-            const canvas = canvases[0];
-            const imgData = canvas.toDataURL('image/jpeg', 1.0);
-            const { jsPDF } = window.jspdf;
-            const pdfDoc = new jsPDF('p', 'mm', 'a4');
-            const pageWidth = pdfDoc.internal.pageSize.getWidth();
-            const pageHeight = pdfDoc.internal.pageSize.getHeight();
-            pdfDoc.addImage(imgData, 'JPEG', 0, 0, pageWidth, pageHeight);
             convertedPDFBlob = pdfDoc.output('blob');
-
             const blobUrl = URL.createObjectURL(convertedPDFBlob);
             pdfPreview.src = blobUrl;
         };
@@ -488,6 +487,7 @@ fileInput.addEventListener('change', async function () {
     }
 });
 </script>
+
 
 <script>
     window.addEventListener('DOMContentLoaded', function () {

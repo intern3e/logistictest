@@ -4,7 +4,6 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>ข้อมูลจัดส่ง</title>
-
   <style>
     body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f9f9f9; margin: 0; padding: 0; }
     .header { background-color: #2d3e50; color: white; padding: 15px 20px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; }
@@ -25,7 +24,6 @@
   </style>
 </head>
 <body>
-
 <div class="header">
   <h2>ข้อมูลจัดส่ง</h2>
   <div class="buttons">
@@ -38,148 +36,131 @@
     </a>
   </div>
 </div>
-
 <div class="filter-container">
   <form method="GET" action="{{ route('sale.dashboard') }}" class="filter-form" id="autoSearchForm">
     <label for="date">📅 วันที่: เดือน / วัน / ปี</label>
     <input type="date" id="date" name="date" value="{{ request('date', \Carbon\Carbon::today()->format('Y-m-d')) }}">
   </form>
 </div>
-
 <div class="search-box">
   <input type="text" id="search-input" placeholder=" ค้นหา ชื่อลูกค้า / ที่อยู่ / พิกัด" onkeyup="searchTable()">
 </div>
-
 <div class="table-container">
   @php
-    $zoneALatMin = 12.95;
-    $zoneALatMax = 13.60;
-    $zoneALongMin = 100.85;
-    $zoneALongMax = 101.30;
+  // Zone A (กรอบสีแดง) - ใช้ค่าที่ถูกต้องตามลำดับ
+  $zoneALatMin = 13.083795;
+  $zoneALatMax = 13.123811;
+  $zoneALongMin = 100.9167453;
+  $zoneALongMax = 100.954473;
 
-    $grouped = [
-      'Zone A (ภายในกรอบสีแดง)' => [],
-      'อื่น ๆ' => []
-    ];
+  // Zone B (จาก 4 จุดที่คุณให้)
+  $zoneBLatMin = 12.9396116;
+  $zoneBLatMax = 13.0748591;
+  $zoneBLongMin = 101.0855834;
+  $zoneBLongMax = 101.21371836789208;
 
-    foreach ($bill as $item) {
-        if (!empty($item->customer_la_long) && str_contains($item->customer_la_long, ',')) {
-            [$lat, $long] = explode(',', $item->customer_la_long);
-            $lat = floatval(trim($lat));
-            $long = floatval(trim($long));
-            if ($lat >= $zoneALatMin && $lat <= $zoneALatMax && $long >= $zoneALongMin && $long <= $zoneALongMax) {
-                $grouped['Zone A (ภายในกรอบสีแดง)'][] = $item;
-            } else {
-                $grouped['อื่น ๆ'][] = $item;
-            }
-        } else {
-            $grouped['อื่น ๆ'][] = $item;
-        }
+  $grouped = [
+    'Zone A (ภายในกรอบสีแดง)' => [],
+    'Zone B (กรอบที่สอง)' => [],
+    'อื่น ๆ' => []
+  ];
+
+  foreach ($bill as $item) {
+    if (!empty($item->customer_la_long) && str_contains($item->customer_la_long, ',')) {
+      [$lat, $long] = explode(',', $item->customer_la_long);
+      $lat = floatval(trim($lat));
+      $long = floatval(trim($long));
+
+      if ($lat >= $zoneALatMin && $lat <= $zoneALatMax && $long >= $zoneALongMin && $long <= $zoneALongMax) {
+        $grouped['Zone A (ภายในกรอบสีแดง)'][] = $item;
+      } elseif ($lat >= $zoneBLatMin && $lat <= $zoneBLatMax && $long >= $zoneBLongMin && $long <= $zoneBLongMax) {
+        $grouped['Zone B (กรอบที่สอง)'][] = $item;
+      } else {
+        $grouped['อื่น ๆ'][] = $item;
+      }
+    } else {
+      $grouped['อื่น ๆ'][] = $item;
     }
+  }
   @endphp
+</div>
+
 
   @foreach($grouped as $zoneName => $items)
-    <h3>{{ $zoneName }}</h3>
-    <table>
-      <thead>
-        <tr><th>ข้อมูลลูกค้า</th></tr>
-      </thead>
-      <tbody>
-        @forelse($items as $item)
-          <tr>
-            <td>
-              {{ $item->customer_name }}<br>
-              <span id="addr-{{ $loop->index }}">📍 กำลังดึงที่อยู่...</span><br>
-              <small style="color: gray">{{ $item->customer_la_long }}</small>
-              <script>
-                reverseGeocodeOSM("{{ $item->customer_la_long }}", "addr-{{ $loop->index }}");
-              </script>
-            </td>
-          </tr>
-        @empty
-          <tr><td>ไม่มีข้อมูล</td></tr>
-        @endforelse
-      </tbody>
-    </table>
+  <h3>{{ $zoneName }}</h3>
+  <table>
+    <thead>
+      <tr>
+        <th>ข้อมูลลูกค้า</th>
+      </tr>
+    </thead>
+    <tbody>
+      @forelse($items as $index => $item)
+        <tr>
+          <td>
+            {{ $item->customer_name }}<br>
+            {{ $item->customer_address }}<br>
+            <span class="latlong" id="resolved-address-{{ $loop->index }}" data-latlong="{{ $item->customer_la_long }}">
+              📍 กำลังดึงที่อยู่...
+            </span>
+          </td>
+        </tr>
+      @empty
+        <tr><td>ไม่มีข้อมูล</td></tr>
+      @endforelse
+    </tbody>
+  </table>
   @endforeach
-
-  @if(isset($message))
-    <p style="text-align: center">{{ $message }}</p>
-  @endif
 </div>
 
 <script>
-  const form = document.getElementById('autoSearchForm');
-  const dateInput = document.getElementById('date');
-  dateInput.addEventListener('change', () => form.submit());
-  window.addEventListener('load', () => {
-    if (!sessionStorage.getItem('hasAutoSubmitted')) {
-      sessionStorage.setItem('hasAutoSubmitted', 'true');
-      form.submit();
-    }
-  });
+async function reverseGeocodeOSM(latlong, elementId) {
+  const [lat, lon] = latlong.split(',').map(val => val.trim());
+  const url = `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lon}&zoom=20&addressdetails=1`;
 
-  async function checkForAlerts() {
-    try {
-      const response = await fetch('/alertsale/count', {
-        headers: { 'X-Requested-With': 'XMLHttpRequest' }
-      });
-      const data = await response.json();
-      const badge = document.getElementById('alertBadge');
-      badge.textContent = data.count > 0 ? data.count : '';
-      badge.style.display = data.count > 0 ? 'block' : 'none';
-    } catch (e) {
-      console.error('แจ้งเตือนล้มเหลว', e);
-    }
-  }
-
-  checkForAlerts();
-  setInterval(checkForAlerts, 1000);
-
-  function searchTable() {
-    let input = document.getElementById("search-input").value.toLowerCase();
-    let tables = document.querySelectorAll(".table-container table");
-    tables.forEach(table => {
-      let rows = table.getElementsByTagName("tr");
-      for (let i = 1; i < rows.length; i++) {
-        let row = rows[i];
-        let cellText = row.textContent.toLowerCase();
-        row.style.display = cellText.includes(input) ? "" : "none";
+  try {
+    const response = await fetch(url, {
+      headers: {
+        'User-Agent': 'MyDeliveryApp/1.0',
+        'Accept-Language': 'th'
       }
     });
+    const data = await response.json();
+    const addr = data.address;
+
+    // ⚙️ ใช้ fallback หลายชั้น
+    const house = addr.house_number || addr.building || '';
+    const road = addr.road || addr.footway || addr.path || addr.residential || addr.street || 'ไม่ระบุถนน';
+    const moo = addr.quarter || addr.neighbourhood || addr.village || 'ไม่ระบุหมู่';
+    const subdistrict = addr.subdistrict || addr.suburb || addr.town || 'ไม่ระบุตำบล';
+    const district = addr.city_district || addr.district || addr.county || 'ไม่ระบุอำเภอ';
+    const province = addr.state || 'ไม่ระบุจังหวัด';
+    const postcode = addr.postcode || '';
+
+    // 🛠️ รวมบ้านเลขที่ + ถนน
+    const houseRoad = (house ? `บ้านเลขที่ ${house}, ` : '') + (road !== 'ไม่ระบุถนน' ? `ถนน${road}, ` : '');
+    const mooText = (moo !== 'ไม่ระบุหมู่' && !moo.includes('หมู่')) ? `หมู่ ${moo}, ` : (moo !== 'ไม่ระบุหมู่' ? `${moo}, ` : '');
+    const fullAddress = `📌 ${houseRoad}${mooText}ต.${subdistrict}, อ.${district}, จ.${province} ${postcode}`;
+
+    document.getElementById(elementId).textContent = fullAddress;
+  } catch (e) {
+    console.error('❌ Reverse geocode failed:', e);
+    document.getElementById(elementId).textContent = '📌 ไม่พบที่อยู่';
   }
+}
 
-  async function reverseGeocodeOSM(latlong, elementId) {
-    const [lat, lon] = latlong.split(',');
-    const url = `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lon}&zoom=18&addressdetails=1`;
-    try {
-      const response = await fetch(url, {
-        headers: {
-          'User-Agent': 'MyDeliveryApp/1.0',
-          'Accept-Language': 'th'
-        }
-      });
-      const data = await response.json();
-      const addr = data.address;
-      const moo = addr.quarter || addr.neighbourhood || addr.village || 'ไม่ระบุ';
-      const house = addr.house_number || '';
-      const road = addr.road || addr.footway || addr.path || 'ไม่ระบุ';
-      const subdistrict = addr.subdistrict || addr.suburb || 'ไม่ระบุ';
-      const district = addr.city_district || addr.county || 'ไม่ระบุ';
-      const province = addr.state || 'ไม่ระบุ';
-      const postcode = addr.postcode || 'ไม่ระบุ';
-
-      const houseAndRoad = (house ? house : '') + (road !== 'ไม่ระบุ' ? ` ถนน${road}` : '');
-      const mooDisplay = moo !== 'ไม่ระบุ' && !moo.includes('หมู่') ? `หมู่ที่ ${moo}` : moo;
-
-      const fullAddress = `📌 ${mooDisplay}, ${houseAndRoad.trim() || 'ไม่ระบุ'}, ต.${subdistrict}, อ.${district}, จ.${province}, ${postcode}`;
-      document.getElementById(elementId).textContent = fullAddress;
-    } catch (e) {
-      console.error('Reverse geocode failed', e);
-      document.getElementById(elementId).textContent = '📌 ไม่พบที่อยู่';
+// 🔁 เรียกใช้งานทุก .latlong เมื่อโหลดหน้าเสร็จ
+document.addEventListener("DOMContentLoaded", () => {
+  document.querySelectorAll('.latlong').forEach((el) => {
+    const latlong = el.getAttribute('data-latlong');
+    const elementId = el.id;
+    if (latlong && elementId) {
+      reverseGeocodeOSM(latlong, elementId);
     }
-  }
+  });
+});
 </script>
+
 
 </body>
 </html>
