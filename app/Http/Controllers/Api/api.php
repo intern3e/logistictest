@@ -7,14 +7,20 @@ use Illuminate\Http\Request;
 
 class api extends Controller
 {
-    public function apibilldeli()
+    public function apibilldeli(Request $request)
     {
-        $bills = Bill::pluck('billid')->toArray(); 
+        // รับค่าจาก query string และแปลงเป็น array
+        $idbillParam = $request->query('idbill');
+        $requestedIds = $idbillParam ? explode(',', $idbillParam) : [];
 
+        // ดึงรายการ billid ที่มีอยู่ในฐานข้อมูล
+        $existingIds = Bill::whereIn('billid', $requestedIds)->pluck('billid')->toArray();
+
+        // สร้าง response โดยตรวจสอบแต่ละ ID ว่ามีหรือไม่
         $result = ['idbilldelivery' => []];
 
-        foreach ($bills as $billid) {
-            $result['idbilldelivery'][$billid] = true;
+        foreach ($requestedIds as $id) {
+            $result['idbilldelivery'][$id] = in_array($id, $existingIds);
         }
 
         return response()->json($result);

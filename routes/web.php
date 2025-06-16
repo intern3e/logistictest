@@ -140,3 +140,8 @@ use App\Http\Controllers\text;
 Route::get('/SOlist', [text::class, 'txt1'])->name('txt1');
 Route::get('/insertSO', [text::class, 'txt2'])->name('txt2');
 Route::get('/adminSO', [text::class, 'txt3'])->name('txt3');
+
+
+
+use App\Http\Controllers\Sotestcontroller;
+Route::get('/Sotest', [Sotestcontroller::class, 'dashboard']);
