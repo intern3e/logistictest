@@ -431,7 +431,7 @@
                         };
                     @endphp
 
-                    <td class="{{ $bgColor }}">{{ $item->formtype }}</td>
+                    <td id = "formtype"class="{{ $bgColor }}">{{ $item->formtype }}</td>
 
                         
                         <td>{{ $item->so_id }}</td>

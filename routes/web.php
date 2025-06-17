@@ -145,3 +145,4 @@ Route::get('/adminSO', [text::class, 'txt3'])->name('txt3');
 
 use App\Http\Controllers\Sotestcontroller;
 Route::get('/Sotest', [Sotestcontroller::class, 'dashboard']);
+
