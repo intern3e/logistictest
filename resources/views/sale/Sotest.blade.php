@@ -125,10 +125,9 @@
   <form method="GET" action="{{ url()->current() }}" id="dateFilterForm" style="display: flex; align-items: center; gap: 10px;">
     <label for="filter_date">📅 เลือกวันที่:</label>
     <input type="date" id="filter_date" name="filter_date"
-      value="{{ request('filter_date', \Carbon\Carbon::now()->format('Y-m-d')) }}"
+      value="{{ request('filter_date') ?: date('Y-m-d') }}"
       onchange="document.getElementById('dateFilterForm').submit();">
   </form>
-
 
   <button onclick="downloadJSON()" style="padding: 10px 20px; background-color: #007bff; color: white; border: none; border-radius: 6px; font-weight: bold;">
     📥 ดาวน์โหลดข้อมูล JSON
@@ -136,6 +135,19 @@
 </div>
 
 <script>
+// ✅ ตั้งค่าวันที่เป็นวันปัจจุบันเมื่อโหลดหน้าเว็บ (ถ้าไม่มี parameter filter_date)
+document.addEventListener('DOMContentLoaded', function() {
+  const filterDateInput = document.getElementById('filter_date');
+  const urlParams = new URLSearchParams(window.location.search);
+  
+  // ถ้าไม่มี parameter filter_date ใน URL ให้ submit form อัตโนมัติ
+  if (!urlParams.has('filter_date')) {
+    const today = new Date().toISOString().split('T')[0];
+    filterDateInput.value = today;
+    document.getElementById('dateFilterForm').submit();
+  }
+});
+
 function downloadJSON() {
   const zoneData = {};
   const zoneBlocks = document.querySelectorAll('h3');
@@ -186,7 +198,6 @@ function downloadJSON() {
   link.click();
   document.body.removeChild(link);
 }
-
 </script>
 
 <div class="table-container">
@@ -207,7 +218,6 @@ function calculateDistance($lat1, $lon1, $lat2, $lon2) {
     return $earthRadius * $c;
 }
 
-
 // ✅ จุดเริ่มต้น
 $startLat = 13.717683;
 $startLong = 100.4732644;
@@ -222,7 +232,6 @@ $zoneAPolygon = [
     [13.496151731088403, 101.27818936995317]
 ];
 
-
 $zoneBPolygon = [
     [12.798893670022817, 101.03070268760943],
     [12.946433141125997, 101.04376636488216],
@@ -231,7 +240,6 @@ $zoneBPolygon = [
     [12.972382572554917, 101.3257158592489],
     [12.850104894894153, 101.36664189428281]
 ];
-
 
 $zoneCPolygon = [
     [13.355394524173379, 99.919167477935],
@@ -257,7 +265,6 @@ $zoneCPolygon = [
     [13.717820115488616, 100.1972798451252],
     [13.749194763512383, 100.30211608384103]
 ];
-
 
 $zoneDPolygon = [
     [13.810916732940521, 100.88197438902678],
@@ -297,8 +304,6 @@ $zoneFPolygon = [
   [13.470365206308633, 100.94721989919763]
 ];
 
-
-
 $zoneGPolygon = [
     [13.68853096266238, 100.8036919217823],
     [13.81086091968321, 100.83138033062738],
@@ -330,10 +335,9 @@ function pointInPolygon($point, $polygon) {
     return $inside;
 }
 
-// ✅ กรองตามวันที่
-$selectedDate = request('filter_date');
+// ✅ กรองตามวันที่ - ใช้วันที่ปัจจุบันถ้าไม่มีการเลือกวันที่
+$selectedDate = request('filter_date') ?: date('Y-m-d');
 $filteredBills = collect($bill)->filter(function($item) use ($selectedDate) {
-    if (!$selectedDate) return true;
     return Carbon::parse($item->date_of_dali)->toDateString() === $selectedDate;
 });
 
@@ -377,12 +381,10 @@ foreach ($filteredBills as $item) {
         } else {
             $grouped['อื่น ๆ'][] = $item;
         }
-
     } else {
         $grouped['อื่น ๆ'][] = $item;
     }
 }
-
 @endphp
 </div>
 
@@ -396,8 +398,7 @@ foreach ($filteredBills as $item) {
       โซนที่ {{ $zoneIndex }}: {{ $zoneName }} — จำนวนงาน: {{ count($items) }}
     </h3>
 
-    
-     <table>
+    <table>
       <thead>
         <tr>
           <th>ข้อมูลลูกค้า</th>
@@ -438,8 +439,6 @@ foreach ($filteredBills as $item) {
   </div>
   @endforeach
 </div>
-
-
 
 </body>
 </html>
