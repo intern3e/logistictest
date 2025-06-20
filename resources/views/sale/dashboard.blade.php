@@ -131,11 +131,12 @@
                     <td>{{ $item->billtype }}</td>
                     <td>{{ \Carbon\Carbon::parse($item->time)->format('H:i d/m/Y ') }}</td>
                     <td style="font-size: 12px;">
-                        @if($item->status == 0)
-                            กำลังดำเนินการ
-                        @else
-                            สำเร็จ
-                        @endif
+                    @if($item->status == 1 || $item->status == 2)
+                        ปริ้นสำเร็จ
+                    @else
+                        กำลังดำเนินการ
+                    @endif
+
                     </td>
                     <td><a href="javascript:void(0);" 
                         onclick="openPopup(
