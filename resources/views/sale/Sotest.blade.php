@@ -121,24 +121,78 @@
   </div>
 </div>
 
-<!-- ✅ ฟอร์มกรองวันที่ -->
-<div class="filter-container">
-  <form method="GET" action="{{ url()->current() }}" id="dateFilterForm">
+<div class="filter-container" style="display: flex; align-items: center; gap: 15px;">
+  <form method="GET" action="{{ url()->current() }}" id="dateFilterForm" style="display: flex; align-items: center; gap: 10px;">
     <label for="filter_date">📅 เลือกวันที่:</label>
-    <input type="date" id="filter_date" name="filter_date" value="{{ request('filter_date') }}" onchange="document.getElementById('dateFilterForm').submit();">
+    <input type="date" id="filter_date" name="filter_date"
+      value="{{ request('filter_date', \Carbon\Carbon::now()->format('Y-m-d')) }}"
+      onchange="document.getElementById('dateFilterForm').submit();">
   </form>
+
+
+  <button onclick="downloadJSON()" style="padding: 10px 20px; background-color: #007bff; color: white; border: none; border-radius: 6px; font-weight: bold;">
+    📥 ดาวน์โหลดข้อมูล JSON
+  </button>
 </div>
 
-<!-- 🔍 กล่องค้นหาข้อความ -->
-<div class="search-box">
-  <input type="text" id="search-input" placeholder="ค้นหา ชื่อลูกค้า / ที่อยู่ / พิกัด" onkeyup="searchTable()">
-</div>
+<script>
+function downloadJSON() {
+  const zoneData = {};
+  const zoneBlocks = document.querySelectorAll('h3');
+
+  zoneBlocks.forEach((zoneHeader) => {
+    const zoneName = zoneHeader.textContent.trim();
+    const table = zoneHeader.nextElementSibling;
+    const rows = table.querySelectorAll('tbody tr');
+
+    const zoneItems = [];
+
+    rows.forEach(row => {
+      const td = row.querySelector('td');
+      if (!td || td.innerText.includes("ไม่มีข้อมูล")) return;
+
+      const lines = td.innerText.trim().split('\n');
+      const so_id    = lines[1] || '';
+      const datetime = lines[2] || '';
+      const name     = lines[3] || '';
+      const address  = lines[4] || '';
+      const latlong  = lines.find(line => line.includes('📍 พิกัด:'))?.replace('📍 พิกัด: ', '') || '';
+      const distance = lines.find(line => line.includes('📏 ระยะทาง:'))?.replace('📏 ระยะทาง: ', '') || '';
+
+      zoneItems.push({
+        so_id: so_id,
+        time: datetime,
+        customer_name: name,
+        customer_address: address,
+        coordinates: latlong,
+        distance: distance
+      });
+    });
+
+    zoneData[zoneName] = zoneItems;
+  });
+
+  const jsonBlob = new Blob([JSON.stringify(zoneData, null, 2)], { type: 'application/json' });
+  const url = URL.createObjectURL(jsonBlob);
+  const link = document.createElement('a');
+  
+  // 🔹 ตั้งชื่อไฟล์ตามวันเวลาปัจจุบัน เช่น "ส่งของ-2025-06-19_14-35-00.json"
+  const now = new Date();
+  const timestamp = now.toISOString().replace(/[:T]/g, '-').split('.')[0]; // YYYY-MM-DD-HH-MM-SS
+  link.download = `ส่งของ-${timestamp}.json`;
+
+  link.href = url;
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+}
+
+</script>
 
 <div class="table-container">
 @php
 use Carbon\Carbon;
 
-// ✅ ฟังก์ชันคำนวณระยะทาง Haversine
 function calculateDistance($lat1, $lon1, $lat2, $lon2) {
     $earthRadius = 6371; // กิโลเมตร
     $latFrom = deg2rad($lat1);
@@ -153,23 +207,115 @@ function calculateDistance($lat1, $lon1, $lat2, $lon2) {
     return $earthRadius * $c;
 }
 
+
 // ✅ จุดเริ่มต้น
 $startLat = 13.717683;
 $startLong = 100.4732644;
 
-// ✅ พิกัดแต่ละโซน
-$zoneAPolygon = [[13.09824143481619, 100.84791113847695], [13.10811217787513, 101.18651778255656], [13.344760830796636, 101.28070372457205], [13.447748580498407, 101.03210018027217], [13.12399906219143, 100.95450518211493]];
-$zoneBPolygon = [[13.089028536413522, 101.2088399207378], [12.986216036841897, 101.25203928553853], [12.681584095570864, 101.28166901094463], [13.07247100159725, 101.0855082937613], [13.069937703530751, 101.18134858026723]];
-$zoneCPolygon = [
-  [13.71461804030927, 100.41190005301226],
-  [13.717912288250515, 100.47327512445216],
-  [13.670158209942592, 100.47426891095738],
-  [13.599941847073415, 100.3354732226036],
-  [13.707224573558767, 100.33833247359794],
-  [13.730404753778528, 100.45672016678178]  // ← จุดที่เพิ่ม , ให้เรียบร้อย
+$zoneAPolygon = [
+    [13.096866694533679, 101.26775485422567],
+    [13.021710224615083, 101.04269643843428],
+    [13.023783741783353, 100.82088836514302],
+    [13.27302261388081, 100.86011508026462],
+    [13.447002292322688, 100.86798408835267],
+    [13.47319712375085, 101.1011754551715],
+    [13.496151731088403, 101.27818936995317]
 ];
 
-$zoneDPolygon = [[14.004486568517862, 100.68032456863266], [14.255936197588044, 100.71860827776081], [14.370490233809495, 100.67763207282407], [14.353677057518775, 100.46821229807749], [14.068837378273237, 100.43214392858478], [13.949965347557134, 100.61169949941588]];
+
+$zoneBPolygon = [
+    [12.798893670022817, 101.03070268760943],
+    [12.946433141125997, 101.04376636488216],
+    [13.094329099162358, 101.05652450650597],
+    [13.094282365823148, 101.2847204488829],
+    [12.972382572554917, 101.3257158592489],
+    [12.850104894894153, 101.36664189428281]
+];
+
+
+$zoneCPolygon = [
+    [13.355394524173379, 99.919167477935],
+    [13.707113289735208, 99.89454148571286],
+    [14.041969739147719, 99.93984548663637],
+    [14.087183654643262, 100.0217867326325],
+    [14.121855638836463, 100.08520385076991],
+    [14.205207795100936, 100.23694375973452],
+    [14.055981420004677, 100.25284759451608],
+    [13.941281542384683, 100.26907977291638],
+    [13.929310924570444, 100.27078801601093],
+    [13.904273259744796, 100.31944866715641],
+    [13.870910626211218, 100.38247952720239],
+    [13.81198239540519, 100.49559153275877],
+    [13.768631613967866, 100.4987573482835],
+    [13.696844305872597, 100.50411226098345],
+    [13.670145027198616, 100.50597952457441],
+    [13.581906654669524, 100.51223381907708],
+    [13.508657185528403, 100.32218265014293],
+    [13.479710676041986, 100.09052308237426],
+    [13.636535153581917, 100.03208334775479],
+    [13.682840154450504, 100.06491085684762],
+    [13.717820115488616, 100.1972798451252],
+    [13.749194763512383, 100.30211608384103]
+];
+
+
+$zoneDPolygon = [
+    [13.810916732940521, 100.88197438902678],
+    [13.816045401249864, 100.49256596662198],
+    [13.933314307659607, 100.27107089815529],
+    [14.3399036515983, 100.23714808378625],
+    [14.716908380150352, 100.20586580145978],
+    [14.771425196855976, 100.67115827732961],
+    [14.813240246213219, 101.04568489026524],
+    [14.326229548695629, 101.00854134715885]
+];
+
+$zoneEPolygon = [
+    [13.493616521835158, 100.8242801525344],
+    [13.51219344799453, 100.71821058863118],
+    [13.537859316422448, 100.61124648692564],
+    [13.590588394220532, 100.6492960402475],
+    [13.649983483261925, 100.69121185480816],
+    [13.606408181994201, 100.87376014417984]
+];
+
+$zoneFPolygon = [
+  [13.49295754606871, 100.82856008153507],
+  [13.608213654070918, 100.8758630796703],
+  [13.632320524640807, 100.76904444767723],
+  [13.650117416433583, 100.69099415749356],
+  [13.593789738148056, 100.65117115919189],
+  [13.536818106921862, 100.60881313003387],
+  [13.537636609788946, 100.526433245617],
+  [13.623126290869333, 100.51442728851738],
+  [13.672355912212867, 100.50763436004434],
+  [13.678295342270166, 100.63007056846502],
+  [13.685679600765358, 100.7876519610175],
+  [13.699079529731494, 101.07539148460486],
+  [13.574837542457214, 101.07989563932854],
+  [13.481596445584746, 101.08303306550918],
+  [13.470365206308633, 100.94721989919763]
+];
+
+
+
+$zoneGPolygon = [
+    [13.68853096266238, 100.8036919217823],
+    [13.81086091968321, 100.83138033062738],
+    [13.812159635512833, 100.66496037833747],
+    [13.813250781871972, 100.49798826698886],
+    [13.674901026070808, 100.50715414236767],
+    [13.681827244874428, 100.65569774314002]
+];
+
+$zoneHPolygon = [
+    [12.653902469989623, 101.02400744070962],
+    [12.780881083683132, 101.01572967934067],
+    [12.813728583446014, 101.13974885931125],
+    [12.784662177783725, 101.35265882742893],
+    [12.633207756418546, 101.34215980719533],
+    [12.608060090136046, 101.15413188628654]
+];
 
 // ✅ ฟังก์ชันตรวจสอบจุดใน Polygon
 function pointInPolygon($point, $polygon) {
@@ -188,38 +334,55 @@ function pointInPolygon($point, $polygon) {
 $selectedDate = request('filter_date');
 $filteredBills = collect($bill)->filter(function($item) use ($selectedDate) {
     if (!$selectedDate) return true;
-    return Carbon::parse($item->time)->toDateString() === $selectedDate;
+    return Carbon::parse($item->date_of_dali)->toDateString() === $selectedDate;
 });
 
 // ✅ แบ่งกลุ่มตามโซน
 $grouped = [
-    'Zone A (มาบเอียง,ปลวกแดง,บ่อวิน)' => [],
+    'Zone A (มาบเอียง,ปลวกแดง)' => [],
     'Zone B (ชลบุรี)' => [],
-    'Zone C (กรุงเทพ)' => [],
+    'Zone C (พระราม 2,นครปฐม)' => [],
     'Zone D (รังสิต,อยุธยา,อ่างทอง)' => [],
+    'Zone E (บางนาตราด กม 11)' => [],
+    'Zone F (บางนาตราด กม 13)' => [],
+    'Zone G (กรุงเทพปริมณฑล)' => [],
+    'Zone H ( Open Source)' => [],
     'อื่น ๆ' => []
 ];
 
 foreach ($filteredBills as $item) {
     if (!empty($item->customer_la_long) && str_contains($item->customer_la_long, ',')) {
         [$lat, $long] = explode(',', $item->customer_la_long);
-        $lat = floatval(trim($lat)); $long = floatval(trim($long));
+        $lat = floatval(trim($lat));
+        $long = floatval(trim($long));
         $point = [$lat, $long];
-        if (pointInPolygon($point, $zoneAPolygon)) {
-            $grouped['Zone A (มาบเอียง,ปลวกแดง,บ่อวิน)'][] = $item;
-        } elseif (pointInPolygon($point, $zoneBPolygon)) {
+
+        // ✅ จัดลำดับ zone แบบแม่นยำ: เล็ก → ใหญ่
+        if (pointInPolygon($point, $zoneBPolygon)) {
             $grouped['Zone B (ชลบุรี)'][] = $item;
+        } elseif (pointInPolygon($point, $zoneFPolygon)) {
+            $grouped['Zone F (บางนาตราด กม 13)'][] = $item;
+        } elseif (pointInPolygon($point, $zoneEPolygon)) {
+            $grouped['Zone E (บางนาตราด กม 11)'][] = $item;
+        } elseif (pointInPolygon($point, $zoneGPolygon)) {
+            $grouped['Zone G (กรุงเทพปริมณฑล)'][] = $item;
         } elseif (pointInPolygon($point, $zoneCPolygon)) {
-            $grouped['Zone C (กรุงเทพ)'][] = $item;
+            $grouped['Zone C (พระราม 2,นครปฐม)'][] = $item;
         } elseif (pointInPolygon($point, $zoneDPolygon)) {
             $grouped['Zone D (รังสิต,อยุธยา,อ่างทอง)'][] = $item;
+        } elseif (pointInPolygon($point, $zoneHPolygon)) {
+            $grouped['Zone H ( Open Source)'][] = $item;
+        } elseif (pointInPolygon($point, $zoneAPolygon)) {
+            $grouped['Zone A (มาบเอียง,ปลวกแดง)'][] = $item;
         } else {
             $grouped['อื่น ๆ'][] = $item;
         }
+
     } else {
         $grouped['อื่น ๆ'][] = $item;
     }
 }
+
 @endphp
 </div>
 
@@ -227,8 +390,14 @@ foreach ($filteredBills as $item) {
 <div style="display: flex; flex-wrap: wrap; gap: 20px; padding: 20px;">
   @foreach($grouped as $zoneName => $items)
   <div style="flex: 1; min-width: 500px; background-color: #fff; border: 2px solid #999; border-radius: 8px; box-shadow: 0 0 8px rgba(0,0,0,0.1); padding: 15px;">
-    <h3 style="margin-top: 0;">{{ $zoneName }}</h3>
-    <table>
+    
+  @php $zoneIndex = $loop->index + 1; @endphp
+    <h3 style="margin-top: 0;">
+      โซนที่ {{ $zoneIndex }}: {{ $zoneName }} — จำนวนงาน: {{ count($items) }}
+    </h3>
+
+    
+     <table>
       <thead>
         <tr>
           <th>ข้อมูลลูกค้า</th>
@@ -237,7 +406,7 @@ foreach ($filteredBills as $item) {
       <tbody>
         @forelse($items as $index => $item)
         @php
-          $distanceText = '';
+          $distanceText = 'ไม่ทราบระยะทาง';
           if (!empty($item->customer_la_long) && str_contains($item->customer_la_long, ',')) {
               [$custLat, $custLong] = explode(',', $item->customer_la_long);
               $custLat = floatval(trim($custLat));
@@ -246,17 +415,18 @@ foreach ($filteredBills as $item) {
               $distanceText = number_format($distance, 2) . ' กม. จากจุดเริ่มต้น';
           }
         @endphp
+
         <tr>
           <td>
             <div style="border: 2px solid #999; border-radius: 6px; padding: 10px;">
-              {{ $item->time }}<br>
+              <strong>งานที่: {{ $index + 1 }}</strong><br>
+              {{ $item->so_id }} {{ $item->date_of_dali }}<br>
               {{ $item->customer_name }}<br>
               {{ $item->customer_address }}<br>
-            <a class="latlong" style="color:#007bff; text-decoration:underline;" href="https://www.google.com/maps?q={{ trim($item->customer_la_long) }}" target="_blank">
-              📍 พิกัด: {{ $item->customer_la_long }}
-            </a>
-              </span><br>
-              <span class="latlong">📏 ระยะทาง: {{ $distanceText }}</span>
+              <a class="latlong" style="color:#007bff; text-decoration:underline;" href="https://www.google.com/maps?q={{ trim($item->customer_la_long) }}" target="_blank">
+                📍 พิกัด: {{ $item->customer_la_long }}
+              </a><br>
+              <span class="latlong" style="color: #28a745; font-weight: bold;">📏 ระยะทาง: {{ $distanceText }}</span>
             </div>
           </td>
         </tr>
@@ -268,5 +438,8 @@ foreach ($filteredBills as $item) {
   </div>
   @endforeach
 </div>
+
+
+
 </body>
 </html>

@@ -101,7 +101,7 @@ billidInput.addEventListener('input', () => {
  <div class="mb-3" style="display: flex; flex-wrap: wrap; gap: 20px; align-items: center;">
     <div style="flex: 2; min-width: 150px;">
         <label for="customer_name">ชื่อบริษัท :</label>
-        <input type="text" id="customer_name" name="customer_name" style="width: 100%;">
+        <input type="text" id="customer_name" name="customer_name" style="width: 100%;" readonly required >
     </div>
 
     <div style="flex: 1; min-width: 100px;">
@@ -111,8 +111,9 @@ billidInput.addEventListener('input', () => {
 
     <div style="flex: 1; min-width: 50px;">
         <label for="date_of_dali">วันกำหนดส่ง :</label>
-        <input type="text" id="date_of_dali" name="date_of_dali" style="width: 40%;" readonly required >
+        <input type="text" id="date_of_dali" name="date_of_dali" style="width: 40%;" readonly required  > 
     </div>
+    {{-- readonly --}}
 </div>
 
        <div class="mb-3" style="display: flex; gap: 20px; align-items: center;">
@@ -179,7 +180,7 @@ billidInput.addEventListener('input', () => {
     <div >
     <label for="customer_address">ที่อยู่จัดส่ง :</label>
     {{-- <textarea id="customer_address" name="customer_address" rows="4" readonly required style="width: 100%; padding: 10px; font-size: 14px; border-radius: 10px; border: 1px solid #ccc; height: 50px" ></textarea> --}}
-    <input type="text" id="customer_address" name="customer_address" style="width: 100%; padding: 10px; font-size: 14px; border-radius: 6px; border: 1px solid #ccc; height: 30px"  required >
+    <input type="text" id="customer_address" name="customer_address" style="width: 100%; padding: 10px; font-size: 14px; border-radius: 6px; border: 1px solid #ccc; height: 30px"  readonly required >
     </div>
         <label>ละติจูด ลองจิจูด :</label>
         <div style="display: flex; justify-content: space-between; width: 100%;" >
