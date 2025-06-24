@@ -111,6 +111,7 @@
     }
   </style>
 </head>
+<form id="csrfForm">@csrf</form>
 <body>
 <div class="header">
   <h2>ข้อมูลจัดส่ง</h2>
@@ -129,9 +130,15 @@
       onchange="document.getElementById('dateFilterForm').submit();">
   </form>
 
-  <button onclick="downloadJSON()" style="padding: 10px 20px; background-color: #007bff; color: white; border: none; border-radius: 6px; font-weight: bold;">
+<!-- ปุ่มดาวน์โหลด + สถานะ -->
+<div style="display: flex; align-items: center; gap: 15px;">
+  <button onclick="downloadJSON()" id="downloadBtn"
+    style="padding: 10px 20px; background-color: #007bff; color: white; border: none; border-radius: 6px; font-weight: bold;">
     📥 ดาวน์โหลดข้อมูล JSON
   </button>
+  <span id="statusMessage" style="font-weight: bold; color: #333;"></span>
+</div>
+
 </div>
 
 <script>
@@ -149,6 +156,12 @@ document.addEventListener('DOMContentLoaded', function() {
 });
 
 function downloadJSON() {
+  const btn = document.getElementById('downloadBtn');
+  const statusEl = document.getElementById('statusMessage');
+
+  statusEl.textContent = '⏳ กำลังส่งข้อมูล...';
+  statusEl.style.color = '#ffc107';
+
   const zoneData = {};
   const zoneBlocks = document.querySelectorAll('h3');
 
@@ -159,45 +172,65 @@ function downloadJSON() {
 
     const zoneItems = [];
 
-    rows.forEach(row => {
-      const td = row.querySelector('td');
-      if (!td || td.innerText.includes("ไม่มีข้อมูล")) return;
+   rows.forEach(row => {
+  const td = row.querySelector('td');
+  if (!td || td.innerText.includes("ไม่มีข้อมูล")) return;
 
-      const lines = td.innerText.trim().split('\n');
-      const so_id    = lines[1] || '';
-      const datetime = lines[2] || '';
-      const name     = lines[3] || '';
-      const address  = lines[4] || '';
-      const latlong  = lines.find(line => line.includes('📍 พิกัด:'))?.replace('📍 พิกัด: ', '') || '';
-      const distance = lines.find(line => line.includes('📏 ระยะทาง:'))?.replace('📏 ระยะทาง: ', '') || '';
+  const lines = td.innerText.trim().split('\n');
 
-      zoneItems.push({
-        so_id: so_id,
-        time: datetime,
-        customer_name: name,
-        customer_address: address,
-        coordinates: latlong,
-        distance: distance
-      });
-    });
+  const so_id        = lines[1] || '';
+  const datetime     = lines[2] || '';
+  const name         = lines[3] || '';
+  const customer_tel = lines[4] || '';
+  let address        = lines[5] || '';
+  const latlongLine  = lines.find(line => line.includes('📍 พิกัด:')) || '';
+  const latlong      = latlongLine.replace(/📍\s*พิกัด:\s*/g, '').trim();
+
+  // 🔧 ถ้า address ยังมีพิกัดติดมา ให้ลบออก
+  if (address.includes('📍 พิกัด:')) {
+    address = address.replace(/📍\s*พิกัด:\s*.+$/, '').trim();
+  }
+
+  zoneItems.push({
+    so_id: so_id,
+    time: datetime,
+    customer_name: name,
+    customer_tel: customer_tel,
+    customer_address: address,
+    coordinates: latlong
+  });
+});
+
 
     zoneData[zoneName] = zoneItems;
   });
 
-  const jsonBlob = new Blob([JSON.stringify(zoneData, null, 2)], { type: 'application/json' });
-  const url = URL.createObjectURL(jsonBlob);
-  const link = document.createElement('a');
-  
-  // 🔹 ตั้งชื่อไฟล์ตามวันเวลาปัจจุบัน เช่น "ส่งของ-2025-06-19_14-35-00.json"
-  const now = new Date();
-  const timestamp = now.toISOString().replace(/[:T]/g, '-').split('.')[0]; // YYYY-MM-DD-HH-MM-SS
-  link.download = `ส่งของ-${timestamp}.json`;
-
-  link.href = url;
-  document.body.appendChild(link);
-  link.click();
-  document.body.removeChild(link);
+  // ✅ ส่งไปที่ Laravel route /send-to-sheet
+  fetch('/send-to-sheet', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'X-CSRF-TOKEN': document.querySelector('input[name="_token"]').value
+    },
+    body: JSON.stringify(zoneData)
+  })
+  .then(response => response.json())
+  .then(data => {
+    if (data.status === 'success') {
+      statusEl.textContent = '✅ ส่งข้อมูลสำเร็จ!';
+      statusEl.style.color = '#28a745';
+    } else {
+      statusEl.textContent = '❌ ล้มเหลว: ' + data.message;
+      statusEl.style.color = '#dc3545';
+    }
+  })
+  .catch(error => {
+    statusEl.textContent = '❌ ส่งข้อมูลล้มเหลว!';
+    statusEl.style.color = '#dc3545';
+    console.error(error);
+  });
 }
+
 </script>
 
 <div class="table-container">
@@ -343,15 +376,15 @@ $filteredBills = collect($bill)->filter(function($item) use ($selectedDate) {
 
 // ✅ แบ่งกลุ่มตามโซน
 $grouped = [
-    'Zone A (มาบเอียง,ปลวกแดง)' => [],
-    'Zone B (ชลบุรี)' => [],
-    'Zone C (พระราม 2,นครปฐม)' => [],
-    'Zone D (รังสิต,อยุธยา,อ่างทอง)' => [],
-    'Zone E (บางนาตราด กม 11)' => [],
-    'Zone F (บางนาตราด กม 13)' => [],
-    'Zone G (กรุงเทพปริมณฑล)' => [],
+    'Zone A กอล์ฟ(มาบเอียง)' => [],
+    'Zone B บังเดช(ชลบุรี)' => [],
+    'Zone C ยุทร(พระราม 2)' => [],
+    'Zone D หรั่ง(รังสิต,อยุธยา)' => [],
+    'Zone E เอ(บางนาตราด กม 11)' => [],
+    'Zone F แฟรงค์(บางนาตราด กม 13)' => [],
+    'Zone G เเชม(กรุงเทพปริมณฑล)' => [],
     'Zone H ( Open Source)' => [],
-    'อื่น ๆ' => []
+    'เก่ง อื่น ๆ' => []
 ];
 
 foreach ($filteredBills as $item) {
@@ -363,26 +396,26 @@ foreach ($filteredBills as $item) {
 
         // ✅ จัดลำดับ zone แบบแม่นยำ: เล็ก → ใหญ่
         if (pointInPolygon($point, $zoneBPolygon)) {
-            $grouped['Zone B (ชลบุรี)'][] = $item;
+            $grouped['Zone B บังเดช(ชลบุรี)'][] = $item;
         } elseif (pointInPolygon($point, $zoneFPolygon)) {
-            $grouped['Zone F (บางนาตราด กม 13)'][] = $item;
+            $grouped['Zone F แฟรงค์(บางนาตราด กม 13)'][] = $item;
         } elseif (pointInPolygon($point, $zoneEPolygon)) {
-            $grouped['Zone E (บางนาตราด กม 11)'][] = $item;
+            $grouped['Zone E เอ(บางนาตราด กม 11)'][] = $item;
         } elseif (pointInPolygon($point, $zoneGPolygon)) {
-            $grouped['Zone G (กรุงเทพปริมณฑล)'][] = $item;
+            $grouped['Zone G เเชม(กรุงเทพปริมณฑล)'][] = $item;
         } elseif (pointInPolygon($point, $zoneCPolygon)) {
-            $grouped['Zone C (พระราม 2,นครปฐม)'][] = $item;
+            $grouped['Zone C ยุทร(พระราม 2)'][] = $item;
         } elseif (pointInPolygon($point, $zoneDPolygon)) {
-            $grouped['Zone D (รังสิต,อยุธยา,อ่างทอง)'][] = $item;
+            $grouped['Zone D หรั่ง(รังสิต,อยุธยา)'][] = $item;
         } elseif (pointInPolygon($point, $zoneHPolygon)) {
             $grouped['Zone H ( Open Source)'][] = $item;
         } elseif (pointInPolygon($point, $zoneAPolygon)) {
-            $grouped['Zone A (มาบเอียง,ปลวกแดง)'][] = $item;
+            $grouped['Zone A กอล์ฟ(มาบเอียง)'][] = $item;
         } else {
-            $grouped['อื่น ๆ'][] = $item;
+            $grouped['เก่ง อื่น ๆ'][] = $item;
         }
     } else {
-        $grouped['อื่น ๆ'][] = $item;
+        $grouped['เก่ง อื่น ๆ'][] = $item;
     }
 }
 @endphp
@@ -423,6 +456,7 @@ foreach ($filteredBills as $item) {
               <strong>งานที่: {{ $index + 1 }}</strong><br>
               {{ $item->so_id }} {{ $item->date_of_dali }}<br>
               {{ $item->customer_name }}<br>
+              {{ $item->customer_tel }}<br>
               {{ $item->customer_address }}<br>
               <a class="latlong" style="color:#007bff; text-decoration:underline;" href="https://www.google.com/maps?q={{ trim($item->customer_la_long) }}" target="_blank">
                 📍 พิกัด: {{ $item->customer_la_long }}

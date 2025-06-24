@@ -146,3 +146,9 @@ Route::get('/adminSO', [text::class, 'txt3'])->name('txt3');
 use App\Http\Controllers\Sotestcontroller;
 Route::get('/Sotest', [Sotestcontroller::class, 'dashboard']);
 
+use App\Http\Controllers\SheetController;
+Route::post('/send-to-sheet', [SheetController::class, 'send']);
+
+use App\Http\Controllers\PdfController;
+Route::post('/upload-merged-pdf', [PdfController::class, 'mergeWithBillTemplate'])->name('upload.merged_pdf');
+

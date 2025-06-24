@@ -211,7 +211,7 @@
              padding: 9px;
             text-align: center;
             border: 1px solid #e1e4e8;
-            font-size: 14px;
+            font-size: 10px;
         }
 
         th {
@@ -410,6 +410,7 @@
                 <th>ประเภทบิล</th>
                 <th>เลขที่เอกสาร</th>
                 <th>ข้อมูลสินค้า</th>
+             
             </tr>
         </thead>
         <tbody id="table-body">
@@ -522,8 +523,55 @@
                                         '{{ $item->sale_name }}'
                                     )">
                                     เพิ่มเติม
-                                 </a></td>
+                                 </a>
+                                </td>
+
+
+                                  <td>
+                                    <span id="customer-id-{{ $item->id }}">{{ $item->customer_id }}</span>
+                                    <button onclick="copyToClipboard('customer-id-{{ $item->id }}')" class="copy-btn">
+                                        คัดลอก
+                                    </button>
+                                </td>
+                                <script>
+                                function copyToClipboard(elementId) {
+                                    const text = document.getElementById(elementId).innerText;
+                                    navigator.clipboard.writeText(text).then(() => {
+                                        alert("คัดลอกข้อมูลแล้ว: " + text);
+                                    }).catch(err => {
+                                        console.error('ไม่สามารถคัดลอกได้', err);
+                                    });
+                                }
+                                </script> 
+
+
+                                    <td>
+                            <div class="bill-actions-condensed">
+                                    <input type="text" class="billid-input-condensed" id="billid" value="{{ $item->customer_id ?? '' }}" readonly>
+
+                                    <form action="{{ route('upload.pdf') }}" method="POST" enctype="multipart/form-data" class="upload-form-condensed">
+                                        @csrf
+                                        <input type="file" name="pdffile" id="pdffile" accept="application/pdf" required>
+                                        <button type="submit" class="btn-upload-condensed">อัปโหลด PDF</button>
+                                    </form>
+
+                                    <div class="action-buttons-condensed">
+                                        <button class="btn-danger-condensed"
+                                            onclick="addIdToDocument('{{ $item->so_detail_id }}', '{{ $item->billid }}')">เพิ่มเลขบิล</button>
+
+                                        <button class="btn-success-condensed"
+                                            onclick="openFileInNewTabbill(
+                                                '{{ asset('storage/doc_document/' . $item->billid . '.pdf') }}', 
+                                                '{{ $item->ponum }}', 
+                                                '{{ $item->so_detail_id }}', 
+                                                '{{ $item->so_id }}',
+                                                '{{ $item->billid ?? '' }}'
+                                            )">เลือกดูไฟล์</button>
+                                    </div>
+                                </div>
+                                    </td>
                                 </tr>
+                                
                             @endif
                         @endforeach
                     </tbody>
