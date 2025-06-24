@@ -137,41 +137,55 @@ billidInput.addEventListener('input', () => {
     </div>
 </div>
 
-        <script>
-        function fetchFormType() {
-            console.log('fetchFormType called'); // ตรวจสอบการเรียกฟังก์ชัน
-        
-            var customer_id = document.getElementById("customer_id").value;
-        
-            if (customer_id) {  // ตรวจสอบว่า customer_id มีค่า
-                // ส่งคำขอไปยัง Controller
-                fetch('/fetch-formtype', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
-                    },
-                    body: JSON.stringify({ customer_id: customer_id })
-                })
-                .then(response => response.json())  // แปลงคำตอบเป็น JSON
-                .then(data => {
-                    console.log('Response from server:', data); // ตรวจสอบข้อมูลจากเซิร์ฟเวอร์
-        
-                    if (data.formtype) {  // ถ้าเจอ formtype จากเซิร์ฟเวอร์
-                        document.getElementById("formtype").value = data.formtype;
-                        document.getElementById("customer_la_long").value = data.customer_la_long;
-                        updateMap();
-                    } else {  // ถ้าไม่เจอ formtype
-                        document.getElementById("formtype").value = 'ไม่มีข้อมูล';  // กำหนดค่าเป็น "ไม่มีข้อมูล"
-                    }
-                })
-                .catch(error => console.error('Error:', error));  // จับข้อผิดพลาด
+     <script>
+function fetchFormType() {
+    console.log('fetchFormType called'); // ตรวจสอบการเรียกฟังก์ชัน
+
+    const customer_id = document.getElementById("customer_id").value;
+    const formtypeSelect = document.getElementById("formtype");
+
+    if (customer_id) {
+        fetch('/fetch-formtype', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+            },
+            body: JSON.stringify({ customer_id: customer_id })
+        })
+        .then(response => response.json())
+        .then(data => {
+            console.log('Response from server:', data);
+
+            if (data.formtype) {
+                const exists = Array.from(formtypeSelect.options)
+                                    .some(option => option.value === data.formtype);
+                if (!exists) {
+                    const newOption = new Option(data.formtype, data.formtype);
+                    formtypeSelect.add(newOption);
+                }
+
+                formtypeSelect.value = data.formtype;
             } else {
-                // หากไม่มี customer_id, กำหนดค่าให้เป็น "ไม่มีข้อมูล"
-                document.getElementById("formtype").value = 'ไม่มีข้อมูล';
+                formtypeSelect.value = 'ไม่มีข้อมูล';
             }
-        }
-        </script>
+
+            // ✅ ตั้งค่าค่า lat/long จาก tblbill
+            document.getElementById("customer_la_long").value = data.customer_la_long || '';
+            updateMap();
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            formtypeSelect.value = 'ไม่มีข้อมูล';
+            document.getElementById("customer_la_long").value = '';
+        });
+    } else {
+        formtypeSelect.value = 'ไม่มีข้อมูล';
+        document.getElementById("customer_la_long").value = '';
+    }
+}
+</script>
+
 
 
             

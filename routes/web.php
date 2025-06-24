@@ -42,6 +42,8 @@ Route::get('/add-so-detail-id-to-pdf/{soDetailId}/{POdocument}',
     [PoDocumentController::class, 'addSoDetailIdToPoDocument']);
 Route::get('/add-so-detail-id-to-bill/{so_detail_id}/{filename}', 
     [PoDocumentController::class, 'addIdToDocument']);
+Route::get('/add-so-detail-id-to-billissue/{so_detail_id}/{bill_issue_no}', 
+    [PoDocumentController::class, 'addIdToissueDocument']);
 
 
 use App\Http\Controllers\admincontroller;
@@ -52,7 +54,7 @@ Route::post('/update-status', [admincontroller::class, 'updateStatus']);
 Route::get('/dashboardadminpdf', [AdminController::class, 'dashboardpdf'])->name('admin.dashboardadminpdf');
 Route::post('/update-statuspdfso', [admincontroller::class, 'updateStatuspdf']);
 Route::post('/update-statuspdfsoback', [admincontroller::class, 'updateStatuspdfback']);
-Route::post('/update-billid', [AdminController::class, 'updateBillId'])->name('update.billid');
+Route::post('/update-billissue', [admincontroller::class, 'updateBillIssue']);
 Route::get('/adminroute', [AdminController::class, 'adminroute'])->name('admin.adminroute');
 Route::post('/update-statuspdfso2', [admincontroller::class, 'updateStatuspdf2']);
 Route::post('/update-delivery-date', [admincontroller::class, 'updateDeliveryDate'])->name('update.delivery.date');
@@ -60,7 +62,9 @@ Route::get('/upload', function () {
     return view('upload');
 });
 
-Route::post('/upload-pdf', [App\Http\Controllers\admincontroller::class, 'upload'])->name('upload.pdf');
+Route::post('/upload-pdf', [admincontroller::class, 'upload'])->name('upload.pdf');
+Route::post('/upload/billissue', [admincontroller::class, 'uploadBillIssue'])->name('upload.billissue');
+
 
 
 // PO system
@@ -135,7 +139,6 @@ Route::get('/alertaccount/count', function () {
 Route::get('/getall-bill-detail/{id}', [alertcontroller::class, 'getBillDetail']);
 
 
-//test 
 use App\Http\Controllers\text;
 Route::get('/SOlist', [text::class, 'txt1'])->name('txt1');
 Route::get('/insertSO', [text::class, 'txt2'])->name('txt2');
@@ -149,6 +152,10 @@ Route::get('/Sotest', [Sotestcontroller::class, 'dashboard']);
 use App\Http\Controllers\SheetController;
 Route::post('/send-to-sheet', [SheetController::class, 'send']);
 
-use App\Http\Controllers\PdfController;
-Route::post('/upload-merged-pdf', [PdfController::class, 'mergeWithBillTemplate'])->name('upload.merged_pdf');
+// use App\Http\Controllers\PdfController;
+// Route::post('/upload-merged-pdf', [PdfController::class, 'mergeWithBillTemplate'])->name('upload.merged_pdf');
+
+use App\Http\Controllers\WorkScheduleController;
+Route::get('/WorkSchedule', [WorkScheduleController::class, 'index']);
+
 

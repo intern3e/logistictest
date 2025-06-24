@@ -87,23 +87,33 @@ public function logout()
     session()->flush(); // ลบข้อมูลในเซสชัน
     return redirect()->route("sale.loginsale")->with('success', 'คุณได้ออกจากระบบเรียบร้อยแล้ว!');
         }
-public function fetchFormType(Request $request)
+public function fetchFormType(Request $request) 
 {
     $customer_id = $request->input('customer_id');
+
+    // ✅ 1. ดึง formtype จาก custdetail
+    $cust = DB::table('custdetail')->where('idcust', $customer_id)->first();
+    $formtype = $cust->formtype ?? null;
+
+    // ✅ 2. ดึง customer_la_long จาก tblbill เสมอ
     $bill = DB::table('tblbill')
                 ->where('customer_id', $customer_id)
-                ->orderBy('time', 'desc') // หรือจะใช้ 'so_detail_id' ก็ได้ ถ้าเพิ่มขึ้นเรื่อยๆ
-                ->first(); // ดึงแถวล่าสุด
+                ->orderBy('time', 'desc')
+                ->first();
 
-    if ($bill) {
-        return response()->json([
-            'formtype' => $bill->formtype,
-            'customer_la_long' => $bill->customer_la_long
-        ]);
-    } else {
-        return response()->json(['formtype' => null]); // ถ้าไม่พบข้อมูล
+    $customer_la_long = $bill->customer_la_long ?? '';
+
+    // ✅ 3. ถ้า formtype ยังไม่เจอ → ลองใช้จาก tblbill
+    if (!$formtype && $bill) {
+        $formtype = $bill->formtype ?? null;
     }
+
+    return response()->json([
+        'formtype' => $formtype,
+        'customer_la_long' => $customer_la_long
+    ]);
 }
+
 
  public function insert(Request $request)
 {

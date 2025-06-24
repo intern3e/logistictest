@@ -118,6 +118,7 @@
   <div class="buttons">
     <span>👤 ผู้ใช้: {{ session('emp_name', 'Guest') }}</span>
     @csrf
+    <a href="WorkSchedule" class="btn btn-danger">ตารางงาน</a>
     <a href="SOlist" class="btn btn-danger">🚪 หน้าหลัก</a>
   </div>
 </div>
@@ -154,7 +155,6 @@ document.addEventListener('DOMContentLoaded', function() {
     document.getElementById('dateFilterForm').submit();
   }
 });
-
 function downloadJSON() {
   const btn = document.getElementById('downloadBtn');
   const statusEl = document.getElementById('statusMessage');
@@ -172,35 +172,51 @@ function downloadJSON() {
 
     const zoneItems = [];
 
-   rows.forEach(row => {
-  const td = row.querySelector('td');
-  if (!td || td.innerText.includes("ไม่มีข้อมูล")) return;
+    rows.forEach(row => {
+      const td = row.querySelector('td');
+      if (!td || td.innerText.includes("ไม่มีข้อมูล")) return;
 
-  const lines = td.innerText.trim().split('\n');
+      const lines = td.innerText.trim().split('\n').map(l => l.trim()).filter(Boolean);
 
-  const so_id        = lines[1] || '';
-  const datetime     = lines[2] || '';
-  const name         = lines[3] || '';
-  const customer_tel = lines[4] || '';
-  let address        = lines[5] || '';
-  const latlongLine  = lines.find(line => line.includes('📍 พิกัด:')) || '';
-  const latlong      = latlongLine.replace(/📍\s*พิกัด:\s*/g, '').trim();
+      // ข้ามบรรทัด "งานที่: ..."
+      const contentLines = lines.filter(line => !line.startsWith("งานที่:"));
 
-  // 🔧 ถ้า address ยังมีพิกัดติดมา ให้ลบออก
-  if (address.includes('📍 พิกัด:')) {
-    address = address.replace(/📍\s*พิกัด:\s*.+$/, '').trim();
-  }
+      const so_id        = contentLines[0] || '';
+      const datetime     = contentLines[1] || '';
+      const name         = contentLines[2] || '';
+      const customer_tel = contentLines[3] || '';
+      let address        = contentLines[4] || '';
+      const latlongLine  = contentLines.find(line => line.includes('📍 พิกัด:')) || '';
+      const distanceLine = contentLines.find(line => line.includes('📏 ระยะทาง:')) || '';
+      const latlong      = latlongLine.replace(/📍\s*พิกัด:\s*/g, '').trim();
 
-  zoneItems.push({
-    so_id: so_id,
-    time: datetime,
-    customer_name: name,
-    customer_tel: customer_tel,
-    customer_address: address,
-    coordinates: latlong
-  });
-});
+        // ลบแค่ "📍 พิกัด:" ออกจาก address (ถ้ามี) โดยเก็บพิกัดไว้
+      if (address.includes('📍 พิกัด:')) {
+        address = address.replace(/📍\s*พิกัด:/, '').trim();
+      }
 
+
+      // แยก latitude กับ longitude จาก string พิกัด
+      let latitude = '';
+      let longitude = '';
+      if (latlong.includes(',')) {
+        const parts = latlong.split(',').map(p => p.trim());
+        latitude = parts[0] || '';
+        longitude = parts[1] || '';
+      }
+
+      zoneItems.push({
+        so_id: so_id,
+        time: datetime,
+        customer_name: name,
+        customer_tel: customer_tel,
+        customer_address: address,
+        coordinates: latlong,
+        latitude: latitude,
+        longitude: longitude,
+        distance: distanceLine.replace(/📏\s*ระยะทาง:\s*/g, '').trim()
+      });
+    });
 
     zoneData[zoneName] = zoneItems;
   });
@@ -383,7 +399,7 @@ $grouped = [
     'Zone E เอ(บางนาตราด กม 11)' => [],
     'Zone F แฟรงค์(บางนาตราด กม 13)' => [],
     'Zone G เเชม(กรุงเทพปริมณฑล)' => [],
-    'Zone H ( Open Source)' => [],
+    'Zone H (เก่ง)' => [],
     'เก่ง อื่น ๆ' => []
 ];
 
@@ -408,7 +424,7 @@ foreach ($filteredBills as $item) {
         } elseif (pointInPolygon($point, $zoneDPolygon)) {
             $grouped['Zone D หรั่ง(รังสิต,อยุธยา)'][] = $item;
         } elseif (pointInPolygon($point, $zoneHPolygon)) {
-            $grouped['Zone H ( Open Source)'][] = $item;
+            $grouped['Zone H (เก่ง)'][] = $item;
         } elseif (pointInPolygon($point, $zoneAPolygon)) {
             $grouped['Zone A กอล์ฟ(มาบเอียง)'][] = $item;
         } else {

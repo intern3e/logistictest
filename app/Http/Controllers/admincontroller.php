@@ -203,38 +203,26 @@ public function updateStatuspdfback(Request $request)
         return response()->json(['success' => false, 'message' => 'Failed to update status', 'error' => $e->getMessage()], 500);
     }
 }
-public function updateBillId(Request $request)
+// app/Http/Controllers/BillController.php
+public function updateBillIssue(Request $request)
 {
     $request->validate([
-        'so_detail_id' => 'required|exists:tblbill,so_detail_id',
-        'billid' => 'required|string|max:50'
+        'so_detail_id' => 'required',
+        'bill_issue_no' => 'required|string|max:255',
     ]);
 
-    try {
-        $affectedRows = DB::table('tblbill')
-            ->where('so_detail_id', $request->so_detail_id)
-            ->update(['billid' => $request->billid]);
+    $bill = Bill::where('so_detail_id', $request->so_detail_id)->first();
 
-        if ($affectedRows === 0) {
-            return response()->json([
-                'success' => false,
-                'message' => 'No records updated. Maybe bill ID is the same or SO Detail ID not found.',
-            ], 404);
-        }
-
-        return response()->json([
-            'success' => true,
-            'affectedRows' => $affectedRows,
-        ]);
-
-    } catch (\Exception $e) {
-        return response()->json([
-            'success' => false,
-            'message' => 'Failed to update bill ID',
-            'error' => $e->getMessage()
-        ], 500);
+    if (!$bill) {
+        return response()->json(['message' => 'ไม่พบข้อมูล so_detail_id'], 404);
     }
+
+    $bill->bill_issue_no = $request->bill_issue_no;
+    $bill->save();
+
+    return response()->json(['message' => 'อัปเดตสำเร็จ']);
 }
+
 public function updateStatuspdf2(Request $request)
 {
     // ตรวจสอบว่ามีค่า soDetailIds ส่งมาหรือไม่
@@ -335,5 +323,22 @@ public function upload(Request $request)
     $file->move($destinationPath, $originalName);
 
     return back()->with('success', 'อัปโหลดไฟล์ ' . $originalName . ' เรียบร้อยแล้ว!');
+}
+public function uploadBillIssue(Request $request)
+{
+    $request->validate([
+        'bill_issue_no' => 'required|string',
+        'pdffilebillissue' => 'required|mimes:pdf|max:10240' 
+    ]);
+
+    $billIssueNo = $request->bill_issue_no;
+    $file = $request->file('pdffilebillissue');
+
+    $filename = $billIssueNo . '.pdf';
+
+    // จัดเก็บไฟล์ใน storage/app/public/billissue_document
+    $file->storeAs('public/billissue_document', $filename);
+
+    return back()->with('message', '✅ อัปโหลดไฟล์สำเร็จ');
 }
 }

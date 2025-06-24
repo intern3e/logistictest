@@ -410,6 +410,8 @@
                 <th>ประเภทบิล</th>
                 <th>เลขที่เอกสาร</th>
                 <th>ข้อมูลสินค้า</th>
+                <th>เลขใบวางบิล</th>
+                <th>เอกสารใบว่างบิล</th>
              
             </tr>
         </thead>
@@ -418,7 +420,7 @@
                 @if($item->statuspdf == 0)
                     <tr>
                         <td>
-                        <input type="checkbox" class="form-control1" name="statupdf[]" value="{{ $item->so_id }}" id="checkbox_{{ $item->so_detail_id }}">
+                       <input type="checkbox" class="form-control1"name="statupdf[]"value="{{ $item->so_id }}"id="checkbox_{{ $item->so_detail_id }}">
                         </td>
                         <td>{{ $item->so_detail_id }}</td>  
                        @php
@@ -459,21 +461,21 @@
                             onclick="copyPonumAndCheckBox('{{ $item->so_id }}', '{{ $item->so_detail_id }}', '{{ $item->billid ?? '' }}')">
                             ไม่มีไฟล์
                         </button>
-<script>
-    function copyPonumAndCheckBox(so_id, so_detail_id, billid) {
-        if (!billid) {
-            return; // ไม่ทำอะไรถ้าไม่มี billid
-        }
+                    <script>
+                        function copyPonumAndCheckBox(so_id, so_detail_id, billid) {
+                            if (!billid) {
+                                return; 
+                            }
 
-        navigator.clipboard.writeText(billid).catch(() => {});
+                            navigator.clipboard.writeText(billid).catch(() => {});
 
-        const checkbox = document.querySelector(`input[type="checkbox"][data-detail-id="${so_detail_id}"]`);
-        if (checkbox) {
-            checkbox.checked = true;
-        }
-    }
-</script>
-                        
+                            const checkbox = document.querySelector(`input[type="checkbox"][data-detail-id="${so_detail_id}"]`);
+                            if (checkbox) {
+                                checkbox.checked = true;
+                            }
+                        }
+                    </script>
+                                            
                                         
                         @endif
                         <td>{{ $item->billid }}</td>
@@ -508,6 +510,43 @@
                                         )">
                                         เลือกดูไฟล์
                                     </button>
+                          <button style="background-color: #3498db; color: white;"
+                                onclick="overwriteBillFile('{{ $item->so_detail_id }}', '{{ $item->billid }}')">
+                                ดำเนินการพิเศษ
+                            </button>
+                            <script>
+    function overwriteBillFile(so_detail_id, billid) {
+        const fileInput = document.getElementById('pdffile');
+        const file = fileInput.files[0];
+
+        if (!file) {
+            alert("กรุณาเลือกไฟล์ PDF ก่อนดำเนินการ");
+            return;
+        }
+
+        const formData = new FormData();
+        formData.append("pdffile", file);
+        formData.append("so_detail_id", so_detail_id);
+        formData.append("billid", billid);
+
+        fetch("{{ route('overwrite.pdf') }}", {
+            method: "POST",
+            headers: {
+                "X-CSRF-TOKEN": "{{ csrf_token() }}"
+            },
+            body: formData
+        })
+        .then(response => response.json())
+        .then(result => {
+            alert(result.message || "อัปโหลดสำเร็จ");
+        })
+        .catch(error => {
+            console.error("Upload failed", error);
+            alert("เกิดข้อผิดพลาด");
+        });
+    }
+</script>
+
 
 
                                 </td>
@@ -528,45 +567,59 @@
 
 
                                   <td>
-                                    <span id="customer-id-{{ $item->id }}">{{ $item->customer_id }}</span>
-                                    <button onclick="copyToClipboard('customer-id-{{ $item->id }}')" class="copy-btn">
+                                    <span id="customer-id{{ $item->id }}">{{ $item->customer_id }}</span>
+                                    <button  id="copycustomer-id" onclick="copyToClipboard('customer-id{{ $item->id }}')" class="copy-btn">
                                         คัดลอก
+                                    </button> 
+                                    <script>
+                                        function copyToClipboard(elementId) {
+                                            const text = document.getElementById(elementId).innerText;
+                                            navigator.clipboard.writeText(text).then(() => {
+                                            }).catch(err => {
+                                                console.error('ไม่สามารถคัดลอกได้', err);
+                                            });
+                                        }
+                                    </script> 
+                                    <br>
+                                    <span>ใบวางบิล</span>
+                                    <input type="text" class="billid-input-condensed" id="billissue" placeholder="กรอกเลขใบวางบิล">
+                                    <br>
+                                    <button type="button"
+                                            id="billissuebut"
+                                            data-sodetailid="{{ $item->so_detail_id }}">
+                                        เพิ่มเลขใบวางบิล
                                     </button>
                                 </td>
-                                <script>
-                                function copyToClipboard(elementId) {
-                                    const text = document.getElementById(elementId).innerText;
-                                    navigator.clipboard.writeText(text).then(() => {
-                                        alert("คัดลอกข้อมูลแล้ว: " + text);
-                                    }).catch(err => {
-                                        console.error('ไม่สามารถคัดลอกได้', err);
-                                    });
-                                }
-                                </script> 
-
-
                                     <td>
                             <div class="bill-actions-condensed">
-                                    <input type="text" class="billid-input-condensed" id="billid" value="{{ $item->customer_id ?? '' }}" readonly>
+                                    <input type="text" class="billid-input-condensed" value="{{ $item->bill_issue_no ?? '' }}" readonly>
 
-                                    <form action="{{ route('upload.pdf') }}" method="POST" enctype="multipart/form-data" class="upload-form-condensed">
+                                   <form action="{{ route('upload.billissue') }}" method="POST" enctype="multipart/form-data" class="upload-form-condensed">
                                         @csrf
-                                        <input type="file" name="pdffile" id="pdffile" accept="application/pdf" required>
+                                        <input type="hidden" id="bill_issue_no" name="bill_issue_no" value="{{ $item->bill_issue_no }}"> 
+                                        <input type="file" id="pdffilebillissue" name="pdffilebillissue" accept="application/pdf" required>
                                         <button type="submit" class="btn-upload-condensed">อัปโหลด PDF</button>
                                     </form>
-
                                     <div class="action-buttons-condensed">
-                                        <button class="btn-danger-condensed"
-                                            onclick="addIdToDocument('{{ $item->so_detail_id }}', '{{ $item->billid }}')">เพิ่มเลขบิล</button>
+                                        <button id="addIdToissue" class="btn-danger-condensed"
+                                            onclick="addIdToissueDocument('{{ $item->so_detail_id }}', '{{ $item->bill_issue_no }}')">เพิ่มเลขบิล</button>
+                                        <button type="button"
+                                            id="openbillissue{{ $item->bill_issue_no }}"
+                                            onclick="openBillAndCheck('{{ asset('storage/billissue_document/' . $item->bill_issue_no . '.pdf') }}', 'checkbox_{{ $item->so_detail_id }}')">
+                                          ดูใบวางบิล
+                                    </button>
+                                    <script>
+                                    function openBillAndCheck(pdfUrl, checkboxId) {
+                                        window.open(pdfUrl, '_blank');
 
-                                        <button class="btn-success-condensed"
-                                            onclick="openFileInNewTabbill(
-                                                '{{ asset('storage/doc_document/' . $item->billid . '.pdf') }}', 
-                                                '{{ $item->ponum }}', 
-                                                '{{ $item->so_detail_id }}', 
-                                                '{{ $item->so_id }}',
-                                                '{{ $item->billid ?? '' }}'
-                                            )">เลือกดูไฟล์</button>
+                                        // ติ๊ก checkbox หลังจากเปิด PDF
+                                        const checkbox = document.getElementById(checkboxId);
+                                        if (checkbox) {
+                                            checkbox.checked = true;
+                                        }
+                                    }
+                                    </script>
+
                                     </div>
                                 </div>
                                     </td>
@@ -670,46 +723,65 @@
     
 
 <script>
-document.addEventListener("DOMContentLoaded", function() {
-    document.querySelectorAll(".buttonbill").forEach(button => {
-        button.addEventListener("click", function() {
-            const row = this.closest("tr");
-            const so_detail_id = this.getAttribute("data-sodetailid");
-            const billidInput = row.querySelector(".billid");
-            const billid = billidInput.value.trim();
+document.addEventListener("DOMContentLoaded", function () {
+    const billissueBtn = document.getElementById("billissuebut");
+    const billissueInput = document.getElementById("billissue");
 
-            if (!billid) {
-                alert("กรุณากรอกเลขที่เอกสาร");
-                billidInput.focus();
-                return;
+    billissueBtn?.addEventListener("click", function () {
+        const so_detail_id = billissueBtn.getAttribute("data-sodetailid");
+        const billissue = billissueInput.value.trim();
+
+        if (!billissue) {
+            alert("❗ กรุณากรอกเลขใบวางบิล");
+            billissueInput.focus();
+            return;
+        }
+
+        if (!so_detail_id) {
+            alert("❌ ไม่พบ so_detail_id");
+            return;
+        }
+
+        billissueBtn.disabled = true;
+
+        fetch("/update-billissue", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+                "X-CSRF-TOKEN": document.querySelector('meta[name=\"csrf-token\"]').content,
+                "Accept": "application/json"
+            },
+            body: JSON.stringify({
+                so_detail_id: so_detail_id,
+                bill_issue_no: billissue
+            })
+        })
+        .then(async response => {
+            const data = await response.json();
+            if (!response.ok) {
+                throw new Error(data.message || 'เกิดข้อผิดพลาดในการอัปเดต');
             }
-
-            fetch("/update-billid", {
-                method: "POST",
-                headers: {
-                    "Content-Type": "application/json",
-                    "X-CSRF-TOKEN": document.querySelector('meta[name="csrf-token"]').content,
-                    "Accept": "application/json"
-                },
-                body: JSON.stringify({
-                    so_detail_id: so_detail_id,  // Using so_id instead of soDetailIds
-                    billid: billid
-                })
-            })
-            .then(async response => {
-                const data = await response.json();
-                if (!response.ok) {
-                    throw new Error(data.message || 'Failed to update');
-                }
-            })
-            .catch(error => {
-                console.error("Error:", error);
-                alert("เกิดข้อผิดพลาด: " + error.message);
-            });
+            alert("✅ บันทึกเลขใบวางบิลและอัปเดต PDF สำเร็จ");
+        })
+        .catch(error => {
+            console.error("Error:", error);
+            alert("❌ เกิดข้อผิดพลาด: " + error.message);
+        })
+        .finally(() => {
+            billissueBtn.disabled = false;
         });
     });
+
+    billissueInput.addEventListener("keydown", function (e) {
+        if (e.key === "Enter") {
+            e.preventDefault();
+            billissueBtn.click();
+        }
+    });
 });
-    </script>
+</script>
+
+
     
 <script>
 function searchTable() {
@@ -859,6 +931,23 @@ function openFileInNewTab(url, ponum, so_detail_id, so_id, billid) {
 }
 </script>
 <script>
+function addIdToissueDocument(so_detail_id, bill_issue_no) {
+    console.log(`กำลังเพิ่ม ${so_detail_id} ลงในเอกสารbill_issue_no: ${bill_issue_no}`);
+
+    fetch(`/add-so-detail-id-to-billissue/${so_detail_id}/${bill_issue_no}`)
+        .then(response => response.json())
+        .then(data => {
+            console.log(data);
+            if (data.success) {
+            } else {
+                alert("เกิดข้อผิดพลาดในการเพิ่มข้อมูลลงในเอกสาร bill_issue_no: " + (data.error || ''));
+            }
+        })
+        .catch(error => {
+            console.error("Error:", error);
+            alert("เกิดข้อผิดพลาดในการเพิ่มเลขที่บิลลงในเอกสาร bill_issue_no");
+        });
+}
 function addIdToDocument(so_detail_id, billid) {
     console.log(`กำลังเพิ่ม ${so_detail_id} ลงในเอกสารbill: ${billid}`);
 
