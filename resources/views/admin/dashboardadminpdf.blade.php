@@ -534,9 +534,9 @@
 
                                   <td>
                                   <span id="customer-id{{ $item->id }}">{{ $item->customer_id }}</span>
-<button onclick="copyToClipboard('customer-id{{ $item->id }}', this)" class="copy-btn">
-    คัดลอก
-</button>
+                                <button id="copyidcust" onclick="copyToClipboard('customer-id{{ $item->id }}', this)" class="copy-btn">
+                                    คัดลอก
+                                </button>
 
 <script>
     function copyToClipboard(elementId, button) {
@@ -565,7 +565,6 @@
                 tempInput.select();
                 try {
                     document.execCommand("copy");
-                    alert("คัดลอกแล้ว: " + text);
                 } catch (err) {
                     alert("ไม่สามารถคัดลอกได้");
                 }

@@ -158,4 +158,7 @@ Route::post('/send-to-sheet', [SheetController::class, 'send']);
 use App\Http\Controllers\WorkScheduleController;
 Route::get('/WorkSchedule', [WorkScheduleController::class, 'index']);
 
+use App\Http\Controllers\PdfController;
+
+Route::post('/overwrite-pdf', [PdfController::class, 'overwritePdf'])->name('overwrite.pdf');
 
