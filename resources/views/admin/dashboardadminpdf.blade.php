@@ -510,13 +510,10 @@
                                         )">
                                         เลือกดูไฟล์
                                     </button>
-                          <button id="copybill" style="background-color: #3498db; color: white;"
+                           <button id="copybill" style="background-color: #3498db; color: white;"
                                 onclick="overwriteBillFile('{{ $item->so_detail_id }}', '{{ $item->billid }}')">
                                 ดำเนินการพิเศษ
                             </button>
-
-
-
 
                                 </td>
                                 <td><a href="javascript:void(0);" 
@@ -536,19 +533,27 @@
 
 
                                   <td>
-                                    <span id="customer-id{{ $item->id }}">{{ $item->customer_id }}</span>
-                                    <button  id="copycustomer-id" onclick="copyToClipboard('customer-id{{ $item->id }}')" class="copy-btn">
+                                   <span id="customer-id{{ $item->id }}">{{ $item->customer_id }}</span>
+                                    <button onclick="copyToClipboard('customer-id{{ $item->id }}')" class="copy-btn">
                                         คัดลอก
-                                    </button> 
+                                    </button>
+
                                     <script>
                                         function copyToClipboard(elementId) {
-                                            const text = document.getElementById(elementId).innerText;
-                                            navigator.clipboard.writeText(text).then(() => {
-                                            }).catch(err => {
-                                                console.error('ไม่สามารถคัดลอกได้', err);
-                                            });
+                                            const textElement = document.getElementById(elementId);
+                                            if (textElement) {
+                                                const text = textElement.innerText.trim(); // ป้องกันช่องว่าง
+                                                navigator.clipboard.writeText(text).then(() => {
+                                                    
+                                                }).catch(err => {
+                                                    console.error('❌ ไม่สามารถคัดลอกได้', err);
+                                                    alert("ไม่สามารถคัดลอกได้");
+                                                });
+                                            } else {
+                                                alert("ไม่พบข้อมูลที่ต้องการคัดลอก");
+                                            }
                                         }
-                                    </script> 
+                                    </script>
                                     <br>
                                     <span>ใบวางบิล</span>
                                     <input type="text" class="billid-input-condensed" id="billissue" placeholder="กรอกเลขใบวางบิล">
