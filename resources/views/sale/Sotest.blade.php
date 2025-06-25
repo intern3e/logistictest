@@ -434,6 +434,58 @@ foreach ($filteredBills as $item) {
         $grouped['เก่ง อื่น ๆ'][] = $item;
     }
 }
+
+// ✅ กรองและจัดกลุ่ม PO ตามโซน
+$filteredPOs = collect($pobill)->filter(function($item) use ($selectedDate) {
+    return Carbon::parse($item->recvDate)->toDateString() === $selectedDate;
+});
+
+$groupedPO = [
+    'Zone A กอล์ฟ(มาบเอียง)' => [],
+    'Zone B บังเดช(ชลบุรี)' => [],
+    'Zone C ยุทร(พระราม 2)' => [],
+    'Zone D หรั่ง(รังสิต,อยุธยา)' => [],
+    'Zone E เอ(บางนาตราด กม 11)' => [],
+    'Zone F แฟรงค์(บางนาตราด กม 13)' => [],
+    'Zone G เเชม(กรุงเทพปริมณฑล)' => [],
+    'Zone H (เก่ง)' => [],
+    'Zone I (จักรยานยนต์)' => [],
+    'เก่ง อื่น ๆ' => []
+];
+
+foreach ($filteredPOs as $item) {
+    if (!empty($item->store_la_long) && str_contains($item->store_la_long, ',')) {
+        [$lat, $long] = explode(',', $item->store_la_long);
+        $lat = floatval(trim($lat));
+        $long = floatval(trim($long));
+        $point = [$lat, $long];
+
+        if (pointInPolygon($point, $zoneBPolygon)) {
+            $groupedPO['Zone B บังเดช(ชลบุรี)'][] = $item;
+        } elseif (pointInPolygon($point, $zoneFPolygon)) {
+            $groupedPO['Zone F แฟรงค์(บางนาตราด กม 13)'][] = $item;
+        } elseif (pointInPolygon($point, $zoneEPolygon)) {
+            $groupedPO['Zone E เอ(บางนาตราด กม 11)'][] = $item;
+        } elseif (pointInPolygon($point, $zoneGPolygon)) {
+            $groupedPO['Zone G เเชม(กรุงเทพปริมณฑล)'][] = $item;
+        } elseif (pointInPolygon($point, $zoneCPolygon)) {
+            $groupedPO['Zone C ยุทร(พระราม 2)'][] = $item;
+        } elseif (pointInPolygon($point, $zoneDPolygon)) {
+            $groupedPO['Zone D หรั่ง(รังสิต,อยุธยา)'][] = $item;
+        } elseif (pointInPolygon($point, $zoneHPolygon)) {
+            $groupedPO['Zone H (เก่ง)'][] = $item;
+        } elseif (pointInPolygon($point, $zoneAPolygon)) {
+            $groupedPO['Zone A กอล์ฟ(มาบเอียง)'][] = $item;
+        } elseif (pointInPolygon($point, $zoneAPolygon)) {
+        $groupedPO['Zone I (จักรยานยนต์) )'][] = $item;
+        } else {
+            $groupedPO['เก่ง อื่น ๆ'][] = $item;
+        }
+    } else {
+        $groupedPO['เก่ง อื่น ๆ'][] = $item;
+    }
+}
+
 @endphp
 </div>
 
@@ -442,9 +494,13 @@ foreach ($filteredBills as $item) {
   @foreach($grouped as $zoneName => $items)
   <div style="flex: 1; min-width: 500px; background-color: #fff; border: 2px solid #999; border-radius: 8px; box-shadow: 0 0 8px rgba(0,0,0,0.1); padding: 15px;">
     
-  @php $zoneIndex = $loop->index + 1; @endphp
+    @php 
+      $zoneIndex = $loop->index + 1; 
+      $totalItems = count($items) + count($groupedPO[$zoneName] ?? []);
+    @endphp
+    
     <h3 style="margin-top: 0;">
-      โซนที่ {{ $zoneIndex }}: {{ $zoneName }} — จำนวนงาน: {{ count($items) }}
+      โซนที่ {{ $zoneIndex }}: {{ $zoneName }} — จำนวนงาน: {{ $totalItems }}
     </h3>
 
     <table>
@@ -454,8 +510,12 @@ foreach ($filteredBills as $item) {
         </tr>
       </thead>
       <tbody>
-        @forelse($items as $index => $item)
+        @php $workIndex = 0; @endphp
+        
+        {{-- แสดง SO ของโซนนี้ --}}
+        @foreach($items as $item)
         @php
+          $workIndex++;
           $distanceText = 'ไม่ทราบระยะทาง';
           if (!empty($item->customer_la_long) && str_contains($item->customer_la_long, ',')) {
               [$custLat, $custLong] = explode(',', $item->customer_la_long);
@@ -465,11 +525,10 @@ foreach ($filteredBills as $item) {
               $distanceText = number_format($distance, 2) . ' กม. จากจุดเริ่มต้น';
           }
         @endphp
-
         <tr>
           <td>
-            <div style="border: 2px solid #999; border-radius: 6px; padding: 10px;">
-              <strong>งานที่: {{ $index + 1 }}</strong><br>
+            <div style="border: 2px solid #007bff; border-radius: 6px; padding: 10px; background-color: #f8f9ff;">
+              <strong>SO งานที่: {{ $workIndex }}</strong><br>
               {{ $item->so_id }} {{ $item->date_of_dali }}<br>
               {{ $item->customer_name }}<br>
               {{ $item->customer_tel }}<br>
@@ -481,14 +540,54 @@ foreach ($filteredBills as $item) {
             </div>
           </td>
         </tr>
-        @empty
-        <tr><td>ไม่มีข้อมูล</td></tr>
-        @endforelse
+        @endforeach
+        
+        {{-- แสดง PO ของโซนนี้ --}}
+        @if(isset($groupedPO[$zoneName]))
+          @foreach($groupedPO[$zoneName] as $po)
+          @php
+            $workIndex++;
+            $distanceText = 'ไม่ทราบระยะทาง';
+            if (!empty($po->store_la_long) && str_contains($po->store_la_long, ',')) {
+                [$lat, $long] = explode(',', $po->store_la_long);
+                $lat = floatval(trim($lat));
+                $long = floatval(trim($long));
+                $distance = calculateDistance($startLat, $startLong, $lat, $long);
+                $distanceText = number_format($distance, 2) . ' กม. จากจุดเริ่มต้น';
+            }
+          @endphp
+          <tr>
+            <td>
+              <div style="border: 2px solid #ff6b35; border-radius: 6px; padding: 10px; background-color: #fff5f0;">
+                <strong>PO งานที่: {{ $workIndex }}</strong><br>
+                {{ $po->po_id }} {{ $po->recvDate }}<br>
+                {{ $po->store_name }}<br>
+                {{ $po->store_tel }}<br>
+                {{ $po->cartype }}<br>
+                {{ $po->store_address }}<br>
+                <a class="latlong" style="color:#007bff; text-decoration:underline;" href="https://www.google.com/maps?q={{ trim($po->store_la_long) }}" target="_blank">
+                  📍 พิกัด: {{ $po->store_la_long }}
+                </a><br>
+                <span class="latlong" style="color: #28a745; font-weight: bold;">📏 ระยะทาง: {{ $distanceText }}</span>
+              </div>
+            </td>
+          </tr>
+          @endforeach
+        @endif
+        
+
+        {{-- ถ้าไม่มีข้อมูลเลย --}}
+        @if(count($items) === 0 && empty($groupedPO[$zoneName]))
+        <tr>
+          <td>
+            <div style="padding: 15px; color: #888;">ไม่มีข้อมูลในโซนนี้</div>
+          </td>
+        </tr>
+        @endif
       </tbody>
     </table>
   </div>
   @endforeach
 </div>
-
 </body>
 </html>
