@@ -510,7 +510,7 @@
                                         )">
                                         เลือกดูไฟล์
                                     </button>
-                          <button style="background-color: #3498db; color: white;"
+                          <button id="copybill" style="background-color: #3498db; color: white;"
                                 onclick="overwriteBillFile('{{ $item->so_detail_id }}', '{{ $item->billid }}')">
                                 ดำเนินการพิเศษ
                             </button>
