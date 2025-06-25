@@ -514,38 +514,7 @@
                                 onclick="overwriteBillFile('{{ $item->so_detail_id }}', '{{ $item->billid }}')">
                                 ดำเนินการพิเศษ
                             </button>
-                            <script>
-    function overwriteBillFile(so_detail_id, billid) {
-        const fileInput = document.getElementById('pdffile');
-        const file = fileInput.files[0];
 
-        if (!file) {
-            alert("กรุณาเลือกไฟล์ PDF ก่อนดำเนินการ");
-            return;
-        }
-
-        const formData = new FormData();
-        formData.append("pdffile", file);
-        formData.append("so_detail_id", so_detail_id);
-        formData.append("billid", billid);
-
-        fetch("{{ route('overwrite.pdf') }}", {
-            method: "POST",
-            headers: {
-                "X-CSRF-TOKEN": "{{ csrf_token() }}"
-            },
-            body: formData
-        })
-        .then(response => response.json())
-        .then(result => {
-            alert(result.message || "อัปโหลดสำเร็จ");
-        })
-        .catch(error => {
-            console.error("Upload failed", error);
-            alert("เกิดข้อผิดพลาด");
-        });
-    }
-</script>
 
 
 
