@@ -533,27 +533,50 @@
 
 
                                   <td>
-                                   <span id="customer-id{{ $item->id }}">{{ $item->customer_id }}</span>
-                                    <button onclick="copyToClipboard('customer-id{{ $item->id }}')" class="copy-btn">
-                                        คัดลอก
-                                    </button>
+                                  <span id="customer-id{{ $item->id }}">{{ $item->customer_id }}</span>
+<button onclick="copyToClipboard('customer-id{{ $item->id }}', this)" class="copy-btn">
+    คัดลอก
+</button>
 
-                                    <script>
-                                        function copyToClipboard(elementId) {
-                                            const textElement = document.getElementById(elementId);
-                                            if (textElement) {
-                                                const text = textElement.innerText.trim(); // ป้องกันช่องว่าง
-                                                navigator.clipboard.writeText(text).then(() => {
-                                                    
-                                                }).catch(err => {
-                                                    console.error('❌ ไม่สามารถคัดลอกได้', err);
-                                                    alert("ไม่สามารถคัดลอกได้");
-                                                });
-                                            } else {
-                                                alert("ไม่พบข้อมูลที่ต้องการคัดลอก");
-                                            }
-                                        }
-                                    </script>
+<script>
+    function copyToClipboard(elementId, button) {
+        const textElement = document.getElementById(elementId);
+        if (textElement) {
+            const text = textElement.innerText.trim();
+
+            // ตรวจสอบว่า Clipboard API ใช้งานได้
+            if (navigator.clipboard && navigator.clipboard.writeText) {
+                navigator.clipboard.writeText(text).then(() => {
+                    // เปลี่ยนข้อความปุ่มชั่วคราว
+                    const originalText = button.innerText;
+                    button.innerText = "คัดลอกแล้ว ✅";
+                    setTimeout(() => {
+                        button.innerText = originalText;
+                    }, 1500);
+                }).catch(err => {
+                    console.error('❌ ไม่สามารถคัดลอกได้', err);
+                    alert("ไม่สามารถคัดลอกได้");
+                });
+            } else {
+                // Fallback (สำหรับเบราว์เซอร์เก่า)
+                const tempInput = document.createElement("input");
+                document.body.appendChild(tempInput);
+                tempInput.value = text;
+                tempInput.select();
+                try {
+                    document.execCommand("copy");
+                    alert("คัดลอกแล้ว: " + text);
+                } catch (err) {
+                    alert("ไม่สามารถคัดลอกได้");
+                }
+                document.body.removeChild(tempInput);
+            }
+        } else {
+            alert("ไม่พบข้อมูลที่ต้องการคัดลอก");
+        }
+    }
+</script>
+
                                     <br>
                                     <span>ใบวางบิล</span>
                                     <input type="text" class="billid-input-condensed" id="billissue" placeholder="กรอกเลขใบวางบิล">
