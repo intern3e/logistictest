@@ -510,10 +510,39 @@
                                         )">
                                         เลือกดูไฟล์
                                     </button>
-                           <button id="copybill" style="background-color: #3498db; color: white;"
-                                onclick="overwriteBillFile('{{ $item->so_detail_id }}', '{{ $item->billid }}')">
-                                ดำเนินการพิเศษ
+                           <button id="mergePdfBtn"
+                                style="background-color: orange; color: white;"
+                                onclick="mergePdf('{{ $item->billid }}')">
+                                รวมและบันทึกไฟล์ PDF
                             </button>
+<script>
+function mergePdf(billid) {
+    fetch("{{ route('merge.pdf') }}", {
+        method: "POST",
+        headers: {
+            'X-CSRF-TOKEN': '{{ csrf_token() }}',
+            'Content-Type': 'application/json',
+            'Accept': 'application/json' // ✅ สำคัญ
+        },
+        body: JSON.stringify({ billid: billid })
+    })
+    .then(res => res.json())
+    .then(data => {
+        if (data.success) {
+        } else {
+            alert("❌ " + data.message);
+        }
+    })
+    .catch(err => {
+        alert("❌ เกิดข้อผิดพลาด: " + err.message);
+        console.error(err);
+    });
+}
+
+</script>
+
+
+
 
                                 </td>
                                 <td><a href="javascript:void(0);" 
@@ -585,8 +614,11 @@
                                             data-sodetailid="{{ $item->so_detail_id }}">
                                         เพิ่มเลขใบวางบิล
                                     </button>
+                                    
                                 </td>
+
                                     <td>
+                                        
                             <div class="bill-actions-condensed">
                                     <input type="text" class="billid-input-condensed" value="{{ $item->bill_issue_no ?? '' }}" readonly>
 
@@ -594,7 +626,7 @@
                                         @csrf
                                         <input type="hidden" id="bill_issue_no" name="bill_issue_no" value="{{ $item->bill_issue_no }}"> 
                                         <input type="file" id="pdffilebillissue" name="pdffilebillissue" accept="application/pdf" required>
-                                        <button type="submit" class="btn-upload-condensed">อัปโหลด PDF</button>
+                                        <button id="subfileissue" type="submit" class="btn-upload-condensed">อัปโหลด PDF</button>
                                     </form>
                                     <div class="action-buttons-condensed">
                                         <button id="addIdToissue" class="btn-danger-condensed"
@@ -716,67 +748,63 @@
         }
     
     </script>
-    
+    <script>
+            document.addEventListener("DOMContentLoaded", function () {
+                const billissueBtn = document.getElementById("billissuebut");
+                const billissueInput = document.getElementById("billissue");
 
-<script>
-document.addEventListener("DOMContentLoaded", function () {
-    const billissueBtn = document.getElementById("billissuebut");
-    const billissueInput = document.getElementById("billissue");
+                billissueBtn?.addEventListener("click", function () {
+                    const so_detail_id = billissueBtn.getAttribute("data-sodetailid");
+                    const billissue = billissueInput.value.trim();
 
-    billissueBtn?.addEventListener("click", function () {
-        const so_detail_id = billissueBtn.getAttribute("data-sodetailid");
-        const billissue = billissueInput.value.trim();
+                    if (!billissue) {
+                        alert("❗ กรุณากรอกเลขใบวางบิล");
+                        billissueInput.focus();
+                        return;
+                    }
 
-        if (!billissue) {
-            alert("❗ กรุณากรอกเลขใบวางบิล");
-            billissueInput.focus();
-            return;
-        }
+                    if (!so_detail_id) {
+                        alert("❌ ไม่พบ so_detail_id");
+                        return;
+                    }
 
-        if (!so_detail_id) {
-            alert("❌ ไม่พบ so_detail_id");
-            return;
-        }
+                    billissueBtn.disabled = true;
 
-        billissueBtn.disabled = true;
+                    fetch("/update-billissue", {
+                        method: "POST",
+                        headers: {
+                            "Content-Type": "application/json",
+                            "X-CSRF-TOKEN": document.querySelector('meta[name=\"csrf-token\"]').content,
+                            "Accept": "application/json"
+                        },
+                        body: JSON.stringify({
+                            so_detail_id: so_detail_id,
+                            bill_issue_no: billissue
+                        })
+                    })
+                    .then(async response => {
+                        const data = await response.json();
+                        if (!response.ok) {
+                            throw new Error(data.message || 'เกิดข้อผิดพลาดในการอัปเดต');
+                        };
+                    })
+                    .catch(error => {
+                        console.error("Error:", error);
+                        alert("❌ เกิดข้อผิดพลาด: " + error.message);
+                    })
+                    .finally(() => {
+                        billissueBtn.disabled = false;
+                    });
+                });
 
-        fetch("/update-billissue", {
-            method: "POST",
-            headers: {
-                "Content-Type": "application/json",
-                "X-CSRF-TOKEN": document.querySelector('meta[name=\"csrf-token\"]').content,
-                "Accept": "application/json"
-            },
-            body: JSON.stringify({
-                so_detail_id: so_detail_id,
-                bill_issue_no: billissue
-            })
-        })
-        .then(async response => {
-            const data = await response.json();
-            if (!response.ok) {
-                throw new Error(data.message || 'เกิดข้อผิดพลาดในการอัปเดต');
-            }
-            alert("✅ บันทึกเลขใบวางบิลและอัปเดต PDF สำเร็จ");
-        })
-        .catch(error => {
-            console.error("Error:", error);
-            alert("❌ เกิดข้อผิดพลาด: " + error.message);
-        })
-        .finally(() => {
-            billissueBtn.disabled = false;
-        });
-    });
-
-    billissueInput.addEventListener("keydown", function (e) {
-        if (e.key === "Enter") {
-            e.preventDefault();
-            billissueBtn.click();
-        }
-    });
-});
-</script>
-
+                billissueInput.addEventListener("keydown", function (e) {
+                    if (e.key === "Enter") {
+                        e.preventDefault();
+                        billissueBtn.click();
+                    }
+                });
+            });
+    </script>
 
     
 <script>

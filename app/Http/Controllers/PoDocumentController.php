@@ -1,10 +1,11 @@
 <?php
 
 namespace App\Http\Controllers;
-
 use setasign\Fpdi\Fpdi;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Http\Request;
+use setasign\Fpdi\TcpdfFpdi;
 
 class PoDocumentController extends Controller
 {
@@ -182,4 +183,69 @@ class PoDocumentController extends Controller
             ]);
         }
     }
-}   
+public function mergeAndOverwrite(Request $request)
+{
+    $billId = $request->input('billid');
+
+    try {
+        if (!$billId) {
+            return response()->json(['success' => false, 'message' => 'Bill ID ไม่ถูกต้อง'], 400);
+        }
+
+        $templatePath = storage_path('app/public/template/template.pdf');
+        $dataPdfPath = storage_path("app/public/doc_document/{$billId}.pdf");
+        $outputPath = $dataPdfPath; // บันทึกทับไฟล์เดิม
+
+        if (!file_exists($templatePath)) {
+            return response()->json(['success' => false, 'message' => '❌ ไม่พบไฟล์ template']);
+        }
+
+        if (!file_exists($dataPdfPath)) {
+            return response()->json(['success' => false, 'message' => "❌ ไม่พบไฟล์ PDF ของ billid = $billId"]);
+        }
+
+        $pdf = new TcpdfFpdi();
+        $pdf->SetPrintHeader(false);
+        $pdf->SetPrintFooter(false);
+        $pdf->SetMargins(0, 0, 0);
+        $pdf->SetAutoPageBreak(false, 0);
+
+        // ดึงจำนวนหน้า
+        $templatePageCount = $pdf->setSourceFile($templatePath);
+        $dataPageCount = $pdf->setSourceFile($dataPdfPath);
+        $maxPages = max($templatePageCount, $dataPageCount);
+
+        for ($i = 1; $i <= $maxPages; $i++) {
+            // โหลดหน้า template
+            $pdf->setSourceFile($templatePath);
+            $tplTemplatePage = $pdf->importPage(min($i, $templatePageCount));
+            $templateSize = $pdf->getTemplateSize($tplTemplatePage);
+
+            // สร้างหน้าใหม่ตามขนาด template
+            $pdf->AddPage($templateSize['orientation'], [$templateSize['width'], $templateSize['height']]);
+            $pdf->useTemplate($tplTemplatePage, 0, 0, $templateSize['width'], $templateSize['height']);
+
+            // ซ้อนหน้าข้อมูล data PDF ถ้ามี
+            if ($i <= $dataPageCount) {
+                $pdf->setSourceFile($dataPdfPath);
+                $tplDataPage = $pdf->importPage($i);
+                $dataSize = $pdf->getTemplateSize($tplDataPage);
+
+                // Fit data PDF ให้ขนาดเดียวกับ template
+                $pdf->useTemplate($tplDataPage, 0, 0, $templateSize['width'], $templateSize['height']);
+            }
+        }
+
+        $pdf->Output($outputPath, 'F');
+
+        return response()->json(['success' => true, 'message' => '✅ รวมและบันทึก PDF สำเร็จ']);
+    } catch (\Throwable $e) {
+        \Log::error("❌ mergeAndOverwrite error: " . $e->getMessage());
+        return response()->json([
+            'success' => false,
+            'message' => '❌ ระบบผิดพลาด: ' . $e->getMessage()
+        ], 500);
+    }
+
+}
+}

@@ -152,13 +152,11 @@ Route::get('/Sotest', [Sotestcontroller::class, 'dashboard']);
 use App\Http\Controllers\SheetController;
 Route::post('/send-to-sheet', [SheetController::class, 'send']);
 
-// use App\Http\Controllers\PdfController;
-// Route::post('/upload-merged-pdf', [PdfController::class, 'mergeWithBillTemplate'])->name('upload.merged_pdf');
+Route::post('/merge-pdf', [PoDocumentController::class, 'mergeAndOverwrite'])->name('merge.pdf');
 
 use App\Http\Controllers\WorkScheduleController;
 Route::get('/WorkSchedule', [WorkScheduleController::class, 'index']);
 
-use App\Http\Controllers\PdfController;
 
-Route::post('/overwrite-pdf', [PdfController::class, 'overwritePdf'])->name('overwrite.pdf');
+
 

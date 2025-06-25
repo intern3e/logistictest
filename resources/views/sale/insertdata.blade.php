@@ -133,6 +133,7 @@ billidInput.addEventListener('input', () => {
             <option value="บิล/PO3/วางบิล/สำเนาหน้าบิล2">บิล/PO3/วางบิล/สำเนาหน้าบิล2</option>
             <option value="บิล/PO3/สำเนาบิล2">บิล/PO3/สำเนาบิล2</option>
             <option value="บิล/PO3/บัญชี">บิล/PO3/บัญชี</option>
+            <option value="ขายสด">ขายสด</option>
         </select>
     </div>
 </div>
