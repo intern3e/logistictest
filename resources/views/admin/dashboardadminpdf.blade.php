@@ -632,7 +632,7 @@ function mergePdf(billid) {
                                         <button id="addIdToissue" class="btn-danger-condensed"
                                             onclick="addIdToissueDocument('{{ $item->so_detail_id }}', '{{ $item->bill_issue_no }}')">เพิ่มเลขบิล</button>
                                         <button type="button"
-                                            id="openbillissue{{ $item->bill_issue_no }}"
+                                            id="openbillissue"
                                             onclick="openBillAndCheck('{{ asset('storage/billissue_document/' . $item->bill_issue_no . '.pdf') }}', 'checkbox_{{ $item->so_detail_id }}')">
                                           ดูใบวางบิล
                                     </button>
