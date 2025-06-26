@@ -400,7 +400,8 @@ $grouped = [
     'Zone F แฟรงค์(บางนาตราด กม 13)' => [],
     'Zone G เเชม(กรุงเทพปริมณฑล)' => [],
     'Zone H (เก่ง)' => [],
-    'เก่ง อื่น ๆ' => []
+    'Zone I (จักรยานยนต์)' => [],
+    'อื่น ๆ' => []
 ];
 
 foreach ($filteredBills as $item) {
@@ -428,10 +429,10 @@ foreach ($filteredBills as $item) {
         } elseif (pointInPolygon($point, $zoneAPolygon)) {
             $grouped['Zone A กอล์ฟ(มาบเอียง)'][] = $item;
         } else {
-            $grouped['เก่ง อื่น ๆ'][] = $item;
+            $grouped['อื่น ๆ'][] = $item;
         }
     } else {
-        $grouped['เก่ง อื่น ๆ'][] = $item;
+        $grouped['อื่น ๆ'][] = $item;
     }
 }
 
@@ -450,10 +451,16 @@ $groupedPO = [
     'Zone G เเชม(กรุงเทพปริมณฑล)' => [],
     'Zone H (เก่ง)' => [],
     'Zone I (จักรยานยนต์)' => [],
-    'เก่ง อื่น ๆ' => []
+    'อื่น ๆ' => []
 ];
 
 foreach ($filteredPOs as $item) {
+    // 🚩 ถ้าเป็นจักรยานยนต์ → ส่งเข้า Zone I โดยไม่สนพิกัด
+    if ($item->cartype == 1) {
+        $groupedPO['Zone I (จักรยานยนต์)'][] = $item;
+        continue;
+    }
+
     if (!empty($item->store_la_long) && str_contains($item->store_la_long, ',')) {
         [$lat, $long] = explode(',', $item->store_la_long);
         $lat = floatval(trim($lat));
@@ -466,7 +473,7 @@ foreach ($filteredPOs as $item) {
             $groupedPO['Zone F แฟรงค์(บางนาตราด กม 13)'][] = $item;
         } elseif (pointInPolygon($point, $zoneEPolygon)) {
             $groupedPO['Zone E เอ(บางนาตราด กม 11)'][] = $item;
-        } elseif (pointInPolygon($point, $zoneGPolygon)) {
+        } elseif (pointInPolygon($point, $zoneGPolygon)) {  
             $groupedPO['Zone G เเชม(กรุงเทพปริมณฑล)'][] = $item;
         } elseif (pointInPolygon($point, $zoneCPolygon)) {
             $groupedPO['Zone C ยุทร(พระราม 2)'][] = $item;
@@ -476,118 +483,169 @@ foreach ($filteredPOs as $item) {
             $groupedPO['Zone H (เก่ง)'][] = $item;
         } elseif (pointInPolygon($point, $zoneAPolygon)) {
             $groupedPO['Zone A กอล์ฟ(มาบเอียง)'][] = $item;
-        } elseif (pointInPolygon($point, $zoneAPolygon)) {
-        $groupedPO['Zone I (จักรยานยนต์) )'][] = $item;
         } else {
-            $groupedPO['เก่ง อื่น ๆ'][] = $item;
+            $groupedPO['อื่น ๆ'][] = $item;
         }
     } else {
-        $groupedPO['เก่ง อื่น ๆ'][] = $item;
+        $groupedPO['อื่น ๆ'][] = $item;
     }
 }
+
+// ✅ เพิ่มการกรอง DocBill ตามวันที่ที่เลือก
+$filteredDocBills = collect($docbill)->filter(function($item) use ($selectedDate) {
+    // สมมติว่าฟิลด์วันที่ใน docbill คือ 'doc_date' หรือฟิลด์ที่เก็บวันที่
+    // เปลี่ยนชื่อฟิลด์ให้ตรงกับฐานข้อมูลของคุณ
+    return Carbon::parse($item->doc_date)->toDateString() === $selectedDate;
+});
+
+$groupedDocBill = [
+  'Zone A กอล์ฟ(มาบเอียง)' => [],
+  'Zone B บังเดช(ชลบุรี)' => [],
+  'Zone C ยุทร(พระราม 2)' => [],
+  'Zone D หรั่ง(รังสิต,อยุธยา)' => [],
+  'Zone E เอ(บางนาตราด กม 11)' => [],
+  'Zone F แฟรงค์(บางนาตราด กม 13)' => [],
+  'Zone G เเชม(กรุงเทพปริมณฑล)' => [],
+  'Zone H (เก่ง)' => [],
+  'Zone I (จักรยานยนต์)' => [],
+  'อื่น ๆ' => []
+];
+
+// ✅ ใช้ข้อมูลที่กรองแล้วแทน
+if ($filteredDocBills) {
+  foreach ($filteredDocBills as $item) {
+    if (!empty($item->la_long) && str_contains($item->la_long, ',')) {
+      [$lat, $long] = explode(',', $item->la_long);
+      $lat = floatval(trim($lat));
+      $long = floatval(trim($long));
+      $point = [$lat, $long];
+
+      if (pointInPolygon($point, $zoneBPolygon)) {
+        $groupedDocBill['Zone B บังเดช(ชลบุรี)'][] = $item;
+      } elseif (pointInPolygon($point, $zoneFPolygon)) {
+        $groupedDocBill['Zone F แฟรงค์(บางนาตราด กม 13)'][] = $item;
+      } elseif (pointInPolygon($point, $zoneEPolygon)) {
+        $groupedDocBill['Zone E เอ(บางนาตราด กม 11)'][] = $item;
+      } elseif (pointInPolygon($point, $zoneGPolygon)) {
+        $groupedDocBill['Zone G เเชม(กรุงเทพปริมณฑล)'][] = $item;
+      } elseif (pointInPolygon($point, $zoneCPolygon)) {
+        $groupedDocBill['Zone C ยุทร(พระราม 2)'][] = $item;
+      } elseif (pointInPolygon($point, $zoneDPolygon)) {
+        $groupedDocBill['Zone D หรั่ง(รังสิต,อยุธยา)'][] = $item;
+      } elseif (pointInPolygon($point, $zoneHPolygon)) {
+        $groupedDocBill['Zone H (เก่ง)'][] = $item;
+      } elseif (pointInPolygon($point, $zoneAPolygon)) {
+        $groupedDocBill['Zone A กอล์ฟ(มาบเอียง)'][] = $item;
+      } else {
+        $groupedDocBill['อื่น ๆ'][] = $item;
+      }
+    } else {
+      $groupedDocBill['อื่น ๆ'][] = $item;
+    }
+  }
+}
+
 
 @endphp
 </div>
 
-<!-- ✅ ตารางแสดงผลข้อมูลลูกค้า -->
+{{-- <!-- ✅ ตารางแสดงผลข้อมูลลูกค้า -->
 <div style="display: flex; flex-wrap: wrap; gap: 20px; padding: 20px;">
   @foreach($grouped as $zoneName => $items)
+  <div style="flex: 1; min-width: 500px; background-color: #fff; border: 2px solid #999; border-radius: 8px; box-shadow: 0 0 8px rgba(0,0,0,0.1); padding: 15px;"> --}}
+    
+<!-- ✅ ตารางแสดงผลข้อมูลลูกค้า -->
+<div style="display: flex; flex-wrap: wrap; gap: 20px; padding: 20px;">
+  @foreach($grouped as $zoneName => $soItems)
   <div style="flex: 1; min-width: 500px; background-color: #fff; border: 2px solid #999; border-radius: 8px; box-shadow: 0 0 8px rgba(0,0,0,0.1); padding: 15px;">
-    
-    @php 
-      $zoneIndex = $loop->index + 1; 
-      $totalItems = count($items) + count($groupedPO[$zoneName] ?? []);
+    @php
+      $zoneIndex = $loop->index + 1;
+      $docItems = $groupedDocBill[$zoneName] ?? [];
+      $poItems = $groupedPO[$zoneName] ?? [];
+      $workIndex = 0;
+      $mergedItems = [];
+      foreach ($soItems as $item) {
+        $distance = 'ไม่ทราบระยะทาง';
+        if (!empty($item->customer_la_long) && str_contains($item->customer_la_long, ',')) {
+          [$lat, $long] = explode(',', $item->customer_la_long);
+          $distance = calculateDistance($startLat, $startLong, $lat, $long);
+        }
+        $mergedItems[] = ['type' => 'SO', 'item' => $item, 'distance' => is_numeric($distance) ? $distance : 9999];
+      }
+      foreach ($poItems as $item) {
+        $distance = 'ไม่ทราบระยะทาง';
+        if (!empty($item->store_la_long) && str_contains($item->store_la_long, ',')) {
+          [$lat, $long] = explode(',', $item->store_la_long);
+          $distance = calculateDistance($startLat, $startLong, $lat, $long);
+        }
+        $mergedItems[] = ['type' => 'PO', 'item' => $item, 'distance' => is_numeric($distance) ? $distance : 9999];
+      }
+      foreach ($docItems as $item) {
+        $distance = 'ไม่ทราบระยะทาง';
+        if (!empty($item->com_la_long) && str_contains($item->com_la_long, ',')) {
+          [$lat, $long] = explode(',', $item->com_la_long);
+          $distance = calculateDistance($startLat, $startLong, $lat, $long);
+        }
+        $mergedItems[] = ['type' => 'DOC', 'item' => $item, 'distance' => is_numeric($distance) ? $distance : 9999];
+      }
+      $sortedItems = collect($mergedItems)->sortBy('distance');
     @endphp
-    
+
     <h3 style="margin-top: 0;">
-      โซนที่ {{ $zoneIndex }}: {{ $zoneName }} — จำนวนงาน: {{ $totalItems }}
+      โซนที่ {{ $zoneIndex }}: {{ $zoneName }} — จำนวนงาน: {{ count($sortedItems) }}
     </h3>
 
     <table>
-      <thead>
-        <tr>
-          <th>ข้อมูลลูกค้า</th>
-        </tr>
-      </thead>
+      <thead><tr><th>ข้อมูลลูกค้า</th></tr></thead>
       <tbody>
-        @php $workIndex = 0; @endphp
-        
-        {{-- แสดง SO ของโซนนี้ --}}
-        @foreach($items as $item)
+        @foreach($sortedItems as $data)
         @php
           $workIndex++;
-          $distanceText = 'ไม่ทราบระยะทาง';
-          if (!empty($item->customer_la_long) && str_contains($item->customer_la_long, ',')) {
-              [$custLat, $custLong] = explode(',', $item->customer_la_long);
-              $custLat = floatval(trim($custLat));
-              $custLong = floatval(trim($custLong));
-              $distance = calculateDistance($startLat, $startLong, $custLat, $custLong);
-              $distanceText = number_format($distance, 2) . ' กม. จากจุดเริ่มต้น';
-          }
+          $item = $data['item'];
+          $distanceText = is_numeric($data['distance']) ? number_format($data['distance'], 2) . ' กม. จากจุดเริ่มต้น' : 'ไม่ทราบระยะทาง';
         @endphp
-        <tr>
-          <td>
+        <tr><td>
+          @if($data['type'] === 'SO')
             <div style="border: 2px solid #007bff; border-radius: 6px; padding: 10px; background-color: #f8f9ff;">
               <strong>SO งานที่: {{ $workIndex }}</strong><br>
-              {{ $item->so_id }} {{ $item->date_of_dali }}<br>
-              {{ $item->customer_name }}<br>
-              {{ $item->customer_tel }}<br>
-              {{ $item->customer_address }}<br>
-              <a class="latlong" style="color:#007bff; text-decoration:underline;" href="https://www.google.com/maps?q={{ trim($item->customer_la_long) }}" target="_blank">
-                📍 พิกัด: {{ $item->customer_la_long }}
-              </a><br>
+              {{ $item->so_id ?? '-' }} {{ $item->date_of_dali ?? '-' }}<br>
+              {{ $item->customer_name ?? '-' }}<br>
+              {{ $item->customer_tel ?? '-' }}<br>
+              {{ $item->customer_address ?? '-' }}<br>
+              <a class="latlong" style="color:#007bff; text-decoration:underline;"  href="https://www.google.com/maps?q={{ trim($item->customer_la_long ?? '') }}" target="_blank">📍 พิกัด: {{ $item->customer_la_long ?? '-' }}</a><br>
               <span class="latlong" style="color: #28a745; font-weight: bold;">📏 ระยะทาง: {{ $distanceText }}</span>
             </div>
-          </td>
-        </tr>
+          @elseif($data['type'] === 'PO')
+            <div style="border: 2px solid #ff6b35; border-radius: 6px; padding: 10px; background-color: #fff5f0;">
+              <strong>PO งานที่: {{ $workIndex }}</strong><br>
+              {{ $item->po_id ?? '-' }} {{ $item->recvDate ?? '-' }}<br>
+              {{ $item->store_name ?? '-' }}<br>
+              {{ $item->store_tel ?? '-' }}<br>
+              {{ $item->store_address ?? '-' }}<br>
+              <a class="latlong" style="color:#007bff; text-decoration:underline;"  href="https://www.google.com/maps?q={{ trim($item->store_la_long ?? '') }}" target="_blank">📍 พิกัด: {{ $item->store_la_long ?? '-' }}</a><br>
+              {{ $item->cartype == 1 ? 'จักรยานยนต์' : ($item->cartype == 2 ? 'รถใหญ่' : '') }}<br>
+              <span class="latlong" style="color: #28a745; font-weight: bold;">📏 ระยะทาง: {{ $distanceText }}</span>
+            </div>
+          @elseif($data['type'] === 'DOC')
+            <div style="border: 2px solid #279100; border-radius: 6px; padding: 10px; background-color: #fefffe;">
+              <strong>เอกสารงานที่: {{ $workIndex }}</strong><br>
+              {{ $item->doc_id ?? '-' }} {{ $item->datestamp ?? '-' }}<br>
+              {{ $item->com_name ?? '-' }} {{ $item->doctype ?? '-' }}<br>
+              {{ $item->contact_tel ?? '-' }}<br>
+              {{ $item->com_address ?? '-' }}<br>
+              @if(!empty($item->com_la_long))
+                <a class="latlong" style="color:#007bff; text-decoration:underline;"  href="https://www.google.com/maps?q={{ trim($item->com_la_long) }}" target="_blank">📍 พิกัด: {{ $item->com_la_long }}</a><br>
+              @endif
+              <span class="latlong" style="color: #28a745; font-weight: bold;">📏 ระยะทาง: {{ $distanceText }}</span>
+            </div>
+          @endif
+        </td></tr>
         @endforeach
-        
-        {{-- แสดง PO ของโซนนี้ --}}
-        @if(isset($groupedPO[$zoneName]))
-          @foreach($groupedPO[$zoneName] as $po)
-          @php
-            $workIndex++;
-            $distanceText = 'ไม่ทราบระยะทาง';
-            if (!empty($po->store_la_long) && str_contains($po->store_la_long, ',')) {
-                [$lat, $long] = explode(',', $po->store_la_long);
-                $lat = floatval(trim($lat));
-                $long = floatval(trim($long));
-                $distance = calculateDistance($startLat, $startLong, $lat, $long);
-                $distanceText = number_format($distance, 2) . ' กม. จากจุดเริ่มต้น';
-            }
-          @endphp
-          <tr>
-            <td>
-              <div style="border: 2px solid #ff6b35; border-radius: 6px; padding: 10px; background-color: #fff5f0;">
-                <strong>PO งานที่: {{ $workIndex }}</strong><br>
-                {{ $po->po_id }} {{ $po->recvDate }}<br>
-                {{ $po->store_name }}<br>
-                {{ $po->store_tel }}<br>
-                {{ $po->cartype }}<br>
-                {{ $po->store_address }}<br>
-                <a class="latlong" style="color:#007bff; text-decoration:underline;" href="https://www.google.com/maps?q={{ trim($po->store_la_long) }}" target="_blank">
-                  📍 พิกัด: {{ $po->store_la_long }}
-                </a><br>
-                <span class="latlong" style="color: #28a745; font-weight: bold;">📏 ระยะทาง: {{ $distanceText }}</span>
-              </div>
-            </td>
-          </tr>
-          @endforeach
-        @endif
-        
-
-        {{-- ถ้าไม่มีข้อมูลเลย --}}
-        @if(count($items) === 0 && empty($groupedPO[$zoneName]))
-        <tr>
-          <td>
-            <div style="padding: 15px; color: #888;">ไม่มีข้อมูลในโซนนี้</div>
-          </td>
-        </tr>
-        @endif
       </tbody>
     </table>
   </div>
   @endforeach
 </div>
+
 </body>
 </html>

@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use Illuminate\Http\Request;
 use App\Models\Bill;
 use App\Models\Pobills;
+use App\Models\Docbills;
 use Illuminate\Support\Facades\Log;
 
 class SotestController extends Controller
@@ -14,25 +15,33 @@ class SotestController extends Controller
         $date = $request->get('date');
         $message = null;
 
-        // ดึงข้อมูลจาก Bill ตามวันที่ หรือทั้งหมด
+        // ดึง Bill
         $bill = Bill::when($date, function ($query) use ($date) {
                     return $query->whereDate('time', $date);
                 })
                 ->orderBy('so_detail_id', 'desc')
                 ->get();
 
-        // ดึงข้อมูลจาก Pobills ตามวันที่ หรือทั้งหมด
+        // ดึง Pobills
         $pobill = Pobills::when($date, function ($query) use ($date) {
                     return $query->whereDate('time', $date);
                 })
                 ->orderBy('po_detail_id', 'desc')
                 ->get();
 
-        // ตรวจสอบว่าทั้งสองว่างหรือไม่
-        if ($bill->isEmpty() && $pobill->isEmpty()) {
+        // ดึง Docbills
+        $docbill = Docbills::when($date, function ($query) use ($date) {
+                    return $query->whereDate('datestamp', $date);
+                })
+                ->orderBy('doc_id', 'desc')
+                ->get();
+
+        // ตรวจสอบว่าไม่มีข้อมูลเลยทั้ง 3 อย่าง
+        if ($bill->isEmpty() && $pobill->isEmpty() && $docbill->isEmpty()) {
             $message = 'ไม่พบข้อมูลที่ตรงกับวันที่เลือก';
         }
 
-        return view('sale.Sotest', compact('bill', 'pobill', 'message'));
+        // ส่งออกไปที่ view
+        return view('sale.Sotest', compact('bill', 'pobill', 'docbill', 'message'));
     }
 }
