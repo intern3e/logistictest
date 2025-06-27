@@ -369,7 +369,7 @@ th {
         <h2>ระบบจัดเตรียมเส้นทางรถของบิลSO</h2>
         <div class="header-buttons">
             <a href="adminpo"><button id = "gopo"class="btn-po">ระบบจัดเตรียมรถรับของPO</button></a>
-            <a href="adminSO"><button class="btn-so">หน้าหลัก</button></a>
+            <a href="http://server_update:8000/solist" button  type="submit" class="btn btn-danger">🚪 หน้าหลัก</a>
         </div>
     </div>
     

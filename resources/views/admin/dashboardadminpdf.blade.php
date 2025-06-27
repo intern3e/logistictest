@@ -373,7 +373,7 @@
     <div class="header">
         <h2>ระบบปริ้นเอกสารของบิลSO</h2>
         <div class="header-buttons">
-            <a href="adminSO"><button class="btn-so">หน้าหลัก</button></a>
+                <a href="http://server_update:8000/solist" button  type="submit" class="btn btn-danger">🚪 หน้าหลัก</a>
         </div>
     </div>
     

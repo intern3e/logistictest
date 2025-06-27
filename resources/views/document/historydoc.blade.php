@@ -14,7 +14,7 @@
 <body>
     <div class="header">
         <h2>ประวัติระบบจัดเส้นทางเอกสารเพิ่มเติม</h2>
-        <a href="adminSO"><button class="btn-so">หน้าหลัก</button></a>
+        <a href="http://server_update:8000/solist" button  type="submit" class="btn btn-danger">🚪 หน้าหลัก</a>
     </div>
 
     <div class="container">

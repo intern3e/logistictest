@@ -15,7 +15,7 @@
             <span>👤 ผู้ใช้: {{ session('emp_name', 'Guest') }}</span>
             @csrf
             
-            <a href="SOlist" button  type="submit" class="btn btn-danger">🚪 หน้าหลัก</a>
+            <a href="http://server_update:8000/solist" button  type="submit" class="btn btn-danger">🚪 หน้าหลัก</a>
        <a href="alertsale" title="แจ้งเตือนนะจ๊ะ" class="notification-icon" style="background-color: rgb(245, 245, 69); padding: 5px; border-radius: 5px; display: inline-block;">
              <img src="https://cdn-icons-png.flaticon.com/512/2645/2645897.png" alt="แจ้งเตือน">
             <span class="notification-badge" id="alertBadge">0</span>

@@ -119,7 +119,7 @@
     <span>👤 ผู้ใช้: {{ session('emp_name', 'Guest') }}</span>
     @csrf
     <a href="WorkSchedule" class="btn btn-danger">ตารางงาน</a>
-    <a href="SOlist" class="btn btn-danger">🚪 หน้าหลัก</a>
+    <a href="http://server_update:8000/solist" button  type="submit" class="btn btn-danger">🚪 หน้าหลัก</a>
   </div>
 </div>
 
@@ -495,7 +495,7 @@ foreach ($filteredPOs as $item) {
 $filteredDocBills = collect($docbill)->filter(function($item) use ($selectedDate) {
     // สมมติว่าฟิลด์วันที่ใน docbill คือ 'doc_date' หรือฟิลด์ที่เก็บวันที่
     // เปลี่ยนชื่อฟิลด์ให้ตรงกับฐานข้อมูลของคุณ
-    return Carbon::parse($item->doc_date)->toDateString() === $selectedDate;
+    return Carbon::parse($item->datestamp)->toDateString() === $selectedDate;
 });
 
 $groupedDocBill = [

@@ -240,7 +240,7 @@
     
             <a href="{{ route('po.insertpo') }}" class="btn btn-warning">➕ เปิดบิลPO</a> 
             @csrf
-                   <a href="SOlist" button  type="submit" class="btn btn-danger">🚪 หน้าหลัก</a>
+            <a href="http://server_update:8000/solist" button  type="submit" class="btn btn-danger">🚪 หน้าหลัก</a>
         </div>
     </div>
 
