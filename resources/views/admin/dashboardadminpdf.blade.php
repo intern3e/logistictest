@@ -457,37 +457,47 @@
                                 เลือกดูไฟล์
                             </button>
                             @else
-<button id="downloadnoPO" style="background-color: red; color: white;"
-  onclick="copyPonumAndCheckBox('{{ $item->so_id }}', '{{ $item->so_detail_id }}', '{{ $item->billid ?? '' }}')">
-  ไม่มีไฟล์
-</button>
+                            <button id="downloadnoPO" style="background-color: red; color: white;"
+                            onclick="copyPonumAndCheckBox('{{ $item->so_id }}', '{{ $item->so_detail_id }}', '{{ $item->billid ?? '' }}')">
+                            ไม่มีไฟล์
+                            </button>
+                     <script>
+    function copyPonumAndCheckBox(elementId, button) {
+        const textElement = document.getElementById(elementId);
+        if (textElement) {
+            const text = textElement.innerText.trim();
 
-<script>
-function copyPonumAndCheckBox(so_id, so_detail_id, billid) {
-  if (!billid) return; // ❌ ไม่ทำอะไรถ้าไม่มี billid
-
-  fetch("http://server-virtual1/api/bill-action", {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json"
-    },
-    body: JSON.stringify({
-      so_id: so_id,
-      so_detail_id: so_detail_id,
-      billid: billid
-    })
-  })
-  .then(response => response.json())
-  .then(data => {
-    // ไม่แสดงอะไร
-    console.log("ส่งข้อมูลสำเร็จ", data);
-  })
-  .catch(error => {
-    console.error("เกิดข้อผิดพลาด", error);
-  });
-}
+            // ตรวจสอบว่า Clipboard API ใช้งานได้
+            if (navigator.clipboard && navigator.clipboard.writeText) {
+                navigator.clipboard.writeText(text).then(() => {
+                    // เปลี่ยนข้อความปุ่มชั่วคราว
+                    const originalText = button.innerText;
+                    button.innerText = "คัดลอกแล้ว ✅";
+                    setTimeout(() => {
+                        button.innerText = originalText;
+                    }, 1500);
+                }).catch(err => {
+                    console.error('❌ ไม่สามารถคัดลอกได้', err);
+                    alert("ไม่สามารถคัดลอกได้");
+                });
+            } else {
+                // Fallback (สำหรับเบราว์เซอร์เก่า)
+                const tempInput = document.createElement("input");
+                document.body.appendChild(tempInput);
+                tempInput.value = text;
+                tempInput.select();
+                try {
+                    document.execCommand("copy");
+                } catch (err) {
+                    alert("ไม่สามารถคัดลอกได้");
+                }
+                document.body.removeChild(tempInput);
+            }
+        } else {
+            alert("ไม่พบข้อมูลที่ต้องการคัดลอก");
+        }
+    }
 </script>
-
 
 
 
