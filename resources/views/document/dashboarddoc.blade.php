@@ -298,7 +298,7 @@
                     @endif
 
                     </td>
-            <td>
+            
             <td>
                 <a href="javascript:void(0);" onclick="openPopup(
                     '{{ $item->doc_id }}',

@@ -284,7 +284,6 @@
                     <th>วันที่รับสินค้า</th>
                     <th>ผู้เปิดบิล</th>
                     <th>ประเภทขนส่ง</th>
-                    <th>สถานะการจัดส่ง</th>
                     <th>ข้อมูลสินค้า</th>
                 </tr>
             </thead>
@@ -308,13 +307,6 @@
                             @endif
                         </td>
                         
-                        <td>
-                            @if($item->status == 0)
-                                กำลังดำเนินการ
-                            @else
-                                สำเร็จ
-                            @endif
-                        </td>
                         <td><a href="javascript:void(0);" 
                             onclick="openPopup(
                                 '{{ $item->po_detail_id }}',
