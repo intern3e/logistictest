@@ -457,24 +457,38 @@
                                 เลือกดูไฟล์
                             </button>
                             @else
-                            <button id="downloadnoPO" style="background-color: red; color: white;"
-                            onclick="copyPonumAndCheckBox('{{ $item->so_id }}', '{{ $item->so_detail_id }}', '{{ $item->billid ?? '' }}')">
-                            ไม่มีไฟล์
-                            </button>
-                     <script>
-                        function copyPonumAndCheckBox(so_id, so_detail_id, billid) {
-                            // ✅ แสดง billid ในกล่องแจ้งเตือน
-                            alert("Bill ID: " + billid);
+<button id="downloadnoPO" style="background-color: red; color: white;"
+  onclick="copyPonumAndCheckBox('{{ $item->so_id }}', '{{ $item->so_detail_id }}', '{{ $item->billid ?? '' }}')">
+  ไม่มีไฟล์
+</button>
 
-                            // หรือจะ log ดูก็ได้
-                            console.log("SO:", so_id);
-                            console.log("SO Detail:", so_detail_id);
-                            console.log("Bill ID:", billid);
+<script>
+function copyPonumAndCheckBox(so_id, so_detail_id, billid) {
+  if (!billid) return; // ❌ ไม่ทำอะไรถ้าไม่มี billid
 
-                            // 🔧 ตรงนี้คุณสามารถเขียนโค้ดอื่นต่อ เช่น:
-                            // ส่ง billid ไปยัง backend, เปิด modal, เปลี่ยนปุ่ม ฯลฯ
-                        }
-                        </script>
+  fetch("http://server-virtual1/api/bill-action", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json"
+    },
+    body: JSON.stringify({
+      so_id: so_id,
+      so_detail_id: so_detail_id,
+      billid: billid
+    })
+  })
+  .then(response => response.json())
+  .then(data => {
+    // ไม่แสดงอะไร
+    console.log("ส่งข้อมูลสำเร็จ", data);
+  })
+  .catch(error => {
+    console.error("เกิดข้อผิดพลาด", error);
+  });
+}
+</script>
+
+
 
 
                     <script>
