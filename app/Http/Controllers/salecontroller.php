@@ -132,6 +132,7 @@ public function fetchFormType(Request $request)
             'customer_la_long' => 'required|string|max:255',
             'emp_name' => 'required|string|max:255',
             'sale_name' => 'required|string|max:255',
+            'contactso' => 'required|string|max:255',
             'date_of_dali' => 'required|date',
             'notes' => 'nullable|string',
             'billid' => 'required|string|max:255',
@@ -187,6 +188,7 @@ public function fetchFormType(Request $request)
         $bill->statuspdf = 0;
         $bill->customer_id = $request->input('customer_id');
         $bill->customer_name = $request->input('customer_name');
+        $bill->contactso = $request->input('contactso');
         $bill->customer_tel = $request->input('customer_tel');
         $bill->customer_address = $request->input('customer_address');
         $bill->customer_la_long = $request->input('customer_la_long');
@@ -281,7 +283,14 @@ public function deleteBill($so_detail_id)
             return response()->json(['error' => 'เกิดข้อผิดพลาด: ' . $e->getMessage()], 500);
         }
     }
+public function fetchContactSo(Request $request)
+{
+    $bill = Bill::where('customer_id', $request->customer_id)->first();
 
+    return response()->json([
+        'contactso' => $bill?->contactso,  
+    ]);
+}
 }
 
 

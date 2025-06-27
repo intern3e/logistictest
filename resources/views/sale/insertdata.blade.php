@@ -97,24 +97,32 @@ billidInput.addEventListener('input', () => {
 });
 </script>
 
+<!-- แถว: ชื่อบริษัท + วันกำหนดส่ง -->
+<div class="mb-3" style="display: flex; flex-wrap: wrap; gap: 20px; align-items: center;">
+  <div style="flex: 2; min-width: 250px;">
+    <label for="customer_name">ชื่อบริษัท :</label>
+    <input type="text" id="customer_name" name="customer_name" style="width: 100%;" readonly required>
+  </div>
 
- <div class="mb-3" style="display: flex; flex-wrap: wrap; gap: 20px; align-items: center;">
-    <div style="flex: 2; min-width: 150px;">
-        <label for="customer_name">ชื่อบริษัท :</label>
-        <input type="text" id="customer_name" name="customer_name" style="width: 100%;" readonly required >
-    </div>
-
-    <div style="flex: 1; min-width: 100px;">
-        <label for="customer_tel">เบอร์ติดต่อ :</label>
-        <input type="text" id="customer_tel" name="customer_tel" style="width: 100%;">
-    </div>
-
-    <div style="flex: 1; min-width: 50px;">
-        <label for="date_of_dali">วันกำหนดส่ง :</label>
-        <input type="text" id="date_of_dali" name="date_of_dali" style="width: 40%;"  required  > 
-    </div>
-    {{-- readonly --}}
+  <div style="flex: 1; min-width: 150px;">
+    <label for="date_of_dali">วันกำหนดส่ง :</label>
+    <input type="text" id="date_of_dali" name="date_of_dali" style="width: 100%;"  readonly required>
+  </div>
 </div>
+
+<!-- แถว: ชื่อผู้ติดต่อ + เบอร์ติดต่อ -->
+<div class="mb-3" style="display: flex; flex-wrap: wrap; gap: 20px; align-items: center;">
+  <div style="flex: 2; min-width: 250px;">
+    <label for="contactso">ชื่อผู้ติดต่อ :</label>
+    <input type="text" id="contactso" name="contactso" style="width: 100%;" required>
+  </div>
+
+  <div style="flex: 1; min-width: 150px;">
+    <label for="customer_tel">เบอร์ติดต่อ :</label>
+    <input type="text" id="customer_tel" name="customer_tel" style="width: 100%;">
+  </div>
+</div>
+
 
        <div class="mb-3" style="display: flex; gap: 20px; align-items: center;">
     <!-- ฝั่งอัปโหลดเอกสาร -->
@@ -197,14 +205,18 @@ function fetchFormType() {
     {{-- <textarea id="customer_address" name="customer_address" rows="4" readonly required style="width: 100%; padding: 10px; font-size: 14px; border-radius: 10px; border: 1px solid #ccc; height: 50px" ></textarea> --}}
     <input type="text" id="customer_address" name="customer_address" style="width: 100%; padding: 10px; font-size: 14px; border-radius: 6px; border: 1px solid #ccc; height: 30px"  readonly required >
     </div>
+    
         <label>ละติจูด ลองจิจูด :</label>
         <div style="display: flex; justify-content: space-between; width: 100%;" >
             <input type="text" id="customer_la_long" name="customer_la_long">
         </div>
          <button type="button" class="btn-custom" onclick="openGoogleMaps()">Google Maps</button>
 
-      <div class="mb-3" style="display: flex; gap: 20px; align-items: flex-start; flex-wrap: wrap;">
+       <label for="additional_notes" style="display: block; margin-bottom: 4px; margin-top: 10px;">รายละเอียดเพิ่มเติม :</label>
+        <textarea id="notes" name="notes" rows="2" style="font-size: 14px; padding: 6px; height: 40px;"></textarea>
 
+
+      <div class="mb-3" style="display: flex; gap: 20px; align-items: flex-start; flex-wrap: wrap;">
     <!-- แสดงแผนที่ -->
     <div style="flex: 1;">
         <label class="form-label">แผนที่ :</label>
@@ -255,8 +267,6 @@ function fetchFormType() {
             <tbody id="detail"></tbody>
         </table>
         </div>
-          <label for="additional_notes">รายละเอียดเพิ่มเติม :</label>
-        <textarea id="notes" name="notes" rows="2" style="font-size: 14px; padding: 6px; height: 60px;"></textarea>
         
         <div style="display: flex; justify-content: center; margin-top: 20px;">
             <button type="button" id="submitBill" class="btn btn-success" 
@@ -265,7 +275,34 @@ function fetchFormType() {
             </button>
         </div>
     </form>
+            <script>
+                function fetchContactSo() {
+                    const customer_id = document.getElementById("customer_id").value;
+                    const contactInput = document.getElementById("contactso");
 
+                    if (!customer_id) {
+                        contactInput.value = "";
+                        return;
+                    }
+
+                    fetch('/fetch-contactso', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+                        },
+                        body: JSON.stringify({ customer_id: customer_id })
+                    })
+                    .then(response => response.json())
+                    .then(data => {
+                        contactInput.value = data.contactso || "";
+                    })
+                    .catch(error => {
+                        console.error('Error fetching contactso:', error);
+                        contactInput.value = "";
+                    });
+                }
+        </script>
     <script>
 document.getElementById('submitBill').addEventListener('click', async function (event) {
     event.preventDefault();
@@ -373,6 +410,7 @@ function openGoogleMaps() {
             document.getElementById('ponum').value = soDetails.CustPONo;  
             document.getElementById('customer_id').value = SoStatus.CustID; 
             fetchFormType();
+            fetchContactSo();
             document.getElementById('customer_name').value = soDetails.CustName;  
             document.getElementById('customer_address').value = 
                 [soDetails.ShipToAddr1, soDetails.CustAddr1, soDetails.ContDistrict, soDetails.ContAmphur, soDetails.ContProvince, soDetails.ContPostCode]

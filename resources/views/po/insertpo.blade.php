@@ -65,6 +65,8 @@
         </div>
         <button type="button" class="btn-custom" onclick="openGoogleMaps()">Google Maps</button>
         <br>
+       <label for="additional_notes" style="display: block; margin-bottom: 4px; margin-top: 10px;">รายละเอียดเพิ่มเติม :</label>
+       <textarea id="notes" name="notes" rows="2" style="font-size: 14px; padding: 6px; height: 40px;"></textarea>
 
        
 
@@ -109,8 +111,6 @@
                         </table>
                         
                         
-  <label for="additional_notes">รายละเอียดเพิ่มเติม :</label>
-        <textarea id="notes" name="notes" rows="2" style="font-size: 14px; padding: 6px; height: 60px;"></textarea>
                     
              <div style="display: flex; justify-content: center; margin-top: 20px;">
             <button type="button" id="submitBillpo" class="btn btn-success" 

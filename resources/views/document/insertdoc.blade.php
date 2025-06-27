@@ -463,6 +463,9 @@ select#cartype option:checked {
         </div>
           <button type="button" class="btn-custom" onclick="openGoogleMaps()">Google Maps</button>
 
+          <label for="additional_notes" style="display: block; margin-bottom: 4px; margin-top: 10px;"> รายละเอียดเพิ่มเติม :</label>
+            <textarea id="notes" name="notes" rows="2" style="font-size: 14px; padding: 6px; height: 40px; width: 100%;"></textarea>
+
         <div class="mb-3">
             <label class="form-label">แผนที่ :</label>
             <iframe id="mapFrame" width="100%" height="300" style="border:0;" allowfullscreen="" loading="lazy"></iframe>
@@ -502,8 +505,6 @@ select#cartype option:checked {
             <button type="button" class="btn btn-success insert-btn">เพิ่มสินค้า</button> 
         </div>
 
-        <label for="additional_notes">รายละเอียดเพิ่มเติม :</label>
-    <textarea id="notes" name="notes" rows="2" style="font-size: 14px; padding: 6px; height: 60px;"></textarea>
 
         <div style="display: flex; justify-content: center; margin-top: 20px;">
             <button type="button" id="submitBill" class="btn btn-success" 

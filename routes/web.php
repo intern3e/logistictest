@@ -31,6 +31,7 @@ use App\Models\Bill_Detail;
     Route::any('/update-bill', [salecontroller::class, 'updateBill']);
     Route::delete('/delete-bill/{so_detail_id}', [salecontroller::class, 'deleteBill']);
     Route::post('/fetch-formtype', [salecontroller::class, 'fetchFormType']);
+    Route::post('/fetch-contactso', [salecontroller::class, 'fetchContactSo']);
     Route::get('/get-bill-detail/{so_detail_id}', function ($so_detail_id) {
         $billDetails = Bill_Detail::where('so_detail_id', $so_detail_id)->get();
         return response()->json($billDetails);});
@@ -128,7 +129,6 @@ Route::get('/alertsale/count', function () {
 });
 
 Route::get('/alertaccount/count', function () {
-    // คัดกรองข้อมูลที่ตรงตามเงื่อนไข formtype == 1 และ statuspdf == 1
     $count = DB::table('tblbill')
                 ->where('formtype', "บิล/PO3/บัญชี")   
                 ->where('statuspdf', 1)  
