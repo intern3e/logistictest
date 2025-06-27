@@ -398,7 +398,7 @@
         <thead>
             <tr>
                 <th>ปริ้นเอกสาร</th>
-                <th>เลขที่บิล</th>
+                <th id="ref1">เลขที่บิล</th>
                 <th>ประเภทบิล</th>
                 <th>อ้างอิงใบสั่งขาย</th>
                 <th>อ้างอิงใบส่งของ</th>
@@ -422,7 +422,7 @@
                         <td>
                        <input type="checkbox" class="form-control1"name="statupdf[]"value="{{ $item->so_id }}"id="checkbox_{{ $item->so_detail_id }}">
                         </td>
-                        <td>{{ $item->so_detail_id }}</td>  
+                        <td id="ref">{{ $item->so_detail_id }}</td>  
                        @php
                         $bgColor = match($item->formtype) {
                             'บิล/PO3' => 'bg-red',
@@ -457,10 +457,26 @@
                                 เลือกดูไฟล์
                             </button>
                             @else
-                             <button id="downloadnoPO" style="background-color: red; color: white;"
+                            <button id="downloadnoPO" style="background-color: red; color: white;"
                             onclick="copyPonumAndCheckBox('{{ $item->so_id }}', '{{ $item->so_detail_id }}', '{{ $item->billid ?? '' }}')">
                             ไม่มีไฟล์
-                        </button>
+                            </button>
+                     <script>
+                        function copyPonumAndCheckBox(so_id, so_detail_id, billid) {
+                            // ✅ แสดง billid ในกล่องแจ้งเตือน
+                            alert("Bill ID: " + billid);
+
+                            // หรือจะ log ดูก็ได้
+                            console.log("SO:", so_id);
+                            console.log("SO Detail:", so_detail_id);
+                            console.log("Bill ID:", billid);
+
+                            // 🔧 ตรงนี้คุณสามารถเขียนโค้ดอื่นต่อ เช่น:
+                            // ส่ง billid ไปยัง backend, เปิด modal, เปลี่ยนปุ่ม ฯลฯ
+                        }
+                        </script>
+
+
                     <script>
                         function copyPonumAndCheckBox(so_id, so_detail_id, billid) {
                             if (!billid) {

@@ -270,6 +270,20 @@
   background-color: #fde047;
   animation: blink-yellow 1s infinite;
 }
+.btn-danger {
+  background-color: #dc3545;
+  color: white;
+  border: none;
+  padding: 10px 20px;
+  border-radius: 6px;
+  font-weight: bold;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+}
+
+.btn-danger:hover {
+  background-color: #ad0314;
+}
 
     </style>
 
@@ -278,7 +292,7 @@
     <div class="header">
         <h2>ระบบตรวจเช็คเอกสาร</h2>
         <div class="header-buttons">
-            <a href="http://server-3e/3e/bills_entry.php" button  type="submit" class="btn-so">🚪 หน้าหลัก</a>
+            <a href="http://server_update:8000/solist" button  type="submit" class="btn btn-danger">🚪 หน้าหลัก</a>
         </div>
     </div>
 
@@ -287,10 +301,17 @@
         <div class="top-section">
             <div class="button-group">
                 <button id="summitso" onclick="updateStatuspdf2()">ยืนยัน</button>
-                <button id="del" onclick="updateStatuspdfcan()">ยกเลิก</button>
                 <a href="history"><button>📜 ประวัติเอกสาร</button></a>
             </div>
             <div class="search-box">
+            <button id="del" class="btn-danger" onclick="confirmDelete()">❌ ยกเลิก</button>
+            <script>
+            function confirmDelete() {
+              if (confirm('คุณแน่ใจหรือไม่ว่าต้องการยกเลิกเอกสารนี้?')) {
+                updateStatuspdfcan(); // เรียกฟังก์ชันยกเลิกจริง
+              }
+            }
+          </script>
             <input type="text" id="search-input" placeholder=" ค้นหา เลขที่บิล" onkeyup="searchTable()">
         </div>
         
