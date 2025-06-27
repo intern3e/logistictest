@@ -517,36 +517,37 @@ $groupedDocBill = [
 
 // ✅ ใช้ข้อมูลที่กรองแล้วแทน
 if ($filteredDocBills) {
-  foreach ($filteredDocBills as $item) {
-    if (!empty($item->la_long) && str_contains($item->la_long, ',')) {
-      [$lat, $long] = explode(',', $item->la_long);
-      $lat = floatval(trim($lat));
-      $long = floatval(trim($long));
-      $point = [$lat, $long];
+foreach ($filteredDocBills as $item) {
+    if (!empty($item->com_la_long) && str_contains($item->com_la_long, ',')) {
+        [$lat, $long] = explode(',', $item->com_la_long);
+        $lat = floatval(trim($lat));
+        $long = floatval(trim($long));
+        $point = [$lat, $long];
 
-      if (pointInPolygon($point, $zoneBPolygon)) {
-        $groupedDocBill['Zone B บังเดช(ชลบุรี)'][] = $item;
-      } elseif (pointInPolygon($point, $zoneFPolygon)) {
-        $groupedDocBill['Zone F แฟรงค์(บางนาตราด กม 13)'][] = $item;
-      } elseif (pointInPolygon($point, $zoneEPolygon)) {
-        $groupedDocBill['Zone E เอ(บางนาตราด กม 11)'][] = $item;
-      } elseif (pointInPolygon($point, $zoneGPolygon)) {
-        $groupedDocBill['Zone G เเชม(กรุงเทพปริมณฑล)'][] = $item;
-      } elseif (pointInPolygon($point, $zoneCPolygon)) {
-        $groupedDocBill['Zone C ยุทร(พระราม 2)'][] = $item;
-      } elseif (pointInPolygon($point, $zoneDPolygon)) {
-        $groupedDocBill['Zone D หรั่ง(รังสิต,อยุธยา)'][] = $item;
-      } elseif (pointInPolygon($point, $zoneHPolygon)) {
-        $groupedDocBill['Zone H (เก่ง)'][] = $item;
-      } elseif (pointInPolygon($point, $zoneAPolygon)) {
-        $groupedDocBill['Zone A กอล์ฟ(มาบเอียง)'][] = $item;
-      } else {
-        $groupedDocBill['อื่น ๆ'][] = $item;
-      }
+        if (pointInPolygon($point, $zoneBPolygon)) {
+            $groupedDocBill['Zone B บังเดช(ชลบุรี)'][] = $item;
+        } elseif (pointInPolygon($point, $zoneFPolygon)) {
+            $groupedDocBill['Zone F แฟรงค์(บางนาตราด กม 13)'][] = $item;
+        } elseif (pointInPolygon($point, $zoneEPolygon)) {
+            $groupedDocBill['Zone E เอ(บางนาตราด กม 11)'][] = $item;
+        } elseif (pointInPolygon($point, $zoneGPolygon)) {
+            $groupedDocBill['Zone G เเชม(กรุงเทพปริมณฑล)'][] = $item;
+        } elseif (pointInPolygon($point, $zoneCPolygon)) {
+            $groupedDocBill['Zone C ยุทร(พระราม 2)'][] = $item;
+        } elseif (pointInPolygon($point, $zoneDPolygon)) {
+            $groupedDocBill['Zone D หรั่ง(รังสิต,อยุธยา)'][] = $item;
+        } elseif (pointInPolygon($point, $zoneHPolygon)) {
+            $groupedDocBill['Zone H (เก่ง)'][] = $item;
+        } elseif (pointInPolygon($point, $zoneAPolygon)) {
+            $groupedDocBill['Zone A กอล์ฟ(มาบเอียง)'][] = $item;
+        } else {
+            $groupedDocBill['อื่น ๆ'][] = $item;
+        }
     } else {
-      $groupedDocBill['อื่น ๆ'][] = $item;
+        $groupedDocBill['อื่น ๆ'][] = $item;
     }
-  }
+}
+
 }
 
 
