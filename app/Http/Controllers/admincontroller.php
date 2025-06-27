@@ -341,4 +341,24 @@ public function uploadBillIssue(Request $request)
 
     return back()->with('message', '✅ อัปโหลดไฟล์สำเร็จ');
 }
+public function updateStatuspdfcan(Request $request)
+{
+    // ตรวจสอบว่ามีค่า soDetailIds ส่งมาหรือไม่
+    $soDetailIds = $request->input('soDetailIds');
+    if (empty($soDetailIds)) {
+        return response()->json(['success' => false, 'message' => 'No SO Detail IDs provided'], 400);
+    }
+
+    try {
+        // อัปเดตสถานะจาก 0 เป็น 1
+        DB::table('tblbill')
+            ->whereIn('so_detail_id', $soDetailIds)
+            ->update(['statuspdf' => '6']);
+
+        return response()->json(['success' => true]);
+    } catch (\Exception $e) {
+        // จัดการข้อผิดพลาดที่เกิดขึ้น
+        return response()->json(['success' => false, 'message' => 'Failed to update status', 'error' => $e->getMessage()], 500);
+    }
+}
 }

@@ -288,6 +288,7 @@
         <div class="top-section">
             <div class="button-group">
                 <button id="summitso" onclick="updateStatuspdf2()">ยืนยัน</button>
+                <button id="del" onclick="updateStatuspdfcan()">ยกเลิก</button>
                 <a href="history"><button>📜 ประวัติเอกสาร</button></a>
             </div>
             <div class="search-box">
@@ -301,7 +302,7 @@
     <table>
         <thead>
             <tr>
-                <th>ปริ้นเอกสาร</th>
+                <th>เลือก</th>
                 <th>REF</th>
                 <th>อ้างอิงใบสั่งขาย</th>
                 <th>อ้างอิงใบสั่งซื้อ</th>
@@ -327,7 +328,7 @@
                             'บิล/PO3' => 'bg-red',
                             'บิล/PO3/วางบิล' => 'bg-green',
                             'บิล/PO3/วางบิล/สำเนาหน้าบิล2' => 'bg-blue',
-                            'บิล/PO3/สำเนาบิล2' => 'bg-purple',
+                            'บิล/PO3/สำเนาหน้าบิล2' => 'bg-purple',
                             'บิล/PO3/บัญชี' => 'bg-yellow',
                             default => ''
                         };
@@ -581,6 +582,45 @@ function toggleCheckboxes() {
     });
 }
     </script>
+  <script>
+    function updateStatuspdfcan() {
+        let selectedIds = [];
+        let checkboxes = document.querySelectorAll("input[name='statupdf[]']:checked");
 
+        checkboxes.forEach(checkbox => {
+            let row = checkbox.closest('tr');
+            let soDetailId = row.querySelector('td:nth-child(2)').textContent; // Get so_detail_id from second column
+            selectedIds.push(soDetailId);
+        });
+
+        if (selectedIds.length === 0) {
+            return;
+        }
+
+        // Proceed to update
+        console.log("Updating status for:", selectedIds); // Log the selected IDs
+
+        fetch('/update-statuspdfcan', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+            },
+            body: JSON.stringify({ soDetailIds: selectedIds })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                location.reload(); // Optionally reload the page to reflect changes
+            } else {
+                alert("ไม่สามารถอัปเดตสถานะได้");
+            }
+        })
+        .catch(error => {
+            console.error("Error updating status:", error);
+            alert("เกิดข้อผิดพลาดในการอัปเดตสถานะ");
+        });
+    }   
+  </script>
 </body>
 </html>

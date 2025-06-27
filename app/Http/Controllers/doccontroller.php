@@ -52,7 +52,7 @@ class DocController extends Controller
             $request->validate([
                 'emp_name' => 'required|string|max:255',
                 'doctype' => 'required|string|max:255',
-                'id_com' => 'required|string|max:255',
+                'id_com' => 'nullable|string|max:255',
                 'com_name' => 'required|string|max:255',
                 'contact_name' => 'required|string|max:255',
                 'contact_tel' => 'nullable|string|max:255',

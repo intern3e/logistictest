@@ -58,6 +58,7 @@ Route::post('/update-statuspdfsoback', [admincontroller::class, 'updateStatuspdf
 Route::post('/update-billissue', [admincontroller::class, 'updateBillIssue']);
 Route::get('/adminroute', [AdminController::class, 'adminroute'])->name('admin.adminroute');
 Route::post('/update-statuspdfso2', [admincontroller::class, 'updateStatuspdf2']);
+Route::post('/update-statuspdfcan', [admincontroller::class, 'updateStatuspdfcan']);
 Route::post('/update-delivery-date', [admincontroller::class, 'updateDeliveryDate'])->name('update.delivery.date');
 Route::get('/upload', function () {
     return view('upload');
