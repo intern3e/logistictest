@@ -278,10 +278,9 @@
     <div class="header">
         <h2>ระบบตรวจเช็คเอกสาร</h2>
         <div class="header-buttons">
-            <a href="http://server-3e/3e/bills_entry.php" button  type="submit" class="btn btn-danger">🚪 หน้าหลัก</a>
+            <a href="http://server-3e/3e/bills_entry.php" button  type="submit" class="btn-so">🚪 หน้าหลัก</a>
         </div>
     </div>
-    
 
 
     <div class="container">

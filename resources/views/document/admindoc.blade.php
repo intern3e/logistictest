@@ -13,7 +13,7 @@
 <body>
     <div class="header">
         <h2>ระบบจัดบิลชั่วคราว</h2>
-        <a href="http://server_update:8000/solist" button  type="submit" class="btn btn-danger">🚪 หน้าหลัก</a>
+        <a href="http://server_update:8000/solist"><button class="btn-so">หน้าหลัก</button></a>
     </div>
     <div class="container">
         <div class="top-section">

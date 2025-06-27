@@ -387,8 +387,11 @@ function pointInPolygon($point, $polygon) {
 // ✅ กรองตามวันที่ - ใช้วันที่ปัจจุบันถ้าไม่มีการเลือกวันที่
 $selectedDate = request('filter_date') ?: date('Y-m-d');
 $filteredBills = collect($bill)->filter(function($item) use ($selectedDate) {
-    return Carbon::parse($item->date_of_dali)->toDateString() === $selectedDate;
+    return Carbon::parse($item->date_of_dali)->toDateString() === $selectedDate
+        && $item->status == 0
+        && $item->statuspdf == 2;
 });
+
 
 // ✅ แบ่งกลุ่มตามโซน
 $grouped = [
