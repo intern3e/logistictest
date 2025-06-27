@@ -457,65 +457,51 @@
                                 เลือกดูไฟล์
                             </button>
                             @else
-                            <button id="downloadnoPO" style="background-color: red; color: white;"
-                            onclick="copyPonumAndCheckBox('{{ $item->so_id }}', '{{ $item->so_detail_id }}', '{{ $item->billid ?? '' }}')">
-                            ไม่มีไฟล์
-                            </button>
-                     <script>
-    function copyPonumAndCheckBox(elementId, button) {
-        const textElement = document.getElementById(elementId);
-        if (textElement) {
-            const text = textElement.innerText.trim();
+                             <button id="downloadnoPO" style="background-color: red; color: white;"
+    onclick="copyBillIdToClipboard(this, '{{ $item->billid ?? '' }}')">
+    ไม่มีไฟล์
+</button>
+                   <script>
+    function copyBillIdToClipboard(button, billid) {
+        const text = billid.trim();
 
-            // ตรวจสอบว่า Clipboard API ใช้งานได้
-            if (navigator.clipboard && navigator.clipboard.writeText) {
-                navigator.clipboard.writeText(text).then(() => {
-                    // เปลี่ยนข้อความปุ่มชั่วคราว
-                    const originalText = button.innerText;
-                    button.innerText = "คัดลอกแล้ว ✅";
-                    setTimeout(() => {
-                        button.innerText = originalText;
-                    }, 1500);
-                }).catch(err => {
-                    console.error('❌ ไม่สามารถคัดลอกได้', err);
-                    alert("ไม่สามารถคัดลอกได้");
-                });
-            } else {
-                // Fallback (สำหรับเบราว์เซอร์เก่า)
-                const tempInput = document.createElement("input");
-                document.body.appendChild(tempInput);
-                tempInput.value = text;
-                tempInput.select();
-                try {
-                    document.execCommand("copy");
-                } catch (err) {
-                    alert("ไม่สามารถคัดลอกได้");
-                }
-                document.body.removeChild(tempInput);
-            }
+        if (!text) {
+            alert("ไม่พบเลข Bill ID ที่จะคัดลอก");
+            return;
+        }
+
+        // ใช้ Clipboard API
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+            navigator.clipboard.writeText(text).then(() => {
+                const originalText = button.innerText;
+                button.innerText = "คัดลอกแล้ว ✅";
+                setTimeout(() => {
+                    button.innerText = originalText;
+                }, 1500);
+            }).catch(err => {
+                console.error('❌ ไม่สามารถคัดลอกได้', err);
+                alert("ไม่สามารถคัดลอกได้");
+            });
         } else {
-            alert("ไม่พบข้อมูลที่ต้องการคัดลอก");
+            // Fallback (สำหรับเบราว์เซอร์เก่า)
+            const tempInput = document.createElement("input");
+            tempInput.value = text;
+            document.body.appendChild(tempInput);
+            tempInput.select();
+            try {
+                document.execCommand("copy");
+                const originalText = button.innerText;
+                button.innerText = "คัดลอกแล้ว ✅";
+                setTimeout(() => {
+                    button.innerText = originalText;
+                }, 1500);
+            } catch (err) {
+                alert("ไม่สามารถคัดลอกได้");
+            }
+            document.body.removeChild(tempInput);
         }
     }
-</script>
-
-
-
-                    <script>
-                        function copyPonumAndCheckBox(so_id, so_detail_id, billid) {
-                            if (!billid) {
-                                return; 
-                            }
-
-                            navigator.clipboard.writeText(billid).catch(() => {});
-
-                            const checkbox = document.querySelector(`input[type="checkbox"][data-detail-id="${so_detail_id}"]`);
-                            if (checkbox) {
-                                checkbox.checked = true;
-                            }
-                        }
-                    </script>
-                                            
+</script>        
                                         
                         @endif
                         <td>{{ $item->billid }}</td>

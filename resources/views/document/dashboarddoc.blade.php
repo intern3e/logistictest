@@ -276,6 +276,7 @@
             <th>ประเภทงาน</th>
             <th>ผู้เปิดบิล</th>
             <th>วันที่</th>
+	    <th>สถานะ</th>
             <th>ข้อมูลรายละเอียด</th>
         </tr>
     </thead>
@@ -289,6 +290,15 @@
             <td>{{ $item->doctype }}</td>
             <td>{{ $item->emp_name }}</td>
             <td>{{ \Carbon\Carbon::parse($item->time)->format('d/m/Y') }}</td>
+            <td style="font-size: 12px;">
+                    @if($item->statuspdf == 0)
+                        กำลังดำเนินการ
+                    @else
+                        ปริ้นสำเร็จ
+                    @endif
+
+                    </td>
+            <td>
             <td>
                 <a href="javascript:void(0);" onclick="openPopup(
                     '{{ $item->doc_id }}',

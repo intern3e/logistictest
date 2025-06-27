@@ -9,6 +9,6 @@ class WorkScheduleController extends Controller
     public function index()
     {
         // เรียกใช้ View ชื่อ WorkScheduleController.blade.php
-        return view('sale.WorkSchedule');
+         return view('sale.WorkSchededule');
     }
 }
