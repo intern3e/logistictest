@@ -241,7 +241,40 @@
             <button type="submit" style="display: none;">ค้นหา</button>
         </form>
     
-    
+       <div class="headcom">
+    <label for="headcom">บริษัทผู้ส่ง : </label>
+    <select id="headcom" onchange="filterTable()">
+        <option value="">ทั้งหมด</option>
+        <option value="บริษัท ทริปเปิ้ล อี เทรดดิ้ง จำกัด">บริษัท ทริปเปิ้ล อี เทรดดิ้ง จำกัด</option>
+        <option value="บริษัท ทริปเปิ้ล อี อินโนเวชั่น จำกัด">บริษัท ทริปเปิ้ล อี อินโนเวชั่น จำกัด</option>
+        <option value="บริษัท ทริปเปิ้ลพี แฟคทอรี่ จำกัด">บริษัท ทริปเปิ้ลพี แฟคทอรี่ จำกัด</option>
+        <option value="บริษัท เอตะ แอนด์ พอล อินโนเวชั่น จำกัด">บริษัท เอตะ แอนด์ พอล อินโนเวชั่น จำกัด</option>
+        <option value="บริษัท ฮิคาริ เดงกิ จำกัด">บริษัท ฮิคาริ เดงกิ จำกัด</option>
+        <option value="บริษัท เอ อี แอนด์ ที อินเตอร์เนชั่นแนล จำกัด">บริษัท เอ อี แอนด์ ที อินเตอร์เนชั่นแนล จำกัด</option>
+    </select>
+</div>
+
+<script>
+    function filterTable() {
+        let selectedType = document.getElementById("headcom").value;
+        let table = document.getElementById("table-body");
+        let rows = table.getElementsByTagName("tr");
+
+        for (let i = 0; i < rows.length; i++) {
+            let typeCell = rows[i].getElementsByTagName("td")[1]; 
+            if (typeCell) {
+                let typeText = typeCell.textContent.trim();
+
+                if (selectedType === "" || typeText === selectedType) {
+                    rows[i].style.display = "";
+                } else {
+                    rows[i].style.display = "none";
+                }
+            }
+        }
+    }
+</script>
+
     <script>
         const form = document.getElementById('autoSearchForm');
         const dateInput = document.getElementById('date');
@@ -270,13 +303,14 @@
     <thead>
         <tr>
             <th>เลขที่บิล</th>
+            <th>บริษัทผู้ส่ง</th>
             <th>บริษัท</th>
             <th>ผู้ติดต่อ</th>
             <th>เบอร์โทร</th>
             <th>ประเภทงาน</th>
             <th>ผู้เปิดบิล</th>
             <th>วันที่</th>
-	    <th>สถานะ</th>
+	        <th>สถานะ</th>
             <th>ข้อมูลรายละเอียด</th>
         </tr>
     </thead>
@@ -284,6 +318,7 @@
         @foreach($docbill as $item)
         <tr>
             <td>{{ $item->doc_id }}</td>
+            <td>{{ $item->headcom }}</td>
             <td>{{ $item->com_name }}</td>
             <td>{{ $item->contact_name }}</td>
             <td>{{ $item->contact_tel}}</td>
