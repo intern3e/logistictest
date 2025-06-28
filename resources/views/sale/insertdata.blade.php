@@ -316,7 +316,7 @@ document.getElementById('submitBill').addEventListener('click', async function (
     }
 
     try {
-        // 1. ตรวจสอบ billid (ส่ง JSON)
+        // 🔎 ตรวจสอบ billid ซ้ำ
         let checkResponse = await fetch('{{ route("check.billid") }}', {
             method: 'POST',
             headers: {
@@ -329,30 +329,35 @@ document.getElementById('submitBill').addEventListener('click', async function (
         let checkData = await checkResponse.json();
 
         if (checkData.exists) {
-            let confirmAdd = confirm(`${checkData.billid}นี้ถูกสร้างโดย ${checkData.emp_name} แล้ว\nต้องการเพิ่มข้อมูลอีกครั้งหรือไม่?`);
-            if (!confirmAdd) {
-                return; // ไม่เพิ่มข้อมูล หยุด
-            }
+            let confirmAdd = confirm(`${checkData.billid} นี้ถูกสร้างโดย ${checkData.emp_name} แล้ว\nต้องการเพิ่มข้อมูลอีกครั้งหรือไม่?`);
+            if (!confirmAdd) return;
         }
 
-        // 2. เตรียม FormData สำหรับส่งเพิ่มข้อมูลจริง
+        // 📄 ตรวจสอบว่าแนบ PO หรือยัง
+        if (typeof convertedPDFBlob === 'undefined' || !convertedPDFBlob) {
+            const confirmNoPO = confirm("คุณยังไม่ได้แนบเอกสาร PO\nต้องการเพิ่มข้อมูลโดยไม่มีเอกสาร PO ใช่หรือไม่?");
+            if (!confirmNoPO) return;
+        }
+
+        // 📦 สร้าง FormData
         let formData = new FormData(form);
 
+        // แนบไฟล์ POdocument (ถ้ามี)
         if (typeof convertedPDFBlob !== 'undefined' && convertedPDFBlob) {
             formData.append('POdocument', convertedPDFBlob, originalFilename || 'upload.pdf');
         }
 
-        // แนบข้อมูลรายการสินค้าตามที่มีในตาราง
+        // แนบรายการสินค้า
         let itemRows = document.querySelectorAll('table tbody tr');
         itemRows.forEach((row, index) => {
             formData.append(`item_id[${index}]`, row.querySelector('input[name="item_id[]"]').value);
             formData.append(`item_name[${index}]`, row.querySelector('input[name="item_name[]"]').value);
             formData.append(`item_quantity[${index}]`, row.querySelector('input[name="item_quantity[]"]').value);
             formData.append(`unit_price[${index}]`, row.querySelector('input[name="unit_price[]"]').value);
-            formData.append(`status[${index}]`, 1);
+            formData.append(`status[${index}]`, 1); // เลือกทั้งหมด
         });
 
-        // 3. ส่งข้อมูลเพิ่ม (ไม่ต้องกำหนด Content-Type)
+        // ส่งข้อมูลไปยัง Laravel
         let response = await fetch('{{ route("insert.post") }}', {
             method: 'POST',
             body: formData,
@@ -371,11 +376,10 @@ document.getElementById('submitBill').addEventListener('click', async function (
         }
 
     } catch (error) {
-        console.error(error);
+        console.error('❌ เกิดข้อผิดพลาด:', error);
         alert('เกิดข้อผิดพลาดในการตรวจสอบหรือส่งข้อมูล');
     }
 });
-
 let mapWindow;
 let closeTimer;
 
