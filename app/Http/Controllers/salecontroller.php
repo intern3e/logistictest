@@ -91,11 +91,11 @@ public function fetchFormType(Request $request)
 {
     $customer_id = $request->input('customer_id');
 
-    // ✅ 1. ดึง formtype จาก custdetail
+
     $cust = DB::table('custdetail')->where('idcust', $customer_id)->first();
     $formtype = $cust->formtype ?? null;
 
-    // ✅ 2. ดึง customer_la_long จาก tblbill เสมอ
+
     $bill = DB::table('tblbill')
                 ->where('customer_id', $customer_id)
                 ->orderBy('time', 'desc')
@@ -285,12 +285,33 @@ public function deleteBill($so_detail_id)
     }
 public function fetchContactSo(Request $request)
 {
-    $bill = Bill::where('customer_id', $request->customer_id)->first();
+    $bill = Bill::where('customer_id', $request->customer_id)
+                ->orderBy('time', 'desc') 
+                ->first();
 
     return response()->json([
-        'contactso' => $bill?->contactso,  
+        'contactso' => $bill?->contactso,
     ]);
 }
+ public function checkBillId(Request $request)
+    {
+        $billid = $request->input('billid');
+
+        $existingBill = Bill::where('billid', $billid)->first();
+
+        if ($existingBill) {
+            return response()->json([
+                'exists' => true,
+                'emp_name' => $existingBill->emp_name,
+                'billid' => $existingBill->billid,
+            ]);
+        }
+
+        return response()->json([
+            'exists' => false,
+        ]);
+    }
+
 }
 
 

@@ -238,7 +238,7 @@
         <div class="buttons">
             <span>👤 ผู้ใช้: {{ session('emp_name', 'Guest') }}</span>
     
-            <a href="{{ route('po.insertpo') }}" class="btn btn-warning">➕ เปิดบิลPO</a> 
+            <a href="{{ route('po.insertpo') }}" class="btn btn-warning">สร้างเส้นทางรับของ</a> 
             @csrf
             <a href="http://server_update:8000/solist" button  type="submit" class="btn btn-danger">🚪 หน้าหลัก</a>
         </div>

@@ -307,30 +307,52 @@ function fetchFormType() {
 document.getElementById('submitBill').addEventListener('click', async function (event) {
     event.preventDefault();
 
-    let formData = new FormData(document.getElementById('billForm'));                         
+    const form = document.getElementById('billForm');
+    const billid = form.querySelector('input[name="billid"]').value.trim();
 
-    if (convertedPDFBlob) {
-        formData.append('POdocument', convertedPDFBlob, originalFilename || 'upload.pdf');
+    if (!billid) {
+        alert('กรุณากรอก billid ก่อนส่ง');
+        return;
     }
 
-    let formType = document.getElementById('formtype').value;
-    formData.append('formtype', formType);
-
-    let itemRows = document.querySelectorAll('table tbody tr');
-    itemRows.forEach((row, index) => {
-        let itemId = row.querySelector('input[name="item_id[]"]').value;
-        let itemName = row.querySelector('input[name="item_name[]"]').value;
-        let itemQuantity = row.querySelector('input[name="item_quantity[]"]').value;
-        let unit_price = row.querySelector('input[name="unit_price[]"]').value;
-
-        formData.append(`item_id[${index}]`, itemId);
-        formData.append(`item_name[${index}]`, itemName);
-        formData.append(`item_quantity[${index}]`, itemQuantity);
-        formData.append(`unit_price[${index}]`, unit_price);
-        formData.append(`status[${index}]`, 1); // ถือว่าเลือกทุกตัว
-    });
-
     try {
+        // 1. ตรวจสอบ billid (ส่ง JSON)
+        let checkResponse = await fetch('{{ route("check.billid") }}', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRF-TOKEN': '{{ csrf_token() }}',
+            },
+            body: JSON.stringify({ billid }),
+        });
+
+        let checkData = await checkResponse.json();
+
+        if (checkData.exists) {
+            let confirmAdd = confirm(`${checkData.billid}นี้ถูกสร้างโดย ${checkData.emp_name} แล้ว\nต้องการเพิ่มข้อมูลอีกครั้งหรือไม่?`);
+            if (!confirmAdd) {
+                return; // ไม่เพิ่มข้อมูล หยุด
+            }
+        }
+
+        // 2. เตรียม FormData สำหรับส่งเพิ่มข้อมูลจริง
+        let formData = new FormData(form);
+
+        if (typeof convertedPDFBlob !== 'undefined' && convertedPDFBlob) {
+            formData.append('POdocument', convertedPDFBlob, originalFilename || 'upload.pdf');
+        }
+
+        // แนบข้อมูลรายการสินค้าตามที่มีในตาราง
+        let itemRows = document.querySelectorAll('table tbody tr');
+        itemRows.forEach((row, index) => {
+            formData.append(`item_id[${index}]`, row.querySelector('input[name="item_id[]"]').value);
+            formData.append(`item_name[${index}]`, row.querySelector('input[name="item_name[]"]').value);
+            formData.append(`item_quantity[${index}]`, row.querySelector('input[name="item_quantity[]"]').value);
+            formData.append(`unit_price[${index}]`, row.querySelector('input[name="unit_price[]"]').value);
+            formData.append(`status[${index}]`, 1);
+        });
+
+        // 3. ส่งข้อมูลเพิ่ม (ไม่ต้องกำหนด Content-Type)
         let response = await fetch('{{ route("insert.post") }}', {
             method: 'POST',
             body: formData,
@@ -340,19 +362,20 @@ document.getElementById('submitBill').addEventListener('click', async function (
         });
 
         let data = await response.json();
+
         if (data.success) {
             alert(data.success);
             window.location.href = '/SOlist';
         } else if (data.error) {
             alert(data.error);
         }
+
     } catch (error) {
-        console.error('Error:', error);
-        alert('มีข้อผิดพลาดในการส่งข้อมูล');
+        console.error(error);
+        alert('เกิดข้อผิดพลาดในการตรวจสอบหรือส่งข้อมูล');
     }
 });
 
-// ======= ฟังก์ชันเปิด Google Maps ในหน้าต่างใหม่ด้านขวา =======
 let mapWindow;
 let closeTimer;
 
@@ -372,10 +395,6 @@ function openGoogleMaps() {
     );
 }
 </script>
-
-
-
-
 <script>
     // ดึงค่า so_num จาก URL
     const urlParams = new URLSearchParams(window.location.search);
@@ -541,8 +560,6 @@ fileInput.addEventListener('change', async function () {
     }
 });
 </script>
-
-
 <script>
     window.addEventListener('DOMContentLoaded', function () {
         const urlParams = new URLSearchParams(window.location.search);
@@ -552,6 +569,8 @@ fileInput.addEventListener('change', async function () {
         }
     });
 </script>
+
+
 </body>
 </html>
  

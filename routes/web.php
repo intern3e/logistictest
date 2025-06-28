@@ -36,6 +36,7 @@ use App\Models\Bill_Detail;
         $billDetails = Bill_Detail::where('so_detail_id', $so_detail_id)->get();
         return response()->json($billDetails);});
 Route::get('/txt', [SaleController::class, 'popup'])->name('popup');
+Route::post('/check-billid', [salecontroller::class, 'checkBillId'])->name('check.billid');
 
 
 use App\Http\Controllers\PoDocumentController;

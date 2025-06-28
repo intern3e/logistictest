@@ -226,7 +226,7 @@
         <div class="buttons">
             <span>👤 ผู้ใช้: {{ session('emp_name', 'Guest') }}</span>
     
-            <a href="{{ route('document.insertdoc') }}" class="btn btn-warning">➕ เปิดบิลdoc</a>
+            <a href="{{ route('document.insertdoc') }}" class="btn btn-warning">สร้างเอกสารชั่วคราว</a>
             
             @csrf
             <a href="http://server_update:8000/solist" button  type="submit" class="btn btn-danger">🚪 หน้าหลัก</a>

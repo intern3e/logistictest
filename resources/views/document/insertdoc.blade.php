@@ -268,13 +268,24 @@ select#cartype option:checked {
 
 <form id="billForm">
     <div class="input-container">
+        <label for="headcom">ชื่อบริษัทหัวเอกสาร:</label>
+        <select id="headcom" name="headcom" required>บริษัท ทริปเปิ้ลพี แฟคทอรี่ จำกัด
+            <option value="" disabled selected>-- กรุณาเลือกชื่อบริษัท --</option>
+            <option value="บริษัท ทริปเปิ้ล อี เทรดดิ้ง จำกัด">บริษัท ทริปเปิ้ล อี เทรดดิ้ง จำกัด</option>
+            <option value="บริษัท ทริปเปิ้ล อี อินโนเวชั่น จำกัด">บริษัท ทริปเปิ้ล อี อินโนเวชั่น จำกัด</option>
+            <option value="บริษัท ทริปเปิ้ลพี แฟคทอรี่ จำกัด">บริษัท ทริปเปิ้ลพี แฟคทอรี่ จำกัด</option>
+            <option value="ข้อมูล บริษัท เอตะ แอนด์ พอล อินโนเวชั่น จำกัด">ข้อมูล บริษัท เอตะ แอนด์ พอล อินโนเวชั่น จำกัด</option>
+            <option value="ข้อมูล บริษัท ฮิคาริ เดงกิ จำกัด">ข้อมูล บริษัท ฮิคาริ เดงกิ จำกัด</option>
+            <option value="ข้อมูล บริษัท เอ อี แอนด์ ที อินเตอร์เนชั่นแนล จำกัด">ข้อมูล บริษัท เอ อี แอนด์ ที อินเตอร์เนชั่นแนล จำกัด</option>
+        </select>
+
         <div>
             <label>ผู้เปิดบิล :</label>
             <input type="text" id="emp_name" name="emp_name" value="{{ session('emp_name', 'Guest') }}">
         </div>
 
         <div class="form-group">
-            <label for="datestamp">วันที่ :</label>
+            <label for="datestamp">วันที่ดำเนินการ:</label>
             <input type="date" id="datestamp" name="datestamp">
         </div>
         
@@ -295,7 +306,8 @@ select#cartype option:checked {
                 <option value="" disabled selected>-- กรุณาเลือกประเภทบิล --</option>
                 <option value="รับของ">รับของ</option>
                 <option value="ส่งของ">ส่งของ</option>
-                <option value="รับของ+ส่งของ">รับและส่งของ</option>
+                <option value="รับของและส่งของ">รับของและส่งของ</option>
+                <option value="ส่งของและรับกลับ">ส่งของและรับกลับ</option>
                 <option value="อื่นๆ" id="other_option">อื่น ๆ</option>
             </select>
         

@@ -44,6 +44,7 @@
                 <th>ผู้เปิดบิล</th>
                 <th>วันที่</th>
                 <th>ข้อมูลรายละเอียด</th>
+                <th>ชื่อบริษัท</th>
                 <th>pdf</th>
             </tr>
         </thead>
@@ -66,7 +67,7 @@
                 <a href="javascript:void(0);" onclick="openPopup('{{ $item->doc_id }}', '{{ $item->com_name }}', '{{ $item->com_address }}', '{{ $item->contact_name }}', '{{ $item->contact_tel }}', '{{ $item->amount }}', '{{ $item->notes }}')">
                     เพิ่มเติม
                 </a>
-
+                <td>{{ $item->headcom }}</td>
                 </td>
                 <td>
                     <button id = "download"onclick="downloadRowPDF(this)" class="btn btn-sm btn-outline-danger">📄</button>
@@ -245,6 +246,7 @@ function updateStatuspdf() {
         const revdate = cells[8].innerText.trim();
         const contact_tel = cells[5].innerText.trim();
         const contact_name = cells[4].innerText.trim();
+        const headcom = cells[10].innerText.trim();
 
         let popupAmount = '', popupNotes = '';
         const link = row.querySelector('a[onclick^="openPopup"]');
@@ -307,7 +309,7 @@ function updateStatuspdf() {
                 <p style="font-size: 26px; margin: 0;"><strong>( ประเภทบิล:</strong> ${type} )</p>
               </div>
               <div style="border: 1px solid #343a40; padding: 8px 12px; display: flex; justify-content: center; align-items: center;">
-                <h2 style="margin: 0; font-size: 26px; color: #343a40;">บริษัท ทริปเปิ้ล อี เทรดดิ้ง จำกัด</h2>
+                <h2 style="margin: 0; font-size: 26px; color: #343a40;">${headcom}</h2>
               </div>
             </div>
             <hr>
