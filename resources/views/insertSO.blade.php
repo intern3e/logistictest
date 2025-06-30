@@ -307,8 +307,7 @@
                             <table>
                                 <tbody><tr>
                                     <td>
-
-                                        <input style="" class="form-control" type="text" name="deliveryCode" id="deliveryCode" readonly="" value="46805-02637">
+                                        <input style="background-color:red;color:white;" class="form-control" type="text" name="deliveryCode" id="deliveryCode" readonly="" value="46805-02637">
                                     </td>
                                     <td>
                                         <button type="button" class="btn_button1" onclick="window.open('http://server_update:8000/popupWindows/SODetailMyAccount?BillNo=46805-02637','welcome','width=1000,height=500,menubar=no,status=no,location=no,toolbar=no,scrollbars=yes')">Details</button>
@@ -365,19 +364,27 @@ window.addEventListener('DOMContentLoaded', function () {
 
     document.querySelectorAll('.openBillBtn').forEach(button => {
         button.addEventListener('click', function () {
-            // หาค่า deliveryCode ในแถวเดียวกับปุ่ม
-            const deliveryCode = this.closest('tr').querySelector('input[name="deliveryCode"]').value;
+            // หาค่า input[name="deliveryCode"] ในแถวเดียวกันกับปุ่ม
+            const deliveryInput = this.closest('tr').querySelector('input[name="deliveryCode"]');
+            const deliveryCode = deliveryInput.value;
 
-            // สร้าง URL สำหรับไปหน้า insertdata พร้อม query string
+            // ตรวจสอบสีพื้นหลัง
+            const bgColor = window.getComputedStyle(deliveryInput).backgroundColor;
+
+            // ถ้าเป็นสีแดง (rgb(255, 0, 0))
+            if (bgColor === 'rgb(255, 0, 0)') {
+                alert('❌ งานยกเลิกแล้ว ไม่สามารถบันทึกข้อมูลจัดส่งได้');
+                return; // ยกเลิกการทำงาน ไม่ให้ redirect
+            }
+
+            // ไปยัง URL ถ้าไม่ใช่งานยกเลิก
             const url = `/insertdata?so_num=${encodeURIComponent(soCode)}&billid=${encodeURIComponent(deliveryCode)}`;
-
-            // ไปยัง URL นั้น
             window.location.href = url;
         });
     });
 });
-
 </script>
+
 
         <!-------------------------- ตาราง ข้อมูล po ----------------------------->
         <div class="row">
