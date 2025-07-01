@@ -106,7 +106,7 @@ billidInput.addEventListener('input', () => {
 
   <div style="flex: 1; min-width: 150px;">
     <label for="date_of_dali">วันกำหนดส่ง :</label>
-    <input type="text" id="date_of_dali" name="date_of_dali" style="width: 100%;"   required>
+    <input type="text" id="date_of_dali" name="date_of_dali" style="width: 100%;"  readonly  required>
   </div>
 </div>
 

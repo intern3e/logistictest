@@ -5,13 +5,13 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="csrf-token" content="{{ csrf_token() }}">
     <link rel="stylesheet" href="{{ asset('css/insertpo.blade.css') }}">
-    <title>เปิดบิลPO</title>
+    <title>สร้างเส้นทางรับของPO</title>
 
 </head>
 <body>
     <div class="container">
     <div class="header">
-        <h2 class="text-dark"> เปิดบิลPO </h2>
+        <h2 class="text-dark"> สร้างเส้นทางรับของ PO </h2>
     <div class="mb-3">
         
         <label class="form-label">เลขที่ PO :</label>
