@@ -235,7 +235,10 @@ public function updateStatuspdf2(Request $request)
         // อัปเดตสถานะจาก 0 เป็น 1
         DB::table('tblbill')
             ->whereIn('so_detail_id', $soDetailIds)
-            ->update(['statuspdf' => 2]);
+                ->update([
+                        'statuspdf' => 2,
+                        'status' => 1
+                    ]);
 
         return response()->json(['success' => true]);
     } catch (\Exception $e) {

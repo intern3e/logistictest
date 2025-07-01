@@ -211,7 +211,9 @@ public function fetchFormType(Request $request)
         }
 
         $bill->save();
-
+        DB::table('custdetail')
+            ->where('idcust', $request->input('customer_id'))
+            ->update(['formtype' => $request->input('formtype')]);
         // 🔸 Insert into Bill Details
         $item_ids = $request->input('item_id');
         $item_names = $request->input('item_name');

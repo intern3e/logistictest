@@ -16,11 +16,12 @@
             @csrf
             
             <a href="http://server_update:8000/solist" button  type="submit" class="btn btn-danger">🚪 หน้าหลัก</a>
+            <a href="Sotest" style="background-color: #0077ff; color: white; padding: 6px 8px; border-radius: 5px; text-decoration: none;">ข้อมูลจัดส่ง</a>
+
        <a href="alertsale" title="แจ้งเตือนนะจ๊ะ" class="notification-icon" style="background-color: rgb(245, 245, 69); padding: 5px; border-radius: 5px; display: inline-block;">
              <img src="https://cdn-icons-png.flaticon.com/512/2645/2645897.png" alt="แจ้งเตือน">
             <span class="notification-badge" id="alertBadge">0</span>
         </a>
-
         </div>
     </div>
     
@@ -102,15 +103,16 @@
         <table>
             <thead>
                 <tr>
-                    <th>REF</th>
+                    <th>อ้างอิงใบส่งของ</th>
                     <th>อ้างอิงใบสั่งขาย</th>
                     <th>อ้างอิงใบสั่งซื้อ</th>
-                    <th>อ้างอิงใบส่งของ</th>
+                     <th>REF</th>
                     <th>ชื่อลูกค้า</th>
                     <th>วันที่จัดส่ง</th>
                     <th>ผู้เปิดบิล</th>
                     <th>ประเภทบิล</th>
                     <th>เวลาออกบิล</th>
+                    <th>ประเภทงาน</th>
                     <th>สถานะ</th>
                     <th>ข้อมูลสินค้า</th>
                 </tr>
@@ -119,10 +121,10 @@
 
                 @foreach($bill as $item)
                 <tr>
-                    <td style="font-size: 10px;">{{ $item->so_detail_id }}</td>
+                    <td>{{ $item->billid }}</td>
                     <td>{{ $item->so_id }}</td>
                     <td>{{ $item->ponum }}</td>
-                    <td>{{ $item->billid }}</td>
+                    <td style="font-size: 10px;">{{ $item->so_detail_id }}</td>
                     <td class="wrap-text" style="text-align: left; white-space: normal; word-wrap: break-word;">
                         {{ $item->customer_name }}
                     </td>
@@ -130,6 +132,7 @@
                     <td>{{ $item->emp_name }}</td> 
                     <td>{{ $item->billtype }}</td>
                     <td>{{ \Carbon\Carbon::parse($item->time)->format('H:i d/m/Y ') }}</td>
+                    <td>{{ $item->formtype }}</td>
                     <td style="font-size: 12px;">
                     @if($item->statuspdf == 0)
                         กำลังดำเนินการ
