@@ -11,13 +11,13 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 
     
-    <title>เปิดบิลสินค้า</title>
+    <title>สร้างเส้นทางส่งสินค้า</title>
 
 </head>
 <body>
 <div class="container">
   <div class="header">
-    <h2 class="text-dark">เปิดบิลสินค้า</h2>
+    <h2 class="text-dark">สร้างเส้นทางส่งสินค้า</h2>
 
     <!-- SO และ บิล ส่งของ ให้อยู่บรรทัดเดียวกัน -->
     <form id="billForm">
