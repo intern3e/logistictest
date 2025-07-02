@@ -514,11 +514,11 @@
 
 <td>
     <span>{{ $formatted }}</span>
-    <button onclick="copyText('{{ $formatted }}', this)">📋 คัดลอก</button>
+    <button id="copydate" onclick="copydate('{{ $formatted }}', this)">📋 คัดลอก</button>
 </td>
 
 <script>
-function copyText(text, button) {
+function copydate(text, button) {
     const textarea = document.createElement("textarea");
     textarea.value = text;
     textarea.setAttribute("readonly", "");
