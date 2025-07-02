@@ -187,7 +187,7 @@ thead tr th:nth-child(8) {
       </tr>
       <tr>
         <td>เก่ง</td>
-        <td>มาบตาพุด-ระยอง</td>
+        <td>ปราจีนบุรี</td>
         <td>Thai Food</td>
         <td>มาบตาพุด-ระยอง</td>
         <td>กรมสุล</td>

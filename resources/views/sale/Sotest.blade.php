@@ -78,6 +78,7 @@
       border-radius: 6px;
       font-size: 18px;
     }
+
     table {
       width: 100%;
       border-collapse: collapse;
@@ -132,40 +133,12 @@
 
 <!-- ปุ่มดาวน์โหลด + สถานะ -->
 <div style="display: flex; align-items: center; gap: 15px;">
-  <button onclick="confirmDownload()" id="downloadBtn"
+  <button onclick="downloadJSON()" id="downloadBtn"
     style="padding: 10px 20px; background-color: #007bff; color: white; border: none; border-radius: 6px; font-weight: bold;">
     📥 ดาวน์โหลดข้อมูล JSON
   </button>
   <span id="statusMessage" style="font-weight: bold; color: #333;"></span>
 </div>
-
-<script>
-  function confirmDownload() {
-    const confirm1 = confirm("คุณแน่ใจหรือไม่ว่าจะดาวน์โหลดข้อมูล?");
-    if (!confirm1) return;
-
-    downloadJSON();
-  }
-
-  function downloadJSON() {
-    const data = {
-      message: "ตัวอย่างข้อมูล",
-      time: new Date().toISOString()
-    };
-
-    const jsonStr = JSON.stringify(data, null, 2);
-    const blob = new Blob([jsonStr], { type: "application/json" });
-    const url = URL.createObjectURL(blob);
-
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = "data.json";
-    a.click();
-
-    document.getElementById("statusMessage").innerText = "✅ ดาวน์โหลดเรียบร้อยแล้ว";
-  }
-</script>
-
 
 </div>
 
@@ -415,7 +388,7 @@ function pointInPolygon($point, $polygon) {
 $selectedDate = request('filter_date') ?: date('Y-m-d');
 $filteredBills = collect($bill)->filter(function($item) use ($selectedDate) {
     return Carbon::parse($item->date_of_dali)->toDateString() === $selectedDate
-        && $item->status == 0
+        && $item->status == 1
         && $item->statuspdf == 2
         && $item->statuspdf != 6;
 });
