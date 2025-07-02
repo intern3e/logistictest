@@ -510,59 +510,42 @@
 @php
     $date = \Carbon\Carbon::parse($item->date_of_dali);
     $formatted = $date->format('d/m/') . ($date->year + 543);
-    $safeId = 'date-' . $item->id;
 @endphp
 
 <td>
-    <span id="{{ $safeId }}">{{ $formatted }}</span>
-    <button id="copydate" onclick="copydate('{{ $safeId }}', this)">📋 คัดลอก</button>
+    <span>{{ $formatted }}</span>
+    <button onclick="copyText('{{ $formatted }}', this)">📋 คัดลอก</button>
 </td>
+
 <script>
-function copydate(elementId, button) {
-    const textElement = document.getElementById(elementId);
-    if (!textElement) {
-        alert("ไม่พบข้อมูลที่ต้องการคัดลอก");
-        return;
-    }
+function copyText(text, button) {
+    const textarea = document.createElement("textarea");
+    textarea.value = text;
+    textarea.setAttribute("readonly", "");
+    textarea.style.position = "absolute";
+    textarea.style.left = "-9999px";
 
-    const text = textElement.innerText.trim();
-
-    // Clipboard API
-    if (navigator.clipboard && navigator.clipboard.writeText) {
-        navigator.clipboard.writeText(text).then(() => {
-            const originalText = button.innerText;
-            button.innerText = "คัดลอกแล้ว ✅";
-            setTimeout(() => button.innerText = originalText, 1500);
-        }).catch(() => {
-            fallbackCopy(text, button);
-        });
-    } else {
-        fallbackCopy(text, button);
-    }
-}
-
-function fallbackCopy(text, button) {
-    const tempInput = document.createElement("textarea");
-    tempInput.value = text;
-    tempInput.setAttribute('readonly', '');
-    tempInput.style.position = 'absolute';
-    tempInput.style.left = '-9999px';
-    document.body.appendChild(tempInput);
-    tempInput.select();
+    document.body.appendChild(textarea);
+    textarea.select();
 
     try {
-        document.execCommand("copy");
-        const originalText = button.innerText;
-        button.innerText = "คัดลอกแล้ว ✅";
-        setTimeout(() => button.innerText = originalText, 1500);
+        const success = document.execCommand("copy");
+        if (success) {
+            const original = button.innerText;
+            button.innerText = "คัดลอกแล้ว ✅";
+            setTimeout(() => button.innerText = original, 1500);
+        } else {
+            alert("ไม่สามารถคัดลอกได้");
+        }
     } catch (err) {
         alert("ไม่สามารถคัดลอกได้");
-        console.error("Fallback copy error:", err);
+        console.error("Error:", err);
     }
 
-    document.body.removeChild(tempInput);
+    document.body.removeChild(textarea);
 }
 </script>
+
 
                                 <td>{{ $item->sale_name }}</td>
                                 <td>{{ $item->emp_name }}</td>
