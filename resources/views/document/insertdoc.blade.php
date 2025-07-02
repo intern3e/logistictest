@@ -30,7 +30,7 @@ body {
 
 h2.text-dark {
     color: #333333;
-    border-bottom: 1px solid #333333;
+    border-bottom: 2px solid #333333;
     padding-bottom: 4px;
     margin-bottom: 10px;
     font-size: 28px;
@@ -258,16 +258,48 @@ select#cartype option:checked {
         flex-direction: column;
     }
 }
+.header-bar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap; /* รองรับจอเล็ก */
+  padding: 10px 0;
+}
+
+.text-dark {
+  font-size: 24px;
+  color: #333333;
+  margin: 0;
+}
+
+.btn-back {
+  background-color: #333333;
+  color: white;
+  border: none;
+  padding: 6px 8px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 14px;
+  transition: background-color 0.3s;
+}
+
+.btn-back:hover {
+  background-color: rgb(0, 10, 33);
+}
+
  </style>
 
 </head>
 <body>
     <div class="container">
     <div class="header">
-        <h2 class="text-dark"> สร้างเอกสารเพิ่มเติม </h2>
+           <div class="header-bar">
+     <h2 class="text-dark"> สร้างเอกสารเพิ่มเติม </h2>
+    <button onclick="history.back()" class="btn-back">ย้อนกลับ</button>
+    </div>
 
 <form id="billForm">
-    <div class="input-container">
+
         <label for="headcom">ชื่อบริษัทหัวเอกสาร:</label>
         <select id="headcom" name="headcom" required>บริษัท ทริปเปิ้ลพี แฟคทอรี่ จำกัด
             <option value="" disabled selected>-- กรุณาเลือกชื่อบริษัท --</option>
@@ -477,7 +509,7 @@ select#cartype option:checked {
         </div>
           <button type="button" class="btn-custom" onclick="openGoogleMaps()">Google Maps</button>
 
-          <label for="additional_notes" style="display: block; margin-bottom: 4px; margin-top: 10px;"> รายละเอียดเพิ่มเติม :*จำเป็น</label>
+          <label for="additional_notes" style="display: block; margin-bottom: 4px; margin-top: 10px;"> รายละเอียดเพิ่มเติม : *จำเป็น</label>
             <textarea id="notes" name="notes" rows="2" style="font-size: 14px; padding: 6px; height: 40px; width: 100%;"></textarea>
 
         <div class="mb-3">

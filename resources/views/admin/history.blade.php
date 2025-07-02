@@ -7,17 +7,22 @@
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <title>ระบบจัดเตรียมสินค้า</title>
     <style>
-body {
-    font-family: 'Poppins', sans-serif;
-    background-color: #F5F5F7;
-    color: #1D1D1F;
+* {
+    box-sizing: border-box;
     margin: 0;
     padding: 0;
 }
 
+body {
+    font-family: 'Poppins', sans-serif;
+    background-color: #F5F5F7;
+    color: #1D1D1F;
+    line-height: 1.5;
+}
+
 .header {
     background: linear-gradient(to right, #2c3e50, #4b6584);
-    padding: 1px 30px;
+    padding: 10px 30px;
     color: white;
     display: flex;
     justify-content: space-between;
@@ -36,7 +41,7 @@ body {
 }
 
 .header-buttons button {
-    padding: 8px 8px;
+    padding: 8px 12px;
     font-size: 16px;
     cursor: pointer;
     border: none;
@@ -44,27 +49,20 @@ body {
     font-weight: bold;
     text-decoration: none;
     transition: all 0.3s ease;
-    margin-right: 10px;
 }
 
 .btn-po {
     background-color: #0071E3;
     color: white;
 }
+.btn-po:hover {
+    background-color: #005BB5;
+}
 
 .btn-so {
     background-color: red;
     color: white;
 }
-
-.header-buttons button:hover {
-    transform: scale(1.05);
-}
-
-.btn-po:hover {
-    background-color: #005BB5;
-}
-
 .btn-so:hover {
     background-color: rgb(179, 1, 1);
 }
@@ -73,14 +71,14 @@ body {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    margin: 0 auto;
-    margin-bottom: 15px;
+    margin: 0 auto 15px;
     gap: 20px;
     width: 90%;
     padding: 15px 20px;
     border-radius: 8px;
     box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.1);
-    text-align: center;
+    background: white;
+    flex-wrap: wrap;
 }
 
 .filter-form {
@@ -114,33 +112,32 @@ body {
     transition: 0.3s;
     font-size: 1rem;
 }
-
 .filter-form button:hover {
     background: #005BB5;
 }
 
 .search-box {
     display: flex;
+    align-items: center;
     max-width: 300px;
     width: 100%;
     margin-left: auto;
+    margin-top: 10px;
 }
 
 .search-box input {
     flex-grow: 1;
     padding: 8px;
     border-radius: 5px;
-    border: 1px solid #000000;
-    background-color: #ffffff;
+    border: 1px solid #6E6E73;
+    background-color: #FFFFFF;
     font-size: 1rem;
     transition: border-color 0.3s;
 }
-
 .search-box input:focus {
     border-color: #0071E3;
     outline: none;
 }
-
 .search-box input::placeholder {
     color: #888;
     font-size: 0.9rem;
@@ -150,25 +147,19 @@ body {
     display: flex;
     gap: 15px;
     align-items: center;
-}
-
-.button-group label {
-    font-weight: bold;
-    font-size: 1rem;
+    flex-wrap: wrap;
 }
 
 .button-group button {
     padding: 10px 20px;
     border-radius: 8px;
     font-weight: bold;
-    text-decoration: none;
     border: none;
     cursor: pointer;
     transition: all 0.3s ease;
     background-color: #ff9d2d;
-    color: rgb(255, 255, 255);
+    color: #fff;
 }
-
 .button-group button:hover {
     background-color: #b37005;
     transform: scale(1.05);
@@ -178,7 +169,6 @@ body {
     background-color: #0071E3;
     color: white;
 }
-
 .button-group a button:hover {
     background-color: #005BB5;
 }
@@ -186,54 +176,39 @@ body {
 .button-group a:last-child button {
     background-color: red;
 }
-
 .button-group a:last-child button:hover {
     background-color: #ad0404;
 }
 
-.search-box {
-    display: flex;
-    align-items: center;
-    max-width: 250px;
-}
-
-.search-box input {
-    flex-grow: 1;
-    padding: 8px;
-    border-radius: 5px;
-    border: 1px solid #6E6E73;
-    background-color: #FFFFFF;
-}
-
 .table-container {
-            background: #f9f9f9; /* Light gray background for table */
-            margin: 2% 5%;
-            padding: 40px;
-            border-radius: 12px;
-            box-shadow: 0px 6px 12px rgba(0, 0, 0, 0.1);
-            overflow: hidden;
-            width: 100%;
-            max-width: 100%; /* Ensure table doesn't overflow the container */
-            transform: scale(0.9); /* Scale down the table to fit the screen */
-            transform-origin: top left; /* Keep the table scaling from the top-left corner */
-        }
+    background: #f9f9f9;
+    margin: 20px auto;
+    padding: 20px;
+    border-radius: 12px;
+    box-shadow: 0px 6px 12px rgba(0, 0, 0, 0.1);
+    overflow-x: auto;
+    width: 90%;
+    max-width: 90%;
+    -webkit-overflow-scrolling: touch;
+}
 
-        table {
-            width: 100%;
-            border-collapse: collapse;
-            text-align: center;
-            word-wrap: break-word; /* Ensure text wraps within table cells */
-            font-size: 1rem; /* Adjust the font size to make it smaller */
-        }
+table {
+    width: 100%;
+    border-collapse: collapse;
+    text-align: center;
+    word-wrap: break-word;
+    font-size: 1rem;
+    min-width: 1000px;
+}
 
 th, td {
     padding: 8px;
     border: 1px solid #2c3e50;
     font-size: 1rem;
-    max-width: 100px; /* กำหนดความกว้างสูงสุด */
-    word-wrap: break-word; /* ถ้าข้อความยาวเกินจะขึ้นบรรทัดใหม่ */
-    word-break: break-word; /* หักคำเมื่อข้อความยาวเกิน */
+    max-width: 150px;
+    word-break: break-word;
 }
+
 th {
     background-color: #0071E3;
     color: white;
@@ -243,19 +218,15 @@ th {
 .table-striped tr:nth-child(odd) {
     background-color: #F5F5F7;
 }
-
 .table-striped tr:hover {
     background-color: #E5E5E7;
 }
-
-
 
 .link {
     color: #0071E3;
     font-weight: bold;
     text-decoration: none;
 }
-
 .link:hover {
     text-decoration: underline;
 }
@@ -268,40 +239,37 @@ th {
     width: 100%;
     height: 100%;
     background: rgba(0, 0, 0, 0.5);
-    display: flex;
     justify-content: center;
     align-items: center;
+    z-index: 999;
 }
 
 .popup-content {
     background: linear-gradient(to right, #f0f2f5, #dfe9f3);
     padding: 20px;
     border-radius: 10px;
-    width: 80%;
+    width: 90%;
     max-width: 1000px;
-    height: auto;
     text-align: center;
     position: relative;
-    overflow: hidden;
-    max-height: 500px;
+    overflow-x: auto;
+    max-height: 90vh;
     overflow-y: auto;
 }
 
 .close-btn {
     position: absolute;
     top: 10px;
-    right: 10px;
+    right: 14px;
+    font-size: 1.4rem;
+    color: #555;
     cursor: pointer;
-    font-size: 18px;
-    font-weight: bold;
+}
+.close-btn:hover {
+    color: #ff3333;
 }
 
-.table-container {
-    overflow-x: auto;
-    -webkit-overflow-scrolling: touch;
-    margin: 30px;
-}
-
+/* RESPONSIVE */
 @media (max-width: 768px) {
     .header, .top-section, .filter-form, .button-group {
         flex-direction: column;
@@ -313,6 +281,7 @@ th {
     .header-buttons {
         width: 100%;
         margin-left: 0;
+        flex-wrap: wrap;
     }
 
     .header-buttons button {
@@ -321,22 +290,27 @@ th {
         font-size: 14px;
     }
 
-    table {
-        width: 100%;
-    }
-
-    th, td {
-        font-size: 12px;
-        padding: 8px;
-    }
-
     .search-box {
-        max-width: 100%;
+        width: 100%;
+        margin: 10px 0;
     }
 
     .button-group button {
         width: 100%;
         padding: 12px 0;
+    }
+
+    .table-container {
+        padding: 10px;
+    }
+
+    table {
+        font-size: 0.9rem;
+    }
+
+    .popup-content {
+        width: 95%;
+        padding: 15px;
     }
 }
 
@@ -346,22 +320,20 @@ th {
         padding: 4px;
     }
 
-    /* Hide some columns if necessary */
-    td:nth-child(10), td:nth-child(11), td:nth-child(12) {
-        display: none;
+    .popup-content {
+        width: 95%;
+        padding: 10px;
     }
 
     .search-box input {
         font-size: 0.9rem;
     }
 
-    .popup-content {
-        width: 90%;
-        padding: 10px;
+    td:nth-child(9), td:nth-child(10) {
+        display: none;
     }
 }
-    
-        
+
     </style>
 </head>
 <body>
@@ -416,7 +388,7 @@ th {
     
         
         <div class="table-container">
-            <table>
+            <table >
                 <thead>
                 <label>
                 <input type="checkbox" id="checkAll" onclick="toggleCheckboxes()"> ทั้งหมด
@@ -434,57 +406,57 @@ th {
                     </tr>
                 </thead>
                 <tbody id="table-body">
-                    @foreach($bill as $item)
-                        @if($item->status == 1 && $item->statuspdf == 2 or $item->statuspdf == 6 )
-                            <tr>
-                                <td>
-                                    <input type="checkbox" class="form-control1" name="status[]" data-so-detail-id="{{ $item->so_detail_id }}">
-                                </td>
-                                <td>{{ $item->so_detail_id }}</td>
-                                <td>{{ $item->so_id }}</td>
-                                <td>{{ $item->ponum }}</td>
-                                <td>{{ $item->customer_name }}</td>
-                                <td>{{ $item->customer_tel }}</td>  
-                                <td>
-                                    <div class="date-container">
-                                        <span class="date-display" id="date-display-{{ $item->so_detail_id }}">
-                                            {{ \Carbon\Carbon::parse($item->date_of_dali)->format('d/m/Y') }}
-                                        </span>
-                                        <div class="date-edit-form" id="date-edit-form-{{ $item->so_detail_id }}" style="display:none;">
-                                            <input type="date" class="form-control form-control-sm" id="new-date-{{ $item->so_detail_id }}" 
-                                                value="{{ \Carbon\Carbon::parse($item->date_of_dali)->format('Y-m-d') }}"
-                                                onchange="validateDateFormat(this)">
-                                            <div class="mt-1">
-                                                <button type="button" class="btn btn-sm btn-success" 
-                                                        onclick="saveNewDate('{{ $item->so_detail_id }}')">บันทึก</button>
-                                                <button type="button" class="btn btn-sm btn-secondary" 
-                                                        onclick="cancelEdit('{{ $item->so_detail_id }}')">ยกเลิก</button>
-                                            </div>
-                                        </div>
-                                        <button type="button" class="btn btn-sm btn-primary edit-date-btn" 
-                                                id="edit-btn-{{ $item->so_detail_id }}"
-                                                onclick="showEditForm('{{ $item->so_detail_id }}')">
-                                            <i class="fas fa-edit"></i> แก้ไข
-                                        </button>
+            @foreach($bill as $item)
+                @if(($item->status == 1 && $item->statuspdf == 2) || $item->statuspdf == 6 )
+                    <tr @if($item->statuspdf == 6) style="background-color: #ffe5e5;" @endif>
+                        <td>
+                            <input type="checkbox" class="form-control1" name="status[]" data-so-detail-id="{{ $item->so_detail_id }}">
+                        </td>
+                        <td>{{ $item->so_detail_id }}</td>
+                        <td>{{ $item->so_id }}</td>
+                        <td>{{ $item->ponum }}</td>
+                        <td>{{ $item->customer_name }}</td>
+                        <td>{{ $item->customer_tel }}</td>  
+                        <td>
+                            <div class="date-container">
+                                <span class="date-display" id="date-display-{{ $item->so_detail_id }}">
+                                    {{ \Carbon\Carbon::parse($item->date_of_dali)->format('d/m/Y') }}
+                                </span>
+                                <div class="date-edit-form" id="date-edit-form-{{ $item->so_detail_id }}" style="display:none;">
+                                    <input type="date" class="form-control form-control-sm" id="new-date-{{ $item->so_detail_id }}" 
+                                        value="{{ \Carbon\Carbon::parse($item->date_of_dali)->format('Y-m-d') }}"
+                                        onchange="validateDateFormat(this)">
+                                    <div class="mt-1">
+                                        <button type="button" class="btn btn-sm btn-success" 
+                                                onclick="saveNewDate('{{ $item->so_detail_id }}')">บันทึก</button>
+                                        <button type="button" class="btn btn-sm btn-secondary" 
+                                                onclick="cancelEdit('{{ $item->so_detail_id }}')">ยกเลิก</button>
                                     </div>
-                                </td>
-                                <td>{{ $item->emp_name }}</td>
-                                <td><a href="javascript:void(0);" 
-                                onclick="openPopup(
-                                    '{{ $item->so_detail_id }}',
-                                    '{{ $item->so_id }}',
-                                    '{{ $item->ponum }}',
-                                    '{{ $item->customer_name }}',
-                                    '{{ $item->customer_tel }}',
-                                    '{{ $item->customer_address }}',
-                                    '{{ $item->date_of_dali }}',
-                                    '{{ $item->sale_name }}'
-                                )">
-                                เพิ่มเติม
-                             </a></td>
-                            </tr>
-                        @endif
-                    @endforeach
+                                </div>
+                                <button type="button" class="btn btn-sm btn-primary edit-date-btn" 
+                                        id="edit-btn-{{ $item->so_detail_id }}"
+                                        onclick="showEditForm('{{ $item->so_detail_id }}')">
+                                    <i class="fas fa-edit"></i> แก้ไข
+                                </button>
+                            </div>
+                        </td>
+                        <td>{{ $item->emp_name }}</td>
+                        <td><a href="javascript:void(0);" 
+                        onclick="openPopup(
+                            '{{ $item->so_detail_id }}',
+                            '{{ $item->so_id }}',
+                            '{{ $item->ponum }}',
+                            '{{ $item->customer_name }}',
+                            '{{ $item->customer_tel }}',
+                            '{{ $item->customer_address }}',
+                            '{{ $item->date_of_dali }}',
+                            '{{ $item->sale_name }}'
+                        )">
+                        เพิ่มเติม
+                    </a></td>
+                    </tr>
+                @endif
+            @endforeach
                 </tbody>
             </table>
             @if(isset($message))

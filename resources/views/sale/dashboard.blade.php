@@ -136,10 +136,11 @@
                     <td style="font-size: 12px;">
                     @if($item->statuspdf == 0)
                         กำลังดำเนินการ
+                    @elseif($item->statuspdf == 6)
+                        ยกเลิก
                     @else
                         ปริ้นสำเร็จ
                     @endif
-
                     </td>
                     <td><a href="javascript:void(0);" 
                         onclick="openPopup(

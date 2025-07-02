@@ -6,12 +6,44 @@
     <meta name="csrf-token" content="{{ csrf_token() }}">
     <link rel="stylesheet" href="{{ asset('css/insertpo.blade.css') }}">
     <title>สร้างเส้นทางรับของPO</title>
+<style>
+.header-bar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap; /* รองรับจอเล็ก */
+  padding: 10px 0;
+}
 
+.text-dark {
+  font-size: 24px;
+  color: #333333;
+  margin: 0;
+}
+
+.btn-back {
+  background-color: #007bff;
+  color: white;
+  border: none;
+  padding: 6px 8px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 14px;
+  transition: background-color 0.3s;
+}
+
+.btn-back:hover {
+  background-color: #0b46cf;
+}
+</style>
 </head>
 <body>
     <div class="container">
     <div class="header">
-        <h2 class="text-dark"> สร้างเส้นทางรับของ PO </h2>
+    <div class="header-bar">
+     <h2 class="text-dark"> สร้างเส้นทางรับของ PO </h2>
+    <button onclick="history.back()" class="btn-back">ย้อนกลับ</button>
+    </div>
     <div class="mb-3">
         
         <label class="form-label">เลขที่ PO :</label>

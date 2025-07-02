@@ -9,15 +9,46 @@
       <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.14.305/pdf.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<style>
+.header-bar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap; /* รองรับจอเล็ก */
+  padding: 10px 0;
+}
 
-    
+.text-dark {
+  font-size: 24px;
+  color: #333333;
+  margin: 0;
+}
+
+.btn-back {
+  background-color: #3f865d;
+  color: white;
+  border: none;
+  padding: 6px 8px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 14px;
+  transition: background-color 0.3s;
+}
+
+.btn-back:hover {
+  background-color: #326f4d;
+}
+</style>
     <title>สร้างเส้นทางส่งสินค้า</title>
 
 </head>
 <body>
 <div class="container">
   <div class="header">
+   <div class="header-bar">
     <h2 class="text-dark">สร้างเส้นทางส่งสินค้า</h2>
+    <button onclick="history.back()" class="btn-back">ย้อนกลับ</button>
+    </div>
 
     <!-- SO และ บิล ส่งของ ให้อยู่บรรทัดเดียวกัน -->
     <form id="billForm">
