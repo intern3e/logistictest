@@ -706,7 +706,7 @@
 
 async function checkForAccountAlerts() {
     try {
-        const response = await fetch('/alertaccount/count'); // เปลี่ยน endpoint ตามระบบของคุณ
+        const response = await fetch('/alertaccount/count'); 
         const data = await response.json();
 
         const badge = document.getElementById('alertAccountBadge');

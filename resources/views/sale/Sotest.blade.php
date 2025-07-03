@@ -613,12 +613,14 @@ foreach ($filteredDocBills as $item) {
           @if($data['type'] === 'SO')
             <div style="border: 2px solid #007bff; border-radius: 6px; padding: 10px; background-color: #f8f9ff;">
               <strong>SO งานที่: {{ $workIndex }}</strong><br>
-              {{ $item->so_id ?? '-' }} {{ $item->date_of_dali ?? '-' }}<br>
+              {{ $item->billid ?? '-' }} {{ $item->date_of_dali ?? '-' }}<br>
+              {{ $item->contactso ?? '-' }}<br>
               {{ $item->customer_name ?? '-' }}<br>
               {{ $item->customer_tel ?? '-' }}<br>
               {{ $item->customer_address ?? '-' }}<br>
               <a class="latlong" style="color:#007bff; text-decoration:underline;"  href="https://www.google.com/maps?q={{ trim($item->customer_la_long ?? '') }}" target="_blank">📍 พิกัด: {{ $item->customer_la_long ?? '-' }}</a><br>
-              <span class="latlong" style="color: #28a745; font-weight: bold;">📏 ระยะทาง: {{ $distanceText }}</span>
+              <span class="latlong" style="color: #28a745; font-weight: bold;">📏 ระยะทาง: {{ $distanceText }}</span><br>
+              {{ $item->notes ?? '-' }}
             </div>
           @elseif($data['type'] === 'PO')
             <div style="border: 2px solid #ff6b35; border-radius: 6px; padding: 10px; background-color: #fff5f0;">

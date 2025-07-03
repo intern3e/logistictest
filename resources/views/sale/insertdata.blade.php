@@ -170,7 +170,7 @@ billidInput.addEventListener('input', () => {
             <option value="บิล/PO3">บิล/PO3</option>
             <option value="บิล/PO3/วางบิล">บิล/PO3/วางบิล</option>
             <option value="บิล/PO3/วางบิล/สำเนาหน้าบิล2">บิล/PO3/วางบิล/สำเนาหน้าบิล2</option>
-            <option value="บิล/PO3/สำเนาบิล2">บิล/PO3/สำเนาบิล2</option>
+            <option value="บิล/PO3/สำเนาหน้าบิล2">บิล/PO3/สำเนาหน้าบิล2</option>
             <option value="บิล/PO3/บัญชี">บิล/PO3/บัญชี</option>
             <option value="ขายสด">ขายสด</option>
         </select>
@@ -525,6 +525,9 @@ const pdfPreview = document.getElementById('pdfPreview');
 let convertedPDFBlob = null;
 let originalFilename = '';
 
+// ฟังก์ชันช่วยดูว่าเป็นแนวนอนหรือแนวตั้ง
+const isLandscape = (width, height) => width > height;
+
 fileInput.addEventListener('change', async function () {
     const file = fileInput.files[0];
     if (!file) return;
@@ -538,12 +541,17 @@ fileInput.addEventListener('change', async function () {
             const base64 = e.target.result.split(',')[1];
             const pdf = await pdfjsLib.getDocument({ data: atob(base64) }).promise;
 
+            const firstPage = await pdf.getPage(1);
+            const firstViewport = firstPage.getViewport({ scale: 1 });
+            const isPdfLandscape = isLandscape(firstViewport.width, firstViewport.height);
+
             const { jsPDF } = window.jspdf;
-            const pdfDoc = new jsPDF('p', 'mm', 'a4');
+            const pdfDoc = new jsPDF(isPdfLandscape ? 'l' : 'p', 'mm', 'a4');
 
             for (let pageNum = 1; pageNum <= pdf.numPages; pageNum++) {
                 const page = await pdf.getPage(pageNum);
                 const viewport = page.getViewport({ scale: 2 });
+
                 const canvas = document.createElement('canvas');
                 canvas.width = viewport.width;
                 canvas.height = viewport.height;
@@ -551,9 +559,12 @@ fileInput.addEventListener('change', async function () {
                 await page.render({ canvasContext: context, viewport }).promise;
 
                 const imgData = canvas.toDataURL('image/jpeg', 1.0);
+
                 if (pageNum > 1) pdfDoc.addPage();
+
                 const pageWidth = pdfDoc.internal.pageSize.getWidth();
                 const pageHeight = pdfDoc.internal.pageSize.getHeight();
+
                 pdfDoc.addImage(imgData, 'JPEG', 0, 0, pageWidth, pageHeight);
             }
 
@@ -562,23 +573,27 @@ fileInput.addEventListener('change', async function () {
             pdfPreview.src = blobUrl;
         };
         reader.readAsDataURL(file);
+
     } else if (['jpg', 'jpeg', 'png'].includes(ext)) {
         const reader = new FileReader();
         reader.onload = function (e) {
             const img = new Image();
             img.src = e.target.result;
             img.onload = function () {
+                const isImgLandscape = isLandscape(img.width, img.height);
+
+                const { jsPDF } = window.jspdf;
+                const pdf = new jsPDF(isImgLandscape ? 'l' : 'p', 'mm', 'a4');
+                const pageWidth = pdf.internal.pageSize.getWidth();
+                const pageHeight = pdf.internal.pageSize.getHeight();
+
                 const canvas = document.createElement('canvas');
                 canvas.width = img.width;
                 canvas.height = img.height;
                 const ctx = canvas.getContext('2d');
                 ctx.drawImage(img, 0, 0);
-
                 const imgData = canvas.toDataURL('image/jpeg', 1.0);
-                const { jsPDF } = window.jspdf;
-                const pdf = new jsPDF('p', 'mm', 'a4');
-                const pageWidth = pdf.internal.pageSize.getWidth();
-                const pageHeight = pdf.internal.pageSize.getHeight();
+
                 pdf.addImage(imgData, 'JPEG', 0, 0, pageWidth, pageHeight);
                 convertedPDFBlob = pdf.output('blob');
 
@@ -587,6 +602,7 @@ fileInput.addEventListener('change', async function () {
             };
         };
         reader.readAsDataURL(file);
+
     } else {
         alert('ไฟล์ไม่รองรับ กรุณาอัปโหลด PDF หรือรูปภาพ');
         fileInput.value = '';
@@ -595,6 +611,7 @@ fileInput.addEventListener('change', async function () {
     }
 });
 </script>
+
 <script>
     window.addEventListener('DOMContentLoaded', function () {
         const urlParams = new URLSearchParams(window.location.search);

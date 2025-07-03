@@ -170,6 +170,7 @@
                                         <input type="button" name="reset" value="Reset" onclick="resetCriteria()">
                                         <input type="button" name="importBills" id="importBills" value="Import Bills" onclick="javaImportBills();">
                                         <a href="adminroute"><input type="button" name="adminso" id="adminso" value="จัดของ"></a>
+                                        <a href="Sotest"><input type="button" name="tablecar" id="tablecar" value="งานขนส่ง"></a>
                                         <a href="dashboardadminpdf"><input type="button" name="bot" id="bot" value="บอท"></a>
                                         <a href="admindoc"><input type="button" name="botprint" id="botprint" value="บอทใบชั่วคราว"></a>
                                         <input type="hidden" name="lastUpdate" id="lastUpdate" value="">
