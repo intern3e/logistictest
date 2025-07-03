@@ -131,11 +131,11 @@
       onchange="document.getElementById('dateFilterForm').submit();">
   </form>
 
-<!-- ปุ่มดาวน์โหลด + สถานะ -->
+
 <div style="display: flex; align-items: center; gap: 15px;">
   <button onclick="downloadJSON()" id="downloadBtn"
     style="padding: 10px 20px; background-color: #007bff; color: white; border: none; border-radius: 6px; font-weight: bold;">
-    📥 ดาวน์โหลดข้อมูล JSON
+    ส่งข้อมูลไปคนขับ
   </button>
   <span id="statusMessage" style="font-weight: bold; color: #333;"></span>
 </div>
@@ -159,6 +159,9 @@ function downloadJSON() {
   const btn = document.getElementById('downloadBtn');
   const statusEl = document.getElementById('statusMessage');
 
+  const confirmed = confirm("คุณต้องการส่งข้อมูลใช่หรือไม่?");
+  if (!confirmed) return;
+  
   statusEl.textContent = '⏳ กำลังส่งข้อมูล...';
   statusEl.style.color = '#ffc107';
 
@@ -614,8 +617,8 @@ foreach ($filteredDocBills as $item) {
             <div style="border: 2px solid #007bff; border-radius: 6px; padding: 10px; background-color: #f8f9ff;">
               <strong>SO งานที่: {{ $workIndex }}</strong><br>
               {{ $item->billid ?? '-' }} {{ $item->date_of_dali ?? '-' }}<br>
-              {{ $item->customer_name ?? '-' }}<br>
-              {{ $item->contactso ?? '-' }}<br>
+              {{ $item->customer_name ?? '-' }}<br> 
+              {{ $item->contactso ?? '-' }}
               {{ $item->customer_tel ?? '-' }}<br>
               {{ $item->customer_address ?? '-' }}<br>
               <a class="latlong" style="color:#007bff; text-decoration:underline;"  href="https://www.google.com/maps?q={{ trim($item->customer_la_long ?? '') }}" target="_blank">📍 พิกัด: {{ $item->customer_la_long ?? '-' }}</a><br>
