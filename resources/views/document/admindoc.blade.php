@@ -45,6 +45,7 @@
                 <th>วันที่</th>
                 <th>ข้อมูลรายละเอียด</th>
                 <th>ชื่อบริษัท</th>
+                <th>หมายเหตุ</th>
                 <th>pdf</th>
             </tr>
         </thead>
@@ -68,6 +69,7 @@
                     เพิ่มเติม
                 </a>
                 <td>{{ $item->headcom }}</td>
+                <td>{{ $item->notes }}</td>
                 </td>
                 <td>
                     <button id = "download"onclick="downloadRowPDF(this)" class="btn btn-sm btn-outline-danger">📄</button>
@@ -247,15 +249,16 @@ function updateStatuspdf() {
         const contact_tel = cells[5].innerText.trim();
         const contact_name = cells[4].innerText.trim();
         const headcom = cells[10].innerText.trim();
+        const notes= cells[11].innerText.trim();
 
-        let popupAmount = '', popupNotes = '';
-        const link = row.querySelector('a[onclick^="openPopup"]');
-        if (link) {
-            const onclickAttr = link.getAttribute('onclick');
-            const args = [...onclickAttr.matchAll(/'([^']*)'/g)].map(match => match[1]);
-            popupAmount = args[5] || '';
-            popupNotes = args[1] || '';
-        }
+        // let popupAmount = '', popupNotes = '';
+        // const link = row.querySelector('a[onclick^="openPopup"]');
+        // if (link) {
+        //     const onclickAttr = link.getAttribute('onclick');
+        //     const args = [...onclickAttr.matchAll(/'([^']*)'/g)].map(match => match[1]);
+        //     popupAmount = args[5] || '';
+        //     popupNotes = args[1] || '';
+        // }
 
         let tableRowsHtml = '';
         try {
@@ -340,7 +343,7 @@ function updateStatuspdf() {
             </p>
 
             <p class="print-line" style="font-size: 20px; border-bottom: 3px dotted #555; padding-bottom: 3px;">
-              <strong>หมายเหตุ :  </strong> ${popupNotes}
+              <strong>หมายเหตุ :  </strong> ${notes}
             </p>
 
             <p class="print-line" style="font-size: 20px; border-bottom: 3px dotted #555; padding-bottom: 3px;">
