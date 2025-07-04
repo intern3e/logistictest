@@ -467,7 +467,7 @@ function openGoogleMaps() {
             fetchContactSo();
             document.getElementById('customer_name').value = soDetails.CustName;  
             document.getElementById('customer_address').value = 
-                [soDetails.ShipToAddr1, soDetails.CustAddr1, soDetails.ContDistrict, soDetails.ContAmphur, soDetails.ContProvince, soDetails.ContPostCode]
+                [soDetails.CustAddr1, soDetails.ContDistrict, soDetails.ContAmphur, soDetails.ContProvince, soDetails.ContPostCode]
                 .filter(Boolean)
                 .join(', ');
             document.getElementById('customer_la_long').value = 

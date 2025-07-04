@@ -161,7 +161,7 @@ function downloadJSON() {
 
   const confirmed = confirm("คุณต้องการส่งข้อมูลใช่หรือไม่?");
   if (!confirmed) return;
-  
+
   statusEl.textContent = '⏳ กำลังส่งข้อมูล...';
   statusEl.style.color = '#ffc107';
 
@@ -181,9 +181,7 @@ function downloadJSON() {
 
       const lines = td.innerText.trim().split('\n').map(l => l.trim()).filter(Boolean);
 
-      // ข้ามบรรทัด "งานที่: ..."
       const contentLines = lines.filter(line => !line.startsWith("งานที่:"));
-
       const so_id        = contentLines[0] || '';
       const datetime     = contentLines[1] || '';
       const name         = contentLines[2] || '';
@@ -193,15 +191,18 @@ function downloadJSON() {
       const distanceLine = contentLines.find(line => line.includes('📏 ระยะทาง:')) || '';
       const latlong      = latlongLine.replace(/📍\s*พิกัด:\s*/g, '').trim();
 
-        // ลบแค่ "📍 พิกัด:" ออกจาก address (ถ้ามี) โดยเก็บพิกัดไว้
       if (address.includes('📍 พิกัด:')) {
         address = address.replace(/📍\s*พิกัด:/, '').trim();
       }
 
+      // ✅ ดึง notes จากบรรทัดสุดท้ายที่ไม่ใช่พิกัดหรือระยะทาง
+      const notes = contentLines.findLast(line =>
+        !line.includes('📍 พิกัด:') &&
+        !line.includes('📏 ระยะทาง:') &&
+        ![so_id, datetime, name, customer_tel, address].includes(line)
+      ) || '';
 
-      // แยก latitude กับ longitude จาก string พิกัด
-      let latitude = '';
-      let longitude = '';
+      let latitude = '', longitude = '';
       if (latlong.includes(',')) {
         const parts = latlong.split(',').map(p => p.trim());
         latitude = parts[0] || '';
@@ -217,14 +218,14 @@ function downloadJSON() {
         coordinates: latlong,
         latitude: latitude,
         longitude: longitude,
-        distance: distanceLine.replace(/📏\s*ระยะทาง:\s*/g, '').trim()
+        distance: distanceLine.replace(/📏\s*ระยะทาง:\s*/g, '').trim(),
+        notes: notes   // ✅ แก้ตรงนี้ให้มีค่า
       });
     });
 
     zoneData[zoneName] = zoneItems;
   });
 
-  // ✅ ส่งไปที่ Laravel route /send-to-sheet
   fetch('/send-to-sheet', {
     method: 'POST',
     headers: {
@@ -249,6 +250,7 @@ function downloadJSON() {
     console.error(error);
   });
 }
+
 
 </script>
 
@@ -634,7 +636,8 @@ foreach ($filteredDocBills as $item) {
               {{ $item->store_address ?? '-' }}<br>
               <a class="latlong" style="color:#007bff; text-decoration:underline;"  href="https://www.google.com/maps?q={{ trim($item->store_la_long ?? '') }}" target="_blank">📍 พิกัด: {{ $item->store_la_long ?? '-' }}</a><br>
               {{ $item->cartype == 1 ? 'จักรยานยนต์' : ($item->cartype == 2 ? 'รถใหญ่' : '') }}<br>
-              <span class="latlong" style="color: #28a745; font-weight: bold;">📏 ระยะทาง: {{ $distanceText }}</span>
+              <span class="latlong" style="color: #28a745; font-weight: bold;">📏 ระยะทาง: {{ $distanceText }}</span><br>
+              {{ $item->notes ?? '-' }}
             </div>
           @elseif($data['type'] === 'DOC')
             <div style="border: 2px solid #279100; border-radius: 6px; padding: 10px; background-color: #fefffe;">
@@ -646,7 +649,8 @@ foreach ($filteredDocBills as $item) {
               @if(!empty($item->com_la_long))
                 <a class="latlong" style="color:#007bff; text-decoration:underline;"  href="https://www.google.com/maps?q={{ trim($item->com_la_long) }}" target="_blank">📍 พิกัด: {{ $item->com_la_long }}</a><br>
               @endif
-              <span class="latlong" style="color: #28a745; font-weight: bold;">📏 ระยะทาง: {{ $distanceText }}</span>
+              <span class="latlong" style="color: #28a745; font-weight: bold;">📏 ระยะทาง: {{ $distanceText }}</span><br>
+              {{ $item->notes ?? '-' }}
             </div>
           @endif
         </td></tr>
