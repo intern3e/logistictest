@@ -232,7 +232,7 @@ function fetchFormType() {
     <div class="form-label">
 
     <div >
-    <label for="customer_address">ที่อยู่จัดส่ง :</label>
+    <label for="customer_address">ที่อยู่หัวบิล :</label>
     {{-- <textarea id="customer_address" name="customer_address" rows="4" readonly required style="width: 100%; padding: 10px; font-size: 14px; border-radius: 10px; border: 1px solid #ccc; height: 50px" ></textarea> --}}
     <input type="text" id="customer_address" name="customer_address" style="width: 100%; padding: 10px; font-size: 14px; border-radius: 6px; border: 1px solid #ccc; height: 30px"  readonly required >
     </div>
