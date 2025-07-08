@@ -103,10 +103,11 @@
         <table>
             <thead>
                 <tr>
+                    <th>ลำดับ</th>
                     <th>อ้างอิงใบส่งของ</th>
                     <th>อ้างอิงใบสั่งขาย</th>
                     <th>อ้างอิงใบสั่งซื้อ</th>
-                     <th>REF</th>
+                    <th>REF</th>
                     <th>ชื่อลูกค้า</th>
                     <th>วันที่จัดส่ง</th>
                     <th>ผู้เปิดบิล</th>
@@ -121,6 +122,7 @@
 
                 @foreach($bill as $item)
                 <tr>
+                    <td>{{ $loop->iteration }}</td>
                     <td>{{ $item->billid }}</td>
                     <td>{{ $item->so_id }}</td>
                     <td>{{ $item->ponum }}</td>

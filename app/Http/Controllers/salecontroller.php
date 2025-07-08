@@ -123,7 +123,7 @@ public function fetchFormType(Request $request)
     try {
         $request->validate([
             'so_id' => 'required|string|max:255',
-            'ponum' => 'string|max:255',
+            'ponum' => 'nullable|string|max:255',
             'billtype' => 'required|string|max:255',
             'customer_id' => 'required|string|max:255',
             'customer_name' => 'required|string|max:255',

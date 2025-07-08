@@ -302,6 +302,7 @@
 <table>
     <thead>
         <tr>
+            <th>ลำดับ</th>
             <th>เลขที่บิล</th>
             <th>บริษัทผู้ส่ง</th>
             <th>บริษัท</th>
@@ -317,6 +318,7 @@
     <tbody id="table-body">
         @foreach($docbill as $item)
         <tr>
+            <td>{{ $loop->iteration }}</td>
             <td>{{ $item->doc_id }}</td>
             <td>{{ $item->headcom }}</td>
             <td>{{ $item->com_name }}</td>

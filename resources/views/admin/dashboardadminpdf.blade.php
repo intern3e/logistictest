@@ -965,7 +965,7 @@ function openFileInNewTab(url, ponum, so_detail_id, so_id, billid) {
         try {
             var successful = document.execCommand('copy');
             if (successful) {
-          
+                // คัดลอกสำเร็จ (ถ้าต้องการแจ้งเตือนเพิ่มใส่ตรงนี้)
             } else {
                 alert('ไม่สามารถคัดลอกเลขได้ (fallback)');
             }
@@ -981,7 +981,6 @@ function openFileInNewTab(url, ponum, so_detail_id, so_id, billid) {
     if (navigator.clipboard && navigator.clipboard.writeText) {
         navigator.clipboard.writeText(copyValue).then(() => {
             console.log('คัดลอกสำเร็จ:', copyValue);
-           
         }).catch(err => {
             console.error('Clipboard API ล้มเหลว:', err);
             fallbackCopyTextToClipboard(copyValue);
@@ -991,9 +990,11 @@ function openFileInNewTab(url, ponum, so_detail_id, so_id, billid) {
         fallbackCopyTextToClipboard(copyValue);
     }
 
-    // เปิดลิงก์
+    // เพิ่ม timestamp query string เพื่อบังคับโหลดไฟล์ใหม่
     if (url && url.trim() !== '') {
-        window.open(url, '_blank');
+        const timestamp = Date.now();
+        const urlWithTimestamp = url.includes('?') ? `${url}&t=${timestamp}` : `${url}?t=${timestamp}`;
+        window.open(urlWithTimestamp, '_blank');
     } else {
         console.warn('URL ว่างหรือไม่ถูกต้อง:', url);
         alert('ไม่สามารถเปิดไฟล์ได้: URL ว่าง');
