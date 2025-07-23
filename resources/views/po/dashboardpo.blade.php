@@ -293,7 +293,19 @@
                     @foreach($pobill as $item)
                     <tr>
                         <td>{{ count($pobill) - $loop->index }}</td>
-                        <td>{{ $item->po_id}}</td>
+                    <td
+                    @if($item->statusdeli == 1)
+                        style="background-color: #a5d6a7;" 
+                    @endif
+                >
+                    @if($item->statusdeli == 1)
+                        <a href="https://drive.google.com/drive/u/0/search?q={{ $item->po_id }}+parent:1WyDB1b01cDQ53Ap7B03UIGFbL6a2Y6WB" target="_blank">
+                            {{ $item->po_id}}
+                        </a>
+                    @else
+                        {{ $item->po_id }}
+                    @endif
+                    </td>
                         <td class="wrap-text">{{ $item->store_name }}</td>
                         <td>{{ \Carbon\Carbon::parse($item->recvDate)->format('d/m/Y') }}</td> 
                         <td>{{ $item->emp_name }}</td> 

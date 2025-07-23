@@ -123,6 +123,7 @@ public function fetchFormType(Request $request)
     try {
         $request->validate([
             'so_id' => 'required|string|max:255',
+            'solve' => 'nullable|string|max:255',
             'ponum' => 'nullable|string|max:255',
             'billtype' => 'required|string|max:255',
             'customer_id' => 'required|string|max:255',
@@ -145,6 +146,7 @@ public function fetchFormType(Request $request)
             'unit_price' => 'required|array',
             'unit_price.*' => 'string',
             'status' => 'nullable|array',
+            'statusdeli' => 'nullable',
             'statuspdf' => 'nullable|array',
             'POdocument' => 'nullable|file|mimes:pdf|max:10240',
             'formtype' => ['required', 'string', 'max:255', 'not_in:ไม่มีข้อมูล'],
@@ -186,6 +188,7 @@ public function fetchFormType(Request $request)
         $bill->ponum = $request->input('ponum');
         $bill->status = 0;
         $bill->statuspdf = 0;
+        $bill->statusdeli = 0;
         $bill->customer_id = $request->input('customer_id');
         $bill->customer_name = $request->input('customer_name');
         $bill->contactso = $request->input('contactso');
@@ -204,7 +207,7 @@ public function fetchFormType(Request $request)
         if ($request->hasFile('POdocument')) {
             $file = $request->file('POdocument');
             $originalName = $file->getClientOriginalName();
-            $filename = $so_detail_id . '_' . pathinfo($originalName, PATHINFO_FILENAME) . '.pdf';
+            $filename = $so_detail_id. '.pdf';
 
             $file->storeAs('public/po_documents', $filename);
             $bill->POdocument = $filename;

@@ -11,7 +11,7 @@
 </head>
 <body>
     <div class="header">
-        <h2>ประวัติจัดเตรียมรถรับของPO</h2>
+        <h2>ประวัติงานรับของ PO</h2>
         <div class="header-buttons">
             <a href="http://server_update:8000/solist" button  type="submit" class="btn btn-danger">🚪 หน้าหลัก</a>
         </div>
@@ -67,7 +67,7 @@
         <input type="checkbox" id="checkAll" onclick="toggleCheckboxes()"> ทั้งหมด
         <thead>
             <tr>
-                <th>ปริ้นเอกสาร</th>
+                <th>คืนสถานะ</th>
                 <th>เลขอ้างอิงใบรับสินค้า</th>
                 <th>เลขที่บิล</th>
                 <th>ชื่อร้านค้า</th>
@@ -81,7 +81,7 @@
         </thead>
         <tbody id="table-body">
             @foreach($pobill as $item)
-                @if($item->status == 1)
+                @if($item->statusdeli == 1 )
                     <tr>
                         <td>
                             <input type="checkbox" class="form-control1" name="status[]" data-po-detail-id="{{ $item->po_id}}">

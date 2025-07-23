@@ -53,6 +53,7 @@ class DocController extends Controller
                 'emp_name' => 'required|string|max:255',
                 'doctype' => 'required|string|max:255',
                 'headcom' => 'required|string|max:255',
+                'solve' => 'nullable|string|max:255',
                 'id_com' => 'nullable|string|max:255',
                 'com_name' => 'required|string|max:255',
                 'contact_name' => 'required|string|max:255',
@@ -60,6 +61,7 @@ class DocController extends Controller
                 'com_address' => 'required|string|max:255',
                 'com_la_long' => 'required|string|max:255',
                 'datestamp' => 'required|date', 
+                'statusdeli' => 'nullable|array',
                 'notes' => 'nullable|string',
             ]);
             $currentYear = date('Y') + 543;
@@ -96,6 +98,7 @@ class DocController extends Controller
             $doc->doc_id = $doc_id; // ใช้ so_detail_id ที่สร้างขึ้นใหม่
             $doc->status = 0;
             $doc->statuspdf = 0;
+            $doc->statusdeli = 0;
             $doc->id_com = $request->input('id_com');
             $doc->emp_name = $request->input('emp_name');
             $doc->com_name = $request->input('com_name');

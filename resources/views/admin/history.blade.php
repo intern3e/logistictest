@@ -338,7 +338,7 @@ th {
 </head>
 <body>
     <div class="header">
-        <h2>ประวัติเส้นทางรถของบิลSO</h2>
+        <h2>ประวัติงานส่งของ SO</h2>
         <div class="header-buttons">
            <a href="http://server_update:8000/solist"><button class="btn-so">หน้าหลัก</button></a>
         </div>
@@ -380,7 +380,7 @@ th {
     
     
         <div class="search-box">
-            <input type="text" id="search-input" placeholder=" ค้นหา เลขที่บิล" onkeyup="searchTable()">
+            <input type="text" id="search-input" placeholder=" ค้นหา เลขที่บิลส่งของ" onkeyup="searchTable()">
         </div>
     
 
@@ -394,8 +394,8 @@ th {
                 <input type="checkbox" id="checkAll" onclick="toggleCheckboxes()"> ทั้งหมด
             </label>
                     <tr>
-                        <th>ปริ้นเอกสาร</th>
-                        <th>REF</th>
+                        <th>คืนสถานะ</th>
+                        <th>อ้างอิงใบส่งของ</th>
                         <th>อ้างอิงใบสั่งขาย</th>
                         <th>อ้างอิงใบสั่งซื้อ</th>
                         <th>ชื่อลูกค้า</th>
@@ -407,12 +407,12 @@ th {
                 </thead>
                 <tbody id="table-body">
             @foreach($bill as $item)
-                @if(($item->status == 1 && $item->statuspdf == 2) || $item->statuspdf == 6 )
+                @if(($item->statusdeli == 1 &&  $item->statuspdf == 2) || $item->statuspdf == 6 )
                     <tr @if($item->statuspdf == 6) style="background-color: #ffe5e5;" @endif>
                         <td>
                             <input type="checkbox" class="form-control1" name="status[]" data-so-detail-id="{{ $item->so_detail_id }}">
                         </td>
-                        <td>{{ $item->so_detail_id }}</td>
+                        <td>{{ $item->billid }}</td>
                         <td>{{ $item->so_id }}</td>
                         <td>{{ $item->ponum }}</td>
                         <td>{{ $item->customer_name }}</td>
@@ -754,7 +754,7 @@ function searchTable() {
         let cells = row.getElementsByTagName("td");
 
         // Get the content of the second column (บิลลำดับ)
-        let soDetailId = cells[2] ? cells[1].textContent.toLowerCase() : '';
+        let soDetailId = cells[1] ? cells[1].textContent.toLowerCase() : '';
 
         // Search for the text inside the selected column (บิลลำดับ)
         if (soDetailId.indexOf(searchInput) > -1) {

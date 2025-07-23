@@ -325,7 +325,7 @@ table a:hover {
     <div class="header" >
         <h2>แจ้งเตือนเซลล์</h2>
         <div class="header-buttons">
-            <a href="dashboard"><button class="btn-so">หน้าหลัก</button></a>
+            <a href="http://server_update:8000/solist"><button class="btn-so">หน้าหลัก</button></a>
         </div>
     </div>
     <div class="top-section">    
@@ -342,7 +342,7 @@ table a:hover {
                 <label>
             </label>
                     <tr>
-                        <th>ลบ</th>
+                        <th>เดินเรื่อง</th>
                         <th>REF</th>
                         <th>อ้างอิงใบส่งของ</th>
                         <th>ชื่อลูกค้า</th>
@@ -351,6 +351,7 @@ table a:hover {
                         <th>ผู้เปิดบิล</th>
                         <th>หมายเหตุ</th>
                         <th>ข้อมูลสินค้า</th>
+                        <th>เพิ่มเติม</th>
                     </tr>
                 </thead>
                <tbody id="table-body">
@@ -386,13 +387,13 @@ table a:hover {
         }
     @endphp
 
-    @if($item->NG != null)
+    @if($item->NG !== null && $item->statusdeli == '0' && $item->statuspdf == '2'&& $item->solve=== NULL )
         <tr>
             <td>
-                <button class="updateNGButton"
+                <button class="updatesolve"
                         data-id="{{ $detailId }}"
                         data-table="{{ $table }}">
-                    ล้าง
+                    ส่งเรื่อง
                 </button>
             </td>
             <td>{{ $alldetailId }}</td>
@@ -402,6 +403,67 @@ table a:hover {
             <td>{{ $dateOfDali }}</td>
             <td>{{ $empName }}</td>
             <td>{{ $NG }}</td>
+            <td>
+              <div id="dateContainer" style="display: none; margin-bottom: 10px;">
+                <label for="newDate">เลือกวันที่ใหม่:</label>
+                <input type="date" id="newDate" name="newDate" required />
+              </div>
+
+              <select class="solve-select" id="reasonSelect" required>
+                <option value="" disabled selected>-- กรุณาเลือกเหตุผล --</option>
+                <option value="ส่งวันใหม่เอกสารเดิม">ส่งวันใหม่เอกสารเดิม</option>
+                <option value="แก้เอกสาร(วันที่เท่านั้น)">แก้เอกสาร(วันที่เท่านั้น)</option>
+                <option value="ยกเลิก">ยกเลิก</option>
+                <option value="ฝากบิลไว้">ฝากบิลไว้</option>
+              </select>
+            </td>
+
+            <script>
+              const select = document.getElementById('reasonSelect');
+              const dateInput = document.getElementById('newDate');
+              const dateContainer = document.getElementById('dateContainer');
+
+              function formatToThaiDate(dateStr) {
+                const date = new Date(dateStr);
+                const day = String(date.getDate()).padStart(2, '0');
+                const month = String(date.getMonth() + 1).padStart(2, '0');
+                const buddhistYear = date.getFullYear() + 543;
+                const shortYear = String(buddhistYear).slice(-2);
+                return `${day}/${month}/${shortYear}`;
+              }
+
+              select.addEventListener('change', function () {
+                const value = this.value;
+                if (value === 'ส่งวันใหม่เอกสารเดิม' || value === 'แก้เอกสาร(วันที่เท่านั้น)') {
+                  dateContainer.style.display = 'block';
+                } else {
+                  dateContainer.style.display = 'none';
+                }
+              });
+
+              dateInput.addEventListener('change', function () {
+                const selectedReason = select.value;
+                const selectedDate = this.value;
+
+                if (
+                  (selectedReason === 'ส่งวันใหม่เอกสารเดิม' || selectedReason === 'แก้เอกสาร(วันที่เท่านั้น)') &&
+                  selectedDate
+                ) {
+                  const formattedDate = formatToThaiDate(selectedDate);
+                  const combinedValue = `${selectedReason},${formattedDate}`;
+
+                  // เพิ่ม option ใหม่ถ้ายังไม่มี
+                  let exists = Array.from(select.options).some(opt => opt.value === combinedValue);
+                  if (!exists) {
+                    const newOption = new Option(combinedValue, combinedValue);
+                    newOption.selected = true;
+                    select.add(newOption);
+                  } else {
+                    select.value = combinedValue;
+                  }
+                }
+              });
+            </script>
             <td>
                 <a href="javascript:void(0);" 
                 onclick="openPopup(
@@ -525,18 +587,25 @@ function openPopup(alldetailId, billid, so_id, customerName, customerTel, dateOf
 
 
 <script>
-document.querySelectorAll('.updateNGButton').forEach(button => {
+document.querySelectorAll('.updatesolve').forEach(button => {
     button.addEventListener('click', function () {
         const id = this.getAttribute('data-id');
         const table = this.getAttribute('data-table');
-        console.log("กำลังล้าง NG ของ ID:", id, "จากตาราง:", table);
-        fetch('{{ route("update.ng") }}', {
+        const row = this.closest('tr');
+        const solve = row.querySelector('.solve-select').value;
+
+        if (!solve) {
+            alert("กรุณาเลือกเหตุผลก่อนส่งเรื่อง");
+            return;
+        }
+
+        fetch('{{ route("updatesolve") }}', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
                 'X-CSRF-TOKEN': '{{ csrf_token() }}'
             },
-            body: JSON.stringify({ id: id, table: table })
+            body: JSON.stringify({ id: id, table: table, solve: solve })
         })
         .then(response => response.json())
         .then(data => {
@@ -551,6 +620,7 @@ document.querySelectorAll('.updateNGButton').forEach(button => {
     });
 });
 </script>
+
 
 <script>
 function searchTable() {

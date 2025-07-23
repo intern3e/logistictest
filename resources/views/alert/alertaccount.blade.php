@@ -436,6 +436,7 @@ th {
     <div class="header" >
         <h2>แจ้งเตือนบัญชี</h2>
         <div class="header-buttons" >
+            <a href="dashboardcheckbillsolve"><button class="btn-so">บิลส่งไม่สำเร็จ</button></a>
             <a href="http://server_update:8000/solist"><button class="btn-so">หน้าหลัก</button></a>
         </div>
     </div>

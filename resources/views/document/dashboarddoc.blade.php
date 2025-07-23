@@ -319,7 +319,19 @@
         @foreach($docbill as $item)
         <tr>
             <td>{{ $loop->iteration }}</td>
-            <td>{{ $item->doc_id }}</td>
+            <td
+            @if($item->statusdeli == 1)
+                style="background-color: #a5d6a7;" 
+            @endif
+        >
+            @if($item->statusdeli == 1)
+                <a href="https://drive.google.com/drive/u/0/search?q={{ $item->doc_id }}+parent:1WyDB1b01cDQ53Ap7B03UIGFbL6a2Y6WB" target="_blank">
+                    {{ $item->doc_id }}
+                </a>
+            @else
+                {{ $item->doc_id }}
+            @endif
+            </td>
             <td>{{ $item->headcom }}</td>
             <td>{{ $item->com_name }}</td>
             <td>{{ $item->contact_name }}</td>

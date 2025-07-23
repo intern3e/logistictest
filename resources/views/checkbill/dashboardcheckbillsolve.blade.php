@@ -4,7 +4,7 @@
     <meta name="csrf-token" content="{{ csrf_token() }}">
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>เช็คบิลสำเร็จ</title>
+    <title>เช็คบิล</title>
     <style>
                     /* ===== Base ===== */
 body {
@@ -318,97 +318,21 @@ table a:hover {
     padding: 10px;
   }
 }
-  .custom-modal {
-    display: none;
-    position: fixed;
-    z-index: 1000;
-    left: 0; top: 0;
-    width: 100%; height: 100%;
-    background-color: rgba(0, 0, 0, 0.5);
-  }
 
-.custom-modal-content {
-  background-color: #ffffff;
-  margin: 5% auto;
-  padding: 40px 30px;
-  width: 350px;
-  max-width: 95%;
-  min-height: 200px;
-  border-radius: 12px;
-  position: relative;
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2);
-  text-align: center;
-  transition: all 0.3s ease-in-out;
-}
-
-  .close-btn {
-    position: absolute;
-    top: 10px;
-    right: 15px;
-    font-size: 22px;
-    font-weight: bold;
-    color: #888;
-    cursor: pointer;
-  }
-
-  #preview {
-    max-width: 100%;
-    margin-top: 15px;
-    border-radius: 8px;
-    border: 1px solid #ccc;
-  }
-
-  .uploaded-info {
-    margin-top: 10px;
-    font-size: 14px;
-  }
-
-  .hidden {
-    display: none;
-  }
-
-  .btn-main {
-    background-color: #4CAF50;
-    color: white;
-    border: none;
-    padding: 8px 16px;
-    margin-top: 15px;
-    border-radius: 6px;
-    cursor: pointer;
-    font-size: 14px;
-  }
-
-  .btn-main:hover {
-    background-color: #45a049;
-  }
-
-  .upload-btn {
-    background-color: #007BFF;
-    color: white;
-    padding: 6px 12px;
-    font-size: 13px;
-    border: none;
-    border-radius: 6px;
-    cursor: pointer;
-  }
-
-  .upload-btn:hover {
-    background-color: #0056b3;
-  }
     </style>
 </head>
 <body>
     <div class="header" >
-        <h2>บิลที่สำเร็จ</h2>
+        <h2>บิลที่ไม่สำเร็จ</h2>
         <div class="header-buttons">
-            <a href="dashboardcheckbillsolve"><button class="btn-so">บิลไม่สำเร็จ</button></a>
+            <a href="alertaccount"><button class="btn-so">แจ้งเตือนบัญชี</button></a>
             <a href="dashboard"><button class="btn-so">หน้าหลัก</button></a>
         </div>
     </div>
     <div class="top-section">    
         <div class="search-box">
             <input type="text" id="search-input" placeholder=" ค้นหา เลขที่บิล" onkeyup="searchTable()"> 
-            <input type="text" id="search-name" placeholder="ค้นหา..." onkeyup="searchTablename()">
+
         </div>
     
         <div class="button-group">
@@ -419,7 +343,7 @@ table a:hover {
                 <label>
             </label>
                     <tr>
-                        <th style="display: none;">ลบ</th>
+                        <th>ลบ</th>
                         <th>REF</th>
                         <th>อ้างอิงใบส่งของ</th>
                         <th>ชื่อลูกค้า</th>
@@ -434,19 +358,20 @@ table a:hover {
                <tbody id="table-body">
    @foreach($items as $item)
     @php
-
+        // ใช้ so_detail_id, po_id, doc_id สำหรับแสดงผล
         $alldetailId = $item->so_detail_id ?? $item->po_id ?? $item->doc_id ?? '';
 
-
+        // ใช้ so_detail_id, po_detail_id, doc_id สำหรับหาข้อมูล detail
         $detailId = $item->so_detail_id ?? $item->po_detail_id ?? $item->doc_id ?? '';
 
+        // ค่าฟอลแบ็คอื่น ๆ
         $billid = $item->billid ?? '';
         $customerName = $item->customer_name ?? $item->store_name ?? $item->com_name ?? '';
         $customerTel = $item->customer_tel ?? $item->store_tel ?? $item->contact_tel ?? '';
         $rawDate = $item->date_of_dali ?? $item->recvDate ?? $item->datestamp ?? null;
         $dateOfDali = $rawDate ? \Carbon\Carbon::parse($rawDate)->format('d/m/Y') : '';
         $empName = $item->emp_name ?? '';
-        $billtype = $item->billtype ?? '';  
+        $billtype = $item->billtype ?? '';
         $notes = $item->notes ?? '';
         $saleName = $item->sale_name ?? '';
         $NG = $item->NG ?? '';
@@ -464,97 +389,23 @@ table a:hover {
         }
     @endphp
 
-    @if($item->NG === 'เสร็จสิ้น/' && $item->statusdeli == '0')
+    @if($item->solve != null && $item->statusdeli == '0')
         <tr>
-            <td style="display: none;">
-    <button class="updatestatusdeli"
-            data-id="{{ $detailId }}"
-            data-table="{{ $table }}">
-        ส่งเรื่อง
-    </button>
-</td>
-
+            <td>
+                <button class="updatestatusdeli"
+                        data-id="{{ $detailId }}"
+                        data-table="{{ $table }}">
+                    ส่งเรื่อง
+                </button>
+            </td>
             <td>{{ $alldetailId }}</td>
             <td>{{ $billid }}</td>
             <td>{{ $customerName }}</td>
             <td>{{ $customerTel }}</td>
             <td>{{ $dateOfDali }}</td>
             <td>{{ $empName }}</td>
-            <td>{{ str_replace('/', '', $item->NG) }}</td>
-       <td>
-  <!-- ปุ่มเปิด modal -->
-  <button class="upload-btn" onclick="openModal()">ใส่รูป</button>
-
-  <!-- แสดงชื่อไฟล์หลังอัปโหลด -->
-  <div class="uploaded-info hidden" id="uploadedInfo">
-    📎 ไฟล์ที่เลือก: <span id="fileName">-</span>
-  </div>
-
-  <!-- Modal -->
-  <div id="myModal" class="custom-modal">
-    <div class="custom-modal-content">
-      <span class="close-btn" onclick="closeModal()">&times;</span>
-      <h4>อัปโหลดรูปภาพ</h4>
-      <input type="file" id="imageInput" accept="image/*" onchange="previewImage(event)">
-      <img id="preview" src="https://via.placeholder.com/150" alt="Preview">
-      <br>
-      <button class="btn-main" onclick="confirmImage()">ยืนยัน</button>
-    </div>
-  </div>
-</td>
-
-<script>
-  let uploadedImageURL = "";
-  let uploadedFileName = "";
-
-  function openModal() {
-    document.getElementById("myModal").style.display = "block";
-  }
-
-  function closeModal() {
-    document.getElementById("myModal").style.display = "none";
-  }
-
-  function previewImage(event) {
-    const file = event.target.files[0];
-    if (file) {
-      uploadedFileName = file.name;
-      const reader = new FileReader();
-      reader.onload = function () {
-        uploadedImageURL = reader.result;
-        document.getElementById("preview").src = uploadedImageURL;
-      };
-      reader.readAsDataURL(file);
-    }
-  }
-
-  function confirmImage() {
-    if (!uploadedImageURL) {
-      alert("กรุณาเลือกรูปภาพก่อน");
-      return;
-    }
-
-    // แสดงชื่อไฟล์
-    document.getElementById("fileName").textContent = uploadedFileName;
-    document.getElementById("uploadedInfo").classList.remove("hidden");
-
-    // ปิด popup
-    closeModal();
-
-    // ✅ คลิกปุ่ม "ส่งเรื่อง" อัตโนมัติ (เลือกปุ่มใกล้เคียงในแถวเดียวกัน)
-    const sendBtn = event.target.closest('tr').querySelector('.updatestatusdeli');
-    if (sendBtn) sendBtn.click();
-  }
-
-  // ปิด modal เมื่อคลิกนอกกล่อง
-  window.onclick = function(event) {
-    const modal = document.getElementById("myModal");
-    if (event.target == modal) {
-      closeModal();
-    }
-  }
-</script>
-
+            <td>{{ $NG }}</td>
+            <td>{{ $solve}}</td>
             <td>
                 <a href="javascript:void(0);" 
                 onclick="openPopup(

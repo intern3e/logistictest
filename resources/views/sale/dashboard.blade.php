@@ -123,7 +123,20 @@
                 @foreach($bill as $item)
                 <tr>
                     <td>{{ $loop->iteration }}</td>
-                    <td>{{ $item->billid }}</td>
+                    <td
+                    @if($item->statusdeli == 1)
+                        style="background-color: #a5d6a7;" 
+                    @endif
+                >
+                    @if($item->statusdeli == 1)
+                        <a href="https://drive.google.com/drive/u/0/search?q={{ $item->billid }}+parent:1WyDB1b01cDQ53Ap7B03UIGFbL6a2Y6WB" target="_blank">
+                            {{ $item->billid }}
+                        </a>
+                    @else
+                        {{ $item->billid }}
+                    @endif
+                    </td>
+
                     <td>{{ $item->so_id }}</td>
                     <td>{{ $item->ponum }}</td>
                     <td style="font-size: 10px;">{{ $item->so_detail_id }}</td>

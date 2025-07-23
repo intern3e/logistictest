@@ -106,19 +106,30 @@ Route::post('/updatedoc-delivery-date', [AdmindocController::class, 'updateDeliv
 
 use App\Http\Controllers\alertcontroller;
 Route::get('/alertsale', [alertcontroller::class, 'dashboard'])->name('alert.alertsale');
-Route::post('/update-ng', [alertcontroller::class, 'updateNG'])->name('update.ng');
+Route::post('/updatesolve', [alertcontroller::class, 'updatesolve'])->name('updatesolve');
 Route::get('/alertaccount', [alertcontroller::class, 'dashboardaccount'])->name('alert.alertaccount');
 Route::post('/finish', [alertcontroller::class, 'finish'])->name('finish.ng');
 
 Route::get('/alertsale/count', function () {
     // นับจาก tblbill
-    $count1 = DB::table('tblbill')->whereNotNull('NG')->count();
+    $count1 = DB::table('tblbill')
+    ->whereNotNull('NG')
+    ->where('statuspdf', 2)
+    ->whereNull('solve') 
+    ->count();
 
     // นับจาก pobills
-    $count2 = DB::table('pobills')->whereNotNull('NG')->count();
+    $count2 = DB::table('pobills')
+    ->whereNotNull('NG')
+    ->whereNull('solve') 
+    ->count();
 
     // นับจาก docbills
-    $count3 = DB::table('docbills')->whereNotNull('NG')->count();
+    $count3 = DB::table('docbills')
+    ->whereNotNull('NG')
+    ->where('statuspdf', 1)
+    ->whereNull('solve') 
+    ->count();
 
     $total = $count1 + $count2 + $count3;
 
@@ -158,6 +169,11 @@ Route::post('/merge-pdf', [PoDocumentController::class, 'mergeAndOverwrite'])->n
 
 use App\Http\Controllers\WorkScheduleController;
 Route::get('/WorkSchedule', [WorkScheduleController::class, 'index']);
+
+use App\Http\Controllers\checkbillController;
+Route::get('/dashboardcheckbillsolve', [checkbillController::class, 'dashboardsolve']);
+Route::get('/dashboardcheckbill', [checkbillController::class, 'dashboard']);
+Route::post('/updatestatusdeli', [checkbillController::class, 'updatestatusdeli'])->name('updatestatusdeli');
 
 
 

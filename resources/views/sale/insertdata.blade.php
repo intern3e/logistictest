@@ -137,7 +137,7 @@ billidInput.addEventListener('input', () => {
 
   <div style="flex: 1; min-width: 150px;">
     <label for="date_of_dali">วันกำหนดส่ง :</label>
-    <input type="text" id="date_of_dali" name="date_of_dali" style="width: 100%;"  readonly  required>
+    <input type="text" id="date_of_dali" name="date_of_dali" style="width: 100%;"  readonly required>
   </div>
 </div>
 
@@ -171,6 +171,7 @@ billidInput.addEventListener('input', () => {
             <option value="บิล/PO3/วางบิล">บิล/PO3/วางบิล</option>
             <option value="บิล/PO3/วางบิล/สำเนาหน้าบิล2">บิล/PO3/วางบิล/สำเนาหน้าบิล2</option>
             <option value="บิล/PO3/สำเนาหน้าบิล2">บิล/PO3/สำเนาหน้าบิล2</option>
+            <option value="บิล/PO3/สำเนาหน้าบิล3">บิล/PO3/สำเนาหน้าบิล3</option>
             <option value="บิล/PO3/บัญชี">บิล/PO3/บัญชี</option>
             <option value="ขายสด">ขายสด</option>
         </select>

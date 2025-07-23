@@ -13,7 +13,7 @@
 </head>
 <body>
     <div class="header">
-        <h2>ประวัติระบบจัดเส้นทางเอกสารเพิ่มเติม</h2>
+        <h2>ประวัติงานเอกสารชั่วคราว</h2>
         <a href="http://server_update:8000/solist"><button class="btn-so">หน้าหลัก</button></a>
     </div>
 
@@ -55,7 +55,7 @@
         <input type="checkbox" id="checkAll" onclick="toggleCheckboxes()"> ทั้งหมด
         <thead>
             <tr>
-                <th>ปริ้นเอกสาร</th>
+                <th>คืนสถานะ</th>
                 <th>เลขที่บิล</th>
                 <th>บริษัท</th>
                 <th>ผู้ติดต่อ</th>
@@ -68,7 +68,7 @@
         </thead>
         <tbody id="table-body">
             @foreach($docbill as $item)
-            @if($item->status == 1)
+            @if($item->statusdeli == 1 && $item->statuspdf == 1)
             <tr>
                 <td>
                     <input type="checkbox" class="form-control1" name="status[]" data-doc-detail-id="{{ $item->doc_id }}">

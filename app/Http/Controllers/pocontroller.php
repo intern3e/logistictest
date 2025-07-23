@@ -47,6 +47,7 @@ class PoController extends Controller
         try {
             $request->validate([
                 'po_id' => 'required|string|max:255',
+                'solve' => 'nullable|string|max:255',
                 'store_id' => 'required|string|max:255',
                 'store_name' => 'required|string|max:255',
                 'store_address' => 'required|string|max:255',
@@ -65,11 +66,13 @@ class PoController extends Controller
                 'cartype' => 'required|string|max:255',
                 'store_tel' => 'nullable|string|max:255' ,
                 'status' => 'required|max:255', 
+                'statusdeli' => 'nullable|array',
             ]);
     
             // Save to Pobills table
             $pobill = new Pobills();
             $pobill->po_id = $request->input('po_id');
+            $pobill->statusdeli = 0;
             $pobill->store_id = $request->input('store_id');
             $pobill->status = $request->input('status');
             $pobill->cartype = $request->input('cartype');
@@ -102,7 +105,7 @@ class PoController extends Controller
             }
     
             DB::commit();
-            return response()->json(['success' => 'เปิดบิลสำเร็จ']);
+            return response()->json(['success' => 'สร้างเส้นทางสำเร็จ']);
     
         } catch (\Exception $e) {
             DB::rollBack();

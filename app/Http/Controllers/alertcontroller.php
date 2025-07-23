@@ -26,46 +26,48 @@ class AlertController extends Controller
 
     return view('alert.alertsale', compact('items'));
 }
-  public function updateNG(Request $request)
-    {
-        try {
-            $id = $request->input('id');
-            $table = $request->input('table');
+ public function updatesolve(Request $request)
+{
+    try {
+        $id = $request->input('id');
+        $table = $request->input('table');
+        $solve = $request->input('solve');
 
-            if (!$id || !$table) {
-                return response()->json(['status' => 'error', 'message' => 'Missing parameters'], 400);
-            }
-
-            switch ($table) {
-                case 'tblbill':
-                    $item = Bill::where('so_detail_id', $id)->first();
-                    break;
-                case 'pobills':
-                    $item = PoBills::where('po_detail_id', $id)->first();
-                    break;
-                case 'docbills':
-                    $item = DocBills::where('doc_id', $id)->first();
-                    break;
-                default:
-                    return response()->json(['status' => 'error', 'message' => 'ไม่รู้จักชื่อตาราง'], 400);
-            }
-
-            if (!$item) {
-                return response()->json(['status' => 'error', 'message' => 'ไม่พบข้อมูล'], 404);
-            }
-
-            $item->NG = null;
-            $item->save();
-
-            return response()->json(['status' => 'success', 'message' => 'ล้าง NG สำเร็จ']);
-        } catch (\Throwable $e) {
-            \Log::error('Update NG Error: ' . $e->getMessage());
-            return response()->json([
-                'status' => 'error',
-                'message' => 'เกิดข้อผิดพลาด: ' . $e->getMessage()
-            ], 500);
+        if (!$id || !$table || !$solve) {
+            return response()->json(['status' => 'error', 'message' => 'Missing parameters'], 400);
         }
+
+        switch ($table) {
+            case 'tblbill':
+                $item = Bill::where('so_detail_id', $id)->first();
+                break;
+            case 'pobills':
+                $item = PoBills::where('po_detail_id', $id)->first();
+                break;
+            case 'docbills':
+                $item = DocBills::where('doc_id', $id)->first();
+                break;
+            default:
+                return response()->json(['status' => 'error', 'message' => 'ไม่รู้จักชื่อตาราง'], 400);
+        }
+
+        if (!$item) {
+            return response()->json(['status' => 'error', 'message' => 'ไม่พบข้อมูล'], 404);
+        }
+
+        $item->solve = $solve;
+        $item->save();
+
+        return response()->json(['status' => 'success', 'message' => 'อัปเดตข้อมูลสำเร็จ']);
+    } catch (\Throwable $e) {
+        \Log::error('Update Solve Error: ' . $e->getMessage());
+        return response()->json([
+            'status' => 'error',
+            'message' => 'เกิดข้อผิดพลาด: ' . $e->getMessage()
+        ], 500);
     }
+}
+
 
  public function dashboardaccount(Request $request)
     {

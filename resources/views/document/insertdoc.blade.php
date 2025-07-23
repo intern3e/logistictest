@@ -301,7 +301,7 @@ select#cartype option:checked {
 <form id="billForm">
 
         <label for="headcom">ชื่อบริษัทหัวเอกสาร:</label>
-        <select id="headcom" name="headcom" required>บริษัท ทริปเปิ้ลพี แฟคทอรี่ จำกัด
+        <select id="headcom" name="headcom" required>
             <option value="" disabled selected>-- กรุณาเลือกชื่อบริษัท --</option>
             <option value="บริษัท ทริปเปิ้ล อี เทรดดิ้ง จำกัด">บริษัท ทริปเปิ้ล อี เทรดดิ้ง จำกัด</option>
             <option value="บริษัท ทริปเปิ้ล อี อินโนเวชั่น จำกัด">บริษัท ทริปเปิ้ล อี อินโนเวชั่น จำกัด</option>
