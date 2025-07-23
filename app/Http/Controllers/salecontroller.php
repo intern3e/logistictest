@@ -207,9 +207,9 @@ public function fetchFormType(Request $request)
         if ($request->hasFile('POdocument')) {
             $file = $request->file('POdocument');
             $originalName = $file->getClientOriginalName();
-            $filename = $so_detail_id. '.pdf';
+            $filename = $so_detail_id'.pdf';
 
-            $file->storeAs('public/storage/po_documents', $filename);
+            $file->storeAs('public/po_documents', $filename);
             $bill->POdocument = $filename;
         }
 

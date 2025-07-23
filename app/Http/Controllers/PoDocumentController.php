@@ -14,7 +14,7 @@ class PoDocumentController extends Controller
         try {
             ob_start();
 
-            $filePath = storage_path("public/storage/po_documents/{$POdocument}");
+            $filePath = storage_path("app/public/po_documents/{$POdocument}");
             Log::info("กำลังเปิดไฟล์ PDF: " . $filePath);
 
             if (!file_exists($filePath)) {
@@ -50,7 +50,7 @@ class PoDocumentController extends Controller
     $pdf->Text($x, $y, "{$so_detail_id}");
 }
 
-            $outputPath = storage_path("public/storage/po_documents/{$POdocument}");
+            $outputPath = storage_path("app/public/po_documents/{$POdocument}");
             $pdf->Output('F', $outputPath);
 
             ob_end_clean();
@@ -109,7 +109,7 @@ class PoDocumentController extends Controller
                 $pdf->Cell(50, 10, "{$so_detail_id}", 0, 0, 'R');
             }
 
-            $outputPath = storage_path("public/storage/doc_document/{$billid}.pdf");
+            $outputPath = storage_path("app/public/doc_document/{$billid}.pdf");
             $pdf->Output('F', $outputPath);
 
             ob_end_clean();
@@ -164,7 +164,7 @@ class PoDocumentController extends Controller
                 $pdf->SetXY(155, 2);
                 $pdf->Cell(50, 10, "{$so_detail_id}", 0, 0, 'R');
             }
-            $outputPath = storage_path("public/storage/billissue_document/{$bill_issue_no}.pdf");
+            $outputPath = storage_path("app/public/billissue_document/{$bill_issue_no}.pdf");
             $pdf->Output('F', $outputPath);
             ob_end_clean();
             Log::info("เขียน PDF สำเร็จ: " . $outputPath);
@@ -192,8 +192,8 @@ public function mergeAndOverwrite(Request $request)
             return response()->json(['success' => false, 'message' => 'Bill ID ไม่ถูกต้อง'], 400);
         }
 
-        $templatePath = storage_path('public/storage/template/template.pdf');
-        $dataPdfPath = storage_path("public/storage/doc_document/{$billId}.pdf");
+        $templatePath = storage_path('app/public/template/template.pdf');
+        $dataPdfPath = storage_path("app/public/doc_document/{$billId}.pdf");
         $outputPath = $dataPdfPath; // บันทึกทับไฟล์เดิม
 
         if (!file_exists($templatePath)) {

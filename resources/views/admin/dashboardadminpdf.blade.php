@@ -449,7 +449,7 @@
                             </button>
                             <button id="download"
                             style="background-color: #27ae60; color: white;"
-                            onclick="openFileInNewTab('{{ asset('public/storage/po_documents' . $item->POdocument) }}', 
+                            onclick="openFileInNewTab('{{ asset('storage/po_documents/' . $item->POdocument) }}', 
                                      '{{ $item->ponum }}', 
                                        '{{ $item->so_detail_id }}', 
                                        '{{ $item->so_id }}',
@@ -568,7 +568,7 @@ function copydate(text, button) {
                                     <button id="downloadbill"
                                         style="background-color: #27ae60; color: white;"
                                         onclick="openFileInNewTabbill(
-                                            '{{ asset('public/storage/doc_document/' . $item->billid . '.pdf') }}', 
+                                            '{{ asset('storage/doc_document/' . $item->billid . '.pdf') }}', 
                                             '{{ $item->ponum }}', 
                                             '{{ $item->so_detail_id }}', 
                                             '{{ $item->so_id }}',
