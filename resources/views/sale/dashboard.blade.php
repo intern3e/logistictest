@@ -234,7 +234,7 @@
                 <td>${customer_address}</td>
                 <td>${date_of_dali}</td>
                 <td>${sale_name}</td>
-               <td><a href="/storage/po_documents/${POdocument}" target="_blank">ดูไฟล์</a></td>
+               <td><a href="public/storage/po_documents/${POdocument}" target="_blank">ดูไฟล์</a></td>
             </tr>
         `;
         document.getElementById("popup-body-3").value = notes;
