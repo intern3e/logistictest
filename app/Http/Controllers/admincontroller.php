@@ -310,12 +310,8 @@ public function upload(Request $request)
     ]);
 
     $file = $request->file('pdffile');
-
-    // ดึงชื่อไฟล์ต้นฉบับ เช่น 46805-00708.pdf
     $originalName = $file->getClientOriginalName();
-
-    // กำหนด path ปลายทาง เช่น storage/app/public/doc_document
-    $destinationPath = storage_path('app/public/doc_document');
+    $destinationPath = storage_path('public/storage/doc_document/');
 
     // สร้างโฟลเดอร์ถ้ายังไม่มี
     if (!file_exists($destinationPath)) {
@@ -340,7 +336,7 @@ public function uploadBillIssue(Request $request)
     $filename = $billIssueNo . '.pdf';
 
     // จัดเก็บไฟล์ใน storage/app/public/billissue_document
-    $file->storeAs('public/billissue_document', $filename);
+    $file->storeAs('public/storage/doc_document/', $filename);
 
     return back()->with('message', '✅ อัปโหลดไฟล์สำเร็จ');
 }

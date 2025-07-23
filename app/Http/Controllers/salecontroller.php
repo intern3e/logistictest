@@ -209,7 +209,7 @@ public function fetchFormType(Request $request)
             $originalName = $file->getClientOriginalName();
             $filename = $so_detail_id. '.pdf';
 
-            $file->storeAs('public/po_documents', $filename);
+            $file->storeAs('public/storage/po_documents', $filename);
             $bill->POdocument = $filename;
         }
 
