@@ -13,8 +13,11 @@ class SheetController extends Controller
 
         try {
             $response = Http::withHeaders([
-                'Content-Type' => 'application/json',
-            ])->post($googleScriptURL, $request->all());
+                    'Content-Type' => 'application/json',
+                ])
+                ->timeout(30) // ⏱️ timeout ทั้งหมด 30 วินาที
+                ->connectTimeout(10) // ⏱️ timeout การเชื่อมต่อ 10 วินาที
+                ->post($googleScriptURL, $request->all());
 
             return response()->json([
                 'status' => 'success',
@@ -23,7 +26,7 @@ class SheetController extends Controller
         } catch (\Exception $e) {
             return response()->json([
                 'status' => 'error',
-                'message' => $e->getMessage()
+                'message' => '❌ ล้มเหลว: ' . $e->getMessage()
             ], 500);
         }
     }
