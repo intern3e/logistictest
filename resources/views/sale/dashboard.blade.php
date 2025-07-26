@@ -68,7 +68,7 @@
   checkForAlerts();
 
   // เรียกซ้ำทุก 1 วิ
-  setInterval(checkForAlerts, 1000);
+  setInterval(checkForAlerts, 180000);
 </script>
 
 

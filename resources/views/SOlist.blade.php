@@ -725,8 +725,8 @@ async function checkForAccountAlerts() {
 // เรียกตอนโหลดหน้า
 checkForAccountAlerts();
 
-// หรือให้เช็คซ้ำทุก 30 วินาที
-setInterval(checkForAccountAlerts, 1000);
+
+setInterval(checkForAccountAlerts, 180000);
 
     </script>
 
