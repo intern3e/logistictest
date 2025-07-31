@@ -238,7 +238,7 @@ function fetchFormType() {
     <input type="text" id="customer_address" name="customer_address" style="width: 100%; padding: 10px; font-size: 14px; border-radius: 6px; border: 1px solid #ccc; height: 30px"  readonly required >
     </div>
     
-        <label>เลือก ที่อยู่จัดส่ง(ติจูด ลองจิจูด) :</label>
+        <label>เลือก ที่อยู่จัดส่ง (ติจูด ลองจิจูด) :</label>
         <div style="display: flex; justify-content: space-between; width: 100%;" >
             <input type="text" id="customer_la_long" name="customer_la_long">
         </div>

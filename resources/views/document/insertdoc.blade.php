@@ -503,13 +503,13 @@ select#cartype option:checked {
     </div>
 
 
-        <label>ละติจูด ลองจิจูด :</label>
+        <label>เลือก ที่อยู่จัดส่ง (ติจูด ลองจิจูด) :</label>
         <div style="display: flex; justify-content: space-between; width: 100%;" >
             <input type="text" id="com_la_long" name="com_la_long">
         </div>
           <button type="button" class="btn-custom" onclick="openGoogleMaps()">Google Maps</button>
 
-          <label for="additional_notes" style="display: block; margin-bottom: 4px; margin-top: 10px;"> รายละเอียดเพิ่มเติม : *จำเป็น</label>
+          <label for="additional_notes" style="display: block; margin-bottom: 4px; margin-top: 10px;">รายละเอียดเพิ่มเติมเกี่ยวกับการจัดส่ง :*จำเป็น</label>
             <textarea id="notes" name="notes" rows="2" style="font-size: 14px; padding: 6px; height: 40px; width: 100%;"></textarea>
 
         <div class="mb-3">
