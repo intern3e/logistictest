@@ -292,6 +292,7 @@
     <div class="header">
         <h2>ระบบตรวจเช็คเอกสาร</h2>
         <div class="header-buttons">
+          <a href="Sotest" style="background-color: #0077ff; color: white; padding: 6px 8px; border-radius: 5px; text-decoration: none;">ข้อมูลจัดส่ง</a>
             <a href="http://server_update:8000/solist" button  type="submit" class="btn btn-danger">🚪 หน้าหลัก</a>
         </div>
     </div>
