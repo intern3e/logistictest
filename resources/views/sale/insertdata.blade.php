@@ -299,13 +299,21 @@ function fetchFormType() {
             <tbody id="detail"></tbody>
         </table>
         </div>
-        
         <div style="display: flex; justify-content: center; margin-top: 20px;">
             <button type="button" id="submitBill" class="btn btn-success" 
             style="font-size: 18px; padding: 15px 30px; width: 200px; height: 50px;">
                 บันทึก
             </button>
         </div>
+<script>
+  document.getElementById('submitBill').addEventListener('click', function () {
+    const btn = this;
+    btn.disabled = true; // ป้องกันการกดซ้ำ
+    btn.classList.remove('btn-success');
+    btn.classList.add('btn-danger');
+    btn.innerText = 'กำลังโหลด...';
+  });
+</script>
     </form>
             <script>
                 function fetchContactSo() {
@@ -348,7 +356,6 @@ document.getElementById('submitBill').addEventListener('click', async function (
     }
 
     try {
-        // 🔎 ตรวจสอบ billid ซ้ำ
         let checkResponse = await fetch('{{ route("check.billid") }}', {
             method: 'POST',
             headers: {
@@ -389,7 +396,6 @@ document.getElementById('submitBill').addEventListener('click', async function (
             formData.append(`status[${index}]`, 1); // เลือกทั้งหมด
         });
 
-        // ส่งข้อมูลไปยัง Laravel
         let response = await fetch('{{ route("insert.post") }}', {
             method: 'POST',
             body: formData,
