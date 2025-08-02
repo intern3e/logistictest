@@ -407,7 +407,7 @@ th {
                 </thead>
                 <tbody id="table-body">
             @foreach($bill as $item)
-                @if(($item->statusdeli == 1 &&  $item->statuspdf == 2) || $item->statuspdf == 6 )
+                @if(($item->statusdeli == 1 &&  $item->statuspdf == 2) || $item->statuspdf == 6  )
                     <tr @if($item->statuspdf == 6) style="background-color: #ffe5e5;" @endif>
                         <td>
                             <input type="checkbox" class="form-control1" name="status[]" data-so-detail-id="{{ $item->so_detail_id }}">

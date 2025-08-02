@@ -144,7 +144,7 @@
                         {{ $item->customer_name }}
                     </td>
                     <td>{{ \Carbon\Carbon::parse($item->date_of_dali)->format('d/m/Y') }}</td> 
-                    <td>{{ $item->emp_name }}</td> 
+                    <td>{{ $item->sale_name }}</td> 
                     <td>{{ $item->billtype }}</td>
                     <td>{{ \Carbon\Carbon::parse($item->time)->format('H:i d/m/Y ') }}</td>
                     <td>{{ $item->formtype }}</td>
