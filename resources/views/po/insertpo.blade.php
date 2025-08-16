@@ -256,9 +256,6 @@ if (response.ok) {
                 }
 
     </script>
-
-  
-
 <script>
 document.getElementById("poSearchForm").addEventListener("submit", async function(event) {
     event.preventDefault();
@@ -308,7 +305,7 @@ document.getElementById("poSearchForm").addEventListener("submit", async functio
             let row = `
                 <tr>
                     <td><input type="text" class="form-control1" name="item_id[]" value="${itemId}" readonly></td>
-                    <td><input type="text" class="form-control1" name="item_name[]" value="${item.GoodName}" readonly></td>
+                    <td><input type="text" class="form-control1" name="item_name[]" value="${(item.GoodName || '').replace(/"/g, '&quot;').trim()}" readonly></td>
                     <td><input type="number" class="form-control1 item_quantity" name="item_quantity[]" value="${parseFloat(item.GoodQty2).toFixed(2)}" readonly></td>
                     <td><input type="number" class="form-control1 item_unit_price" name="item_unit_price[]" value="${parseFloat(item.GoodPrice2).toFixed(2)}" readonly></td>
                 </tr>

@@ -148,7 +148,7 @@ public function fetchFormType(Request $request)
             'status' => 'nullable|array',
             'statusdeli' => 'nullable',
             'statuspdf' => 'nullable|array',
-            'POdocument' => 'nullable|file|mimes:pdf|max:10240',
+            'POdocument' => 'nullable|file|mimes:pdf|max:20480',
             'formtype' => ['required', 'string', 'max:255', 'not_in:ไม่มีข้อมูล'],
             'formtype.not_in' => 'กรุณาเลือกประเภทฟอร์มให้ถูกต้อง',
         ]);
