@@ -22,3 +22,12 @@ Route::middleware('auth:sanctum')->get('/user', function (Request $request) {
 Route::get('/idbilldelivery', [api::class, 'apibilldeli']);
 Route::post('/callstatus/bulk', [CallbackController::class, 'callstatusBulk']);
 Route::post('/callstatussuccess/bulk', [CallbackController::class, 'callstatussuccess']);
+
+
+
+
+//ฝาก FLUKE
+use App\Http\Controllers\Api\FlukeApiController;
+
+Route::get('/fluke', [FlukeApiController::class, 'index']);
+Route::get('/fluke/{iditem}', [FlukeApiController::class, 'show']);

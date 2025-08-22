@@ -175,6 +175,6 @@ Route::get('/dashboardcheckbillsolve', [checkbillController::class, 'dashboardso
 Route::get('/dashboardcheckbill', [checkbillController::class, 'dashboard']);
 Route::post('/updatestatusdeli', [checkbillController::class, 'updatestatusdeli'])->name('updatestatusdeli');
 
-
-
+use App\Http\Controllers\CarserviceController;
+Route::get('/dashboardcarservice', [CarserviceController::class, 'dashboardcarsevice']);
 

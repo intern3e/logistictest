@@ -169,6 +169,7 @@
     <h2>ตารางงาน</h2>
     <div class="buttons">
       <span>👤 ผู้ใช้: {{ session('emp_name', 'Guest') }}</span>
+      <a href="dashboardcarservice" class="btn btn-danger">เช็คระยะ</a>
       <a href="Sotest" class="btn btn-danger">🚪 ข้อมูลจัดส่ง</a>
     </div>
   </div>
