@@ -6,6 +6,13 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Http\Request;
 use setasign\Fpdi\TcpdfFpdi;
+use App\Models\Bill;
+use PDF;
+use Endroid\QrCode\QrCode;
+use Endroid\QrCode\Writer\PngWriter;
+use Endroid\QrCode\Encoding\Encoding;
+use Endroid\QrCode\ErrorCorrectionLevel;
+use Endroid\QrCode\RoundBlockSizeMode;
 
 class PoDocumentController extends Controller
 {
@@ -34,20 +41,20 @@ class PoDocumentController extends Controller
     
             // วนลูปทุกหน้าเพื่อเพิ่ม SO ID
             for ($pageNo = 1; $pageNo <= $pageCount; $pageNo++) {
-    $templateId = $pdf->importPage($pageNo);
-    $size = $pdf->getTemplateSize($templateId);
+            $templateId = $pdf->importPage($pageNo);
+            $size = $pdf->getTemplateSize($templateId);
 
-    $pdf->SetMargins(0, 0, 0);
-    $pdf->AddPage($size['orientation'], [$size['width'], $size['height']]);
-    $pdf->useTemplate($templateId);
+            $pdf->SetMargins(0, 0, 0);
+            $pdf->AddPage($size['orientation'], [$size['width'], $size['height']]);
+            $pdf->useTemplate($templateId);
 
-    $pdf->SetFont('Helvetica', 'I', 8);
-    $pdf->SetTextColor(130,130, 130);
+            $pdf->SetFont('Helvetica', 'I', 8);
+            $pdf->SetTextColor(130,130, 130);
 
-    // คำนวณตำแหน่งใหม่ (หน่วย pt)
-    $x = 175;               // ใกล้ขอบขวา (A4 กว้าง 210 mm)
-    $y = 4;                 // อยู่ห่างจากขอบบน 2 mm
-    $pdf->Text($x, $y, "{$so_detail_id}");
+            // คำนวณตำแหน่งใหม่ (หน่วย pt)
+            $x = 175;               // ใกล้ขอบขวา (A4 กว้าง 210 mm)
+            $y = 4;                 // อยู่ห่างจากขอบบน 2 mm
+            $pdf->Text($x, $y, "{$so_detail_id}");
 }
 
             $outputPath = storage_path("app/public/po_documents/{$POdocument}");
@@ -248,4 +255,251 @@ public function mergeAndOverwrite(Request $request)
     }
 
 }
+// public function printNotes($so_detail_id)
+// {
+//     $item = Bill::findOrFail($so_detail_id);
+
+//     // --- ฝังฟอนต์ (เหมือนเดิม) ---
+//     $fontNormal     = base64_encode(file_get_contents(storage_path('fonts/THSarabun.ttf')));
+//     $fontBold       = base64_encode(file_get_contents(storage_path('fonts/THSarabun Bold.ttf')));
+//     $fontItalic     = base64_encode(file_get_contents(storage_path('fonts/THSarabun Italic.ttf')));
+//     $fontBoldItalic = base64_encode(file_get_contents(storage_path('fonts/THSarabun BoldItalic.ttf')));
+
+//     // --- ลิงก์ Google Maps จากพิกัด ---
+//     $coords  = trim((string)($item->customer_la_long ?? '')); // เช่น "13.713478269263469, 100.47978046740158"
+//     $mapLink = 'https://www.google.com/maps?q=' . rawurlencode($coords);
+
+//     // --- สร้าง QR ด้วย API v6: ส่งพารามิเตอร์ผ่าน constructor ---
+//     // ต้องเปิด extension=gd ใน php.ini แล้ว restart Apache
+//     $qrCode = new QrCode(
+//         data: $mapLink,
+//         encoding: new Encoding('UTF-8'),
+//         errorCorrectionLevel: ErrorCorrectionLevel::High,
+//         size: 300,
+//         margin: 2,
+//         roundBlockSizeMode: RoundBlockSizeMode::Margin
+//     );
+
+//     $writer    = new PngWriter();
+//     $result    = $writer->write($qrCode);
+//     $qrDataUri = $result->getDataUri(); // data:image/png;base64,...
+
+//     // --- HTML สำหรับ Dompdf ---
+//     $html = '
+//     <html>
+//     <head>
+//         <meta charset="utf-8">
+//         <style>
+//             @page { margin: 0; }
+//             @font-face { font-family:"THSarabun"; src:url(data:font/truetype;charset=utf-8;base64,' . $fontNormal . ') format("truetype"); font-weight:normal; font-style:normal; }
+//             @font-face { font-family:"THSarabun"; src:url(data:font/truetype;charset=utf-8;base64,' . $fontBold . ') format("truetype"); font-weight:bold;   font-style:normal; }
+//             @font-face { font-family:"THSarabun"; src:url(data:font/truetype;charset=utf-8;base64,' . $fontItalic . ') format("truetype"); font-weight:normal; font-style:italic; }
+//             @font-face { font-family:"THSarabun"; src:url(data:font/truetype;charset=utf-8;base64,' . $fontBoldItalic . ') format("truetype"); font-weight:bold;   font-style:italic; }
+
+//             body{ font-family:"THSarabun", sans-serif; font-size:6pt; line-height:1.2; margin:0; padding:0; position:relative; box-sizing:border-box; }
+//             .top-center{ position:absolute; top:2mm; left:80%; transform:translateX(-50%); font-weight:bold; white-space:nowrap; }
+//             .content{ width:43mm; margin:8mm auto 18mm auto; page-break-inside: avoid; }
+//             table.kv{ width:100%; border-collapse:collapse; margin:0 0 2mm 0; }
+//             table.kv th{ text-align:left; font-weight:bold; padding:0.4mm 1mm 0.4mm 0; white-space:nowrap; vertical-align:top; width:15mm; }
+//             table.kv td{ padding:0.4mm 0; word-break:break-word; overflow-wrap:anywhere; }
+//             .section{ margin-top:1.2mm; }
+//             .section .title{ font-weight:bold; padding-top:0.6mm; margin-bottom:0.6mm; border-top:0.25pt solid #999; }
+//             .section .body{ word-break:break-word; overflow-wrap:anywhere; }
+//             .footer-qr{ position:absolute; left:50%; transform:translateX(-50%); bottom:3mm; width:43mm; text-align:center; }
+//             .footer-qr img{ width:48px; height:48px; display:inline-block; }
+//             .footer-qr p{ margin-top:1mm; font-size:7.5pt; }
+//         </style>
+//     </head>
+//     <body>
+//         <div class="top-center">' . htmlspecialchars((string)$item->so_detail_id) . '</div>
+//         <div class="content">
+//             <table class="kv">
+//                 <tr><th>บิลที่:</th><td>' . htmlspecialchars((string)$item->billid) . '</td></tr>
+//                 <tr><th>บริษัท:</th><td>' . htmlspecialchars((string)$item->customer_name) . '</td></tr>
+//                 <tr><th>เบอร์:</th><td>' . htmlspecialchars((string)$item->customer_tel) . '</td></tr>
+//                 <tr><th>ผู้ขาย:</th><td>' . htmlspecialchars((string)$item->sale_name) . '</td></tr>
+//             </table>
+//             <div class="section">
+//                 <div class="title">รายละเอียด</div>
+//                 <div class="body">' . nl2br(htmlspecialchars((string)$item->notes)) . '</div>
+//             </div>
+//             <div class="section">
+//                 <div class="title">ที่อยู่</div>
+//                 <div class="body">' . nl2br(htmlspecialchars((string)$item->customer_address)) . '</div>
+//             </div>
+//         </div>
+//         <div class="footer-qr">
+//             <img src="' . $qrDataUri . '" alt="QR Code">
+//             <p>สแกนเพื่อเปิดแผนที่</p>
+//         </div>
+//     </body>
+//     </html>';
+
+//     $pdf = PDF::loadHTML($html)->setPaper([0, 0, 147.4, 209.8], 'portrait'); // A8
+//     return $pdf->stream("notes-{$so_detail_id}.pdf");
+// }
+public function printNotes($so_detail_id)
+{
+    $item = Bill::findOrFail($so_detail_id);
+
+    // --- ฝังฟอนต์ (TH Sarabun) ---
+    $fontNormal     = base64_encode(file_get_contents(storage_path('fonts/THSarabun.ttf')));
+    $fontBold       = base64_encode(file_get_contents(storage_path('fonts/THSarabun Bold.ttf')));
+    $fontItalic     = base64_encode(file_get_contents(storage_path('fonts/THSarabun Italic.ttf')));
+    $fontBoldItalic = base64_encode(file_get_contents(storage_path('fonts/THSarabun BoldItalic.ttf')));
+
+    // --- ลิงก์ Google Maps จากพิกัด ---
+    $coords  = trim((string)($item->customer_la_long ?? '')); 
+    $mapLink = 'https://www.google.com/maps?q=' . rawurlencode($coords);
+
+    // --- สร้าง QR Code ---
+    $qrCode = new QrCode(
+        data: $mapLink,
+        encoding: new Encoding('UTF-8'),
+        errorCorrectionLevel: ErrorCorrectionLevel::High,
+        size: 200,
+        margin: 2,
+        roundBlockSizeMode: RoundBlockSizeMode::Margin
+    );
+    $writer    = new PngWriter();
+    $result    = $writer->write($qrCode);
+    $qrDataUri = $result->getDataUri();
+
+    // --- HTML สำหรับ A4 ---
+    $html = '
+    <html>
+    <head>
+        <meta charset="utf-8">
+        <style>
+            @page { margin: 0mm 15mm 0mm 15mm; }
+
+            @font-face { font-family:"THSarabun"; src:url(data:font/truetype;charset=utf-8;base64,' . $fontNormal . ') format("truetype"); font-weight:normal; font-style:normal; }
+            @font-face { font-family:"THSarabun"; src:url(data:font/truetype;charset=utf-8;base64,' . $fontBold . ') format("truetype"); font-weight:bold; font-style:normal; }
+            @font-face { font-family:"THSarabun"; src:url(data:font/truetype;charset=utf-8;base64,' . $fontItalic . ') format("truetype"); font-weight:normal; font-style:italic; }
+            @font-face { font-family:"THSarabun"; src:url(data:font/truetype;charset=utf-8;base64,' . $fontBoldItalic . ') format("truetype"); font-weight:bold; font-style:italic; }
+
+            body { 
+                font-family:"THSarabun", sans-serif; 
+                font-size:25pt;     /* ✅ เปลี่ยนเป็น 25 */
+                line-height:1.4; 
+                margin:0; 
+                padding:0; 
+                color:#000; 
+            }
+
+            /* มุมขวาบน */
+            .top-right {
+                font-size: 16pt;    /* ✅ ปรับตาม */
+                position: absolute;
+                top: 0;
+                right: -10mm;
+                font-weight: normal;
+                font-style: italic;
+                color: #918f8f;
+            }
+
+            /* Content */
+            .content {
+                width: 100%;
+                margin-top: 15mm;
+            }
+            table.kv {
+                border-collapse: collapse;
+                width: 100%;
+            }
+            table.kv td {
+                padding: 2px 4px;
+                vertical-align: top;
+                font-size: 25pt;   /* ✅ ปรับตาม */
+                word-wrap: break-word;
+                word-break: break-all;
+            }
+            table.kv td.label {
+                width: 25mm;
+                font-weight: bold;
+                white-space: nowrap;
+                padding-right: 5mm;
+            }
+
+            /* Section */
+            .section { margin-top: 10mm; }
+            .section .title {
+                font-weight: bold;
+                border-bottom: 2px solid #000;
+                margin-bottom: 4mm;
+                padding-bottom: 2mm;
+                font-size: 25pt;   /* ✅ ปรับตาม */
+            }
+            .section .body {
+                font-size: 25pt;   /* ✅ ปรับตาม */
+                text-align: left;
+                word-wrap: break-word;
+                word-break: break-word;
+                white-space: pre-wrap;
+            }
+
+            .footer-qr {
+                margin-top: 10mm;      
+                text-align: center;
+                border-top: 2px solid #000;
+                padding-top: 0mm;   
+            }
+
+            .footer-qr img {
+                display: block;
+                margin: 0 auto;
+                width: 180px;   
+                height: 180px;  
+            }
+
+            .footer-qr p {
+                margin-top: 4mm;
+                font-size: 25pt;   /* ✅ ปรับตาม */
+                font-weight: bold;
+            }
+            .address {
+                 width: 25mm;
+                font-weight: bold;
+                white-space: nowrap;
+                padding-right: 5mm;
+            }
+        </style>
+    </head>
+    <body>
+        <!-- มุมขวาบน -->
+        <div class="top-right">' . htmlspecialchars((string)$item->so_detail_id) . '</div>
+
+        <!-- Content -->
+        <div class="content">
+            <table class="kv">
+                <tr><td class="label">เลขที่บิล :</td><td>' . htmlspecialchars((string)$item->billid) . '</td></tr>
+                <tr><td class="label">บริษัท :</td><td>' . htmlspecialchars((string)$item->customer_name) . '</td></tr>
+                <tr><td class="label">ที่อยู่ :</td><td>' . nl2br(htmlspecialchars((string)$item->customer_address)) . '</td></tr>
+                <tr><td class="label">ชื่อผู้ติดต่อ :</td><td>' . htmlspecialchars((string)$item->contactso) . '</td></tr>
+                <tr><td class="label">เบอร์ติดต่อ :</td><td>' . htmlspecialchars((string)$item->customer_tel) . '</td></tr>
+            </table>
+
+            <div class="section">
+                <div class="title">รายละเอียดเพิ่มเติม</div>
+                <div class="body">' . nl2br(htmlspecialchars((string)$item->notes)) . '</div>
+            </div>
+        </div>
+
+        <!-- Footer -->
+        <div class="footer-qr">
+             <p class="address">ที่อยู่จัดส่ง</p>
+            <img src="' . $qrDataUri . '" alt="QR Code">
+            <p>สแกนเพื่อเปิดแผนที่</p>
+        </div>
+    </body>
+    </html>';
+
+    // ✅ ตั้งค่า A4 แนวตั้ง
+    $pdf = PDF::loadHTML($html)->setPaper('A4', 'portrait');
+
+    return $pdf->stream("notes-{$so_detail_id}.pdf");
+}
+
+
+
 }

@@ -297,5 +297,15 @@ return [
          */
         'enable_html5_parser' => true,
     ],
+'font_dir'   => storage_path('fonts/'),
+'font_cache' => storage_path('fonts/'),
 
+'font_family' => [
+    'sarabun' => [
+        'normal'      => storage_path('fonts/THSarabunNew.ttf'),
+        'bold'        => storage_path('fonts/THSarabunNew-Bold.ttf'),
+        'italic'      => storage_path('fonts/THSarabunNew-Italic.ttf'),
+        'bold_italic' => storage_path('fonts/THSarabunNew-BoldItalic.ttf'),
+    ],
+],
 ];

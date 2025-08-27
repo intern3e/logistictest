@@ -504,6 +504,14 @@
 </script>        
                                         
                         @endif
+                            @if($item->notes != null)
+                                <a href="{{ route('print.notes', $item->so_detail_id) }}" target="_blank">
+                                    <button id="printnotes" style="background-color: #2980b9; color: white;">
+                                        พิมพ์ Notes
+                                    </button>
+                                </a>
+                            @endif
+                        </td>
                         <td>{{ $item->billid }}</td>
                         </td>
                             

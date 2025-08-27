@@ -46,6 +46,11 @@ Route::get('/add-so-detail-id-to-bill/{so_detail_id}/{filename}',
     [PoDocumentController::class, 'addIdToDocument']);
 Route::get('/add-so-detail-id-to-billissue/{so_detail_id}/{bill_issue_no}', 
     [PoDocumentController::class, 'addIdToissueDocument']);
+Route::post('/merge-pdf', [PoDocumentController::class, 'mergeAndOverwrite'])->name('merge.pdf');
+Route::get('/print-notes/{id}', [PoDocumentController::class, 'printNotes'])
+    ->name('print.notes');
+
+
 
 
 use App\Http\Controllers\admincontroller;
@@ -165,7 +170,6 @@ Route::get('/Sotest', [Sotestcontroller::class, 'dashboard']);
 use App\Http\Controllers\SheetController;
 Route::post('/send-to-sheet', [SheetController::class, 'send']);
 
-Route::post('/merge-pdf', [PoDocumentController::class, 'mergeAndOverwrite'])->name('merge.pdf');
 
 use App\Http\Controllers\WorkScheduleController;
 Route::get('/WorkSchedule', [WorkScheduleController::class, 'index']);
