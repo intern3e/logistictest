@@ -338,6 +338,138 @@ public function mergeAndOverwrite(Request $request)
 //     $pdf = PDF::loadHTML($html)->setPaper([0, 0, 147.4, 209.8], 'portrait'); // A8
 //     return $pdf->stream("notes-{$so_detail_id}.pdf");
 // }
+// public function printNotes($so_detail_id)
+// {
+//     $item = Bill::findOrFail($so_detail_id);
+
+//     // --- ฝังฟอนต์ (TH Sarabun) ---
+//     $fontNormal     = base64_encode(file_get_contents(storage_path('fonts/THSarabun.ttf')));
+//     $fontBold       = base64_encode(file_get_contents(storage_path('fonts/THSarabun Bold.ttf')));
+//     $fontItalic     = base64_encode(file_get_contents(storage_path('fonts/THSarabun Italic.ttf')));
+//     $fontBoldItalic = base64_encode(file_get_contents(storage_path('fonts/THSarabun BoldItalic.ttf')));
+
+//     // --- ลิงก์ Google Maps จากพิกัด ---
+//     $coords  = trim((string)($item->customer_la_long ?? '')); 
+//     $mapLink = 'https://www.google.com/maps?q=' . rawurlencode($coords);
+
+//     // --- สร้าง QR Code ---
+//     $qrCode = new QrCode(
+//         data: $mapLink,
+//         encoding: new Encoding('UTF-8'),
+//         errorCorrectionLevel: ErrorCorrectionLevel::High,
+//         size: 220,
+//         margin: 2
+//     );
+//     $writer    = new PngWriter();
+//     $result    = $writer->write($qrCode);
+//     $qrDataUri = $result->getDataUri();
+
+    // --- HTML ---
+//     $html = '
+//     <html>
+//     <head>
+//         <meta charset="utf-8">
+//         <style>
+//             @page { margin: 10mm; }
+
+//             @font-face { font-family:"THSarabun"; src:url(data:font/truetype;base64,' . $fontNormal . ') format("truetype"); }
+//             @font-face { font-family:"THSarabun"; src:url(data:font/truetype;base64,' . $fontBold . ') format("truetype"); font-weight:bold; }
+
+//             body { font-family:"THSarabun", sans-serif; font-size:18pt; margin:0; padding:0; color:#000; }
+
+//             h1 { font-size:22pt; margin:0; }
+//             .subtitle { font-size:12pt; color:#000000; }
+//             .header { text-align:left; margin-bottom:5mm; }
+//             .bill-box {
+//                 border: 2px solid #000;
+//                 text-align:center;
+//                 padding:10px;
+//                 font-size:24pt;
+//                 margin:10px 0;
+//                 //  background:#f2f2f2;  /* สีเทาอ่อน */
+//             }
+//             .bill-number { font-size:28pt; font-weight:bold; letter-spacing:2px; }
+            
+//             table.info { width:100%; border-collapse:collapse; margin-top:5mm; }
+//             table.info td { padding:3px; font-size:20pt; vertical-align:top; }
+//             table.info td.label { width:25mm; font-weight:bold; }
+
+//             .section {
+//                 border: 2px solid #000;
+//                 padding:5mm;
+//                 margin-top:3mm;   /* ลดลง หรือใส่ 0 ก็ได้ */
+//                 // background:#f2f2f2;  /* สีเทาอ่อน */
+//             }
+
+//             .section-title {
+//                 font-weight:bold;
+//                 font-size:20pt;
+//                 margin:-20px 0 4px 0;   
+//             }
+//             .section p { margin:2px 0; font-size:16pt; }
+
+//             .footer-qr {
+//                 margin-top:15mm;
+//                 text-align:center;
+//                 border-top:2px solid #000;
+//                 padding-top:15mm;
+//             }
+//             .footer-qr img { width:200px; height:200px; }
+//             .footer-qr p { margin:5px 0; font-size:14pt; }
+            
+//             /* มุมขวาบน */ .top-right { font-size: 16pt; /* ✅ ปรับตาม */ position: absolute; top: 0; right: 2mm; font-weight: normal; font-style: italic; color: #918f8f; }
+//         .line {
+//             border: 1px solid black;
+//             padding: 15px;
+//             position: absolute; 
+//             top: -1.5%;    /* ชิดบน */
+//             left: -2.5%;   /* ชิดซ้าย */
+//             right: -2.5%;  /* ชิดขวา */
+//             bottom: -1.5%; /* ชิดล่าง */
+//             box-sizing: border-box; /* กัน padding ดันกรอบเกิน */
+//         }
+                
+//         </style>
+//     </head>
+//     <body>
+//        <div class="line">
+//     <div class="top-right">' . htmlspecialchars((string)$item->so_detail_id) . '</div>
+//     <div class="header">
+//         <h1 style="font-size:40px;">ข้อมูลการจัดส่ง</h1>
+//         <div class="subtitle">Delivery Note</div>
+//         <div class="subtitle">' . htmlspecialchars((string)$item->time) . '</div>
+//     </div>
+
+//     <div class="bill-box">
+//         <div>เลขที่บิล</div>
+//         <div class="bill-number">' . htmlspecialchars((string)$item->billid) . '</div>
+//     </div>
+
+//     <table class="info">
+//         <tr><td class="label">บริษัท :</td><td>' . htmlspecialchars((string)$item->customer_name) . '</td></tr>
+//         <tr><td class="label">ที่อยู่ :</td><td>' . nl2br(htmlspecialchars((string)$item->customer_address)) . '</td></tr>
+//         <tr><td class="label">ชื่อผู้ติดต่อ :</td><td>' . htmlspecialchars((string)$item->contactso) . '</td></tr>
+//         <tr><td class="label">โทรศัพท์ :</td><td>' . htmlspecialchars((string)$item->customer_tel) . '</td></tr>
+//     </table>
+
+//     <div class="section">
+//         <div class="section-title">รายละเอียด :</div>
+//         <div class="">' . nl2br(htmlspecialchars((string)$item->notes)) . '</div>
+//     </div>
+
+//     <div class="footer-qr">
+//         <img src="' . $qrDataUri . '" alt="QR Code">
+//         <h1 style="font-size:25px;">สแกนเพื่อเปิดแผนที่</h1>
+//     </div>
+// </div>
+
+//     </body>
+//     </html>';
+
+//     $pdf = PDF::loadHTML($html)->setPaper('A4', 'portrait');
+//     return $pdf->stream("notes-{$so_detail_id}.pdf");
+// }
+
 public function printNotes($so_detail_id)
 {
     $item = Bill::findOrFail($so_detail_id);
@@ -388,20 +520,12 @@ public function printNotes($so_detail_id)
             }
 
             /* มุมขวาบน */
-            .top-right {
-                font-size: 16pt;    /* ✅ ปรับตาม */
-                position: absolute;
-                top: 0;
-                right: -10mm;
-                font-weight: normal;
-                font-style: italic;
-                color: #918f8f;
-            }
+
 
             /* Content */
             .content {
                 width: 100%;
-                margin-top: 15mm;
+                margin-top: -5mm;
             }
             table.kv {
                 border-collapse: collapse;
@@ -410,7 +534,7 @@ public function printNotes($so_detail_id)
             table.kv td {
                 padding: 2px 4px;
                 vertical-align: top;
-                font-size: 25pt;   /* ✅ ปรับตาม */
+                font-size: 20pt;   /* ✅ ปรับตาม */
                 word-wrap: break-word;
                 word-break: break-all;
             }
@@ -430,13 +554,13 @@ public function printNotes($so_detail_id)
                 padding-bottom: 2mm;
                 font-size: 25pt;   /* ✅ ปรับตาม */
             }
-            .section .body {
-                font-size: 25pt;   /* ✅ ปรับตาม */
-                text-align: left;
-                word-wrap: break-word;
-                word-break: break-word;
-                white-space: pre-wrap;
-            }
+.section .body {
+    font-size: 20pt;
+    text-align: left;
+    white-space: normal;      /* ✅ ปล่อยให้ห่อบรรทัดอัตโนมัติ */
+    word-wrap: break-word;    /* ✅ บังคับตัดคำ */
+    word-break: break-word;   /* ✅ กันข้อความยาวเกิน */
+}
 
             .footer-qr {
                 margin-top: 10mm;      
@@ -463,12 +587,33 @@ public function printNotes($so_detail_id)
                 white-space: nowrap;
                 padding-right: 5mm;
             }
+                h1 { font-size:22pt; margin:0; }
+             h1 { font-size:22pt; margin:0; }
+            .subtitle { font-size:12pt; color:#000000; }
+            .header { text-align:left; margin-bottom:5mm; }
+                        /* มุมขวาบน */ .top-right { font-size: 16pt; /* ✅ ปรับตาม */ position: absolute; top: 2%; right: 4mm; font-weight: normal; font-style: italic; color: #918f8f; }
+        .line {
+            border: 1px solid black;
+            padding: 15px;
+            position: absolute; 
+            top: 2%;    /* ชิดบน */
+            left: -5%;   /* ชิดซ้าย */
+            right: -5%;  /* ชิดขวา */
+            bottom: 2%; /* ชิดล่าง */
+            box-sizing: border-box; /* กัน padding ดันกรอบเกิน */
+        }
+                
         </style>
     </head>
     <body>
+          <div class="line">
         <!-- มุมขวาบน -->
         <div class="top-right">' . htmlspecialchars((string)$item->so_detail_id) . '</div>
-
+         <div class="header">
+        <h1 style="font-size:40px;">ข้อมูลการจัดส่ง</h1>
+        <div class="subtitle">Delivery Note</div>
+         <div class="subtitle">' . htmlspecialchars((string)$item->time) . '</div>
+            </div>
         <!-- Content -->
         <div class="content">
             <table class="kv">
@@ -480,17 +625,18 @@ public function printNotes($so_detail_id)
             </table>
 
             <div class="section">
-                <div class="title">รายละเอียดเพิ่มเติม</div>
+                <div class="title">รายละเอียดเพิ่มเติม :</div>
                 <div class="body">' . nl2br(htmlspecialchars((string)$item->notes)) . '</div>
             </div>
         </div>
 
         <!-- Footer -->
         <div class="footer-qr">
-             <p class="address">ที่อยู่จัดส่ง</p>
+             <p class="address">ที่อยู่จัดส่ง :</p>
             <img src="' . $qrDataUri . '" alt="QR Code">
             <p>สแกนเพื่อเปิดแผนที่</p>
         </div>
+             </div>
     </body>
     </html>';
 
@@ -499,7 +645,5 @@ public function printNotes($so_detail_id)
 
     return $pdf->stream("notes-{$so_detail_id}.pdf");
 }
-
-
 
 }
