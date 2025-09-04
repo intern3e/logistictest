@@ -112,7 +112,7 @@ class PoDocumentController extends Controller
                 // เพิ่ม SO ID ที่หัวกระดาษทุกหน้า
                 $pdf->SetFont('Helvetica', 'I', 8);
                 $pdf->SetTextColor(0,0,0); // สีดำ
-                $pdf->SetXY(155, 4);
+                $pdf->SetXY(155, 12);
                 $pdf->Cell(50, 10, "{$so_detail_id}", 0, 0, 'R');
             }
 
