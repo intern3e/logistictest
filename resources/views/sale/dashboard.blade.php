@@ -137,7 +137,13 @@
                     @endif
                     </td>
 
-                    <td>{{ $item->so_id }}</td>
+                    <td>
+                    <a href="http://server-3e/3e/store_report.php?so={{ $item->so_id }}&po=&search=Search&rowPerPage=25&currentPage=0" 
+                        target="_blank" 
+                        class="text-blue-600 hover:underline">
+                        {{ $item->so_id }}
+                    </a>
+                    </td>
                     <td>{{ $item->ponum }}</td>
                     <td style="font-size: 10px;">{{ $item->so_detail_id }}</td>
                     <td class="wrap-text" style="text-align: left; white-space: normal; word-wrap: break-word;">
