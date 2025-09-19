@@ -136,14 +136,14 @@
                         {{ $item->billid }}
                     @endif
                     </td>
-
                     <td>
-                    <a href="http://server-3e/3e/store_report.php?so={{ $item->so_id }}&po=&search=Search&rowPerPage=25&currentPage=0" 
-                        target="_blank" 
-                        class="text-blue-600 hover:underline">
+                    <a href="#"
+                        class="text-blue-600 hover:underline"
+                        onclick="return openPopup3E('{{ $item->so_id }}');">
                         {{ $item->so_id }}
                     </a>
                     </td>
+
                     <td>{{ $item->ponum }}</td>
                     <td style="font-size: 10px;">{{ $item->so_detail_id }}</td>
                     <td class="wrap-text" style="text-align: left; white-space: normal; word-wrap: break-word;">
@@ -306,9 +306,50 @@ window.onclick = function(event) {
         }
     }
     window.onload = function() {
-// Sort the rows by 'so_detail_id' in descending order on page load
-sortTableDescByColumn(0); // Assuming 'so_detail_id' is in the first column (index 0)
+sortTableDescByColumn(0); 
 };
+</script>
+<script>
+  function openPopup3E(soId) {
+    const url = `http://server-3e/3e/store_report.php?so=${encodeURIComponent(soId)}&po=&search=Search&rowPerPage=25&currentPage=0`;
+
+    // ขนาดป๊อปอัป
+    const w = 1100, h = 500;
+    const margin = 16; // เว้นจากขอบจอ
+
+    // รองรับหลายจอ
+    const dualScreenLeft = window.screenLeft ?? window.screenX ?? 0;
+    const dualScreenTop  = window.screenTop  ?? window.screenY ?? 0;
+
+    // ขนาดหน้าต่างหลักตอนนี้
+    const width  = window.innerWidth  ?? document.documentElement.clientWidth  ?? screen.width;
+    const height = window.innerHeight ?? document.documentElement.clientHeight ?? screen.height;
+
+    // คำนวณให้ไปขวาล่าง (ลบ margin)
+    const left = Math.max(dualScreenLeft + width  - w - margin, dualScreenLeft);
+    const top  = Math.max(dualScreenTop  + height - h - margin, dualScreenTop);
+
+    const features = [
+      'toolbar=no',
+      'location=no',
+      'status=no',
+      'menubar=no',
+      'scrollbars=yes',
+      'resizable=yes',
+      `width=${w}`,
+      `height=${h}`,
+      `top=${top}`,
+      `left=${left}`,
+      'noopener=yes' // เพิ่มความปลอดภัย
+    ].join(',');
+
+    const win = window.open(url, '_blank', features);
+
+    // fallback ถ้าโดนบล็อกป๊อปอัป
+    if (!win) window.open(url, '_blank', 'noopener');
+
+    return false; // กันการนำทางของ <a href="#">
+  }
 </script>
 
     </body>
