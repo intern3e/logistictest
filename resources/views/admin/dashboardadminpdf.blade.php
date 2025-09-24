@@ -521,7 +521,7 @@
 @endphp
 
 <td>
-    <span>{{ $formatted }}</span>
+    <span id = "datenaja" name="datenaja">{{ $formatted }}</span>
     <button id="copydate" onclick="copydate('{{ $formatted }}', this)">📋 คัดลอก</button>
 </td>
 
