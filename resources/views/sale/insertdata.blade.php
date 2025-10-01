@@ -474,9 +474,20 @@ function openGoogleMaps() {
             fetchContactSo();
             document.getElementById('customer_name').value = soDetails.CustName;  
             document.getElementById('customer_address').value = 
-                [soDetails.CustAddr1, soDetails.ContDistrict, soDetails.ContAmphur, soDetails.ContProvince, soDetails.ContPostCode]
-                .filter(Boolean)
-                .join(', ');
+            [
+                soDetails.CustAddr1,
+                soDetails.ContDistrict,
+                soDetails.ContAmphur,
+                soDetails.ContProvince,
+                soDetails.ContPostCode,
+                (soDetails.ShipToAddr1 || soDetails.ShipToAddr2
+                ? "สถานที่ส่ง: " + [soDetails.ShipToAddr1, soDetails.ShipToAddr2].filter(Boolean).join(', ')
+                : null
+                )
+            ]
+            .filter(Boolean)
+            .join(', ');
+
             document.getElementById('customer_la_long').value = 
                 [soDetails.Latitude, soDetails.Longitude]
                 .filter(Boolean)
