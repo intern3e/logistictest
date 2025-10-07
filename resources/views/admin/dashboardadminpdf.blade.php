@@ -382,8 +382,9 @@
         <div class="top-section">
             <div class="button-group">
                 <button id="summitso" onclick="updateStatuspdf()">ปริ้นเอกสารSO</button>
-                <a href="dashboardadmin"><button id="printroute" style="background-color: red">ปริ้นเอกสารเส้นทางการเดินรถ</button></a>
-                <a href="history"><button>📜 ประวัติเอกสาร</button></a>
+                {{-- <a href="dashboardadmin"><button id="printroute" style="background-color: red">ปริ้นเอกสารเส้นทางการเดินรถ</button></a> --}}
+                <a href="history" ><button style="background-color: red">เปลี่ยนวันที่</button></a>
+
             </div>
 
             <div class="search-box">

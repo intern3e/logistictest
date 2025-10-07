@@ -338,7 +338,7 @@ th {
 </head>
 <body>
     <div class="header">
-        <h2>ประวัติงานส่งของ SO</h2>
+        <h2>เปลี่ยนวันที่</h2>
         <div class="header-buttons">
            <a href="http://server_update:8000/solist"><button class="btn-so">หน้าหลัก</button></a>
         </div>
@@ -354,9 +354,10 @@ th {
             
         </form> 
             <div class="button-group">
-                <button id="summitbackso" onclick="updateStatuspdfback()" style="background-color: orange;">คืนสถานะงาน</button>
+                {{-- <button id="summitbackso" onclick="updateStatuspdfback()" style="background-color: orange;">คืนสถานะงาน</button> --}}
                 <a href="adminroute">
                     <button>ตรวจสอบเอกสาร</button>
+                    <a href="dashboardadminpdf"><button>บอทปริ้นอัตโนมัติ</button></a>
                 </a>
             </div>
         
@@ -407,7 +408,7 @@ th {
                 </thead>
                 <tbody id="table-body">
             @foreach($bill as $item)
-                @if(($item->statusdeli == 1 &&  $item->statuspdf == 2) || $item->statuspdf == 6  )
+                @if(($item->statusdeli == 1 &&  $item->statuspdf == 0) || $item->statuspdf == 0  )
                     <tr @if($item->statuspdf == 6) style="background-color: #ffe5e5;" @endif>
                         <td>
                             <input type="checkbox" class="form-control1" name="status[]" data-so-detail-id="{{ $item->so_detail_id }}">

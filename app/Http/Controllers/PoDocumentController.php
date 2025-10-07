@@ -255,220 +255,7 @@ public function mergeAndOverwrite(Request $request)
     }
 
 }
-// public function printNotes($so_detail_id)
-// {
-//     $item = Bill::findOrFail($so_detail_id);
 
-//     // --- ฝังฟอนต์ (เหมือนเดิม) ---
-//     $fontNormal     = base64_encode(file_get_contents(storage_path('fonts/THSarabun.ttf')));
-//     $fontBold       = base64_encode(file_get_contents(storage_path('fonts/THSarabun Bold.ttf')));
-//     $fontItalic     = base64_encode(file_get_contents(storage_path('fonts/THSarabun Italic.ttf')));
-//     $fontBoldItalic = base64_encode(file_get_contents(storage_path('fonts/THSarabun BoldItalic.ttf')));
-
-//     // --- ลิงก์ Google Maps จากพิกัด ---
-//     $coords  = trim((string)($item->customer_la_long ?? '')); // เช่น "13.713478269263469, 100.47978046740158"
-//     $mapLink = 'https://www.google.com/maps?q=' . rawurlencode($coords);
-
-//     // --- สร้าง QR ด้วย API v6: ส่งพารามิเตอร์ผ่าน constructor ---
-//     // ต้องเปิด extension=gd ใน php.ini แล้ว restart Apache
-//     $qrCode = new QrCode(
-//         data: $mapLink,
-//         encoding: new Encoding('UTF-8'),
-//         errorCorrectionLevel: ErrorCorrectionLevel::High,
-//         size: 300,
-//         margin: 2,
-//         roundBlockSizeMode: RoundBlockSizeMode::Margin
-//     );
-
-//     $writer    = new PngWriter();
-//     $result    = $writer->write($qrCode);
-//     $qrDataUri = $result->getDataUri(); // data:image/png;base64,...
-
-//     // --- HTML สำหรับ Dompdf ---
-//     $html = '
-//     <html>
-//     <head>
-//         <meta charset="utf-8">
-//         <style>
-//             @page { margin: 0; }
-//             @font-face { font-family:"THSarabun"; src:url(data:font/truetype;charset=utf-8;base64,' . $fontNormal . ') format("truetype"); font-weight:normal; font-style:normal; }
-//             @font-face { font-family:"THSarabun"; src:url(data:font/truetype;charset=utf-8;base64,' . $fontBold . ') format("truetype"); font-weight:bold;   font-style:normal; }
-//             @font-face { font-family:"THSarabun"; src:url(data:font/truetype;charset=utf-8;base64,' . $fontItalic . ') format("truetype"); font-weight:normal; font-style:italic; }
-//             @font-face { font-family:"THSarabun"; src:url(data:font/truetype;charset=utf-8;base64,' . $fontBoldItalic . ') format("truetype"); font-weight:bold;   font-style:italic; }
-
-//             body{ font-family:"THSarabun", sans-serif; font-size:6pt; line-height:1.2; margin:0; padding:0; position:relative; box-sizing:border-box; }
-//             .top-center{ position:absolute; top:2mm; left:80%; transform:translateX(-50%); font-weight:bold; white-space:nowrap; }
-//             .content{ width:43mm; margin:8mm auto 18mm auto; page-break-inside: avoid; }
-//             table.kv{ width:100%; border-collapse:collapse; margin:0 0 2mm 0; }
-//             table.kv th{ text-align:left; font-weight:bold; padding:0.4mm 1mm 0.4mm 0; white-space:nowrap; vertical-align:top; width:15mm; }
-//             table.kv td{ padding:0.4mm 0; word-break:break-word; overflow-wrap:anywhere; }
-//             .section{ margin-top:1.2mm; }
-//             .section .title{ font-weight:bold; padding-top:0.6mm; margin-bottom:0.6mm; border-top:0.25pt solid #999; }
-//             .section .body{ word-break:break-word; overflow-wrap:anywhere; }
-//             .footer-qr{ position:absolute; left:50%; transform:translateX(-50%); bottom:3mm; width:43mm; text-align:center; }
-//             .footer-qr img{ width:48px; height:48px; display:inline-block; }
-//             .footer-qr p{ margin-top:1mm; font-size:7.5pt; }
-//         </style>
-//     </head>
-//     <body>
-//         <div class="top-center">' . htmlspecialchars((string)$item->so_detail_id) . '</div>
-//         <div class="content">
-//             <table class="kv">
-//                 <tr><th>บิลที่:</th><td>' . htmlspecialchars((string)$item->billid) . '</td></tr>
-//                 <tr><th>บริษัท:</th><td>' . htmlspecialchars((string)$item->customer_name) . '</td></tr>
-//                 <tr><th>เบอร์:</th><td>' . htmlspecialchars((string)$item->customer_tel) . '</td></tr>
-//                 <tr><th>ผู้ขาย:</th><td>' . htmlspecialchars((string)$item->sale_name) . '</td></tr>
-//             </table>
-//             <div class="section">
-//                 <div class="title">รายละเอียด</div>
-//                 <div class="body">' . nl2br(htmlspecialchars((string)$item->notes)) . '</div>
-//             </div>
-//             <div class="section">
-//                 <div class="title">ที่อยู่</div>
-//                 <div class="body">' . nl2br(htmlspecialchars((string)$item->customer_address)) . '</div>
-//             </div>
-//         </div>
-//         <div class="footer-qr">
-//             <img src="' . $qrDataUri . '" alt="QR Code">
-//             <p>สแกนเพื่อเปิดแผนที่</p>
-//         </div>
-//     </body>
-//     </html>';
-
-//     $pdf = PDF::loadHTML($html)->setPaper([0, 0, 147.4, 209.8], 'portrait'); // A8
-//     return $pdf->stream("notes-{$so_detail_id}.pdf");
-// }
-// public function printNotes($so_detail_id)
-// {
-//     $item = Bill::findOrFail($so_detail_id);
-
-//     // --- ฝังฟอนต์ (TH Sarabun) ---
-//     $fontNormal     = base64_encode(file_get_contents(storage_path('fonts/THSarabun.ttf')));
-//     $fontBold       = base64_encode(file_get_contents(storage_path('fonts/THSarabun Bold.ttf')));
-//     $fontItalic     = base64_encode(file_get_contents(storage_path('fonts/THSarabun Italic.ttf')));
-//     $fontBoldItalic = base64_encode(file_get_contents(storage_path('fonts/THSarabun BoldItalic.ttf')));
-
-//     // --- ลิงก์ Google Maps จากพิกัด ---
-//     $coords  = trim((string)($item->customer_la_long ?? '')); 
-//     $mapLink = 'https://www.google.com/maps?q=' . rawurlencode($coords);
-
-//     // --- สร้าง QR Code ---
-//     $qrCode = new QrCode(
-//         data: $mapLink,
-//         encoding: new Encoding('UTF-8'),
-//         errorCorrectionLevel: ErrorCorrectionLevel::High,
-//         size: 220,
-//         margin: 2
-//     );
-//     $writer    = new PngWriter();
-//     $result    = $writer->write($qrCode);
-//     $qrDataUri = $result->getDataUri();
-
-    // --- HTML ---
-//     $html = '
-//     <html>
-//     <head>
-//         <meta charset="utf-8">
-//         <style>
-//             @page { margin: 10mm; }
-
-//             @font-face { font-family:"THSarabun"; src:url(data:font/truetype;base64,' . $fontNormal . ') format("truetype"); }
-//             @font-face { font-family:"THSarabun"; src:url(data:font/truetype;base64,' . $fontBold . ') format("truetype"); font-weight:bold; }
-
-//             body { font-family:"THSarabun", sans-serif; font-size:18pt; margin:0; padding:0; color:#000; }
-
-//             h1 { font-size:22pt; margin:0; }
-//             .subtitle { font-size:12pt; color:#000000; }
-//             .header { text-align:left; margin-bottom:5mm; }
-//             .bill-box {
-//                 border: 2px solid #000;
-//                 text-align:center;
-//                 padding:10px;
-//                 font-size:24pt;
-//                 margin:10px 0;
-//                 //  background:#f2f2f2;  /* สีเทาอ่อน */
-//             }
-//             .bill-number { font-size:28pt; font-weight:bold; letter-spacing:2px; }
-            
-//             table.info { width:100%; border-collapse:collapse; margin-top:5mm; }
-//             table.info td { padding:3px; font-size:20pt; vertical-align:top; }
-//             table.info td.label { width:25mm; font-weight:bold; }
-
-//             .section {
-//                 border: 2px solid #000;
-//                 padding:5mm;
-//                 margin-top:3mm;   /* ลดลง หรือใส่ 0 ก็ได้ */
-//                 // background:#f2f2f2;  /* สีเทาอ่อน */
-//             }
-
-//             .section-title {
-//                 font-weight:bold;
-//                 font-size:20pt;
-//                 margin:-20px 0 4px 0;   
-//             }
-//             .section p { margin:2px 0; font-size:16pt; }
-
-//             .footer-qr {
-//                 margin-top:15mm;
-//                 text-align:center;
-//                 border-top:2px solid #000;
-//                 padding-top:15mm;
-//             }
-//             .footer-qr img { width:200px; height:200px; }
-//             .footer-qr p { margin:5px 0; font-size:14pt; }
-            
-//             /* มุมขวาบน */ .top-right { font-size: 16pt; /* ✅ ปรับตาม */ position: absolute; top: 0; right: 2mm; font-weight: normal; font-style: italic; color: #918f8f; }
-//         .line {
-//             border: 1px solid black;
-//             padding: 15px;
-//             position: absolute; 
-//             top: -1.5%;    /* ชิดบน */
-//             left: -2.5%;   /* ชิดซ้าย */
-//             right: -2.5%;  /* ชิดขวา */
-//             bottom: -1.5%; /* ชิดล่าง */
-//             box-sizing: border-box; /* กัน padding ดันกรอบเกิน */
-//         }
-                
-//         </style>
-//     </head>
-//     <body>
-//        <div class="line">
-//     <div class="top-right">' . htmlspecialchars((string)$item->so_detail_id) . '</div>
-//     <div class="header">
-//         <h1 style="font-size:40px;">ข้อมูลการจัดส่ง</h1>
-//         <div class="subtitle">Delivery Note</div>
-//         <div class="subtitle">' . htmlspecialchars((string)$item->time) . '</div>
-//     </div>
-
-//     <div class="bill-box">
-//         <div>เลขที่บิล</div>
-//         <div class="bill-number">' . htmlspecialchars((string)$item->billid) . '</div>
-//     </div>
-
-//     <table class="info">
-//         <tr><td class="label">บริษัท :</td><td>' . htmlspecialchars((string)$item->customer_name) . '</td></tr>
-//         <tr><td class="label">ที่อยู่ :</td><td>' . nl2br(htmlspecialchars((string)$item->customer_address)) . '</td></tr>
-//         <tr><td class="label">ชื่อผู้ติดต่อ :</td><td>' . htmlspecialchars((string)$item->contactso) . '</td></tr>
-//         <tr><td class="label">โทรศัพท์ :</td><td>' . htmlspecialchars((string)$item->customer_tel) . '</td></tr>
-//     </table>
-
-//     <div class="section">
-//         <div class="section-title">รายละเอียด :</div>
-//         <div class="">' . nl2br(htmlspecialchars((string)$item->notes)) . '</div>
-//     </div>
-
-//     <div class="footer-qr">
-//         <img src="' . $qrDataUri . '" alt="QR Code">
-//         <h1 style="font-size:25px;">สแกนเพื่อเปิดแผนที่</h1>
-//     </div>
-// </div>
-
-//     </body>
-//     </html>';
-
-//     $pdf = PDF::loadHTML($html)->setPaper('A4', 'portrait');
-//     return $pdf->stream("notes-{$so_detail_id}.pdf");
-// }
 
 public function printNotes($so_detail_id)
 {
@@ -530,7 +317,7 @@ public function printNotes($so_detail_id)
 
             body {
                 font-family:"THSarabun", sans-serif;
-                font-size:25pt;
+                font-size:22pt;
                 line-height:1.4;
                 margin:0;
                 padding:0;
@@ -542,7 +329,7 @@ public function printNotes($so_detail_id)
             table.kv td {
                 padding: 2px 4px;
                 vertical-align: top;
-                font-size: 20pt;
+                font-size: 18pt;
                 word-wrap: break-word;
                 word-break: break-word;
             }
@@ -559,31 +346,37 @@ public function printNotes($so_detail_id)
                 border-bottom: 2px solid #000;
                 margin-bottom: 4mm;
                 padding-bottom: 2mm;
-                font-size: 25pt;
+                font-size: 22pt;
             }
             .section .body {
-                font-size: 20pt;
+                font-size: 18pt;
                 text-align: left;
                 white-space: normal;
                 word-wrap: break-word;
                 word-break: break-word;
+                border-bottom: 2px solid #000; /* เส้นขอบล่างสีดำ */
+                padding-bottom: 4mm;           /* ระยะห่างระหว่างข้อความกับเส้น */
+                margin-bottom: 6mm;            /* เว้นช่องจากส่วนถัดไป */
             }
 
+
             .footer-qr {
-                margin-top: 10mm;
+                position: fixed;
+                bottom: 2mm; /* ให้อยู่เหนือขอบล่าง 2 มม. */
+                left: 0;
+                right: 0;
                 text-align: center;
-                border-top: 2px solid #000;
-                padding-top: 0mm;
+                padding-top: 2mm;
             }
             .footer-qr img {
                 display: block;
                 margin: 0 auto;
-                width: 180px;
-                height: 180px;
+                width: 130px;
+                height: 130px;
             }
             .footer-qr p {
                 margin-top: 4mm;
-                font-size: 25pt;
+                font-size: 22pt;
                 font-weight: bold;
             }
             .address {
