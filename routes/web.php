@@ -182,3 +182,5 @@ Route::post('/updatestatusdeli', [checkbillController::class, 'updatestatusdeli'
 use App\Http\Controllers\CarserviceController;
 Route::get('/dashboardcarservice', [CarserviceController::class, 'dashboardcarsevice']);
 
+use App\Http\Controllers\StockController;
+Route::get('/dashboardstock', [StockController::class, 'dashboard'])->name('stock.dashboard');

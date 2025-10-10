@@ -404,7 +404,6 @@
                 <th>อ้างอิงใบสั่งขาย</th>
                 <th>อ้างอิงใบส่งของ</th>
                 <th>อ้างอิงใบสั่งซื้อ</th>
-            
                 <th>วันที่จัดส่ง</th>
                 <th>ผู้ขาย</th>
                 <th>ผู้เปิดบิล</th>
@@ -413,7 +412,6 @@
                 <th>ข้อมูลสินค้า</th>
                 <th>เลขใบวางบิล</th>
                 <th>เอกสารใบว่างบิล</th>
-             
             </tr>
         </thead>
         <tbody id="table-body">
@@ -462,7 +460,7 @@
     onclick="copyBillIdToClipboard(this, '{{ $item->billid ?? '' }}')">
     ไม่มีไฟล์
 </button>
-                   <script>
+    <script>
     function copyBillIdToClipboard(button, billid) {
         const text = billid.trim();
 

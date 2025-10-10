@@ -279,7 +279,6 @@ public function updateDeliveryDate(Request $request)
             ->where('so_detail_id', $request->so_detail_id)
             ->update([
                 'date_of_dali' => $request->new_date,
-                'time' => now() // หรือใช้ $request->new_date หากไม่ต้องการเวลา ณ ขณะนั้น
             ]);
 
         if ($updated) {
