@@ -184,3 +184,4 @@ Route::get('/dashboardcarservice', [CarserviceController::class, 'dashboardcarse
 
 use App\Http\Controllers\StockController;
 Route::get('/dashboardstock', [StockController::class, 'dashboard'])->name('stock.dashboard');
+Route::get('/dashboardinventory', [StockController::class, 'dashboardinventory'])->name('inventory.dashboard');

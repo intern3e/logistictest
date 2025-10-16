@@ -7,6 +7,6 @@
     <title>สต็อค</title>
 </head>
 <body>
-    <a  href="addstock" ><button>เพิ่มสต็อค</button></a>
+    <a  href="dashboardinventory" ><button>inventory</button></a>
 </body>
 </html>

@@ -128,7 +128,7 @@ public function fetchFormType(Request $request)
             'billtype' => 'required|string|max:255',
             'customer_id' => 'required|string|max:255',
             'customer_name' => 'required|string|max:255',
-            'customer_tel' => 'nullable|string|max:255',
+            'customer_tel' => 'required|string|max:255',
             'customer_address' => 'required|string|max:255',
             'customer_la_long' => 'required|string|max:255',
             'emp_name' => 'required|string|max:255',
@@ -151,9 +151,13 @@ public function fetchFormType(Request $request)
             'POdocument' => 'nullable|file|mimes:pdf|max:20480',
             'formtype' => ['required', 'string', 'max:255', 'not_in:ไม่มีข้อมูล'],
             'formtype.not_in' => 'กรุณาเลือกประเภทฟอร์มให้ถูกต้อง',
-        ]);
-
-        // 🔸 รหัสเดือนปัจจุบัน: 2505 (yyMM)
+            ],[
+            'contactso.required' => 'กรุณากรอกชื่อผู้ติดต่อ',
+            'customer_tel.required' => 'กรุณากรอกเบอร์โทรผู้ติดต่อ',
+            'customer_la_long.required' => 'กรุณากรอกที่อยู่ละติจูดลองจิจูด',
+            'formtype.required' => 'กรุณากรอกประเภทฟอร์มเอกสาร',
+            'formtype.not_in' => 'กรุณาเลือกประเภทฟอร์มให้ถูกต้อง'
+                ]);
         $prefix = date('ym'); // เช่น 2505
 
         // 🔸 ดึงเลขล่าสุดในเดือนเดียวกัน
