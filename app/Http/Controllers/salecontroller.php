@@ -129,7 +129,7 @@ public function fetchFormType(Request $request)
             'customer_id' => 'required|string|max:255',
             'customer_name' => 'required|string|max:255',
             'customer_tel' => 'required|string|max:255',
-            'customer_address' => 'required|string|max:255',
+            'customer_address' => 'required|string',
             'customer_la_long' => 'required|string|max:255',
             'emp_name' => 'required|string|max:255',
             'sale_name' => 'required|string|max:255',
