@@ -244,8 +244,8 @@ function fetchFormType() {
         </div>
          <button type="button" class="btn-custom" onclick="openGoogleMaps()">Google Maps</button>
 
-       <label for="additional_notes" style="display: block; margin-bottom: 4px; margin-top: 10px;">รายละเอียดเพิ่มเติมเกี่ยวกับการจัดส่ง :</label>
-        <textarea id="notes" name="notes" rows="2" style="font-size: 14px; padding: 6px; height: 40px;"></textarea>
+       <label for="additional_notes" style="display: block; margin-bottom: 4px; margin-top: 10px;">รายละเอียดเพิ่มเติมเกี่ยวกับการจัดส่งให้คนขับ :</label>
+        <textarea id="notes" name="notes" rows="2" style="font-size: 14px; padding: 6px; height: 40px;" placeholder="*กรณีเพิ่มข้อมูลที่ช่องนี้ระบบจะปริ้นเอกสารให้คนขับ*"></textarea>
 
 
       <div class="mb-3" style="display: flex; gap: 20px; align-items: flex-start; flex-wrap: wrap;">
