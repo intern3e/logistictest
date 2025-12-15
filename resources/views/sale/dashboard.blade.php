@@ -127,33 +127,30 @@
                         $pdfPath = "doc_document/{$item->billid}.pdf";
                         $hasPdf  = \Illuminate\Support\Facades\Storage::disk('public')->exists($pdfPath);
                     @endphp
+<td
+    @if($item->statusdeli == 1)
+        style="background-color: #a5d6a7;"
+    @endif
+>
+    @if($hasPdf)
+        <a href="javascript:void(0);"
+           style="color:#0000FF; font-weight:bold; cursor:pointer;"
+           onclick="openPdfAndAutoReload(
+                '{{ asset('storage/'.$pdfPath) }}',
+                '{{ $item->billid }}'
+           )">
+            {{ $item->billid }}
+        </a>
 
-                    <td
-                        @if($item->statusdeli == 1)
-                            style="background-color: #a5d6a7;"
-                        @endif
-                    >
-
-                        @if($hasPdf)
-                            <a href="{{ asset('storage/'.$pdfPath) }}"
-                            target="_blank"
-                            style="color: 	#0000FF; font-weight: bold; cursor: pointer;"
-                            onclick="mergePdf('{{ $item->billid }}')">
-                                {{ $item->billid }}
-                            </a>
-
-                        {{-- ✅ กรณีไม่มี PDF แต่ statusdeli = 1 --}}
-                        @elseif($item->statusdeli == 1)
-                            <a href="https://drive.google.com/drive/u/0/search?q={{ $item->billid }}+parent:1WyDB1b01cDQ53Ap7B03UIGFbL6a2Y6WB"
-                            target="_blank">
-                                {{ $item->billid }}
-                            </a>
-
-                        {{-- ❌ กรณีอื่น --}}
-                        @else
-                            {{ $item->billid }}
-                        @endif
-                    </td>
+    @elseif($item->statusdeli == 1)
+        <a href="https://drive.google.com/drive/u/0/search?q={{ $item->billid }}+parent:1WyDB1b01cDQ53Ap7B03UIGFbL6a2Y6WB"
+           target="_blank">
+            {{ $item->billid }}
+        </a>
+    @else
+        {{ $item->billid }}
+    @endif
+</td>
                     <td>
                     <a href="#"
                         class="text-blue-600 hover:underline"
@@ -393,6 +390,41 @@ function mergePdf(billid) {
 }
 </script>
 
+<script>
+function openPdfAndAutoReload(pdfUrl, billid) {
+
+    // 1️⃣ เปิด PDF ก่อน
+    const pdfWin = window.open(pdfUrl, '_blank');
+
+    // 2️⃣ ยิง merge ไป backend
+    fetch("{{ route('merge.pdf') }}", {
+        method: "POST",
+        headers: {
+            'X-CSRF-TOKEN': '{{ csrf_token() }}',
+            'Content-Type': 'application/json',
+            'Accept': 'application/json'
+        },
+        body: JSON.stringify({ billid })
+    })
+    .then(res => res.json())
+    .then(data => {
+        if (data.success && pdfWin) {
+            // 3️⃣ สั่งรีเฟรชแท็บ PDF อัตโนมัติ
+            setTimeout(() => {
+                pdfWin.location.reload();
+            }, 800); // ปรับได้ ถ้า merge ช้า
+        } else {
+            alert("❌ " + data.message);
+        }
+    })
+    .catch(err => {
+        console.error(err);
+        alert("❌ เกิดข้อผิดพลาด");
+    });
+
+    return false;
+}
+</script>
 
     </body>
     </html>
