@@ -17,7 +17,7 @@
             
             <a href="http://server_update:8000/solist" button  type="submit" class="btn btn-danger">🚪 หน้าหลัก</a>
             <a href="Sotest" style="background-color: #0077ff; color: white; padding: 6px 8px; border-radius: 5px; text-decoration: none;">ข้อมูลจัดส่ง</a>
-            <a href="{{ route('stock.dashboard') }}" class="btn btn-danger">เช็ค stock</a>
+            {{-- <a href="{{ route('stock.dashboard') }}" class="btn btn-danger">เช็ค stock</a> --}}
        <a href="alertsale" title="แจ้งเตือนนะจ๊ะ" class="notification-icon" style="background-color: rgb(245, 245, 69); padding: 5px; border-radius: 5px; display: inline-block;">
              <img src="https://cdn-icons-png.flaticon.com/512/2645/2645897.png" alt="แจ้งเตือน">
             <span class="notification-badge" id="alertBadge">0</span>
@@ -123,18 +123,36 @@
                 @foreach($bill as $item)
                 <tr>
                     <td>{{ $loop->iteration }}</td>
+                    @php
+                        $pdfPath = "doc_document/{$item->billid}.pdf";
+                        $hasPdf  = \Illuminate\Support\Facades\Storage::disk('public')->exists($pdfPath);
+                    @endphp
+
                     <td
-                    @if($item->statusdeli == 1)
-                        style="background-color: #a5d6a7;" 
-                    @endif
-                >
-                    @if($item->statusdeli == 1)
-                        <a href="https://drive.google.com/drive/u/0/search?q={{ $item->billid }}+parent:1WyDB1b01cDQ53Ap7B03UIGFbL6a2Y6WB" target="_blank">
+                        @if($item->statusdeli == 1)
+                            style="background-color: #a5d6a7;"
+                        @endif
+                    >
+
+                        @if($hasPdf)
+                            <a href="{{ asset('storage/'.$pdfPath) }}"
+                            target="_blank"
+                            style="color: 	#0000FF; font-weight: bold; cursor: pointer;"
+                            onclick="mergePdf('{{ $item->billid }}')">
+                                {{ $item->billid }}
+                            </a>
+
+                        {{-- ✅ กรณีไม่มี PDF แต่ statusdeli = 1 --}}
+                        @elseif($item->statusdeli == 1)
+                            <a href="https://drive.google.com/drive/u/0/search?q={{ $item->billid }}+parent:1WyDB1b01cDQ53Ap7B03UIGFbL6a2Y6WB"
+                            target="_blank">
+                                {{ $item->billid }}
+                            </a>
+
+                        {{-- ❌ กรณีอื่น --}}
+                        @else
                             {{ $item->billid }}
-                        </a>
-                    @else
-                        {{ $item->billid }}
-                    @endif
+                        @endif
                     </td>
                     <td>
                     <a href="#"
@@ -351,6 +369,30 @@ sortTableDescByColumn(0);
     return false; // กันการนำทางของ <a href="#">
   }
 </script>
+<script>
+function mergePdf(billid) {
+    fetch("{{ route('merge.pdf') }}", {
+        method: "POST",
+        headers: {
+            'X-CSRF-TOKEN': '{{ csrf_token() }}',
+            'Content-Type': 'application/json',
+            'Accept': 'application/json'
+        },
+        body: JSON.stringify({ billid: billid })
+    })
+    .then(res => res.json())
+    .then(data => {
+        if (!data.success) {
+            alert("❌ " + data.message);
+        }
+    })
+    .catch(err => {
+        alert("❌ เกิดข้อผิดพลาด: " + err.message);
+        console.error(err);
+    });
+}
+</script>
+
 
     </body>
     </html>
