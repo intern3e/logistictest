@@ -134,10 +134,7 @@
         <span style="white-space: nowrap;">
             <a href="javascript:void(0);"
                style="color:#0000FF; font-weight:bold; cursor:pointer;"
-               onclick="mergeAndOpenPdfs('{{ $item->billid }}')">{{ $item->billid }}</a><a href="javascript:void(0);"
-               style="color:#28a745; font-weight:bold; cursor:pointer; margin-left:3px;"
-               onclick="openBillOnly('{{ $item->billid }}')"
-               title="เปิดไฟล์ใบเสร็จ">+</a>
+               onclick="mergeAndOpenPdfs('{{ $item->billid }}')">{{ $item->billid }}</a>
         </span>
     @elseif($item->statusdeli == 1)
         <a href="https://drive.google.com/drive/u/0/search?q={{ $item->billid }}+parent:1WyDB1b01cDQ53Ap7B03UIGFbL6a2Y6WB"
@@ -154,12 +151,33 @@
 function mergeAndOpenPdfs(billid) {
     const pdfDocUrl = "{{ asset('storage/doc_document') }}/" + billid + ".pdf";
     const pdfBillUrl = "{{ asset('storage/bill_document') }}/" + billid + ".pdf";
-
-    // เปิดแท็บแรก (doc_document)
     const win1 = window.open(pdfDocUrl, "_blank");
-    
-    // เปิดแท็บสอง (bill_document)
-    const win2 = window.open(pdfBillUrl, "_blank");
+    fetch("{{ route('merge.pdf') }}", {
+        method: "POST",
+        headers: {
+            'X-CSRF-TOKEN': '{{ csrf_token() }}',
+            'Content-Type': 'application/json',
+            'Accept': 'application/json'
+        },
+        body: JSON.stringify({ billid: billid })
+    })
+    .then(res => res.json())
+    .then(data => {
+        if (data.success && win1) {
+            setTimeout(() => {
+                win1.location.reload();
+            }, 800);
+        } else {
+            alert("❌ " + (data.message || "เกิดข้อผิดพลาดในการ merge PDF"));
+        }
+    })
+    return false;
+}
+
+
+function openBillOnly(billid) {
+    const pdfBillUrl = "{{ asset('storage/bill_document') }}/" + billid + ".pdf";
+    window.open(pdfBillUrl, "_blank");
 
     fetch("{{ route('merge.pdf') }}", {
         method: "POST",
@@ -180,18 +198,6 @@ function mergeAndOpenPdfs(billid) {
             alert("❌ " + (data.message || "เกิดข้อผิดพลาดในการ merge PDF"));
         }
     })
-    .catch(err => {
-        console.error("Error:", err);
-        alert("❌ เกิดข้อผิดพลาดในการเชื่อมต่อ");
-    });
-
-    return false;
-}
-
-// ✅ ฟังก์ชันใหม่ - เปิดแค่ bill_document
-function openBillOnly(billid) {
-    const pdfBillUrl = "{{ asset('storage/bill_document') }}/" + billid + ".pdf";
-    window.open(pdfBillUrl, "_blank");
     return false;
 }
 </script>
@@ -210,7 +216,14 @@ function openBillOnly(billid) {
                     </td>
                     <td>{{ \Carbon\Carbon::parse($item->date_of_dali)->format('d/m/Y') }}</td> 
                     <td>{{ $item->sale_name }}</td> 
-                    <td>{{ $item->billtype }}</td>
+                    <td>{{ $item->billtype }}
+                        @if($hasPdf)
+                            <a href="javascript:void(0);"
+                            style="color:#28a745; font-weight:bold; cursor:pointer; margin-left:3px;"
+                            onclick="openBillOnly('{{ $item->billid }}')"
+                            title="เปิดไฟล์ใบเสร็จ">+</a>
+                        @endif
+                    </td>
                     <td>{{ \Carbon\Carbon::parse($item->time)->format('H:i d/m/Y ') }}</td>
                     <td>{{ $item->formtype }}</td>
                     <td style="font-size: 12px;">

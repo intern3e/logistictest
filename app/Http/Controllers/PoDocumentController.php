@@ -104,7 +104,7 @@ public function addIdToDocument($so_detail_id, $billid): JsonResponse
             ]);
         }
 
-        $stampImage = "C:/xampp/htdocs/logistictest/storage/app/public/template/ly.png";
+        $stampImage = "C:/xampp/htdocs/logistic/storage/app/public/template/ly.png";
 
         for ($pageNo = 1; $pageNo <= $pageCount; $pageNo++) {
 
@@ -198,7 +198,7 @@ public function addIdToDocument($so_detail_id, $billid): JsonResponse
             ]);
         }
 
-        $stampImage = "C:/xampp/htdocs/logistictest/storage/app/public/template/ly.png";
+        $stampImage = "C:/xampp/htdocs/logistic/storage/app/public/template/ly.png";
 
         if (!file_exists($stampImage)) {
             Log::error("ไม่พบรูปที่ต้องการวางทับ: {$stampImage}");

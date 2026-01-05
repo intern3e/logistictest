@@ -341,7 +341,7 @@ public function uploadBillIssue(Request $request)
     $filename = $billIssueNo . '.pdf';
 
     // จัดเก็บไฟล์ใน storage/app/public/billissue_document
-    $file->storeAs('billissue_document', $filename);
+    $file->storeAs('public/billissue_document', $filename);
 
     return back()->with('message', '✅ อัปโหลดไฟล์สำเร็จ');
 }
