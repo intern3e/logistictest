@@ -305,27 +305,29 @@ public function updateDeliveryDate(Request $request)
 public function upload(Request $request)
 {
     $request->validate([
-        'pdffile' => 'required|mimes:pdf|max:10240' 
+        'pdffile' => 'required|mimes:pdf|max:10240'
     ]);
 
     $file = $request->file('pdffile');
-
-    // ดึงชื่อไฟล์ต้นฉบับ เช่น 46805-00708.pdf
     $originalName = $file->getClientOriginalName();
 
-    // กำหนด path ปลายทาง เช่น storage/app/public/doc_document
-    $destinationPath = storage_path('app/public/doc_document');
+    // โฟลเดอร์ปลายทางทั้ง 2
+    $path1 = storage_path('app/public/doc_document');
+    $path2 = storage_path('app/public/bill_document');
 
     // สร้างโฟลเดอร์ถ้ายังไม่มี
-    if (!file_exists($destinationPath)) {
-        mkdir($destinationPath, 0777, true);
-    }
+    if (!file_exists($path1)) mkdir($path1, 0777, true);
+    if (!file_exists($path2)) mkdir($path2, 0777, true);
 
-    // ย้ายไฟล์โดยไม่เปลี่ยนชื่อ
-    $file->move($destinationPath, $originalName);
+    // move ครั้งแรก
+    $file->move($path1, $originalName);
+
+    // copy ไปอีกโฟลเดอร์
+    copy($path1 . '/' . $originalName, $path2 . '/' . $originalName);
 
     return back()->with('success', 'อัปโหลดไฟล์ ' . $originalName . ' เรียบร้อยแล้ว!');
 }
+
 public function uploadBillIssue(Request $request)
 {
     $request->validate([
@@ -339,7 +341,7 @@ public function uploadBillIssue(Request $request)
     $filename = $billIssueNo . '.pdf';
 
     // จัดเก็บไฟล์ใน storage/app/public/billissue_document
-    $file->storeAs('public/billissue_document', $filename);
+    $file->storeAs('billissue_document', $filename);
 
     return back()->with('message', '✅ อัปโหลดไฟล์สำเร็จ');
 }

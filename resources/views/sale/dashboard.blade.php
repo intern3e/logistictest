@@ -123,25 +123,22 @@
                 @foreach($bill as $item)
                 <tr>
                     <td>{{ $loop->iteration }}</td>
-                    @php
-                        $pdfPath = "doc_document/{$item->billid}.pdf";
-                        $hasPdf  = \Illuminate\Support\Facades\Storage::disk('public')->exists($pdfPath);
-                    @endphp
-<td
-    @if($item->statusdeli == 1)
-        style="background-color: #a5d6a7;"
-    @endif
->
-    @if($hasPdf)
-        <a href="javascript:void(0);"
-           style="color:#0000FF; font-weight:bold; cursor:pointer;"
-           onclick="openPdfAndAutoReload(
-                '{{ asset('storage/'.$pdfPath) }}',
-                '{{ $item->billid }}'
-           )">
-            {{ $item->billid }}
-        </a>
+@php
+    $pdfPath = "doc_document/{$item->billid}.pdf";
+    $billPath = "bill_document/{$item->billid}.pdf";
+    $hasPdf  = \Illuminate\Support\Facades\Storage::disk('public')->exists($pdfPath);
+@endphp
 
+<td @if($item->statusdeli == 1) style="background-color: #a5d6a7;" @endif>
+    @if($hasPdf)
+        <span style="white-space: nowrap;">
+            <a href="javascript:void(0);"
+               style="color:#0000FF; font-weight:bold; cursor:pointer;"
+               onclick="mergeAndOpenPdfs('{{ $item->billid }}')">{{ $item->billid }}</a><a href="javascript:void(0);"
+               style="color:#28a745; font-weight:bold; cursor:pointer; margin-left:3px;"
+               onclick="openBillOnly('{{ $item->billid }}')"
+               title="เปิดไฟล์ใบเสร็จ">+</a>
+        </span>
     @elseif($item->statusdeli == 1)
         <a href="https://drive.google.com/drive/u/0/search?q={{ $item->billid }}+parent:1WyDB1b01cDQ53Ap7B03UIGFbL6a2Y6WB"
            target="_blank">
@@ -151,6 +148,53 @@
         {{ $item->billid }}
     @endif
 </td>
+
+<script>
+// ฟังก์ชันเดิม - เปิด doc_document และ merge
+function mergeAndOpenPdfs(billid) {
+    const pdfDocUrl = "{{ asset('storage/doc_document') }}/" + billid + ".pdf";
+    const pdfBillUrl = "{{ asset('storage/bill_document') }}/" + billid + ".pdf";
+
+    // เปิดแท็บแรก (doc_document)
+    const win1 = window.open(pdfDocUrl, "_blank");
+    
+    // เปิดแท็บสอง (bill_document)
+    const win2 = window.open(pdfBillUrl, "_blank");
+
+    fetch("{{ route('merge.pdf') }}", {
+        method: "POST",
+        headers: {
+            'X-CSRF-TOKEN': '{{ csrf_token() }}',
+            'Content-Type': 'application/json',
+            'Accept': 'application/json'
+        },
+        body: JSON.stringify({ billid: billid })
+    })
+    .then(res => res.json())
+    .then(data => {
+        if (data.success && win1) {
+            setTimeout(() => {
+                win1.location.reload();
+            }, 800);
+        } else {
+            alert("❌ " + (data.message || "เกิดข้อผิดพลาดในการ merge PDF"));
+        }
+    })
+    .catch(err => {
+        console.error("Error:", err);
+        alert("❌ เกิดข้อผิดพลาดในการเชื่อมต่อ");
+    });
+
+    return false;
+}
+
+// ✅ ฟังก์ชันใหม่ - เปิดแค่ bill_document
+function openBillOnly(billid) {
+    const pdfBillUrl = "{{ asset('storage/bill_document') }}/" + billid + ".pdf";
+    window.open(pdfBillUrl, "_blank");
+    return false;
+}
+</script>
                     <td>
                     <a href="#"
                         class="text-blue-600 hover:underline"
@@ -390,41 +434,7 @@ function mergePdf(billid) {
 }
 </script>
 
-<script>
-function openPdfAndAutoReload(pdfUrl, billid) {
 
-    // 1️⃣ เปิด PDF ก่อน
-    const pdfWin = window.open(pdfUrl, '_blank');
-
-    // 2️⃣ ยิง merge ไป backend
-    fetch("{{ route('merge.pdf') }}", {
-        method: "POST",
-        headers: {
-            'X-CSRF-TOKEN': '{{ csrf_token() }}',
-            'Content-Type': 'application/json',
-            'Accept': 'application/json'
-        },
-        body: JSON.stringify({ billid })
-    })
-    .then(res => res.json())
-    .then(data => {
-        if (data.success && pdfWin) {
-            // 3️⃣ สั่งรีเฟรชแท็บ PDF อัตโนมัติ
-            setTimeout(() => {
-                pdfWin.location.reload();
-            }, 800); // ปรับได้ ถ้า merge ช้า
-        } else {
-            alert("❌ " + data.message);
-        }
-    })
-    .catch(err => {
-        console.error(err);
-        alert("❌ เกิดข้อผิดพลาด");
-    });
-
-    return false;
-}
-</script>
 
     </body>
     </html>

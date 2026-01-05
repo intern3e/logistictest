@@ -55,7 +55,7 @@ class PoDocumentController extends Controller
             $x = 175;               // ใกล้ขอบขวา (A4 กว้าง 210 mm)
             $y = 4;                 // อยู่ห่างจากขอบบน 2 mm
             $pdf->Text($x, $y, "{$so_detail_id}");
-}
+        }
 
             $outputPath = storage_path("app/public/po_documents/{$POdocument}");
             $pdf->Output('F', $outputPath);
@@ -78,183 +78,292 @@ class PoDocumentController extends Controller
         }
     }
 
-    public function addIdToDocument($so_detail_id, $billid): JsonResponse
-    {
-        try {
-            ob_start();
+public function addIdToDocument($so_detail_id, $billid): JsonResponse
+{
+    try {
+        ob_start();
 
-            $filePath = storage_path("app/public/doc_document/{$billid}.pdf");
-            Log::info("กำลังเปิดไฟล์ PDF: " . $filePath);
+        $filePath = storage_path("app/public/doc_document/{$billid}.pdf");
 
-            if (!file_exists($filePath)) {
-                Log::error("ไม่พบไฟล์: {$filePath}");
-                ob_end_clean();
-                return response()->json(['success' => false, 'error' => 'ไฟล์ ไม่พบ']);
-            }
-
-            $pdf = new Fpdi();
-            $pageCount = $pdf->setSourceFile($filePath);
-            Log::info("จำนวนหน้าที่เจอ: {$pageCount}");
-
-            if ($pageCount === 0) {
-                ob_end_clean();
-                return response()->json(['success' => false, 'error' => 'ไม่สามารถโหลดไฟล์ PDF']);
-            }
-
-            // วนลูปทุกหน้าเพื่อเพิ่ม SO ID
-            for ($pageNo = 1; $pageNo <= $pageCount; $pageNo++) {
-                $templateId = $pdf->importPage($pageNo);
-                $size = $pdf->getTemplateSize($templateId);
-                
-                $pdf->addPage($size['orientation'], [$size['width'], $size['height']]);
-                $pdf->useTemplate($templateId);
-                
-                // เพิ่ม SO ID ที่หัวกระดาษทุกหน้า
-                $pdf->SetFont('Helvetica', 'I', 8);
-                $pdf->SetTextColor(0,0,0); // สีดำ
-                $pdf->SetXY(155, 12);
-                $pdf->Cell(50, 10, "{$so_detail_id}", 0, 0, 'R');
-            }
-
-            $outputPath = storage_path("app/public/doc_document/{$billid}.pdf");
-            $pdf->Output('F', $outputPath);
-
+        if (!file_exists($filePath)) {
             ob_end_clean();
-            Log::info("เขียน PDF สำเร็จ: " . $outputPath);
-
-            return response()->json([
-                'success' => true,
-                'message' => 'เพิ่มเลขที่บิลลงในเอกสาร bill สำเร็จ',
-                'so_detail_id' => $so_detail_id
-            ]);
-        } catch (\Exception $e) {
-            ob_end_clean();
-            Log::error("เกิดข้อผิดพลาด: " . $e->getMessage());
             return response()->json([
                 'success' => false,
-                'error' => 'ระบบพบข้อผิดพลาด: ' . $e->getMessage()
+                'error'   => 'ไฟล์ ไม่พบ'
             ]);
         }
-    }
-        public function addIdToissueDocument($so_detail_id, $bill_issue_no): JsonResponse
-    {
-        try {
-            ob_start();
-            $filePath = storage_path("app/public/billissue_document/{$bill_issue_no}.pdf");
-            Log::info("กำลังเปิดไฟล์ PDF: " . $filePath);
 
-            if (!file_exists($filePath)) {
-                Log::error("ไม่พบไฟล์: {$filePath}");
-                ob_end_clean();
-                return response()->json(['success' => false, 'error' => 'ไฟล์ ไม่พบ']);
-            }
-            $pdf = new Fpdi();
-            $pageCount = $pdf->setSourceFile($filePath);
-            Log::info("จำนวนหน้าที่เจอ: {$pageCount}");
+        $pdf = new Fpdi();
+        $pageCount = $pdf->setSourceFile($filePath);
 
-            if ($pageCount === 0) {
-                ob_end_clean();
-                return response()->json(['success' => false, 'error' => 'ไม่สามารถโหลดไฟล์ PDF']);
-            }
-
-            // วนลูปทุกหน้าเพื่อเพิ่ม SO ID
-            for ($pageNo = 1; $pageNo <= $pageCount; $pageNo++) {
-                $templateId = $pdf->importPage($pageNo);
-                $size = $pdf->getTemplateSize($templateId);
-                
-                $pdf->addPage($size['orientation'], [$size['width'], $size['height']]);
-                $pdf->useTemplate($templateId);
-                
-                // เพิ่ม SO ID ที่หัวกระดาษทุกหน้า
-                $pdf->SetFont('Helvetica', 'I', 8);
-                $pdf->SetTextColor(0,0,0); // สีดำ
-                $pdf->SetXY(155, 2);
-                $pdf->Cell(50, 10, "{$so_detail_id}", 0, 0, 'R');
-            }
-            $outputPath = storage_path("app/public/billissue_document/{$bill_issue_no}.pdf");
-            $pdf->Output('F', $outputPath);
+        if ($pageCount === 0) {
             ob_end_clean();
-            Log::info("เขียน PDF สำเร็จ: " . $outputPath);
-
-            return response()->json([
-                'success' => true,
-                'message' => 'เพิ่มเลขที่บิลลงในเอกสาร bill สำเร็จ',
-                'so_detail_id' => $so_detail_id
-            ]);
-        } catch (\Exception $e) {
-            ob_end_clean();
-            Log::error("เกิดข้อผิดพลาด: " . $e->getMessage());
             return response()->json([
                 'success' => false,
-                'error' => 'ระบบพบข้อผิดพลาด: ' . $e->getMessage()
+                'error'   => 'ไม่สามารถโหลดไฟล์ PDF'
             ]);
         }
+
+        $stampImage = "C:/xampp/htdocs/logistictest/storage/app/public/template/ly.png";
+
+        for ($pageNo = 1; $pageNo <= $pageCount; $pageNo++) {
+
+            $templateId = $pdf->importPage($pageNo);
+            $size = $pdf->getTemplateSize($templateId);
+
+            $pdf->addPage(
+                $size['orientation'],
+                [$size['width'], $size['height']]
+            );
+
+            $pdf->useTemplate($templateId);
+
+            // เพิ่ม SO ID
+            $pdf->SetFont('Helvetica', 'I', 8);
+            $pdf->SetTextColor(0, 0, 0);
+            $pdf->SetXY(155, 12);
+            $pdf->Cell(50, 10, "{$so_detail_id}", 0, 0, 'R');
+
+            // เพิ่มรูปปั้ม
+            if (file_exists($stampImage)) {
+                $pdf->Image($stampImage, 170, 257, 22, 0, 'PNG');
+            }
+        }
+
+        // ===============================
+        // เขียนไฟล์ลงโฟลเดอร์ที่ 1
+        // ===============================
+        $output1 = storage_path("app/public/doc_document/{$billid}.pdf");
+        $pdf->Output('F', $output1);
+
+        // ===============================
+        // เขียนหรือคัดลอกไฟล์ลงโฟลเดอร์ที่ 2
+        // ===============================
+        $output2 = storage_path("app/public/bill_document/{$billid}.pdf");
+
+        // สร้างโฟลเดอร์หากไม่มี
+        if (!file_exists(dirname($output2))) {
+            mkdir(dirname($output2), 0777, true);
+        }
+
+        // copy ไฟล์
+        copy($output1, $output2);
+
+        ob_end_clean();
+
+        return response()->json([
+            'success'       => true,
+            'message'       => 'เพิ่มเลขที่บิล + รูปปั้ม ลงในเอกสารสำเร็จ (ทั้ง 2 โฟลเดอร์)',
+            'so_detail_id'  => $so_detail_id
+        ]);
+
+    } catch (\Exception $e) {
+
+        ob_end_clean();
+
+        return response()->json([
+            'success' => false,
+            'error'   => 'ระบบพบข้อผิดพลาด: ' . $e->getMessage()
+        ]);
     }
+}
+
+ public function addIdToissueDocument($so_detail_id, $bill_issue_no): JsonResponse
+{
+    try {
+        ob_start();
+        $filePath = storage_path("app/public/billissue_document/{$bill_issue_no}.pdf");
+        Log::info("กำลังเปิดไฟล์ PDF: " . $filePath);
+
+        if (!file_exists($filePath)) {
+            Log::error("ไม่พบไฟล์: {$filePath}");
+            ob_end_clean();
+
+            return response()->json([
+                'success' => false,
+                'error'   => 'ไฟล์ ไม่พบ'
+            ]);
+        }
+
+        $pdf = new Fpdi();
+        $pageCount = $pdf->setSourceFile($filePath);
+        Log::info("จำนวนหน้าที่เจอ: {$pageCount}");
+
+        if ($pageCount === 0) {
+            ob_end_clean();
+
+            return response()->json([
+                'success' => false,
+                'error'   => 'ไม่สามารถโหลดไฟล์ PDF'
+            ]);
+        }
+
+        $stampImage = "C:/xampp/htdocs/logistictest/storage/app/public/template/ly.png";
+
+        if (!file_exists($stampImage)) {
+            Log::error("ไม่พบรูปที่ต้องการวางทับ: {$stampImage}");
+        }
+
+        // ===============================
+        // วนลูปทุกหน้า เพิ่ม SO + รูป
+        // ===============================
+        for ($pageNo = 1; $pageNo <= $pageCount; $pageNo++) {
+
+            $templateId = $pdf->importPage($pageNo);
+            $size = $pdf->getTemplateSize($templateId);
+
+            $pdf->addPage(
+                $size['orientation'],
+                [$size['width'], $size['height']]
+            );
+
+            $pdf->useTemplate($templateId);
+
+            // ---------- เพิ่ม SO ID ----------
+            $pdf->SetFont('Helvetica', 'I', 8);
+            $pdf->SetTextColor(0, 0, 0);
+            $pdf->SetXY(155, 2);
+            $pdf->Cell(50, 10, "{$so_detail_id}", 0, 0, 'R');
+
+            // ---------- เพิ่มรูปลงบน PDF ----------
+            $x = 45;
+            $y = 237;
+            $w = 22;
+            $h = 0;
+
+            if (file_exists($stampImage)) {
+                $pdf->Image($stampImage, $x, $y, $w, $h, 'PNG');
+            }
+        }
+
+        // ===============================
+        // บันทึกไฟล์ PDF
+        // ===============================
+        $outputPath = storage_path("app/public/billissue_document/{$bill_issue_no}.pdf");
+        $pdf->Output('F', $outputPath);
+
+        ob_end_clean();
+
+        Log::info("เขียน PDF สำเร็จ: " . $outputPath);
+
+        return response()->json([
+            'success'       => true,
+            'message'       => 'เพิ่มเลขที่บิล + เพิ่มรูปภาพ ลงในเอกสาร bill issue สำเร็จ',
+            'so_detail_id'  => $so_detail_id
+        ]);
+
+    } catch (\Exception $e) {
+
+        ob_end_clean();
+        Log::error("เกิดข้อผิดพลาด: " . $e->getMessage());
+
+        return response()->json([
+            'success' => false,
+            'error'   => 'ระบบพบข้อผิดพลาด: ' . $e->getMessage()
+        ]);
+    }
+}
+
 public function mergeAndOverwrite(Request $request)
 {
     $billId = $request->input('billid');
 
     try {
         if (!$billId) {
-            return response()->json(['success' => false, 'message' => 'Bill ID ไม่ถูกต้อง'], 400);
+            return response()->json([
+                'success' => false,
+                'message' => 'Bill ID ไม่ถูกต้อง'
+            ], 400);
         }
 
-        $templatePath = storage_path('app/public/template/template.pdf');
-        $dataPdfPath = storage_path("app/public/doc_document/{$billId}.pdf");
-        $outputPath = $dataPdfPath; // บันทึกทับไฟล์เดิม
+        // ===============================
+        // งานที่ 1 : template + doc_document
+        // ===============================
+        $this->mergePdfWithTemplate(
+            storage_path('app/public/template/template.pdf'),
+            storage_path("app/public/doc_document/{$billId}.pdf")
+        );
 
-        if (!file_exists($templatePath)) {
-            return response()->json(['success' => false, 'message' => '❌ ไม่พบไฟล์ template']);
-        }
+        // ===============================
+        // งานที่ 2 : templatereceipt + bill_document
+        // ===============================
+        $this->mergePdfWithTemplate(
+            storage_path('app/public/template/templatereceipt.pdf'),
+            storage_path("app/public/bill_document/{$billId}.pdf")
+        );
 
-        if (!file_exists($dataPdfPath)) {
-            return response()->json(['success' => false, 'message' => "❌ ไม่พบไฟล์ PDF ของ billid = $billId"]);
-        }
+        return response()->json([
+            'success' => true,
+            'message' => '✅ รวมและปั้ม PDF ทั้ง 2 ไฟล์สำเร็จ'
+        ]);
 
-        $pdf = new TcpdfFpdi();
-        $pdf->SetPrintHeader(false);
-        $pdf->SetPrintFooter(false);
-        $pdf->SetMargins(0, 0, 0);
-        $pdf->SetAutoPageBreak(false, 0);
-
-        // ดึงจำนวนหน้า
-        $templatePageCount = $pdf->setSourceFile($templatePath);
-        $dataPageCount = $pdf->setSourceFile($dataPdfPath);
-        $maxPages = max($templatePageCount, $dataPageCount);
-
-        for ($i = 1; $i <= $maxPages; $i++) {
-            // โหลดหน้า template
-            $pdf->setSourceFile($templatePath);
-            $tplTemplatePage = $pdf->importPage(min($i, $templatePageCount));
-            $templateSize = $pdf->getTemplateSize($tplTemplatePage);
-
-            // สร้างหน้าใหม่ตามขนาด template
-            $pdf->AddPage($templateSize['orientation'], [$templateSize['width'], $templateSize['height']]);
-            $pdf->useTemplate($tplTemplatePage, 0, 0, $templateSize['width'], $templateSize['height']);
-
-            // ซ้อนหน้าข้อมูล data PDF ถ้ามี
-            if ($i <= $dataPageCount) {
-                $pdf->setSourceFile($dataPdfPath);
-                $tplDataPage = $pdf->importPage($i);
-                $dataSize = $pdf->getTemplateSize($tplDataPage);
-
-                // Fit data PDF ให้ขนาดเดียวกับ template
-                $pdf->useTemplate($tplDataPage, 0, 0, $templateSize['width'], $templateSize['height']);
-            }
-        }
-
-        $pdf->Output($outputPath, 'F');
-
-        return response()->json(['success' => true, 'message' => '✅ รวมและบันทึก PDF สำเร็จ']);
     } catch (\Throwable $e) {
         \Log::error("❌ mergeAndOverwrite error: " . $e->getMessage());
+
         return response()->json([
             'success' => false,
             'message' => '❌ ระบบผิดพลาด: ' . $e->getMessage()
         ], 500);
     }
-
 }
+
+private function mergePdfWithTemplate(string $templatePath, string $dataPdfPath): void
+{
+    if (!file_exists($templatePath)) {
+        throw new \Exception("ไม่พบไฟล์ template: {$templatePath}");
+    }
+
+    if (!file_exists($dataPdfPath)) {
+        throw new \Exception("ไม่พบไฟล์ PDF: {$dataPdfPath}");
+    }
+
+    $pdf = new TcpdfFpdi();
+    $pdf->SetPrintHeader(false);
+    $pdf->SetPrintFooter(false);
+    $pdf->SetMargins(0, 0, 0);
+    $pdf->SetAutoPageBreak(false, 0);
+
+    $templatePageCount = $pdf->setSourceFile($templatePath);
+    $dataPageCount     = $pdf->setSourceFile($dataPdfPath);
+    $maxPages          = max($templatePageCount, $dataPageCount);
+
+    for ($i = 1; $i <= $maxPages; $i++) {
+
+        // โหลด template
+        $pdf->setSourceFile($templatePath);
+        $tplTemplatePage = $pdf->importPage(min($i, $templatePageCount));
+        $templateSize = $pdf->getTemplateSize($tplTemplatePage);
+
+        $pdf->AddPage(
+            $templateSize['orientation'],
+            [$templateSize['width'], $templateSize['height']]
+        );
+
+        $pdf->useTemplate(
+            $tplTemplatePage,
+            0,
+            0,
+            $templateSize['width'],
+            $templateSize['height']
+        );
+
+        // ซ้อน PDF ข้อมูล
+        if ($i <= $dataPageCount) {
+            $pdf->setSourceFile($dataPdfPath);
+            $tplDataPage = $pdf->importPage($i);
+
+            $pdf->useTemplate(
+                $tplDataPage,
+                0,
+                0,
+                $templateSize['width'],
+                $templateSize['height']
+            );
+        }
+    }
+    $pdf->Output($dataPdfPath, 'F');
+}
+
 
 
 public function printNotes($so_detail_id)
