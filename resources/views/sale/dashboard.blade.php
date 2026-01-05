@@ -177,7 +177,7 @@ function mergeAndOpenPdfs(billid) {
 
 function openBillOnly(billid) {
     const pdfBillUrl = "{{ asset('storage/bill_document') }}/" + billid + ".pdf";
-    window.open(pdfBillUrl, "_blank");
+    const win1 = window.open(pdfBillUrl, "_blank");
 
     fetch("{{ route('merge.pdf') }}", {
         method: "POST",
@@ -200,6 +200,7 @@ function openBillOnly(billid) {
     })
     return false;
 }
+
 </script>
                     <td>
                     <a href="#"
