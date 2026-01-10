@@ -11,6 +11,7 @@
 
     <div class="header">
         <h2>ข้อมูลจัดส่ง</h2>
+
         <div class="buttons">
             <span>👤 ผู้ใช้: {{ session('emp_name', 'Guest') }}</span>
             @csrf
@@ -94,11 +95,30 @@
         });
     </script>
     </div>
-    <div class="search-box">
-        <input type="text" id="search-input" placeholder=" ค้นหา เลขที่บิล" onkeyup="searchTable()">
+<form method="GET" action="{{ route('sale.dashboard') }}" class="search-box" id="searchForm">
+    <input 
+        type="text" 
+        name="keyword" 
+        placeholder="ค้นหา เลขที่บิล"
+        value="{{ request('keyword') }}"
+        oninput="autoSubmit()"
+    >
+</form>
+
+<script>
+    let timeout = null;
+
+    function autoSubmit() {
+        clearTimeout(timeout);
+        timeout = setTimeout(() => {
+            document.getElementById('searchForm').submit();
+        }, 500); // หน่วง 0.5 วิ กัน submit ถี่เกิน
+    }
+</script>
+
+
     </div>
-    </div>
-    
+
     <div class="table-container">
         <table>
             <thead>
@@ -360,7 +380,7 @@ window.onclick = function(event) {
 }
     
     </script>
- <script>
+ {{-- <script>
     function searchTable() {
         let searchInput = document.getElementById("search-input").value.toLowerCase();
         let table = document.querySelector("table tbody");
@@ -378,10 +398,10 @@ window.onclick = function(event) {
             }
         }
     }
-    window.onload = function() {
-sortTableDescByColumn(0); 
-};
-</script>
+//     window.onload = function() {
+// sortTableDescByColumn(0); 
+// };
+</script> --}}
 <script>
   function openPopup3E(soId) {
     const url = `http://server-3e/3e/store_report.php?so=${encodeURIComponent(soId)}&po=&search=Search&rowPerPage=25&currentPage=0`;
@@ -447,6 +467,84 @@ function mergePdf(billid) {
     });
 }
 </script>
+<style>
+/* ❌ ลบ Showing 1 to 100 of xxxx results */
+nav[role="navigation"] > div > p{
+    display:none !important;
+}
+
+/* ❌ ลบ mobile pagination: « Previous  Next » */
+nav[role="navigation"] .sm\:hidden{
+    display:none !important;
+}
+
+/* ครอบให้อยู่กลาง */
+.pagination-wrap{
+    display:flex;
+    justify-content:center;
+    margin:20px 0;
+}
+
+/* โครงสร้างหลัก */
+nav[role="navigation"] > div{
+    display:flex !important;
+    align-items:center !important;
+    justify-content:center !important;
+    gap:16px;
+    flex-wrap:nowrap !important;
+}
+
+/* ลบคำ Previous / Next */
+nav[role="navigation"] a[rel="prev"] span,
+nav[role="navigation"] a[rel="next"] span{
+    display:none !important;
+}
+
+/* ปุ่มลูกศร */
+nav[role="navigation"] a[rel="prev"],
+nav[role="navigation"] a[rel="next"]{
+    width:40px;
+    height:40px;
+    border-radius:50%;
+    background:#e5e7eb;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+}
+
+/* ไอคอนลูกศร */
+nav[role="navigation"] svg{
+    width:20px !important;
+    height:20px !important;
+    stroke-width:3;
+}
+
+/* เลขหน้า */
+nav[role="navigation"] a.relative,
+nav[role="navigation"] span.relative{
+    min-width:32px;
+    height:32px;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    font-size:16px;
+    font-weight:600;
+    color:#2563eb;
+    background:transparent !important;
+    border:none !important;
+}
+
+/* หน้า active */
+nav[role="navigation"] span[aria-current="page"]{
+    font-weight:800;
+    color:#1d4ed8;
+}
+</style>
+
+<div class="pagination-wrap">
+    {{ $bill->appends(request()->query())->links() }}
+</div>
+
 
 
 

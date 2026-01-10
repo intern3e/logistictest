@@ -53,28 +53,40 @@ public function login(Request $request)
     }
 
 public function dashboard(Request $request)
-    {
-        $date = $request->get('date');
-        $message = null;  // กำหนดค่าเริ่มต้นให้กับตัวแปร $message
-        
-        // ถ้าผู้ใช้กรอกวันที่ ให้กรองข้อมูลที่มีวันที่ตรงกับที่เลือก
-        if ($date) {
-            $bill = Bill::whereDate('time', $date)  // ใช้ชื่อคอลัมน์ที่ถูกต้อง
-                        ->orderBy('so_detail_id', 'desc')
-                        ->get();
-            
-            // ตรวจสอบว่ามีข้อมูลหรือไม่
-            if ($bill->isEmpty()) {
-                $message = 'ไม่พบข้อมูลที่ตรงกับวันที่เลือก';
-            } 
-        } else {
-            // ถ้าไม่ได้กรอกวันที่ จะดึงข้อมูลทั้งหมด
-            $bill = Bill::orderBy('so_detail_id', 'desc')
-                        ->get();
-        }
+{
+    $date    = $request->get('date');
+    $keyword = $request->get('keyword');
+    $message = null;
 
-        return view('sale.dashboard', compact('bill', 'message'));
+    $query = Bill::query();
+
+    // 🔍 ค้นหาตามวันที่
+    if ($date) {
+        $query->whereDate('time', $date);
     }
+
+    // 🔍 ค้นหาตามเลขที่บิล (ค้นจากทั้งหมดจริง)
+    if ($keyword) {
+        $query->where(function ($q) use ($keyword) {
+            $q->where('billid', 'like', "%{$keyword}%")
+              ->orWhere('so_detail_id', 'like', "%{$keyword}%");
+        });
+    }
+
+    $bill = $query
+        ->orderBy('so_detail_id', 'desc')
+        ->paginate(100)
+        ->appends($request->query());
+
+    if ($bill->isEmpty()) {
+        $message = 'ไม่พบข้อมูลที่ค้นหา';
+    }
+
+    return view('sale.dashboard', compact('bill', 'message'));
+}
+
+
+
 
 
 public function insertdata()
