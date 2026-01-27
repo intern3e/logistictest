@@ -10,36 +10,36 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <style>
-.header-bar {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  flex-wrap: wrap; /* รองรับจอเล็ก */
-  padding: 10px 0;
-}
+        .header-bar {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        flex-wrap: wrap; /* รองรับจอเล็ก */
+        padding: 10px 0;
+        }
 
-.text-dark {
-  font-size: 24px;
-  color: #333333;
-  margin: 0;
-}
+        .text-dark {
+        font-size: 24px;
+        color: #333333;
+        margin: 0;
+        }
 
-.btn-back {
-  background-color: #3f865d;
-  color: white;
-  border: none;
-  padding: 6px 8px;
-  border-radius: 6px;
-  cursor: pointer;
-  font-size: 14px;
-  transition: background-color 0.3s;
-}
+        .btn-back {
+        background-color: #3f865d;
+        color: white;
+        border: none;
+        padding: 6px 8px;
+        border-radius: 6px;
+        cursor: pointer;
+        font-size: 14px;
+        transition: background-color 0.3s;
+        }
 
-.btn-back:hover {
-  background-color: #326f4d;
-}
-</style>
-    <title>สร้างเส้นทางส่งสินค้า</title>
+        .btn-back:hover {
+        background-color: #326f4d;
+        }
+        </style>
+            <title>สร้างเส้นทางส่งสินค้า</title>
 
 </head>
 <body>
@@ -176,6 +176,17 @@ billidInput.addEventListener('input', () => {
             <option value="ขายสด">ขายสด</option>
         </select>
     </div>
+</div>
+<div style="flex: 1;">
+    <label for="typeinbill">ประเภทสินค้า/บริการ :</label>
+    <label>
+        <input type="radio" name="typeinbill" value="ขายสินค้า" required>
+        งานขายสินค้า
+    </label>
+    <label>
+        <input type="radio" name="typeinbill" value="งานบริการ" required>
+        งานบริการ/อบรม
+    </label>
 </div>
 
      <script>
@@ -372,13 +383,12 @@ document.getElementById('submitBill').addEventListener('click', async function (
             if (!confirmAdd) return;
         }
 
-        // 📄 ตรวจสอบว่าแนบ PO หรือยัง
         if (typeof convertedPDFBlob === 'undefined' || !convertedPDFBlob) {
             const confirmNoPO = confirm("คุณยังไม่ได้แนบเอกสาร PO\nต้องการเพิ่มข้อมูลโดยไม่มีเอกสาร PO ใช่หรือไม่?");
             if (!confirmNoPO) return;
         }
 
-        // 📦 สร้าง FormData
+        // สร้าง FormData
         let formData = new FormData(form);
 
         // แนบไฟล์ POdocument (ถ้ามี)

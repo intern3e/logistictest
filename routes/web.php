@@ -42,6 +42,8 @@ Route::post('/check-billid', [salecontroller::class, 'checkBillId'])->name('chec
 use App\Http\Controllers\PoDocumentController;
 Route::get('/add-so-detail-id-to-pdf/{soDetailId}/{POdocument}', 
     [PoDocumentController::class, 'addSoDetailIdToPoDocument']);
+Route::get('/add-so-detail-id-to-bill-3/{so_detail_id}/{filename}', 
+    [PoDocumentController::class, 'addIdToDocument3']);
 Route::get('/add-so-detail-id-to-bill/{so_detail_id}/{filename}', 
     [PoDocumentController::class, 'addIdToDocument']);
 Route::get('/add-so-detail-id-to-billissue/{so_detail_id}/{bill_issue_no}', 

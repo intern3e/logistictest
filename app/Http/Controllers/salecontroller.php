@@ -138,6 +138,7 @@ public function fetchFormType(Request $request)
             'solve' => 'nullable|string|max:255',
             'ponum' => 'nullable|string|max:255',
             'billtype' => 'required|string|max:255',
+            'typeinbill' => 'required|string|in:ขายสินค้า,งานบริการ',
             'customer_id' => 'required|string|max:255',
             'customer_name' => 'required|string|max:255',
             'customer_tel' => 'required|string|max:255',
@@ -168,7 +169,8 @@ public function fetchFormType(Request $request)
             'customer_tel.required' => 'กรุณากรอกเบอร์โทรผู้ติดต่อ',
             'customer_la_long.required' => 'กรุณากรอกที่อยู่ละติจูดลองจิจูด',
             'formtype.required' => 'กรุณากรอกประเภทฟอร์มเอกสาร',
-            'formtype.not_in' => 'กรุณาเลือกประเภทฟอร์มให้ถูกต้อง'
+            'formtype.not_in' => 'กรุณาเลือกประเภทฟอร์มให้ถูกต้อง',
+            'typeinbill.required' => 'กรุณาเลือกประเภทสินค้า/บริการ'
                 ]);
         $prefix = date('ym'); // เช่น 2505
 
@@ -215,7 +217,7 @@ public function fetchFormType(Request $request)
         $bill->date_of_dali = $request->input('date_of_dali');
         $bill->emp_name = $request->input('emp_name');
         $bill->sale_name = $request->input('sale_name');
-        $bill->billtype = $request->input('billtype');
+        $bill->billtype = $request->input('billtype') . ',' . $request->input('typeinbill');
         $bill->formtype = $request->input('formtype');
         $bill->billid = $request->input('billid');
 

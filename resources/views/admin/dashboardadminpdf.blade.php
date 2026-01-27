@@ -35,29 +35,29 @@
         text-decoration: none;
         transition: all 0.3s ease;
         margin-right: 10px; /* Adds space between buttons */
-    }
+        }
 
-    .btn-po {
-        background-color: #4CAF50; /* Green for PO button */
-        color: white;
-    }
+        .btn-po {
+            background-color: #4CAF50; /* Green for PO button */
+            color: white;
+        }
 
-    .btn-so {
-        background-color: #2196F3; /* Blue for SO button */
-        color: white;
-    }
+        .btn-so {
+            background-color: #2196F3; /* Blue for SO button */
+            color: white;
+        }
 
-    .header-buttons button:hover {
-        transform: scale(1.05); /* Adds a slight grow effect when hovering */
-    }
+        .header-buttons button:hover {
+            transform: scale(1.05); /* Adds a slight grow effect when hovering */
+        }
 
-    .btn-po:hover {
-        background-color: #27ae60; /* Darker green for PO button on hover */
-    }
+        .btn-po:hover {
+            background-color: #27ae60; /* Darker green for PO button on hover */
+        }
 
-    .btn-so:hover {
-        background-color: #00389f; /* Darker blue for SO button on hover */
-    }
+        .btn-so:hover {
+            background-color: #00389f; /* Darker blue for SO button on hover */
+        }
 
 
         .container {
@@ -444,7 +444,7 @@
                             <button style="background-color: red; color: white;"
                             id="Pumppo"
                                 onclick="addSoDetailIdToPoDocument('{{ $item->so_detail_id }}', '{{ $item->POdocument }}')">
-                                เพิ่มเลขบิล
+                                เพิ่มเลขบิลลงPO
                             </button>
                             <button id="download"
                             style="background-color: #27ae60; color: white;"
@@ -566,10 +566,9 @@ function copydate(text, button) {
                                         <input type="file" name="pdffile" id="pdffile" accept="application/pdf" required>
                                         <button type="submit" id="subpdffile">อัปโหลด PDF</button>
                                     </form>
-
                                     <button style="background-color: red; color: white;"
-                                    id="Pumpbill"
-                                        onclick="addIdToDocument('{{ $item->so_detail_id }}', '{{ $item->billid }}')">
+                                        id="Pumpbill"
+                                        onclick="checkBillTypeAndAddBill('{{ $item->so_detail_id }}', '{{ $item->billid }}', '{{ $item->billtype }}')">
                                         เพิ่มเลขบิล
                                     </button>
                                     <button id="downloadbill"
@@ -1046,10 +1045,37 @@ function addIdToissueDocument(so_detail_id, bill_issue_no) {
             alert("เกิดข้อผิดพลาดในการเพิ่มเลขที่บิลลงในเอกสาร bill_issue_no");
         });
 }
+function checkBillTypeAndAddBill(so_detail_id, billid, billtype) {
+    console.log('Checking billtype:', billtype);
+    
+    if (billtype && billtype.includes('งานบริการ')) {
+        addIdToDocument3(so_detail_id, billid);
+    } else {
+        addIdToDocument(so_detail_id, billid);
+    }
+}
+
 function addIdToDocument(so_detail_id, billid) {
     console.log(`กำลังเพิ่ม ${so_detail_id} ลงในเอกสารbill: ${billid}`);
 
     fetch(`/add-so-detail-id-to-bill/${so_detail_id}/${billid}`)
+        .then(response => response.json())
+        .then(data => {
+            console.log(data);
+            if (data.success) {
+            } else {
+                alert("เกิดข้อผิดพลาดในการเพิ่มข้อมูลลงในเอกสาร bill: " + (data.error || ''));
+            }
+        })
+        .catch(error => {
+            console.error("Error:", error);
+            alert("เกิดข้อผิดพลาดในการเพิ่มเลขที่บิลลงในเอกสาร bill");
+        });
+}
+function addIdToDocument3(so_detail_id, billid) {
+    console.log(`กำลังเพิ่ม ${so_detail_id} พร้อมเพิ่ม3%ลงในเอกสารbill: ${billid}`);
+
+    fetch(`/add-so-detail-id-to-bill-3/${so_detail_id}/${billid}`)
         .then(response => response.json())
         .then(data => {
             console.log(data);

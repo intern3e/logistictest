@@ -167,7 +167,108 @@ public function addIdToDocument($so_detail_id, $billid): JsonResponse
         ]);
     }
 }
+public function addIdToDocument3($so_detail_id, $billid): JsonResponse
+{
+    try {
+        ob_start();
 
+        $filePath = storage_path("app/public/doc_document/{$billid}.pdf");
+
+        if (!file_exists($filePath)) {
+            ob_end_clean();
+            return response()->json([
+                'success' => false,
+                'error'   => 'ไฟล์ ไม่พบ'
+            ]);
+        }
+
+        $pdf = new Fpdi();
+        $pageCount = $pdf->setSourceFile($filePath);
+
+        if ($pageCount === 0) {
+            ob_end_clean();
+            return response()->json([
+                'success' => false,
+                'error'   => 'ไม่สามารถโหลดไฟล์ PDF'
+            ]);
+        }
+
+        $stampImage1 = "C:/xampp/htdocs/logistic/storage/app/public/template/ly.png";
+        $stampImage2 = "C:/xampp/htdocs/logistic/storage/app/public/template/3.png"; 
+
+        for ($pageNo = 1; $pageNo <= $pageCount; $pageNo++) {
+
+            $templateId = $pdf->importPage($pageNo);
+            $size = $pdf->getTemplateSize($templateId);
+
+            $pdf->addPage(
+                $size['orientation'],
+                [$size['width'], $size['height']]
+            );
+
+            $pdf->useTemplate($templateId);
+
+            // เพิ่ม SO ID
+            $pdf->SetFont('Helvetica', 'I', 8);
+            $pdf->SetTextColor(0, 0, 0);
+            $pdf->SetXY(155, 12);
+            $pdf->Cell(50, 10, "{$so_detail_id}", 0, 0, 'R');
+
+            // ✅ เพิ่มรูปปั้มที่ 1 (ly.png)
+            if (file_exists($stampImage1)) {
+                $pdf->Image($stampImage1, 170, 257, 22, 0, 'PNG');
+            }
+
+            // ✅ เพิ่มรูปปั้มที่ 2 (3.png) - ปรับตำแหน่งตามต้องการ
+            if (file_exists($stampImage2)) {
+                // ตัวอย่าง: วางซ้ายกว่า ly.png
+                $pdf->Image($stampImage2, 45, 194, 35, 0, 'PNG');
+                
+                // หรือวางด้านบน
+                // $pdf->Image($stampImage2, 170, 230, 22, 0, 'PNG');
+                
+                // หรือวางด้านล่าง
+                // $pdf->Image($stampImage2, 170, 275, 22, 0, 'PNG');
+            }
+        }
+
+        // ===============================
+        // เขียนไฟล์ลงโฟลเดอร์ที่ 1
+        // ===============================
+        $output1 = storage_path("app/public/doc_document/{$billid}.pdf");
+        $pdf->Output('F', $output1);
+
+        // ===============================
+        // เขียนหรือคัดลอกไฟล์ลงโฟลเดอร์ที่ 2
+        // ===============================
+        $output2 = storage_path("app/public/bill_document/{$billid}.pdf");
+
+        // สร้างโฟลเดอร์หากไม่มี
+        if (!file_exists(dirname($output2))) {
+            mkdir(dirname($output2), 0777, true);
+        }
+
+        // copy ไฟล์
+        copy($output1, $output2);
+
+        ob_end_clean();
+
+        return response()->json([
+            'success'       => true,
+            'message'       => 'เพิ่มเลขที่บิล + รูปปั้ม 2 อัน ลงในเอกสารสำเร็จ (ทั้ง 2 โฟลเดอร์)',
+            'so_detail_id'  => $so_detail_id
+        ]);
+
+    } catch (\Exception $e) {
+
+        ob_end_clean();
+
+        return response()->json([
+            'success' => false,
+            'error'   => 'ระบบพบข้อผิดพลาด: ' . $e->getMessage()
+        ]);
+    }
+}
  public function addIdToissueDocument($so_detail_id, $bill_issue_no): JsonResponse
 {
     try {
