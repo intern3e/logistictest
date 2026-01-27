@@ -166,12 +166,16 @@
     @endif
 </td>
 
+
+<script src="https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/build/pdf.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
+
 <script>
-// ฟังก์ชันเดิม - เปิด doc_document และ merge
+// ตั้งค่า PDF.js worker
+pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/build/pdf.worker.min.js';
+
+// ฟังก์ชันเดิม - ดาวน์โหลด doc_document และ merge
 function mergeAndOpenPdfs(billid) {
-    const pdfDocUrl = "{{ asset('storage/doc_document') }}/" + billid + ".pdf";
-    const pdfBillUrl = "{{ asset('storage/bill_document') }}/" + billid + ".pdf";
-    const win1 = window.open(pdfDocUrl, "_blank");
     fetch("{{ route('merge.pdf') }}", {
         method: "POST",
         headers: {
@@ -183,22 +187,19 @@ function mergeAndOpenPdfs(billid) {
     })
     .then(res => res.json())
     .then(data => {
-        if (data.success && win1) {
+        if (data.success) {
             setTimeout(() => {
-                win1.location.reload();
+                downloadCompressedPdf(billid, 'doc_document', 'สำเนาหน้าบิล');
             }, 800);
         } else {
-            alert("❌ " + (data.message || "เกิดข้อผิดพลาดในการ merge PDF"));
+            alert(" " + (data.message || "เกิดข้อผิดพลาดในการ merge PDF"));
         }
     })
     return false;
 }
 
-
+// ฟังก์ชันใหม่ - ดาวน์โหลด bill_document เท่านั้น
 function openBillOnly(billid) {
-    const pdfBillUrl = "{{ asset('storage/bill_document') }}/" + billid + ".pdf";
-    const win1 = window.open(pdfBillUrl, "_blank");
-
     fetch("{{ route('merge.pdf') }}", {
         method: "POST",
         headers: {
@@ -210,17 +211,70 @@ function openBillOnly(billid) {
     })
     .then(res => res.json())
     .then(data => {
-        if (data.success && win1) {
+        if (data.success) {
             setTimeout(() => {
-                win1.location.reload();
+                downloadCompressedPdf(billid, 'bill_document', 'สำเนาใบเสร็จ');
             }, 800);
         } else {
-            alert("❌ " + (data.message || "เกิดข้อผิดพลาดในการ merge PDF"));
+            alert(" " + (data.message || "เกิดข้อผิดพลาดในการ merge PDF"));
         }
     })
     return false;
 }
 
+// ฟังก์ชันดาวน์โหลดและบีบอัด PDF
+async function downloadCompressedPdf(billid, folder, prefix) {
+    try {
+        const pdfUrl = "{{ asset('storage') }}/" + folder + "/" + billid + ".pdf";
+        
+        const response = await fetch(pdfUrl);
+        const arrayBuffer = await response.arrayBuffer();
+        
+        // โหลด PDF ด้วย PDF.js
+        const loadingTask = pdfjsLib.getDocument({data: arrayBuffer});
+        const pdf = await loadingTask.promise;
+        
+        // สร้าง PDF ใหม่ด้วย jsPDF
+        const { jsPDF } = window.jspdf;
+        const newPdf = new jsPDF('p', 'mm', 'a4');
+        
+        // วนลูปแต่ละหน้า
+        for (let pageNum = 1; pageNum <= pdf.numPages; pageNum++) {
+            const page = await pdf.getPage(pageNum);
+            const viewport = page.getViewport({ scale: 4 });
+            
+            const canvas = document.createElement('canvas');
+            const context = canvas.getContext('2d');
+            canvas.height = viewport.height;
+            canvas.width = viewport.width;
+            
+            await page.render({ 
+                canvasContext: context, 
+                viewport: viewport 
+            }).promise;
+            
+            
+            const imgData = canvas.toDataURL('image/jpeg', 3); 
+            
+            if (pageNum > 1) {
+                newPdf.addPage();
+            }
+            
+            // คำนวณขนาดให้พอดี A4
+            const imgWidth = 210;
+            const imgHeight = (canvas.height * imgWidth) / canvas.width;
+            
+            newPdf.addImage(imgData, 'JPEG', 0, 0, imgWidth, imgHeight);
+        }
+        
+        // ดาวน์โหลด
+        newPdf.save(prefix + billid + '.pdf');
+        
+    } catch (error) {
+        console.error('Error:', error);
+        alert("เกิดข้อผิดพลาดในการดาวน์โหลดไฟล์");
+    }
+}
 </script>
                     <td>
                     <a href="#"
