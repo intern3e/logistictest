@@ -208,21 +208,21 @@ public function addIdToDocument3($so_detail_id, $billid): JsonResponse
 
             $pdf->useTemplate($templateId);
 
-            // เพิ่ม SO ID
+           
             $pdf->SetFont('Helvetica', 'I', 8);
             $pdf->SetTextColor(0, 0, 0);
             $pdf->SetXY(155, 12);
             $pdf->Cell(50, 10, "{$so_detail_id}", 0, 0, 'R');
 
-            // ✅ เพิ่มรูปปั้มที่ 1 (ly.png)
+            
             if (file_exists($stampImage1)) {
                 $pdf->Image($stampImage1, 170, 257, 22, 0, 'PNG');
             }
 
-            // ✅ เพิ่มรูปปั้มที่ 2 (3.png) - ปรับตำแหน่งตามต้องการ
+           
             if (file_exists($stampImage2)) {
                 // ตัวอย่าง: วางซ้ายกว่า ly.png
-                $pdf->Image($stampImage2, 45, 194, 35, 0, 'PNG');
+                $pdf->Image($stampImage2, 10, 194, 40, 0, 'PNG');
                 
                 // หรือวางด้านบน
                 // $pdf->Image($stampImage2, 170, 230, 22, 0, 'PNG');
