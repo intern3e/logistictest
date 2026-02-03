@@ -187,3 +187,10 @@ Route::get('/dashboardcarservice', [CarserviceController::class, 'dashboardcarse
 use App\Http\Controllers\StockController;
 Route::get('/dashboardstock', [StockController::class, 'dashboard'])->name('stock.dashboard');
 Route::get('/dashboardinventory', [StockController::class, 'dashboardinventory'])->name('inventory.dashboard');
+
+
+use App\Http\Controllers\PooutsideController;
+Route::get('/pooutside', [PooutsideController::class, 'dashboard'])->name('pooutside.dashboard');
+Route::get('/detailpooutside/{ponum}', [PooutsideController::class, 'detailpooutside'])->name('pooutside.detailpooutside');
+Route::get('/pooutside/dashboard', [PooutsideController::class, 'dashboard'])->name('pooutside.dashboard');
+Route::post('/pooutside/search-invoice', [PooutsideController::class, 'searchInvoice'])->name('pooutside.searchInvoice');
