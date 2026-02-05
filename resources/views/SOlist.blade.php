@@ -286,13 +286,8 @@
                    <a id="btn-dashboard">
     <input class="btn btn-danger" type="button" style="background-color: #C599B6" value="ข้อมูลจัดส่ง">
 </a>
-<a id="btn-dashboardpo">
-    <input class="btn btn-danger" type="button" style="background-color: #80CBC4" value="ข้อมูลรับของ PO">
-</a>
-<a id="btn-dashboarddoc">
-    <input class="btn btn-danger" type="button" style="background-color: #E9762B" value="เอกสารชั่วคราว">
-</a>
-
+<a href="pooutside" title="poภายนอก" class="notification-icon" style="position: relative; display: inline-block;">
+                <input class="btn btn-danger" type="button" style="background-color: #27D6F5" value="poภายนอก">
 <script>
     document.addEventListener("DOMContentLoaded", function () {
         // ดึงวันที่ปัจจุบันในรูปแบบ YYYY-MM-DD
@@ -300,14 +295,11 @@
 
         // เพิ่มพารามิเตอร์วันที่เข้าไปในลิงก์
         document.getElementById("btn-dashboard").href = `dashboard?date=${today}`;
-        document.getElementById("btn-dashboardpo").href = `dashboardpo?date=${today}`;
-        document.getElementById("btn-dashboarddoc").href = `dashboarddoc?date=${today}`;
     });
 </script>
                  <a href="alertaccount" title="บัญชี" class="notification-icon" style="position: relative; display: inline-block;">
                 <input class="btn btn-danger" type="button" style="background-color: pink" value="บัญชี">
                 
-                    {{-- ไปเพิ่มเซิฟหลัก --}}
                 <span class="notification-badge" id="alertAccountBadge" style="position: absolute; top: -5px; right: -5px; background-color: rgb(255, 0, 0); color: white; border-radius: 50%; width: 20px; height: 20px; display: none; text-align: center; line-height: 20px;">0</span>
             </a>
             
@@ -702,31 +694,6 @@
             }
         }
         initDropdown(document.getElementById('SOStatus'), "");
-
-
-async function checkForAccountAlerts() {
-    try {
-        const response = await fetch('/alertaccount/count'); 
-        const data = await response.json();
-
-        const badge = document.getElementById('alertAccountBadge');
-        
-        if (data.count > 0) {
-            badge.textContent = data.count;
-            badge.style.display = 'block';
-        } else {
-            badge.style.display = 'none';
-        }
-    } catch (error) {
-        console.error('ไม่สามารถเช็คการแจ้งเตือนได้:', error);
-    }
-}
-
-// เรียกตอนโหลดหน้า
-checkForAccountAlerts();
-
-
-setInterval(checkForAccountAlerts, 180000);
 
     </script>
 
