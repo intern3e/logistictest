@@ -1,7 +1,8 @@
 <?php
 
 namespace App\Http\Controllers;
-
+use Carbon\Carbon;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Http\Request;
 use App\Models\Pooutside;
 use Illuminate\Support\Facades\Log;
@@ -267,5 +268,55 @@ class PooutsideController extends Controller
         }
         
         return array_unique($keywords);
+    }
+     public function pull()
+    {
+        // วันที่วันนี้ (รูปแบบเดียวกับ Sheet)
+        $today = Carbon::now()->format('Y/m/d');
+
+        // Google Sheet (CSV Export)
+        $url = "https://docs.google.com/spreadsheets/d/10C7TH4CUsE8AZmngq4G0PYti_IcEzjRHB2EQiCDwsh0/export?format=csv&gid=0";
+
+        $csv = array_map('str_getcsv', file($url));
+
+        // ลบ header
+        unset($csv[0]);
+
+        $inserted = 0;
+
+        foreach ($csv as $row) {
+
+            // [0]=date_invice, [1]=invice, [2]=name, [3]=quantity, [4]=ponum
+            if ($row[0] !== $today) {
+                continue; // เอาเฉพาะวันนี้
+            }
+
+            // ป้องกันข้อมูลซ้ำ (ตาม invice + ponum)
+            $exists = DB::table('pooutside')
+                ->where('invice', $row[1])
+                ->where('ponum', $row[4])
+                ->exists();
+
+            if ($exists) {
+                continue;
+            }
+
+            DB::table('pooutside')->insert([
+                'date_invice' => Carbon::createFromFormat('Y/m/d', $row[0])->format('Y-m-d'),
+                'invice'      => $row[1],
+                'name'        => $row[2],
+                'quantity'    => $row[3],
+                'ponum'       => $row[4],
+                'idvendor'    => null,   // เว้นว่าง
+                'name_vendor' => null    // เว้นว่าง
+            ]);
+
+            $inserted++;
+        }
+
+        return response()->json([
+            'status' => true,
+            'message' => "ดึงข้อมูลสำเร็จ {$inserted} รายการ"
+        ]);
     }
 }

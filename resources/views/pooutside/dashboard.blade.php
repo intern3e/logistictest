@@ -375,7 +375,7 @@
                         <input type="text" id="filterPO" placeholder="เลข PO" />
                     </div>
 
-                    <div class="filter-group">
+                    {{-- <div class="filter-group">
                         <label>วันที่ Invoice</label>
                         <input type="date" id="filterInvoiceDate" />
                     </div>
@@ -388,7 +388,7 @@
                     <div class="filter-group">
                         <label>ชื่อสินค้า</label>
                         <input type="text" id="filterProduct" placeholder="ชื่อสินค้า" />
-                    </div>
+                    </div> --}}
 
                     <div class="filter-group">
                         <label>ชื่อ Vendor</label>

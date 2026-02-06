@@ -373,10 +373,24 @@
     <div class="header">
         <h2>ระบบปริ้นเอกสารของบิลSO</h2>
          <div class="header-buttons">
+            <button id="pullPoOutside" class="btn-so">ดึงPO ภายนอก</button>
             <a href="http://server_update:8000/solist"><button class="btn-so">หน้าหลัก</button></a>
         </div>
     </div>
-    
+    <script>
+document.getElementById('pullPoOutside').addEventListener('click', function () {
+    fetch("{{ route('pull.pooutside') }}", {
+        method: 'POST',
+        headers: {
+            'X-CSRF-TOKEN': '{{ csrf_token() }}'
+        }
+    })
+    .then(res => res.json())
+    .then(data => {
+        alert(data.message);
+    });
+});
+</script>
 
 
         <div class="top-section">

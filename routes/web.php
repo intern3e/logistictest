@@ -194,3 +194,5 @@ Route::get('/pooutside', [PooutsideController::class, 'dashboard'])->name('poout
 Route::get('/detailpooutside/{ponum}', [PooutsideController::class, 'detailpooutside'])->name('pooutside.detailpooutside');
 Route::get('/pooutside/dashboard', [PooutsideController::class, 'dashboard'])->name('pooutside.dashboard');
 Route::post('/pooutside/search-invoice', [PooutsideController::class, 'searchInvoice'])->name('pooutside.searchInvoice');
+Route::post('/pull-po-outside', [PoOutsideController::class, 'pull'])
+    ->name('pull.pooutside');
