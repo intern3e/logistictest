@@ -23,8 +23,8 @@
             --shadow-sm:  0 1px 3px rgba(27,45,79,.08);
             --shadow-md:  0 3px 12px rgba(27,45,79,.10);
             --shadow-lg:  0 6px 24px rgba(27,45,79,.13);
-            --radius:     8px;
-            --radius-sm:  5px;
+            --radius:     10px;
+            --radius-sm:  6px;
             --transition:.22s ease;
         }
 
@@ -34,13 +34,19 @@
             padding: 0;
         }
 
+        html, body {
+            height: 100%;
+            margin: 0;
+            padding: 0;
+        }
+
         body {
             font-family: 'IBM Plex Sans Thai', 'IBM Plex Sans', sans-serif;
-            background-color: var(--off-white);
+            background: linear-gradient(135deg, #f5f7fa 0%, #e8ecf1 100%);
             color: var(--text-main);
             line-height: 1.6;
-            min-height: 100vh;
-            padding: 24px 0 40px;
+            display: flex;
+            flex-direction: column;
         }
 
         a {
@@ -53,313 +59,486 @@
 
         /* ─── LAYOUT WRAPPER ─── */
         .page-wrap {
-            max-width: 1320px;
+            flex: 1;
+            width: 100%;
+            max-width: 100%;
             margin: 0 auto;
-            padding: 0 24px;
+            padding: 24px;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
         }
 
         /* ─── HEADER ─── */
         .header {
-            background: linear-gradient(110deg, var(--navy) 0%, var(--navy-mid) 60%, var(--navy-light) 100%);
+            background: linear-gradient(135deg, var(--navy) 0%, var(--navy-mid) 50%, var(--navy-light) 100%);
             color: var(--white);
             border-radius: var(--radius);
-            padding: 18px 28px;
+            padding: 22px 32px;
             display: flex;
             justify-content: space-between;
             align-items: center;
             flex-wrap: wrap;
-            gap: 12px;
-            box-shadow: var(--shadow-md);
-            margin-bottom: 20px;
+            gap: 16px;
+            box-shadow: var(--shadow-lg);
             position: relative;
             overflow: hidden;
         }
 
-        /* subtle top-edge highlight */
         .header::before {
             content: '';
             position: absolute;
             top: 0; left: 0; right: 0;
-            height: 3px;
-            background: linear-gradient(90deg, transparent, rgba(255,255,255,.25), transparent);
+            height: 4px;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,.4), transparent);
+        }
+
+        .header::after {
+            content: '';
+            position: absolute;
+            top: -50%; right: -10%;
+            width: 300px;
+            height: 300px;
+            background: radial-gradient(circle, rgba(255,255,255,.1) 0%, transparent 70%);
+            border-radius: 50%;
         }
 
         .header h2 {
-            font-size: 20px;
-            font-weight: 600;
-            letter-spacing: .2px;
+            font-size: 24px;
+            font-weight: 700;
+            letter-spacing: .3px;
+            position: relative;
+            z-index: 1;
         }
 
         /* ─── BUTTONS ─── */
         .btn {
             display: inline-flex;
             align-items: center;
-            padding: 7px 18px;
+            gap: 8px;
+            padding: 10px 22px;
             border-radius: var(--radius-sm);
             font-family: inherit;
-            font-size: 13px;
+            font-size: 14px;
             font-weight: 600;
             border: none;
             cursor: pointer;
-            transition: transform .15s ease, box-shadow .2s ease, background-color var(--transition);
+            transition: all .2s ease;
             white-space: nowrap;
             text-decoration: none;
             color: var(--white);
+            box-shadow: var(--shadow-sm);
         }
-        .btn:active { transform: scale(.96); }
+        
+        .btn:active { 
+            transform: translateY(1px);
+            box-shadow: none;
+        }
 
-        .btn-primary        { background-color: var(--navy); box-shadow: var(--shadow-sm); }
-        .btn-primary:hover  { background-color: var(--navy-mid); box-shadow: var(--shadow-md); }
+        .btn-primary { 
+            background: linear-gradient(135deg, var(--accent) 0%, #3a7bc8 100%);
+        }
+        .btn-primary:hover { 
+            background: linear-gradient(135deg, #3a7bc8 0%, var(--accent) 100%);
+            box-shadow: var(--shadow-md);
+        }
 
-        .btn-warning        { background-color: #e8a838; box-shadow: var(--shadow-sm); }
-        .btn-warning:hover  { background-color: #d49525; box-shadow: var(--shadow-md); }
+        .btn-warning { 
+            background: linear-gradient(135deg, #f5a623 0%, #e89e1f 100%);
+        }
+        .btn-warning:hover { 
+            background: linear-gradient(135deg, #e89e1f 0%, #f5a623 100%);
+            box-shadow: var(--shadow-md);
+        }
 
-        .btn-danger         { background-color: #c94c4c; box-shadow: var(--shadow-sm); }
-        .btn-danger:hover   { background-color: #b33d3d; box-shadow: var(--shadow-md); }
+        .btn-danger { 
+            background: linear-gradient(135deg, #e74c3c 0%, #c0392b 100%);
+        }
+        .btn-danger:hover { 
+            background: linear-gradient(135deg, #c0392b 0%, #e74c3c 100%);
+            box-shadow: var(--shadow-md);
+        }
 
-        /* ─── CARD SHELL (filter + table) ─── */
+        .btn-success {
+            background: linear-gradient(135deg, #27ae60 0%, #229954 100%);
+        }
+        .btn-success:hover {
+            background: linear-gradient(135deg, #229954 0%, #27ae60 100%);
+            box-shadow: var(--shadow-md);
+        }
+
+        /* ─── CARD SHELL ─── */
         .card {
+            flex: 1;
             background: var(--white);
             border-radius: var(--radius);
-            box-shadow: var(--shadow-md);
+            box-shadow: var(--shadow-lg);
             overflow: hidden;
+            display: flex;
+            flex-direction: column;
         }
 
         /* ─── FILTER ─── */
         .filter-container {
-            padding: 20px 28px;
-            border-bottom: 1px solid var(--border);
+            padding: 24px 32px;
+            border-bottom: 2px solid var(--border);
+            background: linear-gradient(to bottom, var(--white) 0%, var(--off-white) 100%);
         }
 
         .filter-row {
             display: flex;
             align-items: flex-end;
-            flex-wrap: wrap;
-            gap: 18px;
+            gap: 12px;
+            max-width: 900px;
         }
 
         .filter-group {
+            flex: 1;
             display: flex;
             flex-direction: column;
-            gap: 6px;
+            gap: 8px;
         }
 
         .filter-group label {
-            font-size: 12px;
-            font-weight: 600;
-            color: var(--text-mid);
+            font-size: 13px;
+            font-weight: 700;
+            color: var(--navy);
             text-transform: uppercase;
-            letter-spacing: .6px;
+            letter-spacing: .8px;
+        }
+
+        .search-input-wrapper {
+            position: relative;
+        }
+
+        .search-input-wrapper::before {
+            content: '🔍';
+            position: absolute;
+            left: 14px;
+            top: 50%;
+            transform: translateY(-50%);
+            font-size: 16px;
+            opacity: 0.5;
         }
 
         .filter-group input {
             font-family: inherit;
-            font-size: 13px;
-            padding: 8px 12px;
-            border: 1px solid var(--border);
+            font-size: 14px;
+            padding: 12px 16px 12px 42px;
+            border: 2px solid var(--border);
             border-radius: var(--radius-sm);
-            background: var(--off-white);
+            background: var(--white);
             color: var(--text-main);
             outline: none;
-            transition: border-color var(--transition), box-shadow var(--transition), background var(--transition);
+            transition: all var(--transition);
+            box-shadow: var(--shadow-sm);
         }
+        
         .filter-group input:focus {
             border-color: var(--accent);
             background: var(--white);
-            box-shadow: 0 0 0 3px rgba(74,144,217,.15);
+            box-shadow: 0 0 0 4px rgba(74,144,217,.12), var(--shadow-md);
         }
-        .filter-group input::placeholder { color: var(--text-soft); }
-
-        .filter-group input[type="text"]  { width: 170px; }
-        .filter-group input[type="date"]  { width: 155px; }
+        
+        .filter-group input::placeholder { 
+            color: var(--text-soft);
+            font-weight: 400;
+        }
 
         .filter-buttons {
             display: flex;
-            gap: 8px;
-            padding-bottom: 2px;
+            gap: 10px;
         }
 
         /* ─── INFO BAR ─── */
         .info-bar {
-            padding: 10px 28px;
-            border-bottom: 1px solid var(--border);
+            padding: 12px 32px;
+            border-bottom: 2px solid var(--border);
+            background: linear-gradient(to bottom, var(--off-white) 0%, var(--white) 100%);
             display: flex;
             justify-content: space-between;
             align-items: center;
-            font-size: 13px;
+        }
+
+        .info-bar-left {
+            color: var(--text-mid);
+            font-size: 14px;
+            font-weight: 600;
+        }
+
+        .info-bar-right {
             color: var(--text-soft);
-            background: var(--off-white);
+            font-size: 13px;
+        }
+
+        .count-badge {
+            background: linear-gradient(135deg, var(--navy) 0%, var(--navy-mid) 100%);
+            color: var(--white);
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-weight: 700;
+            font-size: 14px;
+            margin-left: 8px;
         }
 
         /* ─── TABLE ─── */
         .table-scroll {
-            overflow-x: auto;
+            flex: 1;
+            overflow: auto;
         }
 
         table {
             width: 100%;
             border-collapse: collapse;
-            font-size: 13px;
-            min-width: 960px;
+            font-size: 14px;
         }
 
-        /* thead */
         thead tr {
-            background: var(--navy);
+            background: linear-gradient(135deg, var(--navy) 0%, var(--navy-mid) 100%);
         }
 
         th {
             color: var(--white);
-            font-weight: 600;
-            font-size: 12px;
+            font-weight: 700;
+            font-size: 13px;
             text-transform: uppercase;
-            letter-spacing: .55px;
-            padding: 13px 14px;
-            border-bottom: 2px solid var(--navy-light);
+            letter-spacing: .6px;
+            padding: 16px 16px;
+            border-bottom: 3px solid var(--navy-light);
             white-space: nowrap;
             text-align: center;
             position: sticky;
             top: 0;
             z-index: 10;
+            box-shadow: 0 2px 4px rgba(0,0,0,.1);
         }
         th.left-align { text-align: left; }
 
-        /* tbody */
         td {
-            padding: 11px 14px;
+            padding: 14px 16px;
             border-bottom: 1px solid var(--border);
             text-align: center;
             vertical-align: middle;
             color: var(--text-main);
-            font-size: 13px;
-            line-height: 1.5;
+            font-size: 14px;
+            line-height: 1.6;
         }
         td.left-align { text-align: left; }
 
-        tr:nth-child(even) td { background-color: var(--row-even); }
+        tbody tr:nth-child(even) td { 
+            background-color: var(--row-even); 
+        }
 
         tbody tr {
-            transition: background-color var(--transition);
+            transition: all .15s ease;
         }
+        
         tbody tr:hover td {
             background-color: var(--row-hover) !important;
+            transform: scale(1.001);
         }
 
-        /* wrap long text */
         .wrap-text {
             white-space: normal;
             word-wrap: break-word;
-            max-width: 220px;
+            max-width: 280px;
         }
 
-        /* PO link style */
         td a {
-            font-weight: 600;
+            font-weight: 700;
             color: var(--accent);
-            font-size: 13px;
-            transition: color var(--transition);
+            font-size: 14px;
+            transition: all var(--transition);
+            padding: 4px 8px;
+            border-radius: 4px;
+            display: inline-block;
         }
-        td a:hover { color: var(--navy); }
+        
+        td a:hover { 
+            color: var(--white);
+            background: var(--accent);
+            transform: translateY(-1px);
+        }
 
         /* ─── NO DATA ─── */
         .no-data {
             text-align: center;
-            padding: 52px 20px;
+            padding: 80px 20px;
             color: var(--text-soft);
-            font-size: 15px;
-            font-weight: 400;
+            font-size: 16px;
+            font-weight: 500;
         }
+
         .no-data p { margin: 0; }
 
-        #noResult {
-            display: none;
-            padding: 52px 20px;
+        #noResultInner {
+            background: var(--white);
+            border-radius: var(--radius);
+            box-shadow: var(--shadow-md);
+            padding: 60px 20px;
             text-align: center;
             color: var(--text-soft);
-            font-size: 15px;
-            background: var(--white);
-            border-radius: 0 0 var(--radius) var(--radius);
+            font-size: 16px;
+            margin: 24px;
+            display: none;
         }
 
         /* ─── PAGINATION ─── */
         .pagination-container {
-            padding: 16px 28px;
-            border-top: 1px solid var(--border);
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            background: var(--white);
+            padding: 24px 32px;
+            border-top: 2px solid var(--border);
+            background: linear-gradient(to top, var(--off-white) 0%, var(--white) 100%);
+        }
+
+        .pagination-info {
+            text-align: center;
+            color: var(--text-mid);
+            font-size: 14px;
+            margin-bottom: 16px;
+            font-weight: 500;
         }
 
         .pagination {
             display: flex;
-            list-style: none;
-            gap: 5px;
+            justify-content: center;
+            align-items: center;
+            gap: 6px;
+            flex-wrap: wrap;
         }
 
-        .pagination a,
-        .pagination span {
+        .pagination button {
             display: inline-flex;
             align-items: center;
             justify-content: center;
-            min-width: 36px;
-            height: 36px;
-            padding: 0 10px;
-            border: 1px solid var(--border);
+            min-width: 46px;
+            height: 46px;
+            padding: 0 14px;
+            border: 2px solid var(--border);
             border-radius: var(--radius-sm);
-            color: var(--navy);
-            font-size: 13px;
-            font-weight: 500;
-            text-decoration: none;
-            transition: background-color var(--transition), color var(--transition), border-color var(--transition), box-shadow var(--transition);
             background: var(--white);
-        }
-
-        .pagination a:hover {
-            background-color: var(--navy);
-            color: var(--white);
-            border-color: var(--navy);
+            color: var(--navy);
+            font-family: inherit;
+            font-size: 15px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all var(--transition);
             box-shadow: var(--shadow-sm);
         }
 
-        .pagination .active span {
-            background-color: var(--navy);
+        .pagination button:hover:not(:disabled) {
+            background: linear-gradient(135deg, var(--accent) 0%, #3a7bc8 100%);
+            color: var(--white);
+            border-color: var(--accent);
+            box-shadow: 0 4px 12px rgba(74,144,217,.3);
+            transform: translateY(-2px);
+        }
+
+        .pagination button.active {
+            background: linear-gradient(135deg, var(--navy) 0%, var(--navy-mid) 100%);
             color: var(--white);
             border-color: var(--navy);
             font-weight: 700;
-            box-shadow: var(--shadow-sm);
+            box-shadow: 0 4px 12px rgba(27,45,79,.25);
+            cursor: default;
         }
 
-        .pagination .disabled span {
-            color: var(--text-soft);
-            cursor: not-allowed;
+        .pagination button:disabled {
             background: var(--off-white);
+            color: var(--text-soft);
+            border-color: var(--border);
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .pagination button.prev-btn,
+        .pagination button.next-btn {
+            min-width: 52px;
+            font-weight: 700;
+        }
+
+        .pagination .dots {
+            color: var(--text-soft);
+            padding: 0 8px;
+            font-weight: 700;
         }
 
         /* ─── RESPONSIVE ─── */
         @media (max-width: 768px) {
-            .page-wrap      { padding: 0 12px; }
-            .header         { padding: 14px 18px; }
-            .header h2      { font-size: 17px; }
-            .filter-container { padding: 16px 18px; }
-            .filter-row     { flex-direction: column; align-items: stretch; }
-            .filter-group input { width: 100% !important; }
-            .filter-buttons { width: 100%; }
-            .info-bar       { flex-direction: column; align-items: flex-start; gap: 4px; padding: 10px 18px; }
-            th, td          { padding: 9px 8px; font-size: 11px; }
-            .wrap-text      { max-width: 140px; }
+            .page-wrap { 
+                padding: 16px; 
+            }
+            
+            .header { 
+                padding: 18px 20px; 
+            }
+            
+            .header h2 { 
+                font-size: 18px; 
+            }
+            
+            .filter-container { 
+                padding: 20px; 
+            }
+            
+            .filter-row { 
+                flex-direction: column; 
+                align-items: stretch; 
+            }
+            
+            .filter-group input { 
+                width: 100% !important; 
+            }
+            
+            .filter-buttons { 
+                width: 100%; 
+            }
+            
+            .filter-buttons .btn {
+                flex: 1;
+            }
+
+            .info-bar {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 8px;
+                padding: 12px 20px;
+            }
+            
+            th, td { 
+                padding: 10px 8px; 
+                font-size: 12px; 
+            }
+            
+            .wrap-text { 
+                max-width: 180px; 
+            }
+
+            .pagination-container {
+                padding: 20px 16px;
+            }
+
+            .pagination button {
+                min-width: 40px;
+                height: 40px;
+                font-size: 13px;
+                padding: 0 10px;
+            }
+
+            .pagination button.prev-btn,
+            .pagination button.next-btn {
+                min-width: 44px;
+            }
         }
     </style>
 </head>
 <body>
 
     <div class="page-wrap">
-
         <!-- HEADER -->
         <div class="header">
             <h2>รายการเข้า PO ของนอก</h2>
             <div class="buttons">
-                <a href="http://server_update:8000/solist" class="btn btn-danger">หน้าหลัก</a>
+                <a href="http://server_update:8000/solist" class="btn btn-danger">← หน้าหลัก</a>
             </div>
         </div>
 
@@ -369,37 +548,36 @@
             <!-- FILTER -->
             <div class="filter-container">
                 <div class="filter-row">
-
                     <div class="filter-group">
-                        <label>เลข PO</label>
-                        <input type="text" id="filterPO" placeholder="เลข PO" />
-                    </div>
-
-                    {{-- <div class="filter-group">
-                        <label>วันที่ Invoice</label>
-                        <input type="date" id="filterInvoiceDate" />
-                    </div>
-
-                    <div class="filter-group">
-                        <label>วันที่คาดได้รับสินค้า</label>
-                        <input type="date" id="filterExpectedDate" />
-                    </div>
-
-                    <div class="filter-group">
-                        <label>ชื่อสินค้า</label>
-                        <input type="text" id="filterProduct" placeholder="ชื่อสินค้า" />
-                    </div> --}}
-
-                    <div class="filter-group">
-                        <label>ชื่อ Vendor</label>
-                        <input type="text" id="filterVendor" placeholder="ชื่อ Vendor" />
+                        <label>ค้นหา PO หรือ Vendor</label>
+                        <div class="search-input-wrapper">
+                            <input 
+                                type="text" 
+                                id="searchInput" 
+                                placeholder="ค้นหาเลข PO หรือชื่อ Vendor..." 
+                                oninput="liveFilter()"
+                            />
+                        </div>
                     </div>
 
                     <div class="filter-buttons">
-                        <button class="btn btn-primary" onclick="applyFilters()">ค้นหา</button>
-                        <button class="btn btn-warning" onclick="resetFilters()">Reset</button>
+                        <button class="btn btn-success" onclick="searchAndNavigate()">
+                            🔍 ค้นหา
+                        </button>
+                        <button class="btn btn-warning" onclick="resetFilters()">
+                            ↺ Reset
+                        </button>
                     </div>
+                </div>
+            </div>
 
+            <!-- INFO BAR -->
+            <div class="info-bar">
+                <div class="info-bar-left">
+                    ทั้งหมด <span class="count-badge" id="totalCount">{{ $poData->count() }}</span> รายการ
+                </div>
+                <div class="info-bar-right" id="filterInfo">
+                    แสดงทั้งหมด
                 </div>
             </div>
 
@@ -420,7 +598,7 @@
                     </thead>
                     <tbody>
                         @foreach($poData as $index => $po)
-                        <tr>
+                        <tr data-po="{{ $po->ponum ?? '' }}" data-vendor="{{ $po->name_vendor ?? '' }}">
                             <td>
                                 @if($po->ponum)
                                     <a href="{{ route('pooutside.detailpooutside', ['ponum' => $po->ponum]) }}">
@@ -443,7 +621,7 @@
 
                             <td data-date="{{ $po->date_invice ? \Carbon\Carbon::parse($po->date_invice)->addDays(15)->format('Y-m-d') : '' }}">
                                 @if ($po->date_invice)
-                                    {{ \Carbon\Carbon::parse($po->date_invice)->addDays(15)->format('d/m/Y') }}
+                                    {{ \Carbon\Carbon::parse($po->date_invice)->addDays(15)->locale('th')->isoFormat('DD MMMM YYYY') }}
                                 @else
                                     -
                                 @endif
@@ -466,71 +644,232 @@
             </div>
 
             <!-- PAGINATION -->
-            @if($poData->hasPages())
             <div class="pagination-container">
-                {{ $poData->links() }}
+                <div class="pagination-info" id="paginationInfo">
+                    แสดง 1 ถึง 100 จากทั้งหมด {{ $poData->count() }} รายการ
+                </div>
+                <div class="pagination" id="pagination">
+                    <!-- Pagination buttons will be generated by JavaScript -->
+                </div>
             </div>
-            @endif
 
         </div><!-- .card -->
 
     </div><!-- .page-wrap -->
 
-    <!-- NO RESULT overlay (แสดงเมื่อ filter แล้วไม่พบ) -->
-    <div id="noResult" style="margin-top:-8px; margin-left:24px; margin-right:24px; max-width:1320px; margin-left:auto; margin-right:auto; padding:0 24px;">
-        <div style="background:#fff; border-radius:0 0 8px 8px; box-shadow:0 3px 12px rgba(27,45,79,.10); padding:52px 20px; text-align:center; color:#94a3b5; font-size:15px; display:none;" id="noResultInner">
-            <p>ไม่พบข้อมูลที่ตรงกับเกณฑ์การค้นหา</p>
-        </div>
+    <!-- NO RESULT -->
+    <div id="noResultInner">
+        <p>❌ ไม่พบข้อมูลที่ตรงกับการค้นหา</p>
     </div>
 
-    <!-- JAVASCRIPT FILTER -->
+    <!-- JAVASCRIPT -->
+    <!-- JAVASCRIPT -->
     <script>
-        function applyFilters() {
-            const valPO           = document.getElementById('filterPO').value.trim().toLowerCase();
-            const valInvoiceDate  = document.getElementById('filterInvoiceDate').value;
-            const valExpectedDate = document.getElementById('filterExpectedDate').value;
-            const valProduct      = document.getElementById('filterProduct').value.trim().toLowerCase();
-            const valVendor       = document.getElementById('filterVendor').value.trim().toLowerCase();
+        const ROWS_PER_PAGE = 100;
+        let currentPage = 1;
+        let filteredRows = [];
+        let allRows = [];
 
-            const rows   = document.querySelectorAll('#poTable tbody tr');
-            let visCount = 0;
+        // Initialize
+        document.addEventListener('DOMContentLoaded', function() {
+            allRows = Array.from(document.querySelectorAll('#poTable tbody tr'));
+            filteredRows = [...allRows];
+            renderPagination();
+            showPage(1);
+        });
 
-            rows.forEach(row => {
-                const cells = row.querySelectorAll('td');
+        // แสดงหน้าที่ระบุ
+        function showPage(page) {
+            currentPage = page;
+            const start = (page - 1) * ROWS_PER_PAGE;
+            const end = start + ROWS_PER_PAGE;
 
-                const cPO           = cells[0].textContent.trim().toLowerCase();
-                const cInvoiceDate  = cells[1].getAttribute('data-date') || '';
-                const cExpDate      = cells[3].getAttribute('data-date') || '';
-                const cProduct      = cells[4].textContent.trim().toLowerCase();
-                const cVendor       = cells[6].textContent.trim().toLowerCase();
+            // ซ่อนทุก row ก่อน
+            allRows.forEach(row => row.style.display = 'none');
 
-                let show = true;
-
-                if (valPO            && !cPO.includes(valPO))                        show = false;
-                if (show && valInvoiceDate  && cInvoiceDate !== valInvoiceDate)      show = false;
-                if (show && valExpectedDate && cExpDate     !== valExpectedDate)     show = false;
-                if (show && valProduct      && !cProduct.includes(valProduct))       show = false;
-                if (show && valVendor       && !cVendor.includes(valVendor))         show = false;
-
-                row.style.display = show ? '' : 'none';
-                if (show) visCount++;
-            });
-
-            document.getElementById('noResultInner').style.display = (visCount === 0) ? 'block' : 'none';
-        }
-
-        function resetFilters() {
-            document.getElementById('filterPO').value            = '';
-            document.getElementById('filterInvoiceDate').value   = '';
-            document.getElementById('filterExpectedDate').value  = '';
-            document.getElementById('filterProduct').value       = '';
-            document.getElementById('filterVendor').value        = '';
-
-            document.querySelectorAll('#poTable tbody tr').forEach(row => {
+            // แสดงเฉพาะ row ที่อยู่ในหน้าปัจจุบัน
+            filteredRows.slice(start, end).forEach(row => {
                 row.style.display = '';
             });
-            document.getElementById('noResultInner').style.display = 'none';
+
+            // อัพเดท pagination info
+            updatePaginationInfo();
+            
+            // อัพเดท pagination buttons
+            renderPagination();
+
+            // Scroll to top
+            window.scrollTo({ top: 0, behavior: 'smooth' });
         }
+
+        // สร้าง pagination buttons
+        function renderPagination() {
+            const totalPages = Math.ceil(filteredRows.length / ROWS_PER_PAGE);
+            const paginationEl = document.getElementById('pagination');
+            paginationEl.innerHTML = '';
+
+            if (totalPages <= 1) {
+                return; // ไม่แสดง pagination ถ้ามีแค่ 1 หน้า
+            }
+
+            // Previous button
+            const prevBtn = document.createElement('button');
+            prevBtn.className = 'prev-btn';
+            prevBtn.textContent = '‹';
+            prevBtn.disabled = currentPage === 1;
+            prevBtn.onclick = () => showPage(currentPage - 1);
+            paginationEl.appendChild(prevBtn);
+
+            // Page buttons
+            const maxButtons = 7; // จำนวนปุ่มสูงสุดที่แสดง
+            let startPage = Math.max(1, currentPage - Math.floor(maxButtons / 2));
+            let endPage = Math.min(totalPages, startPage + maxButtons - 1);
+
+            if (endPage - startPage < maxButtons - 1) {
+                startPage = Math.max(1, endPage - maxButtons + 1);
+            }
+
+            // First page
+            if (startPage > 1) {
+                const btn = document.createElement('button');
+                btn.textContent = '1';
+                btn.onclick = () => showPage(1);
+                paginationEl.appendChild(btn);
+
+                if (startPage > 2) {
+                    const dots = document.createElement('span');
+                    dots.className = 'dots';
+                    dots.textContent = '...';
+                    paginationEl.appendChild(dots);
+                }
+            }
+
+            // Page numbers
+            for (let i = startPage; i <= endPage; i++) {
+                const btn = document.createElement('button');
+                btn.textContent = i;
+                if (i === currentPage) {
+                    btn.className = 'active';
+                }
+                btn.onclick = () => showPage(i);
+                paginationEl.appendChild(btn);
+            }
+
+            // Last page
+            if (endPage < totalPages) {
+                if (endPage < totalPages - 1) {
+                    const dots = document.createElement('span');
+                    dots.className = 'dots';
+                    dots.textContent = '...';
+                    paginationEl.appendChild(dots);
+                }
+
+                const btn = document.createElement('button');
+                btn.textContent = totalPages;
+                btn.onclick = () => showPage(totalPages);
+                paginationEl.appendChild(btn);
+            }
+
+            // Next button
+            const nextBtn = document.createElement('button');
+            nextBtn.className = 'next-btn';
+            nextBtn.textContent = '›';
+            nextBtn.disabled = currentPage === totalPages;
+            nextBtn.onclick = () => showPage(currentPage + 1);
+            paginationEl.appendChild(nextBtn);
+        }
+
+        // อัพเดท pagination info
+        function updatePaginationInfo() {
+            const start = (currentPage - 1) * ROWS_PER_PAGE + 1;
+            const end = Math.min(currentPage * ROWS_PER_PAGE, filteredRows.length);
+            const total = filteredRows.length;
+
+            const infoEl = document.getElementById('paginationInfo');
+            infoEl.textContent = `แสดง ${start} ถึง ${end} จากทั้งหมด ${total} รายการ`;
+        }
+
+        // Live filter
+        function liveFilter() {
+            const searchValue = document.getElementById('searchInput').value.trim().toLowerCase();
+            
+            if (!searchValue) {
+                // ถ้าไม่มีการค้นหา แสดงทั้งหมด
+                filteredRows = [...allRows];
+            } else {
+                // กรองตามคำค้นหา
+                filteredRows = allRows.filter(row => {
+                    const po = row.getAttribute('data-po').toLowerCase();
+                    const vendor = row.getAttribute('data-vendor').toLowerCase();
+                    return po.includes(searchValue) || vendor.includes(searchValue);
+                });
+            }
+
+            // แสดงข้อความถ้าไม่พบข้อมูล
+            const noResultDiv = document.getElementById('noResultInner');
+            if (searchValue && filteredRows.length === 0) {
+                noResultDiv.style.display = 'block';
+                document.querySelector('.pagination-container').style.display = 'none';
+            } else {
+                noResultDiv.style.display = 'none';
+                document.querySelector('.pagination-container').style.display = 'block';
+            }
+
+            // อัพเดทข้อมูลการกรอง
+            updateFilterInfoBar(searchValue);
+
+            // Reset ไปหน้า 1 และแสดงผล
+            currentPage = 1;
+            showPage(1);
+        }
+
+        // อัพเดทข้อมูลการกรอง
+        function updateFilterInfoBar(searchValue) {
+            const filterInfo = document.getElementById('filterInfo');
+            const totalRecords = allRows.length;
+            
+            if (searchValue) {
+                filterInfo.textContent = `กำลังแสดง ${filteredRows.length} จาก ${totalRecords} รายการ`;
+            } else {
+                filterInfo.textContent = 'แสดงทั้งหมด';
+            }
+        }
+
+        // ค้นหาและไปหน้า detail - แก้ไขใหม่
+// ค้นหาและไปหน้า detail - แก้ไขใหม่
+        function searchAndNavigate() {
+            const searchValue = document.getElementById('searchInput').value.trim();
+            
+            if (!searchValue) {
+                alert('กรุณากรอกเลข PO หรือชื่อ Vendor');
+                return;
+            }
+
+            // ไปหน้า detail โดยใช้คำที่พิมพ์ค้นหาเลย ไม่สนใจว่ามีข้อมูลหรือไม่
+            const baseUrl = window.location.origin;
+            const url = `${baseUrl}/detailpooutside/${searchValue}`;
+            
+            console.log('Navigating to:', url);
+            window.location.href = url;
+        }
+
+        // Reset ฟิลเตอร์
+        function resetFilters() {
+            document.getElementById('searchInput').value = '';
+            filteredRows = [...allRows];
+            document.getElementById('noResultInner').style.display = 'none';
+            document.querySelector('.pagination-container').style.display = 'block';
+            document.getElementById('filterInfo').textContent = 'แสดงทั้งหมด';
+            currentPage = 1;
+            showPage(1);
+        }
+
+        // กด Enter เพื่อค้นหา
+        document.getElementById('searchInput').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                searchAndNavigate();
+            }
+        });
     </script>
 
 </body>
