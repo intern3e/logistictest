@@ -954,11 +954,6 @@
                 tbody.innerHTML += row;
             }
         }
-
-        // ========================================
-        // INITIALIZE
-        // ========================================
-
         document.addEventListener('DOMContentLoaded', function() {
             loadPOData();
         });

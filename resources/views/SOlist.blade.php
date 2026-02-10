@@ -286,8 +286,8 @@
                    <a id="btn-dashboard">
     <input class="btn btn-danger" type="button" style="background-color: #C599B6" value="ข้อมูลจัดส่ง">
 </a>
-<a href="pooutside" title="poภายนอก" class="notification-icon" style="position: relative; display: inline-block;">
-                <input class="btn btn-danger" type="button" style="background-color: #27D6F5" value="poภายนอก">
+<a href="pooutside" title="ติดตามคำสั่งซื้อPO" class="notification-icon" style="position: relative; display: inline-block;">
+                <input class="btn btn-danger" type="button" style="background-color: #27D6F5" value="ติดตามคำสั่งซื้อPO"></a>
 <script>
     document.addEventListener("DOMContentLoaded", function () {
         // ดึงวันที่ปัจจุบันในรูปแบบ YYYY-MM-DD
