@@ -13,350 +13,292 @@ class PooutsideController extends Controller
     public function dashboard(Request $request)
     {
         $poData = Pooutside::orderBy('date_invice', 'desc')->get();
-        
         return view('pooutside.dashboard', compact('poData'));
     }
 
-    private function calculateExpectedDate($dateInvice)
-        {
-            if (!$dateInvice) {
-                return null;
-            }
-            
-            try {
-                $dateArray = explode('/', $dateInvice);
-                
-                if (count($dateArray) == 3) {
-                    $carbonDate = \Carbon\Carbon::createFromDate(
-                        $dateArray[2] - 543,  // year (แปลง พ.ศ. เป็น ค.ศ.)
-                        $dateArray[1],        // month
-                        $dateArray[0]         // day
-                    );
-                    
-                    // บวก 15 วัน
-                    $expectedDate = $carbonDate->addDays(15);
-                    
-                    // คืนค่าเป็น format d/m/Y (พ.ศ.)
-                    return $expectedDate->format('d/m') . '/' . ($expectedDate->year + 543);
-                }
-            } catch (\Exception $e) {
-                Log::error('Error calculating expected date: ' . $e->getMessage());
-            }
-            
-            return null;
-        }
     public function detailpooutside($ponum)
     {
         return view('pooutside.detailpooutside', ['ponum' => $ponum]);
     }
-private function cleanProductName($name)
-{
-    $cleaned = $name;
-    
-    // 1. ลบ metadata และ prefix ก่อน
-    $cleaned = preg_replace('/^.*?Model\s*:\s*/i', '', $cleaned); // ลบทุกอย่างก่อน "Model :"
-    $cleaned = preg_replace('/^(Cooling\s+Fan|Fan|Motor|Pump)\s+/i', '', $cleaned); // ลบคำทั่วไป
-    
-    // 2. ลบ code ท้ายชื่อ
-    $codePatterns = [
-        '/\s+[A-Z]\.\d+[^\s]*\s+[A-Z]\.\d+.*$/i',  // C.12174 S.021620
-        '/\*{2,}.*$/i',
-        '/\/\/[a-z]\.\d+.*$/i',
-    ];
-    
-    foreach ($codePatterns as $pattern) {
-        $cleaned = preg_replace($pattern, '', $cleaned);
-    }
-    
-    // 3. ลบตัวเลขโดดเดี่ยวท้ายสุด (แก้ปัญหา "3", "2" ใน DB)
-    $cleaned = preg_replace('/\s+\d+$/', '', $cleaned);
-    
-    // 4. ⭐ ลบชื่อแบรนด์ที่ต่อท้าย (มักมี comma นำหน้า)
-    $cleaned = preg_replace('/,\s*(SCHNEIDER|ABB|SIEMENS|MITSUBISHI|OMRON|FUJI|YASKAWA|PANASONIC|EATON|LEGRAND|HAGER|MOELLER|ALLEN\s*BRADLEY|ROCKWELL|GE|SQUARE\s*D|CUTLER\s*HAMMER|PHOENIX\s*CONTACT|WEIDMULLER|PILZ|SICK|TURCK|PEPPERL\s*FUCHS|IFM|BALLUFF|FESTO|SMC)\s*$/i', '', $cleaned);
-    
-    // ... ขั้นตอนอื่นๆ เหมือนเดิม
-    
-    return trim($cleaned);
-}
 
-/**
- * ฟังก์ชันเปรียบเทียบชื่อแบบ exact
- */
-private function isExactMatch($apiName, $dbName)
-{
-    $cleanApi = $this->cleanProductName($apiName);
-    $cleanDb = $this->cleanProductName($dbName);
-    
-    // Normalize: ลบทุกอย่างที่ไม่ใช่ตัวอักษรและตัวเลข แล้วแปลงเป็นตัวใหญ่
-    $normalizedApi = strtoupper(preg_replace('/[^A-Z0-9]/i', '', $cleanApi));
-    $normalizedDb = strtoupper(preg_replace('/[^A-Z0-9]/i', '', $cleanDb));
-    
-    $isMatch = $normalizedApi === $normalizedDb;
-    
-    // Log เพื่อ debug
-    Log::info('🔍 Exact Match Check:', [
-        'api_original' => $apiName,
-        'db_original' => $dbName,
-        'api_cleaned' => $cleanApi,
-        'db_cleaned' => $cleanDb,
-        'api_normalized' => $normalizedApi,
-        'db_normalized' => $normalizedDb,
-        'IS_MATCH' => $isMatch ? '✅ YES' : '❌ NO'
-    ]);
-    
-    return $isMatch;
-}
+    /**
+     * ⭐⭐⭐ API ใหม่: Batch Matching - จับคู่ทั้งหมดในครั้งเดียว ⭐⭐⭐
+     * 
+     * รับ: PO Number + รายการ API items ทั้งหมด
+     * ส่งกลับ: ผลการจับคู่ทั้งหมด
+     */
+    public function batchMatch(Request $request)
+    {
+        try {
+            $poNumber = $request->input('po_number');
+            $apiItems = $request->input('api_items'); // Array ของ items จาก API
 
-private function extractKeywords($name)
-{
-    // ลบ code ท้ายชื่อทุกรูปแบบ
-    $cleaned = preg_replace('/[<\^\+]{1,2}[A-Z]\.\d+.*?[>\^\+]{1,2}/', '', $name);
-    $cleaned = preg_replace('/\s+[A-Z]\.\d+[\.\d]*\s+[A-Z]\.[\d\/]+.*$/', '', $cleaned);
-    $cleaned = preg_replace('/\*{2,}.*$/', '', $cleaned);
-    
-    // ลบ code หลัง model number
-    $cleaned = preg_replace('/\s+\d{4}-\d+.*$/', '', $cleaned);
-    
-    // แปลง full-width space เป็น normal space
-    $cleaned = str_replace(['　', '  ', "\t", '"', "'"], ' ', $cleaned);
-    
-    // ลบ Brand:, Model:, PR: ออก
-    $cleaned = preg_replace('/\s*\|\s*PR:.*$/i', '', $cleaned);
-    $cleaned = preg_replace('/\s*Brand:.*$/i', '', $cleaned);
-    $cleaned = preg_replace('/\s*Model:.*$/i', '', $cleaned);
-    
-    // ลบ + ที่หน้าและหลังชื่อ
-    $cleaned = preg_replace('/^\++/', '', $cleaned);
-    $cleaned = preg_replace('/\++$/', '', $cleaned);
-    
-    $cleaned = trim($cleaned);
-    
-    // แยกคำและตัวเลข/model number
-    preg_match_all('/[A-Z]+[\+]?|[A-Z]*\d+[A-Z]*[\-]?[A-Z]*/', strtoupper($cleaned), $matches);
-    
-    $keywords = [];
-    $excludeWords = ['WITH', 'MANUAL', 'ENGLISH', 'FOR', 'THE', 'AND', 'OR', 
-                     'PR', 'BRAND', 'MODEL', 'NO', 'TX', 'OHC', 'PART', 'TWT'];
-    
-    foreach ($matches[0] as $word) {
-        $word = trim($word);
-        
-        // เก็บคำที่มีความหมาย
-        if (strlen($word) >= 2 && !in_array($word, $excludeWords)) {
-            $keywords[] = $word;
-        }
-    }
-    
-    return array_unique($keywords);
-}
+            $cleanPoNumber = preg_replace('/^PO/i', '', $poNumber);
 
-public function searchInvoice(Request $request)
-{
-    try {
-        $poNumber = $request->input('po_number');
-        $goodName = $request->input('good_name');
-        $apiQuantity = $request->input('quantity');
-        $apiCompleteFlag = $request->input('complete_flag', 'N');
-
-        $cleanPoNumber = preg_replace('/^PO/i', '', $poNumber);
-
-        Log::info('=== Search Invoice Request ===', [
-            'po_number' => $cleanPoNumber,
-            'good_name' => $goodName,
-            'api_quantity' => $apiQuantity
-        ]);
-
-        if (!$cleanPoNumber || !$goodName) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Missing parameters',
-                'date_invice' => '',
-                'invice' => '',
-                'total_received' => 0,
-                'is_complete' => false,
-                'has_data' => false
-            ]);
-        }
-
-        // ดึงข้อมูลทั้งหมดของ PO นี้
-        $allRecords = Pooutside::where('ponum', $cleanPoNumber)->get();
-
-        if ($allRecords->isEmpty()) {
-            Log::warning('No records found for PO');
-            return response()->json([
-                'success' => false,
-                'message' => 'No data found',
-                'date_invice' => '',
-                'invice' => '',
-                'total_received' => 0,
-                'is_complete' => false,
-                'has_data' => false
-            ]);
-        }
-
-        // นับจำนวนสินค้าที่ไม่ซ้ำกันใน DB (unique names)
-        $uniqueDbNames = $allRecords->pluck('name')->unique();
-        $dbItemCount = $uniqueDbNames->count();
-
-        Log::info('PO Items Count:', [
-            'db_unique_items' => $dbItemCount,
-            'db_items' => $uniqueDbNames->toArray()
-        ]);
-
-        // === ขั้นตอนที่ 1: ลอง exact match ก่อน ===
-        $exactMatch = null;
-        foreach ($allRecords as $record) {
-            if ($this->isExactMatch($goodName, $record->name)) {
-                $exactMatch = $record;
-                Log::info('✓ EXACT MATCH FOUND', [
-                    'api_name' => $goodName,
-                    'db_name' => $record->name
-                ]);
-                break;
-            }
-        }
-
-        // === ขั้นตอนที่ 2: ถ้าไม่เจอ exact match แต่มีข้อมูลอย่างละ 1 รายการ ให้จับคู่โดยอัตโนมัติ ===
-        if (!$exactMatch && $dbItemCount === 1) {
-            $exactMatch = $allRecords->first();
-            Log::info('✓ AUTO-MATCH (Single Item in PO)', [
-                'reason' => 'Only 1 unique item in DB for this PO',
-                'api_name' => $goodName,
-                'db_name' => $exactMatch->name,
-                'auto_matched' => true
-            ]);
-        }
-
-        // === ขั้นตอนที่ 3: ถ้ายังไม่เจอ ให้ใช้ keyword matching ===
-        if (!$exactMatch) {
-            $cleanedName = $this->cleanProductName($goodName);
-            $apiKeywords = $this->extractKeywords($cleanedName);
-
-            Log::info('No exact match and multiple items, trying keyword matching:', [
-                'cleaned_name' => $cleanedName,
-                'keywords' => $apiKeywords
+            Log::info('=== BATCH MATCH START ===', [
+                'po_number' => $cleanPoNumber,
+                'api_items_count' => count($apiItems)
             ]);
 
-            $bestMatch = null;
-            $highestScore = 0;
-
-            foreach ($allRecords as $record) {
-                $dbKeywords = $this->extractKeywords($record->name);
-                
-                $matchedKeywords = 0;
-                $totalKeywords = count($apiKeywords);
-                
-                if ($totalKeywords === 0) continue;
-                
-                foreach ($apiKeywords as $apiKeyword) {
-                    foreach ($dbKeywords as $dbKeyword) {
-                        $normalizedApi = str_replace(' ', '', strtoupper($apiKeyword));
-                        $normalizedDb = str_replace(' ', '', strtoupper($dbKeyword));
-                        
-                        if ($normalizedApi === $normalizedDb) {
-                            $matchedKeywords++;
-                            break;
-                        }
-                    }
-                }
-                
-                $score = ($totalKeywords > 0) ? ($matchedKeywords / $totalKeywords) * 100 : 0;
-                
-                Log::info('Keyword comparison:', [
-                    'api_keywords' => $apiKeywords,
-                    'db_keywords' => $dbKeywords,
-                    'db_name' => $record->name,
-                    'matched' => $matchedKeywords . '/' . $totalKeywords,
-                    'score' => $score
-                ]);
-
-                if ($score === 100.0 && $score > $highestScore) {
-                    $highestScore = $score;
-                    $bestMatch = $record;
-                }
-            }
-
-            // ถ้าไม่มีที่ตรง 100% ถือว่าไม่เจอ
-            if ($highestScore < 100) {
-                Log::warning('No perfect keyword match found', [
-                    'best_score' => $highestScore
-                ]);
-
+            if (!$cleanPoNumber || empty($apiItems)) {
                 return response()->json([
                     'success' => false,
-                    'message' => 'No matching item found',
-                    'date_invice' => '',
-                    'invice' => '',
-                    'total_received' => 0,
-                    'is_complete' => false,
-                    'has_data' => false
+                    'message' => 'Missing parameters',
+                    'matches' => []
                 ]);
             }
 
-            $exactMatch = $bestMatch;
+            // 1. ดึง DB items ทั้งหมดของ PO นี้
+            $dbRecords = Pooutside::where('ponum', $cleanPoNumber)->get();
+            
+            // Group by unique name
+            $dbItems = $dbRecords->groupBy('name')->map(function($records, $name) {
+                return [
+                    'name' => $name,
+                    'total_qty' => $records->sum(function($r) { return floatval($r->quantity); }),
+                    'latest_invoice' => $records->sortByDesc('date_invice')->first()->invice ?? '',
+                    'latest_date' => $records->sortByDesc('date_invice')->first()->date_invice ?? '',
+                    'records' => $records->map(function($r) {
+                        return [
+                            'invoice' => $r->invice,
+                            'date' => $r->date_invice,
+                            'quantity' => $r->quantity
+                        ];
+                    })->values()->toArray()
+                ];
+            })->values()->toArray();
+
+            Log::info('DB Items:', ['count' => count($dbItems)]);
+
+            // 2. สร้างผลลัพธ์สำหรับ API items ทั้งหมด (default: ไม่มี match)
+            $results = [];
+            foreach ($apiItems as $index => $apiItem) {
+                $results[$index] = [
+                    'api_name' => $apiItem['name'],
+                    'api_quantity' => $apiItem['quantity'],
+                    'complete_flag' => $apiItem['complete_flag'] ?? 'N',
+                    'matched' => false,
+                    'db_name' => null,
+                    'total_received' => 0,
+                    'invoice' => '',
+                    'date_invice' => '',
+                    'records' => []
+                ];
+            }
+
+            // 3. ⭐ วน DB ทีละตัว → หา API ที่ใกล้เคียงที่สุด → จับคู่
+            $usedApiIndexes = []; // เก็บ index ของ API ที่ถูกจับคู่แล้ว
+
+            foreach ($dbItems as $dbItem) {
+                $dbName = $dbItem['name'];
+                
+                $bestApiIndex = null;
+                $highestScore = 0;
+
+                // หา API item ที่ใกล้เคียงที่สุด (ที่ยังไม่ถูกจับคู่)
+                foreach ($apiItems as $apiIndex => $apiItem) {
+                    // ข้าม API ที่ถูกจับคู่แล้ว
+                    if (in_array($apiIndex, $usedApiIndexes)) {
+                        continue;
+                    }
+                    
+                    $apiName = $apiItem['name'];
+                    $score = $this->calculateMatchScore($apiName, $dbName);
+
+                    if ($score > $highestScore) {
+                        $highestScore = $score;
+                        $bestApiIndex = $apiIndex;
+                    }
+                }
+
+                // ⭐ ถ้า score >= 50 (DB keywords อยู่ใน API มากพอ) → จับคู่
+                if ($bestApiIndex !== null && $highestScore >= 50) {
+                    $usedApiIndexes[] = $bestApiIndex;
+                    
+                    $results[$bestApiIndex] = [
+                        'api_name' => $apiItems[$bestApiIndex]['name'],
+                        'api_quantity' => $apiItems[$bestApiIndex]['quantity'],
+                        'complete_flag' => $apiItems[$bestApiIndex]['complete_flag'] ?? 'N',
+                        'matched' => true,
+                        'match_score' => $highestScore,
+                        'db_name' => $dbName,
+                        'total_received' => $dbItem['total_qty'],
+                        'invoice' => $dbItem['latest_invoice'],
+                        'date_invice' => $dbItem['latest_date'],
+                        'records' => $dbItem['records']
+                    ];
+
+                    Log::info("✅ MATCHED", [
+                        'db' => substr($dbName, 0, 40),
+                        'api' => substr($apiItems[$bestApiIndex]['name'], 0, 40),
+                        'score' => $highestScore
+                    ]);
+                }
+            }
+
+            Log::info('=== BATCH MATCH COMPLETE ===', [
+                'matched' => count($usedApiIndexes),
+                'unmatched' => count($apiItems) - count($usedApiIndexes)
+            ]);
+
+            return response()->json([
+                'success' => true,
+                'matches' => $results
+            ]);
+
+        } catch (\Exception $e) {
+            Log::error('Batch Match Error:', ['message' => $e->getMessage()]);
+
+            return response()->json([
+                'success' => false,
+                'error' => $e->getMessage(),
+                'matches' => []
+            ]);
+        }
+    }
+
+    /**
+     * ⭐ คำนวณ Match Score ระหว่าง API name และ DB name
+     * หลักการ: ดูว่า keywords ใน DB มีอยู่ใน API ครบไหม
+     */
+    private function calculateMatchScore($apiName, $dbName)
+    {
+        $apiNorm = $this->normalize($apiName);
+        $dbNorm = $this->normalize($dbName);
+
+        // 1. ถ้า normalized เหมือนกันเลย → 100
+        if ($apiNorm === $dbNorm) {
+            return 100;
         }
 
-        // === มี match แล้ว ===
-        $exactName = $exactMatch->name;
-        $matchedRecords = $allRecords->filter(function($record) use ($exactName) {
-            return $record->name === $exactName;
-        });
+        // 2. ⭐⭐⭐ เช็คว่า keywords ใน DB มีอยู่ใน API ครบไหม ⭐⭐⭐
+        $dbWords = $this->extractWords($dbName);
+        $apiUpper = strtoupper($apiName);
+        
+        if (count($dbWords) > 0) {
+            $matchedCount = 0;
+            foreach ($dbWords as $dbWord) {
+                // เช็คว่า DB word อยู่ใน API string ไหม
+                if (strpos($apiUpper, $dbWord) !== false) {
+                    $matchedCount++;
+                }
+            }
+            
+            $matchPercent = ($matchedCount / count($dbWords)) * 100;
+            
+            Log::info("Keyword match check", [
+                'db_words' => $dbWords,
+                'matched' => $matchedCount . '/' . count($dbWords),
+                'percent' => $matchPercent
+            ]);
+            
+            // ถ้า DB keywords อยู่ใน API ครบ 100% → score 95
+            if ($matchPercent == 100) {
+                return 95;
+            }
+            
+            // ถ้า >= 80% → score 80
+            if ($matchPercent >= 80) {
+                return 80;
+            }
+            
+            // ถ้า >= 60% → score 60
+            if ($matchPercent >= 60) {
+                return 60;
+            }
+        }
 
-        $totalReceived = $matchedRecords->sum(function($item) {
-            return floatval($item->quantity);
-        });
+        // 3. ดึง Model Number มาเทียบ
+        $apiModel = $this->extractModelNumber($apiName);
+        $dbModel = $this->extractModelNumber($dbName);
 
-        $latestRecord = $matchedRecords->sortByDesc('date_invice')->first();
-        $apiQty = floatval($apiQuantity);
-        $isComplete = $totalReceived >= $apiQty;
+        if ($apiModel && $dbModel && $apiModel === $dbModel) {
+            return 85;
+        }
 
-        Log::info('=== FINAL MATCH ===', [
-            'api_name' => $goodName,
-            'matched_db_name' => $exactName,
-            'records_count' => $matchedRecords->count(),
-            'total_received' => $totalReceived,
-            'api_quantity' => $apiQty
-        ]);
+        // 4. ใช้ similar_text เป็น fallback
+        $similarity = 0;
+        similar_text($apiNorm, $dbNorm, $similarity);
 
-        return response()->json([
-            'success' => true,
-            'date_invice' => $latestRecord->date_invice ?? '',
-            'invice' => $latestRecord->invice ?? '',
-            'total_received' => $totalReceived,
-            'is_complete' => $isComplete,
-            'has_data' => true,
-            'api_complete_flag' => $apiCompleteFlag,
-            'matched_name' => $exactName,
-            'records' => $matchedRecords->map(function($item) {
-                return [
-                    'invoice' => $item->invice,
-                    'date' => $item->date_invice,
-                    'quantity' => $item->quantity,
-                    'name' => $item->name
-                ];
-            })->values()
-        ]);
-
-    } catch (\Exception $e) {
-        Log::error('Search Invoice Error:', [
-            'message' => $e->getMessage(),
-            'line' => $e->getLine(),
-            'file' => $e->getFile()
-        ]);
-
-        return response()->json([
-            'success' => false,
-            'error' => $e->getMessage(),
-            'date_invice' => '',
-            'invice' => '',
-            'total_received' => 0,
-            'is_complete' => false,
-            'has_data' => false
-        ]);
+        return round($similarity, 2);
     }
-}  public function pull()
+
+    /**
+     * Normalize string สำหรับเปรียบเทียบ
+     */
+    private function normalize($str)
     {
-        // บังคับ set time limit
+        // ลบ code ท้าย
+        $str = preg_replace('/\+\+.*?\+\+/', '', $str);
+        $str = preg_replace('/\-\/\-.*?\-\/\-/', '', $str);
+        $str = preg_replace('/[^A-Z0-9]/i', '', $str);
+        return strtoupper($str);
+    }
+
+    /**
+     * ดึง Model Number
+     */
+    private function extractModelNumber($name)
+    {
+        $patterns = [
+            '/\b([A-Z]\d+-\d+-\d+)/i',               // A26-30-10
+            '/\b(\d+-\d+-\d+[A-Z]*)/i',              // 3-9900-1P
+            '/\b(\d+-\d+[A-Z]*-\d+[A-Z]*)/i',        // 3-9900-1P variant
+            '/\b(NM8[N]?-\d+[A-Z]?)/i',              // NM8-125S
+            '/\b([A-Z]\d{3}[A-Z]?-[A-Z]{2,}\d+)/i',  // C200H-OC225
+            '/\b([A-Z]{2,}\d+-[A-Z0-9-]+)/i',        // General
+        ];
+
+        foreach ($patterns as $pattern) {
+            if (preg_match($pattern, $name, $matches)) {
+                return strtoupper($matches[1]);
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * ดึงคำสำคัญจากชื่อ
+     */
+    private function extractWords($name)
+    {
+        $clean = preg_replace('/\+\+.*?\+\+/', '', $name);
+        $clean = preg_replace('/\-\/\-.*?\-\/\-/', '', $clean);
+        $clean = preg_replace('/["\'\(\)\[\]<>]/', ' ', $clean);
+        
+        preg_match_all('/[A-Z0-9][A-Z0-9\-]+/i', strtoupper($clean), $matches);
+        
+        $excludeWords = ['THE', 'NEW', 'MODEL', 'IS', 'FOR', 'WITH', 'AND', 'OR'];
+        
+        $words = array_filter($matches[0], function($w) use ($excludeWords) {
+            return strlen($w) >= 2 && !in_array($w, $excludeWords);
+        });
+
+        return array_values(array_unique($words));
+    }
+
+    private function calculateExpectedDate($dateInvice)
+    {
+        if (!$dateInvice) return null;
+        
+        try {
+            $dateArray = explode('/', $dateInvice);
+            if (count($dateArray) == 3) {
+                $carbonDate = \Carbon\Carbon::createFromDate(
+                    $dateArray[2] - 543, $dateArray[1], $dateArray[0]
+                );
+                $expectedDate = $carbonDate->addDays(15);
+                return $expectedDate->format('d/m') . '/' . ($expectedDate->year + 543);
+            }
+        } catch (\Exception $e) {
+            Log::error('Error calculating expected date: ' . $e->getMessage());
+        }
+        return null;
+    }
+
+    public function pull()
+    {
         ini_set('max_execution_time', 600);
         set_time_limit(600);
         
@@ -371,11 +313,8 @@ public function searchInvoice(Request $request)
         $errors = [];
 
         foreach ($csv as $row) {
-            if ($row[0] !== $today) {
-                continue;
-            }
+            if ($row[0] !== $today) continue;
 
-            // Insert ข้อมูลก่อน
             DB::table('pooutside')->insert([
                 'date_invice' => Carbon::createFromFormat('Y/m/d', $row[0])->format('Y-m-d'),
                 'invice'      => $row[1],
@@ -385,31 +324,22 @@ public function searchInvoice(Request $request)
                 'idvendor'    => null,
                 'name_vendor' => null
             ]);
-
             $inserted++;
         }
 
-        // แยก loop การ update vendor ออกมา และใช้ unique PO numbers
         $poNumbers = collect($csv)
             ->filter(fn($row) => $row[0] === $today)
-            ->pluck(4)
-            ->unique()
-            ->values();
+            ->pluck(4)->unique()->values();
 
         foreach ($poNumbers as $poNumber) {
             try {
-                // ลด delay เหลือ 0.2 วินาที
                 usleep(200000);
-                
                 $apiUrl = "http://server_update:8000/api/getPODetail?PONum={$poNumber}";
                 $response = Http::timeout(10)->get($apiUrl);
 
                 if ($response->successful()) {
                     $poDetail = $response->json();
-                    
                     if (isset($poDetail['VendorName']) && isset($poDetail['VendorCode'])) {
-                        
-                        // Update ทุกแถวที่มี ponum นี้
                         $affectedRows = DB::table('pooutside')
                             ->where('ponum', $poNumber)
                             ->where('date_invice', $today)
@@ -418,41 +348,11 @@ public function searchInvoice(Request $request)
                                 'name_vendor' => $poDetail['VendorName'],
                                 'idvendor'    => $poDetail['VendorCode']
                             ]);
-                        
-                        if ($affectedRows > 0) {
-                            $updated += $affectedRows;
-                        }
-                    }
-                } else if ($response->status() === 429) {
-                    // ถ้าโดน rate limit
-                    sleep(1);
-                    
-                    $retryResponse = Http::timeout(10)->get($apiUrl);
-                    if ($retryResponse->successful()) {
-                        $poDetail = $retryResponse->json();
-                        
-                        if (isset($poDetail['VendorName']) && isset($poDetail['VendorCode'])) {
-                            $affectedRows = DB::table('pooutside')
-                                ->where('ponum', $poNumber)
-                                ->where('date_invice', $today)
-                                ->whereNull('idvendor')
-                                ->update([
-                                    'name_vendor' => $poDetail['VendorName'],
-                                    'idvendor'    => $poDetail['VendorCode']
-                                ]);
-                            
-                            if ($affectedRows > 0) {
-                                $updated += $affectedRows;
-                            }
-                        }
-                    } else {
-                        $errors[] = "PO {$poNumber}: ถูก rate limit";
+                        if ($affectedRows > 0) $updated += $affectedRows;
                     }
                 }
-                
             } catch (\Exception $e) {
                 $errors[] = "PO {$poNumber}: " . $e->getMessage();
-                Log::error("Error for {$poNumber}: " . $e->getMessage());
             }
         }
 

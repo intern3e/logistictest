@@ -196,3 +196,5 @@ Route::get('/pooutside/dashboard', [PooutsideController::class, 'dashboard'])->n
 Route::post('/pooutside/search-invoice', [PooutsideController::class, 'searchInvoice'])->name('pooutside.searchInvoice');
 Route::post('/pull-po-outside', [PoOutsideController::class, 'pull'])
     ->name('pull.pooutside');
+Route::post('/pooutside/batch-match', [PooutsideController::class, 'batchMatch'])
+    ->name('pooutside.batchMatch');

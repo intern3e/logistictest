@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>รายการเข้าPO ของนอก</title>
+    <title>ระบบติดตามคำสั่งซื้อภายนอก</title>
     <style>
         /* ─── RESET & VARIABLES ─── */
         :root {
@@ -212,7 +212,6 @@
         }
 
         .search-input-wrapper::before {
-            content: '🔍';
             position: absolute;
             left: 14px;
             top: 50%;
@@ -536,9 +535,9 @@
     <div class="page-wrap">
         <!-- HEADER -->
         <div class="header">
-            <h2>รายการเข้า PO ของนอก</h2>
+            <h2>ระบบติดตามคำสั่งซื้อภายนอก</h2>
             <div class="buttons">
-                <a href="http://server_update:8000/solist" class="btn btn-danger">← หน้าหลัก</a>
+                <a href="http://server_update:8000/solist" class="btn btn-danger">หน้าหลัก</a>
             </div>
         </div>
 
@@ -549,12 +548,12 @@
             <div class="filter-container">
                 <div class="filter-row">
                     <div class="filter-group">
-                        <label>ค้นหา PO หรือ Vendor</label>
+                        <label>ค้นหา PO หรือ ชื่อร้านค้า</label>
                         <div class="search-input-wrapper">
                             <input 
                                 type="text" 
                                 id="searchInput" 
-                                placeholder="ค้นหาเลข PO หรือชื่อ Vendor..." 
+                                placeholder="ค้นหาเลข PO หรือ ชื่อร้านค้า" 
                                 oninput="liveFilter()"
                             />
                         </div>
@@ -562,7 +561,7 @@
 
                     <div class="filter-buttons">
                         <button class="btn btn-success" onclick="searchAndNavigate()">
-                            🔍 ค้นหา
+                            ค้นหา
                         </button>
                         <button class="btn btn-warning" onclick="resetFilters()">
                             ↺ Reset
@@ -577,7 +576,7 @@
                     ทั้งหมด <span class="count-badge" id="totalCount">{{ $poData->count() }}</span> รายการ
                 </div>
                 <div class="info-bar-right" id="filterInfo">
-                    แสดงทั้งหมด
+                    {{-- แสดงทั้งหมด --}}
                 </div>
             </div>
 
@@ -588,12 +587,13 @@
                     <thead>
                         <tr>
                             <th style="width:120px;">เลข PO</th>
-                            <th style="width:105px;">วันที่ Invoice</th>
                             <th style="width:130px;">เลขที่ Invoice</th>
+                            <th class="left-align" style="width:210px;">ชื่อ Vendor</th>
+                            <th style="width:105px;">วันที่ Invoice</th>
                             <th style="width:135px;">วันที่คาดได้รับสินค้า</th>
                             <th class="left-align" style="width:220px;">ชื่อสินค้า</th>
                             <th style="width:75px;">จำนวน</th>
-                            <th class="left-align" style="width:210px;">ชื่อ Vendor</th>
+                            
                         </tr>
                     </thead>
                     <tbody>
@@ -608,6 +608,8 @@
                                     -
                                 @endif
                             </td>
+                            <td>{{ $po->invice ?? '-' }}</td>
+                            <td class="left-align wrap-text">{{ $po->name_vendor ?? '-' }}</td>
 
                             <td data-date="{{ $po->date_invice ? \Carbon\Carbon::parse($po->date_invice)->format('Y-m-d') : '' }}">
                                 @if ($po->date_invice)
@@ -616,8 +618,6 @@
                                     -
                                 @endif
                             </td>
-
-                            <td>{{ $po->invice ?? '-' }}</td>
 
                             <td data-date="{{ $po->date_invice ? \Carbon\Carbon::parse($po->date_invice)->addDays(15)->format('Y-m-d') : '' }}">
                                 @if ($po->date_invice)
@@ -631,7 +631,7 @@
 
                             <td>{{ $po->quantity ?? '-' }}</td>
 
-                            <td class="left-align wrap-text">{{ $po->name_vendor ?? '-' }}</td>
+                            
                         </tr>
                         @endforeach
                     </tbody>
@@ -646,7 +646,7 @@
             <!-- PAGINATION -->
             <div class="pagination-container">
                 <div class="pagination-info" id="paginationInfo">
-                    แสดง 1 ถึง 100 จากทั้งหมด {{ $poData->count() }} รายการ
+                    {{-- แสดง 1 ถึง 100 จากทั้งหมด {{ $poData->count() }} รายการ --}}
                 </div>
                 <div class="pagination" id="pagination">
                     <!-- Pagination buttons will be generated by JavaScript -->
@@ -659,11 +659,8 @@
 
     <!-- NO RESULT -->
     <div id="noResultInner">
-        <p>❌ ไม่พบข้อมูลที่ตรงกับการค้นหา</p>
+        <p>ไม่พบข้อมูลที่ตรงกับการค้นหา</p>
     </div>
-
-    <!-- JAVASCRIPT -->
-    <!-- JAVASCRIPT -->
     <script>
         const ROWS_PER_PAGE = 100;
         let currentPage = 1;
@@ -829,9 +826,9 @@
             const totalRecords = allRows.length;
             
             if (searchValue) {
-                filterInfo.textContent = `กำลังแสดง ${filteredRows.length} จาก ${totalRecords} รายการ`;
+                // filterInfo.textContent = `กำลังแสดง ${filteredRows.length} จาก ${totalRecords} รายการ`;
             } else {
-                filterInfo.textContent = 'แสดงทั้งหมด';
+                // filterInfo.textContent = 'แสดงทั้งหมด';
             }
         }
 
