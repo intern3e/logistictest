@@ -189,9 +189,9 @@ billidInput.addEventListener('input', () => {
     </label>
 </div>
 
-     <script>
+    <script>
 function fetchFormType() {
-    console.log('fetchFormType called'); // ตรวจสอบการเรียกฟังก์ชัน
+    console.log('fetchFormType called');
 
     const customer_id = document.getElementById("customer_id").value;
     const formtypeSelect = document.getElementById("formtype");
@@ -201,7 +201,9 @@ function fetchFormType() {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
-                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+                'X-CSRF-TOKEN': document
+                    .querySelector('meta[name="csrf-token"]')
+                    .getAttribute('content')
             },
             body: JSON.stringify({ customer_id: customer_id })
         })
@@ -211,7 +213,8 @@ function fetchFormType() {
 
             if (data.formtype) {
                 const exists = Array.from(formtypeSelect.options)
-                                    .some(option => option.value === data.formtype);
+                    .some(option => option.value === data.formtype);
+
                 if (!exists) {
                     const newOption = new Option(data.formtype, data.formtype);
                     formtypeSelect.add(newOption);
@@ -222,21 +225,27 @@ function fetchFormType() {
                 formtypeSelect.value = 'ไม่มีข้อมูล';
             }
 
-            // ✅ ตั้งค่าค่า lat/long จาก tblbill
             document.getElementById("customer_la_long").value = data.customer_la_long || '';
+
+            // ✅ ใส่ notes ลง textarea
+            document.getElementById("notes").value = data.note || '';
+
             updateMap();
         })
         .catch(error => {
             console.error('Error:', error);
             formtypeSelect.value = 'ไม่มีข้อมูล';
             document.getElementById("customer_la_long").value = '';
+            document.getElementById("notes").value = '';
         });
     } else {
         formtypeSelect.value = 'ไม่มีข้อมูล';
         document.getElementById("customer_la_long").value = '';
+        document.getElementById("notes").value = '';
     }
 }
 </script>
+
 
 
 

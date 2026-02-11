@@ -103,10 +103,12 @@ public function fetchFormType(Request $request)
 {
     $customer_id = $request->input('customer_id');
 
+    $cust = DB::table('custdetail')
+                ->where('idcust', $customer_id)
+                ->first();
 
-    $cust = DB::table('custdetail')->where('idcust', $customer_id)->first();
     $formtype = $cust->formtype ?? null;
-
+    $note    = $cust->note ?? ''; 
 
     $bill = DB::table('tblbill')
                 ->where('customer_id', $customer_id)
@@ -114,15 +116,14 @@ public function fetchFormType(Request $request)
                 ->first();
 
     $customer_la_long = $bill->customer_la_long ?? '';
-
-    // ✅ 3. ถ้า formtype ยังไม่เจอ → ลองใช้จาก tblbill
     if (!$formtype && $bill) {
         $formtype = $bill->formtype ?? null;
     }
 
     return response()->json([
         'formtype' => $formtype,
-        'customer_la_long' => $customer_la_long
+        'customer_la_long' => $customer_la_long,
+        'note' => $note 
     ]);
 }
 
