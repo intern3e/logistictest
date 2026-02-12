@@ -42,13 +42,8 @@ Route::post('/check-billid', [salecontroller::class, 'checkBillId'])->name('chec
 use App\Http\Controllers\PoDocumentController;
 Route::get('/add-so-detail-id-to-pdf/{soDetailId}/{POdocument}', 
     [PoDocumentController::class, 'addSoDetailIdToPoDocument']);
-Route::get('/add-so-detail-id-to-bill/{so_detail_id}/{filename}/{so_id}', 
-    [PoDocumentController::class, 'addIdToDocument'])
-    ->where('so_id', '.*');
-
-Route::get('/add-so-detail-id-to-bill-3/{so_detail_id}/{filename}/{so_id}', 
-    [PoDocumentController::class, 'addIdToDocument3'])
-    ->where('so_id', '.*');
+Route::post('/add-so-detail-id-to-bill', [PoDocumentController::class, 'addIdToDocument']);
+Route::post('/add-so-detail-id-to-bill-3', [PoDocumentController::class, 'addIdToDocument3']);
 Route::get('/add-so-detail-id-to-billissue/{so_detail_id}/{bill_issue_no}', 
     [PoDocumentController::class, 'addIdToissueDocument']);
 Route::post('/merge-pdf', [PoDocumentController::class, 'mergeAndOverwrite'])->name('merge.pdf');

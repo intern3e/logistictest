@@ -1059,54 +1059,68 @@ function addIdToissueDocument(so_detail_id, bill_issue_no) {
             alert("เกิดข้อผิดพลาดในการเพิ่มเลขที่บิลลงในเอกสาร bill_issue_no");
         });
 }
-function checkBillTypeAndAddBill(so_detail_id,billid,billtype,so_id) {
-    console.log('Checking billtype:',billtype);
+function checkBillTypeAndAddBill(so_detail_id, billid, billtype, so_id) {
+    console.log('Checking billtype:', billtype);
     
     if (billtype && billtype.includes('งานบริการ')) {
-        addIdToDocument3(so_detail_id,billid,so_id);
+        addIdToDocument3(so_detail_id, billid, so_id);
     } else {
-        addIdToDocument(so_detail_id,billid,so_id);
+        addIdToDocument(so_detail_id, billid, so_id);
     }
 }
 
 function addIdToDocument(so_detail_id, billid, so_id) {
-    // Encode so_id เพื่อป้องกันปัญหากับ / ใน URL
-    const encodedSoId = encodeURIComponent(so_id);
-    
-    fetch(`/add-so-detail-id-to-bill/${so_detail_id}/${billid}/${encodedSoId}`)
-        .then(response => response.json())
-        .then(data => {
-            console.log(data);
-            if (data.success) {
-                console.log('เพิ่มข้อมูลสำเร็จ');
-            } else {
-                alert("เกิดข้อผิดพลาดในการเพิ่มข้อมูลลงในเอกสาร bill: " + (data.error || ''));
-            }
+    fetch('/add-so-detail-id-to-bill', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
+        },
+        body: JSON.stringify({
+            so_detail_id: so_detail_id,
+            billid: billid,
+            so_id: so_id
         })
-        .catch(error => {
-            console.error("Error:", error);
-            alert("เกิดข้อผิดพลาดในการเพิ่มเลขที่บิลลงในเอกสาร bill");
-        });
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            console.log('เพิ่มข้อมูลสำเร็จ');
+        } else {
+            alert("เกิดข้อผิดพลาด: " + (data.error || ''));
+        }
+    })
+    .catch(error => {
+        console.error("Error:", error);
+        alert("เกิดข้อผิดพลาด");
+    });
 }
 
 function addIdToDocument3(so_detail_id, billid, so_id) {
-    // Encode so_id เพื่อป้องกันปัญหากับ / ใน URL
-    const encodedSoId = encodeURIComponent(so_id);
-    
-    fetch(`/add-so-detail-id-to-bill-3/${so_detail_id}/${billid}/${encodedSoId}`)
-        .then(response => response.json())
-        .then(data => {
-            console.log(data);
-            if (data.success) {
-                console.log('เพิ่มข้อมูลสำเร็จ');
-            } else {
-                alert("เกิดข้อผิดพลาดในการเพิ่มข้อมูลลงในเอกสาร bill: " + (data.error || ''));
-            }
+    fetch('/add-so-detail-id-to-bill-3', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
+        },
+        body: JSON.stringify({
+            so_detail_id: so_detail_id,
+            billid: billid,
+            so_id: so_id
         })
-        .catch(error => {
-            console.error("Error:", error);
-            alert("เกิดข้อผิดพลาดในการเพิ่มเลขที่บิลลงในเอกสาร bill");
-        });
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            console.log('เพิ่มข้อมูลสำเร็จ');
+        } else {
+            alert("เกิดข้อผิดพลาด: " + (data.error || ''));
+        }
+    })
+    .catch(error => {
+        console.error("Error:", error);
+        alert("เกิดข้อผิดพลาด");
+    });
 }
 function openFileInNewTabbill(url, ponum, so_detail_id, so_id, billid) {
     // ทำให้ checkbox ถูกเลือก

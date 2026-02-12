@@ -4,6 +4,9 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>ระบบติดตามคำสั่งซื้อภายนอก</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
     <style>
         /* ─── RESET & VARIABLES ─── */
         :root {
@@ -26,6 +29,10 @@
             --radius:     10px;
             --radius-sm:  6px;
             --transition:.22s ease;
+            
+            --status-received: #10b981;
+            --status-shipping: #f59e0b;
+            --status-complete: #06b6d4;
         }
 
         * {
@@ -41,8 +48,8 @@
         }
 
         body {
-            font-family: 'IBM Plex Sans Thai', 'IBM Plex Sans', sans-serif;
-            background: linear-gradient(135deg, #f5f7fa 0%, #e8ecf1 100%);
+            font-family: 'Sarabun', sans-serif;
+            background: #f8f9fa;
             color: var(--text-main);
             line-height: 1.6;
             display: flex;
@@ -62,25 +69,26 @@
             flex: 1;
             width: 100%;
             max-width: 100%;
-            margin: 0 auto;
-            padding: 24px;
+            margin: 0;
+            padding: 0;
             display: flex;
             flex-direction: column;
-            gap: 20px;
+            gap: 0;
+            min-height: 100vh;
         }
 
         /* ─── HEADER ─── */
         .header {
             background: linear-gradient(135deg, var(--navy) 0%, var(--navy-mid) 50%, var(--navy-light) 100%);
             color: var(--white);
-            border-radius: var(--radius);
-            padding: 22px 32px;
+            border-radius: 0;
+            padding: 28px 40px;
             display: flex;
             justify-content: space-between;
             align-items: center;
             flex-wrap: wrap;
             gap: 16px;
-            box-shadow: var(--shadow-lg);
+            box-shadow: 0 4px 12px rgba(27,45,79,.15);
             position: relative;
             overflow: hidden;
         }
@@ -91,16 +99,6 @@
             top: 0; left: 0; right: 0;
             height: 4px;
             background: linear-gradient(90deg, transparent, rgba(255,255,255,.4), transparent);
-        }
-
-        .header::after {
-            content: '';
-            position: absolute;
-            top: -50%; right: -10%;
-            width: 300px;
-            height: 300px;
-            background: radial-gradient(circle, rgba(255,255,255,.1) 0%, transparent 70%);
-            border-radius: 50%;
         }
 
         .header h2 {
@@ -159,51 +157,21 @@
             box-shadow: var(--shadow-md);
         }
 
-        .btn-success {
-            background: linear-gradient(135deg, #27ae60 0%, #229954 100%);
-        }
-        .btn-success:hover {
-            background: linear-gradient(135deg, #229954 0%, #27ae60 100%);
-            box-shadow: var(--shadow-md);
-        }
-
-        /* ─── STATUS BADGES ─── */
-        .status-badge {
-            display: inline-block;
-            padding: 6px 14px;
-            border-radius: 20px;
-            font-size: 13px;
-            font-weight: 600;
-            text-align: center;
-            white-space: nowrap;
-        }
-        
-        .status-complete {
-            background: linear-gradient(135deg, #d1fae5 0%, #a7f3d0 100%);
-            color: #065f46;
-            border: 1px solid #6ee7b7;
-        }
-        
-        .status-shipping {
-            background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
-            color: #92400e;
-            border: 1px solid #fcd34d;
-        }
-
         /* ─── CARD SHELL ─── */
         .card {
             flex: 1;
             background: var(--white);
-            border-radius: var(--radius);
-            box-shadow: var(--shadow-lg);
+            border-radius: 0;
+            box-shadow: none;
             overflow: hidden;
             display: flex;
             flex-direction: column;
+            min-height: 0;
         }
 
         /* ─── FILTER ─── */
         .filter-container {
-            padding: 24px 32px;
+            padding: 28px 40px;
             border-bottom: 2px solid var(--border);
             background: linear-gradient(to bottom, var(--white) 0%, var(--off-white) 100%);
         }
@@ -234,15 +202,6 @@
             position: relative;
         }
 
-        .search-input-wrapper::before {
-            position: absolute;
-            left: 14px;
-            top: 50%;
-            transform: translateY(-50%);
-            font-size: 16px;
-            opacity: 0.5;
-        }
-
         .filter-group input {
             font-family: inherit;
             font-size: 14px;
@@ -254,6 +213,7 @@
             outline: none;
             transition: all var(--transition);
             box-shadow: var(--shadow-sm);
+            width: 100%;
         }
         
         .filter-group input:focus {
@@ -274,7 +234,7 @@
 
         /* ─── INFO BAR ─── */
         .info-bar {
-            padding: 12px 32px;
+            padding: 16px 40px;
             border-bottom: 2px solid var(--border);
             background: linear-gradient(to bottom, var(--off-white) 0%, var(--white) 100%);
             display: flex;
@@ -288,11 +248,6 @@
             font-weight: 600;
         }
 
-        .info-bar-right {
-            color: var(--text-soft);
-            font-size: 13px;
-        }
-
         .count-badge {
             background: linear-gradient(135deg, var(--navy) 0%, var(--navy-mid) 100%);
             color: var(--white);
@@ -303,67 +258,319 @@
             margin-left: 8px;
         }
 
-        /* ─── TABLE ─── */
-        .table-scroll {
+        /* ─── PO ROWS ─── */
+        .po-list {
             flex: 1;
             overflow: auto;
         }
 
-        table {
+        .po-row {
+            border-bottom: 2px solid var(--border);
+            transition: all 0.2s ease;
+            background: var(--white);
+        }
+
+        .po-row:nth-child(even) {
+            background-color: #fafbfc;
+        }
+
+        .po-row:hover {
+            background-color: #f0f7ff;
+            border-left: 4px solid var(--accent);
+        }
+
+        .po-row.expanded {
+            background-color: #fff;
+            box-shadow: inset 0 0 0 3px var(--accent-soft);
+            border-left: 4px solid var(--accent);
+        }
+
+        .po-header {
+            display: grid;
+            grid-template-columns: 50px 160px 240px 500px 60px;
+            gap: 24px;
+            padding: 24px 40px;
+            align-items: center;
+            cursor: pointer;
+            user-select: none;
+        }
+
+        .expand-icon {
+            width: 36px;
+            height: 36px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 8px;
+            background: var(--off-white);
+            transition: all 0.3s ease;
+            color: var(--text-mid);
+            font-weight: 700;
+            font-size: 20px;
+            box-shadow: 0 2px 6px rgba(0,0,0,.06);
+        }
+
+        .po-row:hover .expand-icon {
+            background: var(--accent);
+            color: white;
+            transform: translateX(2px);
+            box-shadow: 0 4px 12px rgba(74,144,217,.25);
+        }
+
+        .po-row.expanded .expand-icon {
+            background: var(--accent);
+            color: white;
+            transform: rotate(90deg);
+            box-shadow: 0 4px 12px rgba(74,144,217,.3);
+        }
+
+        .po-number {
+            font-weight: 700;
+            font-size: 16px;
+            color: var(--navy);
+            letter-spacing: 0.3px;
+        }
+
+        .vendor-name {
+            font-size: 15px;
+            color: var(--text-main);
+            font-weight: 500;
+            line-height: 1.4;
+        }
+
+        .item-count {
+            display: none;
+        }
+
+        .item-count-badge {
+            background: var(--navy);
+            color: white;
+            padding: 3px 10px;
+            border-radius: 14px;
+            font-weight: 700;
+            font-size: 13px;
+            min-width: 32px;
+            text-align: center;
+        }
+
+        /* ─── STATUS TIMELINE ─── */
+        .status-timeline {
+            display: flex;
+            align-items: stretch;
+            gap: 0;
+            position: relative;
+            padding: 16px 0;
+        }
+
+        .status-step {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: flex-start;
+            gap: 8px;
+            flex: 1;
+            position: relative;
+            padding: 0 16px;
+        }
+
+        .status-step::before {
+            content: '';
+            position: absolute;
+            top: 31px;
+            left: 50%;
+            width: 100%;
+            height: 5px;
+            background: var(--border);
+            z-index: 0;
+        }
+
+        .status-step:first-child::before {
+            left: 50%;
+            width: 50%;
+        }
+
+        .status-step:last-child::before {
+            width: 50%;
+        }
+
+        .status-step.active::before {
+            background: linear-gradient(90deg, var(--status-received) 0%, var(--status-received) 100%);
+        }
+
+        .status-icon {
+            width: 62px;
+            height: 62px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 28px;
+            background: var(--white);
+            border: 4px solid var(--border);
+            position: relative;
+            z-index: 1;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 12px rgba(0,0,0,.08);
+        }
+
+        .status-step.active .status-icon {
+            background: linear-gradient(135deg, var(--status-received) 0%, #059669 100%);
+            border-color: var(--status-received);
+            color: white;
+            box-shadow: 0 0 0 6px rgba(16, 185, 129, 0.15), 0 8px 24px rgba(16, 185, 129, 0.3);
+            transform: scale(1.05);
+        }
+
+        .status-step.current .status-icon {
+            background: linear-gradient(135deg, var(--status-shipping) 0%, #d97706 100%);
+            border-color: var(--status-shipping);
+            color: white;
+            animation: pulseGlow 2s infinite;
+            box-shadow: 0 0 0 6px rgba(245, 158, 11, 0.15), 0 8px 24px rgba(245, 158, 11, 0.3);
+            transform: scale(1.05);
+        }
+
+        @keyframes pulseGlow {
+            0%, 100% {
+                box-shadow: 0 0 0 0 rgba(245, 158, 11, 0.4), 0 8px 24px rgba(245, 158, 11, 0.3);
+            }
+            50% {
+                box-shadow: 0 0 0 12px rgba(245, 158, 11, 0), 0 8px 24px rgba(245, 158, 11, 0.3);
+            }
+        }
+
+        .status-label {
+            font-size: 15px;
+            font-weight: 700;
+            color: var(--text-soft);
+            text-align: center;
+            white-space: nowrap;
+            margin-top: 4px;
+        }
+
+        .status-step.active .status-label,
+        .status-step.current .status-label {
+            color: var(--text-main);
+            font-size: 16px;
+        }
+
+        .status-date {
+            font-size: 13px;
+            color: var(--text-soft);
+            text-align: center;
+            font-weight: 500;
+        }
+
+        .status-step.active .status-date {
+            color: var(--status-received);
+            font-weight: 700;
+        }
+
+        .status-step.current .status-date {
+            color: var(--status-shipping);
+            font-weight: 700;
+        }
+
+        /* ─── EXPANDABLE DETAILS ─── */
+        .po-details {
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.4s ease;
+        }
+
+        .po-row.expanded .po-details {
+            max-height: 2000px;
+        }
+
+        .details-content {
+            padding: 0 40px 32px 130px;
+            animation: fadeIn 0.3s ease;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(-10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .details-header {
+            font-size: 13px;
+            font-weight: 700;
+            color: var(--navy);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 16px;
+            padding-bottom: 8px;
+            border-bottom: 2px solid var(--border);
+        }
+
+        .items-table {
             width: 100%;
             border-collapse: collapse;
             font-size: 14px;
+            margin-top: 12px;
         }
 
-        thead tr {
-            background: linear-gradient(135deg, var(--navy) 0%, var(--navy-mid) 100%);
+        .items-table thead {
+            background: var(--off-white);
         }
 
-        th {
-            color: var(--white);
-            font-weight: 700;
+        .items-table th {
+            padding: 12px 16px;
+            text-align: left;
+            font-weight: 600;
+            color: var(--navy);
             font-size: 13px;
             text-transform: uppercase;
-            letter-spacing: .6px;
-            padding: 16px 16px;
-            border-bottom: 3px solid var(--navy-light);
-            white-space: nowrap;
-            text-align: center;
-            position: sticky;
-            top: 0;
-            z-index: 10;
-            box-shadow: 0 2px 4px rgba(0,0,0,.1);
+            letter-spacing: 0.5px;
+            border-bottom: 2px solid var(--border);
         }
-        th.left-align { text-align: left; }
 
-        td {
+        .items-table td {
             padding: 14px 16px;
             border-bottom: 1px solid var(--border);
-            text-align: center;
-            vertical-align: middle;
             color: var(--text-main);
-            font-size: 14px;
-            line-height: 1.6;
-        }
-        td.left-align { text-align: left; }
-
-        tbody tr:nth-child(even) td { 
-            background-color: var(--row-even); 
         }
 
-        tbody tr {
-            transition: all .15s ease;
+        .items-table tbody tr:hover {
+            background: var(--row-hover);
+        }
+
+        .invoice-badge {
+            display: inline-block;
+            padding: 4px 10px;
+            background: var(--accent-soft);
+            color: var(--accent);
+            border-radius: 4px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+
+        .status-badge {
+            display: inline-block;
+            padding: 6px 14px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+            text-align: center;
+            white-space: nowrap;
         }
         
-        tbody tr:hover td {
-            background-color: var(--row-hover) !important;
-            transform: scale(1.001);
+        .status-complete {
+            background: linear-gradient(135deg, #d1fae5 0%, #a7f3d0 100%);
+            color: #065f46;
+            border: 1px solid #6ee7b7;
         }
-
-        .wrap-text {
-            white-space: normal;
-            word-wrap: break-word;
-            max-width: 280px;
+        
+        .status-shipping {
+            background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
+            color: #92400e;
+            border: 1px solid #fcd34d;
         }
 
         /* ─── NO DATA ─── */
@@ -374,8 +581,6 @@
             font-size: 16px;
             font-weight: 500;
         }
-
-        .no-data p { margin: 0; }
 
         #noResultInner {
             background: var(--white);
@@ -391,7 +596,7 @@
 
         /* ─── PAGINATION ─── */
         .pagination-container {
-            padding: 24px 32px;
+            padding: 28px 40px;
             border-top: 2px solid var(--border);
             background: linear-gradient(to top, var(--off-white) 0%, var(--white) 100%);
         }
@@ -456,12 +661,6 @@
             cursor: not-allowed;
         }
 
-        .pagination button.prev-btn,
-        .pagination button.next-btn {
-            min-width: 52px;
-            font-weight: 700;
-        }
-
         .pagination .dots {
             color: var(--text-soft);
             padding: 0 8px;
@@ -469,13 +668,91 @@
         }
 
         /* ─── RESPONSIVE ─── */
-        @media (max-width: 768px) {
-            .page-wrap { 
-                padding: 16px; 
+        
+        /* 1280x720 - Perfect View */
+        @media (min-width: 1200px) and (max-width: 1366px) {
+            .po-header {
+                grid-template-columns: 50px 150px 220px 480px 60px;
+                padding: 22px 32px;
             }
             
+            .status-icon {
+                width: 60px;
+                height: 60px;
+                font-size: 26px;
+            }
+            
+            .status-step::before {
+                top: 30px;
+            }
+            
+            .status-label {
+                font-size: 14px;
+            }
+            
+            .status-date {
+                font-size: 12px;
+            }
+        }
+        
+        @media (max-width: 1199px) {
+            .po-header {
+                grid-template-columns: 45px 140px 200px 420px 60px;
+                padding: 20px 28px;
+            }
+            
+            .status-icon {
+                width: 56px;
+                height: 56px;
+                font-size: 24px;
+            }
+            
+            .status-step::before {
+                top: 28px;
+            }
+            
+            .status-label {
+                font-size: 13px;
+            }
+            
+            .status-date {
+                font-size: 11px;
+            }
+        }
+
+        @media (max-width: 1024px) {
+            .po-header {
+                grid-template-columns: 40px 130px 180px 380px 60px;
+                padding: 18px 24px;
+            }
+            
+            .status-icon {
+                width: 52px;
+                height: 52px;
+                font-size: 22px;
+            }
+            
+            .status-step::before {
+                top: 26px;
+                height: 4px;
+            }
+            
+            .status-label {
+                font-size: 12px;
+            }
+            
+            .status-date {
+                font-size: 10px;
+            }
+            
+            .status-step {
+                padding: 0 12px;
+            }
+        }
+
+        @media (max-width: 768px) {
             .header { 
-                padding: 18px 20px; 
+                padding: 20px 24px; 
             }
             
             .header h2 { 
@@ -483,16 +760,12 @@
             }
             
             .filter-container { 
-                padding: 20px; 
+                padding: 20px 24px; 
             }
             
             .filter-row { 
                 flex-direction: column; 
                 align-items: stretch; 
-            }
-            
-            .filter-group input { 
-                width: 100% !important; 
             }
             
             .filter-buttons { 
@@ -507,20 +780,56 @@
                 flex-direction: column;
                 align-items: flex-start;
                 gap: 8px;
-                padding: 12px 20px;
+                padding: 12px 24px;
+            }
+
+            .po-header {
+                grid-template-columns: 40px 1fr 60px;
+                gap: 12px;
+                padding: 16px 20px;
+            }
+
+            .vendor-name {
+                display: none;
+            }
+
+            .status-timeline {
+                grid-column: 1 / -1;
+                margin-top: 12px;
+                padding: 12px 0;
+            }
+
+            .status-label {
+                font-size: 10px;
+            }
+
+            .status-date {
+                font-size: 9px;
             }
             
-            th, td { 
-                padding: 10px 8px; 
-                font-size: 12px; 
+            .status-icon {
+                width: 48px;
+                height: 48px;
+                font-size: 20px;
+                border-width: 3px;
             }
             
-            .wrap-text { 
-                max-width: 180px; 
+            .status-step::before {
+                top: 24px;
+                height: 4px;
+            }
+            
+            .status-step {
+                gap: 6px;
+                padding: 0 8px;
+            }
+
+            .details-content {
+                padding: 0 20px 16px 60px;
             }
 
             .pagination-container {
-                padding: 20px 16px;
+                padding: 20px 24px;
             }
 
             .pagination button {
@@ -528,11 +837,6 @@
                 height: 40px;
                 font-size: 13px;
                 padding: 0 10px;
-            }
-
-            .pagination button.prev-btn,
-            .pagination button.next-btn {
-                min-width: 44px;
             }
         }
     </style>
@@ -548,7 +852,7 @@
             </div>
         </div>
 
-        <!-- CARD: filter + table -->
+        <!-- CARD: filter + list -->
         <div class="card">
 
             <!-- FILTER -->
@@ -577,69 +881,146 @@
             <!-- INFO BAR -->
             <div class="info-bar">
                 <div class="info-bar-left">
-                    ทั้งหมด <span class="count-badge" id="totalCount">{{ $poData->count() }}</span> รายการ
-                </div>
-                <div class="info-bar-right" id="filterInfo">
-                    {{-- แสดงทั้งหมด --}}
+                    ทั้งหมด <span class="count-badge" id="totalCount">0</span> รายการ PO
                 </div>
             </div>
 
-            <!-- TABLE -->
-            <div class="table-scroll">
+            <!-- PO LIST -->
+            <div class="po-list" id="poList">
                 @if($poData->count() > 0)
-                <table id="poTable">
-                    <thead>
-                        <tr>
-                            <th style="width:120px;">เลข PO</th>
-                            <th style="width:130px;">เลขที่ Invoice</th>
-                            <th class="left-align" style="width:210px;">ชื่อ Vendor</th>
-                            <th style="width:105px;">วันที่ Invoice</th>
-                            <th style="width:135px;">วันที่คาดได้รับสินค้า</th>
-                            <th class="left-align" style="width:220px;">ชื่อสินค้า</th>
-                            <th style="width:75px;">จำนวน</th>
-                            <th style="width:150px;">สถานะ</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        @foreach($poData as $index => $po)
-                        <tr data-po="{{ $po->ponum ?? '' }}" 
-                            data-vendor="{{ $po->name_vendor ?? '' }}"
-                            data-status="{{ $po->status ?? 'N' }}">
-                            <td>{{ $po->ponum ?? '-' }}</td>
-                            <td>{{ $po->invice ?? '-' }}</td>
-                            <td class="left-align wrap-text">{{ $po->name_vendor ?? '-' }}</td>
+                    @php
+                        // Group by PO number
+                        $groupedPOs = $poData->groupBy('ponum')->map(function($items) {
+                            $firstItem = $items->first();
+                            $allComplete = $items->every(fn($item) => $item->status === 'Y');
+                            $hasInvoice = $items->whereNotNull('invice')->whereNotNull('date_invice')->count() > 0;
+                            
+                            // Get latest invoice date
+                            $latestInvoiceDate = $items->whereNotNull('date_invice')
+                                ->sortByDesc('date_invice')
+                                ->first()
+                                ?->date_invice;
+                            
+                            $expectedDate = null;
+                            if ($latestInvoiceDate) {
+                                $expectedDate = \Carbon\Carbon::parse($latestInvoiceDate)->addDays(15);
+                            }
+                            
+                            return [
+                                'ponum' => $firstItem->ponum,
+                                'vendor_name' => $firstItem->name_vendor ?? '-',
+                                'items' => $items,
+                                'item_count' => $items->count(),
+                                'all_complete' => $allComplete,
+                                'has_invoice' => $hasInvoice,
+                                'invoice_date' => $latestInvoiceDate,
+                                'expected_date' => $expectedDate,
+                            ];
+                        })->sortByDesc(function($po) {
+                            return $po['invoice_date'] ?? '1900-01-01';
+                        });
+                    @endphp
 
-                            <td data-date="{{ $po->date_invice ? \Carbon\Carbon::parse($po->date_invice)->format('Y-m-d') : '' }}">
-                                @if ($po->date_invice)
-                                    {{ \Carbon\Carbon::parse($po->date_invice)->format('d/m/Y') }}
-                                @else
-                                    -
-                                @endif
-                            </td>
+                    @foreach($groupedPOs as $po)
+                    <div class="po-row" 
+                         data-po="{{ $po['ponum'] }}" 
+                         data-vendor="{{ $po['vendor_name'] }}">
+                        
+                        <div class="po-header" onclick="toggleRow(this)">
+                            <div class="expand-icon">›</div>
+                            
+                            <div class="po-number">{{ $po['ponum'] }}</div>
+                            
+                            <div class="vendor-name">{{ $po['vendor_name'] }}</div>
+                            
+                            <div class="status-timeline">
+                                <!-- Step 1: Invoice Received -->
+                                <div class="status-step {{ $po['has_invoice'] ? 'active' : '' }}">
+                                    <div class="status-icon">📄</div>
+                                    <div class="status-label">ได้รับ Invoice</div>
+                                    @if($po['invoice_date'])
+                                        <div class="status-date">
+                                            {{ \Carbon\Carbon::parse($po['invoice_date'])->format('d/m/Y') }}
+                                        </div>
+                                    @endif
+                                </div>
 
-                            <td data-date="{{ $po->date_invice ? \Carbon\Carbon::parse($po->date_invice)->addDays(15)->format('Y-m-d') : '' }}">
-                                @if ($po->date_invice)
-                                    {{ \Carbon\Carbon::parse($po->date_invice)->addDays(15)->locale('th')->isoFormat('DD MMMM YYYY') }}
-                                @else
-                                    -
-                                @endif
-                            </td>
+                                <!-- Step 2: Shipping -->
+                                <div class="status-step {{ $po['has_invoice'] && !$po['all_complete'] ? 'current' : ($po['all_complete'] ? 'active' : '') }}">
+                                    <div class="status-icon">📦</div>
+                                    <div class="status-label">กำลังจัดส่ง</div>
+                                    @if($po['expected_date'] && !$po['all_complete'])
+                                        <div class="status-date">
+                                            คาดว่า {{ $po['expected_date']->format('d/m/Y') }}
+                                        </div>
+                                    @endif
+                                </div>
 
-                            <td class="left-align wrap-text">{{ $po->name ?? '-' }}</td>
+                                <!-- Step 3: Completed -->
+                                <div class="status-step {{ $po['all_complete'] ? 'active' : '' }}">
+                                    <div class="status-icon">✓</div>
+                                    <div class="status-label">ได้รับสินค้า</div>
+                                </div>
+                            </div>
+                            
+                            <div class="item-count">
+                                <span>รายการ</span>
+                                <span class="item-count-badge">{{ $po['item_count'] }}</span>
+                            </div>
+                            
+                            <div></div>
+                        </div>
 
-                            <td>{{ $po->quantity ?? '-' }}</td>
-
-                            <td>
-                                @if(($po->status ?? 'N') === 'Y')
-                                    <span class="status-badge status-complete">✓ รับของสำเร็จ</span>
-                                @else
-                                    <span class="status-badge status-shipping">📦 กำลังจัดส่ง</span>
-                                @endif
-                            </td>
-                        </tr>
-                        @endforeach
-                    </tbody>
-                </table>
+                        <div class="po-details">
+                            <div class="details-content">
+                                <div class="details-header">รายละเอียดสินค้า ({{ $po['item_count'] }} รายการ)</div>
+                                
+                                <table class="items-table">
+                                    <thead>
+                                        <tr>
+                                            <th style="width: 50px;">#</th>
+                                            <th style="width: 130px;">เลข Invoice</th>
+                                            <th style="width: 110px;">วันที่ Invoice</th>
+                                            <th>ชื่อสินค้า</th>
+                                            <th style="width: 80px; text-align: center;">จำนวน</th>
+                                            <th style="width: 130px; text-align: center;">สถานะ</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        @foreach($po['items'] as $index => $item)
+                                        <tr>
+                                            <td>{{ $index + 1 }}</td>
+                                            <td>
+                                                @if($item->invice)
+                                                    <span class="invoice-badge">{{ $item->invice }}</span>
+                                                @else
+                                                    <span style="color: var(--text-soft);">-</span>
+                                                @endif
+                                            </td>
+                                            <td>
+                                                @if($item->date_invice)
+                                                    {{ \Carbon\Carbon::parse($item->date_invice)->format('d/m/Y') }}
+                                                @else
+                                                    <span style="color: var(--text-soft);">-</span>
+                                                @endif
+                                            </td>
+                                            <td>{{ $item->name ?? '-' }}</td>
+                                            <td style="text-align: center; font-weight: 600;">{{ $item->quantity ?? '-' }}</td>
+                                            <td style="text-align: center;">
+                                                @if($item->status === 'Y')
+                                                    <span class="status-badge status-complete">✓ รับของสำเร็จ</span>
+                                                @else
+                                                    <span class="status-badge status-shipping">📦 กำลังจัดส่ง</span>
+                                                @endif
+                                            </td>
+                                        </tr>
+                                        @endforeach
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                    @endforeach
                 @else
                 <div class="no-data">
                     <p>ไม่พบข้อมูล</p>
@@ -649,12 +1030,8 @@
 
             <!-- PAGINATION -->
             <div class="pagination-container">
-                <div class="pagination-info" id="paginationInfo">
-                    {{-- แสดง 1 ถึง 100 จากทั้งหมด {{ $poData->count() }} รายการ --}}
-                </div>
-                <div class="pagination" id="pagination">
-                    <!-- Pagination buttons will be generated by JavaScript -->
-                </div>
+                <div class="pagination-info" id="paginationInfo"></div>
+                <div class="pagination" id="pagination"></div>
             </div>
 
         </div><!-- .card -->
@@ -665,64 +1042,74 @@
     <div id="noResultInner">
         <p>ไม่พบข้อมูลที่ตรงกับการค้นหา</p>
     </div>
+
     <script>
-        const ROWS_PER_PAGE = 100;
+        const ROWS_PER_PAGE = 20;
         let currentPage = 1;
         let filteredRows = [];
         let allRows = [];
 
         // Initialize
         document.addEventListener('DOMContentLoaded', function() {
-            allRows = Array.from(document.querySelectorAll('#poTable tbody tr'));
+            allRows = Array.from(document.querySelectorAll('.po-row'));
             filteredRows = [...allRows];
+            
+            // Update total count
+            document.getElementById('totalCount').textContent = allRows.length;
+            
             renderPagination();
             showPage(1);
         });
 
-        // แสดงหน้าที่ระบุ
+        // Toggle row expansion
+        function toggleRow(header) {
+            const row = header.closest('.po-row');
+            row.classList.toggle('expanded');
+        }
+
+        // Show specific page
         function showPage(page) {
             currentPage = page;
             const start = (page - 1) * ROWS_PER_PAGE;
             const end = start + ROWS_PER_PAGE;
 
-            // ซ่อนทุก row ก่อน
+            // Hide all rows first
             allRows.forEach(row => row.style.display = 'none');
 
-            // แสดงเฉพาะ row ที่อยู่ในหน้าปัจจุบัน
+            // Show only rows for current page
             filteredRows.slice(start, end).forEach(row => {
                 row.style.display = '';
             });
 
-            // อัพเดท pagination info
+            // Update pagination info
             updatePaginationInfo();
             
-            // อัพเดท pagination buttons
+            // Update pagination buttons
             renderPagination();
 
             // Scroll to top
             window.scrollTo({ top: 0, behavior: 'smooth' });
         }
 
-        // สร้าง pagination buttons
+        // Render pagination buttons
         function renderPagination() {
             const totalPages = Math.ceil(filteredRows.length / ROWS_PER_PAGE);
             const paginationEl = document.getElementById('pagination');
             paginationEl.innerHTML = '';
 
             if (totalPages <= 1) {
-                return; // ไม่แสดง pagination ถ้ามีแค่ 1 หน้า
+                return;
             }
 
             // Previous button
             const prevBtn = document.createElement('button');
-            prevBtn.className = 'prev-btn';
             prevBtn.textContent = '‹';
             prevBtn.disabled = currentPage === 1;
             prevBtn.onclick = () => showPage(currentPage - 1);
             paginationEl.appendChild(prevBtn);
 
             // Page buttons
-            const maxButtons = 7; // จำนวนปุ่มสูงสุดที่แสดง
+            const maxButtons = 7;
             let startPage = Math.max(1, currentPage - Math.floor(maxButtons / 2));
             let endPage = Math.min(totalPages, startPage + maxButtons - 1);
 
@@ -773,21 +1160,20 @@
 
             // Next button
             const nextBtn = document.createElement('button');
-            nextBtn.className = 'next-btn';
             nextBtn.textContent = '›';
             nextBtn.disabled = currentPage === totalPages;
             nextBtn.onclick = () => showPage(currentPage + 1);
             paginationEl.appendChild(nextBtn);
         }
 
-        // อัพเดท pagination info
+        // Update pagination info
         function updatePaginationInfo() {
             const start = (currentPage - 1) * ROWS_PER_PAGE + 1;
             const end = Math.min(currentPage * ROWS_PER_PAGE, filteredRows.length);
             const total = filteredRows.length;
 
             const infoEl = document.getElementById('paginationInfo');
-            infoEl.textContent = `แสดง ${start} ถึง ${end} จากทั้งหมด ${total} รายการ`;
+            infoEl.textContent = `แสดง ${start} ถึง ${end} จากทั้งหมด ${total} รายการ PO`;
         }
 
         // Live filter
@@ -795,10 +1181,8 @@
             const searchValue = document.getElementById('searchInput').value.trim().toLowerCase();
             
             if (!searchValue) {
-                // ถ้าไม่มีการค้นหา แสดงทั้งหมด
                 filteredRows = [...allRows];
             } else {
-                // กรองตามคำค้นหา
                 filteredRows = allRows.filter(row => {
                     const po = row.getAttribute('data-po').toLowerCase();
                     const vendor = row.getAttribute('data-vendor').toLowerCase();
@@ -806,7 +1190,7 @@
                 });
             }
 
-            // แสดงข้อความถ้าไม่พบข้อมูล
+            // Show no result message if needed
             const noResultDiv = document.getElementById('noResultInner');
             if (searchValue && filteredRows.length === 0) {
                 noResultDiv.style.display = 'block';
@@ -816,33 +1200,17 @@
                 document.querySelector('.pagination-container').style.display = 'block';
             }
 
-            // อัพเดทข้อมูลการกรอง
-            updateFilterInfoBar(searchValue);
-
-            // Reset ไปหน้า 1 และแสดงผล
+            // Reset to page 1 and show results
             currentPage = 1;
             showPage(1);
         }
 
-        // อัพเดทข้อมูลการกรอง
-        function updateFilterInfoBar(searchValue) {
-            const filterInfo = document.getElementById('filterInfo');
-            const totalRecords = allRows.length;
-            
-            if (searchValue) {
-                // filterInfo.textContent = `กำลังแสดง ${filteredRows.length} จาก ${totalRecords} รายการ`;
-            } else {
-                // filterInfo.textContent = 'แสดงทั้งหมด';
-            }
-        }
-
-        // Reset ฟิลเตอร์
+        // Reset filters
         function resetFilters() {
             document.getElementById('searchInput').value = '';
             filteredRows = [...allRows];
             document.getElementById('noResultInner').style.display = 'none';
             document.querySelector('.pagination-container').style.display = 'block';
-            document.getElementById('filterInfo').textContent = 'แสดงทั้งหมด';
             currentPage = 1;
             showPage(1);
         }
