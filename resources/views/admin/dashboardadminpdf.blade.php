@@ -582,7 +582,7 @@ function copydate(text, button) {
                                     </form>
                                     <button style="background-color: red; color: white;"
                                         id="Pumpbill"
-                                        onclick="checkBillTypeAndAddBill('{{ $item->so_detail_id }}', '{{ $item->billid }}', '{{ $item->billtype }}')">
+                                        onclick="checkBillTypeAndAddBill('{{ $item->so_detail_id }}','{{ $item->billid }}','{{ $item->billtype }}','{{ $item->so_id }}')">
                                         เพิ่มเลขบิล
                                     </button>
                                     <button id="downloadbill"
@@ -1059,24 +1059,26 @@ function addIdToissueDocument(so_detail_id, bill_issue_no) {
             alert("เกิดข้อผิดพลาดในการเพิ่มเลขที่บิลลงในเอกสาร bill_issue_no");
         });
 }
-function checkBillTypeAndAddBill(so_detail_id, billid, billtype) {
-    console.log('Checking billtype:', billtype);
+function checkBillTypeAndAddBill(so_detail_id,billid,billtype,so_id) {
+    console.log('Checking billtype:',billtype);
     
     if (billtype && billtype.includes('งานบริการ')) {
-        addIdToDocument3(so_detail_id, billid);
+        addIdToDocument3(so_detail_id,billid,so_id);
     } else {
-        addIdToDocument(so_detail_id, billid);
+        addIdToDocument(so_detail_id,billid,so_id);
     }
 }
 
-function addIdToDocument(so_detail_id, billid) {
-    console.log(`กำลังเพิ่ม ${so_detail_id} ลงในเอกสารbill: ${billid}`);
-
-    fetch(`/add-so-detail-id-to-bill/${so_detail_id}/${billid}`)
+function addIdToDocument(so_detail_id, billid, so_id) {
+    // Encode so_id เพื่อป้องกันปัญหากับ / ใน URL
+    const encodedSoId = encodeURIComponent(so_id);
+    
+    fetch(`/add-so-detail-id-to-bill/${so_detail_id}/${billid}/${encodedSoId}`)
         .then(response => response.json())
         .then(data => {
             console.log(data);
             if (data.success) {
+                console.log('เพิ่มข้อมูลสำเร็จ');
             } else {
                 alert("เกิดข้อผิดพลาดในการเพิ่มข้อมูลลงในเอกสาร bill: " + (data.error || ''));
             }
@@ -1086,14 +1088,17 @@ function addIdToDocument(so_detail_id, billid) {
             alert("เกิดข้อผิดพลาดในการเพิ่มเลขที่บิลลงในเอกสาร bill");
         });
 }
-function addIdToDocument3(so_detail_id, billid) {
-    console.log(`กำลังเพิ่ม ${so_detail_id} พร้อมเพิ่ม3%ลงในเอกสารbill: ${billid}`);
 
-    fetch(`/add-so-detail-id-to-bill-3/${so_detail_id}/${billid}`)
+function addIdToDocument3(so_detail_id, billid, so_id) {
+    // Encode so_id เพื่อป้องกันปัญหากับ / ใน URL
+    const encodedSoId = encodeURIComponent(so_id);
+    
+    fetch(`/add-so-detail-id-to-bill-3/${so_detail_id}/${billid}/${encodedSoId}`)
         .then(response => response.json())
         .then(data => {
             console.log(data);
             if (data.success) {
+                console.log('เพิ่มข้อมูลสำเร็จ');
             } else {
                 alert("เกิดข้อผิดพลาดในการเพิ่มข้อมูลลงในเอกสาร bill: " + (data.error || ''));
             }

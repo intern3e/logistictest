@@ -167,6 +167,29 @@
             box-shadow: var(--shadow-md);
         }
 
+        /* ─── STATUS BADGES ─── */
+        .status-badge {
+            display: inline-block;
+            padding: 6px 14px;
+            border-radius: 20px;
+            font-size: 13px;
+            font-weight: 600;
+            text-align: center;
+            white-space: nowrap;
+        }
+        
+        .status-complete {
+            background: linear-gradient(135deg, #d1fae5 0%, #a7f3d0 100%);
+            color: #065f46;
+            border: 1px solid #6ee7b7;
+        }
+        
+        .status-shipping {
+            background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
+            color: #92400e;
+            border: 1px solid #fcd34d;
+        }
+
         /* ─── CARD SHELL ─── */
         .card {
             flex: 1;
@@ -341,22 +364,6 @@
             white-space: normal;
             word-wrap: break-word;
             max-width: 280px;
-        }
-
-        td a {
-            font-weight: 700;
-            color: var(--accent);
-            font-size: 14px;
-            transition: all var(--transition);
-            padding: 4px 8px;
-            border-radius: 4px;
-            display: inline-block;
-        }
-        
-        td a:hover { 
-            color: var(--white);
-            background: var(--accent);
-            transform: translateY(-1px);
         }
 
         /* ─── NO DATA ─── */
@@ -560,9 +567,6 @@
                     </div>
 
                     <div class="filter-buttons">
-                        <button class="btn btn-success" onclick="searchAndNavigate()">
-                            ค้นหา
-                        </button>
                         <button class="btn btn-warning" onclick="resetFilters()">
                             ↺ Reset
                         </button>
@@ -593,21 +597,15 @@
                             <th style="width:135px;">วันที่คาดได้รับสินค้า</th>
                             <th class="left-align" style="width:220px;">ชื่อสินค้า</th>
                             <th style="width:75px;">จำนวน</th>
-                            
+                            <th style="width:150px;">สถานะ</th>
                         </tr>
                     </thead>
                     <tbody>
                         @foreach($poData as $index => $po)
-                        <tr data-po="{{ $po->ponum ?? '' }}" data-vendor="{{ $po->name_vendor ?? '' }}">
-                            <td>
-                                @if($po->ponum)
-                                    <a href="{{ route('pooutside.detailpooutside', ['ponum' => $po->ponum]) }}">
-                                        {{ $po->ponum }}
-                                    </a>
-                                @else
-                                    -
-                                @endif
-                            </td>
+                        <tr data-po="{{ $po->ponum ?? '' }}" 
+                            data-vendor="{{ $po->name_vendor ?? '' }}"
+                            data-status="{{ $po->status ?? 'N' }}">
+                            <td>{{ $po->ponum ?? '-' }}</td>
                             <td>{{ $po->invice ?? '-' }}</td>
                             <td class="left-align wrap-text">{{ $po->name_vendor ?? '-' }}</td>
 
@@ -631,7 +629,13 @@
 
                             <td>{{ $po->quantity ?? '-' }}</td>
 
-                            
+                            <td>
+                                @if(($po->status ?? 'N') === 'Y')
+                                    <span class="status-badge status-complete">✓ รับของสำเร็จ</span>
+                                @else
+                                    <span class="status-badge status-shipping">📦 กำลังจัดส่ง</span>
+                                @endif
+                            </td>
                         </tr>
                         @endforeach
                     </tbody>
@@ -832,24 +836,6 @@
             }
         }
 
-        // ค้นหาและไปหน้า detail - แก้ไขใหม่
-// ค้นหาและไปหน้า detail - แก้ไขใหม่
-        function searchAndNavigate() {
-            const searchValue = document.getElementById('searchInput').value.trim();
-            
-            if (!searchValue) {
-                alert('กรุณากรอกเลข PO หรือชื่อ Vendor');
-                return;
-            }
-
-            // ไปหน้า detail โดยใช้คำที่พิมพ์ค้นหาเลย ไม่สนใจว่ามีข้อมูลหรือไม่
-            const baseUrl = window.location.origin;
-            const url = `${baseUrl}/detailpooutside/${searchValue}`;
-            
-            console.log('Navigating to:', url);
-            window.location.href = url;
-        }
-
         // Reset ฟิลเตอร์
         function resetFilters() {
             document.getElementById('searchInput').value = '';
@@ -860,13 +846,6 @@
             currentPage = 1;
             showPage(1);
         }
-
-        // กด Enter เพื่อค้นหา
-        document.getElementById('searchInput').addEventListener('keypress', function(e) {
-            if (e.key === 'Enter') {
-                searchAndNavigate();
-            }
-        });
     </script>
 
 </body>
