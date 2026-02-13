@@ -14,18 +14,108 @@ class PooutsideController extends Controller
     {
         return view('pooutside.dashboard');
     }
-    public function checkLocalPO(Request $request)
+public function checkLocalPO(Request $request)
     {
         $ponum = $request->ponum;
 
-        $data = Pooutside::where('ponum', $ponum)->get();
+        // ดึงข้อมูลทั้งหมดที่ตรงกับ PO number
+        $data = Pooutside::where('ponum', $ponum)
+            ->orderBy('date_invoice', 'desc') // เรียงตามวันที่ Invoice ล่าสุดก่อน
+            ->get();
 
         return response()->json([
             'success' => true,
             'exists' => $data->count() > 0,
-            'data' => $data
+            'data' => $data,
+            'count' => $data->count()
         ]);
     }
+
+    /**
+     * ดึงข้อมูล PO Detail จาก ERP API
+     * (ฟังก์ชันนี้เป็น optional ถ้าต้องการเรียกจาก Controller)
+     */
+    public function getPODetailFromERP($poNum)
+    {
+        try {
+            $response = Http::get("http://server_update:8000/api/getPODetail", [
+                'PONum' => $poNum
+            ]);
+
+            if ($response->successful()) {
+                return $response->json();
+            }
+
+            return null;
+        } catch (\Exception $e) {
+            Log::error('Error fetching PO detail from ERP: ' . $e->getMessage());
+            return null;
+        }
+    }
+   public function pull()
+{
+    ini_set('max_execution_time', 600);
+    set_time_limit(600);
+
+    // ⭐ วันที่ปัจจุบัน (วันที่กดปุ่ม)
+    $today = Carbon::now()->format('Y/m/d'); // 2026/02/13
+
+    $url = "https://docs.google.com/spreadsheets/d/1wRmbT3ZkN1Td-EoLfwRBCm5LxxUvkNwPkEo5UZxVysE/export?format=csv&gid=0";
+
+    $rows = array_map('str_getcsv', file($url));
+    unset($rows[0]); // ลบ header
+
+    $inserted = 0;
+    $errors = [];
+
+    foreach ($rows as $index => $row) {
+        try {
+            // เช็คว่ามี column ครบ
+            if (!isset($row[0], $row[1], $row[2], $row[3], $row[4])) {
+                continue;
+            }
+
+            $date_invoice = trim($row[0]);
+            $invoice      = trim($row[1]);
+            $name         = trim($row[2]);
+            $quantity     = trim($row[3]);
+            $ponum        = trim($row[4]);
+
+            // ⭐ ข้ามถ้า ponum เป็น null หรือว่าง
+            if (empty($ponum)) {
+                continue;
+            }
+
+            // ⭐ ดึงเฉพาะวันที่วันนี้เท่านั้น
+            if ($date_invoice !== $today) {
+                continue;
+            }
+
+            $date = Carbon::createFromFormat('Y/m/d', $date_invoice)
+                ->format('Y-m-d');
+
+            Pooutside::create([
+                'date_invoice' => $date,
+                'invoice'      => $invoice,
+                'name'        => $name,
+                'quantity'    => $quantity,
+                'ponum'       => $ponum
+            ]);
+
+            $inserted++;
+
+        } catch (\Exception $e) {
+            $errors[] = "Row {$index}: " . $e->getMessage();
+        }
+    }
+
+    return response()->json([
+        'status' => true,
+        'message' => "ดึง PO วันที่ " . Carbon::now()->format('d/m/Y') . " สำเร็จ {$inserted} รายการ",
+        'inserted' => $inserted,
+        'errors' => $errors
+    ]);
+}
 
     // public function detailpooutside($ponum)
     // {
@@ -60,12 +150,12 @@ class PooutsideController extends Controller
     //             return [
     //                 'name' => $name,
     //                 'total_qty' => $records->sum(function($r) { return floatval($r->quantity); }),
-    //                 'latest_invoice' => $records->sortByDesc('date_invice')->first()->invice ?? '',
-    //                 'latest_date' => $records->sortByDesc('date_invice')->first()->date_invice ?? '',
+    //                 'latest_invoice' => $records->sortByDesc('date_invoice')->first()->invoice ?? '',
+    //                 'latest_date' => $records->sortByDesc('date_invoice')->first()->date_invoice ?? '',
     //                 'records' => $records->map(function($r) {
     //                     return [
-    //                         'invoice' => $r->invice,
-    //                         'date' => $r->date_invice,
+    //                         'invoice' => $r->invoice,
+    //                         'date' => $r->date_invoice,
     //                         'quantity' => $r->quantity
     //                     ];
     //                 })->values()->toArray()
@@ -85,7 +175,7 @@ class PooutsideController extends Controller
     //                 'db_name' => null,
     //                 'total_received' => 0,
     //                 'invoice' => '',
-    //                 'date_invice' => '',
+    //                 'date_invoice' => '',
     //                 'records' => []
     //             ];
     //         }
@@ -128,7 +218,7 @@ class PooutsideController extends Controller
     //                     'db_name' => $dbName,
     //                     'total_received' => $dbItem['total_qty'],
     //                     'invoice' => $dbItem['latest_invoice'],
-    //                     'date_invice' => $dbItem['latest_date'],
+    //                     'date_invoice' => $dbItem['latest_date'],
     //                     'records' => $dbItem['records']
     //                 ];
 
@@ -282,12 +372,12 @@ class PooutsideController extends Controller
     //     return array_values(array_unique($words));
     // }
 
-    // private function calculateExpectedDate($dateInvice)
+    // private function calculateExpectedDate($dateinvoice)
     // {
-    //     if (!$dateInvice) return null;
+    //     if (!$dateinvoice) return null;
         
     //     try {
-    //         $dateArray = explode('/', $dateInvice);
+    //         $dateArray = explode('/', $dateinvoice);
     //         if (count($dateArray) == 3) {
     //             $carbonDate = \Carbon\Carbon::createFromDate(
     //                 $dateArray[2] - 543, $dateArray[1], $dateArray[0]
@@ -301,69 +391,5 @@ class PooutsideController extends Controller
     //     return null;
     // }
 
-    public function pull()
-    {
-        ini_set('max_execution_time', 600);
-        set_time_limit(600);
-        
-        $today = Carbon::now()->format('Y/m/d');
-        $url = "https://docs.google.com/spreadsheets/d/10C7TH4CUsE8AZmngq4G0PYti_IcEzjRHB2EQiCDwsh0/export?format=csv&gid=0";
-        
-        $csv = array_map('str_getcsv', file($url));
-        unset($csv[0]);
-
-        $inserted = 0;
-        $updated = 0;
-        $errors = [];
-
-        foreach ($csv as $row) {
-            if ($row[0] !== $today) continue;
-
-            DB::table('pooutside')->insert([
-                'date_invice' => Carbon::createFromFormat('Y/m/d', $row[0])->format('Y-m-d'),
-                'invice'      => $row[1],
-                'name'        => $row[2],
-                'quantity'    => $row[3],
-                'ponum'       => $row[4],
-                'idvendor'    => null,
-                'name_vendor' => null
-            ]);
-            $inserted++;
-        }
-
-        $poNumbers = collect($csv)
-            ->filter(fn($row) => $row[0] === $today)
-            ->pluck(4)->unique()->values();
-
-        foreach ($poNumbers as $poNumber) {
-            try {
-                usleep(200000);
-                $apiUrl = "http://server_update:8000/api/getPODetail?PONum={$poNumber}";
-                $response = Http::timeout(10)->get($apiUrl);
-
-                if ($response->successful()) {
-                    $poDetail = $response->json();
-                    if (isset($poDetail['VendorName']) && isset($poDetail['VendorCode'])) {
-                        $affectedRows = DB::table('pooutside')
-                            ->where('ponum', $poNumber)
-                            ->where('date_invice', $today)
-                            ->whereNull('idvendor')
-                            ->update([
-                                'name_vendor' => $poDetail['VendorName'],
-                                'idvendor'    => $poDetail['VendorCode']
-                            ]);
-                        if ($affectedRows > 0) $updated += $affectedRows;
-                    }
-                }
-            } catch (\Exception $e) {
-                $errors[] = "PO {$poNumber}: " . $e->getMessage();
-            }
-        }
-
-        return response()->json([
-            'status' => true,
-            'message' => "ดึงข้อมูลสำเร็จ {$inserted} รายการ, อัพเดท Vendor {$updated} รายการ",
-            'errors' => count($errors) > 0 ? $errors : null
-        ]);
-    }
+    
 }

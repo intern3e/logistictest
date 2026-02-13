@@ -215,17 +215,18 @@
             justify-content: space-between; 
             align-items: flex-start; 
             position: relative; 
-            margin-bottom: 10px; 
+            margin-bottom: 10px;
         }
         
         .timeline-line { 
             position: absolute; 
             top: 32px; 
-            left: 60px; 
-            right: 60px; 
+            left: calc(10% + 0px); 
+            right: calc(10% + 0px); 
             height: 4px; 
             background: #e5e7eb; 
             z-index: 1; 
+            border-radius: 4px;
         }
         
         .timeline-line-fill { 
@@ -235,7 +236,8 @@
             height: 100%; 
             background: linear-gradient(90deg, #10b981 0%, #059669 100%); 
             transition: width 0.6s ease-in-out; 
-            border-radius: 4px; 
+            border-radius: 4px;
+            display: block;
         }
         
         .timeline-point { 
@@ -267,19 +269,14 @@
         
         .timeline-circle.current { 
             border-color: #3b82f6; 
-            background: #eff6ff; 
-            animation: pulse 2s infinite; 
-        }
-        
-        @keyframes pulse { 
-            0%, 100% { box-shadow: 0 0 0 0 rgba(59, 130, 246, 0.4); } 
-            50% { box-shadow: 0 0 0 8px rgba(59, 130, 246, 0); } 
+            background: white; 
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.2);
         }
         
         .timeline-icon { font-size: 28px; }
         .timeline-circle.completed .timeline-icon { color: white; }
-        .timeline-circle.current .timeline-icon { color: #3b82f6; }
-        .timeline-label { text-align: center; font-size: 14px; color: #6b7280; max-width: 140px; line-height: 1.4; }
+        .timeline-circle.current .timeline-icon { color: #10b981; }
+        .timeline-label { text-align: center; font-size: 14px; color: #6b7280; max-width: 160px; line-height: 1.4; }
         .timeline-point.completed .timeline-label, .timeline-point.current .timeline-label { color: #1f2937; font-weight: 600; }
         .timeline-date { font-size: 12px; color: #9ca3af; margin-top: 4px; }
         .timeline-point.completed .timeline-date, .timeline-point.current .timeline-date { color: #059669; font-weight: 500; }
@@ -293,6 +290,10 @@
             display: flex; 
             align-items: center; 
             gap: 12px; 
+        }
+
+        .notice-box.hidden {
+            display: none;
         }
         
         .notice-text { 
@@ -352,7 +353,7 @@
             padding: 16px; 
             border-bottom: 1px solid #f3f4f6; 
             font-size: 14px; 
-            vertical-align: middle; 
+            vertical-align: top; 
         }
         
         .items-table tbody tr:hover { 
@@ -368,12 +369,15 @@
         .item-name { 
             font-weight: 500; 
             color: #1f2937; 
+            word-wrap: break-word;
+            word-break: break-word;
+            max-width: 100%;
         }
         
         .item-invoices { 
-            display: flex; 
-            flex-wrap: wrap; 
-            gap: 6px; 
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 8px; 
             margin-top: 6px; 
         }
         
@@ -381,7 +385,7 @@
             display: inline-flex; 
             flex-direction: column; 
             gap: 2px; 
-            padding: 6px 12px; 
+            padding: 8px 12px; 
             background: #eff6ff; 
             border: 1px solid #bfdbfe; 
             border-radius: 6px; 
@@ -412,10 +416,20 @@
             font-size: 15px; 
             color: #374151; 
         }
-        
-        .qty-received { 
-            background: #d1fae5; 
-            color: #065f46; 
+
+        .qty-summary {
+            margin-top: 12px;
+            font-size: 13px;
+            font-weight: 600;
+            grid-column: 1 / -1;
+        }
+
+        .qty-summary.excess {
+            color: #dc2626;
+        }
+
+        .qty-summary.shortage {
+            color: #f59e0b;
         }
 
         .status-badge { 
@@ -563,6 +577,10 @@
             .section {
                 padding: 20px;
             }
+
+            .item-invoices {
+                grid-template-columns: 1fr;
+            }
         }
     </style>
 </head>
@@ -587,6 +605,7 @@
                             id="searchInput" 
                             class="search-input"
                             placeholder="กรอกเลข PO เพื่อค้นหา..."
+                            maxlength="10"
                         />
                     </div>
                 </div>
@@ -638,11 +657,11 @@
                             </div>
                             <div class="timeline-point" data-step="3">
                                 <div class="timeline-circle"><span class="timeline-icon">📦</span></div>
-                                <div><div class="timeline-label">ออก Invoice</div><div class="timeline-date" id="date_step3">-</div></div>
+                                <div><div class="timeline-label">ได้รับInvoice</div><div class="timeline-date" id="date_step3">-</div></div>
                             </div>
                             <div class="timeline-point" data-step="4">
                                 <div class="timeline-circle"><span class="timeline-icon">🚚</span></div>
-                                <div><div class="timeline-label">จัดส่งสินค้า</div><div class="timeline-date" id="date_step4">-</div></div>
+                                <div><div class="timeline-label" style="white-space: nowrap;">วันที่คาดว่าจะได้รับสินค้า</div><div class="timeline-date" id="date_step4">-</div></div>
                             </div>
                             <div class="timeline-point" data-step="5">
                                 <div class="timeline-circle"><span class="timeline-icon">⭐</span></div>
@@ -652,8 +671,8 @@
                     </div>
 
                     <!-- Notice Box -->
-                    <div class="notice-box">
-                        <div class="notice-text">วันที่คาดว่าจะได้รับสินค้า: <strong id="expected_date">-</strong></div>
+                    <div class="notice-box" id="noticeBox">
+                        <div class="notice-text">วันที่คาดว่าจะได้รับสินค้าครบทั้งหมด: <strong id="expected_date">-</strong></div>
                     </div>
                 </div>
 
@@ -669,7 +688,7 @@
                             <div class="info-label">ชื่อร้านค้า</div>
                             <div class="info-value" id="vendor_name">-</div>
                         </div>
-                        <div class="info-item" style="grid-column: 1 / -1;">
+                        <div class="info-item">
                             <div class="info-label">ที่อยู่</div>
                             <div class="info-value" id="vendor_address">-</div>
                         </div>
@@ -686,7 +705,7 @@
                             <tr>
                                 <th>สินค้า</th>
                                 <th style="width: 120px; text-align: center;">จำนวนสั่ง</th>
-                                <th style="width: 120px; text-align: center;">จำนวนรับ</th>
+                                <th style="width: 500px;">รายการ Invoice</th>
                                 <th style="width: 160px; text-align: center;">สถานะ</th>
                             </tr>
                         </thead>
@@ -710,14 +729,19 @@
         function updateTimeline(step, dates = {}) {
             const points = document.querySelectorAll('.timeline-point');
             const progressBar = document.getElementById('progress_fill');
+            
+            // Update progress bar - หยุดที่ step ปัจจุบัน
             progressBar.style.width = ((step - 1) / (points.length - 1)) * 100 + '%';
             
             points.forEach((point, index) => {
                 const stepNum = index + 1;
                 const circle = point.querySelector('.timeline-circle');
-                point.classList.remove('completed', 'current');
-                circle.classList.remove('completed', 'current');
                 
+                // Reset classes
+                point.classList.remove('completed', 'current');
+                circle.classList.remove('completed', 'current', 'bg-yellow', 'bg-green', 'bg-red');
+                
+                // Apply state
                 if (stepNum < step) {
                     point.classList.add('completed');
                     circle.classList.add('completed');
@@ -727,20 +751,11 @@
                 }
             });
 
+            // Update dates
             Object.keys(dates).forEach(key => {
                 const el = document.getElementById('date_' + key);
                 if (el && dates[key]) el.textContent = dates[key];
             });
-        }
-
-        function getItemStatus(matched, completeFlag, totalReceived) {
-            if (completeFlag === 'Y') {
-                return { text: 'กำลังส่งคลัง', class: 'status-complete' };
-            }
-            if (matched && totalReceived > 0) {
-                return { text: 'กำลังจัดส่ง', class: 'status-pending' };
-            }
-            return { text: 'ยังไม่มีข้อมูล', class: 'status-no-data' };
         }
 
         function showLoading() {
@@ -748,12 +763,12 @@
             const contentArea = document.getElementById('contentArea');
             
             contentArea.classList.remove('show');
+            contentArea.style.display = 'none';
             initialState.style.display = 'block';
             initialState.innerHTML = `
                 <div class="content-card">
                     <div class="section">
                         <div class="loading-state">
-                            <div class="loading-spinner">⏳</div>
                             <div style="margin-top: 16px; font-size: 16px; font-weight: 500;">กำลังค้นหาข้อมูล...</div>
                         </div>
                     </div>
@@ -766,32 +781,13 @@
             const contentArea = document.getElementById('contentArea');
             
             contentArea.classList.remove('show');
+            contentArea.style.display = 'none';
             initialState.style.display = 'block';
             initialState.innerHTML = `
                 <div class="content-card">
                     <div class="section">
                         <div class="error-state">
-                            <div class="error-icon">❌</div>
                             <div class="error-text">${message}</div>
-                        </div>
-                    </div>
-                </div>
-            `;
-        }
-
-        function showEmptyState() {
-            const initialState = document.getElementById('initialEmptyState');
-            const contentArea = document.getElementById('contentArea');
-            
-            contentArea.classList.remove('show');
-            initialState.style.display = 'block';
-            initialState.innerHTML = `
-                <div class="content-card">
-                    <div class="section">
-                        <div class="empty-state">
-                            <div class="empty-icon">🔍</div>
-                            <div class="empty-text">กรุณากรอกเลข PO หรือชื่อ Vendor</div>
-                            <div class="empty-subtext">ระบบจะค้นหาและแสดงข้อมูลรายละเอียดให้ท่านทราบ</div>
                         </div>
                     </div>
                 </div>
@@ -803,12 +799,257 @@
             const initialState = document.getElementById('initialEmptyState');
             const contentArea = document.getElementById('contentArea');
             
+            // Hide content area
             contentArea.style.display = 'none';
             contentArea.classList.remove('show');
-            initialState.style.display = 'block';
             
-            showEmptyState();
+            // Show initial empty state
+            initialState.style.display = 'block';
+            initialState.innerHTML = `
+                <div class="content-card">
+                    <div class="section">
+                        <div class="empty-state">
+                            <div class="empty-text">กรุณากรอกเลข PO</div>
+                            <div class="empty-subtext">ระบบจะค้นหาและแสดงข้อมูลรายละเอียดให้ท่านทราบ</div>
+                        </div>
+                    </div>
+                </div>
+            `;
+            
+            // Focus on search input
+            document.getElementById('searchInput').focus();
         }
+
+        // Helper function: รวม Invoice ที่ซ้ำกัน (Invoice, name, quantity เหมือนกัน)
+        function mergeInvoices(dbItems) {
+            const invoiceMap = new Map();
+            
+            dbItems.forEach(item => {
+                // สร้าง key จาก invoice + name + quantity
+                const key = `${item.invoice}_${item.name}_${item.quantity}`;
+                
+                if (!invoiceMap.has(key)) {
+                    // ถ้ายังไม่มีใน Map ให้เพิ่มเข้าไป
+                    invoiceMap.set(key, {
+                        invoice: item.invoice,
+                        name: item.name,
+                        quantity: item.quantity,
+                        date_invoice: item.date_invoice
+                    });
+                }
+                // ถ้ามีแล้ว จะไม่เพิ่มซ้ำ (นับเป็น 1 card)
+            });
+            
+            // แปลง Map กลับเป็น Array
+            return Array.from(invoiceMap.values());
+        }
+
+        // Helper function: จับคู่สินค้า DB กับ API
+        // กฎ: DB แต่ละตัวจับคู่ได้แค่ 1 ครั้ง แต่ API จับคู่ได้หลายครั้ง
+        // ใช้ชื่อตรงๆ ไม่เคลียร์คำ
+        function matchProducts(dbItems, apiItems) {
+            const matched = [];
+            const usedDbIndices = new Set(); // ติดตาม DB ที่ถูกใช้ไปแล้ว
+            
+            // สร้าง map เพื่อรวม DB items ที่ match กับ API item เดียวกัน
+            const apiToDbMap = new Map();
+
+            // วนลูป DB items แต่ละตัว
+            dbItems.forEach((dbItem, dbIdx) => {
+                // ถ้า DB item นี้ถูกใช้ไปแล้ว ข้ามไป
+                if (usedDbIndices.has(dbIdx)) return;
+                
+                const dbName = dbItem.name.trim().toUpperCase();
+                
+                let bestMatch = 0; // เริ่มที่ 0 (API ตัวแรก)
+                let bestMatchScore = -1; // ให้เป็นติดลบเพื่อให้มั่นใจว่าต้องเลือกได้เสมอ
+                
+                // หา API item ที่ match ดีที่สุด
+                apiItems.forEach((apiItem, apiIdx) => {
+                    const apiName = apiItem.GoodName.trim().toUpperCase();
+                    
+                    // คำนวณคะแนนความใกล้เคียง
+                    let score = 0;
+                    
+                    // 1. เช็คว่า API มี DB name ทั้งหมดอยู่ในนั้นหรือไม่
+                    if (apiName.includes(dbName)) {
+                        score = 10000 + dbName.length;
+                    } 
+                    // 2. เช็คว่า DB มี API name ทั้งหมดอยู่ในนั้นหรือไม่
+                    else if (dbName.includes(apiName)) {
+                        score = 8000 + apiName.length;
+                    }
+                    // 3. นับคำที่ตรงกัน
+                    else {
+                        const dbWords = dbName.split(/\s+/);
+                        const apiWords = apiName.split(/\s+/);
+                        let matchCount = 0;
+                        
+                        dbWords.forEach(dbWord => {
+                            if (dbWord.length > 2) {
+                                apiWords.forEach(apiWord => {
+                                    if (dbWord === apiWord) {
+                                        matchCount += dbWord.length;
+                                    }
+                                });
+                            }
+                        });
+                        
+                        score = matchCount;
+                    }
+                    
+                    // เก็บ match ที่ดีที่สุด
+                    if (score > bestMatchScore) {
+                        bestMatchScore = score;
+                        bestMatch = apiIdx;
+                    }
+                });
+                
+                // เพิ่ม DB item เข้า API map
+                if (!apiToDbMap.has(bestMatch)) {
+                    apiToDbMap.set(bestMatch, {
+                        apiItem: apiItems[bestMatch],
+                        dbItems: []
+                    });
+                }
+                apiToDbMap.get(bestMatch).dbItems.push(dbItem);
+                
+                // ทำเครื่องหมายว่า DB item นี้ถูกใช้แล้ว
+                usedDbIndices.add(dbIdx);
+            });
+
+            // แปลง Map เป็น Array และรวม Invoice ที่ซ้ำกัน
+            apiToDbMap.forEach((value, apiIdx) => {
+                matched.push({
+                    apiItem: value.apiItem,
+                    dbItems: mergeInvoices(value.dbItems),
+                    apiIndex: apiIdx
+                });
+            });
+
+            // เพิ่ม API items ที่ไม่มี DB match
+            const matchedApiIndices = new Set(Array.from(apiToDbMap.keys()));
+            apiItems.forEach((apiItem, apiIdx) => {
+                if (!matchedApiIndices.has(apiIdx)) {
+                    matched.push({
+                        apiItem: apiItem,
+                        dbItems: [],
+                        apiIndex: apiIdx
+                    });
+                }
+            });
+
+            // เรียงผลลัพธ์ตาม API index
+            matched.sort((a, b) => a.apiIndex - b.apiIndex);
+
+            return matched;
+        }
+
+        // Helper: หาวันที่ Invoice ที่ใกล้เคียงกับวันปัจจุบันที่สุด
+        function getClosestInvoiceDate(invoices) {
+            if (!invoices || invoices.length === 0) return null;
+            
+            const now = new Date();
+            let closest = null;
+            let minDiff = Infinity;
+
+            invoices.forEach(inv => {
+                if (inv.date_invoice) {
+                    const invDate = new Date(inv.date_invoice);
+                    const diff = Math.abs(now - invDate);
+                    if (diff < minDiff) {
+                        minDiff = diff;
+                        closest = inv.date_invoice;
+                    }
+                }
+            });
+
+            return closest;
+        }
+
+        // Helper: เพิ่ม 15 วันให้กับวันที่
+        function addDays(dateString, days) {
+            if (!dateString) return null;
+            const date = new Date(dateString);
+            date.setDate(date.getDate() + days);
+            return formatDateThai(date);
+        }
+
+        // Helper: คำนวณสรุปจำนวนสินค้า
+        function calculateQuantitySummary(orderedQty, dbItems) {
+            if (!dbItems || dbItems.length === 0) {
+                return null;
+            }
+
+            // รวมจำนวนที่ได้รับทั้งหมด
+            const totalReceived = dbItems.reduce((sum, item) => sum + parseFloat(item.quantity || 0), 0);
+            const ordered = parseFloat(orderedQty || 0);
+
+            if (totalReceived > ordered) {
+                // เกิน
+                const excess = totalReceived - ordered;
+                return {
+                    type: 'excess',
+                    message: `เกิน ${excess.toFixed(4)} หน่วย`
+                };
+            } else if (totalReceived < ordered) {
+                // ขาด
+                const shortage = ordered - totalReceived;
+                return {
+                    type: 'shortage',
+                    message: `ขาด ${shortage.toFixed(4)} หน่วย`
+                };
+            } else {
+                // เท่าพอดี
+                return null;
+            }
+        }
+
+        // Auto-format PO number with dash
+        document.getElementById('searchInput').addEventListener('input', function(e) {
+            let value = e.target.value;
+            
+            // Remove all non-digit characters except dash
+            value = value.replace(/[^\d-]/g, '');
+            
+            // Remove all dashes first
+            value = value.replace(/-/g, '');
+            
+            // Format: xxxx-xxxxx
+            if (value.length > 4) {
+                value = value.substring(0, 4) + '-' + value.substring(4, 9);
+            }
+            
+            e.target.value = value;
+        });
+
+        // Handle paste event to clean up pasted text
+        document.getElementById('searchInput').addEventListener('paste', function(e) {
+            e.preventDefault();
+            
+            // Get pasted text
+            let pastedText = (e.clipboardData || window.clipboardData).getData('text');
+            
+            // Remove all non-digit characters except dash
+            pastedText = pastedText.replace(/[^\d-]/g, '');
+            
+            // Remove all dashes
+            pastedText = pastedText.replace(/-/g, '');
+            
+            // Remove spaces
+            pastedText = pastedText.replace(/\s/g, '');
+            
+            // Format: xxxx-xxxxx
+            if (pastedText.length > 4) {
+                pastedText = pastedText.substring(0, 4) + '-' + pastedText.substring(4, 9);
+            }
+            
+            // Set the formatted value
+            e.target.value = pastedText;
+            
+            // Trigger input event to ensure any other listeners are notified
+            e.target.dispatchEvent(new Event('input', { bubbles: true }));
+        });
 
         // กด Enter เพื่อค้นหา
         document.getElementById('searchInput').addEventListener('keypress', function(e) {
@@ -816,169 +1057,197 @@
                 searchPO();
             }
         });
-    </script>
-    <script>
+
         async function searchPO() {
-        const searchValue = document.getElementById('searchInput').value.trim();
-        if (!searchValue) {
-            alert('กรุณากรอกเลข PO');
-            return;
-        }
-        showLoading();
-        try {
+            const searchValue = document.getElementById('searchInput').value.trim();
+            if (!searchValue) {
+                alert('กรุณากรอกเลข PO');
+                return;
+            }
+            
+            showLoading();
+            
+            try {
+                // Fetch LOCAL DB
+                const localRes = await fetch(`/pooutside/check?ponum=${searchValue}`);
+                const localData = await localRes.json();
+                console.log("LOCAL:", localData);
 
-            // =======================
-            // 1️⃣ FETCH LOCAL DB
-            // =======================
-            const localRes = await fetch(`/pooutside/check?ponum=${searchValue}`);
-            const localData = await localRes.json();
-            console.log("LOCAL:", localData);
+                // Fetch ERP API
+                const apiRes = await fetch(`http://server_update:8000/api/getPODetail?PONum=${searchValue}`);
+                const apiData = await apiRes.json();
+                console.log("API:", apiData);
 
-            // =======================
-            // 2️⃣ FETCH ERP API
-            // =======================
-            const apiRes = await fetch(
-                `http://server_update:8000/api/getPODetail?PONum=${searchValue}`
-            );
-            const apiData = await apiRes.json();
-            console.log("API:", apiData);
+                // Update vendor info
+                document.getElementById('vendor_code').textContent = apiData.VendorCode || '-';
+                document.getElementById('vendor_name').textContent = apiData.VendorName || '-';
+                document.getElementById('vendor_address').textContent = [
+                    apiData.ContAddr1,
+                    apiData.ContAddr2,
+                    apiData.ContDistrict,
+                    apiData.ContAmphur,
+                    apiData.ContProvince,
+                    apiData.ContPostCode
+                ].filter(Boolean).join(', ') || '-';
 
-            document.getElementById('vendor_code').textContent =
-                apiData.VendorCode || '-';
+                // Determine current step
+                const hasLocalData = localData.exists && localData.data.length > 0;
+                let step = 1;
+                let statusColor = '';
 
-            document.getElementById('vendor_name').textContent =
-                apiData.VendorName || '-';
+                switch (apiData.store_status) {
+                    case "ENTRY":
+                        if (hasLocalData) {
+                            step = 4; // จัดส่งสินค้า
+                            statusColor = 'bg-green';
+                        } else {
+                            step = 2; // ยืนยันคำสั่งซื้อ
+                            statusColor = 'bg-green';
+                        }
+                        break;
+                    case "PARTIAL":
+                        step = 5; // รับสินค้าครบ
+                        statusColor = 'bg-yellow';
+                        break;
+                    case "COMPLETED":
+                        step = 5; // รับสินค้าครบ
+                        statusColor = 'bg-green';
+                        break;
+                    case "CANCELLED":
+                        step = 2; // ยืนยันคำสั่งซื้อ
+                        statusColor = 'bg-red';
+                        break;
+                    default:
+                        step = 1; // สร้าง PO
+                }
 
-let step = 1; 
-let statusColor = '';
+                // ซ่อน Notice Box ถ้า status เป็น COMPLETED
+                const noticeBox = document.getElementById('noticeBox');
+                if (apiData.store_status === 'COMPLETED') {
+                    noticeBox.classList.add('hidden');
+                } else {
+                    noticeBox.classList.remove('hidden');
+                }
 
-const hasLocalData = localData.exists && localData.data.length > 0;
+                // หา Invoice date ที่ใกล้เคียงกับวันปัจจุบันที่สุด
+                const closestInvoiceDate = getClosestInvoiceDate(localData.data);
+                const expectedDeliveryDate = addDays(closestInvoiceDate, 15);
 
-switch (apiData.store_status) {
+                // Update timeline dates
+                const timelineDates = {
+                    step1: formatDateThai(apiData.DocuDate), // สร้าง PO
+                    step2: formatDateThai(apiData.DocuDate), // ยืนยันคำสั่งซื้อ (ใช้ DocuDate)
+                    step3: closestInvoiceDate ? formatDateThai(closestInvoiceDate) : '-', // ออก Invoice
+                    step4: closestInvoiceDate ? addDays(closestInvoiceDate, 15) : '-', // จัดส่งสินค้า (+15 วัน)
+                };
 
-    case "ENTRY":
-        if (hasLocalData) {
-            step = 4; // จัดส่งสินค้า
-            statusColor = 'bg-yellow';
-        } else {
-            step = 1; // สร้าง PO
-        }
-        break;
+                updateTimeline(step, timelineDates);
 
-    case "PARTIAL":
-        step = 4; // จัดส่งสินค้า
-        statusColor = 'bg-yellow';
-        break;
+                // เพิ่มสีให้ current step
+                if (statusColor) {
+                    const currentPoint = document.querySelector(`.timeline-point[data-step="${step}"] .timeline-circle`);
+                    if (currentPoint) {
+                        currentPoint.classList.add(statusColor);
+                    }
+                }
 
-    case "COMPLETED":
-        step = 5; // รับสินค้าแล้ว
-        statusColor = 'bg-green';
-        break;
+                // Update expected date
+                document.getElementById('expected_date').textContent = expectedDeliveryDate || '-';
 
-    case "CANCELLED":
-        step = 2; // ยืนยันคำสั่งซื้อ
-        statusColor = 'bg-red';
-        break;
+                // Match products
+                const matchedProducts = matchProducts(localData.data || [], apiData.ms_podt || []);
 
-    default:
-        step = 1;
-}
+                // Build table
+                const tbody = document.getElementById('items_table_body');
+                tbody.innerHTML = '';
 
-// อัปเดต timeline
-updateTimeline(step, {
-    step1: formatDateThai(apiData.DocuDate),
-    step2: formatDateThai(apiData.AppvDate),
-    step3: formatDateThai(apiData.BillDate),
-    step4: formatDateThai(apiData.ShipDate),
-    step5: formatDateThai(apiData.ReqInDate)
-});
-
-// เปลี่ยนสี icon พื้นหลังของ step ปัจจุบัน
-const currentPoint = document.querySelector(`.timeline-point[data-step="${step}"] .timeline-circle`);
-if (currentPoint && statusColor) {
-    currentPoint.classList.add(statusColor);
-}
-            document.getElementById('vendor_address').textContent = [
-                apiData.ContAddr1,
-                apiData.ContAddr2,
-                apiData.ContDistrict,
-                apiData.ContAmphur,
-                apiData.ContProvince,
-                apiData.ContPostCode
-            ].filter(Boolean).join(', ') || '-';
-
-
-        // =========================
-        // TABLE
-        // =========================
-        const tbody = document.getElementById('items_table_body');
-        tbody.innerHTML = '';
-
-            // =======================
-            // 🔵 แสดง ERP
-            // =======================
-            if (apiData.ms_podt && apiData.ms_podt.length > 0) {
-
-                tbody.innerHTML += `
-                    <tr style="background:#d9edf7;font-weight:bold;">
-                        <td colspan="4">ERP ITEMS</td>
-                    </tr>
-                `;
-
-                apiData.ms_podt.forEach(item => {
-                    tbody.innerHTML += `
+                if (matchedProducts.length === 0) {
+                    tbody.innerHTML = `
                         <tr>
-                            <td>${item.GoodName}</td>
-                            <td style="text-align:center">${item.GoodQty2}</td>
-                            <td>-</td>
-                            <td>-</td>
+                            <td colspan="4" style="text-align:center;color:red;">
+                                ไม่พบข้อมูล
+                            </td>
                         </tr>
                     `;
-                });
+                } else {
+                    matchedProducts.forEach(match => {
+                        const apiItem = match.apiItem;
+                        const dbItems = match.dbItems;
+
+                        // กำหนดสถานะตาม store_status
+                        let itemStatus = 'ไม่มีข้อมูล';
+                        let statusClass = 'status-no-data';
+
+                        if (dbItems.length > 0) {
+                            if (apiData.store_status === 'COMPLETED') {
+                                itemStatus = 'จัดส่งสำเร็จ';
+                                statusClass = 'status-complete';
+                            } else {
+                                itemStatus = 'กำลังจัดส่ง';
+                                statusClass = 'status-pending';
+                            }
+                        }
+
+                        // คำนวณสรุปจำนวน
+                        const summary = calculateQuantitySummary(apiItem.GoodQty2, dbItems);
+
+                        // สร้าง Invoice tags (แสดงเฉพาะ unique invoices, 2 cards ต่อแถว)
+                        let invoiceTags = '';
+                        if (dbItems.length > 0) {
+                            dbItems.forEach(dbItem => {
+                                invoiceTags += `
+                                    <div class="invoice-tag">
+                                        <span class="inv-num">Invoice: ${dbItem.invoice || '-'}</span>
+                                        <span class="inv-num">Name: ${dbItem.name || '-'}</span>
+                                        <span class="inv-date">วันที่: ${formatDateThai(dbItem.date_invoice)}</span>
+                                        <span class="inv-qty">จำนวน: ${dbItem.quantity || 0}</span>
+                                    </div>
+                                `;
+                            });
+
+                            // เพิ่มสรุปผล (ถ้ามี)
+                            if (summary) {
+                                invoiceTags += `
+                                    <div class="qty-summary ${summary.type}">
+                                        ${summary.message}
+                                    </div>
+                                `;
+                            }
+                        } else {
+                            invoiceTags = '<span style="color: #9ca3af;">ยังไม่มีข้อมูล Invoice</span>';
+                        }
+
+                        tbody.innerHTML += `
+                            <tr>
+                                <td>
+                                    <div class="item-name">${apiItem.GoodName}</div>
+                                </td>
+                                <td style="text-align:center"> 
+                                <div class="qty-box">${apiItem.GoodQty2 || 0}</div> </td>
+                                <td>
+                                    <div class="item-invoices">
+                                        ${invoiceTags}
+                                    </div>
+                                </td>
+                                <td style="text-align:center">
+                                    <span class="status-badge ${statusClass}">${itemStatus}</span>
+                                </td>
+                            </tr>
+                        `;
+                    });
+                }
+
+                // Show content
+                document.getElementById('initialEmptyState').style.display = 'none';
+                const contentArea = document.getElementById('contentArea');
+                contentArea.style.display = 'block';
+                contentArea.classList.add('show');
+
+            } catch (err) {
+                console.error(err);
+                showError("ไม่พบเลข PO");
             }
-
-            // =======================
-            // 🟡 แสดง LOCAL DB
-            // =======================
-            if (localData.exists && localData.data.length > 0) {
-
-                tbody.innerHTML += `
-                    <tr style="background:#fcf8e3;font-weight:bold;">
-                        <td colspan="4">LOCAL INVOICE</td>
-                    </tr>
-                `;
-
-                localData.data.forEach(item => {
-                    tbody.innerHTML += `
-                        <tr>
-                            <td>${item.name}</td>
-                            <td style="text-align:center">${item.quantity}</td>
-                            <td style="text-align:center">${item.invice}</td>
-                            <td style="text-align:center">${item.date_invice}</td>
-                        </tr>
-                    `;
-                });
-            }
-
-            if (!apiData.ms_podt?.length && !localData.data?.length) {
-                tbody.innerHTML = `
-                    <tr>
-                        <td colspan="4" style="text-align:center;color:red;">
-                            ไม่พบข้อมูล
-                        </td>
-                    </tr>
-                `;
-            }
-
-            // ✅ แสดง content จริง
-            document.getElementById('initialEmptyState').style.display = 'none';
-            document.getElementById('contentArea').classList.add('show');
-
-        } catch (err) {
-            console.error(err);
-            alert("เกิดข้อผิดพลาด");
         }
-    }
     </script>
 </body>
 </html>
