@@ -140,7 +140,7 @@ class PoDocumentController extends Controller
                 // เพิ่ม SO ID (ใต้ SO Detail ID)
                 $pdf->SetFont('Helvetica', 'I', 8);
                 $pdf->SetTextColor(0, 0, 0);
-                $pdf->SetXY(152, 15);
+                $pdf->SetXY(155, 15);
                 $pdf->Cell(50, 10, "{$so_id}", 0, 0, 'R');
 
                 // เพิ่มรูปปั้ม
@@ -253,7 +253,7 @@ class PoDocumentController extends Controller
                 // เพิ่ม SO ID
                 $pdf->SetFont('Helvetica', 'I', 8);
                 $pdf->SetTextColor(0, 0, 0);
-                $pdf->SetXY(152, 15);
+                $pdf->SetXY(155, 15);
                 $pdf->Cell(50, 10, "{$so_id}", 0, 0, 'R');
 
                 // เพิ่มรูปปั้มที่ 1

@@ -189,10 +189,12 @@ Route::get('/dashboardinventory', [StockController::class, 'dashboardinventory']
 
 use App\Http\Controllers\PooutsideController;
 Route::get('/pooutside', [PooutsideController::class, 'dashboard'])->name('pooutside.dashboard');
-Route::get('/detailpooutside/{ponum}', [PooutsideController::class, 'detailpooutside'])->name('pooutside.detailpooutside');
-Route::get('/pooutside/dashboard', [PooutsideController::class, 'dashboard'])->name('pooutside.dashboard');
-Route::post('/pooutside/search-invoice', [PooutsideController::class, 'searchInvoice'])->name('pooutside.searchInvoice');
+Route::get('/pooutside/check', [PooutsideController::class, 'checkLocalPO']);
+
+// Route::get('/detailpooutside/{ponum}', [PooutsideController::class, 'detailpooutside'])->name('pooutside.detailpooutside');
+// Route::get('/pooutside/dashboard', [PooutsideController::class, 'dashboard'])->name('pooutside.dashboard');
+// Route::post('/pooutside/search-invoice', [PooutsideController::class, 'searchInvoice'])->name('pooutside.searchInvoice');
 Route::post('/pull-po-outside', [PoOutsideController::class, 'pull'])
     ->name('pull.pooutside');
-Route::post('/pooutside/batch-match', [PooutsideController::class, 'batchMatch'])
-    ->name('pooutside.batchMatch');
+// Route::post('/pooutside/batch-match', [PooutsideController::class, 'batchMatch'])
+//     ->name('pooutside.batchMatch');
