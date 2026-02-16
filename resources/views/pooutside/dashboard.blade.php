@@ -284,7 +284,6 @@
         /* ─── NOTICE BOX ─── */
         .notice-box { 
             background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%); 
-            border-left: 4px solid #f59e0b; 
             padding: 16px 20px; 
             border-radius: 8px; 
             display: flex; 
@@ -587,12 +586,11 @@
 <body>
     <!-- TOP NAV -->
     <div class="top-nav">
-        <div class="nav-title">รายการเข้า PO ของนอก</div>
+        <div class="nav-title">ตามของนอก</div>
         <a href="http://server_update:8000/solist" class="back-button">
             ← หน้าหลัก
         </a>
     </div>
-
     <!-- SEARCH BOX -->
     <div class="search-container">
         <div class="search-card">
@@ -670,9 +668,16 @@
                         </div>
                     </div>
 
-                    <!-- Notice Box -->
+                    <!-- Notice Box - Expected Delivery Date -->
                     <div class="notice-box" id="noticeBox">
                         <div class="notice-text">วันที่คาดว่าจะได้รับสินค้าครบทั้งหมด: <strong id="expected_date">-</strong></div>
+                    </div>
+
+                    <!-- Notice Box - Note from Database -->
+                    <div class="notice-box hidden" id="noteBox" style="background: #FF7D63; margin-top: 16px;">
+                        <div class="notice-text" style="color: #000000">
+                            <strong style="color: #000000;">หมายเหตุ:</strong> <span id="note_text">-</span>
+                        </div>
                     </div>
                 </div>
 
@@ -834,7 +839,8 @@
                         invoice: item.invoice,
                         name: item.name,
                         quantity: item.quantity,
-                        date_invoice: item.date_invoice
+                        date_invoice: item.date_invoice,
+                        note: item.note // เพิ่ม note field
                     });
                 }
                 // ถ้ามีแล้ว จะไม่เพิ่มซ้ำ (นับเป็น 1 card)
@@ -965,6 +971,20 @@
             });
 
             return closest;
+        }
+
+        // Helper: รวม notes ทั้งหมดที่ไม่ซ้ำกัน
+        function collectUniqueNotes(dbItems) {
+            if (!dbItems || dbItems.length === 0) return null;
+            
+            const uniqueNotes = new Set();
+            dbItems.forEach(item => {
+                if (item.note && item.note.trim() !== '') {
+                    uniqueNotes.add(item.note.trim());
+                }
+            });
+            
+            return uniqueNotes.size > 0 ? Array.from(uniqueNotes).join(' | ') : null;
         }
 
         // Helper: เพิ่ม 15 วันให้กับวันที่
@@ -1127,6 +1147,18 @@
                     noticeBox.classList.add('hidden');
                 } else {
                     noticeBox.classList.remove('hidden');
+                }
+
+                // จัดการ Note Box
+                const noteBox = document.getElementById('noteBox');
+                const noteText = document.getElementById('note_text');
+                const allNotes = collectUniqueNotes(localData.data);
+                
+                if (allNotes) {
+                    noteText.textContent = allNotes;
+                    noteBox.classList.remove('hidden');
+                } else {
+                    noteBox.classList.add('hidden');
                 }
 
                 // หา Invoice date ที่ใกล้เคียงกับวันปัจจุบันที่สุด

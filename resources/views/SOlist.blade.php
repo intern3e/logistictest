@@ -284,10 +284,10 @@
                     <input type="hidden" id="method" name="method" value="">
                     {{-- ไปเพิ่มเซิฟหลัก --}}
                    <a id="btn-dashboard">
-    <input class="btn btn-danger" type="button" style="background-color: #C599B6" value="ข้อมูลจัดส่ง">
+    <input class="btn btn-danger" type="button" style="background-color: #1738f3" value="ข้อมูลจัดส่ง">
 </a>
-<a href="pooutside" title="ติดตามคำสั่งซื้อPO" class="notification-icon" style="position: relative; display: inline-block;">
-                <input class="btn btn-danger" type="button" style="background-color: #27D6F5" value="ติดตามคำสั่งซื้อPO"></a>
+<a href="pooutside" title="ตามของนอก" class="notification-icon" style="position: relative; display: inline-block;">
+                <input class="btn btn-danger" type="button" style="background-color: #50c82e" value="ตามของนอก"></a>
 <script>
     document.addEventListener("DOMContentLoaded", function () {
         // ดึงวันที่ปัจจุบันในรูปแบบ YYYY-MM-DD

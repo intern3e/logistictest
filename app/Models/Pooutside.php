@@ -9,7 +9,7 @@ class Pooutside extends Model
 {
     use HasFactory;
     protected $table = 'pooutside'; 
-    protected $fillable = ['date_invoice','invoice','name','quantity','ponum'];
+    protected $fillable = ['date_invoice','invoice','name','quantity','ponum','note'];
     public $incrementing = false;
     public $timestamps = false; 
 }
