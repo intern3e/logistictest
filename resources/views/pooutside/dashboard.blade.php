@@ -825,154 +825,116 @@
             document.getElementById('searchInput').focus();
         }
 
-        // Helper function: รวม Invoice ที่ซ้ำกัน (Invoice, name, quantity เหมือนกัน)
-        function mergeInvoices(dbItems) {
-            const invoiceMap = new Map();
-            
-            dbItems.forEach(item => {
-                // สร้าง key จาก invoice + name + quantity
-                const key = `${item.invoice}_${item.name}_${item.quantity}`;
-                
-                if (!invoiceMap.has(key)) {
-                    // ถ้ายังไม่มีใน Map ให้เพิ่มเข้าไป
-                    invoiceMap.set(key, {
-                        invoice: item.invoice,
-                        name: item.name,
-                        quantity: item.quantity,
-                        date_invoice: item.date_invoice,
-                        note: item.note // เพิ่ม note field
-                    });
-                }
-                // ถ้ามีแล้ว จะไม่เพิ่มซ้ำ (นับเป็น 1 card)
-            });
-            
-            // แปลง Map กลับเป็น Array
-            return Array.from(invoiceMap.values());
-        }
+       function mergeInvoices(dbItems) {
+    const nameQtyMap = new Map();
 
-        // Helper function: จับคู่สินค้า DB กับ API
-        // กฎ: DB แต่ละตัวจับคู่ได้แค่ 1 ครั้ง แต่ API จับคู่ได้หลายครั้ง
-        // ใช้ชื่อตรงๆ ไม่เคลียร์คำ
+    dbItems.forEach(item => {
+        const key = `${item.name.trim().toUpperCase()}_${parseFloat(item.quantity)}`;
+        
+        if (!nameQtyMap.has(key)) {
+            nameQtyMap.set(key, item);
+        } else {
+            // name + qty เดียวกัน → เก็บวันล่าสุด
+            const existing = nameQtyMap.get(key);
+            const existingDate = existing.date_invoice ? new Date(existing.date_invoice) : new Date(0);
+            const newDate = item.date_invoice ? new Date(item.date_invoice) : new Date(0);
+            if (newDate > existingDate) {
+                nameQtyMap.set(key, item);
+            }
+        }
+    });
+
+    return Array.from(nameQtyMap.values());
+}
         function matchProducts(dbItems, apiItems) {
-            const matched = [];
-            const usedDbIndices = new Set(); // ติดตาม DB ที่ถูกใช้ไปแล้ว
-            
-            // สร้าง map เพื่อรวม DB items ที่ match กับ API item เดียวกัน
-            const apiToDbMap = new Map();
+    const matched = [];
+    const usedDbIndices = new Set();
+    const apiToDbMap = new Map();
 
-            // วนลูป DB items แต่ละตัว
-            dbItems.forEach((dbItem, dbIdx) => {
-                // ถ้า DB item นี้ถูกใช้ไปแล้ว ข้ามไป
-                if (usedDbIndices.has(dbIdx)) return;
-                
-                const dbName = dbItem.name.trim().toUpperCase();
-                
-                let bestMatch = 0; // เริ่มที่ 0 (API ตัวแรก)
-                let bestMatchScore = -1; // ให้เป็นติดลบเพื่อให้มั่นใจว่าต้องเลือกได้เสมอ
-                
-                // หา API item ที่ match ดีที่สุด
-                apiItems.forEach((apiItem, apiIdx) => {
-                    const apiName = apiItem.GoodName.trim().toUpperCase();
-                    
-                    // คำนวณคะแนนความใกล้เคียง
-                    let score = 0;
-                    
-                    // 1. เช็คว่า API มี DB name ทั้งหมดอยู่ในนั้นหรือไม่
-                    if (apiName.includes(dbName)) {
-                        score = 10000 + dbName.length;
-                    } 
-                    // 2. เช็คว่า DB มี API name ทั้งหมดอยู่ในนั้นหรือไม่
-                    else if (dbName.includes(apiName)) {
-                        score = 8000 + apiName.length;
+    // คำนวณ score ทุกคู่ก่อน
+    const scores = [];
+    dbItems.forEach((dbItem, dbIdx) => {
+        const dbName = dbItem.name.trim().toUpperCase();
+        apiItems.forEach((apiItem, apiIdx) => {
+            const apiName = apiItem.GoodName.trim().toUpperCase();
+            let score = 0;
+
+            // Exact match
+            if (apiName === dbName) {
+                score = 100000;
+            } else {
+                // นับความยาวของ substring ที่ตรงกันที่ยาวที่สุด (Longest Common Substring)
+                let maxLen = 0;
+                for (let i = 0; i < dbName.length; i++) {
+                    for (let j = i + 1; j <= dbName.length; j++) {
+                        const sub = dbName.substring(i, j);
+                        if (apiName.includes(sub) && sub.length > maxLen) {
+                            maxLen = sub.length;
+                        }
                     }
-                    // 3. นับคำที่ตรงกัน
-                    else {
-                        const dbWords = dbName.split(/\s+/);
-                        const apiWords = apiName.split(/\s+/);
-                        let matchCount = 0;
-                        
-                        dbWords.forEach(dbWord => {
-                            if (dbWord.length > 2) {
-                                apiWords.forEach(apiWord => {
-                                    if (dbWord === apiWord) {
-                                        matchCount += dbWord.length;
-                                    }
-                                });
-                            }
-                        });
-                        
-                        score = matchCount;
-                    }
-                    
-                    // เก็บ match ที่ดีที่สุด
-                    if (score > bestMatchScore) {
-                        bestMatchScore = score;
-                        bestMatch = apiIdx;
-                    }
-                });
-                
-                // เพิ่ม DB item เข้า API map
-                if (!apiToDbMap.has(bestMatch)) {
-                    apiToDbMap.set(bestMatch, {
-                        apiItem: apiItems[bestMatch],
-                        dbItems: []
-                    });
                 }
-                apiToDbMap.get(bestMatch).dbItems.push(dbItem);
-                
-                // ทำเครื่องหมายว่า DB item นี้ถูกใช้แล้ว
-                usedDbIndices.add(dbIdx);
-            });
+                // penalty: ถ้า apiName ยาวกว่า dbName มาก ลด score
+                const lengthPenalty = Math.abs(apiName.length - dbName.length);
+                score = (maxLen * 1000) - lengthPenalty;
+            }
 
-            // แปลง Map เป็น Array และรวม Invoice ที่ซ้ำกัน
-            apiToDbMap.forEach((value, apiIdx) => {
-                matched.push({
-                    apiItem: value.apiItem,
-                    dbItems: mergeInvoices(value.dbItems),
-                    apiIndex: apiIdx
-                });
-            });
+            scores.push({ dbIdx, apiIdx, score });
+        });
+    });
 
-            // เพิ่ม API items ที่ไม่มี DB match
-            const matchedApiIndices = new Set(Array.from(apiToDbMap.keys()));
-            apiItems.forEach((apiItem, apiIdx) => {
-                if (!matchedApiIndices.has(apiIdx)) {
-                    matched.push({
-                        apiItem: apiItem,
-                        dbItems: [],
-                        apiIndex: apiIdx
-                    });
-                }
-            });
+    // เรียง score จากมากไปน้อย
+    scores.sort((a, b) => b.score - a.score);
 
-            // เรียงผลลัพธ์ตาม API index
-            matched.sort((a, b) => a.apiIndex - b.apiIndex);
+    // จับคู่: DB แต่ละตัวล็อคได้แค่ 1 ครั้ง, API จับได้หลายครั้ง
+    scores.forEach(({ dbIdx, apiIdx, score }) => {
+        if (usedDbIndices.has(dbIdx)) return;
 
-            return matched;
+        if (!apiToDbMap.has(apiIdx)) {
+            apiToDbMap.set(apiIdx, { apiItem: apiItems[apiIdx], dbItems: [] });
         }
+        apiToDbMap.get(apiIdx).dbItems.push(dbItems[dbIdx]);
+        usedDbIndices.add(dbIdx);
+    });
 
-        // Helper: หาวันที่ Invoice ที่ใกล้เคียงกับวันปัจจุบันที่สุด
-        function getClosestInvoiceDate(invoices) {
-            if (!invoices || invoices.length === 0) return null;
-            
-            const now = new Date();
-            let closest = null;
-            let minDiff = Infinity;
+    // รวมผลลัพธ์
+    apiToDbMap.forEach((value, apiIdx) => {
+        matched.push({
+            apiItem: value.apiItem,
+            dbItems: mergeInvoices(value.dbItems),
+            apiIndex: apiIdx
+        });
+    });
 
-            invoices.forEach(inv => {
-                if (inv.date_invoice) {
-                    const invDate = new Date(inv.date_invoice);
-                    const diff = Math.abs(now - invDate);
-                    if (diff < minDiff) {
-                        minDiff = diff;
-                        closest = inv.date_invoice;
-                    }
-                }
-            });
-
-            return closest;
+    // API ที่ไม่มี DB match
+    const matchedApiIndices = new Set(Array.from(apiToDbMap.keys()));
+    apiItems.forEach((apiItem, apiIdx) => {
+        if (!matchedApiIndices.has(apiIdx)) {
+            matched.push({ apiItem, dbItems: [], apiIndex: apiIdx });
         }
+    });
 
+    matched.sort((a, b) => a.apiIndex - b.apiIndex);
+    return matched;
+}
+
+function getClosestInvoiceDate(invoices) {
+    if (!invoices || invoices.length === 0) return null;
+    
+    let latest = null;
+    let maxDate = new Date(0);
+
+    invoices.forEach(inv => {
+        if (inv.date_invoice) {
+            const invDate = new Date(inv.date_invoice);
+            if (invDate > maxDate) {
+                maxDate = invDate;
+                latest = inv.date_invoice;
+            }
+        }
+    });
+
+    return latest;
+}
         // Helper: รวม notes ทั้งหมดที่ไม่ซ้ำกัน
         function collectUniqueNotes(dbItems) {
             if (!dbItems || dbItems.length === 0) return null;
