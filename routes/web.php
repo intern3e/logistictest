@@ -198,3 +198,8 @@ Route::post('/pull-po-outside', [PoOutsideController::class, 'pull'])
     ->name('pull.pooutside');
 // Route::post('/pooutside/batch-match', [PooutsideController::class, 'batchMatch'])
 //     ->name('pooutside.batchMatch');
+
+use App\Http\Controllers\ImportedController;
+
+Route::get('/Imported', [ImportedController::class, 'Imported'])->name('Imported.Imported');
+Route::get('/api/po-detail', [ImportedController::class, 'getPODetail']);
