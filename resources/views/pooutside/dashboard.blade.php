@@ -584,13 +584,21 @@
     </style>
 </head>
 <body>
-    <!-- TOP NAV -->
-    <div class="top-nav">
-        <div class="nav-title">ตามของนอก</div>
+<!-- TOP NAV -->
+<div class="top-nav">
+    <div class="nav-title">ตามของนอก</div>
+    <div style="display: flex; gap: 8px;">
+        <a href="dashboardreturn" 
+        style="display: inline-block; background-color: #28a745; color: white; padding: 8px 16px; border-radius: 6px; text-decoration: none; font-weight: bold; transition: background-color 0.2s;"
+        onmouseover="this.style.backgroundColor='#218838'"
+        onmouseout="this.style.backgroundColor='#28a745'">
+         เคลมสินค้านอก
+     </a>
         <a href="http://server_update:8000/solist" class="back-button">
             ← หน้าหลัก
         </a>
     </div>
+</div>
     <!-- SEARCH BOX -->
     <div class="search-container">
         <div class="search-card">

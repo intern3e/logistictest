@@ -18,6 +18,12 @@ class PooutsidereturnController extends Controller
         return view('pooutside.dashboardreturn');
     }
 
+    // ─── Admin View ───────────────────────────────────────────────────────────
+    public function adminpooutside()
+    {
+        return view('pooutside.adminpooutside');
+    }
+
     // ─── Proxy: PO Detail ─────────────────────────────────────────────────────
     public function getPODetail(Request $request)
     {
@@ -85,12 +91,14 @@ class PooutsidereturnController extends Controller
                 'return_date' => $now->toDateTimeString(),
                 'po'          => $poNum,
                 'vendor'      => $vendor,
-                'status'      => 'processing',   // สถานะเริ่มต้น
+                'status'      => 'processing',
                 'reason'      => $reason,
                 'note'        => $note ?: null,
             ]);
 
-            foreach ($request->input('selectedItems') as $item) {
+            $items = $request->input('selectedItems');
+
+            foreach ($items as $item) {
                 DetailPooutsidereturn::create([
                     'return_id'    => $returnId,
                     'inovice'      => $item['invoice']  ?? null,
@@ -98,6 +106,9 @@ class PooutsidereturnController extends Controller
                     'quantity'     => $item['qty'],
                 ]);
             }
+
+            // ─── Send LINE Notification ───────────────────────────────────────
+            $this->sendLineNotification($returnId, $poNum, $vendor, $reason, $note, $items, $now);
 
             return response()->json([
                 'success'   => true,
@@ -162,12 +173,67 @@ class PooutsidereturnController extends Controller
         }
     }
 
+    // ─── Send LINE Notification ───────────────────────────────────────────────
+    private function sendLineNotification(
+        string $returnId,
+        string $poNum,
+        string $vendor,
+        string $reason,
+        string $note,
+        array  $items,
+        Carbon $now
+    ): void {
+        $token  = config('services.line.channel_access_token');
+        $userId = config('services.line.user_id');
+
+        if (!$token || !$userId) {
+            return; // ถ้าไม่มี config ให้ข้ามไป
+        }
+
+        // ─── สร้างรายการสินค้า ─────────────────────────────────────────────
+        $itemLines = collect($items)->map(function ($item, $i) {
+            $name = trim($item['goodName'] ?? '-');
+            $qty  = $item['qty'] ?? 0;
+            $inv  = $item['invoice'] ?? '-';
+            return ($i + 1) . ". {$name}\n   จำนวน: {$qty}  |  Invoice: {$inv}";
+        })->implode("\n");
+
+        // ─── สร้างข้อความแจ้งเตือน ────────────────────────────────────────
+        $message = implode("\n", [
+            "🔔 แจ้งเตือน: เคส Return ใหม่",
+            "📅 " . $now->format('d/m/Y H:i'),
+            "━━━━━━━━━━━━━━━━━━━━",
+            "🏢 บริทัษ : {$vendor}",
+            "📦 บิล   : {$poNum}",
+            "❗เหตุผล : {$reason}",
+            $note ? "📝 หมายเหตุ: {$note}" : "",
+            "━━━━━━━━━━━━━━━━━━━━",
+            "🛒 รายการสินค้า:",
+            $itemLines,
+        ]);
+
+        // กรองบรรทัดว่าง (กรณี $note ว่าง)
+        $message = preg_replace("/\n{2,}/", "\n", trim($message));
+
+        try {
+            Http::withHeaders([
+                'Authorization' => "Bearer {$token}",
+                'Content-Type'  => 'application/json',
+            ])->post('https://api.line.me/v2/bot/message/push', [
+                'to'       => $userId,
+                'messages' => [
+                    ['type' => 'text', 'text' => $message],
+                ],
+            ]);
+        } catch (\Throwable $e) {
+            // ไม่ให้ LINE error กระทบ response หลัก — log ไว้เท่านั้น
+            \Log::error('LINE notification failed: ' . $e->getMessage());
+        }
+    }
+
     // ─── Generate return_id ───────────────────────────────────────────────────
-    // Format: ddmmyy-HHmmss-{poNum_no_prefix}-{seq 5 หลัก}
-    // poNum ตัด "PO" นำหน้าออกก่อนใช้
     private function generateReturnId(Carbon $now, string $poNum): string
     {
-        // ตัด PO prefix ออก เช่น "PO6901-03199" → "6901-03199"
         $cleanPo = preg_replace('/^PO/i', '', $poNum);
 
         $monthPrefix = '01' . $now->format('my');

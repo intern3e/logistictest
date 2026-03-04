@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="csrf-token" content="{{ csrf_token() }}">
-    <title>Return System</title>
+    <title>Admin - Return System</title>
     <link href="https://fonts.googleapis.com/css2?family=SamsungSharpSans:wght@400;700&family=Noto+Sans+Thai:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <style>
         *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -60,21 +60,12 @@
             background: var(--bg-gray); border: 1px solid var(--border);
             padding: 3px 10px; border-radius: 20px;
         }
+        .nav-badge-admin {
+            font-size: 11px; color: #fff;
+            background: var(--samsung-blue); border: 1px solid var(--samsung-blue);
+            padding: 3px 10px; border-radius: 20px; font-weight: 700;
+        }
         .nav-right { display: flex; align-items: center; gap: 12px; }
-
-        .btn-create {
-            background: var(--samsung-blue); color: #fff; border: none;
-            padding: 9px 20px; border-radius: 24px;
-            font-family: 'Noto Sans Thai', sans-serif;
-            font-size: 13px; font-weight: 600; cursor: pointer;
-            display: flex; align-items: center; gap: 7px;
-            transition: all 0.2s; letter-spacing: 0.01em;
-        }
-        .btn-create:hover {
-            background: var(--samsung-blue-hover);
-            box-shadow: 0 4px 16px rgba(20,40,160,0.25);
-            transform: translateY(-1px);
-        }
 
         main { padding: 32px 40px; max-width: 1280px; margin: 0 auto; }
 
@@ -189,7 +180,6 @@
 
         .claim-id { color: var(--samsung-blue); font-weight: 700; font-size: 13px; font-family: 'Courier New', monospace; }
         .customer-name { font-weight: 600; }
-        .product-name { color: var(--text-secondary); }
         .product-list { display: flex; flex-direction: column; gap: 4px; }
         .product-item {
             display: flex; align-items: baseline; gap: 6px;
@@ -244,7 +234,18 @@
             display: flex; align-items: center; justify-content: space-between;
         }
 
-        /* MODAL */
+        /* INVOICE CARDS */
+        .invoice-cards-wrapper { display: flex; flex-wrap: wrap; gap: 3px; justify-content: center; text-align: left; }
+        .invoice-card {
+            display: inline-flex; flex-direction: column; gap: 1px;
+            background: #f0f4ff; border: 1px solid #c8d4f8;
+            border-radius: 6px; padding: 4px 8px;
+            font-size: 10px; min-width: 0; max-width: none;
+            vertical-align: top; white-space: nowrap;
+        }
+        .invoice-card-num  { font-weight: 700; color: var(--samsung-blue); font-size: 10px; }
+
+        /* DETAIL MODAL */
         .modal-overlay {
             display: none; position: fixed; inset: 0;
             background: rgba(0,0,0,0.5); backdrop-filter: blur(3px);
@@ -263,94 +264,6 @@
             to   { opacity: 1; transform: translateY(0); }
         }
 
-        .modal-header { display: flex; align-items: center; gap: 12px; margin-bottom: 24px; }
-        .modal-icon {
-            width: 40px; height: 40px; background: var(--samsung-light-blue);
-            border-radius: 10px; display: flex; align-items: center; justify-content: center;
-        }
-        .modal-title { font-size: 17px; font-weight: 700; color: var(--text-primary); }
-
-        .form-group { margin-bottom: 16px; }
-        .form-label {
-            display: block; font-size: 12px; font-weight: 700;
-            color: var(--text-secondary); margin-bottom: 6px;
-            text-transform: uppercase; letter-spacing: 0.06em;
-        }
-        .form-input, .form-select {
-            width: 100%; background: #fff; border: 1px solid var(--border);
-            border-radius: 8px; padding: 10px 14px;
-            color: var(--text-primary); font-family: 'Noto Sans Thai', sans-serif;
-            font-size: 13px; outline: none; transition: border-color 0.15s, box-shadow 0.15s;
-        }
-        .form-input:focus, .form-select:focus {
-            border-color: var(--samsung-blue);
-            box-shadow: 0 0 0 3px rgba(20,40,160,0.10);
-        }
-        .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
-
-        .modal-actions {
-            display: flex; gap: 10px; justify-content: flex-end;
-            margin-top: 24px; padding-top: 20px; border-top: 1px solid var(--border);
-        }
-        .btn-cancel {
-            background: #fff; border: 1px solid var(--border);
-            color: var(--text-secondary); padding: 9px 22px; border-radius: 24px;
-            font-family: 'Noto Sans Thai', sans-serif; font-size: 13px;
-            font-weight: 600; cursor: pointer; transition: all 0.15s;
-        }
-        .btn-cancel:hover { border-color: #999; color: #333; }
-        .btn-submit {
-            background: var(--samsung-blue); color: #fff; border: none;
-            padding: 9px 24px; border-radius: 24px;
-            font-family: 'Noto Sans Thai', sans-serif; font-size: 13px;
-            font-weight: 700; cursor: pointer; transition: all 0.2s;
-        }
-        .btn-submit:hover {
-            background: var(--samsung-blue-hover);
-            box-shadow: 0 4px 16px rgba(20,40,160,0.3); transform: translateY(-1px);
-        }
-
-        .po-search-row { display: flex; gap: 8px; }
-        .po-search-row .form-input { flex: 1; }
-        .btn-po-search {
-            background: var(--samsung-blue); color: #fff; border: none;
-            padding: 10px 16px; border-radius: 8px;
-            font-family: 'Noto Sans Thai', sans-serif; font-size: 13px;
-            font-weight: 600; cursor: pointer; white-space: nowrap;
-            transition: all 0.2s; flex-shrink: 0;
-        }
-        .btn-po-search:hover { background: var(--samsung-blue-hover); }
-
-        .docu-found {
-            margin-top: 8px; padding: 8px 12px; background: #e6f7f0;
-            border: 1px solid #a3e0c7; border-radius: 8px;
-            font-size: 13px; font-weight: 600; color: #0a7a4b;
-        }
-        .docu-error {
-            margin-top: 8px; padding: 8px 12px; background: #fff0f0;
-            border: 1px solid #ffb3b3; border-radius: 8px;
-            font-size: 13px; color: #e53935;
-        }
-
-        /* INVOICE CARDS */
-        .invoice-cards-wrapper { display: flex; flex-wrap: wrap; gap: 3px; justify-content: center; text-align: left; }
-        .invoice-card {
-            display: inline-flex; flex-direction: column; gap: 1px;
-            background: #f0f4ff; border: 1px solid #c8d4f8;
-            border-radius: 6px; padding: 4px 8px;
-            font-size: 10px; min-width: 0; max-width: none;
-            vertical-align: top; white-space: nowrap;
-        }
-        .invoice-card-num  { font-weight: 700; color: var(--samsung-blue); font-size: 10px; }
-        .invoice-card-date { color: var(--text-secondary); font-size: 10px; }
-        .invoice-card-qty  { color: var(--text-secondary); font-size: 10px; }
-        .invoice-card-qty strong { color: var(--samsung-blue); }
-        .invoice-loading {
-            font-size: 12px; color: var(--text-muted); font-style: italic;
-            padding: 4px 0;
-        }
-
-        /* DETAIL MODAL */
         .detail-modal { width: 920px; max-width: 95vw; padding: 0; overflow: hidden; border-radius: 16px; }
         .detail-header { padding: 24px 28px 20px; border-bottom: 1px solid var(--border); background: #fafafa; }
         .detail-title-row {
@@ -403,6 +316,13 @@
             padding: 16px 28px; border-top: 1px solid var(--border);
             display: flex; justify-content: flex-end; gap: 10px; background: #fafafa;
         }
+        .btn-cancel {
+            background: #fff; border: 1px solid var(--border);
+            color: var(--text-secondary); padding: 9px 22px; border-radius: 24px;
+            font-family: 'Noto Sans Thai', sans-serif; font-size: 13px;
+            font-weight: 600; cursor: pointer; transition: all 0.15s;
+        }
+        .btn-cancel:hover { border-color: #999; color: #333; }
         .btn-reject {
             background: #fff; border: 1.5px solid #e53935; color: #e53935;
             padding: 9px 20px; border-radius: 24px;
@@ -438,12 +358,10 @@
     <div class="nav-brand">
         <span class="nav-subtitle">Claim & Return System</span>
         <span class="nav-badge">ระบบจัดการเคลม/คืนสินค้า</span>
+        <span class="nav-badge-admin">👤 Admin</span>
     </div>
     <div class="nav-right">
-        <button class="btn-create" onclick="openModal()">
-            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-            สร้างเคสใหม่
-        </button>
+        {{-- ไม่มีปุ่มสร้างเคสใหม่ในหน้า Admin --}}
     </div>
 </nav>
 
@@ -508,7 +426,7 @@
                                 <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#bbb" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
                             </div>
                             <div class="empty-title">ยังไม่มีรายการเคส</div>
-                            <div class="empty-sub">กดปุ่ม "สร้างเคสใหม่" เพื่อเพิ่มรายการแรก</div>
+                            <div class="empty-sub">ยังไม่มีเคสในระบบ</div>
                         </div>
                     </td>
                 </tr>
@@ -520,90 +438,6 @@
         </div>
     </div>
 </main>
-
-<!-- CREATE MODAL -->
-<div class="modal-overlay" id="modal" onclick="closeOnOverlay(event)">
-    <div class="modal">
-        <div class="modal-header">
-            <div class="modal-icon">
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#1428A0" stroke-width="2.5"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="12" y1="18" x2="12" y2="12"/><line x1="9" y1="15" x2="15" y2="15"/></svg>
-            </div>
-            <div>
-                <div class="modal-title">สร้างเคสใหม่</div>
-            </div>
-        </div>
-
-        <!-- PO SEARCH -->
-        <div class="form-group">
-            <label class="form-label">รหัส PO <span style="color:#e53935;">*</span></label>
-            <div class="po-search-row">
-                <input id="f-ponum" class="form-input" type="text" placeholder="กรอก PO Number"
-                    onkeydown="if(event.key==='Enter') fetchPODocuNo()">
-                <button class="btn-po-search" type="button" onclick="fetchPODocuNo()">ค้นหา</button>
-            </div>
-            <div id="docu-result"></div>
-        </div>
-
-        <div class="form-row">
-            <div class="form-group">
-                <label class="form-label">ชื่อลูกค้า <span style="color:#e53935;">*</span></label>
-                <input id="f-customer" class="form-input" type="text" placeholder="ชื่อลูกค้า">
-            </div>
-            <div class="form-group">
-                <label class="form-label">เบอร์โทรศัพท์</label>
-                <input id="f-phone" class="form-input" type="tel" placeholder="เบอร์โทรศัพท์">
-            </div>
-        </div>
-
-        <div class="form-group">
-            <label class="form-label">สินค้า <span style="color:#e53935;">*</span></label>
-            <div id="f-product-placeholder" style="padding:14px 16px;text-align:center;border:1px dashed var(--border);border-radius:8px;font-size:13px;color:var(--text-muted);">
-                ค้นหา PO เพื่อโหลดรายการสินค้า
-            </div>
-            <div id="f-product-table-wrapper" style="display:none;">
-                <div style="border-radius:8px;overflow:hidden;max-height:340px;overflow-y:auto;">
-                    <table style="width:100%;border-collapse:collapse;table-layout:auto;border:1px solid #e0e0e0;border-radius:8px;overflow:hidden;">
-                        <thead style="position:sticky;top:0;z-index:2;">
-                            <tr style="background:#f4f6ff;border-bottom:2px solid #d0d0d0;">
-                                <th style="width:1%;padding:9px 10px;text-align:center;border-right:1px solid #e0e0e0;white-space:nowrap;">
-                                    <input type="checkbox" id="chk-all" onchange="toggleAllProducts(this)"
-                                        style="width:15px;height:15px;cursor:pointer;accent-color:var(--samsung-blue);">
-                                </th>
-                                <th style="padding:9px 14px;text-align:left;font-size:11px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.06em;border-right:1px solid #e0e0e0;">ชื่อสินค้า</th>
-                                <th style="width:1%;padding:9px 10px;text-align:center;font-size:11px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.06em;white-space:nowrap;border-right:1px solid #e0e0e0;">จำนวน</th>
-                                <th style="width:1%;padding:9px 14px;text-align:left;font-size:11px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.06em;white-space:nowrap;">Invoice</th>
-                            </tr>
-                        </thead>
-                        <tbody id="f-product-tbody"></tbody>
-                    </table>
-                </div>
-                <div id="f-product-selected-count" style="margin-top:6px;font-size:12px;color:var(--text-muted);"></div>
-            </div>
-        </div>
-
-        <div class="form-group">
-            <label class="form-label">เหตุผลการเคลม <span style="color:#e53935;">*</span></label>
-            <select id="f-reason" class="form-select">
-                <option value="">-- เลือกเหตุผล --</option>
-                <option>สินค้าชำรุด / เสียหาย</option>
-                <option>สินค้าไม่ตรงกับที่สั่ง</option>
-                <option>สินค้าขาดหาย</option>
-                <option>ต้องการคืนสินค้า</option>
-                <option>อื่นๆ</option>
-            </select>
-        </div>
-
-        <div class="form-group">
-            <label class="form-label">หมายเหตุ</label>
-            <textarea id="f-note" class="form-input" placeholder="รายละเอียดเพิ่มเติม (ถ้ามี)" style="height:80px;resize:vertical;line-height:1.6;"></textarea>
-        </div>
-
-        <div class="modal-actions">
-            <button class="btn-cancel" onclick="closeModal()">ยกเลิก</button>
-            <button type="button" class="btn-submit" onclick="submitNewCase(event)">สร้างเคส</button>
-        </div>
-    </div>
-</div>
 
 <!-- DETAIL MODAL -->
 <div class="modal-overlay" id="detail-modal" onclick="closeDetailOnOverlay(event)">
@@ -641,12 +475,8 @@
 </div>
 
 <script>
-    // ─── STATE ───────────────────────────────────────────────────────────────
     let cases = {};
     let currentDetailId = null;
-    let currentDocuNo   = null;
-    let poItems         = [];
-    let localInvoiceData = [];
 
     const stepLabels = ['รับแจ้ง', 'ตรวจสอบ', 'อนุมัติ', 'ดำเนินการ', 'ปิดเคส'];
 
@@ -675,7 +505,6 @@
                     product:   c.product,
                     reason:    c.reason,
                     note:      c.note || '-',
-                    fix:       '-',
                     date:      c.date,
                     status:    c.status,
                     step,
@@ -698,166 +527,6 @@
         return arr;
     }
 
-    // ─── INVOICE HELPERS ─────────────────────────────────────────────────────
-    function mergeInvoices(dbItems) {
-        const map = new Map();
-        dbItems.forEach(item => {
-            const key = `${item.name.trim().toUpperCase()}_${parseFloat(item.quantity)}`;
-            if (!map.has(key)) { map.set(key, item); return; }
-            const ex = map.get(key);
-            const ed = ex.date_invoice ? new Date(ex.date_invoice) : new Date(0);
-            const nd = item.date_invoice ? new Date(item.date_invoice) : new Date(0);
-            if (nd > ed) map.set(key, item);
-        });
-        return Array.from(map.values());
-    }
-
-    function matchProductsWithInvoices(dbItems, apiItems) {
-        if (!dbItems || !dbItems.length)
-            return apiItems.map((a, i) => ({ apiItem: a, dbItems: [], apiIndex: i }));
-
-        const usedDb = new Set(), apiToDb = new Map(), scores = [];
-        dbItems.forEach((db, di) => {
-            const dn = db.name.trim().toUpperCase();
-            apiItems.forEach((api, ai) => {
-                const an = api.GoodName.trim().toUpperCase();
-                let score = an === dn ? 100000 : 0;
-                if (!score) {
-                    let maxLen = 0;
-                    for (let i = 0; i < dn.length; i++)
-                        for (let j = i + 1; j <= dn.length; j++) {
-                            const s = dn.substring(i, j);
-                            if (an.includes(s) && s.length > maxLen) maxLen = s.length;
-                        }
-                    score = maxLen * 1000 - Math.abs(an.length - dn.length);
-                }
-                scores.push({ di, ai, score });
-            });
-        });
-        scores.sort((a, b) => b.score - a.score);
-        scores.forEach(({ di, ai }) => {
-            if (usedDb.has(di)) return;
-            if (!apiToDb.has(ai)) apiToDb.set(ai, { apiItem: apiItems[ai], dbItems: [] });
-            apiToDb.get(ai).dbItems.push(dbItems[di]);
-            usedDb.add(di);
-        });
-        const result = [];
-        apiToDb.forEach((v, ai) => result.push({ apiItem: v.apiItem, dbItems: mergeInvoices(v.dbItems), apiIndex: ai }));
-        apiItems.forEach((a, ai) => { if (!apiToDb.has(ai)) result.push({ apiItem: a, dbItems: [], apiIndex: ai }); });
-        return result.sort((a, b) => a.apiIndex - b.apiIndex);
-    }
-
-    function formatDateThai(d) {
-        if (!d) return '-';
-        const m = ['ม.ค.','ก.พ.','มี.ค.','เม.ย.','พ.ค.','มิ.ย.','ก.ค.','ส.ค.','ก.ย.','ต.ค.','พ.ย.','ธ.ค.'];
-        const dt = new Date(d);
-        return isNaN(dt) ? '-' : `${dt.getDate()} ${m[dt.getMonth()]} ${dt.getFullYear()}`;
-    }
-
-    function buildInvoiceCards(dbItems) {
-        if (!dbItems || !dbItems.length) return '<span style="font-size:11px;color:var(--text-muted);">-</span>';
-        return `<div class="invoice-cards-wrapper">${dbItems.map(item => `
-            <div class="invoice-card">
-                <span class="invoice-card-num">📄 ${item.invoice || '-'}</span>
-                <span style="font-size:10px;color:var(--text-secondary);">📅 ${formatDateThai(item.date_invoice)} · จำนวน: <strong style="color:var(--samsung-blue);">${parseFloat(item.quantity || 0)}</strong></span>
-            </div>`).join('')}</div>`;
-    }
-
-    // ─── FETCH PO ────────────────────────────────────────────────────────────
-    async function fetchPODocuNo() {
-        let poNum = document.getElementById('f-ponum').value.trim();
-        const docuResult = document.getElementById('docu-result');
-        poNum = poNum.replace(/^PO/i, '');
-        if (!poNum) { docuResult.innerHTML = `<div class="docu-error">กรุณากรอก PO Number</div>`; return; }
-        docuResult.innerHTML = `<div style="margin-top:8px;font-size:13px;color:#999;">⏳ กำลังโหลด...</div>`;
-        localInvoiceData = [];
-        try {
-            const [erpRes, localRes] = await Promise.allSettled([
-                fetch(`/api/po-detail?PONum=${encodeURIComponent(poNum)}`),
-                fetch(`/pooutside/check?ponum=${encodeURIComponent(poNum)}`)
-            ]);
-            if (erpRes.status !== 'fulfilled') throw new Error('ERP API failed');
-            const data   = await erpRes.value.json();
-            const docuNo = data?.DocuNo;
-            if (!docuNo) { currentDocuNo = null; docuResult.innerHTML = `<div class="docu-error">❌ ไม่พบข้อมูล PO นี้</div>`; return; }
-            currentDocuNo = docuNo;
-            document.getElementById('f-customer').value = data?.VendorName ?? '';
-            document.getElementById('f-phone').value    = data?.ContTel    ?? '';
-            if (localRes.status === 'fulfilled') {
-                const ld = await localRes.value.json();
-                if (ld?.exists && Array.isArray(ld?.data) && ld.data.length) localInvoiceData = ld.data;
-            }
-            renderProductTable(data?.ms_podt ?? []);
-            docuResult.innerHTML = '';
-        } catch (err) {
-            currentDocuNo = null;
-            docuResult.innerHTML = `<div class="docu-error">เกิดข้อผิดพลาด: ${err.message}</div>`;
-        }
-    }
-
-    // ─── PRODUCT TABLE ────────────────────────────────────────────────────────
-    function renderProductTable(items) {
-        poItems = items;
-        const tbody = document.getElementById('f-product-tbody');
-        const wrapper = document.getElementById('f-product-table-wrapper');
-        const placeholder = document.getElementById('f-product-placeholder');
-        if (!items || !items.length) {
-            wrapper.style.display = 'none'; placeholder.style.display = 'block';
-            placeholder.textContent = 'ไม่มีรายการสินค้าใน PO นี้'; return;
-        }
-        const matched = matchProductsWithInvoices(localInvoiceData, items);
-        tbody.innerHTML = matched.map(({ apiItem: item, dbItems, apiIndex: ai }) => {
-            const qty  = parseFloat(item.GoodQty2 ?? 0);
-            const name = (item.GoodName ?? '').replace(/<<[^>]*>>/g, '').trim();
-            const cards = buildInvoiceCards(dbItems);
-            return `
-            <tr id="prod-row-${ai}" style="border-bottom:1px solid #e0e0e0;">
-                <td style="padding:10px;text-align:center;vertical-align:middle;border-right:1px solid #e0e0e0;width:1%;">
-                    <input type="checkbox" class="prod-chk" data-idx="${ai}" onchange="updateProductSelection()"
-                        style="width:15px;height:15px;cursor:pointer;accent-color:var(--samsung-blue);">
-                </td>
-                <td style="padding:10px 14px;font-size:13px;line-height:1.6;white-space:normal;word-break:break-word;border-right:1px solid #e0e0e0;vertical-align:middle;">
-                    <div style="font-weight:600;">${name}</div>
-                </td>
-                <td style="padding:8px;text-align:center;vertical-align:middle;width:1%;border-right:1px solid #e0e0e0;">
-                    <span class="prod-qty-display" data-idx="${ai}" data-qty="${qty}"
-                        style="display:inline-block;width:50px;padding:4px 6px;font-family:'Noto Sans Thai',sans-serif;font-size:13px;font-weight:600;color:var(--samsung-blue);text-align:center;">${qty}</span>
-                </td>
-                <td style="padding:6px 8px;vertical-align:middle;text-align:center;">
-                    ${cards}
-                </td>
-            </tr>`;
-        }).join('');
-        placeholder.style.display = 'none';
-        wrapper.style.display = 'block';
-        document.getElementById('chk-all').checked = false;
-        updateProductSelection();
-    }
-
-    function toggleAllProducts(chk) {
-        document.querySelectorAll('.prod-chk').forEach(c => c.checked = chk.checked);
-        updateProductSelection();
-    }
-
-    function updateProductSelection() {
-        const chks = document.querySelectorAll('.prod-chk');
-        const total = chks.length, checked = [...chks].filter(c => c.checked).length;
-        const master = document.getElementById('chk-all');
-        master.checked = checked === total;
-        master.indeterminate = checked > 0 && checked < total;
-        document.getElementById('f-product-selected-count').textContent =
-            checked > 0 ? `เลือกแล้ว ${checked} จาก ${total} รายการ` : 'ยังไม่ได้เลือกสินค้า';
-    }
-
-    function resetProductTable() {
-        poItems = []; localInvoiceData = [];
-        document.getElementById('f-product-table-wrapper').style.display = 'none';
-        const ph = document.getElementById('f-product-placeholder');
-        ph.style.display = 'block'; ph.textContent = 'ค้นหา PO เพื่อโหลดรายการสินค้า';
-        document.getElementById('f-product-tbody').innerHTML = '';
-        document.getElementById('f-product-selected-count').textContent = '';
-    }
-
     // ─── RENDER TABLE ─────────────────────────────────────────────────────────
     function renderTable() {
         const tbody = document.getElementById('cases-tbody');
@@ -867,7 +536,7 @@
                 <div class="empty-state">
                     <div class="empty-icon"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#bbb" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg></div>
                     <div class="empty-title">ยังไม่มีรายการเคส</div>
-                    <div class="empty-sub">กดปุ่ม "สร้างเคสใหม่" เพื่อเพิ่มรายการแรก</div>
+                    <div class="empty-sub">ยังไม่มีเคสในระบบ</div>
                 </div></td></tr>`;
         } else {
             tbody.innerHTML = all.map(c => {
@@ -907,76 +576,6 @@
         document.getElementById('footer-count').textContent    = `แสดง ${all.length} รายการ จากทั้งหมด ${all.length} รายการ`;
         document.getElementById('footer-updated').textContent  = all.length > 0
             ? `อัปเดตล่าสุด: ${new Date().toLocaleDateString('th-TH',{day:'numeric',month:'short',year:'numeric'})}` : '—';
-    }
-
-    // ─── MODAL OPEN/CLOSE ─────────────────────────────────────────────────────
-    function openModal() { currentDocuNo = null; document.getElementById('modal').classList.add('active'); }
-    function closeModal() {
-        document.getElementById('modal').classList.remove('active');
-        ['f-ponum','f-customer','f-phone','f-note'].forEach(id => document.getElementById(id).value = '');
-        resetProductTable();
-        document.getElementById('f-reason').value = '';
-        document.getElementById('docu-result').innerHTML = '';
-        currentDocuNo = null;
-    }
-    function closeOnOverlay(e) { if (e.target === document.getElementById('modal')) closeModal(); }
-
-    // ─── SUBMIT NEW CASE ──────────────────────────────────────────────────────
-    async function submitNewCase(e) {
-        if (e) e.preventDefault();
-        const customer = document.getElementById('f-customer').value.trim();
-        const reason   = document.getElementById('f-reason').value;
-        const note     = document.getElementById('f-note').value.trim();
-
-        if (!currentDocuNo)       { alert('กรุณาค้นหา PO ก่อน'); return; }
-        if (!customer || !reason) { alert('กรุณากรอกข้อมูลให้ครบ'); return; }
-
-        const selectedItems = [];
-        document.querySelectorAll('.prod-chk').forEach(chk => {
-            if (!chk.checked) return;
-            const idx  = parseInt(chk.dataset.idx, 10);
-            const item = poItems[idx];
-            if (!item) return;
-            const name      = (item.GoodName ?? '').replace(/<<[^>]*>>/g, '').trim();
-            const qtySpan   = document.querySelector(`.prod-qty-display[data-idx="${idx}"]`);
-            const qty       = qtySpan ? parseFloat(qtySpan.dataset.qty) : parseFloat(item.GoodQty2 ?? 0);
-            const invoiceEl = document.querySelector(`#prod-row-${idx} .invoice-card-num`);
-            const invoice   = invoiceEl ? invoiceEl.textContent.replace('📄', '').trim() : null;
-            selectedItems.push({ goodName: name, qty, invoice });
-        });
-
-        if (!selectedItems.length) { alert('กรุณาเลือกสินค้าอย่างน้อย 1 รายการ'); return; }
-
-        // ตรวจสอบ invoice — ถ้าไม่มีเลข invoice แสดงว่าไม่ใช่สินค้าต่างประเทศ
-        const noInvoice = selectedItems.filter(i => !i.invoice || i.invoice === '-');
-        if (noInvoice.length > 0) {
-            const names = noInvoice.map(i => `• ${i.goodName}`).join('\n');
-            alert(`❌ ไม่สามารถสร้างเคสได้\nสินค้าต่อไปนี้ไม่ใช่สินค้าจากต่างประเทศ (ไม่มีเลข Invoice):\n\n${names}`);
-            return;
-        }
-
-        try {
-            const res  = await fetch('/return/submit', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': CSRF() },
-                body: JSON.stringify({ poNum: currentDocuNo, vendor: customer, reason, note, selectedItems }),
-            });
-            const data = await res.json();
-            if (!data.success) { alert(`❌ ${data.message}\n(${data.file ?? ''}:${data.line ?? ''})`) ; return; }
-
-            const today = new Date().toISOString().slice(0, 10);
-            cases[data.return_id] = {
-                id: data.return_id, customer, reason, note: note || '-', fix: '-', date: today,
-                po: currentDocuNo,
-                product:   selectedItems.map(i => `${i.goodName} (จำนวน: ${i.qty})`).join('\n'),
-                status:    'processing', step: 2,
-                stepDates: [today, today, null, null, null],
-                stepBy:    ['ฝ่ายบริการ','ช่างเทคนิค',null,null,null],
-                stepDesc:  ['รับแจ้งเรื่องจากลูกค้า','ตรวจสอบสินค้าเรียบร้อย',null,null,null],
-            };
-            closeModal(); renderTable();
-            showToast(`✅ สร้างเคส ${data.return_id} เรียบร้อยแล้ว`);
-        } catch (err) { alert('เกิดข้อผิดพลาด: ' + err.message); }
     }
 
     // ─── DETAIL MODAL ─────────────────────────────────────────────────────────
@@ -1028,7 +627,27 @@
 
     function renderDetailActions(c) {
         const act = document.getElementById('d-actions');
-        act.innerHTML = `<button class="btn-cancel" onclick="closeDetail()">ปิด</button>`;
+        if (c.status === 'finish' || c.status === 'cancel') {
+            act.innerHTML = `<button class="btn-cancel" onclick="closeDetail()">ปิด</button>`;
+            return;
+        }
+        if (c.status === 'accept') {
+            act.innerHTML = `
+                <button class="btn-approve" onclick="doApprove('${c.id}')">
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+                    ยืนยัน (Finish)
+                </button>`;
+            return;
+        }
+        act.innerHTML = `
+            <button class="btn-reject" onclick="doReject('${c.id}')">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                ยกเลิก (Cancel)
+            </button>
+            <button class="btn-approve" onclick="doApprove('${c.id}')">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+                อนุมัติ (Accept)
+            </button>`;
     }
 
     // ─── APPROVE ──────────────────────────────────────────────────────────────
