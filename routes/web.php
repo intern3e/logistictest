@@ -199,7 +199,12 @@ Route::post('/pull-po-outside', [PoOutsideController::class, 'pull'])
 // Route::post('/pooutside/batch-match', [PooutsideController::class, 'batchMatch'])
 //     ->name('pooutside.batchMatch');
 
-use App\Http\Controllers\ImportedController;
+use App\Http\Controllers\PooutsidereturnController;
 
-Route::get('/Imported', [ImportedController::class, 'Imported'])->name('Imported.Imported');
-Route::get('/api/po-detail', [ImportedController::class, 'getPODetail']);
+Route::get('/dashboardreturn', [PooutsidereturnController::class, 'dashboardreturn'])->name('pooutside.dashboardreturn');
+Route::get('/api/po-detail', [PooutsidereturnController::class, 'getPODetail']);
+Route::post('/return/submit',          [PooutsidereturnController::class, 'submitReturn']);
+Route::get('/return/list',             [PooutsidereturnController::class, 'listReturns']);
+Route::patch('/return/{id}/status',    [PooutsidereturnController::class, 'updateStatus']);
+Route::post('/return/{id}/approve', [PooutsidereturnController::class, 'approveReturn']);
+Route::post('/return/{id}/reject',  [PooutsidereturnController::class, 'rejectReturn']);

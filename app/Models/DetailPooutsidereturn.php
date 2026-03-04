@@ -5,12 +5,11 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
-class Pooutsidereturn extends Model
+class DetailPooutsidereturn extends Model
 {
     use HasFactory;
-    protected $table = 'Pooutsidereturn'; 
-    protected $fillable = ['return_id','return_date','po','vendor','status','reason','note'];
-    protected $primaryKey = 'return_id';
+    protected $table = 'DetailPooutsidereturn'; 
+    protected $fillable = ['return_id','inovice','product_name','quantity'];
     public $incrementing = false;
     public $timestamps = false; 
 }

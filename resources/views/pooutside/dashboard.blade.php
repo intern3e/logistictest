@@ -825,7 +825,7 @@
             document.getElementById('searchInput').focus();
         }
 
-       function mergeInvoices(dbItems) {
+    function mergeInvoices(dbItems) {
     const nameQtyMap = new Map();
 
     dbItems.forEach(item => {
