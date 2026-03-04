@@ -11,6 +11,7 @@ class Pooutsidereturn extends Model
     protected $table = 'Pooutsidereturn'; 
     protected $fillable = ['return_id','return_date','po','vendor','status','reason','note'];
     protected $primaryKey = 'return_id';
+    public    $keyType    = 'string'; 
     public $incrementing = false;
     public $timestamps = false; 
 }
