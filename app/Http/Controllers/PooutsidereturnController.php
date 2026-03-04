@@ -108,7 +108,7 @@ class PooutsidereturnController extends Controller
             }
 
             // ─── Send LINE Notification ───────────────────────────────────────
-            $this->sendLineNotification($returnId, $poNum, $vendor, $reason, $note, $items, $now);
+            $this->sendLineNotification($returnId, $poNum, $vendor, $reason, $note ?? '', $items, $now);
 
             return response()->json([
                 'success'   => true,
@@ -179,7 +179,7 @@ class PooutsidereturnController extends Controller
         string $poNum,
         string $vendor,
         string $reason,
-        string $note,
+        ?string $note,   // ← แก้ไข: รับ null ได้
         array  $items,
         Carbon $now
     ): void {
@@ -189,6 +189,8 @@ class PooutsidereturnController extends Controller
         if (!$token || !$userId) {
             return; // ถ้าไม่มี config ให้ข้ามไป
         }
+
+        $note = $note ?? ''; // ─── แก้ไข: แปลง null เป็น string ว่าง
 
         // ─── สร้างรายการสินค้า ─────────────────────────────────────────────
         $itemLines = collect($items)->map(function ($item, $i) {
