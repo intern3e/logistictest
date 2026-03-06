@@ -410,7 +410,7 @@
             <thead>
                 <tr>
                     <th>เลข PO</th>
-                    <th>ลูกค้า</th>
+                    <th>ร้านค้า</th>
                     <th>สินค้า</th>
                     <th>เหตุผล</th>
                     <th>ขั้นตอน</th>
@@ -460,7 +460,7 @@
         <div class="detail-body">
             <div class="detail-info-card">
                 <div class="detail-section-title">ข้อมูลเคส</div>
-                <div class="detail-info-row"><span class="detail-info-label">ลูกค้า</span><span class="detail-info-val" id="d-customer"></span></div>
+                <div class="detail-info-row"><span class="detail-info-label">ร้านค้า</span><span class="detail-info-val" id="d-customer"></span></div>
                 <div class="detail-info-row"><span class="detail-info-label">สินค้า</span><span class="detail-info-val" id="d-product"></span></div>
                 <div class="detail-info-row"><span class="detail-info-label">เหตุผล</span><span class="detail-info-val" id="d-reason"></span></div>
                 <div class="detail-info-row"><span class="detail-info-label">หมายเหตุ</span><span class="detail-info-val" id="d-note">-</span></div>

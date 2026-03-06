@@ -153,13 +153,13 @@
             background: #fafafa; border-bottom: 1px solid var(--border);
             white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
         }
-        thead th:nth-child(1) { width: 11%; }  /* เลข PO */
-        thead th:nth-child(2) { width: 15%; }  /* ลูกค้า */
-        thead th:nth-child(3) { width: 26%; }  /* สินค้า */
-        thead th:nth-child(4) { width: 13%; }  /* เหตุผล */
-        thead th:nth-child(5) { width: 13%; }  /* ขั้นตอน */
-        thead th:nth-child(6) { width: 13%; }  /* สถานะ */
-        thead th:nth-child(7) { width: 9%; }   /* วันที่ */
+        thead th:nth-child(1) { width: 11%; }
+        thead th:nth-child(2) { width: 15%; }
+        thead th:nth-child(3) { width: 26%; }
+        thead th:nth-child(4) { width: 13%; }
+        thead th:nth-child(5) { width: 13%; }
+        thead th:nth-child(6) { width: 13%; }
+        thead th:nth-child(7) { width: 9%; }
 
         tbody tr {
             border-bottom: 1px solid #f0f0f0;
@@ -345,6 +345,14 @@
         .invoice-card-date { color: var(--text-secondary); font-size: 10px; }
         .invoice-card-qty  { color: var(--text-secondary); font-size: 10px; }
         .invoice-card-qty strong { color: var(--samsung-blue); }
+        input[type=number].prod-qty-display:focus {
+            border-color: var(--samsung-blue) !important;
+            background: #fff !important;
+            box-shadow: 0 0 0 3px rgba(20,40,160,0.10);
+        }
+        input[type=number].prod-qty-display::-webkit-inner-spin-button,
+        input[type=number].prod-qty-display::-webkit-outer-spin-button { opacity: 1; }
+
         .invoice-loading {
             font-size: 12px; color: var(--text-muted); font-style: italic;
             padding: 4px 0;
@@ -492,7 +500,7 @@
             <thead>
                 <tr>
                     <th>เลข PO</th>
-                    <th>ลูกค้า</th>
+                    <th>ร้านค้า</th>
                     <th>สินค้า</th>
                     <th>เหตุผล</th>
                     <th>ขั้นตอน</th>
@@ -546,12 +554,12 @@
 
         <div class="form-row">
             <div class="form-group">
-                <label class="form-label">ชื่อลูกค้า <span style="color:#e53935;">*</span></label>
-                <input id="f-customer" class="form-input" type="text" placeholder="ชื่อลูกค้า">
+                <label class="form-label">ร้านค้า.VEN <span style="color:#e53935;">*</span></label>
+                <input id="f-customer" class="form-input" type="text" placeholder="ร้านค้า">
             </div>
             <div class="form-group">
                 <label class="form-label">เบอร์โทรศัพท์</label>
-                <input id="f-phone" class="form-input" type="tel" placeholder="เบอร์โทรศัพท์">
+                <input id="f-phone" class="form-input" type="tel" placeholder="ตามรหัส VEN">
             </div>
         </div>
 
@@ -626,7 +634,7 @@
         <div class="detail-body">
             <div class="detail-info-card">
                 <div class="detail-section-title">ข้อมูลเคส</div>
-                <div class="detail-info-row"><span class="detail-info-label">ลูกค้า</span><span class="detail-info-val" id="d-customer"></span></div>
+                <div class="detail-info-row"><span class="detail-info-label">ร้านค้า</span><span class="detail-info-val" id="d-customer"></span></div>
                 <div class="detail-info-row"><span class="detail-info-label">สินค้า</span><span class="detail-info-val" id="d-product"></span></div>
                 <div class="detail-info-row"><span class="detail-info-label">เหตุผล</span><span class="detail-info-val" id="d-reason"></span></div>
                 <div class="detail-info-row"><span class="detail-info-label">หมายเหตุ</span><span class="detail-info-val" id="d-note">-</span></div>
@@ -664,15 +672,31 @@
         try {
             const res  = await fetch('/return/list');
             const list = await res.json();
+            console.log('API response sample:', list[0]);  // DEBUG
             cases = {};
             list.forEach(c => {
                 const sm   = statusMap[c.status] ?? statusMap.processing;
                 const step = sm.step;
+
+                // สร้าง product string จาก products array
+                let productStr = '';
+                if (Array.isArray(c.products) && c.products.length) {
+                    productStr = c.products
+                        .map(p => `${(p.product_name || '').trim()} (จำนวน: ${p.quantity ?? 0})`)
+                        .join('\n');
+                } else if (c.product) {
+                    // รองรับทั้ง | และ \n separator
+                    productStr = c.product.includes('|')
+                        ? c.product.split('|').join('\n')
+                        : c.product;
+                }
+
                 cases[c.id] = {
                     id:        c.id,
                     po:        c.po,
                     customer:  c.customer,
-                    product:   c.product,
+                    product:   productStr,
+                    products:  c.products || [],
                     reason:    c.reason,
                     note:      c.note || '-',
                     fix:       '-',
@@ -820,8 +844,13 @@
                     <div style="font-weight:600;">${name}</div>
                 </td>
                 <td style="padding:8px;text-align:center;vertical-align:middle;width:1%;border-right:1px solid #e0e0e0;">
-                    <span class="prod-qty-display" data-idx="${ai}" data-qty="${qty}"
-                        style="display:inline-block;width:50px;padding:4px 6px;font-family:'Noto Sans Thai',sans-serif;font-size:13px;font-weight:600;color:var(--samsung-blue);text-align:center;">${qty}</span>
+                    <div style="display:flex;flex-direction:column;align-items:center;gap:2px;">
+                        <input type="number" class="prod-qty-display" data-idx="${ai}" data-qty="${qty}" data-max="${qty}"
+                            value="${qty}" min="1" max="${qty}"
+                            oninput="validateQty(this)"
+                            style="width:64px;padding:5px 6px;font-family:'Noto Sans Thai',sans-serif;font-size:13px;font-weight:700;color:var(--samsung-blue);text-align:center;border:1.5px solid #c8d4f8;border-radius:6px;outline:none;background:#f0f4ff;transition:border-color 0.15s;">
+                        <span class="qty-max-hint" style="font-size:10px;color:var(--text-muted);">max: ${qty}</span>
+                    </div>
                 </td>
                 <td style="padding:6px 8px;vertical-align:middle;text-align:center;">
                     ${cards}
@@ -832,6 +861,14 @@
         wrapper.style.display = 'block';
         document.getElementById('chk-all').checked = false;
         updateProductSelection();
+    }
+
+    function validateQty(input) {
+        let val = parseFloat(input.value);
+        const max = parseFloat(input.dataset.max);
+        if (isNaN(val) || val < 1) { input.value = 1; val = 1; }
+        if (val > max) { input.value = max; val = max; }
+        input.style.borderColor = (val < max) ? '#f5a623' : '#c8d4f8';
     }
 
     function toggleAllProducts(chk) {
@@ -878,12 +915,19 @@
                 <tr onclick="openDetail('${c.id}')" style="cursor:pointer;">
                     <td><span class="claim-id">${c.po || c.id}</span></td>
                     <td><span class="customer-name">${c.customer}</span></td>
-                    <td><div class="product-list">${c.product.split('\n').map(p => {
-                        const m = p.trim().match(/^(.+?)\s*\(จำนวน:\s*([\d.]+)\)$/);
-                        return m
-                            ? `<div class="product-item"><span>${m[1].trim()}</span><span class="prod-qty">×${parseFloat(m[2])}</span></div>`
-                            : `<div class="product-item"><span>${p.trim()}</span></div>`;
-                    }).join('')}</div></td>
+                    <td><div class="product-list">${(()=>{
+                        if (Array.isArray(c.products) && c.products.length) {
+                            return c.products.map(p =>
+                                `<div class="product-item"><span>${(p.product_name||'').trim()}</span><span class="prod-qty">×${parseFloat(p.quantity??0)}</span></div>`
+                            ).join('');
+                        }
+                        return c.product.split('\n').map(p => {
+                            const m = p.trim().match(/^(.+?)\s*\(จำนวน:\s*([\d.]+)\)$/);
+                            return m
+                                ? `<div class="product-item"><span>${m[1].trim()}</span><span class="prod-qty">×${parseFloat(m[2])}</span></div>`
+                                : (p.trim() ? `<div class="product-item"><span>${p.trim()}</span></div>` : '');
+                        }).join('');
+                    })()}</div></td>
                     <td><span class="reason-text">${c.reason}</span></td>
                     <td><div class="progress-wrapper">
                         <div class="progress-bar-bg"><div class="progress-bar-fill ${barCls}" style="width:${pct}%"></div></div>
@@ -938,22 +982,14 @@
             const item = poItems[idx];
             if (!item) return;
             const name      = (item.GoodName ?? '').replace(/<<[^>]*>>/g, '').trim();
-            const qtySpan   = document.querySelector(`.prod-qty-display[data-idx="${idx}"]`);
-            const qty       = qtySpan ? parseFloat(qtySpan.dataset.qty) : parseFloat(item.GoodQty2 ?? 0);
+            const qtyInput  = document.querySelector(`.prod-qty-display[data-idx="${idx}"]`);
+            const qty       = qtyInput ? parseFloat(qtyInput.value) || 0 : parseFloat(item.GoodQty2 ?? 0);
             const invoiceEl = document.querySelector(`#prod-row-${idx} .invoice-card-num`);
-            const invoice   = invoiceEl ? invoiceEl.textContent.replace('📄', '').trim() : null;
+            const invoice   = invoiceEl ? invoiceEl.textContent.replace('📄', '').trim() : '';
             selectedItems.push({ goodName: name, qty, invoice });
         });
 
         if (!selectedItems.length) { alert('กรุณาเลือกสินค้าอย่างน้อย 1 รายการ'); return; }
-
-        // ตรวจสอบ invoice — ถ้าไม่มีเลข invoice แสดงว่าไม่ใช่สินค้าต่างประเทศ
-        const noInvoice = selectedItems.filter(i => !i.invoice || i.invoice === '-');
-        if (noInvoice.length > 0) {
-            const names = noInvoice.map(i => `• ${i.goodName}`).join('\n');
-            alert(`❌ ไม่สามารถสร้างเคสได้\nสินค้าต่อไปนี้ไม่ใช่สินค้าจากต่างประเทศ (ไม่มีเลข Invoice):\n\n${names}`);
-            return;
-        }
 
         try {
             const res  = await fetch('/return/submit', {
@@ -993,14 +1029,22 @@
 
         const productEl = document.getElementById('d-product');
         productEl.style.textAlign = 'left';
-        productEl.innerHTML = c.product.split('\n').map(p => {
-            const m = p.trim().match(/^(.+?)\s*\(จำนวน:\s*([\d.]+)\)$/);
-            return m
-                ? `<div style="display:flex;align-items:baseline;justify-content:space-between;gap:8px;padding:5px 8px;margin-bottom:4px;background:#f8f9ff;border-left:2px solid #1428A0;border-radius:0 4px 4px 0;">
-                    <span style="font-size:12px;color:#535353;">${m[1].trim()}</span>
-                    <span style="flex-shrink:0;font-size:11px;font-weight:700;color:#1428A0;background:#e8ecf8;padding:1px 8px;border-radius:10px;">×${parseFloat(m[2])}</span></div>`
-                : `<div style="padding:5px 8px;margin-bottom:4px;background:#f8f9ff;border-left:2px solid #1428A0;border-radius:0 4px 4px 0;font-size:12px;color:#535353;">${p.trim()}</div>`;
-        }).join('');
+        if (Array.isArray(c.products) && c.products.length) {
+            productEl.innerHTML = c.products.map(p => `
+                <div style="display:flex;align-items:baseline;justify-content:space-between;gap:8px;padding:5px 8px;margin-bottom:4px;background:#f8f9ff;border-left:2px solid #1428A0;border-radius:0 4px 4px 0;">
+                    <span style="font-size:12px;color:#535353;">${(p.product_name||'').trim()}</span>
+                    <span style="flex-shrink:0;font-size:11px;font-weight:700;color:#1428A0;background:#e8ecf8;padding:1px 8px;border-radius:10px;">×${parseFloat(p.quantity??0)}</span>
+                </div>`).join('');
+        } else {
+            productEl.innerHTML = c.product.split('\n').map(p => {
+                const m = p.trim().match(/^(.+?)\s*\(จำนวน:\s*([\d.]+)\)$/);
+                return m
+                    ? `<div style="display:flex;align-items:baseline;justify-content:space-between;gap:8px;padding:5px 8px;margin-bottom:4px;background:#f8f9ff;border-left:2px solid #1428A0;border-radius:0 4px 4px 0;">
+                        <span style="font-size:12px;color:#535353;">${m[1].trim()}</span>
+                        <span style="flex-shrink:0;font-size:11px;font-weight:700;color:#1428A0;background:#e8ecf8;padding:1px 8px;border-radius:10px;">×${parseFloat(m[2])}</span></div>`
+                    : (p.trim() ? `<div style="padding:5px 8px;margin-bottom:4px;background:#f8f9ff;border-left:2px solid #1428A0;border-radius:0 4px 4px 0;font-size:12px;color:#535353;">${p.trim()}</div>` : '');
+            }).join('');
+        }
 
         const sm = statusMap[c.status] ?? statusMap.processing;
         const badge = document.getElementById('d-badge');

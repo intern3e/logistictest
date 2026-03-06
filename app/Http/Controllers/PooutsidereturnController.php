@@ -39,7 +39,17 @@ class PooutsidereturnController extends Controller
 
         return response()->json(
             $headers->map(function ($h) {
-                $products = DetailPooutsidereturn::where('return_id', $h->return_id)->get();
+                // ใช้ raw query เพื่อป้องกัน Model mapping issue
+                $products = DB::table('DetailPooutsidereturn')
+                    ->where('return_id', $h->return_id)
+                    ->get();
+
+                $productList = $products->map(fn($d) => [
+                    'product_name' => $d->product_name ?? '',
+                    'quantity'     => $d->quantity ?? 0,
+                    'invoice'      => $d->inovice ?? '',
+                ]);
+
                 return [
                     'id'       => $h->return_id,
                     'customer' => $h->vendor,
@@ -48,14 +58,10 @@ class PooutsidereturnController extends Controller
                     'status'   => $h->status,
                     'reason'   => $h->reason,
                     'note'     => $h->note ?? '-',
-                    'product'  => $products->map(fn($d) =>
-                        $d->product_name . ' (จำนวน: ' . $d->quantity . ')'
-                    )->implode("\n"),
-                    'products' => $products->map(fn($d) => [
-                        'product_name' => $d->product_name,
-                        'quantity'     => $d->quantity,
-                        'invoice'      => $d->inovice,
-                    ]),
+                    'product'  => $productList->map(fn($d) =>
+                        ($d['product_name'] ?: '-') . ' (จำนวน: ' . $d['quantity'] . ')'
+                    )->implode('|'),   // ← ใช้ | แทน \n เพื่อป้องกัน encoding issue
+                    'products' => $productList->values(),
                 ];
             })
         );
@@ -101,7 +107,7 @@ class PooutsidereturnController extends Controller
             foreach ($items as $item) {
                 DetailPooutsidereturn::create([
                     'return_id'    => $returnId,
-                    'inovice'      => $item['invoice']  ?? null,
+                    'inovice'      => $item['invoice'] ?? '',   // ← แก้ไข: ป้องกัน null
                     'product_name' => trim($item['goodName']),
                     'quantity'     => $item['qty'],
                 ]);
@@ -179,7 +185,7 @@ class PooutsidereturnController extends Controller
         string $poNum,
         string $vendor,
         string $reason,
-        ?string $note,   // ← แก้ไข: รับ null ได้
+        ?string $note,
         array  $items,
         Carbon $now
     ): void {
@@ -187,12 +193,11 @@ class PooutsidereturnController extends Controller
         $userId = config('services.line.user_id');
 
         if (!$token || !$userId) {
-            return; // ถ้าไม่มี config ให้ข้ามไป
+            return;
         }
 
-        $note = $note ?? ''; // ─── แก้ไข: แปลง null เป็น string ว่าง
+        $note = $note ?? '';
 
-        // ─── สร้างรายการสินค้า ─────────────────────────────────────────────
         $itemLines = collect($items)->map(function ($item, $i) {
             $name = trim($item['goodName'] ?? '-');
             $qty  = $item['qty'] ?? 0;
@@ -200,7 +205,6 @@ class PooutsidereturnController extends Controller
             return ($i + 1) . ". {$name}\n   จำนวน: {$qty}  |  Invoice: {$inv}";
         })->implode("\n");
 
-        // ─── สร้างข้อความแจ้งเตือน ────────────────────────────────────────
         $message = implode("\n", [
             "🔔 แจ้งเตือน: เคส Return ใหม่",
             "📅 " . $now->format('d/m/Y H:i'),
@@ -214,7 +218,6 @@ class PooutsidereturnController extends Controller
             $itemLines,
         ]);
 
-        // กรองบรรทัดว่าง (กรณี $note ว่าง)
         $message = preg_replace("/\n{2,}/", "\n", trim($message));
 
         try {
@@ -228,7 +231,6 @@ class PooutsidereturnController extends Controller
                 ],
             ]);
         } catch (\Throwable $e) {
-            // ไม่ให้ LINE error กระทบ response หลัก — log ไว้เท่านั้น
             \Log::error('LINE notification failed: ' . $e->getMessage());
         }
     }
