@@ -34,29 +34,29 @@
         font-weight: bold;
         text-decoration: none;
         transition: all 0.3s ease;
-        margin-right: 10px; /* Adds space between buttons */
+        margin-right: 10px;
         }
 
         .btn-po {
-            background-color: #4CAF50; /* Green for PO button */
+            background-color: #4CAF50;
             color: white;
         }
 
         .btn-so {
-            background-color: #2196F3; /* Blue for SO button */
+            background-color: #2196F3;
             color: white;
         }
 
         .header-buttons button:hover {
-            transform: scale(1.05); /* Adds a slight grow effect when hovering */
+            transform: scale(1.05);
         }
 
         .btn-po:hover {
-            background-color: #27ae60; /* Darker green for PO button on hover */
+            background-color: #27ae60;
         }
 
         .btn-so:hover {
-            background-color: #00389f; /* Darker blue for SO button on hover */
+            background-color: #00389f;
         }
 
 
@@ -68,18 +68,17 @@
             width: 90%;
             margin: auto;
         }
-        /* --- Table Styling --- */
         .table-container {
-            background: #f9f9f9; /* Light gray background for table */
+            background: #f9f9f9;
             margin: 2% 5%;
             padding: 10px;
             border-radius: 12px;
             box-shadow: 0px 6px 12px rgba(0, 0, 0, 0.1);
             overflow: hidden;
             width: 99%;
-            max-width: 100%; /* Ensure table doesn't overflow the container */
-            transform: scale(0.9); /* Scale down the table to fit the screen */
-            transform-origin: top left; /* Keep the table scaling from the top-left corner */
+            max-width: 100%;
+            transform: scale(0.9);
+            transform-origin: top left;
             overflow-x: auto; 
         }
 
@@ -313,7 +312,6 @@
             outline: none;
             font-size: 1rem;
             border-radius: 5px;
-            
             background-color: #e1e5ea;
         }
 .modal {
@@ -333,7 +331,7 @@
     padding: 10px;
     border-radius: 10px;
     width: 70%;
-    max-width: 1000px; /* กำหนดขนาดสูงสุด */
+    max-width: 1000px;
     position: relative;
     box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.3);
     margin-left: 13vw;
@@ -355,16 +353,16 @@
     }
 }
 .billid {
-    width: 70px; /* ปรับความกว้าง */
-    height: 25px; /* ปรับความสูง */
-    font-size: 12px; /* ปรับขนาดตัวอักษร */
-    padding: 2px 5px; /* ปรับระยะห่างภายใน */
+    width: 70px;
+    height: 25px;
+    font-size: 12px;
+    padding: 2px 5px;
 }
-.bg-red { background-color: #ef4444; color: white; }     /* สีแดง */
-.bg-green { background-color: #22c55e; color: white; }   /* สีเขียว */
-.bg-blue { background-color: #3b82f6; color: white; }    /* สีฟ้า */
-.bg-purple { background-color: #a855f7; color: white; }  /* สีม่วง */
-.bg-yellow { background-color: #fde047; color: black; }  /* สีเหลือง - ใช้สีดำจะอ่านง่ายกว่า */
+.bg-red { background-color: #ef4444; color: white; }
+.bg-green { background-color: #22c55e; color: white; }
+.bg-blue { background-color: #3b82f6; color: white; }
+.bg-purple { background-color: #a855f7; color: white; }
+.bg-yellow { background-color: #fde047; color: black; }
 
 
     </style>
@@ -386,12 +384,12 @@ document.getElementById('pullPoOutside').addEventListener('click', function () {
             'Accept': 'application/json'
         }
     })
-    .then(response => response.json())  // ⭐ เพิ่มบรรทัดนี้
+    .then(response => response.json())
     .then(data => {
-        alert(data.message);
+        console.log(data.message);
     })
     .catch(error => {
-        alert('เกิดข้อผิดพลาด: ' + error.message);
+        console.error('เกิดข้อผิดพลาด:', error.message);
     });
 });
 </script>
@@ -400,9 +398,7 @@ document.getElementById('pullPoOutside').addEventListener('click', function () {
         <div class="top-section">
             <div class="button-group">
                 <button id="summitso" onclick="updateStatuspdf()">ปริ้นเอกสารSO</button>
-                {{-- <a href="dashboardadmin"><button id="printroute" style="background-color: red">ปริ้นเอกสารเส้นทางการเดินรถ</button></a> --}}
                 <a href="history" ><button style="background-color: red">เปลี่ยนวันที่</button></a>
-
             </div>
 
             <div class="search-box">
@@ -483,11 +479,9 @@ document.getElementById('pullPoOutside').addEventListener('click', function () {
         const text = billid.trim();
 
         if (!text) {
-            alert("ไม่พบเลข Bill ID ที่จะคัดลอก");
             return;
         }
 
-        // ใช้ Clipboard API
         if (navigator.clipboard && navigator.clipboard.writeText) {
             navigator.clipboard.writeText(text).then(() => {
                 const originalText = button.innerText;
@@ -497,10 +491,8 @@ document.getElementById('pullPoOutside').addEventListener('click', function () {
                 }, 1500);
             }).catch(err => {
                 console.error('❌ ไม่สามารถคัดลอกได้', err);
-                alert("ไม่สามารถคัดลอกได้");
             });
         } else {
-            // Fallback (สำหรับเบราว์เซอร์เก่า)
             const tempInput = document.createElement("input");
             tempInput.value = text;
             document.body.appendChild(tempInput);
@@ -513,7 +505,7 @@ document.getElementById('pullPoOutside').addEventListener('click', function () {
                     button.innerText = originalText;
                 }, 1500);
             } catch (err) {
-                alert("ไม่สามารถคัดลอกได้");
+                console.error('copy failed', err);
             }
             document.body.removeChild(tempInput);
         }
@@ -559,11 +551,8 @@ function copydate(text, button) {
             const original = button.innerText;
             button.innerText = "คัดลอกแล้ว ✅";
             setTimeout(() => button.innerText = original, 1500);
-        } else {
-            alert("ไม่สามารถคัดลอกได้");
         }
     } catch (err) {
-        alert("ไม่สามารถคัดลอกได้");
         console.error("Error:", err);
     }
 
@@ -612,26 +601,21 @@ function mergePdf(billid) {
         headers: {
             'X-CSRF-TOKEN': '{{ csrf_token() }}',
             'Content-Type': 'application/json',
-            'Accept': 'application/json' // ✅ สำคัญ
+            'Accept': 'application/json'
         },
         body: JSON.stringify({ billid: billid })
     })
     .then(res => res.json())
     .then(data => {
-        if (data.success) {
-        } else {
-            alert("❌ " + data.message);
+        if (!data.success) {
+            console.error("merge pdf failed:", data.message);
         }
     })
     .catch(err => {
-        alert("❌ เกิดข้อผิดพลาด: " + err.message);
-        console.error(err);
+        console.error("merge pdf error:", err);
     });
 }
-
 </script>
-
-
 
 
                                 </td>
@@ -663,10 +647,8 @@ function mergePdf(billid) {
         if (textElement) {
             const text = textElement.innerText.trim();
 
-            // ตรวจสอบว่า Clipboard API ใช้งานได้
             if (navigator.clipboard && navigator.clipboard.writeText) {
                 navigator.clipboard.writeText(text).then(() => {
-                    // เปลี่ยนข้อความปุ่มชั่วคราว
                     const originalText = button.innerText;
                     button.innerText = "คัดลอกแล้ว ✅";
                     setTimeout(() => {
@@ -674,10 +656,8 @@ function mergePdf(billid) {
                     }, 1500);
                 }).catch(err => {
                     console.error('❌ ไม่สามารถคัดลอกได้', err);
-                    alert("ไม่สามารถคัดลอกได้");
                 });
             } else {
-                // Fallback (สำหรับเบราว์เซอร์เก่า)
                 const tempInput = document.createElement("input");
                 document.body.appendChild(tempInput);
                 tempInput.value = text;
@@ -685,12 +665,10 @@ function mergePdf(billid) {
                 try {
                     document.execCommand("copy");
                 } catch (err) {
-                    alert("ไม่สามารถคัดลอกได้");
+                    console.error('copy failed', err);
                 }
                 document.body.removeChild(tempInput);
             }
-        } else {
-            alert("ไม่พบข้อมูลที่ต้องการคัดลอก");
         }
     }
 </script>
@@ -729,8 +707,6 @@ function mergePdf(billid) {
                                     <script>
                                     function openBillAndCheck(pdfUrl, checkboxId) {
                                         window.open(pdfUrl, '_blank');
-
-                                        // ติ๊ก checkbox หลังจากเปิด PDF
                                         const checkbox = document.getElementById(checkboxId);
                                         if (checkbox) {
                                             checkbox.checked = true;
@@ -790,7 +766,7 @@ function mergePdf(billid) {
     
     <script>
         function openPopup(soDetailId,so_id,ponum,customer_name,customer_tel,customer_address,date_of_dali,sale_name) {
-        document.getElementById("popup").style.display = "flex"; // แสดง Popup
+        document.getElementById("popup").style.display = "flex";
     
         let popupBody = document.getElementById("popup-body-1");
         popupBody.innerHTML = `
@@ -806,12 +782,11 @@ function mergePdf(billid) {
         let secondPopupBody = document.getElementById("popup-body");
         secondPopupBody.innerHTML = "<tr><td colspan='4'>Loading...</td></tr>";
     
-        // ใช้ fetch ดึงข้อมูลจาก Laravel
         fetch(`/get-bill-detail/${soDetailId}`)
             .then(response => response.json())
             .then(data => {
                 if (data.length > 0) {
-                    secondPopupBody.innerHTML = ""; // เคลียร์ข้อมูลเก่า
+                    secondPopupBody.innerHTML = "";
                     data.forEach(item => {
                         secondPopupBody.insertAdjacentHTML("beforeend", `
                             <tr>
@@ -832,9 +807,8 @@ function mergePdf(billid) {
             });
     }
     
-        // ฟังก์ชันปิด Popup
         function closePopup() {
-            document.getElementById("popup").style.display = "none"; // ซ่อน Popup
+            document.getElementById("popup").style.display = "none";
         }
     
     </script>
@@ -847,14 +821,7 @@ function mergePdf(billid) {
                     const so_detail_id = billissueBtn.getAttribute("data-sodetailid");
                     const billissue = billissueInput.value.trim();
 
-                    if (!billissue) {
-                        alert("❗ กรุณากรอกเลขใบวางบิล");
-                        billissueInput.focus();
-                        return;
-                    }
-
-                    if (!so_detail_id) {
-                        alert("❌ ไม่พบ so_detail_id");
+                    if (!billissue || !so_detail_id) {
                         return;
                     }
 
@@ -875,12 +842,11 @@ function mergePdf(billid) {
                     .then(async response => {
                         const data = await response.json();
                         if (!response.ok) {
-                            throw new Error(data.message || 'เกิดข้อผิดพลาดในการอัปเดต');
-                        };
+                            console.error('update billissue failed:', data.message);
+                        }
                     })
                     .catch(error => {
                         console.error("Error:", error);
-                        alert("❌ เกิดข้อผิดพลาด: " + error.message);
                     })
                     .finally(() => {
                         billissueBtn.disabled = false;
@@ -906,11 +872,8 @@ function searchTable() {
     for (let i = 0; i < rows.length; i++) {
         let row = rows[i];
         let cells = row.getElementsByTagName("td");
-
-        // Get the content of the second column (บิลลำดับ)
         let soDetailId = cells[1] ? cells[1].textContent.toLowerCase() : '';
 
-        // Search for the text inside the selected column (บิลลำดับ)
         if (soDetailId.indexOf(searchInput) > -1) {
             row.style.display = "";
         } else {
@@ -925,16 +888,13 @@ function updateStatuspdf() {
 
     checkboxes.forEach(checkbox => {
         let row = checkbox.closest('tr');
-        let soDetailId = row.querySelector('td:nth-child(2)').textContent; // Get so_detail_id from second column
+        let soDetailId = row.querySelector('td:nth-child(2)').textContent.trim();
         selectedIds.push(soDetailId);
     });
 
     if (selectedIds.length === 0) {
         return;
     }
-
-    // Proceed to update
-    console.log("Updating status for:", selectedIds); // Log the selected IDs
 
     fetch('/update-statuspdfso', {
         method: 'POST',
@@ -947,125 +907,96 @@ function updateStatuspdf() {
     .then(response => response.json())
     .then(data => {
         if (data.success) {
-            location.reload(); // Optionally reload the page to reflect changes
+            location.reload();
         } else {
-            alert("ไม่สามารถอัปเดตสถานะได้");
+            console.error("update status failed");
         }
     })
     .catch(error => {
         console.error("Error updating status:", error);
-        alert("เกิดข้อผิดพลาดในการอัปเดตสถานะ");
     });
 }   
  
     </script>
 
 
-
-
 <script>
 function openFileInNewTab(url, ponum, so_detail_id, so_id, billid) {
-    // ตรวจสอบ checkbox
     var checkbox = document.getElementById('checkbox_' + so_detail_id);
     if (checkbox) {
         checkbox.checked = true;
-    } else {
-        console.warn('ไม่พบ checkbox สำหรับ so_detail_id:', so_detail_id);
     }
 
-    // เตรียมค่าเพื่อคัดลอก
     var soIdStr = String(so_id || '');
     var copyValue = (billid && billid.trim() !== '') ? billid : soIdStr.replace(/^SO/, '');
 
-    // ฟังก์ชัน fallback หาก Clipboard API ใช้ไม่ได้
     function fallbackCopyTextToClipboard(text) {
         var textArea = document.createElement("textarea");
         textArea.value = text;
-        textArea.style.position = "fixed";  // ป้องกัน scroll
+        textArea.style.position = "fixed";
         document.body.appendChild(textArea);
         textArea.focus();
         textArea.select();
 
         try {
-            var successful = document.execCommand('copy');
-            if (successful) {
-                // คัดลอกสำเร็จ (ถ้าต้องการแจ้งเตือนเพิ่มใส่ตรงนี้)
-            } else {
-                alert('ไม่สามารถคัดลอกเลขได้ (fallback)');
-            }
+            document.execCommand('copy');
         } catch (err) {
-            console.error('Fallback: ไม่สามารถคัดลอกได้', err);
-            alert('เบราว์เซอร์ของคุณไม่รองรับการคัดลอก');
+            console.error('Fallback copy failed', err);
         }
 
         document.body.removeChild(textArea);
     }
 
-    // ใช้ Clipboard API ถ้าใช้ได้
     if (navigator.clipboard && navigator.clipboard.writeText) {
         navigator.clipboard.writeText(copyValue).then(() => {
             console.log('คัดลอกสำเร็จ:', copyValue);
         }).catch(err => {
-            console.error('Clipboard API ล้มเหลว:', err);
+            console.error('Clipboard API failed:', err);
             fallbackCopyTextToClipboard(copyValue);
         });
     } else {
-        // ใช้ fallback
         fallbackCopyTextToClipboard(copyValue);
     }
 
-    // เพิ่ม timestamp query string เพื่อบังคับโหลดไฟล์ใหม่
     if (url && url.trim() !== '') {
         const timestamp = Date.now();
         const urlWithTimestamp = url.includes('?') ? `${url}&t=${timestamp}` : `${url}?t=${timestamp}`;
         window.open(urlWithTimestamp, '_blank');
     } else {
         console.warn('URL ว่างหรือไม่ถูกต้อง:', url);
-        alert('ไม่สามารถเปิดไฟล์ได้: URL ว่าง');
     }
 }
 
  </script>
 <script>
     function addSoDetailIdToPoDocument(so_detail_id, POdocument) {
-    console.log(`กำลังเพิ่ม ${so_detail_id} ลงในเอกสาร PO: ${POdocument}`);
-
     fetch(`/add-so-detail-id-to-pdf/${so_detail_id}/${POdocument}`)
         .then(response => response.json())
         .then(data => {
-            console.log(data);
-            if (data.success) {
-            } else {
-                alert("เกิดข้อผิดพลาดในการเพิ่มข้อมูลลงในเอกสาร PO: " + (data.error || ''));
+            if (!data.success) {
+                console.error("เพิ่มข้อมูลลง PO ไม่สำเร็จ:", data.error || '');
             }
         })
         .catch(error => {
             console.error("Error:", error);
-            alert("เกิดข้อผิดพลาดในการเพิ่มเลขที่บิลลงในเอกสาร PO");
         });
 }
 </script>
 <script>
 function addIdToissueDocument(so_detail_id, bill_issue_no) {
-    console.log(`กำลังเพิ่ม ${so_detail_id} ลงในเอกสารbill_issue_no: ${bill_issue_no}`);
-
     fetch(`/add-so-detail-id-to-billissue/${so_detail_id}/${bill_issue_no}`)
         .then(response => response.json())
         .then(data => {
-            console.log(data);
-            if (data.success) {
-            } else {
-                alert("เกิดข้อผิดพลาดในการเพิ่มข้อมูลลงในเอกสาร bill_issue_no: " + (data.error || ''));
+            if (!data.success) {
+                console.error("เพิ่มข้อมูลลง bill_issue_no ไม่สำเร็จ:", data.error || '');
             }
         })
         .catch(error => {
             console.error("Error:", error);
-            alert("เกิดข้อผิดพลาดในการเพิ่มเลขที่บิลลงในเอกสาร bill_issue_no");
         });
 }
+
 function checkBillTypeAndAddBill(so_detail_id, billid, billtype, so_id) {
-    console.log('Checking billtype:', billtype);
-    
     if (billtype && billtype.includes('งานบริการ')) {
         addIdToDocument3(so_detail_id, billid, so_id);
     } else {
@@ -1088,15 +1019,12 @@ function addIdToDocument(so_detail_id, billid, so_id) {
     })
     .then(response => response.json())
     .then(data => {
-        if (data.success) {
-            console.log('เพิ่มข้อมูลสำเร็จ');
-        } else {
-            alert("เกิดข้อผิดพลาด: " + (data.error || ''));
+        if (!data.success) {
+            console.error("เพิ่มข้อมูลไม่สำเร็จ:", data.error || '');
         }
     })
     .catch(error => {
         console.error("Error:", error);
-        alert("เกิดข้อผิดพลาด");
     });
 }
 
@@ -1115,28 +1043,23 @@ function addIdToDocument3(so_detail_id, billid, so_id) {
     })
     .then(response => response.json())
     .then(data => {
-        if (data.success) {
-            console.log('เพิ่มข้อมูลสำเร็จ');
-        } else {
-            alert("เกิดข้อผิดพลาด: " + (data.error || ''));
+        if (!data.success) {
+            console.error("เพิ่มข้อมูลไม่สำเร็จ:", data.error || '');
         }
     })
     .catch(error => {
         console.error("Error:", error);
-        alert("เกิดข้อผิดพลาด");
     });
 }
+
 function openFileInNewTabbill(url, ponum, so_detail_id, so_id, billid) {
-    // ทำให้ checkbox ถูกเลือก
     var checkbox = document.getElementById('checkbox_' + so_detail_id);
     if (checkbox) {
         checkbox.checked = true;
     }
 
-    // กำหนดค่าที่ต้องการคัดลอก
     var copyValue = billid && billid.trim() !== '' ? billid : so_id.replace(/^SO/, '');
 
-    // คัดลอกค่าลงคลิปบอร์ด พร้อม fallback
     if (navigator.clipboard && navigator.clipboard.writeText) {
         navigator.clipboard.writeText(copyValue).then(() => {
             console.log('คัดลอกสำเร็จ:', copyValue);
@@ -1147,16 +1070,12 @@ function openFileInNewTabbill(url, ponum, so_detail_id, so_id, billid) {
         fallbackCopyTextToClipboard(copyValue);
     }
 
-    // เปิดไฟล์ในแท็บใหม่
     window.open(url, '_blank');
 }
 
-// ฟังก์ชัน fallback สำหรับการคัดลอก
 function fallbackCopyTextToClipboard(text) {
     var textArea = document.createElement("textarea");
     textArea.value = text;
-
-    // ป้องกันการแสดงผล
     textArea.style.position = "fixed";
     textArea.style.top = 0;
     textArea.style.left = 0;
@@ -1173,16 +1092,15 @@ function fallbackCopyTextToClipboard(text) {
     textArea.select();
 
     try {
-        var successful = document.execCommand('copy');
-        console.log('Fallback copy ' + (successful ? 'สำเร็จ' : 'ล้มเหลว'), text);
+        document.execCommand('copy');
     } catch (err) {
-        console.error('Fallback copy ล้มเหลว:', err);
+        console.error('Fallback copy failed:', err);
     }
 
     document.body.removeChild(textArea);
 }
 
-     function toggleCheckboxes() {
+function toggleCheckboxes() {
     var checkAllBox = document.getElementById('checkAll');
     var checkboxes = document.querySelectorAll('input[type="checkbox"]:not(#checkAll)');
     checkboxes.forEach(function(checkbox) {
