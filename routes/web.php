@@ -188,16 +188,12 @@ Route::get('/dashboardinventory', [StockController::class, 'dashboardinventory']
 
 
 use App\Http\Controllers\PooutsideController;
-Route::get('/pooutside', [PooutsideController::class, 'dashboard'])->name('pooutside.dashboard');
-Route::get('/pooutside/check', [PooutsideController::class, 'checkLocalPO']);
-
-// Route::get('/detailpooutside/{ponum}', [PooutsideController::class, 'detailpooutside'])->name('pooutside.detailpooutside');
-// Route::get('/pooutside/dashboard', [PooutsideController::class, 'dashboard'])->name('pooutside.dashboard');
-// Route::post('/pooutside/search-invoice', [PooutsideController::class, 'searchInvoice'])->name('pooutside.searchInvoice');
+Route::get('/pooutside',        [PooutsideController::class, 'dashboard'])->name('pooutside.dashboard');
+Route::get('/pooutside/search', [PooutsideController::class, 'search'])->name('pooutside.search');
+Route::get('/pooutside/check',  [PooutsideController::class, 'checkLocalPO']);
 Route::post('/pull-po-outside', [PoOutsideController::class, 'pull'])
     ->name('pull.pooutside');
-// Route::post('/pooutside/batch-match', [PooutsideController::class, 'batchMatch'])
-//     ->name('pooutside.batchMatch');
+
 
 use App\Http\Controllers\PooutsidereturnController;
 
@@ -208,6 +204,5 @@ Route::get('/return/list',             [PooutsidereturnController::class, 'listR
 Route::patch('/return/{id}/status',    [PooutsidereturnController::class, 'updateStatus']);
 Route::post('/return/{id}/approve', [PooutsidereturnController::class, 'approveReturn']);
 Route::post('/return/{id}/reject',  [PooutsidereturnController::class, 'rejectReturn']);
-
 Route::get('/adminpooutside', [PooutsidereturnController::class, 'adminpooutside'])->name('pooutside.adminpooutside');
 

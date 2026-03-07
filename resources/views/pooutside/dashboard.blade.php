@@ -9,270 +9,40 @@
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body { font-family: 'Sarabun', sans-serif; background-color: #f5f7fa; color: #333; }
-        
-        /* ─── TOP NAV ─── */
-        .top-nav {
-            background: linear-gradient(135deg, #1b2d4f 0%, #243a5e 50%, #3a5a8a 100%);
-            color: white;
-            padding: 15px 20px;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.15);
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            position: sticky;
-            top: 0;
-            z-index: 100;
-        }
-        .bg-yellow {
-            background-color: #ffc107 !important;
-            color: #000 !important;
-        }
-
-        .bg-green {
-            background-color: #28a745 !important;
-            color: #fff !important;
-        }
-
-        .bg-red {
-            background-color: #dc3545 !important;
-            color: #fff !important;
-        }
-
-        .nav-title {
-            font-size: 18px;
-            font-weight: 600;
-        }
-        
-        .back-button {
-            display: inline-flex;
-            align-items: center;
-            gap: 8px;
-            padding: 8px 16px;
-            background: linear-gradient(135deg, #e74c3c 0%, #c0392b 100%);
-            color: white;
-            text-decoration: none;
-            border-radius: 6px;
-            font-size: 14px;
-            font-weight: 600;
-            transition: all .2s ease;
-        }
-        
-        .back-button:hover {
-            background: linear-gradient(135deg, #c0392b 0%, #e74c3c 100%);
-            transform: translateY(-1px);
-            box-shadow: 0 4px 12px rgba(231,76,60,0.3);
-        }
-
-        /* ─── SEARCH BOX ─── */
-        .search-container {
-            max-width: 1400px;
-            margin: 24px auto;
-            padding: 0 24px;
-        }
-
-        .search-card {
-            background: white;
-            border-radius: 12px;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.06);
-            padding: 24px;
-        }
-
-        .search-box {
-            display: flex;
-            gap: 12px;
-            align-items: flex-end;
-        }
-
-        .search-input-group {
-            flex: 1;
-            display: flex;
-            flex-direction: column;
-            gap: 8px;
-        }
-
-        .search-label {
-            font-size: 13px;
-            font-weight: 700;
-            color: #1b2d4f;
-            text-transform: uppercase;
-            letter-spacing: .8px;
-        }
-
-        .search-input-wrapper {
-            position: relative;
-        }
-
-        .search-input-wrapper::before {
-            position: absolute;
-            left: 14px;
-            top: 50%;
-            transform: translateY(-50%);
-            font-size: 16px;
-            opacity: 0.5;
-        }
-
-        .search-input {
-            width: 100%;
-            font-family: inherit;
-            font-size: 14px;
-            padding: 12px 16px 12px 42px;
-            border: 2px solid #e2e6ec;
-            border-radius: 6px;
-            background: white;
-            color: #1e293b;
-            outline: none;
-            transition: all .22s ease;
-            box-shadow: 0 1px 3px rgba(27,45,79,.08);
-        }
-
-        .search-input:focus {
-            border-color: #4a90d9;
-            box-shadow: 0 0 0 4px rgba(74,144,217,.12), 0 3px 12px rgba(27,45,79,.10);
-        }
-
-        .search-buttons {
-            display: flex;
-            gap: 10px;
-        }
-
-        .btn {
-            display: inline-flex;
-            align-items: center;
-            gap: 8px;
-            padding: 10px 22px;
-            border-radius: 6px;
-            font-family: inherit;
-            font-size: 14px;
-            font-weight: 600;
-            border: none;
-            cursor: pointer;
-            transition: all .2s ease;
-            white-space: nowrap;
-            color: white;
-            box-shadow: 0 1px 3px rgba(27,45,79,.08);
-        }
-
-        .btn:active { 
-            transform: translateY(1px);
-            box-shadow: none;
-        }
-
-        .btn-success {
-            background: linear-gradient(135deg, #27ae60 0%, #229954 100%);
-        }
-        .btn-success:hover {
-            background: linear-gradient(135deg, #229954 0%, #27ae60 100%);
-            box-shadow: 0 3px 12px rgba(27,45,79,.10);
-        }
-
-        .btn-warning { 
-            background: linear-gradient(135deg, #f5a623 0%, #e89e1f 100%);
-        }
-        .btn-warning:hover { 
-            background: linear-gradient(135deg, #e89e1f 0%, #f5a623 100%);
-            box-shadow: 0 3px 12px rgba(27,45,79,.10);
-        }
-
-        /* ─── MAIN CONTAINER ─── */
-        .main-container { 
-            max-width: 1400px; 
-            margin: 0 auto; 
-            padding: 0 24px 24px 24px; 
-        }
-
-        /* ─── CONTENT CARD ─── */
-        .content-card {
-            background: white;
-            border-radius: 12px;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.06);
-            overflow: hidden;
-        }
-
-        /* ─── SECTION DIVIDER ─── */
-        .section {
-            padding: 24px;
-            border-bottom: 1px solid #f0f0f0;
-        }
-
-        .section:last-child {
-            border-bottom: none;
-        }
-
-        .section-title {
-            font-size: 18px;
-            font-weight: 600;
-            color: #1b2d4f;
-            margin-bottom: 20px;
-        }
-
-        /* ─── TIMELINE ─── */
-        .progress-timeline { 
-            padding: 20px 0;
-        }
-        
-        .timeline-track { 
-            display: flex; 
-            justify-content: space-between; 
-            align-items: flex-start; 
-            position: relative; 
-            margin-bottom: 10px;
-        }
-        
-        .timeline-line { 
-            position: absolute; 
-            top: 32px; 
-            left: calc(10% + 0px); 
-            right: calc(10% + 0px); 
-            height: 4px; 
-            background: #e5e7eb; 
-            z-index: 1; 
-            border-radius: 4px;
-        }
-        
-        .timeline-line-fill { 
-            position: absolute; 
-            top: 0; 
-            left: 0; 
-            height: 100%; 
-            background: linear-gradient(90deg, #10b981 0%, #059669 100%); 
-            transition: width 0.6s ease-in-out; 
-            border-radius: 4px;
-            display: block;
-        }
-        
-        .timeline-point { 
-            display: flex; 
-            flex-direction: column; 
-            align-items: center; 
-            position: relative; 
-            z-index: 2; 
-            flex: 1; 
-        }
-        
-        .timeline-circle { 
-            width: 64px; 
-            height: 64px; 
-            border-radius: 50%; 
-            background: white; 
-            border: 4px solid #e5e7eb; 
-            display: flex; 
-            align-items: center; 
-            justify-content: center; 
-            margin-bottom: 12px; 
-            transition: all 0.3s ease; 
-        }
-        
-        .timeline-circle.completed { 
-            background: linear-gradient(135deg, #10b981 0%, #059669 100%); 
-            border-color: #10b981; 
-        }
-        
-        .timeline-circle.current { 
-            border-color: #3b82f6; 
-            background: white; 
-            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.2);
-        }
-        
+        .top-nav { background: linear-gradient(135deg, #1b2d4f 0%, #243a5e 50%, #3a5a8a 100%); color: white; padding: 15px 20px; box-shadow: 0 2px 8px rgba(0,0,0,0.15); display: flex; justify-content: space-between; align-items: center; position: sticky; top: 0; z-index: 100; }
+        .bg-yellow { background-color: #ffc107 !important; color: #000 !important; }
+        .bg-green  { background-color: #28a745 !important; color: #fff !important; }
+        .bg-red    { background-color: #dc3545 !important; color: #fff !important; }
+        .nav-title { font-size: 18px; font-weight: 600; }
+        .back-button { display: inline-flex; align-items: center; gap: 8px; padding: 8px 16px; background: linear-gradient(135deg, #e74c3c 0%, #c0392b 100%); color: white; text-decoration: none; border-radius: 6px; font-size: 14px; font-weight: 600; transition: all .2s ease; }
+        .back-button:hover { background: linear-gradient(135deg, #c0392b 0%, #e74c3c 100%); transform: translateY(-1px); box-shadow: 0 4px 12px rgba(231,76,60,0.3); }
+        .search-container { max-width: 1400px; margin: 24px auto; padding: 0 24px; }
+        .search-card { background: white; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.06); padding: 24px; }
+        .search-box { display: flex; gap: 12px; align-items: flex-end; }
+        .search-input-group { flex: 1; display: flex; flex-direction: column; gap: 8px; }
+        .search-label { font-size: 13px; font-weight: 700; color: #1b2d4f; text-transform: uppercase; letter-spacing: .8px; }
+        .search-input { width: 100%; font-family: inherit; font-size: 14px; padding: 12px 16px; border: 2px solid #e2e6ec; border-radius: 6px; background: white; color: #1e293b; outline: none; transition: all .22s ease; box-shadow: 0 1px 3px rgba(27,45,79,.08); }
+        .search-input:focus { border-color: #4a90d9; box-shadow: 0 0 0 4px rgba(74,144,217,.12), 0 3px 12px rgba(27,45,79,.10); }
+        .search-buttons { display: flex; gap: 10px; }
+        .btn { display: inline-flex; align-items: center; gap: 8px; padding: 10px 22px; border-radius: 6px; font-family: inherit; font-size: 14px; font-weight: 600; border: none; cursor: pointer; transition: all .2s ease; white-space: nowrap; color: white; box-shadow: 0 1px 3px rgba(27,45,79,.08); }
+        .btn:active { transform: translateY(1px); box-shadow: none; }
+        .btn-success { background: linear-gradient(135deg, #27ae60 0%, #229954 100%); }
+        .btn-success:hover { background: linear-gradient(135deg, #229954 0%, #27ae60 100%); }
+        .btn-warning { background: linear-gradient(135deg, #f5a623 0%, #e89e1f 100%); }
+        .btn-warning:hover { background: linear-gradient(135deg, #e89e1f 0%, #f5a623 100%); }
+        .main-container { max-width: 1400px; margin: 0 auto; padding: 0 24px 24px 24px; }
+        .content-card { background: white; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.06); overflow: hidden; }
+        .section { padding: 24px; border-bottom: 1px solid #f0f0f0; }
+        .section:last-child { border-bottom: none; }
+        .section-title { font-size: 18px; font-weight: 600; color: #1b2d4f; margin-bottom: 20px; }
+        .progress-timeline { padding: 20px 0; }
+        .timeline-track { display: flex; justify-content: space-between; align-items: flex-start; position: relative; margin-bottom: 10px; }
+        .timeline-line { position: absolute; top: 32px; left: calc(10% + 0px); right: calc(10% + 0px); height: 4px; background: #e5e7eb; z-index: 1; border-radius: 4px; }
+        .timeline-line-fill { position: absolute; top: 0; left: 0; height: 100%; background: linear-gradient(90deg, #10b981 0%, #059669 100%); transition: width 0.6s ease-in-out; border-radius: 4px; display: block; }
+        .timeline-point { display: flex; flex-direction: column; align-items: center; position: relative; z-index: 2; flex: 1; }
+        .timeline-circle { width: 64px; height: 64px; border-radius: 50%; background: white; border: 4px solid #e5e7eb; display: flex; align-items: center; justify-content: center; margin-bottom: 12px; transition: all 0.3s ease; }
+        .timeline-circle.completed { background: linear-gradient(135deg, #10b981 0%, #059669 100%); border-color: #10b981; }
+        .timeline-circle.current { border-color: #3b82f6; background: white; box-shadow: 0 0 0 3px rgba(59,130,246,0.2); }
         .timeline-icon { font-size: 28px; }
         .timeline-circle.completed .timeline-icon { color: white; }
         .timeline-circle.current .timeline-icon { color: #10b981; }
@@ -280,976 +50,402 @@
         .timeline-point.completed .timeline-label, .timeline-point.current .timeline-label { color: #1f2937; font-weight: 600; }
         .timeline-date { font-size: 12px; color: #9ca3af; margin-top: 4px; }
         .timeline-point.completed .timeline-date, .timeline-point.current .timeline-date { color: #059669; font-weight: 500; }
-
-        /* ─── NOTICE BOX ─── */
-        .notice-box { 
-            background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%); 
-            padding: 16px 20px; 
-            border-radius: 8px; 
-            display: flex; 
-            align-items: center; 
-            gap: 12px; 
-        }
-
-        .notice-box.hidden {
-            display: none;
-        }
-        
-        .notice-text { 
-            font-size: 14px; 
-            color: #78350f; 
-            line-height: 1.5; 
-        }
-        
-        .notice-text strong { 
-            color: #92400e; 
-            font-weight: 600; 
-        }
-
-        /* ─── INFO GRID ─── */
-        .info-grid { 
-            display: grid; 
-            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); 
-            gap: 20px; 
-        }
-        
-        .info-item { 
-            display: flex; 
-            flex-direction: column; 
-            gap: 8px; 
-        }
-        
-        .info-label { 
-            font-size: 13px; 
-            color: #6b7280; 
-            font-weight: 500; 
-        }
-        
-        .info-value { 
-            font-size: 15px; 
-            color: #1f2937; 
-            font-weight: 500; 
-        }
-
-        /* ─── TABLE ─── */
-        .items-table { 
-            width: 100%; 
-            border-collapse: separate; 
-            border-spacing: 0; 
-        }
-        
-        .items-table thead th { 
-            background: #f9fafb; 
-            padding: 14px 16px; 
-            text-align: left; 
-            font-size: 13px; 
-            font-weight: 600; 
-            color: #4b5563; 
-            border-bottom: 2px solid #e5e7eb; 
-        }
-        
-        .items-table tbody td { 
-            padding: 16px; 
-            border-bottom: 1px solid #f3f4f6; 
-            font-size: 14px; 
-            vertical-align: top; 
-        }
-        
-        .items-table tbody tr:hover { 
-            background: #f9fafb; 
-        }
-        
-        .item-details { 
-            display: flex; 
-            flex-direction: column; 
-            gap: 4px; 
-        }
-        
-        .item-name { 
-            font-weight: 500; 
-            color: #1f2937; 
-            word-wrap: break-word;
-            word-break: break-word;
-            max-width: 100%;
-        }
-        
-        .item-invoices { 
-            display: grid;
-            grid-template-columns: repeat(2, 1fr);
-            gap: 8px; 
-            margin-top: 6px; 
-        }
-        
-        .invoice-tag { 
-            display: inline-flex; 
-            flex-direction: column; 
-            gap: 2px; 
-            padding: 8px 12px; 
-            background: #eff6ff; 
-            border: 1px solid #bfdbfe; 
-            border-radius: 6px; 
-            font-size: 11px; 
-            color: #1e40af; 
-        }
-        
-        .invoice-tag .inv-num { 
-            font-weight: 600; 
-            font-size: 12px; 
-        }
-        
-        .invoice-tag .inv-date { 
-            color: #60a5fa; 
-        }
-        
-        .invoice-tag .inv-qty { 
-            color: #059669; 
-            font-weight: 600; 
-        }
-
-        .qty-box { 
-            text-align: center; 
-            padding: 8px 12px; 
-            background: #f3f4f6; 
-            border-radius: 6px; 
-            font-weight: 600; 
-            font-size: 15px; 
-            color: #374151; 
-        }
-
-        .qty-summary {
-            margin-top: 12px;
-            font-size: 13px;
-            font-weight: 600;
-            grid-column: 1 / -1;
-        }
-
-        .qty-summary.excess {
-            color: #dc2626;
-        }
-
-        .qty-summary.shortage {
-            color: #f59e0b;
-        }
-
-        .status-badge { 
-            display: inline-block; 
-            padding: 8px 16px; 
-            border-radius: 20px; 
-            font-size: 13px; 
-            font-weight: 600; 
-            text-align: center; 
-            white-space: nowrap; 
-        }
-        
-        .status-complete { 
-            background: #d1fae5; 
-            color: #065f46; 
-            border: 1px solid #6ee7b7; 
-        }
-        
-        .status-pending { 
-            background: #fef3c7; 
-            color: #92400e; 
-            border: 1px solid #fcd34d; 
-        }
-        
-        .status-no-data { 
-            background: #fee2e2; 
-            color: #991b1b; 
-            border: 1px solid #fca5a5; 
-        }
-
-        /* ─── EMPTY STATE ─── */
-        .empty-state { 
-            text-align: center; 
-            padding: 80px 20px; 
-            color: #9ca3af; 
-        }
-        
-        .empty-icon { 
-            font-size: 64px; 
-            margin-bottom: 12px; 
-            opacity: 0.5; 
-        }
-        
-        .empty-text { 
-            font-size: 18px; 
-            font-weight: 500; 
-            margin-bottom: 8px; 
-        }
-        
-        .empty-subtext { 
-            font-size: 14px; 
-            color: #9ca3af; 
-        }
-
-        .loading-state { 
-            text-align: center; 
-            padding: 80px 20px; 
-            color: #6b7280; 
-        }
-        
-        .loading-spinner { 
-            font-size: 48px; 
-            animation: spin 1s linear infinite; 
-        }
-        
-        @keyframes spin { 
-            from { transform: rotate(0deg); } 
-            to { transform: rotate(360deg); } 
-        }
-
-        .error-state { 
-            text-align: center; 
-            padding: 60px 20px; 
-            background: #fee2e2; 
-            border-left: 4px solid #dc2626; 
-            border-radius: 8px; 
-            margin: 24px; 
-        }
-        
-        .error-icon { 
-            font-size: 48px; 
-            margin-bottom: 12px; 
-        }
-        
-        .error-text { 
-            color: #991b1b; 
-            font-size: 16px; 
-            font-weight: 600; 
-        }
-
-        /* ─── CONTENT AREA ─── */
-        #contentArea {
-            display: none;
-        }
-
-        #contentArea.show {
-            display: block;
-        }
-
-        /* ─── RESPONSIVE ─── */
+        .notice-box { background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%); padding: 16px 20px; border-radius: 8px; display: flex; align-items: center; gap: 12px; }
+        .notice-box.hidden { display: none; }
+        .notice-text { font-size: 14px; color: #78350f; line-height: 1.5; }
+        .notice-text strong { color: #92400e; font-weight: 600; }
+        .info-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 20px; }
+        .info-item { display: flex; flex-direction: column; gap: 8px; }
+        .info-label { font-size: 13px; color: #6b7280; font-weight: 500; }
+        .info-value { font-size: 15px; color: #1f2937; font-weight: 500; }
+        .items-table { width: 100%; border-collapse: separate; border-spacing: 0; }
+        .items-table thead th { background: #f9fafb; padding: 14px 16px; text-align: left; font-size: 13px; font-weight: 600; color: #4b5563; border-bottom: 2px solid #e5e7eb; }
+        .items-table tbody td { padding: 16px; border-bottom: 1px solid #f3f4f6; font-size: 14px; vertical-align: top; }
+        .items-table tbody tr:hover { background: #f9fafb; }
+        .item-name { font-weight: 500; color: #1f2937; word-wrap: break-word; word-break: break-word; }
+        .item-invoices { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; margin-top: 6px; }
+        .invoice-tag { display: inline-flex; flex-direction: column; gap: 2px; padding: 8px 12px; background: #eff6ff; border: 1px solid #bfdbfe; border-radius: 6px; font-size: 11px; color: #1e40af; }
+        .invoice-tag.mismatch { background: #fff1f2; border: 1px solid #fca5a5; color: #991b1b; }
+        .invoice-tag.mismatch .inv-num  { color: #b91c1c; }
+        .invoice-tag.mismatch .inv-date { color: #f87171; }
+        .invoice-tag.mismatch .inv-qty  { color: #dc2626; }
+        .mismatch-label { display: flex; align-items: center; gap: 6px; padding: 6px 10px; background: #fee2e2; border: 1px solid #fca5a5; border-radius: 6px; font-size: 12px; font-weight: 600; color: #991b1b; grid-column: 1 / -1; }
+        .inv-num  { font-weight: 600; font-size: 12px; }
+        .inv-date { color: #60a5fa; }
+        .inv-qty  { color: #059669; font-weight: 600; }
+        .qty-box  { text-align: center; padding: 8px 12px; background: #f3f4f6; border-radius: 6px; font-weight: 600; font-size: 15px; color: #374151; }
+        .qty-summary { margin-top: 12px; font-size: 13px; font-weight: 600; grid-column: 1 / -1; }
+        .qty-summary.excess   { color: #dc2626; }
+        .qty-summary.shortage { color: #f59e0b; }
+        .status-badge  { display: inline-block; padding: 8px 16px; border-radius: 20px; font-size: 13px; font-weight: 600; text-align: center; white-space: nowrap; }
+        .status-complete { background: #d1fae5; color: #065f46; border: 1px solid #6ee7b7; }
+        .status-pending  { background: #fef3c7; color: #92400e; border: 1px solid #fcd34d; }
+        .status-no-data  { background: #fee2e2; color: #991b1b; border: 1px solid #fca5a5; }
+        .empty-state { text-align: center; padding: 80px 20px; color: #9ca3af; }
+        .empty-text { font-size: 18px; font-weight: 500; margin-bottom: 8px; }
+        .empty-subtext { font-size: 14px; }
+        .loading-state { text-align: center; padding: 80px 20px; color: #6b7280; }
+        .error-state { text-align: center; padding: 60px 20px; background: #fee2e2; border-left: 4px solid #dc2626; border-radius: 8px; margin: 24px; }
+        .error-text { color: #991b1b; font-size: 16px; font-weight: 600; }
+        #contentArea { display: none; }
+        #contentArea.show { display: block; }
         @media (max-width: 768px) {
-            .main-container, .search-container { 
-                padding: 16px; 
-            }
-            
-            .search-box { 
-                flex-direction: column; 
-                align-items: stretch; 
-            }
-            
-            .search-buttons { 
-                width: 100%; 
-            }
-            
-            .search-buttons .btn { 
-                flex: 1; 
-            }
-            
-            .timeline-track { 
-                flex-direction: column; 
-                gap: 24px; 
-            }
-            
-            .timeline-line { 
-                display: none; 
-            }
-            
-            .timeline-point { 
-                flex-direction: row; 
-                width: 100%; 
-                gap: 16px; 
-            }
-            
-            .timeline-circle { 
-                margin-bottom: 0; 
-                width: 56px; 
-                height: 56px; 
-            }
-            
-            .timeline-label { 
-                text-align: left; 
-                max-width: none; 
-            }
-
-            .section {
-                padding: 20px;
-            }
-
-            .item-invoices {
-                grid-template-columns: 1fr;
-            }
+            .main-container, .search-container { padding: 16px; }
+            .search-box { flex-direction: column; align-items: stretch; }
+            .search-buttons { width: 100%; }
+            .search-buttons .btn { flex: 1; }
+            .timeline-track { flex-direction: column; gap: 24px; }
+            .timeline-line { display: none; }
+            .timeline-point { flex-direction: row; width: 100%; gap: 16px; }
+            .timeline-circle { margin-bottom: 0; width: 56px; height: 56px; }
+            .timeline-label { text-align: left; max-width: none; }
+            .section { padding: 20px; }
+            .item-invoices { grid-template-columns: 1fr; }
         }
     </style>
 </head>
 <body>
-<!-- TOP NAV -->
 <div class="top-nav">
     <div class="nav-title">ตามของนอก</div>
     <div style="display: flex; gap: 8px;">
-        <a href="dashboardreturn" 
-        style="display: inline-block; background-color: #28a745; color: white; padding: 8px 16px; border-radius: 6px; text-decoration: none; font-weight: bold; transition: background-color 0.2s;"
-        onmouseover="this.style.backgroundColor='#218838'"
-        onmouseout="this.style.backgroundColor='#28a745'">
-         เคลมสินค้านอก
-     </a>
-        <a href="http://server_update:8000/solist" class="back-button">
-            ← หน้าหลัก
+        <a href="dashboardreturn"
+            style="display: inline-block; background-color: #28a745; color: white; padding: 8px 16px; border-radius: 6px; text-decoration: none; font-weight: bold;"
+            onmouseover="this.style.backgroundColor='#218838'"
+            onmouseout="this.style.backgroundColor='#28a745'">
+                เคลมสินค้านอก
         </a>
+        <a href="http://server_update:8000/solist" class="back-button">← หน้าหลัก</a>
     </div>
 </div>
-    <!-- SEARCH BOX -->
-    <div class="search-container">
-        <div class="search-card">
-            <div class="search-box">
-                <div class="search-input-group">
-                    <label class="search-label">ค้นหา PO </label>
-                    <div class="search-input-wrapper">
-                        <input 
-                            type="text" 
-                            id="searchInput" 
-                            class="search-input"
-                            placeholder="กรอกเลข PO เพื่อค้นหา..."
-                            maxlength="10"
-                        />
-                    </div>
-                </div>
 
-                <div class="search-buttons">
-                    <button class="btn btn-success" onclick="searchPO()">
-                        ✓ ค้นหา
-                    </button>
-                    <button class="btn btn-warning" onclick="resetSearch()">
-                        ↺ Reset
-                    </button>
+{{-- SEARCH BOX --}}
+<div class="search-container">
+    <div class="search-card">
+        <div class="search-box">
+            <div class="search-input-group">
+                <label class="search-label">ค้นหา PO</label>
+                <input type="text" id="searchInput" class="search-input"
+                    placeholder="กรอกเลข PO เพื่อค้นหา..." maxlength="10" />
+            </div>
+            <div class="search-buttons">
+                <button class="btn btn-success" onclick="searchPO()">✓ ค้นหา</button>
+                <button class="btn btn-warning" onclick="resetSearch()">↺ Reset</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+{{-- MAIN --}}
+<div class="main-container">
+    <div id="initialEmptyState">
+        <div class="content-card">
+            <div class="section">
+                <div class="empty-state">
+                    <div class="empty-text">กรุณากรอกเลข PO</div>
+                    <div class="empty-subtext">ระบบจะค้นหาและแสดงข้อมูลรายละเอียดให้ท่านทราบ</div>
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- MAIN CONTAINER -->
-    <div class="main-container">
-        <!-- INITIAL EMPTY STATE -->
-        <div id="initialEmptyState">
-            <div class="content-card">
-                <div class="section">
-                    <div class="empty-state">
-                        <div class="empty-text">กรุณากรอกเลข PO</div>
-                        <div class="empty-subtext">ระบบจะค้นหาและแสดงข้อมูลรายละเอียดให้ท่านทราบ</div>
+    <div id="contentArea">
+        <div class="content-card">
+            {{-- TIMELINE --}}
+            <div class="section">
+                <div class="section-title">สถานะการสั่งซื้อ</div>
+                <div class="progress-timeline">
+                    <div class="timeline-track">
+                        <div class="timeline-line">
+                            <div class="timeline-line-fill" id="progress_fill" style="width: 0%"></div>
+                        </div>
+                        @php
+                            $timelineSteps = [
+                                ['icon' => '📝', 'label' => 'สร้าง PO'],
+                                ['icon' => '✅', 'label' => 'ยืนยันคำสั่งซื้อ'],
+                                ['icon' => '📦', 'label' => 'ได้รับ Invoice'],
+                                ['icon' => '🚚', 'label' => 'วันที่คาดว่าจะได้รับสินค้า'],
+                                ['icon' => '⭐', 'label' => 'รับสินค้าครบ'],
+                            ];
+                        @endphp
+                        @foreach ($timelineSteps as $i => $step)
+                            <div class="timeline-point" data-step="{{ $i + 1 }}">
+                                <div class="timeline-circle">
+                                    <span class="timeline-icon">{{ $step['icon'] }}</span>
+                                </div>
+                                <div>
+                                    <div class="timeline-label">{{ $step['label'] }}</div>
+                                    <div class="timeline-date" id="date_step{{ $i + 1 }}">-</div>
+                                </div>
+                            </div>
+                        @endforeach
+                    </div>
+                </div>
+
+                <div class="notice-box" id="noticeBox">
+                    <div class="notice-text">
+                        วันที่คาดว่าจะได้รับสินค้าครบทั้งหมด: <strong id="expected_date">-</strong>
+                    </div>
+                </div>
+
+                <div class="notice-box hidden" id="noteBox" style="background: #FF7D63; margin-top: 16px;">
+                    <div class="notice-text" style="color: #000;">
+                        <strong style="color: #000;">หมายเหตุ:</strong>
+                        <span id="note_text">-</span>
                     </div>
                 </div>
             </div>
-        </div>
 
-        <!-- CONTENT AREA (Hidden initially) -->
-        <div id="contentArea">
-            <div class="content-card">
-                <!-- TIMELINE SECTION -->
-                <div class="section">
-                    <div class="section-title">สถานะการสั่งซื้อ</div>
-                    <div class="progress-timeline">
-                        <div class="timeline-track">
-                            <div class="timeline-line">
-                                <div class="timeline-line-fill" id="progress_fill" style="width: 0%"></div>
-                            </div>
-                            <div class="timeline-point" data-step="1">
-                                <div class="timeline-circle"><span class="timeline-icon">📝</span></div>
-                                <div><div class="timeline-label">สร้าง PO</div><div class="timeline-date" id="date_step1">-</div></div>
-                            </div>
-                            <div class="timeline-point" data-step="2">
-                                <div class="timeline-circle"><span class="timeline-icon">✅</span></div>
-                                <div><div class="timeline-label">ยืนยันคำสั่งซื้อ</div><div class="timeline-date" id="date_step2">-</div></div>
-                            </div>
-                            <div class="timeline-point" data-step="3">
-                                <div class="timeline-circle"><span class="timeline-icon">📦</span></div>
-                                <div><div class="timeline-label">ได้รับInvoice</div><div class="timeline-date" id="date_step3">-</div></div>
-                            </div>
-                            <div class="timeline-point" data-step="4">
-                                <div class="timeline-circle"><span class="timeline-icon">🚚</span></div>
-                                <div><div class="timeline-label" style="white-space: nowrap;">วันที่คาดว่าจะได้รับสินค้า</div><div class="timeline-date" id="date_step4">-</div></div>
-                            </div>
-                            <div class="timeline-point" data-step="5">
-                                <div class="timeline-circle"><span class="timeline-icon">⭐</span></div>
-                                <div><div class="timeline-label">รับสินค้าครบ</div><div class="timeline-date" id="date_step5">-</div></div>
-                            </div>
-                        </div>
+            {{-- VENDOR --}}
+            <div class="section">
+                <div class="section-title">ข้อมูลผู้ขาย</div>
+                <div class="info-grid">
+                    <div class="info-item">
+                        <div class="info-label">รหัสร้านค้า</div>
+                        <div class="info-value" id="vendor_code">-</div>
                     </div>
-
-                    <!-- Notice Box - Expected Delivery Date -->
-                    <div class="notice-box" id="noticeBox">
-                        <div class="notice-text">วันที่คาดว่าจะได้รับสินค้าครบทั้งหมด: <strong id="expected_date">-</strong></div>
+                    <div class="info-item">
+                        <div class="info-label">ชื่อร้านค้า</div>
+                        <div class="info-value" id="vendor_name">-</div>
                     </div>
-
-                    <!-- Notice Box - Note from Database -->
-                    <div class="notice-box hidden" id="noteBox" style="background: #FF7D63; margin-top: 16px;">
-                        <div class="notice-text" style="color: #000000">
-                            <strong style="color: #000000;">หมายเหตุ:</strong> <span id="note_text">-</span>
-                        </div>
+                    <div class="info-item">
+                        <div class="info-label">ที่อยู่</div>
+                        <div class="info-value" id="vendor_address">-</div>
                     </div>
-                </div>
-
-                <!-- VENDOR INFO SECTION -->
-                <div class="section">
-                    <div class="section-title">ข้อมูลผู้ขาย</div>
-                    <div class="info-grid">
-                        <div class="info-item">
-                            <div class="info-label">รหัสร้านค้า</div>
-                            <div class="info-value" id="vendor_code">-</div>
-                        </div>
-                        <div class="info-item">
-                            <div class="info-label">ชื่อร้านค้า</div>
-                            <div class="info-value" id="vendor_name">-</div>
-                        </div>
-                        <div class="info-item">
-                            <div class="info-label">ที่อยู่</div>
-                            <div class="info-value" id="vendor_address">-</div>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- ITEMS TABLE SECTION -->
-                <div class="section" style="padding: 0;">
-                    <div style="padding: 24px 24px 16px 24px;">
-                        <div class="section-title" style="margin-bottom: 0;">รายการสินค้า</div>
-                    </div>
-                    <table class="items-table">
-                        <thead>
-                            <tr>
-                                <th>สินค้า</th>
-                                <th style="width: 120px; text-align: center;">จำนวนสั่ง</th>
-                                <th style="width: 500px;">รายการ Invoice</th>
-                                <th style="width: 160px; text-align: center;">สถานะ</th>
-                            </tr>
-                        </thead>
-                        <tbody id="items_table_body">
-                            <tr><td colspan="4"><div class="empty-state"><div class="empty-icon">⏳</div><div>กำลังโหลดข้อมูล...</div></div></td></tr>
-                        </tbody>
-                    </table>
                 </div>
             </div>
-        </div>
-    </div>
 
-    <script>
-        function formatDateThai(dateInput) {
-            if (!dateInput) return '-';
-            const thaiMonths = ['ม.ค.', 'ก.พ.', 'มี.ค.', 'เม.ย.', 'พ.ค.', 'มิ.ย.', 'ก.ค.', 'ส.ค.', 'ก.ย.', 'ต.ค.', 'พ.ย.', 'ธ.ค.'];
-            const date = new Date(dateInput);
-            return `${date.getDate()} ${thaiMonths[date.getMonth()]} ${date.getFullYear()}`;
-        }
-
-        function updateTimeline(step, dates = {}) {
-            const points = document.querySelectorAll('.timeline-point');
-            const progressBar = document.getElementById('progress_fill');
-            
-            // Update progress bar - หยุดที่ step ปัจจุบัน
-            progressBar.style.width = ((step - 1) / (points.length - 1)) * 100 + '%';
-            
-            points.forEach((point, index) => {
-                const stepNum = index + 1;
-                const circle = point.querySelector('.timeline-circle');
-                
-                // Reset classes
-                point.classList.remove('completed', 'current');
-                circle.classList.remove('completed', 'current', 'bg-yellow', 'bg-green', 'bg-red');
-                
-                // Apply state
-                if (stepNum < step) {
-                    point.classList.add('completed');
-                    circle.classList.add('completed');
-                } else if (stepNum === step) {
-                    point.classList.add('current');
-                    circle.classList.add('current');
-                }
-            });
-
-            // Update dates
-            Object.keys(dates).forEach(key => {
-                const el = document.getElementById('date_' + key);
-                if (el && dates[key]) el.textContent = dates[key];
-            });
-        }
-
-        function showLoading() {
-            const initialState = document.getElementById('initialEmptyState');
-            const contentArea = document.getElementById('contentArea');
-            
-            contentArea.classList.remove('show');
-            contentArea.style.display = 'none';
-            initialState.style.display = 'block';
-            initialState.innerHTML = `
-                <div class="content-card">
-                    <div class="section">
-                        <div class="loading-state">
-                            <div style="margin-top: 16px; font-size: 16px; font-weight: 500;">กำลังค้นหาข้อมูล...</div>
-                        </div>
-                    </div>
+            {{-- ITEMS TABLE --}}
+            <div class="section" style="padding: 0;">
+                <div style="padding: 24px 24px 16px 24px;">
+                    <div class="section-title" style="margin-bottom: 0;">รายการสินค้า</div>
                 </div>
-            `;
-        }
-
-        function showError(message) {
-            const initialState = document.getElementById('initialEmptyState');
-            const contentArea = document.getElementById('contentArea');
-            
-            contentArea.classList.remove('show');
-            contentArea.style.display = 'none';
-            initialState.style.display = 'block';
-            initialState.innerHTML = `
-                <div class="content-card">
-                    <div class="section">
-                        <div class="error-state">
-                            <div class="error-text">${message}</div>
-                        </div>
-                    </div>
-                </div>
-            `;
-        }
-
-        function resetSearch() {
-            document.getElementById('searchInput').value = '';
-            const initialState = document.getElementById('initialEmptyState');
-            const contentArea = document.getElementById('contentArea');
-            
-            // Hide content area
-            contentArea.style.display = 'none';
-            contentArea.classList.remove('show');
-            
-            // Show initial empty state
-            initialState.style.display = 'block';
-            initialState.innerHTML = `
-                <div class="content-card">
-                    <div class="section">
-                        <div class="empty-state">
-                            <div class="empty-text">กรุณากรอกเลข PO</div>
-                            <div class="empty-subtext">ระบบจะค้นหาและแสดงข้อมูลรายละเอียดให้ท่านทราบ</div>
-                        </div>
-                    </div>
-                </div>
-            `;
-            
-            // Focus on search input
-            document.getElementById('searchInput').focus();
-        }
-
-    function mergeInvoices(dbItems) {
-    const nameQtyMap = new Map();
-
-    dbItems.forEach(item => {
-        const key = `${item.name.trim().toUpperCase()}_${parseFloat(item.quantity)}`;
-        
-        if (!nameQtyMap.has(key)) {
-            nameQtyMap.set(key, item);
-        } else {
-            // name + qty เดียวกัน → เก็บวันล่าสุด
-            const existing = nameQtyMap.get(key);
-            const existingDate = existing.date_invoice ? new Date(existing.date_invoice) : new Date(0);
-            const newDate = item.date_invoice ? new Date(item.date_invoice) : new Date(0);
-            if (newDate > existingDate) {
-                nameQtyMap.set(key, item);
-            }
-        }
-    });
-
-    return Array.from(nameQtyMap.values());
-}
-        function matchProducts(dbItems, apiItems) {
-    const matched = [];
-    const usedDbIndices = new Set();
-    const apiToDbMap = new Map();
-
-    // คำนวณ score ทุกคู่ก่อน
-    const scores = [];
-    dbItems.forEach((dbItem, dbIdx) => {
-        const dbName = dbItem.name.trim().toUpperCase();
-        apiItems.forEach((apiItem, apiIdx) => {
-            const apiName = apiItem.GoodName.trim().toUpperCase();
-            let score = 0;
-
-            // Exact match
-            if (apiName === dbName) {
-                score = 100000;
-            } else {
-                // นับความยาวของ substring ที่ตรงกันที่ยาวที่สุด (Longest Common Substring)
-                let maxLen = 0;
-                for (let i = 0; i < dbName.length; i++) {
-                    for (let j = i + 1; j <= dbName.length; j++) {
-                        const sub = dbName.substring(i, j);
-                        if (apiName.includes(sub) && sub.length > maxLen) {
-                            maxLen = sub.length;
-                        }
-                    }
-                }
-                // penalty: ถ้า apiName ยาวกว่า dbName มาก ลด score
-                const lengthPenalty = Math.abs(apiName.length - dbName.length);
-                score = (maxLen * 1000) - lengthPenalty;
-            }
-
-            scores.push({ dbIdx, apiIdx, score });
-        });
-    });
-
-    // เรียง score จากมากไปน้อย
-    scores.sort((a, b) => b.score - a.score);
-
-    // จับคู่: DB แต่ละตัวล็อคได้แค่ 1 ครั้ง, API จับได้หลายครั้ง
-    scores.forEach(({ dbIdx, apiIdx, score }) => {
-        if (usedDbIndices.has(dbIdx)) return;
-
-        if (!apiToDbMap.has(apiIdx)) {
-            apiToDbMap.set(apiIdx, { apiItem: apiItems[apiIdx], dbItems: [] });
-        }
-        apiToDbMap.get(apiIdx).dbItems.push(dbItems[dbIdx]);
-        usedDbIndices.add(dbIdx);
-    });
-
-    // รวมผลลัพธ์
-    apiToDbMap.forEach((value, apiIdx) => {
-        matched.push({
-            apiItem: value.apiItem,
-            dbItems: mergeInvoices(value.dbItems),
-            apiIndex: apiIdx
-        });
-    });
-
-    // API ที่ไม่มี DB match
-    const matchedApiIndices = new Set(Array.from(apiToDbMap.keys()));
-    apiItems.forEach((apiItem, apiIdx) => {
-        if (!matchedApiIndices.has(apiIdx)) {
-            matched.push({ apiItem, dbItems: [], apiIndex: apiIdx });
-        }
-    });
-
-    matched.sort((a, b) => a.apiIndex - b.apiIndex);
-    return matched;
-}
-
-function getClosestInvoiceDate(invoices) {
-    if (!invoices || invoices.length === 0) return null;
-    
-    let latest = null;
-    let maxDate = new Date(0);
-
-    invoices.forEach(inv => {
-        if (inv.date_invoice) {
-            const invDate = new Date(inv.date_invoice);
-            if (invDate > maxDate) {
-                maxDate = invDate;
-                latest = inv.date_invoice;
-            }
-        }
-    });
-
-    return latest;
-}
-        // Helper: รวม notes ทั้งหมดที่ไม่ซ้ำกัน
-        function collectUniqueNotes(dbItems) {
-            if (!dbItems || dbItems.length === 0) return null;
-            
-            const uniqueNotes = new Set();
-            dbItems.forEach(item => {
-                if (item.note && item.note.trim() !== '') {
-                    uniqueNotes.add(item.note.trim());
-                }
-            });
-            
-            return uniqueNotes.size > 0 ? Array.from(uniqueNotes).join(' | ') : null;
-        }
-
-        // Helper: เพิ่ม 15 วันให้กับวันที่
-        function addDays(dateString, days) {
-            if (!dateString) return null;
-            const date = new Date(dateString);
-            date.setDate(date.getDate() + days);
-            return formatDateThai(date);
-        }
-
-        // Helper: คำนวณสรุปจำนวนสินค้า
-        function calculateQuantitySummary(orderedQty, dbItems) {
-            if (!dbItems || dbItems.length === 0) {
-                return null;
-            }
-
-            // รวมจำนวนที่ได้รับทั้งหมด
-            const totalReceived = dbItems.reduce((sum, item) => sum + parseFloat(item.quantity || 0), 0);
-            const ordered = parseFloat(orderedQty || 0);
-
-            if (totalReceived > ordered) {
-                // เกิน
-                const excess = totalReceived - ordered;
-                return {
-                    type: 'excess',
-                    message: `เกิน ${excess.toFixed(4)} หน่วย`
-                };
-            } else if (totalReceived < ordered) {
-                // ขาด
-                const shortage = ordered - totalReceived;
-                return {
-                    type: 'shortage',
-                    message: `ขาด ${shortage.toFixed(4)} หน่วย`
-                };
-            } else {
-                // เท่าพอดี
-                return null;
-            }
-        }
-
-        // Auto-format PO number with dash
-        document.getElementById('searchInput').addEventListener('input', function(e) {
-            let value = e.target.value;
-            
-            // Remove all non-digit characters except dash
-            value = value.replace(/[^\d-]/g, '');
-            
-            // Remove all dashes first
-            value = value.replace(/-/g, '');
-            
-            // Format: xxxx-xxxxx
-            if (value.length > 4) {
-                value = value.substring(0, 4) + '-' + value.substring(4, 9);
-            }
-            
-            e.target.value = value;
-        });
-
-        // Handle paste event to clean up pasted text
-        document.getElementById('searchInput').addEventListener('paste', function(e) {
-            e.preventDefault();
-            
-            // Get pasted text
-            let pastedText = (e.clipboardData || window.clipboardData).getData('text');
-            
-            // Remove all non-digit characters except dash
-            pastedText = pastedText.replace(/[^\d-]/g, '');
-            
-            // Remove all dashes
-            pastedText = pastedText.replace(/-/g, '');
-            
-            // Remove spaces
-            pastedText = pastedText.replace(/\s/g, '');
-            
-            // Format: xxxx-xxxxx
-            if (pastedText.length > 4) {
-                pastedText = pastedText.substring(0, 4) + '-' + pastedText.substring(4, 9);
-            }
-            
-            // Set the formatted value
-            e.target.value = pastedText;
-            
-            // Trigger input event to ensure any other listeners are notified
-            e.target.dispatchEvent(new Event('input', { bubbles: true }));
-        });
-
-        // กด Enter เพื่อค้นหา
-        document.getElementById('searchInput').addEventListener('keypress', function(e) {
-            if (e.key === 'Enter') {
-                searchPO();
-            }
-        });
-
-        async function searchPO() {
-            const searchValue = document.getElementById('searchInput').value.trim();
-            if (!searchValue) {
-                alert('กรุณากรอกเลข PO');
-                return;
-            }
-            
-            showLoading();
-            
-            try {
-                // Fetch LOCAL DB
-                const localRes = await fetch(`/pooutside/check?ponum=${searchValue}`);
-                const localData = await localRes.json();
-                console.log("LOCAL:", localData);
-
-                // Fetch ERP API
-                const apiRes = await fetch(`http://server_update:8000/api/getPODetail?PONum=${searchValue}`);
-                const apiData = await apiRes.json();
-                console.log("API:", apiData);
-
-                // Update vendor info
-                document.getElementById('vendor_code').textContent = apiData.VendorCode || '-';
-                document.getElementById('vendor_name').textContent = apiData.VendorName || '-';
-                document.getElementById('vendor_address').textContent = [
-                    apiData.ContAddr1,
-                    apiData.ContAddr2,
-                    apiData.ContDistrict,
-                    apiData.ContAmphur,
-                    apiData.ContProvince,
-                    apiData.ContPostCode
-                ].filter(Boolean).join(', ') || '-';
-
-                // Determine current step
-                const hasLocalData = localData.exists && localData.data.length > 0;
-                let step = 1;
-                let statusColor = '';
-
-                switch (apiData.store_status) {
-                    case "ENTRY":
-                        if (hasLocalData) {
-                            step = 4; // จัดส่งสินค้า
-                            statusColor = 'bg-green';
-                        } else {
-                            step = 2; // ยืนยันคำสั่งซื้อ
-                            statusColor = 'bg-green';
-                        }
-                        break;
-                    case "PARTIAL":
-                        step = 5; // รับสินค้าครบ
-                        statusColor = 'bg-yellow';
-                        break;
-                    case "COMPLETED":
-                        step = 5; // รับสินค้าครบ
-                        statusColor = 'bg-green';
-                        break;
-                    case "CANCELLED":
-                        step = 2; // ยืนยันคำสั่งซื้อ
-                        statusColor = 'bg-red';
-                        break;
-                    default:
-                        step = 1; // สร้าง PO
-                }
-
-                // ซ่อน Notice Box ถ้า status เป็น COMPLETED
-                const noticeBox = document.getElementById('noticeBox');
-                if (apiData.store_status === 'COMPLETED') {
-                    noticeBox.classList.add('hidden');
-                } else {
-                    noticeBox.classList.remove('hidden');
-                }
-
-                // จัดการ Note Box
-                const noteBox = document.getElementById('noteBox');
-                const noteText = document.getElementById('note_text');
-                const allNotes = collectUniqueNotes(localData.data);
-                
-                if (allNotes) {
-                    noteText.textContent = allNotes;
-                    noteBox.classList.remove('hidden');
-                } else {
-                    noteBox.classList.add('hidden');
-                }
-
-                // หา Invoice date ที่ใกล้เคียงกับวันปัจจุบันที่สุด
-                const closestInvoiceDate = getClosestInvoiceDate(localData.data);
-                const expectedDeliveryDate = addDays(closestInvoiceDate, 15);
-
-                // Update timeline dates
-                const timelineDates = {
-                    step1: formatDateThai(apiData.DocuDate), // สร้าง PO
-                    step2: formatDateThai(apiData.DocuDate), // ยืนยันคำสั่งซื้อ (ใช้ DocuDate)
-                    step3: closestInvoiceDate ? formatDateThai(closestInvoiceDate) : '-', // ออก Invoice
-                    step4: closestInvoiceDate ? addDays(closestInvoiceDate, 15) : '-', // จัดส่งสินค้า (+15 วัน)
-                };
-
-                updateTimeline(step, timelineDates);
-
-                // เพิ่มสีให้ current step
-                if (statusColor) {
-                    const currentPoint = document.querySelector(`.timeline-point[data-step="${step}"] .timeline-circle`);
-                    if (currentPoint) {
-                        currentPoint.classList.add(statusColor);
-                    }
-                }
-
-                // Update expected date
-                document.getElementById('expected_date').textContent = expectedDeliveryDate || '-';
-
-                // Match products
-                const matchedProducts = matchProducts(localData.data || [], apiData.ms_podt || []);
-
-                // Build table
-                const tbody = document.getElementById('items_table_body');
-                tbody.innerHTML = '';
-
-                if (matchedProducts.length === 0) {
-                    tbody.innerHTML = `
+                <table class="items-table">
+                    <thead>
                         <tr>
-                            <td colspan="4" style="text-align:center;color:red;">
-                                ไม่พบข้อมูล
-                            </td>
+                            <th>สินค้า</th>
+                            <th style="width: 120px; text-align: center;">จำนวนสั่ง</th>
+                            <th style="width: 500px;">รายการ Invoice</th>
+                            <th style="width: 160px; text-align: center;">สถานะ</th>
                         </tr>
-                    `;
-                } else {
-                    matchedProducts.forEach(match => {
-                        const apiItem = match.apiItem;
-                        const dbItems = match.dbItems;
+                    </thead>
+                    <tbody id="items_table_body"></tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
 
-                        // กำหนดสถานะตาม store_status
-                        let itemStatus = 'ไม่มีข้อมูล';
-                        let statusClass = 'status-no-data';
+<script>
+    // ─── Utilities ─────────────────────────────────────────────────────────────
 
-                        if (dbItems.length > 0) {
-                            if (apiData.store_status === 'COMPLETED') {
-                                itemStatus = 'จัดส่งสำเร็จ';
-                                statusClass = 'status-complete';
-                            } else {
-                                itemStatus = 'กำลังจัดส่ง';
-                                statusClass = 'status-pending';
-                            }
-                        }
+    function formatDateThai(dateInput) {
+        if (!dateInput) return '-';
+        const months = ['ม.ค.','ก.พ.','มี.ค.','เม.ย.','พ.ค.','มิ.ย.','ก.ค.','ส.ค.','ก.ย.','ต.ค.','พ.ย.','ธ.ค.'];
+        const d = new Date(dateInput);
+        return `${d.getDate()} ${months[d.getMonth()]} ${d.getFullYear()}`;
+    }
 
-                        // คำนวณสรุปจำนวน
-                        const summary = calculateQuantitySummary(apiItem.GoodQty2, dbItems);
+    // ─── UI State ──────────────────────────────────────────────────────────────
 
-                        // สร้าง Invoice tags (แสดงเฉพาะ unique invoices, 2 cards ต่อแถว)
-                        let invoiceTags = '';
-                        if (dbItems.length > 0) {
-                            dbItems.forEach(dbItem => {
-                                invoiceTags += `
-                                    <div class="invoice-tag">
-                                        <span class="inv-num">Invoice: ${dbItem.invoice || '-'}</span>
-                                        <span class="inv-num">Name: ${dbItem.name || '-'}</span>
-                                        <span class="inv-date">วันที่: ${formatDateThai(dbItem.date_invoice)}</span>
-                                        <span class="inv-qty">จำนวน: ${dbItem.quantity || 0}</span>
-                                    </div>
-                                `;
-                            });
+    function showLoading() {
+        setContentVisible(false);
+        document.getElementById('initialEmptyState').innerHTML = `
+            <div class="content-card"><div class="section">
+                <div class="loading-state">
+                    <div style="margin-top:16px;font-size:16px;font-weight:500;">กำลังค้นหาข้อมูล...</div>
+                </div>
+            </div></div>`;
+        document.getElementById('initialEmptyState').style.display = 'block';
+    }
 
-                            // เพิ่มสรุปผล (ถ้ามี)
-                            if (summary) {
-                                invoiceTags += `
-                                    <div class="qty-summary ${summary.type}">
-                                        ${summary.message}
-                                    </div>
-                                `;
-                            }
-                        } else {
-                            invoiceTags = '<span style="color: #9ca3af;">ยังไม่มีข้อมูล Invoice</span>';
-                        }
+    function showError(msg) {
+        setContentVisible(false);
+        document.getElementById('initialEmptyState').innerHTML = `
+            <div class="content-card"><div class="section">
+                <div class="error-state"><div class="error-text">${msg}</div></div>
+            </div></div>`;
+        document.getElementById('initialEmptyState').style.display = 'block';
+    }
 
-                        tbody.innerHTML += `
-                            <tr>
-                                <td>
-                                    <div class="item-name">${apiItem.GoodName}</div>
-                                </td>
-                                <td style="text-align:center"> 
-                                <div class="qty-box">${apiItem.GoodQty2 || 0}</div> </td>
-                                <td>
-                                    <div class="item-invoices">
-                                        ${invoiceTags}
-                                    </div>
-                                </td>
-                                <td style="text-align:center">
-                                    <span class="status-badge ${statusClass}">${itemStatus}</span>
-                                </td>
-                            </tr>
-                        `;
-                    });
-                }
+    function setContentVisible(visible) {
+        const el = document.getElementById('contentArea');
+        el.style.display = visible ? 'block' : 'none';
+        el.classList.toggle('show', visible);
+    }
 
-                // Show content
-                document.getElementById('initialEmptyState').style.display = 'none';
-                const contentArea = document.getElementById('contentArea');
-                contentArea.style.display = 'block';
-                contentArea.classList.add('show');
+    function resetSearch() {
+        document.getElementById('searchInput').value = '';
+        setContentVisible(false);
+        document.getElementById('initialEmptyState').style.display = 'block';
+        document.getElementById('initialEmptyState').innerHTML = `
+            <div class="content-card"><div class="section">
+                <div class="empty-state">
+                    <div class="empty-text">กรุณากรอกเลข PO</div>
+                    <div class="empty-subtext">ระบบจะค้นหาและแสดงข้อมูลรายละเอียดให้ท่านทราบ</div>
+                </div>
+            </div></div>`;
+        document.getElementById('searchInput').focus();
+    }
 
-            } catch (err) {
-                console.error(err);
-                showError("ไม่พบเลข PO");
-            }
+    // ─── Render helpers ────────────────────────────────────────────────────────
+
+    function renderTimeline(timeline) {
+        const totalSteps = 5;
+        const fill       = ((timeline.step - 1) / (totalSteps - 1)) * 100;
+        document.getElementById('progress_fill').style.width = fill + '%';
+
+        document.querySelectorAll('.timeline-point').forEach((point, i) => {
+            const stepNum = i + 1;
+            const circle  = point.querySelector('.timeline-circle');
+            point.classList.remove('completed', 'current');
+            circle.classList.remove('completed', 'current', 'bg-yellow', 'bg-green', 'bg-red');
+
+            if (stepNum < timeline.step)      { point.classList.add('completed'); circle.classList.add('completed'); }
+            else if (stepNum === timeline.step){ point.classList.add('current');   circle.classList.add('current'); }
+        });
+
+        const dates = [
+            timeline.date_created,
+            timeline.date_created,
+            timeline.date_invoice,
+            timeline.date_expected,
+            null,
+        ];
+        dates.forEach((d, i) => {
+            const el = document.getElementById(`date_step${i + 1}`);
+            if (el && d) el.textContent = formatDateThai(d);
+        });
+
+        // สีปุ่ม timeline ตาม status
+        const colorMap = { ENTRY: 'bg-green', PARTIAL: 'bg-yellow', COMPLETED: 'bg-green', CANCELLED: 'bg-red' };
+        const color    = colorMap[timeline.status];
+        if (color) {
+            const el = document.querySelector(`.timeline-point[data-step="${timeline.step}"] .timeline-circle`);
+            if (el) el.classList.add(color);
         }
-    </script>
+
+        // Notice box วันที่คาดรับสินค้า
+        document.getElementById('noticeBox').classList.toggle('hidden', !timeline.show_expected_box);
+        document.getElementById('expected_date').textContent = formatDateThai(timeline.date_expected) || '-';
+    }
+
+    function renderInvoiceTags(item) {
+        if (item.is_low_score && item.invoices.length > 0) {
+            return `
+                <div class="mismatch-label" style="grid-column:1/-1;">
+                    ชื่อสินค้าไม่ถูกต้อง ไม่สามารถจับคู่ได้ *ติดต่อผู้ดูแลระบบ
+                </div>
+                ${item.invoices.map(inv => `
+                    <div class="invoice-tag mismatch">
+                        <span class="inv-num">Invoice: ${inv.invoice}</span>
+                        <span class="inv-num">Name: ${inv.name}</span>
+                        <span class="inv-date">วันที่: ${formatDateThai(inv.date_invoice)}</span>
+                        <span class="inv-qty">จำนวน: ${inv.quantity}</span>
+                    </div>`).join('')}`;
+        }
+
+        if (item.invoices.length > 0) {
+            const tags = item.invoices.map(inv => `
+                <div class="invoice-tag">
+                    <span class="inv-num">Invoice: ${inv.invoice}</span>
+                    <span class="inv-num">Name: ${inv.name}</span>
+                    <span class="inv-date">วันที่: ${formatDateThai(inv.date_invoice)}</span>
+                    <span class="inv-qty">จำนวน: ${inv.quantity}</span>
+                </div>`).join('');
+
+            const summary = item.qty_summary
+                ? `<div class="qty-summary ${item.qty_summary.type}">${item.qty_summary.message}</div>`
+                : '';
+
+            return tags + summary;
+        }
+
+        return '<span style="color:#9ca3af;">ยังไม่มีข้อมูล Invoice</span>';
+    }
+
+    function renderItems(items) {
+        const tbody = document.getElementById('items_table_body');
+        if (!items.length) {
+            tbody.innerHTML = `<tr><td colspan="4" style="text-align:center;color:red;">ไม่พบข้อมูล</td></tr>`;
+            return;
+        }
+
+        tbody.innerHTML = items.map(item => `
+            <tr>
+                <td><div class="item-name">${item.name}</div></td>
+                <td style="text-align:center">
+                    <div class="qty-box">${item.qty_ordered}</div>
+                </td>
+                <td>
+                    <div class="item-invoices">${renderInvoiceTags(item)}</div>
+                </td>
+                <td style="text-align:center">
+                    <span class="status-badge ${item.status_class}">${item.status}</span>
+                </td>
+            </tr>`).join('');
+    }
+
+    // ─── Search ────────────────────────────────────────────────────────────────
+
+    async function searchPO() {
+        const ponum = document.getElementById('searchInput').value.trim();
+        if (!ponum) { alert('กรุณากรอกเลข PO'); return; }
+
+        showLoading();
+
+        try {
+            const res  = await fetch(`/pooutside/search?ponum=${encodeURIComponent(ponum)}`);
+            const data = await res.json();
+
+            if (!data.success) { showError(data.message || 'ไม่พบเลข PO'); return; }
+
+            // Vendor
+            document.getElementById('vendor_code').textContent    = data.vendor.code;
+            document.getElementById('vendor_name').textContent    = data.vendor.name;
+            document.getElementById('vendor_address').textContent = data.vendor.address;
+
+            // Timeline
+            renderTimeline(data.timeline);
+
+            // Notes
+            const noteBox = document.getElementById('noteBox');
+            if (data.notes) {
+                document.getElementById('note_text').textContent = data.notes;
+                noteBox.classList.remove('hidden');
+            } else {
+                noteBox.classList.add('hidden');
+            }
+
+            // Items
+            renderItems(data.items);
+
+            document.getElementById('initialEmptyState').style.display = 'none';
+            setContentVisible(true);
+
+        } catch (err) {
+            console.error(err);
+            showError('ไม่พบเลข PO');
+        }
+    }
+
+    // ─── Input formatting ──────────────────────────────────────────────────────
+
+    document.getElementById('searchInput').addEventListener('input', function (e) {
+        let v = e.target.value.replace(/[^\d]/g, '');
+        if (v.length > 4) v = v.slice(0, 4) + '-' + v.slice(4, 9);
+        e.target.value = v;
+    });
+
+    document.getElementById('searchInput').addEventListener('paste', function (e) {
+        e.preventDefault();
+        let v = (e.clipboardData || window.clipboardData).getData('text').replace(/\D/g, '');
+        if (v.length > 4) v = v.slice(0, 4) + '-' + v.slice(4, 9);
+        e.target.value = v;
+    });
+
+    document.getElementById('searchInput').addEventListener('keypress', function (e) {
+        if (e.key === 'Enter') searchPO();
+    });
+</script>
 </body>
 </html>
