@@ -32,28 +32,33 @@ class PooutsideController extends Controller
             return response()->json(['success' => false, 'message' => 'กรุณากรอกเลข PO'], 422);
         }
 
-        // 1) ดึงข้อมูลจาก DB
         $localData = Pooutside::where('ponum', $ponum)
             ->orderBy('date_invoice', 'desc')
             ->get()
             ->toArray();
 
-        // 2) ดึงข้อมูลจาก ERP
         $erpData = $this->fetchErpPO($ponum);
         if (!$erpData) {
             return response()->json(['success' => false, 'message' => 'ไม่พบเลข PO'], 404);
         }
 
-        // 3) Build response
+        // Match ก่อน แล้วค่อยส่งต่อให้ทุก builder
+        $matchedProducts = $this->matchProducts($localData, $erpData['ms_podt'] ?? []);
+
+        // ✅ เก็บเฉพาะ dbItems ที่ match จริง (score ≥ 20%) เพื่อคำนวณ timeline
+        $validDbItems = collect($matchedProducts)
+            ->filter(fn($m) => !$m['lowScore'])
+            ->flatMap(fn($m) => $m['dbItems'])
+            ->toArray();
+
         return response()->json([
             'success'  => true,
             'vendor'   => $this->buildVendorInfo($erpData),
-            'timeline' => $this->buildTimeline($erpData, $localData),
-            'notes'    => $this->collectUniqueNotes($localData),
-            'items'    => $this->buildItemList($erpData, $localData),
+            'timeline' => $this->buildTimeline($erpData, $validDbItems), // ✅ ใช้เฉพาะ valid
+            'notes'    => $this->collectUniqueNotes($localData),         // notes ยังดูทั้งหมดได้
+            'items'    => $this->buildItemsFromMatched($matchedProducts, $erpData),
         ]);
     }
-
     /**
      * GET /pooutside/check?ponum=XXXX-XXXXX  (ใช้งานเดิม — คงไว้เพื่อ backward compat)
      */
@@ -131,11 +136,8 @@ class PooutsideController extends Controller
         ];
     }
 
-    private function buildItemList(array $erp, array $localData): array
+    private function buildItemsFromMatched(array $matchedProducts, array $erp): array
     {
-        $apiItems = $erp['ms_podt'] ?? [];
-        $matched  = $this->matchProducts($localData, $apiItems);
-
         return array_map(function (array $match) use ($erp) {
             $apiItem    = $match['apiItem'];
             $dbItems    = $match['dbItems'];
@@ -157,7 +159,7 @@ class PooutsideController extends Controller
                     ? $this->calculateQtySummary($apiItem['GoodQty2'] ?? 0, $dbItems)
                     : null,
             ];
-        }, $matched);
+        }, $matchedProducts);
     }
 
     // ─── Private: Matching ────────────────────────────────────────────────────
@@ -174,9 +176,9 @@ class PooutsideController extends Controller
         foreach ($dbItems as $dbIdx => $dbItem) {
             $dbName = strtoupper(trim($dbItem['name']));
             foreach ($apiItems as $apiIdx => $apiItem) {
-                $apiName   = strtoupper(trim($apiItem['GoodName']));
-                $maxLen    = 0;
-                $score     = 0;
+                $apiName = strtoupper(trim($apiItem['GoodName']));
+                $maxLen  = 0;
+                $score   = 0;
 
                 if ($apiName === $dbName) {
                     $score  = 100000;
@@ -196,11 +198,12 @@ class PooutsideController extends Controller
                 }
 
                 $scores[] = [
-                    'dbIdx'    => $dbIdx,
-                    'apiIdx'   => $apiIdx,
-                    'score'    => $score,
-                    'maxLen'   => $maxLen,
-                    'dbNameLen' => strlen($dbName),
+                    'dbIdx'      => $dbIdx,
+                    'apiIdx'     => $apiIdx,
+                    'score'      => $score,
+                    'maxLen'     => $maxLen,
+                    'dbNameLen'  => strlen($dbName),
+                    'apiNameLen' => strlen($apiName), // ✅ เพิ่ม
                 ];
             }
         }
@@ -210,7 +213,9 @@ class PooutsideController extends Controller
         foreach ($scores as $row) {
             if (in_array($row['dbIdx'], $usedDbIndices, true)) continue;
 
-            $threshold  = $row['dbNameLen'] * 0.20;
+            // ✅ ใช้ชื่อที่สั้นกว่าเป็น base และ threshold 50%
+            $shorterLen = min($row['dbNameLen'], $row['apiNameLen']);
+            $threshold  = $shorterLen * 0.40;
             $isLowScore = $row['maxLen'] < $threshold;
 
             if (!isset($apiToDbMap[$row['apiIdx']])) {
@@ -240,7 +245,6 @@ class PooutsideController extends Controller
             ];
         }
 
-        // API items ที่ไม่มี DB match เลย
         $matchedApiIndices = array_keys($apiToDbMap);
         foreach ($apiItems as $apiIdx => $apiItem) {
             if (!in_array($apiIdx, $matchedApiIndices, true)) {
@@ -257,7 +261,6 @@ class PooutsideController extends Controller
         usort($matched, fn($a, $b) => $a['apiIndex'] <=> $b['apiIndex']);
         return $matched;
     }
-
     /**
      * Merge invoices: เก็บ record ที่ date_invoice ล่าสุดต่อ name+qty
      */

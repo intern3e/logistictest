@@ -294,14 +294,20 @@
         const fill       = ((timeline.step - 1) / (totalSteps - 1)) * 100;
         document.getElementById('progress_fill').style.width = fill + '%';
 
+        // ✅ Reset วันที่ทุก step ก่อนเสมอ
+        for (let i = 1; i <= totalSteps; i++) {
+            const el = document.getElementById(`date_step${i}`);
+            if (el) el.textContent = '-';
+        }
+
         document.querySelectorAll('.timeline-point').forEach((point, i) => {
             const stepNum = i + 1;
             const circle  = point.querySelector('.timeline-circle');
             point.classList.remove('completed', 'current');
             circle.classList.remove('completed', 'current', 'bg-yellow', 'bg-green', 'bg-red');
 
-            if (stepNum < timeline.step)      { point.classList.add('completed'); circle.classList.add('completed'); }
-            else if (stepNum === timeline.step){ point.classList.add('current');   circle.classList.add('current'); }
+            if (stepNum < timeline.step)       { point.classList.add('completed'); circle.classList.add('completed'); }
+            else if (stepNum === timeline.step) { point.classList.add('current');   circle.classList.add('current'); }
         });
 
         const dates = [
@@ -316,7 +322,6 @@
             if (el && d) el.textContent = formatDateThai(d);
         });
 
-        // สีปุ่ม timeline ตาม status
         const colorMap = { ENTRY: 'bg-green', PARTIAL: 'bg-yellow', COMPLETED: 'bg-green', CANCELLED: 'bg-red' };
         const color    = colorMap[timeline.status];
         if (color) {
@@ -324,7 +329,6 @@
             if (el) el.classList.add(color);
         }
 
-        // Notice box วันที่คาดรับสินค้า
         document.getElementById('noticeBox').classList.toggle('hidden', !timeline.show_expected_box);
         document.getElementById('expected_date').textContent = formatDateThai(timeline.date_expected) || '-';
     }
