@@ -221,7 +221,9 @@ function fetchFormType() {
                 formtypeSelect.value = 'ไม่มีข้อมูล';
             }
 
-            document.getElementById("customer_la_long").value = data.customer_la_long || '';
+            const laLong = data.customer_la_long || '';
+            const isValidCoords = /^-?\d+(\.\d+)?,\s*-?\d+(\.\d+)?$/.test(laLong.trim());
+            document.getElementById("customer_la_long").value = isValidCoords ? laLong : '';
 
             // ✅ ใส่ notes ลง textarea
             document.getElementById("notes").value = data.note || '';
@@ -256,7 +258,8 @@ function fetchFormType() {
     
         <label>เลือก ที่อยู่จัดส่ง (ติจูด ลองจิจูด) :</label>
         <div style="display: flex; justify-content: space-between; width: 100%;" >
-            <input type="text" id="customer_la_long" name="customer_la_long">
+            <input type="text" id="customer_la_long" name="customer_la_long" 
+                oninput="this.value = this.value.replace(/[^0-9,.\-]/g, '')">
         </div>
          <button type="button" class="btn-custom" onclick="openGoogleMaps()">Google Maps</button>
 
