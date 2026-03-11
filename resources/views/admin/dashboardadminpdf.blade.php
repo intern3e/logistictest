@@ -999,7 +999,11 @@ function addIdToissueDocument(so_detail_id, bill_issue_no) {
 function checkBillTypeAndAddBill(so_detail_id, billid, billtype, so_id) {
     if (billtype && billtype.includes('งานบริการ')) {
         addIdToDocument3(so_detail_id, billid, so_id);
-    } else {
+    } 
+    else if (billtype && billtype.includes('งานเช่า')) {
+        addIdToDocument5(so_detail_id, billid, so_id);
+    } 
+    else {
         addIdToDocument(so_detail_id, billid, so_id);
     }
 }
@@ -1030,6 +1034,30 @@ function addIdToDocument(so_detail_id, billid, so_id) {
 
 function addIdToDocument3(so_detail_id, billid, so_id) {
     fetch('/add-so-detail-id-to-bill-3', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
+        },
+        body: JSON.stringify({
+            so_detail_id: so_detail_id,
+            billid: billid,
+            so_id: so_id
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (!data.success) {
+            console.error("เพิ่มข้อมูลไม่สำเร็จ:", data.error || '');
+        }
+    })
+    .catch(error => {
+        console.error("Error:", error);
+    });
+}
+
+function addIdToDocument5(so_detail_id, billid, so_id) {
+    fetch('/add-so-detail-id-to-bill-5', {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',

@@ -177,15 +177,12 @@ billidInput.addEventListener('input', () => {
     </div>
 </div>
 <div style="flex: 1;">
-    <label for="typeinbill">ประเภทสินค้า/บริการ :</label>
-    <label>
-        <input type="radio" name="typeinbill" value="ขายสินค้า" required>
-        งานขายสินค้า
-    </label>
-    <label>
-        <input type="radio" name="typeinbill" value="งานบริการ" required>
-        งานบริการ/อบรม
-    </label>
+    <label>ประเภทสินค้า/บริการ :</label>
+    <div style="display: flex; gap: 20px; align-items: center; flex-wrap: wrap;">
+        <label><input type="radio" name="typeinbill" value="ขายสินค้า" required> งานขายสินค้า</label>
+        <label><input type="radio" name="typeinbill" value="งานบริการ" required> งานบริการ/อบรม 3%</label>
+        <label><input type="radio" name="typeinbill" value="งานเช่า" required> งานเช่า 5%</label>
+    </div>
 </div>
 
     <script>

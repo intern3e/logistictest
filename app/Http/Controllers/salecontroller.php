@@ -139,7 +139,7 @@ public function fetchFormType(Request $request)
             'solve' => 'nullable|string|max:255',
             'ponum' => 'nullable|string|max:255',
             'billtype' => 'required|string|max:255',
-            'typeinbill' => 'required|string|in:ขายสินค้า,งานบริการ',
+            'typeinbill' => 'required|string|in:ขายสินค้า,งานบริการ,งานเช่า',
             'customer_id' => 'required|string|max:255',
             'customer_name' => 'required|string|max:255',
             'customer_tel' => 'required|string|max:255',

@@ -44,6 +44,7 @@ Route::get('/add-so-detail-id-to-pdf/{soDetailId}/{POdocument}',
     [PoDocumentController::class, 'addSoDetailIdToPoDocument']);
 Route::post('/add-so-detail-id-to-bill', [PoDocumentController::class, 'addIdToDocument']);
 Route::post('/add-so-detail-id-to-bill-3', [PoDocumentController::class, 'addIdToDocument3']);
+Route::post('/add-so-detail-id-to-bill-5', [PoDocumentController::class, 'addIdToDocument5']);
 Route::get('/add-so-detail-id-to-billissue/{so_detail_id}/{bill_issue_no}', 
     [PoDocumentController::class, 'addIdToissueDocument']);
 Route::post('/merge-pdf', [PoDocumentController::class, 'mergeAndOverwrite'])->name('merge.pdf');

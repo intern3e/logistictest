@@ -174,9 +174,6 @@ class PoDocumentController extends Controller
         }
     }
 
-    /**
-     * เพิ่มเลขบิลลงใน PDF (งานบริการ)
-     */
     public function addIdToDocument3(Request $request): JsonResponse
     {
         try {
@@ -280,6 +277,110 @@ class PoDocumentController extends Controller
             ]);
         }
     }
+    public function addIdToDocument5(Request $request): JsonResponse
+    {
+        try {
+            ob_start();
+
+            $so_detail_id = $request->input('so_detail_id');
+            $billid = $request->input('billid');
+            $so_id = $request->input('so_id');
+
+            if (!$so_detail_id || !$billid || !$so_id) {
+                ob_end_clean();
+                return response()->json([
+                    'success' => false,
+                    'error' => 'ข้อมูลไม่ครบถ้วน'
+                ]);
+            }
+
+            $filePath = storage_path("app/public/doc_document/{$billid}.pdf");
+
+            if (!file_exists($filePath)) {
+                ob_end_clean();
+                return response()->json(['success' => true]);
+            }
+
+            $pdf = new Fpdi();
+            $pageCount = $pdf->setSourceFile($filePath);
+
+            if ($pageCount === 0) {
+                ob_end_clean();
+                return response()->json([
+                    'success' => false,
+                    'error'   => 'ไม่สามารถโหลดไฟล์ PDF'
+                ]);
+            }
+
+            $stampImage1 = storage_path("app/public/template/ly.png");
+            $stampImage3 = storage_path("app/public/template/5.png");
+
+            for ($pageNo = 1; $pageNo <= $pageCount; $pageNo++) {
+
+                $templateId = $pdf->importPage($pageNo);
+                $size = $pdf->getTemplateSize($templateId);
+
+                $pdf->addPage(
+                    $size['orientation'],
+                    [$size['width'], $size['height']]
+                );
+
+                $pdf->useTemplate($templateId);
+
+                $pdf->SetFont('Helvetica', 'I', 8);
+                $pdf->SetTextColor(0, 0, 0);
+                $pdf->SetXY(155, 12);
+                $pdf->Cell(50, 10, "{$so_detail_id}", 0, 0, 'R');
+
+                $pdf->SetFont('Helvetica', 'I', 8);
+                $pdf->SetTextColor(0, 0, 0);
+                $pdf->SetXY(155, 15);
+                $pdf->Cell(50, 10, "{$so_id}", 0, 0, 'R');
+
+                if (file_exists($stampImage1)) {
+                    $pdf->Image($stampImage1, 170, 257, 22, 0, 'PNG');
+                }
+
+                if (file_exists($stampImage3)) {
+                    $pdf->Image($stampImage3, 10, 194, 40, 0, 'PNG');
+                }
+            }
+
+            $output1 = storage_path("app/public/doc_document/{$billid}.pdf");
+            $pdf->Output('F', $output1);
+
+            $output2 = storage_path("app/public/bill_document/{$billid}.pdf");
+
+            if (!file_exists(dirname($output2))) {
+                mkdir(dirname($output2), 0777, true);
+            }
+
+            copy($output1, $output2);
+
+            ob_end_clean();
+
+            return response()->json([
+                'success'       => true,
+                'message'       => 'เพิ่มเลขที่บิล + รูปปั้ม 2 อัน ลงในเอกสารสำเร็จ (ทั้ง 2 โฟลเดอร์)',
+                'so_detail_id'  => $so_detail_id,
+                'so_id'         => $so_id
+            ]);
+
+        } catch (\Exception $e) {
+            ob_end_clean();
+
+            Log::error('Error in addIdToDocument3', [
+                'message' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+
+            return response()->json([
+                'success' => false,
+                'error'   => 'ระบบพบข้อผิดพลาด: ' . $e->getMessage()
+            ]);
+        }
+    }
+
 
     public function addIdToissueDocument($so_detail_id, $bill_issue_no): JsonResponse
     {
