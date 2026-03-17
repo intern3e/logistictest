@@ -515,7 +515,7 @@ function openGoogleMaps() {
             const billData = data.Bills[0][billId];
             const items = billData.items;
             
-            let deliveryDate = soDetails.DocuDate;
+            let deliveryDate = billData.SendDate;
             if (deliveryDate) {
                 let [datePart] = deliveryDate.split(" "); // เอาแค่ส่วนวันที่
                 let [year, month, day] = datePart.split("-"); // แยกปี-เดือน-วัน
