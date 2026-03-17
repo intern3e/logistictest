@@ -95,13 +95,23 @@
         });
     </script>
     </div>
-<form method="GET" action="{{ route('sale.dashboard') }}" class="search-box" id="searchForm">
+<form method="GET" action="{{ route('sale.dashboard') }}" class="search-box" id="searchForm1">
+    <input 
+        type="text" 
+        name="so_keyword" 
+        placeholder="ค้นหา อ้างอิงใบสั่งขาย"
+        value="{{ request('so_keyword') }}"
+        oninput="autoSubmit('so_keyword', this.value)"
+    >
+</form>
+
+<form method="GET" action="{{ route('sale.dashboard') }}" class="search-box" id="searchForm2">
     <input 
         type="text" 
         name="keyword" 
         placeholder="ค้นหา เลขที่บิล"
         value="{{ request('keyword') }}"
-        oninput="autoSubmit()"
+        oninput="autoSubmit('keyword', this.value)"
     >
 </form>
 

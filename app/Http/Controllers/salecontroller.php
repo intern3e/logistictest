@@ -54,22 +54,25 @@ public function login(Request $request)
 
 public function dashboard(Request $request)
 {
-    $date    = $request->get('date');
-    $keyword = $request->get('keyword');
-    $message = null;
+    $date      = $request->get('date');
+    $keyword   = $request->get('keyword');   // ค้นหา billid
+    $soKeyword = $request->get('so_keyword'); // ค้นหา so_id
+    $message   = null;
 
     $query = Bill::query();
 
-    // 🔍 ค้นหาตามวันที่
     if ($date) {
         $query->whereDate('time', $date);
     }
 
-    // 🔍 ค้นหาตามเลขที่บิล (ค้นจากทั้งหมดจริง)
     if ($keyword) {
-        $query->where(function ($q) use ($keyword) {
-            $q->where('billid', 'like', "%{$keyword}%")
-              ->orWhere('so_detail_id', 'like', "%{$keyword}%");
+        $query->where('billid', 'like', "%{$keyword}%");
+    }
+
+    if ($soKeyword) {
+        $query->where(function ($q) use ($soKeyword) {
+            $q->where('so_id', 'like', "%{$soKeyword}%")
+              ->orWhere('so_detail_id', 'like', "%{$soKeyword}%");
         });
     }
 
@@ -84,8 +87,6 @@ public function dashboard(Request $request)
 
     return view('sale.dashboard', compact('bill', 'message'));
 }
-
-
 
 
 
