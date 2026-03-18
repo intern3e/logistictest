@@ -75,7 +75,7 @@
    <div class="form-row">
     <div class="inline-group">
         <label>ผู้เปิดบิล :</label>
-      <input 
+       <input 
     type="text" 
     id="emp_name" 
     name="emp_name" 
@@ -521,11 +521,7 @@ function openGoogleMaps() {
             const billData = data.Bills[0][billId];
             const items = billData.items;
             
-<<<<<<< HEAD
-            let deliveryDate = billData.DocuDate;
-=======
-            let deliveryDate = billData.SendDate;
->>>>>>> 54e909eb446200c8514dffcf6dbf132c2775cd24
+            let deliveryDate = soDetails.DocuDate;
             if (deliveryDate) {
                 let [datePart] = deliveryDate.split(" "); // เอาแค่ส่วนวันที่
                 let [year, month, day] = datePart.split("-"); // แยกปี-เดือน-วัน
