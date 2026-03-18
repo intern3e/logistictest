@@ -189,11 +189,17 @@ Route::get('/dashboardinventory', [StockController::class, 'dashboardinventory']
 
 
 use App\Http\Controllers\PooutsideController;
-Route::get('/pooutside',        [PooutsideController::class, 'dashboard'])->name('pooutside.dashboard');
+
+// รองรับรูปแบบ /pooutside&create_by=ชื่อผู้ใช้
+Route::get('/pooutside&create_by={name}', [PooutsideController::class, 'dashboard'])
+    ->name('pooutside.dashboard');
+
+// Route สำรองกรณีเข้า /pooutside เฉยๆ
+Route::get('/pooutside', [PooutsideController::class, 'dashboard']);
+
 Route::get('/pooutside/search', [PooutsideController::class, 'search'])->name('pooutside.search');
 Route::get('/pooutside/check',  [PooutsideController::class, 'checkLocalPO']);
-Route::post('/pull-po-outside', [PoOutsideController::class, 'pull'])
-    ->name('pull.pooutside');
+Route::post('/pull-po-outside', [PooutsideController::class, 'pull'])->name('pull.pooutside');;
 
 
 use App\Http\Controllers\PooutsidereturnController;

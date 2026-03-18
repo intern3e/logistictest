@@ -13,7 +13,7 @@
         <h2>ข้อมูลจัดส่ง</h2>
 
         <div class="buttons">
-            <span>👤 ผู้ใช้: {{ session('emp_name', 'Guest') }}</span>
+         <span>👤 ผู้ใช้: {{ urldecode(last(explode('create_by=', request()->getRequestUri()))) !== request()->getRequestUri() ? urldecode(last(explode('create_by=', request()->getRequestUri()))) : 'Guest' }}</span>
             @csrf
             
             <a href="http://server_update:8000/solist" button  type="submit" class="btn btn-danger">🚪 หน้าหลัก</a>

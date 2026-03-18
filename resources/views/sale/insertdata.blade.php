@@ -75,7 +75,13 @@
    <div class="form-row">
     <div class="inline-group">
         <label>ผู้เปิดบิล :</label>
-        <input type="text" id="emp_name" name="emp_name" value="{{ session('emp_name', 'Guest') }}" readonly>
+      <input 
+    type="text" 
+    id="emp_name" 
+    name="emp_name" 
+    value="{{ request()->filled('create_by') ? request('create_by') : 'Guest' }}" 
+    readonly
+>
     </div>
     
     <div class="inline-group">
@@ -515,7 +521,7 @@ function openGoogleMaps() {
             const billData = data.Bills[0][billId];
             const items = billData.items;
             
-            let deliveryDate = soDetails.DocuDate;
+            let deliveryDate = billData.DocuDate;
             if (deliveryDate) {
                 let [datePart] = deliveryDate.split(" "); // เอาแค่ส่วนวันที่
                 let [year, month, day] = datePart.split("-"); // แยกปี-เดือน-วัน

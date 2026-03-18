@@ -106,7 +106,12 @@
 </head>
 <body>
 <div class="top-nav">
-    <div class="nav-title">ตามของนอก</div>
+<div class="nav-title" style="display: flex; align-items: center; gap: 15px;">
+    <div>ตามของนอก</div>
+    <span>
+       👤 ผู้ใช้: {{ $userName }}
+    </span>
+</div>
     <div style="display: flex; gap: 8px;">
         <a href="dashboardreturn"
             style="display: inline-block; background-color: #28a745; color: white; padding: 8px 16px; border-radius: 6px; text-decoration: none; font-weight: bold;"

@@ -13,10 +13,15 @@ class PooutsideController extends Controller
 {
     // ─── Views ────────────────────────────────────────────────────────────────
 
-    public function dashboard(Request $request)
-    {
-        return view('pooutside.dashboard');
-    }
+  public function dashboard(Request $request, $name = 'Guest')
+{
+    // urldecode ช่วยเปลี่ยน %20 ใน URL ให้เป็นช่องว่างปกติ
+    $userName = urldecode($name);
+
+    return view('pooutside.dashboard', [
+        'userName' => $userName
+    ]);
+}
 
     // ─── API Endpoints ────────────────────────────────────────────────────────
 
