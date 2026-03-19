@@ -260,7 +260,7 @@ function openBillOnly(billid) {
                         {{ $item->customer_name }}
                     </td>
                     <td>{{ \Carbon\Carbon::parse($item->date_of_dali)->format('d/m/Y') }}</td> 
-                    <td>{{ $item->sale_name }}</td> 
+                    <td>{{ $item->emp_name }}</td> 
                     <td>{{ $item->billtype }}
                         @if($hasPdf)
                             <a href="javascript:void(0);"

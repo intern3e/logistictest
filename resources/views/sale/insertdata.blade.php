@@ -39,6 +39,57 @@
         background-color: #326f4d;
         }
         </style>
+        <style>
+.modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0,0,0,0.5);
+    display: none;
+    justify-content: center;
+    align-items: center;
+    z-index: 9999;
+}
+
+.modal-box {
+    background: white;
+    padding: 30px;
+    border-radius: 15px;
+    text-align: center;
+    width: 350px;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+    animation: fadeIn 0.3s ease;
+}
+
+.modal-box h3 {
+    margin-bottom: 10px;
+}
+
+.modal-box p {
+    margin-bottom: 20px;
+    color: #555;
+}
+
+.modal-box button {
+    background: #f3b201;
+    color: white;
+    border: none;
+    padding: 10px 25px;
+    border-radius: 20px;
+    cursor: pointer;
+}
+
+.modal-box button:hover {
+    background: #fbc42d;
+}
+
+@keyframes fadeIn {
+    from { transform: scale(0.8); opacity: 0; }
+    to { transform: scale(1); opacity: 1; }
+}
+</style>
             <title>สร้างเส้นทางส่งสินค้า</title>
 
 </head>
@@ -83,7 +134,26 @@
     readonly
 >
     </div>
-    
+    <div id="loginModal" class="modal-overlay">
+  <div class="modal-box">
+    <h3>แจ้งเตือน</h3>
+    <p>ไม่สามารถเปิดบิลได้ กรุณาเข้าสู่ระบบก่อน</p>
+    <button onclick="goLogin()">ตกลง</button>
+  </div>
+</div>
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    const empInput = document.getElementById('emp_name');
+
+    if (empInput && empInput.value.trim() === 'Guest') {
+        document.getElementById('loginModal').style.display = 'flex';
+    }
+});
+
+function goLogin() {
+    window.location.href = 'http://server_update:8000/login';
+}
+</script>
     <div class="inline-group">
         <label>ผู้ขาย :</label>
         <input type="text" id="sale_name" name="sale_name" readonly>
