@@ -280,20 +280,22 @@ function openBillOnly(billid) {
                         ปริ้นสำเร็จ
                     @endif
                     </td>
-                    <td><a href="javascript:void(0);" 
-                        onclick="openPopup(
-                            '{{ $item->so_detail_id }}',
-                            '{{ $item->so_id }}',
-                            '{{ $item->ponum }}',
-                            '{{ $item->customer_name }}',
-                            '{{ $item->customer_address }}',
-                            '{{ \Carbon\Carbon::parse($item->date_of_dali)->format('d/m/Y') }}',
-                            '{{ $item->sale_name}}',
-                            '{{ $item->POdocument}}',
-                            '{{ $item->notes}}',
-                        )">
-                    เพิ่มเติม
-                 </a></td>
+                   <td>
+                    <a href="javascript:void(0);" 
+                    onclick="openPopup(
+                        {{ json_encode($item->so_detail_id) }},
+                        {{ json_encode($item->so_id) }},
+                        {{ json_encode($item->ponum) }},
+                        {{ json_encode($item->customer_name) }},
+                        {{ json_encode($item->customer_address) }},
+                        {{ json_encode(\Carbon\Carbon::parse($item->date_of_dali)->format('d/m/Y')) }},
+                        {{ json_encode($item->sale_name) }},
+                        {{ json_encode($item->POdocument) }},
+                        {{ json_encode($item->notes) }}
+                    )">
+                        เพิ่มเติม
+                    </a>
+                </td>
                 </tr>
                 @endforeach
             </tbody>

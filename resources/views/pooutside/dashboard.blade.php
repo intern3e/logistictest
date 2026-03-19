@@ -109,7 +109,7 @@
 <div class="nav-title" style="display: flex; align-items: center; gap: 15px;">
     <div>ตามของนอก</div>
     <span>
-       👤 ผู้ใช้: {{ $userName }}
+       <span>👤 ผู้ใช้: {{ request()->get('create_by', 'Guest') }}</span>
     </span>
 </div>
     <div style="display: flex; gap: 8px;">
