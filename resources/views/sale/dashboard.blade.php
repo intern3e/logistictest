@@ -13,7 +13,7 @@
         <h2>ข้อมูลจัดส่ง</h2>
 
         <div class="buttons">
-         <span>👤 ผู้ใช้: {{ urldecode(last(explode('create_by=', request()->getRequestUri()))) !== request()->getRequestUri() ? urldecode(last(explode('create_by=', request()->getRequestUri()))) : 'Guest' }}</span>
+       <span>👤 ผู้ใช้: {{ request()->get('create_by', 'Guest') }}</span>
             @csrf
             
             <a href="http://server_update:8000/solist" button  type="submit" class="btn btn-danger">🚪 หน้าหลัก</a>
@@ -27,11 +27,18 @@
     </div>
     
     <div class="filter-container">
-        <form method="GET" action="{{ route('sale.dashboard') }}" class="filter-form" id="autoSearchForm">
-             <label for="date">📅 วันที่: เดือน / วัน / ปี</label>
-            <input type="date" id="date" name="date" value="{{ request('date', \Carbon\Carbon::today()->format('Y-m-d')) }}">
-            <button type="submit" style="display: none;">ค้นหา</button>
-        </form>
+<form method="GET" action="{{ route('sale.dashboard') }}" class="filter-form" id="autoSearchForm">
+    
+    <label for="date">📅 วันที่: เดือน / วัน / ปี</label>
+    
+    <input type="date" id="date" name="date"
+        value="{{ request('date', \Carbon\Carbon::today()->format('Y-m-d')) }}">
+
+    <!-- 👇 เพิ่มบรรทัดนี้ -->
+    <input type="hidden" name="create_by" value="{{ request('create_by') }}">
+
+    <button type="submit" style="display: none;">ค้นหา</button>
+</form>
         
 <script>
   let isChecking = false;
@@ -95,24 +102,29 @@
         });
     </script>
     </div>
-<form method="GET" action="{{ route('sale.dashboard') }}" class="search-box" id="searchForm1">
-    <input 
-        type="text" 
+<form method="GET" action="{{ route('sale.dashboard') }}" class="search-box">
+    
+    <input type="text" 
         name="so_keyword" 
         placeholder="ค้นหา อ้างอิงใบสั่งขาย"
-        value="{{ request('so_keyword') }}"
-        oninput="autoSubmit('so_keyword', this.value)"
-    >
-</form>
+        value="{{ request('so_keyword') }}">
 
-<form method="GET" action="{{ route('sale.dashboard') }}" class="search-box" id="searchForm2">
-    <input 
-        type="text" 
+    <!-- 👇 เพิ่มพวกนี้ -->
+    <input type="hidden" name="keyword" value="{{ request('keyword') }}">
+    <input type="hidden" name="date" value="{{ request('date') }}">
+    <input type="hidden" name="create_by" value="{{ request('create_by') }}">
+</form>
+<form method="GET" action="{{ route('sale.dashboard') }}" class="search-box">
+    
+    <input type="text" 
         name="keyword" 
         placeholder="ค้นหา เลขที่บิล"
-        value="{{ request('keyword') }}"
-        oninput="autoSubmit('keyword', this.value)"
-    >
+        value="{{ request('keyword') }}">
+
+    <!-- 👇 เพิ่มเหมือนกัน -->
+    <input type="hidden" name="so_keyword" value="{{ request('so_keyword') }}">
+    <input type="hidden" name="date" value="{{ request('date') }}">
+    <input type="hidden" name="create_by" value="{{ request('create_by') }}">
 </form>
 
 <script>

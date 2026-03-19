@@ -309,15 +309,6 @@
             background: var(--samsung-blue-hover);
             box-shadow: 0 4px 16px rgba(20,40,160,0.3); transform: translateY(-1px);
         }
-        .btn-submit:disabled {
-            cursor: not-allowed;
-            transform: none !important;
-            box-shadow: none !important;
-        }
-        .btn-submit.success {
-            background: #0a7a4b;
-            opacity: 0.9;
-        }
 
         .po-search-row { display: flex; gap: 8px; }
         .po-search-row .form-input { flex: 1; }
@@ -538,8 +529,8 @@
     </div>
 </main>
 
-<!-- CREATE MODAL — ลบ onclick="closeOnOverlay(event)" ออกแล้ว กดนอกไม่ปิด -->
-<div class="modal-overlay" id="modal">
+<!-- CREATE MODAL -->
+<div class="modal-overlay" id="modal" onclick="closeOnOverlay(event)">
     <div class="modal">
         <div class="modal-header">
             <div class="modal-icon">
@@ -617,8 +608,7 @@
 
         <div class="modal-actions">
             <button class="btn-cancel" onclick="closeModal()">ยกเลิก</button>
-            <!-- ✅ เพิ่ม id="btn-submit-case" -->
-            <button type="button" class="btn-submit" id="btn-submit-case" onclick="submitNewCase(event)">สร้างเคส</button>
+            <button type="button" class="btn-submit" onclick="submitNewCase(event)">สร้างเคส</button>
         </div>
     </div>
 </div>
@@ -682,18 +672,20 @@
         try {
             const res  = await fetch('/return/list');
             const list = await res.json();
-            console.log('API response sample:', list[0]);
+            console.log('API response sample:', list[0]);  // DEBUG
             cases = {};
             list.forEach(c => {
                 const sm   = statusMap[c.status] ?? statusMap.processing;
                 const step = sm.step;
 
+                // สร้าง product string จาก products array
                 let productStr = '';
                 if (Array.isArray(c.products) && c.products.length) {
                     productStr = c.products
                         .map(p => `${(p.product_name || '').trim()} (จำนวน: ${p.quantity ?? 0})`)
                         .join('\n');
                 } else if (c.product) {
+                    // รองรับทั้ง | และ \n separator
                     productStr = c.product.includes('|')
                         ? c.product.split('|').join('\n')
                         : c.product;
@@ -962,16 +954,7 @@
     }
 
     // ─── MODAL OPEN/CLOSE ─────────────────────────────────────────────────────
-    function openModal() {
-        currentDocuNo = null;
-        // ✅ Reset ปุ่ม submit ทุกครั้งที่เปิด modal
-        const btn = document.getElementById('btn-submit-case');
-        btn.disabled = false;
-        btn.textContent = 'สร้างเคส';
-        btn.className = 'btn-submit';
-        document.getElementById('modal').classList.add('active');
-    }
-
+    function openModal() { currentDocuNo = null; document.getElementById('modal').classList.add('active'); }
     function closeModal() {
         document.getElementById('modal').classList.remove('active');
         ['f-ponum','f-customer','f-phone','f-note'].forEach(id => document.getElementById(id).value = '');
@@ -979,22 +962,12 @@
         document.getElementById('f-reason').value = '';
         document.getElementById('docu-result').innerHTML = '';
         currentDocuNo = null;
-        // ✅ Reset ปุ่มตอนปิดด้วย
-        const btn = document.getElementById('btn-submit-case');
-        btn.disabled = false;
-        btn.textContent = 'สร้างเคส';
-        btn.className = 'btn-submit';
     }
+    function closeOnOverlay(e) { if (e.target === document.getElementById('modal')) closeModal(); }
 
     // ─── SUBMIT NEW CASE ──────────────────────────────────────────────────────
     async function submitNewCase(e) {
         if (e) e.preventDefault();
-
-        const btn = document.getElementById('btn-submit-case');
-
-        // ✅ ป้องกันกดซ้ำ ถ้าปุ่ม disabled อยู่แล้ว
-        if (btn.disabled) return;
-
         const customer = document.getElementById('f-customer').value.trim();
         const reason   = document.getElementById('f-reason').value;
         const note     = document.getElementById('f-note').value.trim();
@@ -1018,11 +991,6 @@
 
         if (!selectedItems.length) { alert('กรุณาเลือกสินค้าอย่างน้อย 1 รายการ'); return; }
 
-        // ✅ Disable ปุ่มทันทีก่อน call API เพื่อป้องกันกดซ้ำ
-        btn.disabled = true;
-        btn.textContent = '⏳ กำลังบันทึก...';
-        btn.style.opacity = '0.7';
-
         try {
             const res  = await fetch('/return/submit', {
                 method: 'POST',
@@ -1030,14 +998,7 @@
                 body: JSON.stringify({ poNum: currentDocuNo, vendor: customer, reason, note, selectedItems }),
             });
             const data = await res.json();
-            if (!data.success) {
-                // ✅ ถ้า error ให้ reset ปุ่มกลับมา
-                btn.disabled = false;
-                btn.textContent = 'สร้างเคส';
-                btn.style.opacity = '';
-                alert(`❌ ${data.message}\n(${data.file ?? ''}:${data.line ?? ''})`);
-                return;
-            }
+            if (!data.success) { alert(`❌ ${data.message}\n(${data.file ?? ''}:${data.line ?? ''})`) ; return; }
 
             const today = new Date().toISOString().slice(0, 10);
             cases[data.return_id] = {
@@ -1049,26 +1010,9 @@
                 stepBy:    ['ฝ่ายบริการ','ช่างเทคนิค',null,null,null],
                 stepDesc:  ['รับแจ้งเรื่องจากลูกค้า','ตรวจสอบสินค้าเรียบร้อย',null,null,null],
             };
-
-            // ✅ เปลี่ยนปุ่มเป็น "✅ สร้างเคสแล้ว" สีเขียว กดไม่ได้
-            btn.textContent = '✅ สร้างเคสแล้ว';
-            btn.className = 'btn-submit success';
-            btn.style.opacity = '';
-
-            // ✅ รอ 1.2 วิ แล้วปิด modal + update table
-            setTimeout(() => {
-                closeModal();
-                renderTable();
-                showToast(`✅ สร้างเคส ${data.return_id} เรียบร้อยแล้ว`);
-            }, 1200);
-
-        } catch (err) {
-            // ✅ ถ้า exception ให้ reset ปุ่มกลับมา
-            btn.disabled = false;
-            btn.textContent = 'สร้างเคส';
-            btn.style.opacity = '';
-            alert('เกิดข้อผิดพลาด: ' + err.message);
-        }
+            closeModal(); renderTable();
+            showToast(`✅ สร้างเคส ${data.return_id} เรียบร้อยแล้ว`);
+        } catch (err) { alert('เกิดข้อผิดพลาด: ' + err.message); }
     }
 
     // ─── DETAIL MODAL ─────────────────────────────────────────────────────────
