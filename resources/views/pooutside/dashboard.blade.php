@@ -102,6 +102,17 @@
             .section { padding: 20px; }
             .item-invoices { grid-template-columns: 1fr; }
         }
+        .inv-expected { 
+            color: #92400e; 
+            font-weight: 600; 
+            font-size: 11px;
+            background: #fde68a;
+            border: 1px solid #f59e0b;
+            border-radius: 4px;
+            padding: 2px 6px;
+            display: inline-block;
+            margin-top: 2px;
+        }
     </style>
 </head>
 <body>
@@ -338,7 +349,7 @@
         document.getElementById('expected_date').textContent = formatDateThai(timeline.date_expected) || '-';
     }
 
-    function renderInvoiceTags(item) {
+    function renderInvoiceTags(item, globalLatestDate) {
         if (item.is_low_score && item.invoices.length > 0) {
             return `
                 <div class="mismatch-label" style="grid-column:1/-1;">
@@ -354,13 +365,25 @@
         }
 
         if (item.invoices.length > 0) {
-            const tags = item.invoices.map(inv => `
-                <div class="invoice-tag">
-                    <span class="inv-num">Invoice: ${inv.invoice}</span>
-                    <span class="inv-num">Name: ${inv.name}</span>
-                    <span class="inv-date">วันที่: ${formatDateThai(inv.date_invoice)}</span>
-                    <span class="inv-qty">จำนวน: ${inv.quantity}</span>
-                </div>`).join('');
+            const tags = item.invoices.map(inv => {
+                // ✅ เทียบกับ globalLatestDate (วันล่าสุดจากทุก item)
+                const isLatest = inv.date_invoice === globalLatestDate;
+                let expectedHtml = '';
+                if (!isLatest && inv.date_invoice) {
+                    const d = new Date(inv.date_invoice);
+                    d.setDate(d.getDate() + 15);
+                    const expectedStr = formatDateThai(d.toISOString().split('T')[0]);
+                    expectedHtml = `<span class="inv-expected">วันที่คาดจะได้รับ ${expectedStr}</span>`;
+                }
+                return `
+                    <div class="invoice-tag">
+                        <span class="inv-num">Invoice: ${inv.invoice}</span>
+                        <span class="inv-num">Name: ${inv.name}</span>
+                        <span class="inv-date">วันที่: ${formatDateThai(inv.date_invoice)}</span>
+                        <span class="inv-qty">จำนวน: ${inv.quantity}</span>
+                        ${expectedHtml}
+                    </div>`;
+            }).join('');
 
             const summary = item.qty_summary
                 ? `<div class="qty-summary ${item.qty_summary.type}">${item.qty_summary.message}</div>`
@@ -371,7 +394,6 @@
 
         return '<span style="color:#9ca3af;">ยังไม่มีข้อมูล Invoice</span>';
     }
-
     function renderItems(items) {
         const tbody = document.getElementById('items_table_body');
         if (!items.length) {
@@ -379,6 +401,18 @@
             return;
         }
 
+        // ✅ หา globalLatestDate จากทุก invoice ของทุก item
+        let globalLatestDate = null;
+        items.forEach(item => {
+            item.invoices.forEach(inv => {
+                if (!inv.date_invoice) return;
+                if (!globalLatestDate || new Date(inv.date_invoice) > new Date(globalLatestDate)) {
+                    globalLatestDate = inv.date_invoice;
+                }
+            });
+        });
+
+        // ✅ ส่ง globalLatestDate เข้าไปใน renderInvoiceTags
         tbody.innerHTML = items.map(item => `
             <tr>
                 <td><div class="item-name">${item.name}</div></td>
@@ -386,13 +420,14 @@
                     <div class="qty-box">${item.qty_ordered}</div>
                 </td>
                 <td>
-                    <div class="item-invoices">${renderInvoiceTags(item)}</div>
+                    <div class="item-invoices">${renderInvoiceTags(item, globalLatestDate)}</div>
                 </td>
                 <td style="text-align:center">
                     <span class="status-badge ${item.status_class}">${item.status}</span>
                 </td>
             </tr>`).join('');
     }
+
 
     // ─── Search ────────────────────────────────────────────────────────────────
 
