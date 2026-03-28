@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="csrf-token" content="{{ csrf_token() }}">
     <title>Return System</title>
-    <link href="https://fonts.googleapis.com/css2?family=SamsungSharpSans:wght@400;700&family=Noto+Sans+Thai:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Thai:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <style>
         *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
@@ -29,7 +29,7 @@
         }
 
         body {
-            font-family: 'Noto Sans Thai', 'SamsungSharpSans', Arial, sans-serif;
+            font-family: 'Noto Sans Thai', Arial, sans-serif;
             background: var(--bg);
             color: var(--text-primary);
             min-height: 100vh;
@@ -153,13 +153,13 @@
             background: #fafafa; border-bottom: 1px solid var(--border);
             white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
         }
-        thead th:nth-child(1) { width: 11%; }
-        thead th:nth-child(2) { width: 15%; }
-        thead th:nth-child(3) { width: 26%; }
-        thead th:nth-child(4) { width: 13%; }
-        thead th:nth-child(5) { width: 13%; }
-        thead th:nth-child(6) { width: 13%; }
-        thead th:nth-child(7) { width: 9%; }
+        thead th:nth-child(1) { width: 10%; }
+        thead th:nth-child(2) { width: 14%; }
+        thead th:nth-child(3) { width: 23%; }
+        thead th:nth-child(4) { width: 12%; }
+        thead th:nth-child(5) { width: 12%; }
+        thead th:nth-child(6) { width: 14%; }
+        thead th:nth-child(7) { width: 10%; }
 
         tbody tr {
             border-bottom: 1px solid #f0f0f0;
@@ -174,22 +174,8 @@
         }
         tbody td:nth-child(3) { white-space: normal; word-break: break-word; }
 
-        @media (max-width: 1024px) {
-            main { padding: 20px 16px; }
-            .stats-grid { grid-template-columns: repeat(3, 1fr); }
-            nav { margin: 0 12px; }
-        }
-        @media (max-width: 768px) {
-            .stats-grid { grid-template-columns: repeat(2, 1fr); }
-            .table-section { overflow-x: auto; }
-            table { min-width: 700px; }
-            thead th:nth-child(3), thead th:nth-child(4) { display: none; }
-            tbody td:nth-child(3), tbody td:nth-child(4) { display: none; }
-        }
-
         .claim-id { color: var(--samsung-blue); font-weight: 700; font-size: 13px; font-family: 'Courier New', monospace; }
         .customer-name { font-weight: 600; }
-        .product-name { color: var(--text-secondary); }
         .product-list { display: flex; flex-direction: column; gap: 4px; }
         .product-item {
             display: flex; align-items: baseline; gap: 6px;
@@ -205,6 +191,20 @@
             padding: 1px 6px; border-radius: 10px;
         }
         .reason-text { color: var(--text-secondary); font-size: 12px; }
+
+        /* Photo thumb in table */
+        .photo-thumb-group { display: flex; gap: 4px; align-items: center; flex-wrap: wrap; }
+        .photo-thumb {
+            width: 36px; height: 36px; border-radius: 6px; object-fit: cover;
+            border: 1px solid var(--border); cursor: pointer;
+            transition: transform 0.15s, box-shadow 0.15s;
+        }
+        .photo-thumb:hover { transform: scale(1.1); box-shadow: 0 4px 12px rgba(0,0,0,0.2); }
+        .photo-count-badge {
+            font-size: 10px; font-weight: 700; color: var(--samsung-blue);
+            background: #e8ecf8; padding: 2px 7px; border-radius: 10px;
+            white-space: nowrap;
+        }
 
         .empty-state { padding: 60px 24px; text-align: center; }
         .empty-icon {
@@ -244,7 +244,7 @@
             display: flex; align-items: center; justify-content: space-between;
         }
 
-        /* MODAL */
+        /* ─── MODAL ─────────────────────────────────────────────────────── */
         .modal-overlay {
             display: none; position: fixed; inset: 0;
             background: rgba(0,0,0,0.5); backdrop-filter: blur(3px);
@@ -304,11 +304,13 @@
             padding: 9px 24px; border-radius: 24px;
             font-family: 'Noto Sans Thai', sans-serif; font-size: 13px;
             font-weight: 700; cursor: pointer; transition: all 0.2s;
+            display: flex; align-items: center; gap: 8px;
         }
         .btn-submit:hover {
             background: var(--samsung-blue-hover);
             box-shadow: 0 4px 16px rgba(20,40,160,0.3); transform: translateY(-1px);
         }
+        .btn-submit:disabled { opacity: 0.6; cursor: not-allowed; transform: none; box-shadow: none; }
 
         .po-search-row { display: flex; gap: 8px; }
         .po-search-row .form-input { flex: 1; }
@@ -332,7 +334,71 @@
             font-size: 13px; color: #e53935;
         }
 
-        /* INVOICE CARDS */
+        /* ─── IMAGE UPLOAD ────────────────────────────────────────────────── */
+        .image-upload-zone {
+            border: 2px dashed var(--border); border-radius: 10px;
+            padding: 20px; text-align: center; cursor: pointer;
+            transition: all 0.2s; background: #fafafa;
+            position: relative;
+        }
+        .image-upload-zone:hover, .image-upload-zone.dragover {
+            border-color: var(--samsung-blue);
+            background: var(--samsung-light-blue);
+        }
+        .image-upload-zone input[type=file] {
+            position: absolute; inset: 0; opacity: 0; cursor: pointer; width: 100%; height: 100%;
+        }
+        .upload-zone-icon { margin-bottom: 8px; color: var(--text-muted); }
+        .upload-zone-text { font-size: 13px; color: var(--text-secondary); font-weight: 500; }
+        .upload-zone-sub  { font-size: 11px; color: var(--text-muted); margin-top: 3px; }
+
+        .image-preview-grid {
+            display: grid; grid-template-columns: repeat(auto-fill, minmax(90px, 1fr));
+            gap: 8px; margin-top: 10px;
+        }
+        .preview-item {
+            position: relative; border-radius: 8px; overflow: hidden;
+            aspect-ratio: 1; background: #f0f0f0;
+            border: 1px solid var(--border);
+        }
+        .preview-item img { width: 100%; height: 100%; object-fit: cover; display: block; }
+        .preview-item .remove-btn {
+            position: absolute; top: 4px; right: 4px;
+            background: rgba(0,0,0,0.65); color: #fff;
+            border: none; border-radius: 50%; width: 20px; height: 20px;
+            font-size: 12px; cursor: pointer; display: flex;
+            align-items: center; justify-content: center;
+            transition: background 0.15s; line-height: 1;
+        }
+        .preview-item .remove-btn:hover { background: rgba(229,57,53,0.9); }
+        .preview-item .upload-progress {
+            position: absolute; inset: 0; background: rgba(0,0,0,0.5);
+            display: flex; align-items: center; justify-content: center;
+            flex-direction: column; gap: 4px;
+        }
+        .preview-item .upload-progress .prog-bar-bg {
+            width: 60px; height: 4px; background: rgba(255,255,255,0.3); border-radius: 2px;
+        }
+        .preview-item .upload-progress .prog-bar-fill {
+            height: 100%; background: #fff; border-radius: 2px; transition: width 0.3s;
+        }
+        .preview-item .upload-progress .prog-text {
+            font-size: 10px; color: #fff; font-weight: 700;
+        }
+        .preview-item.done-upload::after {
+            content: '✓'; position: absolute; bottom: 4px; right: 4px;
+            background: #0a7a4b; color: #fff; border-radius: 50%;
+            width: 18px; height: 18px; font-size: 11px;
+            display: flex; align-items: center; justify-content: center;
+        }
+        .preview-item.error-upload::after {
+            content: '✕'; position: absolute; bottom: 4px; right: 4px;
+            background: #e53935; color: #fff; border-radius: 50%;
+            width: 18px; height: 18px; font-size: 11px;
+            display: flex; align-items: center; justify-content: center;
+        }
+
+        /* ─── INVOICE CARDS ──────────────────────────────────────────────── */
         .invoice-cards-wrapper { display: flex; flex-wrap: wrap; gap: 3px; justify-content: center; text-align: left; }
         .invoice-card {
             display: inline-flex; flex-direction: column; gap: 1px;
@@ -353,13 +419,8 @@
         input[type=number].prod-qty-display::-webkit-inner-spin-button,
         input[type=number].prod-qty-display::-webkit-outer-spin-button { opacity: 1; }
 
-        .invoice-loading {
-            font-size: 12px; color: var(--text-muted); font-style: italic;
-            padding: 4px 0;
-        }
-
-        /* DETAIL MODAL */
-        .detail-modal { width: 920px; max-width: 95vw; padding: 0; overflow: hidden; border-radius: 16px; }
+        /* ─── DETAIL MODAL ───────────────────────────────────────────────── */
+        .detail-modal { width: 980px; max-width: 95vw; padding: 0; overflow: hidden; border-radius: 16px; }
         .detail-header { padding: 24px 28px 20px; border-bottom: 1px solid var(--border); background: #fafafa; }
         .detail-title-row {
             display: flex; align-items: flex-start;
@@ -396,10 +457,69 @@
         .detail-info-card { padding: 20px 24px; border-right: 1px solid var(--border); }
         .detail-info-card:last-child { border-right: none; }
         .detail-section-title { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; color: var(--text-muted); margin-bottom: 14px; }
-        .detail-info-row { display: flex; justify-content: space-between; align-items: center; padding: 8px 0; border-bottom: 1px solid #f5f5f5; gap: 12px; }
+        .detail-info-row { display: flex; justify-content: space-between; align-items: flex-start; padding: 8px 0; border-bottom: 1px solid #f5f5f5; gap: 12px; }
         .detail-info-row:last-child { border-bottom: none; }
         .detail-info-label { font-size: 12px; color: var(--text-muted); flex-shrink: 0; }
         .detail-info-val   { font-size: 13px; font-weight: 600; color: var(--text-primary); text-align: right; }
+
+        /* Photo gallery in detail */
+        .detail-photos-section {
+            padding: 16px 24px; border-top: 1px solid var(--border);
+            background: #fafafa;
+        }
+        .detail-photos-grid {
+            display: grid; grid-template-columns: repeat(auto-fill, minmax(80px, 1fr));
+            gap: 8px; margin-top: 10px;
+        }
+        .detail-photo-thumb {
+            aspect-ratio: 1; border-radius: 8px; overflow: hidden;
+            border: 1px solid var(--border); cursor: pointer;
+            transition: transform 0.15s, box-shadow 0.15s;
+            background: #f0f0f0;
+        }
+        .detail-photo-thumb img {
+            width: 100%; height: 100%; object-fit: cover; display: block;
+        }
+        .detail-photo-thumb:hover { transform: scale(1.05); box-shadow: 0 4px 16px rgba(0,0,0,0.2); }
+        .no-photos-placeholder {
+            padding: 16px; text-align: center; font-size: 12px;
+            color: var(--text-muted); background: var(--bg-gray);
+            border-radius: 8px;
+        }
+
+        /* ─── LIGHTBOX ───────────────────────────────────────────────────── */
+        .lightbox-overlay {
+            display: none; position: fixed; inset: 0;
+            background: rgba(0,0,0,0.92); z-index: 500;
+            align-items: center; justify-content: center;
+            flex-direction: column; gap: 16px;
+        }
+        .lightbox-overlay.active { display: flex; }
+        .lightbox-img {
+            max-width: 90vw; max-height: 80vh;
+            border-radius: 10px; box-shadow: 0 24px 80px rgba(0,0,0,0.6);
+            object-fit: contain;
+        }
+        .lightbox-nav {
+            display: flex; align-items: center; gap: 20px;
+        }
+        .lightbox-btn {
+            background: rgba(255,255,255,0.15); border: 1px solid rgba(255,255,255,0.3);
+            color: #fff; width: 40px; height: 40px; border-radius: 50%;
+            cursor: pointer; display: flex; align-items: center; justify-content: center;
+            transition: background 0.15s; font-size: 18px;
+        }
+        .lightbox-btn:hover { background: rgba(255,255,255,0.3); }
+        .lightbox-counter { font-size: 13px; color: rgba(255,255,255,0.7); min-width: 60px; text-align: center; }
+        .lightbox-close-btn {
+            position: fixed; top: 20px; right: 20px;
+            background: rgba(255,255,255,0.15); border: 1px solid rgba(255,255,255,0.3);
+            color: #fff; width: 40px; height: 40px; border-radius: 50%;
+            cursor: pointer; display: flex; align-items: center; justify-content: center;
+            font-size: 18px; transition: background 0.15s;
+        }
+        .lightbox-close-btn:hover { background: rgba(229,57,53,0.8); }
+        .lightbox-caption { font-size: 12px; color: rgba(255,255,255,0.6); }
 
         .timeline { display: flex; flex-direction: column; gap: 14px; }
         .timeline-item { display: flex; gap: 12px; align-items: flex-start; }
@@ -411,20 +531,45 @@
             padding: 16px 28px; border-top: 1px solid var(--border);
             display: flex; justify-content: flex-end; gap: 10px; background: #fafafa;
         }
-        .btn-reject {
-            background: #fff; border: 1.5px solid #e53935; color: #e53935;
-            padding: 9px 20px; border-radius: 24px;
-            font-family: 'Noto Sans Thai', sans-serif; font-size: 13px; font-weight: 700;
-            cursor: pointer; display: flex; align-items: center; gap: 6px; transition: all 0.15s;
+
+        /* Upload status bar */
+        .upload-status-bar {
+            margin-top: 8px; padding: 8px 12px;
+            border-radius: 8px; font-size: 12px; font-weight: 600;
+            display: none;
         }
-        .btn-reject:hover { background: #fff0f0; }
-        .btn-approve {
-            background: #0a7a4b; border: none; color: #fff;
-            padding: 9px 20px; border-radius: 24px;
-            font-family: 'Noto Sans Thai', sans-serif; font-size: 13px; font-weight: 700;
-            cursor: pointer; display: flex; align-items: center; gap: 6px; transition: all 0.15s;
+        .upload-status-bar.uploading {
+            display: flex; align-items: center; gap: 8px;
+            background: #f0eeff; color: #7b61ff; border: 1px solid #c4b8ff;
         }
-        .btn-approve:hover { background: #085f3a; box-shadow: 0 4px 12px rgba(10,122,75,0.3); }
+        .upload-status-bar.done {
+            display: flex; align-items: center; gap: 8px;
+            background: #e6f7f0; color: #0a7a4b; border: 1px solid #a3e0c7;
+        }
+        .upload-status-bar.error {
+            display: flex; align-items: center; gap: 8px;
+            background: #fff0f0; color: #e53935; border: 1px solid #ffb3b3;
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        .spin { animation: spin 0.8s linear infinite; display: inline-block; }
+
+        @media (max-width: 1024px) {
+            main { padding: 20px 16px; }
+            .stats-grid { grid-template-columns: repeat(3, 1fr); }
+            nav { margin: 0 12px; }
+        }
+        @media (max-width: 768px) {
+            .stats-grid { grid-template-columns: repeat(2, 1fr); }
+            .table-section { overflow-x: auto; }
+            table { min-width: 700px; }
+        }
+
+        .badge-processing { background:#f0eeff; color:#7b61ff; border-color:#c4b8ff; }
+        .badge-processing::before { background:#7b61ff; }
+        .badge-accept     { background:#fff4e0; color:#cc7a00; border-color:#ffd580; }
+        .badge-accept::before     { background:#cc7a00; }
+        .badge-rejected   { background:#fff0f0; color:#e53935; border-color:#ffb3b3; }
+        .badge-rejected::before   { background:#e53935; }
 
         @keyframes fadeInUp {
             from { opacity: 0; transform: translateY(14px); }
@@ -441,10 +586,22 @@
 </head>
 <body>
 
+<!-- ═══════════════════════════════════════════════════════════════
+     ⚙️  CONFIG — แก้ตรงนี้
+     ═══════════════════════════════════════════════════════════════ -->
+<script>
+    // ① URL ของ Google Apps Script Web App
+    const GAS_URL = 'https://script.google.com/macros/s/AKfycby0JavxoTk3YJiq87DuioTDGIpSv8G-WGRKuyCsyuYcFdBtM3f83Do-i6v8LznbFlHA/exec';
+    // ② ขนาดไฟล์สูงสุด (MB)
+    const MAX_FILE_MB = 10;
+    // ③ จำนวนรูปสูงสุดต่อเคส
+    const MAX_IMAGES  = 10;
+</script>
+
 <!-- NAVBAR -->
 <nav>
     <div class="nav-brand">
-        <span class="nav-subtitle">Claim & Return System</span>
+        <span class="nav-subtitle">Claim &amp; Return System</span>
         <span class="nav-badge">ระบบจัดการเคลม/คืนสินค้า</span>
     </div>
     <div class="nav-right">
@@ -529,7 +686,9 @@
     </div>
 </main>
 
-<!-- CREATE MODAL -->
+<!-- ═══════════════════════════════════════════════════════════════
+     CREATE MODAL
+     ═══════════════════════════════════════════════════════════════ -->
 <div class="modal-overlay" id="modal" onclick="closeOnOverlay(event)">
     <div class="modal">
         <div class="modal-header">
@@ -554,7 +713,7 @@
 
         <div class="form-row">
             <div class="form-group">
-                <label class="form-label">ร้านค้า.VEN <span style="color:#e53935;">*</span></label>
+                <label class="form-label">ร้านค้า / VEN <span style="color:#e53935;">*</span></label>
                 <input id="f-customer" class="form-input" type="text" placeholder="ร้านค้า">
             </div>
             <div class="form-group">
@@ -606,14 +765,47 @@
             <textarea id="f-note" class="form-input" placeholder="รายละเอียดเพิ่มเติม (ถ้ามี)" style="height:80px;resize:vertical;line-height:1.6;"></textarea>
         </div>
 
+        <!-- ─── IMAGE UPLOAD SECTION ─── -->
+        <div class="form-group">
+            <label class="form-label">
+                รูปภาพประกอบ
+                <span style="font-size:11px;color:var(--text-muted);font-weight:400;text-transform:none;letter-spacing:0;">
+                    (สูงสุด <span id="lbl-max-img">10</span> รูป · ไม่เกิน <span id="lbl-max-mb">10</span> MB/รูป)
+                </span>
+            </label>
+
+            <div class="image-upload-zone" id="upload-zone"
+                ondragover="handleDragOver(event)"
+                ondragleave="handleDragLeave(event)"
+                ondrop="handleDrop(event)">
+                <input type="file" id="f-images" accept="image/*" multiple onchange="handleImageSelect(this.files)">
+                <div class="upload-zone-icon">
+                    <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                        <rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/>
+                        <polyline points="21 15 16 10 5 21"/>
+                    </svg>
+                </div>
+                <div class="upload-zone-text">คลิกเพื่อเลือกรูป หรือลากวางไฟล์ที่นี่</div>
+                <div class="upload-zone-sub">JPG, PNG, WEBP, GIF · รองรับหลายไฟล์พร้อมกัน</div>
+            </div>
+
+            <div id="upload-status" class="upload-status-bar"></div>
+            <div class="image-preview-grid" id="image-preview-grid"></div>
+        </div>
+
         <div class="modal-actions">
             <button class="btn-cancel" onclick="closeModal()">ยกเลิก</button>
-            <button type="button" class="btn-submit" onclick="submitNewCase(event)">สร้างเคส</button>
+            <button type="button" class="btn-submit" id="btn-submit-case" onclick="submitNewCase(event)">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M9 11l3 3L22 4"/></svg>
+                สร้างเคส
+            </button>
         </div>
     </div>
 </div>
 
-<!-- DETAIL MODAL -->
+<!-- ═══════════════════════════════════════════════════════════════
+     DETAIL MODAL
+     ═══════════════════════════════════════════════════════════════ -->
 <div class="modal-overlay" id="detail-modal" onclick="closeDetailOnOverlay(event)">
     <div class="modal detail-modal">
         <div class="detail-header">
@@ -644,514 +836,869 @@
                 <div class="timeline" id="d-timeline"></div>
             </div>
         </div>
+
+        <!-- PHOTO GALLERY -->
+        <div class="detail-photos-section">
+            <div class="detail-section-title" style="margin-bottom:10px;">
+                รูปภาพประกอบ
+                <span id="d-photo-count" style="font-weight:400;font-size:11px;color:var(--text-muted);text-transform:none;letter-spacing:0;"></span>
+            </div>
+            <div id="d-photos-grid" class="detail-photos-grid"></div>
+        </div>
+
         <div class="detail-actions" id="d-actions"></div>
     </div>
 </div>
 
+<!-- ═══════════════════════════════════════════════════════════════
+     LIGHTBOX
+     ═══════════════════════════════════════════════════════════════ -->
+<div class="lightbox-overlay" id="lightbox" onclick="closeLightboxOnOverlay(event)">
+    <button class="lightbox-close-btn" onclick="closeLightbox()">✕</button>
+    <img class="lightbox-img" id="lb-img" src="" alt="">
+    <div class="lightbox-nav">
+        <button class="lightbox-btn" onclick="lbPrev()">&#8592;</button>
+        <span class="lightbox-counter" id="lb-counter"></span>
+        <button class="lightbox-btn" onclick="lbNext()">&#8594;</button>
+    </div>
+    <div class="lightbox-caption" id="lb-caption"></div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════
+     JAVASCRIPT
+     ═══════════════════════════════════════════════════════════════ -->
 <script>
-    // ─── STATE ───────────────────────────────────────────────────────────────
-    let cases = {};
-    let currentDetailId = null;
-    let currentDocuNo   = null;
-    let poItems         = [];
-    let localInvoiceData = [];
+// ─── STATE ───────────────────────────────────────────────────────────────────
+let cases           = {};
+let currentDetailId = null;
+let currentDocuNo   = null;
+let poItems         = [];
+let localInvoiceData = [];
 
-    const stepLabels = ['รับแจ้ง', 'ตรวจสอบ', 'อนุมัติ', 'ดำเนินการ', 'ปิดเคส'];
+// Image state
+let pendingFiles    = [];  // { file, previewUrl, status:'pending'|'uploading'|'done'|'error', result:{fileId,viewUrl,thumbUrl} }
 
-    const statusMap = {
-        processing: { label: 'กำลังดำเนินการ', cls: 'badge-processing', step: 2 },
-        accept:     { label: 'อนุมัติแล้ว',     cls: 'badge-accept',     step: 3 },
-        finish:     { label: 'เสร็จสิ้น',        cls: 'badge-closed',     step: 5 },
-        cancel:     { label: 'ยกเลิก',           cls: 'badge-rejected',   step: 1 },
-    };
+// Lightbox state
+let lbImages = [];
+let lbIndex  = 0;
 
-    const CSRF = () => document.head.querySelector('meta[name="csrf-token"]').getAttribute('content');
+const stepLabels = ['รับแจ้ง','ตรวจสอบ','อนุมัติ','ดำเนินการ','ปิดเคส'];
 
-    // ─── LOAD FROM DB ────────────────────────────────────────────────────────
-    async function loadCasesFromDB() {
-        try {
-            const res  = await fetch('/return/list');
-            const list = await res.json();
-            console.log('API response sample:', list[0]);  // DEBUG
-            cases = {};
-            list.forEach(c => {
-                const sm   = statusMap[c.status] ?? statusMap.processing;
-                const step = sm.step;
+const statusMap = {
+    processing: { label: 'กำลังดำเนินการ', cls: 'badge-processing', step: 2 },
+    accept:     { label: 'อนุมัติแล้ว',    cls: 'badge-accept',     step: 3 },
+    finish:     { label: 'เสร็จสิ้น',       cls: 'badge-closed',     step: 5 },
+    cancel:     { label: 'ยกเลิก',          cls: 'badge-rejected',   step: 1 },
+};
 
-                // สร้าง product string จาก products array
-                let productStr = '';
-                if (Array.isArray(c.products) && c.products.length) {
-                    productStr = c.products
-                        .map(p => `${(p.product_name || '').trim()} (จำนวน: ${p.quantity ?? 0})`)
-                        .join('\n');
-                } else if (c.product) {
-                    // รองรับทั้ง | และ \n separator
-                    productStr = c.product.includes('|')
-                        ? c.product.split('|').join('\n')
-                        : c.product;
-                }
+const CSRF = () => document.head.querySelector('meta[name="csrf-token"]').getAttribute('content');
 
-                cases[c.id] = {
-                    id:        c.id,
-                    po:        c.po,
-                    customer:  c.customer,
-                    product:   productStr,
-                    products:  c.products || [],
-                    reason:    c.reason,
-                    note:      c.note || '-',
-                    fix:       '-',
-                    date:      c.date,
-                    status:    c.status,
-                    step,
-                    stepDates: buildStepDates(c.date, step),
-                    stepBy:    ['ฝ่ายบริการ','ช่างเทคนิค','ผู้จัดการ','ฝ่ายจัดส่ง','ฝ่ายบริการ'],
-                    stepDesc:  ['รับแจ้งเรื่องจากลูกค้า','ตรวจสอบสินค้าเรียบร้อย','อนุมัติการดำเนินการ','ดำเนินการจัดส่ง / ซ่อม / เปลี่ยนสินค้า','ปิดเคสเรียบร้อย'],
-                };
-            });
-            renderTable();
-        } catch (err) {
-            console.error('โหลดข้อมูลไม่สำเร็จ:', err);
-            renderTable();
-        }
-    }
+// ─── SET LABELS FROM CONFIG ───────────────────────────────────────────────────
+document.getElementById('lbl-max-img').textContent = MAX_IMAGES;
+document.getElementById('lbl-max-mb').textContent  = MAX_FILE_MB;
 
-    function buildStepDates(date, step) {
-        const d = date ?? new Date().toISOString().slice(0, 10);
-        const arr = [null, null, null, null, null];
-        for (let i = 0; i < step && i < 5; i++) arr[i] = d;
-        return arr;
-    }
-
-    // ─── INVOICE HELPERS ─────────────────────────────────────────────────────
-    function mergeInvoices(dbItems) {
-        const map = new Map();
-        dbItems.forEach(item => {
-            const key = `${item.name.trim().toUpperCase()}_${parseFloat(item.quantity)}`;
-            if (!map.has(key)) { map.set(key, item); return; }
-            const ex = map.get(key);
-            const ed = ex.date_invoice ? new Date(ex.date_invoice) : new Date(0);
-            const nd = item.date_invoice ? new Date(item.date_invoice) : new Date(0);
-            if (nd > ed) map.set(key, item);
-        });
-        return Array.from(map.values());
-    }
-
-    function matchProductsWithInvoices(dbItems, apiItems) {
-        if (!dbItems || !dbItems.length)
-            return apiItems.map((a, i) => ({ apiItem: a, dbItems: [], apiIndex: i }));
-
-        const usedDb = new Set(), apiToDb = new Map(), scores = [];
-        dbItems.forEach((db, di) => {
-            const dn = db.name.trim().toUpperCase();
-            apiItems.forEach((api, ai) => {
-                const an = api.GoodName.trim().toUpperCase();
-                let score = an === dn ? 100000 : 0;
-                if (!score) {
-                    let maxLen = 0;
-                    for (let i = 0; i < dn.length; i++)
-                        for (let j = i + 1; j <= dn.length; j++) {
-                            const s = dn.substring(i, j);
-                            if (an.includes(s) && s.length > maxLen) maxLen = s.length;
-                        }
-                    score = maxLen * 1000 - Math.abs(an.length - dn.length);
-                }
-                scores.push({ di, ai, score });
-            });
-        });
-        scores.sort((a, b) => b.score - a.score);
-        scores.forEach(({ di, ai }) => {
-            if (usedDb.has(di)) return;
-            if (!apiToDb.has(ai)) apiToDb.set(ai, { apiItem: apiItems[ai], dbItems: [] });
-            apiToDb.get(ai).dbItems.push(dbItems[di]);
-            usedDb.add(di);
-        });
-        const result = [];
-        apiToDb.forEach((v, ai) => result.push({ apiItem: v.apiItem, dbItems: mergeInvoices(v.dbItems), apiIndex: ai }));
-        apiItems.forEach((a, ai) => { if (!apiToDb.has(ai)) result.push({ apiItem: a, dbItems: [], apiIndex: ai }); });
-        return result.sort((a, b) => a.apiIndex - b.apiIndex);
-    }
-
-    function formatDateThai(d) {
-        if (!d) return '-';
-        const m = ['ม.ค.','ก.พ.','มี.ค.','เม.ย.','พ.ค.','มิ.ย.','ก.ค.','ส.ค.','ก.ย.','ต.ค.','พ.ย.','ธ.ค.'];
-        const dt = new Date(d);
-        return isNaN(dt) ? '-' : `${dt.getDate()} ${m[dt.getMonth()]} ${dt.getFullYear()}`;
-    }
-
-    function buildInvoiceCards(dbItems) {
-        if (!dbItems || !dbItems.length) return '<span style="font-size:11px;color:var(--text-muted);">-</span>';
-        return `<div class="invoice-cards-wrapper">${dbItems.map(item => `
-            <div class="invoice-card">
-                <span class="invoice-card-num">📄 ${item.invoice || '-'}</span>
-                <span style="font-size:10px;color:var(--text-secondary);">📅 ${formatDateThai(item.date_invoice)} · จำนวน: <strong style="color:var(--samsung-blue);">${parseFloat(item.quantity || 0)}</strong></span>
-            </div>`).join('')}</div>`;
-    }
-
-    // ─── FETCH PO ────────────────────────────────────────────────────────────
-    async function fetchPODocuNo() {
-        let poNum = document.getElementById('f-ponum').value.trim();
-        const docuResult = document.getElementById('docu-result');
-        poNum = poNum.replace(/^PO/i, '');
-        if (!poNum) { docuResult.innerHTML = `<div class="docu-error">กรุณากรอก PO Number</div>`; return; }
-        docuResult.innerHTML = `<div style="margin-top:8px;font-size:13px;color:#999;">⏳ กำลังโหลด...</div>`;
-        localInvoiceData = [];
-        try {
-            const [erpRes, localRes] = await Promise.allSettled([
-                fetch(`/api/po-detail?PONum=${encodeURIComponent(poNum)}`),
-                fetch(`/pooutside/check?ponum=${encodeURIComponent(poNum)}`)
-            ]);
-            if (erpRes.status !== 'fulfilled') throw new Error('ERP API failed');
-            const data   = await erpRes.value.json();
-            const docuNo = data?.DocuNo;
-            if (!docuNo) { currentDocuNo = null; docuResult.innerHTML = `<div class="docu-error">❌ ไม่พบข้อมูล PO นี้</div>`; return; }
-            currentDocuNo = docuNo;
-            document.getElementById('f-customer').value = data?.VendorName ?? '';
-            document.getElementById('f-phone').value    = data?.ContTel    ?? '';
-            if (localRes.status === 'fulfilled') {
-                const ld = await localRes.value.json();
-                if (ld?.exists && Array.isArray(ld?.data) && ld.data.length) localInvoiceData = ld.data;
+// ─── LOAD FROM DB ─────────────────────────────────────────────────────────────
+async function loadCasesFromDB() {
+    try {
+        const res  = await fetch('/return/list');
+        const list = await res.json();
+        cases = {};
+        list.forEach(c => {
+            const sm   = statusMap[c.status] ?? statusMap.processing;
+            let productStr = '';
+            if (Array.isArray(c.products) && c.products.length) {
+                productStr = c.products.map(p => `${(p.product_name||'').trim()} (จำนวน: ${p.quantity??0})`).join('\n');
+            } else if (c.product) {
+                productStr = c.product.includes('|') ? c.product.split('|').join('\n') : c.product;
             }
-            renderProductTable(data?.ms_podt ?? []);
-            docuResult.innerHTML = '';
-        } catch (err) {
-            currentDocuNo = null;
-            docuResult.innerHTML = `<div class="docu-error">เกิดข้อผิดพลาด: ${err.message}</div>`;
-        }
+            cases[c.id] = {
+                id: c.id, po: c.po, customer: c.customer,
+                product: productStr, products: c.products || [],
+                reason: c.reason, note: c.note || '-', fix: '-',
+                date: c.date, status: c.status, step: sm.step,
+                images: c.images || [],   // ← array ของ { fileId, viewUrl, thumbUrl, filename }
+                stepDates: buildStepDates(c.date, sm.step),
+                stepBy:   ['ฝ่ายบริการ','ช่างเทคนิค','ผู้จัดการ','ฝ่ายจัดส่ง','ฝ่ายบริการ'],
+                stepDesc: ['รับแจ้งเรื่องจากลูกค้า','ตรวจสอบสินค้าเรียบร้อย','อนุมัติการดำเนินการ','ดำเนินการจัดส่ง / ซ่อม / เปลี่ยนสินค้า','ปิดเคสเรียบร้อย'],
+            };
+        });
+        renderTable();
+    } catch (err) {
+        console.error('โหลดข้อมูลไม่สำเร็จ:', err);
+        renderTable();
+    }
+}
+
+function buildStepDates(date, step) {
+    const d = date ?? new Date().toISOString().slice(0,10);
+    const arr = [null,null,null,null,null];
+    for (let i = 0; i < step && i < 5; i++) arr[i] = d;
+    return arr;
+}
+
+// ─── IMAGE UPLOAD HELPERS ──────────────────────────────────────────────────────
+
+// แปลง File → base64 (ไม่มี prefix)
+function fileToBase64(file) {
+    return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload  = () => resolve(reader.result.split(',')[1]);
+        reader.onerror = reject;
+        reader.readAsDataURL(file);
+    });
+}
+
+// Compress ด้วย Canvas ถ้ารูปใหญ่เกิน maxPx
+function compressImage(file, maxPx = 1600, quality = 0.85) {
+    return new Promise(resolve => {
+        const img = new Image();
+        img.onload = () => {
+            let w = img.width, h = img.height;
+            if (w <= maxPx && h <= maxPx) { resolve(file); return; }
+            const scale = Math.min(maxPx / w, maxPx / h);
+            w = Math.round(w * scale); h = Math.round(h * scale);
+            const canvas = document.createElement('canvas');
+            canvas.width = w; canvas.height = h;
+            canvas.getContext('2d').drawImage(img, 0, 0, w, h);
+            canvas.toBlob(blob => {
+                resolve(new File([blob], file.name, { type: 'image/jpeg' }));
+            }, 'image/jpeg', quality);
+        };
+        img.src = URL.createObjectURL(file);
+    });
+}
+
+// อัปโหลด 1 ไฟล์ไปยัง Google Apps Script → Google Drive
+async function uploadOneImage(file, customFilename, onProgress) {
+    // รองรับ uploadOneImage(file, onProgress) แบบเดิมด้วย
+    if (typeof customFilename === 'function') {
+        onProgress = customFilename;
+        customFilename = null;
     }
 
-    // ─── PRODUCT TABLE ────────────────────────────────────────────────────────
-    function renderProductTable(items) {
-        poItems = items;
-        const tbody = document.getElementById('f-product-tbody');
-        const wrapper = document.getElementById('f-product-table-wrapper');
-        const placeholder = document.getElementById('f-product-placeholder');
-        if (!items || !items.length) {
-            wrapper.style.display = 'none'; placeholder.style.display = 'block';
-            placeholder.textContent = 'ไม่มีรายการสินค้าใน PO นี้'; return;
+    const compressed = await compressImage(file, 1200, 0.85);
+    const base64 = await fileToBase64(compressed);
+    if (onProgress) onProgress(30);
+
+    const ext      = file.name.split('.').pop().toLowerCase() || 'jpg';
+    const filename = customFilename || (file.name.replace(/[^a-zA-Z0-9._-]/g,'_'));
+
+    const res = await fetch('/return/upload-image', {
+        method:  'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRF-TOKEN': CSRF(),
+        },
+        body: JSON.stringify({
+            image:    base64,
+            filename: filename,
+            mimeType: compressed.type || 'image/jpeg',
+            gasUrl:   GAS_URL,
+        }),
+    });
+
+    if (onProgress) onProgress(90);
+    const text = await res.text();
+    let data;
+    try { data = JSON.parse(text); }
+    catch(parseErr) { throw new Error('Response: ' + text.slice(0, 300)); }
+    if (!data.success) throw new Error(data.error || 'Upload failed');
+    if (onProgress) onProgress(100);
+    return { fileId: data.fileId, viewUrl: data.viewUrl, thumbUrl: data.thumbUrl, filename: filename };
+}
+
+// ─── IMAGE PREVIEW UI ─────────────────────────────────────────────────────────
+function renderPreviews() {
+    const grid = document.getElementById('image-preview-grid');
+    grid.innerHTML = pendingFiles.map((item, idx) => `
+        <div class="preview-item ${item.status === 'done' ? 'done-upload' : item.status === 'error' ? 'error-upload' : ''}" id="prev-${idx}">
+            <img src="${item.previewUrl}" alt="${item.file.name}">
+            ${item.status === 'uploading' ? `
+                <div class="upload-progress">
+                    <div class="prog-bar-bg"><div class="prog-bar-fill" id="prog-${idx}" style="width:${item.progress||0}%"></div></div>
+                    <div class="prog-text">${item.progress||0}%</div>
+                </div>` : ''}
+            ${item.status === 'pending' || item.status === 'error' ? `
+                <button class="remove-btn" onclick="removeImage(${idx})" title="ลบรูป">✕</button>` : ''}
+        </div>
+    `).join('');
+}
+
+function removeImage(idx) {
+    URL.revokeObjectURL(pendingFiles[idx].previewUrl);
+    pendingFiles.splice(idx, 1);
+    renderPreviews();
+    updateUploadStatus();
+}
+
+function updateUploadStatus() {
+    const bar = document.getElementById('upload-status');
+    const total   = pendingFiles.length;
+    const done    = pendingFiles.filter(f => f.status === 'done').length;
+    const errors  = pendingFiles.filter(f => f.status === 'error').length;
+    const pending = pendingFiles.filter(f => f.status === 'pending').length;
+    const uploading = pendingFiles.filter(f => f.status === 'uploading').length;
+
+    if (total === 0) { bar.style.display = 'none'; return; }
+    if (uploading > 0) {
+        bar.className = 'upload-status-bar uploading';
+        bar.innerHTML = `<span class="spin">⟳</span> กำลังอัปโหลด ${uploading} รูป...`;
+    } else if (errors > 0 && done + errors === total) {
+        bar.className = 'upload-status-bar error';
+        bar.innerHTML = `⚠️ อัปโหลดล้มเหลว ${errors} รูป (สำเร็จ ${done} รูป)`;
+    } else if (done === total && total > 0) {
+        bar.className = 'upload-status-bar done';
+        bar.innerHTML = `✓ อัปโหลดสำเร็จทั้งหมด ${done} รูป`;
+    } else if (pending > 0) {
+        bar.className = 'upload-status-bar uploading';
+        bar.innerHTML = `<span class="spin">⟳</span> รอดำเนินการ ${pending} รูป...`;
+    } else {
+        bar.style.display = 'none';
+    }
+}
+
+function handleImageSelect(files) {
+    addFiles(Array.from(files));
+    document.getElementById('f-images').value = '';
+}
+
+function addFiles(files) {
+    const remaining = MAX_IMAGES - pendingFiles.length;
+    if (remaining <= 0) { showToast(`⚠️ เพิ่มได้สูงสุด ${MAX_IMAGES} รูปเท่านั้น`); return; }
+
+    const toAdd = files.slice(0, remaining);
+    const skipped = files.length - toAdd.length;
+
+    toAdd.forEach(file => {
+        if (!file.type.startsWith('image/')) { showToast(`⚠️ ${file.name} ไม่ใช่ไฟล์รูปภาพ`); return; }
+        if (file.size > MAX_FILE_MB * 1024 * 1024) { showToast(`⚠️ ${file.name} ใหญ่เกิน ${MAX_FILE_MB} MB`); return; }
+        pendingFiles.push({ file, previewUrl: URL.createObjectURL(file), status: 'pending', progress: 0, result: null });
+    });
+
+    if (skipped > 0) showToast(`⚠️ เพิ่มได้อีกแค่ ${remaining} รูป (ข้าม ${skipped} รูป)`);
+    renderPreviews();
+    updateUploadStatus();
+}
+
+// Drag & drop
+function handleDragOver(e)  { e.preventDefault(); document.getElementById('upload-zone').classList.add('dragover'); }
+function handleDragLeave(e) { document.getElementById('upload-zone').classList.remove('dragover'); }
+function handleDrop(e) {
+    e.preventDefault();
+    document.getElementById('upload-zone').classList.remove('dragover');
+    addFiles(Array.from(e.dataTransfer.files).filter(f => f.type.startsWith('image/')));
+}
+
+// อัปโหลดทั้งหมดที่ยัง pending
+async function uploadPendingImages() {
+    const pending = pendingFiles.filter(f => f.status === 'pending');
+    if (!pending.length) return;
+
+    // สร้าง filename prefix จาก PO + วันที่
+    // รูปแบบ: 6901-03035_27-3-69_01
+    const poRaw   = (currentDocuNo || '').replace(/^PO/i, '');
+    const now     = new Date();
+    const dd      = String(now.getDate()).padStart(2,'0');
+    const mm      = String(now.getMonth()+1).padStart(2,'0');
+    const yy      = String(now.getFullYear()).slice(-2);
+    const dateStr = `${dd}-${mm}-${yy}`;
+
+    // หา index เริ่มต้น (รูปที่เท่าไหร่แล้วในเคสนี้)
+    const doneCount = pendingFiles.filter(f => f.status === 'done').length;
+
+    for (const item of pending) {
+        item.status = 'uploading'; item.progress = 0;
+        renderPreviews(); updateUploadStatus();
+
+        // ลำดับรูปในเคสนี้
+        const seqAll  = pendingFiles.indexOf(item);
+        const seqNum  = String(doneCount + seqAll + 1).padStart(2,'0');
+        const ext     = item.file.name.split('.').pop().toLowerCase() || 'jpg';
+        const fname   = `${poRaw}_${dateStr}_${seqNum}.${ext}`;
+
+        try {
+            item.result = await uploadOneImage(item.file, fname, pct => {
+                item.progress = pct;
+                const bar = document.getElementById(`prog-${pendingFiles.indexOf(item)}`);
+                if (bar) bar.style.width = pct + '%';
+            });
+            item.status = 'done';
+        } catch (err) {
+            item.status = 'error';
+            console.error('Upload error:', item.file.name, err);
         }
-        const matched = matchProductsWithInvoices(localInvoiceData, items);
-        tbody.innerHTML = matched.map(({ apiItem: item, dbItems, apiIndex: ai }) => {
-            const qty  = parseFloat(item.GoodQty2 ?? 0);
-            const name = (item.GoodName ?? '').replace(/<<[^>]*>>/g, '').trim();
-            const cards = buildInvoiceCards(dbItems);
+        renderPreviews(); updateUploadStatus();
+    }
+}
+
+// ─── INVOICE HELPERS ──────────────────────────────────────────────────────────
+function mergeInvoices(dbItems) {
+    const map = new Map();
+    dbItems.forEach(item => {
+        const key = `${item.name.trim().toUpperCase()}_${parseFloat(item.quantity)}`;
+        if (!map.has(key)) { map.set(key, item); return; }
+        const ex = map.get(key);
+        const ed = ex.date_invoice ? new Date(ex.date_invoice) : new Date(0);
+        const nd = item.date_invoice ? new Date(item.date_invoice) : new Date(0);
+        if (nd > ed) map.set(key, item);
+    });
+    return Array.from(map.values());
+}
+
+function matchProductsWithInvoices(dbItems, apiItems) {
+    if (!dbItems || !dbItems.length)
+        return apiItems.map((a,i) => ({ apiItem:a, dbItems:[], apiIndex:i }));
+    const usedDb = new Set(), apiToDb = new Map(), scores = [];
+    dbItems.forEach((db,di) => {
+        const dn = db.name.trim().toUpperCase();
+        apiItems.forEach((api,ai) => {
+            const an = api.GoodName.trim().toUpperCase();
+            let score = an===dn ? 100000 : 0;
+            if (!score) {
+                let maxLen=0;
+                for(let i=0;i<dn.length;i++) for(let j=i+1;j<=dn.length;j++){
+                    const s=dn.substring(i,j); if(an.includes(s)&&s.length>maxLen) maxLen=s.length;
+                }
+                score = maxLen*1000 - Math.abs(an.length-dn.length);
+            }
+            scores.push({di,ai,score});
+        });
+    });
+    scores.sort((a,b)=>b.score-a.score);
+    scores.forEach(({di,ai})=>{
+        if(usedDb.has(di)) return;
+        if(!apiToDb.has(ai)) apiToDb.set(ai,{apiItem:apiItems[ai],dbItems:[]});
+        apiToDb.get(ai).dbItems.push(dbItems[di]);
+        usedDb.add(di);
+    });
+    const result=[];
+    apiToDb.forEach((v,ai)=>result.push({apiItem:v.apiItem,dbItems:mergeInvoices(v.dbItems),apiIndex:ai}));
+    apiItems.forEach((a,ai)=>{if(!apiToDb.has(ai)) result.push({apiItem:a,dbItems:[],apiIndex:ai});});
+    return result.sort((a,b)=>a.apiIndex-b.apiIndex);
+}
+
+function formatDateThai(d) {
+    if (!d) return '-';
+    const m=['ม.ค.','ก.พ.','มี.ค.','เม.ย.','พ.ค.','มิ.ย.','ก.ค.','ส.ค.','ก.ย.','ต.ค.','พ.ย.','ธ.ค.'];
+    const dt=new Date(d); return isNaN(dt)?'-':`${dt.getDate()} ${m[dt.getMonth()]} ${dt.getFullYear()}`;
+}
+
+function buildInvoiceCards(dbItems) {
+    if (!dbItems||!dbItems.length) return '<span style="font-size:11px;color:var(--text-muted);">-</span>';
+    return `<div class="invoice-cards-wrapper">${dbItems.map(item=>`
+        <div class="invoice-card">
+            <span class="invoice-card-num">📄 ${item.invoice||'-'}</span>
+            <span style="font-size:10px;color:var(--text-secondary);">📅 ${formatDateThai(item.date_invoice)} · จำนวน: <strong style="color:var(--samsung-blue);">${parseFloat(item.quantity||0)}</strong></span>
+        </div>`).join('')}</div>`;
+}
+
+// ─── FETCH PO ──────────────────────────────────────────────────────────────────
+async function fetchPODocuNo() {
+    let poNum = document.getElementById('f-ponum').value.trim();
+    const docuResult = document.getElementById('docu-result');
+    poNum = poNum.replace(/^PO/i,'');
+    if (!poNum) { docuResult.innerHTML=`<div class="docu-error">กรุณากรอก PO Number</div>`; return; }
+    docuResult.innerHTML=`<div style="margin-top:8px;font-size:13px;color:#999;">⏳ กำลังโหลด...</div>`;
+    localInvoiceData = [];
+    try {
+        const [erpRes,localRes] = await Promise.allSettled([
+            fetch(`/api/po-detail?PONum=${encodeURIComponent(poNum)}`),
+            fetch(`/pooutside/check?ponum=${encodeURIComponent(poNum)}`)
+        ]);
+        if (erpRes.status!=='fulfilled') throw new Error('ERP API failed');
+        const data=await erpRes.value.json();
+        const docuNo=data?.DocuNo;
+        if (!docuNo) { currentDocuNo=null; docuResult.innerHTML=`<div class="docu-error">❌ ไม่พบข้อมูล PO นี้</div>`; return; }
+        currentDocuNo=docuNo;
+        document.getElementById('f-customer').value=data?.VendorName??'';
+        document.getElementById('f-phone').value=data?.ContTel??'';
+        if (localRes.status==='fulfilled') {
+            const ld=await localRes.value.json();
+            if (ld?.exists&&Array.isArray(ld?.data)&&ld.data.length) localInvoiceData=ld.data;
+        }
+        renderProductTable(data?.ms_podt??[]);
+        docuResult.innerHTML='';
+    } catch(err) {
+        currentDocuNo=null;
+        docuResult.innerHTML=`<div class="docu-error">เกิดข้อผิดพลาด: ${err.message}</div>`;
+    }
+}
+
+// ─── PRODUCT TABLE ─────────────────────────────────────────────────────────────
+function renderProductTable(items) {
+    poItems=items;
+    const tbody=document.getElementById('f-product-tbody');
+    const wrapper=document.getElementById('f-product-table-wrapper');
+    const placeholder=document.getElementById('f-product-placeholder');
+    if (!items||!items.length) {
+        wrapper.style.display='none'; placeholder.style.display='block';
+        placeholder.textContent='ไม่มีรายการสินค้าใน PO นี้'; return;
+    }
+    const matched=matchProductsWithInvoices(localInvoiceData,items);
+    tbody.innerHTML=matched.map(({apiItem:item,dbItems,apiIndex:ai})=>{
+        const qty=parseFloat(item.GoodQty2??0);
+        const name=(item.GoodName??'').replace(/<<[^>]*>>/g,'').trim();
+        const cards=buildInvoiceCards(dbItems);
+        return `
+        <tr id="prod-row-${ai}" style="border-bottom:1px solid #e0e0e0;">
+            <td style="padding:10px;text-align:center;vertical-align:middle;border-right:1px solid #e0e0e0;width:1%;">
+                <input type="checkbox" class="prod-chk" data-idx="${ai}" onchange="updateProductSelection()"
+                    style="width:15px;height:15px;cursor:pointer;accent-color:var(--samsung-blue);">
+            </td>
+            <td style="padding:10px 14px;font-size:13px;line-height:1.6;white-space:normal;word-break:break-word;border-right:1px solid #e0e0e0;vertical-align:middle;">
+                <div style="font-weight:600;">${name}</div>
+            </td>
+            <td style="padding:8px;text-align:center;vertical-align:middle;width:1%;border-right:1px solid #e0e0e0;">
+                <div style="display:flex;flex-direction:column;align-items:center;gap:2px;">
+                    <input type="number" class="prod-qty-display" data-idx="${ai}" data-qty="${qty}" data-max="${qty}"
+                        value="${qty}" min="1" max="${qty}" oninput="validateQty(this)"
+                        style="width:64px;padding:5px 6px;font-family:'Noto Sans Thai',sans-serif;font-size:13px;font-weight:700;color:var(--samsung-blue);text-align:center;border:1.5px solid #c8d4f8;border-radius:6px;outline:none;background:#f0f4ff;transition:border-color 0.15s;">
+                    <span style="font-size:10px;color:var(--text-muted);">max: ${qty}</span>
+                </div>
+            </td>
+            <td style="padding:6px 8px;vertical-align:middle;text-align:center;">${cards}</td>
+        </tr>`;
+    }).join('');
+    placeholder.style.display='none';
+    wrapper.style.display='block';
+    document.getElementById('chk-all').checked=false;
+    updateProductSelection();
+}
+
+function validateQty(input) {
+    let val=parseFloat(input.value); const max=parseFloat(input.dataset.max);
+    if(isNaN(val)||val<1){input.value=1;val=1;}
+    if(val>max){input.value=max;val=max;}
+    input.style.borderColor=(val<max)?'#f5a623':'#c8d4f8';
+}
+
+function toggleAllProducts(chk) {
+    document.querySelectorAll('.prod-chk').forEach(c=>c.checked=chk.checked);
+    updateProductSelection();
+}
+
+function updateProductSelection() {
+    const chks=document.querySelectorAll('.prod-chk');
+    const total=chks.length, checked=[...chks].filter(c=>c.checked).length;
+    const master=document.getElementById('chk-all');
+    master.checked=checked===total;
+    master.indeterminate=checked>0&&checked<total;
+    document.getElementById('f-product-selected-count').textContent=
+        checked>0?`เลือกแล้ว ${checked} จาก ${total} รายการ`:'ยังไม่ได้เลือกสินค้า';
+}
+
+function resetProductTable() {
+    poItems=[]; localInvoiceData=[];
+    document.getElementById('f-product-table-wrapper').style.display='none';
+    const ph=document.getElementById('f-product-placeholder');
+    ph.style.display='block'; ph.textContent='ค้นหา PO เพื่อโหลดรายการสินค้า';
+    document.getElementById('f-product-tbody').innerHTML='';
+    document.getElementById('f-product-selected-count').textContent='';
+}
+
+// ─── RENDER TABLE ──────────────────────────────────────────────────────────────
+function renderTable() {
+    const tbody=document.getElementById('cases-tbody');
+    const all=Object.values(cases);
+    if (!all.length) {
+        tbody.innerHTML=`<tr id="empty-row"><td colspan="8">
+            <div class="empty-state">
+                <div class="empty-icon"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#bbb" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg></div>
+                <div class="empty-title">ยังไม่มีรายการเคส</div>
+                <div class="empty-sub">กดปุ่ม "สร้างเคสใหม่" เพื่อเพิ่มรายการแรก</div>
+            </div></td></tr>`;
+    } else {
+        tbody.innerHTML=all.map(c=>{
+            const sm=statusMap[c.status]??statusMap.processing;
+            const pct=Math.round((c.step/5)*100);
+            const barCls=c.status==='finish'?'blue':'orange';
             return `
-            <tr id="prod-row-${ai}" style="border-bottom:1px solid #e0e0e0;">
-                <td style="padding:10px;text-align:center;vertical-align:middle;border-right:1px solid #e0e0e0;width:1%;">
-                    <input type="checkbox" class="prod-chk" data-idx="${ai}" onchange="updateProductSelection()"
-                        style="width:15px;height:15px;cursor:pointer;accent-color:var(--samsung-blue);">
-                </td>
-                <td style="padding:10px 14px;font-size:13px;line-height:1.6;white-space:normal;word-break:break-word;border-right:1px solid #e0e0e0;vertical-align:middle;">
-                    <div style="font-weight:600;">${name}</div>
-                </td>
-                <td style="padding:8px;text-align:center;vertical-align:middle;width:1%;border-right:1px solid #e0e0e0;">
-                    <div style="display:flex;flex-direction:column;align-items:center;gap:2px;">
-                        <input type="number" class="prod-qty-display" data-idx="${ai}" data-qty="${qty}" data-max="${qty}"
-                            value="${qty}" min="1" max="${qty}"
-                            oninput="validateQty(this)"
-                            style="width:64px;padding:5px 6px;font-family:'Noto Sans Thai',sans-serif;font-size:13px;font-weight:700;color:var(--samsung-blue);text-align:center;border:1.5px solid #c8d4f8;border-radius:6px;outline:none;background:#f0f4ff;transition:border-color 0.15s;">
-                        <span class="qty-max-hint" style="font-size:10px;color:var(--text-muted);">max: ${qty}</span>
-                    </div>
-                </td>
-                <td style="padding:6px 8px;vertical-align:middle;text-align:center;">
-                    ${cards}
-                </td>
+            <tr onclick="openDetail('${c.id}')" style="cursor:pointer;">
+                <td><span class="claim-id">${c.po||c.id}</span></td>
+                <td><span class="customer-name">${c.customer}</span></td>
+                <td><div class="product-list">${(()=>{
+                    if(Array.isArray(c.products)&&c.products.length){
+                        return c.products.map(p=>`<div class="product-item"><span>${(p.product_name||'').trim()}</span><span class="prod-qty">×${parseFloat(p.quantity??0)}</span></div>`).join('');
+                    }
+                    return c.product.split('\n').map(p=>{
+                        const m=p.trim().match(/^(.+?)\s*\(จำนวน:\s*([\d.]+)\)$/);
+                        return m?`<div class="product-item"><span>${m[1].trim()}</span><span class="prod-qty">×${parseFloat(m[2])}</span></div>`:(p.trim()?`<div class="product-item"><span>${p.trim()}</span></div>`:'');
+                    }).join('');
+                })()}</div></td>
+                <td><span class="reason-text">${c.reason}</span></td>
+                <td><div class="progress-wrapper">
+                    <div class="progress-bar-bg"><div class="progress-bar-fill ${barCls}" style="width:${pct}%"></div></div>
+                    <span class="progress-text">${c.step}/5</span>
+                </div></td>
+                <td style="white-space:nowrap;"><span class="badge ${sm.cls}">${sm.label}</span></td>
+                <td><span class="date-text">${c.date}</span></td>
             </tr>`;
         }).join('');
-        placeholder.style.display = 'none';
-        wrapper.style.display = 'block';
-        document.getElementById('chk-all').checked = false;
-        updateProductSelection();
     }
+    updateStats();
+}
 
-    function validateQty(input) {
-        let val = parseFloat(input.value);
-        const max = parseFloat(input.dataset.max);
-        if (isNaN(val) || val < 1) { input.value = 1; val = 1; }
-        if (val > max) { input.value = max; val = max; }
-        input.style.borderColor = (val < max) ? '#f5a623' : '#c8d4f8';
-    }
+function updateStats() {
+    const all=Object.values(cases);
+    document.getElementById('stat-total').textContent     =all.length;
+    document.getElementById('stat-pending').textContent   =all.filter(c=>c.status==='processing').length;
+    document.getElementById('stat-processing').textContent=all.filter(c=>c.status==='accept').length;
+    document.getElementById('stat-closed').textContent    =all.filter(c=>c.status==='finish').length;
+    document.getElementById('stat-rejected').textContent  =all.filter(c=>c.status==='cancel').length;
+    document.getElementById('footer-count').textContent   =`แสดง ${all.length} รายการ จากทั้งหมด ${all.length} รายการ`;
+    document.getElementById('footer-updated').textContent =all.length>0
+        ?`อัปเดตล่าสุด: ${new Date().toLocaleDateString('th-TH',{day:'numeric',month:'short',year:'numeric'})}`:'—';
+}
 
-    function toggleAllProducts(chk) {
-        document.querySelectorAll('.prod-chk').forEach(c => c.checked = chk.checked);
-        updateProductSelection();
-    }
+// ─── MODAL OPEN/CLOSE ──────────────────────────────────────────────────────────
+function openModal() {
+    currentDocuNo=null;
+    pendingFiles=[];
+    renderPreviews();
+    document.getElementById('upload-status').style.display='none';
+    document.getElementById('modal').classList.add('active');
+}
+function closeModal() {
+    document.getElementById('modal').classList.remove('active');
+    ['f-ponum','f-customer','f-phone','f-note'].forEach(id=>document.getElementById(id).value='');
+    resetProductTable();
+    document.getElementById('f-reason').value='';
+    document.getElementById('docu-result').innerHTML='';
+    pendingFiles.forEach(f=>URL.revokeObjectURL(f.previewUrl));
+    pendingFiles=[];
+    renderPreviews();
+    document.getElementById('upload-status').style.display='none';
+    currentDocuNo=null;
+}
+function closeOnOverlay(e) { if(e.target===document.getElementById('modal')) closeModal(); }
 
-    function updateProductSelection() {
-        const chks = document.querySelectorAll('.prod-chk');
-        const total = chks.length, checked = [...chks].filter(c => c.checked).length;
-        const master = document.getElementById('chk-all');
-        master.checked = checked === total;
-        master.indeterminate = checked > 0 && checked < total;
-        document.getElementById('f-product-selected-count').textContent =
-            checked > 0 ? `เลือกแล้ว ${checked} จาก ${total} รายการ` : 'ยังไม่ได้เลือกสินค้า';
-    }
+// ─── SUBMIT NEW CASE ───────────────────────────────────────────────────────────
+async function submitNewCase(e) {
+    if (e) e.preventDefault();
+    const customer=document.getElementById('f-customer').value.trim();
+    const reason  =document.getElementById('f-reason').value;
+    const note    =document.getElementById('f-note').value.trim();
 
-    function resetProductTable() {
-        poItems = []; localInvoiceData = [];
-        document.getElementById('f-product-table-wrapper').style.display = 'none';
-        const ph = document.getElementById('f-product-placeholder');
-        ph.style.display = 'block'; ph.textContent = 'ค้นหา PO เพื่อโหลดรายการสินค้า';
-        document.getElementById('f-product-tbody').innerHTML = '';
-        document.getElementById('f-product-selected-count').textContent = '';
-    }
+    if (!currentDocuNo)       { alert('กรุณาค้นหา PO ก่อน'); return; }
+    if (!customer||!reason)   { alert('กรุณากรอกข้อมูลให้ครบ'); return; }
 
-    // ─── RENDER TABLE ─────────────────────────────────────────────────────────
-    function renderTable() {
-        const tbody = document.getElementById('cases-tbody');
-        const all   = Object.values(cases);
-        if (!all.length) {
-            tbody.innerHTML = `<tr id="empty-row"><td colspan="7">
-                <div class="empty-state">
-                    <div class="empty-icon"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#bbb" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg></div>
-                    <div class="empty-title">ยังไม่มีรายการเคส</div>
-                    <div class="empty-sub">กดปุ่ม "สร้างเคสใหม่" เพื่อเพิ่มรายการแรก</div>
-                </div></td></tr>`;
-        } else {
-            tbody.innerHTML = all.map(c => {
-                const sm  = statusMap[c.status] ?? statusMap.processing;
-                const pct = Math.round((c.step / 5) * 100);
-                const barCls = c.status === 'finish' ? 'blue' : 'orange';
-                return `
-                <tr onclick="openDetail('${c.id}')" style="cursor:pointer;">
-                    <td><span class="claim-id">${c.po || c.id}</span></td>
-                    <td><span class="customer-name">${c.customer}</span></td>
-                    <td><div class="product-list">${(()=>{
-                        if (Array.isArray(c.products) && c.products.length) {
-                            return c.products.map(p =>
-                                `<div class="product-item"><span>${(p.product_name||'').trim()}</span><span class="prod-qty">×${parseFloat(p.quantity??0)}</span></div>`
-                            ).join('');
-                        }
-                        return c.product.split('\n').map(p => {
-                            const m = p.trim().match(/^(.+?)\s*\(จำนวน:\s*([\d.]+)\)$/);
-                            return m
-                                ? `<div class="product-item"><span>${m[1].trim()}</span><span class="prod-qty">×${parseFloat(m[2])}</span></div>`
-                                : (p.trim() ? `<div class="product-item"><span>${p.trim()}</span></div>` : '');
-                        }).join('');
-                    })()}</div></td>
-                    <td><span class="reason-text">${c.reason}</span></td>
-                    <td><div class="progress-wrapper">
-                        <div class="progress-bar-bg"><div class="progress-bar-fill ${barCls}" style="width:${pct}%"></div></div>
-                        <span class="progress-text">${c.step}/5</span>
-                    </div></td>
-                    <td style="white-space:nowrap;"><span class="badge ${sm.cls}">${sm.label}</span></td>
-                    <td><span class="date-text">${c.date}</span></td>
-                </tr>`;
-            }).join('');
-        }
-        updateStats();
-    }
+    const selectedItems=[];
+    document.querySelectorAll('.prod-chk').forEach(chk=>{
+        if (!chk.checked) return;
+        const idx=parseInt(chk.dataset.idx,10);
+        const item=poItems[idx]; if (!item) return;
+        const name=(item.GoodName??'').replace(/<<[^>]*>>/g,'').trim();
+        const qtyInput=document.querySelector(`.prod-qty-display[data-idx="${idx}"]`);
+        const qty=qtyInput?parseFloat(qtyInput.value)||0:parseFloat(item.GoodQty2??0);
+        const invoiceEl=document.querySelector(`#prod-row-${idx} .invoice-card-num`);
+        const invoice=invoiceEl?invoiceEl.textContent.replace('📄','').trim():'';
+        selectedItems.push({goodName:name,qty,invoice});
+    });
+    if (!selectedItems.length) { alert('กรุณาเลือกสินค้าอย่างน้อย 1 รายการ'); return; }
 
-    function updateStats() {
-        const all = Object.values(cases);
-        document.getElementById('stat-total').textContent      = all.length;
-        document.getElementById('stat-pending').textContent    = all.filter(c => c.status === 'processing').length;
-        document.getElementById('stat-processing').textContent = all.filter(c => c.status === 'accept').length;
-        document.getElementById('stat-closed').textContent     = all.filter(c => c.status === 'finish').length;
-        document.getElementById('stat-rejected').textContent   = all.filter(c => c.status === 'cancel').length;
-        document.getElementById('footer-count').textContent    = `แสดง ${all.length} รายการ จากทั้งหมด ${all.length} รายการ`;
-        document.getElementById('footer-updated').textContent  = all.length > 0
-            ? `อัปเดตล่าสุด: ${new Date().toLocaleDateString('th-TH',{day:'numeric',month:'short',year:'numeric'})}` : '—';
-    }
+    // ── ส่งข้อมูลหลักทันที (รูปอัปโหลด background) ──
+    const btn=document.getElementById('btn-submit-case');
+    btn.disabled=true;
+    btn.innerHTML=`<span class="spin">⟳</span> กำลังบันทึก...`;
 
-    // ─── MODAL OPEN/CLOSE ─────────────────────────────────────────────────────
-    function openModal() { currentDocuNo = null; document.getElementById('modal').classList.add('active'); }
-    function closeModal() {
-        document.getElementById('modal').classList.remove('active');
-        ['f-ponum','f-customer','f-phone','f-note'].forEach(id => document.getElementById(id).value = '');
-        resetProductTable();
-        document.getElementById('f-reason').value = '';
-        document.getElementById('docu-result').innerHTML = '';
-        currentDocuNo = null;
-    }
-    function closeOnOverlay(e) { if (e.target === document.getElementById('modal')) closeModal(); }
+    // snapshot รูปที่เลือกไว้ก่อน submit (ยังไม่มี fileId)
+    const pendingSnapshot = pendingFiles.filter(f=>f.status==='pending').map(f=>({...f}));
+    let imageData=[];
 
-    // ─── SUBMIT NEW CASE ──────────────────────────────────────────────────────
-    async function submitNewCase(e) {
-        if (e) e.preventDefault();
-        const customer = document.getElementById('f-customer').value.trim();
-        const reason   = document.getElementById('f-reason').value;
-        const note     = document.getElementById('f-note').value.trim();
-
-        if (!currentDocuNo)       { alert('กรุณาค้นหา PO ก่อน'); return; }
-        if (!customer || !reason) { alert('กรุณากรอกข้อมูลให้ครบ'); return; }
-
-        const selectedItems = [];
-        document.querySelectorAll('.prod-chk').forEach(chk => {
-            if (!chk.checked) return;
-            const idx  = parseInt(chk.dataset.idx, 10);
-            const item = poItems[idx];
-            if (!item) return;
-            const name      = (item.GoodName ?? '').replace(/<<[^>]*>>/g, '').trim();
-            const qtyInput  = document.querySelector(`.prod-qty-display[data-idx="${idx}"]`);
-            const qty       = qtyInput ? parseFloat(qtyInput.value) || 0 : parseFloat(item.GoodQty2 ?? 0);
-            const invoiceEl = document.querySelector(`#prod-row-${idx} .invoice-card-num`);
-            const invoice   = invoiceEl ? invoiceEl.textContent.replace('📄', '').trim() : '';
-            selectedItems.push({ goodName: name, qty, invoice });
+    // ── ส่งข้อมูลหลัก ──
+    try {
+        const res=await fetch('/return/submit',{
+            method:'POST',
+            headers:{'Content-Type':'application/json','X-CSRF-TOKEN':CSRF()},
+            body:JSON.stringify({poNum:currentDocuNo,vendor:customer,reason,note,selectedItems,images:imageData}),
         });
+        const data=await res.json();
+        if (!data.success) { alert(`❌ ${data.message}\n(${data.file??''}:${data.line??''})`); return; }
 
-        if (!selectedItems.length) { alert('กรุณาเลือกสินค้าอย่างน้อย 1 รายการ'); return; }
+        const today=new Date().toISOString().slice(0,10);
+        const newCase = {
+            id:data.return_id, customer, reason, note:note||'-', fix:'-', date:today,
+            po:currentDocuNo,
+            product:selectedItems.map(i=>`${i.goodName} (จำนวน: ${i.qty})`).join('\n'),
+            status:'processing', step:2,
+            images:imageData,
+            stepDates:[today,today,null,null,null],
+            stepBy:['ฝ่ายบริการ','ช่างเทคนิค',null,null,null],
+            stepDesc:['รับแจ้งเรื่องจากลูกค้า','ตรวจสอบสินค้าเรียบร้อย',null,null,null],
+        };
+        cases = Object.assign({ [data.return_id]: newCase }, cases);
+        closeModal(); renderTable();
+        showToast(`✅ สร้างเคส ${data.return_id} เรียบร้อยแล้ว`);
 
-        try {
-            const res  = await fetch('/return/submit', {
-                method: 'POST',
+        if (pendingSnapshot.length > 0) {
+            // มีรูป → อัปโหลด background, final=true จะส่ง LINE หลังรูปครบ
+            uploadImagesBackground(pendingSnapshot, data.return_id);
+        } else {
+            // ไม่มีรูป → ส่ง LINE ทันทีผ่าน update-images final=true
+            fetch('/return/'+encodeURIComponent(data.return_id)+'/update-images', {
+                method:  'POST',
                 headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': CSRF() },
-                body: JSON.stringify({ poNum: currentDocuNo, vendor: customer, reason, note, selectedItems }),
-            });
-            const data = await res.json();
-            if (!data.success) { alert(`❌ ${data.message}\n(${data.file ?? ''}:${data.line ?? ''})`) ; return; }
-
-            const today = new Date().toISOString().slice(0, 10);
-            cases[data.return_id] = {
-                id: data.return_id, customer, reason, note: note || '-', fix: '-', date: today,
-                po: currentDocuNo,
-                product:   selectedItems.map(i => `${i.goodName} (จำนวน: ${i.qty})`).join('\n'),
-                status:    'processing', step: 2,
-                stepDates: [today, today, null, null, null],
-                stepBy:    ['ฝ่ายบริการ','ช่างเทคนิค',null,null,null],
-                stepDesc:  ['รับแจ้งเรื่องจากลูกค้า','ตรวจสอบสินค้าเรียบร้อย',null,null,null],
-            };
-            closeModal(); renderTable();
-            showToast(`✅ สร้างเคส ${data.return_id} เรียบร้อยแล้ว`);
-        } catch (err) { alert('เกิดข้อผิดพลาด: ' + err.message); }
-    }
-
-    // ─── DETAIL MODAL ─────────────────────────────────────────────────────────
-    function openDetail(id) {
-        currentDetailId = id;
-        const c = cases[id];
-        if (!c) return;
-
-        document.getElementById('d-id').textContent       = c.id;
-        document.getElementById('d-meta').textContent     = `${c.customer} · เปิดวันที่ ${c.date}`;
-        document.getElementById('d-customer').textContent = c.customer;
-        document.getElementById('d-reason').textContent   = c.reason;
-        document.getElementById('d-note').textContent     = c.note;
-
-        const productEl = document.getElementById('d-product');
-        productEl.style.textAlign = 'left';
-        if (Array.isArray(c.products) && c.products.length) {
-            productEl.innerHTML = c.products.map(p => `
-                <div style="display:flex;align-items:baseline;justify-content:space-between;gap:8px;padding:5px 8px;margin-bottom:4px;background:#f8f9ff;border-left:2px solid #1428A0;border-radius:0 4px 4px 0;">
-                    <span style="font-size:12px;color:#535353;">${(p.product_name||'').trim()}</span>
-                    <span style="flex-shrink:0;font-size:11px;font-weight:700;color:#1428A0;background:#e8ecf8;padding:1px 8px;border-radius:10px;">×${parseFloat(p.quantity??0)}</span>
-                </div>`).join('');
-        } else {
-            productEl.innerHTML = c.product.split('\n').map(p => {
-                const m = p.trim().match(/^(.+?)\s*\(จำนวน:\s*([\d.]+)\)$/);
-                return m
-                    ? `<div style="display:flex;align-items:baseline;justify-content:space-between;gap:8px;padding:5px 8px;margin-bottom:4px;background:#f8f9ff;border-left:2px solid #1428A0;border-radius:0 4px 4px 0;">
-                        <span style="font-size:12px;color:#535353;">${m[1].trim()}</span>
-                        <span style="flex-shrink:0;font-size:11px;font-weight:700;color:#1428A0;background:#e8ecf8;padding:1px 8px;border-radius:10px;">×${parseFloat(m[2])}</span></div>`
-                    : (p.trim() ? `<div style="padding:5px 8px;margin-bottom:4px;background:#f8f9ff;border-left:2px solid #1428A0;border-radius:0 4px 4px 0;font-size:12px;color:#535353;">${p.trim()}</div>` : '');
-            }).join('');
+                body:    JSON.stringify({ images: [], final: true }),
+            }).catch(err => console.warn('LINE notify failed:', err));
         }
-
-        const sm = statusMap[c.status] ?? statusMap.processing;
-        const badge = document.getElementById('d-badge');
-        badge.className   = 'badge ' + sm.cls;
-        badge.textContent = sm.label;
-
-        document.getElementById('d-steps').innerHTML = stepLabels.map((label, i) => {
-            const cls  = i < c.step ? 'done' : i === c.step ? 'active' : '';
-            const icon = i < c.step
-                ? `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>`
-                : `<span style="font-size:11px;font-weight:700;color:${i===c.step?'var(--samsung-blue)':'#ccc'}">${i+1}</span>`;
-            return `<div class="step-item ${cls}"><div class="step-circle">${icon}</div><div class="step-label">${label}</div></div>`;
-        }).join('');
-
-        document.getElementById('d-timeline').innerHTML = stepLabels.map((label, i) => {
-            if (i >= c.step || !c.stepDates?.[i]) return '';
-            return `<div class="timeline-item"><div class="timeline-dot"></div>
-                <div><div class="timeline-text">${c.stepDesc?.[i] ?? label}</div>
-                <div class="timeline-by">${c.stepBy?.[i] ?? ''} · ${c.stepDates[i]}</div></div></div>`;
-        }).join('');
-
-        renderDetailActions(c);
-        document.getElementById('detail-modal').classList.add('active');
+    } catch(err) {
+        alert('เกิดข้อผิดพลาด: '+err.message);
+    } finally {
+        btn.disabled=false;
+        btn.innerHTML=`<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M9 11l3 3L22 4"/></svg> สร้างเคส`;
     }
+}
 
-    function renderDetailActions(c) {
-        const act = document.getElementById('d-actions');
-        act.innerHTML = `<button class="btn-cancel" onclick="closeDetail()">ปิด</button>`;
-    }
+// ─── BACKGROUND IMAGE UPLOAD (ทีละรูป แสดงผลทันที) ──────────────────────────
+async function uploadImagesBackground(snapshots, returnId) {
+    const poRaw   = (currentDocuNo || '').replace(/^PO/i,'') || returnId.split('-')[2] || '';
+    const now     = new Date();
+    const dd      = String(now.getDate()).padStart(2,'0');
+    const mm      = String(now.getMonth()+1).padStart(2,'0');
+    const yy      = String(now.getFullYear()).slice(-2);
+    const dateStr = dd+'-'+mm+'-'+yy;
 
-    // ─── APPROVE ──────────────────────────────────────────────────────────────
-    async function doApprove(id) {
+    if (!cases[returnId]) return;
+    cases[returnId].images = [];
+
+    let successCount = 0;
+
+    for (let i = 0; i < snapshots.length; i++) {
+        const item   = snapshots[i];
+        const seqNum = String(i + 1).padStart(2,'0');
+        const ext    = item.file.name.split('.').pop().toLowerCase() || 'jpg';
+        const fname  = poRaw+'_'+dateStr+'_'+seqNum+'.'+ext;
+
         try {
-            const res  = await fetch(`/return/${encodeURIComponent(id)}/approve`, {
-                method: 'POST', headers: { 'X-CSRF-TOKEN': CSRF() },
-            });
-            const data = await res.json();
-            if (!data.success) { alert(data.message); return; }
-            const c  = cases[id];
-            const sm = statusMap[data.status] ?? statusMap.processing;
-            c.status    = data.status;
-            c.step      = sm.step;
-            const today = new Date().toISOString().slice(0, 10);
-            if (c.step <= 5) c.stepDates[c.step - 1] = today;
-            renderTable();
-            openDetail(id);
-            showToast(`✅ ${data.status === 'accept' ? 'Accept' : 'Finish'} เคส ${id} แล้ว`);
-        } catch (err) { alert('เกิดข้อผิดพลาด: ' + err.message); }
+            const result = await uploadOneImage(item.file, fname, null);
+
+            // เพิ่มรูปใน local state
+            cases[returnId].images.push(result);
+            successCount++;
+
+            const isLast = (i === snapshots.length - 1);
+
+            // บันทึกลง DB ทันที — รูปสุดท้ายส่ง final=true เพื่อ trigger LINE notification
+            try {
+                await fetch('/return/'+encodeURIComponent(returnId)+'/update-images', {
+                    method:  'POST',
+                    headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': CSRF() },
+                    body:    JSON.stringify({
+                        images: cases[returnId].images,
+                        final:  isLast,  // ← ส่ง LINE พร้อมรูปตอนนี้
+                    }),
+                });
+            } catch(dbErr) {
+                console.warn('Save DB failed:', dbErr.message);
+            }
+
+            // ถ้า detail modal เปิดอยู่ → refresh gallery ทันที
+            if (currentDetailId === returnId) {
+                refreshDetailPhotos(returnId);
+            }
+
+        } catch(err) {
+            console.warn('Upload failed roop '+(i+1)+':', err.message);
+        }
     }
 
-    // ─── REJECT ───────────────────────────────────────────────────────────────
-    async function doReject(id) {
-        if (!confirm(`ยืนยันยกเลิกเคส ${id}?`)) return;
-        try {
-            const res  = await fetch(`/return/${encodeURIComponent(id)}/reject`, {
-                method: 'POST', headers: { 'X-CSRF-TOKEN': CSRF() },
-            });
-            const data = await res.json();
-            if (!data.success) { alert(data.message); return; }
-            cases[id].status = 'cancel';
-            cases[id].step   = 1;
-            renderTable();
-            closeDetail();
-            showToast(`❌ ยกเลิกเคส ${id} แล้ว`);
-        } catch (err) { alert('เกิดข้อผิดพลาด: ' + err.message); }
+    if (successCount > 0) {
+        showToast('✅ อัปโหลดรูป '+successCount+' รูปเรียบร้อย');
+    }
+}
+
+// อัปเดต photo gallery ใน detail modal โดยไม่ปิด modal
+function refreshDetailPhotos(caseId) {
+    const c = cases[caseId];
+    if (!c) return;
+    const imgs       = c.images || [];
+    const photoGrid  = document.getElementById('d-photos-grid');
+    const photoCount = document.getElementById('d-photo-count');
+    if (!photoGrid) return;
+
+    photoCount.textContent = imgs.length > 0 ? '('+imgs.length+' รูป)' : '';
+
+    if (imgs.length === 0) {
+        photoGrid.innerHTML = '<div class="no-photos-placeholder">ไม่มีรูปภาพประกอบ</div>';
+        return;
     }
 
-    function closeDetail() { document.getElementById('detail-modal').classList.remove('active'); currentDetailId = null; }
-    function closeDetailOnOverlay(e) { if (e.target === document.getElementById('detail-modal')) closeDetail(); }
+    photoGrid.innerHTML = imgs.map(function(img, idx) {
+        const id  = img.fileId || ((img.viewUrl||'').match(/\/d\/([^/]+)\//) || [])[1] || '';
+        const src = id ? '/return/drive-image?id='+id : (img.thumbUrl || img.viewUrl || '');
+        return '<div class="detail-photo-thumb" onclick="openLightbox('+idx+',\''+caseId+'\')" title="'+(img.filename||'รูป '+(idx+1))+'">'+
+            '<img src="'+src+'" alt="'+(img.filename||'รูป '+(idx+1))+'" loading="lazy"'+
+            ' onerror="this.src=\'data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 width=%2280%22 height=%2280%22><rect width=%2280%22 height=%2280%22 fill=%22%23f0f0f0%22/><text x=%2240%22 y=%2245%22 text-anchor=%22middle%22 font-size=%2212%22 fill=%22%23999%22>-</text></svg>\'">'+
+            '</div>';
+    }).join('');
+}
 
-    // ─── SEARCH ───────────────────────────────────────────────────────────────
-    function searchTable(q) {
-        q = q.toLowerCase().trim();
-        document.querySelectorAll('#cases-tbody tr:not(#empty-row)').forEach(r => {
-            r.style.display = r.textContent.toLowerCase().includes(q) ? '' : 'none';
-        });
+// ─── DETAIL MODAL ──────────────────────────────────────────────────────────────
+function openDetail(id) {
+    currentDetailId=id;
+    const c=cases[id]; if (!c) return;
+
+    document.getElementById('d-id').textContent      =c.id;
+    document.getElementById('d-meta').textContent    =`${c.customer} · เปิดวันที่ ${c.date}`;
+    document.getElementById('d-customer').textContent=c.customer;
+    document.getElementById('d-reason').textContent  =c.reason;
+    document.getElementById('d-note').textContent    =c.note;
+
+    const productEl=document.getElementById('d-product');
+    productEl.style.textAlign='left';
+    if (Array.isArray(c.products)&&c.products.length) {
+        productEl.innerHTML=c.products.map(p=>`
+            <div style="display:flex;align-items:baseline;justify-content:space-between;gap:8px;padding:5px 8px;margin-bottom:4px;background:#f8f9ff;border-left:2px solid #1428A0;border-radius:0 4px 4px 0;">
+                <span style="font-size:12px;color:#535353;">${(p.product_name||'').trim()}</span>
+                <span style="flex-shrink:0;font-size:11px;font-weight:700;color:#1428A0;background:#e8ecf8;padding:1px 8px;border-radius:10px;">×${parseFloat(p.quantity??0)}</span>
+            </div>`).join('');
+    } else {
+        productEl.innerHTML=c.product.split('\n').map(p=>{
+            const m=p.trim().match(/^(.+?)\s*\(จำนวน:\s*([\d.]+)\)$/);
+            return m
+                ?`<div style="display:flex;align-items:baseline;justify-content:space-between;gap:8px;padding:5px 8px;margin-bottom:4px;background:#f8f9ff;border-left:2px solid #1428A0;border-radius:0 4px 4px 0;">
+                    <span style="font-size:12px;color:#535353;">${m[1].trim()}</span>
+                    <span style="flex-shrink:0;font-size:11px;font-weight:700;color:#1428A0;background:#e8ecf8;padding:1px 8px;border-radius:10px;">×${parseFloat(m[2])}</span></div>`
+                :(p.trim()?`<div style="padding:5px 8px;margin-bottom:4px;background:#f8f9ff;border-left:2px solid #1428A0;border-radius:0 4px 4px 0;font-size:12px;color:#535353;">${p.trim()}</div>`:'');
+        }).join('');
     }
 
-    // ─── TOAST ────────────────────────────────────────────────────────────────
-    function showToast(msg) {
-        const t = document.createElement('div');
-        t.textContent = msg;
-        Object.assign(t.style, {
-            position:'fixed', bottom:'28px', left:'50%', transform:'translateX(-50%) translateY(12px)',
-            background:'#1d1d1f', color:'#fff', padding:'10px 22px', borderRadius:'24px',
-            fontSize:'13px', fontWeight:'600', zIndex:'9999', opacity:'0',
-            transition:'all 0.3s ease', whiteSpace:'nowrap', boxShadow:'0 4px 20px rgba(0,0,0,0.2)'
-        });
-        document.body.appendChild(t);
-        requestAnimationFrame(() => { t.style.opacity='1'; t.style.transform='translateX(-50%) translateY(0)'; });
-        setTimeout(() => { t.style.opacity='0'; t.style.transform='translateX(-50%) translateY(12px)'; setTimeout(() => t.remove(), 300); }, 2500);
+    const sm=statusMap[c.status]??statusMap.processing;
+    const badge=document.getElementById('d-badge');
+    badge.className='badge '+sm.cls; badge.textContent=sm.label;
+
+    document.getElementById('d-steps').innerHTML=stepLabels.map((label,i)=>{
+        const cls=i<c.step?'done':i===c.step?'active':'';
+        const icon=i<c.step
+            ?`<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>`
+            :`<span style="font-size:11px;font-weight:700;color:${i===c.step?'var(--samsung-blue)':'#ccc'}">${i+1}</span>`;
+        return `<div class="step-item ${cls}"><div class="step-circle">${icon}</div><div class="step-label">${label}</div></div>`;
+    }).join('');
+
+    document.getElementById('d-timeline').innerHTML=stepLabels.map((label,i)=>{
+        if(i>=c.step||!c.stepDates?.[i]) return '';
+        return `<div class="timeline-item"><div class="timeline-dot"></div>
+            <div><div class="timeline-text">${c.stepDesc?.[i]??label}</div>
+            <div class="timeline-by">${c.stepBy?.[i]??''} · ${c.stepDates[i]}</div></div></div>`;
+    }).join('');
+
+    // ── Photo gallery ──
+    const imgs=c.images||[];
+    const photoGrid=document.getElementById('d-photos-grid');
+    const photoCount=document.getElementById('d-photo-count');
+    photoCount.textContent=imgs.length>0?`(${imgs.length} รูป)`:'';
+
+    if (imgs.length===0) {
+        photoGrid.innerHTML=`<div class="no-photos-placeholder">ไม่มีรูปภาพประกอบ</div>`;
+    } else {
+        photoGrid.innerHTML=imgs.map((img,idx)=>`
+            <div class="detail-photo-thumb" onclick="openLightbox(${idx},'${c.id}')" title="${img.filename||'รูป '+(idx+1)}">
+                <img src="${(()=>{const id=img.fileId||(img.viewUrl||'').match(/\/d\/([^/]+)\//)?.[1]||'';return id?`/return/drive-image?id=${id}`:(img.thumbUrl||img.viewUrl);})()}" alt="${img.filename||'รูป '+(idx+1)}"
+                    loading="lazy"
+                    onerror="this.src='data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 width=%2280%22 height=%2280%22><rect width=%2280%22 height=%2280%22 fill=%22%23f0f0f0%22/><text x=%2240%22 y=%2245%22 text-anchor=%22middle%22 font-size=%2212%22 fill=%22%23999%22>ไม่พบรูป</text></svg>'">
+            </div>`).join('');
     }
 
-    // ─── BADGE STYLES ─────────────────────────────────────────────────────────
-    const style = document.createElement('style');
-    style.textContent = `
-        .badge-processing { background:#f0eeff; color:#7b61ff; border-color:#c4b8ff; }
-        .badge-processing::before { background:#7b61ff; }
-        .badge-accept     { background:#fff4e0; color:#cc7a00; border-color:#ffd580; }
-        .badge-accept::before     { background:#cc7a00; }
-        .badge-rejected   { background:#fff0f0; color:#e53935; border-color:#ffb3b3; }
-        .badge-rejected::before   { background:#e53935; }
-    `;
-    document.head.appendChild(style);
+    renderDetailActions(c);
+    document.getElementById('detail-modal').classList.add('active');
+}
 
-    // ─── INIT ─────────────────────────────────────────────────────────────────
-    loadCasesFromDB();
+function renderDetailActions(c) {
+    document.getElementById('d-actions').innerHTML=`<button class="btn-cancel" onclick="closeDetail()">ปิด</button>`;
+}
+
+// ─── APPROVE / REJECT ─────────────────────────────────────────────────────────
+async function doApprove(id) {
+    try {
+        const res=await fetch(`/return/${encodeURIComponent(id)}/approve`,{method:'POST',headers:{'X-CSRF-TOKEN':CSRF()}});
+        const data=await res.json();
+        if (!data.success) { alert(data.message); return; }
+        const c=cases[id]; const sm=statusMap[data.status]??statusMap.processing;
+        c.status=data.status; c.step=sm.step;
+        const today=new Date().toISOString().slice(0,10);
+        if(c.step<=5) c.stepDates[c.step-1]=today;
+        renderTable(); openDetail(id);
+        showToast(`✅ ${data.status==='accept'?'Accept':'Finish'} เคส ${id} แล้ว`);
+    } catch(err) { alert('เกิดข้อผิดพลาด: '+err.message); }
+}
+
+async function doReject(id) {
+    if (!confirm(`ยืนยันยกเลิกเคส ${id}?`)) return;
+    try {
+        const res=await fetch(`/return/${encodeURIComponent(id)}/reject`,{method:'POST',headers:{'X-CSRF-TOKEN':CSRF()}});
+        const data=await res.json();
+        if (!data.success) { alert(data.message); return; }
+        cases[id].status='cancel'; cases[id].step=1;
+        renderTable(); closeDetail();
+        showToast(`❌ ยกเลิกเคส ${id} แล้ว`);
+    } catch(err) { alert('เกิดข้อผิดพลาด: '+err.message); }
+}
+
+function closeDetail() { document.getElementById('detail-modal').classList.remove('active'); currentDetailId=null; }
+function closeDetailOnOverlay(e) { if(e.target===document.getElementById('detail-modal')) closeDetail(); }
+
+// ─── LIGHTBOX ──────────────────────────────────────────────────────────────────
+function openLightbox(startIdx, caseId) {
+    const c=cases[caseId]; if (!c||!c.images?.length) return;
+    lbImages=c.images; lbIndex=startIdx;
+    showLightboxImage();
+    document.getElementById('lightbox').classList.add('active');
+}
+
+function openLightboxFromTable(e, caseId, idx) {
+    e.stopPropagation();
+    openLightbox(idx, caseId);
+}
+
+function showLightboxImage() {
+    const img=lbImages[lbIndex];
+    const fileId = img.fileId || (img.viewUrl||'').match(/\/d\/([^/]+)\//)?.[1] || '';
+    document.getElementById('lb-img').src = fileId
+        ? `/return/drive-image?id=${fileId}&sz=w1600`
+        : (img.viewUrl || '');
+    document.getElementById('lb-counter').textContent = `${lbIndex+1} / ${lbImages.length}`;
+    document.getElementById('lb-caption').textContent = img.filename||'';
+}
+
+function lbPrev() { lbIndex=(lbIndex-1+lbImages.length)%lbImages.length; showLightboxImage(); }
+function lbNext() { lbIndex=(lbIndex+1)%lbImages.length; showLightboxImage(); }
+
+function closeLightbox() { document.getElementById('lightbox').classList.remove('active'); }
+function closeLightboxOnOverlay(e) { if(e.target===document.getElementById('lightbox')) closeLightbox(); }
+
+// Keyboard nav for lightbox
+document.addEventListener('keydown', e=>{
+    if (!document.getElementById('lightbox').classList.contains('active')) return;
+    if (e.key==='ArrowLeft') lbPrev();
+    if (e.key==='ArrowRight') lbNext();
+    if (e.key==='Escape') closeLightbox();
+});
+
+// ─── SEARCH ────────────────────────────────────────────────────────────────────
+function searchTable(q) {
+    q=q.toLowerCase().trim();
+    document.querySelectorAll('#cases-tbody tr:not(#empty-row)').forEach(r=>{
+        r.style.display=r.textContent.toLowerCase().includes(q)?'':'none';
+    });
+}
+
+// ─── TOAST ─────────────────────────────────────────────────────────────────────
+function showToast(msg) {
+    const t=document.createElement('div');
+    t.textContent=msg;
+    Object.assign(t.style,{
+        position:'fixed',bottom:'28px',left:'50%',transform:'translateX(-50%) translateY(12px)',
+        background:'#1d1d1f',color:'#fff',padding:'10px 22px',borderRadius:'24px',
+        fontSize:'13px',fontWeight:'600',zIndex:'9999',opacity:'0',
+        transition:'all 0.3s ease',whiteSpace:'nowrap',boxShadow:'0 4px 20px rgba(0,0,0,0.2)'
+    });
+    document.body.appendChild(t);
+    requestAnimationFrame(()=>{t.style.opacity='1';t.style.transform='translateX(-50%) translateY(0)';});
+    setTimeout(()=>{t.style.opacity='0';t.style.transform='translateX(-50%) translateY(12px)';setTimeout(()=>t.remove(),300);},2800);
+}
+
+// ─── INIT ──────────────────────────────────────────────────────────────────────
+loadCasesFromDB();
 </script>
 </body>
 </html>

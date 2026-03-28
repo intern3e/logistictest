@@ -112,15 +112,26 @@
        <span>👤 ผู้ใช้: {{ request()->get('create_by', 'Guest') }}</span>
     </span>
 </div>
-    <div style="display: flex; gap: 8px;">
-        <a href="dashboardreturn"
-            style="display: inline-block; background-color: #28a745; color: white; padding: 8px 16px; border-radius: 6px; text-decoration: none; font-weight: bold;"
-            onmouseover="this.style.backgroundColor='#218838'"
-            onmouseout="this.style.backgroundColor='#28a745'">
-                เคลมสินค้านอก
-        </a>
-        <a href="http://server_update:8000/solist" class="back-button">← หน้าหลัก</a>
-    </div>
+@php
+    $createBy = request()->get('create_by', 'Guest');
+
+    // ★ เพิ่มผู้ใช้ที่มีสิทธิ์ admin ตรงนี้เลย
+    $adminUsers = ['test101', 'หยก', 'admin01', 'superadmin'];
+
+    $claimUrl = in_array($createBy, $adminUsers)
+        ? 'adminpooutside'
+        : 'dashboardreturn';
+@endphp
+
+<div style="display: flex; gap: 8px;">
+    <a href="{{ $claimUrl }}"
+        style="display: inline-block; background-color: #28a745; color: white; padding: 8px 16px; border-radius: 6px; text-decoration: none; font-weight: bold;"
+        onmouseover="this.style.backgroundColor='#218838'"
+        onmouseout="this.style.backgroundColor='#28a745'">
+            เคลมสินค้านอก
+    </a>
+    <a href="http://server_update:8000/solist" class="back-button">← หน้าหลัก</a>
+</div>
 </div>
 
 {{-- SEARCH BOX --}}

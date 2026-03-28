@@ -212,4 +212,9 @@ Route::patch('/return/{id}/status',    [PooutsidereturnController::class, 'updat
 Route::post('/return/{id}/approve', [PooutsidereturnController::class, 'approveReturn']);
 Route::post('/return/{id}/reject',  [PooutsidereturnController::class, 'rejectReturn']);
 Route::get('/adminpooutside', [PooutsidereturnController::class, 'adminpooutside'])->name('pooutside.adminpooutside');
+Route::post('/return/upload-image',            [PooutsidereturnController::class, 'uploadToGAS']);
+Route::get('/return/drive-image',              [PooutsidereturnController::class, 'driveImage']);
+Route::post('/return/{id}/update-images',      [PooutsidereturnController::class, 'updateImages']);
 
+
+ 
