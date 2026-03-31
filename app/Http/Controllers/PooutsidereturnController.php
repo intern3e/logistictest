@@ -14,14 +14,21 @@ use Carbon\Carbon;
 
 class PooutsidereturnController extends Controller
 {
-    // ════════════════════════════════════════════════════════════════════
-    //  เพิ่มคอลัมน์ images อัตโนมัติถ้ายังไม่มี (ไม่ต้อง migrate แยก)
-    // ════════════════════════════════════════════════════════════════════
     public function __construct()
     {
         if (!Schema::hasColumn('Pooutsidereturn', 'images')) {
             Schema::table('Pooutsidereturn', function (Blueprint $table) {
                 $table->text('images')->nullable()->after('note');
+            });
+        }
+        if (!Schema::hasColumn('Pooutsidereturn', 'images_evidence')) {
+            Schema::table('Pooutsidereturn', function (Blueprint $table) {
+                $table->text('images_evidence')->nullable()->after('images');
+            });
+        }
+        if (!Schema::hasColumn('Pooutsidereturn', 'images_pack')) {
+            Schema::table('Pooutsidereturn', function (Blueprint $table) {
+                $table->text('images_pack')->nullable()->after('images_evidence');
             });
         }
     }
@@ -31,11 +38,6 @@ class PooutsidereturnController extends Controller
         return view('pooutside.dashboardreturn');
     }
 
-    public function adminpooutside()
-    {
-        return view('pooutside.adminpooutside');
-    }
-
     public function getPODetail(Request $request)
     {
         $poNum    = $request->query('PONum');
@@ -43,9 +45,11 @@ class PooutsidereturnController extends Controller
         return response()->json($response->json());
     }
 
+    // ════════════════════════════════════════════════════════════════════
+    //  listReturns — ส่ง images, images_evidence, images_pack กลับด้วย
+    // ════════════════════════════════════════════════════════════════════
     public function listReturns()
     {
-        // ใช้ DB::table แทน Eloquent เพื่อดึงทุก column รวม images
         $headers = DB::table('Pooutsidereturn')
             ->orderBy('return_date', 'desc')
             ->get();
@@ -68,24 +72,41 @@ class PooutsidereturnController extends Controller
                     if (is_array($decoded)) $images = $decoded;
                 }
 
+                $images_evidence = [];
+                if (!empty($h->images_evidence)) {
+                    $decoded = json_decode($h->images_evidence, true);
+                    if (is_array($decoded)) $images_evidence = $decoded;
+                }
+
+                $images_pack = [];
+                if (!empty($h->images_pack)) {
+                    $decoded = json_decode($h->images_pack, true);
+                    if (is_array($decoded)) $images_pack = $decoded;
+                }
+
                 return [
-                    'id'       => $h->return_id,
-                    'customer' => $h->vendor,
-                    'date'     => substr($h->return_date, 0, 10),
-                    'po'       => $h->po,
-                    'status'   => $h->status,
-                    'reason'   => $h->reason,
-                    'note'     => $h->note ?? '-',
-                    'product'  => $productList->map(fn($d) =>
+                    'id'              => $h->return_id,
+                    'customer'        => $h->vendor,
+                    'date'            => substr($h->return_date, 0, 10),
+                    'po'              => $h->po,
+                    'status'          => $h->status,
+                    'reason'          => $h->reason,
+                    'note'            => $h->note ?? '-',
+                    'product'         => $productList->map(fn($d) =>
                         ($d['product_name'] ?: '-') . ' (จำนวน: ' . $d['quantity'] . ')'
                     )->implode('|'),
-                    'products' => $productList->values(),
-                    'images'   => $images,
+                    'products'        => $productList->values(),
+                    'images'          => $images,
+                    'images_evidence' => $images_evidence,
+                    'images_pack'     => $images_pack,
                 ];
             })
         );
     }
 
+    // ════════════════════════════════════════════════════════════════════
+    //  submitReturn
+    // ════════════════════════════════════════════════════════════════════
     public function submitReturn(Request $request)
     {
         $validator = Validator::make($request->all(), [
@@ -111,7 +132,6 @@ class PooutsidereturnController extends Controller
 
             $returnId = $this->generateReturnId($now, $poNum);
 
-            // ใช้ DB::table เพื่อ insert images โดยไม่ติดปัญหา fillable
             DB::table('Pooutsidereturn')->insert([
                 'return_id'   => $returnId,
                 'return_date' => $now->toDateTimeString(),
@@ -132,10 +152,6 @@ class PooutsidereturnController extends Controller
                 ]);
             }
 
-            // ไม่ส่ง LINE ที่นี่เลย — ให้ frontend เรียก /update-images?final=true
-            // ถ้าไม่มีรูป frontend จะส่ง final=true ทันที
-            // ถ้ามีรูป frontend จะส่ง final=true หลังรูปครบ
-
             return response()->json([
                 'success'   => true,
                 'return_id' => $returnId,
@@ -154,8 +170,7 @@ class PooutsidereturnController extends Controller
     }
 
     // ════════════════════════════════════════════════════════════════════
-    //  Proxy รูปจาก Google Drive (แก้ CORS)
-    //  GET /return/drive-image?id=FILE_ID&sz=w400
+    //  driveImage — Proxy รูปจาก Google Drive
     // ════════════════════════════════════════════════════════════════════
     public function driveImage(Request $request)
     {
@@ -171,7 +186,6 @@ class PooutsidereturnController extends Controller
             $response = Http::withoutVerifying()->timeout(15)->get($url);
 
             if (!$response->successful()) {
-                // ลอง uc export แทน
                 $url      = "https://drive.google.com/uc?export=view&id={$fileId}";
                 $response = Http::withoutVerifying()->timeout(15)->get($url);
             }
@@ -188,8 +202,7 @@ class PooutsidereturnController extends Controller
     }
 
     // ════════════════════════════════════════════════════════════════════
-    //  Proxy: Browser → Laravel → GAS → Google Drive
-    //  POST /return/upload-image
+    //  uploadToGAS — Proxy Browser → Laravel → GAS → Google Drive
     // ════════════════════════════════════════════════════════════════════
     public function uploadToGAS(Request $request)
     {
@@ -229,20 +242,29 @@ class PooutsidereturnController extends Controller
     }
 
     // ════════════════════════════════════════════════════════════════════
-    //  อัปเดต images หลัง background upload เสร็จ
-    //  POST /return/{id}/update-images
+    //  updateImages — บันทึก images, images_evidence, images_pack
     // ════════════════════════════════════════════════════════════════════
     public function updateImages(Request $request, string $id)
     {
         try {
-            $images   = $request->input('images', []);
-            $isFinal  = $request->boolean('final', false); // true = รูปครบแล้ว ส่ง LINE
+            $images          = $request->input('images', []);
+            $images_evidence = $request->input('images_evidence', null);
+            $images_pack     = $request->input('images_pack', null);
+            $isFinal         = $request->boolean('final', false);
+
+            $updateData = ['images' => json_encode($images)];
+
+            if ($images_evidence !== null) {
+                $updateData['images_evidence'] = json_encode($images_evidence);
+            }
+            if ($images_pack !== null) {
+                $updateData['images_pack'] = json_encode($images_pack);
+            }
 
             DB::table('Pooutsidereturn')
                 ->where('return_id', $id)
-                ->update(['images' => json_encode($images)]);
+                ->update($updateData);
 
-            // ส่ง LINE notification พร้อมรูปเมื่อรูปครบทุกรูป
             if ($isFinal && !empty($images)) {
                 $row = DB::table('Pooutsidereturn')->where('return_id', $id)->first();
                 if ($row) {
@@ -269,6 +291,43 @@ class PooutsidereturnController extends Controller
         }
     }
 
+    // ════════════════════════════════════════════════════════════════════
+    //  updateStatus — POST /return/{id}/status
+    // ════════════════════════════════════════════════════════════════════
+    public function updateStatus(Request $request, string $id)
+    {
+        try {
+            $newStatus = $request->input('status');
+            $updatedBy = $request->input('updated_by', 'admin');
+
+            $allowed = ['processing', 'accept', 'finish', 'cancel'];
+            if (!in_array($newStatus, $allowed)) {
+                return response()->json(['success' => false, 'message' => 'สถานะไม่ถูกต้อง'], 422);
+            }
+
+            $updated = DB::table('Pooutsidereturn')
+                ->where('return_id', $id)
+                ->update(['status' => $newStatus]);
+
+            if (!$updated) {
+                return response()->json(['success' => false, 'message' => 'ไม่พบเคส ' . $id], 404);
+            }
+
+            return response()->json([
+                'success'    => true,
+                'return_id'  => $id,
+                'status'     => $newStatus,
+                'updated_by' => $updatedBy,
+            ]);
+
+        } catch (\Throwable $e) {
+            return response()->json(['success' => false, 'message' => $e->getMessage()], 500);
+        }
+    }
+
+    // ════════════════════════════════════════════════════════════════════
+    //  approveReturn
+    // ════════════════════════════════════════════════════════════════════
     public function approveReturn(Request $request, string $id)
     {
         try {
@@ -293,6 +352,9 @@ class PooutsidereturnController extends Controller
         }
     }
 
+    // ════════════════════════════════════════════════════════════════════
+    //  rejectReturn
+    // ════════════════════════════════════════════════════════════════════
     public function rejectReturn(Request $request, string $id)
     {
         try {
@@ -312,7 +374,9 @@ class PooutsidereturnController extends Controller
         }
     }
 
-    // ─── Generate return_id ───────────────────────────────────────────────────
+    // ════════════════════════════════════════════════════════════════════
+    //  generateReturnId
+    // ════════════════════════════════════════════════════════════════════
     private function generateReturnId(Carbon $now, string $poNum): string
     {
         $cleanPo = preg_replace('/^PO/i', '', $poNum);
@@ -334,7 +398,9 @@ class PooutsidereturnController extends Controller
             . '-' . str_pad($nextSeq, 5, '0', STR_PAD_LEFT);
     }
 
-    // ─── Send LINE Notification ───────────────────────────────────────────────
+    // ════════════════════════════════════════════════════════════════════
+    //  sendLineNotification
+    // ════════════════════════════════════════════════════════════════════
     private function sendLineNotification(
         string $returnId, string $poNum, string $vendor,
         string $reason, ?string $note, array $items, Carbon $now,
@@ -380,7 +446,6 @@ class PooutsidereturnController extends Controller
             ['type'=>'box','layout'=>'vertical','margin'=>'sm','spacing'=>'sm','contents'=>$itemRows],
         ];
 
-        // เพิ่ม section รูปภาพแบบ grid 3x3 (สูงสุด 9 รูป)
         if (!empty($images)) {
             $photos = collect($images)
                 ->filter(fn($img) => !empty($img['viewUrl']))
@@ -398,12 +463,10 @@ class PooutsidereturnController extends Controller
                     'margin' => 'md',
                 ];
 
-                // แบ่งรูปเป็นแถวๆ ละ 3 รูป
                 $rows = $photos->chunk(3);
                 foreach ($rows as $row) {
                     $rowItems = $row->map(function($img) {
                         $viewUrl = $img['viewUrl'] ?? '';
-                        // แปลงเป็น thumbnail URL
                         if (preg_match('/\/d\/([^\/]+)\//', $viewUrl, $m)) {
                             $thumbUrl = 'https://drive.google.com/thumbnail?id='.$m[1].'&sz=w400';
                         } else {
@@ -416,15 +479,10 @@ class PooutsidereturnController extends Controller
                             'aspectRatio' => '1:1',
                             'aspectMode'  => 'cover',
                             'size'        => 'full',
-                            'action'      => [
-                                'type'  => 'uri',
-                                'uri'   => $viewUrl,
-                                'label' => 'ดูรูป',
-                            ],
+                            'action'      => ['type'=>'uri','uri'=>$viewUrl,'label'=>'ดูรูป'],
                         ];
                     })->values()->toArray();
 
-                    // เติมช่องว่างถ้าแถวไม่ครบ 3
                     while (count($rowItems) < 3) {
                         $rowItems[] = ['type'=>'filler'];
                     }
@@ -472,4 +530,8 @@ class PooutsidereturnController extends Controller
             ],
         ];
     }
+    public function Delivery()
+{
+    return view('pooutside.delivery');
+}
 }

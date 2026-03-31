@@ -203,18 +203,16 @@ Route::post('/pull-po-outside', [PooutsideController::class, 'pull'])->name('pul
 
 
 use App\Http\Controllers\PooutsidereturnController;
-
-Route::get('/dashboardreturn', [PooutsidereturnController::class, 'dashboardreturn'])->name('pooutside.dashboardreturn');
-Route::get('/api/po-detail', [PooutsidereturnController::class, 'getPODetail']);
-Route::post('/return/submit',          [PooutsidereturnController::class, 'submitReturn']);
-Route::get('/return/list',             [PooutsidereturnController::class, 'listReturns']);
-Route::patch('/return/{id}/status',    [PooutsidereturnController::class, 'updateStatus']);
-Route::post('/return/{id}/approve', [PooutsidereturnController::class, 'approveReturn']);
-Route::post('/return/{id}/reject',  [PooutsidereturnController::class, 'rejectReturn']);
-Route::get('/adminpooutside', [PooutsidereturnController::class, 'adminpooutside'])->name('pooutside.adminpooutside');
-Route::post('/return/upload-image',            [PooutsidereturnController::class, 'uploadToGAS']);
-Route::get('/return/drive-image',              [PooutsidereturnController::class, 'driveImage']);
-Route::post('/return/{id}/update-images',      [PooutsidereturnController::class, 'updateImages']);
-
-
+ 
+Route::get('/dashboardreturn',            [PooutsidereturnController::class, 'dashboardreturn'])->name('pooutside.dashboardreturn');
+Route::get('/api/po-detail',              [PooutsidereturnController::class, 'getPODetail']);
+Route::post('/return/submit',             [PooutsidereturnController::class, 'submitReturn']);
+Route::get('/return/list',                [PooutsidereturnController::class, 'listReturns']);
+Route::post('/return/upload-image',       [PooutsidereturnController::class, 'uploadToGAS']);
+Route::get('/return/drive-image',         [PooutsidereturnController::class, 'driveImage']);
+Route::post('/return/{id}/update-images', [PooutsidereturnController::class, 'updateImages']);
+Route::post('/return/{id}/status',        [PooutsidereturnController::class, 'updateStatus']);
+Route::post('/return/{id}/approve',       [PooutsidereturnController::class, 'approveReturn']);
+Route::post('/return/{id}/reject',        [PooutsidereturnController::class, 'rejectReturn']);
+Route::get('/Delivery',                   [PooutsidereturnController::class, 'Delivery']);
  
