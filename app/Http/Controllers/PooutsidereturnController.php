@@ -530,8 +530,5 @@ class PooutsidereturnController extends Controller
             ],
         ];
     }
-    public function Delivery()
-{
-    return view('pooutside.delivery');
-}
+
 }

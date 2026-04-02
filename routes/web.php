@@ -214,5 +214,8 @@ Route::post('/return/{id}/update-images', [PooutsidereturnController::class, 'up
 Route::post('/return/{id}/status',        [PooutsidereturnController::class, 'updateStatus']);
 Route::post('/return/{id}/approve',       [PooutsidereturnController::class, 'approveReturn']);
 Route::post('/return/{id}/reject',        [PooutsidereturnController::class, 'rejectReturn']);
-Route::get('/Delivery',                   [PooutsidereturnController::class, 'Delivery']);
- 
+
+use App\Http\Controllers\DeliveryController;
+Route::get('/delivery', [DeliveryController::class, 'Delivery']);
+Route::get('/service', [DeliveryController::class, 'service']);
+Route::get('/oil', [DeliveryController::class, 'oil']);

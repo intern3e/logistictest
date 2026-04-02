@@ -284,10 +284,15 @@
                     <input type="hidden" id="method" name="method" value="">
                     {{-- ไปเพิ่มเซิฟหลัก --}}
                    <a id="btn-dashboard">
-    <input class="btn btn-danger" type="button" style="background-color: #1738f3" value="ข้อมูลจัดส่ง">
+    <input class="btn btn-danger" type="button" style="background-color: #1738f3" value="ข้อมูลจัดส่ง"> 
 </a>
 <a href="pooutside" title="ตามของนอก" class="notification-icon" style="position: relative; display: inline-block;">
                 <input class="btn btn-danger" type="button" style="background-color: #50c82e" value="ตามของนอก"></a>
+                <a href="delivery" title="delivery" class="notification-icon" style="position: relative; display: inline-block;">
+                <input class="btn btn-danger" type="button" style="background-color: #eca311" value="งานผิด"></a>
+                <a href="oil" title="oil" class="notification-icon" style="position: relative; display: inline-block;">
+                <input class="btn btn-danger" type="button" style="background-color: #0dc0f6" value="คนขับ"></a>
+                
 <script>
     document.addEventListener("DOMContentLoaded", function () {
         // ดึงวันที่ปัจจุบันในรูปแบบ YYYY-MM-DD
@@ -298,7 +303,7 @@
     });
 </script>
                  <a href="alertaccount" title="บัญชี" class="notification-icon" style="position: relative; display: inline-block;">
-                <input class="btn btn-danger" type="button" style="background-color: pink" value="บัญชี">
+            
                 
                 <span class="notification-badge" id="alertAccountBadge" style="position: absolute; top: -5px; right: -5px; background-color: rgb(255, 0, 0); color: white; border-radius: 50%; width: 20px; height: 20px; display: none; text-align: center; line-height: 20px;">0</span>
             </a>
