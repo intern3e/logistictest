@@ -456,18 +456,32 @@
                     <input type="date" id="inputDate">
                 </div>
                 <div class="modal-field">
-                    <label>ชื่อ คนขับ</label>
+                    <label>ทะเบียนคนขับ</label>
                     <select id="inputName">
-                        <option value="">— เลือก คนขับ —</option>
-                        <option value="บังเดช">บังเดช</option>
-                        <option value="แชม">แชม</option>
-                        <option value="กอล์ฟ">กอล์ฟ</option>
-                        <option value="หรั่ง">หรั่ง</option>
-                        <option value="เก่ง">เก่ง</option>
-                        <option value="เอ">เอ</option>
-                        <option value="ยุทร">ยุทร</option>
-                        <option value="แฟรงค์">แฟรงค์</option>
-                        <option value="เอ้">เอ้</option>
+                    <option value="">— เลือก ทะเบียนรถ —</option>
+
+                    <option value="1 ฉผ 1276">1 ฉผ 1276</option>
+                    <option value="1 ฉผ 3181">1 ฉผ 3181</option>
+                    <option value="1ฉผ213">1ฉผ213</option>
+                    <option value="1ฉผศ7158">1ฉผศ7158</option>
+
+                    <option value="2 ฉธ 1620">2 ฉธ 1620</option>
+                    <option value="2ฉมฎ3017">2ฉมฎ3017</option>
+                    <option value="2ฉธ1619">2ฉธ1619</option>
+                    <option value="2ฉธ1621">2ฉธ1621</option>
+
+                    <option value="3ฉมก6071">3ฉมก6071</option>
+                    <option value="3ฉมง3059">3ฉมง3059</option>
+                    <option value="3ฉมณ6380">3ฉมณ6380</option>
+                    <option value="3ฉมย478">3ฉมย478</option>
+                    <option value="3ฉมห200">3ฉมห200</option>
+
+                    <option value="4กย1540">4กย1540</option>
+                    <option value="6762">6762</option>
+
+                    <option value="City 8กค6309">City 8กค6309</option>
+                    <option value="City 9 กค4815">City 9 กค4815</option>
+                    <option value="แจ๊ส 9กธ4830">แจ๊ส 9กธ4830</option>
                     </select>
                 </div>
             </div>

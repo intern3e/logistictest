@@ -45,9 +45,6 @@ class PooutsidereturnController extends Controller
         return response()->json($response->json());
     }
 
-    // ════════════════════════════════════════════════════════════════════
-    //  listReturns — ส่ง images, images_evidence, images_pack กลับด้วย
-    // ════════════════════════════════════════════════════════════════════
     public function listReturns()
     {
         $headers = DB::table('Pooutsidereturn')
@@ -104,9 +101,6 @@ class PooutsidereturnController extends Controller
         );
     }
 
-    // ════════════════════════════════════════════════════════════════════
-    //  submitReturn
-    // ════════════════════════════════════════════════════════════════════
     public function submitReturn(Request $request)
     {
         $validator = Validator::make($request->all(), [
@@ -128,7 +122,7 @@ class PooutsidereturnController extends Controller
             $reason = $request->input('reason');
             $note   = $request->input('note', '');
             $images = $request->input('images', []);
-            $now    = Carbon::now();
+            $now    = Carbon::now('Asia/Bangkok'); // ตั้งเวลาไทยให้ถูกต้อง
 
             $returnId = $this->generateReturnId($now, $poNum);
 
@@ -143,13 +137,24 @@ class PooutsidereturnController extends Controller
                 'images'      => !empty($images) ? json_encode($images) : null,
             ]);
 
-            foreach ($request->input('selectedItems') as $item) {
+            $selectedItems = $request->input('selectedItems');
+            foreach ($selectedItems as $item) {
                 DetailPooutsidereturn::create([
                     'return_id'    => $returnId,
                     'inovice'      => $item['invoice'] ?? '',
                     'product_name' => trim($item['goodName']),
                     'quantity'     => $item['qty'],
                 ]);
+            }
+
+            // ส่งการแจ้งเตือน Line ทันทีที่สร้างเคส (เพื่อให้ส่งครั้งเดียวจบที่นี่)
+            // เช็คว่า notify_line ไม่ได้ถูกสั่งปิด
+            if ($request->input('notify_line', true) !== false) {
+                $this->sendLineNotification(
+                    $returnId, $poNum, $vendor,
+                    $reason, $note, $selectedItems, $now,
+                    $images
+                );
             }
 
             return response()->json([
@@ -169,9 +174,6 @@ class PooutsidereturnController extends Controller
         }
     }
 
-    // ════════════════════════════════════════════════════════════════════
-    //  driveImage — Proxy รูปจาก Google Drive
-    // ════════════════════════════════════════════════════════════════════
     public function driveImage(Request $request)
     {
         $fileId = $request->query('id');
@@ -201,9 +203,6 @@ class PooutsidereturnController extends Controller
         }
     }
 
-    // ════════════════════════════════════════════════════════════════════
-    //  uploadToGAS — Proxy Browser → Laravel → GAS → Google Drive
-    // ════════════════════════════════════════════════════════════════════
     public function uploadToGAS(Request $request)
     {
         $gasUrl   = $request->input('gasUrl');
@@ -241,9 +240,6 @@ class PooutsidereturnController extends Controller
         }
     }
 
-    // ════════════════════════════════════════════════════════════════════
-    //  updateImages — บันทึก images, images_evidence, images_pack
-    // ════════════════════════════════════════════════════════════════════
     public function updateImages(Request $request, string $id)
     {
         try {
@@ -251,6 +247,9 @@ class PooutsidereturnController extends Controller
             $images_evidence = $request->input('images_evidence', null);
             $images_pack     = $request->input('images_pack', null);
             $isFinal         = $request->boolean('final', false);
+            
+            // ยกเลิกการส่งแจ้งเตือนซ้ำที่นี่ (เพราะส่งไปแล้วตอน submitReturn)
+            // เพื่อแก้ปัญหาการแจ้งเตือนซ้ำ 2 ครั้ง
 
             $updateData = ['images' => json_encode($images)];
 
@@ -265,52 +264,39 @@ class PooutsidereturnController extends Controller
                 ->where('return_id', $id)
                 ->update($updateData);
 
-            if ($isFinal && !empty($images)) {
-                $row = DB::table('Pooutsidereturn')->where('return_id', $id)->first();
-                if ($row) {
-                    $items = DB::table('DetailPooutsidereturn')
-                        ->where('return_id', $id)->get()
-                        ->map(fn($d) => [
-                            'goodName' => $d->product_name ?? '',
-                            'qty'      => $d->quantity ?? 0,
-                            'invoice'  => $d->inovice ?? '',
-                        ])->toArray();
-
-                    $this->sendLineNotification(
-                        $id, $row->po, $row->vendor,
-                        $row->reason, $row->note ?? '',
-                        $items, Carbon::parse($row->return_date),
-                        $images
-                    );
-                }
-            }
-
             return response()->json(['success' => true]);
         } catch (\Exception $e) {
             return response()->json(['success' => false, 'error' => $e->getMessage()]);
         }
     }
 
-    // ════════════════════════════════════════════════════════════════════
-    //  updateStatus — POST /return/{id}/status
-    // ════════════════════════════════════════════════════════════════════
     public function updateStatus(Request $request, string $id)
     {
         try {
             $newStatus = $request->input('status');
             $updatedBy = $request->input('updated_by', 'admin');
+            
+            // เช็ค parameter notify_line อย่างเคร่งครัด
+            $shouldNotify = $request->input('notify_line', true);
 
             $allowed = ['processing', 'accept', 'finish', 'cancel'];
             if (!in_array($newStatus, $allowed)) {
                 return response()->json(['success' => false, 'message' => 'สถานะไม่ถูกต้อง'], 422);
             }
 
+            $updatePayload = ['status' => $newStatus];
+            
             $updated = DB::table('Pooutsidereturn')
                 ->where('return_id', $id)
-                ->update(['status' => $newStatus]);
+                ->update($updatePayload);
 
             if (!$updated) {
                 return response()->json(['success' => false, 'message' => 'ไม่พบเคส ' . $id], 404);
+            }
+
+            // ถ้าหน้าบ้านสั่งมาว่า notify_line: false (เช่นจากปุ่มสถานะ) จะไม่ทำงานในส่วนแจ้งเตือน
+            if ($shouldNotify !== false) {
+                // ถ้าในอนาคตต้องการให้ปุ่มสถานะแจ้งเตือน ก็สามารถใส่โค้ดตรงนี้ได้
             }
 
             return response()->json([
@@ -325,9 +311,6 @@ class PooutsidereturnController extends Controller
         }
     }
 
-    // ════════════════════════════════════════════════════════════════════
-    //  approveReturn
-    // ════════════════════════════════════════════════════════════════════
     public function approveReturn(Request $request, string $id)
     {
         try {
@@ -352,9 +335,6 @@ class PooutsidereturnController extends Controller
         }
     }
 
-    // ════════════════════════════════════════════════════════════════════
-    //  rejectReturn
-    // ════════════════════════════════════════════════════════════════════
     public function rejectReturn(Request $request, string $id)
     {
         try {
@@ -374,9 +354,6 @@ class PooutsidereturnController extends Controller
         }
     }
 
-    // ════════════════════════════════════════════════════════════════════
-    //  generateReturnId
-    // ════════════════════════════════════════════════════════════════════
     private function generateReturnId(Carbon $now, string $poNum): string
     {
         $cleanPo = preg_replace('/^PO/i', '', $poNum);
@@ -398,9 +375,6 @@ class PooutsidereturnController extends Controller
             . '-' . str_pad($nextSeq, 5, '0', STR_PAD_LEFT);
     }
 
-    // ════════════════════════════════════════════════════════════════════
-    //  sendLineNotification
-    // ════════════════════════════════════════════════════════════════════
     private function sendLineNotification(
         string $returnId, string $poNum, string $vendor,
         string $reason, ?string $note, array $items, Carbon $now,
