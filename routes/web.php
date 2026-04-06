@@ -215,7 +215,9 @@ Route::post('/return/{id}/status',        [PooutsidereturnController::class, 'up
 Route::post('/return/{id}/approve',       [PooutsidereturnController::class, 'approveReturn']);
 Route::post('/return/{id}/reject',        [PooutsidereturnController::class, 'rejectReturn']);
 
-use App\Http\Controllers\DeliveryController;
-Route::get('/delivery', [DeliveryController::class, 'Delivery']);
-Route::get('/service', [DeliveryController::class, 'service']);
-Route::get('/oil', [DeliveryController::class, 'oil']);
+use App\Http\Controllers\fuellogsController;
+Route::get('/oil',                [fuellogsController::class, 'oil'])->name('oil');
+Route::post('/oil/store',         [fuellogsController::class, 'store'])->name('oil.store');
+Route::put('/oil/update/{id}',    [fuellogsController::class, 'update'])->name('oil.update');
+Route::delete('/oil/delete/{id}', [fuellogsController::class, 'destroy'])->name('oil.destroy');
+Route::get('/oil/prev-mileage',   [fuellogsController::class, 'prevMileage'])->name('oil.prevMileage');
