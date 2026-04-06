@@ -34,7 +34,7 @@ class fuel_Logs extends Model
     protected static function booted()
     {
         static::creating(function ($model) {
-            $model->created_at = now();
+            $model->created_at = now('Asia/Bangkok');
         });
     }
     protected $appends = [

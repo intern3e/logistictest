@@ -106,7 +106,7 @@ class fuellogsController extends Controller
     }
     public function getKmPerLiterAttribute()
     {
-        $dist = $this->total_distance > 0 ? $this->total_distance : $this->distance;
+        $dist = ($this->total_distance > 0) ? $this->total_distance : $this->distance;
         if ($this->liters > 0 && $dist > 0) {
             return round($dist / $this->liters, 2);
         }
@@ -192,10 +192,10 @@ class fuellogsController extends Controller
             'end_time'      => 'required|date_format:H:i|after:start_time',
             'start_mileage' => 'required|numeric|min:0',
             'total_distance' => 'nullable|numeric|min:0.1',
-            'liters'        => 'required|numeric|min:0.1',
-            'total_price'   => 'required|numeric|min:0',
+            'liters'      => 'nullable|numeric|min:0.1',
+            'total_price' => 'nullable|numeric|min:0',
             'note'          => 'nullable|string|max:500',
-            'price_per_liter' => 'nullable|numeric|min:0'
+            'price_per_liter' => 'nullable|numeric|min:0',
         ];
     }
 

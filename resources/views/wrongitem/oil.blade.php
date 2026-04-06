@@ -222,8 +222,6 @@ textarea.form-control{resize:vertical;min-height:70px}
             @forelse($logs as $i => $r)
             @php
               $kml  = $r['km_per_liter'] ?? 0;
-              $bc   = $kml >= 16 ? 'badge-green' : ($kml >= 13 ? 'badge-blue' : 'badge-amber');
-              $bt   = $kml >= 16 ? '🟢 ประหยัด' : ($kml >= 13 ? '🔵 ปกติ' : ($kml > 0 ? '🟡 สิ้นเปลือง' : ''));
               $dist = ($r['total_distance'] ?? 0) > 0
                   ? number_format($r['total_distance'], 2)
                   : (($r['distance'] ?? 0) > 0 ? number_format($r['distance'], 2) : '—');
@@ -242,15 +240,14 @@ textarea.form-control{resize:vertical;min-height:70px}
               </td>
               <td style="font-weight:600">{{ $r['start_mileage'] ? number_format($r['start_mileage']) : '—' }}</td>
               <td>{{ $dist }}</td>
-              <td>{{ number_format($r['liters'] ?? 0, 2) }} ล.</td>
-              <td style="font-weight:600">฿{{ number_format($r['total_price'] ?? 0, 2) }}</td>
+              <td>{{ $r['liters'] ? number_format($r['liters'], 2).' ล.' : '—' }}</td>
+              <td style="font-weight:600">{{ $r['total_price'] ? '฿'.number_format($r['total_price'], 2) : '—' }}</td>
               <td>
-                @if($kml > 0)
-                  <span class="km-val">{{ number_format($kml, 1) }}</span>
-                  <span class="badge {{ $bc }}" style="font-size:10px">{{ $bt }}</span>
-                @else
-                  <span style="color:var(--text3);font-size:11px">—</span>
-                @endif
+                  @if($kml > 0)
+                    <span class="km-val">{{ number_format($kml, 1) }}</span>
+                  @else
+                    <span style="color:var(--text3);font-size:11px">—</span>
+                  @endif
               </td>
               <td style="font-size:11px;color:var(--text3)">{{ $r['created_at'] ?? '—' }}</td>
               <td>
@@ -426,7 +423,7 @@ textarea.form-control{resize:vertical;min-height:70px}
             $plateOther = $curPlate && !in_array($curPlate,$plateList);
           @endphp
           <div>
-            <label class="form-label">คนขับ (driver_name) *</label>
+            <label class="form-label">คนขับ</label>
             <select id="f-driver-select" class="form-control {{ $errors->has('driver_name') ? 'is-invalid' : '' }}"
               onchange="onSelectOther(this,'f-driver-name','f-driver-other')">
               <option value="">— เลือกคนขับ —</option>
@@ -445,7 +442,7 @@ textarea.form-control{resize:vertical;min-height:70px}
 
           {{-- ===== PLATE ===== --}}
           <div class="full">
-            <label class="form-label">ทะเบียนรถ (vehicle_id) *</label>
+            <label class="form-label">ทะเบียนรถ*</label>
             <select id="f-plate-select" class="form-control {{ $errors->has('vehicle_id') ? 'is-invalid' : '' }}"
               onchange="onSelectOther(this,'f-vehicle-id','f-plate-other'); onVehicleChange()">
               <option value="">— เลือกทะเบียน —</option>
@@ -462,10 +459,10 @@ textarea.form-control{resize:vertical;min-height:70px}
             @error('vehicle_id')<div class="invalid-feedback">{{ $message }}</div>@enderror
           </div>
 
-          <div class="section-divider">⏰ เวลาทำงาน</div>
+          <div class="section-divider">เวลาทำงาน</div>
 
           <div>
-            <label class="form-label">เวลาเริ่มต้น (start_time) *</label>
+            <label class="form-label">เวลาเริ่มขับ</label>
             <input type="time" name="start_time" id="f-start-time" class="form-control {{ $errors->has('start_time') ? 'is-invalid' : '' }}"
               value="{{ old('start_time', $editLog?->start_time?->format('H:i')) }}"
               oninput="calcPreview()">
@@ -473,17 +470,17 @@ textarea.form-control{resize:vertical;min-height:70px}
           </div>
 
           <div>
-            <label class="form-label">เวลาสิ้นสุด (end_time) *</label>
+            <label class="form-label">เวลาสิ้นสุด</label>
             <input type="time" name="end_time" id="f-end-time" class="form-control {{ $errors->has('end_time') ? 'is-invalid' : '' }}"
               value="{{ old('end_time', $editLog?->end_time?->format('H:i')) }}"
               oninput="calcPreview()">
             @error('end_time')<div class="invalid-feedback">{{ $message }}</div>@enderror
           </div>
 
-          <div class="section-divider">⛽ ข้อมูลน้ำมัน</div>
+          <div class="section-divider">ข้อมูลน้ำมัน</div>
 
           <div>
-            <label class="form-label">จำนวนลิตร (liters) *</label>
+            <label class="form-label">จำนวนลิตร*</label>
             <input type="number" name="liters" id="f-liters" class="form-control {{ $errors->has('liters') ? 'is-invalid' : '' }}"
               step="0.01" 
               value="{{ old('liters', $editLog?->liters) }}"
@@ -491,14 +488,14 @@ textarea.form-control{resize:vertical;min-height:70px}
             @error('liters')<div class="invalid-feedback">{{ $message }}</div>@enderror
           </div>
           <div>
-            <label class="form-label">ราคา/ลิตร (฿) *</label>
+            <label class="form-label">ราคาต่อลิตร*</label>
             <input type="number" name="price_per_liter" id="f-price-per-liter"
               class="form-control" step="0.01"
               oninput="calcPreview()"  readonly>
           </div>
 
           <div class="full">
-            <label class="form-label">ค่าน้ำมันรวม (total_price ฿) *</label>
+            <label class="form-label">ค่าน้ำมัน</label>
             <input type="number" name="total_price" id="f-total-price" class="form-control {{ $errors->has('total_price') ? 'is-invalid' : '' }}"
               step="0.01" 
               value="{{ old('total_price', $editLog?->total_price) }}"
@@ -506,10 +503,10 @@ textarea.form-control{resize:vertical;min-height:70px}
             @error('total_price')<div class="invalid-feedback">{{ $message }}</div>@enderror
           </div>
 
-          <div class="section-divider">🛣 เลขไมล์</div>
+          <div class="section-divider">เลขไมล์</div>
 
           <div class="full">
-            <label class="form-label">เลขไมล์เริ่มต้น (start_mileage) *</label>
+            <label class="form-label">เลขไมล์เริ่มต้น*</label>
             <input type="number" name="start_mileage" id="f-start-mileage" class="form-control {{ $errors->has('start_mileage') ? 'is-invalid' : '' }}"
               value="{{ old('start_mileage', $editLog?->start_mileage) }}"
               oninput="calcPreview()">
@@ -527,7 +524,7 @@ textarea.form-control{resize:vertical;min-height:70px}
           </div>
 
           <div class="full">
-            <label class="form-label">หมายเหตุ (note)</label>
+            <label class="form-label">หมายเหตุ</label>
             <textarea name="note" id="f-note" class="form-control" >{{ old('note', $editLog?->note) }}</textarea>
           </div>
         </div>
