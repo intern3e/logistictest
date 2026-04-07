@@ -221,3 +221,9 @@ Route::post('/oil/store',         [fuellogsController::class, 'store'])->name('o
 Route::put('/oil/update/{id}',    [fuellogsController::class, 'update'])->name('oil.update');
 Route::delete('/oil/delete/{id}', [fuellogsController::class, 'destroy'])->name('oil.destroy');
 Route::get('/oil/prev-mileage',   [fuellogsController::class, 'prevMileage'])->name('oil.prevMileage');
+
+
+use App\Http\Controllers\SellingLiveController;
+
+Route::get('/insertsellinglive', [SellingLiveController::class, 'insertsellinglive'])->name('insertsellinglive');
+Route::get('/dashboardsellinglive', [SellingLiveController::class, 'dashboardsellinglive'])->name('dashboardsellinglive');
