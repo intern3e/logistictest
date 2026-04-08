@@ -14,4 +14,8 @@ class SellingLiveController extends Controller
     {
         return view('sellinglive.dashboardsellinglive');
     }
+        public function Botsellinglive()
+    {
+        return view('sellinglive.Botsellinglive');
+    }
 }

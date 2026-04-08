@@ -227,3 +227,4 @@ use App\Http\Controllers\SellingLiveController;
 
 Route::get('/insertsellinglive', [SellingLiveController::class, 'insertsellinglive'])->name('insertsellinglive');
 Route::get('/dashboardsellinglive', [SellingLiveController::class, 'dashboardsellinglive'])->name('dashboardsellinglive');
+Route::get('/Botsellinglive', [SellingLiveController::class, 'Botsellinglive'])->name('Botsellinglive');
