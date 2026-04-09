@@ -215,16 +215,28 @@ Route::post('/return/{id}/status',        [PooutsidereturnController::class, 'up
 Route::post('/return/{id}/approve',       [PooutsidereturnController::class, 'approveReturn']);
 Route::post('/return/{id}/reject',        [PooutsidereturnController::class, 'rejectReturn']);
 
+
 use App\Http\Controllers\fuellogsController;
-Route::get('/oil',                [fuellogsController::class, 'oil'])->name('oil');
-Route::post('/oil/store',         [fuellogsController::class, 'store'])->name('oil.store');
-Route::put('/oil/update/{id}',    [fuellogsController::class, 'update'])->name('oil.update');
-Route::delete('/oil/delete/{id}', [fuellogsController::class, 'destroy'])->name('oil.destroy');
-Route::get('/oil/prev-mileage',   [fuellogsController::class, 'prevMileage'])->name('oil.prevMileage');
+
+// ===== OIL ROUTES =====
+// สำคัญ: prevMileage ต้องอยู่ก่อน destroy
+// เพราะ Laravel match route จากบนลงล่าง
+Route::get('/oil', [fuellogsController::class, 'oil'])->name('oil');
+Route::post('/oil/store', [fuellogsController::class, 'store'])->name('oil.store');
+Route::put('/oil/update/{id}', [fuellogsController::class, 'update'])->name('oil.update');
+Route::get('/oil/prev-mileage', [fuellogsController::class, 'prevMileage'])->name('oil.prevMileage');
+Route::delete('/oil/{id}', [fuellogsController::class, 'destroy'])->name('oil.destroy');
+
 
 
 use App\Http\Controllers\SellingLiveController;
-
 Route::get('/insertsellinglive', [SellingLiveController::class, 'insertsellinglive'])->name('insertsellinglive');
 Route::get('/dashboardsellinglive', [SellingLiveController::class, 'dashboardsellinglive'])->name('dashboardsellinglive');
 Route::get('/Botsellinglive', [SellingLiveController::class, 'Botsellinglive'])->name('Botsellinglive');
+
+
+use App\Http\Controllers\ServiceController;
+Route::get('/service', [ServiceController::class, 'index'])->name('dashboard');
+
+use App\Http\Controllers\DeliverytrackController ;
+Route::get('/deliverytrack', [DeliverytrackController::class, 'index'])->name('dashboard');

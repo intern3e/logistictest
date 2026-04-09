@@ -8,7 +8,6 @@ class ServiceController extends Controller
 {
     public function index(Request $request)
         {
-         
-            return view('driver.service'); // Pass data to the view
+            return view('driver.service');
         }
 }

@@ -8,6 +8,6 @@ class CheckdriverController extends Controller
 {
     public function dashboard()
     {
-        return view('check');
+        return view('driver.check');
     }
 }
