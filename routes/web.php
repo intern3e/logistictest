@@ -218,14 +218,23 @@ Route::post('/return/{id}/reject',        [PooutsidereturnController::class, 're
 
 use App\Http\Controllers\fuellogsController;
 
-// ===== OIL ROUTES =====
-// สำคัญ: prevMileage ต้องอยู่ก่อน destroy
-// เพราะ Laravel match route จากบนลงล่าง
-Route::get('/oil', [fuellogsController::class, 'oil'])->name('oil');
-Route::post('/oil/store', [fuellogsController::class, 'store'])->name('oil.store');
-Route::put('/oil/update/{id}', [fuellogsController::class, 'update'])->name('oil.update');
+// ต้องวาง prev-mileage ก่อน {id} เสมอ
 Route::get('/oil/prev-mileage', [fuellogsController::class, 'prevMileage'])->name('oil.prevMileage');
-Route::delete('/oil/{id}', [fuellogsController::class, 'destroy'])->name('oil.destroy');
+
+Route::get('/oil',              [fuellogsController::class, 'oil'])->name('oil');
+Route::post('/oil',             [fuellogsController::class, 'store'])->name('oil.store');
+Route::put('/oil/update/{id}',  [fuellogsController::class, 'update'])->name('oil.update');
+Route::delete('/oil/{id}',      [fuellogsController::class, 'destroy'])->name('oil.destroy');
+
+// use App\Http\Controllers\fuellogsController;
+// // ===== OIL ROUTES =====
+// // สำคัญ: prevMileage ต้องอยู่ก่อน destroy
+// // เพราะ Laravel match route จากบนลงล่าง
+// Route::get('/oil', [fuellogsController::class, 'oil'])->name('oil');
+// Route::post('/oil/store', [fuellogsController::class, 'store'])->name('oil.store');
+// Route::put('/oil/update/{id}', [fuellogsController::class, 'update'])->name('oil.update');
+// Route::get('/oil/prev-mileage', [fuellogsController::class, 'prevMileage'])->name('oil.prevMileage');
+// Route::delete('/oil/{id}', [fuellogsController::class, 'destroy'])->name('oil.destroy');
 
 
 

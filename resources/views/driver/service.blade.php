@@ -197,7 +197,7 @@ textarea.form-control{resize:vertical;min-height:60px}
             <th style="text-align:right">ค่าใช้จ่าย (฿)</th>
             <th>รูปภาพ</th>
             <th>สถานะ</th>
-            <th>จัดการ</th>
+            <th></th>
           </tr>
         </thead>
         <tbody id="svcTbody">
@@ -509,8 +509,7 @@ function filterAndRender(){
       <td>${imgHtml}</td>
       <td><span class="${statusCss}">${r.status}</span></td>
       <td><div class="action-btns">
-        <button class="action-btn edit" onclick="openSvcModal(${origIdx})" title="แก้ไข">✏</button>
-        <button class="action-btn del" onclick="deleteSvc(${origIdx})" title="ลบ">🗑</button>
+        
       </div></td>
     </tr>`;
   }).join('');

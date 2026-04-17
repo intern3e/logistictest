@@ -256,7 +256,7 @@ textarea.form-control{resize:vertical;min-height:65px}
     </div>
     <div class="table-wrap">
       <table>
-        <thead><tr><th>#</th><th>วันที่ทำงาน</th><th>คนขับ / ทะเบียน</th><th>เวลาทำงาน</th><th>ระยะทาง</th><th>ลิตร</th><th>ค่าน้ำมัน (฿)</th><th>km/L</th><th>บันทึกเมื่อ (เวลาไทย)</th><th>จัดการ</th></tr></thead>
+        <thead><tr><th>#</th><th>วันที่ทำงาน</th><th>คนขับ / ทะเบียน</th><th>เวลาทำงาน</th><th>ระยะทาง</th><th>ลิตร</th><th>ค่าน้ำมัน (฿)</th><th>km/L</th><th>บันทึกเมื่อ (เวลาไทย)</th></tr></thead>
         <tbody id="oilTbody">
           @forelse($logs as $i => $r)
           @php
@@ -276,8 +276,8 @@ textarea.form-control{resize:vertical;min-height:65px}
             <td>@if($kml>0)<span class="km-val">{{ number_format($kml,1) }}</span>@else<span style="color:var(--text3);font-size:11px">—</span>@endif</td>
             <td style="font-size:11px;color:var(--text3)">{{ $createdTH }}</td>
             <td><div class="action-btns">
-              <button class="action-btn edit" onclick="openModal({{ $r['id'] }})">✏</button>
-              <form method="POST" action="{{ route('oil.destroy',$r['id']) }}" onsubmit="return confirm('ยืนยันการลบ?')" style="display:inline">@csrf @method('DELETE')<button type="submit" class="action-btn del">🗑</button></form>
+              <!-- <button class="action-btn edit" onclick="openModal({{ $r['id'] }})">✏</button> -->
+              <!-- <form method="POST" action="{{ route('oil.destroy',$r['id']) }}" onsubmit="return confirm('ยืนยันการลบ?')" style="display:inline">@csrf @method('DELETE')<button type="submit" class="action-btn del">🗑</button></form> -->
             </div></td>
           </tr>
           @empty
@@ -310,12 +310,12 @@ textarea.form-control{resize:vertical;min-height:65px}
         </select>
       </div>
     </div>
-    <div style="display:flex;gap:14px;margin-bottom:10px;font-size:12px;color:var(--text2)">
+    <!-- <div style="display:flex;gap:14px;margin-bottom:10px;font-size:12px;color:var(--text2)">
       <span style="display:flex;align-items:center;gap:5px"><span style="width:10px;height:10px;border-radius:2px;background:#38c98a;display:inline-block"></span>ส่งสำเร็จ</span>
       <span style="display:flex;align-items:center;gap:5px"><span style="width:10px;height:10px;border-radius:2px;background:#e85d5d;display:inline-block"></span>ส่งไม่สำเร็จ</span>
-    </div>
+    </div> -->
     <div style="height:280px;position:relative"><canvas id="deliveryChart"></canvas></div>
-  </div>
+  </div> 
 </div>{{-- end pageTracking --}}
 
 {{-- PAGE: REPORT --}}
@@ -491,11 +491,12 @@ textarea.form-control{resize:vertical;min-height:65px}
         <div class="form-grid">
           <div class="section-divider">⛽ ข้อมูลน้ำมัน</div>
           <div class="full"><label class="form-label">ค่าน้ำมัน (฿) *</label><input type="number" name="total_price" id="f-total-price" class="form-control {{ $errors->has('total_price')?'is-invalid':'' }}" step="0.01" value="{{ old('total_price',$editLog['total_price']??'') }}" placeholder="กรอกยอดเงิน เช่น 500" oninput="calcPreview()">@error('total_price')<div class="invalid-feedback">{{ $message }}</div>@enderror</div>
-          <div><label class="form-label">จำนวนลิตร</label><input type="number" name="liters" id="f-liters" class="form-control auto-calc" step="0.01" value="{{ old('liters',$editLog['liters']??'') }}" readonly><div class="auto-hint">⚡ ยอดเงิน ÷ ราคา/ลิตร</div></div>
-          <div><label class="form-label">ราคาต่อลิตร (฿)</label><input type="number" name="price_per_liter" id="f-price-per-liter" class="form-control auto-calc" step="0.01" value="{{ old('price_per_liter',$editLog['price_per_liter']??'') }}" readonly><div class="auto-hint">⚡ ดึงจาก PTT</div></div>
-          <div class="full"><label class="form-label">ระยะทางทั้งหมด (km)</label><input type="number" name="total_distance" id="f-total-distance" class="form-control" value="{{ old('total_distance',$editLog['total_distance']??'') }}" oninput="calcPreview()"></div>
-          <div class="full"><label class="form-label">หมายเหตุ</label><textarea name="note" id="f-note" class="form-control">{{ old('note',$editLog['note']??'') }}</textarea></div>
+           <div class="full"><label class="form-label">ระยะทางทั้งหมด (km)</label><input type="number" name="total_distance" id="f-total-distance" class="form-control" value="{{ old('total_distance',$editLog['total_distance']??'') }}" oninput="calcPreview()"></div>
+         
         </div>
+          <div><label class="form-label">จำนวนลิตร</label><input type="number" name="liters" id="f-liters" class="form-control auto-calc" step="0.01" value="{{ old('liters',$editLog['liters']??'') }}" readonly><div class="auto-hint"></div></div>
+          <div><label class="form-label">ราคาต่อลิตร (฿)</label><input type="number" name="price_per_liter" id="f-price-per-liter" class="form-control auto-calc" step="0.01" value="{{ old('price_per_liter',$editLog['price_per_liter']??'') }}" readonly><div class="auto-hint"></div></div>
+         
         <div class="calc-box" id="calcBox">
           <div style="font-size:11px;color:var(--text2);font-weight:600;text-transform:uppercase;letter-spacing:.5px;margin-bottom:10px">📊 Preview</div>
           <div class="calc-grid">
@@ -504,7 +505,9 @@ textarea.form-control{resize:vertical;min-height:65px}
             <div class="calc-item"><div class="lbl">km/L</div><div class="val" id="calcKml">—</div><div class="unit">กม./ลิตร</div></div>
           </div>
         </div>
+        <div class="full"><label class="form-label">หมายเหตุ</label><textarea name="note" id="f-note" class="form-control">{{ old('note',$editLog['note']??'') }}</textarea></div>
       </div>
+       
       <div class="modal-footer"><button type="button" class="btn btn-outline" onclick="backToStep1()" id="backBtnFooter">← ย้อนกลับ</button><button type="submit" class="btn btn-primary">💾 บันทึกข้อมูล</button></div>
     </form>
   </div>
@@ -512,7 +515,7 @@ textarea.form-control{resize:vertical;min-height:65px}
 
 <script>
 const COLORS=['#4f8ef7','#38c98a','#f5a623','#e85d5d','#a855f7','#06b6d4','#f59e0b','#10b981','#ef4444','#8b5cf6','#ec4899','#14b8a6'];
-const ROUTE_STORE='{{ route("oil.store") }}';
+const ROUTE_STORE='{{ route("oil") }}';
 const ROUTE_UPDATE=id=>`{{ url("/oil/update") }}/${id}`;
 const ROUTE_PREVMILE='{{ route("oil.prevMileage") }}';
 const TZ='Asia/Bangkok';
@@ -546,13 +549,13 @@ function filterOilTable(q){
 
 /* TIME DROPDOWNS */
 function buildTimeDropdowns(){
-  const hours=['--',...Array.from({length:24},(_,i)=>String(i).padStart(2,'0'))];
-  const mins=['--',...Array.from({length:60},(_,i)=>String(i).padStart(2,'0'))];
+  const hours=['',...Array.from({length:24},(_,i)=>String(i).padStart(2,'0'))];
+  const mins=['',...Array.from({length:60},(_,i)=>String(i).padStart(2,'0'))];
   ['s1-start-h','s1-end-h'].forEach(id=>{const s=document.getElementById(id);s.innerHTML=hours.map(h=>`<option value="${h}">${h}</option>`).join('');});
   ['s1-start-m','s1-end-m'].forEach(id=>{const s=document.getElementById(id);s.innerHTML=mins.map(m=>`<option value="${m}">${m}</option>`).join('');});
 }
-function getTimeVal(hId,mId){const h=document.getElementById(hId).value,m=document.getElementById(mId).value;if(h==='--'||m==='--')return '';return h+':'+m;}
-function setTimeDropdown(hId,mId,t){if(!t){document.getElementById(hId).value='--';document.getElementById(mId).value='--';return;}const p=t.split(':');document.getElementById(hId).value=p[0]||'--';document.getElementById(mId).value=p[1]||'--';}
+function getTimeVal(hId,mId){const h=document.getElementById(hId).value,m=document.getElementById(mId).value;if(h===''||m==='')return '';return h+':'+m;}
+function setTimeDropdown(hId,mId,t){if(!t){document.getElementById(hId).value='00';document.getElementById(mId).value='00';return;}const p=t.split(':');document.getElementById(hId).value=p[0]||'--';document.getElementById(mId).value=p[1]||'--';}
 function onTimeChange(){updateDriverBanner();}
 function onS1SelectOther(sel,hid,tid){const v=sel.value,t=document.getElementById(tid),h=document.getElementById(hid);if(v==='__other__'){t.style.display='block';t.focus();h.value=t.value;}else{t.style.display='none';t.value='';h.value=v;}}
 function updateDriverBanner(){
@@ -631,13 +634,36 @@ function calcPreview(){
 function switchOilType(t){currentOilType=t;document.querySelectorAll('.oil-btn').forEach(b=>{b.style.background='rgba(255,255,255,.1)';b.style.borderColor='transparent';b.style.color='rgba(255,255,255,.7)';});const a=document.getElementById('btnOil-'+t);if(a){a.style.background='rgba(255,255,255,.3)';a.style.borderColor='#fff';a.style.color='#fff';}loadOilPrice(t);}
 async function refreshOilPrice(){const btn=document.getElementById('btnRefreshOil');btn.disabled=true;btn.style.opacity='.5';await loadOilPrice(currentOilType);btn.disabled=false;btn.style.opacity='1';}
 async function loadOilPrice(type){
-  const config={'diesel':{label:'ดีเซล',pttKey:'premium_diesel',matchName:'ดีเซล'},'95':{label:'แก๊สโซฮอล์ 95',pttKey:'gasohol_95',matchName:'แก๊สโซฮอล์ 95'},'benzin95':{label:'เบนซิน 95',pttKey:'gasoline_95',matchName:'เบนซิน 95'},'91':{label:'แก๊สโซฮอล์ 91',pttKey:'gasohol_91',matchName:'แก๊สโซฮอล์ 91'},'e20':{label:'แก๊สโซฮอล์ E20',pttKey:'gasohol_e20',matchName:'E20'},'e85':{label:'แก๊สโซฮอล์ E85',pttKey:'gasohol_e85',matchName:'E85'}};
+  const config={'diesel':{label:'ดีเซล',matchName:'ดีเซล',maxPrice:55},'95':{label:'แก๊สโซฮอล์ 95',matchName:'แก๊สโซฮอล์ 95',maxPrice:50},'benzin95':{label:'เบนซิน 95',matchName:'เบนซิน 95',maxPrice:60},'91':{label:'แก๊สโซฮอล์ 91',matchName:'แก๊สโซฮอล์ 91',maxPrice:50},'e20':{label:'แก๊สโซฮอล์ E20',matchName:'E20',maxPrice:45},'e85':{label:'แก๊สโซฮอล์ E85',matchName:'E85',maxPrice:40}};
   const cfg=config[type]??config['diesel'];
-  document.getElementById('oilPriceLabel').textContent=`ราคาน้ำมัน${cfg.label} (PTT)`;document.getElementById('oilPriceShow').textContent='...';document.getElementById('oilPriceStatus').textContent='⏳ กำลังดึง...';document.getElementById('liveDot').className='live-dot loading';document.getElementById('liveLabel').textContent='กำลังดึง';document.getElementById('f-price-per-liter').value='';
+  document.getElementById('oilPriceLabel').textContent=`ราคาน้ำมัน${cfg.label}`;document.getElementById('oilPriceShow').textContent='...';document.getElementById('oilPriceStatus').textContent='⏳ กำลังดึง...';document.getElementById('liveDot').className='live-dot loading';document.getElementById('liveLabel').textContent='กำลังดึง';document.getElementById('f-price-per-liter').value='';
   let fetched=null;
-  try{const r=await Promise.race([fetch('https://api.chnwt.dev/thai-oil-api/latest'),new Promise((_,rj)=>setTimeout(()=>rj(new Error('t')),8000))]);if(r.ok){const json=await r.json();const ptt=json?.response?.stations?.ptt;if(ptt){const direct=ptt[cfg.pttKey];if(direct?.price){const n=parseFloat(direct.price);if(!isNaN(n)&&n>0)fetched=n;}if(!fetched){for(const fuel of Object.values(ptt)){if(fuel?.name?.includes(cfg.matchName)&&fuel?.price){const n=parseFloat(fuel.price);if(!isNaN(n)&&n>0){fetched=n;break;}}}}}}}catch(_){}
+  try{
+    const r=await Promise.race([fetch('https://api.chnwt.dev/thai-oil-api/latest'),new Promise((_,rj)=>setTimeout(()=>rj(new Error('t')),8000))]);
+    if(r.ok){
+      const json=await r.json();
+      const stations=json?.response?.stations;
+      if(stations){
+        const prices=[];
+        for(const station of Object.values(stations)){
+          for(const fuel of Object.values(station)){
+            if(fuel?.name?.includes(cfg.matchName)&&fuel?.price){
+              const n=parseFloat(fuel.price);
+              if(!isNaN(n)&&n>0&&n<cfg.maxPrice)prices.push(n);
+            }
+          }
+        }
+        if(prices.length>0){
+          const freq={};
+          for(const p of prices){const k=p.toFixed(2);freq[k]=(freq[k]||0)+1;}
+          const modeKey=Object.entries(freq).sort((a,b)=>b[1]-a[1])[0][0];
+          fetched=parseFloat(modeKey);
+        }
+      }
+    }
+  }catch(_){}
   const now=new Date().toLocaleTimeString('th-TH',{timeZone:TZ,hour:'2-digit',minute:'2-digit',hour12:false});
-  if(fetched){document.getElementById('oilPriceShow').textContent=fetched.toFixed(2);document.getElementById('oilPriceStatus').textContent=`✅ PTT • ${now} น.`;document.getElementById('liveDot').className='live-dot';document.getElementById('liveDot').style.background='';document.getElementById('liveLabel').textContent='Live';document.getElementById('f-price-per-liter').value=fetched.toFixed(2);}
+  if(fetched){document.getElementById('oilPriceShow').textContent=fetched.toFixed(2);document.getElementById('oilPriceStatus').textContent=`✅ ราคากลาง • ${now} น.`;document.getElementById('liveDot').className='live-dot';document.getElementById('liveDot').style.background='';document.getElementById('liveLabel').textContent='Live';document.getElementById('f-price-per-liter').value=fetched.toFixed(2);}
   else{document.getElementById('oilPriceShow').textContent='—';document.getElementById('oilPriceStatus').textContent=`❌ ดึงไม่ได้ • ${now} น.`;document.getElementById('liveDot').className='live-dot';document.getElementById('liveDot').style.background='var(--accent4)';document.getElementById('liveLabel').textContent='ไม่มีข้อมูล';document.getElementById('f-price-per-liter').value='';}
   calcPreview();
 }
@@ -714,7 +740,7 @@ function loadJobsForDriver(){
 }
 function renderJobTable(jobs,driverName){
   const wrap=document.getElementById('jobTableWrap');
-  const rows=jobs.map(j=>{const s=jobStates[j._key];const noteHtml=s.status==='fail'?`<textarea class="job-note-input" rows="2" placeholder="ระบุสาเหตุ..." oninput="jobStates['${j._key}'].note=this.value">${s.note}</textarea>`:'';return `<tr><td><span class="job-bill">${j.bill_no}</span></td><td>${j.customer_name}</td><td style="color:var(--text2)">${j.seller_name}</td><td><div class="job-status-btns"><button type="button" class="job-btn ${s.status==='ok'?'ok':''}" onclick="setJobStatus('${j._key}','ok','${driverName}')">สำเร็จ</button><button type="button" class="job-btn ${s.status==='fail'?'fail':''}" onclick="setJobStatus('${j._key}','fail','${driverName}')">ไม่สำเร็จ</button></div>${noteHtml}</td></tr>`;}).join('');
+  const rows=jobs.map(j=>{const s=jobStates[j._key];const noteHtml=s.status==='fail'?`<textarea class="job-note-input" rows="2" placeholder="ระบุสาเหตุ..." oninput="jobStates['${j._key}'].note=this.value">${s.note}</textarea>`:'';return `<tr><td><span class="job-bill">${j.bill_no}</span></td><td>${j.customer_name}</td><td style="color:var(--text2)">${j.seller_name}</td><td>${noteHtml}</td></tr>`;}).join('');
   const total=jobs.length,ok=jobs.filter(j=>jobStates[j._key]?.status==='ok').length,fail=jobs.filter(j=>jobStates[j._key]?.status==='fail').length,pending=total-ok-fail;
   wrap.innerHTML=`<div class="job-table-wrap"><table><thead><tr><th style="width:130px">เลขบิล</th><th>ลูกค้า</th><th style="width:85px">เซลล์</th><th style="width:180px">สถานะ</th></tr></thead><tbody>${rows}</tbody></table><div class="job-summary-bar"><span class="job-chip">ทั้งหมด ${total}</span>${ok?`<span class="job-chip ok">สำเร็จ ${ok}</span>`:''} ${fail?`<span class="job-chip fail">ไม่สำเร็จ ${fail}</span>`:''} ${pending?`<span class="job-chip">รอ ${pending}</span>`:''}</div></div>`;
 }
