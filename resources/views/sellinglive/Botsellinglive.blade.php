@@ -367,7 +367,7 @@ tbody tr:hover td{background:#F7FFFE}
                 'formtype'=>'บิล/PO3','billtype'=>'สินค้า/บริการ',
                 'customer_name'=>'บริษัท เทค โซลูชั่น จำกัด',
                 'customer_tel'=>'02-111-2222','customer_id'=>'C-00001',
-                'customer_email'=>'techsolution'.'@'.'gmail.com',
+                'customer_email'=>'techsolution@gmail.com',
                 'customer_address'=>'123 ถ.สุขุมวิท แขวงคลองเตย กรุงเทพฯ 10110',
                 'date_of_dali'=>'2025-04-07','sale_name'=>'วิภา ส.',
                 'emp_name'=>'สมศักดิ์ ก.','statuspdf'=>0,'statusdeli'=>0,
@@ -392,7 +392,7 @@ tbody tr:hover td{background:#F7FFFE}
                 'formtype'=>'บิล/PO3/สำเนาหน้าบิล2','billtype'=>'สินค้า/ขนส่ง',
                 'customer_name'=>'สำนักงานกฎหมาย เอเชีย พาร์ทเนอร์',
                 'customer_tel'=>'02-555-6666','customer_id'=>'C-00003',
-                'customer_email'=>'asiapartner'.'@'.'gmail.com',
+                'customer_email'=>'asiapartner@gmail.com',
                 'customer_address'=>'Floor 12, 191 ถ.สีลม บางรัก กรุงเทพฯ 10500',
                 'date_of_dali'=>'2025-04-07','sale_name'=>'สมศักดิ์ ก.',
                 'emp_name'=>'อรุณ ม.','statuspdf'=>0,'statusdeli'=>0,
@@ -417,7 +417,7 @@ tbody tr:hover td{background:#F7FFFE}
                 'formtype'=>'บิล/PO3/วางบิล/สำเนาหน้าบิล2','billtype'=>'สินค้า/บริการ/ขนส่ง',
                 'customer_name'=>'มหาวิทยาลัย เทคโนโลยี ราชมงคล',
                 'customer_tel'=>'02-999-0000','customer_id'=>'C-00005',
-                'customer_email'=>'rajamangala'.'@'.'gmail.com',
+                'customer_email'=>'rajamangala@gmail.com',
                 'customer_address'=>'9 ถ.พระนคร พระนคร กรุงเทพฯ 10200',
                 'date_of_dali'=>'2025-04-07','sale_name'=>'อรุณ ม.',
                 'emp_name'=>'วิภา ส.','statuspdf'=>0,'statusdeli'=>0,
@@ -466,7 +466,14 @@ tbody tr:hover td{background:#F7FFFE}
 
               {{-- รหัสลูกค้า --}}
               <td>
-                <span class="c-code" style="font-size:11px;color:var(--ink3)">{{ $item->customer_id ?? '—' }}</span>
+                @if(!empty($item->customer_id))
+                  <div style="display:flex;align-items:center;gap:5px;white-space:nowrap">
+                    <span class="c-code" style="font-size:11px;color:var(--ink3)">{{ $item->customer_id }}</span>
+                    <button class="btn-copy" onclick="cpText('{{ $item->customer_id }}', this)">คัดลอก</button>
+                  </div>
+                @else
+                  <span class="c-code" style="font-size:11px;color:var(--fog)">—</span>
+                @endif
               </td>
 
               <td class="c-sm" style="white-space:nowrap">{{ $formatted }}</td>
@@ -500,27 +507,23 @@ tbody tr:hover td{background:#F7FFFE}
                 </div>
               </td>
 
-              {{-- Gmail + ปุ่มคัดลอก (ใช้ JS render เพื่อหลีกเลี่ยง Cloudflare obfuscation) --}}
+              {{-- ✅ Gmail แสดงตรงๆ + ปุ่มคัดลอก (ไม่พึ่ง JS render) --}}
               <td>
                 @if(!empty($item->customer_email))
-                  @php
-                    $emailParts = explode('@', $item->customer_email);
-                    $emailUser  = $emailParts[0] ?? '';
-                    $emailDomain = $emailParts[1] ?? '';
-                  @endphp
+                  @php $email = $item->customer_email; @endphp
                   <div style="display:flex;align-items:center;gap:5px;flex-wrap:nowrap">
-                    <svg width="12" height="12" viewBox="0 0 14 14" fill="none" style="flex-shrink:0"><rect x="1.5" y="3" width="11" height="8" rx="1.5" stroke="#00897B" stroke-width="1.2"/><path d="M1.5 4.5L7 8l5.5-3.5" stroke="#00897B" stroke-width="1.2" stroke-linecap="round"/></svg>
-                    <span class="em-cell" style="font-size:11px;color:var(--teal);font-weight:500"
-                      data-u="{{ $emailUser }}"
-                      data-d="{{ $emailDomain }}"></span>
-                    <button class="btn-copy em-copy-btn"
-                      data-u="{{ $emailUser }}"
-                      data-d="{{ $emailDomain }}">คัดลอก</button>
+                    <svg width="12" height="12" viewBox="0 0 14 14" fill="none" style="flex-shrink:0">
+                      <rect x="1.5" y="3" width="11" height="8" rx="1.5" stroke="#00897B" stroke-width="1.2"/>
+                      <path d="M1.5 4.5L7 8l5.5-3.5" stroke="#00897B" stroke-width="1.2" stroke-linecap="round"/>
+                    </svg>
+                    <span style="font-size:11px;color:var(--teal);font-weight:500">{{ $email }}</span>
+                    <button class="btn-copy" onclick="cpText('{{ $email }}', this)">คัดลอก</button>
                   </div>
                 @else
                   <span style="font-size:11px;color:var(--fog)">—</span>
                 @endif
               </td>
+
             </tr>
             @endif
           @endforeach
@@ -581,9 +584,9 @@ tbody tr:hover td{background:#F7FFFE}
   </div>
 </div>
 
-<script data-cfasync="false" src="/cdn-cgi/scripts/5c5dd728/cloudflare-static/email-decode.min.js"></script><script>
+<script>
 /* ── Pull PO outside ── */
-document.getElementById('pullPoOutside').addEventListener('click',function(){
+document.getElementById('pullPoOutside') && document.getElementById('pullPoOutside').addEventListener('click',function(){
   fetch("{{ route('pull.pooutside') }}",{
     method:'POST',
     headers:{'X-CSRF-TOKEN':'{{ csrf_token() }}','Accept':'application/json'}
@@ -620,36 +623,12 @@ function updateStatuspdf(){
   }).then(r=>r.json()).then(d=>{if(d.success)location.reload();}).catch(console.error);
 }
 
-/* ── Copy date ── */
-function copydate(text,btn){
-  const ta=document.createElement('textarea');
-  ta.value=text;ta.style.position='fixed';ta.style.left='-9999px';
-  document.body.appendChild(ta);ta.select();
-  try{document.execCommand('copy');const o=btn.innerText;btn.innerText='✅';setTimeout(()=>btn.innerText=o,1500);}catch(e){}
-  document.body.removeChild(ta);
-}
-
 /* ── Copy to clipboard (generic) ── */
-function copyToClipboard(id,btn){
-  const el=document.getElementById(id);if(!el)return;
-  const text=el.innerText.trim();
-  (navigator.clipboard?navigator.clipboard.writeText(text):Promise.reject()).then(()=>{
-    const o=btn.innerText;btn.innerText='คัดลอกแล้ว ✅';setTimeout(()=>btn.innerText=o,1500);
-  }).catch(()=>{
-    const t=document.createElement('input');t.value=text;document.body.appendChild(t);t.select();
-    try{document.execCommand('copy');}catch(e){}document.body.removeChild(t);
-  });
-}
-
-/* ── Copy billid ── */
-function copyBillIdToClipboard(btn,billid){
-  const text=billid.trim();if(!text)return;
-  (navigator.clipboard?navigator.clipboard.writeText(text):Promise.reject()).then(()=>{
-    const o=btn.innerText;btn.innerText='คัดลอกแล้ว ✅';setTimeout(()=>btn.innerText=o,1500);
-  }).catch(()=>{
-    const t=document.createElement('input');t.value=text;document.body.appendChild(t);t.select();
-    try{document.execCommand('copy');}catch(e){}document.body.removeChild(t);
-  });
+function cpText(text,btn){
+  const t=text.trim();if(!t)return;
+  const orig=btn.textContent;
+  const done=()=>{btn.classList.add('copied');btn.textContent='คัดลอกแล้ว ✓';setTimeout(()=>{btn.classList.remove('copied');btn.textContent=orig;},1500);};
+  (navigator.clipboard?navigator.clipboard.writeText(t):Promise.reject()).then(done).catch(()=>{const i=document.createElement('input');i.value=t;document.body.appendChild(i);i.select();try{document.execCommand('copy');}catch(e){}document.body.removeChild(i);done();});
 }
 
 /* ── PDF functions ── */
@@ -750,28 +729,6 @@ document.addEventListener('DOMContentLoaded',function(){
     inp.addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();btn.click();}});
   });
 });
-
-/* ── Render email cells (bypass Cloudflare Email Protection) ── */
-document.addEventListener('DOMContentLoaded',function(){
-  document.querySelectorAll('.em-cell').forEach(el=>{
-    const u=el.getAttribute('data-u');
-    const d=el.getAttribute('data-d');
-    if(u&&d) el.textContent=u+'@'+d;
-  });
-  document.querySelectorAll('.em-copy-btn').forEach(btn=>{
-    btn.addEventListener('click',function(){
-      const u=btn.getAttribute('data-u');
-      const d=btn.getAttribute('data-d');
-      if(u&&d) cpText(u+'@'+d,btn);
-    });
-  });
-});
-function cpText(text,btn){
-  const t=text.trim();if(!t)return;
-  const orig=btn.textContent;
-  const done=()=>{btn.classList.add('copied');btn.textContent='คัดลอกแล้ว ✓';setTimeout(()=>{btn.classList.remove('copied');btn.textContent=orig;},1500);};
-  (navigator.clipboard?navigator.clipboard.writeText(t):Promise.reject()).then(done).catch(()=>{const i=document.createElement('input');i.value=t;document.body.appendChild(i);i.select();try{document.execCommand('copy');}catch(e){}document.body.removeChild(i);done();});
-}
 
 /* ── Save type input ── */
 function saveTypeInput(soDetailId,btn){

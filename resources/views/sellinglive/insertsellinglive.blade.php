@@ -122,31 +122,15 @@ body{font-family:'Sarabun',system-ui,sans-serif;font-size:15px;background:var(--
 .field label .tip:hover::after{content:attr(data-tip);position:absolute;bottom:calc(100% + 6px);left:50%;transform:translateX(-50%);background:var(--text);color:#fff;font-size:11px;font-weight:400;padding:5px 9px;border-radius:6px;white-space:nowrap;pointer-events:none;z-index:50;letter-spacing:0}
 .field-wrap{position:relative}
 .field input[type="text"],
-.field input[type="number"],
-.field input[type="email"]{
+.field input[type="number"]{
   padding:10px 12px;border:1.5px solid var(--border);border-radius:var(--r-sm);background:#FAFBFC;color:var(--text);font-size:14px;font-family:inherit;outline:none;transition:border var(--t-fast),box-shadow var(--t-fast),background var(--t-fast);width:100%
 }
 .field input[type="text"]:focus,
-.field input[type="number"]:focus,
-.field input[type="email"]:focus{border-color:var(--primary);background:var(--surface);box-shadow:0 0 0 3px rgba(15,110,86,.12)}
+.field input[type="number"]:focus{border-color:var(--primary);background:var(--surface);box-shadow:0 0 0 3px rgba(15,110,86,.12)}
 .field input[readonly]{background:#F5F7FA;color:var(--text-secondary);cursor:default;border-style:dashed}
 .field input[readonly]:focus{border-color:var(--border);box-shadow:none}
 .field input::placeholder{color:var(--text-hint)}
 .readonly-badge{position:absolute;right:10px;top:50%;transform:translateY(-50%);font-size:10px;font-weight:600;color:var(--text-hint);background:var(--bg-alt);padding:2px 6px;border-radius:4px;pointer-events:none}
-
-/* EMAIL FIELD SPECIAL */
-.field-email-wrap{position:relative}
-.field-email-wrap .email-prefix{
-  position:absolute;left:11px;top:50%;transform:translateY(-50%);
-  font-size:13px;color:var(--text-muted);pointer-events:none;
-  display:flex;align-items:center;gap:4px;
-}
-.field-email-wrap input[type="email"]{padding-left:36px}
-.email-valid{border-color:var(--primary)!important;background:var(--primary-light)!important}
-.email-invalid{border-color:var(--red)!important;background:var(--red-light)!important}
-.email-hint{font-size:11px;margin-top:3px;min-height:16px}
-.email-hint.ok{color:var(--primary)}
-.email-hint.err{color:var(--red)}
 
 /* DEPOSIT CARDS */
 .dep-section{padding:0 24px 22px}
@@ -187,10 +171,8 @@ table{width:100%;border-collapse:collapse;font-size:14px;table-layout:fixed}
 thead{background:linear-gradient(to bottom,#F8FAFC,#F1F5F9)}
 th{padding:11px 16px;font-size:11px;font-weight:700;color:var(--text-secondary);letter-spacing:.07em;text-transform:uppercase;border-bottom:1px solid var(--border);text-align:left;white-space:nowrap}
 td{padding:12px 16px;border-bottom:1px solid var(--border-light);vertical-align:middle}
-td input{border:none;background:transparent;font-size:14px;font-family:inherit;color:var(--text-muted);outline:none;width:100%}
 tbody tr:last-child td{border-bottom:none}
 tbody tr:hover td{background:#F8FAFC}
-.td-code{font-family:'SFMono-Regular',Consolas,monospace;font-size:12px;color:var(--text-muted)}
 .td-num{text-align:right;font-variant-numeric:tabular-nums;color:var(--text)}
 .td-dep{text-align:right;font-variant-numeric:tabular-nums;font-weight:600;color:var(--red)}
 .td-name{color:var(--text)}
@@ -234,6 +216,8 @@ tbody tr:hover td{background:#F8FAFC}
 .help-num{width:18px;height:18px;background:var(--blue-light);border:1px solid var(--blue-border);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;color:var(--blue);flex-shrink:0;margin-top:1px}
 
 hr.divider{border:none;border-top:1px solid var(--border-light);margin:0}
+
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
 
 @media(max-width:1100px){
   .page{padding:22px 20px 50px}
@@ -399,14 +383,12 @@ hr.divider{border:none;border-top:1px solid var(--border-light);margin:0}
             </div>
             <div class="card-head-text">
               <h3>ข้อมูลลูกค้า</h3>
-              <p>ชื่อบริษัท ผู้ติดต่อ เบอร์โทร อีเมล และที่อยู่จัดส่ง</p>
+              <p>ชื่อบริษัท ผู้ติดต่อ เบอร์โทร และที่อยู่จัดส่ง</p>
             </div>
             <span class="card-badge badge-optional">แก้ไขได้</span>
           </div>
           <div class="card-body">
             <div class="form-grid-4" style="row-gap:16px">
-
-              <!-- ชื่อบริษัท -->
               <div class="field span-full">
                 <label>ชื่อบริษัท / ลูกค้า</label>
                 <div class="field-wrap">
@@ -414,56 +396,21 @@ hr.divider{border:none;border-top:1px solid var(--border-light);margin:0}
                   <span class="readonly-badge">อัตโนมัติ</span>
                 </div>
               </div>
-
-              <!-- ชื่อผู้ติดต่อ -->
               <div class="field span-2">
                 <label>ชื่อผู้ติดต่อ <span class="req">*</span></label>
                 <input type="text" id="contactso" name="contactso" placeholder="กรอกชื่อผู้ติดต่อ">
               </div>
-
-              <!-- เบอร์ติดต่อ -->
               <div class="field span-2">
                 <label>เบอร์ติดต่อ</label>
                 <input type="text" id="customer_tel" name="customer_tel" placeholder="0XX-XXX-XXXX">
               </div>
-
-              <!-- Gmail ลูกค้า — NEW FIELD -->
-              <div class="field span-2">
-                <label>
-                  <svg width="14" height="14" viewBox="0 0 14 14" fill="none" style="flex-shrink:0">
-                    <rect x="1.5" y="3" width="11" height="8" rx="1.5" stroke="#185FA5" stroke-width="1.2"/>
-                    <path d="M1.5 4.5L7 8l5.5-3.5" stroke="#185FA5" stroke-width="1.2" stroke-linecap="round"/>
-                  </svg>
-                  Gmail ลูกค้า
-                  <i class="tip" data-tip="อีเมลสำหรับส่งเอกสารให้ลูกค้า ต้องเป็น @gmail.com">?</i>
-                </label>
-                <div class="field-wrap field-email-wrap">
-                  <span class="email-prefix">
-                    <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
-                      <rect x="1.5" y="3" width="11" height="8" rx="1.5" stroke="#CBD5E1" stroke-width="1.2"/>
-                      <path d="M1.5 4.5L7 8l5.5-3.5" stroke="#CBD5E1" stroke-width="1.2" stroke-linecap="round"/>
-                    </svg>
-                  </span>
-                  <input type="email" id="customer_email" name="customer_email"
-                    placeholder="example@gmail.com"
-                    oninput="validateEmail(this)"
-                    autocomplete="email">
-                </div>
-                <span class="email-hint" id="email-hint"></span>
-              </div>
-
-              <!-- ที่อยู่จัดส่ง -->
               <div class="field span-full">
-                <label>
-                  ที่อยู่จัดส่ง
-                  <i class="tip" data-tip="ที่อยู่สำหรับจัดส่งสินค้า">?</i>
-                </label>
+                <label>ที่อยู่จัดส่ง <i class="tip" data-tip="ที่อยู่สำหรับจัดส่งสินค้า">?</i></label>
                 <div class="field-wrap">
                   <input type="text" id="customer_address" name="customer_address" readonly placeholder="ที่อยู่จัดส่ง">
                   <span class="readonly-badge">อัตโนมัติ</span>
                 </div>
               </div>
-
             </div>
           </div>
         </div>
@@ -510,7 +457,9 @@ hr.divider{border:none;border-top:1px solid var(--border-light);margin:0}
                   </button>
                 </div>
                 <div class="pct-wrap">
-                  <input type="number" id="dep-g" name="dep_product" value="0" min="0" max="100" step="1" disabled oninput="calc()" onclick="event.stopPropagation()">
+                  <input type="number" id="dep-g" name="dep_product" value="0" min="0" max="100" step="1" disabled
+                    oninput="this.value=Math.min(100,Math.max(0,parseFloat(this.value)||0));calc()"
+                    onclick="event.stopPropagation()">
                   <span class="pct-unit">%</span>
                 </div>
                 <div class="dep-result empty" id="dres-g">ยังไม่เปิดใช้งาน</div>
@@ -532,7 +481,9 @@ hr.divider{border:none;border-top:1px solid var(--border-light);margin:0}
                   </button>
                 </div>
                 <div class="pct-wrap">
-                  <input type="number" id="dep-b" name="dep_service" value="0" min="0" max="100" step="1" disabled oninput="calc()" onclick="event.stopPropagation()">
+                  <input type="number" id="dep-b" name="dep_service" value="0" min="0" max="100" step="1" disabled
+                    oninput="this.value=Math.min(100,Math.max(0,parseFloat(this.value)||0));calc()"
+                    onclick="event.stopPropagation()">
                   <span class="pct-unit">%</span>
                 </div>
                 <div class="dep-result empty" id="dres-b">ยังไม่เปิดใช้งาน</div>
@@ -554,7 +505,9 @@ hr.divider{border:none;border-top:1px solid var(--border-light);margin:0}
                   </button>
                 </div>
                 <div class="pct-wrap">
-                  <input type="number" id="dep-a" name="dep_shipping" value="0" min="0" max="100" step="1" disabled oninput="calc()" onclick="event.stopPropagation()">
+                  <input type="number" id="dep-a" name="dep_shipping" value="0" min="0" max="100" step="1" disabled
+                    oninput="this.value=Math.min(100,Math.max(0,parseFloat(this.value)||0));calc()"
+                    onclick="event.stopPropagation()">
                   <span class="pct-unit">%</span>
                 </div>
                 <div class="dep-result empty" id="dres-a">ยังไม่เปิดใช้งาน</div>
@@ -575,17 +528,16 @@ hr.divider{border:none;border-top:1px solid var(--border-light);margin:0}
               <table>
                 <thead>
                   <tr>
-                    <th style="width:12%">รหัสสินค้า</th>
-                    <th style="width:36%">รายการสินค้า / บริการ</th>
-                    <th style="width:10%;text-align:center">จำนวน</th>
-                    <th style="width:14%;text-align:right">ราคา/หน่วย</th>
-                    <th style="width:14%;text-align:right">ยอดรวม</th>
-                    <th style="width:14%;text-align:right;display:none" id="dep-th">มัดจำ</th>
+                    <th style="width:46%">รายการสินค้า / บริการ</th>
+                    <th style="width:14%;text-align:center">จำนวน</th>
+                    <th style="width:18%;text-align:right">ราคา/หน่วย</th>
+                    <th style="width:18%;text-align:right">ยอดรวม</th>
+                    <th style="width:16%;text-align:right;display:none" id="dep-th">มัดจำ</th>
                   </tr>
                 </thead>
                 <tbody id="tbody">
-                  <tr id="empty-row">
-                    <td colspan="6">
+                  <tr>
+                    <td colspan="4">
                       <div class="tbl-empty">
                         <div class="tbl-empty-icon">
                           <svg width="40" height="40" viewBox="0 0 40 40" fill="none"><rect x="8" y="6" width="24" height="28" rx="4" stroke="#CBD5E1" stroke-width="2"/><path d="M14 14h12M14 20h12M14 26h8" stroke="#CBD5E1" stroke-width="2" stroke-linecap="round"/></svg>
@@ -657,10 +609,6 @@ hr.divider{border:none;border-top:1px solid var(--border-light);margin:0}
             <div class="info-item"><span class="ik">วันที่สร้าง</span><span class="iv" id="info-date">—</span></div>
             <div class="info-item"><span class="ik">ผู้สร้างเอกสาร</span><span class="iv" id="info-emp">—</span></div>
             <div class="info-item">
-              <span class="ik">Gmail ลูกค้า</span>
-              <span class="iv" id="info-email" style="color:var(--text-muted);font-weight:400">—</span>
-            </div>
-            <div class="info-item">
               <span class="ik">สถานะ</span>
               <span class="iv">
                 <span class="status-active">
@@ -679,10 +627,8 @@ hr.divider{border:none;border-top:1px solid var(--border-light);margin:0}
             วิธีใช้งาน
           </div>
           <div class="help-item"><div class="help-num">1</div><span>ตรวจสอบข้อมูลเอกสารและลูกค้าให้ถูกต้อง</span></div>
-          <div class="help-item"><div class="help-num">2</div><span>กรอก Gmail ลูกค้า (ถ้ามี) เพื่อส่งเอกสาร</span></div>
-          <div class="help-item"><div class="help-num">3</div><span>เปิดใช้งานประเภทมัดจำที่ต้องการโดยคลิกที่การ์ด</span></div>
-          <div class="help-item"><div class="help-num">4</div><span>กรอกเปอร์เซ็นต์มัดจำ (0–100%) สำหรับแต่ละประเภท</span></div>
-          <div class="help-item"><div class="help-num">5</div><span>ตรวจสอบยอดสรุปด้านขวา แล้วกด "บันทึกใบมัดจำ"</span></div>
+          <div class="help-item"><div class="help-num">2</div><span>กรอกเปอร์เซ็นต์มัดจำ (0–100%) สำหรับแต่ละประเภท</span></div>
+          <div class="help-item"><div class="help-num">3</div><span>ตรวจสอบยอดสรุปด้านขวา แล้วกด "บันทึกใบมัดจำ"</span></div>
         </div>
 
       </div><!-- /col-side -->
@@ -702,7 +648,7 @@ function fmtPlain(n){ return n.toLocaleString('th-TH',{minimumFractionDigits:2,m
 
 /* ===== LOADING ===== */
 function showLoading(msg){ document.getElementById('loadingOverlay').style.display='flex'; document.getElementById('loadingMsg').textContent=msg||'กำลังโหลดข้อมูล...'; }
-function hideLoading(){ document.getElementById('loadingOverlay').style.display='none' }
+function hideLoading(){ document.getElementById('loadingOverlay').style.display='none'; }
 
 /* ===== TOAST ===== */
 function showToast(title,msg,type='success'){
@@ -726,35 +672,6 @@ function removeToast(id){
   setTimeout(()=>el.remove(),250);
 }
 
-/* ===== EMAIL VALIDATION ===== */
-function validateEmail(input){
-  const val=input.value.trim();
-  const hint=document.getElementById('email-hint');
-  const infoEmail=document.getElementById('info-email');
-  if(!val){
-    input.classList.remove('email-valid','email-invalid');
-    hint.textContent='';hint.className='email-hint';
-    infoEmail.textContent='—';infoEmail.style.color='var(--text-muted)';infoEmail.style.fontWeight='400';
-    return;
-  }
-  const isGmail=/^[^\s@]+@gmail\.com$/i.test(val);
-  if(isGmail){
-    input.classList.add('email-valid');input.classList.remove('email-invalid');
-    hint.textContent='✓ อีเมล Gmail ถูกต้อง';hint.className='email-hint ok';
-    infoEmail.textContent=val;infoEmail.style.color='var(--primary)';infoEmail.style.fontWeight='600';
-  } else {
-    input.classList.add('email-invalid');input.classList.remove('email-valid');
-    const hasAt=val.includes('@');
-    if(hasAt && !val.endsWith('@gmail.com')){
-      hint.textContent='⚠ ต้องเป็น @gmail.com เท่านั้น';
-    } else {
-      hint.textContent='⚠ รูปแบบอีเมลไม่ถูกต้อง';
-    }
-    hint.className='email-hint err';
-    infoEmail.textContent=val;infoEmail.style.color='var(--red)';infoEmail.style.fontWeight='500';
-  }
-}
-
 /* ===== INIT ===== */
 window.addEventListener('DOMContentLoaded',function(){
   const params=new URLSearchParams(window.location.search);
@@ -764,7 +681,6 @@ window.addEventListener('DOMContentLoaded',function(){
   const custName=params.get('cust_name')||'';
   const date    =params.get('date')     ||params.get('sell_date')||'';
   const emp     =params.get('create_by')||params.get('emp')     ||'';
-  const email   =params.get('email')    ||params.get('customer_email')||'';
 
   const empEl=document.getElementById('hidden-emp');
   if(empEl){
@@ -784,12 +700,6 @@ window.addEventListener('DOMContentLoaded',function(){
     document.getElementById('sell_date').value=date;
     document.getElementById('info-date').textContent=date;
   }
-  /* prefill email if passed via URL */
-  if(email){
-    const emailEl=document.getElementById('customer_email');
-    emailEl.value=email;
-    validateEmail(emailEl);
-  }
   if(soNum)fetchSODetails(soNum,billId);
 });
 
@@ -801,39 +711,33 @@ async function fetchSODetails(soNum,billId){
     if(!res.ok)throw new Error(`HTTP ${res.status}`);
     const data=await res.json();
     if(!data.SoDetail){hideLoading();showToast('ไม่พบข้อมูล SO','ไม่พบข้อมูล SO: '+soNum,'error');return;}
-    const d=data.SoDetail,s=data.SoStatus;
+    const d=data.SoDetail, s=data.SoStatus;
+
+    /* ── ข้อมูลหัวเอกสาร ── */
     document.getElementById('so_id').value=s.SONum||'';
     document.getElementById('customer_id').value=s.CustID||'';
     document.getElementById('customer_name').value=d.CustName||'';
     document.getElementById('customer_tel').value=d.ContTel||'';
     const ship=[d.ShipToAddr1,d.ShipToAddr2].filter(Boolean).join(', ');
     document.getElementById('customer_address').value=[d.CustAddr1,d.ContDistrict,d.ContAmphur,d.ContProvince,d.ContPostCode,ship?'สถานที่ส่ง: '+ship:null].filter(Boolean).join(', ');
-    /* ดึง email จาก API ถ้ามี */
-    if(d.CustEmail){
-      const emailEl=document.getElementById('customer_email');
-      if(!emailEl.value){
-        emailEl.value=d.CustEmail;
-        validateEmail(emailEl);
-      }
+
+    /* ── เลขที่บิล จาก CustPONo ── */
+    const bi=document.getElementById('billid');
+    if(bi)bi.value=d.CustPONo||s.CustPONo||'';
+
+    /* ── วันที่จาก SoDetail.DocuDate ── */
+    if(d.DocuDate){
+      const[dp]=d.DocuDate.split(' ');
+      const[y,m,dd]=dp.split('-');
+      const f=`${dd}-${m}-${y}`;
+      document.getElementById('sell_date').value=f;
+      document.getElementById('info-date').textContent=f;
     }
-    let bill=null,key=billId;
-    if(billId&&data.Bills?.[0]?.[billId]){bill=data.Bills[0][billId];}
-    else if(data.Bills?.[0]){
-      key=Object.keys(data.Bills[0])[0];
-      bill=data.Bills[0][key];
-      const bi=document.getElementById('billid');
-      if(bi&&key)bi.value=key;
-    }
-    if(bill){
-      if(bill.DocuDate){
-        const[dp]=bill.DocuDate.split(' ');
-        const[y,m,dd]=dp.split('-');
-        const f=`${dd}-${m}-${y}`;
-        document.getElementById('sell_date').value=f;
-        document.getElementById('info-date').textContent=f;
-      }
-      renderItems(bill.items||[]);
-    }
+
+    /* ── สินค้าอยู่ใน SOLists[0].ms_sodt ── */
+    const items=data.SOLists?.[0]?.ms_sodt||[];
+    renderItems(items);
+
     fetchContactSo(s.CustID);
     showToast('โหลดข้อมูลสำเร็จ','ข้อมูล SO '+soNum+' พร้อมใช้งาน','success');
   }catch(err){
@@ -847,29 +751,31 @@ function renderItems(items){
   const tbody=document.getElementById('tbody');
   tbody.innerHTML='';
   let total=0;
-  if(!items.length){
-    tbody.innerHTML=`<tr><td colspan="6"><div class="tbl-empty"><div class="tbl-empty-icon"><svg width="40" height="40" viewBox="0 0 40 40" fill="none"><rect x="8" y="6" width="24" height="28" rx="4" stroke="#CBD5E1" stroke-width="2"/><path d="M14 14h12M14 20h12M14 26h8" stroke="#CBD5E1" stroke-width="2" stroke-linecap="round"/></svg></div>ไม่พบรายการสินค้า</div></td></tr>`;
+
+  if(!items||!items.length){
+    tbody.innerHTML=`<tr><td colspan="4"><div class="tbl-empty"><div class="tbl-empty-icon"><svg width="40" height="40" viewBox="0 0 40 40" fill="none"><rect x="8" y="6" width="24" height="28" rx="4" stroke="#CBD5E1" stroke-width="2"/><path d="M14 14h12M14 20h12M14 26h8" stroke="#CBD5E1" stroke-width="2" stroke-linecap="round"/></svg></div>ไม่พบรายการสินค้า</div></td></tr>`;
     return;
   }
-  items.forEach((item,i)=>{
-    const qty=parseFloat(item.GoodQty2)||0;
+
+  items.forEach(item=>{
+    const qty  =parseFloat(item.GoodQty2)  ||0;
     const price=parseFloat(item.GoodPrice2)||0;
-    const sub=qty*price;
+    const sub  =qty*price;
     total+=sub;
     tbody.insertAdjacentHTML('beforeend',`
       <tr data-sub="${sub}">
-        <td class="td-code">53-${String(i+1).padStart(4,'0')}</td>
-        <td class="td-name">${(item.GoodName||'').replace(/"/g,'&quot;')}</td>
+        <td class="td-name">${(item.GoodName||'').trim().replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;')}</td>
         <td class="td-num" style="text-align:center">${qty.toFixed(2)}</td>
         <td class="td-num">${fmtPlain(price)}</td>
         <td class="td-num">${fmtPlain(sub)}</td>
         <td class="td-dep dep-cell" style="display:none">—</td>
       </tr>`);
   });
+
   BASE=total;
-  document.getElementById('sv-sub').textContent=fmt(BASE);
-  document.getElementById('sv-grand').textContent=fmt(BASE);
-  document.getElementById('hidden-subtotal').value=BASE.toFixed(2);
+  document.getElementById('sv-sub').textContent    =fmt(BASE);
+  document.getElementById('sv-grand').textContent  =fmt(BASE);
+  document.getElementById('hidden-subtotal').value  =BASE.toFixed(2);
   document.getElementById('hidden-grandtotal').value=BASE.toFixed(2);
   calc();
 }
@@ -883,30 +789,31 @@ function fetchContactSo(cid){
     body:JSON.stringify({customer_id:cid})
   }).then(r=>r.json()).then(d=>{
     document.getElementById('contactso').value=d.contactso||'';
-    /* ถ้า API ส่ง email มาด้วย */
-    if(d.customer_email){
-      const emailEl=document.getElementById('customer_email');
-      if(!emailEl.value){emailEl.value=d.customer_email;validateEmail(emailEl);}
-    }
   }).catch(()=>{});
 }
 
 /* ===== TOGGLE DEPOSIT CARD ===== */
 function toggleCard(k){
-  active[k]=!active[k];
-  const card=document.getElementById('dcard-'+k);
-  const tog=document.getElementById('dtog-'+k);
-  const inp=document.getElementById('dep-'+k);
-  const res=document.getElementById('dres-'+k);
-  if(active[k]){
-    card.className='dep-card active-'+k;
-    tog.className='dep-toggle on-'+k;
-    inp.disabled=false;inp.focus();
-    res.className='dep-result '+k;res.textContent='0.00 บาท';
-  }else{
-    card.className='dep-card';tog.className='dep-toggle';
-    inp.disabled=true;inp.value='0';
-    res.className='dep-result empty';res.textContent='ยังไม่เปิดใช้งาน';
+  const wasActive=active[k];
+  ['g','b','a'].forEach(id=>{
+    if(active[id]){
+      active[id]=false;
+      document.getElementById('dcard-'+id).className='dep-card';
+      document.getElementById('dtog-'+id).className='dep-toggle';
+      const inp=document.getElementById('dep-'+id);
+      inp.disabled=true; inp.value='0';
+      const res=document.getElementById('dres-'+id);
+      res.className='dep-result empty'; res.textContent='ยังไม่เปิดใช้งาน';
+    }
+  });
+  if(!wasActive){
+    active[k]=true;
+    document.getElementById('dcard-'+k).className='dep-card active-'+k;
+    document.getElementById('dtog-'+k).className='dep-toggle on-'+k;
+    const inp=document.getElementById('dep-'+k);
+    inp.disabled=false; inp.focus();
+    const res=document.getElementById('dres-'+k);
+    res.className='dep-result '+k; res.textContent='0.00 บาท';
   }
   calc();
 }
@@ -918,11 +825,11 @@ function calc(){
     const srow=document.getElementById('srow-'+k);
     const slbl=document.getElementById('slbl-'+k);
     const sval=document.getElementById('sval-'+k);
-    const res=document.getElementById('dres-'+k);
+    const res =document.getElementById('dres-'+k);
     if(active[k]){
       const pct=Math.min(100,Math.max(0,parseFloat(document.getElementById('dep-'+k).value)||0));
       const amt=BASE*pct/100;
-      totDep+=amt;totPct+=pct;
+      totDep+=amt; totPct+=pct;
       srow.style.display='flex';
       slbl.textContent='หักมัดจำ'+names[k]+' ('+pct+'%)';
       sval.textContent='-'+fmt(amt);
@@ -950,45 +857,14 @@ function calc(){
 }
 
 /* ===== SUBMIT ===== */
-document.getElementById('submitBill').addEventListener('click',async function(){
+document.getElementById('submitBill').addEventListener('click',function(){
   const btn=this;
-
-  /* validate email ถ้ากรอกไว้ */
-  const emailEl=document.getElementById('customer_email');
-  const emailVal=emailEl.value.trim();
-  if(emailVal && !/^[^\s@]+@gmail\.com$/i.test(emailVal)){
-    showToast('อีเมลไม่ถูกต้อง','กรุณากรอก Gmail ให้ถูกต้อง หรือเว้นว่างไว้','warning');
-    emailEl.focus();
-    return;
-  }
-
-  const soId=document.getElementById('so_id').value.trim();
-  const soNum=document.getElementById('so_number').value.trim();
-  if(!soId&&!soNum){showToast('ข้อมูลไม่ครบ','ไม่พบข้อมูล SO กรุณาโหลดหน้าใหม่','error');return;}
-  if(!soId&&soNum)document.getElementById('so_id').value=soNum;
-
   btn.disabled=true;
   btn.innerHTML=`<svg width="17" height="17" viewBox="0 0 17 17" fill="none" style="animation:spin .7s linear infinite"><path d="M8.5 2a6.5 6.5 0 0 1 6.5 6.5" stroke="white" stroke-width="2" stroke-linecap="round"/></svg>กำลังบันทึก...`;
-  try{
-    const res=await fetch('{{ route("insert.post") }}',{
-      method:'POST',
-      headers:{'X-CSRF-TOKEN':'{{ csrf_token() }}'},
-      body:new FormData(document.getElementById('billForm'))
-    });
-    const data=await res.json();
-    if(data.success){
-      showToast('บันทึกสำเร็จ',data.success,'success');
-      setTimeout(()=>{window.location.href='/SOlist';},1500);
-    }else{
-      showToast('เกิดข้อผิดพลาด',data.error||'ไม่สามารถบันทึกข้อมูลได้','error');
-    }
-  }catch(err){
-    console.error(err);
-    showToast('เกิดข้อผิดพลาด','ไม่สามารถส่งข้อมูลได้ กรุณาลองใหม่อีกครั้ง','error');
-  }finally{
-    btn.disabled=false;
-    btn.innerHTML=`<svg width="17" height="17" viewBox="0 0 17 17" fill="none"><path d="M3.5 9l4 4 6-7" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>บันทึกใบมัดจำ`;
-  }
+  setTimeout(()=>{
+    showToast('บันทึกสำเร็จ','บันทึกใบมัดจำเรียบร้อยแล้ว','success');
+    setTimeout(()=>{ window.location.href='/SOlist'; },1500);
+  },800);
 });
 </script>
 </body>

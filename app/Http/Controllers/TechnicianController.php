@@ -1,13 +1,14 @@
 <?php
 
+// TechnicianController.php
 namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 
 class TechnicianController extends Controller
 {
-    public function dashboard()
+    public function technician()
     {
-        return view('technician.dashboard');
+        return view('technician.technician');
     }
 }

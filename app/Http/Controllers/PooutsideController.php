@@ -418,4 +418,51 @@ class PooutsideController extends Controller
         'errors' => $errors
     ]);
 }
+ public function download()
+    {
+        $token = 'eyJ0eXAiOiJKV1QiLCJhbGciOiJSUzI1NiJ9.eyJhdWQiOiIxIiwianRpIjoiMzU2NzczYTQ1MmI3MWI4NWNjNmEzMjYzNmZmMzlmZjYxMzc2OGUwMDU4ZGU5NWQ2MDAyYmEwOTU4ZjM1MGE1NjMzYmQ5ZjAxOTZkYmYzYjMiLCJpYXQiOjE3NzI0MjE5MzMuMDA5NDA4LCJuYmYiOjE3NzI0MjE5MzMuMDA5NDEsImV4cCI6MTgwMzk1NzkzMy4wMDQ2NjcsInN1YiI6IjExNTM2MyIsInNjb3BlcyI6WyIqIl19.ZzpHxzeyk7Yy6YGl4oCZhUVvdInpqUAX066dOpyYsK6giAVBO1AQAg_tbobVFDK7NZ9rZsLcAmTpQjx2RIwQoeIiMowZXgF74v22fL2hJzaiVfTFdX_g00HxO5J37P1zFFT0mARvLHynOhcxM9qO3isKqHx7TnXvXDHQvSBczGo6TLVZcj4lp9e-cppi_RIzP3eiPXxl3Ou8I2tjY71I2SclZAVkbOAqD_3pUpTqsbPbrvuQl7hN7p2iWvfDL9b7dvQ984T4JIQNp2EdvBr7P7KtHrs1RU1HLp_aVLcmtQ46RQBY5Ymrupw9J1qM0DjBJYQC37jUZrUgL3AR8OYKtFFQwLMJ6_jfzyPYrkbJzcnWp6k8WlMS2fc3m4Fxl9yta9zaQarte-dLypWlhaAv2YcU6qdZ0vJF7JkrlrIDi_NaPRmak-GnCj60jSv83SLy_A7p4gnaBprWO7rkR3ctKl-rT0WjTVbn1aPcWnhCjyfZbYsLebOtZTiovvzv_FR6P2dMIe8YEDHf2o8MQ0qjE0XqmwnOOKWmPJ6T3WOgR_ujIKFlvgpvhSWxCZ5eJ9L1AYSR2HDUib_D8FbF0OzP58asPY0IzpuSENjbvtjvy3lx5zAsiVnKz6MjxMtF4--xO7uEeUlvgZUoWIFCpdAls2D7K_qu4UwP1Oj8_rvO-aY';
+        $page = 1;
+        $size = 20;
+        $allData = [];
+
+        do {
+            $response = Http::withHeaders([
+                'accept' => 'application/json, text/plain, */*',
+                'authorization' => 'Bearer ' . $token,
+                'client-build-date' => '2026-04-08T11:54:08.831Z',
+                'client-lang' => 'th',
+                'client-load-at' => now()->toIso8601String(),
+                'client-version' => '22332a309a309c372a78b05155d66d318ec0f5f3',
+                'origin' => 'https://app.smemove.com',
+                'referer' => 'https://app.smemove.com/',
+            ])->get('https://api.smemove.com/api/119394/purchase-order', [
+                'sort' => 'documentNo',
+                'direction' => 'DESC',
+                'page' => $page,
+                'size' => $size,
+            ]);
+
+            if ($response->failed()) {
+                return response()->json([
+                    'error' => 'API ERROR',
+                    'page' => $page,
+                    'body' => $response->body()
+                ], 500);
+            }
+
+            $json = $response->json();
+            $data = $json['data'] ?? [];
+            if (empty($data)) break;
+
+            $allData = array_merge($allData, $data);
+
+            $page++;
+
+        } while (true);
+
+        return response()->json([
+            'total' => count($allData),
+            'data' => $allData
+        ]);
+    }
 }

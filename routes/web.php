@@ -249,3 +249,6 @@ Route::get('/service', [ServiceController::class, 'index'])->name('dashboard');
 
 use App\Http\Controllers\DeliverytrackController ;
 Route::get('/deliverytrack', [DeliverytrackController::class, 'index'])->name('dashboard');
+
+use App\Http\Controllers\TechnicianController;
+Route::get('/technician', [TechnicianController::class, 'technician']);
