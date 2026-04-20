@@ -177,8 +177,34 @@ textarea.form-control{resize:vertical;min-height:65px}
 .report-stat-value{font-size:22px;font-weight:700;color:var(--navy)}
 .report-stat-sub{font-size:12px;color:var(--text3);margin-top:2px}
 .dlv-filter-row{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;margin-bottom:12px}
+.dlv-controls{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.dlv-sel{height:36px;font-family:'Sarabun',sans-serif;font-size:13px;padding:6px 10px;border:1px solid var(--border);border-radius:var(--radius-sm);background:var(--surface2);color:var(--text);outline:none}
+.dlv-sel:focus{border-color:var(--accent)}
 .print-header{display:none;padding:0 0 16px;margin-bottom:16px;border-bottom:2px solid var(--navy)}
 .print-header-title{font-size:18px;font-weight:700;color:var(--navy)}
+
+/* ── TOAST ── */
+.toast{position:fixed;top:76px;right:20px;z-index:9999;
+  min-width:240px;max-width:340px;
+  background:#1a7a4d;color:#fff;
+  padding:14px 18px 18px 16px;
+  border-radius:12px;
+  box-shadow:0 6px 28px rgba(0,0,0,.22);
+  display:flex;align-items:flex-start;gap:10px;
+  font-family:'Sarabun',sans-serif;font-size:14px;font-weight:500;
+  animation:toastIn .35s cubic-bezier(.34,1.56,.64,1) both;
+  overflow:hidden;
+}
+.toast.hiding{animation:toastOut .35s ease forwards}
+.toast-icon{font-size:20px;line-height:1;flex-shrink:0;margin-top:1px}
+.toast-body{flex:1}
+.toast-title{font-weight:700;font-size:14px;margin-bottom:2px}
+.toast-msg{font-size:13px;opacity:.88}
+.toast-progress{position:absolute;bottom:0;left:0;height:4px;background:rgba(255,255,255,.45);border-radius:0 0 12px 12px;width:100%}
+@keyframes toastIn{from{transform:translateX(110%);opacity:0}to{transform:translateX(0);opacity:1}}
+@keyframes toastOut{from{transform:translateX(0);opacity:1}to{transform:translateX(110%);opacity:0}}
+@keyframes toastShrink{from{width:100%}to{width:0%}}
+
 @media print{body{background:#fff!important;-webkit-print-color-adjust:exact;print-color-adjust:exact}.navbar,.filter-bar,.action-btns,.modal-overlay,.no-print{display:none!important}.main{padding:0!important}#pageTracking{display:none!important}#pageReport{display:block!important}.print-header{display:block!important}canvas{max-width:100%!important}}
 @media(max-width:640px){.form-grid{grid-template-columns:1fr}.driver-card-grid{grid-template-columns:1fr}.main{padding:14px}.metrics{grid-template-columns:1fr 1fr}.time-picker-row{grid-template-columns:1fr auto 1fr}.nb-menu{display:none}}
 </style>
@@ -200,8 +226,42 @@ textarea.form-control{resize:vertical;min-height:65px}
 
 <div class="layout">
 <main class="main">
+
+{{-- ── TOAST NOTIFICATION ── --}}
 @if(session('success'))
-<div class="alert alert-success">{{ session('success') }}</div>
+<div class="toast" id="successToast">
+  <div class="toast-icon">✅</div>
+  <div class="toast-body">
+    <div class="toast-title">บันทึกสำเร็จ</div>
+    <div class="toast-msg">{{ session('success') }}</div>
+  </div>
+  <div class="toast-progress" id="toastProgress"></div>
+</div>
+<script>
+(function(){
+  var DURATION = 5000;
+  var toast = document.getElementById('successToast');
+  var bar   = document.getElementById('toastProgress');
+  if (!toast) return;
+  // shrink progress bar
+  bar.style.transition = 'width ' + DURATION + 'ms linear';
+  requestAnimationFrame(function(){
+    requestAnimationFrame(function(){
+      bar.style.width = '0%';
+    });
+  });
+  // hide after duration
+  setTimeout(function(){
+    toast.classList.add('hiding');
+    setTimeout(function(){ toast.remove(); }, 380);
+  }, DURATION);
+  // click to dismiss
+  toast.addEventListener('click', function(){
+    toast.classList.add('hiding');
+    setTimeout(function(){ toast.remove(); }, 380);
+  });
+})();
+</script>
 @endif
 
 {{-- PAGE: TRACKING --}}
@@ -256,7 +316,7 @@ textarea.form-control{resize:vertical;min-height:65px}
     </div>
     <div class="table-wrap">
       <table>
-        <thead><tr><th>#</th><th>วันที่ทำงาน</th><th>คนขับ / ทะเบียน</th><th>เวลาทำงาน</th><th>ระยะทาง</th><th>ลิตร</th><th>ค่าน้ำมัน (฿)</th><th>km/L</th><th>บันทึกเมื่อ (เวลาไทย)</th></tr></thead>
+        <thead><tr><th>#</th><th>วันที่ทำงาน</th><th>คนขับ / ทะเบียน</th><th>เวลาทำงาน</th><th>ระยะทาง</th><th>ลิตร</th><th>ค่าน้ำมัน (฿)</th><th>km/L</th><th>บันทึกเมื่อ (เวลาไทย)</th><th></th></tr></thead>
         <tbody id="oilTbody">
           @forelse($logs as $i => $r)
           @php
@@ -275,10 +335,7 @@ textarea.form-control{resize:vertical;min-height:65px}
             <td style="font-weight:600">{{ $r['total_price']?'฿'.number_format($r['total_price'],2):'—' }}</td>
             <td>@if($kml>0)<span class="km-val">{{ number_format($kml,1) }}</span>@else<span style="color:var(--text3);font-size:11px">—</span>@endif</td>
             <td style="font-size:11px;color:var(--text3)">{{ $createdTH }}</td>
-            <td><div class="action-btns">
-              <!-- <button class="action-btn edit" onclick="openModal({{ $r['id'] }})">✏</button> -->
-              <!-- <form method="POST" action="{{ route('oil.destroy',$r['id']) }}" onsubmit="return confirm('ยืนยันการลบ?')" style="display:inline">@csrf @method('DELETE')<button type="submit" class="action-btn del">🗑</button></form> -->
-            </div></td>
+            <td><div class="action-btns"></div></td>
           </tr>
           @empty
           <tr><td colspan="10"><div class="empty-state"><div class="icon">⛽</div><p>ไม่พบรายการ</p></div></td></tr>
@@ -293,29 +350,36 @@ textarea.form-control{resize:vertical;min-height:65px}
     <div class="chart-card"><div class="chart-card-title">น้ำมันต่อกิโล (km/L)</div><div class="chart-card-sub">เฉลี่ย km/L แต่ละคน</div><div style="position:relative;width:100%;height:220px"><canvas id="chartKml"></canvas></div></div>
   </div>
 
+  {{-- Delivery chart --}}
   <div class="chart-card" style="margin-bottom:18px">
     <div class="dlv-filter-row">
-      <div><div class="chart-card-title">จำนวนสินค้า สำเร็จ vs ไม่สำเร็จ</div><div class="chart-card-sub" style="margin-bottom:0">ประสิทธิภาพการส่งสินค้า</div></div>
-      <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+      <div>
+        <div class="chart-card-title"> รายการสมบูรณ์ / รายการผิดพลาด</div>
+        <div class="chart-card-sub" style="margin-bottom:0">ประสิทธิภาพการส่งสินค้าแยกตามคนขับ</div>
+      </div>
+      <div class="dlv-controls">
         <div class="view-tabs" id="dlvTabs">
           <button class="view-tab active" onclick="setDlv('day',this)">รายวัน</button>
           <button class="view-tab" onclick="setDlv('month',this)">รายเดือน</button>
           <button class="view-tab" onclick="setDlv('year',this)">รายปี</button>
           <button class="view-tab" onclick="setDlv('all',this)">ทั้งหมด</button>
         </div>
-        <select id="dlvYearSel" onchange="renderDlv()" style="display:none;height:36px;font-family:'Sarabun',sans-serif;font-size:13px;padding:6px 10px;border:1px solid var(--border);border-radius:var(--radius-sm);background:var(--surface2);color:var(--text)">
+        {{-- year selector --}}
+        <select id="dlvYearSel" onchange="renderDlv()" class="dlv-sel" style="display:none">
           @for($y=date('Y');$y>=2020;$y--)
           <option value="{{ $y }}" {{ $y==date('Y')?'selected':'' }}>{{ $y }}</option>
           @endfor
         </select>
+        {{-- driver selector (injected by JS, placeholder kept here) --}}
+        <select id="dlvDriverSel" onchange="dlvDriver=this.value;renderDlv()" class="dlv-sel">
+          <option value="all">ทุกคน (รวม)</option>
+        </select>
       </div>
     </div>
-    <!-- <div style="display:flex;gap:14px;margin-bottom:10px;font-size:12px;color:var(--text2)">
-      <span style="display:flex;align-items:center;gap:5px"><span style="width:10px;height:10px;border-radius:2px;background:#38c98a;display:inline-block"></span>ส่งสำเร็จ</span>
-      <span style="display:flex;align-items:center;gap:5px"><span style="width:10px;height:10px;border-radius:2px;background:#e85d5d;display:inline-block"></span>ส่งไม่สำเร็จ</span>
-    </div> -->
-    <div style="height:280px;position:relative"><canvas id="deliveryChart"></canvas></div>
-  </div> 
+    <div style="height:300px;position:relative"><canvas id="deliveryChart"></canvas></div>
+    {{-- legend --}}
+    <div id="dlvLegend" style="display:flex;flex-wrap:wrap;gap:8px;margin-top:10px;padding-top:10px;border-top:1px solid var(--border)"></div>
+  </div>
 </div>{{-- end pageTracking --}}
 
 {{-- PAGE: REPORT --}}
@@ -406,14 +470,14 @@ textarea.form-control{resize:vertical;min-height:65px}
           $plateList=['1 ฉผ 1276','1 ฉผ 3181','1ฉผ213','1ฉผศ7158','2 ฉธ 1620','2ฉมฎ3017','2ฉธ1619','2ฉธ1621','3ฉมก6071','3ฉมง3059','3ฉมณ6380','3ฉมย478','3ฉมห200','4กย1540','6762','City 8กค6309','City 9 กค4815','แจ๊ส 9กธ4830'];
           foreach($plates as $dbP){if(!in_array($dbP,$plateList))$plateList[]=$dbP;}
         @endphp
-        <div class="full"><label class="form-label">วันที่ทำงาน *</label><input type="date" id="s1-work-date" class="form-control" value="{{ date('Y-m-d') }}" onchange="updateDriverBanner()"><div class="invalid-feedback" id="s1-err-date" style="display:none">กรุณาเลือกวันที่</div></div>
+        <div class="full"><label class="form-label">วันที่ทำงาน *</label><input type="date" id="s1-work-date" class="form-control" value="{{ date('Y-m-d') }}" onchange="onS1DateChange()"><div class="invalid-feedback" id="s1-err-date" style="display:none">กรุณาเลือกวันที่</div></div>
         <div>
           <label class="form-label">คนขับ *</label>
-          <select id="s1-driver-select" class="form-control" onchange="onS1SelectOther(this,'s1-driver-name','s1-driver-other');updateDriverBanner();loadJobsForDriver()">
-            <option value="">— เลือกคนขับ —</option>
-            @foreach($driverList as $d)<option value="{{ $d }}">{{ $d }}</option>@endforeach
-            <option value="__other__">อื่นๆ (พิมพ์เอง)</option>
-          </select>
+        <select id="s1-driver-select" class="form-control"
+          onchange="onS1SelectOther(this,'s1-driver-name','s1-driver-other');updateDriverBanner();loadJobsForDriver()">
+          <option value="">— เลือกคนขับ —</option>
+          <option value="__other__">อื่นๆ (พิมพ์เอง)</option>
+        </select>
           <input type="hidden" id="s1-driver-name" value="">
           <input type="text" id="s1-driver-other" class="form-control" style="margin-top:6px;display:none" placeholder="ระบุชื่อคนขับ" oninput="document.getElementById('s1-driver-name').value=this.value;updateDriverBanner();loadJobsForDriver()">
           <div class="invalid-feedback" id="s1-err-driver" style="display:none">กรุณาเลือกคนขับ</div>
@@ -473,7 +537,13 @@ textarea.form-control{resize:vertical;min-height:65px}
           <div class="summary-chip">📅 <strong id="chipDate">—</strong></div>
           <div class="summary-chip" id="chipTimeWrap" style="display:none">⏱ <strong id="chipTime">—</strong></div>
         </div>
-        <input type="hidden" name="work_date" id="f-work-date"><input type="hidden" name="driver_name" id="f-driver-name"><input type="hidden" name="vehicle_id" id="f-vehicle-id"><input type="hidden" name="start_time" id="f-start-time"><input type="hidden" name="end_time" id="f-end-time">
+        <input type="hidden" name="work_date" id="f-work-date">
+        <input type="hidden" name="driver_name" id="f-driver-name">
+        <input type="hidden" name="vehicle_id" id="f-vehicle-id">
+        <input type="hidden" name="start_time" id="f-start-time">
+        <input type="hidden" name="end_time" id="f-end-time">
+        <input type="hidden" name="ok" id="f-ok" value="0">
+        <input type="hidden" name="ng" id="f-ng" value="0">
         <div class="oil-price-banner">
           <div style="width:100%">
             <div style="font-size:12px;opacity:.7" id="oilPriceLabel">ราคาน้ำมันดีเซล (PTT)</div>
@@ -492,11 +562,9 @@ textarea.form-control{resize:vertical;min-height:65px}
           <div class="section-divider">⛽ ข้อมูลน้ำมัน</div>
           <div class="full"><label class="form-label">ค่าน้ำมัน (฿) *</label><input type="number" name="total_price" id="f-total-price" class="form-control {{ $errors->has('total_price')?'is-invalid':'' }}" step="0.01" value="{{ old('total_price',$editLog['total_price']??'') }}" placeholder="กรอกยอดเงิน เช่น 500" oninput="calcPreview()">@error('total_price')<div class="invalid-feedback">{{ $message }}</div>@enderror</div>
            <div class="full"><label class="form-label">ระยะทางทั้งหมด (km)</label><input type="number" name="total_distance" id="f-total-distance" class="form-control" value="{{ old('total_distance',$editLog['total_distance']??'') }}" oninput="calcPreview()"></div>
-         
         </div>
           <div><label class="form-label">จำนวนลิตร</label><input type="number" name="liters" id="f-liters" class="form-control auto-calc" step="0.01" value="{{ old('liters',$editLog['liters']??'') }}" readonly><div class="auto-hint"></div></div>
           <div><label class="form-label">ราคาต่อลิตร (฿)</label><input type="number" name="price_per_liter" id="f-price-per-liter" class="form-control auto-calc" step="0.01" value="{{ old('price_per_liter',$editLog['price_per_liter']??'') }}" readonly><div class="auto-hint"></div></div>
-         
         <div class="calc-box" id="calcBox">
           <div style="font-size:11px;color:var(--text2);font-weight:600;text-transform:uppercase;letter-spacing:.5px;margin-bottom:10px">📊 Preview</div>
           <div class="calc-grid">
@@ -507,30 +575,164 @@ textarea.form-control{resize:vertical;min-height:65px}
         </div>
         <div class="full"><label class="form-label">หมายเหตุ</label><textarea name="note" id="f-note" class="form-control">{{ old('note',$editLog['note']??'') }}</textarea></div>
       </div>
-       
       <div class="modal-footer"><button type="button" class="btn btn-outline" onclick="backToStep1()" id="backBtnFooter">← ย้อนกลับ</button><button type="submit" class="btn btn-primary">💾 บันทึกข้อมูล</button></div>
     </form>
   </div>
 </div>
-
 <script>
 const COLORS=['#4f8ef7','#38c98a','#f5a623','#e85d5d','#a855f7','#06b6d4','#f59e0b','#10b981','#ef4444','#8b5cf6','#ec4899','#14b8a6'];
-const ROUTE_STORE='{{ route("oil") }}';
-const ROUTE_UPDATE=id=>`{{ url("/oil/update") }}/${id}`;
-const ROUTE_PREVMILE='{{ route("oil.prevMileage") }}';
-const TZ='Asia/Bangkok';
-let currentOilType='diesel',isEditMode=false,editId=null,reportChartsInited=false;
-let dlvView='day',dlvChart=null;
+const COLORS_FADE=COLORS.map(c=>c+'55');
+const ROUTE_STORE    = '{{ route("oil") }}';
+const ROUTE_UPDATE   = id => `{{ url("/oil/update") }}/${id}`;
+const ROUTE_PREVMILE = '{{ route("oil.prevMileage") }}';
+const ROUTE_SYNC_NG  = '{{ route("oil.syncNg") }}';
+const CSRF_TOKEN     = document.querySelector('meta[name="csrf-token"]')?.content ?? '';
+const TZ = 'Asia/Bangkok';
+let currentOilType = 'diesel', isEditMode = false, editId = null, reportChartsInited = false;
 
-/* PAGE SWITCH */
+/* ══════════════════════════════════════════════════════════════════
+   DELIVERY CHART
+══════════════════════════════════════════════════════════════════ */
+const MONTH_LABELS = ['ม.ค.','ก.พ.','มี.ค.','เม.ย.','พ.ค.','มิ.ย.','ก.ค.','ส.ค.','ก.ย.','ต.ค.','พ.ย.','ธ.ค.'];
+let dlvView = 'day', dlvChart = null, dlvDriver = 'all';
+
+@php
+  $deliveryByDriver = [];
+  foreach ($logs as $log) {
+      $driver  = $log['driver_name'] ?? 'ไม่ระบุ';
+      $date    = $log['work_date']   ?? '';
+      $monIdx  = $date ? ((int) substr($date, 5, 2)) - 1 : -1;
+      $quarter = $monIdx >= 0 ? (int) floor($monIdx / 3) : -1;
+      if (!isset($deliveryByDriver[$driver])) {
+          $deliveryByDriver[$driver] = [
+              'days'     => [],
+              'months'   => array_fill(0, 12, ['s' => 0, 'f' => 0]),
+              'quarters' => array_fill(0, 4,  ['s' => 0, 'f' => 0]),
+              'all'      => ['s' => 0, 'f' => 0],
+          ];
+      }
+      $success = (int) ($log['delivery_success'] ?? $log['success_count'] ?? $log['ok_count']  ?? 0);
+      $fail    = (int) ($log['delivery_fail']    ?? $log['fail_count']    ?? $log['ng_count']   ?? 0);
+      if ($date) {
+          if (!isset($deliveryByDriver[$driver]['days'][$date]))
+              $deliveryByDriver[$driver]['days'][$date] = ['s' => 0, 'f' => 0];
+          $deliveryByDriver[$driver]['days'][$date]['s'] += $success;
+          $deliveryByDriver[$driver]['days'][$date]['f'] += $fail;
+      }
+      if ($monIdx >= 0 && $monIdx < 12) {
+          $deliveryByDriver[$driver]['months'][$monIdx]['s'] += $success;
+          $deliveryByDriver[$driver]['months'][$monIdx]['f'] += $fail;
+      }
+      if ($quarter >= 0 && $quarter < 4) {
+          $deliveryByDriver[$driver]['quarters'][$quarter]['s'] += $success;
+          $deliveryByDriver[$driver]['quarters'][$quarter]['f'] += $fail;
+      }
+      $deliveryByDriver[$driver]['all']['s'] += $success;
+      $deliveryByDriver[$driver]['all']['f'] += $fail;
+  }
+@endphp
+const DLV_BY_DRIVER = @json($deliveryByDriver);
+
+function initDlvDriverSel() {
+  const sel = document.getElementById('dlvDriverSel');
+  while (sel.options.length > 1) sel.remove(1);
+  Object.keys(DLV_BY_DRIVER).forEach(d => {
+    const o = document.createElement('option'); o.value = d; o.textContent = d; sel.appendChild(o);
+  });
+}
+function setDlv(v, btn) {
+  dlvView = v;
+  document.querySelectorAll('#dlvTabs .view-tab').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  document.getElementById('dlvYearSel').style.display = v === 'year' ? 'block' : 'none';
+  renderDlv();
+}
+function renderDlv() {
+  const drivers = Object.keys(DLV_BY_DRIVER);
+  const yr = parseInt(document.getElementById('dlvYearSel')?.value || new Date().getFullYear());
+  let labels = [], datasets = [];
+  const tf = { size: 11 };
+  if (dlvDriver !== 'all') {
+    const data = DLV_BY_DRIVER[dlvDriver];
+    if (!data) { if (dlvChart) dlvChart.destroy(); return; }
+    let success = [], fail = [];
+    if (dlvView === 'day') {
+      const sd = Object.keys(data.days || {}).sort();
+      labels = sd.map(d => d.slice(5)); success = sd.map(d => data.days[d].s); fail = sd.map(d => data.days[d].f);
+    } else if (dlvView === 'month') {
+      labels = MONTH_LABELS; success = (data.months||[]).map(m=>m.s); fail = (data.months||[]).map(m=>m.f);
+    } else if (dlvView === 'year') {
+      labels = ['Q1','Q2','Q3','Q4'].map(q=>`${q} ${yr}`); success = (data.quarters||[]).map(q=>q.s); fail = (data.quarters||[]).map(q=>q.f);
+    } else { labels = ['ทั้งหมด']; success = [data.all?.s||0]; fail = [data.all?.f||0]; }
+    datasets = [
+      { label:'ส่งสำเร็จ',    data:success, backgroundColor:'#38c98a', borderRadius:5, borderSkipped:false, stack:'s' },
+      { label:'ส่งไม่สำเร็จ', data:fail,    backgroundColor:'#e85d5d', borderRadius:5, borderSkipped:false, stack:'s' },
+    ];
+  } else {
+    if (dlvView === 'day') {
+      const allDates = [...new Set(drivers.flatMap(d=>Object.keys(DLV_BY_DRIVER[d].days||{})))].sort();
+      labels = allDates.map(d=>d.slice(5));
+      datasets = drivers.flatMap((d,i)=>{ const col=COLORS[i%COLORS.length]; return [
+        { label:`${d} ✓`, data:allDates.map(dt=>DLV_BY_DRIVER[d].days?.[dt]?.s||0), backgroundColor:col,      borderRadius:4, borderSkipped:false, stack:d },
+        { label:`${d} ✗`, data:allDates.map(dt=>DLV_BY_DRIVER[d].days?.[dt]?.f||0), backgroundColor:col+'77', borderRadius:4, borderSkipped:false, stack:d },
+      ]; });
+    } else if (dlvView === 'month') {
+      labels = MONTH_LABELS;
+      datasets = drivers.flatMap((d,i)=>{ const col=COLORS[i%COLORS.length]; const months=DLV_BY_DRIVER[d].months||[]; return [
+        { label:`${d} ✓`, data:months.map(m=>m.s), backgroundColor:col,      borderRadius:4, borderSkipped:false, stack:d },
+        { label:`${d} ✗`, data:months.map(m=>m.f), backgroundColor:col+'77', borderRadius:4, borderSkipped:false, stack:d },
+      ]; });
+    } else if (dlvView === 'year') {
+      labels = ['Q1','Q2','Q3','Q4'].map(q=>`${q} ${yr}`);
+      datasets = drivers.flatMap((d,i)=>{ const col=COLORS[i%COLORS.length]; const qs=DLV_BY_DRIVER[d].quarters||[]; return [
+        { label:`${d} ✓`, data:qs.map(q=>q.s), backgroundColor:col,      borderRadius:4, borderSkipped:false, stack:d },
+        { label:`${d} ✗`, data:qs.map(q=>q.f), backgroundColor:col+'77', borderRadius:4, borderSkipped:false, stack:d },
+      ]; });
+    } else {
+      labels = drivers;
+      datasets = [
+        { label:'ส่งสำเร็จ',    data:drivers.map(d=>DLV_BY_DRIVER[d].all?.s||0), backgroundColor:drivers.map((_,i)=>COLORS[i%COLORS.length]),      borderRadius:5, borderSkipped:false, stack:'ok' },
+        { label:'ส่งไม่สำเร็จ', data:drivers.map(d=>DLV_BY_DRIVER[d].all?.f||0), backgroundColor:drivers.map((_,i)=>COLORS[i%COLORS.length]+'77'), borderRadius:5, borderSkipped:false, stack:'ok' },
+      ];
+    }
+  }
+  if (dlvChart) dlvChart.destroy();
+  dlvChart = new Chart(document.getElementById('deliveryChart'), {
+    type:'bar', data:{labels,datasets},
+    options:{
+      responsive:true, maintainAspectRatio:false,
+      plugins:{legend:{display:false},tooltip:{callbacks:{
+        label:ctx=>`${ctx.dataset.label}: ${ctx.raw} รายการ`,
+        footer:items=>'รวม: '+items.reduce((s,i)=>s+i.raw,0)+' รายการ',
+      }}},
+      scales:{
+        x:{stacked:true,ticks:{font:tf},grid:{color:'rgba(0,0,0,.04)'}},
+        y:{stacked:true,beginAtZero:true,ticks:{font:tf,callback:v=>v+' รายการ'},grid:{color:'rgba(0,0,0,.04)'}},
+      },
+    },
+  });
+  buildDlvLegend(datasets);
+}
+function buildDlvLegend(datasets) {
+  const wrap = document.getElementById('dlvLegend'); if (!wrap) return;
+  const seen = new Set();
+  const items = datasets.filter(ds=>{ if(seen.has(ds.label))return false; seen.add(ds.label); return true; });
+  wrap.innerHTML = items.map(ds=>{
+    const color = Array.isArray(ds.backgroundColor)?ds.backgroundColor[0]:ds.backgroundColor;
+    return `<span style="display:flex;align-items:center;gap:5px;font-size:12px;color:var(--text2)">
+      <span style="width:10px;height:10px;border-radius:2px;background:${color};display:inline-block;flex-shrink:0"></span>${ds.label}</span>`;
+  }).join('');
+}
+
+/* ══════════════════════════════════════════════════════════════════
+   PAGE SWITCH / NAV DATE / TABLE FILTER
+══════════════════════════════════════════════════════════════════ */
 function switchPage(p){
   ['pageTracking','pageReport'].forEach(id=>document.getElementById(id).style.display='none');
   ['navOil','navReport'].forEach(id=>document.getElementById(id).classList.remove('active'));
   if(p==='tracking'){document.getElementById('pageTracking').style.display='block';document.getElementById('navOil').classList.add('active');}
   else if(p==='report'){document.getElementById('pageReport').style.display='block';document.getElementById('navReport').classList.add('active');if(!reportChartsInited){initReportCharts();reportChartsInited=true;}}
 }
-
-/* NAV DATE */
 function nowThai(){return new Date(new Date().toLocaleString('en-US',{timeZone:TZ}));}
 function todayStr(){const d=nowThai();return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;}
 function updateNavDate(){
@@ -539,87 +741,384 @@ function updateNavDate(){
   const map={};parts.forEach(p=>map[p.type]=p.value);
   const el=document.getElementById('navDate');if(el)el.textContent=`${map.day} ${map.month} ${map.year}`;
 }
-
-/* OIL TABLE FILTER */
 function filterOilTable(q){
   const rows=document.querySelectorAll('#oilTbody tr[data-driver]');let v=0;
   rows.forEach(r=>{const m=r.dataset.driver.includes(q.toLowerCase());r.style.display=m?'':'none';if(m)v++;});
   const c=document.getElementById('oilCount');if(c)c.textContent=v;
 }
 
-/* TIME DROPDOWNS */
+/* ══════════════════════════════════════════════════════════════════
+   TIME DROPDOWNS
+══════════════════════════════════════════════════════════════════ */
 function buildTimeDropdowns(){
   const hours=['',...Array.from({length:24},(_,i)=>String(i).padStart(2,'0'))];
-  const mins=['',...Array.from({length:60},(_,i)=>String(i).padStart(2,'0'))];
-  ['s1-start-h','s1-end-h'].forEach(id=>{const s=document.getElementById(id);s.innerHTML=hours.map(h=>`<option value="${h}">${h}</option>`).join('');});
-  ['s1-start-m','s1-end-m'].forEach(id=>{const s=document.getElementById(id);s.innerHTML=mins.map(m=>`<option value="${m}">${m}</option>`).join('');});
+  const mins =['',...Array.from({length:60},(_,i)=>String(i).padStart(2,'0'))];
+  ['s1-start-h','s1-end-h'].forEach(id=>{document.getElementById(id).innerHTML=hours.map(h=>`<option value="${h}">${h}</option>`).join('');});
+  ['s1-start-m','s1-end-m'].forEach(id=>{document.getElementById(id).innerHTML=mins.map(m=>`<option value="${m}">${m}</option>`).join('');});
 }
-function getTimeVal(hId,mId){const h=document.getElementById(hId).value,m=document.getElementById(mId).value;if(h===''||m==='')return '';return h+':'+m;}
+function getTimeVal(hId,mId){const h=document.getElementById(hId).value,m=document.getElementById(mId).value;return(h===''||m==='')?'':h+':'+m;}
 function setTimeDropdown(hId,mId,t){if(!t){document.getElementById(hId).value='00';document.getElementById(mId).value='00';return;}const p=t.split(':');document.getElementById(hId).value=p[0]||'--';document.getElementById(mId).value=p[1]||'--';}
 function onTimeChange(){updateDriverBanner();}
-function onS1SelectOther(sel,hid,tid){const v=sel.value,t=document.getElementById(tid),h=document.getElementById(hid);if(v==='__other__'){t.style.display='block';t.focus();h.value=t.value;}else{t.style.display='none';t.value='';h.value=v;}}
+function onS1SelectOther(sel,hid,tid){
+  const v=sel.value,t=document.getElementById(tid),h=document.getElementById(hid);
+  if(v==='__other__'){t.style.display='block';t.focus();h.value=t.value;}
+  else{t.style.display='none';t.value='';h.value=v;}
+}
 function updateDriverBanner(){
-  const name=document.getElementById('s1-driver-name').value||document.getElementById('s1-driver-select').value;
-  const plate=document.getElementById('s1-vehicle-id').value||document.getElementById('s1-plate-select').value;
+  const name =document.getElementById('s1-driver-name').value||document.getElementById('s1-driver-select').value;
+  const plate=document.getElementById('s1-vehicle-id').value ||document.getElementById('s1-plate-select').value;
   const sT=getTimeVal('s1-start-h','s1-start-m'),eT=getTimeVal('s1-end-h','s1-end-m');
   const banner=document.getElementById('driverBanner');
-  if(name&&name!=='__other__'&&plate&&plate!=='__other__'){document.getElementById('bannerName').textContent=name;document.getElementById('bannerPlate').textContent='ทะเบียน: '+plate;banner.style.display='flex';}else banner.style.display='none';
+  if(name&&name!=='__other__'&&plate&&plate!=='__other__'){
+    document.getElementById('bannerName').textContent=name;
+    document.getElementById('bannerPlate').textContent='ทะเบียน: '+plate;
+    banner.style.display='flex';
+  } else banner.style.display='none';
   const wp=document.getElementById('s1-wh-preview');
   if(sT&&eT){const[sh,sm]=sT.split(':').map(Number),[eh,em]=eT.split(':').map(Number),d=(eh*60+em)-(sh*60+sm);if(d>0){document.getElementById('s1-wh-val').textContent=(d/60).toFixed(2);wp.style.display='block';return;}}
   wp.style.display='none';
 }
+
+/* ══════════════════════════════════════════════════════════════════
+   JOB API — cache + driver dropdown + แสดง status จาก API
+══════════════════════════════════════════════════════════════════ */
+const JOB_API_BASE = 'https://script.google.com/macros/s/AKfycbyL82yRPXR1eiHOnaJqZ5Q0y1VnOZGAPXW2jyEB3NUEWWfJBBhMKosWYxf_363jnmAcHw/exec';
+const jobApiCache = {};   // { "YYYY-MM-DD": Array | null }
+
+/* ── fetch + cache ─────────────────────────────────────────────── */
+async function fetchJobsByDate(dateStr) {
+  if (jobApiCache[dateStr] !== undefined) return;
+  jobApiCache[dateStr] = null;
+  try {
+    const res  = await fetch(`${JOB_API_BASE}?date=${dateStr}`);
+    if (!res.ok) throw new Error('HTTP ' + res.status);
+    const json = await res.json();
+    jobApiCache[dateStr] = Array.isArray(json) ? json
+      : (json.drivers !== undefined ? [json] : []);
+  } catch(e) {
+    console.warn('fetchJobsByDate:', e);
+    jobApiCache[dateStr] = [];
+  }
+}
+
+/* ── populate driver dropdown ──────────────────────────────────── */
+// DB drivers จาก Blade (fallback)
+const DB_DRIVERS = @json($drivers);
+
+function populateDriverDropdown(dateStr) {
+  const sel   = document.getElementById('s1-driver-select');
+  const hidEl = document.getElementById('s1-driver-name');
+  const dayBlocks = jobApiCache[dateStr] || [];
+
+  // คนขับที่วิ่งวันนั้นจาก API
+  const apiDrivers = [];
+  dayBlocks.forEach(day => {
+    (day.drivers || []).forEach(d => {
+      if (d.driver_name && !apiDrivers.includes(d.driver_name))
+        apiDrivers.push(d.driver_name);
+    });
+  });
+
+  const prevVal = hidEl.value || sel.value;
+  sel.innerHTML = '<option value="">— เลือกคนขับ —</option>';
+
+  if (apiDrivers.length > 0) {
+    // คนขับจาก API (flat — ไม่มีหัวกลุ่ม)
+    apiDrivers.forEach(d => {
+      const o = document.createElement('option'); o.value = d; o.textContent = d;
+      sel.appendChild(o);
+    });
+
+    // คนขับ DB ที่ไม่อยู่ใน API
+    const rest = DB_DRIVERS.filter(d => !apiDrivers.includes(d));
+    if (rest.length) {
+      const grpDb = document.createElement('optgroup');
+      grpDb.label = '📋 คนขับอื่นๆ';
+      rest.forEach(d => {
+        const o = document.createElement('option'); o.value = d; o.textContent = d;
+        grpDb.appendChild(o);
+      });
+      sel.appendChild(grpDb);
+    }
+  } else {
+    // ไม่มีข้อมูล API — ใช้ DB ทั้งหมด
+    DB_DRIVERS.forEach(d => {
+      const o = document.createElement('option'); o.value = d; o.textContent = d;
+      sel.appendChild(o);
+    });
+  }
+
+  // option อื่นๆ
+  const oo = document.createElement('option'); oo.value = '__other__'; oo.textContent = 'อื่นๆ (พิมพ์เอง)';
+  sel.appendChild(oo);
+
+  // คืนค่าเดิม
+  if (prevVal && prevVal !== '__other__') {
+    const found = [...sel.options].find(o => o.value === prevVal);
+    if (found) { sel.value = prevVal; hidEl.value = prevVal; }
+    else        { sel.value = ''; hidEl.value = ''; }
+  }
+}
+
+/* ── onDateChange: fetch + repopulate driver + clear jobs ──────── */
+async function onS1DateChange() {
+  updateDriverBanner();
+  const date = document.getElementById('s1-work-date').value;
+  if (!date) return;
+
+  // loading state
+  const sel = document.getElementById('s1-driver-select');
+  sel.innerHTML = '<option value="">⏳ กำลังโหลด...</option>';
+  sel.disabled  = true;
+  document.getElementById('s1-driver-name').value = '';
+  document.getElementById('jobTableWrap').innerHTML = '<div class="job-loading">⏳ กำลังโหลดข้อมูลคนขับ...</div>';
+  document.getElementById('jobDateChip').style.display = 'none';
+
+  await fetchJobsByDate(date);
+
+  sel.disabled = false;
+  populateDriverDropdown(date);
+  updateDriverBanner();
+  document.getElementById('jobTableWrap').innerHTML = '<div class="job-loading">เลือกคนขับเพื่อดูรายการงาน</div>';
+}
+
+/* ── loadJobsForDriver: trigger เมื่อเลือก driver ─────────────── */
+async function loadJobsForDriver() {
+  const name = document.getElementById('s1-driver-name').value
+            || document.getElementById('s1-driver-select').value;
+  const date = document.getElementById('s1-work-date').value;
+  const wrap = document.getElementById('jobTableWrap');
+  const chip = document.getElementById('jobDateChip');
+
+  if (!name || name === '__other__' || !name.trim()) {
+    wrap.innerHTML = '<div class="job-loading">เลือกคนขับเพื่อดูรายการงาน</div>';
+    chip.style.display = 'none'; return;
+  }
+  if (!date) {
+    wrap.innerHTML = '<div class="job-loading">กรุณาเลือกวันที่ก่อน</div>';
+    chip.style.display = 'none'; return;
+  }
+
+  wrap.innerHTML = '<div class="job-loading">⏳ กำลังโหลดรายการงาน...</div>';
+  chip.style.display = 'none';
+
+  await fetchJobsByDate(date);
+
+  const jobs = _collectJobs(name, date);
+
+  chip.textContent = 'วันที่ ' + date; chip.style.display = '';
+
+  if (!jobs.length) {
+    wrap.innerHTML = `<div class="job-loading">ไม่พบรายการงานของ ${name} วันที่ ${date}</div>`;
+    return;
+  }
+  renderJobTable(jobs);
+}
+
+/* ── render job table — display only (status จาก API) ─────────── */
+function renderJobTable(jobs) {
+  const wrap = document.getElementById('jobTableWrap');
+
+  const rows = jobs.map(j => {
+    const raw  = (j.status || '').trim();
+    const isOk = raw.includes('สำเร็จ') && !raw.includes('ไม่');
+    const isNg = raw.includes('ไม่สำเร็จ') || raw.toLowerCase() === 'ng' || raw.toLowerCase() === 'fail';
+
+    const statusBadge = isOk
+      ? `<span class="job-chip ok" style="display:inline-flex">✅ สำเร็จ</span>`
+      : isNg
+        ? `<span class="job-chip fail" style="display:inline-flex">❌ ไม่สำเร็จ</span>`
+        : `<span class="job-chip" style="display:inline-flex;color:var(--text3)">— รอ</span>`;
+
+    const noteHtml = (j.note && j.note.trim())
+      ? `<div style="font-size:11px;color:var(--text3);margin-top:3px">${j.note}</div>` : '';
+
+    return `<tr>
+      <td><span class="job-bill">${j.bill_no}</span></td>
+      <td>${j.customer_name}</td>
+      <td style="color:var(--text2)">${j.seller_name}</td>
+      <td>${statusBadge}${noteHtml}</td>
+    </tr>`;
+  }).join('');
+
+  const total   = jobs.length;
+  const okCount = jobs.filter(j => { const r=(j.status||'').trim(); return r.includes('สำเร็จ')&&!r.includes('ไม่'); }).length;
+  const ngCount = jobs.filter(j => { const r=(j.status||'').trim(); return r.includes('ไม่สำเร็จ')||r.toLowerCase()==='ng'; }).length;
+  const pending = total - okCount - ngCount;
+
+  wrap.innerHTML = `
+    <div class="job-table-wrap">
+      <table>
+        <thead><tr>
+          <th style="width:130px">เลขบิล</th><th>ลูกค้า</th>
+          <th style="width:85px">เซลล์</th><th style="width:120px">สถานะ</th>
+        </tr></thead>
+        <tbody>${rows}</tbody>
+      </table>
+      <div class="job-summary-bar">
+        <span class="job-chip">ทั้งหมด ${total}</span>
+        ${okCount ? `<span class="job-chip ok">✅ สำเร็จ ${okCount}</span>` : ''}
+        ${ngCount ? `<span class="job-chip fail">❌ ไม่สำเร็จ ${ngCount}</span>` : ''}
+        ${pending ? `<span class="job-chip">⏳ รอ ${pending}</span>` : ''}
+      </div>
+    </div>`;
+}
+
+function _collectJobs(driverName, date) {
+  const jobs = [];
+  (jobApiCache[date] || []).forEach(day => {
+    (day.drivers || []).forEach(d => {
+      if (d.driver_name !== driverName) return;
+      (d.jobs || []).forEach((j, i) => {
+        jobs.push({ ...j, _key: `${driverName}_${day.date}_${i}`, _date: day.date });
+      });
+    });
+  });
+  return jobs;
+}
+
+/* ── sync NG ───────────────────────────────────────────────────── */
+/* ══════════════════════════════════════════════════════════════════
+   MODAL FLOW
+══════════════════════════════════════════════════════════════════ */
 function goToStep2(){
   let ok=true;
-  const date=document.getElementById('s1-work-date').value,driver=document.getElementById('s1-driver-name').value,plate=document.getElementById('s1-vehicle-id').value;
+  const date  =document.getElementById('s1-work-date').value;
+  const driver=document.getElementById('s1-driver-name').value;
+  const plate =document.getElementById('s1-vehicle-id').value;
   ['s1-err-date','s1-err-driver','s1-err-plate'].forEach(id=>document.getElementById(id).style.display='none');
   ['s1-work-date','s1-driver-select','s1-plate-select'].forEach(id=>document.getElementById(id).classList.remove('is-invalid'));
-  if(!date){document.getElementById('s1-err-date').style.display='block';document.getElementById('s1-work-date').classList.add('is-invalid');ok=false;}
-  if(!driver||driver==='__other__'){document.getElementById('s1-err-driver').style.display='block';document.getElementById('s1-driver-select').classList.add('is-invalid');ok=false;}
-  if(!plate||plate==='__other__'){document.getElementById('s1-err-plate').style.display='block';document.getElementById('s1-plate-select').classList.add('is-invalid');ok=false;}
+  if(!date)                       {document.getElementById('s1-err-date').style.display='block';  document.getElementById('s1-work-date').classList.add('is-invalid');   ok=false;}
+  if(!driver||driver==='__other__'){document.getElementById('s1-err-driver').style.display='block'; document.getElementById('s1-driver-select').classList.add('is-invalid'); ok=false;}
+  if(!plate ||plate ==='__other__'){document.getElementById('s1-err-plate').style.display='block';  document.getElementById('s1-plate-select').classList.add('is-invalid');  ok=false;}
   if(!ok)return;
+
+  // ── นับ ok/ng จาก job list + auto sync NG → DB ──────────────────────────
+  const jobs = _collectJobs(driver, date);
+  let okCount = 0, ngCount = 0;
+  const ngJobs = [], okBillNos = [];
+
+  jobs.forEach(j => {
+    const raw  = (j.status || '').trim();
+    const isOk = raw.includes('สำเร็จ') && !raw.includes('ไม่');
+    const isNg = raw.includes('ไม่สำเร็จ') || raw.toLowerCase() === 'ng';
+    if (isOk) { okCount++; okBillNos.push(j.bill_no); }
+    else if (isNg) { ngCount++; ngJobs.push(j); }
+  });
+
+  setF('f-ok', okCount);
+  setF('f-ng', ngCount);
+
+  // บันทึก NG อัตโนมัติ (fire-and-forget ไม่ block UI)
+  if (jobs.length > 0) {
+    fetch(ROUTE_SYNC_NG, {
+      method  : 'POST',
+      headers : { 'Content-Type':'application/json', 'Accept':'application/json', 'X-CSRF-TOKEN': CSRF_TOKEN },
+      body    : JSON.stringify({
+        date,
+        jobs: jobs.map(j => ({
+          bill_no      : j.bill_no,
+          driver_name  : driver,
+          seller_name  : j.seller_name   || '',
+          customer_name: j.customer_name || '',
+          status       : (j.status || '').trim(),
+          note         : j.note || '',
+        })),
+      }),
+    }).catch(e => console.warn('syncNg error:', e));
+  }
+
   const sT=getTimeVal('s1-start-h','s1-start-m'),eT=getTimeVal('s1-end-h','s1-end-m');
-  setF('f-work-date',date);setF('f-driver-name',driver);setF('f-vehicle-id',plate);setF('f-start-time',sT);setF('f-end-time',eT);
-  document.getElementById('chipDriver').textContent=driver;document.getElementById('chipPlate').textContent=plate;document.getElementById('chipDate').textContent=date;
-  if(sT&&eT){document.getElementById('chipTime').textContent=sT+' – '+eT+' น.';document.getElementById('chipTimeWrap').style.display='flex';}else document.getElementById('chipTimeWrap').style.display='none';
+  setF('f-work-date',date);setF('f-driver-name',driver);setF('f-vehicle-id',plate);
+  setF('f-start-time',sT);setF('f-end-time',eT);
+  document.getElementById('chipDriver').textContent=driver;
+  document.getElementById('chipPlate').textContent=plate;
+  document.getElementById('chipDate').textContent=date;
+  if(sT&&eT){document.getElementById('chipTime').textContent=sT+' – '+eT+' น.';document.getElementById('chipTimeWrap').style.display='flex';}
+  else document.getElementById('chipTimeWrap').style.display='none';
   document.getElementById('summaryRow').style.display='flex';
-  document.getElementById('step1Modal').classList.remove('open');document.getElementById('fuelModal').classList.add('open');
+  document.getElementById('step1Modal').classList.remove('open');
+  document.getElementById('fuelModal').classList.add('open');
   loadOilPrice('diesel');calcPreview();fetchPrevMileage(plate,date);
 }
 function backToStep1(){document.getElementById('fuelModal').classList.remove('open');document.getElementById('step1Modal').classList.add('open');}
+
 function openModal(id=null){
-  isEditMode=!!id;editId=id;
+  isEditMode=!!id; editId=id;
   if(id){
     const allLogs=@json($logs);const r=allLogs.find(l=>l.id===id);if(!r)return;
     document.getElementById('modalTitle').textContent='แก้ไขข้อมูลเติมน้ำมัน';
-    document.getElementById('fuelForm').action=ROUTE_UPDATE(id);document.getElementById('formMethod').value='PUT';
+    document.getElementById('fuelForm').action=ROUTE_UPDATE(id);
+    document.getElementById('formMethod').value='PUT';
     setF('f-work-date',r.work_date);setF('f-driver-name',r.driver_name);setF('f-vehicle-id',r.vehicle_id);
-    setF('f-start-time',r.start_time);setF('f-end-time',r.end_time);setF('f-liters',r.liters);setF('f-total-distance',r.total_distance);
+    setF('f-start-time',r.start_time);setF('f-end-time',r.end_time);
+    setF('f-liters',r.liters);setF('f-total-distance',r.total_distance);
     setF('f-total-price',r.total_price);setF('f-note',r.note);setF('f-price-per-liter',r.price_per_liter);
-    document.getElementById('chipDriver').textContent=r.driver_name??'—';document.getElementById('chipPlate').textContent=r.vehicle_id??'—';document.getElementById('chipDate').textContent=r.work_date??'—';
-    if(r.start_time&&r.end_time){document.getElementById('chipTime').textContent=r.start_time+' – '+r.end_time+' น.';document.getElementById('chipTimeWrap').style.display='flex';}else document.getElementById('chipTimeWrap').style.display='none';
-    document.getElementById('summaryRow').style.display='flex';document.getElementById('backBtn').style.display='none';document.getElementById('backBtnFooter').style.display='none';
-    document.getElementById('fuelModal').classList.add('open');loadOilPrice('diesel');fetchPrevMileage(r.vehicle_id,r.work_date,id);calcPreview();
-  }else{
-    document.getElementById('modalTitle').textContent='เพิ่มข้อมูลเติมน้ำมัน';document.getElementById('fuelForm').action=ROUTE_STORE;document.getElementById('formMethod').value='';
-    document.getElementById('backBtn').style.display='';document.getElementById('backBtnFooter').style.display='';
-    document.getElementById('s1-work-date').value=todayStr();
-    ['s1-driver-select','s1-driver-name','s1-plate-select','s1-vehicle-id'].forEach(i=>{const el=document.getElementById(i);if(el)el.value='';});
+    document.getElementById('chipDriver').textContent=r.driver_name??'—';
+    document.getElementById('chipPlate').textContent=r.vehicle_id??'—';
+    document.getElementById('chipDate').textContent=r.work_date??'—';
+    if(r.start_time&&r.end_time){document.getElementById('chipTime').textContent=r.start_time+' – '+r.end_time+' น.';document.getElementById('chipTimeWrap').style.display='flex';}
+    else document.getElementById('chipTimeWrap').style.display='none';
+    document.getElementById('summaryRow').style.display='flex';
+    document.getElementById('backBtn').style.display='none';
+    document.getElementById('backBtnFooter').style.display='none';
+    document.getElementById('fuelModal').classList.add('open');
+    loadOilPrice('diesel');fetchPrevMileage(r.vehicle_id,r.work_date,id);calcPreview();
+  } else {
+    // ── new record ──
+    document.getElementById('modalTitle').textContent='เพิ่มข้อมูลเติมน้ำมัน';
+    document.getElementById('fuelForm').action=ROUTE_STORE;
+    document.getElementById('formMethod').value='';
+    document.getElementById('backBtn').style.display='';
+    document.getElementById('backBtnFooter').style.display='';
+    // reset
+    ['s1-driver-name','s1-vehicle-id'].forEach(i=>{const el=document.getElementById(i);if(el)el.value='';});
     ['s1-driver-other','s1-plate-other'].forEach(i=>{const el=document.getElementById(i);if(el){el.style.display='none';el.value='';}});
+    document.getElementById('s1-plate-select').value='';
     setTimeDropdown('s1-start-h','s1-start-m','');setTimeDropdown('s1-end-h','s1-end-m','');
-    document.getElementById('driverBanner').style.display='none';document.getElementById('s1-wh-preview').style.display='none';
+    document.getElementById('driverBanner').style.display='none';
+    document.getElementById('s1-wh-preview').style.display='none';
     ['f-liters','f-total-price','f-total-distance','f-note','f-price-per-liter'].forEach(i=>setF(i,''));
     document.getElementById('calcBox').style.display='none';
     ['s1-err-date','s1-err-driver','s1-err-plate'].forEach(id=>document.getElementById(id).style.display='none');
     ['s1-work-date','s1-driver-select','s1-plate-select'].forEach(id=>document.getElementById(id).classList.remove('is-invalid'));
-    document.getElementById('jobTableWrap').innerHTML='<div class="job-loading">เลือกคนขับเพื่อดูรายการงาน</div>';document.getElementById('jobDateChip').style.display='none';
+    document.getElementById('jobDateChip').style.display='none';
+
+    const today = todayStr();
+    document.getElementById('s1-work-date').value = today;
+
+    // ── fetch API ทันที แล้ว populate driver dropdown ──
+    (async () => {
+      const sel = document.getElementById('s1-driver-select');
+      sel.innerHTML = '<option value="">⏳ กำลังโหลดรายชื่อ...</option>';
+      sel.disabled  = true;
+      document.getElementById('jobTableWrap').innerHTML = '<div class="job-loading">⏳ กำลังโหลดข้อมูลคนขับ...</div>';
+
+      await fetchJobsByDate(today);
+
+      sel.disabled = false;
+      populateDriverDropdown(today);
+      document.getElementById('jobTableWrap').innerHTML = '<div class="job-loading">เลือกคนขับเพื่อดูรายการงาน</div>';
+    })();
+
     document.getElementById('step1Modal').classList.add('open');
   }
 }
+
 function closeAllModals(){document.getElementById('step1Modal').classList.remove('open');document.getElementById('fuelModal').classList.remove('open');}
 function setF(id,v){const el=document.getElementById(id);if(el)el.value=v??'';}
 
+/* ══════════════════════════════════════════════════════════════════
+   PREV MILEAGE + CALC PREVIEW
+══════════════════════════════════════════════════════════════════ */
 async function fetchPrevMileage(vid,wd,xid=null){
-  try{const p=new URLSearchParams({vehicle_id:vid,work_date:wd});if(xid)p.set('exclude_id',xid);const r=await fetch(`${ROUTE_PREVMILE}?${p}`,{headers:{'Accept':'application/json','X-Requested-With':'XMLHttpRequest'}});const d=await r.json();const el=document.getElementById('prevMileageInfo');if(el&&d.data){document.getElementById('prevMileageText').innerHTML=`🔖 Log ก่อนหน้า: <strong>${d.data.work_date}</strong>`;el.style.display='block';}else if(el)el.style.display='none';}catch(_){}
+  try{
+    const p=new URLSearchParams({vehicle_id:vid,work_date:wd});if(xid)p.set('exclude_id',xid);
+    const r=await fetch(`${ROUTE_PREVMILE}?${p}`,{headers:{'Accept':'application/json','X-Requested-With':'XMLHttpRequest'}});
+    const d=await r.json();const el=document.getElementById('prevMileageInfo');
+    if(el&&d.data){document.getElementById('prevMileageText').innerHTML=`🔖 Log ก่อนหน้า: <strong>${d.data.work_date}</strong>`;el.style.display='block';}
+    else if(el)el.style.display='none';
+  }catch(_){}
   calcPreview();
 }
 function calcPreview(){
@@ -629,9 +1128,23 @@ function calcPreview(){
   const liters=parseFloat(document.getElementById('f-liters')?.value)||0;let wh=0;
   if(sT&&eT){const[sh,sm]=sT.split(':').map(Number),[eh,em]=eT.split(':').map(Number),d=(eh*60+em)-(sh*60+sm);if(d>0)wh=d/60;}
   const show=wh>0||liters>0||tp>0;document.getElementById('calcBox').style.display=show?'block':'none';
-  if(show){document.getElementById('calcWorkHours').textContent=wh>0?wh.toFixed(2):'—';document.getElementById('calcLitersPreview').textContent=liters>0?`${liters} / ฿${tp.toFixed(0)}`:'—';const dist=parseFloat(document.getElementById('f-total-distance')?.value)||0;document.getElementById('calcKml').textContent=(liters>0&&dist>0)?(dist/liters).toFixed(2):'—';}
+  if(show){
+    document.getElementById('calcWorkHours').textContent=wh>0?wh.toFixed(2):'—';
+    document.getElementById('calcLitersPreview').textContent=liters>0?`${liters} / ฿${tp.toFixed(0)}`:'—';
+    const dist=parseFloat(document.getElementById('f-total-distance')?.value)||0;
+    document.getElementById('calcKml').textContent=(liters>0&&dist>0)?(dist/liters).toFixed(2):'—';
+  }
 }
-function switchOilType(t){currentOilType=t;document.querySelectorAll('.oil-btn').forEach(b=>{b.style.background='rgba(255,255,255,.1)';b.style.borderColor='transparent';b.style.color='rgba(255,255,255,.7)';});const a=document.getElementById('btnOil-'+t);if(a){a.style.background='rgba(255,255,255,.3)';a.style.borderColor='#fff';a.style.color='#fff';}loadOilPrice(t);}
+
+/* ══════════════════════════════════════════════════════════════════
+   OIL PRICE
+══════════════════════════════════════════════════════════════════ */
+function switchOilType(t){
+  currentOilType=t;
+  document.querySelectorAll('.oil-btn').forEach(b=>{b.style.background='rgba(255,255,255,.1)';b.style.borderColor='transparent';b.style.color='rgba(255,255,255,.7)';});
+  const a=document.getElementById('btnOil-'+t);if(a){a.style.background='rgba(255,255,255,.3)';a.style.borderColor='#fff';a.style.color='#fff';}
+  loadOilPrice(t);
+}
 async function refreshOilPrice(){const btn=document.getElementById('btnRefreshOil');btn.disabled=true;btn.style.opacity='.5';await loadOilPrice(currentOilType);btn.disabled=false;btn.style.opacity='1';}
 async function loadOilPrice(type){
   const config={'diesel':{label:'ดีเซล',matchName:'ดีเซล',maxPrice:55},'95':{label:'แก๊สโซฮอล์ 95',matchName:'แก๊สโซฮอล์ 95',maxPrice:50},'benzin95':{label:'เบนซิน 95',matchName:'เบนซิน 95',maxPrice:60},'91':{label:'แก๊สโซฮอล์ 91',matchName:'แก๊สโซฮอล์ 91',maxPrice:50},'e20':{label:'แก๊สโซฮอล์ E20',matchName:'E20',maxPrice:45},'e85':{label:'แก๊สโซฮอล์ E85',matchName:'E85',maxPrice:40}};
@@ -640,27 +1153,7 @@ async function loadOilPrice(type){
   let fetched=null;
   try{
     const r=await Promise.race([fetch('https://api.chnwt.dev/thai-oil-api/latest'),new Promise((_,rj)=>setTimeout(()=>rj(new Error('t')),8000))]);
-    if(r.ok){
-      const json=await r.json();
-      const stations=json?.response?.stations;
-      if(stations){
-        const prices=[];
-        for(const station of Object.values(stations)){
-          for(const fuel of Object.values(station)){
-            if(fuel?.name?.includes(cfg.matchName)&&fuel?.price){
-              const n=parseFloat(fuel.price);
-              if(!isNaN(n)&&n>0&&n<cfg.maxPrice)prices.push(n);
-            }
-          }
-        }
-        if(prices.length>0){
-          const freq={};
-          for(const p of prices){const k=p.toFixed(2);freq[k]=(freq[k]||0)+1;}
-          const modeKey=Object.entries(freq).sort((a,b)=>b[1]-a[1])[0][0];
-          fetched=parseFloat(modeKey);
-        }
-      }
-    }
+    if(r.ok){const json=await r.json();const stations=json?.response?.stations;if(stations){const prices=[];for(const station of Object.values(stations))for(const fuel of Object.values(station))if(fuel?.name?.includes(cfg.matchName)&&fuel?.price){const n=parseFloat(fuel.price);if(!isNaN(n)&&n>0&&n<cfg.maxPrice)prices.push(n);}if(prices.length>0){const freq={};for(const p of prices){const k=p.toFixed(2);freq[k]=(freq[k]||0)+1;}fetched=parseFloat(Object.entries(freq).sort((a,b)=>b[1]-a[1])[0][0]);}}}
   }catch(_){}
   const now=new Date().toLocaleTimeString('th-TH',{timeZone:TZ,hour:'2-digit',minute:'2-digit',hour12:false});
   if(fetched){document.getElementById('oilPriceShow').textContent=fetched.toFixed(2);document.getElementById('oilPriceStatus').textContent=`✅ ราคากลาง • ${now} น.`;document.getElementById('liveDot').className='live-dot';document.getElementById('liveDot').style.background='';document.getElementById('liveLabel').textContent='Live';document.getElementById('f-price-per-liter').value=fetched.toFixed(2);}
@@ -668,51 +1161,26 @@ async function loadOilPrice(type){
   calcPreview();
 }
 
-/* CHARTS */
+/* ══════════════════════════════════════════════════════════════════
+   STATIC CHARTS
+══════════════════════════════════════════════════════════════════ */
 function initCharts(){
   const cbd=@json($costByDriver);const kbd=@json($kmlByDriver);
   const col=arr=>arr.map((_,i)=>COLORS[i%COLORS.length]);const g='rgba(0,0,0,.04)';const tf={size:11};
   if(cbd.length)new Chart(document.getElementById('chartDriver'),{type:'bar',data:{labels:cbd.map(d=>d.driver),datasets:[{data:cbd.map(d=>d.total_price),backgroundColor:col(cbd),borderRadius:5,borderSkipped:false}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{callbacks:{label:ctx=>'฿'+ctx.raw.toLocaleString()}}},scales:{y:{beginAtZero:true,ticks:{font:tf,callback:v=>'฿'+v.toLocaleString()},grid:{color:g}},x:{ticks:{font:tf}}}}});
   if(kbd.length)new Chart(document.getElementById('chartKml'),{type:'bar',data:{labels:kbd.map(d=>d.driver),datasets:[{data:kbd.map(d=>d.km_per_liter),backgroundColor:col(kbd),borderRadius:5,borderSkipped:false}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{callbacks:{label:ctx=>ctx.raw.toFixed(1)+' km/L'}}},scales:{y:{beginAtZero:true,ticks:{font:tf,callback:v=>v+' km/L'},grid:{color:g}},x:{ticks:{font:tf}}}}});
-  renderDlv();
+  initDlvDriverSel();renderDlv();
 }
 
-@php
-  $deliveryDefault=[['จันทร์',95,5,''],['อังคาร',88,12,''],['พุธ',100,0,''],['พฤหัสบดี',92,8,''],['ศุกร์',85,15,''],['เสาร์',70,5,''],['อาทิตย์',98,2,'']];
-  $deliveryOutput=$deliveryStats??$deliveryDefault;
-@endphp
-const DLV_RAW=@json($deliveryOutput);
-function setDlv(v,btn){dlvView=v;document.querySelectorAll('#dlvTabs .view-tab').forEach(b=>b.classList.remove('active'));btn.classList.add('active');document.getElementById('dlvYearSel').style.display=v==='year'?'block':'none';renderDlv();}
-function renderDlv(){
-  let labels,success,fail;
-  if(dlvView==='month'){
-    const m=['ม.ค.','ก.พ.','มี.ค.','เม.ย.','พ.ค.','มิ.ย.','ก.ค.','ส.ค.','ก.ย.','ต.ค.','พ.ย.','ธ.ค.'];
-    labels=m;success=DLV_RAW.length>=12?DLV_RAW.slice(0,12).map(r=>Number(r[1])||0):m.map(()=>0);fail=DLV_RAW.length>=12?DLV_RAW.slice(0,12).map(r=>Number(r[2])||0):m.map(()=>0);
-  }else if(dlvView==='year'){
-    const yr=parseInt(document.getElementById('dlvYearSel')?.value||new Date().getFullYear());
-    labels=['Q1','Q2','Q3','Q4'].map(q=>`${q} ${yr}`);
-    const qd=[[0,0],[0,0],[0,0],[0,0]];
-    DLV_RAW.forEach(r=>{const qi=parseInt(r[4]||0);if(qi>=1&&qi<=4){qd[qi-1][0]+=Number(r[1])||0;qd[qi-1][1]+=Number(r[2])||0;}});
-    success=qd.map(q=>q[0]);fail=qd.map(q=>q[1]);
-  }else if(dlvView==='all'){
-    labels=DLV_RAW.map(r=>r[0]);success=DLV_RAW.map(r=>Number(r[1])||0);fail=DLV_RAW.map(r=>Number(r[2])||0);
-  }else{
-    labels=DLV_RAW.map(r=>r[0]);success=DLV_RAW.map(r=>Number(r[1])||0);fail=DLV_RAW.map(r=>Number(r[2])||0);
-  }
-  if(dlvChart)dlvChart.destroy();
-  const g='rgba(0,0,0,.04)';const tf={size:11};
-  dlvChart=new Chart(document.getElementById('deliveryChart'),{type:'bar',data:{labels,datasets:[{label:'ส่งสำเร็จ',data:success,backgroundColor:'#38c98a',borderRadius:4,borderSkipped:false},{label:'ส่งไม่สำเร็จ',data:fail,backgroundColor:'#e85d5d',borderRadius:4,borderSkipped:false}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{callbacks:{label:ctx=>ctx.dataset.label+': '+ctx.raw+' รายการ',footer:items=>'รวม: '+items.reduce((s,i)=>s+i.raw,0)+' รายการ'}}},scales:{x:{stacked:true,ticks:{font:tf},grid:{color:g}},y:{stacked:true,beginAtZero:true,ticks:{font:tf,callback:v=>v+' รายการ'},grid:{color:g}}}}});
-}
-
-/* PIE CHARTS */
+/* ══════════════════════════════════════════════════════════════════
+   PIE CHARTS
+══════════════════════════════════════════════════════════════════ */
 function buildPieLegend(cid,labels,values,colors,unit=''){
-  const el=document.getElementById(cid);if(!el)return;
-  const total=values.reduce((s,v)=>s+v,0);
+  const el=document.getElementById(cid);if(!el)return;const total=values.reduce((s,v)=>s+v,0);
   el.innerHTML=labels.map((lbl,i)=>{const pct=total>0?(values[i]/total*100).toFixed(1):0;return `<div class="pie-legend-item"><div class="pie-legend-dot" style="background:${colors[i%colors.length]}"></div><div class="pie-legend-label" title="${lbl}">${lbl}</div><div class="pie-legend-val">${unit}${Number(values[i]).toLocaleString()} <span style="color:var(--text3);font-weight:400">(${pct}%)</span></div></div>`;}).join('');
 }
 function initReportCharts(){
-  const logs=@json($logs);if(!logs.length)return;
-  const byDriver={};
+  const logs=@json($logs);if(!logs.length)return;const byDriver={};
   logs.forEach(r=>{const n=r.driver_name||'ไม่ระบุ';if(!byDriver[n])byDriver[n]={price:0,liters:0,hours:0};byDriver[n].price+=parseFloat(r.total_price)||0;byDriver[n].liters+=parseFloat(r.liters)||0;byDriver[n].hours+=parseFloat(r.work_hours)||0;});
   const labels=Object.keys(byDriver);const prices=labels.map(k=>byDriver[k].price);const liters=labels.map(k=>byDriver[k].liters);const hours=labels.map(k=>byDriver[k].hours);const bgColors=labels.map((_,i)=>COLORS[i%COLORS.length]);
   const pieOpts=unit=>({responsive:true,maintainAspectRatio:false,cutout:'55%',plugins:{legend:{display:false},tooltip:{callbacks:{label:ctx=>`${ctx.label}: ${unit}${Number(ctx.raw).toLocaleString()} (${(ctx.parsed/ctx.dataset.data.reduce((a,b)=>a+b,0)*100).toFixed(1)}%)`}}}});
@@ -720,39 +1188,40 @@ function initReportCharts(){
   if(liters.some(v=>v>0)){new Chart(document.getElementById('pieLiters'),{type:'doughnut',data:{labels,datasets:[{data:liters,backgroundColor:bgColors,borderWidth:2,borderColor:'#fff',hoverOffset:8}]},options:pieOpts('')});buildPieLegend('pieLitersLegend',labels,liters,bgColors,'');}
   if(hours.some(v=>v>0)){new Chart(document.getElementById('pieHours'),{type:'doughnut',data:{labels,datasets:[{data:hours,backgroundColor:bgColors,borderWidth:2,borderColor:'#fff',hoverOffset:8}]},options:pieOpts('')});buildPieLegend('pieHoursLegend',labels,hours,bgColors,'');}
 }
-function printReport(){const el=document.getElementById('printDateTime');if(el){const now=new Date().toLocaleString('th-TH',{timeZone:TZ,day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit',hour12:false});el.textContent=now+' น.';}setTimeout(()=>window.print(),150);}
-
-/* JOB API */
-const JOB_API='https://script.google.com/macros/s/AKfycbyL82yRPXR1eiHOnaJqZ5Q0y1VnOZGAPXW2jyEB3NUEWWfJBBhMKosWYxf_363jnmAcHw/exec';
-let jobApiData=null,jobStates={};
-async function initJobApi(){try{const r=await fetch(JOB_API);jobApiData=await r.json();}catch(e){jobApiData=[];}}
-function loadJobsForDriver(){
-  const name=document.getElementById('s1-driver-name').value||document.getElementById('s1-driver-select').value;
-  const wrap=document.getElementById('jobTableWrap');
-  if(!name||name==='__other__'||name===''){wrap.innerHTML='<div class="job-loading">เลือกคนขับเพื่อดูรายการงาน</div>';document.getElementById('jobDateChip').style.display='none';return;}
-  if(jobApiData===null){wrap.innerHTML='<div class="job-loading">⏳ กำลังโหลดข้อมูล...</div>';setTimeout(()=>loadJobsForDriver(),600);return;}
-  if(!jobApiData.length){wrap.innerHTML='<div class="job-loading">ไม่สามารถโหลดข้อมูลได้</div>';return;}
-  const jobs=[];let dateLabel='';
-  jobApiData.forEach(day=>{day.drivers.forEach(d=>{if(d.driver_name===name){d.jobs.forEach((j,i)=>{const key=name+'_'+day.date+'_'+i;if(!jobStates[key])jobStates[key]={status:'',note:j.note||''};jobs.push({...j,_key:key,_date:day.date});});dateLabel=day.date;}});});
-  const chip=document.getElementById('jobDateChip');if(dateLabel){chip.textContent='วันที่ '+dateLabel;chip.style.display='';}else chip.style.display='none';
-  if(!jobs.length){wrap.innerHTML='<div class="job-loading">ไม่พบรายการงานของ '+name+'</div>';return;}
-  renderJobTable(jobs,name);
+function printReport(){
+  const el=document.getElementById('printDateTime');
+  if(el){const now=new Date().toLocaleString('th-TH',{timeZone:TZ,day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit',hour12:false});el.textContent=now+' น.';}
+  setTimeout(()=>window.print(),150);
 }
-function renderJobTable(jobs,driverName){
-  const wrap=document.getElementById('jobTableWrap');
-  const rows=jobs.map(j=>{const s=jobStates[j._key];const noteHtml=s.status==='fail'?`<textarea class="job-note-input" rows="2" placeholder="ระบุสาเหตุ..." oninput="jobStates['${j._key}'].note=this.value">${s.note}</textarea>`:'';return `<tr><td><span class="job-bill">${j.bill_no}</span></td><td>${j.customer_name}</td><td style="color:var(--text2)">${j.seller_name}</td><td>${noteHtml}</td></tr>`;}).join('');
-  const total=jobs.length,ok=jobs.filter(j=>jobStates[j._key]?.status==='ok').length,fail=jobs.filter(j=>jobStates[j._key]?.status==='fail').length,pending=total-ok-fail;
-  wrap.innerHTML=`<div class="job-table-wrap"><table><thead><tr><th style="width:130px">เลขบิล</th><th>ลูกค้า</th><th style="width:85px">เซลล์</th><th style="width:180px">สถานะ</th></tr></thead><tbody>${rows}</tbody></table><div class="job-summary-bar"><span class="job-chip">ทั้งหมด ${total}</span>${ok?`<span class="job-chip ok">สำเร็จ ${ok}</span>`:''} ${fail?`<span class="job-chip fail">ไม่สำเร็จ ${fail}</span>`:''} ${pending?`<span class="job-chip">รอ ${pending}</span>`:''}</div></div>`;
-}
-function setJobStatus(key,val,driverName){jobStates[key].status=val;if(val==='ok')jobStates[key].note='';const jobs=[];jobApiData.forEach(day=>{day.drivers.forEach(d=>{if(d.driver_name===driverName)d.jobs.forEach((j,i)=>jobs.push({...j,_key:driverName+'_'+day.date+'_'+i,_date:day.date}));});});renderJobTable(jobs,driverName);}
 
+/* ══════════════════════════════════════════════════════════════════
+   TOAST
+══════════════════════════════════════════════════════════════════ */
+function showToast(title,msg,type='ok'){
+  const old=document.getElementById('_jsToast');if(old)old.remove();
+  const t=document.createElement('div');t.id='_jsToast';t.className='toast';
+  t.style.background=type==='ok'?'#1a7a4d':'#c0392b';
+  t.innerHTML=`<div class="toast-icon">${type==='ok'?'✅':'❌'}</div>
+    <div class="toast-body"><div class="toast-title">${title}</div><div class="toast-msg">${msg}</div></div>
+    <div class="toast-progress" id="_jsToastBar"></div>`;
+  document.body.appendChild(t);
+  const bar=document.getElementById('_jsToastBar');const DUR=4500;
+  bar.style.transition=`width ${DUR}ms linear`;
+  requestAnimationFrame(()=>requestAnimationFrame(()=>{bar.style.width='0%';}));
+  const hide=()=>{t.classList.add('hiding');setTimeout(()=>t.remove(),380);};
+  setTimeout(hide,DUR);t.addEventListener('click',hide);
+}
+
+/* ══════════════════════════════════════════════════════════════════
+   INIT
+══════════════════════════════════════════════════════════════════ */
 document.addEventListener('DOMContentLoaded',()=>{
   updateNavDate();
   buildTimeDropdowns();
   initCharts();
-  initJobApi();
+
   @if($errors->any())
-  openModal({{ isset($editLog['id'])?$editLog['id']:'null' }});
+  openModal({{ isset($editLog['id']) ? $editLog['id'] : 'null' }});
   @endif
 });
 </script>

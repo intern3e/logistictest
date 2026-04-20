@@ -2,24 +2,13 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\ng_shipment;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Carbon\Carbon;
 
 class fuellogsController extends Controller
 {
-    // ─────────────────────────────────────────────────────────────────────────
-    // PRIVATE HELPERS
-    // ─────────────────────────────────────────────────────────────────────────
-
-    /**
-     * Build a filtered, enriched collection of fuel_log rows.
-     * Each row is a plain PHP array with pre-computed fields:
-     *   start_time  → "H:i"  (Bangkok)
-     *   end_time    → "H:i"  (Bangkok)
-     *   work_hours  → float (hours, 2 dp)
-     *   km_per_liter→ float (2 dp) or 0
-     */
     private function buildLogs(Request $request): \Illuminate\Support\Collection
     {
         $view         = $request->get('view',        'month');
@@ -32,21 +21,15 @@ class fuellogsController extends Controller
             ->orderBy('work_date', 'desc')
             ->orderBy('id', 'desc');
 
-        // ── Date filter ──────────────────────────────────────────────────────
         if ($view === 'day') {
             $query->whereDate('work_date', $filterDay);
-
         } elseif ($view === 'month') {
             [$y, $m] = explode('-', $filterMonth . '-01');
-            $query->whereYear('work_date', $y)
-                  ->whereMonth('work_date', $m);
-
+            $query->whereYear('work_date', $y)->whereMonth('work_date', $m);
         } elseif ($view === 'year') {
             $query->whereYear('work_date', $filterYear);
         }
-        // 'all' → no date filter
 
-        // ── Driver filter ────────────────────────────────────────────────────
         if ($filterDriver !== 'all') {
             $query->where('driver_name', $filterDriver);
         }
@@ -54,35 +37,25 @@ class fuellogsController extends Controller
         return $query->get()->map(function ($row) {
             $row = (array) $row;
 
-            // ── Parse start / end times → "H:i" display strings ─────────────
             $startTime = null;
             $endTime   = null;
             $workHours = 0;
 
             if (!empty($row['start_time'])) {
-                $startCarbon = Carbon::parse($row['start_time']);
-                $startTime   = $startCarbon->format('H:i');
+                $startTime = Carbon::parse($row['start_time'])->format('H:i');
             }
             if (!empty($row['end_time'])) {
-                $endCarbon = Carbon::parse($row['end_time']);
-                $endTime   = $endCarbon->format('H:i');
+                $endTime = Carbon::parse($row['end_time'])->format('H:i');
             }
-
-            // ── Work hours ───────────────────────────────────────────────────
             if (!empty($row['start_time']) && !empty($row['end_time'])) {
-                $s    = Carbon::parse($row['start_time']);
-                $e    = Carbon::parse($row['end_time']);
-                $diff = $s->diffInMinutes($e, false);   // signed
-                if ($diff > 0) {
-                    $workHours = round($diff / 60, 2);
-                }
+                $diff = Carbon::parse($row['start_time'])
+                              ->diffInMinutes(Carbon::parse($row['end_time']), false);
+                if ($diff > 0) $workHours = round($diff / 60, 2);
             }
 
-            // ── km/L ─────────────────────────────────────────────────────────
             $liters   = (float) ($row['liters']         ?? 0);
             $distance = (float) ($row['total_distance'] ?? 0);
-            $kml      = ($liters > 0 && $distance > 0)
-                        ? round($distance / $liters, 2) : 0;
+            $kml      = ($liters > 0 && $distance > 0) ? round($distance / $liters, 2) : 0;
 
             return [
                 'id'              => (int) $row['id'],
@@ -94,26 +67,20 @@ class fuellogsController extends Controller
                 'work_hours'      => $workHours,
                 'total_distance'  => $distance,
                 'liters'          => $liters ?: null,
-                'total_price'     => (float) ($row['total_price']    ?? 0),
+                'total_price'     => (float) ($row['total_price']     ?? 0),
                 'price_per_liter' => (float) ($row['price_per_liter'] ?? 0),
                 'km_per_liter'    => $kml,
+                'ok_count'        => (int) ($row['ok'] ?? 0),
+                'ng_count'        => (int) ($row['ng'] ?? 0),
                 'note'            => $row['note']       ?? '',
                 'created_at'      => $row['created_at'] ?? null,
             ];
         });
     }
 
-    /**
-     * Parse "H:i" time strings + work_date into datetime strings for DB.
-     * Handles overnight shifts (end < start → add 1 day to end).
-     *
-     * @return array [startDatetime|null, endDatetime|null]
-     */
     private function parseTimes(?string $workDate, ?string $startStr, ?string $endStr): array
     {
-        if (!$workDate) {
-            return [null, null];
-        }
+        if (!$workDate) return [null, null];
 
         $startDt = null;
         $endDt   = null;
@@ -121,13 +88,9 @@ class fuellogsController extends Controller
         if ($startStr && preg_match('/^\d{2}:\d{2}$/', $startStr)) {
             $startDt = Carbon::createFromFormat('Y-m-d H:i', "{$workDate} {$startStr}");
         }
-
         if ($endStr && preg_match('/^\d{2}:\d{2}$/', $endStr)) {
             $endDt = Carbon::createFromFormat('Y-m-d H:i', "{$workDate} {$endStr}");
-            // Overnight shift
-            if ($startDt && $endDt->lt($startDt)) {
-                $endDt->addDay();
-            }
+            if ($startDt && $endDt->lt($startDt)) $endDt->addDay();
         }
 
         return [
@@ -136,33 +99,18 @@ class fuellogsController extends Controller
         ];
     }
 
-    /**
-     * Compute liters and price_per_liter from total_price + one other value.
-     *
-     * @return array [liters|null, price_per_liter|null]
-     */
     private function calcLitersPpl($totalPrice, $pplInput, $litersInput): array
     {
         $tp  = (float) $totalPrice;
         $ppl = (float) $pplInput;
         $ltr = (float) $litersInput;
 
-        // price_per_liter given → derive liters
-        if ($ppl > 0 && $tp > 0) {
-            return [round($tp / $ppl, 2), round($ppl, 2)];
-        }
-
-        // liters given → derive price_per_liter
-        if ($ltr > 0 && $tp > 0) {
-            return [round($ltr, 2), round($tp / $ltr, 2)];
-        }
+        if ($ppl > 0 && $tp > 0) return [round($tp / $ppl, 2), round($ppl, 2)];
+        if ($ltr > 0 && $tp > 0) return [round($ltr, 2), round($tp / $ltr, 2)];
 
         return [$ltr > 0 ? round($ltr, 2) : null, $ppl > 0 ? round($ppl, 2) : null];
     }
 
-    // ─────────────────────────────────────────────────────────────────────────
-    // GET /oil  — main listing page
-    // ─────────────────────────────────────────────────────────────────────────
     public function oil(Request $request)
     {
         $view         = $request->get('view',        'month');
@@ -172,103 +120,63 @@ class fuellogsController extends Controller
 
         $logs = $this->buildLogs($request);
 
-        // ── Dropdown lists for the filter bar & modals ───────────────────────
-        $drivers = DB::table('fuel_logs')
-            ->distinct()->orderBy('driver_name')
-            ->pluck('driver_name')->filter()->values()->toArray();
+        $drivers = DB::table('fuel_logs')->distinct()->orderBy('driver_name')
+                     ->pluck('driver_name')->filter()->values()->toArray();
 
-        $plates = DB::table('fuel_logs')
-            ->distinct()->orderBy('vehicle_id')
-            ->pluck('vehicle_id')->filter()->values()->toArray();
+        $plates = DB::table('fuel_logs')->distinct()->orderBy('vehicle_id')
+                    ->pluck('vehicle_id')->filter()->values()->toArray();
 
-        // ── Summary metrics card ─────────────────────────────────────────────
         $metrics = null;
         if ($logs->count() > 0) {
             $kmlValues = $logs->filter(fn($r) => ($r['km_per_liter'] ?? 0) > 0)
                               ->pluck('km_per_liter');
-
             $metrics = [
                 'total_liters'     => round($logs->sum('liters'), 2),
                 'total_price'      => $logs->sum('total_price'),
-                'avg_km_per_liter' => $kmlValues->count()
-                                      ? round($kmlValues->avg(), 2) : 0,
+                'avg_km_per_liter' => $kmlValues->count() ? round($kmlValues->avg(), 2) : 0,
                 'total_work_hours' => round($logs->sum('work_hours'), 2),
             ];
         }
 
-        // ── Bar chart: cost per driver ───────────────────────────────────────
-        $costByDriver = $logs
-            ->groupBy('driver_name')
-            ->map(fn($g, $d) => [
-                'driver'      => $d,
-                'total_price' => round($g->sum('total_price'), 2),
-            ])
-            ->sortByDesc('total_price')
-            ->values()
-            ->toArray();
+        $costByDriver = $logs->groupBy('driver_name')
+            ->map(fn($g, $d) => ['driver' => $d, 'total_price' => round($g->sum('total_price'), 2)])
+            ->sortByDesc('total_price')->values()->toArray();
 
-        // ── Bar chart: km/L per driver ───────────────────────────────────────
-        $kmlByDriver = $logs
-            ->groupBy('driver_name')
+        $kmlByDriver = $logs->groupBy('driver_name')
             ->map(function ($g, $d) {
-                $kv = $g->filter(fn($r) => $r['km_per_liter'] > 0)
-                        ->pluck('km_per_liter');
-                return [
-                    'driver'       => $d,
-                    'km_per_liter' => $kv->count() ? round($kv->avg(), 2) : 0,
-                ];
+                $kv = $g->filter(fn($r) => $r['km_per_liter'] > 0)->pluck('km_per_liter');
+                return ['driver' => $d, 'km_per_liter' => $kv->count() ? round($kv->avg(), 2) : 0];
             })
-            ->filter(fn($d) => $d['km_per_liter'] > 0)
-            ->values()
-            ->toArray();
+            ->filter(fn($d) => $d['km_per_liter'] > 0)->values()->toArray();
 
-        // ── Delivery stats (plug in your own source here) ────────────────────
         $deliveryStats = null;
-
-        // ── Edit log (populated on validation failure for edit flow) ─────────
-        $editLog = null;
+        $editLog       = null;
 
         return view('driver.oil', compact(
-            'logs',
-            'view',
-            'filterDay',
-            'filterMonth',
-            'filterDriver',
-            'drivers',
-            'plates',
-            'metrics',
-            'costByDriver',
-            'kmlByDriver',
-            'deliveryStats',
-            'editLog'
+            'logs', 'view', 'filterDay', 'filterMonth', 'filterDriver',
+            'drivers', 'plates', 'metrics', 'costByDriver', 'kmlByDriver',
+            'deliveryStats', 'editLog'
         ));
     }
 
-    // ─────────────────────────────────────────────────────────────────────────
-    // POST /oil  — store new record
-    // ─────────────────────────────────────────────────────────────────────────
+
     public function store(Request $request)
     {
         $request->validate([
-            'work_date'      => 'required|date',
-            'driver_name'    => 'required|string|max:100',
-            'vehicle_id'     => 'required|string|max:50',
-            'total_price'    => 'required|numeric|min:0.01',
-            'total_distance' => 'nullable|numeric|min:0',
-            'liters'         => 'nullable|numeric|min:0',
-            'price_per_liter'=> 'nullable|numeric|min:0',
+            'work_date'       => 'required|date',
+            'driver_name'     => 'required|string|max:100',
+            'vehicle_id'      => 'required|string|max:50',
+            'total_price'     => 'required|numeric|min:0.01',
+            'total_distance'  => 'nullable|numeric|min:0',
+            'liters'          => 'nullable|numeric|min:0',
+            'price_per_liter' => 'nullable|numeric|min:0',
         ]);
 
         [$startDt, $endDt] = $this->parseTimes(
-            $request->work_date,
-            $request->start_time,
-            $request->end_time
+            $request->work_date, $request->start_time, $request->end_time
         );
-
         [$liters, $ppl] = $this->calcLitersPpl(
-            $request->total_price,
-            $request->price_per_liter,
-            $request->liters
+            $request->total_price, $request->price_per_liter, $request->liters
         );
 
         DB::table('fuel_logs')->insert([
@@ -281,6 +189,8 @@ class fuellogsController extends Controller
             'liters'          => $liters,
             'total_price'     => (float) $request->total_price,
             'price_per_liter' => $ppl,
+            'ok'              => (int) ($request->ok ?? 0),
+            'ng'              => (int) ($request->ng ?? 0),
             'note'            => $request->note ? trim($request->note) : null,
             'created_at'      => now(),
         ]);
@@ -288,38 +198,26 @@ class fuellogsController extends Controller
         return redirect()->route('oil')->with('success', 'บันทึกข้อมูลน้ำมันสำเร็จ ✅');
     }
 
-    // ─────────────────────────────────────────────────────────────────────────
-    // PUT /oil/update/{id}  — update existing record
-    // ─────────────────────────────────────────────────────────────────────────
+
     public function update(Request $request, $id)
     {
         $request->validate([
-            'work_date'      => 'required|date',
-            'driver_name'    => 'required|string|max:100',
-            'vehicle_id'     => 'required|string|max:50',
-            'total_price'    => 'required|numeric|min:0.01',
-            'total_distance' => 'nullable|numeric|min:0',
-            'liters'         => 'nullable|numeric|min:0',
-            'price_per_liter'=> 'nullable|numeric|min:0',
+            'work_date'       => 'required|date',
+            'driver_name'     => 'required|string|max:100',
+            'vehicle_id'      => 'required|string|max:50',
+            'total_price'     => 'required|numeric|min:0.01',
+            'total_distance'  => 'nullable|numeric|min:0',
+            'liters'          => 'nullable|numeric|min:0',
+            'price_per_liter' => 'nullable|numeric|min:0',
         ]);
 
-        // Verify the record exists
-        abort_unless(
-            DB::table('fuel_logs')->where('id', $id)->exists(),
-            404,
-            'ไม่พบรายการที่ต้องการแก้ไข'
-        );
+        abort_unless(DB::table('fuel_logs')->where('id', $id)->exists(), 404);
 
         [$startDt, $endDt] = $this->parseTimes(
-            $request->work_date,
-            $request->start_time,
-            $request->end_time
+            $request->work_date, $request->start_time, $request->end_time
         );
-
         [$liters, $ppl] = $this->calcLitersPpl(
-            $request->total_price,
-            $request->price_per_liter,
-            $request->liters
+            $request->total_price, $request->price_per_liter, $request->liters
         );
 
         DB::table('fuel_logs')->where('id', $id)->update([
@@ -332,29 +230,24 @@ class fuellogsController extends Controller
             'liters'          => $liters,
             'total_price'     => (float) $request->total_price,
             'price_per_liter' => $ppl,
+            'ok'              => (int) ($request->ok ?? 0),
+            'ng'              => (int) ($request->ng ?? 0),
             'note'            => $request->note ? trim($request->note) : null,
         ]);
 
         return redirect()->route('oil')->with('success', 'อัปเดตข้อมูลสำเร็จ ✅');
     }
 
-    // ─────────────────────────────────────────────────────────────────────────
-    // DELETE /oil/{id}
-    // ─────────────────────────────────────────────────────────────────────────
     public function destroy($id)
     {
         $deleted = DB::table('fuel_logs')->where('id', $id)->delete();
-
         if (!$deleted) {
             return redirect()->route('oil')->with('error', 'ไม่พบรายการที่ต้องการลบ');
         }
-
         return redirect()->route('oil')->with('success', 'ลบข้อมูลเรียบร้อย');
     }
 
-    // ─────────────────────────────────────────────────────────────────────────
-    // GET /oil/prev-mileage  — AJAX: previous log for a vehicle
-    // ─────────────────────────────────────────────────────────────────────────
+
     public function prevMileage(Request $request)
     {
         $vehicleId = $request->get('vehicle_id');
@@ -367,13 +260,11 @@ class fuellogsController extends Controller
 
         $query = DB::table('fuel_logs')
             ->where('vehicle_id', $vehicleId)
-            ->where('work_date',  '<', $workDate)
+            ->where('work_date', '<', $workDate)
             ->orderBy('work_date', 'desc')
             ->orderBy('id', 'desc');
 
-        if ($excludeId) {
-            $query->where('id', '!=', (int) $excludeId);
-        }
+        if ($excludeId) $query->where('id', '!=', (int) $excludeId);
 
         $prev = $query->first();
 
@@ -385,4 +276,64 @@ class fuellogsController extends Controller
             ] : null,
         ]);
     }
+    public function ngList(Request $request)
+    {
+        $q = ng_shipment::query()->latest('ng_date')->latest('id');
+
+        if ($request->filled('driver_name')) {
+            $q->where('driver_name', $request->driver_name);
+        }
+
+        $status = $request->get('status', 'ng');
+        if ($status !== 'all') {
+            $q->where('status', $status);
+        }
+
+        if ($request->filled('from')) $q->whereDate('ng_date', '>=', $request->from);
+        if ($request->filled('to'))   $q->whereDate('ng_date', '<=', $request->to);
+
+        return response()->json($q->paginate(50));
+    }
+public function syncNg(Request $request)
+{
+    $request->validate([
+        'date'                   => 'required|date_format:Y-m-d',
+        'jobs'                   => 'required|array|min:1',
+        'jobs.*.bill_no'         => 'required|max:50',
+        'jobs.*.driver_name'     => 'required|string|max:100',
+        'jobs.*.seller_name'     => 'nullable|string|max:100',
+        'jobs.*.customer_name'   => 'nullable|string|max:200',
+        'jobs.*.status'          => 'required|string',
+        'jobs.*.note'            => 'nullable|string|max:500',
+    ]);
+
+    $date      = $request->date;
+    $jobs      = $request->jobs;
+    $okBillNos = [];
+    $ngJobs    = [];
+
+    foreach ($jobs as $job) {
+        $status = trim($job['status'] ?? '');
+        $isOk   = (str_contains($status, 'สำเร็จ') && !str_contains($status, 'ไม่'))
+               || in_array(strtolower($status), ['ok', 'success', '1']);
+
+        if ($isOk) {
+            $okBillNos[] = (string) $job['bill_no'];
+        } else {
+            $ngJobs[] = $job;
+        }
+    }
+
+    $result = ng_shipment::syncDay($date, $ngJobs, $okBillNos);
+
+    return response()->json([
+        'success'  => true,
+        'date'     => $date,
+        'total'    => count($jobs),
+        'ok'       => count($okBillNos),
+        'ng'       => count($ngJobs),
+        'inserted' => $result['inserted'],
+        'resolved' => $result['resolved'],
+    ]);
+}
 }

@@ -6,7 +6,7 @@ use Illuminate\Database\Eloquent\Model;
 
 class fuel_Logs extends Model
 {
-    protected $table = 'fuel_logs'; // ปรับตามชื่อ table จริง
+    protected $table = 'fuel_logs'; 
 
     protected $fillable = [
         'driver_name',
@@ -18,10 +18,10 @@ class fuel_Logs extends Model
         'price_per_liter',
         'total_price',
         'total_distance',
+        'ok',
+        'ng',
         'note',
     ];
-
-    // cast work_date เป็น date เพื่อให้ Carbon::parse ทำงานถูกต้อง
     protected $casts = [
         'work_date'       => 'date:Y-m-d',
         'liters'          => 'float',

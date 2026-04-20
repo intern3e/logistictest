@@ -217,25 +217,13 @@ Route::post('/return/{id}/reject',        [PooutsidereturnController::class, 're
 
 
 use App\Http\Controllers\fuellogsController;
-
-// ต้องวาง prev-mileage ก่อน {id} เสมอ
 Route::get('/oil/prev-mileage', [fuellogsController::class, 'prevMileage'])->name('oil.prevMileage');
-
 Route::get('/oil',              [fuellogsController::class, 'oil'])->name('oil');
 Route::post('/oil',             [fuellogsController::class, 'store'])->name('oil.store');
 Route::put('/oil/update/{id}',  [fuellogsController::class, 'update'])->name('oil.update');
 Route::delete('/oil/{id}',      [fuellogsController::class, 'destroy'])->name('oil.destroy');
-
-// use App\Http\Controllers\fuellogsController;
-// // ===== OIL ROUTES =====
-// // สำคัญ: prevMileage ต้องอยู่ก่อน destroy
-// // เพราะ Laravel match route จากบนลงล่าง
-// Route::get('/oil', [fuellogsController::class, 'oil'])->name('oil');
-// Route::post('/oil/store', [fuellogsController::class, 'store'])->name('oil.store');
-// Route::put('/oil/update/{id}', [fuellogsController::class, 'update'])->name('oil.update');
-// Route::get('/oil/prev-mileage', [fuellogsController::class, 'prevMileage'])->name('oil.prevMileage');
-// Route::delete('/oil/{id}', [fuellogsController::class, 'destroy'])->name('oil.destroy');
-
+Route::post('/oil/sync-ng',     [fuellogsController::class, 'syncNg'])->name('oil.syncNg');
+Route::get('/oil/ng-list',      [fuellogsController::class, 'ngList'])->name('oil.ngList');
 
 
 use App\Http\Controllers\SellingLiveController;
@@ -243,12 +231,18 @@ Route::get('/insertsellinglive', [SellingLiveController::class, 'insertsellingli
 Route::get('/dashboardsellinglive', [SellingLiveController::class, 'dashboardsellinglive'])->name('dashboardsellinglive');
 Route::get('/Botsellinglive', [SellingLiveController::class, 'Botsellinglive'])->name('Botsellinglive');
 
+use App\Http\Controllers\DeliverytrackController;
+Route::get('/deliverytrack', [DeliverytrackController::class, 'index'])->name('deliverytrack');
+Route::post('/return/{id}/new-bill', [DeliverytrackController::class, 'saveNewBill'])->name('deliverytrack.newbill');
 
 use App\Http\Controllers\ServiceController;
-Route::get('/service', [ServiceController::class, 'index'])->name('dashboard');
+Route::get('/service',              [ServiceController::class, 'index'])->name('service');
+Route::get('/service/list',         [ServiceController::class, 'list'])->name('service.list');
+Route::post('/service',             [ServiceController::class, 'store'])->name('service.store');
+Route::post('/service/{id}',        [ServiceController::class, 'update'])->name('service.update');
+Route::delete('/service/{id}',      [ServiceController::class, 'destroy'])->name('service.destroy');
 
-use App\Http\Controllers\DeliverytrackController ;
-Route::get('/deliverytrack', [DeliverytrackController::class, 'index'])->name('dashboard');
+
 
 use App\Http\Controllers\TechnicianController;
 Route::get('/technician', [TechnicianController::class, 'technician']);

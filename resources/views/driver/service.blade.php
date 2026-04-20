@@ -4,6 +4,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="csrf-token" content="{{ csrf_token() }}">
 <title>ระบบจัดการเซอร์วิสรถ</title>
 <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 <style>
@@ -29,6 +30,7 @@ body{font-family:'Sarabun',sans-serif;background:var(--bg);color:var(--text);min
 .btn{display:inline-flex;align-items:center;gap:7px;padding:9px 18px;border-radius:var(--radius-sm);font-family:'Sarabun',sans-serif;font-size:14px;font-weight:500;cursor:pointer;border:none;transition:all .2s}
 .btn-primary{background:var(--accent);color:#fff}.btn-primary:hover{background:#3a7ce0}
 .btn-outline{background:transparent;color:var(--text2);border:1px solid var(--border)}.btn-outline:hover{background:var(--surface2)}
+.btn:disabled{opacity:.55;cursor:not-allowed}
 .filter-bar{display:flex;align-items:center;gap:8px;flex-wrap:wrap;background:var(--surface);padding:12px 16px;border-radius:var(--radius);border:1px solid var(--border);margin-bottom:18px;box-shadow:var(--shadow)}
 .filter-bar select,.filter-bar input{font-family:'Sarabun',sans-serif;font-size:13px;padding:7px 12px;border:1px solid var(--border);border-radius:var(--radius-sm);background:var(--surface2);color:var(--text);outline:none;height:36px}
 .filter-bar select:focus,.filter-bar input:focus{border-color:var(--accent)}
@@ -44,7 +46,6 @@ body{font-family:'Sarabun',sans-serif;background:var(--bg);color:var(--text);min
 .metric-label{font-size:12px;color:var(--text2);font-weight:500;margin-bottom:3px}
 .metric-value{font-size:24px;font-weight:700;color:var(--text);line-height:1}
 .metric-sub{font-size:11px;color:var(--text3);margin-top:3px}
-/* TABLE */
 .table-card{background:var(--surface);border-radius:var(--radius);border:1px solid var(--border);box-shadow:var(--shadow);overflow:hidden;margin-bottom:18px}
 .table-header-navy{background:linear-gradient(135deg,var(--navy) 0%,var(--navy-light) 100%);display:flex;align-items:center;justify-content:space-between;padding:14px 18px;gap:12px;flex-wrap:wrap;border-radius:var(--radius) var(--radius) 0 0}
 .table-header-navy .table-title{color:#fff;font-size:15px;font-weight:600}
@@ -56,34 +57,29 @@ tbody td{padding:10px 14px;border-bottom:1px solid var(--border);color:var(--tex
 tbody tr:last-child td{border-bottom:none}
 tbody tr:hover{background:var(--surface2)}
 .plate-tag{background:var(--surface2);border:1px solid var(--border);border-radius:4px;font-size:11px;color:var(--text2);padding:1px 6px;font-family:monospace;font-weight:600}
-/* TYPE BADGES */
 .svc-badge{display:inline-flex;align-items:center;gap:3px;padding:3px 9px;border-radius:20px;font-size:11px;font-weight:600;white-space:nowrap}
-.svc-oil    {background:rgba(79,142,247,.12);color:#1a5fd1}
-.svc-tire   {background:rgba(245,166,35,.12);color:#b45309}
-.svc-brake  {background:rgba(232,93,93,.12);color:#c0392b}
-.svc-engine {background:rgba(168,85,247,.12);color:#7c3aed}
-.svc-ac     {background:rgba(6,182,212,.12);color:#0e7490}
+.svc-oil{background:rgba(79,142,247,.12);color:#1a5fd1}
+.svc-tire{background:rgba(245,166,35,.12);color:#b45309}
+.svc-brake{background:rgba(232,93,93,.12);color:#c0392b}
+.svc-engine{background:rgba(168,85,247,.12);color:#7c3aed}
+.svc-ac{background:rgba(6,182,212,.12);color:#0e7490}
 .svc-battery{background:rgba(16,185,129,.12);color:#065f46}
-.svc-wash   {background:rgba(56,201,138,.12);color:#1a7a4d}
-.svc-glass  {background:rgba(148,163,184,.12);color:#475569}
-.svc-light  {background:rgba(251,191,36,.12);color:#92400e}
-.svc-other  {background:rgba(107,114,153,.12);color:#374151}
-/* STATUS */
+.svc-wash{background:rgba(56,201,138,.12);color:#1a7a4d}
+.svc-glass{background:rgba(148,163,184,.12);color:#475569}
+.svc-light{background:rgba(251,191,36,.12);color:#92400e}
+.svc-other{background:rgba(107,114,153,.12);color:#374151}
 .status-done{font-size:11px;font-weight:600;padding:3px 9px;border-radius:20px;background:rgba(56,201,138,.12);color:#1a7a4d;white-space:nowrap}
 .status-wait{font-size:11px;font-weight:600;padding:3px 9px;border-radius:20px;background:rgba(245,166,35,.12);color:#b45309;white-space:nowrap}
 .status-prog{font-size:11px;font-weight:600;padding:3px 9px;border-radius:20px;background:rgba(79,142,247,.12);color:#1a5fd1;white-space:nowrap}
-/* IMAGE THUMBS */
 .img-thumbs{display:flex;gap:4px;align-items:center;flex-wrap:wrap}
 .img-thumb{width:38px;height:38px;border-radius:6px;object-fit:cover;border:1px solid var(--border);cursor:pointer;transition:transform .15s}
 .img-thumb:hover{transform:scale(1.12);z-index:2;box-shadow:0 2px 8px rgba(0,0,0,.15)}
 .no-img{width:38px;height:38px;border-radius:6px;background:var(--surface2);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;font-size:16px;color:var(--text3)}
 .more-badge{font-size:10px;font-weight:600;color:var(--text2);background:var(--surface2);border:1px solid var(--border);border-radius:4px;padding:2px 5px}
-/* ACTION BTNS */
 .action-btns{display:flex;gap:6px}
 .action-btn{width:28px;height:28px;border-radius:6px;border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:13px;transition:all .15s}
 .action-btn.edit{background:rgba(79,142,247,.1);color:var(--accent)}.action-btn.edit:hover{background:var(--accent);color:#fff}
 .action-btn.del{background:rgba(232,93,93,.1);color:var(--accent4)}.action-btn.del:hover{background:var(--accent4);color:#fff}
-/* MODAL */
 .modal-overlay{display:none;position:fixed;inset:0;background:rgba(10,18,40,.55);z-index:500;align-items:center;justify-content:center;padding:16px;backdrop-filter:blur(2px)}
 .modal-overlay.open{display:flex}
 .modal{background:var(--surface);border-radius:16px;width:100%;max-width:600px;max-height:92vh;display:flex;flex-direction:column;box-shadow:0 20px 60px rgba(0,0,0,.2);animation:modalIn .2s ease}
@@ -99,7 +95,6 @@ tbody tr:hover{background:var(--surface2)}
 .form-control{width:100%;padding:9px 12px;border:1px solid var(--border);border-radius:var(--radius-sm);font-family:'Sarabun',sans-serif;font-size:14px;color:var(--text);background:var(--surface);outline:none;transition:border-color .2s}
 .form-control:focus{border-color:var(--accent);box-shadow:0 0 0 3px rgba(79,142,247,.12)}
 textarea.form-control{resize:vertical;min-height:60px}
-/* IMAGE UPLOAD */
 .img-upload-wrap{border:2px dashed var(--border);border-radius:var(--radius-sm);padding:20px;text-align:center;cursor:pointer;transition:all .2s;background:var(--surface2);position:relative}
 .img-upload-wrap:hover{border-color:var(--accent);background:rgba(79,142,247,.04)}
 .img-upload-wrap input[type=file]{position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;height:100%}
@@ -108,7 +103,7 @@ textarea.form-control{resize:vertical;min-height:60px}
 .preview-item:hover{border-color:var(--accent)}
 .preview-item img{width:100%;height:100%;object-fit:cover;cursor:pointer}
 .preview-item .rm{position:absolute;top:3px;right:3px;width:18px;height:18px;background:rgba(232,93,93,.9);border:none;border-radius:50%;color:#fff;font-size:9px;cursor:pointer;display:flex;align-items:center;justify-content:center;line-height:1}
-/* LIGHTBOX */
+.preview-item.existing{border-color:var(--accent2)}
 .lightbox{display:none;position:fixed;inset:0;background:rgba(0,0,0,.9);z-index:900;align-items:center;justify-content:center;flex-direction:column}
 .lightbox.open{display:flex}
 .lightbox img{max-width:90vw;max-height:85vh;border-radius:8px;object-fit:contain;box-shadow:0 8px 40px rgba(0,0,0,.4)}
@@ -116,6 +111,8 @@ textarea.form-control{resize:vertical;min-height:60px}
 .lb-caption{color:rgba(255,255,255,.7);font-size:12px;margin-top:10px}
 .empty-state{text-align:center;padding:50px 20px;color:var(--text3)}
 .empty-state .icon{font-size:44px;margin-bottom:10px;opacity:.4}
+.toast{position:fixed;bottom:24px;right:24px;background:var(--navy);color:#fff;padding:12px 20px;border-radius:10px;font-size:13px;font-weight:500;z-index:999;opacity:0;transform:translateY(10px);transition:all .25s;pointer-events:none}
+.toast.show{opacity:1;transform:translateY(0)}
 @media(max-width:640px){.form-grid{grid-template-columns:1fr}.main{padding:14px}.nb-menu{display:none}}
 </style>
 </head>
@@ -128,7 +125,6 @@ textarea.form-control{resize:vertical;min-height:60px}
   </a>
   <div class="nb-menu">
     <a class="nb-btn" href="{{ route('oil') }}"><span>⛽</span>ติดตามน้ำมัน</a>
-    <a class="nb-btn" href="{{ route('oil') }}" onclick="event.preventDefault();history.back()"><span>📊</span>สรุปรายงาน</a>
     <a class="nb-btn active" href="{{ url('/service') }}"><span>🛠️</span>Service</a>
   </div>
 </nav>
@@ -142,34 +138,32 @@ textarea.form-control{resize:vertical;min-height:60px}
     <button class="btn btn-primary" onclick="openSvcModal()">+ เพิ่มข้อมูลเซอร์วิส</button>
   </div>
 
-  <!-- Metrics -->
-  <div class="metrics" id="metricsRow">
-    <div class="metric-card blue"><div class="metric-icon blue">📋</div><div class="metric-label">รายการทั้งหมด</div><div class="metric-value" id="mTotal">0</div><div class="metric-sub">รายการ</div></div>
-    <div class="metric-card green"><div class="metric-icon green">💰</div><div class="metric-label">ค่าใช้จ่ายรวม</div><div class="metric-value" id="mCost">฿0</div><div class="metric-sub">บาท</div></div>
-    <div class="metric-card amber"><div class="metric-icon amber">📈</div><div class="metric-label">เฉลี่ย/ครั้ง</div><div class="metric-value" id="mAvg">฿0</div><div class="metric-sub">บาท</div></div>
-    <div class="metric-card navy"><div class="metric-icon navy">🚗</div><div class="metric-label">รถที่ซ่อม</div><div class="metric-value" id="mCars">0</div><div class="metric-sub">คัน</div></div>
+  <div class="metrics">
+    <div class="metric-card blue"><div class="metric-icon blue">📋</div><div class="metric-label">รายการทั้งหมด</div><div class="metric-value" id="mTotal">—</div><div class="metric-sub">รายการ</div></div>
+    <div class="metric-card green"><div class="metric-icon green">💰</div><div class="metric-label">ค่าใช้จ่ายรวม</div><div class="metric-value" id="mCost">—</div><div class="metric-sub">บาท</div></div>
+    <div class="metric-card amber"><div class="metric-icon amber">📈</div><div class="metric-label">เฉลี่ย/ครั้ง</div><div class="metric-value" id="mAvg">—</div><div class="metric-sub">บาท</div></div>
+    <div class="metric-card navy"><div class="metric-icon navy">🚗</div><div class="metric-label">รถที่ซ่อม</div><div class="metric-value" id="mCars">—</div><div class="metric-sub">คัน</div></div>
   </div>
 
-  <!-- Filter -->
   <div class="filter-bar">
     <div class="srch-wrap">
       <span class="si">🔍</span>
-      <input type="text" id="svcSearch" placeholder="ค้นหาทะเบียน / คนขับ..." oninput="filterAndRender()" style="min-width:200px">
+      <input type="text" id="svcSearch" placeholder="ค้นหาทะเบียน / คนขับ..." oninput="debounceLoad()" style="min-width:200px">
     </div>
-    <select id="typeFilter" onchange="filterAndRender()">
+    <select id="typeFilter" onchange="loadRecords()">
       <option value="">ประเภทงานทั้งหมด</option>
-      <option value="เปลี่ยนถ่ายน้ำมันเครื่อง"> เปลี่ยนถ่ายน้ำมันเครื่อง</option>
-      <option value="เปลี่ยนยาง"> เปลี่ยนยาง</option>
-      <option value="ตรวจ/เปลี่ยนเบรก"> ตรวจ/เปลี่ยนเบรก</option>
-      <option value="ซ่อมเครื่องยนต์"> ซ่อมเครื่องยนต์</option>
-      <option value="ล้าง/ซ่อมแอร์"> ล้าง/ซ่อมแอร์</option>
-      <option value="เปลี่ยนแบตเตอรี่"> เปลี่ยนแบตเตอรี่</option>
+      <option value="เปลี่ยนถ่ายน้ำมันเครื่อง">เปลี่ยนถ่ายน้ำมันเครื่อง</option>
+      <option value="เปลี่ยนยาง">เปลี่ยนยาง</option>
+      <option value="ตรวจ/เปลี่ยนเบรก">ตรวจ/เปลี่ยนเบรก</option>
+      <option value="ซ่อมเครื่องยนต์">ซ่อมเครื่องยนต์</option>
+      <option value="ล้าง/ซ่อมแอร์">ล้าง/ซ่อมแอร์</option>
+      <option value="เปลี่ยนแบตเตอรี่">เปลี่ยนแบตเตอรี่</option>
       <option value="ล้างรถ">ล้างรถ</option>
-      <option value="ซ่อม/เปลี่ยนกระจก"> ซ่อม/เปลี่ยนกระจก</option>
+      <option value="ซ่อม/เปลี่ยนกระจก">ซ่อม/เปลี่ยนกระจก</option>
       <option value="ซ่อม/เปลี่ยนไฟ">ซ่อม/เปลี่ยนไฟ</option>
       <option value="อื่นๆ">อื่นๆ</option>
     </select>
-    <select id="statusFilter" onchange="filterAndRender()">
+    <select id="statusFilter" onchange="loadRecords()">
       <option value="">สถานะทั้งหมด</option>
       <option value="เสร็จแล้ว">✅ เสร็จแล้ว</option>
       <option value="รอดำเนินการ">⏳ รอดำเนินการ</option>
@@ -177,7 +171,6 @@ textarea.form-control{resize:vertical;min-height:60px}
     </select>
   </div>
 
-  <!-- Table -->
   <div class="table-card">
     <div class="table-header-navy">
       <div>
@@ -201,7 +194,7 @@ textarea.form-control{resize:vertical;min-height:60px}
           </tr>
         </thead>
         <tbody id="svcTbody">
-          <tr><td colspan="9"><div class="empty-state"><div class="icon">🛠️</div><p>ยังไม่มีรายการ กดปุ่ม "+ เพิ่มข้อมูลเซอร์วิส" เพื่อเริ่มต้น</p></div></td></tr>
+          <tr><td colspan="9"><div class="empty-state"><div class="icon">⏳</div><p>กำลังโหลด...</p></div></td></tr>
         </tbody>
       </table>
     </div>
@@ -267,16 +260,16 @@ textarea.form-control{resize:vertical;min-height:60px}
           <label class="form-label">ประเภทงาน *</label>
           <select id="sv-type" class="form-control">
             <option value="">— เลือกประเภท —</option>
-            <option value="เปลี่ยนถ่ายน้ำมันเครื่อง"> เปลี่ยนถ่ายน้ำมันเครื่อง</option>
-            <option value="เปลี่ยนยาง"> เปลี่ยนยาง</option>
-            <option value="ตรวจ/เปลี่ยนเบรก"> ตรวจ/เปลี่ยนเบรก</option>
-            <option value="ซ่อมเครื่องยนต์"> ซ่อมเครื่องยนต์</option>
-            <option value="ล้าง/ซ่อมแอร์"> ล้าง/ซ่อมแอร์</option>
-            <option value="เปลี่ยนแบตเตอรี่"> เปลี่ยนแบตเตอรี่</option>
-            <option value="ล้างรถ"> ล้างรถ</option>
-            <option value="ซ่อม/เปลี่ยนกระจก"> ซ่อม/เปลี่ยนกระจก</option>
-            <option value="ซ่อม/เปลี่ยนไฟ"> ซ่อม/เปลี่ยนไฟ</option>
-            <option value="อื่นๆ"> อื่นๆ</option>
+            <option value="เปลี่ยนถ่ายน้ำมันเครื่อง">เปลี่ยนถ่ายน้ำมันเครื่อง</option>
+            <option value="เปลี่ยนยาง">เปลี่ยนยาง</option>
+            <option value="ตรวจ/เปลี่ยนเบรก">ตรวจ/เปลี่ยนเบรก</option>
+            <option value="ซ่อมเครื่องยนต์">ซ่อมเครื่องยนต์</option>
+            <option value="ล้าง/ซ่อมแอร์">ล้าง/ซ่อมแอร์</option>
+            <option value="เปลี่ยนแบตเตอรี่">เปลี่ยนแบตเตอรี่</option>
+            <option value="ล้างรถ">ล้างรถ</option>
+            <option value="ซ่อม/เปลี่ยนกระจก">ซ่อม/เปลี่ยนกระจก</option>
+            <option value="ซ่อม/เปลี่ยนไฟ">ซ่อม/เปลี่ยนไฟ</option>
+            <option value="อื่นๆ">อื่นๆ</option>
           </select>
         </div>
         <div>
@@ -297,8 +290,8 @@ textarea.form-control{resize:vertical;min-height:60px}
         </div>
         <div class="full">
           <label class="form-label">รูปภาพ (เลือกได้หลายรูป)</label>
-          <div class="img-upload-wrap" id="uploadWrap">
-            <input type="file" accept="image/*" multiple onchange="addImages(this)" id="imgInput">
+          <div class="img-upload-wrap">
+            <input type="file" accept="image/*" multiple onchange="addNewImages(this)" id="imgInput">
             <div style="font-size:28px;margin-bottom:6px">📷</div>
             <div style="font-size:13px;color:var(--text2);font-weight:500">คลิกหรือลากรูปมาวางที่นี่</div>
             <div style="font-size:11px;color:var(--text3);margin-top:3px">JPG, PNG, WEBP (ขนาดไม่เกิน 5MB ต่อรูป)</div>
@@ -309,29 +302,41 @@ textarea.form-control{resize:vertical;min-height:60px}
     </div>
     <div class="modal-footer">
       <button type="button" class="btn btn-outline" onclick="closeSvcModal()">ยกเลิก</button>
-      <button type="button" class="btn btn-primary" onclick="saveSvc()">💾 บันทึก</button>
+      <button type="button" class="btn btn-primary" id="saveBtn" onclick="saveSvc()">💾 บันทึก</button>
     </div>
   </div>
 </div>
 
+<div class="toast" id="toast"></div>
+
 <script>
-let records = [];
-let editIdx = null;
-let pendingImgs = []; // {src: base64, name: string}
+const CSRF  = document.querySelector('meta[name="csrf-token"]').content;
+const LIST_URL    = '{{ route("service.list") }}';
+const STORE_URL   = '{{ route("service.store") }}';
+const UPDATE_BASE = '{{ url("/service") }}';
 
 const TYPE_CSS = {
-  'เปลี่ยนถ่ายน้ำมันเครื่อง':'svc-oil',
-  'เปลี่ยนยาง':'svc-tire',
-  'ตรวจ/เปลี่ยนเบรก':'svc-brake',
-  'ซ่อมเครื่องยนต์':'svc-engine',
-  'ล้าง/ซ่อมแอร์':'svc-ac',
-  'เปลี่ยนแบตเตอรี่':'svc-battery',
-  'ล้างรถ':'svc-wash',
-  'ซ่อม/เปลี่ยนกระจก':'svc-glass',
-  'ซ่อม/เปลี่ยนไฟ':'svc-light',
-  'อื่นๆ':'svc-other'
+  'เปลี่ยนถ่ายน้ำมันเครื่อง':'svc-oil','เปลี่ยนยาง':'svc-tire',
+  'ตรวจ/เปลี่ยนเบรก':'svc-brake','ซ่อมเครื่องยนต์':'svc-engine',
+  'ล้าง/ซ่อมแอร์':'svc-ac','เปลี่ยนแบตเตอรี่':'svc-battery',
+  'ล้างรถ':'svc-wash','ซ่อม/เปลี่ยนกระจก':'svc-glass',
+  'ซ่อม/เปลี่ยนไฟ':'svc-light','อื่นๆ':'svc-other'
 };
 
+/* state */
+let editId       = null;  // DB id when editing
+let existingImgs = [];    // [{path, url}] kept from DB record
+let newFiles     = [];    // File objects newly selected
+
+/* ── TOAST ── */
+function showToast(msg, dur=2400){
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), dur);
+}
+
+/* ── HELPERS ── */
 function toggleOther(selId, otherId){
   const sel = document.getElementById(selId);
   const oth = document.getElementById(otherId);
@@ -350,147 +355,60 @@ function todayStr(){
   return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
 }
 
-/* ---- IMAGE UPLOAD ---- */
-function addImages(input){
-  const files = Array.from(input.files);
-  files.forEach(file => {
-    if(file.size > 5*1024*1024){ alert(`${file.name} ใหญ่เกิน 5MB`); return; }
-    const reader = new FileReader();
-    reader.onload = e => {
-      pendingImgs.push({ src: e.target.result, name: file.name });
-      renderPreviewGrid();
-    };
-    reader.readAsDataURL(file);
-  });
-  input.value = '';
+function setSelectOrOther(selId, otherId, val){
+  const sel = document.getElementById(selId);
+  const oth = document.getElementById(otherId);
+  const opt = Array.from(sel.options).find(o => o.value === val);
+  if(opt){ sel.value = val; oth.style.display = 'none'; }
+  else   { sel.value = '__other__'; oth.style.display = 'block'; oth.value = val; }
 }
 
-function renderPreviewGrid(){
-  const grid = document.getElementById('previewGrid');
-  grid.innerHTML = pendingImgs.map((img, i) => `
-    <div class="preview-item">
-      <img src="${img.src}" alt="${img.name}" onclick="openLb('${img.src}','${img.name}')">
-      <button class="rm" onclick="removeImg(${i})" title="ลบรูป">✕</button>
-    </div>`).join('');
-}
+/* ── LOAD ── */
+let debTimer = null;
+function debounceLoad(){ clearTimeout(debTimer); debTimer = setTimeout(loadRecords, 350); }
 
-function removeImg(i){
-  pendingImgs.splice(i, 1);
-  renderPreviewGrid();
-}
+async function loadRecords(){
+  const q      = document.getElementById('svcSearch').value;
+  const type   = document.getElementById('typeFilter').value;
+  const status = document.getElementById('statusFilter').value;
+  const params = new URLSearchParams({q, type, status});
 
-/* ---- MODAL ---- */
-function openSvcModal(idx = null){
-  editIdx = idx;
-  pendingImgs = [];
-  document.getElementById('previewGrid').innerHTML = '';
-  document.getElementById('svcModalTitle').textContent = idx !== null ? '🛠️ แก้ไขข้อมูลเซอร์วิส' : '🛠️ เพิ่มข้อมูลเซอร์วิส';
-
-  if(idx !== null){
-    const r = records[idx];
-    document.getElementById('sv-date').value   = r.date;
-    document.getElementById('sv-driver').value = r.driver;
-    document.getElementById('sv-plate').value  = r.plate;
-    document.getElementById('sv-type').value   = r.type;
-    document.getElementById('sv-cost').value   = r.cost;
-    document.getElementById('sv-status').value = r.status;
-    document.getElementById('sv-detail').value = r.detail;
-    pendingImgs = (r.images||[]).map(src => ({ src, name: '' }));
-    renderPreviewGrid();
-  } else {
-    document.getElementById('sv-date').value   = todayStr();
-    document.getElementById('sv-driver').value = '';
-    document.getElementById('sv-plate').value  = '';
-    document.getElementById('sv-type').value   = '';
-    document.getElementById('sv-cost').value   = '';
-    document.getElementById('sv-status').value = 'เสร็จแล้ว';
-    document.getElementById('sv-detail').value = '';
-    ['sv-driver-other','sv-plate-other'].forEach(id => {
-      const el = document.getElementById(id);
-      el.style.display = 'none';
-      el.value = '';
-    });
+  try {
+    const res  = await fetch(`${LIST_URL}?${params}`);
+    const data = await res.json();
+    renderMetrics(data.metrics);
+    renderTable(data.records);
+  } catch(e){
+    document.getElementById('svcTbody').innerHTML =
+      `<tr><td colspan="9"><div class="empty-state"><div class="icon">⚠️</div><p>โหลดข้อมูลไม่สำเร็จ</p></div></td></tr>`;
   }
-  document.getElementById('svcModal').classList.add('open');
 }
 
-function closeSvcModal(){ document.getElementById('svcModal').classList.remove('open'); }
-
-function saveSvc(){
-  const date   = document.getElementById('sv-date').value;
-  const driver = getVal('sv-driver','sv-driver-other');
-  const plate  = getVal('sv-plate','sv-plate-other');
-  const type   = document.getElementById('sv-type').value;
-  const cost   = document.getElementById('sv-cost').value;
-  const status = document.getElementById('sv-status').value;
-  const detail = document.getElementById('sv-detail').value;
-
-  if(!date)  { alert('กรุณาเลือกวันที่'); return; }
-  if(!driver){ alert('กรุณาเลือกหรือระบุชื่อคนขับ'); return; }
-  if(!plate) { alert('กรุณาเลือกหรือระบุทะเบียนรถ'); return; }
-  if(!type)  { alert('กรุณาเลือกประเภทงาน'); return; }
-
-  const record = {
-    date, driver, plate, type,
-    cost: cost ? parseFloat(cost) : 0,
-    status, detail,
-    images: pendingImgs.map(img => img.src),
-    createdAt: new Date().toLocaleString('th-TH', {timeZone:'Asia/Bangkok'})
-  };
-
-  if(editIdx !== null) records[editIdx] = record;
-  else records.unshift(record);
-
-  closeSvcModal();
-  filterAndRender();
+function renderMetrics(m){
+  document.getElementById('mTotal').textContent = m.total.toLocaleString();
+  document.getElementById('mCost').textContent  = '฿' + Number(m.totalCost).toLocaleString();
+  document.getElementById('mAvg').textContent   = '฿' + Number(m.avg).toLocaleString();
+  document.getElementById('mCars').textContent  = m.cars.toLocaleString();
 }
 
-function deleteSvc(idx){
-  if(!confirm('ยืนยันการลบรายการนี้?')) return;
-  records.splice(idx, 1);
-  filterAndRender();
-}
-
-/* ---- FILTER & RENDER ---- */
-function filterAndRender(){
-  const q    = document.getElementById('svcSearch').value.toLowerCase();
-  const type = document.getElementById('typeFilter').value;
-  const stat = document.getElementById('statusFilter').value;
-
-  const filtered = records.filter((r, i) => {
-    const matchQ = !q || r.driver.toLowerCase().includes(q) || r.plate.toLowerCase().includes(q) || (r.detail||'').toLowerCase().includes(q);
-    const matchT = !type || r.type === type;
-    const matchS = !stat || r.status === stat;
-    return matchQ && matchT && matchS;
-  });
-
-  // Metrics
-  const total = records.length;
-  const totalCost = records.reduce((s,r) => s + (r.cost||0), 0);
-  const cars = new Set(records.map(r => r.plate)).size;
-  document.getElementById('mTotal').textContent = total;
-  document.getElementById('mCost').textContent  = '฿' + totalCost.toLocaleString();
-  document.getElementById('mAvg').textContent   = total ? '฿' + Math.round(totalCost/total).toLocaleString() : '฿0';
-  document.getElementById('mCars').textContent  = cars;
-  document.getElementById('tblCount').textContent = filtered.length;
-
+function renderTable(records){
+  document.getElementById('tblCount').textContent = records.length;
   const tbody = document.getElementById('svcTbody');
-  if(!filtered.length){
-    tbody.innerHTML = `<tr><td colspan="9"><div class="empty-state"><div class="icon">🛠️</div><p>${total ? 'ไม่พบรายการที่ตรงกับการค้นหา' : 'ยังไม่มีรายการ กดปุ่ม "+ เพิ่มข้อมูลเซอร์วิส" เพื่อเริ่มต้น'}</p></div></td></tr>`;
+  if(!records.length){
+    tbody.innerHTML = `<tr><td colspan="9"><div class="empty-state"><div class="icon">🛠️</div><p>ไม่พบรายการ</p></div></td></tr>`;
     return;
   }
-
-  tbody.innerHTML = filtered.map((r, fi) => {
-    const origIdx = records.indexOf(r);
-    const typeCss = TYPE_CSS[r.type] || 'svc-other';
+  tbody.innerHTML = records.map((r, fi) => {
+    const typeCss   = TYPE_CSS[r.type] || 'svc-other';
     const statusCss = r.status === 'เสร็จแล้ว' ? 'status-done' : r.status === 'รอดำเนินการ' ? 'status-wait' : 'status-prog';
+    const urls      = r.image_urls || [];
 
     let imgHtml = '';
-    if(r.images && r.images.length){
-      const show = r.images.slice(0, 3);
+    if(urls.length){
+      const show = urls.slice(0, 3);
       imgHtml = `<div class="img-thumbs">` +
-        show.map((src,si) => `<img class="img-thumb" src="${src}" onclick="openLb('${src}','รูปที่ ${si+1}')" title="คลิกเพื่อดูรูปขนาดใหญ่">`).join('') +
-        (r.images.length > 3 ? `<span class="more-badge">+${r.images.length - 3}</span>` : '') +
+        show.map((u, si) => `<img class="img-thumb" src="${u}" onclick="openLb('${u}','รูปที่ ${si+1}')">`).join('') +
+        (urls.length > 3 ? `<span class="more-badge">+${urls.length - 3}</span>` : '') +
         `</div>`;
     } else {
       imgHtml = `<div class="no-img">📷</div>`;
@@ -505,29 +423,178 @@ function filterAndRender(){
       </td>
       <td><span class="svc-badge ${typeCss}">${r.type}</span></td>
       <td style="font-size:12px;color:var(--text2);max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${r.detail||''}">${r.detail||'—'}</td>
-      <td style="text-align:right;font-weight:600;color:var(--navy)">${r.cost ? '฿'+r.cost.toLocaleString() : '—'}</td>
+      <td style="text-align:right;font-weight:600;color:var(--navy)">${r.cost ? '฿'+Number(r.cost).toLocaleString() : '—'}</td>
       <td>${imgHtml}</td>
       <td><span class="${statusCss}">${r.status}</span></td>
       <td><div class="action-btns">
-        
+        <button class="action-btn edit" onclick="openSvcModal(${JSON.stringify(r).split('"').join('&quot;')})" title="แก้ไข">✏️</button>
+        <button class="action-btn del"  onclick="deleteSvc(${r.id})" title="ลบ">🗑️</button>
       </div></td>
     </tr>`;
   }).join('');
 }
 
-/* ---- LIGHTBOX ---- */
-function openLb(src, caption){
+/* ── IMAGE HANDLING ── */
+function addNewImages(input){
+  Array.from(input.files).forEach(file => {
+    if(file.size > 5*1024*1024){ alert(`${file.name} ใหญ่เกิน 5MB`); return; }
+    newFiles.push(file);
+  });
+  input.value = '';
+  renderPreviewGrid();
+}
+
+function removeExisting(idx){
+  existingImgs.splice(idx, 1);
+  renderPreviewGrid();
+}
+
+function removeNew(idx){
+  newFiles.splice(idx, 1);
+  renderPreviewGrid();
+}
+
+function renderPreviewGrid(){
+  const grid = document.getElementById('previewGrid');
+  const existHtml = existingImgs.map((img, i) => `
+    <div class="preview-item existing" title="รูปเดิม">
+      <img src="${img.url}" onclick="openLb('${img.url}','รูปเดิม')">
+      <button class="rm" onclick="removeExisting(${i})">✕</button>
+    </div>`).join('');
+
+  const newHtml = newFiles.map((f, i) => {
+    const url = URL.createObjectURL(f);
+    return `<div class="preview-item">
+      <img src="${url}" onclick="openLb('${url}','${f.name}')">
+      <button class="rm" onclick="removeNew(${i})">✕</button>
+    </div>`;
+  }).join('');
+
+  grid.innerHTML = existHtml + newHtml;
+}
+
+/* ── MODAL ── */
+function openSvcModal(record = null){
+  editId       = null;
+  existingImgs = [];
+  newFiles     = [];
+  renderPreviewGrid();
+
+  if(record){
+    // edit mode — record is the full object from renderTable
+    editId = record.id;
+    document.getElementById('svcModalTitle').textContent = '🛠️ แก้ไขข้อมูลเซอร์วิส';
+    document.getElementById('sv-date').value   = record.date;
+    document.getElementById('sv-type').value   = record.type;
+    document.getElementById('sv-cost').value   = record.cost;
+    document.getElementById('sv-status').value = record.status;
+    document.getElementById('sv-detail').value = record.detail || '';
+    setSelectOrOther('sv-driver','sv-driver-other', record.driver);
+    setSelectOrOther('sv-plate', 'sv-plate-other',  record.plate);
+
+    // build existingImgs from paths + urls
+    const paths = record.images || [];
+    const urls  = record.image_urls || [];
+    existingImgs = paths.map((p, i) => ({ path: p, url: urls[i] || '' }));
+    renderPreviewGrid();
+  } else {
+    document.getElementById('svcModalTitle').textContent = '🛠️ เพิ่มข้อมูลเซอร์วิส';
+    document.getElementById('sv-date').value   = todayStr();
+    document.getElementById('sv-driver').value = '';
+    document.getElementById('sv-plate').value  = '';
+    document.getElementById('sv-type').value   = '';
+    document.getElementById('sv-cost').value   = '';
+    document.getElementById('sv-status').value = 'เสร็จแล้ว';
+    document.getElementById('sv-detail').value = '';
+    ['sv-driver-other','sv-plate-other'].forEach(id => {
+      const el = document.getElementById(id); el.style.display = 'none'; el.value = '';
+    });
+  }
+  document.getElementById('svcModal').classList.add('open');
+}
+
+function closeSvcModal(){ document.getElementById('svcModal').classList.remove('open'); }
+
+async function saveSvc(){
+  const date   = document.getElementById('sv-date').value;
+  const driver = getVal('sv-driver','sv-driver-other');
+  const plate  = getVal('sv-plate','sv-plate-other');
+  const type   = document.getElementById('sv-type').value;
+  const cost   = document.getElementById('sv-cost').value;
+  const status = document.getElementById('sv-status').value;
+  const detail = document.getElementById('sv-detail').value;
+
+  if(!date)  { alert('กรุณาเลือกวันที่'); return; }
+  if(!driver){ alert('กรุณาเลือกหรือระบุชื่อคนขับ'); return; }
+  if(!plate) { alert('กรุณาเลือกหรือระบุทะเบียนรถ'); return; }
+  if(!type)  { alert('กรุณาเลือกประเภทงาน'); return; }
+
+  const btn = document.getElementById('saveBtn');
+  btn.disabled = true; btn.textContent = '⏳ กำลังบันทึก...';
+
+  const fd = new FormData();
+  fd.append('date',   date);
+  fd.append('driver', driver);
+  fd.append('plate',  plate);
+  fd.append('type',   type);
+  fd.append('cost',   cost || 0);
+  fd.append('status', status);
+  fd.append('detail', detail);
+
+  newFiles.forEach(f => fd.append('images[]', f));
+
+  let url    = STORE_URL;
+  let method = 'POST';
+
+  if(editId){
+    url    = `${UPDATE_BASE}/${editId}`;
+    method = 'POST'; // tunneled POST for multipart
+    fd.append('_method', 'POST'); // not PUT so Laravel won't complain with files
+    // send paths to keep
+    fd.append('keep_images', JSON.stringify(existingImgs.map(i => i.path)));
+  }
+
+  try {
+    const res  = await fetch(url, { method, headers:{'X-CSRF-TOKEN': CSRF}, body: fd });
+    const data = await res.json();
+    if(data.success){
+      closeSvcModal();
+      showToast(editId ? '✅ แก้ไขสำเร็จ' : '✅ บันทึกสำเร็จ');
+      loadRecords();
+    } else {
+      alert('เกิดข้อผิดพลาด: ' + JSON.stringify(data.errors || data));
+    }
+  } catch(e){
+    alert('ไม่สามารถเชื่อมต่อเซิร์ฟเวอร์ได้');
+  } finally {
+    btn.disabled = false; btn.textContent = '💾 บันทึก';
+  }
+}
+
+/* ── DELETE ── */
+async function deleteSvc(id){
+  if(!confirm('ยืนยันการลบรายการนี้?')) return;
+  try {
+    const res  = await fetch(`${UPDATE_BASE}/${id}`, {
+      method: 'DELETE',
+      headers: { 'X-CSRF-TOKEN': CSRF, 'Content-Type':'application/json' }
+    });
+    const data = await res.json();
+    if(data.success){ showToast('🗑️ ลบสำเร็จ'); loadRecords(); }
+  } catch(e){ alert('ลบไม่สำเร็จ'); }
+}
+
+/* ── LIGHTBOX ── */
+function openLb(src, cap){
   document.getElementById('lbImg').src = src;
-  document.getElementById('lbCaption').textContent = caption || '';
+  document.getElementById('lbCaption').textContent = cap || '';
   document.getElementById('lightbox').classList.add('open');
 }
 function closeLb(){ document.getElementById('lightbox').classList.remove('open'); }
 document.addEventListener('keydown', e => { if(e.key === 'Escape') closeLb(); });
 
-/* ---- INIT ---- */
-document.addEventListener('DOMContentLoaded', () => {
-  filterAndRender();
-});
+/* ── INIT ── */
+document.addEventListener('DOMContentLoaded', loadRecords);
 </script>
 </body>
 </html>
