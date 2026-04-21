@@ -279,7 +279,7 @@ document.getElementById('searchInput').addEventListener('input', function () {
                         ปริ้นสำเร็จ
                     @endif
                     <br>
-                    {{ \Carbon\Carbon::parse($item->print_time)->format('H:i d/m/Y ') }}
+                    {{ $item->print_time ? \Carbon\Carbon::parse($item->print_time)->format('H:i d/m/Y') : '' }}
                     </td>
                    <td>
                     <a href="javascript:void(0);" 
