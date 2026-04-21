@@ -286,13 +286,13 @@
                    <a id="btn-dashboard">
     <input class="btn btn-danger" type="button" style="background-color: #1738f3" value="ข้อมูลจัดส่ง"> 
 </a>
-<a href="pooutside" title="ตามของนอก" class="notification-icon" style="position: relative; display: inline-block;">
+                <a href="pooutside" title="ตามของนอก" class="notification-icon" style="position: relative; display: inline-block;">
                 <input class="btn btn-danger" type="button" style="background-color: #50c82e" value="ตามของนอก"></a>
                 <a href="deliverytrack" title="delivery" class="notification-icon" style="position: relative; display: inline-block;">
                 <input class="btn btn-danger" type="button" style="background-color: #eca311" value="งานผิด"></a>
                 <a href="oil" title="oil" class="notification-icon" style="position: relative; display: inline-block;">
                 <input class="btn btn-danger" type="button" style="background-color: #0dc0f6" value="คนขับ"></a>
-                <a href="technician" title="technician" class="notification-icon" style="position: relative; display: inline-block;">
+                <a href="dashboardtechnician" title="technician" class="notification-icon" style="position: relative; display: inline-block;">
                 <input class="btn btn-danger" type="button" style="background-color: #f97400" value="งาน Projects"></a>
                 
 <script>

@@ -217,6 +217,8 @@ footer{background:var(--wh);border-top:3px solid var(--or);padding:36px 0 20px;m
         สรุปการเข้างาน
       </button>
     </div>
+      <a href="project" title="project" class="notification-icon" style="position: relative; display: inline-block;">
+      <input class="btn btn-danger" type="button" style="background-color: #f97400" value="งาน Projects"></a>
     <div class="nav-spacer"></div>
     <div class="nav-badge">เฉพาะบุคลากรภายใน</div>
   </div>

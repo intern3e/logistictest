@@ -245,4 +245,7 @@ Route::delete('/service/{id}',      [ServiceController::class, 'destroy'])->name
 
 
 use App\Http\Controllers\TechnicianController;
-Route::get('/technician', [TechnicianController::class, 'technician']);
+Route::get('/dashboardtechnician', [TechnicianController::class, 'technician']);
+
+use App\Http\Controllers\ProjectplanController;
+Route::get('/project', [ProjectplanController::class, 'dashboard']);
