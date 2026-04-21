@@ -9,6 +9,6 @@ class TechnicianController extends Controller
 {
     public function technician()
     {
-        return view('technician.technician');
+        return view('project.dashboardtechnician');
     }
 }

@@ -156,7 +156,7 @@ document.getElementById('searchInput').addEventListener('input', function () {
                     <th>วันที่จัดส่ง</th>
                     <th>ผู้เปิดบิล</th>
                     <th>ประเภทบิล</th>
-                    <th>เวลาออกบิล</th>
+                    <th>บันทึกลงระบบ</th>
                     <th>ประเภทงาน</th>
                     <th>สถานะ</th>
                     <th>ข้อมูลสินค้า</th>
@@ -191,59 +191,58 @@ document.getElementById('searchInput').addEventListener('input', function () {
 </td>
 
 <script>
-// ฟังก์ชันเดิม - เปิด doc_document และ merge
-function mergeAndOpenPdfs(billid) {
-    const pdfDocUrl = "{{ asset('storage/doc_document') }}/" + billid + ".pdf";
-    const pdfBillUrl = "{{ asset('storage/bill_document') }}/" + billid + ".pdf";
-    const win1 = window.open(pdfDocUrl, "_blank");
-    fetch("{{ route('merge.pdf') }}", {
-        method: "POST",
-        headers: {
-            'X-CSRF-TOKEN': '{{ csrf_token() }}',
-            'Content-Type': 'application/json',
-            'Accept': 'application/json'
-        },
-        body: JSON.stringify({ billid: billid })
-    })
-    .then(res => res.json())
-    .then(data => {
-        if (data.success && win1) {
-            setTimeout(() => {
-                win1.location.reload();
-            }, 800);
-        } else {
-            alert("❌ " + (data.message || "เกิดข้อผิดพลาดในการ merge PDF"));
-        }
-    })
-    return false;
-}
+    function mergeAndOpenPdfs(billid) {
+        const pdfDocUrl = "{{ asset('storage/doc_document') }}/" + billid + ".pdf";
+        const pdfBillUrl = "{{ asset('storage/bill_document') }}/" + billid + ".pdf";
+        const win1 = window.open(pdfDocUrl, "_blank");
+        fetch("{{ route('merge.pdf') }}", {
+            method: "POST",
+            headers: {
+                'X-CSRF-TOKEN': '{{ csrf_token() }}',
+                'Content-Type': 'application/json',
+                'Accept': 'application/json'
+            },
+            body: JSON.stringify({ billid: billid })
+        })
+        .then(res => res.json())
+        .then(data => {
+            if (data.success && win1) {
+                setTimeout(() => {
+                    win1.location.reload();
+                }, 800);
+            } else {
+                alert("❌ " + (data.message || "เกิดข้อผิดพลาดในการ merge PDF"));
+            }
+        })
+        return false;
+    }
 
 
-function openBillOnly(billid) {
-    const pdfBillUrl = "{{ asset('storage/bill_document') }}/" + billid + ".pdf";
-    const win1 = window.open(pdfBillUrl, "_blank");
+    function openBillOnly(billid) {
+        const pdfBillUrl = "{{ asset('storage/bill_document') }}/" + billid + ".pdf";
+        const win1 = window.open(pdfBillUrl, "_blank");
 
-    fetch("{{ route('merge.pdf') }}", {
-        method: "POST",
-        headers: {
-            'X-CSRF-TOKEN': '{{ csrf_token() }}',
-            'Content-Type': 'application/json',
-            'Accept': 'application/json'
-        },
-        body: JSON.stringify({ billid: billid })
-    })
-    .then(res => res.json())
-    .then(data => {
-        if (data.success && win1) {
-            setTimeout(() => {
-                win1.location.reload();
-            }, 800);
-        } else {
-            alert("❌ " + (data.message || "เกิดข้อผิดพลาดในการ merge PDF"));
-        }
-    })
-    return false;
-}
+        fetch("{{ route('merge.pdf') }}", {
+            method: "POST",
+            headers: {
+                'X-CSRF-TOKEN': '{{ csrf_token() }}',
+                'Content-Type': 'application/json',
+                'Accept': 'application/json'
+            },
+            body: JSON.stringify({ billid: billid })
+        })
+        .then(res => res.json())
+        .then(data => {
+            if (data.success && win1) {
+                setTimeout(() => {
+                    win1.location.reload();
+                }, 800);
+            } else {
+                alert("❌ " + (data.message || "เกิดข้อผิดพลาดในการ merge PDF"));
+            }
+        })
+        return false;
+    }
 
 </script>
                     <td>
@@ -279,6 +278,8 @@ function openBillOnly(billid) {
                     @else
                         ปริ้นสำเร็จ
                     @endif
+                    <br>
+                    {{ \Carbon\Carbon::parse($item->print_time)->format('H:i d/m/Y ') }}
                     </td>
                    <td>
                     <a href="javascript:void(0);" 
