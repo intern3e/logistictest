@@ -857,14 +857,94 @@ function calc(){
 }
 
 /* ===== SUBMIT ===== */
-document.getElementById('submitBill').addEventListener('click',function(){
-  const btn=this;
-  btn.disabled=true;
-  btn.innerHTML=`<svg width="17" height="17" viewBox="0 0 17 17" fill="none" style="animation:spin .7s linear infinite"><path d="M8.5 2a6.5 6.5 0 0 1 6.5 6.5" stroke="white" stroke-width="2" stroke-linecap="round"/></svg>กำลังบันทึก...`;
-  setTimeout(()=>{
-    showToast('บันทึกสำเร็จ','บันทึกใบมัดจำเรียบร้อยแล้ว','success');
-    setTimeout(()=>{ window.location.href='/SOlist'; },1500);
-  },800);
+document.getElementById('submitBill').addEventListener('click', async function(){
+  const btn = this;
+
+  const soId        = document.getElementById('so_id').value.trim();
+  const contactso   = document.getElementById('contactso').value.trim();
+  const customerTel = document.getElementById('customer_tel').value.trim();
+
+  if(!soId){
+    showToast('ข้อมูลไม่ครบ','ไม่พบเลขที่ SO','error');
+    return;
+  }
+  if(!contactso){
+    showToast('ข้อมูลไม่ครบ','กรุณากรอกชื่อผู้ติดต่อ','error');
+    document.getElementById('contactso').focus();
+    return;
+  }
+
+  const anyActive = Object.values(active).some(v => v);
+  if(!anyActive){
+    showToast('ยังไม่ได้เลือกประเภทมัดจำ','กรุณาเปิดสวิตช์และกรอกเปอร์เซ็นต์มัดจำอย่างน้อย 1 ประเภท','warning');
+    return;
+  }
+
+  const typeMap = { g:'product', b:'service', a:'shipping' };
+  const deposits = [];
+  ['g','b','a'].forEach(k => {
+    if(active[k]){
+      const pct = Math.min(100, Math.max(0, parseFloat(document.getElementById('dep-'+k).value) || 0));
+      const amt = BASE * pct / 100;
+      if(pct > 0){
+        deposits.push({
+          type:    typeMap[k],
+          percent: pct,
+          amount:  +amt.toFixed(2),
+        });
+      }
+    }
+  });
+
+  if(deposits.length === 0){
+    showToast('ข้อมูลมัดจำไม่ถูกต้อง','กรุณากรอกเปอร์เซ็นต์มัดจำให้มากกว่า 0','warning');
+    return;
+  }
+
+  const payload = {
+    so_id:            soId,
+    sell_date:        document.getElementById('sell_date').value,
+    customer_id:      document.getElementById('customer_id').value,
+    customer_name:    document.getElementById('customer_name').value,
+    contactso:        contactso,
+    customer_tel:     customerTel,
+    customer_address: document.getElementById('customer_address').value,
+    emp_name:         document.getElementById('hidden-emp').value,
+    grand_total:      parseFloat(document.getElementById('hidden-grandtotal').value) || 0,
+    deposits:         deposits,
+  };
+
+  btn.disabled = true;
+  const originalHTML = btn.innerHTML;
+  btn.innerHTML = `<svg width="17" height="17" viewBox="0 0 17 17" fill="none" style="animation:spin .7s linear infinite"><path d="M8.5 2a6.5 6.5 0 0 1 6.5 6.5" stroke="white" stroke-width="2" stroke-linecap="round"/></svg>กำลังบันทึก...`;
+
+  try{
+    const csrf = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
+    const res = await fetch('/deposit/store', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Accept':       'application/json',
+        'X-CSRF-TOKEN': csrf,
+      },
+      body: JSON.stringify(payload),
+    });
+
+    const data = await res.json();
+
+    if(!res.ok || !data.success){
+      throw new Error(data.message || `HTTP ${res.status}`);
+    }
+
+    showToast('บันทึกสำเร็จ', data.message || 'บันทึกใบมัดจำเรียบร้อยแล้ว', 'success');
+    setTimeout(() => { window.location.href = '/SOlist'; }, 1500);
+
+  }catch(err){
+    console.error(err);
+    showToast('บันทึกไม่สำเร็จ', err.message || 'เกิดข้อผิดพลาด', 'error');
+    btn.disabled = false;
+    btn.innerHTML = originalHTML;
+  }
 });
 </script>
 </body>

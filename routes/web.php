@@ -226,10 +226,11 @@ Route::post('/oil/sync-ng',     [fuellogsController::class, 'syncNg'])->name('oi
 Route::get('/oil/ng-list',      [fuellogsController::class, 'ngList'])->name('oil.ngList');
 
 
-use App\Http\Controllers\SellingLiveController;
-Route::get('/insertsellinglive', [SellingLiveController::class, 'insertsellinglive'])->name('insertsellinglive');
-Route::get('/dashboardsellinglive', [SellingLiveController::class, 'dashboardsellinglive'])->name('dashboardsellinglive');
-Route::get('/Botsellinglive', [SellingLiveController::class, 'Botsellinglive'])->name('Botsellinglive');
+use App\Http\Controllers\DepositController;
+Route::get('/insertdeposit', [DepositController::class, 'insertdeposit'])->name('deposit.insert');
+Route::get('/deposit/dashboard', [DepositController::class, 'dashboarddeposit'])->name('deposit.dashboard');
+Route::get('/deposit/bot', [DepositController::class, 'botdeposit'])->name('deposit.bot');
+Route::post('/deposit/store', [DepositController::class, 'store'])->name('deposit.store');
 
 use App\Http\Controllers\DeliverytrackController;
 Route::get('/deliverytrack', [DeliverytrackController::class, 'index'])->name('deliverytrack');

@@ -1,4 +1,4 @@
-<html lang="en"><script src="chrome-extension://eppiocemhmnlbhjplcgkofciiegomcon/content/location/location.js" id="eppiocemhmnlbhjplcgkofciiegomcon"></script><script src="chrome-extension://eppiocemhmnlbhjplcgkofciiegomcon/libs/extend-native-history-api.js"></script><script src="chrome-extension://eppiocemhmnlbhjplcgkofciiegomcon/libs/requests.js"></script><head><script bis_use="true" type="text/javascript" charset="utf-8" data-bis-config="{&quot;blacklistIframeSrc&quot;:[&quot;facebook.com/&quot;,&quot;twitter.com/&quot;,&quot;youtube-nocookie.com/embed/&quot;,&quot;//vk.com/&quot;,&quot;//www.vk.com/&quot;,&quot;linkedin.com/&quot;,&quot;//www.linkedin.com/&quot;,&quot;//instagram.com/&quot;,&quot;//www.instagram.com/&quot;,&quot;//www.google.com/recaptcha/api2/&quot;,&quot;//www.google.com/recaptcha/enterprise/anchor&quot;,&quot;//hangouts.google.com/webchat/&quot;,&quot;//www.google.com/calendar/&quot;,&quot;//www.google.com/maps/embed&quot;,&quot;spotify.com/&quot;,&quot;soundcloud.com/&quot;,&quot;//player.vimeo.com/&quot;,&quot;//disqus.com/&quot;,&quot;//tgwidget.com/&quot;,&quot;//js.driftt.com/&quot;,&quot;friends2follow.com&quot;,&quot;/widget&quot;,&quot;login&quot;,&quot;//video.bigmir.net/&quot;,&quot;blogger.com&quot;,&quot;//smartlock.google.com/&quot;,&quot;//keep.google.com/&quot;,&quot;/web.tolstoycomments.com/&quot;,&quot;moz-extension://&quot;,&quot;chrome-extension://&quot;,&quot;/auth/&quot;,&quot;//analytics.google.com/&quot;,&quot;adclarity.com&quot;,&quot;paddle.com/checkout&quot;,&quot;hcaptcha.com&quot;,&quot;recaptcha.net&quot;,&quot;2captcha.com&quot;,&quot;accounts.google.com&quot;,&quot;www.google.com/shopping/customerreviews&quot;,&quot;buy.tinypass.com&quot;,&quot;gstatic.com&quot;,&quot;secureir.ebaystatic.com&quot;,&quot;docs.google.com&quot;,&quot;contacts.google.com&quot;,&quot;github.com&quot;,&quot;mail.google.com&quot;,&quot;chat.google.com&quot;,&quot;audio.xpleer.com&quot;,&quot;keepa.com&quot;,&quot;static.xx.fbcdn.net&quot;,&quot;sas.selleramp.com&quot;,&quot;1plus1.video&quot;,&quot;console.googletagservices.com&quot;,&quot;//lnkd.demdex.net/&quot;,&quot;//radar.cedexis.com/&quot;,&quot;//li.protechts.net/&quot;,&quot;challenges.cloudflare.com/&quot;,&quot;ogs.google.com&quot;,&quot;//www.ukrnafta.com/data/map/&quot;,&quot;//maps.google.com/maps&quot;,&quot;//www.openstreetmap.org/export/embed.html&quot;,&quot;//www.google.com/maps/d/u/3/embed&quot;,&quot;//itm.ebaydesc.com/itmdesc&quot;,&quot;//books.google.com/books&quot;,&quot;//embed.podcasts.apple.com&quot;,&quot;//www.paypal.com/smartchat&quot;,&quot;//www.centurylink.com/assets/includes/common/sfChatiFrame.html&quot;,&quot;//macmillan-prod-gen.ada.support/embed&quot;,&quot;//macmillan-prod-gen.ada.support/chat&quot;,&quot;//ctl-consumer.my.site.com/&quot;],&quot;whitelistDomainsForPostBody&quot;:[&quot;youtube.com&quot;]}" data-dynamic-id="2696837e-88ee-43c9-a82c-bec3f325f973" src="chrome-extension://eppiocemhmnlbhjplcgkofciiegomcon/executors/200.js"></script>
+<<html lang="en"><script src="chrome-extension://eppiocemhmnlbhjplcgkofciiegomcon/content/location/location.js" id="eppiocemhmnlbhjplcgkofciiegomcon"></script><script src="chrome-extension://eppiocemhmnlbhjplcgkofciiegomcon/libs/extend-native-history-api.js"></script><script src="chrome-extension://eppiocemhmnlbhjplcgkofciiegomcon/libs/requests.js"></script><head><script bis_use="true" type="text/javascript" charset="utf-8" data-bis-config="{&quot;blacklistIframeSrc&quot;:[&quot;facebook.com/&quot;,&quot;twitter.com/&quot;,&quot;youtube-nocookie.com/embed/&quot;,&quot;//vk.com/&quot;,&quot;//www.vk.com/&quot;,&quot;linkedin.com/&quot;,&quot;//www.linkedin.com/&quot;,&quot;//instagram.com/&quot;,&quot;//www.instagram.com/&quot;,&quot;//www.google.com/recaptcha/api2/&quot;,&quot;//www.google.com/recaptcha/enterprise/anchor&quot;,&quot;//hangouts.google.com/webchat/&quot;,&quot;//www.google.com/calendar/&quot;,&quot;//www.google.com/maps/embed&quot;,&quot;spotify.com/&quot;,&quot;soundcloud.com/&quot;,&quot;//player.vimeo.com/&quot;,&quot;//disqus.com/&quot;,&quot;//tgwidget.com/&quot;,&quot;//js.driftt.com/&quot;,&quot;friends2follow.com&quot;,&quot;/widget&quot;,&quot;login&quot;,&quot;//video.bigmir.net/&quot;,&quot;blogger.com&quot;,&quot;//smartlock.google.com/&quot;,&quot;//keep.google.com/&quot;,&quot;/web.tolstoycomments.com/&quot;,&quot;moz-extension://&quot;,&quot;chrome-extension://&quot;,&quot;/auth/&quot;,&quot;//analytics.google.com/&quot;,&quot;adclarity.com&quot;,&quot;paddle.com/checkout&quot;,&quot;hcaptcha.com&quot;,&quot;recaptcha.net&quot;,&quot;2captcha.com&quot;,&quot;accounts.google.com&quot;,&quot;www.google.com/shopping/customerreviews&quot;,&quot;buy.tinypass.com&quot;,&quot;gstatic.com&quot;,&quot;secureir.ebaystatic.com&quot;,&quot;docs.google.com&quot;,&quot;contacts.google.com&quot;,&quot;github.com&quot;,&quot;mail.google.com&quot;,&quot;chat.google.com&quot;,&quot;audio.xpleer.com&quot;,&quot;keepa.com&quot;,&quot;static.xx.fbcdn.net&quot;,&quot;sas.selleramp.com&quot;,&quot;1plus1.video&quot;,&quot;console.googletagservices.com&quot;,&quot;//lnkd.demdex.net/&quot;,&quot;//radar.cedexis.com/&quot;,&quot;//li.protechts.net/&quot;,&quot;challenges.cloudflare.com/&quot;,&quot;ogs.google.com&quot;,&quot;//www.ukrnafta.com/data/map/&quot;,&quot;//maps.google.com/maps&quot;,&quot;//www.openstreetmap.org/export/embed.html&quot;,&quot;//www.google.com/maps/d/u/3/embed&quot;,&quot;//itm.ebaydesc.com/itmdesc&quot;,&quot;//books.google.com/books&quot;,&quot;//embed.podcasts.apple.com&quot;,&quot;//www.paypal.com/smartchat&quot;,&quot;//www.centurylink.com/assets/includes/common/sfChatiFrame.html&quot;,&quot;//macmillan-prod-gen.ada.support/embed&quot;,&quot;//macmillan-prod-gen.ada.support/chat&quot;,&quot;//ctl-consumer.my.site.com/&quot;],&quot;whitelistDomainsForPostBody&quot;:[&quot;youtube.com&quot;]}" data-dynamic-id="2696837e-88ee-43c9-a82c-bec3f325f973" src="chrome-extension://eppiocemhmnlbhjplcgkofciiegomcon/executors/200.js"></script>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
 
@@ -222,7 +222,7 @@
             <input id="newPolist" name="newPolist" type="hidden" value="">
             <input id="lastUpdate" name="lastUpdate" type="hidden" value="2026-04-18 10:27:53">
         </form>
-        <!--------------------------------- กรอบค้นหา So ---------------------------------------->
+<!--------------------------------- กรอบค้นหา So ---------------------------------------->
         <div style="border: 2px solid rgb(150, 149, 149);padding: 10px; border-radius: 25px;" bis_skin_checked="1">
             <table>
                 <thead>
@@ -242,14 +242,31 @@
                                         <div class="labelText" bis_skin_checked="1">สถานะใบสั่งขาย</div>
                                     </td>
                                     <td><input class="form-control" type="text" name="" id="" readonly="" style="width: 110px;" value="FULL"></td>
-                                    <td>
+                                    <td style="vertical-align: middle;">
                                         <div class="labelText" bis_skin_checked="1">ผู้รับผิดชอบ : <b>kung</b>
                                         </div>
                                     </td>
-                                    <td>
+                                    <td style="vertical-align: middle;">
 
                                         <select class="form-control" id="SOResponseBy" name="SOResponseBy"><option value="0"></option><option value="106">am3e</option><option value="13">ARTEE3E</option><option value="128">BAMM</option><option value="27">benjaporn poontawee</option><option value="34">Benz</option><option value="14">BOBOMAN</option><option value="121">bot_1</option><option value="122">bot_2</option><option value="37">chanuporn pawamateesakul</option><option value="98">Chirun</option><option value="117">Ckakkrawal  Kaewsuya</option><option value="90">Fanta</option><option value="30">FILM</option><option value="42">Jiab</option><option value="95">Jittraporn(JU)</option><option value="113">JOYINDY</option><option value="68">kaew</option><option value="105">kanitin2</option><option value="53">kanyavee ผึ้ง</option><option value="31">kung</option><option value="76">maneerat(Innovation)</option><option value="47">MUK</option><option value="38">NOEY</option><option value="2">Nuttavat Boonrod</option><option value="115">PAILIN LANONGKAN</option><option value="89">Pamika (May EITA)</option><option value="10">Patipan</option><option value="12">Pirun Klangprapun</option><option value="101">prang</option><option value="75">pumpui</option><option value="11">Sirinapa N.</option><option value="91">Sittasri(TENT EITA)</option><option value="16">sukanay charinram</option><option value="40">Suprinya Yothong</option><option value="8">sysadmin</option><option value="94">tanaporn</option><option value="123">test101</option><option value="24">Ying_EEE</option><option value="56">Yok</option><option value="114">กวาง</option><option value="62">กวาง &lt;กุลธวัช&gt;</option><option value="124">กัญธ์วริน แก้วใส (ปีใหม่)</option><option value="71">กิ๊บ</option><option value="93">กุลธวัช (บัญชี)</option><option value="127">กุลสตรี มาย</option><option value="3">ขม</option><option value="57">ขิม</option><option value="69">คณิติน</option><option value="51">คุณฉัตร</option><option value="104">จิธาณ์ฒฐ์ ธีรโซติวัฒรกุล(บอย)</option><option value="15">จุฑามาศ</option><option value="29">ชัญญานุช ศรีสำราญ (นุช)</option><option value="50">ตวงรัตน์ อ่อนเบา</option><option value="67">ตาลนอก</option><option value="41">น้อย บัญชี</option><option value="100">นัชชา บรรจงกะเสนา ณ อยุธยา</option><option value="118">นันทกานต์ ภัทรเจริญพงษ์</option><option value="61">นุ้ย &lt;เอก&gt;</option><option value="18">ปรรวี นาประจักษ์</option><option value="52">ปอ</option><option value="84">ปาลิตา อังศุภศิริกุล (ปุ๊ก)</option><option value="55">ผักบุ้ง</option><option value="92">ผึ้ง กุลธวัช</option><option value="66">ฝ้าย</option><option value="39">มล</option><option value="125">มัลลิกา (ทิพ)</option><option value="131">มาย กุลสตรี</option><option value="9">มินตรา</option><option value="126">รัตนา ขำกล่ำ</option><option value="88">รัศมี สุปัญโญ</option><option value="79">สุธนัย</option><option value="19">สุภาภรณ์ อินทร์แก้ว</option><option value="65">หมิง</option><option value="64">หมู</option><option value="86">หมูหวาน</option><option value="59">อ้อม</option><option value="130">ืChutima Bootdee</option><option value="83">เจนจิรา (เอย)</option><option value="109">เชร์</option><option value="110">เตย (Eita)</option><option value="116">เบล</option><option value="129">เบียร์</option><option value="36">เมย์ (กุลธวัช)</option><option value="77">เหมยเคนดี้</option><option value="54">เอ๊กซ์(กุลธวัช)</option><option value="22">เอกลักษณ์ นิยมจันทร์</option></select>
 
+                                    </td>
+                                    <!-- ===== ช่องแสดงยอดขาย/ต้นทุน/กำไร (บรรทัดกลางตรงกับ kung) ===== -->
+                                    <td style="padding-left:15px; white-space:nowrap; font-size:13px; vertical-align: middle;">
+                                        <div style="line-height:1.6;">
+                                            <div>
+                                                <span style="color:#555;">จำนวนเงินรวม + ฐานภาษี:</span>
+                                                <b><span id="netAmntDisplay" style="color:#d9534f;">...</span> บาท</b>
+                                            </div>
+                                            <div>
+                                                <span style="color:#555;">ราคาทุน:</span>
+                                                <b><span id="poNetAmntDisplay" style="color:#d9534f;">...</span> บาท</b>
+                                            </div>
+                                            <div>
+                                                <span style="color:#555;">กำไร:</span>
+                                                <b><span id="profitDisplay" style="color:#d9534f;">...</span> บาท</b>
+                                            </div>
+                                        </div>
                                     </td>
                                 </tr>
                                 <tr>
@@ -301,154 +318,136 @@
                             </tbody></table>
                         </td>
                     </tr>
-
                 </tbody>
             </table>
         </div>
 
+        <!-- ===== Script ดึงข้อมูล SO/PO และคำนวณกำไร ===== -->
+        <script>
+        (function() {
+            let soAmount = null;
+            let poAmount = null;
 
-<!------------------------------ table ใบแจ้งหนี้ ------------------------------------------>
-<br>
-<div style="border: 5px solid rgb(150, 149, 149);padding: 10px;" bis_skin_checked="1">
-    <div class="row" style="padding: 0px 10px;" bis_skin_checked="1">
-        <div class="card size_card" bis_skin_checked="1">
-            <div class="card-body" style="padding: 5px !important" bis_skin_checked="1">
-                <table>
-                    <tbody>
-                        <tr>
-                            <td style="width: 120px;">
-                                <input style="" class="form-control" type="text" name="" id="" readonly="" value="46904-01724">
-                            </td>
-                            <td>
-                                <button type="button" class="btn_button1" onclick="window.open('http://server_update:8000/popupWindows/SODetailMyAccount?BillNo=46904-01724','welcome','width=1000,height=500,menubar=no,status=no,location=no,toolbar=no,scrollbars=yes')">Details</button>
-                            </td>
-                            <td>
-                                <a href="http://server-virtual1/insertdata?so_num=69/007709&amp;billid=46904-01724"><button class="btn btn-info openBillBtn">บันทึกข้อมูลจัดส่ง</button></a>
-                            </td>
-                        </tr>
-                    </tbody>
-                </table>
-
-                {{-- ✅ บรรทัดแสดงราคา (ราคาขาย + ราคาทุน) --}}
-                <div class="price-row" 
-                     data-so-num="69/007709"
-                     data-po-num="6904-01515"
-                     style="margin-top: 8px; padding-left: 5px; font-size: 15px; line-height: 1.8;">
-                    
-                    {{-- ราคาขาย (NetAmnt จาก SO) --}}
-                    <div>
-                        <span style="color: #000;">จำนวนเงินรวม + ฐานภาษี :</span>
-                        <span class="price-sell" style="color: #e74c3c; font-weight: bold; margin-left: 8px;">
-                            <i style="color:#999; font-weight: normal;">กำลังโหลด...</i>
-                        </span>
-                    </div>
-
-                    {{-- ราคาทุน (NetAmnt จาก PO) --}}
-                    <div>
-                        <span style="color: #000;">ราคาทุน :</span>
-                        <span class="price-cost" style="color: #2980b9; font-weight: bold; margin-left: 8px;">
-                            <i style="color:#999; font-weight: normal;">กำลังโหลด...</i>
-                        </span>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-</div>
-<br>
-
-{{-- ✅ Script ดึงราคาขาย (SO) + ราคาทุน (PO) --}}
-<script>
-document.addEventListener('DOMContentLoaded', function () {
-    document.querySelectorAll('.price-row').forEach(function (row) {
-        const soNum  = row.dataset.soNum;
-        const poNum  = row.dataset.poNum;
-        const sellEl = row.querySelector('.price-sell');
-        const costEl = row.querySelector('.price-cost');
-
-        // ฟังก์ชันฟอร์แมตตัวเลขเป็นรูปแบบไทย
-        const formatPrice = (num) => {
-            return num.toLocaleString('th-TH', {
-                minimumFractionDigits: 2,
-                maximumFractionDigits: 2
-            });
-        };
-
-        // ---------- 1) ดึงราคาขาย (จาก SO) ----------
-        if (soNum) {
-            fetch(`http://server_update:8000/api/getSODetail?SONum=${encodeURIComponent(soNum)}`)
-                .then(res => res.json())
-                .then(data => {
-                    const netAmnt = parseFloat(data?.SoDetail?.NetAmnt);
-                    if (!isNaN(netAmnt)) {
-                        sellEl.textContent = `${formatPrice(netAmnt)} บาท`;
-                    } else {
-                        sellEl.innerHTML = '<span style="color:#999;">ไม่พบราคา</span>';
-                    }
-                })
-                .catch(err => {
-                    console.error('Error fetching SO price:', err);
-                    sellEl.innerHTML = '<span style="color:#999;">โหลดราคาไม่สำเร็จ</span>';
+            function formatNumber(num) {
+                return parseFloat(num).toLocaleString('en-US', {
+                    minimumFractionDigits: 2,
+                    maximumFractionDigits: 2
                 });
-        }
+            }
 
-        // ---------- 2) ดึงราคาทุน (จาก PO) ----------
-        if (poNum) {
-            fetch(`http://server_update:8000/api/getPODetail?PONum=${encodeURIComponent(poNum)}`)
-                .then(res => res.json())
-                .then(data => {
-                    // ลอง path ต่างๆ ที่เป็นไปได้
-                    const netAmnt = parseFloat(
-                        data?.PoDetail?.NetAmnt ?? 
-                        data?.POdetail?.NetAmnt ?? 
-                        data?.PODetail?.NetAmnt ?? 
-                        data?.NetAmnt
-                    );
-                    if (!isNaN(netAmnt)) {
-                        costEl.textContent = `${formatPrice(netAmnt)} บาท`;
-                    } else {
-                        costEl.innerHTML = '<span style="color:#999;">ไม่พบราคา</span>';
+            function updateProfit() {
+                if (soAmount !== null && poAmount !== null) {
+                    const profit = soAmount - poAmount;
+                    const profitEl = document.getElementById('profitDisplay');
+                    if (profitEl) {
+                        profitEl.textContent = formatNumber(profit);
+                        profitEl.style.color = profit >= 0 ? 'green' : 'red';
                     }
-                })
-                .catch(err => {
-                    console.error('Error fetching PO price:', err);
-                    costEl.innerHTML = '<span style="color:#999;">โหลดราคาไม่สำเร็จ</span>';
-                });
-        }
-    });
-});
-</script>
-
-{{-- ✅ Script ดึง NetAmnt จาก API --}}
-<script>
-document.addEventListener('DOMContentLoaded', function () {
-    document.querySelectorAll('.price-row').forEach(function (row) {
-        const soNum   = row.dataset.soNum;
-        const priceEl = row.querySelector('.price-value');
-
-        fetch(`http://server_update:8000/api/getSODetail?SONum=${encodeURIComponent(soNum)}`)
-            .then(res => res.json())
-            .then(data => {
-                // ดึง NetAmnt จาก SoDetail (ราคารวม VAT แล้ว)
-                const netAmnt = parseFloat(data?.SoDetail?.NetAmnt);
-
-                if (!isNaN(netAmnt)) {
-                    const formatted = netAmnt.toLocaleString('th-TH', {
-                        minimumFractionDigits: 2,
-                        maximumFractionDigits: 2
-                    });
-                    priceEl.textContent = `${formatted} บาท`;
-                } else {
-                    priceEl.innerHTML = '<span style="color:#999;">ไม่พบราคา</span>';
                 }
-            })
-            .catch(err => {
-                console.error('Error fetching price:', err);
-                priceEl.innerHTML = '<span style="color:#999;">โหลดราคาไม่สำเร็จ</span>';
+            }
+
+            // ===== ดึงข้อมูล SO (ยอดขาย) =====
+            document.addEventListener('DOMContentLoaded', function() {
+                const soInput = document.getElementById('SOCode');
+                const soDisplay = document.getElementById('netAmntDisplay');
+                if (!soInput || !soDisplay || !soInput.value.trim()) return;
+
+                fetch('http://server_update:8000/api/getSODetail?SONum=' + encodeURIComponent(soInput.value.trim()))
+                    .then(response => response.json())
+                    .then(data => {
+                        const netAmnt = parseFloat(data.SoDetail.NetAmnt);
+                        soAmount = netAmnt;
+                        soDisplay.textContent = formatNumber(netAmnt);
+                        updateProfit();
+                    })
+                    .catch(error => {
+                        console.error('SO Error:', error);
+                        soDisplay.textContent = 'error';
+                    });
             });
-    });
-});
-</script>
+
+            // ===== ดึงข้อมูล PO (ต้นทุน) =====
+            document.addEventListener('DOMContentLoaded', function() {
+                const displayEl = document.getElementById('poNetAmntDisplay');
+                if (!displayEl) return;
+
+                setTimeout(function() {
+                    const poRows = document.querySelectorAll('#POList tbody tr');
+                    if (poRows.length === 0) {
+                        displayEl.textContent = '0.00';
+                        poAmount = 0;
+                        updateProfit();
+                        return;
+                    }
+
+                    let poNumbers = [];
+                    poRows.forEach(row => {
+                        const firstTd = row.querySelector('td:first-child a');
+                        if (firstTd) {
+                            poNumbers.push('PO' + firstTd.textContent.trim());
+                        }
+                    });
+
+                    if (poNumbers.length === 0) {
+                        displayEl.textContent = '0.00';
+                        poAmount = 0;
+                        updateProfit();
+                        return;
+                    }
+
+                    const promises = poNumbers.map(poNum =>
+                        fetch('http://server_update:8000/api/getPOHDNetAmnt?PONum=' + encodeURIComponent(poNum))
+                            .then(res => res.json())
+                    );
+
+                    Promise.all(promises)
+                        .then(results => {
+                            let totalNetAmnt = 0;
+                            results.forEach(poList => {
+                                if (Array.isArray(poList)) {
+                                    poList.forEach(po => {
+                                        totalNetAmnt += parseFloat(po.NetAmnt) || 0;
+                                    });
+                                }
+                            });
+
+                            poAmount = totalNetAmnt;
+                            displayEl.textContent = formatNumber(totalNetAmnt);
+                            updateProfit();
+                        })
+                        .catch(error => {
+                            console.error('PO Error:', error);
+                            displayEl.textContent = 'error';
+                        });
+                }, 500);
+            });
+        })();
+        </script>
+        <!------------------------------ table ใบแจ้งหนี้ ------------------------------------------>
+        <br>
+        <div style="border: 5px solid rgb(150, 149, 149);padding: 10px;" bis_skin_checked="1">
+            <div class="row" style="padding: 0px 10px;" bis_skin_checked="1">
+                                                        <div class="card size_card" bis_skin_checked="1">
+                        <div class="card-body" style="padding: 5px !important" bis_skin_checked="1">
+                            <table>
+                                <tbody><tr>
+                                    <td style="width: 120px;">
+
+                                        <input style="" class="form-control" type="text" name="" id="" readonly="" value="46904-01724">
+                                    </td>
+                                    <td>
+                                        <button type="button" class="btn_button1" onclick="window.open('http://server_update:8000/popupWindows/SODetailMyAccount?BillNo=46904-01724','welcome','width=1000,height=500,menubar=no,status=no,location=no,toolbar=no,scrollbars=yes')">Details</button>
+                                    </td>
+                                    <td>
+                                        <a href="http://server-virtual1/insertdata?so_num=69/007709&amp;billid=46904-01724"><button class="btn btn-info openBillBtn">บันทึกข้อมูลจัดส่ง</button></a>
+                                    </td>
+                                </tr>
+                            </tbody></table>
+                        </div>
+                    </div>
+                            </div>
+        </div>
+        <br>
         <!-------------------------- ตาราง ข้อมูล po ----------------------------->
         <div class="row" bis_skin_checked="1">
             <div class="col" bis_skin_checked="1">
@@ -584,6 +583,4 @@ document.addEventListener('DOMContentLoaded', function () {
         }
         
     </script>
-
-
 </body></html>
