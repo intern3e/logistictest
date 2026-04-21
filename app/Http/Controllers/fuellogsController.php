@@ -11,18 +11,28 @@ class fuellogsController extends Controller
 {
     private function buildLogs(Request $request): \Illuminate\Support\Collection
     {
-        $view         = $request->get('view',        'month');
+        $view         = $request->get('view',        'day');
         $filterDay    = $request->get('date',        date('Y-m-d'));
         $filterMonth  = $request->get('month',       date('Y-m'));
         $filterYear   = $request->get('year',        date('Y'));
         $filterDriver = $request->get('driver_name', 'all');
+
+        // ── ✅ รับช่วงวันที่ (date_from – date_to) ──
+        $dateFrom = $request->get('date_from', $filterDay);
+        $dateTo   = $request->get('date_to',   $filterDay);
+        // ถ้ากลับหัว (from > to) ให้ swap
+        if ($dateFrom && $dateTo && $dateFrom > $dateTo) {
+            [$dateFrom, $dateTo] = [$dateTo, $dateFrom];
+        }
 
         $query = DB::table('fuel_logs')
             ->orderBy('work_date', 'desc')
             ->orderBy('id', 'desc');
 
         if ($view === 'day') {
-            $query->whereDate('work_date', $filterDay);
+            // ── ✅ ใช้ whereBetween แทน whereDate (รองรับช่วงวันที่) ──
+            $query->whereDate('work_date', '>=', $dateFrom)
+                  ->whereDate('work_date', '<=', $dateTo);
         } elseif ($view === 'month') {
             [$y, $m] = explode('-', $filterMonth . '-01');
             $query->whereYear('work_date', $y)->whereMonth('work_date', $m);
@@ -113,12 +123,40 @@ class fuellogsController extends Controller
 
     public function oil(Request $request)
     {
-        $view         = $request->get('view',        'month');
+        // ── ✅ default view = 'day' (ให้ตรงกับ Frontend) ──
+        $view         = $request->get('view',        'day');
         $filterDay    = $request->get('date',        date('Y-m-d'));
         $filterMonth  = $request->get('month',       date('Y-m'));
         $filterDriver = $request->get('driver_name', 'all');
 
         $logs = $this->buildLogs($request);
+
+        // ── ✅ ดึงข้อมูลทั้งหมด (ไม่ filter) สำหรับหน้า Report ──
+        $allLogs = DB::table('fuel_logs')
+            ->orderBy('work_date', 'desc')
+            ->orderBy('id', 'desc')
+            ->get()
+            ->map(function ($row) {
+                $row = (array) $row;
+                $liters   = (float) ($row['liters']         ?? 0);
+                $distance = (float) ($row['total_distance'] ?? 0);
+                $kml      = ($liters > 0 && $distance > 0) ? round($distance / $liters, 2) : 0;
+                $workHours = 0;
+                if (!empty($row['start_time']) && !empty($row['end_time'])) {
+                    $diff = Carbon::parse($row['start_time'])
+                                  ->diffInMinutes(Carbon::parse($row['end_time']), false);
+                    if ($diff > 0) $workHours = round($diff / 60, 2);
+                }
+                return [
+                    'driver_name'    => $row['driver_name']    ?? '',
+                    'work_date'      => $row['work_date']      ?? '',
+                    'total_price'    => (float) ($row['total_price']    ?? 0),
+                    'liters'         => $liters,
+                    'total_distance' => $distance,
+                    'km_per_liter'   => $kml,
+                    'work_hours'     => $workHours,
+                ];
+            });
 
         $drivers = DB::table('fuel_logs')->distinct()->orderBy('driver_name')
                      ->pluck('driver_name')->filter()->values()->toArray();
@@ -153,7 +191,7 @@ class fuellogsController extends Controller
         $editLog       = null;
 
         return view('driver.oil', compact(
-            'logs', 'view', 'filterDay', 'filterMonth', 'filterDriver',
+            'logs', 'allLogs', 'view', 'filterDay', 'filterMonth', 'filterDriver',
             'drivers', 'plates', 'metrics', 'costByDriver', 'kmlByDriver',
             'deliveryStats', 'editLog'
         ));
