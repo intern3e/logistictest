@@ -4,7 +4,7 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 
-class SellingLiveController extends Controller
+class DepositController extends Controller
 {
     public function insertsellinglive()
     {
@@ -13,7 +13,7 @@ class SellingLiveController extends Controller
     public function dashboardsellinglive()
     {
         return view('sellinglive.dashboardsellinglive');
-    }
+    } 
         public function Botsellinglive()
     {
         return view('sellinglive.Botsellinglive');
