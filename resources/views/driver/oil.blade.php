@@ -276,6 +276,7 @@ textarea.form-control{resize:vertical;min-height:65px}
     <button class="nb-btn" id="navReport" onclick="switchPage('report')"><span>📊</span>สรุปรายงาน</button>
     <a class="nb-btn" href="{{ url('/service') }}"><span>🛠️</span>Service</a>
   </div>
+    <a class="nb-btn active" href="{{ url('/SOlist') }}"><span>⬅️</span>กลับ</a>
 </nav>
 
 <div class="layout">

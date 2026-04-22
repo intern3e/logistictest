@@ -246,7 +246,13 @@ Route::delete('/service/{id}',      [ServiceController::class, 'destroy'])->name
 
 
 use App\Http\Controllers\TechnicianController;
-Route::get('/dashboardtechnician', [TechnicianController::class, 'technician']);
+Route::get('/dashboardtechnician',          [TechnicianController::class, 'index'])->name('technician.dashboard');
+Route::post('/technicians/store',            [TechnicianController::class, 'storeTechnician'])->name('tech.store');
+Route::post('/technicians/{empId}/update',   [TechnicianController::class, 'updateTechnician'])->name('tech.update');
+Route::post('/technicians/{empId}/delete',   [TechnicianController::class, 'destroyTechnician'])->name('tech.delete');
+Route::post('/schedules/store',              [TechnicianController::class, 'storeSchedule'])->name('sched.store');
+Route::post('/schedules/{id}/update',        [TechnicianController::class, 'updateSchedule'])->name('sched.update');
+Route::post('/schedules/{id}/delete',        [TechnicianController::class, 'destroySchedule'])->name('sched.delete');
 
 use App\Http\Controllers\ProjectplanController;
 Route::get('/project', [ProjectplanController::class, 'dashboard']);

@@ -464,6 +464,22 @@
         .detail-photo-thumb { aspect-ratio:1; border-radius:8px; overflow:hidden; border:1px solid var(--border); cursor:pointer; transition:transform 0.15s, box-shadow 0.15s; }
         .detail-photo-thumb img { width:100%; height:100%; object-fit:cover; display:block; }
         .detail-photo-thumb:hover { transform:scale(1.05); box-shadow:0 4px 16px rgba(0,0,0,0.2); }
+        .photo-delete-btn {
+            position: absolute; top: 3px; right: 3px;
+            background: rgba(229,57,53,0.9); color: #fff;
+            border: none; border-radius: 50%;
+            width: 20px; height: 20px;
+            font-size: 11px; font-weight: 700;
+            cursor: pointer;
+            display: flex; align-items: center; justify-content: center;
+            transition: background 0.15s, transform 0.15s;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.3);
+            z-index: 2;
+            font-family: inherit;
+            line-height: 1;
+            padding: 0;
+        }
+        .photo-delete-btn:hover { background: #e53935; transform: scale(1.15); }
         .no-photos-placeholder { padding:14px; text-align:center; font-size:12px; color:var(--text-muted); background:var(--bg); border-radius:8px; }
 
         .timeline { display:flex; flex-direction:column; gap:12px; }
@@ -1023,6 +1039,11 @@ async function loadCasesFromDB() {
             } else if (c.product) {
                 productStr = c.product.includes('|') ? c.product.split('|').join('\n') : c.product;
             }
+            // ⭐ ใช้ stepDates จาก backend ตรงๆ (เก็บถาวรใน DB แล้ว)
+            // ถ้า backend ไม่ส่งมา → ใช้ buildStepDates เป็น fallback (backward compat)
+            var stepDates = Array.isArray(c.stepDates) && c.stepDates.length === 5
+                ? c.stepDates
+                : buildStepDates(c.date, sm.step);
             cases[c.id] = {
                 id:c.id, po:c.po, customer:c.customer,
                 product:productStr, products:c.products||[],
@@ -1031,7 +1052,7 @@ async function loadCasesFromDB() {
                 images:c.images||[],
                 images_evidence:c.images_evidence||[],
                 images_pack:c.images_pack||[],
-                stepDates:buildStepDates(c.date,sm.step),
+                stepDates: stepDates,
                 stepBy:['ฝ่ายบริการ','ช่างเทคนิค','ผู้จัดการ','ฝ่ายจัดส่ง','ฝ่ายบริการ'],
                 stepDesc:['รับแจ้งเรื่องจากลูกค้า','ตรวจสอบสินค้าเรียบร้อย','อนุมัติการดำเนินการ','จัดเตรียมสินค้า / ซ่อม / เปลี่ยนสินค้า','ปิดเคสเรียบร้อย'],
             };
@@ -1040,10 +1061,38 @@ async function loadCasesFromDB() {
     } catch(err) { console.error('โหลดข้อมูลไม่สำเร็จ:',err); renderTable(); }
 }
 
+// ─── DATETIME HELPERS ─────────────────────────────────────────────
+// สร้างสตริง datetime ปัจจุบันในรูปแบบ "YYYY-MM-DD HH:MM"
+function nowDatetimeStr() {
+    const d = new Date();
+    const p = n => String(n).padStart(2,'0');
+    return d.getFullYear()+'-'+p(d.getMonth()+1)+'-'+p(d.getDate())+' '+p(d.getHours())+':'+p(d.getMinutes());
+}
+// Format ค่า datetime จาก backend ให้เป็น "YYYY-MM-DD HH:MM"
+// รองรับทั้ง ISO string ("2026-04-21T14:32:00Z") และวันที่ล้วน ("2026-04-21")
+// ถ้าเป็นวันที่ล้วนจะเติมเวลาปัจจุบันของ client ให้อัตโนมัติ
+function formatStepDatetime(val) {
+    if (!val) return '';
+    // ถ้ามีเวลาอยู่แล้ว (มี T หรือช่องว่างคั่น)
+    if (typeof val === 'string' && (val.includes('T') || /\d{2}:\d{2}/.test(val))) {
+        const d = new Date(val);
+        if (!isNaN(d)) {
+            const p = n => String(n).padStart(2,'0');
+            return d.getFullYear()+'-'+p(d.getMonth()+1)+'-'+p(d.getDate())+' '+p(d.getHours())+':'+p(d.getMinutes());
+        }
+    }
+    // ถ้าเป็นวันที่ล้วน → ต่อด้วยเวลาปัจจุบันของ client
+    const n = new Date();
+    const p = n2 => String(n2).padStart(2,'0');
+    return String(val).slice(0,10)+' '+p(n.getHours())+':'+p(n.getMinutes());
+}
+
 function buildStepDates(date, step) {
-    const d = date ?? new Date().toISOString().slice(0,10);
+    // ถ้า backend ส่ง date เป็น ISO string (มีเวลา) ใช้เลย
+    // ถ้าไม่ใช่ ให้ต่อเวลาปัจจุบันของ client
+    const base = date ? formatStepDatetime(date) : nowDatetimeStr();
     const arr = [null,null,null,null,null];
-    for (let i=0; i<step&&i<5; i++) arr[i]=d;
+    for (let i=0; i<step&&i<5; i++) arr[i]=base;
     return arr;
 }
 
@@ -1237,7 +1286,12 @@ async function submitNewCase(e) {
         const data=await res.json();
         if(!data.success){alert(`❌ ${data.message}`);return;}
         const today=new Date().toISOString().slice(0,10);
-        const newCase={id:data.return_id,customer,reason,note:note||'-',fix:'-',date:today,po:currentDocuNo,product:selectedItems.map(i=>`${i.goodName} (จำนวน: ${i.qty})`).join('\n'),status:'processing',step:2,images:[],stepDates:[today,today,null,null,null],stepBy:['ฝ่ายบริการ','ช่างเทคนิค',null,null,null],stepDesc:['รับแจ้งเรื่องจากลูกค้า','ตรวจสอบสินค้าเรียบร้อย',null,null,null]};
+        const nowDt=nowDatetimeStr();
+        // ⭐ ใช้ stepDates จาก backend ถ้าส่งมา (เก็บถาวรใน DB แล้ว) ไม่งั้น fallback เวลา client
+        const stepDatesFromBackend = Array.isArray(data.stepDates) && data.stepDates.length === 5
+            ? data.stepDates
+            : [nowDt, nowDt, null, null, null];
+        const newCase={id:data.return_id,customer,reason,note:note||'-',fix:'-',date:today,po:currentDocuNo,product:selectedItems.map(i=>`${i.goodName} (จำนวน: ${i.qty})`).join('\n'),status:'processing',step:2,images:[],stepDates:stepDatesFromBackend,stepBy:['ฝ่ายบริการ','ช่างเทคนิค',null,null,null],stepDesc:['รับแจ้งเรื่องจากลูกค้า','ตรวจสอบสินค้าเรียบร้อย',null,null,null]};
         cases=Object.assign({[data.return_id]:newCase},cases);
         closeModal(); renderTable();
         showToast(`✅ สร้างเคส ${data.return_id} เรียบร้อยแล้ว`);
@@ -1411,7 +1465,7 @@ function openDetail(id){
     var sm=statusMap[c.status]||statusMap.processing;
     var badge=document.getElementById('d-badge');badge.className='badge '+sm.cls;badge.textContent=sm.label;
     document.getElementById('d-steps').innerHTML=stepLabels.map(function(label,i){var cls=i<c.step?'done':i===c.step?'active':'';var icon=i<c.step?'<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>':'<span style="font-size:11px;font-weight:700;color:'+(i===c.step?'var(--samsung-blue)':'#ccc')+'">'+(i+1)+'</span>';return'<div class="step-item '+cls+'"><div class="step-circle">'+icon+'</div><div class="step-label">'+label+'</div></div>';}).join('');
-    document.getElementById('d-timeline').innerHTML=stepLabels.map(function(label,i){if(i>=c.step||!c.stepDates||!c.stepDates[i])return'';return'<div class="timeline-item"><div class="timeline-dot"></div><div><div class="timeline-text">'+(c.stepDesc&&c.stepDesc[i]?c.stepDesc[i]:label)+'</div><div class="timeline-by">'+(c.stepBy&&c.stepBy[i]?c.stepBy[i]:'')+'·'+c.stepDates[i]+'</div></div></div>';}).join('');
+    document.getElementById('d-timeline').innerHTML=stepLabels.map(function(label,i){if(i>=c.step||!c.stepDates||!c.stepDates[i])return'';var dt=formatStepDatetime(c.stepDates[i]);return'<div class="timeline-item"><div class="timeline-dot"></div><div><div class="timeline-text">'+(c.stepDesc&&c.stepDesc[i]?c.stepDesc[i]:label)+'</div><div class="timeline-by">'+(c.stepBy&&c.stepBy[i]?c.stepBy[i]:'')+' · '+dt+'</div></div></div>';}).join('');
     var imgs=c.images||[];
     var photoGrid=document.getElementById('d-photos-grid');
     var photoCount=document.getElementById('d-photo-count');
@@ -1467,22 +1521,27 @@ function openDetail(id){
 
 // ─── EXTRA PHOTOS (หลักฐาน / แพ็ค) ──────────────────────────────
 // กฎการล็อครูป:
-// - รูปหลักฐาน (evidence): เพิ่มได้เฉพาะสถานะ processing
-// - รูปแพ็คสินค้า (pack): เพิ่มได้ทั้ง processing และ accept (ขั้นตอนที่ 4)
-//   จะล็อคก็ต่อเมื่อกด "จัดของพร้อมปิดเคส" (finish) หรือ cancel แล้วเท่านั้น
+// - เฉพาะ Admin เท่านั้นที่สามารถเพิ่มรูปได้ (User ธรรมดาดูรูปได้อย่างเดียว)
+// - รูปหลักฐาน (evidence): Admin เพิ่มได้เฉพาะสถานะ processing
+// - รูปแพ็คสินค้า (pack): Admin เพิ่มได้เฉพาะสถานะ accept (ขั้นตอนที่ 3)
 function renderExtraPhotos(caseId, type, gridId, countId, btnId) {
     var c = cases[caseId]; if (!c) return;
     var btnEl = document.getElementById(btnId);
 
     // กฎการล็อคปุ่ม (ใช้งานจริง):
     var isLocked = true;
-    if (type === 'pack') {
-        // ส่วนแพ็คสินค้า: เปิดให้เพิ่มรูปได้ "เฉพาะในขั้นตอนที่ 3 (accept)" เท่านั้น
-        if (c.status === 'accept') isLocked = false;
-    } else {
-        // ส่วนหลักฐาน: เปิดให้เพิ่มรูปได้ "เฉพาะในขั้นตอนที่ 1-2 (processing)" เท่านั้น
-        if (c.status === 'processing') isLocked = false;
+
+    // ✅ เช็คสิทธิ์ admin ก่อน: User ธรรมดาดูได้อย่างเดียว เพิ่ม/ลบรูปไม่ได้ทุกส่วน
+    if (isAdmin) {
+        if (type === 'pack') {
+            // ส่วนแพ็คสินค้า: Admin เพิ่มรูปได้ "เฉพาะในขั้นตอนที่ 3 (accept)" เท่านั้น
+            if (c.status === 'accept') isLocked = false;
+        } else {
+            // ส่วนหลักฐาน: Admin เพิ่มรูปได้ "เฉพาะในขั้นตอนที่ 1-2 (processing)" เท่านั้น
+            if (c.status === 'processing') isLocked = false;
+        }
     }
+    // ถ้าไม่ใช่ admin: isLocked = true เสมอ (User ธรรมดาดูรูปได้อย่างเดียว)
 
     // แสดงปุ่มตามสถานะการล็อค
     if (!isLocked) {
@@ -1492,13 +1551,26 @@ function renderExtraPhotos(caseId, type, gridId, countId, btnId) {
             '<input type="file" accept="image/*" multiple style="display:none;" onchange="handleExtraPhotoUpload(this,\'' + caseId + '\',\'' + type + '\')">' +
             '</label>';
     } else {
-        btnEl.innerHTML = '<span style="font-size:10px;color:var(--text-muted);background:#f5f5f5;border:1px solid var(--border);border-radius:12px;padding:3px 8px;display:inline-flex;align-items:center;gap:4px;">🔒 ล็อคแล้ว</span>';
+        // User ธรรมดาจะไม่เห็นปุ่มเพิ่ม/ล็อคใดๆ (ซ่อนไปเลยเพื่อ UI ที่สะอาด)
+        // Admin จะเห็นป้าย "ล็อคแล้ว" ถ้าสถานะไม่ตรงกับที่อนุญาต
+        if (isAdmin) {
+            btnEl.innerHTML = '<span style="font-size:10px;color:var(--text-muted);background:#f5f5f5;border:1px solid var(--border);border-radius:12px;padding:3px 8px;display:inline-flex;align-items:center;gap:4px;">🔒 ล็อคแล้ว</span>';
+        } else {
+            btnEl.innerHTML = '';
+        }
     }
 
     renderExtraPhotosGrid(caseId, type);
 }
 
 async function handleExtraPhotoUpload(input, caseId, type) {
+    // ✅ ป้องกันชั้นที่ 2: User ธรรมดาไม่สามารถอัปโหลดรูปได้ไม่ว่ากรณีใด
+    if (!isAdmin) {
+        showToast('⚠️ ไม่มีสิทธิ์เพิ่มรูปภาพ (เฉพาะผู้ดูแลระบบ)');
+        input.value = '';
+        return;
+    }
+
     var files = Array.from(input.files);
     if (!files.length) return;
     setTimeout(function(){ input.value = ''; }, 100);
@@ -1556,6 +1628,16 @@ function renderExtraPhotosGrid(caseId, type) {
     countEl.textContent = imgs.length > 0 ? '(' + imgs.length + ' รูป)' : '';
     var fallbackSvg = 'data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%2280%22%20height%3D%2280%22%3E%3Crect%20width%3D%2280%22%20height%3D%2280%22%20fill%3D%22%23f0f0f0%22%2F%3E%3Ctext%20x%3D%2240%22%20y%3D%2245%22%20text-anchor%3D%22middle%22%20font-size%3D%2212%22%20fill%3D%22%23999%22%3E-%3C%2Ftext%3E%3C%2Fsvg%3E';
     if (!imgs.length) { grid.innerHTML = '<div class="no-photos-placeholder">ไม่มีรูปภาพ</div>'; return; }
+
+    // เช็คสิทธิ์ลบรูป: admin + สถานะตรงเท่านั้น
+    //  - หลักฐาน (evidence): ลบได้เฉพาะ processing (ก่อนกด Accept)
+    //  - แพ็ค (pack): ลบได้เฉพาะ accept (ก่อนกด Finish)
+    var canDelete = false;
+    if (isAdmin) {
+        if (type === 'evidence' && c.status === 'processing') canDelete = true;
+        if (type === 'pack' && c.status === 'accept') canDelete = true;
+    }
+
     var html = '';
     for (var idx = 0; idx < imgs.length; idx++) {
         var img = imgs[idx];
@@ -1563,11 +1645,54 @@ function renderExtraPhotosGrid(caseId, type) {
         if (!fileId && img.viewUrl) { var m = img.viewUrl.match(/\/d\/([^/]+)\//); if (m) fileId = m[1]; }
         var src = fileId ? '/return/drive-image?id=' + fileId : (img.thumbUrl || img.viewUrl || '');
         var title = img.filename || ('รูป ' + (idx + 1));
-        html += '<div class="detail-photo-thumb" onclick="openLightboxType(' + idx + ',\'' + caseId + '\',\'' + type + '\')" title="' + title + '">';
-        html += '<img src="' + src + '" alt="' + title + '" loading="lazy" onerror="this.src=\'' + fallbackSvg + '\'">';
+        html += '<div class="detail-photo-thumb" style="position:relative;" title="' + title + '">';
+        html += '<img src="' + src + '" alt="' + title + '" loading="lazy" onerror="this.src=\'' + fallbackSvg + '\'" onclick="openLightboxType(' + idx + ',\'' + caseId + '\',\'' + type + '\')" style="cursor:pointer;">';
+        if (canDelete) {
+            html += '<button class="photo-delete-btn" onclick="event.stopPropagation();deleteExtraPhoto(\'' + caseId + '\',\'' + type + '\',' + idx + ')" title="ลบรูปนี้">✕</button>';
+        }
         html += '</div>';
     }
     grid.innerHTML = html;
+}
+
+// ลบรูปในส่วน หลักฐาน / แพ็ค (เฉพาะ admin + สถานะถูกต้อง)
+async function deleteExtraPhoto(caseId, type, idx) {
+    if (!isAdmin) { showToast('⚠️ ไม่มีสิทธิ์ลบรูป'); return; }
+    var c = cases[caseId]; if (!c) return;
+
+    // เช็คสถานะอีกครั้งเพื่อป้องกัน bypass
+    var allowed = (type === 'evidence' && c.status === 'processing')
+               || (type === 'pack' && c.status === 'accept');
+    if (!allowed) {
+        showToast('⚠️ ไม่สามารถลบรูปได้ เคสนี้ถูกล็อคแล้ว');
+        return;
+    }
+
+    if (!confirm('ยืนยันลบรูปนี้?')) return;
+
+    var arr = type === 'evidence' ? (c.images_evidence || []) : (c.images_pack || []);
+    if (idx < 0 || idx >= arr.length) return;
+    arr.splice(idx, 1);
+    renderExtraPhotosGrid(caseId, type);
+
+    // บันทึกการเปลี่ยนแปลงไปยัง server
+    try {
+        await fetch('/return/' + encodeURIComponent(caseId) + '/update-images', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': CSRF() },
+            body: JSON.stringify({
+                images: c.images,
+                images_evidence: c.images_evidence,
+                images_pack: c.images_pack,
+                final: true,
+                notify_line: false
+            })
+        });
+        showToast('✅ ลบรูปเรียบร้อย');
+    } catch(e) {
+        console.warn('ลบรูปไม่สำเร็จ:', e);
+        showToast('⚠️ บันทึกการลบไปยังเซิร์ฟเวอร์ไม่สำเร็จ');
+    }
 }
 
 function closeDetail(){document.getElementById('detail-modal').classList.remove('active');currentDetailId=null;}
@@ -1640,6 +1765,17 @@ async function changeStatus(caseId, newStatus) {
         var sm = statusMap[newStatus] || statusMap.processing;
         cases[caseId].status = newStatus;
         cases[caseId].step = sm.step;
+        // ⭐ ใช้ stepDates ที่ backend ส่งกลับมา (เก็บถาวรใน DB แล้ว)
+        // ถ้า backend ไม่ส่งมา → ใช้เวลา client เป็น fallback (backward compat)
+        if (Array.isArray(data.stepDates) && data.stepDates.length === 5) {
+            cases[caseId].stepDates = data.stepDates;
+        } else {
+            var nowDt = nowDatetimeStr();
+            if (!cases[caseId].stepDates) cases[caseId].stepDates = [null,null,null,null,null];
+            for (var si = 0; si < sm.step && si < 5; si++) {
+                if (!cases[caseId].stepDates[si]) cases[caseId].stepDates[si] = nowDt;
+            }
+        }
         showToast('✅ เปลี่ยนสถานะเป็น "' + sm.label + '" เรียบร้อย');
         closeDetail();
         renderTable();

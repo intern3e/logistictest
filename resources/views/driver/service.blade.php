@@ -57,20 +57,7 @@ tbody td{padding:10px 14px;border-bottom:1px solid var(--border);color:var(--tex
 tbody tr:last-child td{border-bottom:none}
 tbody tr:hover{background:var(--surface2)}
 .plate-tag{background:var(--surface2);border:1px solid var(--border);border-radius:4px;font-size:11px;color:var(--text2);padding:1px 6px;font-family:monospace;font-weight:600}
-.svc-badge{display:inline-flex;align-items:center;gap:3px;padding:3px 9px;border-radius:20px;font-size:11px;font-weight:600;white-space:nowrap}
-.svc-oil{background:rgba(79,142,247,.12);color:#1a5fd1}
-.svc-tire{background:rgba(245,166,35,.12);color:#b45309}
-.svc-brake{background:rgba(232,93,93,.12);color:#c0392b}
-.svc-engine{background:rgba(168,85,247,.12);color:#7c3aed}
-.svc-ac{background:rgba(6,182,212,.12);color:#0e7490}
-.svc-battery{background:rgba(16,185,129,.12);color:#065f46}
-.svc-wash{background:rgba(56,201,138,.12);color:#1a7a4d}
-.svc-glass{background:rgba(148,163,184,.12);color:#475569}
-.svc-light{background:rgba(251,191,36,.12);color:#92400e}
-.svc-other{background:rgba(107,114,153,.12);color:#374151}
-.status-done{font-size:11px;font-weight:600;padding:3px 9px;border-radius:20px;background:rgba(56,201,138,.12);color:#1a7a4d;white-space:nowrap}
-.status-wait{font-size:11px;font-weight:600;padding:3px 9px;border-radius:20px;background:rgba(245,166,35,.12);color:#b45309;white-space:nowrap}
-.status-prog{font-size:11px;font-weight:600;padding:3px 9px;border-radius:20px;background:rgba(79,142,247,.12);color:#1a5fd1;white-space:nowrap}
+.svc-badge,.svc-oil,.svc-tire,.svc-brake,.svc-engine,.svc-ac,.svc-battery,.svc-wash,.svc-glass,.svc-light,.svc-other{display:inline-flex;align-items:center;gap:3px;padding:3px 9px;font-size:13px;font-weight:500;white-space:nowrap;background:transparent;color:#000}
 .img-thumbs{display:flex;gap:4px;align-items:center;flex-wrap:wrap}
 .img-thumb{width:38px;height:38px;border-radius:6px;object-fit:cover;border:1px solid var(--border);cursor:pointer;transition:transform .15s}
 .img-thumb:hover{transform:scale(1.12);z-index:2;box-shadow:0 2px 8px rgba(0,0,0,.15)}
@@ -127,6 +114,7 @@ textarea.form-control{resize:vertical;min-height:60px}
     <a class="nb-btn" href="{{ route('oil') }}"><span>⛽</span>ติดตามน้ำมัน</a>
     <a class="nb-btn active" href="{{ url('/service') }}"><span>🛠️</span>Service</a>
   </div>
+    <a class="nb-btn active" href="{{ url('/SOlist') }}"><span>⬅️</span>กลับ</a>
 </nav>
 
 <div class="main">
@@ -163,12 +151,6 @@ textarea.form-control{resize:vertical;min-height:60px}
       <option value="ซ่อม/เปลี่ยนไฟ">ซ่อม/เปลี่ยนไฟ</option>
       <option value="อื่นๆ">อื่นๆ</option>
     </select>
-    <select id="statusFilter" onchange="loadRecords()">
-      <option value="">สถานะทั้งหมด</option>
-      <option value="เสร็จแล้ว">✅ เสร็จแล้ว</option>
-      <option value="รอดำเนินการ">⏳ รอดำเนินการ</option>
-      <option value="อยู่ระหว่างซ่อม">🔧 อยู่ระหว่างซ่อม</option>
-    </select>
   </div>
 
   <div class="table-card">
@@ -189,12 +171,11 @@ textarea.form-control{resize:vertical;min-height:60px}
             <th>รายละเอียด</th>
             <th style="text-align:right">ค่าใช้จ่าย (฿)</th>
             <th>รูปภาพ</th>
-            <th>สถานะ</th>
             <th></th>
           </tr>
         </thead>
         <tbody id="svcTbody">
-          <tr><td colspan="9"><div class="empty-state"><div class="icon">⏳</div><p>กำลังโหลด...</p></div></td></tr>
+          <tr><td colspan="8"><div class="empty-state"><div class="icon">⏳</div><p>กำลังโหลด...</p></div></td></tr>
         </tbody>
       </table>
     </div>
@@ -275,14 +256,6 @@ textarea.form-control{resize:vertical;min-height:60px}
         <div>
           <label class="form-label">ค่าใช้จ่าย (฿)</label>
           <input type="number" id="sv-cost" class="form-control" step="0.01" min="0" placeholder="0.00">
-        </div>
-        <div>
-          <label class="form-label">สถานะ</label>
-          <select id="sv-status" class="form-control">
-            <option value="เสร็จแล้ว">✅ เสร็จแล้ว</option>
-            <option value="รอดำเนินการ">⏳ รอดำเนินการ</option>
-            <option value="อยู่ระหว่างซ่อม">🔧 อยู่ระหว่างซ่อม</option>
-          </select>
         </div>
         <div class="full">
           <label class="form-label">รายละเอียด</label>
@@ -370,8 +343,7 @@ function debounceLoad(){ clearTimeout(debTimer); debTimer = setTimeout(loadRecor
 async function loadRecords(){
   const q      = document.getElementById('svcSearch').value;
   const type   = document.getElementById('typeFilter').value;
-  const status = document.getElementById('statusFilter').value;
-  const params = new URLSearchParams({q, type, status});
+  const params = new URLSearchParams({q, type});
 
   try {
     const res  = await fetch(`${LIST_URL}?${params}`);
@@ -380,7 +352,7 @@ async function loadRecords(){
     renderTable(data.records);
   } catch(e){
     document.getElementById('svcTbody').innerHTML =
-      `<tr><td colspan="9"><div class="empty-state"><div class="icon">⚠️</div><p>โหลดข้อมูลไม่สำเร็จ</p></div></td></tr>`;
+      `<tr><td colspan="8"><div class="empty-state"><div class="icon">⚠️</div><p>โหลดข้อมูลไม่สำเร็จ</p></div></td></tr>`;
   }
 }
 
@@ -395,12 +367,11 @@ function renderTable(records){
   document.getElementById('tblCount').textContent = records.length;
   const tbody = document.getElementById('svcTbody');
   if(!records.length){
-    tbody.innerHTML = `<tr><td colspan="9"><div class="empty-state"><div class="icon">🛠️</div><p>ไม่พบรายการ</p></div></td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="8"><div class="empty-state"><div class="icon">🛠️</div><p>ไม่พบรายการ</p></div></td></tr>`;
     return;
   }
   tbody.innerHTML = records.map((r, fi) => {
     const typeCss   = TYPE_CSS[r.type] || 'svc-other';
-    const statusCss = r.status === 'เสร็จแล้ว' ? 'status-done' : r.status === 'รอดำเนินการ' ? 'status-wait' : 'status-prog';
     const urls      = r.image_urls || [];
 
     let imgHtml = '';
@@ -425,7 +396,6 @@ function renderTable(records){
       <td style="font-size:12px;color:var(--text2);max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${r.detail||''}">${r.detail||'—'}</td>
       <td style="text-align:right;font-weight:600;color:var(--navy)">${r.cost ? '฿'+Number(r.cost).toLocaleString() : '—'}</td>
       <td>${imgHtml}</td>
-      <td><span class="${statusCss}">${r.status}</span></td>
       <td><div class="action-btns">
         <button class="action-btn edit" onclick="openSvcModal(${JSON.stringify(r).split('"').join('&quot;')})" title="แก้ไข">✏️</button>
         <button class="action-btn del"  onclick="deleteSvc(${r.id})" title="ลบ">🗑️</button>
@@ -487,7 +457,6 @@ function openSvcModal(record = null){
     document.getElementById('sv-date').value   = record.date;
     document.getElementById('sv-type').value   = record.type;
     document.getElementById('sv-cost').value   = record.cost;
-    document.getElementById('sv-status').value = record.status;
     document.getElementById('sv-detail').value = record.detail || '';
     setSelectOrOther('sv-driver','sv-driver-other', record.driver);
     setSelectOrOther('sv-plate', 'sv-plate-other',  record.plate);
@@ -504,7 +473,6 @@ function openSvcModal(record = null){
     document.getElementById('sv-plate').value  = '';
     document.getElementById('sv-type').value   = '';
     document.getElementById('sv-cost').value   = '';
-    document.getElementById('sv-status').value = 'เสร็จแล้ว';
     document.getElementById('sv-detail').value = '';
     ['sv-driver-other','sv-plate-other'].forEach(id => {
       const el = document.getElementById(id); el.style.display = 'none'; el.value = '';
@@ -521,7 +489,6 @@ async function saveSvc(){
   const plate  = getVal('sv-plate','sv-plate-other');
   const type   = document.getElementById('sv-type').value;
   const cost   = document.getElementById('sv-cost').value;
-  const status = document.getElementById('sv-status').value;
   const detail = document.getElementById('sv-detail').value;
 
   if(!date)  { alert('กรุณาเลือกวันที่'); return; }
@@ -532,14 +499,14 @@ async function saveSvc(){
   const btn = document.getElementById('saveBtn');
   btn.disabled = true; btn.textContent = '⏳ กำลังบันทึก...';
 
-  const fd = new FormData();
-  fd.append('date',   date);
-  fd.append('driver', driver);
-  fd.append('plate',  plate);
-  fd.append('type',   type);
-  fd.append('cost',   cost || 0);
-  fd.append('status', status);
-  fd.append('detail', detail);
+const fd = new FormData();
+fd.append('date',   date);
+fd.append('driver', driver);
+fd.append('plate',  plate);
+fd.append('type',   type);
+fd.append('cost',   cost || 0);
+fd.append('status', 'เสร็จแล้ว');
+fd.append('detail', detail);
 
   newFiles.forEach(f => fd.append('images[]', f));
 

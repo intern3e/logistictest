@@ -31,6 +31,19 @@ class PooutsidereturnController extends Controller
                 $table->text('images_pack')->nullable()->after('images_evidence');
             });
         }
+
+        // ⭐ เพิ่ม column เวลา step ถ้ายังไม่มี (fail-safe ถ้ายังไม่ได้รัน migration)
+        $stepColumns = [
+            'step1_at', 'step2_at', 'step3_at',
+            'step4_at', 'step5_at', 'cancelled_at',
+        ];
+        foreach ($stepColumns as $col) {
+            if (!Schema::hasColumn('Pooutsidereturn', $col)) {
+                Schema::table('Pooutsidereturn', function (Blueprint $table) use ($col) {
+                    $table->timestamp($col)->nullable();
+                });
+            }
+        }
     }
 
     public function dashboardreturn()
@@ -81,6 +94,16 @@ class PooutsidereturnController extends Controller
                     if (is_array($decoded)) $images_pack = $decoded;
                 }
 
+                // ⭐ สร้าง stepDates array จาก column เวลาใน DB
+                // ถ้า column ยังไม่มี (เคสเก่า) ใช้ return_date เป็น fallback
+                $stepDates = [
+                    $this->fmtDt($h->step1_at ?? $h->return_date),
+                    $this->fmtDt($h->step2_at ?? $h->return_date),
+                    $this->fmtDt($h->step3_at ?? null),
+                    $this->fmtDt($h->step4_at ?? null),
+                    $this->fmtDt($h->step5_at ?? null),
+                ];
+
                 return [
                     'id'              => $h->return_id,
                     'customer'        => $h->vendor,
@@ -96,9 +119,25 @@ class PooutsidereturnController extends Controller
                     'images'          => $images,
                     'images_evidence' => $images_evidence,
                     'images_pack'     => $images_pack,
+                    // ⭐ ส่ง stepDates เป็น "Y-m-d H:i:s" ให้ frontend แสดงใน timeline
+                    'stepDates'       => $stepDates,
+                    'cancelled_at'    => $this->fmtDt($h->cancelled_at ?? null),
                 ];
             })
         );
+    }
+
+    /**
+     * Helper: format datetime เป็น "Y-m-d H:i:s" หรือ null
+     */
+    private function fmtDt($datetime): ?string
+    {
+        if (empty($datetime)) return null;
+        try {
+            return Carbon::parse($datetime)->format('Y-m-d H:i:s');
+        } catch (\Throwable $e) {
+            return null;
+        }
     }
 
     public function submitReturn(Request $request)
@@ -135,6 +174,9 @@ class PooutsidereturnController extends Controller
                 'reason'      => $reason,
                 'note'        => $note ?: null,
                 'images'      => !empty($images) ? json_encode($images) : null,
+                // ⭐ บันทึกเวลา step1 และ step2 ตอนสร้างเคส (เก็บถาวร)
+                'step1_at'    => $now->toDateTimeString(),
+                'step2_at'    => $now->toDateTimeString(),
             ]);
 
             $selectedItems = $request->input('selectedItems');
@@ -162,6 +204,12 @@ class PooutsidereturnController extends Controller
                 'return_id' => $returnId,
                 'vendor'    => $vendor,
                 'message'   => "สร้างเคส {$returnId} เรียบร้อยแล้ว",
+                // ⭐ ส่ง stepDates กลับให้ frontend ทันที
+                'stepDates' => [
+                    $now->format('Y-m-d H:i:s'),
+                    $now->format('Y-m-d H:i:s'),
+                    null, null, null,
+                ],
             ]);
 
         } catch (\Throwable $e) {
@@ -284,8 +332,38 @@ class PooutsidereturnController extends Controller
                 return response()->json(['success' => false, 'message' => 'สถานะไม่ถูกต้อง'], 422);
             }
 
+            // ⭐ ดึงข้อมูลเคสปัจจุบันมาก่อน เพื่อเช็คว่าเวลา step ไหนถูกเก็บไปแล้วบ้าง
+            $case = DB::table('Pooutsidereturn')->where('return_id', $id)->first();
+            if (!$case) {
+                return response()->json(['success' => false, 'message' => 'ไม่พบเคส ' . $id], 404);
+            }
+
+            $now = Carbon::now('Asia/Bangkok');
+            $nowStr = $now->toDateTimeString();
             $updatePayload = ['status' => $newStatus];
-            
+
+            // ⭐ บันทึกเวลาตาม step ที่เปลี่ยน → เก็บครั้งเดียวถาวร
+            // ถ้าเคยเก็บแล้ว (ไม่ว่างเปล่า) จะไม่เขียนทับ
+            if ($newStatus === 'accept') {
+                // กด ✓ อนุมัติ → เก็บเวลา step3
+                if (empty($case->step3_at)) {
+                    $updatePayload['step3_at'] = $nowStr;
+                }
+            } elseif ($newStatus === 'finish') {
+                // กด 📦 จัดของพร้อมปิดเคส → เก็บเวลา step4 + step5 (จัดของ + ปิดเคส พร้อมกัน)
+                if (empty($case->step4_at)) {
+                    $updatePayload['step4_at'] = $nowStr;
+                }
+                if (empty($case->step5_at)) {
+                    $updatePayload['step5_at'] = $nowStr;
+                }
+            } elseif ($newStatus === 'cancel') {
+                // กด ✕ ยกเลิก → เก็บเวลา cancel
+                if (empty($case->cancelled_at)) {
+                    $updatePayload['cancelled_at'] = $nowStr;
+                }
+            }
+
             $updated = DB::table('Pooutsidereturn')
                 ->where('return_id', $id)
                 ->update($updatePayload);
@@ -299,11 +377,23 @@ class PooutsidereturnController extends Controller
                 // ถ้าในอนาคตต้องการให้ปุ่มสถานะแจ้งเตือน ก็สามารถใส่โค้ดตรงนี้ได้
             }
 
+            // ⭐ ส่ง stepDates ชุดใหม่กลับให้ frontend อัปเดต UI ทันที
+            $fresh = DB::table('Pooutsidereturn')->where('return_id', $id)->first();
+            $stepDates = [
+                $this->fmtDt($fresh->step1_at ?? $fresh->return_date),
+                $this->fmtDt($fresh->step2_at ?? $fresh->return_date),
+                $this->fmtDt($fresh->step3_at ?? null),
+                $this->fmtDt($fresh->step4_at ?? null),
+                $this->fmtDt($fresh->step5_at ?? null),
+            ];
+
             return response()->json([
-                'success'    => true,
-                'return_id'  => $id,
-                'status'     => $newStatus,
-                'updated_by' => $updatedBy,
+                'success'      => true,
+                'return_id'    => $id,
+                'status'       => $newStatus,
+                'updated_by'   => $updatedBy,
+                'stepDates'    => $stepDates,
+                'cancelled_at' => $this->fmtDt($fresh->cancelled_at ?? null),
             ]);
 
         } catch (\Throwable $e) {
@@ -326,6 +416,16 @@ class PooutsidereturnController extends Controller
             }
 
             $row->status = $next;
+
+            // ⭐ บันทึกเวลาเมื่อ approve ผ่าน method นี้ด้วย
+            $now = Carbon::now('Asia/Bangkok');
+            if ($next === 'accept' && empty($row->step3_at)) {
+                $row->step3_at = $now;
+            } elseif ($next === 'finish') {
+                if (empty($row->step4_at)) $row->step4_at = $now;
+                if (empty($row->step5_at)) $row->step5_at = $now;
+            }
+
             $row->save();
 
             return response()->json(['success' => true, 'return_id' => $id, 'status' => $next]);
@@ -345,6 +445,12 @@ class PooutsidereturnController extends Controller
             }
 
             $row->status = 'cancel';
+
+            // ⭐ บันทึกเวลา cancel
+            if (empty($row->cancelled_at)) {
+                $row->cancelled_at = Carbon::now('Asia/Bangkok');
+            }
+
             $row->save();
 
             return response()->json(['success' => true, 'return_id' => $id, 'status' => 'cancel']);
