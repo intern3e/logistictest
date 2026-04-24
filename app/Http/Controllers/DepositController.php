@@ -6,6 +6,7 @@ use App\Models\deposit;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
+use Carbon\Carbon;
 
 class DepositController extends Controller
 {
@@ -14,9 +15,57 @@ class DepositController extends Controller
         return view('deposit.insertdeposit');
     }
 
-    public function dashboarddeposit()
+    public function dashboarddeposit(Request $request)
     {
-        return view('deposit.dashboarddeposit');
+        $soKeyword = trim($request->get('so_keyword', ''));
+        $keyword   = trim($request->get('keyword', ''));
+        $createBy  = trim($request->get('create_by', ''));
+
+        // ดึงข้อมูลทั้งหมด ไม่ group - แสดงทุกแถวแยกกัน
+        $query = deposit::query();
+
+        // filter: เลขใบสั่งขาย
+        if ($soKeyword !== '') {
+            $query->where('so_id', 'like', "%{$soKeyword}%");
+        }
+
+        // filter: ชื่อลูกค้า / Sale / ผู้ติดต่อ / รหัสลูกค้า
+        if ($keyword !== '') {
+            $query->where(function ($q) use ($keyword) {
+                $q->where('customer_name', 'like', "%{$keyword}%")
+                  ->orWhere('sale_name', 'like', "%{$keyword}%")
+                  ->orWhere('contactso', 'like', "%{$keyword}%")
+                  ->orWhere('customer_id', 'like', "%{$keyword}%");
+            });
+        }
+
+        // filter: ผู้สร้าง
+        if ($createBy !== '') {
+            $query->where('emp_name', $createBy);
+        }
+
+        $deposits = $query
+            ->orderByDesc('time')
+            ->orderByDesc('id')
+            ->paginate(15)
+            ->appends($request->query());
+
+        return view('deposit.dashboarddeposit', compact('deposits'));
+    }
+
+    /**
+     * ดึงรายละเอียดใบมัดจำทั้งหมดของ so_id นั้น (ใช้ใน Modal)
+     */
+    public function detail($so_id)
+    {
+        $items = deposit::where('so_id', $so_id)
+            ->orderBy('id')
+            ->get();
+
+        return response()->json([
+            'success' => true,
+            'items'   => $items,
+        ]);
     }
 
     public function botdeposit()
@@ -55,6 +104,15 @@ class DepositController extends Controller
             }
         }
 
+        $totalDeposit = 0;
+        foreach ($validated['deposits'] as $dep) {
+            if ((float)$dep['percent'] > 0) {
+                $totalDeposit += (float)$dep['amount'];
+            }
+        }
+
+        $netGrandTotal = (float)$validated['grand_total'];
+
         DB::beginTransaction();
         try {
             $inserted = [];
@@ -77,8 +135,11 @@ class DepositController extends Controller
                     'dep_type'         => $dep['type'],
                     'dep_per'          => $dep['percent'],
                     'dep_price'        => $dep['amount'],
-                    'grand_total'      => $validated['grand_total'],
+                    'grand_total'      => $netGrandTotal,
                     'time'             => now(),
+                    'print_time'       => null,
+                    'status'           => 'รอยืนยัน',
+                    'status_bill'      => null,
                 ]);
 
                 $inserted[] = $row->id;

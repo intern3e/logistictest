@@ -13,7 +13,7 @@ class deposit extends Model
 
     protected $fillable = [
         'so_id',
-        'date_dep',
+        'date_dep',        
         'customer_id',
         'customer_name',
         'contactso',
@@ -21,14 +21,13 @@ class deposit extends Model
         'customer_address',
         'sale_name',
         'emp_name',
-        'dep_type',
-        'dep_per',
-        'dep_price',
-        'grand_total',
+        'dep_type',   
+        'dep_per',       
+        'dep_price',      
+        'grand_total',     
         'time',
-        'print_time'
-    ];
-
-    protected $casts = [
+        'print_time',      
+        'status',          
+        'status_bill',      
     ];
 }

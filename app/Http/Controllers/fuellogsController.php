@@ -9,17 +9,57 @@ use Carbon\Carbon;
 
 class fuellogsController extends Controller
 {
+    /* ══════════════════════════════════════════════════════════════════
+       ✅ NEW: รับ filter จาก form POST → เก็บใน session → redirect /oil
+       เพื่อให้ URL สะอาดเสมอ (ไม่มี query string)
+    ══════════════════════════════════════════════════════════════════ */
+    public function applyFilter(Request $request)
+    {
+        session([
+            'oil_filter' => [
+                'view'        => $request->input('view', 'day'),
+                'date_from'   => $request->input('date_from'),
+                'date_to'     => $request->input('date_to'),
+                'month'       => $request->input('month'),
+                'year'        => $request->input('year'),
+                'driver_name' => $request->input('driver_name', 'all'),
+            ]
+        ]);
+
+        return redirect()->route('oil');
+    }
+
+    /* ══════════════════════════════════════════════════════════════════
+       ✅ NEW: ดึง filter จาก session → ถ้าไม่มี fallback เป็น request
+    ══════════════════════════════════════════════════════════════════ */
+    private function getFilter(Request $request): array
+    {
+        $filter = session('oil_filter', []);
+
+        return [
+            'view'        => $filter['view']        ?? $request->input('view', 'day'),
+            'date_from'   => $filter['date_from']   ?? $request->input('date_from', date('Y-m-d')),
+            'date_to'     => $filter['date_to']     ?? $request->input('date_to', date('Y-m-d')),
+            'month'       => $filter['month']       ?? $request->input('month', date('Y-m')),
+            'year'        => $filter['year']        ?? $request->input('year', date('Y')),
+            'driver_name' => $filter['driver_name'] ?? $request->input('driver_name', 'all'),
+        ];
+    }
+
     private function buildLogs(Request $request): \Illuminate\Support\Collection
     {
-        $view         = $request->get('view',        'day');
-        $filterDay    = $request->get('date',        date('Y-m-d'));
-        $filterMonth  = $request->get('month',       date('Y-m'));
-        $filterYear   = $request->get('year',        date('Y'));
-        $filterDriver = $request->get('driver_name', 'all');
+        // ── ✅ ใช้ filter จาก session (ผ่าน getFilter) แทน request โดยตรง ──
+        $f = $this->getFilter($request);
 
-        // ── ✅ รับช่วงวันที่ (date_from – date_to) ──
-        $dateFrom = $request->get('date_from', $filterDay);
-        $dateTo   = $request->get('date_to',   $filterDay);
+        $view         = $f['view'];
+        $filterMonth  = $f['month'];
+        $filterYear   = $f['year'];
+        $filterDriver = $f['driver_name'];
+
+        // ── รับช่วงวันที่ (date_from – date_to) ──
+        $dateFrom = $f['date_from'];
+        $dateTo   = $f['date_to'];
+
         // ถ้ากลับหัว (from > to) ให้ swap
         if ($dateFrom && $dateTo && $dateFrom > $dateTo) {
             [$dateFrom, $dateTo] = [$dateTo, $dateFrom];
@@ -30,7 +70,6 @@ class fuellogsController extends Controller
             ->orderBy('id', 'desc');
 
         if ($view === 'day') {
-            // ── ✅ ใช้ whereBetween แทน whereDate (รองรับช่วงวันที่) ──
             $query->whereDate('work_date', '>=', $dateFrom)
                   ->whereDate('work_date', '<=', $dateTo);
         } elseif ($view === 'month') {
@@ -123,15 +162,20 @@ class fuellogsController extends Controller
 
     public function oil(Request $request)
     {
-        // ── ✅ default view = 'day' (ให้ตรงกับ Frontend) ──
-        $view         = $request->get('view',        'day');
-        $filterDay    = $request->get('date',        date('Y-m-d'));
-        $filterMonth  = $request->get('month',       date('Y-m'));
-        $filterDriver = $request->get('driver_name', 'all');
+        // ── ✅ ดึง filter จาก session (fallback เป็น request) ──
+        $f = $this->getFilter($request);
+
+        $view         = $f['view'];
+        $filterDay    = $f['date_from'];
+        $filterMonth  = $f['month'];
+        $filterYear   = $f['year'];
+        $filterDriver = $f['driver_name'];
+        $dateFrom     = $f['date_from'];
+        $dateTo       = $f['date_to'];
 
         $logs = $this->buildLogs($request);
 
-        // ── ✅ ดึงข้อมูลทั้งหมด (ไม่ filter) สำหรับหน้า Report ──
+        // ── ดึงข้อมูลทั้งหมด (ไม่ filter) สำหรับหน้า Report ──
         $allLogs = DB::table('fuel_logs')
             ->orderBy('work_date', 'desc')
             ->orderBy('id', 'desc')
@@ -191,7 +235,9 @@ class fuellogsController extends Controller
         $editLog       = null;
 
         return view('driver.oil', compact(
-            'logs', 'allLogs', 'view', 'filterDay', 'filterMonth', 'filterDriver',
+            'logs', 'allLogs',
+            'view', 'filterDay', 'filterMonth', 'filterYear', 'filterDriver',
+            'dateFrom', 'dateTo',
             'drivers', 'plates', 'metrics', 'costByDriver', 'kmlByDriver',
             'deliveryStats', 'editLog'
         ));
@@ -314,6 +360,7 @@ class fuellogsController extends Controller
             ] : null,
         ]);
     }
+
     public function ngList(Request $request)
     {
         $q = ng_shipment::query()->latest('ng_date')->latest('id');
@@ -332,46 +379,47 @@ class fuellogsController extends Controller
 
         return response()->json($q->paginate(50));
     }
-public function syncNg(Request $request)
-{
-    $request->validate([
-        'date'                   => 'required|date_format:Y-m-d',
-        'jobs'                   => 'required|array|min:1',
-        'jobs.*.bill_no'         => 'required|max:50',
-        'jobs.*.driver_name'     => 'required|string|max:100',
-        'jobs.*.seller_name'     => 'nullable|string|max:100',
-        'jobs.*.customer_name'   => 'nullable|string|max:200',
-        'jobs.*.status'          => 'required|string',
-        'jobs.*.note'            => 'nullable|string|max:500',
-    ]);
 
-    $date      = $request->date;
-    $jobs      = $request->jobs;
-    $okBillNos = [];
-    $ngJobs    = [];
+    public function syncNg(Request $request)
+    {
+        $request->validate([
+            'date'                   => 'required|date_format:Y-m-d',
+            'jobs'                   => 'required|array|min:1',
+            'jobs.*.bill_no'         => 'required|max:50',
+            'jobs.*.driver_name'     => 'required|string|max:100',
+            'jobs.*.seller_name'     => 'nullable|string|max:100',
+            'jobs.*.customer_name'   => 'nullable|string|max:200',
+            'jobs.*.status'          => 'required|string',
+            'jobs.*.note'            => 'nullable|string|max:500',
+        ]);
 
-    foreach ($jobs as $job) {
-        $status = trim($job['status'] ?? '');
-        $isOk   = (str_contains($status, 'สำเร็จ') && !str_contains($status, 'ไม่'))
-               || in_array(strtolower($status), ['ok', 'success', '1']);
+        $date      = $request->date;
+        $jobs      = $request->jobs;
+        $okBillNos = [];
+        $ngJobs    = [];
 
-        if ($isOk) {
-            $okBillNos[] = (string) $job['bill_no'];
-        } else {
-            $ngJobs[] = $job;
+        foreach ($jobs as $job) {
+            $status = trim($job['status'] ?? '');
+            $isOk   = (str_contains($status, 'สำเร็จ') && !str_contains($status, 'ไม่'))
+                   || in_array(strtolower($status), ['ok', 'success', '1']);
+
+            if ($isOk) {
+                $okBillNos[] = (string) $job['bill_no'];
+            } else {
+                $ngJobs[] = $job;
+            }
         }
+
+        $result = ng_shipment::syncDay($date, $ngJobs, $okBillNos);
+
+        return response()->json([
+            'success'  => true,
+            'date'     => $date,
+            'total'    => count($jobs),
+            'ok'       => count($okBillNos),
+            'ng'       => count($ngJobs),
+            'inserted' => $result['inserted'],
+            'resolved' => $result['resolved'],
+        ]);
     }
-
-    $result = ng_shipment::syncDay($date, $ngJobs, $okBillNos);
-
-    return response()->json([
-        'success'  => true,
-        'date'     => $date,
-        'total'    => count($jobs),
-        'ok'       => count($okBillNos),
-        'ng'       => count($ngJobs),
-        'inserted' => $result['inserted'],
-        'resolved' => $result['resolved'],
-    ]);
-}
 }

@@ -11,87 +11,46 @@
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
 :root{
-  --primary:#0F6E56;
-  --primary-hover:#085041;
-  --primary-light:#E1F5EE;
-  --primary-mid:#1D9E75;
-  --primary-border:#9FE1CB;
-  --blue:#185FA5;
-  --blue-hover:#0C447C;
-  --blue-light:#E6F1FB;
-  --blue-border:#B5D4F4;
-  --amber:#854F0B;
-  --amber-hover:#633806;
-  --amber-light:#FAEEDA;
-  --amber-border:#FAC775;
-  --red:#C0392B;
-  --red-light:#FDEDEC;
-  --surface:#FFFFFF;
-  --bg:#F0F4F8;
-  --bg-alt:#E8EDF3;
-  --border:#DDE3EC;
-  --border-light:#EEF1F7;
-  --text:#0F172A;
-  --text-secondary:#475569;
-  --text-muted:#94A3B8;
-  --text-hint:#CBD5E1;
-  --shadow-xs:0 1px 2px rgba(15,23,42,.06);
-  --shadow-sm:0 2px 8px rgba(15,23,42,.08);
-  --shadow-md:0 4px 16px rgba(15,23,42,.10);
-  --shadow-lg:0 8px 32px rgba(15,23,42,.12);
-  --r-sm:8px;--r-md:12px;--r-lg:16px;--r-xl:20px;
-  --t-fast:.12s ease;--t-base:.2s ease;
+  --primary:#0F6E56;--primary-hover:#085041;--primary-light:#E1F5EE;--primary-mid:#1D9E75;--primary-border:#9FE1CB;
+  --blue:#185FA5;--blue-hover:#0C447C;--blue-light:#E6F1FB;--blue-border:#B5D4F4;
+  --amber:#854F0B;--amber-hover:#633806;--amber-light:#FAEEDA;--amber-border:#FAC775;
+  --red:#C0392B;--red-light:#FDEDEC;
+  --surface:#FFFFFF;--bg:#F0F4F8;--bg-alt:#E8EDF3;--border:#DDE3EC;--border-light:#EEF1F7;
+  --text:#0F172A;--text-secondary:#475569;--text-muted:#94A3B8;--text-hint:#CBD5E1;
+  --shadow-xs:0 1px 2px rgba(15,23,42,.06);--shadow-sm:0 2px 8px rgba(15,23,42,.08);--shadow-md:0 4px 16px rgba(15,23,42,.10);--shadow-lg:0 8px 32px rgba(15,23,42,.12);
+  --r-sm:8px;--r-md:12px;--r-lg:16px;--r-xl:20px;--t-fast:.12s ease;--t-base:.2s ease;
 }
 body{font-family:'Sarabun',system-ui,sans-serif;font-size:15px;background:var(--bg);color:var(--text);line-height:1.6;min-height:100vh}
-
-/* LOADING */
 #loadingOverlay{display:none;position:fixed;inset:0;background:rgba(255,255,255,.92);backdrop-filter:blur(4px);z-index:9999;justify-content:center;align-items:center;flex-direction:column;gap:16px}
 @keyframes spin{to{transform:rotate(360deg)}}
 .spinner{width:44px;height:44px;border:3px solid var(--border);border-top-color:var(--primary);border-radius:50%;animation:spin .7s linear infinite}
 #loadingMsg{font-size:14px;color:var(--text-secondary);font-weight:500}
-
-/* TOAST */
 #toast-container{position:fixed;top:24px;right:24px;z-index:10000;display:flex;flex-direction:column;gap:10px;pointer-events:none}
 .toast{display:flex;align-items:flex-start;gap:12px;padding:14px 18px;background:var(--surface);border:1px solid var(--border);border-radius:var(--r-md);box-shadow:var(--shadow-lg);min-width:280px;max-width:380px;pointer-events:all;animation:toastIn .25s ease forwards;border-left:4px solid var(--primary)}
 .toast.toast-error{border-left-color:var(--red)}
 .toast.toast-warning{border-left-color:#D97706}
-.toast-icon{flex-shrink:0;margin-top:1px}
-.toast-body{flex:1;min-width:0}
-.toast-title{font-size:13px;font-weight:700;color:var(--text);margin-bottom:2px}
-.toast-msg{font-size:13px;color:var(--text-secondary);line-height:1.5}
-.toast-close{flex-shrink:0;background:none;border:none;cursor:pointer;color:var(--text-muted);padding:2px;border-radius:4px;line-height:1;transition:color var(--t-fast)}
-.toast-close:hover{color:var(--text)}
+.toast-icon{flex-shrink:0;margin-top:1px}.toast-body{flex:1;min-width:0}.toast-title{font-size:13px;font-weight:700;color:var(--text);margin-bottom:2px}.toast-msg{font-size:13px;color:var(--text-secondary);line-height:1.5}.toast-close{flex-shrink:0;background:none;border:none;cursor:pointer;color:var(--text-muted);padding:2px;border-radius:4px;line-height:1;transition:color var(--t-fast)}.toast-close:hover{color:var(--text)}
 @keyframes toastIn{from{opacity:0;transform:translateX(20px)}to{opacity:1;transform:translateX(0)}}
 @keyframes toastOut{to{opacity:0;transform:translateX(20px)}}
-
-/* NAVBAR */
 .navbar{background:var(--surface);border-bottom:1px solid var(--border);box-shadow:var(--shadow-xs);position:sticky;top:0;z-index:100}
 .navbar-inner{max-width:1200px;margin:0 auto;padding:0 28px;height:60px;display:flex;align-items:center;justify-content:space-between;gap:16px}
 .navbar-brand{display:flex;align-items:center;gap:10px;font-size:15px;font-weight:700;color:var(--primary);text-decoration:none;flex-shrink:0}
 .navbar-brand-icon{width:34px;height:34px;background:var(--primary);border-radius:var(--r-sm);display:flex;align-items:center;justify-content:center}
 .navbar-breadcrumb{display:flex;align-items:center;gap:6px;font-size:13px;color:var(--text-muted)}
 .navbar-breadcrumb a{color:var(--text-muted);text-decoration:none;transition:color var(--t-fast)}
-.navbar-breadcrumb a:hover{color:var(--primary)}
-.navbar-breadcrumb .sep{color:var(--text-hint)}
-.navbar-breadcrumb .current{color:var(--text);font-weight:600}
+.navbar-breadcrumb a:hover{color:var(--primary)}.navbar-breadcrumb .sep{color:var(--text-hint)}.navbar-breadcrumb .current{color:var(--text);font-weight:600}
 .navbar-actions{display:flex;align-items:center;gap:10px;flex-shrink:0}
 .btn-nav{display:inline-flex;align-items:center;gap:6px;padding:7px 14px;border-radius:var(--r-sm);border:1px solid var(--border);background:var(--surface);color:var(--text-secondary);font-size:13px;font-weight:500;cursor:pointer;transition:all var(--t-fast);font-family:inherit;white-space:nowrap}
 .btn-nav:hover{border-color:#CBD5E1;color:var(--text);background:#F8FAFC;box-shadow:var(--shadow-xs)}
-
-/* PAGE */
 .page{max-width:1200px;margin:0 auto;padding:28px 28px 60px}
 .page-header{margin-bottom:28px;padding:24px 28px;background:var(--surface);border:1px solid var(--border);border-radius:var(--r-xl);box-shadow:var(--shadow-sm);display:flex;align-items:center;justify-content:space-between;gap:20px;flex-wrap:wrap}
 .page-header-left{display:flex;align-items:center;gap:16px}
 .page-header-icon{width:52px;height:52px;background:linear-gradient(135deg,var(--primary) 0%,var(--primary-mid) 100%);border-radius:var(--r-md);display:flex;align-items:center;justify-content:center;box-shadow:0 4px 12px rgba(15,110,86,.25);flex-shrink:0}
 .page-header-text h1{font-size:22px;font-weight:800;color:var(--text);letter-spacing:-.4px}
 .page-header-text p{font-size:13px;color:var(--text-secondary);margin-top:3px}
-
-/* GRID */
 .grid-layout{display:grid;grid-template-columns:1fr 340px;gap:22px;align-items:start}
 .col-main{display:flex;flex-direction:column;gap:18px}
 .col-side{display:flex;flex-direction:column;gap:16px;position:sticky;top:80px}
-
-/* CARD */
 .card{background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);box-shadow:var(--shadow-sm);overflow:hidden;transition:box-shadow var(--t-base)}
 .card:hover{box-shadow:var(--shadow-md)}
 .card-head{padding:18px 24px 15px;border-bottom:1px solid var(--border-light);display:flex;align-items:center;gap:12px;background:linear-gradient(to bottom,#FAFBFD,var(--surface))}
@@ -102,70 +61,58 @@ body{font-family:'Sarabun',system-ui,sans-serif;font-size:15px;background:var(--
 .card-head-text h3{font-size:15px;font-weight:700;color:var(--text)}
 .card-head-text p{font-size:12px;color:var(--text-muted);margin-top:2px}
 .card-badge{margin-left:auto;padding:3px 10px;border-radius:20px;font-size:11px;font-weight:600}
-.badge-required{background:var(--red-light);color:var(--red)}
-.badge-optional{background:var(--bg-alt);color:var(--text-muted)}
+.badge-required{background:var(--red-light);color:var(--red)}.badge-optional{background:var(--bg-alt);color:var(--text-muted)}
 .card-body{padding:22px 24px}
-
-/* SECTION DIVIDER */
 .section-divider{display:flex;align-items:center;gap:10px;padding:0 24px;margin-bottom:16px}
 .section-divider-line{flex:1;height:1px;background:var(--border-light)}
 .section-divider-label{font-size:11px;font-weight:700;color:var(--text-muted);letter-spacing:.08em;text-transform:uppercase;white-space:nowrap}
-
-/* FORM */
+.form-grid-3{display:grid;grid-template-columns:repeat(3,1fr);gap:14px}
 .form-grid-4{display:grid;grid-template-columns:repeat(4,1fr);gap:14px}
-.span-2{grid-column:span 2}
-.span-full{grid-column:1/-1}
+.span-2{grid-column:span 2}.span-full{grid-column:1/-1}
 .field{display:flex;flex-direction:column;gap:6px}
 .field label{font-size:12px;font-weight:700;color:var(--text-secondary);letter-spacing:.04em;display:flex;align-items:center;gap:5px}
 .field label .req{color:var(--red);font-size:14px;line-height:1}
 .field label .tip{display:inline-flex;align-items:center;justify-content:center;width:14px;height:14px;background:var(--bg-alt);border-radius:50%;font-size:10px;color:var(--text-muted);cursor:help;font-style:normal;font-weight:700;position:relative}
 .field label .tip:hover::after{content:attr(data-tip);position:absolute;bottom:calc(100% + 6px);left:50%;transform:translateX(-50%);background:var(--text);color:#fff;font-size:11px;font-weight:400;padding:5px 9px;border-radius:6px;white-space:nowrap;pointer-events:none;z-index:50;letter-spacing:0}
 .field-wrap{position:relative}
-.field input[type="text"],
-.field input[type="number"]{
-  padding:10px 12px;border:1.5px solid var(--border);border-radius:var(--r-sm);background:#FAFBFC;color:var(--text);font-size:14px;font-family:inherit;outline:none;transition:border var(--t-fast),box-shadow var(--t-fast),background var(--t-fast);width:100%
-}
-.field input[type="text"]:focus,
-.field input[type="number"]:focus{border-color:var(--primary);background:var(--surface);box-shadow:0 0 0 3px rgba(15,110,86,.12)}
+.field input[type="text"],.field input[type="number"]{padding:10px 12px;border:1.5px solid var(--border);border-radius:var(--r-sm);background:#FAFBFC;color:var(--text);font-size:14px;font-family:inherit;outline:none;transition:border var(--t-fast),box-shadow var(--t-fast),background var(--t-fast);width:100%}
+.field input[type="text"]:focus,.field input[type="number"]:focus{border-color:var(--primary);background:var(--surface);box-shadow:0 0 0 3px rgba(15,110,86,.12)}
 .field input[readonly]{background:#F5F7FA;color:var(--text-secondary);cursor:default;border-style:dashed}
 .field input[readonly]:focus{border-color:var(--border);box-shadow:none}
 .field input::placeholder{color:var(--text-hint)}
 .readonly-badge{position:absolute;right:10px;top:50%;transform:translateY(-50%);font-size:10px;font-weight:600;color:var(--text-hint);background:var(--bg-alt);padding:2px 6px;border-radius:4px;pointer-events:none}
-
-/* DEPOSIT CARDS */
 .dep-section{padding:0 24px 22px}
-.dep-cards{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
+.dep-cards{display:grid;grid-template-columns:repeat(2,1fr);gap:12px}
 .dep-card{border:2px solid var(--border);border-radius:var(--r-md);padding:16px;transition:all var(--t-base);background:var(--surface);cursor:pointer}
 .dep-card:hover{border-color:#CBD5E1;box-shadow:var(--shadow-sm);transform:translateY(-1px)}
 .dep-card.active-g{border-color:var(--primary);background:linear-gradient(135deg,#F0FBF7,#FAFFFD);box-shadow:0 4px 16px rgba(15,110,86,.12)}
 .dep-card.active-b{border-color:var(--blue);background:linear-gradient(135deg,#EEF6FE,#FAFCFF);box-shadow:0 4px 16px rgba(24,95,165,.12)}
-.dep-card.active-a{border-color:var(--amber);background:linear-gradient(135deg,#FEF6EC,#FFFDF8);box-shadow:0 4px 16px rgba(133,79,11,.12)}
 .dep-card-top{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;user-select:none}
 .dep-card-info{display:flex;align-items:center;gap:10px}
 .dep-ico{width:34px;height:34px;border-radius:var(--r-sm);display:flex;align-items:center;justify-content:center;flex-shrink:0}
 .di-g{background:var(--primary-light);border:1px solid var(--primary-border)}
 .di-b{background:var(--blue-light);border:1px solid var(--blue-border)}
-.di-a{background:var(--amber-light);border:1px solid var(--amber-border)}
 .dep-card-name{font-size:14px;font-weight:700;color:var(--text)}
 .dep-card-sub{font-size:11px;color:var(--text-muted);margin-top:2px}
 .dep-toggle{width:42px;height:24px;border-radius:12px;background:#E2E8F0;position:relative;transition:background var(--t-base);flex-shrink:0;cursor:pointer;border:none;outline:none;padding:0}
-.dep-toggle.on-g{background:var(--primary)}
-.dep-toggle.on-b{background:var(--blue)}
-.dep-toggle.on-a{background:var(--amber)}
+.dep-toggle.on-g{background:var(--primary)}.dep-toggle.on-b{background:var(--blue)}
 .dep-toggle-knob{position:absolute;top:3px;left:3px;width:18px;height:18px;border-radius:50%;background:#fff;transition:left var(--t-base);box-shadow:0 1px 4px rgba(0,0,0,.18)}
-.dep-toggle.on-g .dep-toggle-knob,.dep-toggle.on-b .dep-toggle-knob,.dep-toggle.on-a .dep-toggle-knob{left:21px}
+.dep-toggle.on-g .dep-toggle-knob,.dep-toggle.on-b .dep-toggle-knob{left:21px}
+.mode-tabs{display:flex;border:1.5px solid var(--border);border-radius:20px;overflow:hidden;background:#F0F4F8;margin-bottom:8px;flex-shrink:0}
+.mode-tab{padding:4px 14px;border:none;background:transparent;font-size:11px;font-weight:700;cursor:pointer;font-family:inherit;color:var(--text-muted);transition:all var(--t-fast);letter-spacing:.03em}
+.mode-tab:hover{color:var(--text)}
+.mode-tab.on-g{background:var(--primary);color:#fff;border-radius:18px}
+.mode-tab.on-b{background:var(--blue);color:#fff;border-radius:18px}
 .pct-wrap{display:flex;align-items:center;border:1.5px solid var(--border);border-radius:var(--r-sm);background:#F7F8FA;overflow:hidden;transition:border var(--t-fast),box-shadow var(--t-fast),background var(--t-fast)}
 .pct-wrap:focus-within{border-color:var(--primary);background:var(--surface);box-shadow:0 0 0 3px rgba(15,110,86,.12)}
+.pct-wrap.bfocus:focus-within{border-color:var(--blue);box-shadow:0 0 0 3px rgba(24,95,165,.12)}
 .pct-wrap input{border:none;background:transparent;padding:9px 10px;font-size:14px;font-family:inherit;color:var(--text);outline:none;width:100%;text-align:right}
 .pct-wrap input:disabled{color:var(--text-hint);cursor:not-allowed}
-.pct-unit{padding:0 11px 0 4px;font-size:13px;color:var(--text-secondary);font-weight:600}
+.pct-unit{padding:0 11px 0 4px;font-size:13px;color:var(--text-secondary);font-weight:700;white-space:nowrap;min-width:28px}
 .dep-result{font-size:12px;font-weight:600;margin-top:9px;min-height:22px;padding:4px 10px;border-radius:6px;display:inline-block;transition:all var(--t-fast)}
 .dep-result.g{background:var(--primary-light);color:var(--primary-hover)}
 .dep-result.b{background:var(--blue-light);color:var(--blue-hover)}
-.dep-result.a{background:var(--amber-light);color:var(--amber-hover)}
 .dep-result.empty{background:transparent;color:var(--text-hint);padding-left:0;font-weight:400;font-size:11px}
-
-/* TABLE */
 .tbl-wrap{overflow-x:auto;-webkit-overflow-scrolling:touch;border-radius:var(--r-md);border:1px solid var(--border)}
 table{width:100%;border-collapse:collapse;font-size:14px;table-layout:fixed}
 thead{background:linear-gradient(to bottom,#F8FAFC,#F1F5F9)}
@@ -178,8 +125,6 @@ tbody tr:hover td{background:#F8FAFC}
 .td-name{color:var(--text)}
 .tbl-empty{padding:40px 20px;text-align:center;color:var(--text-muted);font-size:13px}
 .tbl-empty-icon{margin-bottom:10px;opacity:.4}
-
-/* SUMMARY CARD */
 .summary-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);overflow:hidden;box-shadow:var(--shadow-sm)}
 .summary-head{padding:16px 20px;border-bottom:1px solid var(--border-light);font-size:14px;font-weight:700;color:var(--text);display:flex;align-items:center;gap:8px;background:linear-gradient(to bottom,#FAFBFD,var(--surface))}
 .summary-rows{padding:16px 20px;display:flex;flex-direction:column;gap:10px}
@@ -197,8 +142,6 @@ tbody tr:hover td{background:#F8FAFC}
 .btn-save:active{transform:scale(.98);box-shadow:var(--shadow-sm)}
 .btn-save:disabled{background:linear-gradient(135deg,#94A3B8,#CBD5E1);cursor:not-allowed;transform:none;box-shadow:none}
 .btn-save-hint{text-align:center;font-size:11px;color:var(--text-muted);margin-top:8px}
-
-/* INFO CARD */
 .info-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);overflow:hidden;box-shadow:var(--shadow-xs)}
 .info-card-head{padding:13px 16px;border-bottom:1px solid var(--border-light);display:flex;align-items:center;gap:7px;font-size:12px;font-weight:700;color:var(--text-secondary);letter-spacing:.05em;text-transform:uppercase;background:linear-gradient(to bottom,#FAFBFD,var(--surface))}
 .info-items{padding:4px 0}
@@ -207,63 +150,23 @@ tbody tr:hover td{background:#F8FAFC}
 .info-item .ik{color:var(--text-muted);flex-shrink:0}
 .info-item .iv{font-weight:600;color:var(--text);text-align:right;min-width:0;word-break:break-all}
 .info-item .iv.status-active{display:inline-flex;align-items:center;gap:5px;color:var(--primary);background:var(--primary-light);padding:3px 9px;border-radius:20px;font-size:12px}
-
-/* HELP CARD */
 .help-card{background:linear-gradient(135deg,#EEF6FE,#F0F8FF);border:1px solid var(--blue-border);border-radius:var(--r-lg);padding:16px}
 .help-card-head{display:flex;align-items:center;gap:7px;font-size:12px;font-weight:700;color:var(--blue);letter-spacing:.05em;text-transform:uppercase;margin-bottom:12px}
 .help-item{display:flex;align-items:flex-start;gap:9px;font-size:12px;color:var(--text-secondary);padding:6px 0;border-bottom:1px solid rgba(181,212,244,.5)}
 .help-item:last-child{border-bottom:none;padding-bottom:0}
 .help-num{width:18px;height:18px;background:var(--blue-light);border:1px solid var(--blue-border);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;color:var(--blue);flex-shrink:0;margin-top:1px}
-
 hr.divider{border:none;border-top:1px solid var(--border-light);margin:0}
-
 @keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
-
-@media(max-width:1100px){
-  .page{padding:22px 20px 50px}
-  .grid-layout{grid-template-columns:1fr}
-  .col-side{position:static;display:grid;grid-template-columns:1fr 1fr;gap:16px}
-  .form-grid-4{grid-template-columns:repeat(2,1fr)}
-  .dep-cards{grid-template-columns:repeat(3,1fr)}
-}
-@media(max-width:768px){
-  .page{padding:16px 16px 50px}
-  .navbar-inner{padding:0 16px}
-  .navbar-breadcrumb{display:none}
-  .page-header{padding:18px 20px}
-  .page-header-text h1{font-size:18px}
-  .col-side{grid-template-columns:1fr}
-  .dep-cards{grid-template-columns:1fr}
-  .card-body{padding:16px 18px}
-  .card-head{padding:14px 18px 12px}
-  .dep-section{padding:0 18px 18px}
-  table{font-size:13px}
-  th,td{padding:10px 12px}
-  .s-row.total .sval{font-size:20px}
-  .form-grid-4{grid-template-columns:1fr}
-  .span-2{grid-column:1}
-  .page-header-icon{width:42px;height:42px}
-}
-@media(max-width:480px){
-  .page{padding:12px 12px 50px}
-  .page-header{padding:14px 16px}
-  .card-body,.card-head{padding:14px}
-  .dep-section{padding:0 14px 14px}
-  table{min-width:480px}
-  .btn-save{padding:13px}
-  .summary-rows,.summary-footer{padding:14px 16px}
-}
+@media(max-width:1100px){.page{padding:22px 20px 50px}.grid-layout{grid-template-columns:1fr}.col-side{position:static;display:grid;grid-template-columns:1fr 1fr;gap:16px}.form-grid-3{grid-template-columns:repeat(3,1fr)}.form-grid-4{grid-template-columns:repeat(2,1fr)}.dep-cards{grid-template-columns:repeat(2,1fr)}}
+@media(max-width:768px){.page{padding:16px 16px 50px}.navbar-inner{padding:0 16px}.navbar-breadcrumb{display:none}.page-header{padding:18px 20px}.page-header-text h1{font-size:18px}.col-side{grid-template-columns:1fr}.dep-cards{grid-template-columns:1fr}.card-body{padding:16px 18px}.card-head{padding:14px 18px 12px}.dep-section{padding:0 18px 18px}table{font-size:13px}th,td{padding:10px 12px}.s-row.total .sval{font-size:20px}.form-grid-3{grid-template-columns:1fr 1fr}.form-grid-4{grid-template-columns:1fr}.span-2{grid-column:1}.page-header-icon{width:42px;height:42px}}
+@media(max-width:480px){.page{padding:12px 12px 50px}.page-header{padding:14px 16px}.card-body,.card-head{padding:14px}.dep-section{padding:0 14px 14px}table{min-width:480px}.btn-save{padding:13px}.summary-rows,.summary-footer{padding:14px 16px}.form-grid-3{grid-template-columns:1fr}}
 </style>
 </head>
 <body>
 
-<div id="loadingOverlay">
-  <div class="spinner"></div>
-  <span id="loadingMsg">กำลังโหลดข้อมูล...</span>
-</div>
+<div id="loadingOverlay"><div class="spinner"></div><span id="loadingMsg">กำลังโหลดข้อมูล...</span></div>
 <div id="toast-container"></div>
 
-<!-- NAVBAR -->
 <nav class="navbar">
   <div class="navbar-inner">
     <a href="/dashboard" class="navbar-brand">
@@ -278,10 +181,8 @@ hr.divider{border:none;border-top:1px solid var(--border-light);margin:0}
       ระบบจัดการเอกสาร
     </a>
     <div class="navbar-breadcrumb">
-      <a href="/dashboard">หน้าหลัก</a>
-      <span class="sep">›</span>
-      <a href="/SOlist">รายการ SO</a>
-      <span class="sep">›</span>
+      <a href="/dashboard">หน้าหลัก</a><span class="sep">›</span>
+      <a href="/SOlist">รายการ SO</a><span class="sep">›</span>
       <span class="current">สร้างใบมัดจำ</span>
     </div>
     <div class="navbar-actions">
@@ -295,7 +196,6 @@ hr.divider{border:none;border-top:1px solid var(--border-light);margin:0}
 
 <div class="page">
 
-  <!-- PAGE HEADER -->
   <div class="page-header">
     <div class="page-header-left">
       <div class="page-header-icon">
@@ -318,13 +218,13 @@ hr.divider{border:none;border-top:1px solid var(--border-light);margin:0}
     <input type="hidden" name="so_id"       id="so_id">
     <input type="hidden" name="subtotal"     id="hidden-subtotal"   value="0">
     <input type="hidden" name="grand_total"  id="hidden-grandtotal" value="0">
+    <input type="hidden" name="sale_name"    id="hidden-sale"       value="">
     <input type="hidden" name="emp_name"     id="hidden-emp"
       value="{{ request()->filled('create_by') ? request('create_by') : 'Guest' }}">
 
     <div class="grid-layout">
       <div class="col-main">
 
-        <!-- CARD: ข้อมูลเอกสาร -->
         <div class="card">
           <div class="card-head">
             <div class="card-icon ci-green">
@@ -372,7 +272,6 @@ hr.divider{border:none;border-top:1px solid var(--border-light);margin:0}
           </div>
         </div>
 
-        <!-- CARD: ข้อมูลลูกค้า -->
         <div class="card">
           <div class="card-head">
             <div class="card-icon ci-blue">
@@ -415,7 +314,6 @@ hr.divider{border:none;border-top:1px solid var(--border-light);margin:0}
           </div>
         </div>
 
-        <!-- CARD: รายการสินค้าและมัดจำ -->
         <div class="card">
           <div class="card-head">
             <div class="card-icon ci-amber">
@@ -428,11 +326,10 @@ hr.divider{border:none;border-top:1px solid var(--border-light);margin:0}
             </div>
             <div class="card-head-text">
               <h3>รายการสินค้าและมัดจำ</h3>
-              <p>กำหนดเปอร์เซ็นต์มัดจำแต่ละประเภทสินค้า</p>
+              <p>กำหนดเปอร์เซ็นต์หรือจำนวนเงินมัดจำแต่ละประเภท</p>
             </div>
           </div>
 
-          <!-- Deposit Section -->
           <div class="dep-section" style="padding-top:20px">
             <div class="section-divider" style="padding:0;margin-bottom:14px">
               <div class="section-divider-line"></div>
@@ -440,7 +337,6 @@ hr.divider{border:none;border-top:1px solid var(--border-light);margin:0}
               <div class="section-divider-line"></div>
             </div>
             <div class="dep-cards">
-              <!-- สินค้า -->
               <div class="dep-card" id="dcard-g" onclick="toggleCard('g')">
                 <div class="dep-card-top">
                   <div class="dep-card-info">
@@ -456,15 +352,20 @@ hr.divider{border:none;border-top:1px solid var(--border-light);margin:0}
                     <div class="dep-toggle-knob"></div>
                   </button>
                 </div>
-                <div class="pct-wrap">
-                  <input type="number" id="dep-g" name="dep_product" value="0" min="0" max="100" step="1" disabled
-                    oninput="this.value=Math.min(100,Math.max(0,parseFloat(this.value)||0));calc()"
-                    onclick="event.stopPropagation()">
-                  <span class="pct-unit">%</span>
+                <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
+                  <span style="font-size:11px;color:var(--text-muted);font-weight:600">โหมดกรอก</span>
+                  <div class="mode-tabs" onclick="event.stopPropagation()">
+                    <button type="button" class="mode-tab on-g" id="mtab-g-pct" onclick="event.stopPropagation();setMode('g','pct')">% เปอร์เซ็นต์</button>
+                    <button type="button" class="mode-tab" id="mtab-g-amt" onclick="event.stopPropagation();setMode('g','amt')">฿ จำนวนเงิน</button>
+                  </div>
+                </div>
+                <div class="pct-wrap" id="pwrap-g">
+                  <input type="number" id="dep-g" name="dep_product" value="" min="0" max="100" step="0.01" disabled placeholder="0.00" oninput="onDepInput('g')" onclick="event.stopPropagation()">
+                  <span class="pct-unit" id="unit-g">%</span>
                 </div>
                 <div class="dep-result empty" id="dres-g">ยังไม่เปิดใช้งาน</div>
               </div>
-              <!-- บริการ -->
+
               <div class="dep-card" id="dcard-b" onclick="toggleCard('b')">
                 <div class="dep-card-top">
                   <div class="dep-card-info">
@@ -480,44 +381,24 @@ hr.divider{border:none;border-top:1px solid var(--border-light);margin:0}
                     <div class="dep-toggle-knob"></div>
                   </button>
                 </div>
-                <div class="pct-wrap">
-                  <input type="number" id="dep-b" name="dep_service" value="0" min="0" max="100" step="1" disabled
-                    oninput="this.value=Math.min(100,Math.max(0,parseFloat(this.value)||0));calc()"
-                    onclick="event.stopPropagation()">
-                  <span class="pct-unit">%</span>
+                <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
+                  <span style="font-size:11px;color:var(--text-muted);font-weight:600">โหมดกรอก</span>
+                  <div class="mode-tabs" onclick="event.stopPropagation()">
+                    <button type="button" class="mode-tab on-b" id="mtab-b-pct" onclick="event.stopPropagation();setMode('b','pct')">% เปอร์เซ็นต์</button>
+                    <button type="button" class="mode-tab" id="mtab-b-amt" onclick="event.stopPropagation();setMode('b','amt')">฿ จำนวนเงิน</button>
+                  </div>
+                </div>
+                <div class="pct-wrap bfocus" id="pwrap-b">
+                  <input type="number" id="dep-b" name="dep_service" value="" min="0" max="100" step="0.01" disabled placeholder="0.00" oninput="onDepInput('b')" onclick="event.stopPropagation()">
+                  <span class="pct-unit" id="unit-b">%</span>
                 </div>
                 <div class="dep-result empty" id="dres-b">ยังไม่เปิดใช้งาน</div>
-              </div>
-              <!-- ขนส่ง -->
-              <div class="dep-card" id="dcard-a" onclick="toggleCard('a')">
-                <div class="dep-card-top">
-                  <div class="dep-card-info">
-                    <div class="dep-ico di-a">
-                      <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><rect x="1" y="5" width="9" height="7" rx="1" stroke="#854F0B" stroke-width="1.4"/><path d="M10 7l4 2.5V13h-4" stroke="#854F0B" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/><circle cx="3.5" cy="13" r="1.2" stroke="#854F0B" stroke-width="1.2"/><circle cx="12.5" cy="13" r="1.2" stroke="#854F0B" stroke-width="1.2"/></svg>
-                    </div>
-                    <div>
-                      <div class="dep-card-name">ขนส่ง</div>
-                      <div class="dep-card-sub">มัดจำขนส่ง</div>
-                    </div>
-                  </div>
-                  <button type="button" class="dep-toggle" id="dtog-a" onclick="event.stopPropagation();toggleCard('a')">
-                    <div class="dep-toggle-knob"></div>
-                  </button>
-                </div>
-                <div class="pct-wrap">
-                  <input type="number" id="dep-a" name="dep_shipping" value="0" min="0" max="100" step="1" disabled
-                    oninput="this.value=Math.min(100,Math.max(0,parseFloat(this.value)||0));calc()"
-                    onclick="event.stopPropagation()">
-                  <span class="pct-unit">%</span>
-                </div>
-                <div class="dep-result empty" id="dres-a">ยังไม่เปิดใช้งาน</div>
               </div>
             </div>
           </div>
 
           <hr class="divider">
 
-          <!-- Table -->
           <div style="padding:20px 24px 24px">
             <div class="section-divider" style="padding:0;margin-bottom:14px">
               <div class="section-divider-line"></div>
@@ -552,12 +433,10 @@ hr.divider{border:none;border-top:1px solid var(--border-light);margin:0}
           </div>
         </div>
 
-      </div><!-- /col-main -->
+      </div>
 
-      <!-- SIDEBAR -->
       <div class="col-side">
 
-        <!-- Summary -->
         <div class="summary-card">
           <div class="summary-head">
             <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><rect x="2" y="2" width="12" height="12" rx="3" stroke="#0F172A" stroke-width="1.4"/><path d="M5 8h6M5 10.5h4" stroke="#0F172A" stroke-width="1.4" stroke-linecap="round"/><path d="M5 5.5h2" stroke="#0F6E56" stroke-width="1.6" stroke-linecap="round"/></svg>
@@ -575,10 +454,6 @@ hr.divider{border:none;border-top:1px solid var(--border-light);margin:0}
             <div class="s-row neg" id="srow-b" style="display:none">
               <span class="slbl" id="slbl-b">หักมัดจำบริการ (0%)</span>
               <span class="sval" id="sval-b">-฿0.00</span>
-            </div>
-            <div class="s-row neg" id="srow-a" style="display:none">
-              <span class="slbl" id="slbl-a">หักมัดจำขนส่ง (0%)</span>
-              <span class="sval" id="sval-a">-฿0.00</span>
             </div>
             <div class="s-row neg divider-row" id="srow-tot" style="display:none">
               <span class="slbl" style="font-weight:600;color:#475569">รวมมัดจำทั้งหมด</span>
@@ -598,7 +473,6 @@ hr.divider{border:none;border-top:1px solid var(--border-light);margin:0}
           </div>
         </div>
 
-        <!-- Doc Info -->
         <div class="info-card">
           <div class="info-card-head">
             <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><circle cx="7" cy="7" r="5.5" stroke="#475569" stroke-width="1.3"/><path d="M7 5v3l2 1.5" stroke="#475569" stroke-width="1.3" stroke-linecap="round"/></svg>
@@ -620,37 +494,35 @@ hr.divider{border:none;border-top:1px solid var(--border-light);margin:0}
           </div>
         </div>
 
-        <!-- Help -->
         <div class="help-card">
           <div class="help-card-head">
             <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><circle cx="7" cy="7" r="5.5" stroke="#185FA5" stroke-width="1.3"/><path d="M5.5 5.5C5.5 4.67 6.17 4 7 4s1.5.67 1.5 1.5c0 1-1.5 1.5-1.5 2.5" stroke="#185FA5" stroke-width="1.3" stroke-linecap="round"/><circle cx="7" cy="10.5" r=".6" fill="#185FA5"/></svg>
             วิธีใช้งาน
           </div>
           <div class="help-item"><div class="help-num">1</div><span>ตรวจสอบข้อมูลเอกสารและลูกค้าให้ถูกต้อง</span></div>
-          <div class="help-item"><div class="help-num">2</div><span>กรอกเปอร์เซ็นต์มัดจำ (0–100%) สำหรับแต่ละประเภท</span></div>
+          <div class="help-item"><div class="help-num">2</div><span>เลือกโหมด % หรือ ฿ แล้วกรอกค่ามัดจำ (รองรับทศนิยม)</span></div>
           <div class="help-item"><div class="help-num">3</div><span>ตรวจสอบยอดสรุปด้านขวา แล้วกด "บันทึกใบมัดจำ"</span></div>
         </div>
 
-      </div><!-- /col-side -->
-    </div><!-- /grid-layout -->
+      </div>
+    </div>
   </form>
-</div><!-- /page -->
+</div>
 
 <script>
-/* ===== STATE ===== */
 let BASE = 0;
-const active = { g:false, b:false, a:false };
-const names  = { g:'สินค้า', b:'บริการ', a:'ขนส่ง' };
+const active = { g: false, b: false };
+const mode   = { g: 'pct', b: 'pct' };
+const names  = { g: 'สินค้า', b: 'บริการ' };
+const KEYS   = ['g', 'b'];
 
-/* ===== FORMATTERS ===== */
 function fmt(n){ return '฿'+n.toLocaleString('th-TH',{minimumFractionDigits:2,maximumFractionDigits:2}) }
 function fmtPlain(n){ return n.toLocaleString('th-TH',{minimumFractionDigits:2,maximumFractionDigits:2}) }
+function fmtPct(n){ return n.toLocaleString('th-TH',{minimumFractionDigits:2,maximumFractionDigits:4}) }
 
-/* ===== LOADING ===== */
 function showLoading(msg){ document.getElementById('loadingOverlay').style.display='flex'; document.getElementById('loadingMsg').textContent=msg||'กำลังโหลดข้อมูล...'; }
 function hideLoading(){ document.getElementById('loadingOverlay').style.display='none'; }
 
-/* ===== TOAST ===== */
 function showToast(title,msg,type='success'){
   const container=document.getElementById('toast-container');
   const id='toast-'+Date.now();
@@ -672,7 +544,6 @@ function removeToast(id){
   setTimeout(()=>el.remove(),250);
 }
 
-/* ===== INIT ===== */
 window.addEventListener('DOMContentLoaded',function(){
   const params=new URLSearchParams(window.location.search);
   const soNum   =params.get('so_num')   ||params.get('SONum')   ||'';
@@ -700,11 +571,10 @@ window.addEventListener('DOMContentLoaded',function(){
     document.getElementById('sell_date').value=date;
     document.getElementById('info-date').textContent=date;
   }
-  if(soNum)fetchSODetails(soNum,billId);
+  if(soNum)fetchSODetails(soNum);
 });
 
-/* ===== FETCH SO DETAILS ===== */
-async function fetchSODetails(soNum,billId){
+async function fetchSODetails(soNum){
   showLoading('กำลังโหลดข้อมูล SO...');
   try{
     const res=await fetch(`http://server_update:8000/api/getSODetail?SONum=${encodeURIComponent(soNum)}`);
@@ -713,7 +583,6 @@ async function fetchSODetails(soNum,billId){
     if(!data.SoDetail){hideLoading();showToast('ไม่พบข้อมูล SO','ไม่พบข้อมูล SO: '+soNum,'error');return;}
     const d=data.SoDetail, s=data.SoStatus;
 
-    /* ── ข้อมูลหัวเอกสาร ── */
     document.getElementById('so_id').value=s.SONum||'';
     document.getElementById('customer_id').value=s.CustID||'';
     document.getElementById('customer_name').value=d.CustName||'';
@@ -721,11 +590,14 @@ async function fetchSODetails(soNum,billId){
     const ship=[d.ShipToAddr1,d.ShipToAddr2].filter(Boolean).join(', ');
     document.getElementById('customer_address').value=[d.CustAddr1,d.ContDistrict,d.ContAmphur,d.ContProvince,d.ContPostCode,ship?'สถานที่ส่ง: '+ship:null].filter(Boolean).join(', ');
 
-    /* ── เลขที่บิล จาก CustPONo ── */
-    const bi=document.getElementById('billid');
-    if(bi)bi.value=d.CustPONo||s.CustPONo||'';
+    // ===== เลขที่บิล + sale_name: ดึงจาก createdBy =====
+    const createdBy = d.createdBy || s.createdBy || d.CreatedBy || s.CreatedBy || '';
+    const bi = document.getElementById('billid');
+    if(bi) bi.value = createdBy;
+    // เก็บค่าเดียวกันไว้เพื่อส่งไปเป็น sale_name
+    const saleEl = document.getElementById('hidden-sale');
+    if(saleEl) saleEl.value = createdBy;
 
-    /* ── วันที่จาก SoDetail.DocuDate ── */
     if(d.DocuDate){
       const[dp]=d.DocuDate.split(' ');
       const[y,m,dd]=dp.split('-');
@@ -734,7 +606,6 @@ async function fetchSODetails(soNum,billId){
       document.getElementById('info-date').textContent=f;
     }
 
-    /* ── สินค้าอยู่ใน SOLists[0].ms_sodt ── */
     const items=data.SOLists?.[0]?.ms_sodt||[];
     renderItems(items);
 
@@ -746,7 +617,6 @@ async function fetchSODetails(soNum,billId){
   }finally{hideLoading();}
 }
 
-/* ===== RENDER ITEMS ===== */
 function renderItems(items){
   const tbody=document.getElementById('tbody');
   tbody.innerHTML='';
@@ -780,7 +650,6 @@ function renderItems(items){
   calc();
 }
 
-/* ===== FETCH CONTACT ===== */
 function fetchContactSo(cid){
   if(!cid)return;
   fetch('/fetch-contactso',{
@@ -792,82 +661,151 @@ function fetchContactSo(cid){
   }).catch(()=>{});
 }
 
-/* ===== TOGGLE DEPOSIT CARD ===== */
+function setMode(k, m){
+  if(!active[k]) return;
+  mode[k] = m;
+  const inp    = document.getElementById('dep-'+k);
+  const unit   = document.getElementById('unit-'+k);
+  const tabPct = document.getElementById('mtab-'+k+'-pct');
+  const tabAmt = document.getElementById('mtab-'+k+'-amt');
+  tabPct.className = 'mode-tab' + (m==='pct' ? ' on-'+k : '');
+  tabAmt.className = 'mode-tab' + (m==='amt' ? ' on-'+k : '');
+  if(m === 'pct'){ unit.textContent = '%'; inp.max = '100'; }
+  else { unit.textContent = '฿'; inp.removeAttribute('max'); }
+  inp.value = '';
+  inp.placeholder = '0.00';
+  const res = document.getElementById('dres-'+k);
+  res.className = 'dep-result '+k;
+  res.textContent = m==='pct' ? 'กรอกเปอร์เซ็นต์มัดจำ' : 'กรอกจำนวนเงินมัดจำ';
+  calc();
+}
+
 function toggleCard(k){
-  const wasActive=active[k];
-  ['g','b','a'].forEach(id=>{
+  const wasActive = active[k];
+  KEYS.forEach(id=>{
     if(active[id]){
-      active[id]=false;
-      document.getElementById('dcard-'+id).className='dep-card';
-      document.getElementById('dtog-'+id).className='dep-toggle';
-      const inp=document.getElementById('dep-'+id);
-      inp.disabled=true; inp.value='0';
-      const res=document.getElementById('dres-'+id);
-      res.className='dep-result empty'; res.textContent='ยังไม่เปิดใช้งาน';
+      active[id] = false;
+      mode[id]   = 'pct';
+      document.getElementById('dcard-'+id).className = 'dep-card';
+      document.getElementById('dtog-'+id).className  = 'dep-toggle';
+      const inp = document.getElementById('dep-'+id);
+      inp.disabled = true; inp.value = ''; inp.max = '100'; inp.placeholder = '0.00';
+      document.getElementById('mtab-'+id+'-pct').className = 'mode-tab on-'+id;
+      document.getElementById('mtab-'+id+'-amt').className = 'mode-tab';
+      document.getElementById('unit-'+id).textContent = '%';
+      const res = document.getElementById('dres-'+id);
+      res.className = 'dep-result empty'; res.textContent = 'ยังไม่เปิดใช้งาน';
     }
   });
   if(!wasActive){
-    active[k]=true;
-    document.getElementById('dcard-'+k).className='dep-card active-'+k;
-    document.getElementById('dtog-'+k).className='dep-toggle on-'+k;
-    const inp=document.getElementById('dep-'+k);
-    inp.disabled=false; inp.focus();
-    const res=document.getElementById('dres-'+k);
-    res.className='dep-result '+k; res.textContent='0.00 บาท';
+    active[k] = true;
+    document.getElementById('dcard-'+k).className = 'dep-card active-'+k;
+    document.getElementById('dtog-'+k).className  = 'dep-toggle on-'+k;
+    const inp = document.getElementById('dep-'+k);
+    inp.disabled = false; inp.focus();
+    const res = document.getElementById('dres-'+k);
+    res.className   = 'dep-result '+k;
+    res.textContent = 'กรอกเปอร์เซ็นต์มัดจำ';
   }
   calc();
 }
 
-/* ===== CALCULATE ===== */
+function getOtherAmt(k){
+  const other = k === 'g' ? 'b' : 'g';
+  if(!active[other]) return 0;
+  const raw = parseFloat(document.getElementById('dep-'+other).value) || 0;
+  if(mode[other] === 'pct'){ return BASE * Math.min(100, Math.max(0, raw)) / 100; }
+  return Math.max(0, raw);
+}
+
+function onDepInput(k){
+  const inp = document.getElementById('dep-'+k);
+  let raw = parseFloat(inp.value);
+  if(isNaN(raw) || raw < 0){ inp.value = ''; calc(); return; }
+  const otherAmt = getOtherAmt(k);
+  const maxAmt   = Math.max(0, BASE - otherAmt);
+  if(mode[k] === 'pct'){
+    const maxPct = BASE > 0 ? Math.min(100, maxAmt / BASE * 100) : 100;
+    if(raw > maxPct){
+      inp.value = parseFloat(maxPct.toFixed(2));
+      showToastOnce('เกินขีดจำกัด', `รวมมัดจำต้องไม่เกิน 100% (เหลือได้อีก ${parseFloat(maxPct.toFixed(2))}%)`, 'warning');
+    }
+  } else {
+    if(raw > maxAmt){
+      inp.value = parseFloat(maxAmt.toFixed(2));
+      showToastOnce('เกินยอดคงเหลือ', `มัดจำ${names[k]}ต้องไม่เกิน ${fmt(maxAmt)}`, 'warning');
+    }
+  }
+  calc();
+}
+
+let _toastDebounce = null;
+function showToastOnce(title, msg, type){
+  clearTimeout(_toastDebounce);
+  _toastDebounce = setTimeout(() => showToast(title, msg, type), 600);
+}
+
 function calc(){
-  let totDep=0,totPct=0;
-  ['g','b','a'].forEach(k=>{
-    const srow=document.getElementById('srow-'+k);
-    const slbl=document.getElementById('slbl-'+k);
-    const sval=document.getElementById('sval-'+k);
-    const res =document.getElementById('dres-'+k);
+  let totDepAmt = 0;
+  KEYS.forEach(k=>{
+    const srow = document.getElementById('srow-'+k);
+    const slbl = document.getElementById('slbl-'+k);
+    const sval = document.getElementById('sval-'+k);
+    const res  = document.getElementById('dres-'+k);
     if(active[k]){
-      const pct=Math.min(100,Math.max(0,parseFloat(document.getElementById('dep-'+k).value)||0));
-      const amt=BASE*pct/100;
-      totDep+=amt; totPct+=pct;
-      srow.style.display='flex';
-      slbl.textContent='หักมัดจำ'+names[k]+' ('+pct+'%)';
-      sval.textContent='-'+fmt(amt);
-      res.textContent=fmtPlain(amt)+' บาท';
-    }else{srow.style.display='none';}
+      const raw = parseFloat(document.getElementById('dep-'+k).value) || 0;
+      let pct, amt;
+      if(mode[k]==='pct'){
+        pct = Math.min(100, Math.max(0, raw));
+        amt = BASE * pct / 100;
+        res.className   = 'dep-result '+k;
+        res.textContent = amt > 0 ? fmtPlain(amt)+' บาท' : 'กรอกเปอร์เซ็นต์มัดจำ';
+      } else {
+        amt = Math.max(0, raw);
+        pct = BASE > 0 ? (amt / BASE * 100) : 0;
+        res.className   = 'dep-result '+k;
+        res.textContent = amt > 0 ? 'คิดเป็น '+fmtPct(pct)+'%' : 'กรอกจำนวนเงินมัดจำ';
+      }
+      totDepAmt += amt;
+      srow.style.display = 'flex';
+      slbl.textContent   = 'หักมัดจำ'+names[k]+' ('+fmtPct(pct)+'%)';
+      sval.textContent   = '-'+fmt(amt);
+    } else {
+      srow.style.display = 'none';
+    }
   });
-  const any=Object.values(active).some(v=>v);
-  const net=BASE-totDep;
-  document.getElementById('srow-tot').style.display=any?'flex':'none';
-  document.getElementById('sval-tot').textContent='-'+fmt(totDep);
-  document.getElementById('sv-grand').textContent=fmt(net);
-  document.getElementById('hidden-grandtotal').value=net.toFixed(2);
-  const dth=document.getElementById('dep-th');
-  if(any&&totPct>0){
-    dth.style.display='';
+  totDepAmt = Math.min(totDepAmt, BASE);
+  const any = Object.values(active).some(v=>v);
+  const net = Math.max(0, BASE - totDepAmt);
+  document.getElementById('srow-tot').style.display  = any ? 'flex' : 'none';
+  document.getElementById('sval-tot').textContent    = '-'+fmt(totDepAmt);
+  document.getElementById('sv-grand').textContent    = fmt(net);
+  document.getElementById('hidden-grandtotal').value = net.toFixed(2);
+  const dth = document.getElementById('dep-th');
+  if(any && totDepAmt > 0){
+    dth.style.display = '';
     document.querySelectorAll('#tbody tr').forEach(row=>{
-      const sub=parseFloat(row.getAttribute('data-sub'))||0;
-      const cell=row.querySelector('.dep-cell');
-      if(cell){cell.style.display='';cell.textContent='-฿'+fmtPlain(sub*totPct/100);}
+      const sub  = parseFloat(row.getAttribute('data-sub')) || 0;
+      const cell = row.querySelector('.dep-cell');
+      if(cell){
+        cell.style.display = '';
+        const itemDep = BASE > 0 ? (sub / BASE * totDepAmt) : 0;
+        cell.textContent = '-฿'+fmtPlain(itemDep);
+      }
     });
-  }else{
-    dth.style.display='none';
+  } else {
+    dth.style.display = 'none';
     document.querySelectorAll('.dep-cell').forEach(c=>c.style.display='none');
   }
 }
 
-/* ===== SUBMIT ===== */
 document.getElementById('submitBill').addEventListener('click', async function(){
   const btn = this;
-
   const soId        = document.getElementById('so_id').value.trim();
   const contactso   = document.getElementById('contactso').value.trim();
   const customerTel = document.getElementById('customer_tel').value.trim();
 
-  if(!soId){
-    showToast('ข้อมูลไม่ครบ','ไม่พบเลขที่ SO','error');
-    return;
-  }
+  if(!soId){ showToast('ข้อมูลไม่ครบ','ไม่พบเลขที่ SO','error'); return; }
   if(!contactso){
     showToast('ข้อมูลไม่ครบ','กรุณากรอกชื่อผู้ติดต่อ','error');
     document.getElementById('contactso').focus();
@@ -876,20 +814,27 @@ document.getElementById('submitBill').addEventListener('click', async function()
 
   const anyActive = Object.values(active).some(v => v);
   if(!anyActive){
-    showToast('ยังไม่ได้เลือกประเภทมัดจำ','กรุณาเปิดสวิตช์และกรอกเปอร์เซ็นต์มัดจำอย่างน้อย 1 ประเภท','warning');
+    showToast('ยังไม่ได้เลือกประเภทมัดจำ','กรุณาเปิดสวิตช์และกรอกค่ามัดจำอย่างน้อย 1 ประเภท','warning');
     return;
   }
 
-  const typeMap = { g:'product', b:'service', a:'shipping' };
+  const typeMap = { g:'product', b:'service' };
   const deposits = [];
-  ['g','b','a'].forEach(k => {
+  KEYS.forEach(k => {
     if(active[k]){
-      const pct = Math.min(100, Math.max(0, parseFloat(document.getElementById('dep-'+k).value) || 0));
-      const amt = BASE * pct / 100;
-      if(pct > 0){
+      const raw = parseFloat(document.getElementById('dep-'+k).value) || 0;
+      let pct, amt;
+      if(mode[k]==='pct'){
+        pct = Math.min(100, Math.max(0, raw));
+        amt = BASE * pct / 100;
+      } else {
+        amt = Math.max(0, raw);
+        pct = BASE > 0 ? amt / BASE * 100 : 0;
+      }
+      if(amt > 0){
         deposits.push({
           type:    typeMap[k],
-          percent: pct,
+          percent: +pct.toFixed(4),
           amount:  +amt.toFixed(2),
         });
       }
@@ -897,9 +842,14 @@ document.getElementById('submitBill').addEventListener('click', async function()
   });
 
   if(deposits.length === 0){
-    showToast('ข้อมูลมัดจำไม่ถูกต้อง','กรุณากรอกเปอร์เซ็นต์มัดจำให้มากกว่า 0','warning');
+    showToast('ข้อมูลมัดจำไม่ถูกต้อง','กรุณากรอกค่ามัดจำให้มากกว่า 0','warning');
     return;
   }
+
+  // sale_name จาก createdBy (ใช้ hidden-sale, fallback ไปที่ billid)
+  const saleName = (document.getElementById('hidden-sale').value
+                 || document.getElementById('billid').value
+                 || '').trim();
 
   const payload = {
     so_id:            soId,
@@ -910,6 +860,7 @@ document.getElementById('submitBill').addEventListener('click', async function()
     customer_tel:     customerTel,
     customer_address: document.getElementById('customer_address').value,
     emp_name:         document.getElementById('hidden-emp').value,
+    sale_name:        saleName,   // <<< ส่ง createdBy ไปเก็บเป็น sale_name
     grand_total:      parseFloat(document.getElementById('hidden-grandtotal').value) || 0,
     deposits:         deposits,
   };
@@ -922,23 +873,13 @@ document.getElementById('submitBill').addEventListener('click', async function()
     const csrf = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
     const res = await fetch('/deposit/store', {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Accept':       'application/json',
-        'X-CSRF-TOKEN': csrf,
-      },
+      headers: { 'Content-Type':'application/json', 'Accept':'application/json', 'X-CSRF-TOKEN': csrf },
       body: JSON.stringify(payload),
     });
-
     const data = await res.json();
-
-    if(!res.ok || !data.success){
-      throw new Error(data.message || `HTTP ${res.status}`);
-    }
-
+    if(!res.ok || !data.success){ throw new Error(data.message || `HTTP ${res.status}`); }
     showToast('บันทึกสำเร็จ', data.message || 'บันทึกใบมัดจำเรียบร้อยแล้ว', 'success');
     setTimeout(() => { window.location.href = '/SOlist'; }, 1500);
-
   }catch(err){
     console.error(err);
     showToast('บันทึกไม่สำเร็จ', err.message || 'เกิดข้อผิดพลาด', 'error');

@@ -217,6 +217,7 @@ Route::post('/return/{id}/reject',        [PooutsidereturnController::class, 're
 
 
 use App\Http\Controllers\fuellogsController;
+ 
 Route::get('/oil/prev-mileage', [fuellogsController::class, 'prevMileage'])->name('oil.prevMileage');
 Route::get('/oil',              [fuellogsController::class, 'oil'])->name('oil');
 Route::post('/oil',             [fuellogsController::class, 'store'])->name('oil.store');
@@ -224,14 +225,18 @@ Route::put('/oil/update/{id}',  [fuellogsController::class, 'update'])->name('oi
 Route::delete('/oil/{id}',      [fuellogsController::class, 'destroy'])->name('oil.destroy');
 Route::post('/oil/sync-ng',     [fuellogsController::class, 'syncNg'])->name('oil.syncNg');
 Route::get('/oil/ng-list',      [fuellogsController::class, 'ngList'])->name('oil.ngList');
+ 
+// ⭐ NEW — สำหรับส่ง filter ผ่าน POST เพื่อให้ URL สะอาด
+Route::post('/oil/filter',      [fuellogsController::class, 'applyFilter'])->name('oil.filter');
 
 
 use App\Http\Controllers\DepositController;
-Route::get('/insertdeposit', [DepositController::class, 'insertdeposit'])->name('deposit.insert');
-Route::get('/deposit/dashboard', [DepositController::class, 'dashboarddeposit'])->name('deposit.dashboard');
-Route::get('/deposit/bot', [DepositController::class, 'botdeposit'])->name('deposit.bot');
-Route::post('/deposit/store', [DepositController::class, 'store'])->name('deposit.store');
 
+Route::get('/insertdeposit', [DepositController::class, 'insertdeposit'])->name('deposit.insert');
+Route::get('/dashboarddeposit', [DepositController::class, 'dashboarddeposit'])->name('deposit.dashboard');
+Route::get('/deposit/detail/{so_id}', [DepositController::class, 'detail'])->name('deposit.detail');
+Route::get('/depositbot', [DepositController::class, 'botdeposit'])->name('deposit.bot');
+Route::post('/deposit/store', [DepositController::class, 'store'])->name('deposit.store');
 use App\Http\Controllers\DeliverytrackController;
 Route::get('/deliverytrack', [DeliverytrackController::class, 'index'])->name('deliverytrack');
 Route::post('/return/{id}/new-bill', [DeliverytrackController::class, 'saveNewBill'])->name('deliverytrack.newbill');
