@@ -234,9 +234,23 @@ use App\Http\Controllers\DepositController;
 
 Route::get('/insertdeposit', [DepositController::class, 'insertdeposit'])->name('deposit.insert');
 Route::get('/dashboarddeposit', [DepositController::class, 'dashboarddeposit'])->name('deposit.dashboard');
-Route::get('/deposit/detail/{so_id}', [DepositController::class, 'detail'])->name('deposit.detail');
-Route::get('/depositbot', [DepositController::class, 'botdeposit'])->name('deposit.bot');
+Route::get('/deposit/detail/{so_id}', [DepositController::class, 'detail'])
+     ->where('so_id', '.*')   // อนุญาตให้ใช้ "/" ใน so_id เช่น "69/007708"
+     ->name('deposit.detail');
+
+// ===== หน้า Bot — รองรับทั้ง 2 URL =====
+Route::get('/botdeposit', [DepositController::class, 'botdeposit'])->name('deposit.bot');
+Route::get('/depositbot', [DepositController::class, 'botdeposit']);  // alias เผื่อพิมพ์สลับ
+
 Route::post('/deposit/store', [DepositController::class, 'store'])->name('deposit.store');
+
+// ===== อัปเดตสถานะใบมัดจำ (admin: kanitin2, dev) =====
+Route::post('/deposit/update-status', [DepositController::class, 'updateStatus'])->name('deposit.updateStatus');
+
+// ===== บันทึกการพิมพ์ใบมัดจำ (จากหน้า botdeposit) =====
+Route::post('/deposit/mark-printed', [DepositController::class, 'markPrinted'])->name('deposit.markPrinted');
+Route::post('/deposit/mark-printed-bulk', [DepositController::class, 'markPrintedBulk'])->name('deposit.markPrintedBulk');
+ 
 use App\Http\Controllers\DeliverytrackController;
 Route::get('/deliverytrack', [DeliverytrackController::class, 'index'])->name('deliverytrack');
 Route::post('/return/{id}/new-bill', [DeliverytrackController::class, 'saveNewBill'])->name('deliverytrack.newbill');
