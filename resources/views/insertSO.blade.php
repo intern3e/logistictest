@@ -329,6 +329,27 @@
                                                     <input class="form-control" type="text" name="" id="" disabled
                                                         style="width: 280px" value="ที.ซี.ฟาร์มาซูติคอล อุตสาหกรรม จำกัด">
                                                 </td>
+                                                <td>
+                                            <a href="javascript:void(0);" onclick="goToInsertDeposit()" class="btn"
+                                            style="margin-left: 10px; color: #212529; background-color: #6cb2eb; border-color: #6cb2eb;"
+                                            onmouseover="this.style.color='#ffffff'"
+                                            onmouseout="this.style.color='#212529'">
+                                                สร้างใบมัดจำ
+                                            </a>
+
+                                            <script>
+                                            function goToInsertDeposit() {
+                                                const soNum = document.getElementById('SOCode').value;
+
+                                                if (!soNum) {
+                                                    alert('ไม่พบเลข SO');
+                                                    return;
+                                                }
+
+                                                window.location.href = `/insertdeposit?so_num=${encodeURIComponent(soNum)}&create_by=`;
+                                            }
+                                            </script>
+                                                </td>
                                             </tr>
                                         </table>
                                     </td>

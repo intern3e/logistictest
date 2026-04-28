@@ -265,13 +265,20 @@ Route::delete('/service/{id}',      [ServiceController::class, 'destroy'])->name
 
 
 use App\Http\Controllers\TechnicianController;
-Route::get('/dashboardtechnician',          [TechnicianController::class, 'index'])->name('technician.dashboard');
-Route::post('/technicians/store',            [TechnicianController::class, 'storeTechnician'])->name('tech.store');
-Route::post('/technicians/{empId}/update',   [TechnicianController::class, 'updateTechnician'])->name('tech.update');
-Route::post('/technicians/{empId}/delete',   [TechnicianController::class, 'destroyTechnician'])->name('tech.delete');
-Route::post('/schedules/store',              [TechnicianController::class, 'storeSchedule'])->name('sched.store');
-Route::post('/schedules/{id}/update',        [TechnicianController::class, 'updateSchedule'])->name('sched.update');
-Route::post('/schedules/{id}/delete',        [TechnicianController::class, 'destroySchedule'])->name('sched.delete');
-
-use App\Http\Controllers\ProjectplanController;
-Route::get('/project', [ProjectplanController::class, 'dashboard']);
+Route::get('/dashboardtechnician',             [TechnicianController::class, 'index'])->name('technician.dashboard');
+Route::post('/technicians/store',              [TechnicianController::class, 'storeTechnician'])->name('tech.store');
+Route::post('/technicians/{empId}/update',     [TechnicianController::class, 'updateTechnician'])->name('tech.update');
+Route::post('/technicians/{empId}/delete',     [TechnicianController::class, 'destroyTechnician'])->name('tech.delete');
+Route::post('/schedules/store',                [TechnicianController::class, 'storeSchedule'])->name('sched.store');
+Route::post('/schedules/{id}/update',          [TechnicianController::class, 'updateSchedule'])->name('sched.update');
+Route::post('/schedules/{id}/delete',          [TechnicianController::class, 'destroySchedule'])->name('sched.delete');
+Route::post('/customers/store',                [TechnicianController::class, 'customerStore'])->name('cust.store');
+Route::post('/customers/{id}/update',          [TechnicianController::class, 'customerUpdate'])->name('cust.update');
+Route::post('/customers/{id}/delete',          [TechnicianController::class, 'customerDestroy'])->name('cust.delete');
+Route::post('/customers/{id}/wash/store',      [TechnicianController::class, 'washStore'])->name('wash.store');
+Route::post('/customers/{id}/wash/{num}/delete',[TechnicianController::class, 'washDestroy'])->name('wash.delete');
+Route::post('/solar-accounts/store',           [TechnicianController::class, 'accountStore'])->name('account.store');
+Route::post('/solar-accounts/{id}/update',     [TechnicianController::class, 'accountUpdate'])->name('account.update');
+Route::post('/solar-accounts/{id}/delete',     [TechnicianController::class, 'accountDestroy'])->name('account.delete');
+Route::post('/customers/{id}/milestone/store',         [TechnicianController::class, 'milestoneStore'])->name('milestone.store');
+Route::post('/customers/{id}/milestone/{index}/delete',[TechnicianController::class, 'milestoneDestroy'])->name('milestone.delete');

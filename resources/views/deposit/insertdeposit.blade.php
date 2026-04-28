@@ -269,28 +269,28 @@ hr.divider{border:none;border-top:1px solid var(--border-light);margin:0}
                 <label>เลขที่ SO <i class="tip" data-tip="รหัส Sales Order จากระบบ">?</i></label>
                 <div class="field-wrap">
                   <input type="text" id="so_number" name="so_number" readonly placeholder="SO-XXXX">
-                  <span class="readonly-badge">อัตโนมัติ</span>
+                  
                 </div>
               </div>
               <div class="field">
                 <label>ชื่อ Sale</label>
                 <div class="field-wrap">
                   <input type="text" id="billid" name="billid" readonly placeholder="—">
-                  <span class="readonly-badge">อัตโนมัติ</span>
+                  
                 </div>
               </div>
               <div class="field">
                 <label>วันที่ออกเอกสาร</label>
                 <div class="field-wrap">
                   <input type="text" id="sell_date" name="sell_date" readonly placeholder="DD-MM-YYYY">
-                  <span class="readonly-badge">อัตโนมัติ</span>
+                  
                 </div>
               </div>
               <div class="field">
                 <label>รหัสลูกค้า</label>
                 <div class="field-wrap">
                   <input type="text" id="customer_id" name="customer_id" readonly placeholder="—">
-                  <span class="readonly-badge">อัตโนมัติ</span>
+                  
                 </div>
               </div>
             </div>
@@ -317,7 +317,7 @@ hr.divider{border:none;border-top:1px solid var(--border-light);margin:0}
                 <label>ชื่อบริษัท / ลูกค้า</label>
                 <div class="field-wrap">
                   <input type="text" id="customer_name" name="customer_name" readonly placeholder="ชื่อบริษัทหรือลูกค้า">
-                  <span class="readonly-badge">อัตโนมัติ</span>
+                  
                 </div>
               </div>
               <div class="field span-2">
@@ -332,7 +332,7 @@ hr.divider{border:none;border-top:1px solid var(--border-light);margin:0}
                 <label>ที่อยู่จัดส่ง <i class="tip" data-tip="ที่อยู่สำหรับจัดส่งสินค้า">?</i></label>
                 <div class="field-wrap">
                   <input type="text" id="customer_address" name="customer_address" readonly placeholder="ที่อยู่จัดส่ง">
-                  <span class="readonly-badge">อัตโนมัติ</span>
+                  
                 </div>
               </div>
             </div>

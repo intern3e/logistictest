@@ -8,7 +8,6 @@ class technician extends Model
     protected $primaryKey = 'emp_id';
     public    $incrementing = false;
     protected $keyType      = 'string';
-
     public    $timestamps   = false;
     const     CREATED_AT    = 'created_at';
 
@@ -16,6 +15,7 @@ class technician extends Model
         'emp_id',
         'emp_name',
         'emp_name_eng',
+        'emp_nickname',
         'emp_phone',
         'date_of_birth',
         'img',

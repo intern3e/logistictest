@@ -294,6 +294,8 @@
                 <input class="btn btn-danger" type="button" style="background-color: #0dc0f6" value="คนขับ"></a>
                 <a href="dashboardtechnician" title="technician" class="notification-icon" style="position: relative; display: inline-block;">
                 <input class="btn btn-danger" type="button" style="background-color: #f97400" value="งาน Projects"></a>
+                <a href="dashboarddeposit" title="deposit" class="notification-icon" style="position: relative; display: inline-block;">
+                <input class="btn btn-secondary" type="button" style="background-color: #07439c" value="ใบมัดจำ"></a>
                 
 <script>
     document.addEventListener("DOMContentLoaded", function () {
