@@ -9,7 +9,6 @@ class SolarAccount extends Model
     protected $table = 'solar_accounts';
 
     protected $fillable = [
-        'no',
         'plane',
         'username',
         'password',
