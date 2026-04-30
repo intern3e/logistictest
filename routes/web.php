@@ -225,8 +225,6 @@ Route::put('/oil/update/{id}',  [fuellogsController::class, 'update'])->name('oi
 Route::delete('/oil/{id}',      [fuellogsController::class, 'destroy'])->name('oil.destroy');
 Route::post('/oil/sync-ng',     [fuellogsController::class, 'syncNg'])->name('oil.syncNg');
 Route::get('/oil/ng-list',      [fuellogsController::class, 'ngList'])->name('oil.ngList');
- 
-// ⭐ NEW — สำหรับส่ง filter ผ่าน POST เพื่อให้ URL สะอาด
 Route::post('/oil/filter',      [fuellogsController::class, 'applyFilter'])->name('oil.filter');
 
 use App\Http\Controllers\DepositController;
@@ -270,3 +268,7 @@ Route::post('/solar-accounts/store',       [TechnicianController::class, 'accoun
 Route::post('/solar-accounts/{id}/update', [TechnicianController::class, 'accountUpdate'])->name('account.update');
 Route::post('/solar-accounts/{id}/delete', [TechnicianController::class, 'accountDestroy'])->name('account.delete');
 Route::post('/customers/{id}/status', [TechnicianController::class, 'customerStatusUpdate'])->name('cust.status');
+
+use App\Http\Controllers\DeliverytrackController;
+Route::get('/deliverytrack', [DeliverytrackController::class, 'index'])->name('deliverytrack');
+Route::post('/return/{id}/new-bill', [DeliverytrackController::class, 'saveNewBill'])->name('deliverytrack.newbill');
