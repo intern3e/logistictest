@@ -29,6 +29,7 @@ class deposit extends Model
         'status_bill', 
         'deposit_bill_id',
         'time_check',
-        'deposit_bill'
+        'deposit_bill',
+        'po_document'
     ];
 }

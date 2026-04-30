@@ -25,6 +25,8 @@
 
   --red-btn:#9B1B1B;             /* แดงคล้ำ ทางการ */
   --red-btn-hover:#7F1717;
+  --red-light:#FEE2E2;
+  --red-border:#FCA5A5;
 
   --ink:#1F2937;
   --steel:#374151;
@@ -189,9 +191,41 @@ tbody tr:last-child td{border-bottom:none}
 .type-text{color:var(--green-text);font-weight:500}
 .type-text .plus{color:var(--green-link);font-weight:700;margin-left:4px}
 
+/* ===== คอลัมน์ deposit_bill_id + ปุ่ม PDF ===== */
+.c-billno{
+  display:inline-flex;align-items:center;gap:6px;
+  white-space:nowrap;
+}
+.c-billno-text{
+  font-weight:700;color:var(--green-text);
+  font-variant-numeric:tabular-nums;font-size:12.5px;
+}
+.btn-pdf{
+  display:inline-flex;align-items:center;justify-content:center;
+  width:26px;height:26px;
+  background:var(--red-light);
+  border:1px solid var(--red-border);
+  color:var(--red-btn);
+  text-decoration:none;
+  transition:all .15s;
+  flex-shrink:0;
+}
+.btn-pdf:hover{
+  background:var(--red-btn);
+  color:#fff;
+  border-color:var(--red-btn);
+  transform:translateY(-1px);
+  box-shadow:0 2px 6px rgba(155,27,27,.3);
+}
+.no-bill{color:var(--mist);font-size:12px}
+
 .status-cell{text-align:center;line-height:1.35}
 .status-cell .st{color:var(--green-text);font-weight:600;font-size:13px;display:block}
 .status-cell .st-time{color:var(--ash);font-size:11px;display:block;margin-top:2px}
+.status-cell .st-check-time{
+  color:var(--green-link);font-size:10.5px;display:block;margin-top:2px;
+  font-weight:500;
+}
 .status-cancel{color:#9B1B1B;font-weight:600}
 .status-wait{color:#D97706;font-weight:600}
 .status-wip{color:var(--green-link);font-weight:600}
@@ -439,7 +473,7 @@ nav[role="navigation"] span[aria-current="page"]{
 
     <div class="f-search-wrap">
       <div class="f-search">
-        <input type="text" id="filterSO" placeholder="ค้นหา ใบสั่งขาย" oninput="applyFilter()">
+        <input type="text" id="filterSO" placeholder="ค้นหา ใบสั่งขาย / เลขใบมัดจำ" oninput="applyFilter()">
       </div>
     </div>
   </div>
@@ -459,6 +493,7 @@ nav[role="navigation"] span[aria-current="page"]{
       <thead>
         <tr>
           <th style="width:50px">ลำดับ</th>
+          <th>เลขที่ใบมัดจำ</th>
           <th>ใบสั่งขาย</th>
           <th>ชื่อลูกค้า</th>
           <th>Sale</th>
@@ -476,16 +511,42 @@ nav[role="navigation"] span[aria-current="page"]{
         @forelse($deposits as $item)
         @php
           $status = $item->status ?? 'รอยืนยัน';
-          $isConfirmed = in_array($status, ['ยืนยันแล้ว', 'สำเร็จ', 'ออกบิลแล้ว', 'ปรับสำเร็จ']);
+          $isConfirmed = in_array($status, ['ยืนยัน', 'ยืนยันแล้ว', 'สำเร็จ', 'ออกบิลแล้ว', 'ปรับสำเร็จ']);
           $isCancelled = $status === 'ยกเลิก';
           $depType = $item->dep_type ?? '';
           $typeName = $typeLabel[$depType] ?? $depType;
           $recordDate = $item->time ? \Carbon\Carbon::parse($item->time)->setTimezone('Asia/Bangkok')->format('Y-m-d') : '';
+          $billId = $item->deposit_bill_id ?? '';
         @endphp
         <tr class="{{ $isConfirmed ? 'confirmed' : '' }}"
             data-record-date="{{ $recordDate }}"
-            data-so="{{ strtolower($item->so_id ?? '') }}">
+            data-so="{{ strtolower(($item->so_id ?? '') . ' ' . $billId) }}">
           <td class="row-idx">{{ ($deposits->currentPage() - 1) * $deposits->perPage() + $loop->iteration }}</td>
+
+          {{-- เลขที่ใบมัดจำ + ปุ่ม PDF --}}
+          <td>
+            @if($billId)
+              <div class="c-billno">
+                <span class="c-billno-text">{{ $billId }}</span>
+                <a href="{{ route('deposit.bill', $billId) }}"
+                   target="_blank"
+                   rel="noopener"
+                   class="btn-pdf"
+                   title="เปิดใบมัดจำ (พิมพ์ / PDF)">
+                  <svg width="13" height="13" viewBox="0 0 14 14" fill="none">
+                    <path d="M3 1.5h5l3 3v8a.5.5 0 0 1-.5.5H3.5a.5.5 0 0 1-.5-.5v-11a.5.5 0 0 1 .5-.5z"
+                          stroke="currentColor" stroke-width="1.3" stroke-linejoin="round"/>
+                    <path d="M8 1.5V4.5h3" stroke="currentColor" stroke-width="1.3" stroke-linejoin="round"/>
+                    <text x="7" y="11.3" font-size="3.6" font-weight="700" text-anchor="middle"
+                          fill="currentColor" font-family="Arial, sans-serif">PDF</text>
+                  </svg>
+                </a>
+              </div>
+            @else
+              <span class="no-bill">—</span>
+            @endif
+          </td>
+
           <td>
             <a class="c-link" onclick="openDetail('{{ $item->so_id }}')">{{ $item->so_id }}</a>
           </td>
@@ -533,12 +594,23 @@ nav[role="navigation"] span[aria-current="page"]{
             @else
               <span class="st status-wip">{{ $status }}</span>
             @endif
-            <span class="st-time">{{ $item->time ? \Carbon\Carbon::parse($item->time)->setTimezone('Asia/Bangkok')->format('H:i d/m/Y') : '' }}</span>
+
+            {{-- เวลาบันทึกครั้งแรก --}}
+            <span class="st-time">
+              {{ $item->time ? \Carbon\Carbon::parse($item->time)->setTimezone('Asia/Bangkok')->format('H:i d/m/Y') : '' }}
+            </span>
+
+            {{-- เวลายืนยัน (time_check) --}}
+            @if($isConfirmed && !empty($item->time_check))
+              <span class="st-check-time" title="เวลาที่ยืนยัน">
+                ✓ ยืนยัน: {{ \Carbon\Carbon::parse($item->time_check)->setTimezone('Asia/Bangkok')->format('H:i d/m/Y') }}
+              </span>
+            @endif
           </td>
         </tr>
         @empty
         <tr>
-          <td colspan="12" style="background:#fff;border-right:none">
+          <td colspan="13" style="background:#fff;border-right:none">
             <div class="empty">
               <div class="empty-ico">
                 <svg width="22" height="22" viewBox="0 0 22 22" fill="none">
@@ -555,7 +627,7 @@ nav[role="navigation"] span[aria-current="page"]{
 
         <!-- แถวแสดงเมื่อกรองแล้วไม่พบ -->
         <tr class="no-match-row" id="noMatchRow">
-          <td colspan="12" style="background:#fff;border-right:none">
+          <td colspan="13" style="background:#fff;border-right:none">
             <div class="no-match">
               <div class="empty-ico">
                 <svg width="22" height="22" viewBox="0 0 22 22" fill="none">
@@ -564,7 +636,7 @@ nav[role="navigation"] span[aria-current="page"]{
                 </svg>
               </div>
               <h4>ไม่พบรายการที่ตรงกับเงื่อนไข</h4>
-              <p>ลองเปลี่ยนวันที่ หรือ เลขใบสั่งขายดูใหม่</p>
+              <p>ลองเปลี่ยนวันที่ หรือ เลขใบสั่งขาย / เลขใบมัดจำดูใหม่</p>
             </div>
           </td>
         </tr>
@@ -596,6 +668,7 @@ nav[role="navigation"] span[aria-current="page"]{
       <div class="sec-ttl">ข้อมูลทั่วไป</div>
       <div class="dg">
         <div class="df"><span class="dl">ใบสั่งขาย</span><span class="dv" id="d-so">—</span></div>
+        <div class="df"><span class="dl">เลขที่ใบมัดจำ</span><span class="dv" id="d-billno" style="color:var(--green-text);font-weight:700">—</span></div>
         <div class="df"><span class="dl">วันที่</span><span class="dv" id="d-date">—</span></div>
         <div class="df full"><span class="dl">ชื่อลูกค้า</span><span class="dv" id="d-cust">—</span></div>
         <div class="df"><span class="dl">ผู้ติดต่อ</span><span class="dv" id="d-contact">—</span></div>
@@ -629,7 +702,7 @@ nav[role="navigation"] span[aria-current="page"]{
         <div class="df"><span class="dl">ยอดคงเหลือ</span><span class="dv" id="d-grand" style="color:var(--ink);font-weight:700;font-size:15px">—</span></div>
       </div>
     </div>
-    <div class="modal-foot">
+    <div class="modal-foot" id="modal-foot-actions">
       <button class="btn-ghost" onclick="closeDetail()">ปิด</button>
     </div>
   </div>
@@ -670,6 +743,7 @@ nav[role="navigation"] span[aria-current="page"]{
 const IS_ADMIN     = {{ $isAdmin ? 'true' : 'false' }};
 const CURRENT_USER = '{{ $currentUser }}';
 const CSRF_TOKEN   = document.querySelector('meta[name="csrf-token"]')?.content || '';
+
 /* ===== Client-side Filter ===== */
 function formatDateThai(ymd){
   if(!ymd) return '';
@@ -689,7 +763,7 @@ function applyFilter(){
 
   rows.forEach(r => {
     const recDate = r.getAttribute('data-record-date');
-    const soId    = r.getAttribute('data-so');
+    const soId    = r.getAttribute('data-so'); // ตอนนี้รวม so_id + deposit_bill_id แล้ว
 
     let show = true;
     if(dateVal && recDate !== dateVal) show = false;
@@ -712,7 +786,7 @@ function applyFilter(){
   if(dateVal || soVal){
     info.classList.add('show');
     dText.innerHTML = dateVal ? `<b>วันที่บันทึก:</b> ${formatDateThai(dateVal)}` : '';
-    sText.innerHTML = soVal   ? `<b>ใบสั่งขาย:</b> ${soVal}` : '';
+    sText.innerHTML = soVal   ? `<b>ค้นหา:</b> ${soVal}` : '';
     cText.textContent = `${visibleCount} รายการ`;
   } else {
     info.classList.remove('show');
@@ -745,8 +819,13 @@ const typeLabels = {product:'สินค้า', service:'บริการ', 
 function openDetail(soId){
   document.getElementById('modal-title').textContent='รายละเอียด '+soId;
 
-  ['d-so','d-date','d-cust','d-contact','d-tel','d-addr','d-emp','d-sale','d-total-dep','d-grand']
+  ['d-so','d-billno','d-date','d-cust','d-contact','d-tel','d-addr','d-emp','d-sale','d-total-dep','d-grand']
     .forEach(id=>document.getElementById(id).textContent='—');
+
+  // ล้างปุ่ม PDF เก่าใน modal foot ถ้ามี
+  const foot = document.getElementById('modal-foot-actions');
+  const oldPdfBtn = document.getElementById('modal-pdf-btn');
+  if(oldPdfBtn) oldPdfBtn.remove();
 
   const tb=document.getElementById('d-items');
   tb.innerHTML='<tr><td colspan="5" style="background:#fff;color:var(--mist);padding:16px">กำลังโหลด...</td></tr>';
@@ -763,6 +842,7 @@ function openDetail(soId){
       }
       const first = data.items[0];
       document.getElementById('d-so').textContent      = first.so_id || '—';
+      document.getElementById('d-billno').textContent  = first.deposit_bill_id || '—';
       document.getElementById('d-date').textContent    = first.date_dep ? formatDate(first.date_dep) : '—';
       document.getElementById('d-cust').textContent    = first.customer_name || '—';
       document.getElementById('d-contact').textContent = first.contactso || '—';
@@ -771,6 +851,25 @@ function openDetail(soId){
       document.getElementById('d-emp').textContent     = first.emp_name || '—';
       document.getElementById('d-sale').textContent    = first.sale_name || '—';
 
+      // เพิ่มปุ่ม "เปิดใบมัดจำ" ใน modal foot ถ้ามี deposit_bill_id
+      if(first.deposit_bill_id){
+        const pdfBtn = document.createElement('a');
+        pdfBtn.id = 'modal-pdf-btn';
+        pdfBtn.href = `/deposit/bill/${encodeURIComponent(first.deposit_bill_id)}`;
+        pdfBtn.target = '_blank';
+        pdfBtn.rel = 'noopener';
+        pdfBtn.className = 'btn-ghost';
+        pdfBtn.style.cssText = 'background:var(--red-light);border-color:var(--red-border);color:var(--red-btn);text-decoration:none;display:inline-flex;align-items:center;gap:6px;margin-right:auto';
+        pdfBtn.innerHTML = `
+          <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+            <path d="M3 1.5h5l3 3v8a.5.5 0 0 1-.5.5H3.5a.5.5 0 0 1-.5-.5v-11a.5.5 0 0 1 .5-.5z" stroke="currentColor" stroke-width="1.3" stroke-linejoin="round"/>
+            <path d="M8 1.5V4.5h3" stroke="currentColor" stroke-width="1.3" stroke-linejoin="round"/>
+          </svg>
+          เปิดใบมัดจำ (PDF)
+        `;
+        foot.insertBefore(pdfBtn, foot.firstChild);
+      }
+
       let totalDep = 0;
       tb.innerHTML = data.items.map(it=>{
         totalDep += parseFloat(it.dep_price||0);
@@ -778,7 +877,7 @@ function openDetail(soId){
         const st = it.status || 'รอยืนยัน';
         let stCls = 'status-wait';
         if(st==='ยกเลิก') stCls='status-cancel';
-        else if(['ยืนยันแล้ว','สำเร็จ','ออกบิลแล้ว','ปรับสำเร็จ'].includes(st)) stCls='';
+        else if(['ยืนยัน','ยืนยันแล้ว','สำเร็จ','ออกบิลแล้ว','ปรับสำเร็จ'].includes(st)) stCls='';
         return `<tr>
           <td>${it.id}</td>
           <td><span class="type-text">${tLabel}</span></td>
@@ -826,14 +925,14 @@ function askChangeStatus(soId, depId, currentStatus, nextStatus, custName){
     btn.classList.remove('to-wait');
     btn.textContent = 'ยืนยัน';
     title.textContent = 'ยืนยันรายการนี้?';
-    msg.innerHTML = `เปลี่ยนสถานะจาก <b>รอยืนยัน</b> → <b style="color:var(--green-table)">ยืนยัน</b>`;
+    msg.innerHTML = `เปลี่ยนสถานะจาก <b>รอยืนยัน</b> → <b style="color:var(--green-table)">ยืนยัน</b><br><span style="font-size:12px;color:var(--ash)">ระบบจะบันทึกเวลายืนยันให้อัตโนมัติ</span>`;
   } else {
     ico.textContent = '!';
     ico.classList.remove('to-confirm');
     btn.classList.add('to-wait');
     btn.textContent = 'เปลี่ยนกลับ';
     title.textContent = 'เปลี่ยนกลับเป็นรอยืนยัน?';
-    msg.innerHTML = `เปลี่ยนสถานะจาก <b>${currentStatus}</b> → <b style="color:#D97706">รอยืนยัน</b>`;
+    msg.innerHTML = `เปลี่ยนสถานะจาก <b>${currentStatus}</b> → <b style="color:#D97706">รอยืนยัน</b><br><span style="font-size:12px;color:var(--ash)">เวลายืนยันเดิมจะถูกล้าง</span>`;
   }
 
   document.getElementById('confirmSO').textContent   = soId || '—';

@@ -900,7 +900,13 @@ document.getElementById('submitBill').addEventListener('click', async function()
     });
     const data = await res.json();
     if(!res.ok || !data.success){ throw new Error(data.message || `HTTP ${res.status}`); }
-    showToast('บันทึกสำเร็จ', data.message || 'บันทึกใบมัดจำเรียบร้อยแล้ว', 'success');
+
+    // ===== แสดงเลขใบมัดจำที่ controller ส่งกลับมา =====
+    const billMsg = data.deposit_bill_id
+      ? `เลขที่ใบมัดจำ: ${data.deposit_bill_id}`
+      : (data.message || 'บันทึกใบมัดจำเรียบร้อยแล้ว');
+    showToast('บันทึกสำเร็จ', billMsg, 'success');
+
     setTimeout(() => { window.location.href = '/SOlist'; }, 1500);
   }catch(err){
     console.error(err);
