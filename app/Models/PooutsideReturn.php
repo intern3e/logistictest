@@ -9,7 +9,7 @@ class Pooutsidereturn extends Model
 {
     use HasFactory;
     protected $table = 'Pooutsidereturn'; 
-    protected $fillable = ['return_id','return_date','po','vendor','status','reason','note'];
+    protected $fillable = ['return_id','return_date','po','vendor','status','reason','note','shipping_address','claim_type'];
     protected $primaryKey = 'return_id';
     public    $keyType    = 'string'; 
     public $incrementing = false;

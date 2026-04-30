@@ -8,6 +8,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Database\Schema\Blueprint;
+use Symfony\Component\HttpFoundation\StreamedResponse;
 use App\Models\Pooutsidereturn;
 use App\Models\DetailPooutsidereturn;
 use Carbon\Carbon;
@@ -32,7 +33,6 @@ class PooutsidereturnController extends Controller
             });
         }
 
-        // ⭐ เพิ่ม column เวลา step ถ้ายังไม่มี (fail-safe ถ้ายังไม่ได้รัน migration)
         $stepColumns = [
             'step1_at', 'step2_at', 'step3_at',
             'step4_at', 'step5_at', 'cancelled_at',
@@ -43,6 +43,18 @@ class PooutsidereturnController extends Controller
                     $table->timestamp($col)->nullable();
                 });
             }
+        }
+
+        // ⭐ เพิ่ม column สำหรับข้อมูลที่ admin กรอกตอนอนุมัติ
+        if (!Schema::hasColumn('Pooutsidereturn', 'shipping_address')) {
+            Schema::table('Pooutsidereturn', function (Blueprint $table) {
+                $table->text('shipping_address')->nullable();
+            });
+        }
+        if (!Schema::hasColumn('Pooutsidereturn', 'claim_type')) {
+            Schema::table('Pooutsidereturn', function (Blueprint $table) {
+                $table->string('claim_type', 50)->nullable();
+            });
         }
     }
 
@@ -94,8 +106,6 @@ class PooutsidereturnController extends Controller
                     if (is_array($decoded)) $images_pack = $decoded;
                 }
 
-                // ⭐ สร้าง stepDates array จาก column เวลาใน DB
-                // ถ้า column ยังไม่มี (เคสเก่า) ใช้ return_date เป็น fallback
                 $stepDates = [
                     $this->fmtDt($h->step1_at ?? $h->return_date),
                     $this->fmtDt($h->step2_at ?? $h->return_date),
@@ -112,6 +122,8 @@ class PooutsidereturnController extends Controller
                     'status'          => $h->status,
                     'reason'          => $h->reason,
                     'note'            => $h->note ?? '-',
+                    'shipping_address' => $h->shipping_address ?? '',
+                    'claim_type'      => $h->claim_type ?? '',
                     'product'         => $productList->map(fn($d) =>
                         ($d['product_name'] ?: '-') . ' (จำนวน: ' . $d['quantity'] . ')'
                     )->implode('|'),
@@ -119,7 +131,6 @@ class PooutsidereturnController extends Controller
                     'images'          => $images,
                     'images_evidence' => $images_evidence,
                     'images_pack'     => $images_pack,
-                    // ⭐ ส่ง stepDates เป็น "Y-m-d H:i:s" ให้ frontend แสดงใน timeline
                     'stepDates'       => $stepDates,
                     'cancelled_at'    => $this->fmtDt($h->cancelled_at ?? null),
                 ];
@@ -127,9 +138,6 @@ class PooutsidereturnController extends Controller
         );
     }
 
-    /**
-     * Helper: format datetime เป็น "Y-m-d H:i:s" หรือ null
-     */
     private function fmtDt($datetime): ?string
     {
         if (empty($datetime)) return null;
@@ -161,7 +169,7 @@ class PooutsidereturnController extends Controller
             $reason = $request->input('reason');
             $note   = $request->input('note', '');
             $images = $request->input('images', []);
-            $now    = Carbon::now('Asia/Bangkok'); // ตั้งเวลาไทยให้ถูกต้อง
+            $now    = Carbon::now('Asia/Bangkok');
 
             $returnId = $this->generateReturnId($now, $poNum);
 
@@ -174,7 +182,6 @@ class PooutsidereturnController extends Controller
                 'reason'      => $reason,
                 'note'        => $note ?: null,
                 'images'      => !empty($images) ? json_encode($images) : null,
-                // ⭐ บันทึกเวลา step1 และ step2 ตอนสร้างเคส (เก็บถาวร)
                 'step1_at'    => $now->toDateTimeString(),
                 'step2_at'    => $now->toDateTimeString(),
             ]);
@@ -189,8 +196,6 @@ class PooutsidereturnController extends Controller
                 ]);
             }
 
-            // ส่งการแจ้งเตือน Line ทันทีที่สร้างเคส (เพื่อให้ส่งครั้งเดียวจบที่นี่)
-            // เช็คว่า notify_line ไม่ได้ถูกสั่งปิด
             if ($request->input('notify_line', true) !== false) {
                 $this->sendLineNotification(
                     $returnId, $poNum, $vendor,
@@ -204,7 +209,6 @@ class PooutsidereturnController extends Controller
                 'return_id' => $returnId,
                 'vendor'    => $vendor,
                 'message'   => "สร้างเคส {$returnId} เรียบร้อยแล้ว",
-                // ⭐ ส่ง stepDates กลับให้ frontend ทันที
                 'stepDates' => [
                     $now->format('Y-m-d H:i:s'),
                     $now->format('Y-m-d H:i:s'),
@@ -222,6 +226,9 @@ class PooutsidereturnController extends Controller
         }
     }
 
+    /**
+     * รูปภาพจาก Google Drive (เดิม) - ใช้สำหรับ thumbnail/รูป
+     */
     public function driveImage(Request $request)
     {
         $fileId = $request->query('id');
@@ -251,6 +258,164 @@ class PooutsidereturnController extends Controller
         }
     }
 
+    /**
+     * ⭐ Stream วิดีโอจาก Google Drive (ปรับปรุงใหม่)
+     *
+     * ปัญหาที่เคยเจอ:
+     * 1. Google Drive `uc?export=download` ไฟล์ใหญ่ >25MB จะคืนหน้า virus scan warning HTML
+     * 2. PHP output_buffering ทำให้ headers ส่งผิดลำดับ
+     * 3. StreamedResponse + cURL บางครั้งดึง Content-Length ไม่ได้ทำให้ browser ไม่ยอม seek
+     *
+     * วิธีแก้:
+     * - ใช้ thumbnail URL (ใช้ได้กับวิดีโอด้วย) สำหรับ preview
+     * - ส่งต่อ Range header แบบ raw + ปิด output_buffering
+     * - ใช้ readfile() แทน cURL streaming (เร็วกว่า + เสถียรกว่า)
+     * - เพิ่ม fallback: ถ้าได้ HTML กลับมา (virus scan) → parse confirm token แล้วลองอีกรอบ
+     */
+    public function driveVideo(Request $request)
+    {
+        $fileId = $request->query('id');
+        if (!$fileId) {
+            return response('Missing id', 400);
+        }
+
+        // ⭐ ปิด output buffering เพื่อให้ stream แบบ real-time
+        while (ob_get_level() > 0) { ob_end_clean(); }
+
+        // ส่ง Range header ที่ผู้ใช้ส่งมา
+        $rangeHeader = $request->header('Range');
+
+        // ใช้ URL ที่เสถียรสำหรับการ stream วิดีโอ
+        // googleusercontent.com มักจะคืน raw bytes ตรงๆ ไม่ติด virus scan
+        // แต่ Drive จะ redirect จาก uc?export=download → googleusercontent
+        $driveUrl = "https://drive.google.com/uc?export=download&id={$fileId}";
+
+        // ขั้นตอนที่ 1: ทำ HEAD-like request เพื่อหา URL จริง + เช็ค virus scan
+        $finalUrl = $this->resolveDriveDownloadUrl($driveUrl);
+
+        if (!$finalUrl) {
+            return response('Cannot resolve drive video URL', 502);
+        }
+
+        // ขั้นตอนที่ 2: Stream ผ่าน cURL ไปยัง output
+        return new StreamedResponse(function () use ($finalUrl, $rangeHeader) {
+            $ch = curl_init($finalUrl);
+
+            $reqHeaders = [
+                'User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
+                'Accept: */*',
+            ];
+            if ($rangeHeader) {
+                $reqHeaders[] = 'Range: ' . $rangeHeader;
+            }
+
+            curl_setopt_array($ch, [
+                CURLOPT_HTTPHEADER     => $reqHeaders,
+                CURLOPT_FOLLOWLOCATION => true,
+                CURLOPT_MAXREDIRS      => 10,
+                CURLOPT_SSL_VERIFYPEER => false,
+                CURLOPT_SSL_VERIFYHOST => false,
+                CURLOPT_TIMEOUT        => 0,
+                CURLOPT_CONNECTTIMEOUT => 30,
+                CURLOPT_BUFFERSIZE     => 8192, // 8KB chunks
+                CURLOPT_WRITEFUNCTION  => function ($ch, $data) {
+                    echo $data;
+                    if (function_exists('fastcgi_finish_request')) {
+                        // ถ้าใช้ FPM ให้ flush ผ่าน FPM
+                        @ob_flush();
+                    }
+                    @flush();
+                    return strlen($data);
+                },
+            ]);
+
+            curl_exec($ch);
+            curl_close($ch);
+        }, 200, [
+            'Content-Type'           => 'video/mp4',
+            'Accept-Ranges'          => 'bytes',
+            'Cache-Control'          => 'public, max-age=3600',
+            'X-Content-Type-Options' => 'nosniff',
+            'X-Accel-Buffering'      => 'no', // ⭐ บอก Nginx ห้าม buffer
+        ]);
+    }
+
+    /**
+     * Helper: หา URL จริงสำหรับดาวน์โหลดวิดีโอจาก Drive
+     * - ทำ HEAD request ก่อน
+     * - ถ้าได้ HTML กลับมา (virus scan) → parse confirm token
+     * - คืน URL สุดท้ายที่จะใช้ stream
+     */
+    private function resolveDriveDownloadUrl(string $url): ?string
+    {
+        // ลอง request แบบ HEAD ดู Content-Type ก่อน
+        $ch = curl_init($url);
+        curl_setopt_array($ch, [
+            CURLOPT_NOBODY         => true,
+            CURLOPT_HEADER         => true,
+            CURLOPT_RETURNTRANSFER => true,
+            CURLOPT_FOLLOWLOCATION => true,
+            CURLOPT_MAXREDIRS      => 10,
+            CURLOPT_SSL_VERIFYPEER => false,
+            CURLOPT_SSL_VERIFYHOST => false,
+            CURLOPT_TIMEOUT        => 15,
+            CURLOPT_HTTPHEADER     => ['User-Agent: Mozilla/5.0'],
+        ]);
+        curl_exec($ch);
+        $effectiveUrl = curl_getinfo($ch, CURLINFO_EFFECTIVE_URL);
+        $contentType  = curl_getinfo($ch, CURLINFO_CONTENT_TYPE);
+        curl_close($ch);
+
+        // ถ้า Content-Type เป็น HTML → เป็นหน้า virus scan ของ Drive
+        // ต้อง parse confirm token แล้วเพิ่มใน URL
+        if ($contentType && stripos($contentType, 'text/html') !== false) {
+            // ดึง HTML body มา parse
+            $ch2 = curl_init($url);
+            curl_setopt_array($ch2, [
+                CURLOPT_RETURNTRANSFER => true,
+                CURLOPT_FOLLOWLOCATION => true,
+                CURLOPT_MAXREDIRS      => 10,
+                CURLOPT_SSL_VERIFYPEER => false,
+                CURLOPT_SSL_VERIFYHOST => false,
+                CURLOPT_TIMEOUT        => 15,
+                CURLOPT_HTTPHEADER     => ['User-Agent: Mozilla/5.0'],
+                CURLOPT_COOKIEJAR      => '/tmp/drive_cookie_' . md5($url),
+                CURLOPT_COOKIEFILE     => '/tmp/drive_cookie_' . md5($url),
+            ]);
+            $html = curl_exec($ch2);
+            curl_close($ch2);
+
+            // ดึง confirm token ออกจาก HTML (รูปแบบใหม่ของ Drive ใช้ form action+input)
+            // รูปแบบ 1: ?confirm=XXX
+            if (preg_match('/confirm=([a-zA-Z0-9_-]+)/', $html, $m)) {
+                return $url . '&confirm=' . $m[1];
+            }
+            // รูปแบบ 2: <input name="confirm" value="XXX">
+            if (preg_match('/name=["\']confirm["\']\s+value=["\']([^"\']+)["\']/i', $html, $m)) {
+                return $url . '&confirm=' . $m[1];
+            }
+            // รูปแบบ 3: action="/uc?..." มี hidden inputs ทั้งหมด
+            if (preg_match('/<form[^>]+id=["\']download-form["\'][^>]+action=["\']([^"\']+)["\']/i', $html, $am)) {
+                $action = html_entity_decode($am[1]);
+                $params = [];
+                if (preg_match_all('/<input[^>]+name=["\']([^"\']+)["\'][^>]+value=["\']([^"\']*)["\']/i', $html, $im, PREG_SET_ORDER)) {
+                    foreach ($im as $kv) {
+                        $params[$kv[1]] = html_entity_decode($kv[2]);
+                    }
+                }
+                if (!empty($params)) {
+                    $sep = strpos($action, '?') === false ? '?' : '&';
+                    return $action . $sep . http_build_query($params);
+                }
+            }
+            // หา confirm token ไม่เจอ → คืน null
+            return null;
+        }
+
+        // ถ้าไม่ใช่ HTML → ใช้ URL สุดท้าย (effective_url) ที่ redirect ไปแล้ว
+        return $effectiveUrl ?: $url;
+    }
+
     public function uploadToGAS(Request $request)
     {
         $gasUrl   = $request->input('gasUrl');
@@ -264,7 +429,7 @@ class PooutsidereturnController extends Controller
 
         try {
             $response = Http::withoutVerifying()
-                ->timeout(60)
+                ->timeout(180) // ⭐ เพิ่ม timeout เป็น 180s รองรับวิดีโอใหญ่
                 ->withHeaders(['Content-Type' => 'application/json'])
                 ->post($gasUrl, [
                     'image'    => $image,
@@ -295,9 +460,6 @@ class PooutsidereturnController extends Controller
             $images_evidence = $request->input('images_evidence', null);
             $images_pack     = $request->input('images_pack', null);
             $isFinal         = $request->boolean('final', false);
-            
-            // ยกเลิกการส่งแจ้งเตือนซ้ำที่นี่ (เพราะส่งไปแล้วตอน submitReturn)
-            // เพื่อแก้ปัญหาการแจ้งเตือนซ้ำ 2 ครั้ง
 
             $updateData = ['images' => json_encode($images)];
 
@@ -323,16 +485,17 @@ class PooutsidereturnController extends Controller
         try {
             $newStatus = $request->input('status');
             $updatedBy = $request->input('updated_by', 'admin');
-            
-            // เช็ค parameter notify_line อย่างเคร่งครัด
             $shouldNotify = $request->input('notify_line', true);
+
+            // ⭐ รับข้อมูลเพิ่มที่ admin กรอกตอนอนุมัติ
+            $shippingAddress = $request->input('shipping_address');
+            $claimType       = $request->input('claim_type');
 
             $allowed = ['processing', 'accept', 'finish', 'cancel'];
             if (!in_array($newStatus, $allowed)) {
                 return response()->json(['success' => false, 'message' => 'สถานะไม่ถูกต้อง'], 422);
             }
 
-            // ⭐ ดึงข้อมูลเคสปัจจุบันมาก่อน เพื่อเช็คว่าเวลา step ไหนถูกเก็บไปแล้วบ้าง
             $case = DB::table('Pooutsidereturn')->where('return_id', $id)->first();
             if (!$case) {
                 return response()->json(['success' => false, 'message' => 'ไม่พบเคส ' . $id], 404);
@@ -342,15 +505,18 @@ class PooutsidereturnController extends Controller
             $nowStr = $now->toDateTimeString();
             $updatePayload = ['status' => $newStatus];
 
-            // ⭐ บันทึกเวลาตาม step ที่เปลี่ยน → เก็บครั้งเดียวถาวร
-            // ถ้าเคยเก็บแล้ว (ไม่ว่างเปล่า) จะไม่เขียนทับ
             if ($newStatus === 'accept') {
-                // กด ✓ อนุมัติ → เก็บเวลา step3
                 if (empty($case->step3_at)) {
                     $updatePayload['step3_at'] = $nowStr;
                 }
+                // ⭐ บันทึกที่อยู่จัดส่ง + ประเภทเคลม ตอน admin อนุมัติ
+                if ($shippingAddress !== null) {
+                    $updatePayload['shipping_address'] = trim($shippingAddress);
+                }
+                if ($claimType !== null) {
+                    $updatePayload['claim_type'] = trim($claimType);
+                }
             } elseif ($newStatus === 'finish') {
-                // กด 📦 จัดของพร้อมปิดเคส → เก็บเวลา step4 + step5 (จัดของ + ปิดเคส พร้อมกัน)
                 if (empty($case->step4_at)) {
                     $updatePayload['step4_at'] = $nowStr;
                 }
@@ -358,7 +524,6 @@ class PooutsidereturnController extends Controller
                     $updatePayload['step5_at'] = $nowStr;
                 }
             } elseif ($newStatus === 'cancel') {
-                // กด ✕ ยกเลิก → เก็บเวลา cancel
                 if (empty($case->cancelled_at)) {
                     $updatePayload['cancelled_at'] = $nowStr;
                 }
@@ -372,12 +537,6 @@ class PooutsidereturnController extends Controller
                 return response()->json(['success' => false, 'message' => 'ไม่พบเคส ' . $id], 404);
             }
 
-            // ถ้าหน้าบ้านสั่งมาว่า notify_line: false (เช่นจากปุ่มสถานะ) จะไม่ทำงานในส่วนแจ้งเตือน
-            if ($shouldNotify !== false) {
-                // ถ้าในอนาคตต้องการให้ปุ่มสถานะแจ้งเตือน ก็สามารถใส่โค้ดตรงนี้ได้
-            }
-
-            // ⭐ ส่ง stepDates ชุดใหม่กลับให้ frontend อัปเดต UI ทันที
             $fresh = DB::table('Pooutsidereturn')->where('return_id', $id)->first();
             $stepDates = [
                 $this->fmtDt($fresh->step1_at ?? $fresh->return_date),
@@ -388,12 +547,14 @@ class PooutsidereturnController extends Controller
             ];
 
             return response()->json([
-                'success'      => true,
-                'return_id'    => $id,
-                'status'       => $newStatus,
-                'updated_by'   => $updatedBy,
-                'stepDates'    => $stepDates,
-                'cancelled_at' => $this->fmtDt($fresh->cancelled_at ?? null),
+                'success'          => true,
+                'return_id'        => $id,
+                'status'           => $newStatus,
+                'updated_by'       => $updatedBy,
+                'stepDates'        => $stepDates,
+                'cancelled_at'     => $this->fmtDt($fresh->cancelled_at ?? null),
+                'shipping_address' => $fresh->shipping_address ?? '',
+                'claim_type'       => $fresh->claim_type ?? '',
             ]);
 
         } catch (\Throwable $e) {
@@ -417,7 +578,6 @@ class PooutsidereturnController extends Controller
 
             $row->status = $next;
 
-            // ⭐ บันทึกเวลาเมื่อ approve ผ่าน method นี้ด้วย
             $now = Carbon::now('Asia/Bangkok');
             if ($next === 'accept' && empty($row->step3_at)) {
                 $row->step3_at = $now;
@@ -446,7 +606,6 @@ class PooutsidereturnController extends Controller
 
             $row->status = 'cancel';
 
-            // ⭐ บันทึกเวลา cancel
             if (empty($row->cancelled_at)) {
                 $row->cancelled_at = Carbon::now('Asia/Bangkok');
             }

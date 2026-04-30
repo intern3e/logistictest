@@ -413,11 +413,53 @@
 
         .image-preview-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(86px, 1fr)); gap: 8px; margin-top: 10px; }
         .preview-item { position: relative; border-radius: 8px; overflow: hidden; aspect-ratio: 1; background: #f0f0f0; border: 1px solid var(--border); }
-        .preview-item img { width: 100%; height: 100%; object-fit: cover; display: block; }
-        .preview-item .remove-btn { position: absolute; top: 4px; right: 4px; background: rgba(0,0,0,0.65); color: #fff; border: none; border-radius: 50%; width: 20px; height: 20px; font-size: 12px; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: background 0.15s; }
+        .preview-item img, .preview-item video { width: 100%; height: 100%; object-fit: cover; display: block; }
+        .preview-item .video-badge {
+            position: absolute; top: 4px; left: 4px;
+            background: rgba(0,0,0,0.7); color: #fff;
+            font-size: 9px; font-weight: 700;
+            padding: 2px 6px; border-radius: 4px;
+            display: flex; align-items: center; gap: 3px;
+            pointer-events: none;
+        }
+        .preview-item .video-play-icon {
+            position: absolute; top: 50%; left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(0,0,0,0.55); color: #fff;
+            width: 28px; height: 28px; border-radius: 50%;
+            display: flex; align-items: center; justify-content: center;
+            pointer-events: none;
+        }
+        .preview-item .remove-btn { position: absolute; top: 4px; right: 4px; background: rgba(0,0,0,0.65); color: #fff; border: none; border-radius: 50%; width: 20px; height: 20px; font-size: 12px; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: background 0.15s; z-index: 3; }
         .preview-item .remove-btn:hover { background: rgba(229,57,53,0.9); }
         .preview-item.done-upload::after { content:'✓'; position:absolute; bottom:4px; right:4px; background:#0a7a4b; color:#fff; border-radius:50%; width:18px; height:18px; font-size:11px; display:flex; align-items:center; justify-content:center; }
         .preview-item.error-upload::after { content:'✕'; position:absolute; bottom:4px; right:4px; background:#e53935; color:#fff; border-radius:50%; width:18px; height:18px; font-size:11px; display:flex; align-items:center; justify-content:center; }
+
+        /* ⭐ Progress bar overlay ตอนอัปโหลด - แสดงทับรูป preview */
+        .preview-item .upload-progress {
+            position: absolute; inset: 0;
+            background: rgba(0,0,0,0.55);
+            display: flex; flex-direction: column;
+            align-items: center; justify-content: center;
+            gap: 4px; padding: 6px;
+            z-index: 4;
+        }
+        .preview-item .prog-bar-bg {
+            width: 80%; height: 4px;
+            background: rgba(255,255,255,0.25);
+            border-radius: 2px; overflow: hidden;
+        }
+        .preview-item .prog-bar-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #5b8af7, #1428A0);
+            border-radius: 2px;
+            transition: width 0.2s ease;
+        }
+        .preview-item .prog-text {
+            font-size: 11px; font-weight: 700;
+            color: #fff;
+            text-shadow: 0 1px 2px rgba(0,0,0,0.4);
+        }
 
         .upload-status-bar { margin-top: 8px; padding: 8px 12px; border-radius: 8px; font-size: 12px; font-weight: 600; display: none; }
         .upload-status-bar.uploading { display:flex; align-items:center; gap:8px; background:#f0eeff; color:#7b61ff; border:1px solid #c4b8ff; }
@@ -461,9 +503,25 @@
         .btn-add-photo:hover { background:var(--samsung-blue); color:#fff; }
         @media (max-width: 767px) { .detail-photos-section > div { grid-template-columns:1fr !important; } .detail-photos-section > div > div { border-right:none !important; border-bottom:1px solid var(--border); } }
         .detail-photos-grid { display:grid; grid-template-columns:repeat(auto-fill, minmax(76px, 1fr)); gap:8px; margin-top:10px; }
-        .detail-photo-thumb { aspect-ratio:1; border-radius:8px; overflow:hidden; border:1px solid var(--border); cursor:pointer; transition:transform 0.15s, box-shadow 0.15s; }
-        .detail-photo-thumb img { width:100%; height:100%; object-fit:cover; display:block; }
+        .detail-photo-thumb { aspect-ratio:1; border-radius:8px; overflow:hidden; border:1px solid var(--border); cursor:pointer; transition:transform 0.15s, box-shadow 0.15s; position:relative; }
+        .detail-photo-thumb img, .detail-photo-thumb video { width:100%; height:100%; object-fit:cover; display:block; }
         .detail-photo-thumb:hover { transform:scale(1.05); box-shadow:0 4px 16px rgba(0,0,0,0.2); }
+        .detail-photo-thumb .thumb-video-badge {
+            position:absolute; bottom:3px; left:3px;
+            background:rgba(0,0,0,0.75); color:#fff;
+            font-size:9px; font-weight:700;
+            padding:2px 5px; border-radius:4px;
+            display:flex; align-items:center; gap:2px;
+            pointer-events:none;
+        }
+        .detail-photo-thumb .thumb-play-icon {
+            position:absolute; top:50%; left:50%;
+            transform:translate(-50%,-50%);
+            background:rgba(0,0,0,0.55); color:#fff;
+            width:24px; height:24px; border-radius:50%;
+            display:flex; align-items:center; justify-content:center;
+            pointer-events:none;
+        }
         .photo-delete-btn {
             position: absolute; top: 3px; right: 3px;
             background: rgba(229,57,53,0.9); color: #fff;
@@ -504,6 +562,7 @@
         .lightbox-overlay { display:none; position:fixed; inset:0; background:rgba(0,0,0,0.92); z-index:500; align-items:center; justify-content:center; flex-direction:column; gap:16px; }
         .lightbox-overlay.active { display:flex; }
         .lightbox-img { max-width:90vw; max-height:80vh; border-radius:10px; box-shadow:0 24px 80px rgba(0,0,0,0.6); object-fit:contain; }
+        .lightbox-video { max-width:90vw; max-height:80vh; border-radius:10px; box-shadow:0 24px 80px rgba(0,0,0,0.6); background:#000; }
         .lightbox-nav { display:flex; align-items:center; gap:20px; }
         .lightbox-btn { background:rgba(255,255,255,0.15); border:1px solid rgba(255,255,255,0.3); color:#fff; width:40px; height:40px; border-radius:50%; cursor:pointer; display:flex; align-items:center; justify-content:center; transition:background 0.15s; font-size:18px; }
         .lightbox-btn:hover { background:rgba(255,255,255,0.3); }
@@ -591,8 +650,11 @@
 
 <script>
     const GAS_URL = 'https://script.google.com/macros/s/AKfycby0JavxoTk3YJiq87DuioTDGIpSv8G-WGRKuyCsyuYcFdBtM3f83Do-i6v8LznbFlHA/exec';
-    const MAX_FILE_MB = 10;
-    const MAX_IMAGES  = 10;
+    const MAX_IMAGE_MB = 10;
+    const MAX_VIDEO_MB = 100;
+    const MAX_FILES    = 10;
+    // mime types ที่อนุญาต
+    const ALLOWED_VIDEO_TYPES = ['video/mp4','video/quicktime','video/x-msvideo','video/webm','video/x-matroska','video/3gpp','video/x-ms-wmv'];
 </script>
 
 <!-- SIDEBAR -->
@@ -857,16 +919,16 @@
 
         <div class="form-group">
             <label class="form-label">
-                รูปภาพประกอบ
-                <span style="font-size:11px;color:var(--text-muted);font-weight:400;text-transform:none;letter-spacing:0;">(สูงสุด <span id="lbl-max-img">10</span> รูป · ไม่เกิน <span id="lbl-max-mb">10</span> MB/รูป)</span>
+                รูปภาพ / วิดีโอประกอบ
+                <span style="font-size:11px;color:var(--text-muted);font-weight:400;text-transform:none;letter-spacing:0;">(สูงสุด <span id="lbl-max-file">10</span> ไฟล์ · รูปไม่เกิน <span id="lbl-max-img-mb">10</span> MB · วิดีโอไม่เกิน <span id="lbl-max-vid-mb">100</span> MB)</span>
             </label>
             <div class="image-upload-zone" id="upload-zone" ondragover="handleDragOver(event)" ondragleave="handleDragLeave(event)" ondrop="handleDrop(event)">
-                <input type="file" id="f-images" accept="image/*" multiple onchange="handleImageSelect(this.files)">
+                <input type="file" id="f-images" accept="image/*,video/*" multiple onchange="handleImageSelect(this.files)">
                 <div class="upload-zone-icon" style="margin-bottom:6px;color:var(--text-muted);">
                     <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
                 </div>
-                <div class="upload-zone-text">คลิกเพื่อเลือกรูป หรือลากวางไฟล์ที่นี่</div>
-                <div class="upload-zone-sub">JPG, PNG, WEBP, GIF · รองรับหลายไฟล์พร้อมกัน</div>
+                <div class="upload-zone-text">คลิกเพื่อเลือกรูปหรือวิดีโอ หรือลากวางไฟล์ที่นี่</div>
+                <div class="upload-zone-sub">รูป: JPG, PNG, WEBP, GIF · วิดีโอ: MP4, MOV, WEBM, AVI · รองรับหลายไฟล์พร้อมกัน</div>
             </div>
             <div id="upload-status" class="upload-status-bar"></div>
             <div class="image-preview-grid" id="image-preview-grid"></div>
@@ -907,6 +969,9 @@
                 <div class="detail-info-row"><span class="detail-info-label">สินค้า</span><span class="detail-info-val" id="d-product"></span></div>
                 <div class="detail-info-row"><span class="detail-info-label">เหตุผล</span><span class="detail-info-val" id="d-reason"></span></div>
                 <div class="detail-info-row"><span class="detail-info-label">หมายเหตุ</span><span class="detail-info-val" id="d-note">-</span></div>
+                <!-- ⭐ ข้อมูลจากการอนุมัติ (admin กรอก) - แสดงเฉพาะเมื่อมีข้อมูล -->
+                <div class="detail-info-row" id="d-shipping-row" style="display:none;"><span class="detail-info-label">ที่อยู่จัดส่ง</span><span class="detail-info-val" id="d-shipping-address" style="white-space:pre-wrap;text-align:right;"></span></div>
+                <div class="detail-info-row" id="d-claim-type-row" style="display:none;"><span class="detail-info-label">ประเภทเคลม</span><span class="detail-info-val" id="d-claim-type"></span></div>
             </div>
             <div class="detail-info-card">
                 <div class="detail-section-title">ประวัติการดำเนินงาน</div>
@@ -916,7 +981,7 @@
         <div class="detail-photos-section">
             <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:0;border-top:1px solid var(--border);">
                 <div style="padding:14px 18px;border-right:1px solid var(--border);">
-                    <div class="detail-section-title" style="margin-bottom:8px;">รูปภาพประกอบ <span id="d-photo-count" style="font-weight:400;font-size:11px;color:var(--text-muted);text-transform:none;letter-spacing:0;"></span></div>
+                    <div class="detail-section-title" style="margin-bottom:8px;">รูปภาพ / วิดีโอประกอบ <span id="d-photo-count" style="font-weight:400;font-size:11px;color:var(--text-muted);text-transform:none;letter-spacing:0;"></span></div>
                     <div id="d-photos-grid" class="detail-photos-grid"></div>
                 </div>
                 <div style="padding:14px 18px;border-right:1px solid var(--border);">
@@ -942,13 +1007,61 @@
 <!-- LIGHTBOX -->
 <div class="lightbox-overlay" id="lightbox" onclick="closeLightboxOnOverlay(event)">
     <button class="lightbox-close-btn" onclick="closeLightbox()">✕</button>
-    <img class="lightbox-img" id="lb-img" src="" alt="">
+    <div id="lb-media-wrapper"></div>
     <div class="lightbox-nav">
         <button class="lightbox-btn" onclick="lbPrev()">&#8592;</button>
         <span class="lightbox-counter" id="lb-counter"></span>
         <button class="lightbox-btn" onclick="lbNext()">&#8594;</button>
     </div>
     <div class="lightbox-caption" id="lb-caption"></div>
+</div>
+
+<!-- ⭐ APPROVAL MODAL - ให้ admin กรอกที่อยู่จัดส่ง + ประเภทเคลม ตอนกดอนุมัติ -->
+<div class="modal-overlay" id="approval-modal" onclick="closeApprovalOnOverlay(event)">
+    <div class="modal" style="width:560px;max-width:95vw;">
+        <div class="modal-header">
+            <div class="modal-icon" style="background:#e6f7f0;">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#0a7a4b" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+            </div>
+            <div>
+                <div class="modal-title">อนุมัติเคส</div>
+                <div style="font-size:11px;color:var(--text-muted);margin-top:2px;">กรุณากรอกข้อมูลเพิ่มเติมก่อนอนุมัติ</div>
+            </div>
+        </div>
+
+        <div id="approval-case-info" style="padding:10px 14px;background:var(--samsung-blue-light);border-radius:8px;margin-bottom:14px;font-size:12px;">
+            <div style="color:var(--text-muted);font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.06em;margin-bottom:2px;">เคส</div>
+            <div id="approval-case-id" style="font-weight:700;color:var(--samsung-blue);font-family:'Courier New',monospace;"></div>
+        </div>
+
+        <div class="form-group">
+            <label class="form-label">ที่อยู่จัดส่ง <span style="color:#e53935;">*</span></label>
+            <textarea id="f-shipping-address" class="form-input"
+                placeholder="กรอกที่อยู่ที่ใช้จัดส่งสินค้ากลับ&#10;เช่น 123 ถนนสุขุมวิท แขวงคลองตัน เขตวัฒนา กรุงเทพฯ 10110"
+                style="height:90px;resize:vertical;line-height:1.6;"></textarea>
+        </div>
+
+        <div class="form-group">
+            <label class="form-label">ประเภทเคลม <span style="color:#e53935;">*</span></label>
+            <select id="f-claim-type" class="form-select">
+                <option value="">-- เลือกประเภทเคลม --</option>
+                <option value="no_return">เคลมของไม่ต้องคืน</option>
+                <option value="return_required">เคลมของต้องคืน</option>
+            </select>
+            <div style="margin-top:6px;font-size:11px;color:var(--text-muted);line-height:1.5;">
+                <div>• <strong style="color:var(--text-secondary);">เคลมของไม่ต้องคืน</strong> = ลูกค้าเก็บสินค้าไว้ ไม่ต้องส่งคืน</div>
+                <div>• <strong style="color:var(--text-secondary);">เคลมของต้องคืน</strong> = ลูกค้าต้องส่งสินค้ากลับมา</div>
+            </div>
+        </div>
+
+        <div class="modal-actions">
+            <button class="btn-cancel" onclick="closeApprovalModal()">ยกเลิก</button>
+            <button type="button" class="btn-action-accept" id="btn-confirm-approve" onclick="confirmApproval()" style="border-radius:24px;">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+                ยืนยันอนุมัติ
+            </button>
+        </div>
+    </div>
 </div>
 
 <script>
@@ -1012,8 +1125,28 @@ const statusMap = {
 };
 const CSRF = () => document.head.querySelector('meta[name="csrf-token"]').getAttribute('content');
 
-document.getElementById('lbl-max-img').textContent = MAX_IMAGES;
-document.getElementById('lbl-max-mb').textContent  = MAX_FILE_MB;
+document.getElementById('lbl-max-file').textContent = MAX_FILES;
+document.getElementById('lbl-max-img-mb').textContent = MAX_IMAGE_MB;
+document.getElementById('lbl-max-vid-mb').textContent = MAX_VIDEO_MB;
+
+// ─── MEDIA TYPE HELPERS ────────────────────────────────────────────
+// ตรวจสอบว่าเป็นไฟล์วิดีโอหรือไม่ (จาก mime type หรือ field 'type' ใน object รูป)
+function isVideoFile(file) {
+    return file && file.type && file.type.startsWith('video/');
+}
+function isVideoMedia(media) {
+    if (!media) return false;
+    // เช็คจาก field type (ที่เราเซ็ตเองตอนอัปโหลด)
+    if (media.type === 'video') return true;
+    // เช็คจาก mimeType (เผื่อ backend ส่งกลับมา)
+    if (media.mimeType && media.mimeType.startsWith('video/')) return true;
+    // เช็คจาก filename extension
+    if (media.filename) {
+        const ext = media.filename.split('.').pop().toLowerCase();
+        if (['mp4','mov','webm','avi','mkv','3gp','wmv','m4v'].indexOf(ext) !== -1) return true;
+    }
+    return false;
+}
 
 // ─── LOAD FROM DB ──────────────────────────────────────────────────
 async function loadCasesFromDB() {
@@ -1039,8 +1172,6 @@ async function loadCasesFromDB() {
             } else if (c.product) {
                 productStr = c.product.includes('|') ? c.product.split('|').join('\n') : c.product;
             }
-            // ⭐ ใช้ stepDates จาก backend ตรงๆ (เก็บถาวรใน DB แล้ว)
-            // ถ้า backend ไม่ส่งมา → ใช้ buildStepDates เป็น fallback (backward compat)
             var stepDates = Array.isArray(c.stepDates) && c.stepDates.length === 5
                 ? c.stepDates
                 : buildStepDates(c.date, sm.step);
@@ -1048,6 +1179,8 @@ async function loadCasesFromDB() {
                 id:c.id, po:c.po, customer:c.customer,
                 product:productStr, products:c.products||[],
                 reason:c.reason, note:c.note||'-', fix:'-',
+                shipping_address: c.shipping_address || '',
+                claim_type: c.claim_type || '',
                 date:c.date, status:c.status, step:sm.step,
                 images:c.images||[],
                 images_evidence:c.images_evidence||[],
@@ -1062,18 +1195,13 @@ async function loadCasesFromDB() {
 }
 
 // ─── DATETIME HELPERS ─────────────────────────────────────────────
-// สร้างสตริง datetime ปัจจุบันในรูปแบบ "YYYY-MM-DD HH:MM"
 function nowDatetimeStr() {
     const d = new Date();
     const p = n => String(n).padStart(2,'0');
     return d.getFullYear()+'-'+p(d.getMonth()+1)+'-'+p(d.getDate())+' '+p(d.getHours())+':'+p(d.getMinutes());
 }
-// Format ค่า datetime จาก backend ให้เป็น "YYYY-MM-DD HH:MM"
-// รองรับทั้ง ISO string ("2026-04-21T14:32:00Z") และวันที่ล้วน ("2026-04-21")
-// ถ้าเป็นวันที่ล้วนจะเติมเวลาปัจจุบันของ client ให้อัตโนมัติ
 function formatStepDatetime(val) {
     if (!val) return '';
-    // ถ้ามีเวลาอยู่แล้ว (มี T หรือช่องว่างคั่น)
     if (typeof val === 'string' && (val.includes('T') || /\d{2}:\d{2}/.test(val))) {
         const d = new Date(val);
         if (!isNaN(d)) {
@@ -1081,27 +1209,31 @@ function formatStepDatetime(val) {
             return d.getFullYear()+'-'+p(d.getMonth()+1)+'-'+p(d.getDate())+' '+p(d.getHours())+':'+p(d.getMinutes());
         }
     }
-    // ถ้าเป็นวันที่ล้วน → ต่อด้วยเวลาปัจจุบันของ client
     const n = new Date();
     const p = n2 => String(n2).padStart(2,'0');
     return String(val).slice(0,10)+' '+p(n.getHours())+':'+p(n.getMinutes());
 }
 
 function buildStepDates(date, step) {
-    // ถ้า backend ส่ง date เป็น ISO string (มีเวลา) ใช้เลย
-    // ถ้าไม่ใช่ ให้ต่อเวลาปัจจุบันของ client
     const base = date ? formatStepDatetime(date) : nowDatetimeStr();
     const arr = [null,null,null,null,null];
     for (let i=0; i<step&&i<5; i++) arr[i]=base;
     return arr;
 }
 
-// ─── IMAGE HELPERS ────────────────────────────────────────────────
+// ─── FILE / IMAGE / VIDEO HELPERS ──────────────────────────────────
 function fileToBase64(file) {
     return new Promise((resolve,reject) => { const r=new FileReader(); r.onload=()=>resolve(r.result.split(',')[1]); r.onerror=reject; r.readAsDataURL(file); });
 }
+
+// บีบรูปภาพ (skip ถ้าเป็นวิดีโอ)
 function compressImage(file, maxPx=1600, quality=0.85) {
     return new Promise(resolve => {
+        // ถ้าเป็นวิดีโอ → ไม่บีบ ส่งไฟล์ต้นฉบับกลับ
+        if (isVideoFile(file)) {
+            resolve(file);
+            return;
+        }
         const img=new Image(); img.onload=()=>{
             let w=img.width,h=img.height;
             if(w<=maxPx&&h<=maxPx){resolve(file);return;}
@@ -1112,53 +1244,91 @@ function compressImage(file, maxPx=1600, quality=0.85) {
         }; img.src=URL.createObjectURL(file);
     });
 }
+
+// อัปโหลดไฟล์ 1 ไฟล์ (รองรับทั้งรูปและวิดีโอ)
 async function uploadOneImage(file, customFilename, onProgress) {
     if(typeof customFilename==='function'){onProgress=customFilename;customFilename=null;}
-    const compressed=await compressImage(file,1200,0.85);
-    const base64=await fileToBase64(compressed);
+    const isVideo = isVideoFile(file);
+    // ถ้าเป็นวิดีโอ → ไม่บีบ ใช้ไฟล์ต้นฉบับ
+    const processed = isVideo ? file : await compressImage(file,1200,0.85);
+    const base64=await fileToBase64(processed);
     if(onProgress) onProgress(30);
     const filename=customFilename||(file.name.replace(/[^a-zA-Z0-9._-]/g,'_'));
-    const res=await fetch('/return/upload-image',{method:'POST',headers:{'Content-Type':'application/json','X-CSRF-TOKEN':CSRF()},body:JSON.stringify({image:base64,filename,mimeType:compressed.type||'image/jpeg',gasUrl:GAS_URL})});
+    const mimeType = processed.type || (isVideo ? 'video/mp4' : 'image/jpeg');
+    const res=await fetch('/return/upload-image',{method:'POST',headers:{'Content-Type':'application/json','X-CSRF-TOKEN':CSRF()},body:JSON.stringify({image:base64,filename,mimeType,gasUrl:GAS_URL})});
     if(onProgress) onProgress(90);
     const data=await res.json();
     if(!data.success) throw new Error(data.error||'Upload failed');
     if(onProgress) onProgress(100);
-    return {fileId:data.fileId,viewUrl:data.viewUrl,thumbUrl:data.thumbUrl,filename};
+    return {
+        fileId:data.fileId,
+        viewUrl:data.viewUrl,
+        thumbUrl:data.thumbUrl,
+        filename,
+        // ⭐ เพิ่ม field type เพื่อให้รู้ว่าเป็นรูปหรือวิดีโอ
+        type: isVideo ? 'video' : 'image',
+        mimeType: mimeType
+    };
 }
 
 function renderPreviews() {
-    document.getElementById('image-preview-grid').innerHTML=pendingFiles.map((item,idx)=>`
+    document.getElementById('image-preview-grid').innerHTML=pendingFiles.map((item,idx)=>{
+        const isVid = isVideoFile(item.file);
+        const mediaTag = isVid
+            ? `<video src="${item.previewUrl}" muted preload="metadata"></video><div class="video-play-icon"><svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"/></svg></div><div class="video-badge">▶ VIDEO</div>`
+            : `<img src="${item.previewUrl}" alt="${item.file.name}">`;
+        return `
         <div class="preview-item ${item.status==='done'?'done-upload':item.status==='error'?'error-upload':''}" id="prev-${idx}">
-            <img src="${item.previewUrl}" alt="${item.file.name}">
+            ${mediaTag}
             ${item.status==='uploading'?`<div class="upload-progress"><div class="prog-bar-bg"><div class="prog-bar-fill" id="prog-${idx}" style="width:${item.progress||0}%"></div></div><div class="prog-text">${item.progress||0}%</div></div>`:''}
             ${item.status==='pending'||item.status==='error'?`<button class="remove-btn" onclick="removeImage(${idx})">✕</button>`:''}
-        </div>`).join('');
+        </div>`;
+    }).join('');
 }
 function removeImage(idx) { URL.revokeObjectURL(pendingFiles[idx].previewUrl); pendingFiles.splice(idx,1); renderPreviews(); updateUploadStatus(); }
 function updateUploadStatus() {
     const bar=document.getElementById('upload-status');
     const total=pendingFiles.length, done=pendingFiles.filter(f=>f.status==='done').length, errors=pendingFiles.filter(f=>f.status==='error').length, uploading=pendingFiles.filter(f=>f.status==='uploading').length;
     if(!total){bar.style.display='none';return;}
-    if(uploading>0){bar.className='upload-status-bar uploading';bar.innerHTML=`<span class="spin">⟳</span> กำลังอัปโหลด ${uploading} รูป...`;}
-    else if(errors>0&&done+errors===total){bar.className='upload-status-bar error';bar.innerHTML=`⚠️ อัปโหลดล้มเหลว ${errors} รูป`;}
-    else if(done===total&&total>0){bar.className='upload-status-bar done';bar.innerHTML=`✓ อัปโหลดสำเร็จทั้งหมด ${done} รูป`;}
+    if(uploading>0){bar.className='upload-status-bar uploading';bar.innerHTML=`<span class="spin">⟳</span> กำลังอัปโหลด ${uploading} ไฟล์...`;}
+    else if(errors>0&&done+errors===total){bar.className='upload-status-bar error';bar.innerHTML=`⚠️ อัปโหลดล้มเหลว ${errors} ไฟล์`;}
+    else if(done===total&&total>0){bar.className='upload-status-bar done';bar.innerHTML=`✓ อัปโหลดสำเร็จทั้งหมด ${done} ไฟล์`;}
     else{bar.className='upload-status-bar uploading';bar.innerHTML=`<span class="spin">⟳</span> รอดำเนินการ...`;}
 }
 function handleImageSelect(files) { addFiles(Array.from(files)); document.getElementById('f-images').value=''; }
+
+// ⭐ เพิ่มไฟล์ลงคิวอัปโหลด - รองรับทั้งรูปและวิดีโอ
 function addFiles(files) {
-    const remaining=MAX_IMAGES-pendingFiles.length; if(remaining<=0){showToast(`⚠️ เพิ่มได้สูงสุด ${MAX_IMAGES} รูป`);return;}
+    const remaining=MAX_FILES-pendingFiles.length;
+    if(remaining<=0){showToast(`⚠️ เพิ่มได้สูงสุด ${MAX_FILES} ไฟล์`);return;}
     const toAdd=files.slice(0,remaining);
     toAdd.forEach(file=>{
-        if(!file.type.startsWith('image/')){showToast(`⚠️ ${file.name} ไม่ใช่รูปภาพ`);return;}
-        if(file.size>MAX_FILE_MB*1024*1024){showToast(`⚠️ ${file.name} ใหญ่เกิน ${MAX_FILE_MB}MB`);return;}
+        const isImg = file.type.startsWith('image/');
+        const isVid = file.type.startsWith('video/');
+        // ตรวจสอบประเภทไฟล์
+        if(!isImg && !isVid){
+            showToast(`⚠️ ${file.name} ไม่ใช่รูปภาพหรือวิดีโอ`);
+            return;
+        }
+        // ตรวจสอบขนาด - แยกตามประเภท
+        const maxMb = isVid ? MAX_VIDEO_MB : MAX_IMAGE_MB;
+        if(file.size > maxMb*1024*1024){
+            showToast(`⚠️ ${file.name} ใหญ่เกิน ${maxMb}MB (${isVid?'วิดีโอ':'รูป'})`);
+            return;
+        }
         pendingFiles.push({file,previewUrl:URL.createObjectURL(file),status:'pending',progress:0,result:null});
     });
-    if(files.length>remaining) showToast(`⚠️ เพิ่มได้อีก ${remaining} รูป`);
+    if(files.length>remaining) showToast(`⚠️ เพิ่มได้อีก ${remaining} ไฟล์`);
     renderPreviews(); updateUploadStatus();
 }
 function handleDragOver(e){e.preventDefault();document.getElementById('upload-zone').classList.add('dragover');}
 function handleDragLeave(e){document.getElementById('upload-zone').classList.remove('dragover');}
-function handleDrop(e){e.preventDefault();document.getElementById('upload-zone').classList.remove('dragover');addFiles(Array.from(e.dataTransfer.files).filter(f=>f.type.startsWith('image/')));}
+function handleDrop(e){
+    e.preventDefault();
+    document.getElementById('upload-zone').classList.remove('dragover');
+    // รับทั้งรูปและวิดีโอ
+    addFiles(Array.from(e.dataTransfer.files).filter(f=>f.type.startsWith('image/')||f.type.startsWith('video/')));
+}
 
 // ─── INVOICE HELPERS ──────────────────────────────────────────────
 function mergeInvoices(dbItems){const map=new Map();dbItems.forEach(item=>{const key=`${item.name.trim().toUpperCase()}_${parseFloat(item.quantity)}`;if(!map.has(key)){map.set(key,item);return;}const ex=map.get(key);const ed=ex.date_invoice?new Date(ex.date_invoice):new Date(0);const nd=item.date_invoice?new Date(item.date_invoice):new Date(0);if(nd>ed)map.set(key,item);});return Array.from(map.values());}
@@ -1262,66 +1432,166 @@ function closeModal(){document.getElementById('modal').classList.remove('active'
 function closeOnOverlay(e){if(e.target===document.getElementById('modal'))closeModal();}
 
 // ─── SUBMIT ───────────────────────────────────────────────────────
+// ⭐ Flow ใหม่: อัปโหลดรูป/วิดีโอทั้งหมดเสร็จก่อน → จากนั้นค่อยสร้างเคส + ส่ง Line
+// ข้อดี: ถ้าอัปโหลดล้มเหลวจะไม่เกิดเคสเปล่า, Line notification จะแนบรูปครบ
 async function submitNewCase(e) {
-    if(e) e.preventDefault();
-    const customer=document.getElementById('f-customer').value.trim(),reason=document.getElementById('f-reason').value,note=document.getElementById('f-note').value.trim();
-    if(!currentDocuNo){alert('กรุณาค้นหา PO ก่อน');return;}
-    if(!customer||!reason){alert('กรุณากรอกข้อมูลให้ครบ');return;}
-    const selectedItems=[];
-    document.querySelectorAll('.prod-chk').forEach(chk=>{if(!chk.checked)return;const idx=parseInt(chk.dataset.idx,10);const item=poItems[idx];if(!item)return;const name=(item.GoodName??'').replace(/<<[^>]*>>/g,'').trim();const qtyInput=document.querySelector(`.prod-qty-display[data-idx="${idx}"]`);const qty=qtyInput?parseFloat(qtyInput.value)||0:parseFloat(item.GoodQty2??0);selectedItems.push({goodName:name,qty,invoice:''});});
-    if(!selectedItems.length){alert('กรุณาเลือกสินค้าอย่างน้อย 1 รายการ');return;}
-    const btn=document.getElementById('btn-submit-case');
-    btn.disabled=true; btn.innerHTML=`<span class="spin">⟳</span> กำลังบันทึก...`;
-    const pendingSnapshot=pendingFiles.filter(f=>f.status==='pending').map(f=>({...f}));
+    if (e) e.preventDefault();
+
+    // ── 1. Validate ข้อมูลฟอร์ม ──
+    const customer = document.getElementById('f-customer').value.trim();
+    const reason   = document.getElementById('f-reason').value;
+    const note     = document.getElementById('f-note').value.trim();
+    if (!currentDocuNo) { alert('กรุณาค้นหา PO ก่อน'); return; }
+    if (!customer || !reason) { alert('กรุณากรอกข้อมูลให้ครบ'); return; }
+
+    const selectedItems = [];
+    document.querySelectorAll('.prod-chk').forEach(chk => {
+        if (!chk.checked) return;
+        const idx = parseInt(chk.dataset.idx, 10);
+        const item = poItems[idx]; if (!item) return;
+        const name = (item.GoodName ?? '').replace(/<<[^>]*>>/g, '').trim();
+        const qtyInput = document.querySelector(`.prod-qty-display[data-idx="${idx}"]`);
+        const qty = qtyInput ? parseFloat(qtyInput.value) || 0 : parseFloat(item.GoodQty2 ?? 0);
+        selectedItems.push({ goodName: name, qty, invoice: '' });
+    });
+    if (!selectedItems.length) { alert('กรุณาเลือกสินค้าอย่างน้อย 1 รายการ'); return; }
+
+    // ── 2. ตรวจสอบว่ามีไฟล์ที่ error อยู่หรือไม่ (ถ้ามี ไม่ให้ submit) ──
+    const errorFiles = pendingFiles.filter(f => f.status === 'error');
+    if (errorFiles.length > 0) {
+        alert('มีไฟล์ที่อัปโหลดล้มเหลว ' + errorFiles.length + ' ไฟล์ กรุณาลบไฟล์เหล่านั้นออกก่อน');
+        return;
+    }
+
+    const btn = document.getElementById('btn-submit-case');
+    btn.disabled = true;
+
+    // ── 3. อัปโหลดรูป/วิดีโอทั้งหมดให้เสร็จก่อน (ถ้ามี) ──
+    const filesToUpload = pendingFiles.filter(f => f.status === 'pending');
+    let uploadedMedia = [];
+
+    // เก็บไฟล์ที่อัปสำเร็จไว้แล้ว (เคยอัปสำเร็จจากครั้งก่อน เช่น กดสร้างซ้ำ)
+    pendingFiles.filter(f => f.status === 'done' && f.result).forEach(f => {
+        uploadedMedia.push(f.result);
+    });
+
+    if (filesToUpload.length > 0) {
+        try {
+            // ใช้ PO ปัจจุบันสำหรับชื่อไฟล์
+            const poRaw = (currentDocuNo || '').replace(/^PO/i, '');
+            const now = new Date();
+            const dd = String(now.getDate()).padStart(2,'0');
+            const mm = String(now.getMonth()+1).padStart(2,'0');
+            const yy = String(now.getFullYear()).slice(-2);
+            const dateStr = dd + '-' + mm + '-' + yy;
+
+            // อัปโหลดทีละไฟล์ (เพื่อให้รู้ progress รายไฟล์)
+            for (let i = 0; i < filesToUpload.length; i++) {
+                const item = filesToUpload[i];
+                const seqNum = String(uploadedMedia.length + 1).padStart(2,'0');
+                const origExt = item.file.name.split('.').pop().toLowerCase() || (isVideoFile(item.file)?'mp4':'jpg');
+                const filename = poRaw + '_' + dateStr + '_' + seqNum + '.' + origExt;
+
+                // อัปเดท UI: แสดงว่ากำลังอัปโหลดไฟล์ที่เท่าไรของเท่าไร
+                btn.innerHTML = `<span class="spin">⟳</span> กำลังอัปโหลด ${i+1}/${filesToUpload.length}...`;
+
+                // เปลี่ยนสถานะไฟล์เป็น uploading + render preview ใหม่
+                item.status = 'uploading';
+                item.progress = 0;
+                // หา index จริงใน pendingFiles
+                const realIdx = pendingFiles.indexOf(item);
+                if (realIdx >= 0) pendingFiles[realIdx] = item;
+                renderPreviews();
+                updateUploadStatus();
+
+                try {
+                    const result = await uploadOneImage(item.file, filename, function(p) {
+                        item.progress = p;
+                        const realIdx2 = pendingFiles.indexOf(item);
+                        if (realIdx2 >= 0) pendingFiles[realIdx2] = item;
+                        renderPreviews();
+                    });
+                    item.status = 'done';
+                    item.result = result;
+                    uploadedMedia.push(result);
+                    const realIdx3 = pendingFiles.indexOf(item);
+                    if (realIdx3 >= 0) pendingFiles[realIdx3] = item;
+                    renderPreviews();
+                    updateUploadStatus();
+                } catch (err) {
+                    item.status = 'error';
+                    const realIdx4 = pendingFiles.indexOf(item);
+                    if (realIdx4 >= 0) pendingFiles[realIdx4] = item;
+                    renderPreviews();
+                    updateUploadStatus();
+                    btn.disabled = false;
+                    btn.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M9 11l3 3L22 4"/></svg> สร้างเคส';
+                    alert('❌ อัปโหลดไฟล์ล้มเหลว: ' + (item.file.name) + '\n\n' + err.message + '\n\nกรุณาลองใหม่ หรือลบไฟล์นั้นออกแล้วลองสร้างเคสอีกครั้ง');
+                    return; // หยุด ไม่สร้างเคส
+                }
+            }
+        } catch (err) {
+            btn.disabled = false;
+            btn.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M9 11l3 3L22 4"/></svg> สร้างเคส';
+            alert('เกิดข้อผิดพลาดระหว่างอัปโหลด: ' + err.message);
+            return;
+        }
+    }
+
+    // ── 4. ทุกไฟล์อัปโหลดสำเร็จแล้ว → สร้างเคส + ส่ง Line ในครั้งเดียว ──
+    btn.innerHTML = `<span class="spin">⟳</span> กำลังบันทึกเคส...`;
+
     try {
-        const res=await fetch('/return/submit',{method:'POST',headers:{'Content-Type':'application/json','X-CSRF-TOKEN':CSRF()},body:JSON.stringify({
-            poNum:currentDocuNo,
-            vendor:customer,
-            reason,
-            note,
-            selectedItems,
-            images:[],
-            notify_line: true // แจ้งเตือน Line เสมอเมื่อมีการสร้างเคสใหม่ ไม่ว่าจะแนบรูปภาพหรือไม่ก็ตาม
-        })});
-        const data=await res.json();
-        if(!data.success){alert(`❌ ${data.message}`);return;}
-        const today=new Date().toISOString().slice(0,10);
-        const nowDt=nowDatetimeStr();
-        // ⭐ ใช้ stepDates จาก backend ถ้าส่งมา (เก็บถาวรใน DB แล้ว) ไม่งั้น fallback เวลา client
+        const res = await fetch('/return/submit', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': CSRF() },
+            body: JSON.stringify({
+                poNum: currentDocuNo,
+                vendor: customer,
+                reason,
+                note,
+                selectedItems,
+                images: uploadedMedia, // ⭐ ส่งรูป/วิดีโอที่อัปโหลดเสร็จแล้วไปด้วยเลย
+                notify_line: true
+            })
+        });
+        const data = await res.json();
+        if (!data.success) { alert(`❌ ${data.message}`); return; }
+
+        // ── 5. อัปเดท local state + ปิด modal ──
+        const today = new Date().toISOString().slice(0,10);
+        const nowDt = nowDatetimeStr();
         const stepDatesFromBackend = Array.isArray(data.stepDates) && data.stepDates.length === 5
             ? data.stepDates
             : [nowDt, nowDt, null, null, null];
-        const newCase={id:data.return_id,customer,reason,note:note||'-',fix:'-',date:today,po:currentDocuNo,product:selectedItems.map(i=>`${i.goodName} (จำนวน: ${i.qty})`).join('\n'),status:'processing',step:2,images:[],stepDates:stepDatesFromBackend,stepBy:['ฝ่ายบริการ','ช่างเทคนิค',null,null,null],stepDesc:['รับแจ้งเรื่องจากลูกค้า','ตรวจสอบสินค้าเรียบร้อย',null,null,null]};
-        cases=Object.assign({[data.return_id]:newCase},cases);
-        closeModal(); renderTable();
-        showToast(`✅ สร้างเคส ${data.return_id} เรียบร้อยแล้ว`);
-        // ส่งรูปภาพขึ้น Server (ถ้ามี)
-        if(pendingSnapshot.length>0) uploadImagesBackground(pendingSnapshot,data.return_id);
-        
-        // เราจะไม่เรียก update-images พร้อม notify_line: true ซ้ำที่นี่ 
-        // เพราะฝั่ง Server (submitReturn) ได้ส่งแจ้งเตือน Line ไปเรียบร้อยแล้วตั้งแต่ตอนสร้างเคสครั้งแรก
-        // เพื่อป้องกันการแจ้งเตือนซ้ำ 2 ครั้งครับ
-    } catch(err){alert('เกิดข้อผิดพลาด: '+err.message);}
-    finally{btn.disabled=false;btn.innerHTML=`<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M9 11l3 3L22 4"/></svg> สร้างเคส`;}
+
+        const newCase = {
+            id: data.return_id, customer, reason,
+            note: note || '-', fix: '-', date: today, po: currentDocuNo,
+            product: selectedItems.map(i => `${i.goodName} (จำนวน: ${i.qty})`).join('\n'),
+            products: selectedItems.map(i => ({ product_name: i.goodName, quantity: i.qty, invoice: i.invoice||'' })),
+            status: 'processing', step: 2,
+            images: uploadedMedia, // ⭐ ใช้รูป/วิดีโอที่อัปโหลดแล้ว
+            images_evidence: [],
+            images_pack: [],
+            stepDates: stepDatesFromBackend,
+            stepBy: ['ฝ่ายบริการ','ช่างเทคนิค',null,null,null],
+            stepDesc: ['รับแจ้งเรื่องจากลูกค้า','ตรวจสอบสินค้าเรียบร้อย',null,null,null]
+        };
+        cases = Object.assign({ [data.return_id]: newCase }, cases);
+        closeModal();
+        renderTable();
+        const fileText = uploadedMedia.length > 0 ? ` (พร้อมไฟล์ ${uploadedMedia.length} รายการ)` : '';
+        showToast(`✅ สร้างเคส ${data.return_id} เรียบร้อยแล้ว${fileText}`);
+    } catch (err) {
+        alert('เกิดข้อผิดพลาด: ' + err.message);
+    } finally {
+        btn.disabled = false;
+        btn.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M9 11l3 3L22 4"/></svg> สร้างเคส';
+    }
 }
 
-async function uploadImagesBackground(snapshots,returnId) {
-    const poRaw=(currentDocuNo||'').replace(/^PO/i,'')||returnId.split('-')[2]||'';
-    const now=new Date(),dd=String(now.getDate()).padStart(2,'0'),mm=String(now.getMonth()+1).padStart(2,'0'),yy=String(now.getFullYear()).slice(-2);
-    const dateStr=dd+'-'+mm+'-'+yy;
-    if(!cases[returnId]) return;
-    cases[returnId].images=[];
-    let successCount=0;
-    for(let i=0;i<snapshots.length;i++){
-        const item=snapshots[i],seqNum=String(i+1).padStart(2,'0'),ext=item.file.name.split('.').pop().toLowerCase()||'jpg';
-        try{const result=await uploadOneImage(item.file,poRaw+'_'+dateStr+'_'+seqNum+'.'+ext,null);cases[returnId].images.push(result);successCount++;const isLast=(i===snapshots.length-1);try{await fetch('/return/'+encodeURIComponent(returnId)+'/update-images',{method:'POST',headers:{'Content-Type':'application/json','X-CSRF-TOKEN':CSRF()},body:JSON.stringify({
-            images:cases[returnId].images,
-            final:isLast,
-            notify_line: false // ปิดการแจ้งเตือนซ้ำที่นี่ เพราะส่งไปแล้วตอนสร้างเคส
-        })});}catch(dbErr){console.warn('Save DB failed:',dbErr.message);}if(currentDetailId===returnId)refreshDetailPhotos(returnId);}catch(err){console.warn('Upload failed:',err.message);}
-    }
-    if(successCount>0) showToast('✅ อัปโหลดรูป '+successCount+' รูปเรียบร้อย');
-}
+// ⭐ uploadImagesBackground ถูกลบไปแล้ว เพราะตอนนี้อัปโหลดเสร็จก่อนสร้างเคสใน submitNewCase
 
 // ─── REFRESH DETAIL PHOTOS ────────────────────────────────────────
 function refreshDetailPhotos(caseId) {
@@ -1331,50 +1601,35 @@ function refreshDetailPhotos(caseId) {
     var photoGrid = document.getElementById('d-photos-grid');
     var photoCount = document.getElementById('d-photo-count');
     if (!photoGrid) return;
-    photoCount.textContent = imgs.length > 0 ? '(' + imgs.length + ' รูป)' : '';
+    photoCount.textContent = imgs.length > 0 ? '(' + imgs.length + ' ไฟล์)' : '';
     if (!imgs.length) {
         photoGrid.innerHTML = '<div class="no-photos-placeholder">ไม่มีรูปภาพประกอบ</div>';
         return;
     }
-    var html = '';
-    for (var idx = 0; idx < imgs.length; idx++) {
-        var img = imgs[idx];
-        var fileId = img.fileId || '';
-        if (!fileId && img.viewUrl) {
-            var m = img.viewUrl.match(/\/d\/([^/]+)\//);
-            if (m) fileId = m[1];
-        }
-        var src = fileId ? '/return/drive-image?id=' + fileId : (img.thumbUrl || img.viewUrl || '');
-        var title = img.filename || ('รูป ' + (idx + 1));
-        var fallbackSvg = 'data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%2280%22%20height%3D%2280%22%3E%3Crect%20width%3D%2280%22%20height%3D%2280%22%20fill%3D%22%23f0f0f0%22%2F%3E%3Ctext%20x%3D%2240%22%20y%3D%2245%22%20text-anchor%3D%22middle%22%20font-size%3D%2212%22%20fill%3D%22%23999%22%3E-%3C%2Ftext%3E%3C%2Fsvg%3E';
-        html += '<div class="detail-photo-thumb" onclick="openLightbox(' + idx + ',\'' + caseId + '\')" title="' + title + '">';
-        html += '<img src="' + src + '" alt="' + title + '" loading="lazy" onerror="this.src=\'' + fallbackSvg + '\'">';
-        html += '</div>';
-    }
-    photoGrid.innerHTML = html;
+    photoGrid.innerHTML = buildMediaGridHtml(imgs, caseId, 'images', false);
 }
 
-// ─── PRINT CASE LABEL ──────────────────────────────────────────────
+// ─── PRINT CASE LABEL (A4 - ชิดบนซ้าย เว้นขอบนิดเดียว) ────────────
 function printCaseLabel(caseId) {
     var c = cases[caseId]; if (!c) return;
 
     var productRows = '';
     if (Array.isArray(c.products) && c.products.length) {
         productRows = c.products.map(function(p) {
-            return '<tr><td style="padding:8px 12px;border:1px solid #dde3f0;font-size:13px;">' +
+            return '<tr><td style="padding:6px 10px;border:1px solid #999;font-size:11px;color:#000;">' +
                 (p.product_name||'').trim() +
-                '</td><td style="padding:8px 12px;border:1px solid #dde3f0;text-align:center;font-size:13px;font-weight:700;color:#1428A0;">×' +
+                '</td><td style="padding:6px 10px;border:1px solid #999;text-align:center;font-size:11px;font-weight:700;color:#000;">×' +
                 parseFloat(p.quantity||0) + '</td></tr>';
         }).join('');
     } else {
         productRows = c.product.split('\n').map(function(p) {
             var m = p.trim().match(/^(.+?)\s*\(จำนวน:\s*([\d.]+)\)$/);
             if (m) {
-                return '<tr><td style="padding:8px 12px;border:1px solid #dde3f0;font-size:13px;">' + m[1].trim() +
-                    '</td><td style="padding:8px 12px;border:1px solid #dde3f0;text-align:center;font-size:13px;font-weight:700;color:#1428A0;">×' +
+                return '<tr><td style="padding:6px 10px;border:1px solid #999;font-size:11px;color:#000;">' + m[1].trim() +
+                    '</td><td style="padding:6px 10px;border:1px solid #999;text-align:center;font-size:11px;font-weight:700;color:#000;">×' +
                     parseFloat(m[2]) + '</td></tr>';
             }
-            return p.trim() ? '<tr><td colspan="2" style="padding:8px 12px;border:1px solid #dde3f0;font-size:13px;">' + p.trim() + '</td></tr>' : '';
+            return p.trim() ? '<tr><td colspan="2" style="padding:6px 10px;border:1px solid #999;font-size:11px;color:#000;">' + p.trim() + '</td></tr>' : '';
         }).join('');
     }
 
@@ -1382,46 +1637,62 @@ function printCaseLabel(caseId) {
     var printDate = new Date().toLocaleDateString('th-TH', { day:'numeric', month:'long', year:'numeric' });
     var printTime = new Date().toLocaleTimeString('th-TH', { hour:'2-digit', minute:'2-digit' });
 
-    var win = window.open('', '_blank', 'width=680,height=800');
+    var win = window.open('', '_blank', 'width=620,height=720');
     win.document.write('<!DOCTYPE html><html><head><meta charset="UTF-8">');
-    win.document.write('<title>ใบแนบสินค้า - ' + (c.po || c.id) + '</title>');
+    win.document.write('<title></title>');
     win.document.write('<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Thai:wght@400;600;700;800&display=swap" rel="stylesheet">');
     win.document.write('<style>');
     win.document.write('*{box-sizing:border-box;margin:0;padding:0;}');
-    win.document.write('body{font-family:"Noto Sans Thai",Arial,sans-serif;background:#fff;padding:28px;color:#1d1d1f;font-size:13px;-webkit-print-color-adjust:exact;print-color-adjust:exact;}');
-    win.document.write('.wrap{border:2px solid #1428A0;border-radius:12px;overflow:hidden;width:100%;max-width:800px;margin:0 auto;background:#fff;}');
-    win.document.write('.header{background:#1428A0;padding:16px 22px;display:flex;align-items:center;justify-content:space-between;}');
-    win.document.write('.header-left{display:flex;align-items:center;gap:12px;}');
-    win.document.write('.header-icon{width:40px;height:40px;background:rgba(255,255,255,0.15);border-radius:8px;display:flex;align-items:center;justify-content:center;}');
-    win.document.write('.header-title{color:#fff;font-size:16px;font-weight:800;letter-spacing:-0.3px;}');
-    win.document.write('.header-sub{color:rgba(255,255,255,0.6);font-size:10px;margin-top:2px;}');
-    win.document.write('.header-date{color:rgba(255,255,255,0.7);font-size:11px;text-align:right;}');
-    win.document.write('.body{padding:20px 22px;}');
-    win.document.write('.po-box{background:#f0f4ff;border:1.5px solid #c8d4f8;border-radius:10px;padding:14px 18px;margin-bottom:16px;display:flex;align-items:center;justify-content:space-between;}');
-    win.document.write('.po-label{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:#888;margin-bottom:3px;}');
-    win.document.write('.po-val{font-size:22px;font-weight:800;color:#1428A0;letter-spacing:-0.5px;font-family:"Courier New",monospace;}');
-    win.document.write('.status-badge{padding:5px 14px;border-radius:20px;font-size:11px;font-weight:700;background:#fff4e0;color:#cc7a00;border:1.5px solid #ffd580;}');
-    win.document.write('.info-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:16px;}');
-    win.document.write('.info-box{background:#fafafa;border:1px solid #e8e8e8;border-radius:8px;padding:10px 14px;}');
-    win.document.write('.info-label{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.07em;color:#999;margin-bottom:3px;}');
-    win.document.write('.info-val{font-size:13px;font-weight:700;color:#1d1d1f;line-height:1.4;}');
-    win.document.write('.section-title{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:#888;margin-bottom:8px;}');
-    win.document.write('table{width:100%;border-collapse:collapse;border-radius:8px;overflow:hidden;}');
-    win.document.write('thead th{background:#1428A0;color:#fff;padding:9px 12px;text-align:left;font-size:11px;font-weight:700;letter-spacing:0.05em;}');
-    win.document.write('thead th:last-child{text-align:center;width:100px;}');
-    win.document.write('tbody tr:nth-child(even){background:#f8f9ff;}');
-    win.document.write('.footer{margin-top:16px;padding-top:14px;border-top:1.5px dashed #dde3f0;display:flex;justify-content:space-between;align-items:center;}');
-    win.document.write('.footer-note{font-size:11px;color:#aaa;}');
-    win.document.write('.sig-box{border-top:1.5px solid #ccc;width:130px;text-align:center;padding-top:6px;font-size:10px;color:#aaa;margin-top:30px;}');
-    win.document.write('@media print{body{padding:0;margin:0;} .wrap{border:none;border-radius:0;max-width:100%;} .no-print{display:none;} @page{margin:15mm; size:A4;}}');
+    win.document.write('html,body{margin:0;padding:0;}');
+    win.document.write('body{font-family:"Noto Sans Thai",Arial,sans-serif;background:#fff;color:#000;font-size:11px;}');
+    win.document.write('.wrap{border:1px solid #999;width:100%;max-width:560px;margin:14px auto;background:#fff;}');
+    win.document.write('.header{background:#fff;padding:10px 12px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid #999;gap:8px;}');
+    win.document.write('.header-left{display:flex;align-items:center;gap:8px;flex:1;min-width:0;}');
+    win.document.write('.header-icon{width:28px;height:28px;background:#fff;border-radius:6px;display:flex;align-items:center;justify-content:center;border:1px solid #999;flex-shrink:0;}');
+    win.document.write('.header-title{color:#000;font-size:13px;font-weight:800;letter-spacing:-0.2px;}');
+    win.document.write('.header-sub{color:#777;font-size:9px;margin-top:1px;}');
+    win.document.write('.header-date{color:#555;font-size:9px;text-align:right;line-height:1.4;flex-shrink:0;}');
+    win.document.write('.body{padding:10px 12px;}');
+    win.document.write('.po-box{background:#fff;border:1px solid #999;border-radius:6px;padding:8px 10px;margin-bottom:8px;display:flex;align-items:center;justify-content:space-between;gap:6px;}');
+    win.document.write('.po-label{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:0.06em;color:#666;margin-bottom:2px;}');
+    win.document.write('.po-val{font-size:18px;font-weight:800;color:#000;letter-spacing:-0.3px;font-family:"Courier New",monospace;}');
+    win.document.write('.status-badge{padding:3px 10px;border-radius:14px;font-size:10px;font-weight:700;background:#fff;color:#000;border:1px solid #999;white-space:nowrap;}');
+    win.document.write('.info-grid{display:grid;grid-template-columns:1fr;gap:5px;margin-bottom:8px;}');
+    win.document.write('.info-box{background:#fff;border:1px solid #bbb;border-radius:5px;padding:6px 10px;}');
+    win.document.write('.info-label{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:0.06em;color:#666;margin-bottom:2px;}');
+    win.document.write('.info-val{font-size:12px;font-weight:700;color:#000;line-height:1.3;word-break:break-word;}');
+    win.document.write('.section-title{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:0.06em;color:#666;margin-bottom:5px;}');
+    win.document.write('table{width:100%;border-collapse:collapse;border:1px solid #999;}');
+    win.document.write('thead th{background:#fff;color:#000;padding:6px 10px;text-align:left;font-size:10px;font-weight:700;letter-spacing:0.04em;border-bottom:1.5px solid #666;}');
+    win.document.write('thead th:last-child{text-align:center;width:80px;}');
+    win.document.write('.footer{margin-top:10px;padding-top:8px;border-top:1px dashed #999;display:flex;justify-content:space-between;align-items:center;gap:8px;}');
+    win.document.write('.footer-note{font-size:9px;color:#777;}');
+    win.document.write('.sig-box{border-top:1px solid #666;width:120px;text-align:center;padding-top:4px;font-size:9px;color:#666;margin-top:18px;}');
+
+    // ⭐⭐⭐ KEY: เว้นขอบ 5mm รอบ wrap (กันเครื่องพิมพ์ตัดขอบ)
+    win.document.write('@media print{');
+    win.document.write('  @page{size:A4 portrait; margin:0;}');
+    win.document.write('  html,body{margin:0!important;padding:0!important;width:210mm!important;}');
+    win.document.write('  .wrap{');
+    win.document.write('    border:1px solid #999!important;');
+    win.document.write('    border-radius:0!important;');
+    win.document.write('    max-width:148mm!important;');
+    win.document.write('    width:148mm!important;');
+    // ⭐ margin บน 5mm + ซ้าย 5mm (กันเครื่องพิมพ์ตัด, ไม่ลอยถึงกึ่งกลาง)
+    win.document.write('    margin:5mm 0 0 5mm!important;');
+    win.document.write('    padding:0!important;');
+    win.document.write('  }');
+    win.document.write('  .no-print{display:none!important;}');
+    win.document.write('}');
+
     win.document.write('</style></head><body>');
     win.document.write('<div class="wrap">');
     win.document.write('<div class="header">');
     win.document.write('<div class="header-left">');
-    win.document.write('<div class="header-icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.5"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg></div>');
+    win.document.write('<div class="header-icon"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#000" stroke-width="2.5"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg></div>');
     win.document.write('<div><div class="header-title">ใบแนบสินค้า / Return</div><div class="header-sub">Return System · Samsung</div></div>');
     win.document.write('</div>');
-    win.document.write('<div class="header-date">พิมพ์วันที่<br>' + printDate + '<br>' + printTime + '</div>');
+    win.document.write('<div class="header-date">พิมพ์<br>' + printDate + '<br>' + printTime + '</div>');
     win.document.write('</div>');
     win.document.write('<div class="body">');
     win.document.write('<div class="po-box">');
@@ -1431,21 +1702,64 @@ function printCaseLabel(caseId) {
     win.document.write('<div class="info-grid">');
     win.document.write('<div class="info-box"><div class="info-label">ร้านค้า</div><div class="info-val">' + (c.customer || '-') + '</div></div>');
     win.document.write('<div class="info-box"><div class="info-label">วันที่เปิดเคส</div><div class="info-val">' + (c.date || '-') + '</div></div>');
-    win.document.write('<div class="info-box" style="grid-column:1/-1;"><div class="info-label">เหตุผล</div><div class="info-val">' + (c.reason || '-') + '</div></div>');
+    win.document.write('<div class="info-box"><div class="info-label">เหตุผล</div><div class="info-val">' + (c.reason || '-') + '</div></div>');
     if (c.note && c.note !== '-') {
-        win.document.write('<div class="info-box" style="grid-column:1/-1;"><div class="info-label">หมายเหตุ</div><div class="info-val" style="font-weight:400;color:#535353;">' + c.note + '</div></div>');
+        win.document.write('<div class="info-box"><div class="info-label">หมายเหตุ</div><div class="info-val" style="font-weight:400;color:#333;">' + c.note + '</div></div>');
+    }
+    if (c.shipping_address) {
+        win.document.write('<div class="info-box"><div class="info-label">ที่อยู่จัดส่ง</div><div class="info-val" style="white-space:pre-wrap;">' + c.shipping_address + '</div></div>');
     }
     win.document.write('</div>');
     win.document.write('<div class="section-title">รายการสินค้า</div>');
     win.document.write('<table><thead><tr><th>ชื่อสินค้า</th><th>จำนวน</th></tr></thead><tbody>' + productRows + '</tbody></table>');
     win.document.write('<div class="footer">');
-    win.document.write('<div class="footer-note">เอกสารนี้ออกโดยระบบ Return System · ' + printDate + '</div>');
+    win.document.write('<div class="footer-note">ออกโดยระบบ Return System</div>');
     win.document.write('<div style="text-align:right;"><div class="sig-box">ผู้รับสินค้า / Receiver</div></div>');
     win.document.write('</div>');
     win.document.write('</div></div>');
-    win.document.write('<div class="no-print" style="text-align:center;margin-top:20px;"><button onclick="window.print()" style="background:#1428A0;color:#fff;border:none;padding:12px 40px;border-radius:30px;font-family:\'Noto Sans Thai\',sans-serif;font-size:16px;font-weight:700;cursor:pointer;box-shadow:0 4px 12px rgba(20,40,160,0.3);">🖨️ สั่งพิมพ์เอกสาร</button></div>');
+    win.document.write('<div class="no-print" style="text-align:center;margin-top:14px;padding-bottom:14px;">');
+    win.document.write('<button onclick="window.print()" style="background:#000;color:#fff;border:none;padding:10px 32px;border-radius:24px;font-family:\'Noto Sans Thai\',sans-serif;font-size:14px;font-weight:700;cursor:pointer;box-shadow:0 4px 10px rgba(0,0,0,0.3);">สั่งพิมพ์เอกสาร</button>');
+    win.document.write('<div style="margin-top:10px;font-size:11px;color:#666;line-height:1.6;padding:0 20px;">');
+    win.document.write('⚠️ <b>ในหน้าต่าง Print:</b> Paper size = <b>A4</b>, Margins = <b>None</b>, ปิด <b>Headers and footers</b>');
+    win.document.write('</div>');
+    win.document.write('</div>');
     win.document.write('</body></html>');
     win.document.close();
+}
+
+// ─── BUILD MEDIA GRID HTML (รูป + วิดีโอ ในกริดเดียว) ─────────────
+function buildMediaGridHtml(items, caseId, type, canDelete) {
+    if (!items || !items.length) return '<div class="no-photos-placeholder">ไม่มีรูปภาพ/วิดีโอ</div>';
+    var fallbackSvg = 'data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%2280%22%20height%3D%2280%22%3E%3Crect%20width%3D%2280%22%20height%3D%2280%22%20fill%3D%22%23f0f0f0%22%2F%3E%3Ctext%20x%3D%2240%22%20y%3D%2245%22%20text-anchor%3D%22middle%22%20font-size%3D%2212%22%20fill%3D%22%23999%22%3E-%3C%2Ftext%3E%3C%2Fsvg%3E';
+    var html = '';
+    for (var idx = 0; idx < items.length; idx++) {
+        var media = items[idx];
+        var fileId = media.fileId || '';
+        if (!fileId && media.viewUrl) { var m = media.viewUrl.match(/\/d\/([^/]+)\//); if (m) fileId = m[1]; }
+        var src = fileId ? '/return/drive-image?id=' + fileId : (media.thumbUrl || media.viewUrl || '');
+        var title = media.filename || ('ไฟล์ ' + (idx + 1));
+        var isVid = isVideoMedia(media);
+
+        html += '<div class="detail-photo-thumb" style="position:relative;" title="' + title + '">';
+
+        if (isVid) {
+            // วิดีโอ: แสดง thumbnail (drive thumbnail สามารถสร้าง preview ของวิดีโอได้)
+            // + ไอคอน play overlay + badge "VIDEO"
+            html += '<img src="' + src + '" alt="' + title + '" loading="lazy" onerror="this.src=\'' + fallbackSvg + '\'" style="cursor:pointer;background:#000;" onclick="openLightboxType(' + idx + ',\'' + caseId + '\',\'' + type + '\')">';
+            html += '<div class="thumb-play-icon"><svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"/></svg></div>';
+            html += '<div class="thumb-video-badge">▶ VID</div>';
+        } else {
+            // รูปภาพ
+            html += '<img src="' + src + '" alt="' + title + '" loading="lazy" onerror="this.src=\'' + fallbackSvg + '\'" onclick="openLightboxType(' + idx + ',\'' + caseId + '\',\'' + type + '\')" style="cursor:pointer;">';
+        }
+
+        if (canDelete) {
+            html += '<button class="photo-delete-btn" onclick="event.stopPropagation();deleteExtraPhoto(\'' + caseId + '\',\'' + type + '\',' + idx + ')" title="ลบไฟล์นี้">✕</button>';
+        }
+
+        html += '</div>';
+    }
+    return html;
 }
 
 // ─── DETAIL MODAL ─────────────────────────────────────────────────
@@ -1456,6 +1770,25 @@ function openDetail(id){
     document.getElementById('d-customer').textContent=c.customer;
     document.getElementById('d-reason').textContent=c.reason;
     document.getElementById('d-note').textContent=c.note;
+
+    // ⭐ แสดงที่อยู่จัดส่ง + ประเภทเคลม (ถ้ามีข้อมูล - หมายความว่า admin อนุมัติแล้ว)
+    var shippingRow = document.getElementById('d-shipping-row');
+    var claimTypeRow = document.getElementById('d-claim-type-row');
+    if (c.shipping_address && c.shipping_address.trim() !== '') {
+        document.getElementById('d-shipping-address').textContent = c.shipping_address;
+        shippingRow.style.display = 'flex';
+    } else {
+        shippingRow.style.display = 'none';
+    }
+    if (c.claim_type && c.claim_type.trim() !== '') {
+        var claimTypeLabel = c.claim_type === 'no_return' ? '🎁 เคลมของไม่ต้องคืน'
+            : c.claim_type === 'return_required' ? '↩️ เคลมของต้องคืน'
+            : c.claim_type;
+        document.getElementById('d-claim-type').textContent = claimTypeLabel;
+        claimTypeRow.style.display = 'flex';
+    } else {
+        claimTypeRow.style.display = 'none';
+    }
     var productEl=document.getElementById('d-product');productEl.style.textAlign='left';
     if(Array.isArray(c.products)&&c.products.length){
         productEl.innerHTML=c.products.map(function(p){return'<div style="display:flex;align-items:baseline;justify-content:space-between;gap:8px;padding:5px 8px;margin-bottom:4px;background:#f8f9ff;border-left:2px solid #1428A0;border-radius:0 4px 4px 0;"><span style="font-size:12px;color:#535353;">'+(p.product_name||'').trim()+'</span><span style="flex-shrink:0;font-size:11px;font-weight:700;color:#1428A0;background:#e8ecf8;padding:1px 8px;border-radius:10px;">×'+parseFloat(p.quantity||0)+'</span></div>';}).join('');
@@ -1466,51 +1799,28 @@ function openDetail(id){
     var badge=document.getElementById('d-badge');badge.className='badge '+sm.cls;badge.textContent=sm.label;
     document.getElementById('d-steps').innerHTML=stepLabels.map(function(label,i){var cls=i<c.step?'done':i===c.step?'active':'';var icon=i<c.step?'<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>':'<span style="font-size:11px;font-weight:700;color:'+(i===c.step?'var(--samsung-blue)':'#ccc')+'">'+(i+1)+'</span>';return'<div class="step-item '+cls+'"><div class="step-circle">'+icon+'</div><div class="step-label">'+label+'</div></div>';}).join('');
     document.getElementById('d-timeline').innerHTML=stepLabels.map(function(label,i){if(i>=c.step||!c.stepDates||!c.stepDates[i])return'';var dt=formatStepDatetime(c.stepDates[i]);return'<div class="timeline-item"><div class="timeline-dot"></div><div><div class="timeline-text">'+(c.stepDesc&&c.stepDesc[i]?c.stepDesc[i]:label)+'</div><div class="timeline-by">'+(c.stepBy&&c.stepBy[i]?c.stepBy[i]:'')+' · '+dt+'</div></div></div>';}).join('');
+
+    // รูปภาพ/วิดีโอประกอบ (ส่วนแรก - ไม่มีปุ่มลบ)
     var imgs=c.images||[];
     var photoGrid=document.getElementById('d-photos-grid');
     var photoCount=document.getElementById('d-photo-count');
-    photoCount.textContent=imgs.length>0?'('+imgs.length+' รูป)':'';
-    if(!imgs.length){
-        photoGrid.innerHTML='<div class="no-photos-placeholder">ไม่มีรูปภาพประกอบ</div>';
-    } else {
-        var html='';
-        for(var idx=0;idx<imgs.length;idx++){
-            var img=imgs[idx];
-            var fileId=img.fileId||'';
-            if(!fileId&&img.viewUrl){var m=img.viewUrl.match(/\/d\/([^/]+)\//);if(m)fileId=m[1];}
-            var src=fileId?'/return/drive-image?id='+fileId:(img.thumbUrl||img.viewUrl||'');
-            var title=img.filename||('รูป '+(idx+1));
-            var fallbackSvg='data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%2280%22%20height%3D%2280%22%3E%3Crect%20width%3D%2280%22%20height%3D%2280%22%20fill%3D%22%23f0f0f0%22%2F%3E%3Ctext%20x%3D%2240%22%20y%3D%2245%22%20text-anchor%3D%22middle%22%20font-size%3D%2212%22%20fill%3D%22%23999%22%3Eไม่พบรูป%3C%2Ftext%3E%3C%2Fsvg%3E';
-            html+='<div class="detail-photo-thumb" onclick="openLightboxType('+idx+',\''+id+'\',\'images\')" title="'+title+'">';
-            html+='<img src="'+src+'" alt="'+title+'" loading="lazy" onerror="this.src=\''+fallbackSvg+'\'">';
-            html+='</div>';
-        }
-        photoGrid.innerHTML=html;
-    }
+    photoCount.textContent=imgs.length>0?'('+imgs.length+' ไฟล์)':'';
+    photoGrid.innerHTML = imgs.length ? buildMediaGridHtml(imgs, id, 'images', false) : '<div class="no-photos-placeholder">ไม่มีรูปภาพ/วิดีโอประกอบ</div>';
 
     renderExtraPhotos(id, 'evidence', 'd-evidence-grid', 'd-evidence-count', 'd-evidence-upload-btn');
     renderExtraPhotos(id, 'pack', 'd-pack-grid', 'd-pack-count', 'd-pack-upload-btn');
 
-    // ─── ACTIONS ──────────────────────────────────────────────────
-    // ปุ่มคำสั่ง (Actions)
+    // ACTIONS
     var actionsHtml = '<button class="btn-cancel" onclick="closeDetail()">ปิด</button>';
-
-    // 1. ปุ่มปริ้น: แสดงเฉพาะในขั้นตอนที่ 3 (accept)
     if (c.status === 'accept') {
         actionsHtml += '<button class="btn-action-print" onclick="printCaseLabel(\'' + id + '\')">🖨️ ปริ้นเอกสารติดสินค้า</button>';
     }
-
-    // 2. ปุ่มสำหรับ Admin
     if (isAdmin) {
         var c_status = c.status;
-
-        // ขั้นตอนที่ 1-2 (processing): แสดงปุ่ม ยกเลิก และ อนุมัติ
         if (c_status === 'processing') {
             actionsHtml += '<button class="btn-action-cancel" onclick="changeStatus(\''+id+'\',\'cancel\')">✕ ยกเลิก (Cancel)</button>';
-            actionsHtml += '<button class="btn-action-accept" onclick="changeStatus(\''+id+'\',\'accept\')">✓ อนุมัติ (Accept)</button>';
+            actionsHtml += '<button class="btn-action-accept" onclick="openApprovalModal(\''+id+'\')">✓ อนุมัติ (Accept)</button>';
         }
-
-        // ขั้นตอนที่ 3 (accept): แสดงปุ่ม จัดของพร้อมปิดเคส
         if (c_status === 'accept') {
             actionsHtml += '<button class="btn-action-finish" onclick="changeStatus(\''+id+'\',\'finish\')">📦 จัดของพร้อมปิดเคส</button>';
         }
@@ -1520,39 +1830,27 @@ function openDetail(id){
 }
 
 // ─── EXTRA PHOTOS (หลักฐาน / แพ็ค) ──────────────────────────────
-// กฎการล็อครูป:
-// - เฉพาะ Admin เท่านั้นที่สามารถเพิ่มรูปได้ (User ธรรมดาดูรูปได้อย่างเดียว)
-// - รูปหลักฐาน (evidence): Admin เพิ่มได้เฉพาะสถานะ processing
-// - รูปแพ็คสินค้า (pack): Admin เพิ่มได้เฉพาะสถานะ accept (ขั้นตอนที่ 3)
 function renderExtraPhotos(caseId, type, gridId, countId, btnId) {
     var c = cases[caseId]; if (!c) return;
     var btnEl = document.getElementById(btnId);
-
-    // กฎการล็อคปุ่ม (ใช้งานจริง):
     var isLocked = true;
 
-    // ✅ เช็คสิทธิ์ admin ก่อน: User ธรรมดาดูได้อย่างเดียว เพิ่ม/ลบรูปไม่ได้ทุกส่วน
     if (isAdmin) {
         if (type === 'pack') {
-            // ส่วนแพ็คสินค้า: Admin เพิ่มรูปได้ "เฉพาะในขั้นตอนที่ 3 (accept)" เท่านั้น
             if (c.status === 'accept') isLocked = false;
         } else {
-            // ส่วนหลักฐาน: Admin เพิ่มรูปได้ "เฉพาะในขั้นตอนที่ 1-2 (processing)" เท่านั้น
             if (c.status === 'processing') isLocked = false;
         }
     }
-    // ถ้าไม่ใช่ admin: isLocked = true เสมอ (User ธรรมดาดูรูปได้อย่างเดียว)
 
-    // แสดงปุ่มตามสถานะการล็อค
     if (!isLocked) {
-        btnEl.innerHTML = '<label class="btn-add-photo" title="เพิ่มรูป" style="cursor:pointer;display:inline-flex;align-items:center;gap:4px;background:var(--samsung-blue);color:#fff;padding:4px 10px;border-radius:12px;font-size:11px;font-weight:600;">' +
+        // ⭐ accept ทั้งรูปและวิดีโอ
+        btnEl.innerHTML = '<label class="btn-add-photo" title="เพิ่มรูป/วิดีโอ" style="cursor:pointer;display:inline-flex;align-items:center;gap:4px;background:var(--samsung-blue);color:#fff;padding:4px 10px;border-radius:12px;font-size:11px;font-weight:600;">' +
             '<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>' +
-            ' เพิ่มรูป' +
-            '<input type="file" accept="image/*" multiple style="display:none;" onchange="handleExtraPhotoUpload(this,\'' + caseId + '\',\'' + type + '\')">' +
+            ' เพิ่มไฟล์' +
+            '<input type="file" accept="image/*,video/*" multiple style="display:none;" onchange="handleExtraPhotoUpload(this,\'' + caseId + '\',\'' + type + '\')">' +
             '</label>';
     } else {
-        // User ธรรมดาจะไม่เห็นปุ่มเพิ่ม/ล็อคใดๆ (ซ่อนไปเลยเพื่อ UI ที่สะอาด)
-        // Admin จะเห็นป้าย "ล็อคแล้ว" ถ้าสถานะไม่ตรงกับที่อนุญาต
         if (isAdmin) {
             btnEl.innerHTML = '<span style="font-size:10px;color:var(--text-muted);background:#f5f5f5;border:1px solid var(--border);border-radius:12px;padding:3px 8px;display:inline-flex;align-items:center;gap:4px;">🔒 ล็อคแล้ว</span>';
         } else {
@@ -1564,20 +1862,38 @@ function renderExtraPhotos(caseId, type, gridId, countId, btnId) {
 }
 
 async function handleExtraPhotoUpload(input, caseId, type) {
-    // ✅ ป้องกันชั้นที่ 2: User ธรรมดาไม่สามารถอัปโหลดรูปได้ไม่ว่ากรณีใด
     if (!isAdmin) {
-        showToast('⚠️ ไม่มีสิทธิ์เพิ่มรูปภาพ (เฉพาะผู้ดูแลระบบ)');
+        showToast('⚠️ ไม่มีสิทธิ์เพิ่มไฟล์ (เฉพาะผู้ดูแลระบบ)');
         input.value = '';
         return;
     }
 
-    var files = Array.from(input.files);
-    if (!files.length) return;
+    var rawFiles = Array.from(input.files);
+    if (!rawFiles.length) return;
     setTimeout(function(){ input.value = ''; }, 100);
-    showToast('⏳ กำลังอัปโหลด ' + files.length + ' รูป...');
+
+    // ⭐ Validate ไฟล์: รับทั้งรูปและวิดีโอ + เช็คขนาด
+    var files = [];
+    for (var k = 0; k < rawFiles.length; k++) {
+        var f = rawFiles[k];
+        var isImg = f.type.startsWith('image/');
+        var isVid = f.type.startsWith('video/');
+        if (!isImg && !isVid) {
+            showToast('⚠️ ' + f.name + ' ไม่ใช่รูปหรือวิดีโอ');
+            continue;
+        }
+        var maxMb = isVid ? MAX_VIDEO_MB : MAX_IMAGE_MB;
+        if (f.size > maxMb * 1024 * 1024) {
+            showToast('⚠️ ' + f.name + ' ใหญ่เกิน ' + maxMb + 'MB');
+            continue;
+        }
+        files.push(f);
+    }
+    if (!files.length) return;
+
+    showToast('⏳ กำลังอัปโหลด ' + files.length + ' ไฟล์...');
     var c = cases[caseId]; if (!c) return;
 
-    // กฎการอัปโหลด (ต้องตรงกับ renderExtraPhotos):
     var isUploadAllowed = false;
     if (type === 'pack' && c.status === 'accept') {
         isUploadAllowed = true;
@@ -1586,7 +1902,7 @@ async function handleExtraPhotoUpload(input, caseId, type) {
     }
 
     if (!isUploadAllowed) {
-        showToast('⚠️ ไม่สามารถเพิ่มรูปได้ เคสนี้ถูกล็อคแล้ว');
+        showToast('⚠️ ไม่สามารถเพิ่มไฟล์ได้ เคสนี้ถูกล็อคแล้ว');
         return;
     }
 
@@ -1599,7 +1915,8 @@ async function handleExtraPhotoUpload(input, caseId, type) {
     for (var i = 0; i < files.length; i++) {
         try {
             var seqNum = String(arr.length + 1).padStart(2,'0');
-            var ext = files[i].name.split('.').pop().toLowerCase() || 'jpg';
+            // ⭐ ใช้ extension ตามไฟล์จริง
+            var ext = files[i].name.split('.').pop().toLowerCase() || (isVideoFile(files[i]) ? 'mp4' : 'jpg');
             var filename = type + '_' + (c.po||caseId) + '_' + dateStr + '_' + seqNum + '.' + ext;
             var result = await uploadOneImage(files[i], filename, null);
             arr.push(result);
@@ -1614,7 +1931,7 @@ async function handleExtraPhotoUpload(input, caseId, type) {
             } catch(e) { console.warn('save failed', e); }
         } catch(e) { console.warn('upload failed', e); }
     }
-    if (successCount > 0) showToast('✅ อัปโหลด ' + successCount + ' รูปเรียบร้อย');
+    if (successCount > 0) showToast('✅ อัปโหลด ' + successCount + ' ไฟล์เรียบร้อย');
 }
 
 function renderExtraPhotosGrid(caseId, type) {
@@ -1625,57 +1942,35 @@ function renderExtraPhotosGrid(caseId, type) {
     var grid    = document.getElementById(gridId);
     var countEl = document.getElementById(countId);
     if (!grid) return;
-    countEl.textContent = imgs.length > 0 ? '(' + imgs.length + ' รูป)' : '';
-    var fallbackSvg = 'data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%2280%22%20height%3D%2280%22%3E%3Crect%20width%3D%2280%22%20height%3D%2280%22%20fill%3D%22%23f0f0f0%22%2F%3E%3Ctext%20x%3D%2240%22%20y%3D%2245%22%20text-anchor%3D%22middle%22%20font-size%3D%2212%22%20fill%3D%22%23999%22%3E-%3C%2Ftext%3E%3C%2Fsvg%3E';
-    if (!imgs.length) { grid.innerHTML = '<div class="no-photos-placeholder">ไม่มีรูปภาพ</div>'; return; }
+    countEl.textContent = imgs.length > 0 ? '(' + imgs.length + ' ไฟล์)' : '';
 
-    // เช็คสิทธิ์ลบรูป: admin + สถานะตรงเท่านั้น
-    //  - หลักฐาน (evidence): ลบได้เฉพาะ processing (ก่อนกด Accept)
-    //  - แพ็ค (pack): ลบได้เฉพาะ accept (ก่อนกด Finish)
     var canDelete = false;
     if (isAdmin) {
         if (type === 'evidence' && c.status === 'processing') canDelete = true;
         if (type === 'pack' && c.status === 'accept') canDelete = true;
     }
 
-    var html = '';
-    for (var idx = 0; idx < imgs.length; idx++) {
-        var img = imgs[idx];
-        var fileId = img.fileId || '';
-        if (!fileId && img.viewUrl) { var m = img.viewUrl.match(/\/d\/([^/]+)\//); if (m) fileId = m[1]; }
-        var src = fileId ? '/return/drive-image?id=' + fileId : (img.thumbUrl || img.viewUrl || '');
-        var title = img.filename || ('รูป ' + (idx + 1));
-        html += '<div class="detail-photo-thumb" style="position:relative;" title="' + title + '">';
-        html += '<img src="' + src + '" alt="' + title + '" loading="lazy" onerror="this.src=\'' + fallbackSvg + '\'" onclick="openLightboxType(' + idx + ',\'' + caseId + '\',\'' + type + '\')" style="cursor:pointer;">';
-        if (canDelete) {
-            html += '<button class="photo-delete-btn" onclick="event.stopPropagation();deleteExtraPhoto(\'' + caseId + '\',\'' + type + '\',' + idx + ')" title="ลบรูปนี้">✕</button>';
-        }
-        html += '</div>';
-    }
-    grid.innerHTML = html;
+    grid.innerHTML = buildMediaGridHtml(imgs, caseId, type, canDelete);
 }
 
-// ลบรูปในส่วน หลักฐาน / แพ็ค (เฉพาะ admin + สถานะถูกต้อง)
 async function deleteExtraPhoto(caseId, type, idx) {
-    if (!isAdmin) { showToast('⚠️ ไม่มีสิทธิ์ลบรูป'); return; }
+    if (!isAdmin) { showToast('⚠️ ไม่มีสิทธิ์ลบไฟล์'); return; }
     var c = cases[caseId]; if (!c) return;
 
-    // เช็คสถานะอีกครั้งเพื่อป้องกัน bypass
     var allowed = (type === 'evidence' && c.status === 'processing')
                || (type === 'pack' && c.status === 'accept');
     if (!allowed) {
-        showToast('⚠️ ไม่สามารถลบรูปได้ เคสนี้ถูกล็อคแล้ว');
+        showToast('⚠️ ไม่สามารถลบไฟล์ได้ เคสนี้ถูกล็อคแล้ว');
         return;
     }
 
-    if (!confirm('ยืนยันลบรูปนี้?')) return;
+    if (!confirm('ยืนยันลบไฟล์นี้?')) return;
 
     var arr = type === 'evidence' ? (c.images_evidence || []) : (c.images_pack || []);
     if (idx < 0 || idx >= arr.length) return;
     arr.splice(idx, 1);
     renderExtraPhotosGrid(caseId, type);
 
-    // บันทึกการเปลี่ยนแปลงไปยัง server
     try {
         await fetch('/return/' + encodeURIComponent(caseId) + '/update-images', {
             method: 'POST',
@@ -1688,9 +1983,9 @@ async function deleteExtraPhoto(caseId, type, idx) {
                 notify_line: false
             })
         });
-        showToast('✅ ลบรูปเรียบร้อย');
+        showToast('✅ ลบไฟล์เรียบร้อย');
     } catch(e) {
-        console.warn('ลบรูปไม่สำเร็จ:', e);
+        console.warn('ลบไฟล์ไม่สำเร็จ:', e);
         showToast('⚠️ บันทึกการลบไปยังเซิร์ฟเวอร์ไม่สำเร็จ');
     }
 }
@@ -1698,7 +1993,7 @@ async function deleteExtraPhoto(caseId, type, idx) {
 function closeDetail(){document.getElementById('detail-modal').classList.remove('active');currentDetailId=null;}
 function closeDetailOnOverlay(e){if(e.target===document.getElementById('detail-modal'))closeDetail();}
 
-// ─── LIGHTBOX ─────────────────────────────────────────────────────
+// ─── LIGHTBOX (รองรับทั้งรูปและวิดีโอ) ────────────────────────────
 function openLightboxType(startIdx, caseId, type) {
     var c = cases[caseId]; if (!c) return;
     var arr = type === 'evidence' ? (c.images_evidence||[]) : type === 'pack' ? (c.images_pack||[]) : (c.images||[]);
@@ -1707,17 +2002,79 @@ function openLightboxType(startIdx, caseId, type) {
     document.getElementById('lightbox').classList.add('active');
 }
 function openLightbox(startIdx,caseId){openLightboxType(startIdx,caseId,'images');}
+
+// ⭐ แสดงไฟล์ใน lightbox
+//   - รูป → แสดงรูปเต็ม
+//   - วิดีโอ → แสดง card สวยๆ พร้อมปุ่มดาวน์โหลดเพื่อดู (ไม่เล่นในหน้าเว็บ - เสถียร 100%)
 function showLightboxImage(){
-    var img=lbImages[lbIndex];
-    var fileId=img.fileId||'';
-    if(!fileId&&img.viewUrl){var m=img.viewUrl.match(/\/d\/([^/]+)\//);if(m)fileId=m[1];}
-    document.getElementById('lb-img').src=fileId?'/return/drive-image?id='+fileId+'&sz=w1600':(img.viewUrl||'');
-    document.getElementById('lb-counter').textContent=(lbIndex+1)+' / '+lbImages.length;
-    document.getElementById('lb-caption').textContent=img.filename||'';
+    var media = lbImages[lbIndex];
+    var fileId = media.fileId || '';
+    if (!fileId && media.viewUrl) { var m = media.viewUrl.match(/\/d\/([^/]+)\//); if (m) fileId = m[1]; }
+    var wrapper = document.getElementById('lb-media-wrapper');
+
+    if (isVideoMedia(media)) {
+        // ⭐ วิดีโอ: แสดง card เรียบง่าย พร้อมปุ่มดาวน์โหลด/เปิดใน Drive
+        var driveViewUrl = fileId ? 'https://drive.google.com/file/d/' + fileId + '/view' : '';
+        var downloadUrl  = fileId ? 'https://drive.google.com/uc?export=download&id=' + fileId : (media.viewUrl || '');
+        var filename     = media.filename || 'video';
+
+        wrapper.innerHTML =
+            '<div style="background:#1a1a1a;border:1px solid rgba(255,255,255,0.12);border-radius:14px;width:min(90vw,460px);overflow:hidden;box-shadow:0 24px 80px rgba(0,0,0,0.6);">' +
+                // ─── Body: ชื่อไฟล์ + ปุ่ม ──
+                '<div style="padding:24px 24px;">' +
+                    '<div style="display:flex;align-items:center;gap:10px;margin-bottom:14px;">' +
+                        '<div style="width:36px;height:36px;background:rgba(20,40,160,0.2);border-radius:10px;display:flex;align-items:center;justify-content:center;flex-shrink:0;">' +
+                            '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#5b8af7" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="23 7 16 12 23 17 23 7"/><rect x="1" y="5" width="15" height="14" rx="2" ry="2"/></svg>' +
+                        '</div>' +
+                        '<div style="flex:1;min-width:0;">' +
+                            '<div style="font-size:13px;font-weight:700;color:#fff;word-break:break-all;line-height:1.4;">' + filename + '</div>' +
+                            '<div style="font-size:11px;color:rgba(255,255,255,0.5);margin-top:2px;">ไฟล์วิดีโอ · กดดาวน์โหลดเพื่อดู</div>' +
+                        '</div>' +
+                    '</div>' +
+                    '<div style="display:flex;flex-direction:column;gap:8px;">' +
+                        '<a href="' + downloadUrl + '" download="' + filename + '" ' +
+                        'style="background:#1428A0;color:#fff;padding:11px 20px;border-radius:24px;font-size:13px;font-weight:700;text-decoration:none;display:flex;align-items:center;justify-content:center;gap:8px;transition:background 0.15s;font-family:inherit;" ' +
+                        'onmouseover="this.style.background=\'#0f1f80\'" onmouseout="this.style.background=\'#1428A0\'">' +
+                            '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>' +
+                            'ดาวน์โหลดวิดีโอเพื่อดู' +
+                        '</a>' +
+                        '<a href="' + driveViewUrl + '" target="_blank" rel="noopener" ' +
+                        'style="background:rgba(255,255,255,0.08);color:#fff;border:1px solid rgba(255,255,255,0.2);padding:10px 20px;border-radius:24px;font-size:12px;font-weight:600;text-decoration:none;display:flex;align-items:center;justify-content:center;gap:6px;transition:background 0.15s;font-family:inherit;" ' +
+                        'onmouseover="this.style.background=\'rgba(255,255,255,0.15)\'" onmouseout="this.style.background=\'rgba(255,255,255,0.08)\'">' +
+                            '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>' +
+                            'เปิดใน Google Drive' +
+                        '</a>' +
+                    '</div>' +
+                '</div>' +
+            '</div>';
+    } else {
+        // รูป
+        var src = fileId ? '/return/drive-image?id=' + fileId + '&sz=w1600' : (media.viewUrl || '');
+        wrapper.innerHTML = '<img class="lightbox-img" src="' + src + '" alt="">';
+    }
+
+    document.getElementById('lb-counter').textContent = (lbIndex+1) + ' / ' + lbImages.length;
+    document.getElementById('lb-caption').textContent = (media.filename||'') + (isVideoMedia(media) ? '  •  🎬 วิดีโอ' : '');
+}
+
+// ฟังก์ชันสำรอง (ไม่ใช้แล้วแต่เก็บไว้เผื่ออนาคต)
+function handleVideoError(videoEl, fileId) {
+    console.warn('Video failed to load, fileId=', fileId);
 }
 function lbPrev(){lbIndex=(lbIndex-1+lbImages.length)%lbImages.length;showLightboxImage();}
 function lbNext(){lbIndex=(lbIndex+1)%lbImages.length;showLightboxImage();}
-function closeLightbox(){document.getElementById('lightbox').classList.remove('active');}
+function closeLightbox(){
+    document.getElementById('lightbox').classList.remove('active');
+    // ⭐ เคลียร์ DOM (iframe / video) เพื่อหยุดเล่น
+    var wrap = document.getElementById('lb-media-wrapper');
+    if (wrap) {
+        var vid = wrap.querySelector('video');
+        if (vid) { try { vid.pause(); vid.removeAttribute('src'); vid.load(); } catch(e){} }
+        var ifr = wrap.querySelector('iframe');
+        if (ifr) { try { ifr.src = 'about:blank'; } catch(e){} }
+        wrap.innerHTML = '';
+    }
+}
 function closeLightboxOnOverlay(e){if(e.target===document.getElementById('lightbox'))closeLightbox();}
 document.addEventListener('keydown',function(e){if(!document.getElementById('lightbox').classList.contains('active'))return;if(e.key==='ArrowLeft')lbPrev();if(e.key==='ArrowRight')lbNext();if(e.key==='Escape')closeLightbox();});
 
@@ -1745,28 +2102,90 @@ function searchTable(q){q=q.toLowerCase().trim();var shown=0;document.querySelec
 // ─── TOAST ────────────────────────────────────────────────────────
 function showToast(msg){var t=document.createElement('div');t.textContent=msg;Object.assign(t.style,{position:'fixed',bottom:'28px',left:'50%',transform:'translateX(-50%) translateY(12px)',background:'#1d1d1f',color:'#fff',padding:'10px 22px',borderRadius:'24px',fontSize:'13px',fontWeight:'600',zIndex:'9999',opacity:'0',transition:'all 0.3s ease',whiteSpace:'nowrap',boxShadow:'0 4px 20px rgba(0,0,0,0.2)'});document.body.appendChild(t);requestAnimationFrame(function(){t.style.opacity='1';t.style.transform='translateX(-50%) translateY(0)';});setTimeout(function(){t.style.opacity='0';t.style.transform='translateX(-50%) translateY(12px)';setTimeout(function(){t.remove();},300);},2800);}
 
-// ─── CHANGE STATUS (ADMIN ONLY) ───────────────────────────────────
-async function changeStatus(caseId, newStatus) {
+// ─── APPROVAL MODAL (ADMIN) ───────────────────────────────────────
+// เปิด modal ให้ admin กรอกที่อยู่จัดส่ง + ประเภทเคลม ก่อนอนุมัติ
+var approvalCaseId = null;
+
+function openApprovalModal(caseId) {
     if (!isAdmin) return;
-    var labels = { cancel:'ยกเลิกเคส', accept:'อนุมัติเคส', finish:'ปิดเคส' };
-    if (!confirm('ยืนยัน: ' + (labels[newStatus]||newStatus) + '?')) return;
+    var c = cases[caseId]; if (!c) return;
+    approvalCaseId = caseId;
+    document.getElementById('approval-case-id').textContent = c.id + ' · ' + c.customer;
+    // โหลดค่าเก่าถ้ามี (เผื่อเคยกรอกแล้ว)
+    document.getElementById('f-shipping-address').value = c.shipping_address || '';
+    document.getElementById('f-claim-type').value = c.claim_type || '';
+    document.getElementById('approval-modal').classList.add('active');
+}
+
+function closeApprovalModal() {
+    document.getElementById('approval-modal').classList.remove('active');
+    approvalCaseId = null;
+}
+
+function closeApprovalOnOverlay(e) {
+    if (e.target === document.getElementById('approval-modal')) closeApprovalModal();
+}
+
+async function confirmApproval() {
+    if (!approvalCaseId) return;
+    var shippingAddress = document.getElementById('f-shipping-address').value.trim();
+    var claimType       = document.getElementById('f-claim-type').value;
+
+    if (!shippingAddress) { alert('กรุณากรอกที่อยู่จัดส่ง'); return; }
+    if (!claimType)       { alert('กรุณาเลือกประเภทเคลม'); return; }
+
+    var btn = document.getElementById('btn-confirm-approve');
+    btn.disabled = true;
+    btn.innerHTML = '<span class="spin">⟳</span> กำลังอนุมัติ...';
+
     try {
+        await changeStatus(approvalCaseId, 'accept', {
+            shipping_address: shippingAddress,
+            claim_type: claimType,
+            skipConfirm: true
+        });
+        closeApprovalModal();
+    } finally {
+        btn.disabled = false;
+        btn.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg> ยืนยันอนุมัติ';
+    }
+}
+
+// ─── CHANGE STATUS (ADMIN ONLY) ───────────────────────────────────
+async function changeStatus(caseId, newStatus, extraData) {
+    if (!isAdmin) return;
+    extraData = extraData || {};
+    var labels = { cancel:'ยกเลิกเคส', accept:'อนุมัติเคส', finish:'ปิดเคส' };
+    // ⭐ ถ้าเป็น approval modal เรียกมา → ไม่ต้องถาม confirm ซ้ำ
+    if (!extraData.skipConfirm) {
+        if (!confirm('ยืนยัน: ' + (labels[newStatus]||newStatus) + '?')) return;
+    }
+    try {
+        var payload = {
+            status: newStatus,
+            updated_by: currentUser,
+            notify_line: false
+        };
+        // ⭐ แนบที่อยู่จัดส่ง + ประเภทเคลม (เฉพาะตอน approve)
+        if (newStatus === 'accept') {
+            if (extraData.shipping_address !== undefined) payload.shipping_address = extraData.shipping_address;
+            if (extraData.claim_type !== undefined)       payload.claim_type       = extraData.claim_type;
+        }
         var res = await fetch('/return/' + encodeURIComponent(caseId) + '/status', {
             method: 'POST',
             headers: { 'Content-Type':'application/json', 'X-CSRF-TOKEN': CSRF() },
-            body: JSON.stringify({ 
-                status: newStatus, 
-                updated_by: currentUser,
-                notify_line: false // ปิดการแจ้งเตือน Line สำหรับการเปลี่ยนสถานะจากปุ่ม อนุมัติ, ยกเลิก, และ จัดของพร้อมปิดเคส
-            })
+            body: JSON.stringify(payload)
         });
         var data = await res.json();
         if (!data.success) { alert('❌ ' + (data.message||'เกิดข้อผิดพลาด')); return; }
         var sm = statusMap[newStatus] || statusMap.processing;
         cases[caseId].status = newStatus;
         cases[caseId].step = sm.step;
-        // ⭐ ใช้ stepDates ที่ backend ส่งกลับมา (เก็บถาวรใน DB แล้ว)
-        // ถ้า backend ไม่ส่งมา → ใช้เวลา client เป็น fallback (backward compat)
+
+        // ⭐ อัปเดทที่อยู่จัดส่ง + ประเภทเคลม จาก response
+        if (data.shipping_address !== undefined) cases[caseId].shipping_address = data.shipping_address;
+        if (data.claim_type !== undefined)       cases[caseId].claim_type       = data.claim_type;
+
         if (Array.isArray(data.stepDates) && data.stepDates.length === 5) {
             cases[caseId].stepDates = data.stepDates;
         } else {
