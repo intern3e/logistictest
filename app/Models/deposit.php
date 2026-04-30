@@ -8,9 +8,7 @@ use Illuminate\Database\Eloquent\Model;
 class deposit extends Model
 {
     protected $table = 'deposit';
-
     public $timestamps = false;
-
     protected $fillable = [
         'so_id',
         'date_dep',        
@@ -28,6 +26,9 @@ class deposit extends Model
         'time',
         'print_time',      
         'status',          
-        'status_bill',      
+        'status_bill', 
+        'deposit_bill_id',
+        'time_check',
+        'deposit_bill'
     ];
 }

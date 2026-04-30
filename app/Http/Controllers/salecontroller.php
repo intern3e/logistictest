@@ -57,7 +57,19 @@ public function dashboard(Request $request)
     $date      = $request->get('date');
     $keyword   = $request->get('keyword');   // ค้นหา billid
     $soKeyword = $request->get('so_keyword'); // ค้นหา so_id
+    $empName   = $request->get('emp_name');  // 👈 เพิ่ม filter ผู้เปิดบิล
     $message   = null;
+
+    // 👇 ดึงรายชื่อผู้เปิดบิลของวันนั้น (auto distinct)
+    $empList = collect();
+    if ($date) {
+        $empList = Bill::whereDate('time', $date)
+            ->whereNotNull('emp_name')
+            ->where('emp_name', '!=', '')
+            ->distinct()
+            ->orderBy('emp_name')
+            ->pluck('emp_name');
+    }
 
     $query = Bill::query();
 
@@ -76,6 +88,11 @@ public function dashboard(Request $request)
         });
     }
 
+    // 👇 เพิ่มเงื่อนไขกรอง emp_name
+    if ($empName) {
+        $query->where('emp_name', $empName);
+    }
+
     $bill = $query
         ->orderBy('so_detail_id', 'desc')
         ->paginate(100)
@@ -85,9 +102,8 @@ public function dashboard(Request $request)
         $message = 'ไม่พบข้อมูลที่ค้นหา';
     }
 
-    return view('sale.dashboard', compact('bill', 'message'));
+    return view('sale.dashboard', compact('bill', 'message', 'empList'));
 }
-
 
 
 public function insertdata()

@@ -34,8 +34,22 @@
     <input type="date" id="date" name="date"
         value="{{ request('date', \Carbon\Carbon::today()->format('Y-m-d')) }}">
 
-    <!-- 👇 เพิ่มบรรทัดนี้ -->
+    {{-- 👇 เพิ่ม dropdown ผู้บันทึก --}}
+    <label for="emp_name" style="margin-left: 15px;">ผู้บันทึก:</label>
+    <select name="emp_name" id="emp_name" 
+            onchange="document.getElementById('autoSearchForm').submit();"
+            style="padding: 5px; border-radius: 5px;">
+        <option value="">-- ทั้งหมด --</option>
+        @foreach($empList as $emp)
+            <option value="{{ $emp }}" {{ request('emp_name') == $emp ? 'selected' : '' }}>
+                {{ $emp }}
+            </option>
+        @endforeach
+    </select>
+
     <input type="hidden" name="create_by" value="{{ request('create_by') }}">
+    <input type="hidden" name="keyword" value="{{ request('keyword') }}">
+    <input type="hidden" name="so_keyword" value="{{ request('so_keyword') }}">
 
     <button type="submit" style="display: none;">ค้นหา</button>
 </form>
@@ -103,16 +117,15 @@
     </script>
     </div>
 <form method="GET" action="{{ route('sale.dashboard') }}" class="search-box">
-    
     <input type="text" 
         name="so_keyword" 
         placeholder="ค้นหา อ้างอิงใบสั่งขาย"
         value="{{ request('so_keyword') }}">
 
-    <!-- 👇 เพิ่มพวกนี้ -->
     <input type="hidden" name="keyword" value="{{ request('keyword') }}">
     <input type="hidden" name="date" value="{{ request('date') }}">
     <input type="hidden" name="create_by" value="{{ request('create_by') }}">
+    <input type="hidden" name="emp_name" value="{{ request('emp_name') }}"> 
 </form>
 <form method="GET" action="{{ route('sale.dashboard') }}" class="search-box">
     
@@ -154,7 +167,7 @@ document.getElementById('searchInput').addEventListener('input', function () {
                     <th>REF</th>
                     <th>ชื่อลูกค้า</th>
                     <th>วันที่จัดส่ง</th>
-                    <th>ผู้เปิดบิล</th>
+                    <th>ผู้บันทึก</th>
                     <th>ประเภทบิล</th>
                     <th>บันทึกลงระบบ</th>
                     <th>ประเภทงาน</th>

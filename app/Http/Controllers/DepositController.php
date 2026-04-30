@@ -24,24 +24,20 @@ class DepositController extends Controller
     {
         $soKeyword = trim($request->get('so_keyword', ''));
         $keyword   = trim($request->get('keyword', ''));
-        // หมายเหตุ: create_by ใช้สำหรับระบุ "ใครเข้าระบบ" (แสดงชื่อมุมขวาบน + เช็คสิทธิ์ admin)
-        //          ❌ ไม่ใช้สำหรับ filter ข้อมูล มิฉะนั้นจะไม่เห็นรายการเลย
 
-        // ดึงข้อมูลทั้งหมด ไม่ group - แสดงทุกแถวแยกกัน
         $query = deposit::query();
 
-        // filter: เลขใบสั่งขาย
         if ($soKeyword !== '') {
             $query->where('so_id', 'like', "%{$soKeyword}%");
         }
 
-        // filter: ชื่อลูกค้า / Sale / ผู้ติดต่อ / รหัสลูกค้า
         if ($keyword !== '') {
             $query->where(function ($q) use ($keyword) {
                 $q->where('customer_name', 'like', "%{$keyword}%")
                   ->orWhere('sale_name', 'like', "%{$keyword}%")
                   ->orWhere('contactso', 'like', "%{$keyword}%")
-                  ->orWhere('customer_id', 'like', "%{$keyword}%");
+                  ->orWhere('customer_id', 'like', "%{$keyword}%")
+                  ->orWhere('deposit_bill_id', 'like', "%{$keyword}%");
             });
         }
 
@@ -70,18 +66,37 @@ class DepositController extends Controller
     }
 
     /**
+     * แสดงใบมัดจำในรูปแบบฟอร์มเอกสาร (พิมพ์/PDF)
+     * Route: GET /deposit/bill/{deposit_bill_id}
+     */
+    public function showBill($deposit_bill_id)
+    {
+        $items = deposit::where('deposit_bill_id', $deposit_bill_id)
+            ->orderBy('id')
+            ->get();
+
+        if ($items->isEmpty()) {
+            abort(404, 'ไม่พบใบมัดจำเลขที่ ' . $deposit_bill_id);
+        }
+
+        // ใช้ row แรกเป็น header info
+        $header = $items->first();
+
+        // คำนวณยอดรวม
+        $totalDeposit = $items->sum('dep_price');
+        $grandTotal   = (float) $header->grand_total;
+        $netRemaining = max(0, $grandTotal - $totalDeposit);
+
+        return view('deposit.billform', compact(
+            'items', 'header', 'totalDeposit', 'grandTotal', 'netRemaining', 'deposit_bill_id'
+        ));
+    }
+
+    /**
      * อัปเดตสถานะใบมัดจำ (รอยืนยัน ↔ ยืนยัน)
-     * Route: POST /deposit/update-status
-     *
-     * Body (JSON):
-     *  - so_id      : เลขใบสั่งขาย
-     *  - deposit_id : ID ของแถวมัดจำ (ใช้ระบุแถวที่จะอัปเดต)
-     *  - new_status : "รอยืนยัน" หรือ "ยืนยัน"
-     *  - changed_by : ชื่อผู้ใช้ที่กดเปลี่ยน (จาก URL ?create_by=...)
      */
     public function updateStatus(Request $request)
     {
-        // ===== 1. ตรวจสอบสิทธิ์ admin (kanitin2, dev เท่านั้น) =====
         $changedBy = strtolower(trim($request->input('changed_by', '')));
 
         if (!in_array($changedBy, $this->adminUsers)) {
@@ -91,7 +106,6 @@ class DepositController extends Controller
             ], 403);
         }
 
-        // ===== 2. ตรวจสอบค่า new_status =====
         $newStatus = $request->input('new_status');
         $allowed   = ['รอยืนยัน', 'ยืนยัน'];
 
@@ -102,7 +116,6 @@ class DepositController extends Controller
             ], 422);
         }
 
-        // ===== 3. หาแถวที่จะอัปเดต =====
         $depositId = $request->input('deposit_id');
         $soId      = $request->input('so_id');
 
@@ -114,7 +127,6 @@ class DepositController extends Controller
         }
 
         try {
-            // ใช้ deposit_id ก่อนถ้ามี (แม่นยำกว่า), ไม่งั้น fallback ไปใช้ so_id
             $query = deposit::query();
 
             if (!empty($depositId)) {
@@ -123,9 +135,20 @@ class DepositController extends Controller
                 $query->where('so_id', $soId);
             }
 
-            $affected = $query->update([
+            // ===== เตรียมข้อมูลที่จะ update =====
+            $updateData = [
                 'status' => $newStatus,
-            ]);
+            ];
+
+            // ถ้าเปลี่ยนเป็น "ยืนยัน" → บันทึก time_check
+            // ถ้าเปลี่ยนกลับเป็น "รอยืนยัน" → ล้าง time_check
+            if ($newStatus === 'ยืนยัน') {
+                $updateData['time_check'] = now();
+            } else {
+                $updateData['time_check'] = null;
+            }
+
+            $affected = $query->update($updateData);
 
             if ($affected === 0) {
                 return response()->json([
@@ -134,17 +157,18 @@ class DepositController extends Controller
                 ], 404);
             }
 
-            // log การเปลี่ยนสถานะเผื่อ audit ภายหลัง
             Log::info('Deposit status updated', [
                 'so_id'      => $soId,
                 'deposit_id' => $depositId,
                 'new_status' => $newStatus,
                 'changed_by' => $changedBy,
+                'time_check' => $updateData['time_check'],
             ]);
 
             return response()->json([
-                'success' => true,
-                'message' => 'อัปเดตสถานะเรียบร้อย',
+                'success'    => true,
+                'message'    => 'อัปเดตสถานะเรียบร้อย',
+                'time_check' => $updateData['time_check'],
             ]);
 
         } catch (\Throwable $e) {
@@ -159,8 +183,7 @@ class DepositController extends Controller
     }
 
     /**
-     * บันทึกว่าใบมัดจำถูกพิมพ์แล้ว (อัปเดต print_time + bill_no)
-     * Route: POST /deposit/mark-printed
+     * บันทึกว่าใบมัดจำถูกพิมพ์แล้ว
      */
     public function markPrinted(Request $request)
     {
@@ -189,7 +212,6 @@ class DepositController extends Controller
                 'print_time' => now(),
             ];
 
-            // ถ้ามี bill_no ส่งมาด้วย ก็เก็บใน status_bill (ปรับชื่อ column ตามจริงถ้าต่าง)
             if ($billNo !== '') {
                 $updateData['status_bill'] = $billNo;
             }
@@ -226,7 +248,6 @@ class DepositController extends Controller
 
     /**
      * บันทึกว่าใบมัดจำหลายรายการถูกพิมพ์แล้ว (bulk)
-     * Route: POST /deposit/mark-printed-bulk
      */
     public function markPrintedBulk(Request $request)
     {
@@ -267,7 +288,6 @@ class DepositController extends Controller
 
     /**
      * หน้า botdeposit — แสดงเฉพาะใบมัดจำที่ status = "ยืนยัน"
-     * (ข้อมูลจะมาที่หน้านี้ต่อเมื่อ admin กดยืนยันที่หน้า dashboarddeposit)
      */
     public function botdeposit(Request $request)
     {
@@ -276,7 +296,6 @@ class DepositController extends Controller
         $query = deposit::query()
             ->where('status', 'ยืนยัน');
 
-        // filter: เลขใบสั่งขาย
         if ($soKeyword !== '') {
             $query->where('so_id', 'like', "%{$soKeyword}%");
         }
@@ -288,6 +307,41 @@ class DepositController extends Controller
             ->appends($request->query());
 
         return view('deposit.botdeposit', compact('deposits'));
+    }
+
+    /**
+     * สร้าง deposit_bill_id แบบ running ต่อเดือน
+     * รูปแบบ: RD + YY(พ.ศ.2หลัก) + MM + - + 5หลัก  เช่น RD6904-00003
+     *
+     * ใช้ DB transaction + lockForUpdate กันการสร้างเลขซ้ำเมื่อกดพร้อมกัน
+     *
+     * @return string
+     */
+    private function generateDepositBillId()
+    {
+        $now      = Carbon::now();
+        $yearBE   = $now->year + 543;             // ค.ศ. → พ.ศ.
+        $yy       = substr((string)$yearBE, -2);  // 2หลักท้าย
+        $mm       = $now->format('m');
+        $prefix   = "RD{$yy}{$mm}-";              // เช่น RD6904-
+
+        // หาเลขล่าสุดของ prefix นี้ พร้อม lock เพื่อกัน race condition
+        $latest = DB::table('deposit')
+            ->where('deposit_bill_id', 'like', $prefix . '%')
+            ->orderByDesc('deposit_bill_id')
+            ->lockForUpdate()
+            ->value('deposit_bill_id');
+
+        if ($latest) {
+            // ตัดส่วนหลัง '-' มาเป็นตัวเลข แล้ว +1
+            $lastNum = (int) substr($latest, strlen($prefix));
+            $next    = $lastNum + 1;
+        } else {
+            $next = 1;
+        }
+
+        $running = str_pad((string)$next, 5, '0', STR_PAD_LEFT);
+        return $prefix . $running;
     }
 
     public function store(Request $request)
@@ -321,21 +375,17 @@ class DepositController extends Controller
             }
         }
 
-        $totalDeposit = 0;
-        foreach ($validated['deposits'] as $dep) {
-            if ((float)$dep['percent'] > 0) {
-                $totalDeposit += (float)$dep['amount'];
-            }
-        }
-
         $netGrandTotal = (float)$validated['grand_total'];
 
         DB::beginTransaction();
         try {
+            // ===== สร้าง deposit_bill_id (1 ใบ ต่อ 1 SO) =====
+            $depositBillId = $this->generateDepositBillId();
+
             $inserted = [];
 
             foreach ($validated['deposits'] as $dep) {
-                if ((float)$dep['percent'] <= 0) {
+                if ((float)$dep['percent'] <= 0 && (float)$dep['amount'] <= 0) {
                     continue;
                 }
 
@@ -357,6 +407,9 @@ class DepositController extends Controller
                     'print_time'       => null,
                     'status'           => 'รอยืนยัน',
                     'status_bill'      => null,
+                    'deposit_bill_id'  => $depositBillId,
+                    'time_check'       => null,
+                    'deposit_bill'     => null,
                 ]);
 
                 $inserted[] = $row->id;
@@ -372,12 +425,19 @@ class DepositController extends Controller
 
             DB::commit();
 
+            Log::info('Deposit created', [
+                'so_id'           => $validated['so_id'],
+                'deposit_bill_id' => $depositBillId,
+                'count'           => count($inserted),
+            ]);
+
             return response()->json([
-                'success'      => true,
-                'message'      => 'บันทึกใบมัดจำเรียบร้อยแล้ว',
-                'so_id'        => $validated['so_id'],
-                'inserted_ids' => $inserted,
-                'count'        => count($inserted),
+                'success'         => true,
+                'message'         => 'บันทึกใบมัดจำเรียบร้อยแล้ว',
+                'so_id'           => $validated['so_id'],
+                'deposit_bill_id' => $depositBillId,
+                'inserted_ids'    => $inserted,
+                'count'           => count($inserted),
             ]);
 
         } catch (\Throwable $e) {

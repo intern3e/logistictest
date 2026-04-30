@@ -229,39 +229,26 @@ Route::get('/oil/ng-list',      [fuellogsController::class, 'ngList'])->name('oi
 // ⭐ NEW — สำหรับส่ง filter ผ่าน POST เพื่อให้ URL สะอาด
 Route::post('/oil/filter',      [fuellogsController::class, 'applyFilter'])->name('oil.filter');
 
-
 use App\Http\Controllers\DepositController;
 
 Route::get('/insertdeposit', [DepositController::class, 'insertdeposit'])->name('deposit.insert');
 Route::get('/dashboarddeposit', [DepositController::class, 'dashboarddeposit'])->name('deposit.dashboard');
 Route::get('/deposit/detail/{so_id}', [DepositController::class, 'detail'])
-     ->where('so_id', '.*')   // อนุญาตให้ใช้ "/" ใน so_id เช่น "69/007708"
+     ->where('so_id', '.*')
      ->name('deposit.detail');
 
-// ===== หน้า Bot — รองรับทั้ง 2 URL =====
+// ===== หน้าฟอร์มใบมัดจำ (PDF / พิมพ์) =====
+Route::get('/deposit/bill/{deposit_bill_id}', [DepositController::class, 'showBill'])
+     ->where('deposit_bill_id', '[A-Za-z0-9\-]+')
+     ->name('deposit.bill');
+
 Route::get('/botdeposit', [DepositController::class, 'botdeposit'])->name('deposit.bot');
 Route::get('/depositbot', [DepositController::class, 'botdeposit']);  // alias เผื่อพิมพ์สลับ
 
 Route::post('/deposit/store', [DepositController::class, 'store'])->name('deposit.store');
-
-// ===== อัปเดตสถานะใบมัดจำ (admin: kanitin2, dev) =====
 Route::post('/deposit/update-status', [DepositController::class, 'updateStatus'])->name('deposit.updateStatus');
-
-// ===== บันทึกการพิมพ์ใบมัดจำ (จากหน้า botdeposit) =====
 Route::post('/deposit/mark-printed', [DepositController::class, 'markPrinted'])->name('deposit.markPrinted');
 Route::post('/deposit/mark-printed-bulk', [DepositController::class, 'markPrintedBulk'])->name('deposit.markPrintedBulk');
- 
-use App\Http\Controllers\DeliverytrackController;
-Route::get('/deliverytrack', [DeliverytrackController::class, 'index'])->name('deliverytrack');
-Route::post('/return/{id}/new-bill', [DeliverytrackController::class, 'saveNewBill'])->name('deliverytrack.newbill');
-
-use App\Http\Controllers\ServiceController;
-Route::get('/service',              [ServiceController::class, 'index'])->name('service');
-Route::get('/service/list',         [ServiceController::class, 'list'])->name('service.list');
-Route::post('/service',             [ServiceController::class, 'store'])->name('service.store');
-Route::post('/service/{id}',        [ServiceController::class, 'update'])->name('service.update');
-Route::delete('/service/{id}',      [ServiceController::class, 'destroy'])->name('service.destroy');
-
 
 
 use App\Http\Controllers\TechnicianController;
