@@ -236,6 +236,67 @@ textarea.form-control{resize:vertical;min-height:65px}
 @keyframes toastShrink{from{width:100%}to{width:0%}}
 .doc-header, .doc-info, .doc-section-title, .doc-footer, .doc-signature{display:none}
 @media(max-width:640px){.form-grid{grid-template-columns:1fr}.driver-card-grid{grid-template-columns:1fr}.main{padding:14px}.metrics{grid-template-columns:1fr 1fr}.time-picker-row{grid-template-columns:1fr auto 1fr}.nb-menu{display:none}}
+/* ═══════ MODAL FULLSCREEN — Step 1 (ข้อมูลคนขับ) ═══════ */
+.modal.modal-fullscreen{
+  max-width:1200px !important;
+  width:96vw !important;
+  max-height:96vh !important;
+  height:96vh;
+}
+.modal.modal-fullscreen .modal-header{padding:22px 28px 18px}
+.modal.modal-fullscreen .modal-title{font-size:20px}
+.modal.modal-fullscreen .modal-close{width:36px;height:36px;font-size:18px}
+.modal.modal-fullscreen .modal-body{padding:24px 32px}
+.modal.modal-fullscreen .modal-footer{padding:18px 28px}
+.modal.modal-fullscreen .form-label{font-size:14px;letter-spacing:.6px;margin-bottom:8px}
+.modal.modal-fullscreen .form-control{font-size:16px;padding:12px 14px;height:auto}
+.modal.modal-fullscreen .driver-card-grid{gap:18px}
+.modal.modal-fullscreen .step-circle{width:38px;height:38px;font-size:14px}
+.modal.modal-fullscreen .step-label{font-size:14px}
+.modal.modal-fullscreen .step-line{flex:0 0 200px}
+.modal.modal-fullscreen .driver-banner{padding:18px 22px}
+.modal.modal-fullscreen .driver-banner-name{font-size:20px}
+.modal.modal-fullscreen .driver-banner-plate{font-size:14px}
+.modal.modal-fullscreen .driver-avatar{width:54px;height:54px;font-size:24px}
+.modal.modal-fullscreen .clock-display{font-size:18px;padding:14px 18px}
+.modal.modal-fullscreen .clock-label{font-size:13px}
+.modal.modal-fullscreen .btn{font-size:15px;padding:11px 22px}
+.modal.modal-fullscreen .invalid-feedback{font-size:13px}
+
+/* ตารางงานในโหมดเต็มจอ — อักษรใหญ่ขึ้น */
+.modal.modal-fullscreen .job-table-wrap table{font-size:14px}
+.modal.modal-fullscreen .job-table-wrap thead th{font-size:13px;padding:11px 14px}
+.modal.modal-fullscreen .job-table-wrap tbody td{padding:12px 14px}
+.modal.modal-fullscreen .job-bill{font-size:13px;padding:3px 8px}
+.modal.modal-fullscreen .job-chip{font-size:13px;padding:4px 12px}
+.modal.modal-fullscreen .job-loading{font-size:15px;padding:24px}
+.modal.modal-fullscreen .job-date-chip{font-size:13px;padding:4px 12px}
+
+/* ═══════ LOCK วันที่ระหว่างโหลด ═══════ */
+.date-input-locked{
+  background:var(--surface2) !important;
+  cursor:not-allowed !important;
+  opacity:.6;
+  pointer-events:none;
+}
+.date-loading-hint{
+  display:none;
+  margin-top:6px;
+  font-size:12px;
+  color:var(--accent3);
+  font-weight:600;
+}
+.date-loading-hint.show{display:flex;align-items:center;gap:6px}
+.date-loading-hint .spinner{
+  display:inline-block;
+  width:12px;
+  height:12px;
+  border:2px solid var(--accent3);
+  border-top-color:transparent;
+  border-radius:50%;
+  animation:spin .8s linear infinite;
+}
+@keyframes spin{to{transform:rotate(360deg)}}
 </style>
 </head>
 <body>
@@ -511,7 +572,7 @@ textarea.form-control{resize:vertical;min-height:65px}
 </div>
 
 <div class="modal-overlay" id="step1Modal">
-  <div class="modal" style="max-width:540px">
+  <div class="modal modal-fullscreen">
     <div class="modal-header"><div class="modal-title">🚗 ข้อมูลคนขับรถ</div><button type="button" class="modal-close" onclick="closeAllModals()">✕</button></div>
     <div class="modal-body">
       <div class="step-indicator">
@@ -530,7 +591,15 @@ textarea.form-control{resize:vertical;min-height:65px}
           $plateList=['1 ฉผ 1276','1 ฉผ 3181','1ฉผ213','1ฉผศ7158','2 ฉธ 1620','2ฉมฎ3017','2ฉธ1619','2ฉธ1621','3ฉมก6071','3ฉมง3059','3ฉมณ6380','3ฉมย478','3ฉมห200','4กย1540','6762','City 8กค6309','City 9 กค4815','แจ๊ส 9กธ4830'];
           foreach($plates as $dbP){if(!in_array($dbP,$plateList))$plateList[]=$dbP;}
         @endphp
-        <div class="full"><label class="form-label">วันที่ทำงาน *</label><input type="date" id="s1-work-date" class="form-control" value="{{ date('Y-m-d') }}" onchange="onS1DateChange()"><div class="invalid-feedback" id="s1-err-date" style="display:none">กรุณาเลือกวันที่</div></div>
+        <div class="full">
+          <label class="form-label">วันที่ทำงาน *</label>
+          <input type="date" id="s1-work-date" class="form-control" value="{{ date('Y-m-d') }}" onchange="onS1DateChange()">
+          <div class="invalid-feedback" id="s1-err-date" style="display:none">กรุณาเลือกวันที่</div>
+          <div class="date-loading-hint" id="s1-date-loading-hint">
+            <span class="spinner"></span>
+            <span>กำลังโหลดข้อมูลคนขับ</span>
+          </div>
+        </div>
         <div>
           <label class="form-label">คนขับ *</label>
         <select id="s1-driver-select" class="form-control" onchange="onS1SelectOther(this,'s1-driver-name','s1-driver-other');updateDriverBanner();loadJobsForDriver()">
@@ -553,31 +622,32 @@ textarea.form-control{resize:vertical;min-height:65px}
           <div class="invalid-feedback" id="s1-err-plate" style="display:none">กรุณาเลือกทะเบียนรถ</div>
         </div>
 
-        <div class="full" style="margin-top:4px">
-          <label class="form-label">เวลาทำงาน (เวลาไทย)</label>
-          <div class="clock-picker-row">
-            <div class="clock-block">
-              <div class="clock-label">เวลาเริ่ม</div>
-              <div class="clock-display" onclick="openClock('start')">
-                <span id="s1-start-display">00:00</span> น.
-              </div>
-            </div>
-            <div class="time-arrow">→</div>
-            <div class="clock-block">
-              <div class="clock-label">เวลาสิ้นสุด</div>
-              <div class="clock-display" onclick="openClock('end')">
-                <span id="s1-end-display">00:00</span> น.
-              </div>
+      <div class="full" style="margin-top:4px">
+        <label class="form-label">เวลาทำงาน (เวลาไทย) *</label>
+        <div class="clock-picker-row" id="s1-time-block">
+          <div class="clock-block">
+            <div class="clock-label">เวลาเริ่ม</div>
+            <div class="clock-display" onclick="openClock('start')">
+              <span id="s1-start-display">00:00</span> น.
             </div>
           </div>
-          <div id="s1-wh-preview" style="margin-top:8px;font-size:12px;color:var(--accent3);font-weight:600;display:none">
-            ⏱ <span id="s1-wh-val">0</span>
+          <div class="time-arrow">→</div>
+          <div class="clock-block">
+            <div class="clock-label">เวลาสิ้นสุด</div>
+            <div class="clock-display" onclick="openClock('end')">
+              <span id="s1-end-display">00:00</span> น.
+            </div>
           </div>
-          <input type="hidden" id="s1-start-h" value="0">
-          <input type="hidden" id="s1-start-m" value="0">
-          <input type="hidden" id="s1-end-h" value="0">
-          <input type="hidden" id="s1-end-m" value="0">
         </div>
+        <div class="invalid-feedback" id="s1-err-time" style="display:none">กรุณาเลือกเวลาเริ่มและเวลาสิ้นสุด</div>
+        <div id="s1-wh-preview" style="margin-top:8px;font-size:12px;color:var(--accent3);font-weight:600;display:none">
+          ⏱ <span id="s1-wh-val">0</span>
+        </div>
+        <input type="hidden" id="s1-start-h" value="0">
+        <input type="hidden" id="s1-start-m" value="0">
+        <input type="hidden" id="s1-end-h" value="0">
+        <input type="hidden" id="s1-end-m" value="0">
+      </div>
 
       </div>
       <div style="margin-top:18px;padding-top:16px;border-top:1px solid var(--border)">
@@ -612,8 +682,14 @@ textarea.form-control{resize:vertical;min-height:65px}
 .clock-picker-row{display:flex;align-items:flex-end;gap:12px;flex-wrap:wrap}
 .clock-block{flex:1;min-width:120px}
 .clock-label{font-size:11px;color:var(--text2);margin-bottom:5px;font-weight:600}
-.clock-display{padding:10px 14px;border:1px solid var(--border,#ddd);border-radius:8px;background:var(--bg,#fff);cursor:pointer;font-size:15px;font-weight:600;text-align:center;transition:.15s;user-select:none;}
-.clock-display:hover{border-color:var(--clock-primary);box-shadow:0 0 0 2px var(--clock-primary-light);}
+.clock-picker-row.is-invalid .clock-display{
+  border-color: #e85d5d;
+  background: rgba(232,93,93,.05);
+}
+.clock-picker-row.is-invalid .clock-display:hover{
+  box-shadow: 0 0 0 2px rgba(232,93,93,.15);
+  border-color: #e85d5d;
+}
 .time-arrow{font-size:18px;color:var(--text2);padding-bottom:10px}
 .clock-modal{position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:10000;display:flex;align-items:center;justify-content:center;}
 .clock-box{background:#fff;border-radius:16px;padding:20px;width:300px;box-shadow:0 20px 50px rgba(0,0,0,.3);}
@@ -736,6 +812,9 @@ function confirmClock(){
   document.getElementById(`s1-${t}-display`).textContent = `${String(clockState.h).padStart(2,'0')}:${String(clockState.m).padStart(2,'0')}`;
   closeClock();
   calcWorkHours();
+  const errTimeEl = document.getElementById('s1-err-time');
+  if (errTimeEl) errTimeEl.style.display = 'none';
+  document.getElementById('s1-time-block')?.classList.remove('is-invalid');
 }
 
 function calcWorkHours(){
@@ -1382,21 +1461,34 @@ function updateDriverBanner(){
   if(typeof calcWorkHours === 'function') calcWorkHours();
 }
 
-/* ══════════════════════════════════════════════════════════════════
-   JOB API
-══════════════════════════════════════════════════════════════════ */
-const JOB_API_BASE = 'https://script.google.com/macros/s/AKfycbyL82yRPXR1eiHOnaJqZ5Q0y1VnOZGAPXW2jyEB3NUEWWfJBBhMKosWYxf_363jnmAcHw/exec';
+const JOB_API_BASE = 'http://server_update:8000/api/getDeliveryPersonByDate';
 const jobApiCache = {};
-
 async function fetchJobsByDate(dateStr) {
   if (jobApiCache[dateStr] !== undefined) return;
   jobApiCache[dateStr] = null;
   try {
-    const res  = await fetch(`${JOB_API_BASE}?date=${dateStr}`);
+    const res = await fetch(`${JOB_API_BASE}?date=${dateStr}`);
     if (!res.ok) throw new Error('HTTP ' + res.status);
     const json = await res.json();
-    jobApiCache[dateStr] = Array.isArray(json) ? json : (json.drivers !== undefined ? [json] : []);
-  } catch(e) {
+
+    // map โครงสร้างใหม่ → โครงสร้างเดิมที่ UI ใช้อยู่
+    const drivers = (json.data || []).map(block => ({
+      driver_name: block.bill_out_by || 'ไม่ระบุ',
+      jobs: (block.jobs || []).map(j => ({
+        bill_no       : j.bill_no       || '',
+        so_id         : j.so_id         || '',
+        customer_name : j.customer_name || '',
+        bill_in_by   : j.bill_in_by    || '',
+        status        : j.delivery_status || '',
+        note          : j.reason        || '',
+      })),
+    }));
+
+    jobApiCache[dateStr] = [{
+      date    : json.date || dateStr,
+      drivers : drivers,
+    }];
+  } catch (e) {
     console.warn('fetchJobsByDate:', e);
     jobApiCache[dateStr] = [];
   }
@@ -1437,23 +1529,65 @@ function populateDriverDropdown(dateStr) {
   }
 }
 
+let isLoadingDrivers = false;
+let lastLoadedDate   = null;
+
+function setDateInputLocked(locked) {
+  const dateInput = document.getElementById('s1-work-date');
+  const hint      = document.getElementById('s1-date-loading-hint');
+  if (!dateInput) return;
+  if (locked) {
+    dateInput.classList.add('date-input-locked');
+    dateInput.setAttribute('readonly', 'readonly');
+    if (hint) hint.classList.add('show');
+    isLoadingDrivers = true;
+  } else {
+    dateInput.classList.remove('date-input-locked');
+    dateInput.removeAttribute('readonly');
+    if (hint) hint.classList.remove('show');
+    isLoadingDrivers = false;
+  }
+}
+
 async function onS1DateChange() {
+  // ✅ ถ้ากำลังโหลดอยู่ → revert กลับเป็นวันที่เดิม
+  if (isLoadingDrivers) {
+    if (lastLoadedDate) {
+      document.getElementById('s1-work-date').value = lastLoadedDate;
+    }
+    return;
+  }
+
   updateDriverBanner();
   const date = document.getElementById('s1-work-date').value;
   if (!date) return;
+
+  // ✅ Lock input วันที่
+  setDateInputLocked(true);
+
   const sel = document.getElementById('s1-driver-select');
   sel.innerHTML = '<option value="">⏳ กำลังโหลด...</option>';
   sel.disabled  = true;
   document.getElementById('s1-driver-name').value = '';
-  document.getElementById('jobTableWrap').innerHTML = '<div class="job-loading">⏳ กำลังโหลดข้อมูลคนขับ...</div>';
+  document.getElementById('jobTableWrap').innerHTML = '<div class="job-loading">กำลังโหลดข้อมูลคนขับ...</div>';
   document.getElementById('jobDateChip').style.display = 'none';
-  await fetchJobsByDate(date);
-  sel.disabled = false;
-  populateDriverDropdown(date);
-  updateDriverBanner();
-  document.getElementById('jobTableWrap').innerHTML = '<div class="job-loading">เลือกคนขับเพื่อดูรายการงาน</div>';
-}
 
+  try {
+    await fetchJobsByDate(date);
+    lastLoadedDate = date;
+    sel.disabled = false;
+    populateDriverDropdown(date);
+    updateDriverBanner();
+    document.getElementById('jobTableWrap').innerHTML = '<div class="job-loading">เลือกคนขับเพื่อดูรายการงาน</div>';
+  } catch (e) {
+    console.warn('onS1DateChange:', e);
+    sel.disabled = false;
+    sel.innerHTML = '<option value="">— เกิดข้อผิดพลาด —</option>';
+  } finally {
+    // ✅ Unlock input ไม่ว่าจะสำเร็จหรือล้มเหลว
+    setDateInputLocked(false);
+  }
+}
 async function loadJobsForDriver() {
   const name = document.getElementById('s1-driver-name').value || document.getElementById('s1-driver-select').value;
   const date = document.getElementById('s1-work-date').value;
@@ -1490,12 +1624,16 @@ function renderJobTable(jobs) {
       : isNg
         ? `<span class="job-chip fail" style="display:inline-flex">❌ ไม่สำเร็จ</span>`
         : `<span class="job-chip" style="display:inline-flex;color:var(--text3)">— รอ</span>`;
-    const noteHtml = (j.note && j.note.trim())
+    const noteHtml = (j.note && j.note.trim() && j.note.trim() !== raw)
       ? `<div style="font-size:11px;color:var(--text3);margin-top:3px">${j.note}</div>` : '';
+    const soIdCell = j.so_id
+      ? `<span class="job-bill" style="background:rgba(79,142,247,.08);color:var(--accent);border-color:rgba(79,142,247,.3)">${j.so_id}</span>`
+      : `<span style="color:var(--text3);font-size:11px">—</span>`;
     return `<tr>
       <td><span class="job-bill">${j.bill_no}</span></td>
+      <td>${soIdCell}</td>
       <td>${j.customer_name}</td>
-      <td style="color:var(--text2)">${j.seller_name}</td>
+      <td style="color:var(--text2)">${j.bill_in_by}</td>
       <td>${statusBadge}${noteHtml}</td>
     </tr>`;
   }).join('');
@@ -1507,8 +1645,11 @@ function renderJobTable(jobs) {
     <div class="job-table-wrap">
       <table>
         <thead><tr>
-          <th style="width:130px">เลขบิล</th><th>ลูกค้า</th>
-          <th style="width:85px">เซลล์</th><th style="width:120px">สถานะ</th>
+          <th style="width:120px">เลขบิล</th>
+          <th style="width:110px">SO ID</th>
+          <th>ลูกค้า</th>
+          <th style="width:85px">ผู้นำบิลเข้า</th>
+          <th style="width:120px">สถานะ</th>
         </tr></thead>
         <tbody>${rows}</tbody>
       </table>
@@ -1520,7 +1661,6 @@ function renderJobTable(jobs) {
       </div>
     </div>`;
 }
-
 function _collectJobs(driverName, date) {
   const jobs = [];
   (jobApiCache[date] || []).forEach(day => {
@@ -1533,22 +1673,55 @@ function _collectJobs(driverName, date) {
   });
   return jobs;
 }
-
-/* ══════════════════════════════════════════════════════════════════
-   MODAL FLOW
-══════════════════════════════════════════════════════════════════ */
 function goToStep2(){
   let ok=true;
   const date  =document.getElementById('s1-work-date').value;
   const driver=document.getElementById('s1-driver-name').value;
   const plate =document.getElementById('s1-vehicle-id').value;
-  ['s1-err-date','s1-err-driver','s1-err-plate'].forEach(id=>document.getElementById(id).style.display='none');
-  ['s1-work-date','s1-driver-select','s1-plate-select'].forEach(id=>document.getElementById(id).classList.remove('is-invalid'));
+
+  // เคลียร์ error ทั้งหมด
+  ['s1-err-date','s1-err-driver','s1-err-plate','s1-err-time']
+    .forEach(id=>{const el=document.getElementById(id);if(el)el.style.display='none';});
+  ['s1-work-date','s1-driver-select','s1-plate-select']
+    .forEach(id=>document.getElementById(id).classList.remove('is-invalid'));
+  document.getElementById('s1-time-block')?.classList.remove('is-invalid');
+
   if(!date){document.getElementById('s1-err-date').style.display='block';document.getElementById('s1-work-date').classList.add('is-invalid');ok=false;}
   if(!driver||driver==='__other__'){document.getElementById('s1-err-driver').style.display='block';document.getElementById('s1-driver-select').classList.add('is-invalid');ok=false;}
   if(!plate ||plate ==='__other__'){document.getElementById('s1-err-plate').style.display='block';document.getElementById('s1-plate-select').classList.add('is-invalid');ok=false;}
-  if(!ok)return;
 
+  // ✅ ตรวจเวลาทำงาน
+  const sh = +document.getElementById('s1-start-h').value || 0;
+  const sm = +document.getElementById('s1-start-m').value || 0;
+  const eh = +document.getElementById('s1-end-h').value || 0;
+  const em = +document.getElementById('s1-end-m').value || 0;
+  const startMin = sh*60 + sm;
+  const endMin   = eh*60 + em;
+
+  const errTimeEl = document.getElementById('s1-err-time');
+  if (startMin === 0 && endMin === 0) {
+    if (errTimeEl) {
+      errTimeEl.textContent = 'กรุณาเลือกเวลาเริ่มและเวลาสิ้นสุด';
+      errTimeEl.style.display = 'block';
+    }
+    document.getElementById('s1-time-block')?.classList.add('is-invalid');
+    ok = false;
+  } else if (startMin === endMin) {
+    if (errTimeEl) {
+      errTimeEl.textContent = 'เวลาเริ่มและเวลาสิ้นสุดต้องไม่เหมือนกัน';
+      errTimeEl.style.display = 'block';
+    }
+    document.getElementById('s1-time-block')?.classList.add('is-invalid');
+    ok = false;
+  }
+
+  if(!ok){
+    const firstErr = document.querySelector('.modal.modal-fullscreen .invalid-feedback[style*="block"]');
+    firstErr?.scrollIntoView({behavior:'smooth', block:'center'});
+    return;
+  }
+
+  // ── โค้ดเดิมตั้งแต่บรรทัดนี้ลงมา ไม่ต้องแก้ ──
   const jobs = _collectJobs(driver, date);
   let okCount = 0, ngCount = 0;
   const ngJobs = [], okBillNos = [];
@@ -1570,8 +1743,9 @@ function goToStep2(){
         date,
         jobs: jobs.map(j => ({
           bill_no      : j.bill_no,
+          so_id        : j.so_id || '',
           driver_name  : driver,
-          seller_name  : j.seller_name   || '',
+          bill_in_by   : j.bill_in_by   || '',
           customer_name: j.customer_name || '',
           status       : (j.status || '').trim(),
           note         : j.note || '',
@@ -1636,14 +1810,23 @@ function openModal(id=null){
     const today = todayStr();
     document.getElementById('s1-work-date').value = today;
     (async () => {
+      setDateInputLocked(true);
       const sel = document.getElementById('s1-driver-select');
       sel.innerHTML = '<option value="">⏳ กำลังโหลดรายชื่อ...</option>';
       sel.disabled  = true;
-      document.getElementById('jobTableWrap').innerHTML = '<div class="job-loading">⏳ กำลังโหลดข้อมูลคนขับ...</div>';
-      await fetchJobsByDate(today);
-      sel.disabled = false;
-      populateDriverDropdown(today);
-      document.getElementById('jobTableWrap').innerHTML = '<div class="job-loading">เลือกคนขับเพื่อดูรายการงาน</div>';
+      document.getElementById('jobTableWrap').innerHTML = '<div class="job-loading">กำลังโหลดข้อมูลคนขับ...</div>';
+      try {
+        await fetchJobsByDate(today);
+        lastLoadedDate = today;
+        sel.disabled = false;
+        populateDriverDropdown(today);
+        document.getElementById('jobTableWrap').innerHTML = '<div class="job-loading">เลือกคนขับเพื่อดูรายการงาน</div>';
+      } catch (e) {
+        console.warn(e);
+        sel.disabled = false;
+      } finally {
+        setDateInputLocked(false);
+      }
     })();
     document.getElementById('step1Modal').classList.add('open');
   }
@@ -1666,17 +1849,54 @@ async function fetchPrevMileage(vid,wd,xid=null){
   calcPreview();
 }
 function calcPreview(){
-  const sT=document.getElementById('f-start-time')?.value??'';const eT=document.getElementById('f-end-time')?.value??'';
-  const ppl=parseFloat(document.getElementById('f-price-per-liter')?.value)||0;const tp=parseFloat(document.getElementById('f-total-price')?.value)||0;
-  if(tp>0&&ppl>0)setF('f-liters',(tp/ppl).toFixed(2));
-  const liters=parseFloat(document.getElementById('f-liters')?.value)||0;let wh=0;
-  if(sT&&eT){const[sh,sm]=sT.split(':').map(Number),[eh,em]=eT.split(':').map(Number),d=(eh*60+em)-(sh*60+sm);if(d>0)wh=d/60;}
-  const show=wh>0||liters>0||tp>0;document.getElementById('calcBox').style.display=show?'block':'none';
-  if(show){
-    document.getElementById('calcWorkHours').textContent=wh>0?wh.toFixed(2):'—';
-    document.getElementById('calcLitersPreview').textContent=liters>0?`${liters} / ฿${tp.toFixed(0)}`:'—';
-    const dist=parseFloat(document.getElementById('f-total-distance')?.value)||0;
-    document.getElementById('calcKml').textContent=(liters>0&&dist>0)?(dist/liters).toFixed(2):'—';
+  const sT  = document.getElementById('f-start-time')?.value ?? '';
+  const eT  = document.getElementById('f-end-time')?.value   ?? '';
+  const ppl = parseFloat(document.getElementById('f-price-per-liter')?.value) || 0;
+  const tp  = parseFloat(document.getElementById('f-total-price')?.value)     || 0;
+
+  if (tp > 0 && ppl > 0) setF('f-liters', (tp/ppl).toFixed(2));
+
+  const liters = parseFloat(document.getElementById('f-liters')?.value) || 0;
+
+  // ✅ คำนวณชั่วโมงทำงาน — รองรับข้ามวัน
+  let wh = 0;
+  if (sT && eT) {
+    const [sh, sm] = sT.split(':').map(Number);
+    const [eh, em] = eT.split(':').map(Number);
+    const startMin = sh*60 + sm;
+    let endMin     = eh*60 + em;
+    // ถ้า end < start → ข้ามวัน (เช่น 22:00 → 02:00)
+    if (endMin < startMin) endMin += 24*60;
+    const diffMin = endMin - startMin;
+    if (diffMin > 0) wh = diffMin / 60;
+  }
+
+  // ✅ แสดง calcBox ถ้ามีข้อมูลใดๆ
+  const show = wh > 0 || liters > 0 || tp > 0;
+  const calcBox = document.getElementById('calcBox');
+  if (calcBox) calcBox.style.display = show ? 'block' : 'none';
+
+  if (show) {
+    // ✅ แสดงเป็น "X ชม. Y นาที" หรือ X.XX ตามแบบ
+    const whEl = document.getElementById('calcWorkHours');
+    if (whEl) {
+      if (wh > 0) {
+        const h = Math.floor(wh);
+        const m = Math.round((wh - h) * 60);
+        if (m === 0) whEl.textContent = h + '';
+        else if (h === 0) whEl.textContent = m + ' น.';
+        else whEl.textContent = `${h}:${String(m).padStart(2,'0')}`;
+      } else {
+        whEl.textContent = '—';
+      }
+    }
+    
+    const litEl = document.getElementById('calcLitersPreview');
+    if (litEl) litEl.textContent = liters > 0 ? `${liters} / ฿${tp.toFixed(0)}` : '—';
+    
+    const dist = parseFloat(document.getElementById('f-total-distance')?.value) || 0;
+    const kmlEl = document.getElementById('calcKml');
+    if (kmlEl) kmlEl.textContent = (liters > 0 && dist > 0) ? (dist/liters).toFixed(2) : '—';
   }
 }
 function switchOilType(t){

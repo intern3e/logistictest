@@ -15,10 +15,12 @@ class ng_shipment extends Model
     const UPDATED_AT = null;
 
     protected $fillable = [
+        'so_id',
         'bill_no',
         'driver_name',
         'seller_name',
         'customer_name',
+        'bill_in_by',
         'ng_date',
         'note',
         'status',
@@ -73,6 +75,7 @@ class ng_shipment extends Model
             if ($exists) continue;
 
             static::create([
+                'so_id'         => trim((string) ($job['so_id'] ?? '')) ?: null,
                 'bill_no'       => $billNo,
                 'driver_name'   => trim($job['driver_name']   ?? ''),
                 'seller_name'   => trim($job['seller_name']   ?? '') ?: null,

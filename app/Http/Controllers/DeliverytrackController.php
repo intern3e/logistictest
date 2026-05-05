@@ -7,28 +7,31 @@ use App\Models\ng_shipment;
 
 class DeliverytrackController extends Controller
 {
-public function index(Request $request)
-{
-    $date   = $request->get('date', '');
-    $driver = $request->get('driver', '');
-    $status = $request->get('status', 'ng'); // ← default = ng
+    public function index(Request $request)
+    {
+        $date   = $request->get('date', '');
+        $driver = $request->get('driver', '');
+        $status = $request->get('status', 'ng');
 
-    $query = ng_shipment::query()->latest('ng_date')->latest('id');
+        $query = ng_shipment::query()->latest('ng_date')->latest('id');
 
-    if ($date)   $query->whereDate('ng_date', $date);
-    if ($driver) $query->where('driver_name', $driver);
+        // ✅ เปลี่ยน whereDate เป็น where ตรงๆ + รองรับทั้ง 2 format
+        if ($date) {
+            $query->where(function($q) use ($date) {
+                $q->where('ng_date', $date)
+                ->orWhereDate('ng_date', $date);
+            });
+        }
+        
+        if ($driver) $query->where('driver_name', $driver);
+        if ($status) $query->where('status', $status);
 
-    // กรอง status — '' = ทั้งหมด
-    if ($status !== '') {
-        $query->where('status', $status);
+        $shipments = $query->get();
+        $drivers   = ng_shipment::distinct()->orderBy('driver_name')
+                        ->pluck('driver_name')->filter()->values();
+
+        return view('driver.deliverytrack', compact('shipments', 'drivers', 'date', 'driver', 'status'));
     }
-
-    $shipments = $query->get();
-    $drivers   = ng_shipment::distinct()->orderBy('driver_name')
-                    ->pluck('driver_name')->filter()->values();
-
-    return view('driver.deliverytrack', compact('shipments', 'drivers', 'date', 'driver', 'status'));
-}
     public function saveNewBill(Request $request, $id)
     {
         $request->validate([

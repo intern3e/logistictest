@@ -365,7 +365,7 @@ hr.divider{border:none;border-top:1px solid var(--border-light);margin:0}
               <div class="field span-full">
                 <label>หมายเหตุ <i class="tip" data-tip="ข้อความเพิ่มเติมที่ต้องการระบุในใบมัดจำ">?</i></label>
                 <div class="field-wrap">
-                  <textarea id="note_id" name="note_id" rows="3" placeholder="กรอกหมายเหตุเพิ่มเติม (ถ้ามี)"></textarea>
+                  <textarea id="note" name="note" rows="3" placeholder="กรอกหมายเหตุเพิ่มเติม (ถ้ามี)"></textarea>
                 </div>
               </div>
             </div>
@@ -540,12 +540,12 @@ hr.divider{border:none;border-top:1px solid var(--border-light);margin:0}
                     <path d="M2 5V2h3M12 5V2H9M2 9v3h3M12 9v3H9" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/>
                   </svg>
                 </button>
-                <a class="pdf-action-btn" href="{{ asset('storage/posit_templates/templates.pdf') }}" target="_blank" rel="noopener" title="เปิดในแท็บใหม่">
+                <a class="pdf-action-btn" href="{{ asset('storage/deposit_templates/templates.pdf') }}" target="_blank" rel="noopener" title="เปิดในแท็บใหม่">
                   <svg width="13" height="13" viewBox="0 0 14 14" fill="none">
                     <path d="M5.5 2.5h-3v9h9v-3M9 2.5h3v3M12 2.5l-5 5" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/>
                   </svg>
                 </a>
-                <a class="pdf-action-btn" href="{{ asset('storage/posit_templates/templates.pdf') }}" download title="ดาวน์โหลด">
+                <a class="pdf-action-btn" href="{{ asset('storage/deposit_templates/templates.pdf') }}" download title="ดาวน์โหลด">
                   <svg width="13" height="13" viewBox="0 0 14 14" fill="none">
                     <path d="M7 2v8M3.5 7L7 10.5 10.5 7M2.5 12.5h9" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/>
                   </svg>
@@ -555,7 +555,7 @@ hr.divider{border:none;border-top:1px solid var(--border-light);margin:0}
             <div class="pdf-frame-wrap">
               <iframe
                 id="pdfPreviewFrame"
-                src="{{ asset('storage/posit_templates/templates.pdf') }}#toolbar=0&navpanes=0&scrollbar=0&view=FitH"
+                src="{{ asset('storage/deposit_templates/templates.pdf') }}#toolbar=0&navpanes=0&scrollbar=0&view=FitH"
                 title="ตัวอย่างเอกสารใบมัดจำ"
                 onload="this.previousElementSibling && (this.previousElementSibling.style.display='none')"
                 onerror="showPdfFallback()">
@@ -636,7 +636,7 @@ hr.divider{border:none;border-top:1px solid var(--border-light);margin:0}
         ตัวอย่างเอกสารใบมัดจำ
       </div>
       <div class="pdf-modal-actions">
-        <a class="pdf-action-btn" href="{{ asset('storage/posit_templates/templates.pdf') }}" download title="ดาวน์โหลด">
+        <a class="pdf-action-btn" href="{{ asset('storage/deposit_templates/templates.pdf') }}" download title="ดาวน์โหลด">
           <svg width="13" height="13" viewBox="0 0 14 14" fill="none">
             <path d="M7 2v8M3.5 7L7 10.5 10.5 7M2.5 12.5h9" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/>
           </svg>
@@ -661,7 +661,7 @@ const mode   = { g: 'pct', b: 'pct' };
 const names  = { g: 'สินค้า', b: 'บริการ' };
 const KEYS   = ['g', 'b'];
 
-const PDF_TEMPLATE_URL = "{{ asset('storage/posit_templates/templates.pdf') }}";
+const PDF_TEMPLATE_URL = "{{ asset('storage/deposit_templates/templates.pdf') }}";
 const PDF_PREVIEW_BASE = "{{ url('/deposit/preview') }}";
 let PDF_URL = PDF_TEMPLATE_URL;
 
@@ -703,7 +703,7 @@ function buildPreviewUrl(){
   params.set('contactso',        document.getElementById('contactso').value || '');
   params.set('customer_tel',     document.getElementById('customer_tel').value || '');
   params.set('customer_address', document.getElementById('customer_address').value || '');
-  params.set('note_id',          document.getElementById('note_id').value || '');
+  params.set('note',          document.getElementById('note').value || '');
   params.set('emp_name',         document.getElementById('hidden-emp').value || '');
   params.set('sale_name',        document.getElementById('hidden-sale').value || '');
   params.set('billid',           document.getElementById('billid').value || '');
@@ -803,7 +803,7 @@ window.addEventListener('DOMContentLoaded',function(){
   }
   if(soNum)fetchSODetails(soNum);
 
-  ['contactso','customer_tel','note_id'].forEach(id=>{
+  ['contactso','customer_tel','note'].forEach(id=>{
     const el = document.getElementById(id);
     if(el) el.addEventListener('input', updatePdfPreview);
   });
@@ -1102,7 +1102,7 @@ document.getElementById('submitBill').addEventListener('click', async function()
     contactso:        contactso,
     customer_tel:     customerTel,
     customer_address: document.getElementById('customer_address').value,
-    note_id:          document.getElementById('note_id').value,
+    note:          document.getElementById('note').value,
     emp_name:         document.getElementById('hidden-emp').value,
     sale_name:        saleName,
     po_document:      poDoc,

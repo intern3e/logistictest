@@ -69,7 +69,9 @@ tbody td.td-note{text-align:left}
 .row-num{font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--gray-400);font-weight:500}
 .cell-date{font-family:'IBM Plex Mono',monospace;font-size:11.5px;color:var(--gray-600);letter-spacing:0.02em}
 .cell-name{font-weight:600;color:var(--blue-800);font-size:13px}
-.cell-bill{display:inline-flex;align-items:center;font-family:'IBM Plex Mono',monospace;font-size:11px;font-weight:600;color:var(--red-700);background:var(--red-50);border:1px solid var(--red-200);border-radius:5px;padding:3px 9px;letter-spacing:0.04em;}
+.cell-so{display:inline-flex;align-items:center;font-family:'IBM Plex Mono',monospace;font-size:11px;font-weight:600;color:var(--blue-800);background:var(--blue-50);border:1px solid var(--blue-200);border-radius:5px;padding:3px 9px;letter-spacing:0.04em;}
+.cell-customer{font-size:12.5px;color:var(--gray-700);text-align:left;display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.cell-empty{color:var(--gray-300);font-size:11px}
 .cell-note{font-size:12px;color:var(--gray-500);display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .cell-note.empty{color:var(--gray-300)}
 
@@ -94,18 +96,132 @@ tbody td.td-note{text-align:left}
 .nb-lock-ico svg{width:12px;height:12px}
 
 .tbl-foot{padding:9px 16px;border-top:1px solid var(--gray-200);background:var(--gray-50);display:flex;justify-content:space-between;align-items:center;font-size:11px;color:var(--gray-500);font-family:'IBM Plex Mono',monospace;letter-spacing:0.02em;flex-shrink:0;}
-.empty-cell{padding:64px 24px !important;text-align:center !important;white-space:normal !important}
+.empty-cell{
+  padding:64px 24px !important;
+  text-align:center !important;
+  white-space:normal !important;
+  background:var(--white) !important;
+  border-bottom:none !important;
+}
+.empty-row:hover{background:var(--white) !important}
 .empty-ico{width:44px;height:44px;background:var(--gray-100);border:1px solid var(--gray-200);border-radius:10px;display:flex;align-items:center;justify-content:center;margin:0 auto 12px;color:var(--gray-400)}
 .empty-t{font-size:13px;font-weight:600;color:var(--gray-700);margin-bottom:4px}
 .empty-s{font-size:12px;color:var(--gray-400)}
 .toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(10px);background:var(--gray-900);color:#fff;padding:9px 18px;border-radius:8px;font-size:12px;font-weight:500;opacity:0;transition:all .2s ease;z-index:999;pointer-events:none;white-space:nowrap;border-left:3px solid var(--blue-400);letter-spacing:0.01em;}
 .toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
-@media(max-width:768px){
-  .topbar,main{padding-left:14px;padding-right:14px}
-  .filter-bar{flex-direction:column;align-items:stretch}
-  .fi{width:100%}.fsep{display:none}
-  .hdr-date{display:none}
+/* ═══════ แถวเตือน — ng เกิน 1 เดือน ═══════ */
+tbody tr.row-overdue {
+  background: var(--red-50);
+  box-shadow: inset 3px 0 0 var(--red-600);
 }
+/* ═══════ MULTI SEARCH ═══════ */
+.srch-multi{
+  display:flex;
+  align-items:center;
+  gap:6px;
+  flex-wrap:nowrap;
+  overflow-x:auto;
+  max-width:100%;
+}
+.srch-multi::-webkit-scrollbar{height:4px}
+.srch-multi::-webkit-scrollbar-thumb{background:var(--gray-300);border-radius:2px}
+.srch-mini{
+  height:30px;
+  border:1px solid var(--gray-300);
+  border-radius:var(--r);
+  padding:0 10px;
+  font-family:'IBM Plex Sans Thai',sans-serif;
+  font-size:12px;
+  color:var(--gray-900);
+  background:var(--gray-50);
+  outline:none;
+  width:130px;
+  transition:all .15s;
+}
+.srch-mini:focus{
+  border-color:var(--blue-500);
+  box-shadow:0 0 0 3px rgba(26,117,216,.1);
+  background:var(--white);
+  width:160px;
+}
+.srch-mini::placeholder{
+  color:var(--gray-400);
+  font-size:11.5px;
+}
+.srch-clear{
+  height:30px;
+  width:30px;
+  border:1px solid var(--gray-300);
+  border-radius:var(--r);
+  background:var(--gray-50);
+  color:var(--gray-500);
+  cursor:pointer;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  flex-shrink:0;
+  transition:all .15s;
+}
+.srch-clear:hover{
+  background:var(--red-50);
+  border-color:var(--red-700);
+  color:var(--red-700);
+}
+@media(max-width:768px){
+  .srch-mini{width:110px}
+}
+tbody tr.row-overdue:hover {
+  background: #fecaca;
+}
+.overdue-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  margin-left: 6px;
+  padding: 2px 8px;
+  background: var(--red-600);
+  color: #fff;
+  border-radius: 10px;
+  font-size: 10px;
+  font-weight: 700;
+  font-family: 'IBM Plex Sans Thai', sans-serif;
+  letter-spacing: 0.03em;
+}
+.overdue-days {
+  display: inline-block;
+  margin-top: 3px;
+  font-size: 10px;
+  color: var(--red-700);
+  font-weight: 700;
+  font-family: 'IBM Plex Sans Thai', sans-serif;
+}
+.filter-bar {
+  flex-direction: row;
+  align-items: center;
+  flex-wrap: nowrap;
+  overflow-x: auto;
+}
+.filter-bar > * {
+  flex-shrink: 0;
+}
+.filter-bar form {
+  display: flex !important;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: nowrap;
+}
+@media (max-width: 768px) {
+  .topbar, main { padding-left: 14px; padding-right: 14px; }
+  .hdr-date { display: none; }
+  .filter-bar {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+  .filter-bar::-webkit-scrollbar { height: 4px; }
+  .filter-bar::-webkit-scrollbar-thumb { background: var(--gray-300); border-radius: 2px; }
+}
+</style>
+
   </style>
 </head>
 <body>
@@ -145,7 +261,7 @@ tbody td.td-note{text-align:left}
       <select name="status" id="f-status" class="fi" onchange="this.form.submit()">
         <option value="ng"        {{ ($status ?? 'ng') === 'ng'        ? 'selected' : '' }}>🔴 รอกรอกบิล (NG)</option>
         <option value="pending"   {{ ($status ?? 'ng') === 'pending'   ? 'selected' : '' }}>🟡 บันทึกแล้ว (Pending)</option>
-        <option value="completed" {{ ($status ?? 'ng') === 'completed' ? 'selected' : '' }}>🟢 เสร็จสิ้น (Completed)</option>
+        <option value="completed" {{ ($status ?? 'ng') === 'completed' ? 'selected' : '' }}>🟢 จัดส่งสำเร็จ (Completed)</option>
       </select>
 
       {{-- <button type="submit" class="btn-go">
@@ -160,147 +276,210 @@ tbody td.td-note{text-align:left}
   </div>
 
   <div class="tbl-card">
-    <div class="tbl-head">
-      <div class="tbl-head-l">
-        <span class="tbl-title">รายการทั้งหมด</span>
-        <span class="rec-badge">{{ $shipments->count() }} รายการ</span>
-      </div>
-      <div class="srch-wrap">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-        <input type="text" class="srch-inp" placeholder="ค้นหา..." oninput="doSearch(this.value)">
-      </div>
-    </div>
+<div class="tbl-head">
+  <div class="tbl-head-l">
+    <span class="tbl-title">รายการทั้งหมด</span>
+    <span class="rec-badge">{{ $shipments->count() }} รายการ</span>
+  </div>
+  <div class="srch-multi">
+    <input type="text" class="srch-mini" id="q-bill"     placeholder=" เลขบิล"   oninput="doSearch()">
+    <input type="text" class="srch-mini" id="q-so"       placeholder=" SO ID"    oninput="doSearch()">
+    <input type="text" class="srch-mini" id="q-customer" placeholder=" ลูกค้า"   oninput="doSearch()">
+    <input type="text" class="srch-mini" id="q-driver"   placeholder=" คนขับ"    oninput="doSearch()">
+    <button type="button" class="srch-clear" onclick="clearSearch()" title="ล้างค้นหา">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" width="12" height="12"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+    </button>
+  </div>
+</div>
 
-    <div class="tbl-scroll">
+<div class="tbl-scroll">
       <table>
-        <colgroup>
-          <col class="c-n"><col class="c-d"><col class="c-drv"><col class="c-nm">
-          <col class="c-bill"><col class="c-note"><col class="c-st">
-        </colgroup>
+      <colgroup>
+        <col style="width:90px">
+        <col style="width:90px">
+        <col style="width:120px">
+        <col style="width:160px">
+        <col style="width:120px">
+        <col style="width:120px">
+        <col style="width:170px">
+        <col style="width:160px">
+        <col style="width:220px">
+      </colgroup>
         <thead>
           <tr>
-            <th>#</th>
             <th>วันที่</th>
             <th>คนขับ</th>
             <th>ชื่อ Sale</th>
+            <th>ลูกค้า</th>
             <th>เลขที่บิล</th>
+            <th>SO ID</th>
             <th class="th-hl">หมายเหตุ</th>
+            <th>วันที่แก้ไข</th>
             <th>เลขบิลใหม่ / สถานะ</th>
           </tr>
         </thead>
         <tbody id="tbody">
-          @forelse($shipments as $i => $r)
-            @php $isPending = $r->status === 'pending'; @endphp
-            <tr
-              data-bill="{{ strtolower($r->bill_no ?? '') }}"
-              data-driver="{{ strtolower($r->driver_name ?? '') }}"
-              data-seller="{{ strtolower($r->seller_name ?? '') }}"
-              data-customer="{{ strtolower($r->customer_name ?? '') }}"
-              data-note="{{ strtolower($r->note ?? '') }}"
-              data-status="{{ $r->status }}"
-              >
-              <td><span class="row-num">{{ $i + 1 }}</span></td>
-              <td><span class="cell-date">{{ $r->ng_date ? $r->ng_date->format('d/m/Y') : '—' }}</span></td>
-              <td><span style="font-size:12.5px;color:var(--gray-700)">{{ $r->driver_name ?: '—' }}</span></td>
-              <td><span class="cell-name">{{ $r->seller_name ?: '—' }}</span></td>
-              <td><span class="cell-bill">{{ $r->bill_no ?: '—' }}</span></td>
-              <td class="td-note" title="{{ $r->note ?? '' }}">
-                @if($r->note)
-                  <span class="cell-note">{{ $r->note }}</span>
-                @else
-                  <span class="cell-note empty">—</span>
+        @forelse($shipments as $i => $r)
+          @php
+            $isPending   = $r->status === 'pending';
+            $isCompleted = $r->status === 'completed';
+            
+            // ✅ เช็คว่า ng_date เกิน 1 เดือนไหม + เป็น status ng เท่านั้น
+            $isOverdue = false;
+            $daysOverdue = 0;
+            if ($r->status === 'ng' && $r->ng_date) {
+                $ngDate = \Carbon\Carbon::parse($r->ng_date)->startOfDay();
+                $today  = \Carbon\Carbon::today();
+                $daysSince = $ngDate->diffInDays($today);
+                if ($daysSince > 30) {
+                    $isOverdue = true;
+                    $daysOverdue = $daysSince;
+                }
+            }
+          @endphp
+          <tr
+            class="{{ $isOverdue ? 'row-overdue' : '' }}"
+            data-bill="{{ strtolower($r->bill_no ?? '') }}"
+            data-so="{{ strtolower($r->so_id ?? '') }}"
+            data-driver="{{ strtolower($r->driver_name ?? '') }}"
+            data-seller="{{ strtolower($r->bill_in_by ?? '') }}"
+            data-customer="{{ strtolower($r->customer_name ?? '') }}"
+            data-note="{{ strtolower($r->note ?? '') }}"
+            data-status="{{ $r->status }}"
+            data-overdue="{{ $isOverdue ? '1' : '0' }}"
+            >
+            <td>
+              <span class="cell-date">{{ $r->ng_date ? $r->ng_date->format('d/m/Y') : '—' }}</span>
+              @if($isOverdue)
+                <div class="overdue-days">เกินกำหนด {{ $daysOverdue }} วัน</div>
+              @endif
+            </td>
+          <td><span style="font-size:12.5px;color:var(--gray-700)">{{ $r->driver_name ?: '—' }}</span></td>
+          <td><span class="cell-name">{{ $r->bill_in_by ?: '—' }}</span></td>
+          <td title="{{ $r->customer_name ?? '' }}">
+            @if($r->customer_name)
+              <span class="cell-customer">{{ $r->customer_name }}</span>
+            @else
+              <span class="cell-empty">—</span>
+            @endif
+          </td>
+          <td><span class="cell-bill">{{ $r->bill_no ?: '—' }}</span></td>
+          <td>
+            @if($r->so_id)
+              <span class="cell-so">{{ $r->so_id }}</span>
+            @else
+              <span class="cell-empty">—</span>
+            @endif
+          </td>
+          <td class="td-note" title="{{ $r->note ?? '' }}">
+            @if($r->note)
+              <span class="cell-note">{{ $r->note }}</span>
+            @else
+              <span class="cell-note empty">—</span>
+            @endif
+          </td>
+          <td>
+            @if($r->resolved_date)
+              <span class="cell-date">{{ \Carbon\Carbon::parse($r->resolved_date)->format('d/m/Y') }}</span>
+            @else
+              <span class="cell-empty">—</span>
+            @endif
+          </td>
+          <td>
+            <div class="st-cell" id="stcell-{{ $r->id }}">
+              @php $isPending = $r->status === 'pending'; $isCompleted = $r->status === 'completed'; @endphp
+
+              @if($isCompleted)
+                <span class="st-badge" style="background:var(--green-100);color:var(--green-700);border-color:#86efac">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M9 12l2 2 4-4"/><circle cx="12" cy="12" r="10"/></svg>
+                  จัดส่งสำเร็จ
+                </span>
+                @if($r->new_bill_no)
+                <div class="nb-locked" style="background:var(--green-50);border-color:#86efac">
+                  <span class="nb-lock-ico" style="color:var(--green-700)">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 12l2 2 4-4"/><circle cx="12" cy="12" r="10"/></svg>
+                  </span>
+                  <span class="nb-locked-val" style="color:var(--green-700)">{{ $r->new_bill_no }}</span>
+                </div>
                 @endif
-              </td>
-              <td>
-                <div class="st-cell" id="stcell-{{ $r->id }}">
-                  @php $isPending = $r->status === 'pending'; $isCompleted = $r->status === 'completed'; @endphp
 
-                  @if($isCompleted)
-                    <span class="st-badge" style="background:var(--green-100);color:var(--green-700);border-color:#86efac">
-                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M9 12l2 2 4-4"/><circle cx="12" cy="12" r="10"/></svg>
-                      เสร็จสิ้น
-                    </span>
-                    @if($r->new_bill_no)
-                    <div class="nb-locked" style="background:var(--green-50);border-color:#86efac">
-                      <span class="nb-lock-ico" style="color:var(--green-700)">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 12l2 2 4-4"/><circle cx="12" cy="12" r="10"/></svg>
-                      </span>
-                      <span class="nb-locked-val" style="color:var(--green-700)">{{ $r->new_bill_no }}</span>
-                    </div>
-                    @endif
-
-                  @elseif($isPending)
-                    <span class="st-badge st-pending">
-                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
-                      Pending
-                    </span>
-                    <div class="nb-locked">
-                      <span class="nb-lock-ico">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 12l2 2 4-4"/><circle cx="12" cy="12" r="10"/></svg>
-                      </span>
-                      <span class="nb-locked-val">{{ $r->new_bill_no }}</span>
-                    </div>
-
-                  @else
-                    <span class="st-badge st-ng">
-                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
-                      NG — รอกรอกบิล
-                    </span>
-                    <div class="nb-wrap">
-                      <input
-                        class="nb-inp"
-                        id="nb-input-{{ $r->id }}"
-                        type="text"
-                        placeholder="กรอกเลขบิลใหม่..."
-                        onkeydown="if(event.key==='Enter')saveNewBill({{ $r->id }})"
-                      >
-                      <button class="nb-save" onclick="saveNewBill({{ $r->id }})">บันทึก</button>
-                    </div>
+              @elseif($isPending)
+                <span class="st-badge st-pending">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+                  Pending
+                </span>
+                <div class="nb-locked">
+                  <span class="nb-lock-ico">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 12l2 2 4-4"/><circle cx="12" cy="12" r="10"/></svg>
+                  </span>
+                  <span class="nb-locked-val">{{ $r->new_bill_no }}</span>
+                </div>
+              @else
+                <span class="st-badge st-ng">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+                  NG — รอกรอกบิล
+                  @if($isOverdue)
+                    <span class="overdue-badge">เกินกำหนด</span>
                   @endif
+                </span>
+                <div class="nb-wrap">
+                  <input
+                    class="nb-inp"
+                    id="nb-input-{{ $r->id }}"
+                    type="text"
+                    placeholder="กรอกเลขบิลใหม่..."
+                    onkeydown="if(event.key==='Enter')saveNewBill({{ $r->id }})"
+                  >
+                  <button class="nb-save" onclick="saveNewBill({{ $r->id }})">บันทึก</button>
                 </div>
-              </td>
-            </tr>
-          @empty
-            <tr>
-              <td colspan="7" class="empty-cell">
-                <div class="empty-ico">
-                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M5 17H3a2 2 0 01-2-2V5a2 2 0 012-2h11a2 2 0 012 2v3"/><rect x="9" y="11" width="14" height="10" rx="2"/><circle cx="12" cy="20" r="1"/><circle cx="20" cy="20" r="1"/></svg>
-                </div>
-                <div class="empty-t">ไม่พบรายการ</div>
-                <div class="empty-s">ไม่มีข้อมูลที่ตรงกับเงื่อนไข</div>
-              </td>
-            </tr>
-          @endforelse
+              @endif
+            </div>
+          </td>
+        </tr>
+        @empty
+        <tr class="empty-row">
+          <td colspan="9" class="empty-cell">
+            <div class="empty-ico">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M5 17H3a2 2 0 01-2-2V5a2 2 0 012-2h11a2 2 0 012 2v3"/><rect x="9" y="11" width="14" height="10" rx="2"/><circle cx="12" cy="20" r="1"/><circle cx="20" cy="20" r="1"/></svg>
+            </div>
+            <div class="empty-t">ไม่พบรายการ</div>
+            <div class="empty-s">ไม่มีข้อมูลที่ตรงกับเงื่อนไข</div>
+          </td>
+        </tr>
+        @endforelse
         </tbody>
       </table>
     </div>
 
-    <div class="tbl-foot">
-      <span>แสดง {{ $shipments->count() }} รายการ</span>
-      <span id="ft-time">—</span>
-    </div>
   </div>
 </main>
 
 <div class="toast" id="toast"></div>
 
 <script>
-(function(){
-  const now = new Date();
-  document.getElementById('hdr-date').textContent =
-    now.toLocaleDateString('th-TH', {weekday:'long', year:'numeric', month:'long', day:'numeric'});
-  document.getElementById('ft-time').textContent = 'อัพเดต ' + now.toLocaleTimeString('th-TH');
-})();
+function doSearch() {
+  const qBill     = (document.getElementById('q-bill')?.value     || '').toLowerCase().trim();
+  const qSo       = (document.getElementById('q-so')?.value       || '').toLowerCase().trim();
+  const qCustomer = (document.getElementById('q-customer')?.value || '').toLowerCase().trim();
+  const qDriver   = (document.getElementById('q-driver')?.value   || '').toLowerCase().trim();
 
-function doSearch(q) {
-  q = q.toLowerCase().trim();
   document.querySelectorAll('#tbody tr[data-bill]').forEach(tr => {
-    if (!q) { tr.style.display = ''; return; }
-    const hit = ['bill','driver','seller','customer','note'].some(k =>
-      (tr.dataset[k] || '').includes(q)
-    );
-    tr.style.display = hit ? '' : 'none';
+    const matchBill     = !qBill     || (tr.dataset.bill     || '').includes(qBill);
+    const matchSo       = !qSo       || (tr.dataset.so       || '').includes(qSo);
+    const matchCustomer = !qCustomer || (tr.dataset.customer || '').includes(qCustomer);
+    const matchDriver   = !qDriver   || (tr.dataset.driver   || '').includes(qDriver);
+
+    // ทุกช่องที่กรอกต้อง match (AND condition)
+    tr.style.display = (matchBill && matchSo && matchCustomer && matchDriver) ? '' : 'none';
   });
+}
+
+function clearSearch() {
+  ['q-bill','q-so','q-customer','q-driver'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.value = '';
+  });
+  doSearch();
 }
 
 async function saveNewBill(id) {

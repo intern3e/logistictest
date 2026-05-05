@@ -548,7 +548,7 @@ nav[role="navigation"] span[aria-current="page"]{
                 @endphp
 
                 @if($pdfFile)
-                  <a href="{{ asset('storage/posit_templates/' . $pdfFile) }}"
+                  <a href="{{ asset('storage/deposit_templates/' . $pdfFile) }}"
                      target="_blank"
                      rel="noopener"
                      class="btn-pdf"

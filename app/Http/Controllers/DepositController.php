@@ -13,8 +13,8 @@ use setasign\Fpdi\Tcpdf\Fpdi;
 class DepositController extends Controller
 {
     private $adminUsers = ['kanitin2', 'dev'];
-    private const PDF_TEMPLATE_REL = 'posit_templates/templates.pdf';
-    private const PDF_OUTPUT_DIR = 'posit_templates';
+    private const PDF_TEMPLATE_REL = 'deposit_templates/templates.pdf';
+    private const PDF_OUTPUT_DIR = 'deposit_templates';
 
     public function insertdeposit()
     {
@@ -322,7 +322,7 @@ class DepositController extends Controller
             'contactso'          => 'required|string|max:255',
             'customer_tel'       => 'nullable|string|max:50',
             'customer_address'   => 'nullable|string',
-            'note_id'            => 'nullable|string|max:1000',
+            'note'            => 'nullable|string|max:1000',
             'emp_name'           => 'nullable|string|max:150',
             'tax_id'             => 'nullable|string|max:150',
             'sale_name'          => 'nullable|string|max:150',
@@ -367,7 +367,7 @@ class DepositController extends Controller
                     'contactso'        => $validated['contactso'],
                     'customer_tel'     => $validated['customer_tel']     ?? null,
                     'customer_address' => $validated['customer_address'] ?? null,
-                    'note_id'          => $validated['note_id']          ?? null,
+                    'note'          => $validated['note']          ?? null,
                     'sale_name'        => $validated['sale_name']        ?? null,
                     'po_document'      => $validated['po_document']      ?? null,
                     'emp_name'         => $validated['emp_name']         ?? 'Guest',
@@ -564,10 +564,10 @@ class DepositController extends Controller
         $pdf->SetXY(113, 64.5);
         $pdf->Cell(60, 6, $this->safeText(Carbon::now()->format('d-m-') . (Carbon::now()->year + 543)), 0, 0, 'L');
 
-        // ✅ วาดหมายเหตุ (note_id)
+        // ✅ วาดหมายเหตุ (note)
         $pdf->SetXY(22, 173.5);
         $pdf->MultiCell(110, 5,
-            $this->safeText($data['note_id'] ?? ''),
+            $this->safeText($data['note'] ?? ''),
             0, 'L'
         );
 
