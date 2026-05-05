@@ -11,30 +11,22 @@
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
 :root{
-  /* ===== Navy ทางการ (เข้าชุดกับ deposit_dashboard) ===== */
   --primary:#0B2447;        --primary-hover:#061B3A;  --primary-light:#EAF1FB;
   --primary-mid:#19376D;    --primary-border:#C5D6EC;
-
   --blue:#19376D;           --blue-hover:#0B2447;     --blue-light:#EAF1FB;
   --blue-border:#C5D6EC;
-
   --amber:#1E40AF;          --amber-hover:#1E3A8A;    --amber-light:#DBEAFE;
   --amber-border:#BFDBFE;
-
   --red:#9B1B1B;            --red-light:#FEE2E2;
-
   --surface:#FFFFFF;
   --bg:#EEF2F7;             --bg-alt:#DCE3EC;
   --border:#C5D6EC;         --border-light:#E5EBF3;
-
   --text:#0F172A;           --text-secondary:#475569;
   --text-muted:#94A3B8;     --text-hint:#CBD5E1;
-
   --shadow-xs:0 1px 2px rgba(11,36,71,.06);
   --shadow-sm:0 2px 8px rgba(11,36,71,.10);
   --shadow-md:0 4px 16px rgba(11,36,71,.12);
   --shadow-lg:0 8px 32px rgba(11,36,71,.14);
-
   --r-sm:0;--r-md:0;--r-lg:0;--r-xl:0;
   --t-fast:.12s ease;--t-base:.2s ease;
 }
@@ -80,6 +72,10 @@ body{font-family:'Sarabun',system-ui,sans-serif;font-size:15px;background:var(--
 .card-head-text p{font-size:12px;color:var(--text-muted);margin-top:2px}
 .card-badge{margin-left:auto;padding:3px 10px;border-radius:0;font-size:11px;font-weight:600}
 .badge-required{background:var(--red-light);color:var(--red)}.badge-optional{background:var(--bg-alt);color:var(--text-muted)}
+.sale-chip{margin-left:auto;display:inline-flex;align-items:center;gap:8px;padding:6px 12px;background:var(--primary-light);border:1px solid var(--primary-border);border-radius:0;font-size:12px;color:var(--text-secondary);max-width:280px;min-width:0}
+.sale-chip-label{font-weight:700;color:var(--primary);white-space:nowrap;font-size:11px;letter-spacing:.04em;text-transform:uppercase}
+.sale-chip-value{font-weight:700;color:var(--text);font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
+.sale-chip-icon{flex-shrink:0;display:flex;align-items:center;justify-content:center;width:22px;height:22px;background:var(--surface);border:1px solid var(--primary-border);border-radius:0}
 .card-body{padding:22px 24px}
 .section-divider{display:flex;align-items:center;gap:10px;padding:0 24px;margin-bottom:16px}
 .section-divider-line{flex:1;height:1px;background:var(--border-light)}
@@ -93,8 +89,10 @@ body{font-family:'Sarabun',system-ui,sans-serif;font-size:15px;background:var(--
 .field label .tip{display:inline-flex;align-items:center;justify-content:center;width:14px;height:14px;background:var(--bg-alt);border-radius:0;font-size:10px;color:var(--text-muted);cursor:help;font-style:normal;font-weight:700;position:relative}
 .field label .tip:hover::after{content:attr(data-tip);position:absolute;bottom:calc(100% + 6px);left:50%;transform:translateX(-50%);background:var(--text);color:#fff;font-size:11px;font-weight:400;padding:5px 9px;border-radius:0;white-space:nowrap;pointer-events:none;z-index:50;letter-spacing:0}
 .field-wrap{position:relative}
-.field input[type="text"],.field input[type="number"]{padding:10px 12px;border:1.5px solid var(--border);border-radius:0;background:#F8FAFC;color:var(--text);font-size:14px;font-family:inherit;outline:none;transition:border var(--t-fast),box-shadow var(--t-fast),background var(--t-fast);width:100%}
-.field input[type="text"]:focus,.field input[type="number"]:focus{border-color:var(--primary);background:var(--surface);box-shadow:0 0 0 3px rgba(11,36,71,.12)}
+.field input[type="text"],.field input[type="number"],.field textarea{padding:10px 12px;border:1.5px solid var(--border);border-radius:0;background:#F8FAFC;color:var(--text);font-size:14px;font-family:inherit;outline:none;transition:border var(--t-fast),box-shadow var(--t-fast),background var(--t-fast);width:100%}
+.field input[type="text"]:focus,.field input[type="number"]:focus,.field textarea:focus{border-color:var(--primary);background:var(--surface);box-shadow:0 0 0 3px rgba(11,36,71,.12)}
+.field textarea{resize:vertical;min-height:70px;line-height:1.5;font-family:inherit}
+.field textarea::placeholder{color:var(--text-hint)}
 .field input[readonly]{background:#F1F5F9;color:var(--text-secondary);cursor:default;border-style:dashed}
 .field input[readonly]:focus{border-color:var(--border);box-shadow:none}
 .field input::placeholder{color:var(--text-hint)}
@@ -154,6 +152,27 @@ tbody tr:hover td{background:#F5F8FD}
 .s-row.total{margin-top:6px;padding:14px 0 0;border-top:2px solid var(--border-light)}
 .s-row.total .slbl{font-weight:700;color:var(--text);font-size:14px}
 .s-row.total .sval{font-size:24px;font-weight:800;color:var(--primary);letter-spacing:-.5px}
+.pdf-preview-section{border-top:1px solid var(--border-light);padding:14px 20px 16px;background:linear-gradient(to bottom,#F8FAFC,var(--surface))}
+.pdf-preview-head{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:10px}
+.pdf-preview-title{display:flex;align-items:center;gap:7px;font-size:11px;font-weight:700;color:var(--text-secondary);letter-spacing:.06em;text-transform:uppercase}
+.pdf-preview-actions{display:flex;align-items:center;gap:6px}
+.pdf-action-btn{display:inline-flex;align-items:center;justify-content:center;width:26px;height:26px;border:1px solid var(--border);background:var(--surface);color:var(--text-secondary);cursor:pointer;transition:all var(--t-fast);text-decoration:none}
+.pdf-action-btn:hover{border-color:var(--primary);color:var(--primary);background:var(--primary-light);box-shadow:var(--shadow-xs)}
+.pdf-frame-wrap{position:relative;border:1px solid var(--border);background:#F1F5F9;height:240px;overflow:hidden}
+.pdf-frame-wrap iframe{width:100%;height:100%;border:none;display:block;background:#fff}
+.pdf-frame-fallback{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;padding:16px;text-align:center;background:#F8FAFC}
+.pdf-frame-fallback-icon{width:42px;height:42px;background:var(--primary-light);border:1px solid var(--primary-border);display:flex;align-items:center;justify-content:center}
+.pdf-frame-fallback-text{font-size:12px;color:var(--text-secondary);font-weight:500}
+.pdf-meta{display:flex;align-items:center;justify-content:space-between;margin-top:8px;font-size:11px;color:var(--text-muted)}
+.pdf-meta-name{font-weight:600;color:var(--text-secondary);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:200px}
+.pdf-modal{display:none;position:fixed;inset:0;background:rgba(11,36,71,.75);backdrop-filter:blur(4px);z-index:9998;align-items:center;justify-content:center;padding:20px}
+.pdf-modal.show{display:flex}
+.pdf-modal-content{background:var(--surface);width:100%;max-width:1000px;height:90vh;display:flex;flex-direction:column;box-shadow:var(--shadow-lg);border:1px solid var(--border)}
+.pdf-modal-head{padding:14px 20px;border-bottom:1px solid var(--border-light);display:flex;align-items:center;justify-content:space-between;gap:12px;background:linear-gradient(to bottom,#F5F8FD,var(--surface))}
+.pdf-modal-title{display:flex;align-items:center;gap:9px;font-size:14px;font-weight:700;color:var(--text)}
+.pdf-modal-actions{display:flex;align-items:center;gap:8px}
+.pdf-modal-body{flex:1;background:#525659;overflow:hidden}
+.pdf-modal-body iframe{width:100%;height:100%;border:none;display:block}
 .summary-footer{padding:14px 20px 20px;border-top:1px solid var(--border-light)}
 .btn-save{width:100%;padding:14px;border-radius:0;border:none;background:linear-gradient(135deg,var(--primary) 0%,var(--primary-mid) 100%);color:#fff;font-size:15px;font-weight:700;cursor:pointer;transition:all var(--t-base);font-family:inherit;letter-spacing:.01em;display:flex;align-items:center;justify-content:center;gap:8px;box-shadow:0 4px 12px rgba(11,36,71,.30)}
 .btn-save:hover{background:linear-gradient(135deg,var(--primary-hover) 0%,var(--primary) 100%);transform:translateY(-1px);box-shadow:0 6px 18px rgba(11,36,71,.36)}
@@ -176,10 +195,8 @@ tbody tr:hover td{background:#F5F8FD}
 hr.divider{border:none;border-top:1px solid var(--border-light);margin:0}
 @keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
 @media(max-width:1100px){.page{padding:22px 20px 50px}.grid-layout{grid-template-columns:1fr}.col-side{position:static;display:grid;grid-template-columns:1fr 1fr;gap:16px}.form-grid-3{grid-template-columns:repeat(3,1fr)}.form-grid-4{grid-template-columns:repeat(2,1fr)}.dep-cards{grid-template-columns:repeat(2,1fr)}}
-@media(max-width:768px){.page{padding:16px 16px 50px}.navbar-inner{padding:0 16px}.navbar-breadcrumb{display:none}.page-header{padding:18px 20px}.page-header-text h1{font-size:18px}.col-side{grid-template-columns:1fr}.dep-cards{grid-template-columns:1fr}.card-body{padding:16px 18px}.card-head{padding:14px 18px 12px}.dep-section{padding:0 18px 18px}table{font-size:13px}th,td{padding:10px 12px}.s-row.total .sval{font-size:20px}.form-grid-3{grid-template-columns:1fr 1fr}.form-grid-4{grid-template-columns:1fr}.span-2{grid-column:1}.page-header-icon{width:42px;height:42px}}
-@media(max-width:480px){.page{padding:12px 12px 50px}.page-header{padding:14px 16px}.card-body,.card-head{padding:14px}.dep-section{padding:0 14px 14px}table{min-width:480px}.btn-save{padding:13px}.summary-rows,.summary-footer{padding:14px 16px}.form-grid-3{grid-template-columns:1fr}}
-
-/* ===== Override: เอาความโค้งมนทั้งหมดออก ===== */
+@media(max-width:768px){.page{padding:16px 16px 50px}.navbar-inner{padding:0 16px}.navbar-breadcrumb{display:none}.page-header{padding:18px 20px}.page-header-text h1{font-size:18px}.col-side{grid-template-columns:1fr}.dep-cards{grid-template-columns:1fr}.card-body{padding:16px 18px}.card-head{padding:14px 18px 12px;flex-wrap:wrap}.dep-section{padding:0 18px 18px}table{font-size:13px}th,td{padding:10px 12px}.s-row.total .sval{font-size:20px}.form-grid-3{grid-template-columns:1fr 1fr}.form-grid-4{grid-template-columns:1fr}.span-2{grid-column:1}.page-header-icon{width:42px;height:42px}.sale-chip{margin-left:0;width:100%;max-width:none;margin-top:4px}.pdf-frame-wrap{height:200px}.pdf-modal-content{height:95vh}}
+@media(max-width:480px){.page{padding:12px 12px 50px}.page-header{padding:14px 16px}.card-body,.card-head{padding:14px}.dep-section{padding:0 14px 14px}table{min-width:480px}.btn-save{padding:13px}.summary-rows,.summary-footer{padding:14px 16px}.pdf-preview-section{padding:12px 16px 14px}.form-grid-3{grid-template-columns:1fr}}
 *,*::before,*::after{border-radius:0 !important}
 .spinner{border-radius:50% !important}
 .dep-toggle-knob,
@@ -211,8 +228,10 @@ hr.divider{border:none;border-top:1px solid var(--border-light);margin:0}
       <span class="current">สร้างใบมัดจำ</span>
     </div>
     <div class="navbar-actions">
-      <button class="btn-nav" onclick="history.back()">
-        <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M9 11L5 7L9 3" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      <button class="btn-nav" onclick="window.location.href='{{ url('/SOlist') }}'">
+        <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+          <path d="M9 11L5 7L9 3" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
         ย้อนกลับ
       </button>
     </div>
@@ -240,11 +259,12 @@ hr.divider{border:none;border-top:1px solid var(--border-light);margin:0}
 
   <form id="billForm" enctype="multipart/form-data">
     @csrf
-    <input type="hidden" name="so_id"       id="so_id">
-    <input type="hidden" name="subtotal"     id="hidden-subtotal"   value="0">
-    <input type="hidden" name="grand_total"  id="hidden-grandtotal" value="0">
-    <input type="hidden" name="sale_name"    id="hidden-sale"       value="">
-    <input type="hidden" name="emp_name"     id="hidden-emp"
+    <input type="hidden" name="so_id"        id="so_id">
+    <input type="hidden" name="subtotal"      id="hidden-subtotal"   value="0">
+    <input type="hidden" name="grand_total"   id="hidden-grandtotal" value="0">
+    <input type="hidden" name="sale_name"     id="hidden-sale"       value="">
+    <input type="hidden" name="po_document"   id="hidden-po"         value="">
+    <input type="hidden" name="emp_name"      id="hidden-emp"
       value="{{ request()->filled('create_by') ? request('create_by') : 'Guest' }}">
 
     <div class="grid-layout">
@@ -262,6 +282,16 @@ hr.divider{border:none;border-top:1px solid var(--border-light);margin:0}
               <h3>ข้อมูลเอกสาร</h3>
               <p>Sales Order และวันที่ออกเอกสาร</p>
             </div>
+            <div class="sale-chip" id="sale-chip" title="ชื่อ Sale ผู้รับผิดชอบเอกสาร">
+              <div class="sale-chip-icon">
+                <svg width="12" height="12" viewBox="0 0 14 14" fill="none">
+                  <circle cx="7" cy="5" r="2.6" stroke="#0B2447" stroke-width="1.4"/>
+                  <path d="M2 12.5c0-2.76 2.24-5 5-5s5 2.24 5 5" stroke="#0B2447" stroke-width="1.4" stroke-linecap="round"/>
+                </svg>
+              </div>
+              <span class="sale-chip-label">ชื่อ Sale:</span>
+              <span class="sale-chip-value" id="sale-chip-value">—</span>
+            </div>
           </div>
           <div class="card-body">
             <div class="form-grid-4">
@@ -269,28 +299,25 @@ hr.divider{border:none;border-top:1px solid var(--border-light);margin:0}
                 <label>เลขที่ SO <i class="tip" data-tip="รหัส Sales Order จากระบบ">?</i></label>
                 <div class="field-wrap">
                   <input type="text" id="so_number" name="so_number" readonly placeholder="SO-XXXX">
-                  
                 </div>
               </div>
               <div class="field">
-                <label>ชื่อ Sale</label>
+                <label>เลขที่ PO ลูกค้า <i class="tip" data-tip="เลขที่ใบสั่งซื้อจากลูกค้า (Customer PO Number)">?</i></label>
                 <div class="field-wrap">
                   <input type="text" id="billid" name="billid" readonly placeholder="—">
-                  
                 </div>
               </div>
               <div class="field">
                 <label>วันที่ออกเอกสาร</label>
                 <div class="field-wrap">
                   <input type="text" id="sell_date" name="sell_date" readonly placeholder="DD-MM-YYYY">
-                  
                 </div>
               </div>
+                  <input type="hidden" id="tax_id" name="tax_id"  >
               <div class="field">
                 <label>รหัสลูกค้า</label>
                 <div class="field-wrap">
                   <input type="text" id="customer_id" name="customer_id" readonly placeholder="—">
-                  
                 </div>
               </div>
             </div>
@@ -317,7 +344,6 @@ hr.divider{border:none;border-top:1px solid var(--border-light);margin:0}
                 <label>ชื่อบริษัท / ลูกค้า</label>
                 <div class="field-wrap">
                   <input type="text" id="customer_name" name="customer_name" readonly placeholder="ชื่อบริษัทหรือลูกค้า">
-                  
                 </div>
               </div>
               <div class="field span-2">
@@ -332,7 +358,14 @@ hr.divider{border:none;border-top:1px solid var(--border-light);margin:0}
                 <label>ที่อยู่จัดส่ง <i class="tip" data-tip="ที่อยู่สำหรับจัดส่งสินค้า">?</i></label>
                 <div class="field-wrap">
                   <input type="text" id="customer_address" name="customer_address" readonly placeholder="ที่อยู่จัดส่ง">
-                  
+                </div>
+              </div>
+
+              {{-- ✅ ฟิลด์หมายเหตุ --}}
+              <div class="field span-full">
+                <label>หมายเหตุ <i class="tip" data-tip="ข้อความเพิ่มเติมที่ต้องการระบุในใบมัดจำ">?</i></label>
+                <div class="field-wrap">
+                  <textarea id="note_id" name="note_id" rows="3" placeholder="กรอกหมายเหตุเพิ่มเติม (ถ้ามี)"></textarea>
                 </div>
               </div>
             </div>
@@ -489,6 +522,62 @@ hr.divider{border:none;border-top:1px solid var(--border-light);margin:0}
               <span class="sval" id="sv-grand">฿0.00</span>
             </div>
           </div>
+
+          {{-- ===== PDF Preview Section ===== --}}
+          <div class="pdf-preview-section">
+            <div class="pdf-preview-head">
+              <div class="pdf-preview-title">
+                <svg width="13" height="13" viewBox="0 0 14 14" fill="none">
+                  <path d="M3 1.5h5l3 3v8a1 1 0 0 1-1 1H3a1 1 0 0 1-1-1v-10a1 1 0 0 1 1-1z" stroke="#475569" stroke-width="1.3" stroke-linejoin="round"/>
+                  <path d="M8 1.5v3h3" stroke="#475569" stroke-width="1.3" stroke-linejoin="round"/>
+                  <path d="M5 8h4M5 10h3" stroke="#9B1B1B" stroke-width="1.3" stroke-linecap="round"/>
+                </svg>
+                ตัวอย่างเอกสารใบมัดจำ
+              </div>
+              <div class="pdf-preview-actions">
+                <button type="button" class="pdf-action-btn" onclick="openPdfModal()" title="ดูเต็มจอ">
+                  <svg width="13" height="13" viewBox="0 0 14 14" fill="none">
+                    <path d="M2 5V2h3M12 5V2H9M2 9v3h3M12 9v3H9" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/>
+                  </svg>
+                </button>
+                <a class="pdf-action-btn" href="{{ asset('storage/posit_templates/templates.pdf') }}" target="_blank" rel="noopener" title="เปิดในแท็บใหม่">
+                  <svg width="13" height="13" viewBox="0 0 14 14" fill="none">
+                    <path d="M5.5 2.5h-3v9h9v-3M9 2.5h3v3M12 2.5l-5 5" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/>
+                  </svg>
+                </a>
+                <a class="pdf-action-btn" href="{{ asset('storage/posit_templates/templates.pdf') }}" download title="ดาวน์โหลด">
+                  <svg width="13" height="13" viewBox="0 0 14 14" fill="none">
+                    <path d="M7 2v8M3.5 7L7 10.5 10.5 7M2.5 12.5h9" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/>
+                  </svg>
+                </a>
+              </div>
+            </div>
+            <div class="pdf-frame-wrap">
+              <iframe
+                id="pdfPreviewFrame"
+                src="{{ asset('storage/posit_templates/templates.pdf') }}#toolbar=0&navpanes=0&scrollbar=0&view=FitH"
+                title="ตัวอย่างเอกสารใบมัดจำ"
+                onload="this.previousElementSibling && (this.previousElementSibling.style.display='none')"
+                onerror="showPdfFallback()">
+              </iframe>
+              <div class="pdf-frame-fallback" id="pdfFallback" style="display:none">
+                <div class="pdf-frame-fallback-icon">
+                  <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+                    <path d="M5 2h7l4 4v11a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V3a1 1 0 0 1 1-1z" stroke="#0B2447" stroke-width="1.5" stroke-linejoin="round"/>
+                    <path d="M12 2v4h4" stroke="#0B2447" stroke-width="1.5" stroke-linejoin="round"/>
+                  </svg>
+                </div>
+                <div class="pdf-frame-fallback-text">
+                  ไม่สามารถแสดงตัวอย่างได้<br>กดปุ่มด้านบนเพื่อเปิดในแท็บใหม่
+                </div>
+              </div>
+            </div>
+            <div class="pdf-meta">
+              <span class="pdf-meta-name">templates.pdf</span>
+              <span>เทมเพลตใบมัดจำ</span>
+            </div>
+          </div>
+
           <div class="summary-footer">
             <button type="button" class="btn-save" id="submitBill">
               <svg width="17" height="17" viewBox="0 0 17 17" fill="none"><path d="M3.5 9l4 4 6-7" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
@@ -505,6 +594,7 @@ hr.divider{border:none;border-top:1px solid var(--border-light);margin:0}
           </div>
           <div class="info-items">
             <div class="info-item"><span class="ik">SO Number</span><span class="iv" id="info-so">—</span></div>
+            <div class="info-item"><span class="ik">เลขที่ PO ลูกค้า</span><span class="iv" id="info-po">—</span></div>
             <div class="info-item"><span class="ik">วันที่สร้าง</span><span class="iv" id="info-date">—</span></div>
             <div class="info-item"><span class="ik">ผู้สร้างเอกสาร</span><span class="iv" id="info-emp">—</span></div>
             <div class="info-item">
@@ -534,12 +624,46 @@ hr.divider{border:none;border-top:1px solid var(--border-light);margin:0}
   </form>
 </div>
 
+{{-- ===== PDF Modal (ดูเต็มจอ) ===== --}}
+<div class="pdf-modal" id="pdfModal" onclick="closePdfModalOnBackdrop(event)">
+  <div class="pdf-modal-content" onclick="event.stopPropagation()">
+    <div class="pdf-modal-head">
+      <div class="pdf-modal-title">
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+          <path d="M3.5 1.5h6l3.5 3.5v9a1 1 0 0 1-1 1H3.5a1 1 0 0 1-1-1v-11a1 1 0 0 1 1-1z" stroke="#0B2447" stroke-width="1.5" stroke-linejoin="round"/>
+          <path d="M9.5 1.5v3.5h3.5" stroke="#0B2447" stroke-width="1.5" stroke-linejoin="round"/>
+        </svg>
+        ตัวอย่างเอกสารใบมัดจำ
+      </div>
+      <div class="pdf-modal-actions">
+        <a class="pdf-action-btn" href="{{ asset('storage/posit_templates/templates.pdf') }}" download title="ดาวน์โหลด">
+          <svg width="13" height="13" viewBox="0 0 14 14" fill="none">
+            <path d="M7 2v8M3.5 7L7 10.5 10.5 7M2.5 12.5h9" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        </a>
+        <button type="button" class="pdf-action-btn" onclick="closePdfModal()" title="ปิด">
+          <svg width="13" height="13" viewBox="0 0 14 14" fill="none">
+            <path d="M3 3l8 8M11 3l-8 8" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>
+          </svg>
+        </button>
+      </div>
+    </div>
+    <div class="pdf-modal-body">
+      <iframe id="pdfModalFrame" title="ตัวอย่างเอกสารใบมัดจำ (เต็มจอ)"></iframe>
+    </div>
+  </div>
+</div>
+
 <script>
 let BASE = 0;
 const active = { g: false, b: false };
 const mode   = { g: 'pct', b: 'pct' };
 const names  = { g: 'สินค้า', b: 'บริการ' };
 const KEYS   = ['g', 'b'];
+
+const PDF_TEMPLATE_URL = "{{ asset('storage/posit_templates/templates.pdf') }}";
+const PDF_PREVIEW_BASE = "{{ url('/deposit/preview') }}";
+let PDF_URL = PDF_TEMPLATE_URL;
 
 function fmt(n){ return '฿'+n.toLocaleString('th-TH',{minimumFractionDigits:2,maximumFractionDigits:2}) }
 function fmtPlain(n){ return n.toLocaleString('th-TH',{minimumFractionDigits:2,maximumFractionDigits:2}) }
@@ -569,6 +693,89 @@ function removeToast(id){
   setTimeout(()=>el.remove(),250);
 }
 
+function buildPreviewUrl(){
+  const params = new URLSearchParams();
+  params.set('so_id',            document.getElementById('so_id').value || '');
+  params.set('sell_date',        document.getElementById('sell_date').value || '');
+  params.set('customer_id',      document.getElementById('customer_id').value || '');
+  params.set('tax_id',           document.getElementById('tax_id').value || '');
+  params.set('customer_name',    document.getElementById('customer_name').value || '');
+  params.set('contactso',        document.getElementById('contactso').value || '');
+  params.set('customer_tel',     document.getElementById('customer_tel').value || '');
+  params.set('customer_address', document.getElementById('customer_address').value || '');
+  params.set('note_id',          document.getElementById('note_id').value || '');
+  params.set('emp_name',         document.getElementById('hidden-emp').value || '');
+  params.set('sale_name',        document.getElementById('hidden-sale').value || '');
+  params.set('billid',           document.getElementById('billid').value || '');
+  params.set('grand_total',      document.getElementById('hidden-grandtotal').value || '0');
+
+  const deposits = [];
+  const typeMap = { g:'product', b:'service' };
+  KEYS.forEach(k => {
+    if(active[k]){
+      const raw = parseFloat(document.getElementById('dep-'+k).value) || 0;
+      let pct, amt;
+      if(mode[k]==='pct'){
+        pct = Math.min(100, Math.max(0, raw));
+        amt = BASE * pct / 100;
+      } else {
+        amt = Math.max(0, raw);
+        pct = BASE > 0 ? amt / BASE * 100 : 0;
+      }
+      if(amt > 0){
+        deposits.push({ type:typeMap[k], percent:+pct.toFixed(4), amount:+amt.toFixed(2) });
+      }
+    }
+  });
+  params.set('deposits', JSON.stringify(deposits));
+  params.set('_t', Date.now());
+  return PDF_PREVIEW_BASE + '?' + params.toString();
+}
+
+let _pdfPreviewDebounce = null;
+function updatePdfPreview(){
+  clearTimeout(_pdfPreviewDebounce);
+  _pdfPreviewDebounce = setTimeout(() => {
+    PDF_URL = buildPreviewUrl();
+    const inlineFrame = document.getElementById('pdfPreviewFrame');
+    if(inlineFrame){
+      inlineFrame.setAttribute('src', PDF_URL + '#toolbar=0&navpanes=0&scrollbar=0&view=FitH');
+    }
+    const modal = document.getElementById('pdfModal');
+    if(modal && modal.classList.contains('show')){
+      const modalFrame = document.getElementById('pdfModalFrame');
+      if(modalFrame){
+        modalFrame.setAttribute('src', PDF_URL + '#view=FitH');
+      }
+    }
+  }, 600);
+}
+
+function openPdfModal(){
+  const modal = document.getElementById('pdfModal');
+  const frame = document.getElementById('pdfModalFrame');
+  const targetSrc = (PDF_URL || PDF_TEMPLATE_URL) + '#view=FitH';
+  frame.setAttribute('src', targetSrc);
+  modal.classList.add('show');
+  document.body.style.overflow = 'hidden';
+}
+function closePdfModal(){
+  document.getElementById('pdfModal').classList.remove('show');
+  document.body.style.overflow = '';
+  const frame = document.getElementById('pdfModalFrame');
+  if(frame) frame.setAttribute('src', '');
+}
+function closePdfModalOnBackdrop(e){
+  if(e.target.id === 'pdfModal') closePdfModal();
+}
+function showPdfFallback(){
+  const fb = document.getElementById('pdfFallback');
+  if(fb) fb.style.display = 'flex';
+}
+document.addEventListener('keydown', function(e){
+  if(e.key === 'Escape'){ closePdfModal(); }
+});
+
 window.addEventListener('DOMContentLoaded',function(){
   const params=new URLSearchParams(window.location.search);
   const soNum   =params.get('so_num')   ||params.get('SONum')   ||'';
@@ -588,8 +795,6 @@ window.addEventListener('DOMContentLoaded',function(){
     document.getElementById('so_id').value=soNum;
     document.getElementById('info-so').textContent=soNum;
   }
-  const billEl=document.getElementById('billid');
-  if(billId&&billEl)billEl.value=billId;
   if(custId)   document.getElementById('customer_id').value=custId;
   if(custName) document.getElementById('customer_name').value=custName;
   if(date){
@@ -597,6 +802,11 @@ window.addEventListener('DOMContentLoaded',function(){
     document.getElementById('info-date').textContent=date;
   }
   if(soNum)fetchSODetails(soNum);
+
+  ['contactso','customer_tel','note_id'].forEach(id=>{
+    const el = document.getElementById(id);
+    if(el) el.addEventListener('input', updatePdfPreview);
+  });
 });
 
 async function fetchSODetails(soNum){
@@ -611,15 +821,25 @@ async function fetchSODetails(soNum){
     document.getElementById('so_id').value=s.SONum||'';
     document.getElementById('customer_id').value=s.CustID||'';
     document.getElementById('customer_name').value=d.CustName||'';
+    document.getElementById('tax_id').value=d.TaxId||'';
     document.getElementById('customer_tel').value=d.ContTel||'';
     const ship=[d.ShipToAddr1,d.ShipToAddr2].filter(Boolean).join(', ');
     document.getElementById('customer_address').value=[d.CustAddr1,d.ContDistrict,d.ContAmphur,d.ContProvince,d.ContPostCode,ship?'สถานที่ส่ง: '+ship:null].filter(Boolean).join(', ');
 
-    const createdBy = d.createdBy || s.createdBy || d.CreatedBy || s.CreatedBy || '';
+    const custPONo = d.CustPONo || s.CustPONo || '';
     const bi = document.getElementById('billid');
-    if(bi) bi.value = createdBy;
+    if(bi) bi.value = custPONo;
+
+    const hiddenPo = document.getElementById('hidden-po');
+    if(hiddenPo) hiddenPo.value = custPONo;
+    const infoPo = document.getElementById('info-po');
+    if(infoPo) infoPo.textContent = custPONo || '—';
+
+    const createdBy = d.createdBy || s.createdBy || d.CreatedBy || s.CreatedBy || '';
     const saleEl = document.getElementById('hidden-sale');
     if(saleEl) saleEl.value = createdBy;
+    const saleChipVal = document.getElementById('sale-chip-value');
+    if(saleChipVal) saleChipVal.textContent = createdBy || '—';
 
     if(d.DocuDate){
       const[dp]=d.DocuDate.split(' ');
@@ -671,6 +891,7 @@ function renderItems(items){
   document.getElementById('hidden-subtotal').value  =BASE.toFixed(2);
   document.getElementById('hidden-grandtotal').value=BASE.toFixed(2);
   calc();
+  updatePdfPreview();
 }
 
 function fetchContactSo(cid){
@@ -820,6 +1041,7 @@ function calc(){
     dth.style.display = 'none';
     document.querySelectorAll('.dep-cell').forEach(c=>c.style.display='none');
   }
+  updatePdfPreview();
 }
 
 document.getElementById('submitBill').addEventListener('click', async function(){
@@ -869,9 +1091,8 @@ document.getElementById('submitBill').addEventListener('click', async function()
     return;
   }
 
-  const saleName = (document.getElementById('hidden-sale').value
-                 || document.getElementById('billid').value
-                 || '').trim();
+  const saleName = (document.getElementById('hidden-sale').value || '').trim();
+  const poDoc    = (document.getElementById('hidden-po').value   || '').trim();
 
   const payload = {
     so_id:            soId,
@@ -881,10 +1102,14 @@ document.getElementById('submitBill').addEventListener('click', async function()
     contactso:        contactso,
     customer_tel:     customerTel,
     customer_address: document.getElementById('customer_address').value,
+    note_id:          document.getElementById('note_id').value,
     emp_name:         document.getElementById('hidden-emp').value,
     sale_name:        saleName,
+    po_document:      poDoc,
+    billid:           document.getElementById('billid').value,
     grand_total:      parseFloat(document.getElementById('hidden-grandtotal').value) || 0,
     deposits:         deposits,
+    tax_id:           document.getElementById('tax_id').value,
   };
 
   btn.disabled = true;
@@ -900,13 +1125,7 @@ document.getElementById('submitBill').addEventListener('click', async function()
     });
     const data = await res.json();
     if(!res.ok || !data.success){ throw new Error(data.message || `HTTP ${res.status}`); }
-
-    // ===== แสดงเลขใบมัดจำที่ controller ส่งกลับมา =====
-    const billMsg = data.deposit_bill_id
-      ? `เลขที่ใบมัดจำ: ${data.deposit_bill_id}`
-      : (data.message || 'บันทึกใบมัดจำเรียบร้อยแล้ว');
-    showToast('บันทึกสำเร็จ', billMsg, 'success');
-
+    showToast('บันทึกสำเร็จ', data.message || 'บันทึกใบมัดจำเรียบร้อยแล้ว', 'success');
     setTimeout(() => { window.location.href = '/SOlist'; }, 1500);
   }catch(err){
     console.error(err);

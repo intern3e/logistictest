@@ -3,285 +3,346 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>ใบมัดจำ {{ $deposit_bill_id }}</title>
+<title>ใบรับเงินมัดจำ {{ $deposit_bill_id }}</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
-:root{
-  --navy:#0B2447; --navy-mid:#19376D; --navy-light:#EAF1FB; --navy-border:#C5D6EC;
-  --text:#0F172A; --text-secondary:#475569; --text-muted:#94A3B8;
-  --border:#C5D6EC; --border-light:#E5EBF3;
-  --bg:#EEF2F7; --surface:#FFFFFF;
-  --red:#9B1B1B;
-}
-html,body{font-family:'Sarabun',system-ui,sans-serif;color:var(--text);background:var(--bg);font-size:14px;line-height:1.5}
-.toolbar{position:sticky;top:0;z-index:100;background:var(--surface);border-bottom:1px solid var(--border);padding:12px 24px;display:flex;justify-content:space-between;align-items:center;gap:12px;box-shadow:0 1px 3px rgba(11,36,71,.08)}
-.tb-left{display:flex;align-items:center;gap:10px}
-.tb-title{font-size:14px;font-weight:700;color:var(--navy)}
-.tb-sub{font-size:12px;color:var(--text-muted)}
+body{font-family:'Sarabun',sans-serif;background:#ccc;font-size:13px;color:#111;line-height:1.5}
+
+.toolbar{position:sticky;top:0;z-index:100;background:#fff;border-bottom:1px solid #ccc;padding:10px 20px;display:flex;justify-content:space-between;align-items:center;box-shadow:0 1px 3px rgba(0,0,0,.1)}
+.tb-title{font-size:13px;font-weight:700;color:#1a3a6b}
+.tb-sub{font-size:11px;color:#888}
 .tb-actions{display:flex;gap:8px}
-.btn{display:inline-flex;align-items:center;gap:6px;padding:8px 16px;border:1px solid var(--border);background:var(--surface);color:var(--text-secondary);font-size:13px;font-weight:600;cursor:pointer;font-family:inherit;transition:.15s}
-.btn:hover{border-color:var(--navy);color:var(--navy);background:#F8FAFC}
-.btn-primary{background:var(--navy);color:#fff;border-color:var(--navy)}
-.btn-primary:hover{background:var(--navy-mid);color:#fff}
+.btn{padding:7px 16px;border:1px solid #bbb;background:#fff;color:#444;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit}
+.btn:hover{background:#f5f5f5}
+.btn-primary{background:#1a3a6b;color:#fff;border-color:#1a3a6b}
+.btn-primary:hover{background:#14305a}
 
-/* ===== Document ===== */
-.page{max-width:820px;margin:24px auto;background:var(--surface);box-shadow:0 4px 20px rgba(11,36,71,.10);padding:48px 56px;border:1px solid var(--border)}
-.doc-head{display:flex;justify-content:space-between;align-items:flex-start;border-bottom:3px double var(--navy);padding-bottom:18px;margin-bottom:22px}
-.doc-head-left h1{font-size:22px;font-weight:800;color:var(--navy);letter-spacing:-.3px;margin-bottom:4px}
-.doc-head-left .sub{font-size:13px;color:var(--text-secondary);font-weight:600}
-.doc-head-right{text-align:right;font-size:13px}
-.doc-head-right .label{color:var(--text-muted);font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.05em;margin-bottom:2px}
-.doc-head-right .billno{font-size:20px;font-weight:800;color:var(--navy);font-family:'Sarabun',monospace;letter-spacing:.5px}
-.doc-head-right .date{margin-top:6px;color:var(--text-secondary)}
+/* ===== A4 Page ===== */
+.page-wrap{max-width:794px;margin:24px auto;padding-bottom:40px}
+.page{background:#fff;padding:22px 28px;border:1px solid #999;box-shadow:0 2px 12px rgba(0,0,0,.2);position:relative;font-size:12px}
 
-.section-title{font-size:11px;font-weight:700;color:var(--navy);text-transform:uppercase;letter-spacing:.08em;margin-bottom:8px;padding-bottom:5px;border-bottom:1px solid var(--border-light)}
-.info-grid{display:grid;grid-template-columns:1fr 1fr;gap:24px;margin-bottom:24px}
-.info-block .row{display:flex;padding:5px 0;font-size:13px;line-height:1.5}
-.info-block .k{color:var(--text-muted);min-width:90px;flex-shrink:0}
-.info-block .v{color:var(--text);font-weight:500;flex:1}
+/* ---- Header ---- */
+.header{display:grid;grid-template-columns:1fr auto auto;gap:12px;align-items:start;border-bottom:2px solid #111;padding-bottom:8px;margin-bottom:6px}
 
-table.dep-table{width:100%;border-collapse:collapse;margin-bottom:18px;font-size:13px}
-table.dep-table thead{background:var(--navy);color:#fff}
-table.dep-table th{padding:10px 12px;text-align:left;font-size:12px;font-weight:700;letter-spacing:.03em}
-table.dep-table th.num{text-align:right}
-table.dep-table th.center{text-align:center}
-table.dep-table td{padding:10px 12px;border-bottom:1px solid var(--border-light);vertical-align:top}
-table.dep-table td.num{text-align:right;font-variant-numeric:tabular-nums;font-weight:600}
-table.dep-table td.center{text-align:center}
-table.dep-table tbody tr:last-child td{border-bottom:1px solid var(--border)}
-.type-badge{display:inline-block;padding:2px 8px;font-size:11px;font-weight:700;background:var(--navy-light);color:var(--navy);border:1px solid var(--navy-border)}
+.co-name{font-size:14.5px;font-weight:800;color:#1a3a6b;line-height:1.2}
+.co-name-en{font-size:10px;color:#555;font-weight:600;margin-bottom:3px}
+.co-info{font-size:10.5px;color:#333;line-height:1.7}
 
-.summary{display:flex;justify-content:flex-end;margin-bottom:32px}
-.summary-box{width:340px;border:1px solid var(--border)}
-.summary-box .row{display:flex;justify-content:space-between;padding:8px 14px;font-size:13px;border-bottom:1px solid var(--border-light)}
-.summary-box .row:last-child{border-bottom:none}
-.summary-box .row .lbl{color:var(--text-secondary)}
-.summary-box .row .val{font-weight:600;font-variant-numeric:tabular-nums}
-.summary-box .row.total{background:var(--navy);color:#fff;padding:12px 14px}
-.summary-box .row.total .lbl{color:#fff;font-weight:700}
-.summary-box .row.total .val{color:#fff;font-weight:800;font-size:16px}
-.summary-box .row.deposit .val{color:var(--red)}
+.doc-title-box{border:1.5px solid #111;padding:5px 14px;text-align:center;white-space:nowrap;align-self:center}
+.doc-title-box .main{font-size:13px;font-weight:800;color:#1a3a6b}
+.doc-title-box .sub{font-size:10px;color:#444;margin-top:1px}
 
-.amount-words{padding:10px 14px;background:var(--navy-light);border:1px solid var(--navy-border);font-size:13px;margin-bottom:32px;display:flex;gap:10px;align-items:center}
-.amount-words .lbl{font-size:11px;font-weight:700;color:var(--navy);text-transform:uppercase;letter-spacing:.05em}
-.amount-words .val{font-weight:600;color:var(--text)}
+.doc-no-box{text-align:right;font-size:11px;min-width:120px}
+.doc-no-box .no{font-size:14px;font-weight:800;color:#c00;letter-spacing:.5px}
+.doc-no-box .row{display:flex;justify-content:flex-end;gap:4px;margin-top:2px}
+.doc-no-box .lbl{color:#777}
+.doc-no-box .val{font-weight:600}
 
-.signatures{display:grid;grid-template-columns:1fr 1fr;gap:48px;margin-top:48px;padding-top:24px}
-.sig-block{text-align:center}
-.sig-line{border-bottom:1px dotted var(--text-muted);height:60px;margin-bottom:8px}
-.sig-label{font-size:13px;color:var(--text-secondary);font-weight:600}
-.sig-name{font-size:12px;color:var(--text-muted);margin-top:3px}
+/* ---- Stamp ---- */
+.stamp{position:absolute;top:70px;right:60px;border:3px solid #16a34a;color:#16a34a;padding:5px 16px;font-size:15px;font-weight:800;letter-spacing:.1em;transform:rotate(-12deg);opacity:.85;pointer-events:none}
+.stamp.pending{border-color:#d97706;color:#d97706}
 
-.footer{margin-top:36px;padding-top:14px;border-top:1px solid var(--border-light);text-align:center;font-size:11px;color:var(--text-muted)}
+/* ---- Branch row ---- */
+.branch-row{font-size:10.5px;color:#555;margin-bottom:6px;padding-bottom:5px;border-bottom:1px solid #ddd}
 
-.status-stamp{position:absolute;top:130px;right:80px;border:3px solid;padding:8px 24px;font-size:18px;font-weight:800;letter-spacing:.1em;transform:rotate(-12deg);opacity:.85;text-transform:uppercase}
-.status-confirmed{color:#16A34A;border-color:#16A34A}
-.status-pending{color:#D97706;border-color:#D97706}
+/* ---- Customer grid ---- */
+.cus-grid{display:grid;grid-template-columns:1fr 1fr;border:1px solid #aaa;margin-bottom:8px}
+.cus-cell{padding:5px 9px;border-right:1px solid #aaa;border-bottom:1px solid #aaa;min-width:0}
+.cus-cell:nth-child(2n){border-right:none}
+.cus-cell.full{grid-column:1/3;border-right:none}
+.cus-cell:nth-last-child(-n+2):not(.full){border-bottom:none}
+.cus-cell.full:last-child{border-bottom:none}
+.cus-lbl{font-size:9.5px;color:#999;text-transform:uppercase;letter-spacing:.04em;margin-bottom:1px}
+.cus-val{font-size:12px;font-weight:600;color:#111;word-break:break-word;white-space:normal}
+.cus-val.name{font-size:13px;font-weight:800}
 
-/* ===== Print ===== */
-@media print {
-  @page { size: A4; margin: 12mm 14mm; }
-  body { background: white; font-size: 12pt; }
-  .toolbar { display: none !important; }
-  .page { box-shadow:none !important; border:none !important; margin:0 !important; padding:0 !important; max-width:100% !important; }
-  .status-stamp { right: 40px; top: 100px; }
-}
+/* ---- Main table ---- */
+table.main{width:100%;border-collapse:collapse;font-size:12px;margin-bottom:0;table-layout:fixed}
+table.main col.col-no{width:62px}
+table.main col.col-desc{width:auto}
+table.main col.col-amt{width:130px}
+table.main thead tr{background:#1a3a6b;color:#fff}
+table.main th{padding:6px 10px;font-size:11px;font-weight:700;border:1px solid #1a3a6b;text-align:left;white-space:nowrap}
+table.main th.r{text-align:right}
+table.main th.c{text-align:center}
+table.main td{padding:7px 10px;border:1px solid #ccc;vertical-align:top;word-break:break-word;white-space:normal;line-height:1.6}
+table.main td.r{text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap}
+table.main td.c{text-align:center;white-space:nowrap}
+table.main tbody tr:nth-child(even){background:#f8f9fb}
+.empty td{height:22px;border-color:#e0e0e0}
 
-@media (max-width:768px){
-  .page{padding:24px 20px;margin:12px}
-  .doc-head{flex-direction:column;gap:14px}
-  .doc-head-right{text-align:left}
-  .info-grid{grid-template-columns:1fr;gap:14px}
-  .summary-box{width:100%}
-  .signatures{grid-template-columns:1fr;gap:24px}
-  .toolbar{padding:10px 14px;flex-wrap:wrap}
+/* ---- Bottom ---- */
+.bottom{display:flex;border:1px solid #aaa;border-top:none}
+.bot-left{flex:1;padding:9px 11px;border-right:1px solid #aaa;font-size:11.5px}
+.bot-right{width:220px;display:flex;flex-direction:column}
+
+.note-lbl{font-size:9.5px;color:#999;text-transform:uppercase;letter-spacing:.04em;margin-bottom:3px}
+.note-txt{color:#444;line-height:1.55;margin-bottom:5px}
+.warn-txt{font-size:11px;color:#555;margin-bottom:6px}
+.amount-words{background:#eef3fa;border:1px solid #b5c9e8;padding:6px 10px;font-size:11.5px}
+.amount-words .lbl{font-size:9.5px;color:#888;display:block;margin-bottom:2px}
+.amount-words .val{font-weight:700;color:#1a3a6b}
+
+/* payment method */
+.pay-method{display:grid;grid-template-columns:1fr 1fr 1fr;border-bottom:1px solid #aaa}
+.pm{padding:5px 8px;border-right:1px solid #aaa;font-size:11px}
+.pm:last-child{border-right:none}
+.pm .lbl{font-size:9px;color:#999;text-transform:uppercase;margin-bottom:2px}
+.pm .val{font-weight:600;min-height:16px}
+
+/* check info */
+.check-row{display:grid;grid-template-columns:1fr 1fr 1fr;border-bottom:1px solid #aaa}
+.ch{padding:4px 8px;border-right:1px solid #aaa;font-size:11px;color:#555}
+.ch:last-child{border-right:none}
+.ch .lbl{font-size:9px;color:#999;margin-bottom:2px}
+.ch-full{grid-column:1/4;border-right:none}
+
+/* summary */
+table.summ{width:100%;border-collapse:collapse}
+table.summ td{padding:5px 10px;font-size:12px;border-bottom:1px solid #e5e5e5}
+table.summ td.lbl{color:#555}
+table.summ td.val{text-align:right;font-weight:600;font-variant-numeric:tabular-nums}
+table.summ tr.total td{background:#1a3a6b;color:#fff;font-weight:800;font-size:13px;border-bottom:none}
+table.summ tr.total td.val{color:#fff}
+
+/* signatures */
+.sig-row{display:grid;grid-template-columns:1fr 1fr 1fr;border:1px solid #aaa;border-top:none}
+.sig{padding:10px 10px 7px;border-right:1px solid #aaa;text-align:center}
+.sig:last-child{border-right:none}
+.sig-line{border-bottom:1px dotted #aaa;height:46px;margin-bottom:5px}
+.sig-lbl{font-size:11px;color:#444;font-weight:600}
+.sig-date{font-size:10px;color:#999;margin-top:2px}
+
+.footer{margin-top:6px;text-align:center;font-size:10px;color:#aaa;border-top:1px solid #eee;padding-top:5px}
+
+@media print{
+  @page{size:A4;margin:10mm 12mm}
+  body{background:#fff}
+  .toolbar{display:none!important}
+  .page-wrap{margin:0;max-width:100%}
+  .page{box-shadow:none;border:none;padding:0}
+  .stamp{right:30px;top:60px}
 }
 </style>
 </head>
 <body>
 
 <div class="toolbar">
-  <div class="tb-left">
-    <div>
-      <div class="tb-title">ใบมัดจำ {{ $deposit_bill_id }}</div>
-      <div class="tb-sub">SO: {{ $header->so_id }} · {{ $header->customer_name }}</div>
-    </div>
+  <div>
+    <div class="tb-title">ใบรับเงินมัดจำ {{ $deposit_bill_id }}</div>
+    <div class="tb-sub">SO: {{ $header->so_id }} · {{ $header->customer_name }}</div>
   </div>
   <div class="tb-actions">
-    <button type="button" class="btn" onclick="history.back()">
-      <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M9 11L5 7L9 3" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
-      ย้อนกลับ
-    </button>
-    <button type="button" class="btn btn-primary" onclick="window.print()">
-      <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M3 5V2h8v3M3 9H2V5h10v4h-1M4 8h6v4H4z" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round"/></svg>
-      พิมพ์ / บันทึก PDF
-    </button>
+    <button class="btn" onclick="history.back()">← ย้อนกลับ</button>
+    <button class="btn btn-primary" onclick="window.print()">🖨 พิมพ์ / บันทึก PDF</button>
   </div>
 </div>
 
-<div class="page" style="position:relative">
+<div class="page-wrap">
+<div class="page">
 
+  {{-- Stamp --}}
   @if($header->status === 'ยืนยัน')
-    <div class="status-stamp status-confirmed">ยืนยันแล้ว</div>
+    <div class="stamp">ยืนยันแล้ว</div>
   @else
-    <div class="status-stamp status-pending">รอยืนยัน</div>
+    <div class="stamp pending">รอยืนยัน</div>
   @endif
 
   {{-- Header --}}
-  <div class="doc-head">
-    <div class="doc-head-left">
-      <h1>ใบรับเงินมัดจำ</h1>
-      <div class="sub">DEPOSIT RECEIPT</div>
-    </div>
-    <div class="doc-head-right">
-      <div class="label">เลขที่เอกสาร</div>
-      <div class="billno">{{ $deposit_bill_id }}</div>
-      <div class="date">
-        วันที่ออก:
-        @php
-          $issueDate = $header->date_dep ? \Carbon\Carbon::parse($header->date_dep) : \Carbon\Carbon::parse($header->time);
-        @endphp
-        {{ $issueDate->format('d/m/') }}{{ $issueDate->year + 543 }}
+  <div class="header">
+    <div>
+      <div class="co-name">บริษัท ทริปเปิ้ล อี เทรดดิ้ง จำกัด</div>
+      <div class="co-name-en">TRIPLE E TRADING CO., LTD.</div>
+      <div class="co-info">
+        สำนักงานใหญ่: เลขที่ 39/7 ถนนวุฒากาส แขวงตลาดพลู เขตธนบุรี กรุงเทพฯ 10600<br>
+        โทร. 02-4727341-40 &nbsp;|&nbsp; โทรสาร 02-4727349-50<br>
+        เลขประจำตัวผู้เสียภาษีอากร <strong>0105549013885</strong>
       </div>
-      <div class="date">SO: <strong>{{ $header->so_id }}</strong></div>
+    </div>
+
+    <div class="doc-title-box">
+      <div class="main">ต้นฉบับใบรับเงินมัดจำ</div>
+      <div class="sub">ใบกำกับภาษี / ใบเสร็จรับเงิน</div>
+    </div>
+
+    <div class="doc-no-box">
+      <div class="no">{{ $deposit_bill_id }}</div>
+      <div class="row">
+        <span class="lbl">วันที่:</span>
+        <span class="val">
+          @php
+            $issueDate = $header->date_dep
+              ? \Carbon\Carbon::parse($header->date_dep)
+              : \Carbon\Carbon::parse($header->time);
+          @endphp
+          {{ $issueDate->format('d/m/') }}{{ $issueDate->year + 543 }}
+        </span>
+      </div>
+      <div class="row"><span class="lbl">หน้า:</span><span class="val">1 / 1</span></div>
     </div>
   </div>
 
-  {{-- Customer info --}}
-  <div class="info-grid">
-    <div class="info-block">
-      <div class="section-title">ข้อมูลลูกค้า</div>
-      <div class="row"><span class="k">รหัสลูกค้า</span><span class="v">{{ $header->customer_id ?: '—' }}</span></div>
-      <div class="row"><span class="k">ชื่อ</span><span class="v">{{ $header->customer_name ?: '—' }}</span></div>
-      <div class="row"><span class="k">ผู้ติดต่อ</span><span class="v">{{ $header->contactso ?: '—' }}</span></div>
-      <div class="row"><span class="k">โทรศัพท์</span><span class="v">{{ $header->customer_tel ?: '—' }}</span></div>
+  {{-- Branch --}}
+  <div class="branch-row">
+    สาขาที่ออกใบกำกับภาษี: <strong>สำนักงานใหญ่</strong>
+  </div>
+
+  {{-- Customer --}}
+  <div class="cus-grid">
+    <div class="cus-cell">
+      <div class="cus-lbl">นามผู้ซื้อ</div>
+      <div class="cus-val name">{{ $header->customer_name ?: '—' }}</div>
     </div>
-    <div class="info-block">
-      <div class="section-title">ที่อยู่ / เพิ่มเติม</div>
-      <div class="row"><span class="k">ที่อยู่</span><span class="v">{{ $header->customer_address ?: '—' }}</span></div>
-      <div class="row"><span class="k">พนักงานขาย</span><span class="v">{{ $header->sale_name ?: '—' }}</span></div>
-      <div class="row"><span class="k">ผู้สร้างเอกสาร</span><span class="v">{{ $header->emp_name ?: '—' }}</span></div>
-      @if($header->time_check)
-        <div class="row"><span class="k">ยืนยันเมื่อ</span>
-          <span class="v">{{ \Carbon\Carbon::parse($header->time_check)->format('d/m/Y H:i') }} น.</span>
-        </div>
-      @endif
+    <div class="cus-cell">
+      <div class="cus-lbl">รหัสลูกค้า</div>
+      <div class="cus-val">{{ $header->customer_id ?: '—' }}</div>
+    </div>
+    <div class="cus-cell full">
+      <div class="cus-lbl">ที่อยู่</div>
+      <div class="cus-val">{{ $header->customer_address ?: '—' }}</div>
+    </div>
+    <div class="cus-cell">
+      <div class="cus-lbl">โทร.</div>
+      <div class="cus-val">{{ $header->customer_tel ?: '—' }}</div>
+    </div>
+    <div class="cus-cell">
+      <div class="cus-lbl">โทรสาร</div>
+      <div class="cus-val">{{ $header->customer_fax ?: '—' }}</div>
+    </div>
+    <div class="cus-cell">
+      <div class="cus-lbl">เลขประจำตัวผู้เสียภาษี</div>
+      <div class="cus-val">{{ $header->customer_tax_id ?: '—' }}</div>
+    </div>
+    <div class="cus-cell">
+      <div class="cus-lbl">สาขา</div>
+      <div class="cus-val">{{ $header->customer_branch ?: 'สำนักงานใหญ่' }}</div>
     </div>
   </div>
 
-  {{-- Deposit table --}}
-  <div class="section-title" style="margin-bottom:10px">รายการมัดจำ</div>
-  <table class="dep-table">
+  {{-- Items table --}}
+  <table class="main">
+    <colgroup>
+      <col class="col-no">
+      <col class="col-desc">
+      <col class="col-amt">
+    </colgroup>
     <thead>
       <tr>
-        <th class="center" style="width:50px">ลำดับ</th>
-        <th>ประเภท</th>
-        <th class="num" style="width:110px">เปอร์เซ็นต์</th>
-        <th class="num" style="width:160px">จำนวนเงิน (บาท)</th>
+        <th class="c">ลำดับที่</th>
+        <th>รายการ</th>
+        <th class="r">จำนวนเงิน</th>
       </tr>
     </thead>
     <tbody>
-      @php
-        $typeLabel = ['product'=>'มัดจำสินค้า','service'=>'มัดจำบริการ','shipping'=>'มัดจำค่าขนส่ง'];
-      @endphp
       @foreach($items as $i => $item)
-        <tr>
-          <td class="center">{{ $i + 1 }}</td>
-          <td>
-            <span class="type-badge">{{ $typeLabel[$item->dep_type] ?? $item->dep_type }}</span>
-          </td>
-          <td class="num">{{ number_format((float)$item->dep_per, 2) }}%</td>
-          <td class="num">{{ number_format((float)$item->dep_price, 2) }}</td>
-        </tr>
+      <tr>
+        <td class="c">{{ $i + 1 }}</td>
+        <td>{{ $item->description }}</td>
+        <td class="r">{{ number_format((float)$item->dep_price, 2) }}</td>
+      </tr>
       @endforeach
+      {{-- empty filler rows --}}
+      @for($e = count($items); $e < 7; $e++)
+      <tr class="empty"><td></td><td></td><td></td></tr>
+      @endfor
     </tbody>
   </table>
 
-  {{-- Summary --}}
-  <div class="summary">
-    <div class="summary-box">
-      <div class="row">
-        <span class="lbl">ยอดรวมตามใบสั่งขาย</span>
-        <span class="val">฿ {{ number_format($grandTotal, 2) }}</span>
-      </div>
-      <div class="row deposit">
-        <span class="lbl">รวมมัดจำที่ต้องชำระ</span>
-        <span class="val">฿ {{ number_format($totalDeposit, 2) }}</span>
-      </div>
-      <div class="row">
-        <span class="lbl">ยอดคงเหลือ</span>
-        <span class="val">฿ {{ number_format($netRemaining, 2) }}</span>
-      </div>
-      <div class="row total">
-        <span class="lbl">ยอดมัดจำสุทธิ</span>
-        <span class="val">฿ {{ number_format($totalDeposit, 2) }}</span>
+  {{-- Bottom section --}}
+  <div class="bottom">
+    <div class="bot-left">
+      <div class="note-lbl">หมายเหตุ</div>
+      <div class="note-txt">ในกรณีที่ชำระเงินเป็นเช็ค ใบเสร็จฉบับนี้จะสมบูรณ์ก็ต่อเมื่อบริษัทฯ เรียกเก็บเงินจากธนาคารได้แล้ว</div>
+      <div class="warn-txt">โปรดสั่งจ่ายเช็คในนามบริษัทฯ เท่านั้น</div>
+      <div class="amount-words">
+        <span class="lbl">จำนวนเงิน (ตัวอักษร):</span>
+        <span class="val">
+          @php
+            function bahtText($amount) {
+              $n1=['ศูนย์','หนึ่ง','สอง','สาม','สี่','ห้า','หก','เจ็ด','แปด','เก้า'];
+              $n2=['','สิบ','ร้อย','พัน','หมื่น','แสน','ล้าน'];
+              [$int,$dec]=explode('.',number_format($amount,2,'.',''));
+              $b='';$s='';$il=strlen($int);
+              for($i=0;$i<$il;$i++){$d=(int)$int[$i];$p=$il-$i-1;if(!$d)continue;
+                if($p==0&&$d==1&&$il>1){$b.='เอ็ด';}
+                elseif($p==1&&$d==2){$b.='ยี่สิบ';}
+                elseif($p==1&&$d==1){$b.='สิบ';}
+                else{$b.=$n1[$d].$n2[$p];}}
+              $b.='บาท';$dn=(int)$dec;
+              if(!$dn){$s='ถ้วน';}else{$dl=strlen($dec);
+                for($i=0;$i<$dl;$i++){$d=(int)$dec[$i];$p=$dl-$i-1;if(!$d)continue;
+                  if($p==0&&$d==1&&$dl>1){$s.='เอ็ด';}
+                  elseif($p==1&&$d==2){$s.='ยี่สิบ';}
+                  elseif($p==1&&$d==1){$s.='สิบ';}
+                  else{$s.=$n1[$d].$n2[$p];}}$s.='สตางค์';}
+              return $b.$s;}
+          @endphp
+          ( {{ bahtText($totalDeposit) }} )
+        </span>
       </div>
     </div>
-  </div>
 
-  {{-- Amount in words --}}
-  @php
-    function bahtText($amount) {
-      $txtnum1 = ['ศูนย์','หนึ่ง','สอง','สาม','สี่','ห้า','หก','เจ็ด','แปด','เก้า'];
-      $txtnum2 = ['','สิบ','ร้อย','พัน','หมื่น','แสน','ล้าน'];
-      $number = number_format($amount, 2, '.', '');
-      [$int, $dec] = explode('.', $number);
-      $strBaht = ''; $strSatang = '';
-      $intLen = strlen($int);
-      for ($i = 0; $i < $intLen; $i++) {
-          $d = (int)$int[$i];
-          $pos = $intLen - $i - 1;
-          if ($d == 0) continue;
-          if ($pos == 0 && $d == 1 && $intLen > 1) { $strBaht .= 'เอ็ด'; }
-          elseif ($pos == 1 && $d == 2) { $strBaht .= 'ยี่สิบ'; }
-          elseif ($pos == 1 && $d == 1) { $strBaht .= 'สิบ'; }
-          else { $strBaht .= $txtnum1[$d] . $txtnum2[$pos]; }
-      }
-      $strBaht .= 'บาท';
-      $decN = (int)$dec;
-      if ($decN == 0) { $strSatang = 'ถ้วน'; }
-      else {
-          $decLen = strlen($dec);
-          for ($i = 0; $i < $decLen; $i++) {
-              $d = (int)$dec[$i];
-              $pos = $decLen - $i - 1;
-              if ($d == 0) continue;
-              if ($pos == 0 && $d == 1 && $decLen > 1) { $strSatang .= 'เอ็ด'; }
-              elseif ($pos == 1 && $d == 2) { $strSatang .= 'ยี่สิบ'; }
-              elseif ($pos == 1 && $d == 1) { $strSatang .= 'สิบ'; }
-              else { $strSatang .= $txtnum1[$d] . $txtnum2[$pos]; }
-          }
-          $strSatang .= 'สตางค์';
-      }
-      return $strBaht . $strSatang;
-    }
-  @endphp
-  <div class="amount-words">
-    <span class="lbl">จำนวนเงิน (ตัวอักษร):</span>
-    <span class="val">({{ bahtText($totalDeposit) }})</span>
+    <div class="bot-right">
+      {{-- Payment method --}}
+      <div class="pay-method">
+        <div class="pm"><div class="lbl">ชำระโดย</div><div class="val">☐ เงินสด</div></div>
+        <div class="pm"><div class="lbl">&nbsp;</div><div class="val">☐ เช็ค</div></div>
+        <div class="pm"><div class="lbl">&nbsp;</div><div class="val">☐ เงินโอน</div></div>
+      </div>
+      {{-- Check info --}}
+      <div class="check-row">
+        <div class="ch"><div class="lbl">ในนาม</div><div style="min-height:16px"></div></div>
+        <div class="ch"><div class="lbl">ธนาคาร</div><div style="min-height:16px"></div></div>
+        <div class="ch"><div class="lbl">สาขา</div><div style="min-height:16px"></div></div>
+      </div>
+      <div class="check-row">
+        <div class="ch ch-full"><div class="lbl">เลขที่เช็ค / ลงวันที่</div><div style="min-height:16px"></div></div>
+      </div>
+      {{-- Summary --}}
+      <table class="summ">
+        <tr>
+          <td class="lbl">หมายเหตุ รวมเงิน</td>
+          <td class="val">{{ number_format($totalDeposit, 2) }}</td>
+        </tr>
+        <tr>
+          <td class="lbl">ภาษีมูลค่าเพิ่ม 7%</td>
+          <td class="val">{{ number_format($totalDeposit * 0.07, 2) }}</td>
+        </tr>
+        <tr class="total">
+          <td class="lbl">จำนวนเงินทั้งสิ้น</td>
+          <td class="val">{{ number_format($totalDeposit * 1.07, 2) }}</td>
+        </tr>
+      </table>
+    </div>
   </div>
 
   {{-- Signatures --}}
-  <div class="signatures">
-    <div class="sig-block">
+  <div class="sig-row">
+    <div class="sig">
       <div class="sig-line"></div>
-      <div class="sig-label">ผู้รับเงิน / ผู้มีอำนาจลงนาม</div>
-      <div class="sig-name">วันที่ ............. / ............. / .............</div>
+      <div class="sig-lbl">จัดเตรียมโดย</div>
+      <div class="sig-date">วันที่ _____ / _____ / _______</div>
     </div>
-    <div class="sig-block">
+    <div class="sig">
       <div class="sig-line"></div>
-      <div class="sig-label">ผู้ชำระเงิน / ลูกค้า</div>
-      <div class="sig-name">วันที่ ............. / ............. / .............</div>
+      <div class="sig-lbl">ตรวจสอบโดย</div>
+      <div class="sig-date">วันที่ _____ / _____ / _______</div>
+    </div>
+    <div class="sig">
+      <div class="sig-line"></div>
+      <div class="sig-lbl">ผู้มีอำนาจลงนาม (สำนักงานใหญ่)</div>
+      <div class="sig-date">วันที่ _____ / _____ / _______</div>
     </div>
   </div>
 
   <div class="footer">
-    เอกสารนี้ออกโดยระบบจัดการเอกสาร · พิมพ์เมื่อ {{ \Carbon\Carbon::now()->format('d/m/Y H:i') }} น.
+    ได้รับชำระเงินไว้ถูกต้องแล้วด้วยความขอบคุณ &nbsp;·&nbsp;
+    พิมพ์เมื่อ {{ \Carbon\Carbon::now()->format('d/m/Y H:i') }} น.
   </div>
 
+</div>
 </div>
 
 </body>

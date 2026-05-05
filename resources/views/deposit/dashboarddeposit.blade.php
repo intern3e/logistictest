@@ -120,7 +120,7 @@ body{font-family:'Sarabun','Kanit',sans-serif;font-size:14px;background:var(--bg
 .f-search input{
   border:none;outline:none;background:transparent;
   font-size:13px;font-family:inherit;color:var(--ink);
-  width:220px;text-align:right;direction:rtl;
+  width:260px;text-align:right;direction:rtl;
 }
 .f-search input::placeholder{color:var(--mist)}
 
@@ -218,6 +218,13 @@ tbody tr:last-child td{border-bottom:none}
   box-shadow:0 2px 6px rgba(155,27,27,.3);
 }
 .no-bill{color:var(--mist);font-size:12px}
+
+/* ===== คอลัมน์ PO ลูกค้า ===== */
+.c-custpo{
+  font-weight:600;color:var(--green-text);
+  font-variant-numeric:tabular-nums;
+  white-space:nowrap;
+}
 
 .status-cell{text-align:center;line-height:1.35}
 .status-cell .st{color:var(--green-text);font-weight:600;font-size:13px;display:block}
@@ -411,7 +418,7 @@ nav[role="navigation"] span[aria-current="page"]{
 @media(max-width:768px){
   .filter-bar,.tbl-wrap,.filter-info{margin-left:10px;margin-right:10px}
   .tbl-wrap{margin:0 10px 10px}
-  .f-search input{width:160px}
+  .f-search input{width:180px}
   th,td{padding:8px 8px;font-size:12px}
   .brand-title{font-size:18px}
 }
@@ -473,7 +480,7 @@ nav[role="navigation"] span[aria-current="page"]{
 
     <div class="f-search-wrap">
       <div class="f-search">
-        <input type="text" id="filterSO" placeholder="ค้นหา ใบสั่งขาย / เลขใบมัดจำ" oninput="applyFilter()">
+        <input type="text" id="filterSO" placeholder="ค้นหา ใบสั่งขาย / เลขใบมัดจำ / PO ลูกค้า" oninput="applyFilter()">
       </div>
     </div>
   </div>
@@ -495,6 +502,7 @@ nav[role="navigation"] span[aria-current="page"]{
           <th style="width:50px">ลำดับ</th>
           <th>เลขที่ใบมัดจำ</th>
           <th>ใบสั่งขาย</th>
+          <th>เลขที่ PO ลูกค้า</th>
           <th>ชื่อลูกค้า</th>
           <th>Sale</th>
           <th>วันที่</th>
@@ -517,30 +525,45 @@ nav[role="navigation"] span[aria-current="page"]{
           $typeName = $typeLabel[$depType] ?? $depType;
           $recordDate = $item->time ? \Carbon\Carbon::parse($item->time)->setTimezone('Asia/Bangkok')->format('Y-m-d') : '';
           $billId = $item->deposit_bill_id ?? '';
+
+          // เลขที่ PO ลูกค้า (ฟิลด์ billid)
+          $custPoNo = $item->po_document ?? $item->billid ?? '';
         @endphp
         <tr class="{{ $isConfirmed ? 'confirmed' : '' }}"
             data-record-date="{{ $recordDate }}"
-            data-so="{{ strtolower(($item->so_id ?? '') . ' ' . $billId) }}">
+            data-so="{{ strtolower(($item->so_id ?? '') . ' ' . $billId . ' ' . $custPoNo) }}">
           <td class="row-idx">{{ ($deposits->currentPage() - 1) * $deposits->perPage() + $loop->iteration }}</td>
 
-          {{-- เลขที่ใบมัดจำ + ปุ่ม PDF --}}
+{{-- เลขที่ใบมัดจำ + ปุ่ม PDF --}}
           <td>
             @if($billId)
               <div class="c-billno">
                 <span class="c-billno-text">{{ $billId }}</span>
-                <a href="{{ route('deposit.bill', $billId) }}"
-                   target="_blank"
-                   rel="noopener"
-                   class="btn-pdf"
-                   title="เปิดใบมัดจำ (พิมพ์ / PDF)">
-                  <svg width="13" height="13" viewBox="0 0 14 14" fill="none">
-                    <path d="M3 1.5h5l3 3v8a.5.5 0 0 1-.5.5H3.5a.5.5 0 0 1-.5-.5v-11a.5.5 0 0 1 .5-.5z"
-                          stroke="currentColor" stroke-width="1.3" stroke-linejoin="round"/>
-                    <path d="M8 1.5V4.5h3" stroke="currentColor" stroke-width="1.3" stroke-linejoin="round"/>
-                    <text x="7" y="11.3" font-size="3.6" font-weight="700" text-anchor="middle"
-                          fill="currentColor" font-family="Arial, sans-serif">PDF</text>
-                  </svg>
-                </a>
+
+                @php
+                  // หาไฟล์ PDF จาก deposit_bill (ในแถวที่มี deposit_bill_id ตรงกัน)
+                  $pdfFile = \App\Models\deposit::where('deposit_bill_id', $billId)
+                              ->whereNotNull('deposit_bill')
+                              ->value('deposit_bill');
+                @endphp
+
+                @if($pdfFile)
+                  <a href="{{ asset('storage/posit_templates/' . $pdfFile) }}"
+                     target="_blank"
+                     rel="noopener"
+                     class="btn-pdf"
+                     title="เปิดใบมัดจำ (PDF)">
+                    <svg width="13" height="13" viewBox="0 0 14 14" fill="none">
+                      <path d="M3 1.5h5l3 3v8a.5.5 0 0 1-.5.5H3.5a.5.5 0 0 1-.5-.5v-11a.5.5 0 0 1 .5-.5z"
+                            stroke="currentColor" stroke-width="1.3" stroke-linejoin="round"/>
+                      <path d="M8 1.5V4.5h3" stroke="currentColor" stroke-width="1.3" stroke-linejoin="round"/>
+                      <text x="7" y="11.3" font-size="3.6" font-weight="700" text-anchor="middle"
+                            fill="currentColor" font-family="Arial, sans-serif">PDF</text>
+                    </svg>
+                  </a>
+                @else
+                  <span class="no-pdf" title="ยังไม่มีไฟล์ PDF">—</span>
+                @endif
               </div>
             @else
               <span class="no-bill">—</span>
@@ -550,6 +573,16 @@ nav[role="navigation"] span[aria-current="page"]{
           <td>
             <a class="c-link" onclick="openDetail('{{ $item->so_id }}')">{{ $item->so_id }}</a>
           </td>
+
+          {{-- เลขที่ PO ลูกค้า --}}
+          <td title="{{ $custPoNo }}">
+            @if(!empty($custPoNo))
+              <span class="c-custpo">{{ $custPoNo }}</span>
+            @else
+              <span class="no-bill">—</span>
+            @endif
+          </td>
+
           <td class="c-cust" title="{{ $item->customer_name }}">{{ $item->customer_name ?? '—' }}</td>
           <td class="c-emp" title="{{ $item->sale_name }}">{{ $item->sale_name ?? '—' }}</td>
           <td>{{ $item->date_dep ? \Carbon\Carbon::parse($item->date_dep)->format('d/m/Y') : '—' }}</td>
@@ -610,7 +643,7 @@ nav[role="navigation"] span[aria-current="page"]{
         </tr>
         @empty
         <tr>
-          <td colspan="13" style="background:#fff;border-right:none">
+          <td colspan="14" style="background:#fff;border-right:none">
             <div class="empty">
               <div class="empty-ico">
                 <svg width="22" height="22" viewBox="0 0 22 22" fill="none">
@@ -627,7 +660,7 @@ nav[role="navigation"] span[aria-current="page"]{
 
         <!-- แถวแสดงเมื่อกรองแล้วไม่พบ -->
         <tr class="no-match-row" id="noMatchRow">
-          <td colspan="13" style="background:#fff;border-right:none">
+          <td colspan="14" style="background:#fff;border-right:none">
             <div class="no-match">
               <div class="empty-ico">
                 <svg width="22" height="22" viewBox="0 0 22 22" fill="none">
@@ -636,7 +669,7 @@ nav[role="navigation"] span[aria-current="page"]{
                 </svg>
               </div>
               <h4>ไม่พบรายการที่ตรงกับเงื่อนไข</h4>
-              <p>ลองเปลี่ยนวันที่ หรือ เลขใบสั่งขาย / เลขใบมัดจำดูใหม่</p>
+              <p>ลองเปลี่ยนวันที่ หรือ เลขใบสั่งขาย / เลขใบมัดจำ / PO ลูกค้าดูใหม่</p>
             </div>
           </td>
         </tr>
@@ -669,6 +702,7 @@ nav[role="navigation"] span[aria-current="page"]{
       <div class="dg">
         <div class="df"><span class="dl">ใบสั่งขาย</span><span class="dv" id="d-so">—</span></div>
         <div class="df"><span class="dl">เลขที่ใบมัดจำ</span><span class="dv" id="d-billno" style="color:var(--green-text);font-weight:700">—</span></div>
+        <div class="df"><span class="dl">เลขที่ PO ลูกค้า</span><span class="dv" id="d-custpo" style="color:var(--green-text);font-weight:600">—</span></div>
         <div class="df"><span class="dl">วันที่</span><span class="dv" id="d-date">—</span></div>
         <div class="df full"><span class="dl">ชื่อลูกค้า</span><span class="dv" id="d-cust">—</span></div>
         <div class="df"><span class="dl">ผู้ติดต่อ</span><span class="dv" id="d-contact">—</span></div>
@@ -763,7 +797,7 @@ function applyFilter(){
 
   rows.forEach(r => {
     const recDate = r.getAttribute('data-record-date');
-    const soId    = r.getAttribute('data-so'); // ตอนนี้รวม so_id + deposit_bill_id แล้ว
+    const soId    = r.getAttribute('data-so'); // รวม so_id + deposit_bill_id + cust_po_no
 
     let show = true;
     if(dateVal && recDate !== dateVal) show = false;
@@ -819,7 +853,7 @@ const typeLabels = {product:'สินค้า', service:'บริการ', 
 function openDetail(soId){
   document.getElementById('modal-title').textContent='รายละเอียด '+soId;
 
-  ['d-so','d-billno','d-date','d-cust','d-contact','d-tel','d-addr','d-emp','d-sale','d-total-dep','d-grand']
+  ['d-so','d-billno','d-custpo','d-date','d-cust','d-contact','d-tel','d-addr','d-emp','d-sale','d-total-dep','d-grand']
     .forEach(id=>document.getElementById(id).textContent='—');
 
   // ล้างปุ่ม PDF เก่าใน modal foot ถ้ามี
@@ -843,6 +877,8 @@ function openDetail(soId){
       const first = data.items[0];
       document.getElementById('d-so').textContent      = first.so_id || '—';
       document.getElementById('d-billno').textContent  = first.deposit_bill_id || '—';
+      // เลขที่ PO ลูกค้า (ฟิลด์ billid)
+     document.getElementById('d-custpo').textContent  = first.po_document || first.billid || '—';
       document.getElementById('d-date').textContent    = first.date_dep ? formatDate(first.date_dep) : '—';
       document.getElementById('d-cust').textContent    = first.customer_name || '—';
       document.getElementById('d-contact').textContent = first.contactso || '—';

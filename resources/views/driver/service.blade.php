@@ -284,9 +284,7 @@ textarea.form-control{resize:vertical;min-height:60px}
 
 <script>
 const CSRF  = document.querySelector('meta[name="csrf-token"]').content;
-const LIST_URL    = '{{ route("service.list") }}';
-const STORE_URL   = '{{ route("service.store") }}';
-const UPDATE_BASE = '{{ url("/service") }}';
+
 
 const TYPE_CSS = {
   'เปลี่ยนถ่ายน้ำมันเครื่อง':'svc-oil','เปลี่ยนยาง':'svc-tire',

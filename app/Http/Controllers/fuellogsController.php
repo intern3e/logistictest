@@ -422,4 +422,8 @@ class fuellogsController extends Controller
             'resolved' => $result['resolved'],
         ]);
     }
+public function service(Request $request)
+{
+    return view('driver.service');
+}
 }

@@ -30,6 +30,8 @@ class deposit extends Model
         'deposit_bill_id',
         'time_check',
         'deposit_bill',
+        'tax_id',
+        'note_id',
         'po_document'
     ];
 }

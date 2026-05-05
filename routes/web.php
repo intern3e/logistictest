@@ -226,6 +226,10 @@ Route::delete('/oil/{id}',      [fuellogsController::class, 'destroy'])->name('o
 Route::post('/oil/sync-ng',     [fuellogsController::class, 'syncNg'])->name('oil.syncNg');
 Route::get('/oil/ng-list',      [fuellogsController::class, 'ngList'])->name('oil.ngList');
 Route::post('/oil/filter',      [fuellogsController::class, 'applyFilter'])->name('oil.filter');
+Route::get('/service',          [fuellogsController::class, 'service']);
+
+// ✅ Deposit
+Route::post('/deposit/store', [\App\Http\Controllers\DepositController::class, 'store'])->name('deposit.store');
 
 use App\Http\Controllers\DepositController;
 
@@ -241,12 +245,16 @@ Route::get('/deposit/bill/{deposit_bill_id}', [DepositController::class, 'showBi
      ->name('deposit.bill');
 
 Route::get('/botdeposit', [DepositController::class, 'botdeposit'])->name('deposit.bot');
-Route::get('/depositbot', [DepositController::class, 'botdeposit']);  // alias เผื่อพิมพ์สลับ
+Route::get('/depositbot', [DepositController::class, 'botdeposit']);  // alias
 
 Route::post('/deposit/store', [DepositController::class, 'store'])->name('deposit.store');
 Route::post('/deposit/update-status', [DepositController::class, 'updateStatus'])->name('deposit.updateStatus');
 Route::post('/deposit/mark-printed', [DepositController::class, 'markPrinted'])->name('deposit.markPrinted');
 Route::post('/deposit/mark-printed-bulk', [DepositController::class, 'markPrintedBulk'])->name('deposit.markPrintedBulk');
+
+// ===== ✅ เพิ่มใหม่: Preview PDF (ใช้กับ iframe พรีวิวก่อนบันทึก) =====
+Route::get('/deposit/preview', [DepositController::class, 'preview'])->name('deposit.preview');
+
 
 
 use App\Http\Controllers\TechnicianController;
@@ -272,3 +280,4 @@ Route::post('/customers/{id}/status', [TechnicianController::class, 'customerSta
 use App\Http\Controllers\DeliverytrackController;
 Route::get('/deliverytrack', [DeliverytrackController::class, 'index'])->name('deliverytrack');
 Route::post('/return/{id}/new-bill', [DeliverytrackController::class, 'saveNewBill'])->name('deliverytrack.newbill');
+
