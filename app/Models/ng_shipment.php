@@ -79,6 +79,7 @@ class ng_shipment extends Model
                 'bill_no'       => $billNo,
                 'driver_name'   => trim($job['driver_name']   ?? ''),
                 'seller_name'   => trim($job['seller_name']   ?? '') ?: null,
+                'bill_in_by'    => $job['bill_in_by']    ?? null,
                 'customer_name' => trim($job['customer_name'] ?? '') ?: null,
                 'ng_date'       => $date,
                 'note'          => trim($job['note'] ?? '') ?: null,

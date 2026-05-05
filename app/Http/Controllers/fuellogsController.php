@@ -387,7 +387,6 @@ class fuellogsController extends Controller
             'jobs'                   => 'required|array|min:1',
             'jobs.*.bill_no'         => 'required|max:50',
             'jobs.*.driver_name'     => 'required|string|max:100',
-            'jobs.*.seller_name'     => 'nullable|string|max:100',
             'jobs.*.bill_in_by'      => 'nullable|string|max:100',
             'jobs.*.customer_name'   => 'nullable|string|max:200',
             'jobs.*.status'          => 'required|string',
