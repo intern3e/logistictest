@@ -411,7 +411,7 @@ nav[role="navigation"] span[aria-current="page"]{
 
   <!-- TABLE -->
   <div class="tbl-wrap">
-    <table>
+    <table name = "table-dashboard" id="table-dashboard">
       <thead>
         <tr>
           <th style="width:42px">
