@@ -1033,6 +1033,27 @@ function renderDlv() {
   let labels = [], datasets = [];
   const tf = { size: 11 };
 
+  // ── ดึงเดือนที่เลือกจาก monthPicker (รูปแบบ "YYYY-MM") ──
+  const monthPickerEl = document.getElementById('monthPicker');
+  const SELECTED_MONTH = monthPickerEl?.value || '';
+
+  // ── ดึงปีที่เลือกจาก yearPicker (fallback เป็น MAIN_YEAR) ──
+  const yearPickerEl = document.getElementById('yearPicker');
+  const SELECTED_YEAR = (yearPickerEl?.value || String(MAIN_YEAR)).trim();
+
+  // ── helper: สร้าง label เดือนแบบไทย เช่น "เม.ย. 2569" ──
+  const buildMonthLabel = (ym) => {
+    if (!ym) return '';
+    const [y, m] = ym.split('-').map(Number);
+    return `${MONTH_LABELS[m - 1]} ${y + 543}`;
+  };
+
+  // ── helper: สร้าง label ปี ค.ศ. เช่น "ปี 2026" ──
+  const buildYearLabel = (y) => {
+    if (!y) return 'ปีที่เลือก';
+    return `ปี ${y}`;
+  };
+
   if (MAIN_DRIVER !== 'all') {
     const data = DLV_BY_DRIVER[MAIN_DRIVER];
     if (!data) {
@@ -1047,13 +1068,28 @@ function renderDlv() {
       success = sd.map(d => data.days[d].s);
       fail    = sd.map(d => data.days[d].f);
     } else if (MAIN_VIEW === 'month') {
-      labels  = MONTH_LABELS;
-      success = (data.months || []).map(m => m.s);
-      fail    = (data.months || []).map(m => m.f);
+      let sumS = 0, sumF = 0;
+      Object.entries(data.days || {}).forEach(([dt, v]) => {
+        if (!SELECTED_MONTH || dt.startsWith(SELECTED_MONTH)) {
+          sumS += v.s || 0;
+          sumF += v.f || 0;
+        }
+      });
+      labels  = [buildMonthLabel(SELECTED_MONTH) || 'เดือนที่เลือก'];
+      success = [sumS];
+      fail    = [sumF];
     } else if (MAIN_VIEW === 'year') {
-      labels  = ['Q1','Q2','Q3','Q4'].map(q => `${q} ${MAIN_YEAR}`);
-      success = (data.quarters || []).map(q => q.s);
-      fail    = (data.quarters || []).map(q => q.f);
+      // ✅ แท่งเดียว = ผลรวมทั้งปีที่เลือก (อ่านจาก days แบบไม่ผูกกับ MAIN_YEAR)
+      let sumS = 0, sumF = 0;
+      Object.entries(data.days || {}).forEach(([dt, v]) => {
+        if (!SELECTED_YEAR || dt.startsWith(SELECTED_YEAR)) {
+          sumS += v.s || 0;
+          sumF += v.f || 0;
+        }
+      });
+      labels  = [buildYearLabel(SELECTED_YEAR)];
+      success = [sumS];
+      fail    = [sumF];
     } else {
       labels  = [MAIN_DRIVER];
       success = [data.all?.s || 0];
@@ -1073,20 +1109,35 @@ function renderDlv() {
         { label:'ส่งไม่สำเร็จ', data:fail,    backgroundColor:NG_COLOR, borderRadius:5, borderSkipped:false, stack:'s' },
       ];
     } else if (MAIN_VIEW === 'month') {
-      labels = MONTH_LABELS;
-      const success = MONTH_LABELS.map((_, i) => drivers.reduce((s, d) => s + (DLV_BY_DRIVER[d].months?.[i]?.s || 0), 0));
-      const fail    = MONTH_LABELS.map((_, i) => drivers.reduce((s, d) => s + (DLV_BY_DRIVER[d].months?.[i]?.f || 0), 0));
+      let sumS = 0, sumF = 0;
+      drivers.forEach(d => {
+        Object.entries(DLV_BY_DRIVER[d].days || {}).forEach(([dt, v]) => {
+          if (!SELECTED_MONTH || dt.startsWith(SELECTED_MONTH)) {
+            sumS += v.s || 0;
+            sumF += v.f || 0;
+          }
+        });
+      });
+      labels = [buildMonthLabel(SELECTED_MONTH) || 'เดือนที่เลือก'];
       datasets = [
-        { label:'ส่งสำเร็จ',    data:success, backgroundColor:OK_COLOR, borderRadius:5, borderSkipped:false, stack:'s' },
-        { label:'ส่งไม่สำเร็จ', data:fail,    backgroundColor:NG_COLOR, borderRadius:5, borderSkipped:false, stack:'s' },
+        { label:'ส่งสำเร็จ',    data:[sumS], backgroundColor:OK_COLOR, borderRadius:5, borderSkipped:false, stack:'s' },
+        { label:'ส่งไม่สำเร็จ', data:[sumF], backgroundColor:NG_COLOR, borderRadius:5, borderSkipped:false, stack:'s' },
       ];
     } else if (MAIN_VIEW === 'year') {
-      labels = ['Q1','Q2','Q3','Q4'].map(q => `${q} ${MAIN_YEAR}`);
-      const success = [0,1,2,3].map(i => drivers.reduce((s, d) => s + (DLV_BY_DRIVER[d].quarters?.[i]?.s || 0), 0));
-      const fail    = [0,1,2,3].map(i => drivers.reduce((s, d) => s + (DLV_BY_DRIVER[d].quarters?.[i]?.f || 0), 0));
+      // ✅ รวมทุกคนขับ ทุกวันในปีที่เลือก → แท่งเดียว
+      let sumS = 0, sumF = 0;
+      drivers.forEach(d => {
+        Object.entries(DLV_BY_DRIVER[d].days || {}).forEach(([dt, v]) => {
+          if (!SELECTED_YEAR || dt.startsWith(SELECTED_YEAR)) {
+            sumS += v.s || 0;
+            sumF += v.f || 0;
+          }
+        });
+      });
+      labels = [buildYearLabel(SELECTED_YEAR)];
       datasets = [
-        { label:'ส่งสำเร็จ',    data:success, backgroundColor:OK_COLOR, borderRadius:5, borderSkipped:false, stack:'s' },
-        { label:'ส่งไม่สำเร็จ', data:fail,    backgroundColor:NG_COLOR, borderRadius:5, borderSkipped:false, stack:'s' },
+        { label:'ส่งสำเร็จ',    data:[sumS], backgroundColor:OK_COLOR, borderRadius:5, borderSkipped:false, stack:'s' },
+        { label:'ส่งไม่สำเร็จ', data:[sumF], backgroundColor:NG_COLOR, borderRadius:5, borderSkipped:false, stack:'s' },
       ];
     } else {
       labels = drivers;
@@ -1097,6 +1148,13 @@ function renderDlv() {
     }
   }
 
+  // ✅ คำนวณ barPercentage ตามจำนวนแท่ง
+  const barCount = labels.length;
+  let barPct, catPct;
+  if (barCount === 1)      { barPct = 1.0;  catPct = 0.6;  }
+  else if (barCount <= 4)  { barPct = 0.85; catPct = 0.85; }
+  else                     { barPct = 0.9;  catPct = 0.95; }
+
   if (dlvChart) dlvChart.destroy();
   dlvChart = new Chart(document.getElementById('deliveryChart'), {
     type: 'bar',
@@ -1104,7 +1162,7 @@ function renderDlv() {
     plugins: [ChartDataLabels],
     options: {
       responsive: true, maintainAspectRatio: false,
-      layout: { padding: { top: 20 } },
+      layout: { padding: { top: 20, left: 10, right: 10 } },
       plugins: {
         legend: { display: false },
         tooltip: { callbacks: {
@@ -1113,7 +1171,7 @@ function renderDlv() {
         }},
         datalabels: {
           color: '#fff',
-          font: { weight: '700', size: 11, family: 'Sarabun' },
+          font: { weight: '700', size: 14, family: 'Sarabun' },
           formatter: (v) => v > 0 ? v : '',
           display: (ctx) => ctx.dataset.data[ctx.dataIndex] > 0,
           anchor: 'center',
@@ -1121,8 +1179,18 @@ function renderDlv() {
         },
       },
       scales: {
-        x: { stacked: true, ticks: { font: { size: 12, weight: '600', family: 'Sarabun' }, color: '#1a2744', autoSkip: false, maxRotation: 30, minRotation: 0, }, grid: { color:'rgba(0,0,0,.04)' }, },
-        y: { stacked: true, beginAtZero: true, ticks: { font: tf, callback: v => v + ' รายการ' }, grid: { color: 'rgba(0,0,0,.04)' }, },
+        x: {
+          stacked: true,
+          ticks: { font: { size: 13, weight: '600', family: 'Sarabun' }, color: '#1a2744', autoSkip: false, maxRotation: 30, minRotation: 0 },
+          grid: { color:'rgba(0,0,0,.04)' },
+          barPercentage: barPct,
+          categoryPercentage: catPct,
+        },
+        y: {
+          stacked: true, beginAtZero: true,
+          ticks: { font: tf, callback: v => v + ' รายการ' },
+          grid: { color: 'rgba(0,0,0,.04)' },
+        },
       },
     },
   });
