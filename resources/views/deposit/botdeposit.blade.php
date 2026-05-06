@@ -427,6 +427,7 @@ nav[role="navigation"] span[aria-current="page"]{
           <th>ผู้เปิดบิล</th>
           <th>%</th>
           <th>ยอดมัดจำ</th>
+          <th>ยอดคงเหลือ</th>
           <th>ประเภทงาน</th>
         </tr>
       </thead>
@@ -504,6 +505,18 @@ nav[role="navigation"] span[aria-current="page"]{
             <div style="display:flex;align-items:center;gap:5px;justify-content:center;white-space:nowrap">
               <span class="c-money">{{ number_format((float)($item->dep_price ?? 0), 2) }}</span>
               <button class="btn-copy" name="copy-bath" onclick="cpText('{{ number_format((float)($item->dep_price ?? 0), 2) }}',this)">คัดลอก</button>
+            </div>
+          </td>
+
+          <td>
+            <div style="display:flex;align-items:center;gap:5px;justify-content:center;white-space:nowrap">
+              <span class="c-grand_total">{{ number_format((float)($item->grand_total ?? 0), 2) }}</span>
+              <button 
+                class="btn-copy" 
+                name="copy-grand_total"
+                onclick="cpText('{{ number_format((float)($item->grand_total ?? 0) + (float)($item->dep_price ?? 0), 2) }}', this)">
+                คัดลอก
+              </button>
             </div>
           </td>
 
