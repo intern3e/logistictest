@@ -15,12 +15,10 @@ class DepositController extends Controller
     private $adminUsers = ['kanitin2', 'dev'];
     private const PDF_TEMPLATE_REL = 'deposit_templates/templates.pdf';
     private const PDF_OUTPUT_DIR = 'deposit_templates';
-
     public function insertdeposit()
     {
         return view('deposit.insertdeposit');
     }
-
     public function dashboarddeposit(Request $request)
     {
         $soKeyword = trim($request->get('so_keyword', ''));
@@ -486,8 +484,6 @@ class DepositController extends Controller
     protected function generateDepositPdf(array $data): string
     {
         $pdfBinary = $this->buildDepositPdfBinary($data);
-
-        // ✅ ใช้ deposit_bill_id เป็นชื่อไฟล์ (เช่น RD6905-00001.pdf)
         $safeName = $this->sanitizeDepositFilename(
             $data['deposit_bill_id'] ?? ($data['billid'] ?? ('deposit_' . date('YmdHis')))
         );

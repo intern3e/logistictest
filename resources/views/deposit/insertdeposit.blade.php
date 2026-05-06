@@ -490,11 +490,8 @@ hr.divider{border:none;border-top:1px solid var(--border-light);margin:0}
             </div>
           </div>
         </div>
-
       </div>
-
       <div class="col-side">
-
         <div class="summary-card">
           <div class="summary-head">
             <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><rect x="2" y="2" width="12" height="12" rx="3" stroke="#0F172A" stroke-width="1.4"/><path d="M5 8h6M5 10.5h4" stroke="#0F172A" stroke-width="1.4" stroke-linecap="round"/><path d="M5 5.5h2" stroke="#0B2447" stroke-width="1.6" stroke-linecap="round"/></svg>
@@ -595,7 +592,7 @@ hr.divider{border:none;border-top:1px solid var(--border-light);margin:0}
           <div class="info-items">
             <div class="info-item"><span class="ik">SO Number</span><span class="iv" id="info-so">—</span></div>
             <div class="info-item"><span class="ik">เลขที่ PO ลูกค้า</span><span class="iv" id="info-po">—</span></div>
-            <div class="info-item"><span class="ik">วันที่สร้าง</span><span class="iv" id="info-date">—</span></div>
+            <div class="info-item"><span class="ik">วันที่สร้างSO</span><span class="iv" id="info-date">—</span></div>
             <div class="info-item"><span class="ik">ผู้สร้างเอกสาร</span><span class="iv" id="info-emp">—</span></div>
             <div class="info-item">
               <span class="ik">สถานะ</span>
@@ -1044,7 +1041,16 @@ function calc(){
   updatePdfPreview();
 }
 
+// ===== Lock กันส่งซ้ำ (queue ฝั่ง JS) =====
+let _isSubmitting = false;
+
 document.getElementById('submitBill').addEventListener('click', async function(){
+  // ✅ กันกดซ้ำขณะกำลังประมวลผล
+  if(_isSubmitting){
+    showToast('กำลังประมวลผล','กรุณารอสักครู่ ระบบกำลังบันทึกข้อมูล','warning');
+    return;
+  }
+
   const btn = this;
   const soId        = document.getElementById('so_id').value.trim();
   const contactso   = document.getElementById('contactso').value.trim();
@@ -1102,7 +1108,7 @@ document.getElementById('submitBill').addEventListener('click', async function()
     contactso:        contactso,
     customer_tel:     customerTel,
     customer_address: document.getElementById('customer_address').value,
-    note:          document.getElementById('note').value,
+    note:             document.getElementById('note').value,
     emp_name:         document.getElementById('hidden-emp').value,
     sale_name:        saleName,
     po_document:      poDoc,
@@ -1112,6 +1118,8 @@ document.getElementById('submitBill').addEventListener('click', async function()
     tax_id:           document.getElementById('tax_id').value,
   };
 
+  // ✅ Lock ก่อนยิง request
+  _isSubmitting = true;
   btn.disabled = true;
   const originalHTML = btn.innerHTML;
   btn.innerHTML = `<svg width="17" height="17" viewBox="0 0 17 17" fill="none" style="animation:spin .7s linear infinite"><path d="M8.5 2a6.5 6.5 0 0 1 6.5 6.5" stroke="white" stroke-width="2" stroke-linecap="round"/></svg>กำลังบันทึก...`;
@@ -1120,20 +1128,79 @@ document.getElementById('submitBill').addEventListener('click', async function()
     const csrf = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
     const res = await fetch('/deposit/store', {
       method: 'POST',
-      headers: { 'Content-Type':'application/json', 'Accept':'application/json', 'X-CSRF-TOKEN': csrf },
+      headers: {
+        'Content-Type':'application/json',
+        'Accept':'application/json',
+        'X-CSRF-TOKEN': csrf
+      },
       body: JSON.stringify(payload),
     });
     const data = await res.json();
-    if(!res.ok || !data.success){ throw new Error(data.message || `HTTP ${res.status}`); }
-    showToast('บันทึกสำเร็จ', data.message || 'บันทึกใบมัดจำเรียบร้อยแล้ว', 'success');
-    setTimeout(() => { window.location.href = '/SOlist'; }, 1500);
+
+    if(!res.ok || !data.success){
+      throw new Error(data.message || `HTTP ${res.status}`);
+    }
+
+    // ✅ บันทึกสำเร็จ — แสดงเลขที่ใบมัดจำ
+    showToast(
+      'บันทึกสำเร็จ',
+      `เลขที่ใบมัดจำ: ${data.deposit_bill_id} กำลังดาวน์โหลด PDF...`,
+      'success'
+    );
+
+    // เปลี่ยนข้อความปุ่ม
+    btn.innerHTML = `<svg width="17" height="17" viewBox="0 0 17 17" fill="none" style="animation:spin .7s linear infinite"><path d="M8.5 2a6.5 6.5 0 0 1 6.5 6.5" stroke="white" stroke-width="2" stroke-linecap="round"/></svg>กำลังดาวน์โหลด PDF...`;
+
+    // ✅ ดาวน์โหลด PDF อัตโนมัติด้วยชื่อ {deposit_bill_id}.pdf
+    if(data.pdf_url && data.deposit_bill_id){
+      await downloadPdfFile(data.pdf_url, data.deposit_bill_id + '.pdf');
+    } else {
+      showToast('ไม่พบไฟล์ PDF','ระบบบันทึกข้อมูลแล้ว แต่ไม่พบลิงก์ดาวน์โหลด','warning');
+    }
+
+    // ✅ รอดาวน์โหลดเริ่มแล้วค่อย redirect
+    setTimeout(() => { window.location.href = '/SOlist'; }, 1800);
+
   }catch(err){
     console.error(err);
     showToast('บันทึกไม่สำเร็จ', err.message || 'เกิดข้อผิดพลาด', 'error');
+    // ปลด lock เฉพาะกรณี error
+    _isSubmitting = false;
     btn.disabled = false;
     btn.innerHTML = originalHTML;
   }
 });
+
+/**
+ * ดาวน์โหลด PDF บังคับชื่อไฟล์เป็น {deposit_bill_id}.pdf
+ */
+async function downloadPdfFile(url, filename){
+  try{
+    const response = await fetch(url, {
+      method: 'GET',
+      headers: { 'Accept': 'application/pdf' },
+      credentials: 'same-origin',
+    });
+    if(!response.ok) throw new Error(`HTTP ${response.status}`);
+
+    const blob    = await response.blob();
+    const blobUrl = URL.createObjectURL(blob);
+
+    const a = document.createElement('a');
+    a.href     = blobUrl;
+    a.download = filename;
+    a.style.display = 'none';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+
+    setTimeout(() => URL.revokeObjectURL(blobUrl), 1500);
+  }catch(err){
+    console.error('Download PDF error:', err);
+    showToast('ดาวน์โหลด PDF ไม่สำเร็จ','บันทึกข้อมูลแล้ว แต่ดาวน์โหลดไม่ได้: ' + err.message,'warning');
+    if(url) window.open(url, '_blank');
+  }
+}
 </script>
 </body>
 </html>
