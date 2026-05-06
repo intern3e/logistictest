@@ -422,6 +422,7 @@ nav[role="navigation"] span[aria-current="page"]{
           </th>
           <th>เลขที่บิล</th>
           <th>ใบสั่งขาย</th>
+          <th>PO</th>
           <th>รหัสลูกค้า</th>
           <th>วันที่จัดส่ง</th>
           <th>ผู้เปิดบิล</th>
@@ -453,8 +454,6 @@ nav[role="navigation"] span[aria-current="page"]{
                 data-so="{{ $item->so_id }}"
                 {{ $isPrinted ? 'disabled' : '' }}>
             </td>
-
-          {{-- เลขที่บิล --}}
           <td>
             <div style="display:flex;align-items:center;gap:5px;justify-content:center;white-space:nowrap">
               <span class="c-code-light">{{ $item->deposit_bill_id ?? '—' }}</span>
@@ -463,8 +462,6 @@ nav[role="navigation"] span[aria-current="page"]{
               @endif
             </div>
           </td>
-
-          {{-- ใบสั่งขาย + คัดลอก --}}
           <td>
             <div style="display:flex;align-items:center;gap:5px;justify-content:center;white-space:nowrap">
               <span class="c-code-light">{{ $item->so_id ?? '—' }}</span>
@@ -473,8 +470,14 @@ nav[role="navigation"] span[aria-current="page"]{
               @endif
             </div>
           </td>
-
-          {{-- รหัสลูกค้า + คัดลอก --}}
+          <td>
+            <div style="display:flex;align-items:center;gap:5px;justify-content:center;white-space:nowrap">
+              <span class="c-code-light">{{ $item->po_document ?? '—' }}</span>
+              @if(!empty($item->po_document))
+                <button class="btn-copy" name="copy-po-document" onclick="cpText('{{ $item->po_document}}',this)">คัดลอก</button>
+              @endif
+            </div>
+          </td>
           <td>
             @if(!empty($item->customer_id))
               <div style="display:flex;align-items:center;gap:5px;justify-content:center;white-space:nowrap">
@@ -485,22 +488,14 @@ nav[role="navigation"] span[aria-current="page"]{
               <span class="c-sm" style="color:var(--fog)">—</span>
             @endif
           </td>
-
-          {{-- วันที่จัดส่ง --}}
           <td class="c-sm" style="white-space:nowrap">{{ $formatted }}</td>
-
-          {{-- ผู้เปิดบิล --}}
           <td class="c-sm">{{ $item->emp_name ?? '—' }}</td>
-
-          {{-- % --}}
           <td>
             <div style="display:flex;align-items:center;gap:5px;justify-content:center;white-space:nowrap">
               <span class="c-percent">{{ number_format((float)($item->dep_per ?? 0), 2) }}%</span>
               <button class="btn-copy" name="copy-percent" onclick="cpText('{{ number_format((float)($item->dep_per ?? 0), 2) }}',this)">คัดลอก</button>
             </div>
           </td>
-
-          {{-- ยอดมัดจำ --}}
           <td>
             <div style="display:flex;align-items:center;gap:5px;justify-content:center;white-space:nowrap">
               <span class="c-money">{{ number_format((float)($item->dep_price ?? 0), 2) }}</span>
@@ -519,8 +514,6 @@ nav[role="navigation"] span[aria-current="page"]{
               </button>
             </div>
           </td>
-
-          {{-- ประเภทงาน + คัดลอก + กรอกเลข + บันทึก --}}
           <td>
             <div style="display:flex;flex-direction:column;gap:5px;align-items:center">
               <div style="display:flex;flex-wrap:wrap;gap:4px;align-items:center;justify-content:center">
