@@ -411,7 +411,7 @@ nav[role="navigation"] span[aria-current="page"]{
 
   <!-- TABLE -->
   <div class="tbl-wrap">
-    <table name = "table-dashboard" id="table-dashboard">
+    <table>
       <thead>
         <tr>
           <th style="width:42px">
@@ -431,32 +431,36 @@ nav[role="navigation"] span[aria-current="page"]{
         </tr>
       </thead>
       <tbody id="table-body">
-        @forelse($deposits as $item)
-        @php
-          $depType = $item->dep_type ?? '';
-          $typeName = $typeLabel[$depType] ?? $depType;
-          $typeCls  = $typeMap[$depType] ?? 'ft-default';
+          @forelse($deposits as $item)
+          @php
+            $depType = $item->dep_type ?? '';
+            $typeName = $typeLabel[$depType] ?? $depType;
+            $typeCls  = $typeMap[$depType] ?? 'ft-default';
 
-          $billRef = 'REF-' . str_pad($item->id ?? 0, 6, '0', STR_PAD_LEFT);
-          $deliDate = $item->date_dep ? \Carbon\Carbon::parse($item->date_dep) : null;
-          $formatted = $deliDate ? ($deliDate->format('d/m/') . ($deliDate->year + 543)) : '—';
+            $deliDate = $item->date_dep ? \Carbon\Carbon::parse($item->date_dep) : null;
+            $formatted = $deliDate ? ($deliDate->format('d/m/') . ($deliDate->year + 543)) : '—';
 
-          $isPrinted = !empty($item->print_time);
-        @endphp
-        <tr class="{{ $isPrinted ? 'processed' : '' }}"
-            data-so="{{ strtolower($item->so_id ?? '') }}"
-            data-id="{{ $item->id ?? '' }}">
-          <td>
-            <input type="checkbox" class="chk row-chk"
-              name="markprint[]"
-              value="{{ $item->id }}"
-              data-so="{{ $item->so_id }}"
-              {{ $isPrinted ? 'disabled' : '' }}>
-          </td>
+            $isPrinted = !empty($item->print_time);
+          @endphp
+          <tr class="{{ $isPrinted ? 'processed' : '' }}"
+              data-so="{{ strtolower($item->so_id ?? '') }}"
+              data-id="{{ $item->id ?? '' }}">
+            <td>
+              <input type="checkbox" class="chk row-chk"
+                name="markprint[]"
+                value="{{ $item->id }}"
+                data-so="{{ $item->so_id }}"
+                {{ $isPrinted ? 'disabled' : '' }}>
+            </td>
 
           {{-- เลขที่บิล --}}
           <td>
-            <span class="c-code">{{ $billRef }}</span>
+            <div style="display:flex;align-items:center;gap:5px;justify-content:center;white-space:nowrap">
+              <span class="c-code-light">{{ $item->deposit_bill_id ?? '—' }}</span>
+              @if(!empty($item->deposit_bill_id))
+                <button class="btn-copy" name="copy-bill_id" onclick="cpText('{{ $item->deposit_bill_id }}',this)">คัดลอก</button>
+              @endif
+            </div>
           </td>
 
           {{-- ใบสั่งขาย + คัดลอก --}}
@@ -464,7 +468,7 @@ nav[role="navigation"] span[aria-current="page"]{
             <div style="display:flex;align-items:center;gap:5px;justify-content:center;white-space:nowrap">
               <span class="c-code-light">{{ $item->so_id ?? '—' }}</span>
               @if(!empty($item->so_id))
-                <button class="btn-copy" onclick="cpText('{{ $item->so_id }}',this)">คัดลอก</button>
+                <button class="btn-copy" name="copy-so_id" onclick="cpText('{{ $item->so_id }}',this)">คัดลอก</button>
               @endif
             </div>
           </td>
@@ -474,7 +478,7 @@ nav[role="navigation"] span[aria-current="page"]{
             @if(!empty($item->customer_id))
               <div style="display:flex;align-items:center;gap:5px;justify-content:center;white-space:nowrap">
                 <span class="c-code-light">{{ $item->customer_id }}</span>
-                <button class="btn-copy" onclick="cpText('{{ $item->customer_id }}', this)">คัดลอก</button>
+                <button class="btn-copy" name="copy-cust_id" onclick="cpText('{{ $item->customer_id }}', this)">คัดลอก</button>
               </div>
             @else
               <span class="c-sm" style="color:var(--fog)">—</span>
@@ -491,7 +495,7 @@ nav[role="navigation"] span[aria-current="page"]{
           <td>
             <div style="display:flex;align-items:center;gap:5px;justify-content:center;white-space:nowrap">
               <span class="c-percent">{{ number_format((float)($item->dep_per ?? 0), 2) }}%</span>
-              <button class="btn-copy" onclick="cpText('{{ number_format((float)($item->dep_per ?? 0), 2) }}',this)">คัดลอก</button>
+              <button class="btn-copy" name="copy-percent" onclick="cpText('{{ number_format((float)($item->dep_per ?? 0), 2) }}',this)">คัดลอก</button>
             </div>
           </td>
 
@@ -499,7 +503,7 @@ nav[role="navigation"] span[aria-current="page"]{
           <td>
             <div style="display:flex;align-items:center;gap:5px;justify-content:center;white-space:nowrap">
               <span class="c-money">{{ number_format((float)($item->dep_price ?? 0), 2) }}</span>
-              <button class="btn-copy" onclick="cpText('{{ number_format((float)($item->dep_price ?? 0), 2) }}',this)">คัดลอก</button>
+              <button class="btn-copy" name="copy-bath" onclick="cpText('{{ number_format((float)($item->dep_price ?? 0), 2) }}',this)">คัดลอก</button>
             </div>
           </td>
 
@@ -509,7 +513,7 @@ nav[role="navigation"] span[aria-current="page"]{
               <div style="display:flex;flex-wrap:wrap;gap:4px;align-items:center;justify-content:center">
                 @if($depType)
                   <span class="badge {{ $typeCls }}">{{ $typeName }}</span>
-                  <button class="btn-copy" onclick="cpText('{{ $typeName }}',this)">คัดลอก</button>
+                  <button class="btn-copy" name="copy-type" onclick="cpText('{{ $typeName }}',this)">คัดลอก</button>
                 @else
                   <span class="c-sm">—</span>
                 @endif

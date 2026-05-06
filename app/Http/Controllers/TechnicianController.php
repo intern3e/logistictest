@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Carbon;
 use App\Models\Technician;
 use App\Models\Schedule;
@@ -191,9 +192,23 @@ class TechnicianController extends Controller
         $data           = $this->validateTechnician($request, true);
         $data['status'] = 'active';
 
-        if ($request->hasFile('img')) {
-            $data['img'] = $this->storeProfileImage($request->file('img'), $data['emp_id']);
+        // ── ✨ FIX: ตรวจไฟล์รูปให้รัดกุมขึ้น + log ──
+        if ($request->hasFile('img') && $request->file('img')->isValid()) {
+            try {
+                $data['img'] = $this->storeProfileImage($request->file('img'), $data['emp_id']);
+                Log::info('[Technician][Create] Profile image stored: ' . $data['img']);
+            } catch (\Throwable $e) {
+                Log::error('[Technician][Create] Image upload failed: ' . $e->getMessage());
+                return back()
+                    ->withErrors(['img' => 'อัปโหลดรูปไม่สำเร็จ: ' . $e->getMessage()])
+                    ->withInput();
+            }
         } else {
+            // log เพื่อ debug ว่าทำไมไม่มีไฟล์
+            if ($request->hasFile('img')) {
+                $err = $request->file('img')->getError();
+                Log::warning('[Technician][Create] img file invalid (error code: ' . $err . ')');
+            }
             unset($data['img']);
         }
 
@@ -215,10 +230,25 @@ class TechnicianController extends Controller
         $tech = Technician::where('emp_id', $empId)->firstOrFail();
         $data = $this->validateTechnician($request, false);
 
-        if ($request->hasFile('img')) {
-            if ($tech->img) Storage::disk('public')->delete($tech->img);
-            $data['img'] = $this->storeProfileImage($request->file('img'), $tech->emp_id);
+        // ── ✨ FIX: ตรวจไฟล์รูปให้รัดกุมขึ้น + log ──
+        if ($request->hasFile('img') && $request->file('img')->isValid()) {
+            try {
+                if ($tech->img) {
+                    Storage::disk('public')->delete($tech->img);
+                }
+                $data['img'] = $this->storeProfileImage($request->file('img'), $tech->emp_id);
+                Log::info('[Technician][Update] Profile image stored: ' . $data['img']);
+            } catch (\Throwable $e) {
+                Log::error('[Technician][Update] Image upload failed: ' . $e->getMessage());
+                return back()
+                    ->withErrors(['img' => 'อัปโหลดรูปไม่สำเร็จ: ' . $e->getMessage()])
+                    ->withInput();
+            }
         } else {
+            if ($request->hasFile('img')) {
+                $err = $request->file('img')->getError();
+                Log::warning('[Technician][Update] img file invalid (error code: ' . $err . ')');
+            }
             unset($data['img']);
         }
 
@@ -451,6 +481,30 @@ class TechnicianController extends Controller
         return redirect()->route('technician.dashboard')->with('success', 'ลบลูกค้าเรียบร้อย');
     }
 
+    public function customerStatusUpdate(Request $r, $id)
+    {
+        $r->validate(['status' => 'required|string|max:50']);
+        $c = project_cust::findOrFail($id);
+
+        $oldStatus = $c->status;
+        $newStatus = $r->input('status');
+        $c->status = $newStatus;
+
+        // เมื่อเปลี่ยนเป็น "ติดตั้งสำเร็จ" ครั้งแรก
+        if ($newStatus === 'ติดตั้งสำเร็จ' && $oldStatus !== 'ติดตั้งสำเร็จ') {
+            $today = Carbon::today();
+            $cycle = (int) ($c->wash_cycle ?: project_cust::WASH_CYCLE_MONTHS);
+            if (empty($c->supervisor)) {
+                $c->supervisor = $today->toDateString();
+            }
+            $c->wash_next = Carbon::parse($c->supervisor)->addMonths($cycle)->toDateString();
+        }
+
+        $c->save();
+        return redirect()->route('technician.dashboard')
+            ->with('success', 'อัปเดตสถานะเรียบร้อย');
+    }
+
     // ══════════════════════════════════════════════════════════════
     //  WASH LOGS
     // ══════════════════════════════════════════════════════════════
@@ -614,7 +668,7 @@ class TechnicianController extends Controller
             'emp_nickname'             => 'nullable|string|max:100',
             'emp_phone'                => 'nullable|string|max:100',
             'date_of_birth'            => 'nullable|string',
-            'img'                      => 'nullable|image|mimes:jpg,jpeg,png,webp|max:3072',
+            'img'                      => 'nullable|image|mimes:jpg,jpeg,png,webp|max:5120',
             'status'                   => 'nullable|in:active,leave',
             'emp_position'             => 'nullable|in:ลูกทีม,หัวหน้าทีม',
             'emp_team'                 => 'nullable|string|max:255',
@@ -640,18 +694,42 @@ class TechnicianController extends Controller
             'emp_id.required' => 'กรุณากรอกรหัสพนักงาน',
             'emp_id.regex'    => 'รหัสพนักงานใช้ได้เฉพาะ ตัวอักษร, ตัวเลข, - และ _',
             'emp_id.unique'   => 'รหัสพนักงานนี้มีอยู่แล้ว',
+            'img.image'       => 'ไฟล์ต้องเป็นรูปภาพเท่านั้น',
+            'img.mimes'       => 'รูปต้องเป็น jpg, jpeg, png หรือ webp',
+            'img.max'         => 'รูปต้องมีขนาดไม่เกิน 5 MB',
         ]);
     }
 
+    /**
+     * ── ✨ FIX: เก็บรูป profile ของช่าง ──
+     * ใช้ putFileAs (return path เต็มกลับมา) + verify ว่ามีไฟล์จริง
+     */
     private function storeProfileImage($file, string $empId): string
     {
         $safeId   = $this->sanitizeId($empId);
         $ext      = strtolower($file->getClientOriginalExtension() ?: 'jpg');
         $filename = "{$safeId}_profile.{$ext}";
-        $path     = self::PROFILE_FOLDER . '/' . $filename;
+
+        // ลบไฟล์เก่าทุก extension ของ empId นี้ก่อน
         $this->cleanupProfileVariants($safeId);
-        $file->storeAs(self::PROFILE_FOLDER, $filename, 'public');
-        return $path;
+
+        // ใช้ putFileAs แทน storeAs — return full path กลับมา
+        $stored = Storage::disk('public')->putFileAs(
+            self::PROFILE_FOLDER,
+            $file,
+            $filename
+        );
+
+        if (! $stored) {
+            throw new \RuntimeException('Storage::putFileAs returned false — เช็คสิทธิ์โฟลเดอร์ storage/app/public');
+        }
+
+        // verify ว่าไฟล์ถูกเขียนจริง
+        if (! Storage::disk('public')->exists($stored)) {
+            throw new \RuntimeException("File not found after upload: {$stored}");
+        }
+
+        return $stored;  // เช่น "technician/profile/EMP001_profile.jpg"
     }
 
     private function cleanupProfileVariants(string $safeId): void
@@ -698,9 +776,9 @@ class TechnicianController extends Controller
             if (! empty($lic['file'])) $existingFilesMap[$lic['file']] = true;
         }
 
-        $result   = [];
+        $result    = [];
         $usedFiles = [];
-        $nextNum  = 1;
+        $nextNum   = 1;
 
         foreach ($input as $idx => $lic) {
             $title        = trim($lic['title']         ?? '');
@@ -717,7 +795,9 @@ class TechnicianController extends Controller
             $filePath  = $existingFile ?: null;
             $candidate = null;
 
-            if ($request->hasFile("licenses.{$idx}.file_upload")) {
+            if ($request->hasFile("licenses.{$idx}.file_upload")
+                && $request->file("licenses.{$idx}.file_upload")->isValid()
+            ) {
                 $uploadedFile = $request->file("licenses.{$idx}.file_upload");
                 $ext = strtolower($uploadedFile->getClientOriginalExtension() ?: 'pdf');
                 while (true) {
@@ -729,8 +809,15 @@ class TechnicianController extends Controller
                 if ($filePath && isset($existingFilesMap[$filePath]) && $filePath !== $candidate) {
                     Storage::disk('public')->delete($filePath);
                 }
-                $uploadedFile->storeAs(self::LICENSE_FOLDER, $filename, 'public');
-                $filePath = $candidate;
+                // ── ✨ FIX: ใช้ putFileAs เหมือน profile ──
+                $storedLic = Storage::disk('public')->putFileAs(
+                    self::LICENSE_FOLDER,
+                    $uploadedFile,
+                    $filename
+                );
+                if ($storedLic) {
+                    $filePath = $storedLic;
+                }
                 $nextNum++;
             }
 
@@ -798,27 +885,4 @@ class TechnicianController extends Controller
 
         return true;
     }
-    public function customerStatusUpdate(Request $r, $id)
-        {
-            $r->validate(['status' => 'required|string|max:50']);
-            $c = project_cust::findOrFail($id);
-
-            $oldStatus = $c->status;
-            $newStatus = $r->input('status');
-            $c->status = $newStatus;
-
-            // เมื่อเปลี่ยนเป็น "ติดตั้งสำเร็จ" ครั้งแรก
-            if ($newStatus === 'ติดตั้งสำเร็จ' && $oldStatus !== 'ติดตั้งสำเร็จ') {
-                $today = Carbon::today();
-                $cycle = (int) ($c->wash_cycle ?: project_cust::WASH_CYCLE_MONTHS);
-                if (empty($c->supervisor)) {
-                    $c->supervisor = $today->toDateString();
-                }
-                $c->wash_next = Carbon::parse($c->supervisor)->addMonths($cycle)->toDateString();
-            }
-
-            $c->save();
-            return redirect()->route('technician.dashboard')
-                ->with('success', 'อัปเดตสถานะเรียบร้อย');
-        }
 }
