@@ -217,6 +217,28 @@ tbody tr:last-child td{border-bottom:none}
   transform:translateY(-1px);
   box-shadow:0 2px 6px rgba(155,27,27,.3);
 }
+
+/* ✅ เพิ่มใหม่: ปุ่ม PDF สีเขียวเมื่อ status_bill = 'ok' */
+.btn-pdf.is-ok{
+  background:#D1FAE5;
+  border-color:#6EE7B7;
+  color:#047857;
+}
+.btn-pdf.is-ok:hover{
+  background:#047857;
+  color:#fff;
+  border-color:#047857;
+  box-shadow:0 2px 6px rgba(4,120,87,.35);
+}
+
+/* ✅ เพิ่มใหม่: ข้อความ "สร้างเอกสารแล้วเมื่อ" */
+.status-cell .st-print-time{
+  color:#047857;
+  font-size:10.5px;
+  display:block;
+  margin-top:2px;
+  font-weight:500;
+}
 .no-bill{color:var(--mist);font-size:12px}
 
 /* ===== คอลัมน์ PO ลูกค้า ===== */
@@ -539,20 +561,22 @@ nav[role="navigation"] span[aria-current="page"]{
             @if($billId)
               <div class="c-billno">
                 <span class="c-billno-text">{{ $billId }}</span>
+            @php
+              // หาไฟล์ PDF + status_bill จาก deposit_bill_id ตรงกัน
+              $pdfRow = \App\Models\deposit::where('deposit_bill_id', $billId)
+                          ->whereNotNull('deposit_bill')
+                          ->select('deposit_bill', 'status_bill')
+                          ->first();
+              $pdfFile     = $pdfRow->deposit_bill ?? null;
+              $isBillReady = ($pdfRow->status_bill ?? null) === 'ok';
+            @endphp
 
-                @php
-                  // หาไฟล์ PDF จาก deposit_bill (ในแถวที่มี deposit_bill_id ตรงกัน)
-                  $pdfFile = \App\Models\deposit::where('deposit_bill_id', $billId)
-                              ->whereNotNull('deposit_bill')
-                              ->value('deposit_bill');
-                @endphp
-
-                @if($pdfFile)
-                  <a href="{{ asset('storage/deposit_templates/' . $pdfFile) }}"
-                     target="_blank"
-                     rel="noopener"
-                     class="btn-pdf"
-                     title="เปิดใบมัดจำ (PDF)">
+            @if($pdfFile)
+              <a href="{{ asset('storage/deposit_templates/' . $pdfFile) }}"
+                target="_blank"
+                rel="noopener"
+                class="btn-pdf {{ $isBillReady ? 'is-ok' : '' }}"
+                title="{{ $isBillReady ? 'เปิดใบมัดจำ (พร้อมแล้ว)' : 'เปิดใบมัดจำ (PDF)' }}">
                     <svg width="13" height="13" viewBox="0 0 14 14" fill="none">
                       <path d="M3 1.5h5l3 3v8a.5.5 0 0 1-.5.5H3.5a.5.5 0 0 1-.5-.5v-11a.5.5 0 0 1 .5-.5z"
                             stroke="currentColor" stroke-width="1.3" stroke-linejoin="round"/>
@@ -632,13 +656,19 @@ nav[role="navigation"] span[aria-current="page"]{
             <span class="st-time">
               {{ $item->time ? \Carbon\Carbon::parse($item->time)->setTimezone('Asia/Bangkok')->format('H:i d/m/Y') : '' }}
             </span>
+              {{-- เวลายืนยัน (time_check) --}}
+              @if($isConfirmed && !empty($item->time_check))
+                <span class="st-check-time" title="เวลาที่ยืนยัน">
+                  ยืนยัน: {{ \Carbon\Carbon::parse($item->time_check)->setTimezone('Asia/Bangkok')->format('H:i d/m/Y') }}
+                </span>
+              @endif
 
-            {{-- เวลายืนยัน (time_check) --}}
-            @if($isConfirmed && !empty($item->time_check))
-              <span class="st-check-time" title="เวลาที่ยืนยัน">
-                ✓ ยืนยัน: {{ \Carbon\Carbon::parse($item->time_check)->setTimezone('Asia/Bangkok')->format('H:i d/m/Y') }}
-              </span>
-            @endif
+              {{-- ✅ เวลาสร้างเอกสาร (print_time) - แสดงเมื่อ status_bill = 'ok' --}}
+              @if(($item->status_bill ?? null) === 'ok' && !empty($item->print_time))
+                <span class="st-print-time" title="เวลาที่สร้างเอกสารใบมัดจำ">
+                  สร้างเอกสารแล้วเมื่อ: {{ \Carbon\Carbon::parse($item->print_time)->setTimezone('Asia/Bangkok')->format('H:i d/m/Y') }}
+                </span>
+              @endif
           </td>
         </tr>
         @empty

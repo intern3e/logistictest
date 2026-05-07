@@ -242,7 +242,10 @@ class DepositController extends Controller
 
         try {
             $affected = deposit::whereIn('id', $ids)
-                ->update(['print_time' => now()]);
+                ->update([
+                    'print_time'  => now(),
+                    'status_bill' => 'ok',  
+                ]);
 
             Log::info('Deposit bulk marked as printed', [
                 'deposit_ids' => $ids,
@@ -265,12 +268,81 @@ class DepositController extends Controller
         }
     }
 
+    public function uploadBillPdf(Request $request)
+    {
+        $request->validate([
+            'deposit_id'      => 'required',
+            'deposit_bill_id' => 'required|string|max:50',
+            'pdf_file'        => 'required|file|mimes:pdf|max:10240', // 10 MB
+            'printed_by'      => 'nullable|string|max:150',
+        ]);
+
+        $depositId     = $request->input('deposit_id');
+        $depositBillId = trim($request->input('deposit_bill_id'));
+        $printedBy     = trim($request->input('printed_by', 'unknown'));
+        $file          = $request->file('pdf_file');
+
+        try {
+            // ✅ บังคับชื่อไฟล์ = {deposit_bill_id}.pdf
+            $safeName = $this->sanitizeDepositFilename($depositBillId);
+            $fileName = $safeName . '.pdf';
+
+            $relPath = self::PDF_OUTPUT_DIR . '/' . $fileName;
+            $absDir  = storage_path('app/public/' . self::PDF_OUTPUT_DIR);
+            $absPath = storage_path('app/public/' . $relPath);
+
+            // สร้างโฟลเดอร์ถ้ายังไม่มี
+            if (!is_dir($absDir)) {
+                mkdir($absDir, 0775, true);
+            }
+
+            // ✅ ทับไฟล์เดิม (move with overwrite)
+            if (file_exists($absPath)) {
+                @unlink($absPath);
+            }
+            $file->move($absDir, $fileName);
+
+            // ✅ อัปเดต DB ทุกแถวที่มี deposit_bill_id เดียวกัน (เพราะ 1 ใบบิลอาจมีหลายแถว)
+            // ถ้าต้องการอัปเดตเฉพาะแถวเดียว ใช้ where('id', $depositId) แทน
+            $affected = deposit::where('deposit_bill_id', $depositBillId)
+                ->update([
+                    'print_time'   => now(),
+                    'status_bill'  => 'ok',
+                    'deposit_bill' => $fileName,
+                ]);
+
+            Log::info('Deposit PDF uploaded & marked printed', [
+                'deposit_id'      => $depositId,
+                'deposit_bill_id' => $depositBillId,
+                'file_name'       => $fileName,
+                'rows_affected'   => $affected,
+                'printed_by'      => $printedBy,
+            ]);
+
+            return response()->json([
+                'success'   => true,
+                'message'   => 'อัปโหลดและบันทึกการพิมพ์สำเร็จ',
+                'file_name' => $fileName,
+                'file_url'  => asset('storage/' . $relPath),
+            ]);
+
+        } catch (\Throwable $e) {
+            Log::error('Upload deposit PDF failed: ' . $e->getMessage(), [
+                'trace' => $e->getTraceAsString(),
+            ]);
+            return response()->json([
+                'success' => false,
+                'message' => 'เกิดข้อผิดพลาด: ' . $e->getMessage(),
+            ], 500);
+        }
+    }
     public function botdeposit(Request $request)
     {
         $soKeyword = trim($request->get('so_keyword', ''));
 
         $query = deposit::query()
-            ->where('status', 'ยืนยัน');
+            ->where('status', 'ยืนยัน')
+            ->whereNull('status_bill');   
 
         if ($soKeyword !== '') {
             $query->where('so_id', 'like', "%{$soKeyword}%");
@@ -284,7 +356,6 @@ class DepositController extends Controller
 
         return view('deposit.botdeposit', compact('deposits'));
     }
-
     private function generateDepositBillId()
     {
         $now      = Carbon::now();

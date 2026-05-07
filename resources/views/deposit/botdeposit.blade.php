@@ -309,6 +309,25 @@ nav[role="navigation"] span[aria-current="page"]{
   .brand-title{font-size:18px}
   .brand-badge{display:none}
 }
+.file-input{
+  cursor:pointer;
+  background:#fff;
+}
+.file-input::-webkit-file-upload-button{
+  background:var(--green-table);
+  color:#fff;
+  border:none;
+  padding:3px 8px;
+  border-radius:3px;
+  font-size:10px;
+  cursor:pointer;
+  margin-right:6px;
+  font-family:inherit;
+}
+.file-input::-webkit-file-upload-button:hover{
+  background:var(--green-header-2);
+}
+.file-input:disabled{opacity:.5;cursor:wait}
 </style>
 </head>
 <body>
@@ -533,13 +552,13 @@ nav[role="navigation"] span[aria-current="page"]{
                 </span>
               @else
                 <div style="display:flex;align-items:center;gap:4px">
-                  <input type="text" class="inp-sm"
+                  <input type="file" 
+                    name ="button_pdf"
+                    class="inp-sm file-input"
                     id="bill_input_{{ $item->id }}"
-                    placeholder="กรอกเลขบิล...">
-                  <button class="btn btn-primary btn-sm"
-                    onclick="saveBillNo('{{ $item->id }}',this)">
-                    บันทึก
-                  </button>
+                    accept="application/pdf"
+                    style="width:140px;font-size:11px;padding:3px"
+                    onchange="uploadDepositPdf('{{ $item->id }}','{{ $item->deposit_bill_id }}',this)">
                 </div>
               @endif
             </div>
@@ -652,53 +671,69 @@ function cpText(text, btn){
     });
 }
 
-/* ===== บันทึกเลขบิล (per row) ===== */
-async function saveBillNo(depositId, btn){
-  const inp = document.getElementById('bill_input_'+depositId);
-  const val = inp ? inp.value.trim() : '';
-  if(!val){ showToast('กรุณากรอกเลขบิล', true); return; }
+async function uploadDepositPdf(depositId, depositBillId, inputEl){
+  const file = inputEl.files[0];
+  if(!file){ return; }
 
-  const orig = btn.textContent;
-  btn.disabled = true;
-  btn.textContent = '...';
+  // ตรวจสอบเป็น PDF
+  if(file.type !== 'application/pdf' && !file.name.toLowerCase().endsWith('.pdf')){
+    showToast('กรุณาเลือกไฟล์ PDF เท่านั้น', true);
+    inputEl.value = '';
+    return;
+  }
+
+  // ✅ ตรวจสอบชื่อไฟล์ต้องตรงกับ deposit_bill_id
+  const expectedName = depositBillId + '.pdf';
+  const actualName = file.name.trim();
+  
+  if(actualName !== expectedName){
+    showToast(`ชื่อไฟล์ไม่ถูกต้อง ต้องเป็น "${expectedName}"`, true);
+    inputEl.value = '';
+    return;
+  }
+
+  // ตรวจสอบขนาดไฟล์
+  if(file.size > 10 * 1024 * 1024){
+    showToast('ไฟล์ใหญ่เกิน 10 MB', true);
+    inputEl.value = '';
+    return;
+  }
+
+  const fd = new FormData();
+  fd.append('deposit_id', depositId);
+  fd.append('deposit_bill_id', depositBillId);
+  fd.append('printed_by', CURRENT_USER);
+  fd.append('pdf_file', file);
+
+  inputEl.disabled = true;
+  showToast('กำลังอัปโหลด...');
 
   try {
-    const res = await fetch('/deposit/mark-printed', {
+    const res = await fetch('/deposit/upload-bill-pdf', {
       method: 'POST',
       headers: {
-        'Content-Type': 'application/json',
         'X-CSRF-TOKEN': CSRF_TOKEN,
         'X-Requested-With': 'XMLHttpRequest',
         'Accept': 'application/json'
       },
-      body: JSON.stringify({
-        deposit_id: depositId,
-        bill_no: val,
-        printed_by: CURRENT_USER
-      })
+      body: fd
     });
 
     if(!res.ok) throw new Error('HTTP ' + res.status);
-    const data = await res.json().catch(()=>({success:true}));
+    const data = await res.json().catch(()=>({success:false, message:'Response error'}));
 
-    if(data.success === false){
-      throw new Error(data.message || 'บันทึกไม่สำเร็จ');
-    }
+    if(data.success === false) throw new Error(data.message || 'อัปโหลดไม่สำเร็จ');
 
-    btn.style.background = 'var(--emerald)';
-    btn.style.borderColor = 'var(--emerald)';
-    btn.textContent = 'บันทึกแล้ว ✓';
-    showToast('บันทึกเลขบิล ' + val + ' สำเร็จ');
-    setTimeout(()=>location.reload(), 800);
+    showToast('อัปโหลด ' + file.name + ' สำเร็จ');
+    setTimeout(()=>location.reload(), 700);
 
   } catch(err) {
     console.error(err);
     showToast('เกิดข้อผิดพลาด: ' + err.message, true);
-    btn.disabled = false;
-    btn.textContent = orig;
+    inputEl.disabled = false;
+    inputEl.value = '';
   }
 }
-
 /* ===== บันทึกหลายรายการพร้อมกัน ===== */
 async function markSelectedPrinted(){
   const checked = Array.from(document.querySelectorAll('input[name="markprint[]"]:checked'));

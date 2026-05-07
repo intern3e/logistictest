@@ -254,6 +254,8 @@ Route::post('/deposit/mark-printed-bulk', [DepositController::class, 'markPrinte
 
 // ===== ✅ เพิ่มใหม่: Preview PDF (ใช้กับ iframe พรีวิวก่อนบันทึก) =====
 Route::get('/deposit/preview', [DepositController::class, 'preview'])->name('deposit.preview');
+Route::post('/deposit/upload-bill-pdf', [DepositController::class, 'uploadBillPdf'])
+     ->name('deposit.uploadBillPdf');
 
 
 
