@@ -1066,7 +1066,7 @@
 
 <script>
 // ─── USER INFO ────────────────────────────────────────────────────
-var adminUsers = ['test101', 'หยก', 'admin01', 'superadmin'];
+var adminUsers = ['test101', 'หยก', 'admin01', 'yok', 'ขัย'];
 var currentUser = (new URLSearchParams(window.location.search)).get('create_by') || 'Guest';
 var isAdmin = adminUsers.indexOf(currentUser) !== -1;
 

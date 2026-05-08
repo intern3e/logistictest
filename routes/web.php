@@ -226,7 +226,15 @@ Route::delete('/oil/{id}',      [fuellogsController::class, 'destroy'])->name('o
 Route::post('/oil/sync-ng',     [fuellogsController::class, 'syncNg'])->name('oil.syncNg');
 Route::get('/oil/ng-list',      [fuellogsController::class, 'ngList'])->name('oil.ngList');
 Route::post('/oil/filter',      [fuellogsController::class, 'applyFilter'])->name('oil.filter');
-Route::get('/service',          [fuellogsController::class, 'service']);
+
+
+use App\Http\Controllers\ServiceController;
+Route::get('/service',              [ServiceController::class, 'index'])->name('service');
+Route::get('/service/list',         [ServiceController::class, 'list'])->name('service.list');
+Route::post('/service',             [ServiceController::class, 'store'])->name('service.store');
+Route::post('/service/{id}',        [ServiceController::class, 'update'])->name('service.update');
+Route::delete('/service/{id}',      [ServiceController::class, 'destroy'])->name('service.destroy');
+
 
 // ✅ Deposit
 Route::post('/deposit/store', [\App\Http\Controllers\DepositController::class, 'store'])->name('deposit.store');
