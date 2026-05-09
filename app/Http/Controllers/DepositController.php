@@ -349,8 +349,8 @@ class DepositController extends Controller
         }
 
         $deposits = $query
-            ->orderByDesc('time')
-            ->orderByDesc('id')
+            ->orderBy('deposit_bill_id', 'asc')
+            ->orderBy('id', 'asc')
             ->paginate(15)
             ->appends($request->query());
 
