@@ -386,137 +386,138 @@
                 </tbody>
             </table>
         </div>
- <!-- ===== เพิิ่มคำนวณต้นทุน ===== -->
-@role('admin|sale')
-<td style="padding:10px 15px; white-space:nowrap; font-size:13px; vertical-align: middle;">
-    <div style="display:inline-flex; align-items:center; gap:20px; 
-                border:2px solid rgb(167, 167, 167); border-radius:8px; 
-                padding:10px 18px; background:#fafafa;
-                margin:8px 0;
-                box-shadow: 0 2px 3px rgba(0,0,0,0.05);">
-        <div>
-            <span style="color:#555;">ยอดออกใบกำกับ:</span>
-            <b><span id="netAmntDisplay" style="color:#4f74d9;">...</span> บาท</b>
-        </div>
-        <div style="width:2px; height:24px; background:rgb(167, 167, 167);"></div>
-        <div>
-            <span style="color:#555;">ยอดสั่งซื้อ:</span>
-            <b><span id="poNetAmntDisplay" style="color:#d9534f;">...</span> บาท</b>
-        </div>
-        <div style="width:2px; height:24px; background:rgb(167, 167, 167);"></div>
-        <div>
-            <span style="color:#555;">กำไร:</span>
-            <b><span id="profitDisplay" style="color:#28a745;">...</span> บาท</b>
-        </div>
-    </div>
-</td>
-<script>
-    (function() {
-        let soAmount = null;
-        let poAmount = null;
+        <!-- ===== ช่องแสดงยอดขาย/ต้นทุน/กำไร (แนวนอนในกรอบสีเทา) ===== -->
+        <td style="padding:10px 15px; white-space:nowrap; font-size:13px; vertical-align: middle;">
+            <div style="display:inline-flex; align-items:center; gap:20px; 
+                        border:2px solid rgb(167, 167, 167); border-radius:8px; 
+                        padding:10px 18px; background:#fafafa;
+                        margin:8px 0;
+                        box-shadow: 0 2px 3px rgba(0,0,0,0.05);">
+                <div>
+                    <span style="color:#555;">ยอดออกใบกำกับ:</span>
+                    <b><span id="netAmntDisplay" style="color:#d9534f;">...</span> บาท</b>
+                </div>
+                <div style="width:2px; height:24px; background:rgb(167, 167, 167);"></div>
+                <div>
+                    <span style="color:#555;">ยอดสั่งซื้อ:</span>
+                    <b><span id="poNetAmntDisplay" style="color:#d9534f;">...</span> บาท</b>
+                </div>
+                <div style="width:2px; height:24px; background:rgb(167, 167, 167);"></div>
+                <div>
+                    <span style="color:#555;">กำไร:</span>
+                    <b><span id="profitDisplay" style="color:#28a745;">...</span> บาท</b>
+                </div>
+            </div>
+        </td>
+        <!-- ===== Script ดึงข้อมูล SO/PO และคำนวณกำไร ===== -->
+        <script>
+        (function() {
+            let soAmount = null;
+            let poAmount = null;
 
-        function formatNumber(num) {
-            return parseFloat(num).toLocaleString('en-US', {
-                minimumFractionDigits: 2,
-                maximumFractionDigits: 2
-            });
-        }
+            function formatNumber(num) {
+                return parseFloat(num).toLocaleString('en-US', {
+                    minimumFractionDigits: 2,
+                    maximumFractionDigits: 2
+                });
+            }
 
-        function updateProfit() {
-            if (soAmount !== null && poAmount !== null) {
-                const profit = soAmount - poAmount;
-                const profitEl = document.getElementById('profitDisplay');
-                if (profitEl) {
-                    profitEl.textContent = formatNumber(profit);
-                    profitEl.style.color = profit >= 0 ? 'green' : 'red';
+            function updateProfit() {
+                if (soAmount !== null && poAmount !== null) {
+                    const profit = soAmount - poAmount;
+                    const profitEl = document.getElementById('profitDisplay');
+                    if (profitEl) {
+                        profitEl.textContent = formatNumber(profit);
+                        profitEl.style.color = profit >= 0 ? 'green' : 'red';
+                    }
                 }
             }
-        }
 
-        // ===== ดึงข้อมูล SO (ยอดขาย) =====
-        document.addEventListener('DOMContentLoaded', function() {
-            const soInput = document.getElementById('SOCode');
-            const soDisplay = document.getElementById('netAmntDisplay');
-            if (!soInput || !soDisplay || !soInput.value.trim()) return;
+            // ===== ดึงข้อมูล SO (ยอดขาย) =====
+            document.addEventListener('DOMContentLoaded', function() {
+                const soInput = document.getElementById('SOCode');
+                const soDisplay = document.getElementById('netAmntDisplay');
+                if (!soInput || !soDisplay || !soInput.value.trim()) return;
 
-            fetch('http://server_update:8000/api/getSODetail?SONum=' + encodeURIComponent(soInput.value.trim()))
-                .then(response => response.json())
-                .then(data => {
-                    const netAmnt = parseFloat(data.SoDetail.NetAmnt);
-                    soAmount = netAmnt;
-                    soDisplay.textContent = formatNumber(netAmnt);
-                    updateProfit();
-                })
-                .catch(error => {
-                    console.error('SO Error:', error);
-                    soDisplay.textContent = 'error';
-                });
-        });
-
-        // ===== ดึงข้อมูล PO (ต้นทุน) =====
-        document.addEventListener('DOMContentLoaded', function() {
-            const displayEl = document.getElementById('poNetAmntDisplay');
-            if (!displayEl) return;
-
-            setTimeout(function() {
-                const poRows = document.querySelectorAll('#POList tbody tr');
-                if (poRows.length === 0) {
-                    displayEl.textContent = '0.00';
-                    poAmount = 0;
-                    updateProfit();
-                    return;
-                }
-
-                let poNumbers = [];
-                poRows.forEach(row => {
-                    const redInput = row.querySelector('input[style*="background-color:red"]');
-                    if (redInput) {
-                        return; 
-                    }
-
-                    const firstTd = row.querySelector('td:first-child a');
-                    if (firstTd) {
-                        poNumbers.push('PO' + firstTd.textContent.trim());
-                    }
-                });
-
-                if (poNumbers.length === 0) {
-                    displayEl.textContent = '0.00';
-                    poAmount = 0;
-                    updateProfit();
-                    return;
-                }
-
-                const promises = poNumbers.map(poNum =>
-                    fetch('http://server_update:8000/api/getPOHDNetAmnt?PONum=' + encodeURIComponent(poNum))
-                        .then(res => res.json())
-                );
-
-                Promise.all(promises)
-                    .then(results => {
-                        let totalNetAmnt = 0;
-                        results.forEach(poList => {
-                            if (Array.isArray(poList)) {
-                                poList.forEach(po => {
-                                    totalNetAmnt += parseFloat(po.NetAmnt) || 0;
-                                });
-                            }
-                        });
-
-                        poAmount = totalNetAmnt;
-                        displayEl.textContent = formatNumber(totalNetAmnt);
+                fetch('http://server_update:8000/api/getSODetail?SONum=' + encodeURIComponent(soInput.value.trim()))
+                    .then(response => response.json())
+                    .then(data => {
+                        const netAmnt = parseFloat(data.SoDetail.NetAmnt);
+                        soAmount = netAmnt;
+                        soDisplay.textContent = formatNumber(netAmnt);
                         updateProfit();
                     })
                     .catch(error => {
-                        console.error('PO Error:', error);
-                        displayEl.textContent = 'error';
+                        console.error('SO Error:', error);
+                        soDisplay.textContent = 'error';
                     });
-            }, 500);
-        });
-    })();
-</script>
-@endrole
-<!-- ===== เพิิ่มคำนวณต้นทุน ===== -->
+            });
+
+            // ===== ดึงข้อมูล PO (ต้นทุน) =====
+            document.addEventListener('DOMContentLoaded', function() {
+                const displayEl = document.getElementById('poNetAmntDisplay');
+                if (!displayEl) return;
+
+                setTimeout(function() {
+                    const poRows = document.querySelectorAll('#POList tbody tr');
+                    if (poRows.length === 0) {
+                        displayEl.textContent = '0.00';
+                        poAmount = 0;
+                        updateProfit();
+                        return;
+                    }
+
+                    let poNumbers = [];
+                    poRows.forEach(row => {
+                        // ตรวจสอบว่าในแถวมี input ที่มีพื้นหลังสีแดงหรือไม่
+                        const redInput = row.querySelector('input[style*="background-color:red"]');
+                        if (redInput) {
+                            // ถ้าเจอพื้นหลังสีแดง แสดงว่ายกเลิก ไม่ต้องเอามาคำนวณ
+                            return; 
+                        }
+
+                        const firstTd = row.querySelector('td:first-child a');
+                        if (firstTd) {
+                            poNumbers.push('PO' + firstTd.textContent.trim());
+                        }
+                    });
+
+                    if (poNumbers.length === 0) {
+                        displayEl.textContent = '0.00';
+                        poAmount = 0;
+                        updateProfit();
+                        return;
+                    }
+
+                    const promises = poNumbers.map(poNum =>
+                        fetch('http://server_update:8000/api/getPOHDNetAmnt?PONum=' + encodeURIComponent(poNum))
+                            .then(res => res.json())
+                    );
+
+                    Promise.all(promises)
+                        .then(results => {
+                            let totalNetAmnt = 0;
+                            results.forEach(poList => {
+                                if (Array.isArray(poList)) {
+                                    poList.forEach(po => {
+                                        totalNetAmnt += parseFloat(po.NetAmnt) || 0;
+                                    });
+                                }
+                            });
+
+                            poAmount = totalNetAmnt;
+                            displayEl.textContent = formatNumber(totalNetAmnt);
+                            updateProfit();
+                        })
+                        .catch(error => {
+                            console.error('PO Error:', error);
+                            displayEl.textContent = 'error';
+                        });
+                }, 500);
+            });
+        })();
+        </script>
+
         <!------------------------------ table ใบแจ้งหนี้ ------------------------------------------>
         <br>
         <div style="border: 5px solid rgb(150, 149, 149);padding: 10px;">

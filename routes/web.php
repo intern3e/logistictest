@@ -111,50 +111,11 @@ Route::post('/update-statusdocback', [admindoccontroller::class, 'updateStatusdo
 Route::post('/updatedoc-delivery-date', [AdmindocController::class, 'updateDeliveryDate'])->name('updatedoc.delivery.date');
 
 use App\Http\Controllers\alertcontroller;
-Route::get('/alertsale', [alertcontroller::class, 'dashboard'])->name('alert.alertsale');
+Route::get('/alertbill', [alertcontroller::class, 'dashboard'])->name('alert.alertbill');
 Route::post('/updatesolve', [alertcontroller::class, 'updatesolve'])->name('updatesolve');
 Route::get('/alertaccount', [alertcontroller::class, 'dashboardaccount'])->name('alert.alertaccount');
 Route::post('/finish', [alertcontroller::class, 'finish'])->name('finish.ng');
 
-Route::get('/alertsale/count', function () {
-    // นับจาก tblbill
-    $count1 = DB::table('tblbill')
-    ->whereNotNull('NG')
-    ->where('statuspdf', 2)
-    ->whereNull('solve') 
-    ->count();
-
-    // นับจาก pobills
-    $count2 = DB::table('pobills')
-    ->whereNotNull('NG')
-    ->whereNull('solve') 
-    ->count();
-
-    // นับจาก docbills
-    $count3 = DB::table('docbills')
-    ->whereNotNull('NG')
-    ->where('statuspdf', 1)
-    ->whereNull('solve') 
-    ->count();
-
-    $total = $count1 + $count2 + $count3;
-
-    return response()->json([
-        'count' => $total,
-        'from_tblbill' => $count1,
-        'from_pobills' => $count2,
-        'from_docbills' => $count3,
-    ]);
-});
-
-Route::get('/alertaccount/count', function () {
-    $count = DB::table('tblbill')
-                ->where('formtype', "บิล/PO3/บัญชี")   
-                ->where('statuspdf', 1)  
-                ->count();              
-
-    return response()->json(['count' => $count]);
-});
 Route::get('/getall-bill-detail/{id}', [alertcontroller::class, 'getBillDetail']);
 
 

@@ -129,6 +129,20 @@ body{font-family:'Sarabun',system-ui,sans-serif;font-size:15px;background:var(--
 .dep-result.g{background:var(--primary-light);color:var(--primary-hover)}
 .dep-result.b{background:var(--blue-light);color:var(--blue-hover)}
 .dep-result.empty{background:transparent;color:var(--text-hint);padding-left:0;font-weight:400;font-size:11px}
+
+/* ===== Selection Bar ===== */
+.selection-bar{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:10px 14px;margin-bottom:12px;background:linear-gradient(135deg,#EAF1FB,#F5F8FD);border:1px solid var(--primary-border);border-radius:0;flex-wrap:wrap}
+.selection-info{display:flex;align-items:center;gap:10px;font-size:12px;color:var(--text-secondary);flex-wrap:wrap}
+.selection-badge{display:inline-flex;align-items:center;gap:6px;padding:3px 10px;background:var(--surface);border:1px solid var(--primary-border);border-radius:0;font-weight:600;color:var(--primary);font-size:12px}
+.selection-badge strong{font-weight:800;font-size:13px}
+.selection-amount{font-weight:700;color:var(--text);font-variant-numeric:tabular-nums}
+.selection-actions{display:flex;align-items:center;gap:6px}
+.btn-link{background:none;border:none;color:var(--primary);font-size:12px;font-weight:600;cursor:pointer;padding:4px 8px;border-radius:0;font-family:inherit;transition:all var(--t-fast)}
+.btn-link:hover{background:var(--surface);color:var(--primary-hover)}
+.btn-link.warn{color:var(--red)}
+.btn-link.warn:hover{background:var(--red-light)}
+
+/* ===== Table ===== */
 .tbl-wrap{overflow-x:auto;-webkit-overflow-scrolling:touch;border-radius:0;border:1px solid var(--border)}
 table{width:100%;border-collapse:collapse;font-size:14px;table-layout:fixed}
 thead{background:linear-gradient(to bottom,#F5F8FD,#EAF1FB)}
@@ -136,11 +150,27 @@ th{padding:11px 16px;font-size:11px;font-weight:700;color:var(--text-secondary);
 td{padding:12px 16px;border-bottom:1px solid var(--border-light);vertical-align:middle}
 tbody tr:last-child td{border-bottom:none}
 tbody tr:hover td{background:#F5F8FD}
+tbody tr.row-unchecked td{background:#FAFAFA;opacity:.55}
+tbody tr.row-unchecked:hover td{opacity:.75;background:#F5F8FD}
+tbody tr.row-checked td{background:#FBFDFF}
 .td-num{text-align:right;font-variant-numeric:tabular-nums;color:var(--text)}
 .td-dep{text-align:right;font-variant-numeric:tabular-nums;font-weight:600;color:var(--red)}
 .td-name{color:var(--text)}
+.td-check{text-align:center;padding:12px 8px}
 .tbl-empty{padding:40px 20px;text-align:center;color:var(--text-muted);font-size:13px}
 .tbl-empty-icon{margin-bottom:10px;opacity:.4}
+
+/* Custom checkbox */
+.chk{position:relative;display:inline-flex;align-items:center;justify-content:center;cursor:pointer;width:20px;height:20px;flex-shrink:0}
+.chk input{position:absolute;opacity:0;width:0;height:0;pointer-events:none}
+.chk-box{width:18px;height:18px;border:1.8px solid var(--text-hint);background:var(--surface);transition:all var(--t-fast);display:flex;align-items:center;justify-content:center;border-radius:0}
+.chk:hover .chk-box{border-color:var(--primary)}
+.chk input:checked + .chk-box{background:var(--primary);border-color:var(--primary)}
+.chk input:checked + .chk-box::after{content:'';width:5px;height:9px;border:solid #fff;border-width:0 2px 2px 0;transform:rotate(45deg);margin-top:-2px}
+.chk input:indeterminate + .chk-box{background:var(--primary);border-color:var(--primary)}
+.chk input:indeterminate + .chk-box::after{content:'';width:9px;height:2px;background:#fff}
+.chk input:focus-visible + .chk-box{box-shadow:0 0 0 3px rgba(11,36,71,.20)}
+
 .summary-card{background:var(--surface);border:1px solid var(--border);border-radius:0;overflow:hidden;box-shadow:var(--shadow-sm)}
 .summary-head{padding:16px 20px;border-bottom:1px solid var(--border-light);font-size:14px;font-weight:700;color:var(--text);display:flex;align-items:center;gap:8px;background:linear-gradient(to bottom,#F5F8FD,var(--surface))}
 .summary-rows{padding:16px 20px;display:flex;flex-direction:column;gap:10px}
@@ -152,6 +182,7 @@ tbody tr:hover td{background:#F5F8FD}
 .s-row.total{margin-top:6px;padding:14px 0 0;border-top:2px solid var(--border-light)}
 .s-row.total .slbl{font-weight:700;color:var(--text);font-size:14px}
 .s-row.total .sval{font-size:24px;font-weight:800;color:var(--primary);letter-spacing:-.5px}
+
 .pdf-preview-section{border-top:1px solid var(--border-light);padding:14px 20px 16px;background:linear-gradient(to bottom,#F8FAFC,var(--surface))}
 .pdf-preview-head{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:10px}
 .pdf-preview-title{display:flex;align-items:center;gap:7px;font-size:11px;font-weight:700;color:var(--text-secondary);letter-spacing:.06em;text-transform:uppercase}
@@ -196,7 +227,7 @@ hr.divider{border:none;border-top:1px solid var(--border-light);margin:0}
 @keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
 @media(max-width:1100px){.page{padding:22px 20px 50px}.grid-layout{grid-template-columns:1fr}.col-side{position:static;display:grid;grid-template-columns:1fr 1fr;gap:16px}.form-grid-3{grid-template-columns:repeat(3,1fr)}.form-grid-4{grid-template-columns:repeat(2,1fr)}.dep-cards{grid-template-columns:repeat(2,1fr)}}
 @media(max-width:768px){.page{padding:16px 16px 50px}.navbar-inner{padding:0 16px}.navbar-breadcrumb{display:none}.page-header{padding:18px 20px}.page-header-text h1{font-size:18px}.col-side{grid-template-columns:1fr}.dep-cards{grid-template-columns:1fr}.card-body{padding:16px 18px}.card-head{padding:14px 18px 12px;flex-wrap:wrap}.dep-section{padding:0 18px 18px}table{font-size:13px}th,td{padding:10px 12px}.s-row.total .sval{font-size:20px}.form-grid-3{grid-template-columns:1fr 1fr}.form-grid-4{grid-template-columns:1fr}.span-2{grid-column:1}.page-header-icon{width:42px;height:42px}.sale-chip{margin-left:0;width:100%;max-width:none;margin-top:4px}.pdf-frame-wrap{height:200px}.pdf-modal-content{height:95vh}}
-@media(max-width:480px){.page{padding:12px 12px 50px}.page-header{padding:14px 16px}.card-body,.card-head{padding:14px}.dep-section{padding:0 14px 14px}table{min-width:480px}.btn-save{padding:13px}.summary-rows,.summary-footer{padding:14px 16px}.pdf-preview-section{padding:12px 16px 14px}.form-grid-3{grid-template-columns:1fr}}
+@media(max-width:480px){.page{padding:12px 12px 50px}.page-header{padding:14px 16px}.card-body,.card-head{padding:14px}.dep-section{padding:0 14px 14px}table{min-width:560px}.btn-save{padding:13px}.summary-rows,.summary-footer{padding:14px 16px}.pdf-preview-section{padding:12px 16px 14px}.form-grid-3{grid-template-columns:1fr}}
 *,*::before,*::after{border-radius:0 !important}
 .spinner{border-radius:50% !important}
 .dep-toggle-knob,
@@ -384,7 +415,7 @@ hr.divider{border:none;border-top:1px solid var(--border-light);margin:0}
             </div>
             <div class="card-head-text">
               <h3>รายการสินค้าและมัดจำ</h3>
-              <p>กำหนดเปอร์เซ็นต์หรือจำนวนเงินมัดจำแต่ละประเภท</p>
+              <p>เลือกรายการที่ต้องการคิดมัดจำ และกำหนดเปอร์เซ็นต์หรือจำนวนเงิน</p>
             </div>
           </div>
 
@@ -418,7 +449,7 @@ hr.divider{border:none;border-top:1px solid var(--border-light);margin:0}
                   </div>
                 </div>
                 <div class="pct-wrap" id="pwrap-g">
-                  <input type="number" id="dep-g" name="dep_product" value="" min="0" max="100" step="0.01" disabled placeholder="0.00" oninput="onDepInput('g')" onclick="event.stopPropagation()">
+                  <input type="number" id="dep-g" name="dep_product" value="" min="0" max="100" step="1" disabled placeholder="0" oninput="onDepInput('g')" onclick="event.stopPropagation()">
                   <span class="pct-unit" id="unit-g">%</span>
                 </div>
                 <div class="dep-result empty" id="dres-g">ยังไม่เปิดใช้งาน</div>
@@ -447,7 +478,7 @@ hr.divider{border:none;border-top:1px solid var(--border-light);margin:0}
                   </div>
                 </div>
                 <div class="pct-wrap bfocus" id="pwrap-b">
-                  <input type="number" id="dep-b" name="dep_service" value="" min="0" max="100" step="0.01" disabled placeholder="0.00" oninput="onDepInput('b')" onclick="event.stopPropagation()">
+                  <input type="number" id="dep-b" name="dep_service" value="" min="0" max="100" step="1" disabled placeholder="0" oninput="onDepInput('b')" onclick="event.stopPropagation()">
                   <span class="pct-unit" id="unit-b">%</span>
                 </div>
                 <div class="dep-result empty" id="dres-b">ยังไม่เปิดใช้งาน</div>
@@ -463,20 +494,44 @@ hr.divider{border:none;border-top:1px solid var(--border-light);margin:0}
               <span class="section-divider-label">รายการสินค้า</span>
               <div class="section-divider-line"></div>
             </div>
+
+            {{-- ✅ Selection Bar --}}
+            <div class="selection-bar" id="selection-bar" style="display:none">
+              <div class="selection-info">
+                <span class="selection-badge">
+                  <svg width="12" height="12" viewBox="0 0 14 14" fill="none">
+                    <path d="M3 7l3 3 5-6" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+                  </svg>
+                  เลือก <strong id="sel-count">0</strong>/<span id="sel-total">0</span> รายการ
+                </span>
+                <span>ยอดที่เลือก: <span class="selection-amount" id="sel-amount">฿0.00</span></span>
+              </div>
+              <div class="selection-actions">
+                <button type="button" class="btn-link" onclick="selectAllItems(true)">เลือกทั้งหมด</button>
+                <button type="button" class="btn-link warn" onclick="selectAllItems(false)">ยกเลิกทั้งหมด</button>
+              </div>
+            </div>
+
             <div class="tbl-wrap">
               <table>
                 <thead>
                   <tr>
-                    <th style="width:46%">รายการสินค้า / บริการ</th>
-                    <th style="width:14%;text-align:center">จำนวน</th>
-                    <th style="width:18%;text-align:right">ราคา/หน่วย</th>
-                    <th style="width:18%;text-align:right">ยอดรวม</th>
-                    <th style="width:16%;text-align:right;display:none" id="dep-th">มัดจำ</th>
+                    <th style="width:44px;text-align:center;padding:11px 8px">
+                      <label class="chk" title="เลือก/ยกเลิกทั้งหมด">
+                        <input type="checkbox" id="chk-all" onchange="onCheckAllChange(this)">
+                        <span class="chk-box"></span>
+                      </label>
+                    </th>
+                    <th style="width:42%">รายการสินค้า / บริการ</th>
+                    <th style="width:13%;text-align:center">จำนวน</th>
+                    <th style="width:17%;text-align:right">ราคา/หน่วย</th>
+                    <th style="width:17%;text-align:right">ยอดรวม</th>
+                    <th style="width:15%;text-align:right;display:none" id="dep-th">มัดจำ</th>
                   </tr>
                 </thead>
                 <tbody id="tbody">
                   <tr>
-                    <td colspan="4">
+                    <td colspan="5">
                       <div class="tbl-empty">
                         <div class="tbl-empty-icon">
                           <svg width="40" height="40" viewBox="0 0 40 40" fill="none"><rect x="8" y="6" width="24" height="28" rx="4" stroke="#C5D6EC" stroke-width="2"/><path d="M14 14h12M14 20h12M14 26h8" stroke="#C5D6EC" stroke-width="2" stroke-linecap="round"/></svg>
@@ -490,8 +545,11 @@ hr.divider{border:none;border-top:1px solid var(--border-light);margin:0}
             </div>
           </div>
         </div>
+
       </div>
+
       <div class="col-side">
+
         <div class="summary-card">
           <div class="summary-head">
             <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><rect x="2" y="2" width="12" height="12" rx="3" stroke="#0F172A" stroke-width="1.4"/><path d="M5 8h6M5 10.5h4" stroke="#0F172A" stroke-width="1.4" stroke-linecap="round"/><path d="M5 5.5h2" stroke="#0B2447" stroke-width="1.6" stroke-linecap="round"/></svg>
@@ -499,8 +557,12 @@ hr.divider{border:none;border-top:1px solid var(--border-light);margin:0}
           </div>
           <div class="summary-rows">
             <div class="s-row">
-              <span class="slbl">ยอดรวมสินค้าทั้งหมด</span>
-              <span class="sval" id="sv-sub">฿0.00</span>
+              <span class="slbl">ยอดรวมทั้งหมด</span>
+              <span class="sval" id="sv-fulltotal">฿0.00</span>
+            </div>
+            <div class="s-row" id="srow-selected" style="display:none">
+              <span class="slbl" id="sv-sub-label">ยอดที่เลือกคิดมัดจำ</span>
+              <span class="sval" id="sv-sub" style="color:var(--primary)">฿0.00</span>
             </div>
             <div class="s-row neg" id="srow-g" style="display:none">
               <span class="slbl" id="slbl-g">หักมัดจำสินค้า (0%)</span>
@@ -592,7 +654,7 @@ hr.divider{border:none;border-top:1px solid var(--border-light);margin:0}
           <div class="info-items">
             <div class="info-item"><span class="ik">SO Number</span><span class="iv" id="info-so">—</span></div>
             <div class="info-item"><span class="ik">เลขที่ PO ลูกค้า</span><span class="iv" id="info-po">—</span></div>
-            <div class="info-item"><span class="ik">วันที่สร้างSO</span><span class="iv" id="info-date">—</span></div>
+            <div class="info-item"><span class="ik">วันที่สร้าง</span><span class="iv" id="info-date">—</span></div>
             <div class="info-item"><span class="ik">ผู้สร้างเอกสาร</span><span class="iv" id="info-emp">—</span></div>
             <div class="info-item">
               <span class="ik">สถานะ</span>
@@ -612,8 +674,9 @@ hr.divider{border:none;border-top:1px solid var(--border-light);margin:0}
             วิธีใช้งาน
           </div>
           <div class="help-item"><div class="help-num">1</div><span>ตรวจสอบข้อมูลเอกสารและลูกค้าให้ถูกต้อง</span></div>
-          <div class="help-item"><div class="help-num">2</div><span>เลือกโหมด % หรือ ฿ แล้วกรอกค่ามัดจำ (รองรับทศนิยม)</span></div>
-          <div class="help-item"><div class="help-num">3</div><span>ตรวจสอบยอดสรุปด้านขวา แล้วกด "บันทึกใบมัดจำ"</span></div>
+          <div class="help-item"><div class="help-num">2</div><span>ติ๊กเลือกรายการที่ต้องการคิดมัดจำ (เลือกเฉพาะบางรายการได้)</span></div>
+          <div class="help-item"><div class="help-num">3</div><span>โหมด % ใส่จำนวนเต็ม (1–100) / โหมด ฿ ใส่ทศนิยมได้</span></div>
+          <div class="help-item"><div class="help-num">4</div><span>ยอดคงเหลือ = ยอดรวมทั้งหมด − มัดจำ</span></div>
         </div>
 
       </div>
@@ -652,7 +715,10 @@ hr.divider{border:none;border-top:1px solid var(--border-light);margin:0}
 </div>
 
 <script>
-let BASE = 0;
+let BASE = 0;            // ยอดรวมเฉพาะรายการที่ติ๊กเลือก (ใช้เป็นฐานคำนวณ % มัดจำ)
+let FULL_TOTAL = 0;      // ยอดรวมทั้งหมด (ใช้หักมัดจำเพื่อหายอดคงเหลือ)
+let ALL_ITEMS = [];      // เก็บข้อมูลรายการทั้งหมด {idx, name, qty, price, sub, selected}
+
 const active = { g: false, b: false };
 const mode   = { g: 'pct', b: 'pct' };
 const names  = { g: 'สินค้า', b: 'บริการ' };
@@ -690,6 +756,10 @@ function removeToast(id){
   setTimeout(()=>el.remove(),250);
 }
 
+function getSelectedItems(){
+  return ALL_ITEMS.filter(it => it.selected);
+}
+
 function buildPreviewUrl(){
   const params = new URLSearchParams();
   params.set('so_id',            document.getElementById('so_id').value || '');
@@ -700,11 +770,15 @@ function buildPreviewUrl(){
   params.set('contactso',        document.getElementById('contactso').value || '');
   params.set('customer_tel',     document.getElementById('customer_tel').value || '');
   params.set('customer_address', document.getElementById('customer_address').value || '');
-  params.set('note',          document.getElementById('note').value || '');
+  params.set('note',             document.getElementById('note').value || '');
   params.set('emp_name',         document.getElementById('hidden-emp').value || '');
   params.set('sale_name',        document.getElementById('hidden-sale').value || '');
   params.set('billid',           document.getElementById('billid').value || '');
   params.set('grand_total',      document.getElementById('hidden-grandtotal').value || '0');
+
+  // ส่งเฉพาะ index รายการที่เลือก
+  const selectedIdx = getSelectedItems().map(it => it.idx);
+  params.set('selected_items', JSON.stringify(selectedIdx));
 
   const deposits = [];
   const typeMap = { g:'product', b:'service' };
@@ -857,24 +931,39 @@ async function fetchSODetails(soNum){
   }finally{hideLoading();}
 }
 
+function escapeHtml(s){
+  return (s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
 function renderItems(items){
   const tbody=document.getElementById('tbody');
   tbody.innerHTML='';
-  let total=0;
+  ALL_ITEMS = [];
 
   if(!items||!items.length){
-    tbody.innerHTML=`<tr><td colspan="4"><div class="tbl-empty"><div class="tbl-empty-icon"><svg width="40" height="40" viewBox="0 0 40 40" fill="none"><rect x="8" y="6" width="24" height="28" rx="4" stroke="#C5D6EC" stroke-width="2"/><path d="M14 14h12M14 20h12M14 26h8" stroke="#C5D6EC" stroke-width="2" stroke-linecap="round"/></svg></div>ไม่พบรายการสินค้า</div></td></tr>`;
+    tbody.innerHTML=`<tr><td colspan="5"><div class="tbl-empty"><div class="tbl-empty-icon"><svg width="40" height="40" viewBox="0 0 40 40" fill="none"><rect x="8" y="6" width="24" height="28" rx="4" stroke="#C5D6EC" stroke-width="2"/><path d="M14 14h12M14 20h12M14 26h8" stroke="#C5D6EC" stroke-width="2" stroke-linecap="round"/></svg></div>ไม่พบรายการสินค้า</div></td></tr>`;
+    document.getElementById('selection-bar').style.display = 'none';
+    document.getElementById('srow-fulltotal').style.display = 'none';
     return;
   }
 
-  items.forEach(item=>{
+  items.forEach((item, idx)=>{
     const qty  =parseFloat(item.GoodQty2)  ||0;
     const price=parseFloat(item.GoodPrice2)||0;
     const sub  =qty*price;
-    total+=sub;
+    const name = (item.GoodName||'').trim();
+
+    ALL_ITEMS.push({ idx, name, qty, price, sub, selected: true });
+
     tbody.insertAdjacentHTML('beforeend',`
-      <tr data-sub="${sub}">
-        <td class="td-name">${(item.GoodName||'').trim().replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;')}</td>
+      <tr class="row-checked" data-idx="${idx}" data-sub="${sub}">
+        <td class="td-check">
+          <label class="chk">
+            <input type="checkbox" class="chk-item" data-idx="${idx}" checked onchange="onItemCheckChange(${idx}, this.checked)">
+            <span class="chk-box"></span>
+          </label>
+        </td>
+        <td class="td-name">${escapeHtml(name)}</td>
         <td class="td-num" style="text-align:center">${qty.toFixed(2)}</td>
         <td class="td-num">${fmtPlain(price)}</td>
         <td class="td-num">${fmtPlain(sub)}</td>
@@ -882,13 +971,100 @@ function renderItems(items){
       </tr>`);
   });
 
-  BASE=total;
-  document.getElementById('sv-sub').textContent    =fmt(BASE);
-  document.getElementById('sv-grand').textContent  =fmt(BASE);
-  document.getElementById('hidden-subtotal').value  =BASE.toFixed(2);
-  document.getElementById('hidden-grandtotal').value=BASE.toFixed(2);
+  // แสดง selection bar
+  document.getElementById('selection-bar').style.display = 'flex';
+  recalcBase();
+}
+
+/* ==== Selection logic ==== */
+function onItemCheckChange(idx, checked){
+  const item = ALL_ITEMS.find(it => it.idx === idx);
+  if(item) item.selected = checked;
+  // อัพเดทสีแถว
+  const row = document.querySelector(`tr[data-idx="${idx}"]`);
+  if(row){
+    row.classList.toggle('row-checked', checked);
+    row.classList.toggle('row-unchecked', !checked);
+  }
+  recalcBase();
+}
+
+function selectAllItems(checked){
+  ALL_ITEMS.forEach(it => it.selected = checked);
+  document.querySelectorAll('.chk-item').forEach(cb => {
+    cb.checked = checked;
+  });
+  document.querySelectorAll('#tbody tr[data-idx]').forEach(row => {
+    row.classList.toggle('row-checked', checked);
+    row.classList.toggle('row-unchecked', !checked);
+  });
+  recalcBase();
+}
+
+function onCheckAllChange(el){
+  selectAllItems(el.checked);
+}
+
+function updateCheckAllState(){
+  const total = ALL_ITEMS.length;
+  const sel   = ALL_ITEMS.filter(it => it.selected).length;
+  const all = document.getElementById('chk-all');
+  if(!all) return;
+  if(sel === 0){
+    all.checked = false;
+    all.indeterminate = false;
+  } else if(sel === total){
+    all.checked = true;
+    all.indeterminate = false;
+  } else {
+    all.checked = false;
+    all.indeterminate = true;
+  }
+}
+
+function recalcBase(){
+  // คำนวณยอดทั้งสองชนิด
+  FULL_TOTAL = ALL_ITEMS.reduce((s, it) => s + it.sub, 0);
+  BASE       = ALL_ITEMS.filter(it => it.selected).reduce((s, it) => s + it.sub, 0);
+
+  // อัพเดท selection bar
+  const sel = ALL_ITEMS.filter(it => it.selected).length;
+  document.getElementById('sel-count').textContent  = sel;
+  document.getElementById('sel-total').textContent  = ALL_ITEMS.length;
+  document.getElementById('sel-amount').textContent = fmt(BASE);
+
+  // ยอดรวมทั้งหมด (แสดงเสมอ)
+  document.getElementById('sv-fulltotal').textContent = fmt(FULL_TOTAL);
+
+  // ยอดที่เลือกคิดมัดจำ — แสดงเฉพาะตอนเลือกบางส่วน
+  const selRow = document.getElementById('srow-selected');
+  if(sel < ALL_ITEMS.length && ALL_ITEMS.length > 0){
+    selRow.style.display = 'flex';
+    document.getElementById('sv-sub-label').textContent = `ยอดที่เลือกคิดมัดจำ (${sel}/${ALL_ITEMS.length} รายการ)`;
+    document.getElementById('sv-sub').textContent = fmt(BASE);
+  } else {
+    selRow.style.display = 'none';
+  }
+
+  document.getElementById('hidden-subtotal').value   = FULL_TOTAL.toFixed(2);
+  document.getElementById('hidden-grandtotal').value = FULL_TOTAL.toFixed(2);
+
+  updateCheckAllState();
+
+  // ถ้ามีค่ามัดจำเป็น amount mode → reclamp ตาม FULL_TOTAL ใหม่
+  KEYS.forEach(k => {
+    if(active[k] && mode[k] === 'amt'){
+      const inp = document.getElementById('dep-'+k);
+      const cur = parseFloat(inp.value) || 0;
+      const otherAmt = getOtherAmt(k);
+      const maxAmt = Math.max(0, +(FULL_TOTAL - otherAmt).toFixed(2));
+      if(cur > maxAmt){
+        inp.value = maxAmt;
+      }
+    }
+  });
+
   calc();
-  updatePdfPreview();
 }
 
 function fetchContactSo(cid){
@@ -911,10 +1087,18 @@ function setMode(k, m){
   const tabAmt = document.getElementById('mtab-'+k+'-amt');
   tabPct.className = 'mode-tab' + (m==='pct' ? ' on-'+k : '');
   tabAmt.className = 'mode-tab' + (m==='amt' ? ' on-'+k : '');
-  if(m === 'pct'){ unit.textContent = '%'; inp.max = '100'; }
-  else { unit.textContent = '฿'; inp.removeAttribute('max'); }
+  if(m === 'pct'){
+    unit.textContent = '%';
+    inp.max = '100';
+    inp.step = '1';
+    inp.placeholder = '0';
+  } else {
+    unit.textContent = '฿';
+    inp.removeAttribute('max');
+    inp.step = '0.01';
+    inp.placeholder = '0.00';
+  }
   inp.value = '';
-  inp.placeholder = '0.00';
   const res = document.getElementById('dres-'+k);
   res.className = 'dep-result '+k;
   res.textContent = m==='pct' ? 'กรอกเปอร์เซ็นต์มัดจำ' : 'กรอกจำนวนเงินมัดจำ';
@@ -930,7 +1114,7 @@ function toggleCard(k){
       document.getElementById('dcard-'+id).className = 'dep-card';
       document.getElementById('dtog-'+id).className  = 'dep-toggle';
       const inp = document.getElementById('dep-'+id);
-      inp.disabled = true; inp.value = ''; inp.max = '100'; inp.placeholder = '0.00';
+      inp.disabled = true; inp.value = ''; inp.max = '100'; inp.step = '1'; inp.placeholder = '0';
       document.getElementById('mtab-'+id+'-pct').className = 'mode-tab on-'+id;
       document.getElementById('mtab-'+id+'-amt').className = 'mode-tab';
       document.getElementById('unit-'+id).textContent = '%';
@@ -939,6 +1123,10 @@ function toggleCard(k){
     }
   });
   if(!wasActive){
+    if(BASE <= 0){
+      showToast('ไม่มีรายการที่เลือก','กรุณาเลือกรายการสินค้าอย่างน้อย 1 รายการก่อน','warning');
+      return;
+    }
     active[k] = true;
     document.getElementById('dcard-'+k).className = 'dep-card active-'+k;
     document.getElementById('dtog-'+k).className  = 'dep-toggle on-'+k;
@@ -955,26 +1143,42 @@ function getOtherAmt(k){
   const other = k === 'g' ? 'b' : 'g';
   if(!active[other]) return 0;
   const raw = parseFloat(document.getElementById('dep-'+other).value) || 0;
-  if(mode[other] === 'pct'){ return BASE * Math.min(100, Math.max(0, raw)) / 100; }
-  return Math.max(0, raw);
+  if(mode[other] === 'pct'){
+    const pct = Math.min(100, Math.max(0, Math.floor(raw)));
+    return BASE * pct / 100;
+  }
+  return Math.max(0, Math.round(raw * 100) / 100);
 }
 
 function onDepInput(k){
   const inp = document.getElementById('dep-'+k);
   let raw = parseFloat(inp.value);
   if(isNaN(raw) || raw < 0){ inp.value = ''; calc(); return; }
-  const otherAmt = getOtherAmt(k);
-  const maxAmt   = Math.max(0, BASE - otherAmt);
+
   if(mode[k] === 'pct'){
-    const maxPct = BASE > 0 ? Math.min(100, maxAmt / BASE * 100) : 100;
-    if(raw > maxPct){
-      inp.value = parseFloat(maxPct.toFixed(2));
-      showToastOnce('เกินขีดจำกัด', `รวมมัดจำต้องไม่เกิน 100% (เหลือได้อีก ${parseFloat(maxPct.toFixed(2))}%)`, 'warning');
+    // % บังคับเป็นจำนวนเต็ม
+    if(!Number.isInteger(raw)){
+      raw = Math.floor(raw);
+      inp.value = raw;
+    }
+    // ห้ามเกิน 100%
+    if(raw > 100){
+      inp.value = 100;
+      showToastOnce('เกินขีดจำกัด','เปอร์เซ็นต์มัดจำต้องไม่เกิน 100%','warning');
     }
   } else {
+    // ฿ ใส่ทศนิยมได้ (ปัดเป็น 2 ตำแหน่ง)
+    const rounded = Math.round(raw * 100) / 100;
+    if(rounded !== raw){
+      raw = rounded;
+      inp.value = raw;
+    }
+    // มัดจำรวมต้องไม่เกินยอดรวมทั้งหมด (FULL_TOTAL)
+    const otherAmt = getOtherAmt(k);
+    const maxAmt = Math.max(0, +(FULL_TOTAL - otherAmt).toFixed(2));
     if(raw > maxAmt){
-      inp.value = parseFloat(maxAmt.toFixed(2));
-      showToastOnce('เกินยอดคงเหลือ', `มัดจำ${names[k]}ต้องไม่เกิน ${fmt(maxAmt)}`, 'warning');
+      inp.value = maxAmt;
+      showToastOnce('เกินยอดรวม',`มัดจำ${names[k]}ต้องไม่เกิน ${fmt(maxAmt)} (ยอดรวมทั้งหมด ${fmt(FULL_TOTAL)})`,'warning');
     }
   }
   calc();
@@ -997,15 +1201,18 @@ function calc(){
       const raw = parseFloat(document.getElementById('dep-'+k).value) || 0;
       let pct, amt;
       if(mode[k]==='pct'){
-        pct = Math.min(100, Math.max(0, raw));
+        // % เป็นจำนวนเต็ม คิดบน BASE (เฉพาะรายการที่เลือก)
+        pct = Math.min(100, Math.max(0, Math.floor(raw)));
         amt = BASE * pct / 100;
         res.className   = 'dep-result '+k;
         res.textContent = amt > 0 ? fmtPlain(amt)+' บาท' : 'กรอกเปอร์เซ็นต์มัดจำ';
       } else {
-        amt = Math.max(0, raw);
+        // ฿ ทศนิยม 2 ตำแหน่ง
+        amt = Math.max(0, Math.round(raw * 100) / 100);
+        // % แสดงผลจาก BASE
         pct = BASE > 0 ? (amt / BASE * 100) : 0;
         res.className   = 'dep-result '+k;
-        res.textContent = amt > 0 ? 'คิดเป็น '+fmtPct(pct)+'%' : 'กรอกจำนวนเงินมัดจำ';
+        res.textContent = amt > 0 ? 'คิดเป็น '+fmtPct(pct)+'% ของยอดที่เลือก' : 'กรอกจำนวนเงินมัดจำ';
       }
       totDepAmt += amt;
       srow.style.display = 'flex';
@@ -1015,23 +1222,36 @@ function calc(){
       srow.style.display = 'none';
     }
   });
-  totDepAmt = Math.min(totDepAmt, BASE);
+
+  // มัดจำรวมต้องไม่เกินยอดรวมทั้งหมด
+  totDepAmt = Math.min(totDepAmt, FULL_TOTAL);
+
   const any = Object.values(active).some(v=>v);
-  const net = Math.max(0, BASE - totDepAmt);
+  // ✅ ยอดคงเหลือ = ยอดรวมทั้งหมด - มัดจำ
+  const net = Math.max(0, FULL_TOTAL - totDepAmt);
+
   document.getElementById('srow-tot').style.display  = any ? 'flex' : 'none';
   document.getElementById('sval-tot').textContent    = '-'+fmt(totDepAmt);
   document.getElementById('sv-grand').textContent    = fmt(net);
   document.getElementById('hidden-grandtotal').value = net.toFixed(2);
+
   const dth = document.getElementById('dep-th');
   if(any && totDepAmt > 0){
     dth.style.display = '';
-    document.querySelectorAll('#tbody tr').forEach(row=>{
-      const sub  = parseFloat(row.getAttribute('data-sub')) || 0;
+    document.querySelectorAll('#tbody tr[data-idx]').forEach(row=>{
+      const idx  = parseInt(row.getAttribute('data-idx'));
+      const item = ALL_ITEMS.find(it => it.idx === idx);
       const cell = row.querySelector('.dep-cell');
-      if(cell){
-        cell.style.display = '';
-        const itemDep = BASE > 0 ? (sub / BASE * totDepAmt) : 0;
+      if(!cell || !item) return;
+      cell.style.display = '';
+      if(item.selected && BASE > 0){
+        // เฉลี่ยมัดจำตามสัดส่วนของรายการที่เลือก
+        const itemDep = (item.sub / BASE) * totDepAmt;
         cell.textContent = '-฿'+fmtPlain(itemDep);
+        cell.style.color = '';
+      } else {
+        cell.textContent = '—';
+        cell.style.color = 'var(--text-hint)';
       }
     });
   } else {
@@ -1041,16 +1261,7 @@ function calc(){
   updatePdfPreview();
 }
 
-// ===== Lock กันส่งซ้ำ (queue ฝั่ง JS) =====
-let _isSubmitting = false;
-
 document.getElementById('submitBill').addEventListener('click', async function(){
-  // ✅ กันกดซ้ำขณะกำลังประมวลผล
-  if(_isSubmitting){
-    showToast('กำลังประมวลผล','กรุณารอสักครู่ ระบบกำลังบันทึกข้อมูล','warning');
-    return;
-  }
-
   const btn = this;
   const soId        = document.getElementById('so_id').value.trim();
   const contactso   = document.getElementById('contactso').value.trim();
@@ -1060,6 +1271,12 @@ document.getElementById('submitBill').addEventListener('click', async function()
   if(!contactso){
     showToast('ข้อมูลไม่ครบ','กรุณากรอกชื่อผู้ติดต่อ','error');
     document.getElementById('contactso').focus();
+    return;
+  }
+
+  const selectedItems = getSelectedItems();
+  if(selectedItems.length === 0){
+    showToast('ไม่มีรายการที่เลือก','กรุณาเลือกรายการสินค้าที่ต้องการคิดมัดจำอย่างน้อย 1 รายการ','warning');
     return;
   }
 
@@ -1113,13 +1330,23 @@ document.getElementById('submitBill').addEventListener('click', async function()
     sale_name:        saleName,
     po_document:      poDoc,
     billid:           document.getElementById('billid').value,
+    subtotal:         parseFloat(document.getElementById('hidden-subtotal').value) || 0,
     grand_total:      parseFloat(document.getElementById('hidden-grandtotal').value) || 0,
     deposits:         deposits,
     tax_id:           document.getElementById('tax_id').value,
+
+    // ✅ ส่งรายการที่เลือกไปด้วย
+    selected_items:   selectedItems.map(it => ({
+                        idx:    it.idx,
+                        name:   it.name,
+                        qty:    it.qty,
+                        price:  it.price,
+                        sub:    +it.sub.toFixed(2),
+                      })),
+    selected_count:   selectedItems.length,
+    total_count:      ALL_ITEMS.length,
   };
 
-  // ✅ Lock ก่อนยิง request
-  _isSubmitting = true;
   btn.disabled = true;
   const originalHTML = btn.innerHTML;
   btn.innerHTML = `<svg width="17" height="17" viewBox="0 0 17 17" fill="none" style="animation:spin .7s linear infinite"><path d="M8.5 2a6.5 6.5 0 0 1 6.5 6.5" stroke="white" stroke-width="2" stroke-linecap="round"/></svg>กำลังบันทึก...`;
@@ -1128,79 +1355,20 @@ document.getElementById('submitBill').addEventListener('click', async function()
     const csrf = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
     const res = await fetch('/deposit/store', {
       method: 'POST',
-      headers: {
-        'Content-Type':'application/json',
-        'Accept':'application/json',
-        'X-CSRF-TOKEN': csrf
-      },
+      headers: { 'Content-Type':'application/json', 'Accept':'application/json', 'X-CSRF-TOKEN': csrf },
       body: JSON.stringify(payload),
     });
     const data = await res.json();
-
-    if(!res.ok || !data.success){
-      throw new Error(data.message || `HTTP ${res.status}`);
-    }
-
-    // ✅ บันทึกสำเร็จ — แสดงเลขที่ใบมัดจำ
-    showToast(
-      'บันทึกสำเร็จ',
-      `เลขที่ใบมัดจำ: ${data.deposit_bill_id} กำลังดาวน์โหลด PDF...`,
-      'success'
-    );
-
-    // เปลี่ยนข้อความปุ่ม
-    btn.innerHTML = `<svg width="17" height="17" viewBox="0 0 17 17" fill="none" style="animation:spin .7s linear infinite"><path d="M8.5 2a6.5 6.5 0 0 1 6.5 6.5" stroke="white" stroke-width="2" stroke-linecap="round"/></svg>กำลังดาวน์โหลด PDF...`;
-
-    // ✅ ดาวน์โหลด PDF อัตโนมัติด้วยชื่อ {deposit_bill_id}.pdf
-    if(data.pdf_url && data.deposit_bill_id){
-      await downloadPdfFile(data.pdf_url, data.deposit_bill_id + '.pdf');
-    } else {
-      showToast('ไม่พบไฟล์ PDF','ระบบบันทึกข้อมูลแล้ว แต่ไม่พบลิงก์ดาวน์โหลด','warning');
-    }
-
-    // ✅ รอดาวน์โหลดเริ่มแล้วค่อย redirect
-    setTimeout(() => { window.location.href = '/SOlist'; }, 1800);
-
+    if(!res.ok || !data.success){ throw new Error(data.message || `HTTP ${res.status}`); }
+    showToast('บันทึกสำเร็จ', data.message || 'บันทึกใบมัดจำเรียบร้อยแล้ว', 'success');
+    setTimeout(() => { window.location.href = '/SOlist'; }, 1500);
   }catch(err){
     console.error(err);
     showToast('บันทึกไม่สำเร็จ', err.message || 'เกิดข้อผิดพลาด', 'error');
-    // ปลด lock เฉพาะกรณี error
-    _isSubmitting = false;
     btn.disabled = false;
     btn.innerHTML = originalHTML;
   }
 });
-
-/**
- * ดาวน์โหลด PDF บังคับชื่อไฟล์เป็น {deposit_bill_id}.pdf
- */
-async function downloadPdfFile(url, filename){
-  try{
-    const response = await fetch(url, {
-      method: 'GET',
-      headers: { 'Accept': 'application/pdf' },
-      credentials: 'same-origin',
-    });
-    if(!response.ok) throw new Error(`HTTP ${response.status}`);
-
-    const blob    = await response.blob();
-    const blobUrl = URL.createObjectURL(blob);
-
-    const a = document.createElement('a');
-    a.href     = blobUrl;
-    a.download = filename;
-    a.style.display = 'none';
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-
-    setTimeout(() => URL.revokeObjectURL(blobUrl), 1500);
-  }catch(err){
-    console.error('Download PDF error:', err);
-    showToast('ดาวน์โหลด PDF ไม่สำเร็จ','บันทึกข้อมูลแล้ว แต่ดาวน์โหลดไม่ได้: ' + err.message,'warning');
-    if(url) window.open(url, '_blank');
-  }
-}
 </script>
 </body>
 </html>

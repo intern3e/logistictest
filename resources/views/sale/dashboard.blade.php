@@ -17,12 +17,8 @@
             @csrf
             
             <a href="http://server_update:8000/solist" button  type="submit" class="btn btn-danger">🚪 หน้าหลัก</a>
-            <a href="Sotest" style="background-color: #0077ff; color: white; padding: 6px 8px; border-radius: 5px; text-decoration: none;">ข้อมูลจัดส่ง</a>
-            {{-- <a href="{{ route('stock.dashboard') }}" class="btn btn-danger">เช็ค stock</a> --}}
-       <a href="alertsale" title="แจ้งเตือนนะจ๊ะ" class="notification-icon" style="background-color: rgb(245, 245, 69); padding: 5px; border-radius: 5px; display: inline-block;">
-             <img src="https://cdn-icons-png.flaticon.com/512/2645/2645897.png" alt="แจ้งเตือน">
-            <span class="notification-badge" id="alertBadge">0</span>
-        </a>
+            {{-- <a href="Sotest" style="background-color: #0077ff; color: white; padding: 6px 8px; border-radius: 5px; text-decoration: none;">ตารางเดินรถ</a> --}}
+            <a href="alertbill" style="background-color: #ff0000; color: white; padding: 6px 8px; border-radius: 5px; text-decoration: none;">งานค้าง</a>
         </div>
     </div>
     
@@ -54,44 +50,6 @@
     <button type="submit" style="display: none;">ค้นหา</button>
 </form>
         
-<script>
-  let isChecking = false;
-
-  async function checkForAlerts() {
-    if (isChecking) return; // ป้องกันเรียกซ้ำซ้อน
-    isChecking = true;
-
-    try {
-      const response = await fetch('/alertsale/count', {
-        headers: {
-          'X-Requested-With': 'XMLHttpRequest',
-        }
-      });
-
-      if (!response.ok) throw new Error("Response ไม่โอเค");
-
-      const data = await response.json();
-      const badge = document.getElementById('alertBadge');
-
-      if (data.count > 0) {
-        badge.textContent = data.count;
-        badge.style.display = 'block';
-      } else {
-        badge.style.display = 'none';
-      }
-    } catch (error) {
-      console.error('ไม่สามารถเช็คการแจ้งเตือนได้:', error);
-    } finally {
-      isChecking = false;
-    }
-  }
-
-  // เรียกตอนโหลดหน้า
-  checkForAlerts();
-
-  // เรียกซ้ำทุก 1 วิ
-  setInterval(checkForAlerts, 180000);
-</script>
 
 
     <!-- Filter & Search Section -->
@@ -179,7 +137,7 @@ document.getElementById('searchInput').addEventListener('input', function () {
 
                 @foreach($bill as $item)
                 <tr>
-                    <td>{{ $loop->iteration }}</td>
+                    <td>{{ ($bill->currentPage() - 1) * $bill->perPage() + $loop->iteration }}</td>
 @php
     $pdfPath = "doc_document/{$item->billid}.pdf";
     $billPath = "bill_document/{$item->billid}.pdf";
