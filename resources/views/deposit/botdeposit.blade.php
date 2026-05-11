@@ -555,7 +555,7 @@ nav[role="navigation"] span[aria-current="page"]{
                   <input type="file" 
                     name ="button_pdf"
                     class="inp-sm file-input"
-                    id="bill_input_{{ $item->id }}"
+                    id="bill_input"
                     accept="application/pdf"
                     style="width:140px;font-size:11px;padding:3px"
                     onchange="uploadDepositPdf('{{ $item->id }}','{{ $item->deposit_bill_id }}',this)">
