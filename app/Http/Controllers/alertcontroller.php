@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 use App\Models\Bill;
 use App\Models\docBills;
 use App\Models\pobills;
+use App\Models\Manualbill;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
@@ -11,109 +12,160 @@ use Illuminate\Support\Facades\log;
 
 class AlertController extends Controller
 {
-    public function dashboard(Request $request)
-        {
-            $date = $request->input('date');
-            $missingBills = [];
-            $error = null;
+  public function dashboard(Request $request)
+    {
+        $date = $request->input('date');
+        $missingBills = [];
+        $error = null;
 
-            Log::info('========== AlertBill START ==========');
-            Log::info('Request date: ' . ($date ?? 'null'));
+        Log::info('========== AlertBill START ==========');
+        Log::info('Request date: ' . ($date ?? 'null'));
 
-            if ($date) {
-                try {
-                    $apiUrl = "http://server_update:8000/api/getTotalBillByDate?date={$date}";
-                    Log::info('Calling API: ' . $apiUrl);
+        if ($date) {
+            try {
+                $apiUrl = "http://server_update:8000/api/getTotalBillByDate?date={$date}";
+                Log::info('Calling API: ' . $apiUrl);
 
-                    $response = Http::timeout(15)->get($apiUrl);
+                $response = Http::timeout(15)->get($apiUrl);
 
-                    Log::info('API HTTP status: ' . $response->status());
-                    Log::info('API raw body: ' . $response->body());
+                Log::info('API HTTP status: ' . $response->status());
 
-                    if ($response->successful()) {
-                        $json = $response->json();
-                        $apiData = $json['data'] ?? [];
+                if ($response->successful()) {
+                    $json = $response->json();
+                    $apiData = $json['data'] ?? [];
 
-                        Log::info('API data count: ' . count($apiData));
-                        Log::info('API first item: ' . json_encode($apiData[0] ?? null));
+                    $carbon = \Carbon\Carbon::parse($date);
+                    $yy = $carbon->format('y');
+                    $mm = $carbon->format('m');
+                    $prefix = '4' . $yy . $mm;
 
-                        // สร้าง prefix 4yymm
-                        $carbon = \Carbon\Carbon::parse($date);
-                        $yy = $carbon->format('y');
-                        $mm = $carbon->format('m');
-                        $prefix = '4' . $yy . $mm;
+                    $yyTh = (int)$carbon->format('Y') + 543;
+                    $prefixTh = '4' . substr($yyTh, -2) . $mm;
 
-                        Log::info("Prefix calculated (ค.ศ.): {$prefix}");
+                    $filtered = collect($apiData)->filter(function ($item) use ($prefix, $prefixTh) {
+                        $docuNo = $item['DocuNo'] ?? '';
+                        return str_starts_with($docuNo, $prefix) || str_starts_with($docuNo, $prefixTh);
+                    })->values();
 
-                        // ลอง prefix แบบ พ.ศ. ด้วย เผื่อใช้
-                        $yyTh = (int)$carbon->format('Y') + 543;
-                        $prefixTh = '4' . substr($yyTh, -2) . $mm;
-                        Log::info("Prefix calculated (พ.ศ.): {$prefixTh}");
+                    $apiBillIds = $filtered->pluck('DocuNo')->filter()->unique()->toArray();
 
-                        // กรองเฉพาะบิลที่ขึ้นต้นด้วย prefix (ลองทั้ง 2 แบบ)
-                        $filtered = collect($apiData)->filter(function ($item) use ($prefix, $prefixTh) {
-                            $docuNo = $item['DocuNo'] ?? '';
-                            return str_starts_with($docuNo, $prefix) || str_starts_with($docuNo, $prefixTh);
-                        })->values();
+                    if (!empty($apiBillIds)) {
+                        // ✅ บิลที่มีใน tblbill อยู่แล้ว
+                        $existingBillIds = DB::table('tblbill')
+                            ->whereIn('billid', $apiBillIds)
+                            ->pluck('billid')
+                            ->toArray();
 
-                        Log::info('Filtered count (matched prefix): ' . $filtered->count());
-                        Log::info('Filtered sample: ' . json_encode($filtered->take(3)->all()));
+                        // ✅ บิลที่อยู่ใน manualbills (ถูกลบไปแล้ว) ก็ถือว่า "มีแล้ว" ไม่ต้องแสดง
+                        $manualBillIds = Manualbill::whereIn('billid', $apiBillIds)
+                            ->pluck('billid')
+                            ->toArray();
 
-                        $apiBillIds = $filtered->pluck('DocuNo')->filter()->unique()->toArray();
-                        Log::info('API billIds: ' . json_encode($apiBillIds));
+                        // รวมทั้ง 2 แหล่งเป็น "ไม่ต้องแสดง"
+                        $excludedBillIds = array_unique(array_merge($existingBillIds, $manualBillIds));
 
-                        if (!empty($apiBillIds)) {
-                            $existingBillIds = DB::table('tblbill')
-                                ->whereIn('billid', $apiBillIds)
-                                ->pluck('billid')
-                                ->toArray();
+                        Log::info('Existing in tblbill: ' . count($existingBillIds));
+                        Log::info('Existing in manualbills: ' . count($manualBillIds));
+                        Log::info('Total excluded: ' . count($excludedBillIds));
 
-                            Log::info('Existing in DB: ' . json_encode($existingBillIds));
+                        $missingBillIds = array_diff($apiBillIds, $excludedBillIds);
 
-                            $missingBillIds = array_diff($apiBillIds, $existingBillIds);
-                            Log::info('Missing billIds: ' . json_encode($missingBillIds));
-                                $missingBills = $filtered
-                                    ->whereIn('DocuNo', $missingBillIds)
-                                    ->sortBy('DocuNo')
-                                    ->values()
-                                    ->all();
+                        $missingBills = $filtered
+                            ->whereIn('DocuNo', $missingBillIds)
+                            ->sortBy('DocuNo')
+                            ->values()
+                            ->all();
 
-                            Log::info('Missing bills count: ' . count($missingBills));
-                        } else {
-                            Log::warning('No bills matched prefix - apiBillIds is empty');
-                        }
+                        Log::info('Missing bills count: ' . count($missingBills));
                     } else {
-                        $error = 'API ตอบกลับไม่สำเร็จ (HTTP ' . $response->status() . ')';
-                        Log::error($error);
+                        Log::warning('No bills matched prefix');
                     }
-                } catch (\Exception $e) {
-                    $error = 'เกิดข้อผิดพลาด: ' . $e->getMessage();
-                    Log::error('Exception: ' . $e->getMessage());
-                    Log::error($e->getTraceAsString());
+                } else {
+                    $error = 'API ตอบกลับไม่สำเร็จ (HTTP ' . $response->status() . ')';
                 }
+            } catch (\Exception $e) {
+                $error = 'เกิดข้อผิดพลาด: ' . $e->getMessage();
+                Log::error('Exception: ' . $e->getMessage());
             }
-
-                // สร้าง pagination 100 ต่อหน้า
-                $perPage = 100;
-                $currentPage = \Illuminate\Pagination\LengthAwarePaginator::resolveCurrentPage();
-                $collection = collect($missingBills);
-                $paginated = new \Illuminate\Pagination\LengthAwarePaginator(
-                    $collection->forPage($currentPage, $perPage)->values(),
-                    $collection->count(),
-                    $perPage,
-                    $currentPage,
-                    ['path' => $request->url(), 'query' => $request->query()]
-                );
-
-                Log::info('Final missingBills count: ' . count($missingBills));
-                Log::info('========== AlertBill END ==========');
-
-                return view('alert.alertbill', [
-                    'missingBills' => $paginated,
-                    'date' => $date,
-                    'error' => $error,
-                ]);
         }
+
+        $perPage = 100;
+        $currentPage = \Illuminate\Pagination\LengthAwarePaginator::resolveCurrentPage();
+        $collection = collect($missingBills);
+        $paginated = new \Illuminate\Pagination\LengthAwarePaginator(
+            $collection->forPage($currentPage, $perPage)->values(),
+            $collection->count(),
+            $perPage,
+            $currentPage,
+            ['path' => $request->url(), 'query' => $request->query()]
+        );
+
+        Log::info('========== AlertBill END ==========');
+
+        return view('alert.alertbill', [
+            'missingBills' => $paginated,
+            'date'         => $date,
+            'error'        => $error,
+        ]);
+    }
+public function removeBills(Request $request)
+{
+    try {
+        $bills = $request->input('bills', []);
+
+        if (empty($bills) || !is_array($bills)) {
+            return response()->json([
+                'status'  => 'error',
+                'message' => 'ไม่มีรายการที่ส่งมา',
+            ], 400);
+        }
+
+        $now = now();
+        $rows = [];
+
+        foreach ($bills as $b) {
+            $billid = trim($b['billid'] ?? '');
+            if ($billid === '') continue;
+
+            $rows[] = [
+                'billid'     => $billid,
+                'sono'       => $b['sono'] ?? null,
+                'docu_date'  => !empty($b['docu_date'])
+                                ? \Carbon\Carbon::parse($b['docu_date'])->format('Y-m-d')
+                                : null,
+                'removed_at' => $now,
+            ];
+        }
+
+        if (empty($rows)) {
+            return response()->json([
+                'status'  => 'error',
+                'message' => 'ข้อมูลไม่ถูกต้อง',
+            ], 400);
+        }
+
+        // upsert ป้องกัน billid ซ้ำ (UNIQUE)
+        DB::table('manualbills')->upsert(
+            $rows,
+            ['billid'],
+            ['sono', 'docu_date', 'removed_at']
+        );
+
+        Log::info('Manualbill upsert count: ' . count($rows));
+
+        return response()->json([
+            'status'  => 'success',
+            'message' => 'ลบและบันทึกข้อมูลสำเร็จ ' . count($rows) . ' รายการ',
+            'count'   => count($rows),
+        ]);
+    } catch (\Throwable $e) {
+        Log::error('removeBills error: ' . $e->getMessage());
+        return response()->json([
+            'status'  => 'error',
+            'message' => 'เกิดข้อผิดพลาด: ' . $e->getMessage(),
+        ], 500);
+    }
+}
  public function updatesolve(Request $request)
 {
     try {

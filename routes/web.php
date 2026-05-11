@@ -115,7 +115,7 @@ Route::get('/alertbill', [alertcontroller::class, 'dashboard'])->name('alert.ale
 Route::post('/updatesolve', [alertcontroller::class, 'updatesolve'])->name('updatesolve');
 Route::get('/alertaccount', [alertcontroller::class, 'dashboardaccount'])->name('alert.alertaccount');
 Route::post('/finish', [alertcontroller::class, 'finish'])->name('finish.ng');
-
+Route::post('/alertbill/remove', [alertcontroller::class, 'removeBills'])->name('alert.removeBills');
 Route::get('/getall-bill-detail/{id}', [alertcontroller::class, 'getBillDetail']);
 
 

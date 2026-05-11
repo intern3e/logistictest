@@ -18,7 +18,7 @@
             
             <a href="http://server_update:8000/solist" button  type="submit" class="btn btn-danger">🚪 หน้าหลัก</a>
             {{-- <a href="Sotest" style="background-color: #0077ff; color: white; padding: 6px 8px; border-radius: 5px; text-decoration: none;">ตารางเดินรถ</a> --}}
-            <a href="alertbill" style="background-color: #ff0000; color: white; padding: 6px 8px; border-radius: 5px; text-decoration: none;">งานค้าง</a>
+            <a href="alertbill" style="background:#c0392b; color:#fff; padding:7px 14px; text-decoration:none; font-weight:600; font-size:13px; border:1px solid #c0392b; border-radius:6px;">งานค้าง</a>
         </div>
     </div>
     
