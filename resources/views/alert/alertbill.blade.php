@@ -511,19 +511,19 @@
                             </tr>
                         </thead>
                         <tbody>
-                                @forelse($missingBills as $i => $item)
-                                    <tr data-billid="{{ $item['DocuNo'] ?? '' }}"
-                                        data-sono="{{ $item['SONo'] ?? '' }}"
-                                        data-docudate="{{ $item['DocuDate'] ?? '' }}">
-                                        <td class="td-check">
-                                            <input type="checkbox" class="row-check" value="{{ $item['DocuNo'] ?? '' }}">
-                                        </td>
-                                        <td>{{ ($missingBills->firstItem() ?? 0) + $i }}</td>
-                                        <td><span class="doc-no">{{ $item['DocuNo'] ?? '-' }}</span></td>
-                                        <td><span class="so-no">{{ $item['SONo'] ?? '-' }}</span></td>
-                                        <td><span class="date-cell">{{ isset($item['DocuDate']) ? \Carbon\Carbon::parse($item['DocuDate'])->format('d/m/Y') : '-' }}</span></td>
-                                    </tr>
-                                @empty
+                            @forelse($missingBills as $i => $item)
+                                <tr data-billid="{{ $item['DocuNo'] ?? '' }}"
+                                    data-sono="{{ $item['SONo'] ?? '' }}"
+                                    data-docudate="{{ $item['DocuDate'] ?? '' }}">
+                                    <td class="td-check">
+                                        <input type="checkbox" class="row-check" value="{{ $item['DocuNo'] ?? '' }}">
+                                    </td>
+                                    <td>{{ ($missingBills->firstItem() ?? 0) + $i }}</td>
+                                    <td><span class="doc-no">{{ $item['DocuNo'] ?? '-' }}</span></td>
+                                    <td><span class="so-no">{{ $item['SONo'] ?? '-' }}</span></td>
+                                    <td><span class="date-cell">{{ isset($item['DocuDate']) ? \Carbon\Carbon::parse($item['DocuDate'])->format('d/m/Y') : '-' }}</span></td>
+                                </tr>
+                            @empty
                                 <tr class="empty-row">
                                     <td colspan="5">
                                         <div class="icon">✓</div>
@@ -555,136 +555,144 @@
     </main>
 
     <script>
-    (function() {
-        const checkAll = document.getElementById('check-all');
-        const btnRemove = document.getElementById('btn-remove');
-        const countLabel = document.getElementById('count');
-        const tbody = document.querySelector('tbody');
-        if (!tbody) return;
+(function() {
+    const checkAll   = document.getElementById('check-all');
+    const btnRemove  = document.getElementById('btn-remove');
+    const countLabel = document.getElementById('count');
+    const tbody      = document.querySelector('tbody');
+    if (!tbody) return;
 
-        const firstItemNo = {{ $missingBills->firstItem() ?? 1 }};
+    const firstItemNo = {{ $missingBills->firstItem() ?? 1 }};
 
-        function getRowChecks() {
-            return tbody.querySelectorAll('.row-check');
-        }
+    function getRowChecks() {
+        return tbody.querySelectorAll('.row-check');
+    }
+    function getCheckedRows() {
+        return tbody.querySelectorAll('.row-check:checked');
+    }
+    function highlightRow(cb) {
+        const row = cb.closest('tr');
+        if (row) row.classList.toggle('row-selected', cb.checked);
+    }
+    function syncCheckAll() {
+        if (!checkAll) return;
+        const all = getRowChecks();
+        const checked = getCheckedRows().length;
+        checkAll.checked = all.length > 0 && checked === all.length;
+        checkAll.indeterminate = checked > 0 && checked < all.length;
+    }
+    function updateUI() {
+        const n = getCheckedRows().length;
+        if (countLabel) countLabel.textContent = n;
+        if (btnRemove)  btnRemove.disabled = n === 0;
+    }
+    function renumber() {
+        tbody.querySelectorAll('tr:not(.empty-row)').forEach(function(row, i) {
+            const cell = row.querySelector('td:nth-child(2)');
+            if (cell) cell.textContent = firstItemNo + i;
+        });
+    }
 
-        function getCheckedRows() {
-            return tbody.querySelectorAll('.row-check:checked');
-        }
-
-        function highlightRow(cb) {
-            const row = cb.closest('tr');
-            if (row) row.classList.toggle('row-selected', cb.checked);
-        }
-
-        function syncCheckAll() {
-            if (!checkAll) return;
-            const all = getRowChecks();
-            const checked = getCheckedRows().length;
-            checkAll.checked = all.length > 0 && checked === all.length;
-            checkAll.indeterminate = checked > 0 && checked < all.length;
-        }
-
-        function updateUI() {
-            const n = getCheckedRows().length;
-            if (countLabel) countLabel.textContent = n;
-            if (btnRemove) btnRemove.disabled = n === 0;
-        }
-
-        function renumber() {
-            tbody.querySelectorAll('tr:not(.empty-row)').forEach(function(row, i) {
-                const cell = row.querySelector('td:nth-child(2)');
-                if (cell) cell.textContent = firstItemNo + i;
+    // ===== Check All =====
+    if (checkAll) {
+        checkAll.addEventListener('click', function() {
+            const state = checkAll.checked;
+            getRowChecks().forEach(function(cb) {
+                if (cb === checkAll) return;
+                cb.checked = state;
+                highlightRow(cb);
             });
-        }
+            updateUI();
+        });
+    }
 
-        // Check all
-        if (checkAll) {
-            checkAll.addEventListener('change', function() {
-                getRowChecks().forEach(function(cb) {
-                    cb.checked = checkAll.checked;
-                    highlightRow(cb);
-                });
-                updateUI();
-            });
-        }
-
-        // Per-row check (event delegation)
-        tbody.addEventListener('change', function(e) {
-            if (e.target.classList.contains('row-check')) {
+    // ===== Row check (delegate ทั้งคลิกและ change) =====
+    tbody.addEventListener('click', function(e) {
+        if (e.target && e.target.classList.contains('row-check')) {
+            // ปล่อยให้ browser toggle checkbox ก่อน แล้วค่อย sync
+            setTimeout(function() {
                 highlightRow(e.target);
                 syncCheckAll();
                 updateUI();
-            }
-        });
+            }, 0);
+        }
+    });
 
-        // Remove selected
-       if (btnRemove) {
-    btnRemove.addEventListener('click', async function() {
-        const selected = getCheckedRows();
-        if (!selected.length) return;
-        if (!confirm('ยืนยันลบรายการที่เลือก ' + selected.length + ' รายการ?')) return;
+    // ===== Remove Selected =====
+    if (btnRemove) {
+        btnRemove.addEventListener('click', async function() {
+            const selected = getCheckedRows();
+            if (!selected.length) return;
+            if (!confirm('ยืนยันลบรายการที่เลือก ' + selected.length + ' รายการ?')) return;
 
-        // เก็บข้อมูลจากแต่ละแถวที่ถูกเลือก
-        const bills = Array.from(selected).map(function(cb) {
-            const row = cb.closest('tr');
-            return {
-                billid:    row.dataset.billid    || '',
-                sono:      row.dataset.sono      || '',
-                docu_date: row.dataset.docudate  || '',
-            };
-        }).filter(b => b.billid);
+            const bills = Array.from(selected).map(function(cb) {
+                const row = cb.closest('tr');
+                return {
+                    billid:    (row && row.dataset.billid)    ? row.dataset.billid    : cb.value,
+                    sono:      (row && row.dataset.sono)      ? row.dataset.sono      : '',
+                    docu_date: (row && row.dataset.docudate)  ? row.dataset.docudate  : '',
+                };
+            }).filter(function(b) { return b.billid; });
 
-        const userName = @json($userName ?? 'Guest');
-        const csrf = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
-
-        btnRemove.disabled = true;
-        const originalLabel = btnRemove.innerHTML;
-        btnRemove.innerHTML = 'กำลังบันทึก...';
-
-        try {
-            const res = await fetch('{{ route('alert.removeBills') }}', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'X-CSRF-TOKEN': csrf,
-                    'Accept': 'application/json',
-                },
-                body: JSON.stringify({ bills: bills }),
-            });
-
-            const data = await res.json();
-
-            if (!res.ok || data.status !== 'success') {
-                alert(data.message || 'เกิดข้อผิดพลาด');
-                btnRemove.innerHTML = originalLabel;
-                btnRemove.disabled = false;
+            if (!bills.length) {
+                alert('ไม่พบเลขที่บิลในแถวที่เลือก');
                 return;
             }
 
-            // ลบแถวออกจาก DOM
-            selected.forEach(function(cb) { cb.closest('tr').remove(); });
-            renumber();
+            const csrfMeta = document.querySelector('meta[name="csrf-token"]');
+            const csrf = csrfMeta ? csrfMeta.getAttribute('content') : '';
 
-            if (!tbody.querySelectorAll('tr:not(.empty-row)').length) {
-                tbody.innerHTML = '<tr class="empty-row"><td colspan="5">' +
-                    '<div class="icon">✓</div>' +
-                    '<div class="t">ไม่มีรายการคงเหลือ</div>' +
-                    '<div>รายการทั้งหมดถูกลบและบันทึกเรียบร้อย</div>' +
-                    '</td></tr>';
+            btnRemove.disabled = true;
+            const originalLabel = btnRemove.innerHTML;
+            btnRemove.innerHTML = 'กำลังบันทึก...';
+
+            try {
+                const res = await fetch('{{ route('alert.removeBills') }}', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRF-TOKEN': csrf,
+                        'Accept': 'application/json',
+                    },
+                    body: JSON.stringify({ bills: bills }),
+                });
+
+                let data = null;
+                try { data = await res.json(); } catch (_) {}
+
+                if (!res.ok || !data || data.status !== 'success') {
+                    alert((data && data.message) ? data.message : ('เกิดข้อผิดพลาด HTTP ' + res.status));
+                    btnRemove.innerHTML = originalLabel;
+                    btnRemove.disabled = false;
+                    return;
+                }
+
+                selected.forEach(function(cb) { cb.closest('tr').remove(); });
+                renumber();
+
+                if (!tbody.querySelectorAll('tr:not(.empty-row)').length) {
+                    tbody.innerHTML = '<tr class="empty-row"><td colspan="5">' +
+                        '<div class="icon">✓</div>' +
+                        '<div class="t">ไม่มีรายการคงเหลือ</div>' +
+                        '<div>รายการทั้งหมดถูกลบและบันทึกเรียบร้อย</div>' +
+                        '</td></tr>';
+                }
+
+                if (checkAll) { checkAll.checked = false; checkAll.indeterminate = false; }
+                btnRemove.innerHTML = originalLabel;
+                updateUI();
+            } catch (err) {
+                alert('เกิดข้อผิดพลาดในการเชื่อมต่อ: ' + err.message);
+                btnRemove.innerHTML = originalLabel;
+                btnRemove.disabled = false;
             }
+        });
+    }
 
-            if (checkAll) { checkAll.checked = false; checkAll.indeterminate = false; }
-            btnRemove.innerHTML = originalLabel;
-            updateUI();
-        } catch (err) {
-            alert('เกิดข้อผิดพลาดในการเชื่อมต่อ: ' + err.message);
-            btnRemove.innerHTML = originalLabel;
-            btnRemove.disabled = false;
-        }
-    });
-}
-    </script>
+    // เผื่อเริ่มต้นมีบางอันถูก check ไว้แล้ว
+    updateUI();
+})();
+</script>
 
 </body>
 </html>
