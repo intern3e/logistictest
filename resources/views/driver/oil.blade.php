@@ -2238,7 +2238,13 @@ function renderJobTable(jobs){
     const isOk=raw.includes('สำเร็จ')&&!raw.includes('ไม่');
     const isNg=raw.includes('ไม่สำเร็จ')||raw.toLowerCase()==='ng'||raw.toLowerCase()==='fail';
     const sb=isOk?`<span class="job-chip ok">✅ สำเร็จ</span>`:isNg?`<span class="job-chip fail">❌ ไม่สำเร็จ</span>`:`<span class="job-chip">— รอ</span>`;
-    const nh=(j.note&&j.note.trim()&&j.note.trim()!==raw)?`<div style="font-size:11px;color:var(--text3);margin-top:3px">${j.note}</div>`:'';
+    const noteText = (j.note || '').trim();
+    const isSuccessNote = noteText === 'ส่งสำเร็จ' || noteText === 'สำเร็จ';
+    const nh = (noteText && noteText !== raw && !isSuccessNote)
+      ? `<div style="font-size:11px;color:var(--text3);margin-top:3px">${noteText}</div>`
+      : '';
+    // ─────────────────
+    
     const so=j.so_id?`<span class="job-bill" style="background:rgba(37,99,235,.08);color:var(--accent)">${j.so_id}</span>`:`<span style="color:var(--text3);font-size:11px">—</span>`;
     return `<tr><td><span class="job-bill">${j.bill_no}</span></td><td>${so}</td><td>${j.customer_name}</td><td style="color:var(--text2)">${j.bill_in_by}</td><td>${sb}${nh}</td></tr>`;
   }).join('');
