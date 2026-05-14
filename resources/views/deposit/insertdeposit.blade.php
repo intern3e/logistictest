@@ -254,18 +254,16 @@ hr.divider{border:none;border-top:1px solid var(--border-light);margin:0}
       ระบบจัดการเอกสาร
     </a>
     <div class="navbar-breadcrumb">
-      <a href="/dashboard">หน้าหลัก</a><span class="sep">›</span>
-      <a href="/SOlist">รายการ SO</a><span class="sep">›</span>
       <span class="current">สร้างใบมัดจำ</span>
     </div>
-    <div class="navbar-actions">
-      <button class="btn-nav" onclick="window.location.href='{{ url('/SOlist') }}'">
+<div class="navbar-actions">
+    <button class="btn-nav" onclick="window.location.href='http://server_update:8000/solist'">
         <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
-          <path d="M9 11L5 7L9 3" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
+            <path d="M9 11L5 7L9 3" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
         </svg>
         ย้อนกลับ
-      </button>
-    </div>
+    </button>
+</div>
   </div>
 </nav>
 
@@ -1358,10 +1356,10 @@ document.getElementById('submitBill').addEventListener('click', async function()
       headers: { 'Content-Type':'application/json', 'Accept':'application/json', 'X-CSRF-TOKEN': csrf },
       body: JSON.stringify(payload),
     });
-    const data = await res.json();
+const data = await res.json();
     if(!res.ok || !data.success){ throw new Error(data.message || `HTTP ${res.status}`); }
     showToast('บันทึกสำเร็จ', data.message || 'บันทึกใบมัดจำเรียบร้อยแล้ว', 'success');
-    setTimeout(() => { window.location.href = '/SOlist'; }, 1500);
+    setTimeout(() => { window.location.href = 'http://server_update:8000/solist'; }, 1500);
   }catch(err){
     console.error(err);
     showToast('บันทึกไม่สำเร็จ', err.message || 'เกิดข้อผิดพลาด', 'error');

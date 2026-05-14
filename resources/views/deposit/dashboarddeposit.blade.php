@@ -482,12 +482,12 @@ nav[role="navigation"] span[aria-current="page"]{
           <span>ผู้ใช้:</span>
         @endif
       </div>
-      <a href="/solist" class="btn-home">
-        <svg width="13" height="13" viewBox="0 0 13 13" fill="none">
+  <a href="http://server_update:8000/solist" class="btn-home">
+      <svg width="13" height="13" viewBox="0 0 13 13" fill="none">
           <path d="M2 6.5L6.5 2 11 6.5V11.5H8V8.5H5V11.5H2V6.5Z" stroke="white" stroke-width="1.4" stroke-linejoin="round"/>
-        </svg>
-        หน้าหลัก
-      </a>
+      </svg>
+      หน้าหลัก
+  </a>
     </div>
   </div>
 
