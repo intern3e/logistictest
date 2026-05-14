@@ -1,740 +1,1110 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="th">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="csrf-token" content="{{ csrf_token() }}">
+    <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.4.0/jspdf.umd.min.js"></script>
     <link rel="stylesheet" href="{{ asset('css/insertdata.blade.css') }}">
-      <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.14.305/pdf.min.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.14.305/pdf.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <title>สร้างเส้นทางส่งสินค้า</title>
+
 <style>
-        .header-bar {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        flex-wrap: wrap; /* รองรับจอเล็ก */
-        padding: 10px 0;
-        }
-
-        .text-dark {
-        font-size: 24px;
-        color: #333333;
-        margin: 0;
-        }
-
-        .btn-back {
-        background-color: #3f865d;
-        color: white;
-        border: none;
-        padding: 6px 8px;
-        border-radius: 6px;
-        cursor: pointer;
-        font-size: 14px;
-        transition: background-color 0.3s;
-        }
-
-        .btn-back:hover {
-        background-color: #326f4d;
-        }
-        </style>
-        <style>
-.modal-overlay {
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background: rgba(0,0,0,0.5);
-    display: none;
-    justify-content: center;
-    align-items: center;
-    z-index: 9999;
+*{box-sizing:border-box}
+:root{
+    --primary:#3f865d; --primary-hover:#326f4d; --primary-light:#e8f2ec;
+    --primary-mid:#4a9d6c; --primary-border:#c4dfd0;
+    --blue:#1e6fd9; --blue-hover:#1857ad;
+    --red:#9b1b1b; --red-light:#fee2e2;
+    --bg:#fff; --surface:#fff;
+    --border:#d0d7de; --border-light:#e8eef1;
+    --text:#0f172a; --text-secondary:#475569;
+    --text-muted:#94a3b8; --text-hint:#cbd5e1;
+    --shadow-xs:0 1px 2px rgba(63,134,93,.06);
+    --shadow-sm:0 2px 8px rgba(63,134,93,.08);
+    --shadow-md:0 4px 16px rgba(63,134,93,.10);
+    --t-fast:.12s ease; --t-base:.2s ease;
+}
+body{
+    font-family:'Sarabun','Segoe UI',system-ui,sans-serif;
+    background:rgb(233, 233, 233);
+    color:var(--text);
+    margin:0;padding:0;
+    line-height:1.5;
+    font-size:14px;
 }
 
-.modal-box {
-    background: white;
-    padding: 30px;
-    border-radius: 15px;
-    text-align: center;
-    width: 350px;
-    box-shadow: 0 10px 30px rgba(0,0,0,0.2);
-    animation: fadeIn 0.3s ease;
+/* ===== Container — บีบเว็บให้อยู่กลาง มีขอบ 2 ข้าง ===== */
+.container{
+    max-width:1140px;
+    margin:24px auto;
+    background:#fff;
+    border:1px solid var(--border-light);
+    border-radius:10px;
+    box-shadow:0 2px 8px rgba(0,0,0,.04);
+    overflow:hidden;
 }
 
-.modal-box h3 {
-    margin-bottom: 10px;
+/* ===== Header bar ===== */
+.header-bar{
+    padding:18px 28px;
+    display:flex;justify-content:space-between;align-items:center;
+    flex-wrap:wrap;gap:12px;
+    border-bottom:2px solid var(--border-light);
+    background:#fff;
+}
+.text-dark{font-size:24px;color:var(--text);margin:0;font-weight:700;letter-spacing:-.3px}
+.btn-back{
+    background:var(--primary);color:#fff;border:none;
+    padding:8px 18px;border-radius:6px;cursor:pointer;
+    font-size:14px;font-weight:500;
+    font-family:inherit;transition:background .2s;
+}
+.btn-back:hover{background:var(--primary-hover)}
+
+/* ===== Page (ภายใน container) ===== */
+.page{
+    padding:24px 28px 32px;
+    display:flex;flex-direction:column;gap:18px;
 }
 
-.modal-box p {
-    margin-bottom: 20px;
-    color: #555;
+/* ===== Card ===== */
+.card{
+    background:var(--surface);
+    border:1px solid var(--border);
+    border-radius:8px;
+    box-shadow:var(--shadow-xs);
+    overflow:hidden;
+    transition:box-shadow var(--t-base);
+}
+.card:hover{box-shadow:var(--shadow-sm)}
+.card-head{
+    padding:18px 24px 15px;
+    border-bottom:1px solid var(--border-light);
+    display:flex;align-items:center;gap:12px;
+    background:#fff;
+}
+.card-icon{
+    width:38px;height:38px;border-radius:8px;
+    display:flex;align-items:center;justify-content:center;flex-shrink:0;
+}
+.ci-green{background:#fff;border:1px solid var(--border)}
+.ci-blue {background:#fff;border:1px solid var(--border)}
+.ci-amber{background:#fff;border:1px solid var(--border)}
+.card-head-text h3{font-size:15px;font-weight:700;color:var(--text);margin:0}
+.card-head-text p {font-size:12px;color:var(--text-muted);margin:2px 0 0}
+.card-badge{
+    margin-left:auto;padding:3px 10px;border-radius:4px;
+    font-size:11px;font-weight:600;letter-spacing:.02em;
+}
+.badge-optional{background:#f1f5f9;color:var(--text-muted)}
+.badge-required{background:var(--red-light);color:var(--red)}
+
+/* Sale chip ขวาบน */
+.sale-chip{
+    margin-left:auto;
+    display:inline-flex;align-items:center;gap:8px;
+    padding:7px 14px;
+    background:#fff;
+    border:1px solid var(--border);
+    border-radius:6px;
+    font-size:12px;color:var(--text-secondary);
+    max-width:300px;min-width:0;
+}
+.sale-chip-icon{
+    flex-shrink:0;display:flex;align-items:center;justify-content:center;
+    width:22px;height:22px;
+    background:#fff;border:1px solid var(--border);
+    border-radius:4px;
+}
+.sale-chip-label{
+    font-weight:700;color:var(--primary);
+    white-space:nowrap;font-size:11px;letter-spacing:.04em;text-transform:uppercase;
+}
+.sale-chip-value{
+    font-weight:700;color:var(--text);font-size:13px;
+    white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0;
 }
 
-.modal-box button {
-    background: #f3b201;
-    color: white;
-    border: none;
-    padding: 10px 25px;
-    border-radius: 20px;
-    cursor: pointer;
+.card-body{padding:22px 24px}
+
+/* ===== Section divider (เส้นแบ่งหัวข้อย่อยใน card) ===== */
+.section-divider{
+    display:flex;align-items:center;gap:10px;
+    padding:0;margin-bottom:14px;
+}
+.section-divider-line{flex:1;height:1px;background:var(--border-light)}
+.section-divider-label{
+    font-size:11px;font-weight:700;color:var(--text-muted);
+    letter-spacing:.08em;text-transform:uppercase;white-space:nowrap;
 }
 
-.modal-box button:hover {
-    background: #fbc42d;
+/* ===== Form grid ===== */
+.form-grid-2{display:grid;grid-template-columns:repeat(2,1fr);gap:14px}
+.form-grid-3{display:grid;grid-template-columns:repeat(3,1fr);gap:14px}
+.form-grid-4{display:grid;grid-template-columns:repeat(4,1fr);gap:14px}
+.form-grid-5{display:grid;grid-template-columns:repeat(5,1fr);gap:14px}
+.span-2{grid-column:span 2}
+.span-full{grid-column:1/-1}
+
+/* ===== Field ===== */
+.field{display:flex;flex-direction:column;gap:6px;min-width:0}
+.field label{
+    font-size:12px;font-weight:700;color:var(--text-secondary);
+    letter-spacing:.04em;
+    display:flex;align-items:center;gap:5px;margin:0;
+}
+.field label .req{color:var(--red);font-size:14px;line-height:1}
+.field label .tip{
+    display:inline-flex;align-items:center;justify-content:center;
+    width:14px;height:14px;background:#f1f5f9;border-radius:3px;
+    font-size:10px;color:var(--text-muted);cursor:help;
+    font-style:normal;font-weight:700;position:relative;
+}
+.field label .tip:hover::after{
+    content:attr(data-tip);
+    position:absolute;bottom:calc(100% + 6px);left:50%;
+    transform:translateX(-50%);
+    background:var(--text);color:#fff;
+    font-size:11px;font-weight:400;
+    padding:5px 9px;border-radius:4px;
+    white-space:nowrap;pointer-events:none;z-index:50;letter-spacing:0;
+}
+.field input[type="text"],
+.field input[type="number"],
+.field select,
+.field textarea{
+    width:100%;
+    padding:10px 12px;
+    border:1.5px solid var(--border);
+    border-radius:6px;
+    background:#f8fafc;
+    color:var(--text);
+    font-size:14px;font-family:inherit;
+    outline:none;
+    transition:border var(--t-fast),box-shadow var(--t-fast),background var(--t-fast);
+}
+.field input:focus,.field select:focus,.field textarea:focus{
+    border-color:var(--primary);
+    background:var(--surface);
+    box-shadow:0 0 0 3px rgba(63,134,93,.12);
+}
+.field textarea{resize:vertical;min-height:70px;line-height:1.5;font-family:inherit}
+.field textarea::placeholder,.field input::placeholder{color:var(--text-hint)}
+.field input[readonly]{
+    background:#f1f5f9;color:var(--text-secondary);cursor:default;
+    border-style:dashed;
+}
+.field input[readonly]:focus{border-color:var(--border);box-shadow:none}
+.field select{
+    background:#f8fafc;cursor:pointer;
+    appearance:none;-webkit-appearance:none;
+    background-image:url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath d='M3 4.5L6 7.5L9 4.5' stroke='%23475569' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round' fill='none'/%3E%3C/svg%3E");
+    background-repeat:no-repeat;background-position:right 12px center;
+    padding-right:32px;
+}
+.field input[type="file"]{
+    padding:7px 10px;font-size:13px;cursor:pointer;
+    background:var(--surface);
+    border:1.5px solid var(--border);border-radius:6px;width:100%;
+    color:var(--text-secondary);font-family:inherit;
+}
+.field input[type="file"]::file-selector-button{
+    margin-right:10px;padding:6px 12px;
+    border:1px solid var(--border);
+    background:#f8fafc;color:var(--text-secondary);
+    font-size:12px;font-weight:600;cursor:pointer;
+    font-family:inherit;border-radius:4px;
+    transition:all var(--t-fast);
+}
+.field input[type="file"]::file-selector-button:hover{
+    background:var(--primary);color:#fff;border-color:var(--primary);
 }
 
-@keyframes fadeIn {
-    from { transform: scale(0.8); opacity: 0; }
-    to { transform: scale(1); opacity: 1; }
+/* ===== Radio group ===== */
+.radio-group{display:flex;gap:10px;flex-wrap:wrap}
+.radio-item{position:relative;flex:1;min-width:140px}
+.radio-item input{position:absolute;opacity:0;width:0;height:0}
+.radio-item label{
+    display:flex;align-items:center;gap:8px;
+    padding:10px 14px;
+    border:1.5px solid var(--border);border-radius:6px;
+    background:#f8fafc;
+    cursor:pointer;
+    font-size:13px;font-weight:600;color:var(--text-secondary);
+    transition:all var(--t-fast);
+    justify-content:center;text-align:center;letter-spacing:0;
+}
+.radio-item label::before{
+    content:'';width:14px;height:14px;
+    border:2px solid var(--text-hint);border-radius:50%;
+    flex-shrink:0;transition:all var(--t-fast);background:#fff;
+}
+.radio-item input:checked + label{
+    border-color:var(--primary);
+    background:#fff;
+    color:var(--primary);
+}
+.radio-item input:checked + label::before{
+    border-color:var(--primary);
+    background:radial-gradient(circle,var(--primary) 40%,#fff 45%);
+}
+.radio-item label:hover{border-color:var(--primary-mid)}
+
+/* ===== Coords + Maps button ===== */
+.coords-row{display:flex;gap:8px;align-items:stretch}
+.coords-row input{flex:1}
+.btn-custom{
+    display:inline-flex;align-items:center;gap:6px;
+    padding:0 18px;
+    border:1.5px solid var(--blue);background:var(--blue);
+    color:#fff;font-size:13px;font-weight:700;
+    border-radius:6px;cursor:pointer;font-family:inherit;
+    transition:all var(--t-fast);white-space:nowrap;
+}
+.btn-custom:hover{background:var(--blue-hover);border-color:var(--blue-hover)}
+
+/* ===== Preview frames ===== */
+.preview-grid{display:grid;grid-template-columns:2fr 1fr;gap:14px}
+.preview-frame{
+    border:1px solid var(--border);
+    border-radius:6px;
+    overflow:hidden;
+    background:#f1f5f9;
+    height:300px;position:relative;
+}
+.preview-frame iframe{
+    width:100%;height:100%;border:none;display:block;background:#fff;
+}
+.preview-empty{
+    position:absolute;inset:0;
+    display:flex;flex-direction:column;align-items:center;justify-content:center;
+    gap:8px;padding:16px;text-align:center;
+    background:#f8fafc;color:var(--text-muted);font-size:12px;
+}
+
+/* ===== Table ===== */
+.tbl-wrap{
+    overflow-x:auto;
+    border:1px solid var(--border);border-radius:6px;
+}
+table.table{
+    width:100%;border-collapse:collapse;font-size:14px;margin:0;
+    table-layout:fixed;
+}
+table.table thead{background:#f8fafc}
+table.table th{
+    padding:11px 16px;font-size:11px;font-weight:700;color:var(--text-secondary);
+    letter-spacing:.07em;text-transform:uppercase;text-align:left;
+    border-bottom:1px solid var(--border);white-space:nowrap;
+}
+table.table td{
+    padding:9px 16px;border-bottom:1px solid var(--border-light);
+    vertical-align:middle;
+}
+table.table tbody tr:last-child td{border-bottom:none}
+table.table tbody tr:hover td{background:#f8fafc}
+.form-control1{
+    width:100%;padding:7px 10px;
+    border:1px solid var(--border-light);border-radius:4px;
+    font-size:13px;background:#fafbfc;color:var(--text);
+    box-sizing:border-box;font-family:inherit;
+}
+.form-control1[readonly]{background:#fafbfc;cursor:default}
+.tbl-empty{padding:40px 20px;text-align:center;color:var(--text-muted);font-size:13px}
+
+/* ===== Submit ===== */
+.submit-row{
+    display:flex;justify-content:center;gap:12px;
+    margin-top:8px;
+    flex-wrap:wrap;
+}
+.btn-success{
+    display:inline-flex;align-items:center;justify-content:center;gap:8px;
+    background:linear-gradient(135deg,var(--primary) 0%,var(--primary-mid) 100%);
+    color:#fff;border:none;
+    padding:14px 32px;border-radius:8px;
+    font-size:15px;font-weight:700;
+    cursor:pointer;min-width:240px;
+    font-family:inherit;letter-spacing:.01em;
+    transition:all var(--t-base);
+    box-shadow:0 4px 12px rgba(63,134,93,.30);
+}
+.btn-success:hover{
+    background:linear-gradient(135deg,var(--primary-hover) 0%,var(--primary) 100%);
+    transform:translateY(-1px);
+    box-shadow:0 6px 18px rgba(63,134,93,.36);
+}
+.btn-success:active{transform:scale(.98);box-shadow:var(--shadow-sm)}
+.btn-success:disabled,.btn-danger{
+    background:linear-gradient(135deg,#94a3b8,#cbd5e1);
+    cursor:not-allowed;transform:none;box-shadow:none;
+}
+
+/* ===== Modal (login) ===== */
+.modal-overlay{
+    position:fixed;top:0;left:0;width:100%;height:100%;
+    background:rgba(0,0,0,.5);display:none;
+    justify-content:center;align-items:center;z-index:9999;
+}
+.modal-box{
+    background:#fff;padding:28px 30px;border-radius:12px;
+    text-align:center;width:340px;
+    box-shadow:0 10px 30px rgba(0,0,0,.2);
+    animation:fadeIn .25s ease;
+}
+.modal-box h3{margin:0 0 10px;font-size:18px;color:var(--text)}
+.modal-box p{margin:0 0 20px;color:#555;font-size:14px}
+.modal-box button{
+    background:#f3b201;color:#fff;border:none;
+    padding:10px 26px;border-radius:20px;cursor:pointer;
+    font-size:14px;font-weight:600;font-family:inherit;
+}
+.modal-box button:hover{background:#fbc42d}
+@keyframes fadeIn{from{transform:scale(.9);opacity:0}to{transform:scale(1);opacity:1}}
+
+/* ===== Responsive ===== */
+@media (max-width:1180px){
+    .container{margin:16px;max-width:none}
+}
+@media (max-width:992px){
+    .form-grid-5{grid-template-columns:repeat(3,1fr)}
+    .form-grid-4{grid-template-columns:repeat(2,1fr)}
+}
+@media (max-width:640px){
+    .container{margin:0;border-radius:0;border:none;box-shadow:none}
+    .header-bar{padding:14px 16px}
+    .text-dark{font-size:18px}
+    .page{padding:16px 14px 32px}
+    .card-body{padding:16px 18px}
+    .card-head{padding:14px 18px 12px;flex-wrap:wrap}
+    .form-grid-2,.form-grid-3,.form-grid-4,.form-grid-5{grid-template-columns:1fr}
+    .span-2{grid-column:1}
+    .preview-grid{grid-template-columns:1fr}
+    .radio-item{min-width:100%}
+    .sale-chip{margin-left:0;width:100%;max-width:none;margin-top:4px}
+    .btn-success{width:100%;min-width:0}
 }
 </style>
-            <title>สร้างเส้นทางส่งสินค้า</title>
-
 </head>
+
 <body>
+
 <div class="container">
-  <div class="header">
-   <div class="header-bar">
+
+<!-- ===== Header ===== -->
+<div class="header-bar">
     <h2 class="text-dark">สร้างเส้นทางส่งสินค้า</h2>
     <button onclick="history.back()" class="btn-back">ย้อนกลับ</button>
-    </div>
-
-    <!-- SO และ บิล ส่งของ ให้อยู่บรรทัดเดียวกัน -->
-    <form id="billForm">
-      <div class="mb-3" style="display: flex; gap: 20px; align-items: center; flex-wrap: wrap;">
-        <!-- SO -->
-        <div style="flex: 1; min-width: 200px;">
-          <label class="form-label" for="so_number">เลขที่ SO :</label>
-          <input type="text" class="form-control" id="so_number" name="so_number" style="width: 100%;" required readonly>
-        </div>
-
-        <!-- บิล -->
-        <div style="flex: 1; min-width: 200px;">
-          <label for="billid">เลขที่บิลส่งของ:</label>
-          <input type="text" id="billid" name="billid" style="width: 100%;" readonly required>
-        </div>
-      </div>
-
-      <!-- ที่เหลือของฟอร์ม ใส่ต่อได้เลย -->
-      <input type="hidden" name="so_id" id="so_id" value="">
-
-      <!-- ส่วนอื่นๆ คงเดิม -->
-
-       
-   <div class="form-row">
-    <div class="inline-group">
-        <label>ผู้เปิดบิล :</label>
-       <input 
-    type="text" 
-    id="emp_name" 
-    name="emp_name" 
-    value="{{ request()->filled('create_by') ? request('create_by') : 'Guest' }}" 
-    readonly
->
-    </div>
-    <div id="loginModal" class="modal-overlay">
-  <div class="modal-box">
-    <h3>แจ้งเตือน</h3>
-    <p>ไม่สามารถเปิดบิลได้ กรุณาเข้าสู่ระบบก่อน</p>
-    <button onclick="goLogin()">ตกลง</button>
-  </div>
 </div>
+
+<!-- ===== Login Modal ===== -->
+<div id="loginModal" class="modal-overlay">
+    <div class="modal-box">
+        <h3>แจ้งเตือน</h3>
+        <p>ไม่สามารถเปิดบิลได้ กรุณาเข้าสู่ระบบก่อน</p>
+        <button onclick="goLogin()">ตกลง</button>
+    </div>
+</div>
+
+<form id="billForm">
+    @csrf
+    <input type="hidden" name="so_id" id="so_id" value="">
+
+    <div class="page">
+
+        <!-- ====================== Card 1: ข้อมูลเอกสาร ====================== -->
+        <div class="card">
+            <div class="card-head">
+                <div class="card-icon ci-green">
+                    <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
+                        <rect x="3" y="2" width="12" height="14" rx="2.5" stroke="#3f865d" stroke-width="1.5"/>
+                        <path d="M6 6h6M6 9h6M6 12h4" stroke="#3f865d" stroke-width="1.5" stroke-linecap="round"/>
+                    </svg>
+                </div>
+                <div class="card-head-text">
+                    <h3>ข้อมูลเอกสาร</h3>
+                    <p>Sales Order, บิลส่งของ และผู้รับผิดชอบ</p>
+                </div>
+                <div class="sale-chip" title="ผู้ขายที่รับผิดชอบเอกสารนี้">
+                    <div class="sale-chip-icon">
+                        <svg width="12" height="12" viewBox="0 0 14 14" fill="none">
+                            <circle cx="7" cy="5" r="2.6" stroke="#3f865d" stroke-width="1.4"/>
+                            <path d="M2 12.5c0-2.76 2.24-5 5-5s5 2.24 5 5" stroke="#3f865d" stroke-width="1.4" stroke-linecap="round"/>
+                        </svg>
+                    </div>
+                    <span class="sale-chip-label">ผู้ขาย:</span>
+                    <span class="sale-chip-value" id="sale-chip-value">—</span>
+                </div>
+            </div>
+            <div class="card-body">
+                <!-- แถว 1: SO + บิล (2 คอลัมน์ใหญ่) -->
+                <div class="form-grid-2" style="margin-bottom:14px">
+                    <div class="field">
+                        <label for="so_number">เลขที่ SO <i class="tip" data-tip="รหัส Sales Order จากระบบ">?</i></label>
+                        <input type="text" id="so_number" name="so_number" required readonly placeholder="—">
+                    </div>
+                    <div class="field">
+                        <label for="billid">เลขที่บิลส่งของ <i class="tip" data-tip="เลขที่บิลส่งของจากระบบ">?</i></label>
+                        <input type="text" id="billid" name="billid" readonly required placeholder="—">
+                    </div>
+                </div>
+
+                <!-- แถว 2: ผู้เปิดบิล / PO / ประเภทบิล / รหัสลูกค้า -->
+                <div class="form-grid-4">
+                    <div class="field">
+                        <label for="emp_name">ผู้เปิดบิล <span class="req">*</span></label>
+                        <input type="text" id="emp_name" name="emp_name"
+                            value="{{ request()->filled('create_by') ? request('create_by') : 'Guest' }}" readonly>
+                    </div>
+                    <div class="field">
+                        <label for="ponum">เลขที่ PO ลูกค้า</label>
+                        <input type="text" id="ponum" name="ponum" readonly placeholder="—">
+                    </div>
+                    <div class="field">
+                        <label for="billtype">ประเภทบิล <i class="tip" data-tip="ขายสด / ขายเชื่อ ตามรหัสบิล">?</i></label>
+                        <input type="text" id="billtype" name="billtype" placeholder="—" readonly>
+                    </div>
+                    <div class="field">
+                        <label for="customer_id">รหัสลูกค้า</label>
+                        <input type="text" id="customer_id" name="customer_id" readonly placeholder="—">
+                    </div>
+                </div>
+
+                <!-- ผู้ขาย ซ่อน (ใช้ chip ด้านบน) แต่ยัง submit ได้ -->
+                <input type="hidden" id="sale_name" name="sale_name">
+            </div>
+        </div>
+
+        <!-- ====================== Card 2: ข้อมูลลูกค้า ====================== -->
+        <div class="card">
+            <div class="card-head">
+                <div class="card-icon ci-blue">
+                    <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
+                        <circle cx="9" cy="6" r="3.2" stroke="#1e6fd9" stroke-width="1.5"/>
+                        <path d="M2.5 15.5c0-3.59 2.91-6.5 6.5-6.5s6.5 2.91 6.5 6.5" stroke="#1e6fd9" stroke-width="1.5" stroke-linecap="round"/>
+                    </svg>
+                </div>
+                <div class="card-head-text">
+                    <h3>ข้อมูลลูกค้า</h3>
+                    <p>ชื่อบริษัท ผู้ติดต่อ เบอร์โทร และที่อยู่จัดส่ง</p>
+                </div>
+                <span class="card-badge badge-optional">แก้ไขได้</span>
+            </div>
+            <div class="card-body">
+                <div class="form-grid-2" style="row-gap:16px">
+                    <div class="field span-full">
+                        <label for="customer_name">ชื่อบริษัท / ลูกค้า</label>
+                        <input type="text" id="customer_name" name="customer_name" readonly required placeholder="ชื่อบริษัทหรือลูกค้า">
+                    </div>
+
+                    <div class="field">
+                        <label for="contactso">ชื่อผู้ติดต่อ <span class="req">*</span></label>
+                        <input type="text" id="contactso" name="contactso" required placeholder="กรอกชื่อผู้ติดต่อ">
+                    </div>
+                    <div class="field">
+                        <label for="customer_tel">เบอร์ติดต่อ</label>
+                        <input type="text" id="customer_tel" name="customer_tel" placeholder="0XX-XXX-XXXX">
+                    </div>
+
+                    <div class="field span-full">
+                        <label for="date_of_dali">วันกำหนดส่ง</label>
+                        <input type="text" id="date_of_dali" name="date_of_dali" readonly required placeholder="DD-MM-YYYY">
+                    </div>
+
+                    <div class="field span-full">
+                        <label for="customer_address">ที่อยู่หัวบิล <i class="tip" data-tip="ที่อยู่ที่ใช้ในเอกสารบิล">?</i></label>
+                        <input type="text" id="customer_address" name="customer_address" readonly required placeholder="ที่อยู่หัวบิล">
+                    </div>
+
+                    <div class="field span-full">
+                        <label for="customer_la_long">ที่อยู่จัดส่ง (ละติจูด, ลองจิจูด) <i class="tip" data-tip="ใช้ Google Maps คัดลอกพิกัดมาวาง">?</i></label>
+                        <div class="coords-row">
+                            <input type="text" id="customer_la_long" name="customer_la_long"
+                                placeholder="13.7563, 100.5018"
+                                oninput="this.value = this.value.replace(/[^0-9,.\-\s]/g, '')">
+                            <button type="button" class="btn-custom" onclick="return openGoogleMaps(event)">
+                                <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+                                    <path d="M7 1.5c-2.21 0-4 1.79-4 4 0 3 4 7 4 7s4-4 4-7c0-2.21-1.79-4-4-4z" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round"/>
+                                    <circle cx="7" cy="5.5" r="1.4" stroke="currentColor" stroke-width="1.4"/>
+                                </svg>
+                                Google Maps
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="field span-full">
+                        <label for="notes">รายละเอียดเพิ่มเติม (สำหรับคนขับ) <i class="tip" data-tip="ข้อความนี้จะปรากฏในเอกสารสำหรับคนขับ">?</i></label>
+                        <textarea id="notes" name="notes" rows="2"
+                            placeholder="*กรณีเพิ่มข้อมูลที่ช่องนี้ระบบจะปริ้นเอกสารให้คนขับ*"></textarea>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ====================== Card 3: ประเภท + เอกสาร PO + พรีวิว ====================== -->
+        <div class="card">
+            <div class="card-head">
+                <div class="card-icon ci-amber">
+                    <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
+                        <path d="M5 2h6l3 3v10a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V3a1 1 0 0 1 1-1z" stroke="#b45309" stroke-width="1.5" stroke-linejoin="round"/>
+                        <path d="M11 2v3h3" stroke="#b45309" stroke-width="1.5" stroke-linejoin="round"/>
+                        <path d="M7 9h4M7 12h3" stroke="#b45309" stroke-width="1.5" stroke-linecap="round"/>
+                    </svg>
+                </div>
+                <div class="card-head-text">
+                    <h3>ประเภทงาน &amp; เอกสาร PO</h3>
+                    <p>เลือกประเภท แบบฟอร์ม และแนบไฟล์ PO เพื่อพรีวิว</p>
+                </div>
+            </div>
+            <div class="card-body">
+                <div class="form-grid-2" style="row-gap:16px">
+                    <div class="field span-full">
+                        <label>ประเภทสินค้า / บริการ <span class="req">*</span></label>
+                        <div class="radio-group">
+                            <div class="radio-item">
+                                <input type="radio" id="type-sell" name="typeinbill" value="ขายสินค้า" required>
+                                <label for="type-sell">งานขายสินค้า</label>
+                            </div>
+                            <div class="radio-item">
+                                <input type="radio" id="type-service" name="typeinbill" value="งานบริการ">
+                                <label for="type-service">งานบริการ / อบรม 3%</label>
+                            </div>
+                            <div class="radio-item">
+                                <input type="radio" id="type-rent" name="typeinbill" value="งานเช่า">
+                                <label for="type-rent">งานเช่า 5%</label>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="field">
+                        <label for="POdocument">อัปโหลดเอกสาร PO <i class="tip" data-tip="รองรับ PDF, JPG, PNG (ระบบจะแปลงเป็น PDF อัตโนมัติ)">?</i></label>
+                        <input type="file" id="POdocument" name="POdocument" accept=".pdf,.jpg,.jpeg,.png">
+                    </div>
+                    <div class="field">
+                        <label for="formtype">แบบฟอร์มเอกสาร <span class="req">*</span></label>
+                        <select id="formtype" name="formtype" required>
+                            <option value="ไม่มีข้อมูล" disabled selected>ไม่มีข้อมูล</option>
+                            <option value="บิล/PO3">บิล/PO3</option>
+                            <option value="บิล/PO3/วางบิล">บิล/PO3/วางบิล</option>
+                            <option value="บิล/PO3/วางบิล/สำเนาหน้าบิล2">บิล/PO3/วางบิล/สำเนาหน้าบิล2</option>
+                            <option value="บิล/PO3/สำเนาหน้าบิล2">บิล/PO3/สำเนาหน้าบิล2</option>
+                            <option value="บิล/PO5/สำเนาหน้าบิล3">บิล/PO5/สำเนาหน้าบิล3</option>
+                            <option value="บิล/PO3/บัญชี">บิล/PO3/บัญชี</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div style="margin-top:20px">
+                    <div class="section-divider">
+                        <div class="section-divider-line"></div>
+                        <span class="section-divider-label">พรีวิวแผนที่ &amp; เอกสาร</span>
+                        <div class="section-divider-line"></div>
+                    </div>
+                    <div class="preview-grid">
+                        <div class="field">
+                            <label>แผนที่จุดส่งสินค้า</label>
+                            <div class="preview-frame">
+                                <iframe id="mapFrame" allowfullscreen="" loading="lazy"></iframe>
+                                <div class="preview-empty" id="mapEmpty">
+                                    กรอกพิกัด ละติจูด, ลองจิจูด<br>เพื่อแสดงแผนที่
+                                </div>
+                            </div>
+                        </div>
+                        <div class="field">
+                            <label>เอกสาร PO (PDF)</label>
+                            <div class="preview-frame">
+                                <iframe id="pdfPreview" allowfullscreen></iframe>
+                                <div class="preview-empty" id="pdfEmpty">
+                                    ยังไม่มีไฟล์ PO<br>อัปโหลดเพื่อแสดงตัวอย่าง
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ====================== Card 4: รายการสินค้า ====================== -->
+        <div class="card">
+            <div class="card-head">
+                <div class="card-icon ci-amber">
+                    <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
+                        <rect x="2" y="5" width="10" height="9" rx="1.5" stroke="#b45309" stroke-width="1.5"/>
+                        <path d="M12 7.5l4 2.5v4h-4" stroke="#b45309" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                        <circle cx="4.5" cy="15" r="1.3" stroke="#b45309" stroke-width="1.3"/>
+                        <circle cx="13.5" cy="15" r="1.3" stroke="#b45309" stroke-width="1.3"/>
+                    </svg>
+                </div>
+                <div class="card-head-text">
+                    <h3>รายการสินค้า / บริการ</h3>
+                    <p>รายการที่จะจัดส่งจากบิลนี้ (ดึงจากระบบอัตโนมัติ)</p>
+                </div>
+            </div>
+            <div style="padding:18px 24px 24px">
+                <div class="tbl-wrap">
+                    <table class="table">
+                        <thead>
+                            <tr>
+                                <th style="width:18%">รหัสสินค้า</th>
+                                <th style="width:48%">รายการ</th>
+                                <th style="width:14%;text-align:center">จำนวน</th>
+                                <th style="width:20%;text-align:center">ราคาต่อหน่วย</th>
+                            </tr>
+                        </thead>
+                        <tbody id="detail">
+                            <tr><td colspan="4"><div class="tbl-empty">กำลังโหลดรายการสินค้า...</div></td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- ====================== Submit ====================== -->
+        <div class="submit-row">
+            <button type="button" id="submitBill" class="btn-success">
+                <svg width="17" height="17" viewBox="0 0 17 17" fill="none">
+                    <path d="M3.5 9l4 4 6-7" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
+                บันทึกเส้นทางส่งสินค้า
+            </button>
+        </div>
+
+    </div>
+</form>
+
+</div>
+<!-- ===== /container ===== -->
+
+<!-- ===================== SCRIPTS ===================== -->
 <script>
+/* Login modal */
 document.addEventListener('DOMContentLoaded', function () {
     const empInput = document.getElementById('emp_name');
-
     if (empInput && empInput.value.trim() === 'Guest') {
         document.getElementById('loginModal').style.display = 'flex';
     }
 });
+function goLogin(){ window.location.href = 'http://server_update:8000/login'; }
 
-function goLogin() {
-    window.location.href = 'http://server_update:8000/login';
-}
-</script>
-    <div class="inline-group">
-        <label>ผู้ขาย :</label>
-        <input type="text" id="sale_name" name="sale_name" readonly>
-    </div>
-
-    <div class="inline-group">
-        <label for="ponum">เลขที่ PO :</label>
-        <input type="text" id="ponum" name="ponum" readonly>
-    </div>
-
-    <div class="inline-group">
-        <label for="billtype">ประเภทบิล :</label>
-        <input type="text" id="billtype" name="billtype" placeholder="ประเภทบิล" readonly>
-    </div>
-
-    <div class="inline-group">
-        <label>รหัสลูกค้า :</label>
-        <input type="text" id="customer_id" name="customer_id" readonly>
-    </div>
-</div>
-
-
-<script>
-// สมมติว่าค่า billid ถูก set มาแล้ว
-const billidInput = document.getElementById('billid');
+/* Bill type detect */
+const billidInput  = document.getElementById('billid');
 const billtypeInput = document.getElementById('billtype');
+function checkBillid(){
+    const v = billidInput.value.toLowerCase().trim();
+    if(v.startsWith('cs'))      billtypeInput.value = 'ขายสด';
+    else if(v.length > 0)        billtypeInput.value = 'ขายเชื่อ';
+    else                          billtypeInput.value = '';
+}
+window.addEventListener('load', checkBillid);
+billidInput.addEventListener('input', checkBillid);
 
-// ฟังก์ชันตรวจสอบ
-function checkBillid() {
-  const billidValue = billidInput.value.toLowerCase().trim(); // แปลงเป็น lowercase และตัดช่องว่างข้างหน้า-หลัง
-  if (billidValue.startsWith('cs')) {  // ถ้า **ขึ้นต้น** ด้วย 'cs'
-    billtypeInput.value = 'ขายสด';    // ตั้งค่าเป็น "ขายสด"
-  } else if (billidValue.length > 0) {
-    billtypeInput.value = 'ขายเชื่อ'; // ถ้าไม่ขึ้นต้นด้วย 'cs' แต่มีค่า ให้เป็น "ขายเชื่อ"
-  } else {
-    billtypeInput.value = '';          // ถ้าว่าง ให้เป็นค่าว่าง
-  }
+/* helper: parse JSON อย่างปลอดภัย, log ถ้า server ตอบ HTML */
+async function safeJson(response, label){
+    const text = await response.text();
+    if(!response.ok){
+        // server error → log + ดึง message จาก HTML ถ้าเป็น Laravel error page
+        console.error(`[${label}] HTTP ${response.status}:`, text.substring(0,800));
+        const m = text.match(/<title>([^<]+)<\/title>/i);
+        throw new Error(`${label} → ${response.status}` + (m?`: ${m[1]}`:''));
+    }
+    try{
+        return JSON.parse(text);
+    }catch(e){
+        console.error(`[${label}] Server ตอบไม่ใช่ JSON:`, text.substring(0,500));
+        throw new Error(`${label} → response ไม่ใช่ JSON`);
+    }
 }
 
-// เรียกตอนโหลดหน้า
-window.addEventListener('load', () => {
-  checkBillid();
-});
-
-// เช็คทุกครั้งที่เปลี่ยนค่า billid
-billidInput.addEventListener('input', () => {
-  checkBillid();
-});
-</script>
-
-<!-- แถว: ชื่อบริษัท + วันกำหนดส่ง -->
-<div class="mb-3" style="display: flex; flex-wrap: wrap; gap: 20px; align-items: center;">
-  <div style="flex: 2; min-width: 250px;">
-    <label for="customer_name">ชื่อบริษัท :</label>
-    <input type="text" id="customer_name" name="customer_name" style="width: 100%;" readonly required>
-  </div>
-
-  <div style="flex: 1; min-width: 150px;">
-    <label for="date_of_dali">วันกำหนดส่ง :</label>
-    <input type="text" id="date_of_dali" name="date_of_dali" style="width: 100%;"  readonly required>
-  </div>
-</div>
-
-<!-- แถว: ชื่อผู้ติดต่อ + เบอร์ติดต่อ -->
-<div class="mb-3" style="display: flex; flex-wrap: wrap; gap: 20px; align-items: center;">
-  <div style="flex: 2; min-width: 250px;">
-    <label for="contactso">ชื่อผู้ติดต่อ :</label>
-    <input type="text" id="contactso" name="contactso" style="width: 100%;" required>
-  </div>
-
-  <div style="flex: 1; min-width: 150px;">
-    <label for="customer_tel">เบอร์ติดต่อ :</label>
-    <input type="text" id="customer_tel" name="customer_tel" style="width: 100%;">
-  </div>
-</div>
-
-
-       <div class="mb-3" style="display: flex; gap: 20px; align-items: center;">
-    <!-- ฝั่งอัปโหลดเอกสาร -->
-    <div style="flex: 1;">
-        <label for="POdocument">อัปโหลดเอกสาร PO :</label>
-        <input type="file" id="POdocument" name="POdocument" style="width: 100%;">
-    </div>
-
-    <!-- ฝั่งเลือกแบบฟอร์ม -->
-    <div style="flex: 1;">
-        <label for="formtype">แบบฟอร์มเอกสาร :</label>
-        <select id="formtype" name="formtype" style="width: 100%;" required>
-            <option value="ไม่มีข้อมูล" disabled selected>ไม่มีข้อมูล</option>
-            <option value="บิล/PO3">บิล/PO3</option>
-            <option value="บิล/PO3/วางบิล">บิล/PO3/วางบิล</option>
-            <option value="บิล/PO3/วางบิล/สำเนาหน้าบิล2">บิล/PO3/วางบิล/สำเนาหน้าบิล2</option>
-            <option value="บิล/PO3/สำเนาหน้าบิล2">บิล/PO3/สำเนาหน้าบิล2</option>
-            <option value="บิล/PO5/สำเนาหน้าบิล3">บิล/PO5/สำเนาหน้าบิล3</option>
-            <option value="บิล/PO3/บัญชี">บิล/PO3/บัญชี</option>
-        </select>
-    </div>
-</div>
-<div style="flex: 1;">
-    <label>ประเภทสินค้า/บริการ :</label>
-    <div style="display: flex; gap: 20px; align-items: center; flex-wrap: wrap;">
-        <label><input type="radio" name="typeinbill" value="ขายสินค้า" required> งานขายสินค้า</label>
-        <label><input type="radio" name="typeinbill" value="งานบริการ" required> งานบริการ/อบรม 3%</label>
-        <label><input type="radio" name="typeinbill" value="งานเช่า" required> งานเช่า 5%</label>
-    </div>
-</div>
-
-    <script>
-function fetchFormType() {
-    console.log('fetchFormType called');
-
-    const customer_id = document.getElementById("customer_id").value;
+/* Form-type fetch */
+function fetchFormType(){
+    const customer_id = (document.getElementById("customer_id").value || '').trim();
     const formtypeSelect = document.getElementById("formtype");
-
-    if (customer_id) {
-        fetch('/fetch-formtype', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'X-CSRF-TOKEN': document
-                    .querySelector('meta[name="csrf-token"]')
-                    .getAttribute('content')
-            },
-            body: JSON.stringify({ customer_id: customer_id })
-        })
-        .then(response => response.json())
-        .then(data => {
-            console.log('Response from server:', data);
-
-            if (data.formtype) {
-                const exists = Array.from(formtypeSelect.options)
-                    .some(option => option.value === data.formtype);
-
-                if (!exists) {
-                    const newOption = new Option(data.formtype, data.formtype);
-                    formtypeSelect.add(newOption);
-                }
-
-                formtypeSelect.value = data.formtype;
-            } else {
-                formtypeSelect.value = 'ไม่มีข้อมูล';
-            }
-
-            const laLong = data.customer_la_long || '';
-            const isValidCoords = /^-?\d+(\.\d+)?,\s*-?\d+(\.\d+)?$/.test(laLong.trim());
-            document.getElementById("customer_la_long").value = isValidCoords ? laLong : '';
-
-            // ✅ ใส่ notes ลง textarea
-            document.getElementById("notes").value = data.note || '';
-
-            updateMap();
-        })
-        .catch(error => {
-            console.error('Error:', error);
-            formtypeSelect.value = 'ไม่มีข้อมูล';
-            document.getElementById("customer_la_long").value = '';
-            document.getElementById("notes").value = '';
-        });
-    } else {
+    // ✅ ป้องกัน 500 ที่ Laravel ถ้า customer_id ว่าง — skip ไปเลย
+    if(!customer_id){
+        console.log('[fetchFormType] skipped: customer_id is empty');
         formtypeSelect.value = 'ไม่มีข้อมูล';
         document.getElementById("customer_la_long").value = '';
         document.getElementById("notes").value = '';
-    }
-}
-</script>
-
-
-
-
-            
-    <div class="form-label">
-
-    <div >
-    <label for="customer_address">ที่อยู่หัวบิล :</label>
-    {{-- <textarea id="customer_address" name="customer_address" rows="4" readonly required style="width: 100%; padding: 10px; font-size: 14px; border-radius: 10px; border: 1px solid #ccc; height: 50px" ></textarea> --}}
-    <input type="text" id="customer_address" name="customer_address" style="width: 100%; padding: 10px; font-size: 14px; border-radius: 6px; border: 1px solid #ccc; height: 30px"  readonly required >
-    </div>
-    
-        <label>เลือก ที่อยู่จัดส่ง (ติจูด ลองจิจูด) :</label>
-        <div style="display: flex; justify-content: space-between; width: 100%;" >
-            <input type="text" id="customer_la_long" name="customer_la_long" 
-                oninput="this.value = this.value.replace(/[^0-9,.\-]/g, '')">
-        </div>
-         <button type="button" class="btn-custom" onclick="openGoogleMaps()">Google Maps</button>
-
-       <label for="additional_notes" style="display: block; margin-bottom: 4px; margin-top: 10px;">รายละเอียดเพิ่มเติมเกี่ยวกับการจัดส่งให้คนขับ :</label>
-        <textarea id="notes" name="notes" rows="2" style="font-size: 14px; padding: 6px; height: 40px;" placeholder="*กรณีเพิ่มข้อมูลที่ช่องนี้ระบบจะปริ้นเอกสารให้คนขับ*"></textarea>
-
-
-      <div class="mb-3" style="display: flex; gap: 20px; align-items: flex-start; flex-wrap: wrap;">
-    <!-- แสดงแผนที่ -->
-    <div style="flex: 1;">
-        <label class="form-label">แผนที่ :</label>
-        <iframe id="mapFrame"
-            style="width: 140%; height: 300px; border: 0; border-radius: 8px;"
-            allowfullscreen=""
-            loading="lazy"
-        ></iframe>
-    </div>
-
-    <!-- แสดง PDF -->
-    <div style="flex: 1; display: flex; justify-content: flex-end;">
-        <div>
-            <label class="form-label">เอกสาร PDF :</label>
-            <iframe id="pdfPreview"
-                style="width: 100%; height: 300px; border: 1px solid #ccc; border-radius: 8px;"
-                allowfullscreen
-            ></iframe>
-        </div>
-    </div>
-</div>
-
-        <script>
-            
-            function updateMap() {
-                let coords = document.getElementById('customer_la_long').value;
-                if (coords) {
-                    document.getElementById('mapFrame').src = `https://www.google.com/maps?q=${coords}&output=embed`;
-                }
-            }
-
-            document.getElementById('customer_la_long').addEventListener('input', updateMap);
-            updateMap();
-        </script>
-
-  </div>
-          
-
-        <table class="table table-bordered table-striped">
-            <thead>
-                 <tr>
-            <th style="width: 15%;">รหัสสินค้า</th>
-            <th style="width: 50%;">รายการ</th>
-            <th style="width: 15%;">จำนวน</th>
-            <th style="width: 20%;">ราคาต่อหน่วย</th>
-               </tr>
-            </thead>
-            <tbody id="detail"></tbody>
-        </table>
-        </div>
-        <div style="display: flex; justify-content: center; margin-top: 20px;">
-            <button type="button" id="submitBill" class="btn btn-success" 
-            style="font-size: 18px; padding: 15px 30px; width: 200px; height: 50px;">
-                บันทึก
-            </button>
-        </div>
-<script>
-  document.getElementById('submitBill').addEventListener('click', function () {
-    const btn = this;
-    btn.disabled = true; // ป้องกันการกดซ้ำ
-    btn.classList.remove('btn-success');
-    btn.classList.add('btn-danger');
-    btn.innerText = 'กำลังโหลด...';
-  });
-</script>
-    </form>
-            <script>
-                function fetchContactSo() {
-                    const customer_id = document.getElementById("customer_id").value;
-                    const contactInput = document.getElementById("contactso");
-
-                    if (!customer_id) {
-                        contactInput.value = "";
-                        return;
-                    }
-
-                    fetch('/fetch-contactso', {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json',
-                            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
-                        },
-                        body: JSON.stringify({ customer_id: customer_id })
-                    })
-                    .then(response => response.json())
-                    .then(data => {
-                        contactInput.value = data.contactso || "";
-                    })
-                    .catch(error => {
-                        console.error('Error fetching contactso:', error);
-                        contactInput.value = "";
-                    });
-                }
-        </script>
-    <script>
-document.getElementById('submitBill').addEventListener('click', async function (event) {
-    event.preventDefault();
-
-    const form = document.getElementById('billForm');
-    const billid = form.querySelector('input[name="billid"]').value.trim();
-
-    if (!billid) {
-        alert('กรุณากรอก billid ก่อนส่ง');
         return;
     }
-
-    try {
-        let checkResponse = await fetch('{{ route("check.billid") }}', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'X-CSRF-TOKEN': '{{ csrf_token() }}',
-            },
-            body: JSON.stringify({ billid }),
-        });
-
-        let checkData = await checkResponse.json();
-
-        if (checkData.exists) {
-            let confirmAdd = confirm(`${checkData.billid} นี้ถูกสร้างโดย ${checkData.emp_name} แล้ว\nต้องการเพิ่มข้อมูลอีกครั้งหรือไม่?`);
-            if (!confirmAdd) return;
+    fetch('/fetch-formtype', {
+        method:'POST',
+        credentials:'same-origin',
+        headers:{
+            'Content-Type':'application/json',
+            'Accept':'application/json',
+            'X-Requested-With':'XMLHttpRequest',
+            'X-CSRF-TOKEN':document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+        },
+        body:JSON.stringify({customer_id})
+    })
+    .then(r => safeJson(r, 'fetch-formtype'))
+    .then(data=>{
+        if(data.formtype){
+            const exists = Array.from(formtypeSelect.options).some(o=>o.value===data.formtype);
+            if(!exists) formtypeSelect.add(new Option(data.formtype, data.formtype));
+            formtypeSelect.value = data.formtype;
+        } else {
+            formtypeSelect.value = 'ไม่มีข้อมูล';
         }
-
-        if (typeof convertedPDFBlob === 'undefined' || !convertedPDFBlob) {
-            const confirmNoPO = confirm("คุณยังไม่ได้แนบเอกสาร PO\nต้องการเพิ่มข้อมูลโดยไม่มีเอกสาร PO ใช่หรือไม่?");
-            if (!confirmNoPO) return;
-        }
-
-        // สร้าง FormData
-        let formData = new FormData(form);
-
-        // แนบไฟล์ POdocument (ถ้ามี)
-        if (typeof convertedPDFBlob !== 'undefined' && convertedPDFBlob) {
-            formData.append('POdocument', convertedPDFBlob, originalFilename || 'upload.pdf');
-        }
-
-        // แนบรายการสินค้า
-        let itemRows = document.querySelectorAll('table tbody tr');
-        itemRows.forEach((row, index) => {
-            formData.append(`item_id[${index}]`, row.querySelector('input[name="item_id[]"]').value);
-            formData.append(`item_name[${index}]`, row.querySelector('input[name="item_name[]"]').value);
-            formData.append(`item_quantity[${index}]`, row.querySelector('input[name="item_quantity[]"]').value);
-            formData.append(`unit_price[${index}]`, row.querySelector('input[name="unit_price[]"]').value);
-            formData.append(`status[${index}]`, 1); // เลือกทั้งหมด
-        });
-
-        let response = await fetch('{{ route("insert.post") }}', {
-            method: 'POST',
-            body: formData,
-            headers: {
-                'X-CSRF-TOKEN': '{{ csrf_token() }}',
-            },
-        });
-
-        let data = await response.json();
-
-        if (data.success) {
-            alert(data.success);
-            window.location.href = '/SOlist';
-        } else if (data.error) {
-            alert(data.error);
-        }
-
-    } catch (error) {
-        console.error('❌ เกิดข้อผิดพลาด:', error);
-        alert('เกิดข้อผิดพลาดในการตรวจสอบหรือส่งข้อมูล');
-    }
-});
-let mapWindow;
-let closeTimer;
-
-function openGoogleMaps() {
-    const screenWidth = window.screen.width;
-    const screenHeight = window.screen.height;
-    const windowWidth = 800;
-    const windowHeight = 600;
-
-    const leftPosition = screenWidth - windowWidth;
-    const topPosition = (screenHeight - windowHeight) / 2;
-
-    mapWindow = window.open(
-        "https://www.google.com/maps/@13.7563,100.5018,14z",
-        "Google Maps",
-        `width=${windowWidth},height=${windowHeight},left=${leftPosition},top=${topPosition}`
-    );
+        const laLong = data.customer_la_long || '';
+        const isValidCoords = /^-?\d+(\.\d+)?,\s*-?\d+(\.\d+)?$/.test(laLong.trim());
+        document.getElementById("customer_la_long").value = isValidCoords ? laLong : '';
+        document.getElementById("notes").value = data.note || '';
+        updateMap();
+    })
+    .catch(err=>{
+        console.error('fetchFormType error:', err);
+        formtypeSelect.value = 'ไม่มีข้อมูล';
+    });
 }
-</script>
-<script>
-    // ดึงค่า so_num จาก URL
-    const urlParams = new URLSearchParams(window.location.search);
-    const soNum = urlParams.get('so_num');
-     const billId = urlParams.get('billid');
+function fetchContactSo(){
+    const customer_id = (document.getElementById("customer_id").value || '').trim();
+    const contactInput = document.getElementById("contactso");
+    // ✅ skip ถ้า customer_id ว่าง
+    if(!customer_id){
+        console.log('[fetchContactSo] skipped: customer_id is empty');
+        contactInput.value = '';
+        return;
+    }
+    fetch('/fetch-contactso',{
+        method:'POST',
+        credentials:'same-origin',
+        headers:{
+            'Content-Type':'application/json',
+            'Accept':'application/json',
+            'X-Requested-With':'XMLHttpRequest',
+            'X-CSRF-TOKEN':document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+        },
+        body:JSON.stringify({customer_id})
+    })
+    .then(r => safeJson(r, 'fetch-contactso'))
+    .then(d=>{ contactInput.value = d.contactso || ''; })
+    .catch(err => { console.error('fetchContactSo error:', err); });
+}
 
-    // ถ้ามีค่า so_num ใน URL ให้ดึงข้อมูล SO อัตโนมัติ
-    if (soNum) {
-        document.getElementById('so_number').value = soNum; // แสดงค่า so_num ใน input
-        fetchSODetails(soNum); // เรียกฟังก์ชันดึงข้อมูล SO
+/* Map */
+function updateMap(){
+    const coords = (document.getElementById('customer_la_long').value||'').trim();
+    const frame  = document.getElementById('mapFrame');
+    const empty  = document.getElementById('mapEmpty');
+    const isValid = /^-?\d+(\.\d+)?\s*,\s*-?\d+(\.\d+)?$/.test(coords);
+    if(isValid){
+        frame.src = `https://www.google.com/maps?q=${encodeURIComponent(coords)}&output=embed`;
+        if(empty) empty.style.display = 'none';
+    } else {
+        frame.src = '';
+        if(empty) empty.style.display = 'flex';
+    }
+}
+document.getElementById('customer_la_long').addEventListener('input', updateMap);
+updateMap();
+
+/* Open Google Maps popup window (ไม่ใช่ tab) — รองรับ Chrome / Edge / Safari (Mac) */
+let mapWindow = null;
+function openGoogleMaps(event){
+    // กัน form submit / parent click
+    if(event){
+        event.preventDefault();
+        event.stopPropagation();
     }
 
-    async function fetchSODetails(soNum) {
-        try {
-            let response = await fetch(`http://server_update:8000/api/getSODetail?SONum=${soNum}`);
-            if (!response.ok) {
-                throw new Error("เกิดข้อผิดพลาดในการโหลดข้อมูล");
-            }
+    const w = 900, h = 650;
+    const left = Math.max(0, Math.round((window.screen.availWidth  - w) / 2));
+    const top  = Math.max(0, Math.round((window.screen.availHeight - h) / 2));
 
-            let data = await response.json();
-            console.log("API Response:", data); // ตรวจสอบข้อมูล API 
+    // ✅ feature string ที่บังคับ popup ใน Chromium + Safari
+    // - Chrome/Edge: ต้องมี width + height (ไม่งั้นเปิดเป็น tab)
+    // - Safari: ต้องระบุ toolbar=no, menubar=no, location=no, status=no
+    // - ห้ามมี space ระหว่าง key=value
+    const features = [
+        'popup=yes',
+        'width='+w,
+        'height='+h,
+        'left='+left,
+        'top='+top,
+        'scrollbars=yes',
+        'resizable=yes',
+        'toolbar=no',
+        'menubar=no',
+        'location=no',
+        'status=no',
+        'directories=no',
+        'titlebar=no'
+    ].join(',');
 
-            if (!data.SoDetail || data.SoDetail.length === 0) {
-                alert("ไม่พบข้อมูลที่ตรงกับเลขที่ SO นี้: " + soNum);
-                return;
-            }
+    // ถ้า popup เก่ายังเปิดอยู่ ให้ focus แทน
+    if(mapWindow && !mapWindow.closed){
+        try{
+            mapWindow.focus();
+            mapWindow.location.href = 'https://www.google.com/maps/@13.7563,100.5018,14z';
+            return false;
+        }catch(e){ /* fall through */ }
+    }
 
-            // แสดงข้อมูลทั่วไป
-            const soDetails = data.SoDetail;
-            const SoStatus = data.SoStatus;
-            document.getElementById('so_id').value = SoStatus.SONum;  
-            document.getElementById('ponum').value = soDetails.CustPONo;  
-            document.getElementById('customer_id').value = SoStatus.CustID; 
-            fetchFormType();
-            fetchContactSo();
-            document.getElementById('customer_name').value = soDetails.CustName;  
-            document.getElementById('customer_address').value = 
-            [
-                soDetails.CustAddr1,
-                soDetails.ContDistrict,
-                soDetails.ContAmphur,
-                soDetails.ContProvince,
-                soDetails.ContPostCode,
-                (soDetails.ShipToAddr1 || soDetails.ShipToAddr2
+    // ✅ ใช้ชื่อ window แบบ unique กัน browser reuse tab เดิม
+    const winName = 'gmaps_popup_' + Date.now();
+    mapWindow = window.open('https://www.google.com/maps/@13.7563,100.5018,14z', winName, features);
+
+    if(!mapWindow || mapWindow.closed || typeof mapWindow.closed === 'undefined'){
+        alert('Browser ปิดกั้น popup ไว้\nกรุณาอนุญาต popup สำหรับเว็บนี้ในการตั้งค่า Browser');
+    } else {
+        try{ mapWindow.focus(); }catch(e){}
+    }
+    return false;
+}
+
+/* SO loader */
+const urlParams = new URLSearchParams(window.location.search);
+const soNum = urlParams.get('so_num');
+const billId = urlParams.get('billid');
+
+if(soNum){
+    document.getElementById('so_number').value = soNum;
+    fetchSODetails(soNum);
+}
+window.addEventListener('DOMContentLoaded', function(){
+    if(billId) document.getElementById('billid').value = billId;
+});
+
+async function fetchSODetails(soNum){
+    try{
+        let response = await fetch(`http://server_update:8000/api/getSODetail?SONum=${soNum}`);
+        if(!response.ok) throw new Error('เกิดข้อผิดพลาดในการโหลดข้อมูล');
+        let data = await response.json();
+        if(!data.SoDetail || data.SoDetail.length === 0){
+            alert("ไม่พบข้อมูลที่ตรงกับเลขที่ SO นี้: " + soNum);
+            return;
+        }
+        const soDetails = data.SoDetail;
+        const SoStatus  = data.SoStatus;
+        document.getElementById('so_id').value         = SoStatus.SONum;
+        document.getElementById('ponum').value         = soDetails.CustPONo;
+        document.getElementById('customer_id').value   = SoStatus.CustID;
+        fetchFormType();
+        fetchContactSo();
+        document.getElementById('customer_name').value = soDetails.CustName;
+        document.getElementById('customer_address').value = [
+            soDetails.CustAddr1, soDetails.ContDistrict, soDetails.ContAmphur,
+            soDetails.ContProvince, soDetails.ContPostCode,
+            (soDetails.ShipToAddr1 || soDetails.ShipToAddr2)
                 ? "สถานที่ส่ง: " + [soDetails.ShipToAddr1, soDetails.ShipToAddr2].filter(Boolean).join(', ')
                 : null
-                )
-            ]
-            .filter(Boolean)
-            .join(', ');
+        ].filter(Boolean).join(', ');
+        document.getElementById('customer_la_long').value =
+            [soDetails.Latitude, soDetails.Longitude].filter(Boolean).join(', ');
+        document.getElementById('customer_tel').value = soDetails.ContTel;
+        document.getElementById('sale_name').value    = SoStatus.createdBy || '';
+        document.getElementById('sale-chip-value').textContent = SoStatus.createdBy || '—';
 
-            document.getElementById('customer_la_long').value = 
-                [soDetails.Latitude, soDetails.Longitude]
-                .filter(Boolean)
-                .join(', ');
-            document.getElementById('customer_tel').value = soDetails.ContTel;  
-            document.getElementById('sale_name').value = SoStatus.createdBy; 
-            const billData = data.Bills[0][billId];
-            const items = billData.items;
-            
-            let deliveryDate = billData.DocuDate;
-            if (deliveryDate) {
-                let [datePart] = deliveryDate.split(" "); // เอาแค่ส่วนวันที่
-                let [year, month, day] = datePart.split("-"); // แยกปี-เดือน-วัน
-            
-                document.getElementById("date_of_dali").value = `${day}-${month}-${year}`;
-            }
-
-            let itemCounter = 1;
-            const tableBody = document.getElementById('detail'); // แก้เป็น id จริงของ <tbody>
-
-            items.forEach(item => {
-                let newRow = document.createElement('tr');
-
-                const safeGoodName = item.GoodName.replace(/"/g, '&quot;');
-                const itemId = `53-${String(itemCounter).padStart(4, '0')}`; // เช่น 53-0001
-
-                newRow.innerHTML = `
-                    <td style="text-align: center; vertical-align: middle;">
-                        <input type="text" class="form-control1" name="item_id[]" value="${itemId}" readonly style="text-align: center;">
-                    </td>
-                    <td><input type="text" class="form-control1" name="item_name[]" value="${safeGoodName}" readonly></td>
-                    <td style="text-align: center; vertical-align: middle;">
-                        <input type="text" class="form-control1 item_quantity" name="item_quantity[]" value="${parseFloat(item.GoodQty2).toFixed(2)}" readonly style="text-align: center;">
-                    </td>
-                    <td style="text-align: center; vertical-align: middle;">
-                        <input type="text" class="form-control1" name="unit_price[]" value="${parseFloat(item.GoodPrice2).toFixed(2)}" readonly style="text-align: center;">
-                    </td>
-                `;
-                tableBody.appendChild(newRow);
-                itemCounter++;
-            });
-        } catch (error) {
-            console.error(error);
+        const billData = data.Bills[0][billId];
+        const items = billData.items;
+        let deliveryDate = billData.DocuDate;
+        if(deliveryDate){
+            let [datePart] = deliveryDate.split(' ');
+            let [year,month,day] = datePart.split('-');
+            document.getElementById('date_of_dali').value = `${day}-${month}-${year}`;
         }
-    }
-</script>
 
+        let itemCounter = 1;
+        const tableBody = document.getElementById('detail');
+        tableBody.innerHTML = '';
+        items.forEach(item=>{
+            let newRow = document.createElement('tr');
+            const safeGoodName = item.GoodName.replace(/"/g,'&quot;');
+            const itemId = `53-${String(itemCounter).padStart(4,'0')}`;
+            newRow.innerHTML = `
+                <td style="text-align:center;vertical-align:middle">
+                    <input type="text" class="form-control1" name="item_id[]" value="${itemId}" readonly style="text-align:center">
+                </td>
+                <td><input type="text" class="form-control1" name="item_name[]" value="${safeGoodName}" readonly></td>
+                <td style="text-align:center;vertical-align:middle">
+                    <input type="text" class="form-control1 item_quantity" name="item_quantity[]" value="${parseFloat(item.GoodQty2).toFixed(2)}" readonly style="text-align:center">
+                </td>
+                <td style="text-align:center;vertical-align:middle">
+                    <input type="text" class="form-control1" name="unit_price[]" value="${parseFloat(item.GoodPrice2).toFixed(2)}" readonly style="text-align:center">
+                </td>
+            `;
+            tableBody.appendChild(newRow);
+            itemCounter++;
+        });
+        if(items.length === 0){
+            tableBody.innerHTML = '<tr><td colspan="4"><div class="tbl-empty">ไม่พบรายการสินค้า</div></td></tr>';
+        }
+        updateMap();
+    }catch(err){ console.error(err); }
+}
 
-<script>
-const fileInput = document.getElementById('POdocument');
+/* PO upload + convert to PDF */
+const fileInput  = document.getElementById('POdocument');
 const pdfPreview = document.getElementById('pdfPreview');
-
+const pdfEmpty   = document.getElementById('pdfEmpty');
 let convertedPDFBlob = null;
 let originalFilename = '';
+const isLandscape = (w,h) => w > h;
 
-// ฟังก์ชันช่วยดูว่าเป็นแนวนอนหรือแนวตั้ง
-const isLandscape = (width, height) => width > height;
-
-fileInput.addEventListener('change', async function () {
+fileInput.addEventListener('change', async function(){
     const file = fileInput.files[0];
-    if (!file) return;
-
+    if(!file) return;
     const ext = file.name.split('.').pop().toLowerCase();
     originalFilename = file.name;
 
-    if (ext === 'pdf') {
+    if(ext === 'pdf'){
         const reader = new FileReader();
-        reader.onload = async function (e) {
+        reader.onload = async function(e){
             const base64 = e.target.result.split(',')[1];
-            const pdf = await pdfjsLib.getDocument({ data: atob(base64) }).promise;
-
+            const pdf = await pdfjsLib.getDocument({data: atob(base64)}).promise;
             const firstPage = await pdf.getPage(1);
-            const firstViewport = firstPage.getViewport({ scale: 1 });
+            const firstViewport = firstPage.getViewport({scale:1});
             const isPdfLandscape = isLandscape(firstViewport.width, firstViewport.height);
-
             const { jsPDF } = window.jspdf;
-            const pdfDoc = new jsPDF(isPdfLandscape ? 'l' : 'p', 'mm', 'a4');
-
-            for (let pageNum = 1; pageNum <= pdf.numPages; pageNum++) {
-                const page = await pdf.getPage(pageNum);
-                const viewport = page.getViewport({ scale: 2 });
-
+            const pdfDoc = new jsPDF(isPdfLandscape?'l':'p','mm','a4');
+            for(let p=1; p<=pdf.numPages; p++){
+                const page = await pdf.getPage(p);
+                const viewport = page.getViewport({scale:2});
                 const canvas = document.createElement('canvas');
-                canvas.width = viewport.width;
+                canvas.width  = viewport.width;
                 canvas.height = viewport.height;
-                const context = canvas.getContext('2d');
-                await page.render({ canvasContext: context, viewport }).promise;
-
-                const imgData = canvas.toDataURL('image/jpeg', 1.0);
-
-                if (pageNum > 1) pdfDoc.addPage();
-
-                const pageWidth = pdfDoc.internal.pageSize.getWidth();
-                const pageHeight = pdfDoc.internal.pageSize.getHeight();
-
-                pdfDoc.addImage(imgData, 'JPEG', 0, 0, pageWidth, pageHeight);
+                const ctx = canvas.getContext('2d');
+                await page.render({canvasContext:ctx, viewport}).promise;
+                const imgData = canvas.toDataURL('image/jpeg',1.0);
+                if(p>1) pdfDoc.addPage();
+                const pw = pdfDoc.internal.pageSize.getWidth();
+                const ph = pdfDoc.internal.pageSize.getHeight();
+                pdfDoc.addImage(imgData,'JPEG',0,0,pw,ph);
             }
-
             convertedPDFBlob = pdfDoc.output('blob');
-            const blobUrl = URL.createObjectURL(convertedPDFBlob);
-            pdfPreview.src = blobUrl;
+            pdfPreview.src = URL.createObjectURL(convertedPDFBlob) + '#toolbar=0&navpanes=0&scrollbar=0&view=FitH';
+            if(pdfEmpty) pdfEmpty.style.display = 'none';
         };
         reader.readAsDataURL(file);
-
-    } else if (['jpg', 'jpeg', 'png'].includes(ext)) {
+    } else if(['jpg','jpeg','png'].includes(ext)){
         const reader = new FileReader();
-        reader.onload = function (e) {
+        reader.onload = function(e){
             const img = new Image();
             img.src = e.target.result;
-            img.onload = function () {
+            img.onload = function(){
                 const isImgLandscape = isLandscape(img.width, img.height);
-
                 const { jsPDF } = window.jspdf;
-                const pdf = new jsPDF(isImgLandscape ? 'l' : 'p', 'mm', 'a4');
-                const pageWidth = pdf.internal.pageSize.getWidth();
-                const pageHeight = pdf.internal.pageSize.getHeight();
-
+                const pdf = new jsPDF(isImgLandscape?'l':'p','mm','a4');
+                const pw = pdf.internal.pageSize.getWidth();
+                const ph = pdf.internal.pageSize.getHeight();
                 const canvas = document.createElement('canvas');
-                canvas.width = img.width;
+                canvas.width  = img.width;
                 canvas.height = img.height;
                 const ctx = canvas.getContext('2d');
-                ctx.drawImage(img, 0, 0);
-                const imgData = canvas.toDataURL('image/jpeg', 1.0);
-
-                pdf.addImage(imgData, 'JPEG', 0, 0, pageWidth, pageHeight);
+                ctx.drawImage(img,0,0);
+                const imgData = canvas.toDataURL('image/jpeg',1.0);
+                pdf.addImage(imgData,'JPEG',0,0,pw,ph);
                 convertedPDFBlob = pdf.output('blob');
-
-                const blobUrl = URL.createObjectURL(convertedPDFBlob);
-                pdfPreview.src = blobUrl;
+                pdfPreview.src = URL.createObjectURL(convertedPDFBlob) + '#toolbar=0&navpanes=0&scrollbar=0&view=FitH';
+                if(pdfEmpty) pdfEmpty.style.display = 'none';
             };
         };
         reader.readAsDataURL(file);
-
     } else {
         alert('ไฟล์ไม่รองรับ กรุณาอัปโหลด PDF หรือรูปภาพ');
         fileInput.value = '';
         convertedPDFBlob = null;
         pdfPreview.src = '';
+        if(pdfEmpty) pdfEmpty.style.display = 'flex';
+    }
+});
+
+/* Submit */
+document.getElementById('submitBill').addEventListener('click', async function(event){
+    event.preventDefault();
+    const btn = this;
+    const form = document.getElementById('billForm');
+    const billid = form.querySelector('input[name="billid"]').value.trim();
+
+    if(!billid){ alert('กรุณากรอก billid ก่อนส่ง'); return; }
+
+    const originalHTML = btn.innerHTML;
+    btn.disabled = true;
+    btn.classList.remove('btn-success');
+    btn.classList.add('btn-danger');
+    btn.innerText = 'กำลังโหลด...';
+
+    try{
+        let checkResponse = await fetch('{{ route("check.billid") }}', {
+            method:'POST',
+            credentials:'same-origin',
+            headers:{
+                'Content-Type':'application/json',
+                'Accept':'application/json',
+                'X-Requested-With':'XMLHttpRequest',
+                'X-CSRF-TOKEN':'{{ csrf_token() }}'
+            },
+            body:JSON.stringify({billid}),
+        });
+        let checkData = await safeJson(checkResponse, 'check.billid');
+
+        if(checkData.exists){
+            let confirmAdd = confirm(`${checkData.billid} นี้ถูกสร้างโดย ${checkData.emp_name} แล้ว\nต้องการเพิ่มข้อมูลอีกครั้งหรือไม่?`);
+            if(!confirmAdd){
+                resetBtn(); return;
+            }
+        }
+        if(typeof convertedPDFBlob === 'undefined' || !convertedPDFBlob){
+            const confirmNoPO = confirm("คุณยังไม่ได้แนบเอกสาร PO\nต้องการเพิ่มข้อมูลโดยไม่มีเอกสาร PO ใช่หรือไม่?");
+            if(!confirmNoPO){ resetBtn(); return; }
+        }
+
+        let formData = new FormData(form);
+        if(typeof convertedPDFBlob !== 'undefined' && convertedPDFBlob){
+            formData.append('POdocument', convertedPDFBlob, originalFilename || 'upload.pdf');
+        }
+        let itemRows = document.querySelectorAll('table tbody tr');
+        itemRows.forEach((row, i)=>{
+            const idIn  = row.querySelector('input[name="item_id[]"]');
+            const nmIn  = row.querySelector('input[name="item_name[]"]');
+            const qtIn  = row.querySelector('input[name="item_quantity[]"]');
+            const prIn  = row.querySelector('input[name="unit_price[]"]');
+            if(!idIn||!nmIn||!qtIn||!prIn) return;
+            formData.append(`item_id[${i}]`,        idIn.value);
+            formData.append(`item_name[${i}]`,      nmIn.value);
+            formData.append(`item_quantity[${i}]`,  qtIn.value);
+            formData.append(`unit_price[${i}]`,     prIn.value);
+            formData.append(`status[${i}]`, 1);
+        });
+
+        let response = await fetch('{{ route("insert.post") }}', {
+            method:'POST',
+            credentials:'same-origin',
+            body: formData,
+            headers:{
+                'Accept':'application/json',
+                'X-Requested-With':'XMLHttpRequest',
+                'X-CSRF-TOKEN':'{{ csrf_token() }}'
+            },
+        });
+        let data = await safeJson(response, 'insert.post');
+
+        if(data.success){
+            alert(data.success);
+            window.location.href = 'http://server_update:8000/solist';
+        } else if(data.error){
+            alert(data.error);
+            resetBtn();
+        }
+    }catch(err){
+        console.error('❌ เกิดข้อผิดพลาด:', err);
+        alert('เกิดข้อผิดพลาด: ' + (err.message || 'ไม่ทราบสาเหตุ') + '\nกรุณาดู Console (F12) เพื่อดูรายละเอียด');
+        resetBtn();
+    }
+
+    function resetBtn(){
+        btn.disabled = false;
+        btn.classList.remove('btn-danger');
+        btn.classList.add('btn-success');
+        btn.innerHTML = originalHTML;
     }
 });
 </script>
-
-<script>
-    window.addEventListener('DOMContentLoaded', function () {
-        const urlParams = new URLSearchParams(window.location.search);
-        const billid = urlParams.get('billid');
-        if (billid) {
-            document.getElementById('billid').value = billid;
-        }
-    });
-</script>
-
-
 </body>
 </html>
- 

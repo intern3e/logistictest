@@ -443,6 +443,7 @@ textarea.form-control{resize:vertical;min-height:64px}
             <option value="2ฉธ1619">2ฉธ1619</option>
             <option value="3ฉมก6071">3ฉมก6071</option>
             <option value="3ฉมง3059">3ฉมง3059</option>
+            <option value="805">805</option>
             <option value="City 8กค6309">City 8กค6309</option>
             <option value="City 9 กค4815">City 9 กค4815</option>
             <option value="แจ๊ส 9กธ4830">แจ๊ส 9กธ4830</option>
