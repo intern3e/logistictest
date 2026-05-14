@@ -1452,7 +1452,7 @@ textarea.form-control{resize:vertical;min-height:65px}
         @php
           $driverList=['บังเดช','แชม','กอล์ฟ','หรั่ง','เก่ง','เอ','ยุทร','แฟรงค์','เอ้'];
           foreach($drivers as $dbD){if(!in_array($dbD,$driverList))$driverList[]=$dbD;}
-          $plateList=['1 ฉผ 1276','1 ฉผ 3181','1ฉผ213','1ฉผศ7158','2 ฉธ 1620','2ฉมฎ3017','2ฉธ1619','2ฉธ1621','3ฉมก6071','3ฉมง3059','3ฉมณ6380','3ฉมย478','3ฉมห200','4กย1540','6762','City 8กค6309','City 9 กค4815','แจ๊ส 9กธ4830'];
+          $plateList=['1 ฉผ 1276','1 ฉผ 3181','1ฉผ213','1ฉผศ7158','2 ฉธ 1620','2ฉมฎ3017','2ฉธ1619','2ฉธ1621','805','3ฉมก6071','3ฉมง3059','3ฉมณ6380','3ฉมย478','3ฉมห200','4กย1540','6762','City 8กค6309','City 9 กค4815','แจ๊ส 9กธ4830'];
           foreach($plates as $dbP){if(!in_array($dbP,$plateList))$plateList[]=$dbP;}
         @endphp
         <div class="full">
@@ -2234,11 +2234,22 @@ async function loadJobsForDriver(){
 function renderJobTable(jobs){
   const wrap=document.getElementById('jobTableWrap');
   const rows=jobs.map(j=>{
-    const raw=(j.status||'').trim();
-    const isOk=raw.includes('สำเร็จ')&&!raw.includes('ไม่');
-    const isNg=raw.includes('ไม่สำเร็จ')||raw.toLowerCase()==='ng'||raw.toLowerCase()==='fail';
-    const sb=isOk?`<span class="job-chip ok">✅ สำเร็จ</span>`:isNg?`<span class="job-chip fail">❌ ไม่สำเร็จ</span>`:`<span class="job-chip">— รอ</span>`;
-    const nh=(j.note&&j.note.trim()&&j.note.trim()!==raw)?`<div style="font-size:11px;color:var(--text3);margin-top:3px">${j.note}</div>`:'';
+      const raw=(j.status||'').trim();
+      const noteText = (j.note || '').trim();
+      
+      // ถ้า note = ส่งสำเร็จ ให้ถือว่า status = สำเร็จด้วย
+      const effectiveStatus = (noteText === 'ส่งสำเร็จ' || noteText === 'สำเร็จ') ? 'ส่งสำเร็จ' : raw;
+      
+      const isOk = effectiveStatus.includes('สำเร็จ') && !effectiveStatus.includes('ไม่');
+      const isNg = effectiveStatus.includes('ไม่สำเร็จ') || effectiveStatus.toLowerCase()==='ng' || effectiveStatus.toLowerCase()==='fail';
+      const sb = isOk ? `<span class="job-chip ok">✅ สำเร็จ</span>` : isNg ? `<span class="job-chip fail">❌ ไม่สำเร็จ</span>` : `<span class="job-chip">— รอ</span>`;
+      
+      const isSuccessNote = noteText === 'ส่งสำเร็จ' || noteText === 'สำเร็จ';
+      const nh = (noteText && noteText !== raw && !isSuccessNote)
+        ? `<div style="font-size:11px;color:var(--text3);margin-top:3px">${noteText}</div>`
+        : '';
+    // ─────────────────
+    
     const so=j.so_id?`<span class="job-bill" style="background:rgba(37,99,235,.08);color:var(--accent)">${j.so_id}</span>`:`<span style="color:var(--text3);font-size:11px">—</span>`;
     return `<tr><td><span class="job-bill">${j.bill_no}</span></td><td>${so}</td><td>${j.customer_name}</td><td style="color:var(--text2)">${j.bill_in_by}</td><td>${sb}${nh}</td></tr>`;
   }).join('');
@@ -2268,9 +2279,16 @@ function goToStep2(){
   else if(startMin===endMin){if(errTime){errTime.textContent='เวลาเริ่มและเวลาสิ้นสุดต้องไม่เหมือนกัน';errTime.style.display='block';}document.getElementById('s1-time-block')?.classList.add('is-invalid');ok=false;}
   if(!ok)return;
 
-  const jobs=_collectJobs(driver,date);
-  let okCount=0,ngCount=0;
-  jobs.forEach(j=>{const raw=(j.status||'').trim();const isOk=raw.includes('สำเร็จ')&&!raw.includes('ไม่');const isNg=raw.includes('ไม่สำเร็จ')||raw.toLowerCase()==='ng';if(isOk)okCount++;else if(isNg)ngCount++;});
+  jobs.forEach(j=>{
+      const raw=(j.status||'').trim();
+      const noteText=(j.note||'').trim();
+      // ถ้า note = ส่งสำเร็จ ให้นับเป็น ok
+      const effectiveStatus = (noteText === 'ส่งสำเร็จ' || noteText === 'สำเร็จ') ? 'ส่งสำเร็จ' : raw;
+      const isOk = effectiveStatus.includes('สำเร็จ') && !effectiveStatus.includes('ไม่');
+      const isNg = effectiveStatus.includes('ไม่สำเร็จ') || effectiveStatus.toLowerCase()==='ng';
+      if(isOk) okCount++;
+      else if(isNg) ngCount++;
+  });
   setF('f-ok',okCount);setF('f-ng',ngCount);
   if(jobs.length>0){
     fetch(ROUTE_SYNC_NG,{method:'POST',headers:{'Content-Type':'application/json','Accept':'application/json','X-CSRF-TOKEN':CSRF_TOKEN},body:JSON.stringify({date,jobs:jobs.map(j=>({bill_no:j.bill_no,so_id:j.so_id||'',driver_name:driver,bill_in_by:j.bill_in_by||'',customer_name:j.customer_name||'',status:(j.status||'').trim(),note:j.note||'',})),})}).catch(e=>console.warn(e));

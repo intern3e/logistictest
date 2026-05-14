@@ -37,7 +37,7 @@ body{
     font-size:14px;
 }
 
-/* ===== Container — บีบเว็บให้อยู่กลาง มีขอบ 2 ข้าง ===== */
+/* ===== Container ===== */
 .container{
     max-width:1140px;
     margin:24px auto;
@@ -65,7 +65,7 @@ body{
 }
 .btn-back:hover{background:var(--primary-hover)}
 
-/* ===== Page (ภายใน container) ===== */
+/* ===== Page ===== */
 .page{
     padding:24px 28px 32px;
     display:flex;flex-direction:column;gap:18px;
@@ -103,7 +103,7 @@ body{
 .badge-optional{background:#f1f5f9;color:var(--text-muted)}
 .badge-required{background:var(--red-light);color:var(--red)}
 
-/* Sale chip ขวาบน */
+/* Sale chip */
 .sale-chip{
     margin-left:auto;
     display:inline-flex;align-items:center;gap:8px;
@@ -131,7 +131,7 @@ body{
 
 .card-body{padding:22px 24px}
 
-/* ===== Section divider (เส้นแบ่งหัวข้อย่อยใน card) ===== */
+/* ===== Section divider ===== */
 .section-divider{
     display:flex;align-items:center;gap:10px;
     padding:0;margin-bottom:14px;
@@ -222,6 +222,49 @@ body{
 }
 .field input[type="file"]::file-selector-button:hover{
     background:var(--primary);color:#fff;border-color:var(--primary);
+}
+
+/* ===== Validation states ===== */
+.field.is-invalid input,
+.field.is-invalid select,
+.field.is-invalid textarea{
+    border-color:var(--red) !important;
+    background:#fef2f2 !important;
+    box-shadow:0 0 0 3px rgba(155,27,27,.10) !important;
+}
+.field.is-invalid label{ color:var(--red); }
+.field.is-invalid input[readonly]{
+    background:#fef2f2 !important;
+}
+.radio-group.is-invalid .radio-item label{
+    border-color:var(--red);
+    background:#fef2f2;
+}
+
+/* ===== Validation Summary box ===== */
+.validation-summary{
+    background:#fef2f2;
+    border:1px solid #fecaca;
+    border-radius:8px;
+    padding:14px 18px;
+    margin-bottom:4px;
+    display:none;
+    animation:slideDown .25s ease;
+}
+.validation-summary.show{ display:block; }
+.validation-summary-title{
+    font-size:14px;font-weight:700;color:var(--red);
+    margin:0 0 8px;display:flex;align-items:center;gap:6px;
+}
+.validation-summary ul{
+    margin:0;padding-left:20px;
+    font-size:13px;color:var(--text-secondary);
+    columns:2;column-gap:20px;
+}
+.validation-summary li{ margin-bottom:3px; break-inside:avoid; }
+@keyframes slideDown{
+    from{opacity:0;transform:translateY(-8px)}
+    to{opacity:1;transform:translateY(0)}
 }
 
 /* ===== Radio group ===== */
@@ -318,9 +361,8 @@ table.table tbody tr:hover td{background:#f8fafc}
 
 /* ===== Submit ===== */
 .submit-row{
-    display:flex;justify-content:center;gap:12px;
+    display:flex;flex-direction:column;align-items:center;gap:12px;
     margin-top:8px;
-    flex-wrap:wrap;
 }
 .btn-success{
     display:inline-flex;align-items:center;justify-content:center;gap:8px;
@@ -343,6 +385,20 @@ table.table tbody tr:hover td{background:#f8fafc}
     background:linear-gradient(135deg,#94a3b8,#cbd5e1);
     cursor:not-allowed;transform:none;box-shadow:none;
 }
+.btn-success.is-incomplete{
+    background:linear-gradient(135deg,#94a3b8,#cbd5e1) !important;
+    box-shadow:0 4px 12px rgba(148,163,184,.30) !important;
+    cursor:not-allowed !important;
+}
+.btn-success.is-incomplete:hover{
+    transform:none !important;
+    box-shadow:0 4px 12px rgba(148,163,184,.30) !important;
+}
+.btn-hint{
+    font-size:12px;color:var(--text-muted);
+    display:flex;align-items:center;gap:5px;
+}
+.btn-hint.warn{ color:var(--red); font-weight:600; }
 
 /* ===== Modal (login) ===== */
 .modal-overlay{
@@ -373,6 +429,7 @@ table.table tbody tr:hover td{background:#f8fafc}
 @media (max-width:992px){
     .form-grid-5{grid-template-columns:repeat(3,1fr)}
     .form-grid-4{grid-template-columns:repeat(2,1fr)}
+    .validation-summary ul{columns:1}
 }
 @media (max-width:640px){
     .container{margin:0;border-radius:0;border:none;box-shadow:none}
@@ -441,7 +498,7 @@ table.table tbody tr:hover td{background:#f8fafc}
                 </div>
             </div>
             <div class="card-body">
-                <!-- แถว 1: SO + บิล (2 คอลัมน์ใหญ่) -->
+                <!-- แถว 1: SO + บิล -->
                 <div class="form-grid-2" style="margin-bottom:14px">
                     <div class="field">
                         <label for="so_number">เลขที่ SO <i class="tip" data-tip="รหัส Sales Order จากระบบ">?</i></label>
@@ -474,7 +531,6 @@ table.table tbody tr:hover td{background:#f8fafc}
                     </div>
                 </div>
 
-                <!-- ผู้ขาย ซ่อน (ใช้ chip ด้านบน) แต่ยัง submit ได้ -->
                 <input type="hidden" id="sale_name" name="sale_name">
             </div>
         </div>
@@ -521,7 +577,7 @@ table.table tbody tr:hover td{background:#f8fafc}
                     </div>
 
                     <div class="field span-full">
-                        <label for="customer_la_long">ที่อยู่จัดส่ง (ละติจูด, ลองจิจูด) <i class="tip" data-tip="ใช้ Google Maps คัดลอกพิกัดมาวาง">?</i></label>
+                        <label for="customer_la_long">ที่อยู่จัดส่ง (ละติจูด, ลองจิจูด) <span class="req">*</span> <i class="tip" data-tip="ใช้ Google Maps คัดลอกพิกัดมาวาง">?</i></label>
                         <div class="coords-row">
                             <input type="text" id="customer_la_long" name="customer_la_long"
                                 placeholder="13.7563, 100.5018"
@@ -562,7 +618,7 @@ table.table tbody tr:hover td{background:#f8fafc}
             </div>
             <div class="card-body">
                 <div class="form-grid-2" style="row-gap:16px">
-                    <div class="field span-full">
+                    <div class="field span-full" id="field-typeinbill">
                         <label>ประเภทสินค้า / บริการ <span class="req">*</span></label>
                         <div class="radio-group">
                             <div class="radio-item">
@@ -663,6 +719,18 @@ table.table tbody tr:hover td{background:#f8fafc}
             </div>
         </div>
 
+        <!-- ====================== Validation Summary ====================== -->
+        <div class="validation-summary" id="validationSummary">
+            <p class="validation-summary-title">
+                <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+                    <circle cx="8" cy="8" r="7" stroke="#9b1b1b" stroke-width="1.5"/>
+                    <path d="M8 4.5v4M8 11h.01" stroke="#9b1b1b" stroke-width="1.5" stroke-linecap="round"/>
+                </svg>
+                <span>กรุณากรอกข้อมูลให้ครบก่อนบันทึก</span>
+            </p>
+            <ul id="validationList"></ul>
+        </div>
+
         <!-- ====================== Submit ====================== -->
         <div class="submit-row">
             <button type="button" id="submitBill" class="btn-success">
@@ -671,6 +739,13 @@ table.table tbody tr:hover td{background:#f8fafc}
                 </svg>
                 บันทึกเส้นทางส่งสินค้า
             </button>
+            <div class="btn-hint" id="btnHint">
+                <svg width="13" height="13" viewBox="0 0 14 14" fill="none">
+                    <circle cx="7" cy="7" r="6" stroke="currentColor" stroke-width="1.4"/>
+                    <path d="M7 4v3.5M7 9.5h.01" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/>
+                </svg>
+                <span id="btnHintText">กรุณากรอกข้อมูลที่จำเป็นให้ครบก่อน</span>
+            </div>
         </div>
 
     </div>
@@ -681,7 +756,7 @@ table.table tbody tr:hover td{background:#f8fafc}
 
 <!-- ===================== SCRIPTS ===================== -->
 <script>
-/* Login modal */
+/* ====================== Login modal ====================== */
 document.addEventListener('DOMContentLoaded', function () {
     const empInput = document.getElementById('emp_name');
     if (empInput && empInput.value.trim() === 'Guest') {
@@ -690,7 +765,7 @@ document.addEventListener('DOMContentLoaded', function () {
 });
 function goLogin(){ window.location.href = 'http://server_update:8000/login'; }
 
-/* Bill type detect */
+/* ====================== Bill type detect ====================== */
 const billidInput  = document.getElementById('billid');
 const billtypeInput = document.getElementById('billtype');
 function checkBillid(){
@@ -702,11 +777,10 @@ function checkBillid(){
 window.addEventListener('load', checkBillid);
 billidInput.addEventListener('input', checkBillid);
 
-/* helper: parse JSON อย่างปลอดภัย, log ถ้า server ตอบ HTML */
+/* ====================== Helper: safe JSON ====================== */
 async function safeJson(response, label){
     const text = await response.text();
     if(!response.ok){
-        // server error → log + ดึง message จาก HTML ถ้าเป็น Laravel error page
         console.error(`[${label}] HTTP ${response.status}:`, text.substring(0,800));
         const m = text.match(/<title>([^<]+)<\/title>/i);
         throw new Error(`${label} → ${response.status}` + (m?`: ${m[1]}`:''));
@@ -719,11 +793,10 @@ async function safeJson(response, label){
     }
 }
 
-/* Form-type fetch */
+/* ====================== Form-type fetch ====================== */
 function fetchFormType(){
     const customer_id = (document.getElementById("customer_id").value || '').trim();
     const formtypeSelect = document.getElementById("formtype");
-    // ✅ ป้องกัน 500 ที่ Laravel ถ้า customer_id ว่าง — skip ไปเลย
     if(!customer_id){
         console.log('[fetchFormType] skipped: customer_id is empty');
         formtypeSelect.value = 'ไม่มีข้อมูล';
@@ -756,16 +829,17 @@ function fetchFormType(){
         document.getElementById("customer_la_long").value = isValidCoords ? laLong : '';
         document.getElementById("notes").value = data.note || '';
         updateMap();
+        refreshSubmitState();
     })
     .catch(err=>{
         console.error('fetchFormType error:', err);
         formtypeSelect.value = 'ไม่มีข้อมูล';
+        refreshSubmitState();
     });
 }
 function fetchContactSo(){
     const customer_id = (document.getElementById("customer_id").value || '').trim();
     const contactInput = document.getElementById("contactso");
-    // ✅ skip ถ้า customer_id ว่าง
     if(!customer_id){
         console.log('[fetchContactSo] skipped: customer_id is empty');
         contactInput.value = '';
@@ -783,11 +857,14 @@ function fetchContactSo(){
         body:JSON.stringify({customer_id})
     })
     .then(r => safeJson(r, 'fetch-contactso'))
-    .then(d=>{ contactInput.value = d.contactso || ''; })
+    .then(d=>{
+        contactInput.value = d.contactso || '';
+        refreshSubmitState();
+    })
     .catch(err => { console.error('fetchContactSo error:', err); });
 }
 
-/* Map */
+/* ====================== Map ====================== */
 function updateMap(){
     const coords = (document.getElementById('customer_la_long').value||'').trim();
     const frame  = document.getElementById('mapFrame');
@@ -804,10 +881,9 @@ function updateMap(){
 document.getElementById('customer_la_long').addEventListener('input', updateMap);
 updateMap();
 
-/* Open Google Maps popup window (ไม่ใช่ tab) — รองรับ Chrome / Edge / Safari (Mac) */
+/* ====================== Google Maps popup ====================== */
 let mapWindow = null;
 function openGoogleMaps(event){
-    // กัน form submit / parent click
     if(event){
         event.preventDefault();
         event.stopPropagation();
@@ -817,10 +893,6 @@ function openGoogleMaps(event){
     const left = Math.max(0, Math.round((window.screen.availWidth  - w) / 2));
     const top  = Math.max(0, Math.round((window.screen.availHeight - h) / 2));
 
-    // ✅ feature string ที่บังคับ popup ใน Chromium + Safari
-    // - Chrome/Edge: ต้องมี width + height (ไม่งั้นเปิดเป็น tab)
-    // - Safari: ต้องระบุ toolbar=no, menubar=no, location=no, status=no
-    // - ห้ามมี space ระหว่าง key=value
     const features = [
         'popup=yes',
         'width='+w,
@@ -837,7 +909,6 @@ function openGoogleMaps(event){
         'titlebar=no'
     ].join(',');
 
-    // ถ้า popup เก่ายังเปิดอยู่ ให้ focus แทน
     if(mapWindow && !mapWindow.closed){
         try{
             mapWindow.focus();
@@ -846,7 +917,6 @@ function openGoogleMaps(event){
         }catch(e){ /* fall through */ }
     }
 
-    // ✅ ใช้ชื่อ window แบบ unique กัน browser reuse tab เดิม
     const winName = 'gmaps_popup_' + Date.now();
     mapWindow = window.open('https://www.google.com/maps/@13.7563,100.5018,14z', winName, features);
 
@@ -858,7 +928,7 @@ function openGoogleMaps(event){
     return false;
 }
 
-/* SO loader */
+/* ====================== SO loader ====================== */
 const urlParams = new URLSearchParams(window.location.search);
 const soNum = urlParams.get('so_num');
 const billId = urlParams.get('billid');
@@ -936,10 +1006,11 @@ async function fetchSODetails(soNum){
             tableBody.innerHTML = '<tr><td colspan="4"><div class="tbl-empty">ไม่พบรายการสินค้า</div></td></tr>';
         }
         updateMap();
+        refreshSubmitState();
     }catch(err){ console.error(err); }
 }
 
-/* PO upload + convert to PDF */
+/* ====================== PO upload + convert to PDF ====================== */
 const fileInput  = document.getElementById('POdocument');
 const pdfPreview = document.getElementById('pdfPreview');
 const pdfEmpty   = document.getElementById('pdfEmpty');
@@ -1015,13 +1086,175 @@ fileInput.addEventListener('change', async function(){
     }
 });
 
-/* Submit */
+/* ====================== Validation System ====================== */
+const VALIDATION_RULES = [
+    { id:'so_number',         label:'เลขที่ SO',                    type:'input' },
+    { id:'billid',            label:'เลขที่บิลส่งของ',               type:'input' },
+    { id:'contactso',         label:'ชื่อผู้ติดต่อ',                  type:'input' },
+    { id:'date_of_dali',      label:'วันกำหนดส่ง',                  type:'input' },
+    { id:'customer_address',  label:'ที่อยู่หัวบิล',                  type:'input' },
+    { id:'customer_la_long',  label:'พิกัดละติจูด, ลองจิจูด',         type:'coords' },
+    { name:'typeinbill',      label:'ประเภทสินค้า / บริการ',          type:'radio' },
+    { id:'formtype',          label:'แบบฟอร์มเอกสาร',                type:'select', invalidValue:'ไม่มีข้อมูล' },
+];
+
+function getFieldEl(rule){
+    if(rule.type === 'radio') return null;
+    return document.getElementById(rule.id);
+}
+function getFieldWrapper(el){
+    return el ? el.closest('.field') : null;
+}
+function clearFieldError(rule){
+    if(rule.type === 'radio'){
+        const wrap = document.getElementById('field-typeinbill');
+        if(wrap) wrap.querySelector('.radio-group')?.classList.remove('is-invalid');
+        return;
+    }
+    const el = getFieldEl(rule);
+    const wrap = getFieldWrapper(el);
+    if(wrap) wrap.classList.remove('is-invalid');
+}
+function markFieldError(rule){
+    if(rule.type === 'radio'){
+        const wrap = document.getElementById('field-typeinbill');
+        if(wrap) wrap.querySelector('.radio-group')?.classList.add('is-invalid');
+        return;
+    }
+    const el = getFieldEl(rule);
+    const wrap = getFieldWrapper(el);
+    if(wrap) wrap.classList.add('is-invalid');
+}
+
+/** ตรวจสอบฟอร์มทั้งหมด คืน array ของ rule ที่ยังไม่ผ่าน */
+function validateForm(){
+    const errors = [];
+    VALIDATION_RULES.forEach(rule=>{
+        let invalid = false;
+        if(rule.type === 'radio'){
+            const checked = document.querySelector(`input[name="${rule.name}"]:checked`);
+            invalid = !checked;
+        } else if(rule.type === 'select'){
+            const el = getFieldEl(rule);
+            invalid = !el || !el.value || el.value === rule.invalidValue;
+        } else if(rule.type === 'coords'){
+            const el = getFieldEl(rule);
+            const v  = (el?.value || '').trim();
+            invalid = !v || !/^-?\d+(\.\d+)?\s*,\s*-?\d+(\.\d+)?$/.test(v);
+        } else {
+            const el = getFieldEl(rule);
+            invalid = !el || !el.value.trim();
+        }
+        if(invalid){
+            errors.push(rule);
+            markFieldError(rule);
+        } else {
+            clearFieldError(rule);
+        }
+    });
+
+    // ตรวจรายการสินค้า — ต้องมีอย่างน้อย 1 แถว
+    const itemRows = document.querySelectorAll('#detail tr');
+    let hasItem = false;
+    itemRows.forEach(r=>{
+        if(r.querySelector('input[name="item_id[]"]')) hasItem = true;
+    });
+    if(!hasItem){
+        errors.push({ label:'รายการสินค้า (ยังไม่มีรายการในบิลนี้)', type:'items' });
+    }
+
+    return errors;
+}
+
+/** อัปเดตสถานะปุ่ม submit + hint ใต้ปุ่ม */
+function refreshSubmitState(){
+    const btn = document.getElementById('submitBill');
+    const hint = document.getElementById('btnHint');
+    const hintText = document.getElementById('btnHintText');
+    const errors = validateForm();
+
+    if(errors.length === 0){
+        btn.classList.remove('is-incomplete');
+        btn.title = '';
+        hint.classList.remove('warn');
+        hintText.textContent = 'พร้อมบันทึก ✓';
+        document.getElementById('validationSummary').classList.remove('show');
+    } else {
+        btn.classList.add('is-incomplete');
+        btn.title = `ยังขาด ${errors.length} ช่อง: ` + errors.map(e=>e.label).join(', ');
+        hint.classList.add('warn');
+        hintText.textContent = `ยังขาดข้อมูลอีก ${errors.length} ช่อง — โปรดกรอกให้ครบ`;
+    }
+}
+
+/** แสดง box สรุปข้อผิดพลาด + เลื่อนไปช่องแรกที่ผิด */
+function showValidationSummary(errors){
+    const box  = document.getElementById('validationSummary');
+    const list = document.getElementById('validationList');
+    list.innerHTML = '';
+    errors.forEach(err=>{
+        const li = document.createElement('li');
+        li.textContent = err.label;
+        list.appendChild(li);
+    });
+    box.classList.add('show');
+    box.scrollIntoView({ behavior:'smooth', block:'center' });
+
+    // focus ช่องแรกที่ผิด (ที่ไม่ใช่ readonly)
+    const first = errors.find(e => e.type && e.type !== 'radio' && e.type !== 'items');
+    if(first){
+        const el = getFieldEl(first);
+        if(el && !el.readOnly){
+            setTimeout(()=>el.focus(), 400);
+        }
+    }
+}
+
+/** ผูก real-time listener กับทุกฟิลด์ */
+VALIDATION_RULES.forEach(rule=>{
+    if(rule.type === 'radio'){
+        document.querySelectorAll(`input[name="${rule.name}"]`).forEach(r=>{
+            r.addEventListener('change', refreshSubmitState);
+        });
+    } else {
+        const el = getFieldEl(rule);
+        if(el){
+            el.addEventListener('input',  refreshSubmitState);
+            el.addEventListener('change', refreshSubmitState);
+        }
+    }
+});
+
+// MutationObserver: เฝ้าดูตาราง #detail ว่ามีแถวสินค้าเพิ่ม/ลบหรือไม่
+const detailObserver = new MutationObserver(refreshSubmitState);
+detailObserver.observe(document.getElementById('detail'), { childList:true, subtree:true });
+
+// เรียกครั้งแรกตอนโหลดหน้า
+window.addEventListener('DOMContentLoaded', refreshSubmitState);
+
+/* ====================== Submit ====================== */
 document.getElementById('submitBill').addEventListener('click', async function(event){
     event.preventDefault();
     const btn = this;
     const form = document.getElementById('billForm');
-    const billid = form.querySelector('input[name="billid"]').value.trim();
 
+    // ✅ ตรวจสอบข้อมูลครบหรือไม่ก่อนส่ง
+    const errors = validateForm();
+    if(errors.length > 0){
+        showValidationSummary(errors);
+        // shake animation ที่ปุ่ม
+        btn.animate([
+            { transform:'translateX(0)' },
+            { transform:'translateX(-6px)' },
+            { transform:'translateX(6px)' },
+            { transform:'translateX(-4px)' },
+            { transform:'translateX(4px)' },
+            { transform:'translateX(0)' },
+        ], { duration:350, easing:'ease-in-out' });
+        return; // หยุดทันที — ไม่ส่งฟอร์ม
+    }
+
+    const billid = form.querySelector('input[name="billid"]').value.trim();
     if(!billid){ alert('กรุณากรอก billid ก่อนส่ง'); return; }
 
     const originalHTML = btn.innerHTML;
@@ -1103,6 +1336,7 @@ document.getElementById('submitBill').addEventListener('click', async function(e
         btn.classList.remove('btn-danger');
         btn.classList.add('btn-success');
         btn.innerHTML = originalHTML;
+        refreshSubmitState();
     }
 });
 </script>
