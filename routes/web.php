@@ -197,34 +197,26 @@ Route::post('/service/{id}',        [ServiceController::class, 'update'])->name(
 Route::delete('/service/{id}',      [ServiceController::class, 'destroy'])->name('service.destroy');
 
 
-// ✅ Deposit
-Route::post('/deposit/store', [\App\Http\Controllers\DepositController::class, 'store'])->name('deposit.store');
-
 use App\Http\Controllers\DepositController;
-
+Route::post('/deposit/store', [DepositController::class, 'store'])->name('deposit.store');
 Route::get('/insertdeposit', [DepositController::class, 'insertdeposit'])->name('deposit.insert');
 Route::get('/dashboarddeposit', [DepositController::class, 'dashboarddeposit'])->name('deposit.dashboard');
 Route::get('/deposit/detail/{so_id}', [DepositController::class, 'detail'])
      ->where('so_id', '.*')
      ->name('deposit.detail');
-
-// ===== หน้าฟอร์มใบมัดจำ (PDF / พิมพ์) =====
 Route::get('/deposit/bill/{deposit_bill_id}', [DepositController::class, 'showBill'])
      ->where('deposit_bill_id', '[A-Za-z0-9\-]+')
      ->name('deposit.bill');
-
 Route::get('/botdeposit', [DepositController::class, 'botdeposit'])->name('deposit.bot');
 Route::get('/depositbot', [DepositController::class, 'botdeposit']);  // alias
-
 Route::post('/deposit/store', [DepositController::class, 'store'])->name('deposit.store');
 Route::post('/deposit/update-status', [DepositController::class, 'updateStatus'])->name('deposit.updateStatus');
 Route::post('/deposit/mark-printed', [DepositController::class, 'markPrinted'])->name('deposit.markPrinted');
 Route::post('/deposit/mark-printed-bulk', [DepositController::class, 'markPrintedBulk'])->name('deposit.markPrintedBulk');
-
-// ===== ✅ เพิ่มใหม่: Preview PDF (ใช้กับ iframe พรีวิวก่อนบันทึก) =====
 Route::get('/deposit/preview', [DepositController::class, 'preview'])->name('deposit.preview');
 Route::post('/deposit/upload-bill-pdf', [DepositController::class, 'uploadBillPdf'])
      ->name('deposit.uploadBillPdf');
+Route::post('/deposit/upload-slip', [DepositController::class, 'uploadSlip']);
 
 
 

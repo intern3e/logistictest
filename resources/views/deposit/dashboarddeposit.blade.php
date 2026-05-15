@@ -35,7 +35,6 @@
   --border:#D6D9DD;
   --bg:#EEF2F7;                  /* พื้นหลังฟ้า-เทาอ่อน */
   --white:#FFFFFF;
-
   --r4:4px;--r6:6px;--r8:8px;
 }
 
@@ -444,6 +443,77 @@ nav[role="navigation"] span[aria-current="page"]{
   th,td{padding:8px 8px;font-size:12px}
   .brand-title{font-size:18px}
 }
+/* ===== ปุ่มแนบสลิป / ดูสลิป ===== */
+.btn-slip{
+  display:inline-flex;align-items:center;justify-content:center;gap:5px;
+  padding:5px 10px;height:26px;
+  border-radius:4px;cursor:pointer;
+  font-size:11.5px;font-weight:600;font-family:inherit;
+  border:1px solid;transition:all .15s;text-decoration:none;
+  white-space:nowrap;
+}
+.btn-slip.insert{
+  background:#FFF7ED;border-color:#FDBA74;color:#C2410C;
+}
+.btn-slip.insert:hover{
+  background:#C2410C;color:#fff;border-color:#C2410C;
+  transform:translateY(-1px);box-shadow:0 2px 6px rgba(194,65,12,.3);
+}
+.btn-slip.view{
+  background:#ECFDF5;border-color:#6EE7B7;color:#047857;
+}
+.btn-slip.view:hover{
+  background:#047857;color:#fff;border-color:#047857;
+  transform:translateY(-1px);box-shadow:0 2px 6px rgba(4,120,87,.3);
+}
+.st-slip-time{
+  color:#C2410C;font-size:10.5px;display:block;margin-top:2px;font-weight:500;
+}
+
+.slip-modal-body{
+  padding:20px 22px;
+}
+.slip-drop{
+  display:block;              /* ✅ บังคับให้เป็น block */
+  width:100%;                 /* ✅ เต็มความกว้าง */
+  box-sizing:border-box;      /* ✅ รวม padding ในความกว้าง */
+  border:2px dashed var(--green-line);
+  border-radius:8px;
+  padding:30px 20px;
+  text-align:center;
+  background:#FAFBFE;
+  cursor:pointer;
+  transition:all .15s;
+  margin:0;                   /* ✅ กัน margin default ของ label */
+}
+.slip-drop:hover,
+.slip-drop.dragover{
+  border-color:var(--green-table);
+  background:var(--green-row);
+}
+.slip-drop input[type=file]{
+  position:absolute;          /* ✅ ดึงออกจาก flow */
+  width:0;height:0;
+  opacity:0;
+  pointer-events:none;
+  overflow:hidden;
+}
+.slip-drop-ico{
+  width:48px;height:48px;border-radius:50%;
+  background:var(--green-row);color:var(--green-table);
+  margin:0 auto 10px;display:flex;align-items:center;justify-content:center;
+  font-size:22px;
+}
+.slip-drop-text{font-size:13px;color:var(--steel);font-weight:500;margin-bottom:4px}
+.slip-drop-hint{font-size:11px;color:var(--ash)}
+.slip-preview{margin-top:14px;display:none}
+.slip-preview.show{display:block}
+.slip-preview img{max-width:100%;max-height:300px;border-radius:6px;border:1px solid var(--green-line)}
+.slip-preview .pdf-box{
+  padding:14px;background:var(--green-row);border-radius:6px;
+  display:flex;align-items:center;gap:10px;
+  font-size:13px;color:var(--green-text);font-weight:500;
+}
 </style>
 </head>
 <body>
@@ -532,7 +602,7 @@ nav[role="navigation"] span[aria-current="page"]{
           <th>เวลาบันทึก</th>
           <th>ประเภท</th>
           <th>%</th>
-          <th>ยอดมัดจำ</th>
+          <th>ยอดมัดจำ<br><span style="font-size:10px;font-weight:400;opacity:.8">(รวม VAT 7%)</span></th>
           <th>ยอดคงเหลือ</th>
           <th>สถานะ</th>
         </tr>
@@ -556,27 +626,27 @@ nav[role="navigation"] span[aria-current="page"]{
             data-so="{{ strtolower(($item->so_id ?? '') . ' ' . $billId . ' ' . $custPoNo) }}">
           <td class="row-idx">{{ ($deposits->currentPage() - 1) * $deposits->perPage() + $loop->iteration }}</td>
 
-{{-- เลขที่ใบมัดจำ + ปุ่ม PDF --}}
+          {{-- เลขที่ใบมัดจำ + ปุ่ม PDF + ปุ่มสลิป --}}
           <td>
             @if($billId)
               <div class="c-billno">
                 <span class="c-billno-text">{{ $billId }}</span>
-            @php
-              // หาไฟล์ PDF + status_bill จาก deposit_bill_id ตรงกัน
-              $pdfRow = \App\Models\deposit::where('deposit_bill_id', $billId)
-                          ->whereNotNull('deposit_bill')
-                          ->select('deposit_bill', 'status_bill')
-                          ->first();
-              $pdfFile     = $pdfRow->deposit_bill ?? null;
-              $isBillReady = ($pdfRow->status_bill ?? null) === 'ok';
-            @endphp
+                @php
+                  // หาไฟล์ PDF + status_bill + สลิป จาก deposit_bill_id ตรงกัน
+                  $pdfRow = \App\Models\deposit::where('deposit_bill_id', $billId)
+                              ->select('deposit_bill', 'status_bill', 'deposit_slip', 'slip_time')
+                              ->first();
+                  $pdfFile     = $pdfRow->deposit_bill ?? null;
+                  $isBillReady = ($pdfRow->status_bill ?? null) === 'ok';
+                  $slipFile    = $pdfRow->deposit_slip ?? null;
+                  $slipTime    = $pdfRow->slip_time ?? null;
+                @endphp
 
-            @if($pdfFile)
-              <a href="{{ asset('storage/deposit_templates/' . $pdfFile) }}"
-                target="_blank"
-                rel="noopener"
-                class="btn-pdf {{ $isBillReady ? 'is-ok' : '' }}"
-                title="{{ $isBillReady ? 'เปิดใบมัดจำ (พร้อมแล้ว)' : 'เปิดใบมัดจำ (PDF)' }}">
+                @if($pdfFile)
+                  <a href="{{ asset('storage/deposit_templates/' . $pdfFile) }}"
+                    target="_blank" rel="noopener"
+                    class="btn-pdf {{ $isBillReady ? 'is-ok' : '' }}"
+                    title="{{ $isBillReady ? 'เปิดใบมัดจำ (พร้อมแล้ว)' : 'เปิดใบมัดจำ (PDF)' }}">
                     <svg width="13" height="13" viewBox="0 0 14 14" fill="none">
                       <path d="M3 1.5h5l3 3v8a.5.5 0 0 1-.5.5H3.5a.5.5 0 0 1-.5-.5v-11a.5.5 0 0 1 .5-.5z"
                             stroke="currentColor" stroke-width="1.3" stroke-linejoin="round"/>
@@ -588,17 +658,42 @@ nav[role="navigation"] span[aria-current="page"]{
                 @else
                   <span class="no-pdf" title="ยังไม่มีไฟล์ PDF">—</span>
                 @endif
+
+                {{-- ✅ ปุ่มแนบสลิป / ดูสลิป --}}
+                @if($slipFile)
+                  <a href="{{ asset('storage/deposit_templates/deposit_slip/' . $slipFile) }}"
+                    target="_blank" rel="noopener"
+                    class="btn-slip view"
+                    title="ดูสลิปการโอน">
+                    <svg width="11" height="11" viewBox="0 0 14 14" fill="none">
+                      <path d="M1 7s2.5-4.5 6-4.5S13 7 13 7s-2.5 4.5-6 4.5S1 7 1 7z"
+                            stroke="currentColor" stroke-width="1.3"/>
+                      <circle cx="7" cy="7" r="2" stroke="currentColor" stroke-width="1.3"/>
+                    </svg>
+                    ดูสลิป
+                  </a>
+                @else
+                  <button type="button"
+                          class="btn-slip insert"
+                          onclick="openSlipModal('{{ $billId }}')"
+                          title="แนบสลิปการโอน">
+                    <svg width="11" height="11" viewBox="0 0 14 14" fill="none">
+                      <path d="M7 2v10M2 7h10" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>
+                    </svg>
+                    แนบสลิป
+                  </button>
+                @endif
               </div>
             @else
               <span class="no-bill">—</span>
             @endif
           </td>
-
+                    {{-- ✅ เพิ่ม: ใบสั่งขาย --}}
           <td>
             <a class="c-link" onclick="openDetail('{{ $item->so_id }}')">{{ $item->so_id }}</a>
           </td>
 
-          {{-- เลขที่ PO ลูกค้า --}}
+          {{-- ✅ เพิ่ม: เลขที่ PO ลูกค้า --}}
           <td title="{{ $custPoNo }}">
             @if(!empty($custPoNo))
               <span class="c-custpo">{{ $custPoNo }}</span>
@@ -620,7 +715,7 @@ nav[role="navigation"] span[aria-current="page"]{
             @endif
           </td>
           <td class="c-percent">{{ number_format((float)($item->dep_per ?? 0), 2) }}%</td>
-          <td class="c-money">{{ number_format((float)($item->dep_price ?? 0), 2) }}</td>
+          <td class="c-money">{{ number_format((float)($item->dep_price ?? 0) * 1.07, 2) }}</td>
           <td class="c-money-sub">{{ number_format((float)($item->grand_total ?? 0), 2) }}</td>
           <td class="status-cell">
             @if($isCancelled)
@@ -662,8 +757,11 @@ nav[role="navigation"] span[aria-current="page"]{
                   ยืนยัน: {{ \Carbon\Carbon::parse($item->time_check)->setTimezone('Asia/Bangkok')->format('H:i d/m/Y') }}
                 </span>
               @endif
-
-              {{-- ✅ เวลาสร้างเอกสาร (print_time) - แสดงเมื่อ status_bill = 'ok' --}}
+              @if(!empty($item->slip_time))
+              <span class="st-slip-time" title="เวลาที่แนบสลิป">
+                แนบสลิปแล้ว: {{ \Carbon\Carbon::parse($item->slip_time)->setTimezone('Asia/Bangkok')->format('H:i d/m/Y') }}
+              </span>
+            @endif
               @if(($item->status_bill ?? null) === 'ok' && !empty($item->print_time))
                 <span class="st-print-time" title="เวลาที่สร้างเอกสารใบมัดจำ">
                   สร้างเอกสารแล้วเมื่อ: {{ \Carbon\Carbon::parse($item->print_time)->setTimezone('Asia/Bangkok')->format('H:i d/m/Y') }}
@@ -750,7 +848,7 @@ nav[role="navigation"] span[aria-current="page"]{
               <th>ID</th>
               <th>ประเภท</th>
               <th>%</th>
-              <th>ยอดมัดจำ</th>
+              <th>ยอดมัดจำ (รวม VAT)</th>
               <th>สถานะ</th>
             </tr>
           </thead>
@@ -796,7 +894,36 @@ nav[role="navigation"] span[aria-current="page"]{
     </div>
   </div>
 </div>
+<!-- ===== Slip Upload Modal ===== -->
+<div class="modal-bg" id="slipModal">
+  <div class="modal" style="max-width:520px">
+    <div class="modal-head">
+      <h3>แนบสลิปการโอน <span id="slipModalBillId" style="font-weight:400;opacity:.85;font-size:13px"></span></h3>
+      <button class="modal-x" onclick="closeSlipModal()">
+        <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
+          <path d="M2 2l8 8M10 2L2 10" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>
+        </svg>
+      </button>
+    </div>
+    <div class="slip-modal-body">
+      <label class="slip-drop" id="slipDrop">
+        <input type="file" id="slipFile" accept=".pdf,.jpg,.jpeg,.png,.webp" onchange="onSlipChange(event)">
+        <div class="slip-drop-ico">📎</div>
+        <div class="slip-drop-text">คลิกเพื่อเลือกไฟล์ หรือ ลากวางที่นี่</div>
+        <div class="slip-drop-hint">รองรับ JPG, PNG, WEBP, PDF (ขนาดไม่เกิน 10 MB)</div>
+      </label>
 
+      <div class="slip-preview" id="slipPreview"></div>
+    </div>
+    <div class="modal-foot" style="gap:10px">
+      <button class="btn-ghost" onclick="closeSlipModal()">ยกเลิก</button>
+      <button class="btn-confirm" id="slipUploadBtn" onclick="uploadSlip()" disabled
+              style="padding:7px 18px;border-radius:6px;font-size:13px;font-weight:600;font-family:inherit;cursor:pointer;border:none;background:var(--green-table);color:#fff">
+        อัปโหลด
+      </button>
+    </div>
+  </div>
+</div>
 <!-- Toast -->
 <div class="toast" id="toast">
   <span id="toastMsg">—</span>
@@ -938,7 +1065,7 @@ function openDetail(soId){
 
       let totalDep = 0;
       tb.innerHTML = data.items.map(it=>{
-        totalDep += parseFloat(it.dep_price||0);
+      totalDep += parseFloat(it.dep_price||0) * 1.07;
         const tLabel = typeLabels[it.dep_type] || it.dep_type;
         const st = it.status || 'รอยืนยัน';
         let stCls = 'status-wait';
@@ -948,7 +1075,7 @@ function openDetail(soId){
           <td>${it.id}</td>
           <td><span class="type-text">${tLabel}</span></td>
           <td class="c-percent">${parseFloat(it.dep_per||0).toFixed(2)}%</td>
-          <td class="c-money">${parseFloat(it.dep_price||0).toLocaleString('th-TH',{minimumFractionDigits:2})}</td>
+          <td class="c-money">${(parseFloat(it.dep_price||0) * 1.07).toLocaleString('th-TH',{minimumFractionDigits:2})}</td>
           <td><span class="${stCls}" style="font-weight:600;color:${stCls?'':'var(--green-text)'}">${st}</span></td>
         </tr>`;
       }).join('');
@@ -967,7 +1094,7 @@ function formatDate(d){
 
 function closeDetail(){document.getElementById('detailModal').classList.remove('open');document.body.style.overflow='';}
 document.getElementById('detailModal').addEventListener('click',function(e){if(e.target===this)closeDetail();});
-document.addEventListener('keydown',e=>{if(e.key==='Escape'){closeDetail();closeConfirm();}});
+document.addEventListener('keydown',e=>{if(e.key==='Escape'){closeDetail();closeConfirm();closeSlipModal();}});
 
 /* ===== เปลี่ยนสถานะ (Admin เท่านั้น) ===== */
 let pendingChange = null;
@@ -1070,6 +1197,143 @@ function showToast(msg, isError){
 
 document.getElementById('confirmModal').addEventListener('click', function(e){
   if(e.target === this) closeConfirm();
+});
+</script>
+<script>
+  /* ===== Slip Upload ===== */
+let slipBillId = null;
+let slipFileObj = null;
+
+function openSlipModal(billId){
+  slipBillId = billId;
+  slipFileObj = null;
+  document.getElementById('slipModalBillId').textContent = '(' + billId + ')';
+  document.getElementById('slipFile').value = '';
+  document.getElementById('slipPreview').classList.remove('show');
+  document.getElementById('slipPreview').innerHTML = '';
+  document.getElementById('slipUploadBtn').disabled = true;
+  document.getElementById('slipModal').classList.add('open');
+  document.body.style.overflow = 'hidden';
+}
+
+function closeSlipModal(){
+  document.getElementById('slipModal').classList.remove('open');
+  document.body.style.overflow = '';
+  slipBillId = null;
+  slipFileObj = null;
+}
+
+function onSlipChange(e){
+  const file = e.target.files[0];
+  if(!file) return;
+
+  // ตรวจขนาด
+  if(file.size > 10 * 1024 * 1024){
+    showToast('ไฟล์มีขนาดเกิน 10 MB', true);
+    e.target.value = '';
+    return;
+  }
+
+  slipFileObj = file;
+  const prev = document.getElementById('slipPreview');
+  prev.classList.add('show');
+
+  if(file.type.startsWith('image/')){
+    const reader = new FileReader();
+    reader.onload = (ev) => {
+      prev.innerHTML = `<img src="${ev.target.result}" alt="preview">`;
+    };
+    reader.readAsDataURL(file);
+  } else {
+    prev.innerHTML = `
+      <div class="pdf-box">
+        <svg width="22" height="22" viewBox="0 0 14 14" fill="none">
+          <path d="M3 1.5h5l3 3v8a.5.5 0 0 1-.5.5H3.5a.5.5 0 0 1-.5-.5v-11a.5.5 0 0 1 .5-.5z"
+                stroke="currentColor" stroke-width="1.3" stroke-linejoin="round"/>
+          <path d="M8 1.5V4.5h3" stroke="currentColor" stroke-width="1.3"/>
+        </svg>
+        <div>
+          <div>${file.name}</div>
+          <div style="font-size:11px;color:var(--ash);font-weight:400">${(file.size/1024).toFixed(1)} KB</div>
+        </div>
+      </div>
+    `;
+  }
+
+  document.getElementById('slipUploadBtn').disabled = false;
+}
+
+// Drag & Drop
+const slipDrop = document.getElementById('slipDrop');
+if(slipDrop){
+  ['dragover','dragenter'].forEach(ev=>{
+    slipDrop.addEventListener(ev, e=>{
+      e.preventDefault();
+      slipDrop.classList.add('dragover');
+    });
+  });
+  ['dragleave','drop'].forEach(ev=>{
+    slipDrop.addEventListener(ev, e=>{
+      e.preventDefault();
+      slipDrop.classList.remove('dragover');
+    });
+  });
+  slipDrop.addEventListener('drop', e=>{
+    const file = e.dataTransfer.files[0];
+    if(!file) return;
+    const inp = document.getElementById('slipFile');
+    const dt = new DataTransfer();
+    dt.items.add(file);
+    inp.files = dt.files;
+    onSlipChange({target: inp});
+  });
+}
+
+async function uploadSlip(){
+  if(!slipBillId || !slipFileObj){
+    showToast('กรุณาเลือกไฟล์', true);
+    return;
+  }
+
+  const btn = document.getElementById('slipUploadBtn');
+  btn.disabled = true;
+  btn.textContent = 'กำลังอัปโหลด...';
+
+  const fd = new FormData();
+  fd.append('deposit_bill_id', slipBillId);
+  fd.append('slip_file', slipFileObj);
+  fd.append('uploaded_by', CURRENT_USER);
+
+  try {
+    const res = await fetch('/deposit/upload-slip', {
+      method: 'POST',
+      headers: {
+        'X-CSRF-TOKEN': CSRF_TOKEN,
+        'X-Requested-With': 'XMLHttpRequest',
+        'Accept': 'application/json'
+      },
+      body: fd
+    });
+
+    const data = await res.json().catch(()=>({success:false, message:'response error'}));
+    if(!res.ok || data.success === false){
+      throw new Error(data.message || ('HTTP ' + res.status));
+    }
+
+    showToast('อัปโหลดสลิปสำเร็จ');
+    closeSlipModal();
+    setTimeout(()=>location.reload(), 600);
+
+  } catch(err){
+    console.error(err);
+    showToast('อัปโหลดล้มเหลว: ' + err.message, true);
+    btn.disabled = false;
+    btn.textContent = 'อัปโหลด';
+  }
+}
+
+document.getElementById('slipModal').addEventListener('click', function(e){
+  if(e.target === this) closeSlipModal();
 });
 </script>
 </body>

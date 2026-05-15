@@ -328,6 +328,24 @@ nav[role="navigation"] span[aria-current="page"]{
   background:var(--green-header-2);
 }
 .file-input:disabled{opacity:.5;cursor:wait}
+/* ===== Slip Time Badge ===== */
+.slip-badge{
+  display:inline-flex;align-items:center;gap:4px;
+  padding:3px 9px;border-radius:12px;
+  background:#FFF7ED;color:#C2410C;
+  border:1px solid #FDBA74;
+  font-size:10.5px;font-weight:600;
+  white-space:nowrap;margin-top:4px;
+}
+.slip-badge svg{flex-shrink:0}
+.no-slip{
+  display:inline-flex;align-items:center;gap:4px;
+  padding:3px 9px;border-radius:12px;
+  background:#F1F5F9;color:#94A3B8;
+  border:1px solid #E2E8F0;
+  font-size:10.5px;font-weight:500;
+  white-space:nowrap;margin-top:4px;
+}
 </style>
 </head>
 <body>
@@ -449,6 +467,7 @@ nav[role="navigation"] span[aria-current="page"]{
           <th>ยอดมัดจำ</th>
           <th>ยอดคงเหลือ</th>
           <th>ประเภทงาน</th>
+          <th>สลิป</th>
         </tr>
       </thead>
       <tbody id="table-body">
@@ -560,11 +579,31 @@ nav[role="navigation"] span[aria-current="page"]{
                     style="width:140px;font-size:11px;padding:3px"
                     onchange="uploadDepositPdf('{{ $item->id }}','{{ $item->deposit_bill_id }}',this)">
                 </div>
-              @endif
-            </div>
-          </td>
+                @endif
+                            </div>
+                          </td>
 
-        </tr>
+                          {{-- ✅ คอลัมน์สลิป --}}
+                          <td name = "time-slip">
+                            @if(!empty($item->slip_time))
+                              <span class="slip-badge" title="เวลาที่แนบสลิป">
+                                <svg width="11" height="11" viewBox="0 0 12 12" fill="none">
+                                  <path d="M6 1v5l3 1.5" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/>
+                                  <circle cx="6" cy="6" r="5" stroke="currentColor" stroke-width="1.4"/>
+                                </svg>
+                                {{ \Carbon\Carbon::parse($item->slip_time)->setTimezone('Asia/Bangkok')->format('H:i d/m/Y') }}
+                              </span>
+                            @else
+                              <span class="no-slip" title="ยังไม่มีสลิป">
+                                <svg width="10" height="10" viewBox="0 0 12 12" fill="none">
+                                  <path d="M3 3l6 6M9 3l-6 6" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/>
+                                </svg>
+                                ยังไม่มีสลิป
+                              </span>
+                            @endif
+                          </td>
+
+                        </tr>
         @empty
         <tr>
           <td colspan="9" style="background:#fff;border-right:none">

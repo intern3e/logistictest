@@ -780,4 +780,75 @@ class DepositController extends Controller
 
         return '(' . $bahtText . ')';   // 👈 ครอบวงเล็บตรงนี้
     }
+    private const SLIP_OUTPUT_DIR = 'deposit_templates/deposit_slip';
+    public function uploadSlip(Request $request)
+    {
+        $request->validate([
+            'deposit_bill_id' => 'required|string|max:50',
+            'slip_file'       => 'required|file|mimes:pdf,jpg,jpeg,png,webp|max:10240', // 10 MB
+            'uploaded_by'     => 'nullable|string|max:150',
+        ]);
+
+        $depositBillId = trim($request->input('deposit_bill_id'));
+        $uploadedBy    = trim($request->input('uploaded_by', 'unknown'));
+        $file          = $request->file('slip_file');
+
+        try {
+            $safeName = $this->sanitizeDepositFilename($depositBillId);
+            $ext      = strtolower($file->getClientOriginalExtension());
+            $fileName = $safeName . '.' . $ext;
+
+            $absDir = storage_path('app/public/' . self::SLIP_OUTPUT_DIR);
+            $relPath = self::SLIP_OUTPUT_DIR . '/' . $fileName;
+            $absPath = storage_path('app/public/' . $relPath);
+
+            // สร้างโฟลเดอร์ถ้ายังไม่มี
+            if (!is_dir($absDir)) {
+                mkdir($absDir, 0775, true);
+            }
+
+            // ✅ ลบไฟล์เดิมทุกนามสกุล (เผื่อเปลี่ยนจาก .pdf → .jpg)
+            foreach (['pdf','jpg','jpeg','png','webp'] as $oldExt) {
+                $oldFile = $absDir . DIRECTORY_SEPARATOR . $safeName . '.' . $oldExt;
+                if (file_exists($oldFile)) {
+                    @unlink($oldFile);
+                }
+            }
+
+            // ย้ายไฟล์ใหม่
+            $file->move($absDir, $fileName);
+
+            // อัปเดต DB ทุกแถวที่มี deposit_bill_id เดียวกัน
+            $now = now();
+            $affected = deposit::where('deposit_bill_id', $depositBillId)
+                ->update([
+                    'deposit_slip' => $fileName,
+                    'slip_time'    => $now,
+                ]);
+
+            Log::info('Deposit slip uploaded', [
+                'deposit_bill_id' => $depositBillId,
+                'file_name'       => $fileName,
+                'rows_affected'   => $affected,
+                'uploaded_by'     => $uploadedBy,
+            ]);
+
+            return response()->json([
+                'success'   => true,
+                'message'   => 'อัปโหลดสลิปสำเร็จ',
+                'file_name' => $fileName,
+                'file_url'  => asset('storage/' . $relPath),
+                'slip_time' => $now->format('Y-m-d H:i:s'),
+            ]);
+
+        } catch (\Throwable $e) {
+            Log::error('Upload deposit slip failed: ' . $e->getMessage(), [
+                'trace' => $e->getTraceAsString(),
+            ]);
+            return response()->json([
+                'success' => false,
+                'message' => 'เกิดข้อผิดพลาด: ' . $e->getMessage(),
+            ], 500);
+        }
+    }
 }
