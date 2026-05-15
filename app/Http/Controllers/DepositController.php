@@ -9,9 +9,17 @@ use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Http;
 use Carbon\Carbon;
 use setasign\Fpdi\Tcpdf\Fpdi;
+use setasign\Fpdi\Fpdi as FpdiBasic;
+
 
 class DepositController extends Controller
 {
+    private const STAMP_IMAGE_REL = 'deposit_templates/ly.png';
+    private const STAMP_X         = 4;   // ตำแหน่ง X (mm) จากซ้าย
+    private const STAMP_Y         = 215;    // ตำแหน่ง Y (mm) จากบน
+    private const STAMP_WIDTH     = 65;     // ความกว้าง (mm), 0 = อัตโนมัติ
+    private const STAMP_HEIGHT    = 55;      // ความสูง (mm), 0 = อัตโนมัติ (รักษาสัดส่วน)
+    private const STAMP_PAGE      = 0;      // หน้าที่จะ stamp (1 = หน้าแรก, 0 = ทุกหน้า)
     private $adminUsers = ['kanitin2', 'dev'];
     private const PDF_TEMPLATE_REL = 'deposit_templates/templates.pdf';
     private const PDF_OUTPUT_DIR = 'deposit_templates';
@@ -296,11 +304,14 @@ class DepositController extends Controller
                 mkdir($absDir, 0775, true);
             }
 
-            // ✅ ทับไฟล์เดิม (move with overwrite)
             if (file_exists($absPath)) {
                 @unlink($absPath);
             }
             $file->move($absDir, $fileName);
+
+            // 🔥 Stamp ภาพ ly.png ลงบน PDF ที่อัปโหลดมา
+            $this->stampPdfWithImage($absPath);
+
 
             // ✅ อัปเดต DB ทุกแถวที่มี deposit_bill_id เดียวกัน (เพราะ 1 ใบบิลอาจมีหลายแถว)
             // ถ้าต้องการอัปเดตเฉพาะแถวเดียว ใช้ where('id', $depositId) แทน
@@ -718,7 +729,6 @@ class DepositController extends Controller
         $pdf->SetXY(55, 192);                                          // 👈 ปรับ X, Y ให้ตรงช่อง
         $pdf->Cell(100, $rowH, $this->bahtText($grandTotal), 0, 0, 'L');
     }
-
     protected function sanitizeDepositFilename(string $name): string
     {
         $name = trim($name);
@@ -726,7 +736,64 @@ class DepositController extends Controller
         $name = preg_replace('/\s+/', '_', $name);
         return $name !== '' ? $name : 'deposit_' . date('YmdHis');
     }
+   protected function stampPdfWithImage(string $pdfAbsPath): void
+    {
+        $stampAbs = storage_path('app/public/' . self::STAMP_IMAGE_REL);
 
+        if (!file_exists($stampAbs)) {
+            Log::warning('Stamp image not found: ' . self::STAMP_IMAGE_REL);
+            return;
+        }
+        if (!file_exists($pdfAbsPath)) {
+            Log::warning('PDF to stamp not found: ' . $pdfAbsPath);
+            return;
+        }
+
+        try {
+            ob_start();   
+
+       
+            $pdf = new FpdiBasic();
+            $pdf->SetMargins(0, 0, 0);
+            $pdf->SetAutoPageBreak(false, 0);
+
+            $pageCount = $pdf->setSourceFile($pdfAbsPath);
+
+            for ($p = 1; $p <= $pageCount; $p++) {
+                $tplId = $pdf->importPage($p);
+                $size  = $pdf->getTemplateSize($tplId);
+
+                $pdf->AddPage($size['orientation'] ?? 'P', [$size['width'], $size['height']]);
+                $pdf->useTemplate($tplId, 0, 0, $size['width'], $size['height']);
+
+                $shouldStamp = (self::STAMP_PAGE === 0) || ($p === self::STAMP_PAGE);
+                if ($shouldStamp) {
+                    // ระบุ type 'PNG' ชัดเจน + ปลอดภัยกับ alpha channel
+                    $pdf->Image(
+                        $stampAbs,
+                        self::STAMP_X,
+                        self::STAMP_Y,
+                        self::STAMP_WIDTH,
+                        self::STAMP_HEIGHT,
+                        'PNG'
+                    );
+                }
+            }
+
+            $pdf->Output('F', $pdfAbsPath);
+
+            ob_end_clean();
+
+            Log::info('Stamp PDF success: ' . basename($pdfAbsPath));
+
+        } catch (\Throwable $e) {
+            if (ob_get_level() > 0) ob_end_clean();
+            Log::error('Stamp PDF failed: ' . $e->getMessage(), [
+                'pdf'   => $pdfAbsPath,
+                'trace' => $e->getTraceAsString(),
+            ]);
+        }
+    }
     protected function safeText($text): string
     {
         if ($text === null) return '';

@@ -603,7 +603,7 @@ nav[role="navigation"] span[aria-current="page"]{
           <th>ประเภท</th>
           <th>%</th>
           <th>ยอดมัดจำ<br><span style="font-size:10px;font-weight:400;opacity:.8">(รวม VAT 7%)</span></th>
-          <th>ยอดคงเหลือ</th>
+          <th>ยอดคงเหลือ<br><span style="font-size:10px;font-weight:400;opacity:.8">(รวม VAT 7%)</span></th>
           <th>สถานะ</th>
         </tr>
       </thead>
@@ -689,9 +689,9 @@ nav[role="navigation"] span[aria-current="page"]{
             @endif
           </td>
                     {{-- ✅ เพิ่ม: ใบสั่งขาย --}}
-          <td>
-            <a class="c-link" onclick="openDetail('{{ $item->so_id }}')">{{ $item->so_id }}</a>
-          </td>
+     
+            <td class="c-cust" title="{{ $item->so_id }}">{{ $item->so_id ?? '—' }}</td>
+
 
           {{-- ✅ เพิ่ม: เลขที่ PO ลูกค้า --}}
           <td title="{{ $custPoNo }}">
@@ -716,7 +716,7 @@ nav[role="navigation"] span[aria-current="page"]{
           </td>
           <td class="c-percent">{{ number_format((float)($item->dep_per ?? 0), 2) }}%</td>
           <td class="c-money">{{ number_format((float)($item->dep_price ?? 0) * 1.07, 2) }}</td>
-          <td class="c-money-sub">{{ number_format((float)($item->grand_total ?? 0), 2) }}</td>
+          <td class="c-money-sub">{{ number_format((float)($item->grand_total ?? 0) * 1.07, 2) }}</td>
           <td class="status-cell">
             @if($isCancelled)
               <span class="st status-cancel">ยกเลิก</span>
@@ -1081,7 +1081,7 @@ function openDetail(soId){
       }).join('');
 
       document.getElementById('d-total-dep').textContent = totalDep.toLocaleString('th-TH',{minimumFractionDigits:2}) + ' บาท';
-      document.getElementById('d-grand').textContent     = parseFloat(first.grand_total||0).toLocaleString('th-TH',{minimumFractionDigits:2}) + ' บาท';
+      <div class="df"><span class="dl">ยอดคงเหลือ (รวม VAT 7%)</span><span class="dv" id="d-grand" style="color:var(--ink);font-weight:700;font-size:15px">—</span></div>
     })
     .catch(()=>{tb.innerHTML='<tr><td colspan="5" style="background:#fff;color:#9B1B1B;padding:16px">เกิดข้อผิดพลาด</td></tr>';});
 }

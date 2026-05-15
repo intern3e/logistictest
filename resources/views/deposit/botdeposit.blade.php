@@ -747,7 +747,7 @@ async function uploadDepositPdf(depositId, depositBillId, inputEl){
   inputEl.disabled = true;
   showToast('กำลังอัปโหลด...');
 
-  try {
+try {
     const res = await fetch('/deposit/upload-bill-pdf', {
       method: 'POST',
       headers: {
@@ -758,16 +758,28 @@ async function uploadDepositPdf(depositId, depositBillId, inputEl){
       body: fd
     });
 
-    if(!res.ok) throw new Error('HTTP ' + res.status);
-    const data = await res.json().catch(()=>({success:false, message:'Response error'}));
+    // 🔍 ดึง raw text ก่อน parse JSON เพื่อดู response จริงทั้งหมด
+    const rawText = await res.text();
+    console.log('=== Server response ===');
+    console.log('Status:', res.status);
+    console.log('Body:', rawText);
+    console.log('=======================');
 
+    let data;
+    try {
+      data = JSON.parse(rawText);
+    } catch(e) {
+      throw new Error('Server returned non-JSON (HTTP ' + res.status + '): ' + rawText.substring(0, 500));
+    }
+
+    if(!res.ok) throw new Error(data.message || ('HTTP ' + res.status));
     if(data.success === false) throw new Error(data.message || 'อัปโหลดไม่สำเร็จ');
 
     showToast('อัปโหลด ' + file.name + ' สำเร็จ');
     setTimeout(()=>location.reload(), 700);
 
   } catch(err) {
-    console.error(err);
+    console.error('Upload error:', err);
     showToast('เกิดข้อผิดพลาด: ' + err.message, true);
     inputEl.disabled = false;
     inputEl.value = '';

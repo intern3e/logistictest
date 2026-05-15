@@ -578,6 +578,10 @@ hr.divider{border:none;border-top:1px solid var(--border-light);margin:0}
               <span class="slbl">ยอดคงเหลือที่ต้องชำระ</span>
               <span class="sval" id="sv-grand">฿0.00</span>
             </div>
+            <div class="s-row" id="srow-grand-vat" style="margin-top:4px;padding-top:8px;border-top:1px dashed var(--border)">
+              <span class="slbl" style="font-size:12px;color:var(--text-muted)">ยอดคงเหลือ (รวม VAT 7%)</span>
+              <span class="sval" id="sv-grand-vat" style="color:var(--primary);font-weight:700;font-size:15px">฿0.00</span>
+            </div>
           </div>
 
           {{-- ===== PDF Preview Section ===== --}}
@@ -1231,6 +1235,7 @@ function calc(){
   document.getElementById('srow-tot').style.display  = any ? 'flex' : 'none';
   document.getElementById('sval-tot').textContent    = '-'+fmt(totDepAmt);
   document.getElementById('sv-grand').textContent    = fmt(net);
+  document.getElementById('sv-grand-vat').textContent = fmt(net * 1.07);  
   document.getElementById('hidden-grandtotal').value = net.toFixed(2);
 
   const dth = document.getElementById('dep-th');
