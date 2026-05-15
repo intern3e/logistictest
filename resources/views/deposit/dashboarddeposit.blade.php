@@ -860,8 +860,8 @@ nav[role="navigation"] span[aria-current="page"]{
 
       <div class="sec-ttl">สรุปยอด</div>
       <div class="dg">
-        <div class="df"><span class="dl">รวมยอดมัดจำ</span><span class="dv" id="d-total-dep" style="color:var(--green-text);font-weight:700;font-size:15px">—</span></div>
-        <div class="df"><span class="dl">ยอดคงเหลือ</span><span class="dv" id="d-grand" style="color:var(--ink);font-weight:700;font-size:15px">—</span></div>
+        <div class="df"><span class="dl">รวมยอดมัดจำ (รวม VAT 7%)</span><span class="dv" id="d-total-dep" style="color:var(--green-text);font-weight:700;font-size:15px">—</span></div>
+        <div class="df"><span class="dl">ยอดคงเหลือ (รวม VAT 7%)</span><span class="dv" id="d-grand" style="color:var(--ink);font-weight:700;font-size:15px">—</span></div>
       </div>
     </div>
     <div class="modal-foot" id="modal-foot-actions">
@@ -1081,7 +1081,7 @@ function openDetail(soId){
       }).join('');
 
       document.getElementById('d-total-dep').textContent = totalDep.toLocaleString('th-TH',{minimumFractionDigits:2}) + ' บาท';
-      <div class="df"><span class="dl">ยอดคงเหลือ (รวม VAT 7%)</span><span class="dv" id="d-grand" style="color:var(--ink);font-weight:700;font-size:15px">—</span></div>
+      document.getElementById('d-grand').textContent     = (parseFloat(first.grand_total||0) * 1.07).toLocaleString('th-TH',{minimumFractionDigits:2}) + ' บาท';
     })
     .catch(()=>{tb.innerHTML='<tr><td colspan="5" style="background:#fff;color:#9B1B1B;padding:16px">เกิดข้อผิดพลาด</td></tr>';});
 }
