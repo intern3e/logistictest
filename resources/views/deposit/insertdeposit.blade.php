@@ -893,7 +893,7 @@ async function fetchSODetails(soNum){
     document.getElementById('tax_id').value=d.TaxId||'';
     document.getElementById('customer_tel').value=d.ContTel||'';
     const ship=[d.ShipToAddr1,d.ShipToAddr2].filter(Boolean).join(', ');
-    document.getElementById('customer_address').value=[d.CustAddr1,d.ContDistrict,d.ContAmphur,d.ContProvince,d.ContPostCode,ship?'สถานที่ส่ง: '+ship:null].filter(Boolean).join(', ');
+    document.getElementById('customer_address').value=[d.CustAddr1,d.ContDistrict,d.ContAmphur,d.ContProvince,d.ContPostCode,ship?].filter(Boolean).join(', ');
 
     const custPONo = d.CustPONo || s.CustPONo || '';
     const bi = document.getElementById('billid');
