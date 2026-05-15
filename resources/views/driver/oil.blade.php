@@ -2232,31 +2232,82 @@ async function loadJobsForDriver(){
   renderJobTable(jobs);
 }
 function renderJobTable(jobs){
-  const wrap=document.getElementById('jobTableWrap');
-  const rows=jobs.map(j=>{
-      const raw=(j.status||'').trim();
-      const noteText = (j.note || '').trim();
-      
-      // ถ้า note = ส่งสำเร็จ ให้ถือว่า status = สำเร็จด้วย
-      const effectiveStatus = (noteText === 'ส่งสำเร็จ' || noteText === 'สำเร็จ') ? 'ส่งสำเร็จ' : raw;
-      
-      const isOk = effectiveStatus.includes('สำเร็จ') && !effectiveStatus.includes('ไม่');
-      const isNg = effectiveStatus.includes('ไม่สำเร็จ') || effectiveStatus.toLowerCase()==='ng' || effectiveStatus.toLowerCase()==='fail';
-      const sb = isOk ? `<span class="job-chip ok">✅ สำเร็จ</span>` : isNg ? `<span class="job-chip fail">❌ ไม่สำเร็จ</span>` : `<span class="job-chip">— รอ</span>`;
-      
-      const isSuccessNote = noteText === 'ส่งสำเร็จ' || noteText === 'สำเร็จ';
-      const nh = (noteText && noteText !== raw && !isSuccessNote)
-        ? `<div style="font-size:11px;color:var(--text3);margin-top:3px">${noteText}</div>`
-        : '';
-    // ─────────────────
-    
-    const so=j.so_id?`<span class="job-bill" style="background:rgba(37,99,235,.08);color:var(--accent)">${j.so_id}</span>`:`<span style="color:var(--text3);font-size:11px">—</span>`;
-    return `<tr><td><span class="job-bill">${j.bill_no}</span></td><td>${so}</td><td>${j.customer_name}</td><td style="color:var(--text2)">${j.bill_in_by}</td><td>${sb}${nh}</td></tr>`;
+  const wrap = document.getElementById('jobTableWrap');
+
+  // ─── ✅ Helper: คำนวณ effective status (note override) ───
+  function getEffectiveStatus(j){
+    const raw = (j.status || '').trim();
+    const noteText = (j.note || '').trim();
+    const isNoteSuccess = (noteText === 'ส่งสำเร็จ' || noteText === 'สำเร็จ');
+    return isNoteSuccess ? 'ส่งสำเร็จ' : raw;
+  }
+  function isJobOk(j){
+    const s = getEffectiveStatus(j);
+    return s.includes('สำเร็จ') && !s.includes('ไม่');
+  }
+  function isJobNg(j){
+    const s = getEffectiveStatus(j);
+    return s.includes('ไม่สำเร็จ')
+        || s.toLowerCase() === 'ng'
+        || s.toLowerCase() === 'fail';
+  }
+
+  // ─── Render แต่ละแถว ───
+  const rows = jobs.map(j=>{
+    const raw = (j.status || '').trim();
+    const noteText = (j.note || '').trim();
+    const effectiveStatus = getEffectiveStatus(j);
+
+    const isOk = isJobOk(j);
+    const isNg = isJobNg(j);
+
+    const sb = isOk ? `<span class="job-chip ok">✅ สำเร็จ</span>`
+             : isNg ? `<span class="job-chip fail">❌ ไม่สำเร็จ</span>`
+             : `<span class="job-chip">— รอ</span>`;
+
+    // ซ่อน note ถ้าเป็น "ส่งสำเร็จ" / "สำเร็จ" (ไม่ต้องโชว์ซ้ำ) หรือเหมือน status
+    const isSuccessNote = (noteText === 'ส่งสำเร็จ' || noteText === 'สำเร็จ');
+    const nh = (noteText && noteText !== raw && !isSuccessNote)
+      ? `<div style="font-size:11px;color:var(--text3);margin-top:3px">${noteText}</div>`
+      : '';
+
+    const so = j.so_id
+      ? `<span class="job-bill" style="background:rgba(37,99,235,.08);color:var(--accent)">${j.so_id}</span>`
+      : `<span style="color:var(--text3);font-size:11px">—</span>`;
+
+    return `<tr>
+      <td><span class="job-bill">${j.bill_no}</span></td>
+      <td>${so}</td>
+      <td>${j.customer_name}</td>
+      <td style="color:var(--text2)">${j.bill_in_by}</td>
+      <td>${sb}${nh}</td>
+    </tr>`;
   }).join('');
-  const t=jobs.length,ok=jobs.filter(j=>{const r=(j.status||'').trim();return r.includes('สำเร็จ')&&!r.includes('ไม่');}).length;
-  const ng=jobs.filter(j=>{const r=(j.status||'').trim();return r.includes('ไม่สำเร็จ')||r.toLowerCase()==='ng';}).length;
-  const p=t-ok-ng;
-  wrap.innerHTML=`<div class="job-table-wrap"><table><thead><tr><th>เลขบิล</th><th>SO ID</th><th>ลูกค้า</th><th>ผู้นำบิลเข้า</th><th>สถานะ</th></tr></thead><tbody>${rows}</tbody></table><div class="job-summary-bar"><span class="job-chip">ทั้งหมด ${t}</span>${ok?`<span class="job-chip ok">✅ ${ok}</span>`:''}${ng?`<span class="job-chip fail">❌ ${ng}</span>`:''}${p?`<span class="job-chip">⏳ ${p}</span>`:''}</div></div>`;
+
+  // ─── ✅ Summary bar — ใช้ helper ที่เช็ค note ด้วย ───
+  const t  = jobs.length;
+  const ok = jobs.filter(isJobOk).length;
+  const ng = jobs.filter(isJobNg).length;
+  const p  = t - ok - ng;
+
+  wrap.innerHTML = `
+    <div class="job-table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>เลขบิล</th><th>SO ID</th><th>ลูกค้า</th><th>ผู้นำบิลเข้า</th><th>สถานะ</th>
+          </tr>
+        </thead>
+        <tbody>${rows}</tbody>
+      </table>
+      <div class="job-summary-bar">
+        <span class="job-chip">ทั้งหมด ${t}</span>
+        ${ok ? `<span class="job-chip ok">✅ ${ok}</span>` : ''}
+        ${ng ? `<span class="job-chip fail">❌ ${ng}</span>` : ''}
+        ${p  ? `<span class="job-chip">⏳ ${p}</span>` : ''}
+      </div>
+    </div>
+  `;
 }
 function _collectJobs(driverName,date){const jobs=[];(jobApiCache[date]||[]).forEach(day=>{(day.drivers||[]).forEach(d=>{if(d.driver_name!==driverName)return;(d.jobs||[]).forEach((j,i)=>{jobs.push({...j,_key:`${driverName}_${day.date}_${i}`,_date:day.date});});});});return jobs;}
 
@@ -2279,20 +2330,56 @@ function goToStep2(){
   else if(startMin===endMin){if(errTime){errTime.textContent='เวลาเริ่มและเวลาสิ้นสุดต้องไม่เหมือนกัน';errTime.style.display='block';}document.getElementById('s1-time-block')?.classList.add('is-invalid');ok=false;}
   if(!ok)return;
 
+  // ─── ✅ FIX: ดึงรายการ jobs จาก cache แล้วนับใหม่ ───
+  const jobs = _collectJobs(driver, date);
+  let okCount = 0, ngCount = 0;
+
   jobs.forEach(j=>{
-      const raw=(j.status||'').trim();
-      const noteText=(j.note||'').trim();
-      // ถ้า note = ส่งสำเร็จ ให้นับเป็น ok
-      const effectiveStatus = (noteText === 'ส่งสำเร็จ' || noteText === 'สำเร็จ') ? 'ส่งสำเร็จ' : raw;
+      const raw = (j.status || '').trim();
+      const noteText = (j.note || '').trim();
+
+      // ✅ ถ้า note = "ส่งสำเร็จ" หรือ "สำเร็จ" ให้ถือว่าสำเร็จ (override status)
+      const isNoteSuccess = (noteText === 'ส่งสำเร็จ' || noteText === 'สำเร็จ');
+      const effectiveStatus = isNoteSuccess ? 'ส่งสำเร็จ' : raw;
+
       const isOk = effectiveStatus.includes('สำเร็จ') && !effectiveStatus.includes('ไม่');
-      const isNg = effectiveStatus.includes('ไม่สำเร็จ') || effectiveStatus.toLowerCase()==='ng';
-      if(isOk) okCount++;
-      else if(isNg) ngCount++;
+      const isNg = effectiveStatus.includes('ไม่สำเร็จ')
+                || effectiveStatus.toLowerCase() === 'ng'
+                || effectiveStatus.toLowerCase() === 'fail';
+
+      if (isOk) okCount++;
+      else if (isNg) ngCount++;
   });
-  setF('f-ok',okCount);setF('f-ng',ngCount);
+
+  setF('f-ok', okCount);
+  setF('f-ng', ngCount);
+
   if(jobs.length>0){
-    fetch(ROUTE_SYNC_NG,{method:'POST',headers:{'Content-Type':'application/json','Accept':'application/json','X-CSRF-TOKEN':CSRF_TOKEN},body:JSON.stringify({date,jobs:jobs.map(j=>({bill_no:j.bill_no,so_id:j.so_id||'',driver_name:driver,bill_in_by:j.bill_in_by||'',customer_name:j.customer_name||'',status:(j.status||'').trim(),note:j.note||'',})),})}).catch(e=>console.warn(e));
+    fetch(ROUTE_SYNC_NG,{
+      method:'POST',
+      headers:{'Content-Type':'application/json','Accept':'application/json','X-CSRF-TOKEN':CSRF_TOKEN},
+      body:JSON.stringify({
+        date,
+        jobs: jobs.map(j=>{
+          // ✅ ส่ง status ที่ override แล้วไป backend ด้วย เพื่อให้ syncNg นับถูก
+          const raw = (j.status||'').trim();
+          const noteText = (j.note||'').trim();
+          const isNoteSuccess = (noteText === 'ส่งสำเร็จ' || noteText === 'สำเร็จ');
+          const effectiveStatus = isNoteSuccess ? 'ส่งสำเร็จ' : raw;
+          return {
+            bill_no: j.bill_no,
+            so_id: j.so_id || '',
+            driver_name: driver,
+            bill_in_by: j.bill_in_by || '',
+            customer_name: j.customer_name || '',
+            status: effectiveStatus,  // ← ใช้ effective status
+            note: noteText,
+          };
+        }),
+      })
+    }).catch(e=>console.warn(e));
   }
+
   const sT=getTimeVal('s1-start-h','s1-start-m'),eT=getTimeVal('s1-end-h','s1-end-m');
   setF('f-work-date',date);setF('f-driver-name',driver);setF('f-vehicle-id',plate);setF('f-start-time',sT);setF('f-end-time',eT);
   document.getElementById('chipDriver').textContent=driver;document.getElementById('chipPlate').textContent=plate;document.getElementById('chipDate').textContent=date;
