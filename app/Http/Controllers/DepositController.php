@@ -648,6 +648,7 @@ class DepositController extends Controller
         $poDocument = $data['po_document'] ?? '';
 
         // Loop 1: วาดประโยค "รับเงินค่ามัดจำ ..."
+// Loop 1: วาดประโยค "รับเงินค่ามัดจำ ... เหลือ อีก ...% จำนวน ... บาท"
         $grandTotalData = (float)($data['grand_total'] ?? 0);
 
         $y = $startY;
@@ -656,23 +657,31 @@ class DepositController extends Controller
             $amount  = (float)($dep['amount']  ?? 0);
 
             // ✅ คำนวณยอดเต็มย้อนกลับจาก amount และ percent
-            //    เช่น มัดจำ 11% = 1,193.50 → ยอดเต็ม = 1,193.50 × 100 / 11 = 10,850.00
-            //    ถ้าคำนวณไม่ได้ (percent = 0) ค่อย fallback เป็น grand_total
             if ($percent > 0 && $amount > 0) {
                 $fullPrice = $amount * 100 / $percent;
             } else {
                 $fullPrice = $grandTotalData;
             }
 
+            // 🔥 คำนวณส่วนที่เหลือ + VAT
+            $allPercent = max(0, 100 - $percent);          // เปอร์เซ็นต์ที่เหลือ
+            $remain     = max(0, $fullPrice - $amount);    // ยอดที่เหลือก่อน VAT
+            $allTotal   = $remain * 1.07;                  // ยอดที่เหลือ + VAT 7%
+
+            $typeName = ($dep['type'] ?? '') === 'service' ? 'บริการ' : 'สินค้า';
+
             $line = sprintf(
-                'รับเงินค่ามัดจำ %s%% %s – (%s)',
+                'รับเงินค่ามัดจำ%s %s%% %s – (%s) เหลือ อีก %s%% จำนวน %s บาท',
+                $typeName,
                 rtrim(rtrim(number_format($percent, 2), '0'), '.'),
                 $poDocument,
-                number_format($fullPrice, 2)
+                number_format($fullPrice, 2),
+                rtrim(rtrim(number_format($allPercent, 2), '0'), '.'),
+                number_format($allTotal, 2)
             );
 
             $pdf->SetXY(30, $y);
-            $pdf->Cell(150, $rowH, $this->safeText($line), 0, 0, 'L');
+            $pdf->Cell(170, $rowH, $this->safeText($line), 0, 0, 'L');
 
             $y += $rowH;
         }
