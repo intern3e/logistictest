@@ -751,17 +751,17 @@ nav[role="navigation"] span[aria-current="page"]{
             <span class="st-time">
               {{ $item->time ? \Carbon\Carbon::parse($item->time)->setTimezone('Asia/Bangkok')->format('H:i d/m/Y') : '' }}
             </span>
+            @if(!empty($item->slip_time))
+              <span class="st-slip-time" title="เวลาที่แนบสลิป">
+                แนบสลิปแล้ว: {{ \Carbon\Carbon::parse($item->slip_time)->setTimezone('Asia/Bangkok')->format('H:i d/m/Y') }}
+              </span>
+            @endif
               {{-- เวลายืนยัน (time_check) --}}
               @if($isConfirmed && !empty($item->time_check))
                 <span class="st-check-time" title="เวลาที่ยืนยัน">
                   ยืนยัน: {{ \Carbon\Carbon::parse($item->time_check)->setTimezone('Asia/Bangkok')->format('H:i d/m/Y') }}
                 </span>
               @endif
-              @if(!empty($item->slip_time))
-              <span class="st-slip-time" title="เวลาที่แนบสลิป">
-                แนบสลิปแล้ว: {{ \Carbon\Carbon::parse($item->slip_time)->setTimezone('Asia/Bangkok')->format('H:i d/m/Y') }}
-              </span>
-            @endif
               @if(($item->status_bill ?? null) === 'ok' && !empty($item->print_time))
                 <span class="st-print-time" title="เวลาที่สร้างเอกสารใบมัดจำ">
                   สร้างเอกสารแล้วเมื่อ: {{ \Carbon\Carbon::parse($item->print_time)->setTimezone('Asia/Bangkok')->format('H:i d/m/Y') }}
