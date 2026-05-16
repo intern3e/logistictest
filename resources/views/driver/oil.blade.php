@@ -1468,6 +1468,8 @@ textarea.form-control{resize:vertical;min-height:80px}
             $bpkClass = 'km-mid';
             if($bpk > 0 && $bpk <= 4) $bpkClass = 'km-good';
             elseif($bpk > 6) $bpkClass = 'km-bad';
+            // ✅ NEW: flag — วันที่ไม่ได้เติมน้ำมัน
+            $noFuel = ($priceNum == 0 && (float)($r['liters'] ?? 0) == 0);
           @endphp
           <tr data-driver="{{ strtolower($name) }}">
             <td class="row-idx">{{ str_pad((string)$rowNo, 2, '0', STR_PAD_LEFT) }}</td>
@@ -1481,19 +1483,22 @@ textarea.form-control{resize:vertical;min-height:80px}
             </td>
             <td><span class="time-pill">{{ $timeText }}</span></td>
             <td class="num">{{ $dist }}</td>
-            <td class="num">{{ $r['liters']?number_format($r['liters'],1):'—' }}</td>
-            <td class="num">{{ $r['total_price']?'฿'.number_format($r['total_price']):'—' }}</td>
-            <td class="num">
-              @if($kml>0)<span class="{{ $kmlClass }}">{{ number_format($kml,2) }}</span>
-              @else<span style="color:var(--text3)">—</span>@endif
-            </td>
-            <td class="num">
-              @if($bpk > 0)
-                <span class="{{ $bpkClass }}">฿{{ number_format($bpk, 2) }}</span>
-              @else
-                <span style="color:var(--text3)">—</span>
-              @endif
-            </td>
+                @if($noFuel)
+                  <td class="num" colspan="4" style="text-align:center;color:var(--text3);font-style:italic;background:rgba(148,163,184,.06)">
+                   ไม่ได้เติมน้ำมัน
+                  </td>
+                @else
+                  <td class="num">{{ $r['liters']?number_format($r['liters'],1):'—' }}</td>
+                  <td class="num">{{ $r['total_price']?'฿'.number_format($r['total_price']):'—' }}</td>
+                  <td class="num">
+                    @if($kml>0)<span class="{{ $kmlClass }}">{{ number_format($kml,2) }}</span>
+                    @else<span style="color:var(--text3)">—</span>@endif
+                  </td>
+                  <td class="num">
+                    @if($bpk > 0)<span class="{{ $bpkClass }}">฿{{ number_format($bpk, 2) }}</span>
+                    @else<span style="color:var(--text3)">—</span>@endif
+                  </td>
+                @endif
           </tr>
           @empty
           <tr><td colspan="8"><div class="empty-state"><div class="icon">⛽</div><p>ไม่พบรายการ</p></div></td></tr>
@@ -1532,14 +1537,20 @@ textarea.form-control{resize:vertical;min-height:80px}
                   'kml_count' => 0,
                 ];
               }
-              $uniqueDrivers[$n]['rounds']++;
-              $uniqueDrivers[$n]['distance'] += $r['total_distance'] ?? 0;
-              $uniqueDrivers[$n]['liters']   += $r['liters'] ?? 0;
-              $uniqueDrivers[$n]['price']    += $r['total_price'] ?? 0;
-              if(($r['km_per_liter'] ?? 0) > 0){
-                $uniqueDrivers[$n]['kml_sum'] += $r['km_per_liter'];
-                $uniqueDrivers[$n]['kml_count']++;
-              }
+            $uniqueDrivers[$n]['rounds']++;
+            $uniqueDrivers[$n]['distance'] += $r['total_distance'] ?? 0;
+            $uniqueDrivers[$n]['liters']   += $r['liters'] ?? 0;
+            $uniqueDrivers[$n]['price']    += $r['total_price'] ?? 0;
+            // ✅ NEW: นับรอบที่ "ไม่ได้เติม" แยก
+            $rPrice = (float)($r['total_price'] ?? 0);
+            if($rPrice == 0){
+              if(!isset($uniqueDrivers[$n]['no_fuel_rounds'])) $uniqueDrivers[$n]['no_fuel_rounds'] = 0;
+              $uniqueDrivers[$n]['no_fuel_rounds']++;
+            }
+            if(($r['km_per_liter'] ?? 0) > 0){
+              $uniqueDrivers[$n]['kml_sum'] += $r['km_per_liter'];
+              $uniqueDrivers[$n]['kml_count']++;
+            }
             }
             // sort by total price DESC
             uasort($uniqueDrivers, fn($a,$b)=> $b['price'] <=> $a['price']);
@@ -1575,6 +1586,9 @@ textarea.form-control{resize:vertical;min-height:80px}
               <span>{{ $d['rounds'] }} รอบ</span>
               <span>{{ number_format($d['distance']) }} km</span>
               <span>{{ number_format($d['liters'],1) }} ลิตร</span>
+              @if(!empty($d['no_fuel_rounds']))
+                <span style="color:var(--amber);font-weight:600">{{ $d['no_fuel_rounds'] }} วันไม่เติม</span>
+              @endif
             </div>
           </div>
           <div class="right">
@@ -1824,7 +1838,17 @@ textarea.form-control{resize:vertical;min-height:80px}
         </div>
         <div class="form-grid">
           <div class="section-divider">⛽ ข้อมูลน้ำมัน</div>
-          <div class="full"><label class="form-label">ค่าน้ำมัน (฿) *</label><input type="number" name="total_price" id="f-total-price" class="form-control {{ $errors->has('total_price')?'is-invalid':'' }}" step="0.01" value="{{ old('total_price',$editLog['total_price']??'') }}" placeholder="กรอกยอดเงิน เช่น 500" oninput="calcPreview()">@error('total_price')<div class="invalid-feedback">{{ $message }}</div>@enderror</div>
+          <div class="full">
+            <label class="form-label">ค่าน้ำมัน (฿) *</label>
+            <input type="number" name="total_price" id="f-total-price"
+                  class="form-control {{ $errors->has('total_price')?'is-invalid':'' }}"
+                  step="0.01" min="0"
+                  value="{{ old('total_price',$editLog['total_price']??'') }}"
+                  placeholder="กรอก 0 ถ้าไม่ได้เติมน้ำมันวันนี้"
+                  oninput="calcPreview()">
+            <div class="auto-hint" style="color:var(--text3)">💡 กรอก 0 หากวันนี้ไม่ได้เติมน้ำมัน (ระบบจะยังนับระยะทาง/ชม.ทำงาน)</div>
+            @error('total_price')<div class="invalid-feedback">{{ $message }}</div>@enderror
+          </div>
           <div class="full"><label class="form-label">ระยะทางทั้งหมด (km)</label><input type="number" name="total_distance" id="f-total-distance" class="form-control" step="0.01" value="{{ old('total_distance',$editLog['total_distance']??'') }}" oninput="calcPreview()"></div>
         </div>
         <div><label class="form-label">จำนวนลิตร</label><input type="number" name="liters" id="f-liters" class="form-control auto-calc" step="0.01" value="{{ old('liters',$editLog['liters']??'') }}" readonly></div>
@@ -2901,13 +2925,31 @@ function calcPreview(){
   if(sT&&eT){const[sh,sm]=sT.split(':').map(Number);const[eh,em]=eT.split(':').map(Number);const sM=sh*60+sm;let eM=eh*60+em;if(eM<sM)eM+=24*60;const dM=eM-sM;if(dM>0)wh=dM/60;}
   const show=wh>0||liters>0||tp>0;const calcBox=document.getElementById('calcBox');if(calcBox)calcBox.style.display=show?'block':'none';
   if(show){
-    const whEl=document.getElementById('calcWorkHours');
-    if(whEl){if(wh>0){const h=Math.floor(wh);const m=Math.round((wh-h)*60);if(m===0)whEl.textContent=h+'';else if(h===0)whEl.textContent=m+' น.';else whEl.textContent=`${h}:${String(m).padStart(2,'0')}`;}else whEl.textContent='—';}
-    const litEl=document.getElementById('calcLitersPreview');if(litEl)litEl.textContent=liters>0?`${liters} / ฿${tp.toFixed(0)}`:'—';
-    const dist=parseFloat(document.getElementById('f-total-distance')?.value)||0;
-    const kmlEl=document.getElementById('calcKml');if(kmlEl)kmlEl.textContent=(liters>0&&dist>0)?(dist/liters).toFixed(2):'—';
-    const bpkEl = document.getElementById('calcBpk');
-  if(bpkEl) bpkEl.textContent = (tp > 0 && dist > 0) ? '฿' + (tp/dist).toFixed(2) : '—';
+      const whEl=document.getElementById('calcWorkHours');
+      if(whEl){if(wh>0){const h=Math.floor(wh);const m=Math.round((wh-h)*60);if(m===0)whEl.textContent=h+'';else if(h===0)whEl.textContent=m+' น.';else whEl.textContent=`${h}:${String(m).padStart(2,'0')}`;}else whEl.textContent='—';}
+
+      const dist=parseFloat(document.getElementById('f-total-distance')?.value)||0;
+
+      // ✅ NEW: ถ้า total_price = 0 → วันนี้ไม่เติมน้ำมัน
+      const noFuelToday = (tp === 0);
+
+      const litEl=document.getElementById('calcLitersPreview');
+      if(litEl){
+        if(noFuelToday) litEl.textContent = 'ไม่เติม';
+        else litEl.textContent = liters>0 ? `${liters} / ฿${tp.toFixed(0)}` : '—';
+      }
+
+      const kmlEl=document.getElementById('calcKml');
+      if(kmlEl){
+        if(noFuelToday) kmlEl.textContent = '—';
+        else kmlEl.textContent = (liters>0&&dist>0)?(dist/liters).toFixed(2):'—';
+      }
+
+      const bpkEl = document.getElementById('calcBpk');
+      if(bpkEl){
+        if(noFuelToday) bpkEl.textContent = '—';
+        else bpkEl.textContent = (tp > 0 && dist > 0) ? '฿' + (tp/dist).toFixed(2) : '—';
+      }
   }
 }
 function switchOilType(t){
