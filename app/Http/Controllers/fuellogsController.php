@@ -250,7 +250,7 @@ class fuellogsController extends Controller
             'work_date'       => 'required|date',
             'driver_name'     => 'required|string|max:100',
             'vehicle_id'      => 'required|string|max:50',
-            'total_price'     => 'required|numeric|min:0.01',
+            'total_price'     => 'required|numeric|min:0.00',
             'total_distance'  => 'nullable|numeric|min:0',
             'liters'          => 'nullable|numeric|min:0',
             'price_per_liter' => 'nullable|numeric|min:0',
