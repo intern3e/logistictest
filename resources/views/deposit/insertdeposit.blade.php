@@ -777,7 +777,7 @@ function buildPreviewUrl(){
   params.set('sale_name',        document.getElementById('hidden-sale').value || '');
   params.set('billid',           document.getElementById('billid').value || '');
   params.set('grand_total',      document.getElementById('hidden-grandtotal').value || '0');
-   params.set('po_document',      document.getElementById('hidden-po').value || '');
+  params.set('po_document',      document.getElementById('hidden-po').value || '');
 
   // ส่งเฉพาะ index รายการที่เลือก
   const selectedIdx = getSelectedItems().map(it => it.idx);

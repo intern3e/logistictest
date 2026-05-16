@@ -1,4 +1,3 @@
-{{-- resources/views/driver/oil.blade.php --}}
 <!DOCTYPE html>
 <html lang="th">
 <head>
@@ -351,16 +350,18 @@ body{font-family:'IBM Plex Sans Thai','Inter',sans-serif;background:var(--bg);co
 /* ═══════ MAIN CONTENT ═══════ */
 .main{padding:24px 28px;max-width:1600px;margin:0 auto}
 
-/* ═══════ METRIC CARDS (4 cards บนสุด) ═══════ */
 .metrics{
   display:grid;
-  grid-template-columns:repeat(4, 1fr);
+  grid-template-columns:repeat(5, 1fr);
   gap:16px;
   margin-bottom:24px;
 }
-@media(max-width:1100px){.metrics{grid-template-columns:repeat(2,1fr)}}
+@media(max-width:1300px){.metrics{grid-template-columns:repeat(3,1fr)}}
+@media(max-width:900px){.metrics{grid-template-columns:repeat(2,1fr)}}
 @media(max-width:560px){.metrics{grid-template-columns:1fr}}
 
+/* เพิ่มสี purple */
+.metric-card.purple::before{background:var(--purple)}
 .metric-card{
   background:var(--surface);
   border:1px solid var(--border);
@@ -755,151 +756,336 @@ body{font-family:'IBM Plex Sans Thai','Inter',sans-serif;background:var(--bg);co
 .page-btn:disabled{opacity:.4;cursor:not-allowed}
 .page-ellipsis{color:var(--text3);font-size:12px;padding:0 4px;user-select:none}
 
-/* ═══════ DATE RANGE PICKER POPUP ═══════ */
+/* ═══════ DATE RANGE PICKER POPUP — ขยายใหญ่ขึ้น ═══════ */
 .drp-wrap{position:relative}
 .drp-popup{
   position:fixed;
   background:#fff;
   border:1px solid var(--border);
-  border-radius:12px;
-  box-shadow:0 8px 28px rgba(15,23,42,.12);
-  padding:16px;
+  border-radius:16px;
+  box-shadow:0 12px 40px rgba(15,23,42,.18);
+  padding:22px;
   z-index:600;
   display:none;
-  min-width:320px;
+  min-width:420px;
+  max-width:460px;
 }
 .drp-popup.open{display:block;animation:drpIn .15s ease}
 @keyframes drpIn{from{opacity:0;transform:translateY(-6px)}to{opacity:1;transform:translateY(0)}}
-.drp-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;padding:0 4px}
-.drp-nav-btn{width:28px;height:28px;border-radius:50%;border:none;background:transparent;color:var(--text2);cursor:pointer;font-size:14px;display:flex;align-items:center;justify-content:center}
+.drp-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;padding:0 6px}
+.drp-nav-btn{
+  width:36px;height:36px;
+  border-radius:50%;
+  border:none;background:transparent;
+  color:var(--text2);cursor:pointer;
+  font-size:18px;
+  display:flex;align-items:center;justify-content:center;
+  transition:background .15s;
+}
 .drp-nav-btn:hover{background:var(--surface2);color:var(--accent)}
-.drp-title{font-size:14px;font-weight:600;color:var(--text)}
-.drp-weekdays{display:grid;grid-template-columns:repeat(7,1fr);gap:2px;margin-bottom:4px}
-.drp-weekday{text-align:center;font-size:11px;color:var(--text3);padding:6px 0;font-weight:500}
-.drp-days{display:grid;grid-template-columns:repeat(7,1fr);gap:2px;user-select:none;-webkit-user-select:none;touch-action:none}
-.drp-day{aspect-ratio:1;display:flex;align-items:center;justify-content:center;font-size:13px;color:var(--text);cursor:pointer;border:none;background:transparent;font-family:inherit;font-weight:500;border-radius:6px;transition:all .12s}
+.drp-title{font-size:16px;font-weight:600;color:var(--text)}
+.drp-weekdays{display:grid;grid-template-columns:repeat(7,1fr);gap:4px;margin-bottom:6px}
+.drp-weekday{
+  text-align:center;
+  font-size:12px;
+  color:var(--text3);
+  padding:8px 0;
+  font-weight:600;
+}
+.drp-days{display:grid;grid-template-columns:repeat(7,1fr);gap:4px;user-select:none;-webkit-user-select:none;touch-action:none}
+.drp-day{
+  width:100%;
+  height:44px;
+  display:flex;align-items:center;justify-content:center;
+  font-size:14px;
+  color:var(--text);cursor:pointer;
+  border:none;background:transparent;
+  font-family:inherit;font-weight:500;
+  border-radius:8px;
+  transition:background .12s, color .12s;
+  padding:0;
+  line-height:1;
+}
 .drp-day:hover:not(.disabled):not(.in-range):not(.selected){background:var(--surface2)}
 .drp-day.muted{color:var(--text3);opacity:.4}
 .drp-day.today{color:var(--accent);font-weight:700}
-.drp-day.selected{background:var(--accent);color:#fff;font-weight:700;border-radius:8px;z-index:2}
+.drp-day.selected{background:var(--accent);color:#fff;font-weight:700;border-radius:10px;z-index:2}
 .drp-day.in-range{background:rgba(37,99,235,.12);border-radius:0;color:var(--accent)}
-.drp-day.range-start{background:var(--accent);color:#fff;border-radius:8px 0 0 8px}
-.drp-day.range-end{background:var(--accent);color:#fff;border-radius:0 8px 8px 0}
-.drp-day.range-start.range-end{border-radius:8px}
-.drp-footer{display:flex;justify-content:space-between;align-items:center;margin-top:12px;padding-top:12px;border-top:1px solid var(--border);gap:8px}
-.drp-presets{display:flex;gap:4px;flex-wrap:wrap}
-.drp-preset-btn{padding:4px 10px;font-size:11px;border:1px solid var(--border);background:var(--surface2);color:var(--text2);border-radius:14px;cursor:pointer;font-family:inherit;font-weight:500}
+.drp-day.range-start{background:var(--accent);color:#fff;border-radius:10px 0 0 10px}
+.drp-day.range-end{background:var(--accent);color:#fff;border-radius:0 10px 10px 0}
+.drp-day.range-start.range-end{border-radius:10px}
+.drp-footer{
+  display:flex;justify-content:space-between;align-items:center;
+  margin-top:16px;padding-top:16px;
+  border-top:1px solid var(--border);
+  gap:10px;
+}
+.drp-presets{display:flex;gap:6px;flex-wrap:wrap}
+.drp-preset-btn{
+  padding:7px 14px;
+  font-size:12.5px;
+  border:1px solid var(--border);
+  background:var(--surface2);
+  color:var(--text2);
+  border-radius:18px;
+  cursor:pointer;font-family:inherit;font-weight:500;
+  transition:all .15s;
+}
 .drp-preset-btn:hover{border-color:var(--accent);color:var(--accent);background:#fff}
-.drp-apply-btn{padding:6px 16px;background:var(--accent);color:#fff;border:none;border-radius:6px;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit}
+.drp-apply-btn{
+  padding:9px 22px;
+  background:var(--accent);color:#fff;
+  border:none;border-radius:8px;
+  font-size:13.5px;
+  font-weight:600;cursor:pointer;font-family:inherit;
+  transition:background .15s;
+}
 .drp-apply-btn:hover{background:var(--accent-hover)}
 .drp-apply-btn:disabled{opacity:.5;cursor:not-allowed}
-.drp-hint{font-size:11px;color:var(--text3);margin-top:8px;text-align:center}
+.drp-hint{font-size:12px;color:var(--text3);margin-top:10px;text-align:center}
 
-/* Driver picker dropdown ในแถบ topbar */
-.driver-select{
-  font-family:inherit;
-  font-size:13px;
-  padding:7px 12px;
-  border:1px solid var(--border);
-  border-radius:var(--radius-xs);
-  background:var(--surface);
-  color:var(--text);
-  outline:none;
-  height:34px;
-  cursor:pointer;
-  transition:border-color .15s;
+/* ═══════ MAIN MODAL (เพิ่มข้อมูล) — ขยายใหญ่ขึ้น ═══════ */
+.modal-overlay{
+  display:none;position:fixed;inset:0;
+  background:rgba(15,23,42,.55);
+  z-index:500;
+  align-items:center;justify-content:center;
+  padding:20px;
+  backdrop-filter:blur(5px);
 }
-.driver-select:hover{border-color:var(--border-strong)}
-.driver-select:focus{border-color:var(--accent)}
-
-/* ═══════ MODAL (เก็บ logic เดิม แต่ refresh สี) ═══════ */
-.modal-overlay{display:none;position:fixed;inset:0;background:rgba(15,23,42,.5);z-index:500;align-items:center;justify-content:center;padding:16px;backdrop-filter:blur(4px)}
 .modal-overlay.open{display:flex}
-.modal{background:var(--surface);border-radius:16px;width:100%;max-width:640px;max-height:92vh;display:flex;flex-direction:column;box-shadow:0 20px 60px rgba(0,0,0,.2);animation:modalIn .2s ease}
+.modal{
+  background:var(--surface);
+  border-radius:18px;
+  width:100%;
+  max-width:780px;
+  max-height:94vh;
+  display:flex;flex-direction:column;
+  box-shadow:0 24px 70px rgba(0,0,0,.22);
+  animation:modalIn .2s ease;
+}
 @keyframes modalIn{from{transform:translateY(20px);opacity:0}to{transform:translateY(0);opacity:1}}
-.modal-header{padding:18px 22px 14px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;flex-shrink:0}
-.modal-title{font-size:16px;font-weight:600;color:var(--text)}
-.modal-close{width:30px;height:30px;border-radius:8px;border:none;background:var(--surface2);color:var(--text2);cursor:pointer;font-size:15px;display:flex;align-items:center;justify-content:center}
-.modal-body{padding:18px 22px;overflow-y:auto;flex:1}
-.modal-footer{padding:14px 22px;border-top:1px solid var(--border);display:flex;justify-content:flex-end;gap:10px;flex-shrink:0}
-.modal.modal-fullscreen{max-width:1200px!important;width:96vw!important;max-height:96vh!important;height:96vh}
-.modal.modal-fullscreen .modal-body{padding:24px 32px}
+.modal-header{
+  padding:22px 28px 16px;
+  border-bottom:1px solid var(--border);
+  display:flex;align-items:center;justify-content:space-between;
+  flex-shrink:0;
+}
+.modal-title{font-size:18px;font-weight:600;color:var(--text)}
+.modal-close{
+  width:36px;height:36px;
+  border-radius:10px;
+  border:none;background:var(--surface2);
+  color:var(--text2);cursor:pointer;
+  font-size:17px;
+  display:flex;align-items:center;justify-content:center;
+  transition:background .15s;
+}
+.modal-close:hover{background:var(--border)}
+.modal-body{padding:22px 28px;overflow-y:auto;flex:1}
+.modal-footer{
+  padding:16px 28px;
+  border-top:1px solid var(--border);
+  display:flex;justify-content:flex-end;gap:12px;
+  flex-shrink:0;
+}
 
-.step-indicator{display:flex;align-items:center;justify-content:center;margin-bottom:20px;width:100%}
-.step-item{display:flex;align-items:center;gap:8px;flex-shrink:0}
-.step-circle{width:30px;height:30px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;flex-shrink:0;transition:all .3s}
-.step-circle.active{background:var(--accent);color:#fff;box-shadow:0 0 0 4px rgba(37,99,235,.18)}
+/* Fullscreen modal — ขยายมากขึ้น */
+.modal.modal-fullscreen{
+  max-width:1320px!important;
+  width:97vw!important;
+  max-height:96vh!important;
+  height:96vh;
+}
+.modal.modal-fullscreen .modal-body{padding:28px 36px}
+
+/* Step indicator — ใหญ่ขึ้น */
+.step-indicator{display:flex;align-items:center;justify-content:center;margin-bottom:24px;width:100%}
+.step-item{display:flex;align-items:center;gap:10px;flex-shrink:0}
+.step-circle{
+  width:36px;height:36px;
+  border-radius:50%;
+  display:flex;align-items:center;justify-content:center;
+  font-size:14px;
+  font-weight:700;flex-shrink:0;
+  transition:all .3s;
+}
+.step-circle.active{background:var(--accent);color:#fff;box-shadow:0 0 0 5px rgba(37,99,235,.18)}
 .step-circle.done{background:var(--green);color:#fff}
 .step-circle.inactive{background:var(--border);color:var(--text3)}
-.step-label{font-size:12px;font-weight:600}
-.step-label.active{color:var(--accent)}
-.step-label.done{color:var(--green)}
-.step-label.inactive{color:var(--text3)}
-.step-line{flex:0 0 120px;height:2px;margin:0 10px;border-radius:2px}
-.step-line.done{background:var(--green)}
-.step-line.inactive{background:var(--border)}
+.step-label{font-size:13px;font-weight:600}
+.step-line{flex:0 0 140px;height:2px;margin:0 12px;border-radius:2px}
 
-.driver-banner{background:linear-gradient(135deg,var(--navy) 0%,var(--navy-light) 100%);border-radius:var(--radius-sm);padding:14px 16px;margin-bottom:16px;display:flex;align-items:center;gap:12px;color:#fff}
-.driver-avatar-big{width:44px;height:44px;background:rgba(255,255,255,.15);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0}
-.driver-banner-name{font-size:17px;font-weight:700;line-height:1}
-.driver-banner-plate{font-size:12px;opacity:.7;margin-top:4px;font-family:monospace}
+/* Driver banner — ใหญ่ขึ้น */
+.driver-banner{
+  background:linear-gradient(135deg,var(--navy) 0%,var(--navy-light) 100%);
+  border-radius:var(--radius);
+  padding:18px 20px;
+  margin-bottom:20px;
+  display:flex;align-items:center;gap:14px;
+  color:#fff;
+}
+.driver-avatar-big{
+  width:52px;height:52px;
+  background:rgba(255,255,255,.15);
+  border-radius:50%;
+  display:flex;align-items:center;justify-content:center;
+  font-size:24px;
+  flex-shrink:0;
+}
+.driver-banner-name{font-size:19px;font-weight:700;line-height:1}
+.driver-banner-plate{font-size:13px;opacity:.7;margin-top:5px;font-family:monospace}
 
-.driver-card-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+/* Form grids — เพิ่ม gap */
+.driver-card-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px}
 .driver-card-grid .full{grid-column:1/-1}
-.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px}
 .form-grid .full{grid-column:1/-1}
-.form-label{display:block;font-size:12px;font-weight:600;color:var(--text2);margin-bottom:5px;text-transform:uppercase;letter-spacing:.5px}
-.form-control{width:100%;padding:9px 12px;border:1px solid var(--border);border-radius:var(--radius-xs);font-family:inherit;font-size:14px;color:var(--text);background:var(--surface);outline:none;transition:border-color .2s}
+
+/* Labels & form controls — ใหญ่ขึ้น */
+.form-label{
+  display:block;
+  font-size:13px;
+  font-weight:600;color:var(--text2);
+  margin-bottom:7px;
+  text-transform:uppercase;letter-spacing:.5px;
+}
+.form-control{
+  width:100%;
+  padding:11px 14px;
+  border:1px solid var(--border);
+  border-radius:var(--radius-xs);
+  font-family:inherit;
+  font-size:15px;
+  color:var(--text);background:var(--surface);
+  outline:none;
+  transition:border-color .2s, box-shadow .2s;
+}
 .form-control:focus{border-color:var(--accent);box-shadow:0 0 0 3px rgba(37,99,235,.12)}
 .form-control.is-invalid{border-color:var(--red)}
 .form-control.auto-calc{background:var(--surface2);color:var(--text2);cursor:default}
-textarea.form-control{resize:vertical;min-height:65px}
-.invalid-feedback{font-size:11px;color:var(--red);margin-top:4px}
-.auto-hint{font-size:11px;color:var(--accent);margin-top:4px;font-weight:500}
-.section-divider{font-size:11px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:1px;padding:4px 0 8px;border-bottom:1px solid var(--border);margin:14px 0 10px;grid-column:1/-1}
+textarea.form-control{resize:vertical;min-height:80px}
+.invalid-feedback{font-size:12px;color:var(--red);margin-top:5px}
+.auto-hint{font-size:12px;color:var(--accent);margin-top:5px;font-weight:500}
+.section-divider{
+  font-size:12px;
+  font-weight:700;color:var(--text3);
+  text-transform:uppercase;letter-spacing:1px;
+  padding:6px 0 10px;
+  border-bottom:1px solid var(--border);
+  margin:18px 0 12px;
+  grid-column:1/-1;
+}
 
-.oil-price-banner{background:linear-gradient(135deg,var(--navy) 0%,var(--navy-light) 100%);border-radius:var(--radius-sm);padding:12px 14px;margin-bottom:12px;color:#fff}
-.live-dot{width:7px;height:7px;border-radius:50%;background:var(--green);animation:pulse 1.5s infinite}
-.live-dot.loading{background:var(--amber)}
-@keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
-.calc-box{background:rgba(22,163,74,.06);border:1px solid rgba(22,163,74,.25);border-radius:var(--radius-xs);padding:12px 14px;display:none;margin-top:10px}
-.calc-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px}
-.calc-item .lbl{font-size:11px;color:var(--text3)}
-.calc-item .val{font-size:19px;font-weight:700;color:var(--green)}
+/* Oil price banner — ใหญ่ขึ้น */
+.oil-price-banner{
+  background:linear-gradient(135deg,var(--navy) 0%,var(--navy-light) 100%);
+  border-radius:var(--radius);
+  padding:16px 18px;
+  margin-bottom:16px;color:#fff;
+}
+
+/* Calc box — ใหญ่ขึ้น */
+.calc-box{
+  background:rgba(22,163,74,.06);
+  border:1px solid rgba(22,163,74,.25);
+  border-radius:var(--radius-xs);
+  padding:16px 18px;
+  display:none;margin-top:14px;
+}
+.calc-grid{display:grid;grid-template-columns:repeat(4, 1fr);gap:14px}
+.calc-item .lbl{font-size:12px;color:var(--text3);font-weight:600}
+.calc-item .val{font-size:22px;font-weight:700;color:var(--green);margin-top:3px}
 .calc-item .val.amber{color:var(--amber)}
-.calc-item .unit{font-size:11px;color:var(--text3)}
+.calc-item .unit{font-size:12px;color:var(--text3);margin-top:2px}
 
-.alert{padding:11px 14px;border-radius:var(--radius-xs);margin-bottom:14px;font-size:14px}
-.alert-success{background:var(--green-light);border:1px solid var(--green);color:#14532d}
-.alert-error{background:var(--red-light);border:1px solid var(--red);color:#7f1d1d}
-
-.empty-state{text-align:center;padding:50px 20px;color:var(--text3)}
-.empty-state .icon{font-size:44px;margin-bottom:10px;opacity:.4}
-
-.summary-row{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:14px}
-.summary-chip{background:var(--surface2);border:1px solid var(--border);border-radius:20px;padding:5px 12px;font-size:12px;color:var(--text2);display:flex;align-items:center;gap:5px;font-weight:500}
-.summary-chip strong{color:var(--text)}
-
-/* Time clock picker */
-.clock-picker-row{display:flex;align-items:flex-end;gap:12px;flex-wrap:wrap}
-.clock-block{flex:1;min-width:120px}
-.clock-label{font-size:11px;color:var(--text2);margin-bottom:5px;font-weight:600}
-.clock-display{padding:10px 14px;border:1px solid var(--border);border-radius:var(--radius-xs);background:var(--surface);font-family:'Inter',monospace;font-size:15px;font-weight:600;color:var(--text);cursor:pointer;text-align:center;transition:all .15s}
+/* Clock picker row — ใหญ่ขึ้น */
+.clock-picker-row{display:flex;align-items:flex-end;gap:14px;flex-wrap:wrap}
+.clock-block{flex:1;min-width:140px}
+.clock-label{font-size:12px;color:var(--text2);margin-bottom:6px;font-weight:600}
+.clock-display{
+  padding:13px 16px;
+  border:1px solid var(--border);
+  border-radius:var(--radius-xs);
+  background:var(--surface);
+  font-family:'Inter',monospace;
+  font-size:17px;
+  font-weight:600;color:var(--text);
+  cursor:pointer;text-align:center;
+  transition:all .15s;
+}
 .clock-display:hover{border-color:var(--accent);box-shadow:0 0 0 2px rgba(37,99,235,.1)}
 .clock-picker-row.is-invalid .clock-display{border-color:var(--red);background:rgba(220,38,38,.04)}
-.time-arrow{font-size:18px;color:var(--text3);padding-bottom:10px}
+.time-arrow{font-size:22px;color:var(--text3);padding-bottom:12px}
 
-.clock-modal{position:fixed;inset:0;background:rgba(15,23,42,.5);z-index:10000;display:flex;align-items:center;justify-content:center}
-.clock-box{background:#fff;border-radius:16px;padding:20px;width:300px;box-shadow:0 20px 50px rgba(0,0,0,.3)}
-.clock-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px}
-.clock-header span{font-weight:700;font-size:15px}
-.clock-close{background:none;border:none;font-size:24px;cursor:pointer;color:#666;line-height:1}
-.clock-tabs{display:flex;gap:6px;margin-bottom:10px}
-.clock-tab{flex:1;padding:6px;border:1px solid #ddd;background:#f5f5f5;border-radius:6px;cursor:pointer;font-size:12px;font-weight:600}
+/* ═══════ CLOCK PICKER MODAL — ขยายใหญ่ขึ้น ═══════ */
+.clock-modal{
+  position:fixed;inset:0;
+  background:rgba(15,23,42,.55);
+  z-index:10000;
+  display:flex;align-items:center;justify-content:center;
+  padding:20px;
+  backdrop-filter:blur(4px);
+}
+.clock-box{
+  background:#fff;
+  border-radius:20px;
+  padding:26px;
+  width:380px;
+  max-width:100%;
+  box-shadow:0 24px 60px rgba(0,0,0,.32);
+}
+.clock-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:16px}
+.clock-header span{font-weight:700;font-size:17px}
+.clock-close{
+  background:none;border:none;
+  font-size:28px;
+  cursor:pointer;color:#666;line-height:1;
+  width:32px;height:32px;
+  display:flex;align-items:center;justify-content:center;
+  border-radius:8px;
+  transition:background .15s;
+}
+.clock-close:hover{background:var(--surface2)}
+.clock-tabs{display:flex;gap:8px;margin-bottom:14px}
+.clock-tab{
+  flex:1;
+  padding:9px;
+  border:1px solid #ddd;
+  background:#f5f5f5;
+  border-radius:8px;
+  cursor:pointer;
+  font-size:13.5px;
+  font-weight:600;
+  font-family:inherit;
+  transition:all .15s;
+}
 .clock-tab.active{background:var(--accent);color:#fff;border-color:transparent}
-.clock-current{text-align:center;font-size:28px;font-weight:700;margin:8px 0;color:var(--accent);font-family:'Inter',monospace}
-#clock-face{display:block;margin:0 auto;cursor:pointer}
-.clock-ok{width:100%;margin-top:12px;padding:10px;border:none;background:var(--accent);color:#fff;border-radius:8px;font-weight:700;cursor:pointer;font-size:14px}
+.clock-current{
+  text-align:center;
+  font-size:36px;
+  font-weight:700;
+  margin:12px 0;
+  color:var(--accent);
+  font-family:'Inter',monospace;
+  letter-spacing:.02em;
+}
+#clock-face{
+  display:block;margin:0 auto;cursor:pointer;
+  width:320px!important;
+  height:320px!important;
+}
+.clock-ok{
+  width:100%;
+  margin-top:16px;
+  padding:13px;
+  border:none;background:var(--accent);color:#fff;
+  border-radius:10px;
+  font-weight:700;cursor:pointer;
+  font-size:15px;
+  font-family:inherit;
+  transition:background .15s;
+}
 .clock-ok:hover{background:var(--accent-hover)}
 
 /* Job table inside modal */
@@ -1154,62 +1340,70 @@ textarea.form-control{resize:vertical;min-height:65px}
 <main class="main">
 <div id="pageTracking">
 
-  {{-- ═══════ METRIC CARDS ═══════ --}}
-  @php
-    // คำนวณ trend สำหรับแต่ละการ์ด
-    $totalLogs       = $logs->count();
-    $totalLiters     = $metrics['total_liters']     ?? 0;
-    $totalPrice      = $metrics['total_price']      ?? 0;
-    $avgKml          = $metrics['avg_km_per_liter'] ?? 0;
-    $totalWorkHours  = $metrics['total_work_hours'] ?? 0;
+@php
+  $totalLogs       = $logs->count();
+  $totalLiters     = $metrics['total_liters']     ?? 0;
+  $totalPrice      = $metrics['total_price']      ?? 0;
+  $avgKml          = $metrics['avg_km_per_liter'] ?? 0;
+  $totalWorkHours  = $metrics['total_work_hours'] ?? 0;
 
-    // นับคนขับที่มี km/L < 9 (ผิดปกติ)
-    $abnormalCount = 0;
-    foreach($logs as $r){
-      if(($r['km_per_liter'] ?? 0) > 0 && ($r['km_per_liter'] ?? 0) < 9){
-        $abnormalCount++;
-      }
+  // ✅ คำนวณบาท/กม. แบบ weighted (รวมเงิน ÷ รวมระยะ) — สดๆ ไม่บันทึก
+  $totalDistance = 0;
+  foreach($logs as $r){
+    $totalDistance += $r['total_distance'] ?? 0;
+  }
+  $avgBpk = $totalDistance > 0 ? $totalPrice / $totalDistance : 0;
+
+  $abnormalCount = 0;
+  foreach($logs as $r){
+    if(($r['km_per_liter'] ?? 0) > 0 && ($r['km_per_liter'] ?? 0) < 9){
+      $abnormalCount++;
     }
-  @endphp
+  }
+@endphp
 
-  <div class="metrics">
-    {{-- น้ำมันรวม --}}
-    <div class="metric-card green">
-      <div class="metric-label">น้ำมันรวม</div>
-      <div class="metric-row">
-        <div class="metric-value">{{ number_format($totalLiters, 2) }}</div>
-        <div class="metric-unit">ลิตร</div>
-      </div>
-    </div>
-
-    {{-- ค่าน้ำมันรวม --}}
-    <div class="metric-card blue">
-      <div class="metric-label">ค่าน้ำมันรวม</div>
-      <div class="metric-row">
-        <div class="metric-value">฿{{ number_format($totalPrice) }}</div>
-        <div class="metric-unit">บาท</div>
-      </div>
-    </div>
-
-    {{-- เฉลี่ย km/L --}}
-    <div class="metric-card amber">
-      <div class="metric-label">เฉลี่ย km/L</div>
-      <div class="metric-row">
-        <div class="metric-value">{{ number_format($avgKml, 2) }}</div>
-        <div class="metric-unit">กม./ลิตร</div>
-      </div>
-    </div>
-
-    {{-- ชม.ทำงาน --}}
-    <div class="metric-card red">
-      <div class="metric-label">ชม.ทำงาน</div>
-      <div class="metric-row">
-        <div class="metric-value">{{ number_format($totalWorkHours, 0) }}</div>
-        <div class="metric-unit">ชั่วโมง</div>
-      </div>
+<div class="metrics">
+  <div class="metric-card green">
+    <div class="metric-label">น้ำมันรวม</div>
+    <div class="metric-row">
+      <div class="metric-value">{{ number_format($totalLiters, 2) }}</div>
+      <div class="metric-unit">ลิตร</div>
     </div>
   </div>
 
+  <div class="metric-card blue">
+    <div class="metric-label">ค่าน้ำมันรวม</div>
+    <div class="metric-row">
+      <div class="metric-value">฿{{ number_format($totalPrice) }}</div>
+      <div class="metric-unit">บาท</div>
+    </div>
+  </div>
+
+  <div class="metric-card amber">
+    <div class="metric-label">เฉลี่ย km/L</div>
+    <div class="metric-row">
+      <div class="metric-value">{{ number_format($avgKml, 2) }}</div>
+      <div class="metric-unit">กม./ลิตร</div>
+    </div>
+  </div>
+
+  {{-- ✅ NEW: บาท/กม. --}}
+  <div class="metric-card purple">
+    <div class="metric-label">ต้นทุนต่อกิโล</div>
+    <div class="metric-row">
+      <div class="metric-value">฿{{ number_format($avgBpk, 2) }}</div>
+      <div class="metric-unit">บาท/กม.</div>
+    </div>
+  </div>
+
+  <div class="metric-card red">
+    <div class="metric-label">ชม.ทำงาน</div>
+    <div class="metric-row">
+      <div class="metric-value">{{ number_format($totalWorkHours, 0) }}</div>
+      <div class="metric-unit">ชั่วโมง</div>
+    </div>
+  </div>
+</div>
   {{-- ═══════ DUAL GRID: ตารางเติมน้ำมัน (ซ้าย) + คนขับวันนี้ (ขวา) ═══════ --}}
   <div class="dual-grid {{ $view === 'day' ? 'single-col' : '' }}">
 
@@ -1238,6 +1432,7 @@ textarea.form-control{resize:vertical;min-height:65px}
             <th class="num" style="width:70px">ลิตร</th>
             <th class="num" style="width:80px">฿</th>
             <th class="num" style="width:70px">KM/L</th>
+            <th class="num" style="width:80px">฿/KM</th>  
           </tr>
         </thead>
         <tbody id="oilTbody">
@@ -1267,6 +1462,12 @@ textarea.form-control{resize:vertical;min-height:65px}
             if(strlen($tStart) >= 5) $tStart = substr($tStart, 0, 5);
             if(strlen($tEnd)   >= 5) $tEnd   = substr($tEnd,   0, 5);
             $timeText = ($tStart && $tEnd) ? $tStart.'-'.$tEnd : '—';
+            $distNum = (float)($r['total_distance'] ?? 0);
+            $priceNum = (float)($r['total_price'] ?? 0);
+            $bpk = ($distNum > 0 && $priceNum > 0) ? round($priceNum / $distNum, 2) : 0;
+            $bpkClass = 'km-mid';
+            if($bpk > 0 && $bpk <= 4) $bpkClass = 'km-good';
+            elseif($bpk > 6) $bpkClass = 'km-bad';
           @endphp
           <tr data-driver="{{ strtolower($name) }}">
             <td class="row-idx">{{ str_pad((string)$rowNo, 2, '0', STR_PAD_LEFT) }}</td>
@@ -1286,9 +1487,16 @@ textarea.form-control{resize:vertical;min-height:65px}
               @if($kml>0)<span class="{{ $kmlClass }}">{{ number_format($kml,2) }}</span>
               @else<span style="color:var(--text3)">—</span>@endif
             </td>
+            <td class="num">
+              @if($bpk > 0)
+                <span class="{{ $bpkClass }}">฿{{ number_format($bpk, 2) }}</span>
+              @else
+                <span style="color:var(--text3)">—</span>
+              @endif
+            </td>
           </tr>
           @empty
-          <tr><td colspan="7"><div class="empty-state"><div class="icon">⛽</div><p>ไม่พบรายการ</p></div></td></tr>
+          <tr><td colspan="8"><div class="empty-state"><div class="icon">⛽</div><p>ไม่พบรายการ</p></div></td></tr>
           @endforelse
         </tbody>
       </table>
@@ -1351,6 +1559,9 @@ textarea.form-control{resize:vertical;min-height:65px}
           $initials = mb_substr($d['name'], 0, 2, 'UTF-8');
           $avgKmlD = $d['kml_count'] > 0 ? $d['kml_sum'] / $d['kml_count'] : 0;
           $kmlBad = $avgKmlD > 0 && $avgKmlD < 9;
+          // ✅ NEW: บาท/กม. weighted = รวมเงิน ÷ รวมระยะ
+          $avgBpkD = $d['distance'] > 0 ? $d['price'] / $d['distance'] : 0;
+          $bpkBad = $avgBpkD > 6;
         @endphp
         <div class="driver-row">
           <div class="driver-rank">
@@ -1368,8 +1579,11 @@ textarea.form-control{resize:vertical;min-height:65px}
           </div>
           <div class="right">
             <div class="price">฿{{ number_format($d['price']) }}</div>
+            @if($avgBpkD > 0)
+              <div class="kml {{ $bpkBad ? 'warn' : '' }}">฿{{ number_format($avgBpkD,2) }}/km</div>
+            @endif
             @if($avgKmlD > 0)
-            <div class="kml {{ $kmlBad ? 'warn' : '' }}">{{ number_format($avgKmlD,2) }} km/L</div>
+              <div class="kml {{ $kmlBad ? 'warn' : '' }}">{{ number_format($avgKmlD,2) }} km/L</div>
             @endif
           </div>
         </div>
@@ -1406,11 +1620,22 @@ textarea.form-control{resize:vertical;min-height:65px}
         </div>
       </div>
       <div class="chart-canvas chart-scroll" style="height:280px"><div class="chart-inner" id="chartKmlInner"><canvas id="chartKml"></canvas></div></div>
-      <div class="chart-legend" id="kmlLegend"></div>
-    </div>
-
-  </div>
-
+        <div class="charts-grid" style="grid-template-columns:1fr">
+          <div class="chart-panel">
+            <div class="chart-head">
+              <div style="display:flex;align-items:center">
+                <div class="chart-title">ต้นทุนต่อกิโล (฿/km)</div>
+                <div class="chart-sub">ค่าน้ำมันเฉลี่ยต่อระยะทาง · แยกตามคนขับ</div>
+              </div>
+            </div>
+            <div class="chart-canvas chart-scroll" style="height:280px">
+              <div class="chart-inner" id="chartBpkInner">
+                <canvas id="chartBpk"></canvas>
+              </div>
+            </div>
+            <div class="chart-legend" id="bpkLegend"></div>
+          </div>
+        </div>
 </div>
 
 {{-- ═══════ HIDDEN: Report page (เก็บไว้เผื่อ route เดิม) ═══════ --}}
@@ -1610,6 +1835,11 @@ textarea.form-control{resize:vertical;min-height:65px}
             <div class="calc-item"><div class="lbl">ชั่วโมงทำงาน</div><div class="val amber" id="calcWorkHours">—</div><div class="unit">ชม.</div></div>
             <div class="calc-item"><div class="lbl">ลิตร / ยอดเงิน</div><div class="val" id="calcLitersPreview">—</div><div class="unit">ล. / ฿</div></div>
             <div class="calc-item"><div class="lbl">km/L</div><div class="val" id="calcKml">—</div><div class="unit">กม./ลิตร</div></div>
+            <div class="calc-item">
+                <div class="lbl">฿/km</div>
+                <div class="val" id="calcBpk" style="color:var(--purple)">—</div>
+                <div class="unit">บาท/กม.</div>
+            </div>
           </div>
         </div>
         <div class="full"><label class="form-label">หมายเหตุ</label><textarea name="note" id="f-note" class="form-control">{{ old('note',$editLog['note']??'') }}</textarea></div>
@@ -1889,9 +2119,10 @@ function renderKmlChart(){
   })).filter(d => d.avg > 0).sort((a,b) => b.avg - a.avg);
 
   if(drivers.length === 0){
-    if(kmlChart) kmlChart.destroy();
-    document.getElementById('kmlLegend').innerHTML = '<span style="color:var(--text3)">ไม่มีข้อมูล</span>';
-    return;
+      if(kmlChart) kmlChart.destroy();
+      const lg = document.getElementById('kmlLegend');
+      if(lg) lg.innerHTML = '<span style="color:var(--text3)">ไม่มีข้อมูล</span>';
+      return;
   }
 
   // Lock chart width to panel: ≤4 drivers fit panel exactly; >4 scroll
@@ -2025,7 +2256,178 @@ function renderKmlChart(){
     `;
   }
 }
+</script>
+<script>
+  /* ═══════════════════════════════════════════════════════════════
+   BPK BAR CHART — ต้นทุนต่อกิโล (บาท/กม.) — คำนวณสดจาก logs
+═══════════════════════════════════════════════════════════════ */
+@php
+  // คำนวณ บาท/กม. ต่อคนขับ แบบ weighted (รวมเงิน ÷ รวมระยะ)
+  $bpkByDriver = [];
+  foreach ($logs as $log) {
+      $driver = $log['driver_name'] ?? 'ไม่ระบุ';
+      $price  = (float)($log['total_price']    ?? 0);
+      $dist   = (float)($log['total_distance'] ?? 0);
+      if ($price <= 0 || $dist <= 0) continue;
+      if (!isset($bpkByDriver[$driver])) {
+          $bpkByDriver[$driver] = ['price_sum'=>0,'dist_sum'=>0,'plate'=>$log['vehicle_id']??''];
+      }
+      $bpkByDriver[$driver]['price_sum'] += $price;
+      $bpkByDriver[$driver]['dist_sum']  += $dist;
+  }
+@endphp
+const BPK_BY_DRIVER = @json($bpkByDriver);
 
+let bpkChart = null;
+function renderBpkChart(){
+  const drivers = Object.keys(BPK_BY_DRIVER).map(name => ({
+    name,
+    plate: BPK_BY_DRIVER[name].plate || '',
+    avg: BPK_BY_DRIVER[name].dist_sum > 0
+        ? BPK_BY_DRIVER[name].price_sum / BPK_BY_DRIVER[name].dist_sum
+        : 0,
+  })).filter(d => d.avg > 0).sort((a,b) => a.avg - b.avg);  // เรียงน้อย→มาก (ถูกขึ้นก่อน)
+
+  if(drivers.length === 0){
+    if(bpkChart) bpkChart.destroy();
+    document.getElementById('bpkLegend').innerHTML = '<span style="color:var(--text3)">ไม่มีข้อมูล</span>';
+    return;
+  }
+
+  // Width handling — เหมือน km/L chart
+  const inner = document.getElementById('chartBpkInner');
+  const scrollWrap = inner ? inner.parentElement : null;
+  if(inner && scrollWrap){
+    const BAR_PX = 120;
+    inner.style.width = '100%';
+    const panel = scrollWrap.closest('.chart-panel');
+    const panelW = panel ? (panel.clientWidth - 40) : scrollWrap.clientWidth;
+    const containerW = Math.max(scrollWrap.clientWidth, panelW);
+    const needed = drivers.length * BAR_PX;
+    const w = (drivers.length > 4 && needed > containerW) ? needed : containerW;
+    inner.style.width = w + 'px';
+    inner.style.height = '100%';
+  }
+
+  const labels = drivers.map(d => d.name);
+  const data   = drivers.map(d => +d.avg.toFixed(2));
+
+  // สี: ≤ 4 เขียว / 4–6 อำพัน / > 6 แดง
+  const barColors = data.map(v => v <= 4 ? '#16a34a' : (v <= 6 ? '#f59e0b' : '#dc2626'));
+
+  // weighted overall = รวมเงินทั้งหมด ÷ รวมระยะทั้งหมด
+  let totalPriceAll = 0, totalDistAll = 0;
+  Object.values(BPK_BY_DRIVER).forEach(d => {
+    totalPriceAll += d.price_sum;
+    totalDistAll  += d.dist_sum;
+  });
+  const overallAvg = totalDistAll > 0 ? (totalPriceAll / totalDistAll) : 0;
+
+  const maxVal = Math.max(...data, 6);
+  const yMax = Math.ceil(maxVal + 1);
+
+  if(bpkChart) bpkChart.destroy();
+  bpkChart = new Chart(document.getElementById('chartBpk'), {
+    type: 'bar',
+    data: {
+      labels,
+      datasets: [{
+        label: 'เฉลี่ย ฿/km',
+        data,
+        backgroundColor: barColors,
+        borderRadius: 6,
+        borderSkipped: false,
+        maxBarThickness: 50,
+      }],
+    },
+    plugins: [
+      ChartDataLabels,
+      {
+        id: 'bpkThreshold',
+        afterDatasetsDraw(chart){
+          if(overallAvg <= 0) return;
+          const {ctx, chartArea: {left, right}, scales: {y}} = chart;
+          const yPos = y.getPixelForValue(overallAvg);
+          ctx.save();
+          ctx.strokeStyle = '#7c3aed';
+          ctx.setLineDash([6, 4]);
+          ctx.lineWidth = 2;
+          ctx.beginPath();
+          ctx.moveTo(left, yPos);
+          ctx.lineTo(right, yPos);
+          ctx.stroke();
+          ctx.setLineDash([]);
+          ctx.fillStyle = '#7c3aed';
+          ctx.font = '600 11px Inter';
+          ctx.textAlign = 'right';
+          ctx.fillText('เฉลี่ยรวม ฿' + overallAvg.toFixed(2), right - 6, yPos - 6);
+          ctx.restore();
+        },
+      },
+    ],
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      layout: { padding: { top: 24, right: 16, left: 6, bottom: 6 } },
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          callbacks: {
+            label: ctx => `฿${ctx.raw.toFixed(2)} ต่อ กม.`,
+            afterLabel: ctx => {
+              const d = drivers[ctx.dataIndex];
+              return d.plate ? `ทะเบียน: ${d.plate}` : '';
+            },
+          },
+        },
+        datalabels: {
+          color: '#0f172a',
+          font: { weight: '700', size: 11, family: 'Inter' },
+          anchor: 'end', align: 'top', offset: 2,
+          formatter: v => '฿' + v.toFixed(2),
+        },
+      },
+      scales: {
+        x: {
+          grid: { display: false },
+          ticks: {
+            font: { size: 11, family: 'IBM Plex Sans Thai' },
+            color: '#475569',
+            autoSkip: false,
+            maxRotation: 0,
+            callback: function(value){
+              const lbl = this.getLabelForValue(value);
+              return lbl.length > 8 ? lbl.substring(0,7) + '…' : lbl;
+            },
+          },
+        },
+        y: {
+          beginAtZero: true,
+          suggestedMax: yMax,
+          ticks: {
+            font: { size: 11, family: 'Inter' },
+            color: '#94a3b8',
+            callback: v => '฿' + v,
+          },
+          grid: { color: 'rgba(15,23,42,.05)' },
+        },
+      },
+    },
+  });
+
+  const wrap = document.getElementById('bpkLegend');
+  if(wrap){
+    wrap.innerHTML = `
+      <div class="chart-legend-item"><span class="chart-legend-dot" style="background:#16a34a"></span>ดี (≤ ฿4)</div>
+      <div class="chart-legend-item"><span class="chart-legend-dot" style="background:#f59e0b"></span>ปกติ (฿4–6)</div>
+      <div class="chart-legend-item"><span class="chart-legend-dot" style="background:#dc2626"></span>แพง (&gt; ฿6)</div>
+      <div class="chart-legend-item" style="margin-left:auto;color:var(--text3)">
+        เฉลี่ยรวม: <strong style="color:var(--text);margin-left:4px">฿${overallAvg.toFixed(2)}/km</strong>
+      </div>
+    `;
+  }
+}
+</script>
+<script>
 /* ═══════════════════════════════════════════════════════════════
    DATE RANGE PICKER (เก็บ logic เดิม)
 ═══════════════════════════════════════════════════════════════ */
@@ -2082,21 +2484,52 @@ function drpNavMonth(d){drpViewMonth+=d;if(drpViewMonth<0){drpViewMonth=11;drpVi
 function drpRender(){
   document.getElementById('drpMonthTitle').textContent=`${TH_MONTHS_SHORT[drpViewMonth]} ${drpViewYear+543}`;
   const grid=document.getElementById('drpDays');
-  const fd=new Date(drpViewYear,drpViewMonth,1);const fw=fd.getDay();
+  const fd=new Date(drpViewYear,drpViewMonth,1);
+  const fw=fd.getDay();
   const dim=new Date(drpViewYear,drpViewMonth+1,0).getDate();
   const pmd=new Date(drpViewYear,drpViewMonth,0).getDate();
   const ts=drpFmt(new Date());
   let h='';
-  for(let i=fw-1;i>=0;i--){const d=pmd-i;const y=drpViewMonth===0?drpViewYear-1:drpViewYear;const m=drpViewMonth===0?11:drpViewMonth-1;const ds=`${y}-${drpPad(m+1)}-${drpPad(d)}`;h+=drpDayBtn(ds,d,true,ts);}
-  for(let d=1;d<=dim;d++){const ds=`${drpViewYear}-${drpPad(drpViewMonth+1)}-${drpPad(d)}`;h+=drpDayBtn(ds,d,false,ts);}
-  const total=fw+dim;const rem=(7-(total%7))%7;
-  for(let d=1;d<=rem;d++){const y=drpViewMonth===11?drpViewYear+1:drpViewYear;const m=drpViewMonth===11?0:drpViewMonth+1;const ds=`${y}-${drpPad(m+1)}-${drpPad(d)}`;h+=drpDayBtn(ds,d,true,ts);}
+  for(let i=fw-1;i>=0;i--){
+    const d=pmd-i;
+    const y=drpViewMonth===0?drpViewYear-1:drpViewYear;
+    const m=drpViewMonth===0?11:drpViewMonth-1;
+    const ds=`${y}-${drpPad(m+1)}-${drpPad(d)}`;
+    h+=drpDayBtn(ds,d,true,ts);
+  }
+  for(let d=1;d<=dim;d++){
+    const ds=`${drpViewYear}-${drpPad(drpViewMonth+1)}-${drpPad(d)}`;
+    h+=drpDayBtn(ds,d,false,ts);
+  }
+  const total=fw+dim;
+  const rem=(7-(total%7))%7;
+  for(let d=1;d<=rem;d++){
+    const y=drpViewMonth===11?drpViewYear+1:drpViewYear;
+    const m=drpViewMonth===11?0:drpViewMonth+1;
+    const ds=`${y}-${drpPad(m+1)}-${drpPad(d)}`;
+    h+=drpDayBtn(ds,d,true,ts);
+  }
   grid.innerHTML=h;
+
   const hint=document.getElementById('drpHint');
-  if(!drpFrom)hint.textContent='🖱️ กดค้างแล้วลากเพื่อเลือกช่วงวันที่';
+  if(!drpFrom)hint.textContent='🖱️ กดค้างแล้วลากเพื่อเลือกช่วงวันที่ หรือคลิกวันเดียว';
   else if(drpFrom===drpTo)hint.textContent=`เลือก ${drpFormatLabel(drpFrom,drpTo)}`;
   else hint.textContent=`เลือกช่วง ${drpFormatLabel(drpFrom,drpTo)}`;
   document.getElementById('drpApplyBtn').disabled=!drpFrom;
+
+  // ✅ ผูก click handler หลัง render เสร็จ — รองรับการกดวันเดียว
+  grid.querySelectorAll('.drp-day').forEach(btn=>{
+    btn.addEventListener('click', (ev)=>{
+      ev.stopPropagation();
+      const ds = btn.dataset.date;
+      if(!ds) return;
+      if(!drpDragging){
+        drpFrom = ds;
+        drpTo   = ds;
+        drpRender();
+      }
+    });
+  });
 }
 function drpDayBtn(ds,d,muted,ts){
   const c=['drp-day'];if(muted)c.push('muted');if(ds===ts)c.push('today');
@@ -2110,8 +2543,24 @@ function drpDayBtn(ds,d,muted,ts){
 }
 let drpDragging=false,drpDragStart=null;
 function drpGetDateFromEvent(e){const p=e.touches?e.touches[0]:e;if(!p)return null;const el=document.elementFromPoint(p.clientX,p.clientY);if(!el)return null;const b=el.closest('.drp-day');return b?b.dataset.date:null;}
-function drpStartDrag(e){const ds=drpGetDateFromEvent(e);if(!ds)return;e.preventDefault();drpDragging=true;drpDragStart=ds;drpFrom=ds;drpTo=ds;drpRender();}
-function drpMoveDrag(e){if(!drpDragging)return;const ds=drpGetDateFromEvent(e);if(!ds)return;e.preventDefault();if(ds<drpDragStart){drpFrom=ds;drpTo=drpDragStart;}else{drpFrom=drpDragStart;drpTo=ds;}drpRender();}
+function drpStartDrag(e){
+  const ds=drpGetDateFromEvent(e);
+  if(!ds)return;
+  drpDragging=true;
+  drpDragStart=ds;
+  drpFrom=ds;
+  drpTo=ds;
+  drpRender();
+}
+function drpMoveDrag(e){
+  if(!drpDragging)return;
+  const ds=drpGetDateFromEvent(e);
+  if(!ds)return;
+  e.preventDefault();
+  if(ds<drpDragStart){drpFrom=ds;drpTo=drpDragStart;}
+  else{drpFrom=drpDragStart;drpTo=ds;}
+  drpRender();
+}
 function drpEndDrag(){drpDragging=false;}
 function drpPreset(p){const n=new Date();let f,t;if(p==='today'){f=t=drpFmt(n);}else if(p==='7days'){t=drpFmt(n);const d=new Date(n);d.setDate(d.getDate()-6);f=drpFmt(d);}else if(p==='thismonth'){f=drpFmt(new Date(n.getFullYear(),n.getMonth(),1));t=drpFmt(n);}drpFrom=f;drpTo=t;const fd=drpParse(f);drpViewYear=fd.getFullYear();drpViewMonth=fd.getMonth();drpRender();}
 function drpApply(){if(!drpFrom)return;const to=drpTo||drpFrom;const params={view:'day',date_from:drpFrom,date_to:to};const ds=document.getElementById('driverPicker');if(ds&&ds.value)params.driver_name=ds.value;submitFilterForm(params);}
@@ -2457,6 +2906,8 @@ function calcPreview(){
     const litEl=document.getElementById('calcLitersPreview');if(litEl)litEl.textContent=liters>0?`${liters} / ฿${tp.toFixed(0)}`:'—';
     const dist=parseFloat(document.getElementById('f-total-distance')?.value)||0;
     const kmlEl=document.getElementById('calcKml');if(kmlEl)kmlEl.textContent=(liters>0&&dist>0)?(dist/liters).toFixed(2):'—';
+    const bpkEl = document.getElementById('calcBpk');
+  if(bpkEl) bpkEl.textContent = (tp > 0 && dist > 0) ? '฿' + (tp/dist).toFixed(2) : '—';
   }
 }
 function switchOilType(t){
@@ -2606,23 +3057,21 @@ function renderReportPage(){
   makePie('pieHours', 'pieHoursLegend', 'hours', 'ชั่วโมง', v=>v.toFixed(1)+' ชม.');
 }
 
-/* ═══════════════════════════════════════════════════════════════
-   INIT
-═══════════════════════════════════════════════════════════════ */
 document.addEventListener('DOMContentLoaded',()=>{
   updateNavDate();setInterval(updateNavDate,60000);
   buildTimeDropdowns();
   renderDlv();
   renderKmlChart();
+  renderBpkChart();        // ✅ NEW
   renderOilPage();
   drpInit();
-  // Re-render charts when window resizes so inner width matches container
   let _resizeTimer = null;
   window.addEventListener('resize', () => {
     clearTimeout(_resizeTimer);
     _resizeTimer = setTimeout(() => {
       renderDlv();
       renderKmlChart();
+      renderBpkChart();    // ✅ NEW
     }, 200);
   });
   @if($errors->any())
