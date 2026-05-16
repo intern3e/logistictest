@@ -651,7 +651,7 @@ class DepositController extends Controller
         $startY = 93;
         $rowH   = 6;
         $deposits   = $data['deposits'] ?? [];
-        $poDocument = $data['po_document'] ?? '';
+        $poDocument = $data['po_document'] ?? $data['poDocument'] ?? $data['po'] ?? '';
         $grandTotalData = (float)($data['grand_total'] ?? 0);
 
         $y = $startY;
@@ -675,9 +675,7 @@ class DepositController extends Controller
                 $typeName,
                 rtrim(rtrim(number_format($percent, 2), '0'), '.'),
                 $poDocument,
-                number_format($fullPrice, 2),
-                rtrim(rtrim(number_format($allPercent, 2), '0'), '.'),
-                number_format($allTotal, 2)
+                number_format($fullPrice, 2)
             );
 
             $pdf->SetXY(30, $y);
