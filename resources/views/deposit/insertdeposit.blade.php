@@ -1363,8 +1363,15 @@ document.getElementById('submitBill').addEventListener('click', async function()
     });
 const data = await res.json();
     if(!res.ok || !data.success){ throw new Error(data.message || `HTTP ${res.status}`); }
+
     showToast('บันทึกสำเร็จ', data.message || 'บันทึกใบมัดจำเรียบร้อยแล้ว', 'success');
-    setTimeout(() => { window.location.href = 'http://server_update:8000/solist'; }, 1500);
+
+    // ─── ✅ ดาวน์โหลด PDF ที่ backend สร้างไว้ ลงเครื่อง ───
+    if(data.pdf_url){
+      await downloadSavedPdf(data.pdf_url, data.deposit_bill_id || soId);
+    }
+
+    setTimeout(() => { window.location.href = 'http://server_update:8000/solist'; }, 2000);
   }catch(err){
     console.error(err);
     showToast('บันทึกไม่สำเร็จ', err.message || 'เกิดข้อผิดพลาด', 'error');
@@ -1372,6 +1379,37 @@ const data = await res.json();
     btn.innerHTML = originalHTML;
   }
 });
+/* ═══════════════════════════════════════════════════════════════
+   DOWNLOAD SAVED PDF — ดาวน์โหลดไฟล์ PDF ที่ backend สร้างและบันทึกไว้แล้ว
+═══════════════════════════════════════════════════════════════ */
+async function downloadSavedPdf(pdfUrl, billId){
+  try{
+    // fetch ไฟล์ PDF ที่ backend สร้างไว้ (จาก storage/deposit_templates/RDxxxx-xxxxx.pdf)
+    const res = await fetch(pdfUrl);
+    if(!res.ok) throw new Error(`HTTP ${res.status}`);
+    const blob = await res.blob();
+
+    // ชื่อไฟล์ = deposit_bill_id (เช่น RD6905-00004.pdf)
+    const safeName = (billId || 'deposit').replace(/[^a-zA-Z0-9_-]/g, '_');
+    const filename = `${safeName}.pdf`;
+
+    // Trigger download
+    const blobUrl = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = blobUrl;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+
+    setTimeout(() => URL.revokeObjectURL(blobUrl), 1000);
+
+    showToast('ดาวน์โหลด PDF', `บันทึกไฟล์ ${filename} เรียบร้อย`, 'success');
+  }catch(err){
+    console.error('Download saved PDF error:', err);
+    showToast('ดาวน์โหลด PDF ไม่สำเร็จ', err.message || 'ไม่สามารถดาวน์โหลด PDF ได้', 'warning');
+  }
+}
 </script>
 </body>
 </html>
