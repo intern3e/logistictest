@@ -3104,7 +3104,7 @@ document.addEventListener('DOMContentLoaded',()=>{
   buildTimeDropdowns();
   renderDlv();
   renderKmlChart();
-  renderBpkChart();        // ✅ NEW
+  renderBpkChart();       
   renderOilPage();
   drpInit();
   let _resizeTimer = null;
@@ -3113,7 +3113,7 @@ document.addEventListener('DOMContentLoaded',()=>{
     _resizeTimer = setTimeout(() => {
       renderDlv();
       renderKmlChart();
-      renderBpkChart();    // ✅ NEW
+      renderBpkChart();   
     }, 200);
   });
   @if($errors->any())

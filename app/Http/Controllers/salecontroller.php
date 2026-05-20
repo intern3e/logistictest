@@ -182,6 +182,7 @@ public function fetchFormType(Request $request)
             'POdocument' => 'nullable|file|mimes:pdf|max:20480',
             'formtype' => ['required', 'string', 'max:255', 'not_in:ไม่มีข้อมูล'],
             'formtype.not_in' => 'กรุณาเลือกประเภทฟอร์มให้ถูกต้อง',
+            'deposit_bill_id' => 'nullable|string|max:255',
             ],[
             'contactso.required' => 'กรุณากรอกชื่อผู้ติดต่อ',
             'customer_tel.required' => 'กรุณากรอกเบอร์โทรผู้ติดต่อ',
@@ -238,6 +239,7 @@ public function fetchFormType(Request $request)
         $bill->billtype = $request->input('billtype') . ',' . $request->input('typeinbill');
         $bill->formtype = $request->input('formtype');
         $bill->billid = $request->input('billid');
+        $bill->deposit_bill_id = $request->input('deposit_bill_id'); 
 
         // 🔸 จัดการไฟล์เอกสาร
         if ($request->hasFile('POdocument')) {
@@ -352,7 +354,76 @@ public function fetchContactSo(Request $request)
             'exists' => false,
         ]);
     }
+public function fetchDeposit(Request $request)
+{
+    $so_id = $request->input('so_id');
 
+    if (!$so_id) {
+        return response()->json(['deposits' => []]);
+    }
+
+    // 1) ดึง deposit ของ so_id นี้ (เอามาแสดงทั้งหมด)
+    $deposits = DB::table('deposit')
+        ->where('so_id', $so_id)
+        ->select(
+            'deposit_bill_id',
+            'dep_type',
+            'dep_per',
+            'dep_price',
+            'grand_total',
+            'time',
+            'status_bill'
+        )
+        ->orderBy('time', 'desc')
+        ->get();
+
+    if ($deposits->isEmpty()) {
+        return response()->json(['deposits' => []]);
+    }
+
+    // 2) เช็คใน tblbill ว่า deposit ตัวไหนถูกใช้ไปแล้วบ้าง
+    $depIds = $deposits->pluck('deposit_bill_id')->filter()->values()->all();
+
+    $usedMap = [];
+    if (!empty($depIds)) {
+        $usedRows = DB::table('tblbill')
+            ->whereIn('deposit_bill_id', $depIds)
+            ->whereNotNull('deposit_bill_id')
+            ->where('deposit_bill_id', '!=', '')
+            ->select('deposit_bill_id', 'so_detail_id')
+            ->get();
+
+        foreach ($usedRows as $row) {
+            $key = $row->deposit_bill_id;
+            if (!isset($usedMap[$key])) {
+                $usedMap[$key] = [];
+            }
+            $usedMap[$key][] = $row->so_detail_id;
+        }
+    }
+
+    // 3) แนบ flag: is_used, used_in, is_approved
+    $deposits = $deposits->map(function ($d) use ($usedMap) {
+        $key = $d->deposit_bill_id;
+
+        // ใช้แล้วหรือยัง?
+        if (isset($usedMap[$key]) && count($usedMap[$key]) > 0) {
+            $d->is_used = true;
+            $d->used_in = implode(', ', $usedMap[$key]);
+        } else {
+            $d->is_used = false;
+            $d->used_in = null;
+        }
+
+        // อนุมัติแล้วหรือยัง? (status_bill = 'ok')
+        $sb = strtolower(trim((string) $d->status_bill));
+        $d->is_approved = ($sb === 'ok');
+
+        return $d;
+    });
+
+    return response()->json(['deposits' => $deposits]);
+}
 }
 
 

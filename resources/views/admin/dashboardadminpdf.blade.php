@@ -573,11 +573,11 @@ function copydate(text, button) {
                                         <input type="file" name="pdffile" id="pdffile" accept="application/pdf" required>
                                         <button type="submit" id="subpdffile">อัปโหลด PDF</button>
                                     </form>
-                                    <button style="background-color: red; color: white;"
-                                        id="Pumpbill"
-                                        onclick="checkBillTypeAndAddBill('{{ $item->so_detail_id }}','{{ $item->billid }}','{{ $item->billtype }}','{{ $item->so_id }}')">
-                                        เพิ่มเลขบิล
-                                    </button>
+                                        <button style="background-color: red; color: white;"
+                                            id="Pumpbill"
+                                            onclick="checkBillTypeAndAddBill('{{ $item->so_detail_id }}','{{ $item->billid }}','{{ $item->billtype }}','{{ $item->so_id }}','{{ $item->customer_id }}','{{ $item->deposit_bill_id ?? '' }}')">
+                                            เพิ่มเลขบิล
+                                        </button>
                                     <button id="downloadbill"
                                         style="background-color: #27ae60; color: white;"
                                         onclick="openFileInNewTabbill(
@@ -616,22 +616,9 @@ function mergePdf(billid) {
     });
 }
 </script>
-
-
                                 </td>
-                                <td><a href="javascript:void(0);" 
-                                    onclick="openPopup(
-                                        '{{ $item->so_detail_id }}',
-                                        '{{ $item->so_id }}',
-                                        '{{ $item->ponum }}',
-                                        '{{ $item->customer_name }}',
-                                        '{{ $item->customer_tel }}',
-                                        '{{ $item->customer_address }}',
-                                        '{{ $item->date_of_dali }}',
-                                        '{{ $item->sale_name }}'
-                                    )">
-                                    เพิ่มเติม
-                                 </a>
+                                <td>
+                                     <span id="deposit-id{{ $item->id }}">{{ $item->deposit_bill_id }}</span>
                                 </td>
 
 
@@ -969,7 +956,7 @@ function openFileInNewTab(url, ponum, so_detail_id, so_id, billid) {
 
  </script>
 <script>
-    function addSoDetailIdToPoDocument(so_detail_id, POdocument) {
+function addSoDetailIdToPoDocument(so_detail_id, POdocument) {
     fetch(`/add-so-detail-id-to-pdf/${so_detail_id}/${POdocument}`)
         .then(response => response.json())
         .then(data => {
@@ -981,8 +968,7 @@ function openFileInNewTab(url, ponum, so_detail_id, so_id, billid) {
             console.error("Error:", error);
         });
 }
-</script>
-<script>
+
 function addIdToissueDocument(so_detail_id, bill_issue_no) {
     fetch(`/add-so-detail-id-to-billissue/${so_detail_id}/${bill_issue_no}`)
         .then(response => response.json())
@@ -995,20 +981,19 @@ function addIdToissueDocument(so_detail_id, bill_issue_no) {
             console.error("Error:", error);
         });
 }
-
-function checkBillTypeAndAddBill(so_detail_id, billid, billtype, so_id) {
+function checkBillTypeAndAddBill(so_detail_id, billid, billtype, so_id, customer_id, deposit_bill_id) {
     if (billtype && billtype.includes('งานบริการ')) {
-        addIdToDocument3(so_detail_id, billid, so_id);
+        addIdToDocument3(so_detail_id, billid, so_id, customer_id, deposit_bill_id);
     } 
     else if (billtype && billtype.includes('งานเช่า')) {
-        addIdToDocument5(so_detail_id, billid, so_id);
+        addIdToDocument5(so_detail_id, billid, so_id, customer_id, deposit_bill_id);
     } 
     else {
-        addIdToDocument(so_detail_id, billid, so_id);
+        addIdToDocument(so_detail_id, billid, so_id, customer_id, deposit_bill_id);
     }
 }
 
-function addIdToDocument(so_detail_id, billid, so_id) {
+function addIdToDocument(so_detail_id, billid, so_id, customer_id, deposit_bill_id) {
     fetch('/add-so-detail-id-to-bill', {
         method: 'POST',
         headers: {
@@ -1016,23 +1001,17 @@ function addIdToDocument(so_detail_id, billid, so_id) {
             'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
         },
         body: JSON.stringify({
-            so_detail_id: so_detail_id,
-            billid: billid,
-            so_id: so_id
+            so_detail_id, billid, so_id, customer_id, deposit_bill_id
         })
     })
     .then(response => response.json())
     .then(data => {
-        if (!data.success) {
-            console.error("เพิ่มข้อมูลไม่สำเร็จ:", data.error || '');
-        }
+        if (!data.success) console.error("เพิ่มข้อมูลไม่สำเร็จ:", data.error || '');
     })
-    .catch(error => {
-        console.error("Error:", error);
-    });
+    .catch(error => console.error("Error:", error));
 }
 
-function addIdToDocument3(so_detail_id, billid, so_id) {
+function addIdToDocument3(so_detail_id, billid, so_id, customer_id, deposit_bill_id) {
     fetch('/add-so-detail-id-to-bill-3', {
         method: 'POST',
         headers: {
@@ -1040,23 +1019,17 @@ function addIdToDocument3(so_detail_id, billid, so_id) {
             'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
         },
         body: JSON.stringify({
-            so_detail_id: so_detail_id,
-            billid: billid,
-            so_id: so_id
+            so_detail_id, billid, so_id, customer_id, deposit_bill_id
         })
     })
     .then(response => response.json())
     .then(data => {
-        if (!data.success) {
-            console.error("เพิ่มข้อมูลไม่สำเร็จ:", data.error || '');
-        }
+        if (!data.success) console.error("เพิ่มข้อมูลไม่สำเร็จ:", data.error || '');
     })
-    .catch(error => {
-        console.error("Error:", error);
-    });
+    .catch(error => console.error("Error:", error));
 }
 
-function addIdToDocument5(so_detail_id, billid, so_id) {
+function addIdToDocument5(so_detail_id, billid, so_id, customer_id, deposit_bill_id) {
     fetch('/add-so-detail-id-to-bill-5', {
         method: 'POST',
         headers: {
@@ -1064,20 +1037,14 @@ function addIdToDocument5(so_detail_id, billid, so_id) {
             'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
         },
         body: JSON.stringify({
-            so_detail_id: so_detail_id,
-            billid: billid,
-            so_id: so_id
+            so_detail_id, billid, so_id, customer_id, deposit_bill_id
         })
     })
     .then(response => response.json())
     .then(data => {
-        if (!data.success) {
-            console.error("เพิ่มข้อมูลไม่สำเร็จ:", data.error || '');
-        }
+        if (!data.success) console.error("เพิ่มข้อมูลไม่สำเร็จ:", data.error || '');
     })
-    .catch(error => {
-        console.error("Error:", error);
-    });
+    .catch(error => console.error("Error:", error));
 }
 
 function openFileInNewTabbill(url, ponum, so_detail_id, so_id, billid) {

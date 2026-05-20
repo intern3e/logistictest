@@ -13,16 +13,178 @@ use Endroid\QrCode\Writer\PngWriter;
 use Endroid\QrCode\Encoding\Encoding;
 use Endroid\QrCode\ErrorCorrectionLevel;
 use Endroid\QrCode\RoundBlockSizeMode;
+use Illuminate\Support\Facades\DB;
 
 class PoDocumentController extends Controller
 {
+    private $specialCustomers = ['CUS-26039'];
+    private $tcusPerBillPage = 6;
+    private $depositPdfPath = null; 
+    private function isSpecialCustomer($customer_id): bool
+    {
+        $cleanCustomerId = trim($customer_id ?? '');
+        return in_array($cleanCustomerId, $this->specialCustomers);
+    }
+    private function getTemplatePath(): string
+    {
+        return storage_path("app/public/template/TCUS-26039.pdf");
+    }
+    private function saveOutputFiles($pdf, $billid): void
+    {
+        $output1 = storage_path("app/public/doc_document/{$billid}.pdf");
+        $pdf->Output('F', $output1);
+
+        $output2 = storage_path("app/public/bill_document/{$billid}.pdf");
+        if (!file_exists(dirname($output2))) {
+            mkdir(dirname($output2), 0777, true);
+        }
+        copy($output1, $output2);
+    }
+    private function getDepositText($deposit_bill_id)
+    {
+        if (empty($deposit_bill_id)) {
+            return null;
+        }
+
+        $deposit = DB::table('deposit')
+            ->where('deposit_bill_id', $deposit_bill_id)
+            ->first();
+
+        if (!$deposit) {
+            Log::warning("ไม่พบข้อมูล deposit: " . $deposit_bill_id);
+            return null;
+        }
+
+        $depTypeText = '';
+        if ($deposit->dep_type === 'product') {
+            $depTypeText = 'สินค้า';
+        } elseif ($deposit->dep_type === 'service') {
+            $depTypeText = 'บริการ';
+        } else {
+            $depTypeText = $deposit->dep_type ?? '';
+        }
+
+        $depPriceFormatted = number_format((float)$deposit->dep_price, 2);
+
+        return "หักค่ามัดจำ{$depTypeText} {$deposit->dep_per}% อ้างอิงใบกำกับภาษีเลขที่ {$deposit_bill_id} จากยอดมูลค่ายอดก่อน VAT – {$depPriceFormatted}";
+    }
+    private function createDepositPdf(string $depositText): ?string
+    {
+        if ($this->depositPdfPath !== null && file_exists($this->depositPdfPath)) {
+            return $this->depositPdfPath;
+        }
+
+        try {
+            // โหลดฟอนต์เป็น base64 เหมือนใน printNotes
+            $fontNormal = base64_encode(file_get_contents(storage_path('fonts/THSarabun.ttf')));
+            $fontBold = base64_encode(file_get_contents(storage_path('fonts/THSarabun Bold.ttf')));
+
+            $textEscaped = htmlspecialchars($depositText, ENT_QUOTES, 'UTF-8');
+
+            // HTML สำหรับ deposit text - ใช้ A4 ขนาดเท่าบิล
+            $html = '
+            <html>
+            <head>
+                <meta charset="utf-8">
+                <style>
+                    @page { margin: 0; size: A4; }
+
+                    @font-face {
+                        font-family: "THSarabun";
+                        src: url(data:font/truetype;charset=utf-8;base64,' . $fontNormal . ') format("truetype");
+                        font-weight: normal;
+                    }
+                    @font-face {
+                        font-family: "THSarabun";
+                        src: url(data:font/truetype;charset=utf-8;base64,' . $fontBold . ') format("truetype");
+                        font-weight: bold;
+                    }
+
+                    body {
+                        font-family: "THSarabun", sans-serif;
+                        margin: 0;
+                        padding: 0;
+                    }
+
+                    .deposit-text {
+                        position: absolute;
+                        top: 196mm;
+                        left: 23mm;
+                        right: 10mm;
+                        font-size: 13pt;
+                        font-weight: bold;
+                        color: rgb(0, 0, 0);
+                    }
+                </style>
+            </head>
+            <body>
+                <div class="deposit-text">' . $textEscaped . '</div>
+            </body>
+            </html>';
+
+            // ใช้ dompdf เหมือน printNotes
+            $pdf = PDF::loadHTML($html)->setPaper('A4', 'portrait');
+
+            // บันทึกเป็นไฟล์ชั่วคราว
+            $tempPath = storage_path('app/public/temp/deposit_' . uniqid() . '.pdf');
+            if (!file_exists(dirname($tempPath))) {
+                mkdir(dirname($tempPath), 0777, true);
+            }
+
+            file_put_contents($tempPath, $pdf->output());
+
+            $this->depositPdfPath = $tempPath;
+            Log::info("✅ สร้าง deposit PDF: " . $tempPath);
+
+            return $tempPath;
+
+        } catch (\Exception $e) {
+            Log::error("❌ สร้าง deposit PDF ไม่สำเร็จ: " . $e->getMessage());
+            return null;
+        }
+    }
+    private function cleanupDepositPdf(): void
+    {
+        if ($this->depositPdfPath && file_exists($this->depositPdfPath)) {
+            @unlink($this->depositPdfPath);
+            $this->depositPdfPath = null;
+        }
+    }
+    private function stampCommonInfo($pdf, $so_detail_id, $so_id, $stampImage): void
+    {
+        $pdf->SetFont('Helvetica', 'I', 8);
+        $pdf->SetTextColor(0, 0, 0);
+        $pdf->SetXY(155, 12);
+        $pdf->Cell(50, 10, "{$so_detail_id}", 0, 0, 'R');
+
+        $pdf->SetXY(155, 15);
+        $pdf->Cell(50, 10, "{$so_id}", 0, 0, 'R');
+
+        if (file_exists($stampImage)) {
+            $pdf->Image($stampImage, 170, 257, 22, 0, 'PNG');
+        }
+    }
+    private function overlayDepositPdf($pdf, $depositPdfPath, $pageWidth, $pageHeight): void
+    {
+        if (!$depositPdfPath || !file_exists($depositPdfPath)) {
+            return;
+        }
+
+        try {
+            // เก็บ source file ปัจจุบันไว้ก่อน (เพราะ setSourceFile จะ override)
+            $pdf->setSourceFile($depositPdfPath);
+            $depositTemplateId = $pdf->importPage(1);
+            $pdf->useTemplate($depositTemplateId, 0, 0, $pageWidth, $pageHeight);
+        } catch (\Exception $e) {
+            Log::error("overlay deposit ไม่สำเร็จ: " . $e->getMessage());
+        }
+    }
     public function addSoDetailIdToPoDocument($so_detail_id, $POdocument): JsonResponse
     {
         try {
             ob_start();
 
             $filePath = storage_path("app/public/po_documents/{$POdocument}");
-            Log::info("กำลังเปิดไฟล์ PDF: " . $filePath);
 
             if (!file_exists($filePath)) {
                 ob_end_clean();
@@ -31,13 +193,12 @@ class PoDocumentController extends Controller
 
             $pdf = new Fpdi();
             $pageCount = $pdf->setSourceFile($filePath);
-            Log::info("จำนวนหน้าที่เจอ: {$pageCount}");
 
             if ($pageCount === 0) {
                 ob_end_clean();
                 return response()->json(['success' => false, 'error' => 'ไม่สามารถโหลดไฟล์ PDF']);
             }
-    
+
             for ($pageNo = 1; $pageNo <= $pageCount; $pageNo++) {
                 $templateId = $pdf->importPage($pageNo);
                 $size = $pdf->getTemplateSize($templateId);
@@ -47,18 +208,14 @@ class PoDocumentController extends Controller
                 $pdf->useTemplate($templateId);
 
                 $pdf->SetFont('Helvetica', 'I', 8);
-                $pdf->SetTextColor(130,130, 130);
-
-                $x = 175;
-                $y = 4;
-                $pdf->Text($x, $y, "{$so_detail_id}");
+                $pdf->SetTextColor(130, 130, 130);
+                $pdf->Text(175, 4, "{$so_detail_id}");
             }
 
             $outputPath = storage_path("app/public/po_documents/{$POdocument}");
             $pdf->Output('F', $outputPath);
 
             ob_end_clean();
-            Log::info("เขียน PDF สำเร็จ: " . $outputPath);
 
             return response()->json([
                 'success' => true,
@@ -67,14 +224,13 @@ class PoDocumentController extends Controller
             ]);
         } catch (\Exception $e) {
             ob_end_clean();
-            Log::error("เกิดข้อผิดพลาด: " . $e->getMessage());
+            Log::error("Error in addSoDetailIdToPoDocument: " . $e->getMessage());
             return response()->json([
                 'success' => false,
                 'error' => 'ระบบพบข้อผิดพลาด: ' . $e->getMessage()
             ]);
         }
     }
-
     public function addIdToDocument(Request $request): JsonResponse
     {
         try {
@@ -83,97 +239,112 @@ class PoDocumentController extends Controller
             $so_detail_id = $request->input('so_detail_id');
             $billid = $request->input('billid');
             $so_id = $request->input('so_id');
+            $customer_id = $request->input('customer_id');
+            $deposit_bill_id = $request->input('deposit_bill_id');
+
+            Log::info("addIdToDocument - Customer: [{$customer_id}] | Deposit: [{$deposit_bill_id}]");
 
             if (!$so_detail_id || !$billid || !$so_id) {
                 ob_end_clean();
-                return response()->json([
-                    'success' => false,
-                    'error' => 'ข้อมูลไม่ครบถ้วน'
-                ]);
+                return response()->json(['success' => false, 'error' => 'ข้อมูลไม่ครบถ้วน']);
             }
 
             $filePath = storage_path("app/public/doc_document/{$billid}.pdf");
-
             if (!file_exists($filePath)) {
                 ob_end_clean();
                 return response()->json(['success' => true]);
             }
 
-            $pdf = new Fpdi();
-            $pageCount = $pdf->setSourceFile($filePath);
+            $stampImage = storage_path("app/public/template/ly.png");
+            $isSpecialCustomer = $this->isSpecialCustomer($customer_id);
+            $templatePdfPath = $this->getTemplatePath();
+            $useTemplate = $isSpecialCustomer && file_exists($templatePdfPath);
 
-            if ($pageCount === 0) {
+            $depositText = $this->getDepositText($deposit_bill_id);
+            $hasDeposit = !empty($depositText);
+            $depositPdfPath = $hasDeposit ? $this->createDepositPdf($depositText) : null;
+
+            $pdf = new Fpdi();
+            $billPageCount = $pdf->setSourceFile($filePath);
+
+            if ($billPageCount === 0) {
                 ob_end_clean();
-                return response()->json([
-                    'success' => false,
-                    'error'   => 'ไม่สามารถโหลดไฟล์ PDF'
-                ]);
+                $this->cleanupDepositPdf();
+                return response()->json(['success' => false, 'error' => 'ไม่สามารถโหลดไฟล์ PDF']);
             }
 
-            $stampImage = storage_path("app/public/template/ly.png");
+            if ($useTemplate) {
+                for ($billPageNo = 1; $billPageNo <= $billPageCount; $billPageNo++) {
+                    for ($tcusOffset = 1; $tcusOffset <= $this->tcusPerBillPage; $tcusOffset++) {
+                        $tcusPageNo = (($billPageNo - 1) * $this->tcusPerBillPage) + $tcusOffset;
 
-            for ($pageNo = 1; $pageNo <= $pageCount; $pageNo++) {
+                        $pdf->setSourceFile($filePath);
+                        $templateBillId = $pdf->importPage($billPageNo);
+                        $sizeBill = $pdf->getTemplateSize($templateBillId);
 
-                $templateId = $pdf->importPage($pageNo);
-                $size = $pdf->getTemplateSize($templateId);
+                        $pageWidth = $sizeBill['width'];
+                        $pageHeight = $sizeBill['height'];
 
-                $pdf->addPage(
-                    $size['orientation'],
-                    [$size['width'], $size['height']]
-                );
+                        $pdf->addPage($sizeBill['orientation'], [$pageWidth, $pageHeight]);
 
-                $pdf->useTemplate($templateId);
+                        // Layer 1: TCUS
+                        $pdf->setSourceFile($templatePdfPath);
+                        $templateSpecialId = $pdf->importPage($tcusPageNo);
+                        $pdf->useTemplate($templateSpecialId, 0, 0, $pageWidth, $pageHeight);
 
-                $pdf->SetFont('Helvetica', 'I', 8);
-                $pdf->SetTextColor(0, 0, 0);
-                $pdf->SetXY(155, 12);
-                $pdf->Cell(50, 10, "{$so_detail_id}", 0, 0, 'R');
+                        // Layer 2: บิลเดิม
+                        $pdf->setSourceFile($filePath);
+                        $templateBillId = $pdf->importPage($billPageNo);
+                        $pdf->useTemplate($templateBillId, 0, 0, $pageWidth, $pageHeight);
 
-                $pdf->SetFont('Helvetica', 'I', 8);
-                $pdf->SetTextColor(0, 0, 0);
-                $pdf->SetXY(155, 15);
-                $pdf->Cell(50, 10, "{$so_id}", 0, 0, 'R');
+                        // Layer 3: ปั้มข้อมูลทั่วไป (ทุกหน้า)
+                        $this->stampCommonInfo($pdf, $so_detail_id, $so_id, $stampImage);
 
-                if (file_exists($stampImage)) {
-                    $pdf->Image($stampImage, 170, 257, 22, 0, 'PNG');
+                        // ✨ Layer 4: ซ้อน deposit เฉพาะหน้าสุดท้ายของบิลเดิม + tcusOffset สุดท้าย
+                        $isLastPage = ($billPageNo == $billPageCount && $tcusOffset == $this->tcusPerBillPage);
+                        if ($hasDeposit && $depositPdfPath && $isLastPage) {
+                            $this->overlayDepositPdf($pdf, $depositPdfPath, $pageWidth, $pageHeight);
+                        }
+                    }
+                }
+            } else {
+                for ($pageNo = 1; $pageNo <= $billPageCount; $pageNo++) {
+                    $pdf->setSourceFile($filePath);
+                    $templateBillId = $pdf->importPage($pageNo);
+                    $sizeBill = $pdf->getTemplateSize($templateBillId);
+
+                    $pdf->addPage($sizeBill['orientation'], [$sizeBill['width'], $sizeBill['height']]);
+                    $pdf->useTemplate($templateBillId);
+
+                    // ปั้มข้อมูลทั่วไป (ทุกหน้า)
+                    $this->stampCommonInfo($pdf, $so_detail_id, $so_id, $stampImage);
+
+                    // ✨ ซ้อน deposit เฉพาะหน้าสุดท้าย
+                    $isLastPage = ($pageNo == $billPageCount);
+                    if ($hasDeposit && $depositPdfPath && $isLastPage) {
+                        $this->overlayDepositPdf($pdf, $depositPdfPath, $sizeBill['width'], $sizeBill['height']);
+                    }
                 }
             }
 
-            $output1 = storage_path("app/public/doc_document/{$billid}.pdf");
-            $pdf->Output('F', $output1);
-
-            $output2 = storage_path("app/public/bill_document/{$billid}.pdf");
-
-            if (!file_exists(dirname($output2))) {
-                mkdir(dirname($output2), 0777, true);
-            }
-
-            copy($output1, $output2);
-
+            $this->saveOutputFiles($pdf, $billid);
+            $this->cleanupDepositPdf();
             ob_end_clean();
 
             return response()->json([
-                'success'       => true,
-                'message'       => 'เพิ่มเลขที่บิล + รูปปั้ม ลงในเอกสารสำเร็จ (ทั้ง 2 โฟลเดอร์)',
-                'so_detail_id'  => $so_detail_id,
-                'so_id'         => $so_id
+                'success' => true,
+                'message' => 'เพิ่มเลขที่บิล + รูปปั้ม ลงในเอกสารสำเร็จ',
+                'has_deposit' => $hasDeposit,
+                'bill_pages' => $billPageCount,
             ]);
 
         } catch (\Exception $e) {
             ob_end_clean();
-
-            Log::error('Error in addIdToDocument', [
-                'message' => $e->getMessage(),
-                'trace' => $e->getTraceAsString()
-            ]);
-
-            return response()->json([
-                'success' => false,
-                'error'   => 'ระบบพบข้อผิดพลาด: ' . $e->getMessage()
-            ]);
+            $this->cleanupDepositPdf();
+            Log::error('Error in addIdToDocument', ['message' => $e->getMessage()]);
+            return response()->json(['success' => false, 'error' => $e->getMessage()]);
         }
     }
-
     public function addIdToDocument3(Request $request): JsonResponse
     {
         try {
@@ -182,99 +353,122 @@ class PoDocumentController extends Controller
             $so_detail_id = $request->input('so_detail_id');
             $billid = $request->input('billid');
             $so_id = $request->input('so_id');
+            $customer_id = $request->input('customer_id');
+            $deposit_bill_id = $request->input('deposit_bill_id');
+
+            Log::info("addIdToDocument3 - Customer: [{$customer_id}] | Deposit: [{$deposit_bill_id}]");
 
             if (!$so_detail_id || !$billid || !$so_id) {
                 ob_end_clean();
-                return response()->json([
-                    'success' => false,
-                    'error' => 'ข้อมูลไม่ครบถ้วน'
-                ]);
+                return response()->json(['success' => false, 'error' => 'ข้อมูลไม่ครบถ้วน']);
             }
 
             $filePath = storage_path("app/public/doc_document/{$billid}.pdf");
-
             if (!file_exists($filePath)) {
                 ob_end_clean();
                 return response()->json(['success' => true]);
             }
 
-            $pdf = new Fpdi();
-            $pageCount = $pdf->setSourceFile($filePath);
-
-            if ($pageCount === 0) {
-                ob_end_clean();
-                return response()->json([
-                    'success' => false,
-                    'error'   => 'ไม่สามารถโหลดไฟล์ PDF'
-                ]);
-            }
-
             $stampImage1 = storage_path("app/public/template/ly.png");
             $stampImage2 = storage_path("app/public/template/3.png");
 
-            for ($pageNo = 1; $pageNo <= $pageCount; $pageNo++) {
+            $isSpecialCustomer = $this->isSpecialCustomer($customer_id);
+            $templatePdfPath = $this->getTemplatePath();
+            $useTemplate = $isSpecialCustomer && file_exists($templatePdfPath);
 
-                $templateId = $pdf->importPage($pageNo);
-                $size = $pdf->getTemplateSize($templateId);
+            $depositText = $this->getDepositText($deposit_bill_id);
+            $hasDeposit = !empty($depositText);
+            $depositPdfPath = $hasDeposit ? $this->createDepositPdf($depositText) : null;
 
-                $pdf->addPage(
-                    $size['orientation'],
-                    [$size['width'], $size['height']]
-                );
+            $pdf = new Fpdi();
+            $billPageCount = $pdf->setSourceFile($filePath);
 
-                $pdf->useTemplate($templateId);
+            if ($billPageCount === 0) {
+                ob_end_clean();
+                $this->cleanupDepositPdf();
+                return response()->json(['success' => false, 'error' => 'ไม่สามารถโหลดไฟล์ PDF']);
+            }
 
-                $pdf->SetFont('Helvetica', 'I', 8);
-                $pdf->SetTextColor(0, 0, 0);
-                $pdf->SetXY(155, 12);
-                $pdf->Cell(50, 10, "{$so_detail_id}", 0, 0, 'R');
+            if ($useTemplate) {
+                for ($billPageNo = 1; $billPageNo <= $billPageCount; $billPageNo++) {
+                    for ($tcusOffset = 1; $tcusOffset <= $this->tcusPerBillPage; $tcusOffset++) {
+                        $tcusPageNo = (($billPageNo - 1) * $this->tcusPerBillPage) + $tcusOffset;
 
-                $pdf->SetFont('Helvetica', 'I', 8);
-                $pdf->SetTextColor(0, 0, 0);
-                $pdf->SetXY(155, 15);
-                $pdf->Cell(50, 10, "{$so_id}", 0, 0, 'R');
+                        $pdf->setSourceFile($filePath);
+                        $templateBillId = $pdf->importPage($billPageNo);
+                        $sizeBill = $pdf->getTemplateSize($templateBillId);
 
-                if (file_exists($stampImage1)) {
-                    $pdf->Image($stampImage1, 170, 257, 22, 0, 'PNG');
+                        $pageWidth = $sizeBill['width'];
+                        $pageHeight = $sizeBill['height'];
+
+                        $pdf->addPage($sizeBill['orientation'], [$pageWidth, $pageHeight]);
+
+                        // Layer 1: TCUS
+                        $pdf->setSourceFile($templatePdfPath);
+                        $templateSpecialId = $pdf->importPage($tcusPageNo);
+                        $pdf->useTemplate($templateSpecialId, 0, 0, $pageWidth, $pageHeight);
+
+                        // Layer 2: บิลเดิม
+                        $pdf->setSourceFile($filePath);
+                        $templateBillId = $pdf->importPage($billPageNo);
+                        $pdf->useTemplate($templateBillId, 0, 0, $pageWidth, $pageHeight);
+
+                        // Layer 3: ปั้มข้อมูลทั่วไป (ทุกหน้า)
+                        $this->stampCommonInfo($pdf, $so_detail_id, $so_id, $stampImage1);
+
+                        // Layer 4: รูป 3.png (ทุกหน้า)
+                        if (file_exists($stampImage2)) {
+                            $pdf->Image($stampImage2, 10, 194, 40, 0, 'PNG');
+                        }
+
+                        // ✨ Layer 5: ซ้อน deposit เฉพาะหน้าสุดท้าย
+                        $isLastPage = ($billPageNo == $billPageCount && $tcusOffset == $this->tcusPerBillPage);
+                        if ($hasDeposit && $depositPdfPath && $isLastPage) {
+                            $this->overlayDepositPdf($pdf, $depositPdfPath, $pageWidth, $pageHeight);
+                        }
+                    }
                 }
+            } else {
+                for ($pageNo = 1; $pageNo <= $billPageCount; $pageNo++) {
+                    $pdf->setSourceFile($filePath);
+                    $templateId = $pdf->importPage($pageNo);
+                    $size = $pdf->getTemplateSize($templateId);
 
-                if (file_exists($stampImage2)) {
-                    $pdf->Image($stampImage2, 10, 194, 40, 0, 'PNG');
+                    $pdf->addPage($size['orientation'], [$size['width'], $size['height']]);
+                    $pdf->useTemplate($templateId);
+
+                    // ปั้มข้อมูลทั่วไป (ทุกหน้า)
+                    $this->stampCommonInfo($pdf, $so_detail_id, $so_id, $stampImage1);
+
+                    // รูป 3.png (ทุกหน้า)
+                    if (file_exists($stampImage2)) {
+                        $pdf->Image($stampImage2, 10, 194, 40, 0, 'PNG');
+                    }
+
+                    // ✨ ซ้อน deposit เฉพาะหน้าสุดท้าย
+                    $isLastPage = ($pageNo == $billPageCount);
+                    if ($hasDeposit && $depositPdfPath && $isLastPage) {
+                        $this->overlayDepositPdf($pdf, $depositPdfPath, $size['width'], $size['height']);
+                    }
                 }
             }
 
-            $output1 = storage_path("app/public/doc_document/{$billid}.pdf");
-            $pdf->Output('F', $output1);
-
-            $output2 = storage_path("app/public/bill_document/{$billid}.pdf");
-
-            if (!file_exists(dirname($output2))) {
-                mkdir(dirname($output2), 0777, true);
-            }
-
-            copy($output1, $output2);
-
+            $this->saveOutputFiles($pdf, $billid);
+            $this->cleanupDepositPdf();
             ob_end_clean();
 
             return response()->json([
-                'success'       => true,
-                'message'       => 'เพิ่มเลขที่บิล + รูปปั้ม 2 อัน ลงในเอกสารสำเร็จ (ทั้ง 2 โฟลเดอร์)',
-                'so_detail_id'  => $so_detail_id,
-                'so_id'         => $so_id
+                'success' => true,
+                'message' => 'เพิ่มเลขที่บิล + ปั้ม ลงในเอกสารสำเร็จ',
+                'has_deposit' => $hasDeposit,
+                'bill_pages' => $billPageCount,
             ]);
 
         } catch (\Exception $e) {
             ob_end_clean();
-
-            Log::error('Error in addIdToDocument3', [
-                'message' => $e->getMessage(),
-                'trace' => $e->getTraceAsString()
-            ]);
-
-            return response()->json([
-                'success' => false,
-                'error'   => 'ระบบพบข้อผิดพลาด: ' . $e->getMessage()
-            ]);
+            $this->cleanupDepositPdf();
+            Log::error('Error in addIdToDocument3', ['message' => $e->getMessage()]);
+            return response()->json(['success' => false, 'error' => $e->getMessage()]);
         }
     }
     public function addIdToDocument5(Request $request): JsonResponse
@@ -285,103 +479,124 @@ class PoDocumentController extends Controller
             $so_detail_id = $request->input('so_detail_id');
             $billid = $request->input('billid');
             $so_id = $request->input('so_id');
+            $customer_id = $request->input('customer_id');
+            $deposit_bill_id = $request->input('deposit_bill_id');
+
+            Log::info("addIdToDocument5 - Customer: [{$customer_id}] | Deposit: [{$deposit_bill_id}]");
 
             if (!$so_detail_id || !$billid || !$so_id) {
                 ob_end_clean();
-                return response()->json([
-                    'success' => false,
-                    'error' => 'ข้อมูลไม่ครบถ้วน'
-                ]);
+                return response()->json(['success' => false, 'error' => 'ข้อมูลไม่ครบถ้วน']);
             }
 
             $filePath = storage_path("app/public/doc_document/{$billid}.pdf");
-
             if (!file_exists($filePath)) {
                 ob_end_clean();
                 return response()->json(['success' => true]);
             }
 
-            $pdf = new Fpdi();
-            $pageCount = $pdf->setSourceFile($filePath);
-
-            if ($pageCount === 0) {
-                ob_end_clean();
-                return response()->json([
-                    'success' => false,
-                    'error'   => 'ไม่สามารถโหลดไฟล์ PDF'
-                ]);
-            }
-
             $stampImage1 = storage_path("app/public/template/ly.png");
             $stampImage3 = storage_path("app/public/template/5.png");
 
-            for ($pageNo = 1; $pageNo <= $pageCount; $pageNo++) {
+            $isSpecialCustomer = $this->isSpecialCustomer($customer_id);
+            $templatePdfPath = $this->getTemplatePath();
+            $useTemplate = $isSpecialCustomer && file_exists($templatePdfPath);
 
-                $templateId = $pdf->importPage($pageNo);
-                $size = $pdf->getTemplateSize($templateId);
+            $depositText = $this->getDepositText($deposit_bill_id);
+            $hasDeposit = !empty($depositText);
+            $depositPdfPath = $hasDeposit ? $this->createDepositPdf($depositText) : null;
 
-                $pdf->addPage(
-                    $size['orientation'],
-                    [$size['width'], $size['height']]
-                );
+            $pdf = new Fpdi();
+            $billPageCount = $pdf->setSourceFile($filePath);
 
-                $pdf->useTemplate($templateId);
+            if ($billPageCount === 0) {
+                ob_end_clean();
+                $this->cleanupDepositPdf();
+                return response()->json(['success' => false, 'error' => 'ไม่สามารถโหลดไฟล์ PDF']);
+            }
 
-                $pdf->SetFont('Helvetica', 'I', 8);
-                $pdf->SetTextColor(0, 0, 0);
-                $pdf->SetXY(155, 12);
-                $pdf->Cell(50, 10, "{$so_detail_id}", 0, 0, 'R');
+            if ($useTemplate) {
+                for ($billPageNo = 1; $billPageNo <= $billPageCount; $billPageNo++) {
+                    for ($tcusOffset = 1; $tcusOffset <= $this->tcusPerBillPage; $tcusOffset++) {
+                        $tcusPageNo = (($billPageNo - 1) * $this->tcusPerBillPage) + $tcusOffset;
 
-                $pdf->SetFont('Helvetica', 'I', 8);
-                $pdf->SetTextColor(0, 0, 0);
-                $pdf->SetXY(155, 15);
-                $pdf->Cell(50, 10, "{$so_id}", 0, 0, 'R');
+                        $pdf->setSourceFile($filePath);
+                        $templateBillId = $pdf->importPage($billPageNo);
+                        $sizeBill = $pdf->getTemplateSize($templateBillId);
 
-                if (file_exists($stampImage1)) {
-                    $pdf->Image($stampImage1, 170, 257, 22, 0, 'PNG');
+                        $pageWidth = $sizeBill['width'];
+                        $pageHeight = $sizeBill['height'];
+
+                        $pdf->addPage($sizeBill['orientation'], [$pageWidth, $pageHeight]);
+
+                        // Layer 1: TCUS
+                        $pdf->setSourceFile($templatePdfPath);
+                        $templateSpecialId = $pdf->importPage($tcusPageNo);
+                        $pdf->useTemplate($templateSpecialId, 0, 0, $pageWidth, $pageHeight);
+
+                        // Layer 2: บิลเดิม
+                        $pdf->setSourceFile($filePath);
+                        $templateBillId = $pdf->importPage($billPageNo);
+                        $pdf->useTemplate($templateBillId, 0, 0, $pageWidth, $pageHeight);
+
+                        // Layer 3: ปั้มข้อมูลทั่วไป (ทุกหน้า)
+                        $this->stampCommonInfo($pdf, $so_detail_id, $so_id, $stampImage1);
+
+                        // Layer 4: รูป 5.png (ทุกหน้า)
+                        if (file_exists($stampImage3)) {
+                            $pdf->Image($stampImage3, 10, 194, 40, 0, 'PNG');
+                        }
+
+                        // ✨ Layer 5: ซ้อน deposit เฉพาะหน้าสุดท้าย
+                        $isLastPage = ($billPageNo == $billPageCount && $tcusOffset == $this->tcusPerBillPage);
+                        if ($hasDeposit && $depositPdfPath && $isLastPage) {
+                            $this->overlayDepositPdf($pdf, $depositPdfPath, $pageWidth, $pageHeight);
+                        }
+                    }
                 }
+            } else {
+                for ($pageNo = 1; $pageNo <= $billPageCount; $pageNo++) {
+                    $pdf->setSourceFile($filePath);
+                    $templateId = $pdf->importPage($pageNo);
+                    $size = $pdf->getTemplateSize($templateId);
 
-                if (file_exists($stampImage3)) {
-                    $pdf->Image($stampImage3, 10, 194, 40, 0, 'PNG');
+                    $pdf->addPage($size['orientation'], [$size['width'], $size['height']]);
+                    $pdf->useTemplate($templateId);
+
+                    // ปั้มข้อมูลทั่วไป (ทุกหน้า)
+                    $this->stampCommonInfo($pdf, $so_detail_id, $so_id, $stampImage1);
+
+                    // รูป 5.png (ทุกหน้า)
+                    if (file_exists($stampImage3)) {
+                        $pdf->Image($stampImage3, 10, 194, 40, 0, 'PNG');
+                    }
+
+                    // ✨ ซ้อน deposit เฉพาะหน้าสุดท้าย
+                    $isLastPage = ($pageNo == $billPageCount);
+                    if ($hasDeposit && $depositPdfPath && $isLastPage) {
+                        $this->overlayDepositPdf($pdf, $depositPdfPath, $size['width'], $size['height']);
+                    }
                 }
             }
 
-            $output1 = storage_path("app/public/doc_document/{$billid}.pdf");
-            $pdf->Output('F', $output1);
-
-            $output2 = storage_path("app/public/bill_document/{$billid}.pdf");
-
-            if (!file_exists(dirname($output2))) {
-                mkdir(dirname($output2), 0777, true);
-            }
-
-            copy($output1, $output2);
-
+            $this->saveOutputFiles($pdf, $billid);
+            $this->cleanupDepositPdf();
             ob_end_clean();
 
             return response()->json([
-                'success'       => true,
-                'message'       => 'เพิ่มเลขที่บิล + รูปปั้ม 2 อัน ลงในเอกสารสำเร็จ (ทั้ง 2 โฟลเดอร์)',
-                'so_detail_id'  => $so_detail_id,
-                'so_id'         => $so_id
+                'success' => true,
+                'message' => 'เพิ่มเลขที่บิล + ปั้ม ลงในเอกสารสำเร็จ',
+                'has_deposit' => $hasDeposit,
+                'bill_pages' => $billPageCount,
             ]);
 
         } catch (\Exception $e) {
             ob_end_clean();
-
-            Log::error('Error in addIdToDocument3', [
-                'message' => $e->getMessage(),
-                'trace' => $e->getTraceAsString()
-            ]);
-
-            return response()->json([
-                'success' => false,
-                'error'   => 'ระบบพบข้อผิดพลาด: ' . $e->getMessage()
-            ]);
+            $this->cleanupDepositPdf();
+            Log::error('Error in addIdToDocument5', ['message' => $e->getMessage()]);
+            return response()->json(['success' => false, 'error' => $e->getMessage()]);
         }
     }
-
-
     public function addIdToissueDocument($so_detail_id, $bill_issue_no): JsonResponse
     {
         try {
@@ -458,7 +673,6 @@ class PoDocumentController extends Controller
             ]);
         }
     }
-
     public function mergeAndOverwrite(Request $request)
     {
         $billId = $request->input('billid');
@@ -495,7 +709,6 @@ class PoDocumentController extends Controller
             ], 500);
         }
     }
-
     private function mergePdfWithTemplate(string $templatePath, string $dataPdfPath): void
     {
         if (!file_exists($templatePath)) {
@@ -550,7 +763,6 @@ class PoDocumentController extends Controller
         }
         $pdf->Output($dataPdfPath, 'F');
     }
-
     public function printNotes($so_detail_id)
     {
         $item = Bill::findOrFail($so_detail_id);

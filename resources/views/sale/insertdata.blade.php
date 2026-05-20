@@ -445,6 +445,122 @@ table.table tbody tr:hover td{background:#f8fafc}
     .sale-chip{margin-left:0;width:100%;max-width:none;margin-top:4px}
     .btn-success{width:100%;min-width:0}
 }
+/* ===== Deposit Chip (in card head) ===== */
+.deposit-chip{
+    margin-left:auto;
+    display:flex;flex-direction:column;
+    gap:6px;
+    padding:8px 12px;
+    background:#fff;
+    border:1.5px solid var(--border);
+    border-radius:6px;
+    min-width:340px;max-width:480px;
+    transition:all var(--t-base);
+}
+.deposit-chip.has-data{
+    border-color:var(--primary);
+    background:var(--primary-light);
+}
+.deposit-chip-header{
+    display:flex;align-items:center;gap:6px;
+    font-size:11px;font-weight:700;color:var(--primary);
+    letter-spacing:.04em;text-transform:uppercase;
+}
+.deposit-chip-empty{
+    font-size:12px;color:var(--text-muted);
+    padding:2px 0;
+}
+.deposit-list{
+    display:flex;flex-direction:column;gap:5px;
+    max-height:140px;overflow-y:auto;
+}
+.deposit-item{
+    position:relative;
+    display:flex;align-items:center;gap:8px;
+    padding:7px 10px;
+    background:#fff;
+    border:1.5px solid var(--border);
+    border-radius:5px;
+    cursor:pointer;
+    transition:all var(--t-fast);
+    font-size:12px;
+}
+.deposit-item:hover{border-color:var(--primary-mid)}
+.deposit-item input[type="radio"]{
+    margin:0;flex-shrink:0;cursor:pointer;
+    accent-color:var(--primary);
+}
+.deposit-item.selected{
+    border-color:var(--primary);
+    background:#f0f9f3;
+    box-shadow:0 0 0 2px rgba(63,134,93,.12);
+}
+.deposit-item-info{
+    display:flex;flex-direction:column;gap:1px;
+    flex:1;min-width:0;
+}
+.deposit-item-id{
+    font-weight:700;color:var(--text);font-size:12px;
+    white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+}
+.deposit-item-meta{
+    display:flex;gap:8px;font-size:11px;color:var(--text-secondary);
+    flex-wrap:wrap;
+}
+.deposit-item-meta .amount{
+    font-weight:700;color:var(--primary);
+}
+@media (max-width:768px){
+    .deposit-chip{margin-left:0;width:100%;min-width:0;max-width:none;margin-top:8px}
+}
+/* ===== Deposit used state ===== */
+.deposit-item.is-used{
+    background:#f8fafc;
+    border-color:var(--border-light);
+    cursor:not-allowed;
+    opacity:.7;
+}
+.deposit-item.is-used:hover{
+    border-color:var(--border-light);
+}
+.deposit-item.is-used input[type="radio"]{
+    cursor:not-allowed;
+}
+.deposit-item.is-used .deposit-item-id{
+    color:var(--text-muted);
+    text-decoration:line-through;
+    text-decoration-color:rgba(148,163,184,.6);
+}
+/* ===== Deposit pending state (รออนุมัติ) ===== */
+.deposit-item.is-pending{
+    background:#fffbeb;
+    border-color:#fde68a;
+    cursor:not-allowed;
+    opacity:.85;
+}
+.deposit-item.is-pending:hover{
+    border-color:#fde68a;
+}
+.deposit-item.is-pending input[type="radio"]{
+    cursor:not-allowed;
+}
+.deposit-item.is-pending .deposit-item-id{
+    color:var(--text-secondary);
+}
+.dep-pending-badge{
+    display:inline-block;
+    margin-left:6px;
+    padding:1px 7px;
+    background:#fef3c7;
+    color:#b45309;
+    border:1px solid #fde68a;
+    border-radius:4px;
+    font-size:10px;
+    font-weight:700;
+    letter-spacing:.02em;
+    vertical-align:middle;
+    white-space:nowrap;
+}
 </style>
 </head>
 
@@ -532,6 +648,7 @@ table.table tbody tr:hover td{background:#f8fafc}
                 </div>
 
                 <input type="hidden" id="sale_name" name="sale_name">
+                <input type="hidden" id="deposit_bill_id" name="deposit_bill_id" value="">
             </div>
         </div>
 
@@ -601,21 +718,33 @@ table.table tbody tr:hover td{background:#f8fafc}
             </div>
         </div>
 
-        <!-- ====================== Card 3: ประเภท + เอกสาร PO + พรีวิว ====================== -->
-        <div class="card">
-            <div class="card-head">
-                <div class="card-icon ci-amber">
-                    <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
-                        <path d="M5 2h6l3 3v10a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V3a1 1 0 0 1 1-1z" stroke="#b45309" stroke-width="1.5" stroke-linejoin="round"/>
-                        <path d="M11 2v3h3" stroke="#b45309" stroke-width="1.5" stroke-linejoin="round"/>
-                        <path d="M7 9h4M7 12h3" stroke="#b45309" stroke-width="1.5" stroke-linecap="round"/>
+        <div class="card-head">
+            <div class="card-icon ci-amber">
+                <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
+                    <path d="M5 2h6l3 3v10a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V3a1 1 0 0 1 1-1z" stroke="#b45309" stroke-width="1.5" stroke-linejoin="round"/>
+                    <path d="M11 2v3h3" stroke="#b45309" stroke-width="1.5" stroke-linejoin="round"/>
+                    <path d="M7 9h4M7 12h3" stroke="#b45309" stroke-width="1.5" stroke-linecap="round"/>
+                </svg>
+            </div>
+            <div class="card-head-text">
+                <h3>ประเภทงาน &amp; เอกสาร PO</h3>
+                <p>เลือกประเภท แบบฟอร์ม และแนบไฟล์ PO เพื่อพรีวิว</p>
+            </div>
+
+            <!-- 👇 กรอบเงินมัดจำ -->
+            <div class="deposit-chip" id="depositChip">
+                <div class="deposit-chip-header">
+                    <svg width="12" height="12" viewBox="0 0 14 14" fill="none">
+                        <rect x="2" y="3" width="10" height="8" rx="1.5" stroke="currentColor" stroke-width="1.4"/>
+                        <circle cx="7" cy="7" r="1.6" stroke="currentColor" stroke-width="1.4"/>
                     </svg>
+                    <span>เงินมัดจำ</span>
                 </div>
-                <div class="card-head-text">
-                    <h3>ประเภทงาน &amp; เอกสาร PO</h3>
-                    <p>เลือกประเภท แบบฟอร์ม และแนบไฟล์ PO เพื่อพรีวิว</p>
+                <div id="depositContent">
+                    <div class="deposit-chip-empty">— ไม่มีข้อมูลเงินมัดจำ —</div>
                 </div>
             </div>
+        </div>
             <div class="card-body">
                 <div class="form-grid-2" style="row-gap:16px">
                     <div class="field span-full" id="field-typeinbill">
@@ -781,14 +910,12 @@ billidInput.addEventListener('input', checkBillid);
 async function safeJson(response, label){
     const text = await response.text();
     if(!response.ok){
-        console.error(`[${label}] HTTP ${response.status}:`, text.substring(0,800));
         const m = text.match(/<title>([^<]+)<\/title>/i);
         throw new Error(`${label} → ${response.status}` + (m?`: ${m[1]}`:''));
     }
     try{
         return JSON.parse(text);
     }catch(e){
-        console.error(`[${label}] Server ตอบไม่ใช่ JSON:`, text.substring(0,500));
         throw new Error(`${label} → response ไม่ใช่ JSON`);
     }
 }
@@ -798,7 +925,6 @@ function fetchFormType(){
     const customer_id = (document.getElementById("customer_id").value || '').trim();
     const formtypeSelect = document.getElementById("formtype");
     if(!customer_id){
-        console.log('[fetchFormType] skipped: customer_id is empty');
         formtypeSelect.value = 'ไม่มีข้อมูล';
         document.getElementById("customer_la_long").value = '';
         document.getElementById("notes").value = '';
@@ -832,7 +958,7 @@ function fetchFormType(){
         refreshSubmitState();
     })
     .catch(err=>{
-        console.error('fetchFormType error:', err);
+
         formtypeSelect.value = 'ไม่มีข้อมูล';
         refreshSubmitState();
     });
@@ -841,7 +967,6 @@ function fetchContactSo(){
     const customer_id = (document.getElementById("customer_id").value || '').trim();
     const contactInput = document.getElementById("contactso");
     if(!customer_id){
-        console.log('[fetchContactSo] skipped: customer_id is empty');
         contactInput.value = '';
         return;
     }
@@ -861,9 +986,136 @@ function fetchContactSo(){
         contactInput.value = d.contactso || '';
         refreshSubmitState();
     })
-    .catch(err => { console.error('fetchContactSo error:', err); });
-}
 
+}
+/* ====================== Deposit fetch ====================== */
+function fetchDeposit(){
+    const so_id = (document.getElementById('so_id').value || '').trim();
+    const chip = document.getElementById('depositChip');
+    const content = document.getElementById('depositContent');
+    const hidden = document.getElementById('deposit_bill_id');
+
+    // reset
+    hidden.value = '';
+    chip.classList.remove('has-data');
+
+    if(!so_id){
+        content.innerHTML = '<div class="deposit-chip-empty">— ไม่มีข้อมูลเงินมัดจำ —</div>';
+        return;
+    }
+
+    fetch('/fetch-deposit', {
+        method:'POST',
+        credentials:'same-origin',
+        headers:{
+            'Content-Type':'application/json',
+            'Accept':'application/json',
+            'X-Requested-With':'XMLHttpRequest',
+            'X-CSRF-TOKEN':document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+        },
+        body:JSON.stringify({ so_id })
+    })
+    .then(r => safeJson(r, 'fetch-deposit'))
+    .then(data => {
+        const list = data.deposits || [];
+        if(list.length === 0){
+            content.innerHTML = '<div class="deposit-chip-empty">— ไม่มีข้อมูลเงินมัดจำ —</div>';
+            return;
+        }
+
+        chip.classList.add('has-data');
+
+        const fmt = n => {
+            const num = parseFloat(n);
+            if(isNaN(num)) return '-';
+            return num.toLocaleString('th-TH', {minimumFractionDigits:2, maximumFractionDigits:2});
+        };
+        const fmtDate = d => {
+            if(!d) return '';
+            const dt = String(d).split(' ')[0].split('-');
+            if(dt.length === 3) return `${dt[2]}/${dt[1]}/${dt[0].substring(2)}`;
+            return d;
+        };
+
+        // 🔸 แปลง dep_type → ข้อความไทย
+        const depTypeLabel = (t) => {
+            const v = String(t || '').toLowerCase().trim();
+            if(v === 'product' || v === 'สินค้า' || v === 'มัดจำสินค้า') return 'มัดจำสินค้า';
+            if(v === 'service' || v === 'บริการ' || v === 'มัดจำค่าบริการ') return 'มัดจำค่าบริการ';
+            return t || '-';
+        };
+
+        let html = '<div class="deposit-list">';
+        list.forEach((dep) => {
+            const depId = dep.deposit_bill_id || '';
+            const safeDepId = depId.replace(/"/g,'&quot;');
+            const used = !!dep.is_used;
+            const approved = !!dep.is_approved;
+            const usedIn = dep.used_in || '';
+            const typeText = depTypeLabel(dep.dep_type);
+
+            // 🔸 กำหนดสถานะการเลือก: ต้อง approved=ok และ used=false
+            const disabled = (!approved) || used;
+
+            // 🔸 สร้าง badge ตามสถานะ (ใช้แล้ว มาก่อน รออนุมัติ)
+            let statusBadge = '';
+            let stateClass = '';
+            if (used) {
+                statusBadge = `<span class="dep-used-badge" title="ใช้แล้วกับ ${usedIn}">ใช้แล้วกับ ${usedIn}</span>`;
+                stateClass = 'is-used';
+            } else if (!approved) {
+                statusBadge = `<span class="dep-pending-badge">รออนุมัติ</span>`;
+                stateClass = 'is-pending';
+            }
+
+            html += `
+                <label class="deposit-item ${stateClass}" data-id="${safeDepId}">
+                    <input type="radio" name="deposit_select" value="${safeDepId}" ${disabled ? 'disabled' : ''}>
+                    <div class="deposit-item-info">
+                        <div class="deposit-item-id">
+                            ${depId || '(ไม่มีเลขที่)'}
+                            ${statusBadge}
+                        </div>
+                        <div class="deposit-item-meta">
+                            <span>${typeText}</span>
+                            <span class="amount">฿${fmt(dep.dep_price)}</span>
+                            <span>วันที่ ${fmtDate(dep.time)}</span>
+                        </div>
+                    </div>
+                </label>
+            `;
+        });
+        html += '</div>';
+        content.innerHTML = html;
+
+        // ผูก event ให้ radio (เฉพาะที่ไม่ disabled)
+        content.querySelectorAll('input[name="deposit_select"]:not([disabled])').forEach(radio => {
+            radio.addEventListener('change', function(){
+                content.querySelectorAll('.deposit-item').forEach(it => it.classList.remove('selected'));
+                if(this.checked){
+                    this.closest('.deposit-item').classList.add('selected');
+                    hidden.value = this.value;
+                } else {
+                    hidden.value = '';
+                }
+            });
+
+            radio.addEventListener('click', function(){
+                if(this.dataset.wasChecked === '1'){
+                    this.checked = false;
+                    this.dataset.wasChecked = '0';
+                    this.closest('.deposit-item').classList.remove('selected');
+                    hidden.value = '';
+                } else {
+                    content.querySelectorAll('input[name="deposit_select"]').forEach(r => r.dataset.wasChecked = '0');
+                    this.dataset.wasChecked = '1';
+                }
+            });
+        });
+    })
+    .catch(() => {
+    });
+}
 /* ====================== Map ====================== */
 function updateMap(){
     const coords = (document.getElementById('customer_la_long').value||'').trim();
@@ -957,6 +1209,7 @@ async function fetchSODetails(soNum){
         document.getElementById('customer_id').value   = SoStatus.CustID;
         fetchFormType();
         fetchContactSo();
+        fetchDeposit();
         document.getElementById('customer_name').value = soDetails.CustName;
         document.getElementById('customer_address').value = [
             soDetails.CustAddr1, soDetails.ContDistrict, soDetails.ContAmphur,
@@ -1007,7 +1260,7 @@ async function fetchSODetails(soNum){
         }
         updateMap();
         refreshSubmitState();
-    }catch(err){ console.error(err); }
+    }catch(err){ }
 }
 
 /* ====================== PO upload + convert to PDF ====================== */
@@ -1326,8 +1579,6 @@ document.getElementById('submitBill').addEventListener('click', async function(e
             resetBtn();
         }
     }catch(err){
-        console.error('❌ เกิดข้อผิดพลาด:', err);
-        alert('เกิดข้อผิดพลาด: ' + (err.message || 'ไม่ทราบสาเหตุ') + '\nกรุณาดู Console (F12) เพื่อดูรายละเอียด');
         resetBtn();
     }
 
