@@ -1,3 +1,4 @@
+{{-- resources/views/driver/oil.blade.php — Apple-style redesign --}}
 <!DOCTYPE html>
 <html lang="th">
 <head>
@@ -5,1242 +6,527 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta name="csrf-token" content="{{ csrf_token() }}">
 <title>ระบบติดตามน้ำมันรถ</title>
-<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Thai:wght@300;400;500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Thai:wght@300;400;500;600;700&family=Inter:wght@400;500;600;700&family=SF+Pro+Display:wght@400;500;600;700&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.2.0"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.1/jspdf.plugin.autotable.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+
 <style>
+/* ═══════════════════════════════════════════════════════════════
+   APPLE-STYLE DESIGN SYSTEM
+═══════════════════════════════════════════════════════════════ */
+*,*::before,*::after{box-sizing:border-box;-webkit-font-smoothing:antialiased;-moz-osx-font-smoothing:grayscale}
+html,body{margin:0;padding:0;overflow-x:hidden;max-width:100vw}
+
 :root{
-  --navy:#0f172a;
-  --navy-light:#1e293b;
-  --accent:#2563eb;
-  --accent-hover:#1d4ed8;
-  --green:#16a34a;
-  --green-light:#dcfce7;
-  --amber:#d97706;
-  --amber-light:#fef3c7;
-  --red:#dc2626;
-  --red-light:#fee2e2;
-  --purple:#7c3aed;
-  --bg:#f8fafc;
-  --surface:#fff;
-  --surface2:#f1f5f9;
-  --border:#e2e8f0;
-  --border-strong:#cbd5e1;
-  --text:#0f172a;
-  --text2:#475569;
-  --text3:#94a3b8;
-  --shadow:0 1px 3px rgba(15,23,42,.04), 0 1px 2px rgba(15,23,42,.06);
-  --shadow-md:0 4px 12px rgba(15,23,42,.06);
-  --radius:14px;
-  --radius-sm:10px;
-  --radius-xs:8px;
-}
-*{box-sizing:border-box;margin:0;padding:0}
-body{font-family:'IBM Plex Sans Thai','Inter',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;font-size:14px;-webkit-font-smoothing:antialiased}
-
-/* ═══════ APP LAYOUT — Sidebar (ซ้าย) + Content (ขวา) ═══════ */
-.app{display:flex;min-height:100vh}
-
-/* ═══════ SIDEBAR ซ้าย ═══════ */
-.sidebar{
-  width:260px;
-  flex-shrink:0;
-  background:var(--surface);
-  border-right:1px solid var(--border);
-  display:flex;
-  flex-direction:column;
-  position:sticky;
-  top:0;
-  height:100vh;
-  overflow-y:auto;
-  z-index:200;
-}
-.sidebar-brand{
-  padding:20px 22px 18px;
-  border-bottom:1px solid var(--border);
-}
-.sidebar-brand .title{
-  font-size:15px;
-  font-weight:700;
-  color:var(--text);
-  letter-spacing:-.01em;
-  display:flex;
-  align-items:center;
-  gap:8px;
-}
-.sidebar-brand .title .logo{
-  width:30px;
-  height:30px;
-  border-radius:8px;
-  background:linear-gradient(135deg,var(--accent) 0%,#3b82f6 100%);
-  display:flex;
-  align-items:center;
-  justify-content:center;
-  color:#fff;
-  font-size:15px;
-  flex-shrink:0;
-}
-.sidebar-brand .sub{
-  font-size:11px;
-  color:var(--text3);
-  margin-top:6px;
-  margin-left:38px;
+  --bg: #fafafa;
+  --bg-elevated: #ffffff;
+  --bg-card: #ffffff;
+  --bg-card-hover: #f9fafb;
+  --bg-subtle: #f4f4f5;
+  --bg-subtle2: #fafafa;
+  --separator: rgba(0,0,0,.06);
+  --separator-strong: rgba(0,0,0,.10);
+  --text: #18181b;
+  --text2: #3f3f46;
+  --text3: #71717a;
+  --text4: #a1a1aa;
+  --text5: #d4d4d8;
+  --blue: #3b82f6;
+  --blue-hover: #2563eb;
+  --blue-light: #dbeafe;
+  --green: #10b981;
+  --green-dark: #059669;
+  --green-light: #d1fae5;
+  --orange: #f59e0b;
+  --orange-light: #fef3c7;
+  --red: #ef4444;
+  --red-light: #fee2e2;
+  --yellow: #eab308;
+  --purple: #8b5cf6;
+  --pink: #ec4899;
+  --indigo: #6366f1;
+  --teal: #14b8a6;
+  --cyan: #06b6d4;
+  --radius-sm: 8px;
+  --radius: 12px;
+  --radius-lg: 18px;
+  --radius-xl: 22px;
+  --shadow-xs: 0 1px 2px rgba(0,0,0,.04);
+  --shadow-sm: 0 1px 3px rgba(0,0,0,.05), 0 1px 2px rgba(0,0,0,.04);
+  --shadow: 0 2px 8px rgba(0,0,0,.04), 0 1px 3px rgba(0,0,0,.03);
+  --shadow-lg: 0 10px 30px rgba(0,0,0,.07), 0 2px 6px rgba(0,0,0,.04);
+  --shadow-xl: 0 20px 50px rgba(0,0,0,.10), 0 4px 12px rgba(0,0,0,.05);
+  --font: 'SF Pro Display', 'Inter', 'IBM Plex Sans Thai', -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
+  --font-thai: 'IBM Plex Sans Thai', 'SF Pro Display', 'Inter', -apple-system, sans-serif;
+  --font-mono: ui-monospace, 'SF Mono', Menlo, monospace;
+  --ease: cubic-bezier(.4,0,.2,1);
+  --ease-out: cubic-bezier(0,0,.2,1);
 }
 
-.sidebar-section{
-  padding:14px 16px 8px;
+body{font-family: var(--font-thai);background: var(--bg);color: var(--text);min-height: 100vh;font-size: 14px;line-height: 1.5;letter-spacing: -0.01em;}
+
+.topnav{position: sticky; top: 0; z-index: 50;background: rgba(245,245,247,.78);backdrop-filter: saturate(180%) blur(20px);-webkit-backdrop-filter: saturate(180%) blur(20px);border-bottom: 0.5px solid var(--separator);}
+.topnav-main{display: flex; align-items: center; gap: 24px;padding: 0 28px; height: 52px;max-width: 1800px; margin: 0 auto;}
+.topnav-brand{display: flex; align-items: center; gap: 10px; flex-shrink: 0}
+.topnav-brand .logo{width: 28px; height: 28px;display: flex; align-items: center; justify-content: center;font-size: 16px;background: linear-gradient(135deg, #10b981 0%, #059669 100%);color: #fff;border-radius: 8px;box-shadow: 0 1px 3px rgba(16,185,129,.3);}
+.topnav-brand .title-text{font-size: 14px; font-weight: 600;letter-spacing: -0.02em;color: var(--text);}
+.topnav-menu{display: flex; align-items: center; gap: 2px; flex: 1}
+.topnav-menu .nav-item{display: inline-flex; align-items: center; gap: 6px;padding: 6px 12px; border-radius: 7px;background: transparent; border: none;color: var(--text2);font-family: inherit; font-size: 14px; font-weight: 500;cursor: pointer; text-decoration: none;white-space: nowrap;transition: all .15s var(--ease);}
+.topnav-menu .nav-item:hover{background: rgba(0,0,0,.04); color: var(--text)}
+.topnav-menu .nav-item.active{background: rgba(0,0,0,.06);color: var(--text); font-weight: 600;}
+.topnav-menu .nav-item .ic{display: inline-flex; align-items: center; justify-content: center;width: 18px; height: 18px;opacity: .85;flex-shrink: 0;}
+.topnav-menu .nav-item .ic svg{display: block}
+.topnav-menu .nav-item.active .ic{opacity: 1}
+.topnav-toggle svg{display: block}
+.topnav-right{display: flex; align-items: center; gap: 10px; flex-shrink: 0}
+.topnav-user{display: inline-flex; align-items: center; gap: 7px;padding: 4px 11px 4px 4px;background: rgba(0,0,0,.04);border: 0.5px solid var(--separator);border-radius: 100px;color: var(--text);font-size: 14px; font-weight: 600;letter-spacing: -0.01em;max-width: 180px;}
+.topnav-user-avatar{width: 22px; height: 22px;border-radius: 50%;background: linear-gradient(135deg, var(--blue), var(--blue-hover));color: #fff;display: inline-flex; align-items: center; justify-content: center;font-size: 14px; font-weight: 700;flex-shrink: 0;text-transform: uppercase;}
+.topnav-user-name{white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0;}
+.topnav-time{font-size: 14px; color: var(--text3);font-family: var(--font-mono); font-weight: 500;display: flex; align-items: center; gap: 5px;}
+.topnav-time .pulse{width: 6px; height: 6px; border-radius: 50%;background: var(--green);box-shadow: 0 0 0 0 rgba(16,185,129,.4);animation: pulse 2s infinite;}
+@keyframes pulse{0%{box-shadow:0 0 0 0 rgba(16,185,129,.4)}70%{box-shadow:0 0 0 7px rgba(16,185,129,0)}100%{box-shadow:0 0 0 0 rgba(16,185,129,0)}}
+.topnav-toggle{display: none; background: transparent;border: none; width: 32px; height: 32px;font-size: 17px; cursor: pointer; color: var(--text);border-radius: 7px;}
+.topnav-toggle:hover{background: rgba(0,0,0,.04)}
+.topnav-filters{display: flex; align-items: center; gap: 16px;padding: 0 28px; height: 44px;max-width: 1800px; margin: 0 auto;border-top: 0.5px solid var(--separator);overflow-x: auto;}
+.topnav-filters::-webkit-scrollbar{display: none}
+.topnav-filters{scrollbar-width: none}
+.filter-group{display: flex; align-items: center; gap: 8px; flex-shrink: 0}
+.filter-group-label{font-size: 14px; font-weight: 500;color: var(--text3);white-space: nowrap;}
+.segmented{display: inline-flex;background: rgba(120,120,128,.12);border-radius: 7px;padding: 2px;gap: 0;}
+.segmented .seg-btn{padding: 4px 12px; border-radius: 5px;background: transparent; border: none;color: var(--text2);font-family: inherit; font-size: 14px; font-weight: 500;cursor: pointer; white-space: nowrap;transition: all .15s var(--ease);position: relative;}
+.segmented .seg-btn:hover{color: var(--text)}
+.segmented .seg-btn.active{background: #fff;color: var(--text); font-weight: 600;box-shadow: 0 1px 3px rgba(0,0,0,.1), 0 1px 1px rgba(0,0,0,.05);}
+.pill-select,.pill-date{padding: 5px 12px;border: 0.5px solid var(--separator-strong);border-radius: 7px;font-family: inherit; font-size: 14px; font-weight: 500;background: #fff;color: var(--text);min-width: 130px;cursor: pointer;transition: all .15s var(--ease);outline: none;}
+.pill-select:hover,.pill-date:hover{border-color: rgba(0,0,0,.2)}
+.pill-select:focus,.pill-date:focus{border-color: var(--blue); box-shadow: 0 0 0 3px rgba(59,130,246,.2)}
+.date-trigger-pill{display: inline-flex; align-items: center; gap: 6px;padding: 5px 10px;border: 0.5px solid var(--separator-strong);border-radius: 7px;background: #fff; color: var(--text);font-family: inherit; font-size: 14px; font-weight: 500;cursor: pointer;min-width: 200px;transition: all .15s var(--ease);}
+.date-trigger-pill:hover{border-color: rgba(0,0,0,.2)}
+.date-trigger-pill.active{border-color: var(--blue); box-shadow: 0 0 0 3px rgba(59,130,246,.2)}
+.date-trigger-pill .arrow{margin-left: auto; font-size: 14px; color: var(--text4)}
+
+.hero{margin-bottom: 24px;}
+.hero-title{font-size: 28px; font-weight: 700;letter-spacing: -0.03em;color: var(--text);margin: 0 0 6px;}
+.hero-sub{font-size: 14px; font-weight: 400;color: var(--text3);margin: 0;}
+
+.entry-layout{display: grid;grid-template-columns: minmax(0, 70fr) minmax(0, 30fr);gap: 18px;margin-bottom: 24px;align-items: start;}
+.entry-card{background: var(--bg-card);border-radius: var(--radius-xl);box-shadow: var(--shadow);border: 1px solid rgba(0,0,0,.04);overflow: hidden;min-width: 0;}
+.entry-card-head{padding: 14px 20px;border-bottom: 1px solid var(--separator);background: linear-gradient(180deg, #fafbfc 0%, #ffffff 100%);}
+.entry-card-head-left{display: flex; align-items: center; gap: 14px;flex-wrap: wrap;}
+.entry-icon{width: 38px; height: 38px;display: flex; align-items: center; justify-content: center;background: linear-gradient(135deg, #10b981 0%, #059669 100%);color: #fff;border-radius: 10px;font-size: 19px;box-shadow: 0 2px 8px rgba(16,185,129,.35), inset 0 1px 0 rgba(255,255,255,.2);flex-shrink: 0;}
+.entry-titlewrap{display: flex; flex-direction: column; line-height: 1.25; flex-shrink: 0}
+.entry-title{font-size: 16px; font-weight: 600;color: var(--text); letter-spacing: -0.02em;}
+.entry-sub{font-size: 14px; font-weight: 400;color: var(--text3); margin-top: 2px;}
+.entry-head-right{display: flex; align-items: center; gap: 12px}
+.entry-date-field{display: flex; flex-direction: column; gap: 3px;}
+.entry-date-label{font-size: 14px; font-weight: 600;color: var(--text3);letter-spacing: -0.01em;text-transform: none;}
+.entry-date-input{padding: 7px 11px;border: 1px solid var(--separator-strong);border-radius: 9px;font-family: inherit;font-size: 14px; font-weight: 600;color: var(--text);background: #fff;transition: all .15s var(--ease);outline: none;}
+.entry-date-input:hover{border-color: rgba(0,0,0,.2)}
+.entry-date-input:focus{border-color: var(--blue); box-shadow: 0 0 0 3px rgba(59,130,246,.15)}
+.entry-oil-mini{display: inline-flex; align-items: center; gap: 8px;padding: 7px 12px;background: var(--green-light);border: 1px solid #d1fae5;border-radius: 100px;color: var(--green-dark);}
+.entry-oil-label{font-size: 14px; font-weight: 600}
+.entry-oil-num{font-family: var(--font-mono);font-size: 15px; font-weight: 700;color: var(--text);}
+.entry-oil-refresh{width: 22px; height: 22px;border-radius: 50%;background: rgba(255,255,255,.7);border: none;cursor: pointer;font-size: 14px;color: var(--green-dark);display: inline-flex; align-items: center; justify-content: center;transition: transform .3s var(--ease);}
+.entry-oil-refresh:hover{transform: rotate(180deg)}
+.entry-export-btn{display: inline-flex; align-items: center; gap: 6px;padding: 7px 13px;background: var(--blue);color: #fff;border: none;border-radius: 9px;font-family: inherit;font-size: 14px; font-weight: 600;cursor: pointer;letter-spacing: -0.01em;transition: all .15s var(--ease);white-space: nowrap;box-shadow: 0 1px 3px rgba(59,130,246,.3);}
+.entry-export-btn:hover{background: var(--blue-hover);transform: translateY(-1px);box-shadow: 0 4px 10px rgba(59,130,246,.35);}
+.entry-export-btn:active{transform: translateY(0)}
+.entry-export-btn:disabled{background: var(--text4); cursor: wait; transform: none;box-shadow: none;}
+.entry-export-btn svg{flex-shrink: 0}
+.entry-oil-tabs{display: flex; align-items: center; gap: 4px; flex-wrap: wrap;padding: 10px 22px;background: var(--bg-subtle2);border-bottom: 1px solid var(--separator);}
+.entry-oil-tab{padding: 4px 11px; border-radius: 100px;background: #fff; border: 1px solid var(--separator-strong);color: var(--text2); font-family: inherit;font-size: 14px; font-weight: 500;cursor: pointer;transition: all .15s var(--ease);}
+.entry-oil-tab:hover{background: #fafafa; border-color: rgba(0,0,0,.2)}
+.entry-oil-tab.active{background: var(--green); color: #fff; border-color: var(--green); font-weight: 600}
+.entry-oil-status{font-size: 14px; color: var(--text3); font-weight: 500;margin-left: 6px;}
+.entry-oil-live{margin-left: auto;display: inline-flex; align-items: center; gap: 5px;padding: 3px 9px;background: rgba(16,185,129,.12);color: var(--green-dark);border-radius: 100px;font-size: 14px; font-weight: 600;}
+.entry-oil-live .dot{width: 5px; height: 5px; border-radius: 50%; background: var(--green)}
+.entry-oil-live.loading{background: rgba(245,158,11,.12); color: var(--orange)}
+.entry-oil-live.loading .dot{background: var(--orange); animation: pulse-dot 1s infinite}
+.entry-loading-row{display: flex; align-items: center; justify-content: center; gap: 8px;padding: 30px;color: var(--orange); font-size: 14px; font-weight: 500;}
+.entry-loading-row .spinner{width: 14px; height: 14px;border: 2px solid var(--orange);border-top-color: transparent;border-radius: 50%;animation: spin 1s linear infinite;}
+.entry-rows-wrap{overflow-x: hidden;}
+.entry-rows-wrap::-webkit-scrollbar{height: 8px}
+.entry-rows-wrap::-webkit-scrollbar-thumb{background: rgba(0,0,0,.12);border-radius: 100px;border: 2px solid #fff;background-clip: padding-box;}
+.entry-rows-header,.entry-row{display: grid;grid-template-columns:minmax(100px, 1.2fr) minmax(90px, 0.9fr) minmax(120px, 1fr) minmax(75px, 0.8fr) minmax(70px, 0.7fr) minmax(80px, 0.8fr) minmax(70px, auto);gap: 6px;align-items: center;padding: 9px 12px;min-width: 0;}
+.entry-rows-header{background: var(--bg-subtle2);border-bottom: 1px solid var(--separator);font-size: 14px; font-weight: 700;color: var(--text3);text-transform: uppercase; letter-spacing: 0.4px;position: sticky; top: 0; z-index: 1;}
+.entry-rows-header > div:last-child{text-align: center; min-width: 80px}
+.entry-row{border-bottom: 1px solid var(--separator);transition: background .12s;position: relative;cursor: pointer;}
+.entry-row:hover{background: var(--bg-subtle2)}
+.entry-row.focused{background: linear-gradient(90deg, rgba(59,130,246,.07), rgba(59,130,246,.02) 50%);}
+.entry-row.focused::before{content: '';position: absolute; left: 0; top: 0; bottom: 0;width: 3px; background: var(--blue);}
+.entry-row.saved{background: linear-gradient(90deg, rgba(16,185,129,.06), transparent 50%)}
+.entry-row.saved::before{content: '';position: absolute; left: 0; top: 0; bottom: 0;width: 3px; background: var(--green);}
+.entry-row.saving{opacity: .6; pointer-events: none}
+.save-toast{position: fixed;top: 78px; right: 28px;z-index: 200;background: #fff;border-radius: 14px;box-shadow: 0 12px 32px rgba(0,0,0,.12), 0 4px 12px rgba(0,0,0,.06);border: 1px solid var(--separator);padding: 12px 16px;display: flex; align-items: center; gap: 12px;min-width: 240px;border-left: 3px solid var(--green);animation: toastSlideIn .25s var(--ease) forwards;}
+.save-toast.hiding{animation: toastSlideOut .25s var(--ease) forwards}
+@keyframes toastSlideIn{from{opacity: 0; transform: translateY(-10px) scale(.95)}to{opacity: 1; transform: translateY(0) scale(1)}}
+@keyframes toastSlideOut{to{opacity: 0; transform: translateY(-10px) scale(.95)}}
+.save-toast-icon{width: 28px; height: 28px;display: flex; align-items: center; justify-content: center;background: var(--green);color: #fff;border-radius: 50%;font-size: 14px; font-weight: 700;flex-shrink: 0;}
+.save-toast-body{flex: 1; min-width: 0}
+.save-toast-title{font-size: 14px; font-weight: 600;color: var(--text);letter-spacing: -0.01em;}
+.save-toast-msg{font-size: 14px; color: var(--text3);margin-top: 1px;}
+.er-driver{display: flex; align-items: center; gap: 10px;min-width: 0;}
+.er-driver-avatar{width: 32px; height: 32px;border-radius: 50%;background: linear-gradient(135deg, var(--blue-light), var(--green-light));color: var(--blue-hover);display: inline-flex; align-items: center; justify-content: center;font-size: 14px; font-weight: 700;flex-shrink: 0;}
+.er-driver-info{min-width: 0; flex: 1}
+.er-driver-name{font-size: 14px; font-weight: 600;color: var(--text);letter-spacing: -0.01em;white-space: nowrap; overflow: hidden; text-overflow: ellipsis;}
+.er-driver-jobs{font-size: 14px; color: var(--text3);margin-top: 1px;}
+.er-plate-select{width: 100%;padding: 7px 11px;border: 1px solid var(--separator-strong);border-radius: 8px;font-family: inherit;font-size: 14px; font-weight: 500;background: #fff; color: var(--text);outline: none;appearance: none;background-image: url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6' fill='none'%3E%3Cpath d='M1 1L5 5L9 1' stroke='%23a1a1aa' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");background-repeat: no-repeat;background-position: right 9px center;padding-right: 26px;transition: all .15s var(--ease);}
+.er-plate-select:hover{border-color: rgba(0,0,0,.2)}
+.er-plate-select:focus{border-color: var(--blue); box-shadow: 0 0 0 3px rgba(59,130,246,.15)}
+.er-time-pair{display: grid;grid-template-columns: 1fr auto 1fr;gap: 4px;align-items: center;}
+.er-time-btn{padding: 7px 4px;border: 1px solid var(--separator-strong);border-radius: 8px;font-family: var(--font-mono);font-size: 14px; font-weight: 600;background: #fff; color: var(--text);cursor: pointer;text-align: center;letter-spacing: 0.5px;transition: all .15s var(--ease);}
+.er-time-btn:hover{border-color: var(--blue); background: rgba(59,130,246,.04)}
+.er-time-arrow{color: var(--text4); font-size: 14px; padding: 0 2px}
+.er-num-input{width: 100%;padding: 7px 10px;border: 1px solid var(--separator-strong);border-radius: 8px;font-family: var(--font-mono);font-size: 14px; font-weight: 600;background: #fff; color: var(--text);outline: none;transition: all .15s var(--ease);text-align: right;}
+.er-num-input::placeholder{color: var(--text4); font-weight: 400}
+.er-num-input:hover{border-color: rgba(0,0,0,.2)}
+.er-num-input:focus{border-color: var(--blue); box-shadow: 0 0 0 3px rgba(59,130,246,.15)}
+.er-summary{display: flex; flex-direction: column; gap: 3px;font-size: 14px;}
+.er-summary-row{display: flex; gap: 6px; align-items: baseline;}
+.er-summary-label{color: var(--text4); font-weight: 500; min-width: 32px}
+.er-summary-val{font-family: var(--font-mono); font-weight: 600; color: var(--text2)}
+.er-summary-val.green{color: var(--green-dark)}
+.er-summary-val.red{color: var(--red)}
+.er-summary-val.empty{color: var(--text5); font-weight: 400}
+.er-save-btn{padding: 8px 16px;background: var(--green);color: #fff;border: none;border-radius: 100px;font-family: inherit;font-size: 14px; font-weight: 600;cursor: pointer;letter-spacing: -0.01em;white-space: nowrap;transition: all .15s var(--ease);display: inline-flex; align-items: center; gap: 5px;}
+.er-save-btn:hover{background: var(--green-dark); transform: scale(1.04)}
+.er-save-btn:active{transform: scale(.96)}
+.er-save-btn:disabled{background: var(--text5); cursor: not-allowed; transform: none;}
+.er-save-btn.saved{background: var(--bg-subtle); color: var(--green-dark);border: 1px solid var(--green-light);}
+.er-save-btn .ic{font-size: 14px}
+.entry-empty{text-align: center; padding: 40px 20px;color: var(--text4); font-size: 14px;}
+
+/* ════ RESPONSIVE — improved fluid scaling ════ */
+.main{padding: clamp(14px, 2.5vw, 28px);max-width: 1800px;margin: 0 auto;}
+
+@media (max-width: 1400px){.entry-layout{grid-template-columns: 65fr 35fr}}
+@media (max-width: 1280px){
+  /* Stack entry-row to card format BEFORE entry-layout stacks
+     เพราะตอน 65/35 entry-card ได้ ~700px ซึ่งไม่พอสำหรับ 7 columns */
+  .entry-rows-header{display: none}
+  .entry-row{
+    grid-template-columns: 1fr 1fr;
+    grid-template-areas:
+      "driver driver"
+      "plate time"
+      "price distance"
+      "summary action";
+    gap: 10px 12px;
+    padding: 14px 16px;
+    min-width: 0;
+  }
+  .entry-row > .er-driver{grid-area: driver}
+  .entry-row > div:nth-child(2){grid-area: plate}
+  .entry-row > .er-time-pair{grid-area: time}
+  .entry-row > div:nth-child(4){grid-area: price}
+  .entry-row > div:nth-child(5){grid-area: distance}
+  .entry-row > .er-summary{grid-area: summary; flex-direction: row; gap: 14px}
+  .entry-row > div:last-child{grid-area: action; text-align: right !important}
 }
-.sidebar-section .label{
-  font-size:10px;
-  font-weight:700;
-  color:var(--text3);
-  text-transform:uppercase;
-  letter-spacing:.08em;
-  padding:0 8px 8px;
+@media (max-width: 1200px){
+  .entry-layout{grid-template-columns: 1fr; gap: 14px}
+  .jobs-panel{position: static; max-height: 500px}
+}
+@media (max-width: 1024px){
+  .topnav-user{max-width: 130px}
+  .entry-card-head-left{gap: 10px}
+  .entry-export-btn span{display: none}
+  .entry-export-btn{padding: 7px 9px}
+  /* Hide secondary fuel-table cols on tablet */
+  .fuel-table thead th:nth-child(5),
+  .fuel-table tbody td:nth-child(5),
+  .fuel-table thead th:nth-child(6),
+  .fuel-table tbody td:nth-child(6){display: none}
+}
+@media (max-width: 900px){
+  .entry-card-head{padding: 14px 16px}
+  .entry-oil-tabs{padding: 10px 16px}
+  .entry-card-head-left{gap: 10px}
+  .entry-oil-mini{flex-shrink: 0; padding: 5px 10px}
+  .entry-oil-mini .entry-oil-label{display: none}
+  .topnav-user-name{display: none}
+  .topnav-user{padding: 4px; max-width: none}
+  /* Hide more table cols on phone */
+  .fuel-table thead th:nth-child(1),
+  .fuel-table tbody td:nth-child(1),
+  .fuel-table thead th:nth-child(4),
+  .fuel-table tbody td:nth-child(4),
+  .fuel-table thead th:nth-child(8),
+  .fuel-table tbody td:nth-child(8){display: none}
+}
+@media (max-width: 600px){
+  .entry-row{
+    grid-template-columns: 1fr;
+    grid-template-areas:
+      "driver"
+      "plate"
+      "time"
+      "price"
+      "distance"
+      "summary"
+      "action";
+    gap: 8px;
+  }
+  .entry-card-head-left{flex-wrap: wrap}
 }
 
-/* Nav items */
-.nav-item{
-  display:flex;
-  align-items:center;
-  gap:10px;
-  padding:9px 12px;
-  border-radius:var(--radius-xs);
-  color:var(--text2);
-  font-size:13.5px;
-  font-weight:500;
-  cursor:pointer;
-  text-decoration:none;
-  border:none;
-  background:transparent;
-  font-family:inherit;
-  width:100%;
-  text-align:left;
-  transition:all .15s;
-  margin-bottom:2px;
-}
-.nav-item:hover{background:var(--surface2);color:var(--text)}
-.nav-item.active{background:rgba(37,99,235,.08);color:var(--accent);font-weight:600}
-.nav-item .ic{font-size:15px;width:18px;text-align:center;flex-shrink:0}
-.nav-item .badge-dot{
-  margin-left:auto;
-  width:6px;height:6px;border-radius:50%;
-  background:var(--accent);
-}
 
-/* View tabs (สำหรับใน sidebar) — แนวตั้ง */
-.sidebar-view-tabs{
-  display:flex;
-  flex-direction:column;
-  background:var(--surface2);
-  border-radius:var(--radius-xs);
-  padding:3px;
-  gap:2px;
-  margin:0 8px;
-}
-.sidebar-view-tabs .view-tab{
-  padding:7px 12px;
-  border-radius:6px;
-  font-size:13px;
-  font-weight:500;
-  cursor:pointer;
-  color:var(--text2);
-  border:none;
-  background:transparent;
-  font-family:inherit;
-  transition:all .15s;
-  text-align:left;
-}
-.sidebar-view-tabs .view-tab:hover{color:var(--text)}
-.sidebar-view-tabs .view-tab.active{background:var(--surface);color:var(--text);box-shadow:0 1px 3px rgba(15,23,42,.08);font-weight:600}
+.jobs-panel{background: var(--bg-card);border-radius: var(--radius-xl);box-shadow: var(--shadow);border: 1px solid rgba(0,0,0,.04);overflow: hidden;display: flex; flex-direction: column;position: sticky;top: 110px;max-height: calc(100vh - 130px);}
+.jobs-panel-head{display: flex; align-items: center; justify-content: space-between;gap: 10px;padding: 12px 16px;border-bottom: 1px solid var(--separator);background: linear-gradient(180deg, #fafbfc 0%, #ffffff 100%);flex-shrink: 0;}
+.jobs-panel-title{font-size: 14px; font-weight: 600; color: var(--text);display: flex; align-items: center; gap: 8px;letter-spacing: -0.01em;}
+.jobs-panel-title .ico{font-size: 15px}
+.jobs-panel-body{flex: 1; min-height: 0;overflow-y: auto;padding: 0;-webkit-overflow-scrolling: touch;}
+.jobs-panel-body::-webkit-scrollbar{width: 8px}
+.jobs-panel-body::-webkit-scrollbar-track{background: transparent}
+.jobs-panel-body::-webkit-scrollbar-thumb{background: rgba(0,0,0,.12);border-radius: 100px;border: 2px solid #fff;background-clip: padding-box;}
+.jobs-panel-body::-webkit-scrollbar-thumb:hover{background: rgba(0,0,0,.22)}
+.dgj-row{display: grid;grid-template-columns: auto 1fr auto;gap: 8px; align-items: center;padding: 7px 12px;border-top: 1px solid var(--separator);font-size: 14px;}
+.dgj-row:first-child{border-top: none}
+.dgj-bill{font-family: var(--font-mono);font-size: 14px; font-weight: 600;color: var(--text2);padding: 1px 6px;background: var(--bg-subtle);border-radius: 5px;white-space: nowrap;}
+.dgj-customer{color: var(--text2);font-size: 14px;white-space: nowrap; overflow: hidden; text-overflow: ellipsis;min-width: 0;}
+.dgj-status{display: inline-flex; align-items: center;padding: 1px 8px; border-radius: 100px;font-size: 14px; font-weight: 600;white-space: nowrap;}
+.dgj-status.ok{background: var(--green-light); color: var(--green-dark)}
+.dgj-status.fail{background: var(--red-light); color: var(--red)}
+.dgj-status.pending{background: var(--bg-subtle); color: var(--text3)}
+.jobs-summary-bar{display: flex; gap: 6px; flex-wrap: wrap;padding: 10px 12px;background: linear-gradient(180deg, #fafbfc 0%, #fff 100%);border-bottom: 1px solid var(--separator);position: sticky; top: 0;z-index: 1;}
+.jsb-chip{display: inline-flex; align-items: center; gap: 4px;padding: 3px 9px; border-radius: 100px;font-size: 14px; font-weight: 600;background: #fff;border: 1px solid var(--separator);color: var(--text2);}
+.jsb-chip strong{font-family: var(--font-mono); color: var(--text)}
+.jsb-chip.ok{background: var(--green-light); color: var(--green-dark); border-color: transparent}
+.jsb-chip.ok strong{color: var(--green-dark)}
+.jsb-chip.fail{background: var(--red-light); color: var(--red); border-color: transparent}
+.jsb-chip.fail strong{color: var(--red)}
+.job-loading{text-align: center; padding: 22px;color: var(--text3); font-size: 14px;}
+.job-date-chip{display: inline-block; padding: 1px 8px;background: var(--blue); color: #fff;border-radius: 100px; font-size: 14px; font-weight: 600;}
 
-/* Sidebar form controls */
-.sidebar-control{
-  margin:0 8px 8px;
-}
-.sidebar-control .lbl{
-  font-size:10px;
-  font-weight:700;
-  color:var(--text3);
-  text-transform:uppercase;
-  letter-spacing:.06em;
-  padding:0 4px 5px;
-}
-.sidebar .driver-select,
-.sidebar .date-trigger{
-  width:100%;
-  height:36px;
-  font-size:13px;
-}
+.dual-grid{display: grid;grid-template-columns: 1.6fr 1fr;gap: 18px;margin-bottom: 18px;align-items: stretch;}
+.dual-grid.single-col{grid-template-columns: 1fr}
+.card{background: var(--bg-card);border-radius: var(--radius-xl);box-shadow: var(--shadow);border: 1px solid rgba(0,0,0,.04);overflow: hidden;display: flex; flex-direction: column;min-height: 540px;max-height: 640px;}
+.card-head{display: flex; align-items: center; justify-content: space-between;padding: 16px 22px;border-bottom: 0.5px solid var(--separator);gap: 12px;}
+.card-title{font-size: 15px; font-weight: 600;color: var(--text); letter-spacing: -0.02em;display: flex; align-items: center; gap: 8px;}
+.card-count{display: inline-flex; align-items: center; justify-content: center;min-width: 22px; height: 20px; padding: 0 7px;background: rgba(0,0,0,.06); color: var(--text2);border-radius: 100px;font-size: 14px; font-weight: 600;font-family: var(--font-mono);}
+.card-meta{font-size: 14px; color: var(--text3); font-weight: 400;margin-left: 4px;}
+.sort-toggle{display: flex; align-items: center; gap: 8px;flex-shrink: 0;}
+.sort-label{font-size: 14px; color: var(--text3); font-weight: 500;white-space: nowrap;}
+.sort-segmented{display: inline-flex;background: rgba(0,0,0,.05);border-radius: 7px;padding: 2px;gap: 0;}
+.sort-btn{padding: 4px 10px;border: none;background: transparent;color: var(--text3);font-family: inherit;font-size: 14px; font-weight: 500;cursor: pointer;border-radius: 5px;white-space: nowrap;letter-spacing: -0.01em;transition: all .15s var(--ease);}
+.sort-btn:hover{color: var(--text)}
+.sort-btn.active{background: #fff;color: var(--text);font-weight: 600;box-shadow: 0 1px 3px rgba(0,0,0,.08), 0 1px 1px rgba(0,0,0,.04);}
+.search-pill{position: relative; flex-shrink: 0;}
+.search-pill .si{position: absolute; left: 10px; top: 50%;transform: translateY(-50%);color: var(--text4);pointer-events: none;display: inline-flex; align-items: center;width: 13px; height: 13px;}
+.search-pill .si svg{display: block}
+.search-pill input{padding: 6px 11px 6px 28px;border: 0.5px solid var(--separator-strong);border-radius: 100px;font-family: inherit; font-size: 14px;width: 200px; background: var(--bg-subtle);color: var(--text);transition: all .15s var(--ease);}
+.search-pill input:focus{outline: none; background: #fff;border-color: var(--blue);box-shadow: 0 0 0 3px rgba(59,130,246,.15);}
+.search-pill input::placeholder{color: var(--text4)}
+.fuel-table-scroll{overflow-x: hidden;overflow-y: auto;flex: 1;min-height: 0;-webkit-overflow-scrolling: touch;}
+.fuel-table-scroll::-webkit-scrollbar{width: 8px; height: 8px}
+.fuel-table-scroll::-webkit-scrollbar-track{background: transparent}
+.fuel-table-scroll::-webkit-scrollbar-thumb{background: rgba(0,0,0,.12);border-radius: 100px;border: 2px solid #fff;background-clip: padding-box;}
+.fuel-table-scroll::-webkit-scrollbar-thumb:hover{background: rgba(0,0,0,.22); border: 2px solid #fff; background-clip: padding-box}
+.fuel-table{width: 100%;min-width: 0;border-collapse: collapse;font-size: 14px;table-layout: auto;}
+.fuel-table thead{position: sticky; top: 0; z-index: 1;background: #fff;}
+.fuel-table thead th{padding: 11px 10px;background: var(--bg-subtle2);font-size: 14px; color: var(--text3);font-weight: 600; text-align: left;border-bottom: 0.5px solid var(--separator);letter-spacing: -0.01em;white-space: nowrap;text-overflow: ellipsis;overflow: hidden;}
+.fuel-table thead th:first-child{padding-left: 16px}
+.fuel-table thead th:last-child{padding-right: 16px}
+.fuel-table thead th.num{text-align: right}
+.fuel-table tbody td{padding: 11px 10px;border-bottom: 0.5px solid var(--separator);vertical-align: middle;overflow: hidden;text-overflow: ellipsis;white-space: nowrap;}
+.fuel-table tbody td:first-child{padding-left: 16px}
+.fuel-table tbody td:last-child{padding-right: 16px}
+.fuel-table tbody tr{transition: background .12s}
+.fuel-table tbody tr:hover{background: var(--bg-subtle)}
+.fuel-table tbody tr:last-child td{border-bottom: none}
+.fuel-table .num{text-align: right;font-variant-numeric: tabular-nums;font-family: var(--font-mono);font-size: 14px;}
+.row-idx{color: var(--text4); font-weight: 500; font-size: 14px;font-family: var(--font-mono);}
+.driver-cell{min-width: 0;overflow: hidden;}
+.driver-name{font-weight: 600; font-size: 14px;color: var(--text); letter-spacing: -0.01em;overflow: hidden;text-overflow: ellipsis;white-space: nowrap;}
+.driver-plate{font-size: 14px; color: var(--text3); margin-top: 1px;overflow: hidden;text-overflow: ellipsis;white-space: nowrap;}
+.time-pill{display: inline-block; padding: 2px 8px;background: var(--bg-subtle); color: var(--text2);border-radius: 100px; font-size: 14px; font-weight: 600;font-family: var(--font-mono);white-space: nowrap;}
+.date-pill{display: inline-block; padding: 2px 8px;background: rgba(59,130,246,.08);color: var(--blue-hover);border-radius: 100px;font-size: 14px; font-weight: 600;font-family: var(--font-mono);white-space: nowrap;letter-spacing: -0.01em;}
+.km-good{color: var(--green-dark); font-weight: 600}
+.km-mid{color: var(--text); font-weight: 500}
+.km-bad{color: var(--red); font-weight: 700}
+.driver-list{padding: 6px;overflow-y: auto;flex: 1;min-height: 0;-webkit-overflow-scrolling: touch;}
+.driver-list::-webkit-scrollbar{width: 8px}
+.driver-list::-webkit-scrollbar-track{background: transparent}
+.driver-list::-webkit-scrollbar-thumb{background: rgba(0,0,0,.12);border-radius: 100px;border: 2px solid #fff;background-clip: padding-box;}
+.driver-list::-webkit-scrollbar-thumb:hover{background: rgba(0,0,0,.22); border: 2px solid #fff; background-clip: padding-box}
+.driver-row{display: grid;grid-template-columns: auto 1fr auto;gap: 12px; align-items: center;padding: 10px 14px;border-radius: 12px;transition: background .12s;}
+.driver-row:hover{background: var(--bg-subtle)}
+.driver-rank{font-family: var(--font-mono);font-size: 14px; font-weight: 700;width: 26px; height: 26px;display: flex; align-items: center; justify-content: center;background: var(--bg-subtle); color: var(--text3);border-radius: 8px;}
+.driver-row:nth-child(1) .driver-rank{background: linear-gradient(135deg, #fde047, #eab308); color: #713f12; box-shadow: 0 2px 6px rgba(234,179,8,.3)}
+.driver-row:nth-child(2) .driver-rank{background: linear-gradient(135deg, #e5e7eb, #9ca3af); color: #1f2937; box-shadow: 0 2px 6px rgba(156,163,175,.3)}
+.driver-row:nth-child(3) .driver-rank{background: linear-gradient(135deg, #fdba74, #c2410c); color: #fff; box-shadow: 0 2px 6px rgba(194,65,12,.3)}
+.driver-row .body{min-width: 0}
+.driver-row .name{font-weight: 600; font-size: 14px; color: var(--text);letter-spacing: -0.01em; margin-bottom: 2px;}
+.driver-row .stats{display: flex; gap: 10px; flex-wrap: wrap;font-size: 14px; color: var(--text3);}
+.driver-row .right{text-align: right}
+.driver-row .price{font-size: 14.5px; font-weight: 700; color: var(--text);font-family: var(--font-mono);letter-spacing: -0.02em;}
+.driver-row .kml{font-size: 14px; color: var(--green-dark); font-weight: 600;margin-top: 2px; font-family: var(--font-mono);}
+.driver-row .kml.warn{color: var(--red)}
+.empty-state{text-align: center; padding: 50px 20px;color: var(--text4);}
+.empty-state .icon{font-size: 30px; margin-bottom: 8px; opacity: .4}
+.empty-state p{margin: 0; font-size: 14px}
+.charts-grid{display: grid;grid-template-columns: 1fr;gap: 18px;}
+.chart-card{background: var(--bg-card);border-radius: var(--radius-xl);box-shadow: var(--shadow);border: 1px solid rgba(0,0,0,.04);padding: clamp(12px, 2vw, 22px);min-width: 0;overflow: hidden;}
+.chart-head{display: flex; align-items: baseline; gap: 10px;margin-bottom: 14px;flex-wrap: wrap;}
+.chart-title{font-size: clamp(14px, 1.5vw, 16px); font-weight: 600;color: var(--text); letter-spacing: -0.02em;}
+.chart-sub{font-size: 14px; color: var(--text3); font-weight: 400;}
+.chart-canvas{position: relative; width: 100%; min-width: 0;}
+.chart-scroll{overflow-x: hidden; overflow-y: hidden}
+.chart-scroll::-webkit-scrollbar{height: 5px}
+.chart-scroll::-webkit-scrollbar-thumb{background: rgba(0,0,0,.15); border-radius: 3px}
+.chart-inner{height: 100%; width: 100%; min-width: 0;}
+.chart-legend{display: flex; gap: 14px; flex-wrap: wrap;margin-top: 12px; padding-top: 12px;border-top: 0.5px solid var(--separator);}
+.chart-legend-item{display: inline-flex; align-items: center; gap: 6px;font-size: 14px; color: var(--text2); font-weight: 500;}
+.chart-legend-dot{width: 9px; height: 9px; border-radius: 3px}
 
-/* Add button */
-.sidebar-add-btn{
-  margin:8px 16px 0;
-  display:flex;
-  align-items:center;
-  justify-content:center;
-  gap:7px;
-  background:var(--accent);
-  color:#fff;
-  border:none;
-  padding:10px 14px;
-  border-radius:var(--radius-xs);
-  font-size:13.5px;
-  font-weight:600;
-  cursor:pointer;
-  font-family:inherit;
-  transition:background .15s;
-  width:calc(100% - 32px);
-}
-.sidebar-add-btn:hover{background:var(--accent-hover)}
-.sidebar-add-btn-top{
-  margin:14px 16px 6px;
-  padding:11px 14px;
-  box-shadow:0 2px 6px rgba(37,99,235,.2);
-}
+.report-header{display: flex; align-items: center; justify-content: space-between;padding: 20px 24px; margin-bottom: 20px;background: linear-gradient(135deg, #10b981 0%, #059669 100%);color: #fff;border-radius: var(--radius-xl);box-shadow: var(--shadow);}
+.report-title{font-size: 20px; font-weight: 700;letter-spacing: -0.02em;}
+.report-sub{font-size: 14px; opacity: .8; margin-top: 3px}
+.report-back{background: rgba(255,255,255,.15); color: #fff;border: 0.5px solid rgba(255,255,255,.2);padding: 7px 14px; border-radius: 100px;font-family: inherit; font-size: 14px; font-weight: 500;cursor: pointer;transition: all .15s var(--ease);}
+.report-back:hover{background: rgba(255,255,255,.25)}
+.report-stat-row{display: grid;grid-template-columns: repeat(6, 1fr);gap: 12px; margin-bottom: 20px;}
+.report-stat-card{background: var(--bg-card);border-radius: var(--radius-lg);padding: 16px 18px;box-shadow: var(--shadow-sm);}
+.report-stat-label{font-size: 14px; color: var(--text3); font-weight: 500;margin-bottom: 6px;}
+.report-stat-value{font-size: 22px; font-weight: 700;color: var(--text); letter-spacing: -0.02em;font-family: var(--font-mono);}
+.report-stat-sub{font-size: 14px; color: var(--text4); margin-top: 2px}
+.report-pie-grid{display: grid;grid-template-columns: repeat(3, 1fr);gap: 16px;}
+.pie-card{background: var(--bg-card);border-radius: var(--radius-xl);padding: 20px;box-shadow: var(--shadow-sm);}
+.pie-card-title{font-size: 14.5px; font-weight: 600; color: var(--text); letter-spacing: -0.01em}
+.pie-card-sub{font-size: 14px; color: var(--text3); margin: 2px 0 14px}
+.pie-canvas-wrap{height: 220px; position: relative}
+.pie-legend{margin-top: 12px; display: flex; flex-direction: column; gap: 6px}
+.pie-legend-item{display: flex; align-items: center; gap: 8px; font-size: 14px}
+.pie-legend-dot{width: 9px; height: 9px; border-radius: 3px; flex-shrink: 0}
+.pie-legend-label{flex: 1; color: var(--text2); font-weight: 500}
+.pie-legend-val{color: var(--text3); font-size: 14px; font-family: var(--font-mono)}
 
-.sidebar-footer{
-  margin-top:auto;
-  padding:12px 22px 18px;
-  border-top:1px solid var(--border);
-  font-size:11px;
-  color:var(--text3);
-}
-.sidebar-footer .live-time{
-  display:flex;
-  align-items:center;
-  gap:6px;
-  font-weight:500;
-  color:var(--text2);
-}
-.sidebar-footer .live-time::before{
-  content:'';
-  width:6px;height:6px;border-radius:50%;
-  background:var(--green);
-  animation:pulse 1.5s infinite;
-}
+.toast{position: fixed; top: 72px; right: 28px; z-index: 200;background: rgba(255,255,255,.95);backdrop-filter: blur(20px);border-radius: 14px;box-shadow: var(--shadow-xl);padding: 12px 16px;display: flex; align-items: center; gap: 12px;min-width: 280px; max-width: 380px;border-left: 3px solid var(--green);overflow: hidden;animation: toast-in .35s var(--ease-out);cursor: pointer;}
+.toast.hiding{animation: toast-out .25s var(--ease) forwards}
+@keyframes toast-in{from{opacity: 0; transform: translateY(-10px) scale(.96)}to{opacity: 1; transform: translateY(0) scale(1)}}
+@keyframes toast-out{to{opacity: 0; transform: translateY(-10px)}}
+.toast-icon{font-size: 22px}
+.toast-body{flex: 1; min-width: 0}
+.toast-title{font-size: 14px; font-weight: 600; color: var(--text); letter-spacing: -0.01em}
+.toast-msg{font-size: 14px; color: var(--text3); margin-top: 1px}
+.toast-progress{position: absolute; left: 0; bottom: 0; height: 2px; background: var(--green); width: 100%}
 
-/* Content wrapper */
-.content-wrap{flex:1;min-width:0}
+.clock-modal{position: fixed; inset: 0; z-index: 150;background: rgba(0,0,0,.4);backdrop-filter: blur(8px);align-items: center; justify-content: center;padding: 20px;}
+.clock-box{background: rgba(255,255,255,.98);border-radius: 18px; padding: 22px;max-width: 340px; width: 100%;box-shadow: var(--shadow-xl);}
+.clock-header{display: flex; justify-content: space-between; align-items: center;margin-bottom: 14px; font-size: 15px; font-weight: 600;letter-spacing: -0.01em;}
+.clock-close{background: transparent; border: none;font-size: 22px; cursor: pointer; color: var(--text3);width: 28px; height: 28px; border-radius: 100px;display: flex; align-items: center; justify-content: center;}
+.clock-close:hover{background: rgba(0,0,0,.06)}
+.clock-tabs{display: flex; gap: 4px; margin-bottom: 14px;background: rgba(0,0,0,.05); padding: 3px; border-radius: 8px;}
+.clock-tab{flex: 1; padding: 6px 10px; border-radius: 6px; border: none;background: transparent; color: var(--text2);font-family: inherit; font-size: 14px; font-weight: 500;cursor: pointer;transition: all .15s var(--ease);}
+.clock-tab.active{background: #fff; color: var(--text); font-weight: 600; box-shadow: 0 1px 2px rgba(0,0,0,.08)}
+.clock-current{text-align: center; font-size: 30px; font-weight: 700;margin-bottom: 14px; color: var(--text);font-family: var(--font-mono); letter-spacing: -0.02em;}
+#clock-face{display: block; margin: 0 auto}
+.clock-ok{width: 100%; margin-top: 16px; padding: 11px;background: var(--blue); color: #fff;border: none; border-radius: 100px;font-family: inherit; font-size: 14px; font-weight: 600;cursor: pointer;transition: all .15s var(--ease);}
+.clock-ok:hover{background: var(--blue-hover)}
 
-/* Mobile sidebar toggle */
-.sidebar-toggle{
-  display:none;
-  position:fixed;
-  top:14px;left:14px;
-  z-index:250;
-  background:var(--surface);
-  border:1px solid var(--border);
-  border-radius:var(--radius-xs);
-  width:40px;height:40px;
-  align-items:center;
-  justify-content:center;
-  font-size:18px;
-  cursor:pointer;
-  box-shadow:var(--shadow);
-}
-.sidebar-overlay{display:none;position:fixed;inset:0;background:rgba(15,23,42,.4);z-index:190}
-@media(max-width:900px){
-  .sidebar{position:fixed;left:-280px;top:0;height:100vh;transition:left .25s ease}
-  .sidebar.open{left:0;box-shadow:0 4px 20px rgba(0,0,0,.18)}
-  .sidebar-toggle{display:flex}
-  .sidebar-overlay.show{display:block}
-  .content-wrap{padding-top:60px}
-}
+.drp-popup{position: fixed; z-index: 100; width: 340px;background: rgba(255,255,255,.98);backdrop-filter: blur(20px);border-radius: 14px;border: 0.5px solid var(--separator);box-shadow: var(--shadow-xl);padding: 14px;display: none;}
+.drp-popup.open{display: block}
+.drp-header{display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px}
+.drp-nav-btn{width: 28px; height: 28px; border-radius: 100px;border: none; background: rgba(0,0,0,.05); color: var(--text2);font-size: 14px; cursor: pointer;transition: background .12s;}
+.drp-nav-btn:hover{background: rgba(0,0,0,.08); color: var(--blue)}
+.drp-title{font-size: 14px; font-weight: 600; color: var(--text); letter-spacing: -0.01em}
+.drp-weekdays{display: grid; grid-template-columns: repeat(7, 1fr); gap: 2px; margin-bottom: 4px}
+.drp-weekday{text-align: center; padding: 6px 0; font-size: 14px; color: var(--text4); font-weight: 600}
+.drp-days{display: grid; grid-template-columns: repeat(7, 1fr); gap: 2px}
+.drp-day{aspect-ratio: 1; border: none; border-radius: 100px;font-family: var(--font-mono); font-size: 14px;background: transparent; color: var(--text); cursor: pointer;transition: background .12s;}
+.drp-day:hover{background: rgba(0,0,0,.05)}
+.drp-day.muted{color: var(--text5)}
+.drp-day.today{font-weight: 700; color: var(--blue)}
+.drp-day.selected, .drp-day.range-start, .drp-day.range-end{background: var(--blue); color: #fff; font-weight: 600;}
+.drp-day.in-range{background: rgba(59,130,246,.15); color: var(--blue); border-radius: 0}
+.drp-day.range-start{border-top-right-radius: 0; border-bottom-right-radius: 0}
+.drp-day.range-end{border-top-left-radius: 0; border-bottom-left-radius: 0}
+.drp-hint{margin-top: 10px; padding: 7px; text-align: center;font-size: 14px; color: var(--text3);background: var(--bg-subtle); border-radius: 8px;}
+.drp-footer{display: flex; justify-content: space-between; align-items: center; margin-top: 10px; gap: 8px}
+.drp-presets{display: flex; gap: 4px}
+.drp-preset-btn{padding: 5px 10px; border-radius: 100px;border: 0.5px solid var(--separator-strong);background: #fff; color: var(--text2);font-family: inherit; font-size: 14px; cursor: pointer;transition: all .12s;}
+.drp-preset-btn:hover{background: var(--bg-subtle); border-color: var(--blue); color: var(--blue)}
+.drp-apply-btn{padding: 6px 14px; border-radius: 100px; border: none;background: var(--blue); color: #fff;font-family: inherit; font-size: 14px; font-weight: 600; cursor: pointer;}
+.drp-apply-btn:disabled{opacity: .4; cursor: not-allowed}
 
-/* ═══════ TOP BAR — รวมทุกอย่างไว้ในแถบเดียวตามรูป ═══════ */
-.topbar{
-  background:var(--surface);
-  border-bottom:1px solid var(--border);
-  padding:14px 28px;
-  display:flex;
-  align-items:center;
-  gap:18px;
-  flex-wrap:wrap;
-  position:sticky;
-  top:0;
-  z-index:200;
-}
-.topbar-brand{display:flex;align-items:center;gap:14px;flex-shrink:0}
-.topbar-title{font-size:17px;font-weight:700;color:var(--text);letter-spacing:-.01em}
-.topbar-sub{font-size:12px;color:var(--text3);font-weight:400;border-left:1px solid var(--border);padding-left:14px;margin-left:2px}
-.topbar-actions{display:flex;align-items:center;gap:10px;margin-left:auto;flex-wrap:wrap}
+.alert{padding: 11px 14px; border-radius: 10px;font-size: 14px;margin-bottom: 14px;}
+.alert-error{background: var(--red-light); color: var(--red);border: 0.5px solid rgba(239,68,68,.2);}
 
-/* View tabs (รายวัน / รายเดือน / รายปี) */
-.view-tabs{
-  display:flex;
-  background:var(--surface2);
-  border-radius:var(--radius-xs);
-  padding:3px;
-  gap:2px;
-}
-.view-tab{
-  padding:6px 16px;
-  border-radius:6px;
-  font-size:13px;
-  font-weight:500;
-  cursor:pointer;
-  color:var(--text2);
-  border:none;
-  background:transparent;
-  font-family:inherit;
-  transition:all .15s;
-  white-space:nowrap;
-}
-.view-tab:hover{color:var(--text)}
-.view-tab.active{background:var(--surface);color:var(--text);box-shadow:0 1px 3px rgba(15,23,42,.08);font-weight:600}
-
-/* Date picker trigger */
-.date-trigger{
-  display:flex;
-  align-items:center;
-  gap:8px;
-  background:var(--surface);
-  border:1px solid var(--border);
-  border-radius:var(--radius-xs);
-  padding:7px 14px;
-  font-size:13px;
-  font-weight:500;
-  color:var(--text);
-  cursor:pointer;
-  transition:all .15s;
-  font-family:inherit;
-}
-.date-trigger:hover{border-color:var(--border-strong)}
-.date-trigger .arrow{font-size:9px;color:var(--text3)}
-
-/* Primary button */
-.btn-primary{
-  display:inline-flex;
-  align-items:center;
-  gap:6px;
-  background:var(--accent);
-  color:#fff;
-  border:none;
-  padding:8px 16px;
-  border-radius:var(--radius-xs);
-  font-size:13px;
-  font-weight:600;
-  cursor:pointer;
-  font-family:inherit;
-  transition:background .15s;
-}
-.btn-primary:hover{background:var(--accent-hover)}
-.btn-primary .plus{font-size:14px;line-height:1}
-
-/* Outline button */
-.btn-outline{
-  display:inline-flex;
-  align-items:center;
-  gap:6px;
-  background:var(--surface);
-  color:var(--text2);
-  border:1px solid var(--border);
-  padding:7px 14px;
-  border-radius:var(--radius-xs);
-  font-size:13px;
-  font-weight:500;
-  cursor:pointer;
-  font-family:inherit;
-  transition:all .15s;
-  text-decoration:none;
-}
-.btn-outline:hover{background:var(--surface2);color:var(--text)}
-
-/* ═══════ MAIN CONTENT ═══════ */
-.main{padding:24px 28px;max-width:1600px;margin:0 auto}
-
-.metrics{
-  display:grid;
-  grid-template-columns:repeat(5, 1fr);
-  gap:16px;
-  margin-bottom:24px;
-}
-@media(max-width:1300px){.metrics{grid-template-columns:repeat(3,1fr)}}
-@media(max-width:900px){.metrics{grid-template-columns:repeat(2,1fr)}}
-@media(max-width:560px){.metrics{grid-template-columns:1fr}}
-
-/* เพิ่มสี purple */
-.metric-card.purple::before{background:var(--purple)}
-.metric-card{
-  background:var(--surface);
-  border:1px solid var(--border);
-  border-radius:var(--radius);
-  padding:18px 20px;
-  position:relative;
-  overflow:hidden;
-  box-shadow:var(--shadow);
-}
-.metric-card::before{
-  content:'';
-  position:absolute;
-  top:0;left:0;right:0;
-  height:3px;
-}
-.metric-card.green::before{background:var(--green)}
-.metric-card.blue::before{background:var(--accent)}
-.metric-card.amber::before{background:#eab308}
-.metric-card.red::before{background:var(--red)}
-
-.metric-label{
-  font-size:13px;
-  color:var(--text2);
-  font-weight:500;
-  margin-bottom:8px;
-}
-.metric-row{display:flex;align-items:baseline;gap:6px;margin-bottom:0}
-.metric-value{
-  font-size:30px;
-  font-weight:700;
-  color:var(--text);
-  letter-spacing:-.02em;
-  line-height:1;
-  font-family:'Inter','IBM Plex Sans Thai',sans-serif;
-}
-.metric-unit{font-size:13px;color:var(--text2);font-weight:500}
-.metric-trend{
-  font-size:12px;
-  font-weight:500;
-  display:flex;
-  align-items:center;
-  gap:4px;
-  margin-top:6px;
-}
-.metric-trend.up{color:var(--green)}
-.metric-trend.down{color:var(--red)}
-.metric-trend.warn{color:var(--red)}
-.metric-trend .ic{font-size:10px}
-
-/* ═══════ TWO-COLUMN LAYOUT ═══════ */
-.dual-grid{
-  display:grid;
-  grid-template-columns:1.55fr 1fr;
-  gap:18px;
-  margin-bottom:18px;
-}
-@media(max-width:1100px){.dual-grid{grid-template-columns:1fr}}
-.dual-grid.single-col{grid-template-columns:1fr}
-
-.panel{
-  background:var(--surface);
-  border:1px solid var(--border);
-  border-radius:var(--radius);
-  overflow:hidden;
-  box-shadow:var(--shadow);
-}
-.panel-header{
-  display:flex;
-  align-items:center;
-  justify-content:space-between;
-  padding:16px 20px;
-  border-bottom:1px solid var(--border);
-  gap:12px;
-  flex-wrap:wrap;
-}
-.panel-title{
-  display:flex;
-  align-items:center;
-  gap:10px;
-  font-size:15px;
-  font-weight:600;
-  color:var(--text);
-}
-.count-badge{
-  background:var(--surface2);
-  color:var(--text);
-  font-size:12px;
-  font-weight:600;
-  padding:2px 9px;
-  border-radius:10px;
-  font-family:'Inter',sans-serif;
-}
-.panel-meta{
-  font-size:12px;
-  color:var(--text3);
-  font-weight:500;
-}
-.panel-meta .arrow{margin-left:4px}
-
-/* Search input ในแถบ panel */
-.search-wrap{position:relative;display:flex;align-items:center}
-.search-wrap input{
-  font-family:inherit;
-  font-size:13px;
-  padding:6px 10px 6px 28px;
-  border:1px solid var(--border);
-  border-radius:var(--radius-xs);
-  background:var(--surface2);
-  color:var(--text);
-  outline:none;
-  width:170px;
-  transition:all .15s;
-}
-.search-wrap input:focus{border-color:var(--accent);background:var(--surface)}
-.search-wrap .si{
-  position:absolute;
-  left:9px;
-  font-size:12px;
-  color:var(--text3);
-  pointer-events:none;
-}
-
-/* ═══════ FUEL TABLE ═══════ */
-/* Fuel table scroll wrapper — max ~10 rows then internal scroll */
-.fuel-table-scroll{
-  max-height:560px;       /* ~10 rows × 56px */
-  overflow-y:auto;
-  overflow-x:auto;
-}
-.fuel-table-scroll thead th{
-  position:sticky;
-  top:0;
-  background:var(--surface);
-  z-index:2;
-}
-.fuel-table-scroll::-webkit-scrollbar{width:8px;height:8px}
-.fuel-table-scroll::-webkit-scrollbar-track{background:transparent}
-.fuel-table-scroll::-webkit-scrollbar-thumb{background:var(--border-strong);border-radius:4px}
-.fuel-table-scroll::-webkit-scrollbar-thumb:hover{background:var(--text3)}
-
-.fuel-table{width:100%;border-collapse:collapse;font-size:13px}
-.fuel-table thead th{
-  background:transparent;
-  padding:10px 16px;
-  text-align:left;
-  font-weight:500;
-  font-size:11px;
-  color:var(--text3);
-  border-bottom:1px solid var(--border);
-  text-transform:uppercase;
-  letter-spacing:.05em;
-}
-.fuel-table thead th.num{text-align:right}
-.fuel-table tbody td{
-  padding:14px 16px;
-  border-bottom:1px solid var(--border);
-  color:var(--text);
-  vertical-align:middle;
-}
-.fuel-table tbody tr:last-child td{border-bottom:none}
-.fuel-table tbody tr:hover{background:var(--surface2)}
-.fuel-table tbody td.num{text-align:right;font-family:'Inter','IBM Plex Sans Thai',sans-serif;font-variant-numeric:tabular-nums}
-
-.row-idx{
-  color:var(--text3);
-  font-size:12px;
-  font-weight:500;
-  font-family:'Inter',sans-serif;
-}
-
-/* Avatar (วงกลมตัวอักษร) */
-.driver-cell{display:flex;align-items:center;gap:10px}
-.avatar{
-  width:32px;
-  height:32px;
-  border-radius:50%;
-  display:flex;
-  align-items:center;
-  justify-content:center;
-  font-size:12px;
-  font-weight:700;
-  color:#fff;
-  flex-shrink:0;
-  letter-spacing:-.01em;
-}
-.driver-info{display:flex;flex-direction:column;line-height:1.3}
-.driver-name{font-weight:600;font-size:13.5px;color:var(--text)}
-.driver-plate{font-size:11.5px;color:var(--text3);font-family:'Inter',monospace}
-
-/* Time pill */
-.time-pill{
-  display:inline-flex;
-  align-items:center;
-  border:1px solid var(--border);
-  background:var(--surface);
-  border-radius:20px;
-  padding:4px 12px;
-  font-size:12px;
-  font-weight:500;
-  color:var(--text2);
-  font-family:'Inter','IBM Plex Sans Thai',sans-serif;
-  font-variant-numeric:tabular-nums;
-  white-space:nowrap;
-}
-
-/* km value highlight */
-.km-good{color:var(--green);font-weight:700}
-.km-bad{color:var(--red);font-weight:700}
-.km-mid{color:var(--text);font-weight:600}
-
-/* ═══════ DRIVER LIST PANEL (ขวา) ═══════ */
-.driver-list{
-  padding:8px 0;
-  max-height:560px;
-  overflow-y:auto;
-}
-.driver-list::-webkit-scrollbar{width:8px}
-.driver-list::-webkit-scrollbar-track{background:transparent}
-.driver-list::-webkit-scrollbar-thumb{background:var(--border-strong);border-radius:4px}
-.driver-list::-webkit-scrollbar-thumb:hover{background:var(--text3)}
-.driver-row{
-  display:flex;
-  align-items:center;
-  gap:12px;
-  padding:11px 20px;
-  border-bottom:1px solid var(--border);
-  transition:background .15s;
-}
-.driver-row:last-child{border-bottom:none}
-.driver-row:hover{background:var(--surface2)}
-.driver-rank{
-  display:flex;
-  align-items:center;
-  justify-content:center;
-  width:28px;
-  flex-shrink:0;
-}
-.rank-num{
-  font-size:14px;
-  font-weight:700;
-  color:var(--text3);
-  font-family:'Inter',sans-serif;
-}
-.rank-circle{
-  width:22px;
-  height:22px;
-  border-radius:50%;
-  display:flex;
-  align-items:center;
-  justify-content:center;
-  font-size:11px;
-  font-weight:700;
-  color:#fff;
-  font-family:'Inter',sans-serif;
-}
-.driver-row .body{flex:1;min-width:0}
-.driver-row .body .name-row{
-  display:flex;
-  align-items:center;
-  gap:8px;
-  margin-bottom:3px;
-}
-.driver-row .body .name{font-weight:600;font-size:13.5px;color:var(--text)}
-.driver-row .body .stats{
-  font-size:11.5px;
-  color:var(--text3);
-  font-family:'Inter','IBM Plex Sans Thai',sans-serif;
-  font-variant-numeric:tabular-nums;
-}
-.driver-row .body .stats span{margin-right:6px}
-.driver-row .body .stats span+span{padding-left:6px;border-left:1px solid var(--border)}
-.driver-row .right{text-align:right;flex-shrink:0}
-.driver-row .right .price{
-  font-size:14px;
-  font-weight:700;
-  color:var(--text);
-  font-family:'Inter',sans-serif;
-  font-variant-numeric:tabular-nums;
-}
-.driver-row .right .kml{
-  font-size:11.5px;
-  color:var(--text3);
-  margin-top:2px;
-  font-family:'Inter',sans-serif;
-}
-.driver-row .right .kml.warn{color:var(--red);font-weight:600}
-
-/* ═══════ CHARTS GRID ═══════ */
-.charts-grid{
-  display:grid;
-  grid-template-columns:minmax(0, 1fr) minmax(0, 1.3fr);
-  gap:18px;
-  margin-bottom:24px;
-}
-@media(max-width:1100px){.charts-grid{grid-template-columns:minmax(0,1fr)}}
-
-.chart-panel{
-  background:var(--surface);
-  border:1px solid var(--border);
-  border-radius:var(--radius);
-  padding:18px 20px;
-  box-shadow:var(--shadow);
-  min-width:0;
-  overflow:hidden;
-}
-.chart-head{
-  display:flex;
-  align-items:center;
-  justify-content:space-between;
-  margin-bottom:14px;
-  gap:10px;
-  flex-wrap:wrap;
-}
-.chart-title{
-  font-size:14.5px;
-  font-weight:600;
-  color:var(--text);
-}
-.chart-sub{
-  font-size:12px;
-  color:var(--text3);
-  font-weight:400;
-  border-left:1px solid var(--border);
-  padding-left:12px;
-  margin-left:12px;
-}
-.chart-canvas{position:relative;width:100%;max-width:100%;height:230px}
-/* Horizontal scroll container — limits visible bars to ~4, scrolls if more */
-.chart-scroll{
-  overflow-x:auto;
-  overflow-y:hidden;
-  width:100%;
-  max-width:100%;
-  display:block;
-}
-.chart-scroll .chart-inner{
-  position:relative;
-  height:100%;
-  display:block;
-}
-.chart-scroll canvas{display:block}
-.chart-scroll::-webkit-scrollbar{height:8px}
-.chart-scroll::-webkit-scrollbar-track{background:transparent}
-.chart-scroll::-webkit-scrollbar-thumb{background:var(--border-strong);border-radius:4px}
-.chart-scroll::-webkit-scrollbar-thumb:hover{background:var(--text3)}
-.chart-legend{
-  display:flex;
-  flex-wrap:wrap;
-  gap:14px;
-  margin-top:12px;
-  padding-top:12px;
-  border-top:1px solid var(--border);
-  font-size:12px;
-  color:var(--text2);
-}
-.chart-legend-item{display:flex;align-items:center;gap:6px;font-weight:500}
-.chart-legend-dot{width:10px;height:10px;border-radius:2px;flex-shrink:0}
-
-/* ═══════ PAGINATION ═══════ */
-.pagination{
-  display:flex;
-  align-items:center;
-  justify-content:space-between;
-  padding:12px 20px;
-  border-top:1px solid var(--border);
-  background:var(--surface);
-  gap:12px;
-  flex-wrap:wrap;
-}
-.pagination-info{font-size:12px;color:var(--text2)}
-.pagination-info strong{color:var(--text);font-weight:600;font-family:'Inter',sans-serif}
-.pagination-controls{display:flex;align-items:center;gap:4px;flex-wrap:wrap}
-.page-btn{
-  min-width:30px;
-  height:30px;
-  padding:0 10px;
-  border:1px solid var(--border);
-  background:var(--surface);
-  color:var(--text2);
-  border-radius:6px;
-  font-family:inherit;
-  font-size:12.5px;
-  font-weight:500;
-  cursor:pointer;
-  display:inline-flex;
-  align-items:center;
-  justify-content:center;
-  transition:all .15s;
-}
-.page-btn:hover:not(:disabled){background:var(--surface2);border-color:var(--border-strong);color:var(--text)}
-.page-btn.active{background:var(--accent);border-color:var(--accent);color:#fff}
-.page-btn:disabled{opacity:.4;cursor:not-allowed}
-.page-ellipsis{color:var(--text3);font-size:12px;padding:0 4px;user-select:none}
-
-/* ═══════ DATE RANGE PICKER POPUP — ขยายใหญ่ขึ้น ═══════ */
-.drp-wrap{position:relative}
-.drp-popup{
-  position:fixed;
-  background:#fff;
-  border:1px solid var(--border);
-  border-radius:16px;
-  box-shadow:0 12px 40px rgba(15,23,42,.18);
-  padding:22px;
-  z-index:600;
-  display:none;
-  min-width:420px;
-  max-width:460px;
-}
-.drp-popup.open{display:block;animation:drpIn .15s ease}
-@keyframes drpIn{from{opacity:0;transform:translateY(-6px)}to{opacity:1;transform:translateY(0)}}
-.drp-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;padding:0 6px}
-.drp-nav-btn{
-  width:36px;height:36px;
-  border-radius:50%;
-  border:none;background:transparent;
-  color:var(--text2);cursor:pointer;
-  font-size:18px;
-  display:flex;align-items:center;justify-content:center;
-  transition:background .15s;
-}
-.drp-nav-btn:hover{background:var(--surface2);color:var(--accent)}
-.drp-title{font-size:16px;font-weight:600;color:var(--text)}
-.drp-weekdays{display:grid;grid-template-columns:repeat(7,1fr);gap:4px;margin-bottom:6px}
-.drp-weekday{
-  text-align:center;
-  font-size:12px;
-  color:var(--text3);
-  padding:8px 0;
-  font-weight:600;
-}
-.drp-days{display:grid;grid-template-columns:repeat(7,1fr);gap:4px;user-select:none;-webkit-user-select:none;touch-action:none}
-.drp-day{
-  width:100%;
-  height:44px;
-  display:flex;align-items:center;justify-content:center;
-  font-size:14px;
-  color:var(--text);cursor:pointer;
-  border:none;background:transparent;
-  font-family:inherit;font-weight:500;
-  border-radius:8px;
-  transition:background .12s, color .12s;
-  padding:0;
-  line-height:1;
-}
-.drp-day:hover:not(.disabled):not(.in-range):not(.selected){background:var(--surface2)}
-.drp-day.muted{color:var(--text3);opacity:.4}
-.drp-day.today{color:var(--accent);font-weight:700}
-.drp-day.selected{background:var(--accent);color:#fff;font-weight:700;border-radius:10px;z-index:2}
-.drp-day.in-range{background:rgba(37,99,235,.12);border-radius:0;color:var(--accent)}
-.drp-day.range-start{background:var(--accent);color:#fff;border-radius:10px 0 0 10px}
-.drp-day.range-end{background:var(--accent);color:#fff;border-radius:0 10px 10px 0}
-.drp-day.range-start.range-end{border-radius:10px}
-.drp-footer{
-  display:flex;justify-content:space-between;align-items:center;
-  margin-top:16px;padding-top:16px;
-  border-top:1px solid var(--border);
-  gap:10px;
-}
-.drp-presets{display:flex;gap:6px;flex-wrap:wrap}
-.drp-preset-btn{
-  padding:7px 14px;
-  font-size:12.5px;
-  border:1px solid var(--border);
-  background:var(--surface2);
-  color:var(--text2);
-  border-radius:18px;
-  cursor:pointer;font-family:inherit;font-weight:500;
-  transition:all .15s;
-}
-.drp-preset-btn:hover{border-color:var(--accent);color:var(--accent);background:#fff}
-.drp-apply-btn{
-  padding:9px 22px;
-  background:var(--accent);color:#fff;
-  border:none;border-radius:8px;
-  font-size:13.5px;
-  font-weight:600;cursor:pointer;font-family:inherit;
-  transition:background .15s;
-}
-.drp-apply-btn:hover{background:var(--accent-hover)}
-.drp-apply-btn:disabled{opacity:.5;cursor:not-allowed}
-.drp-hint{font-size:12px;color:var(--text3);margin-top:10px;text-align:center}
-
-/* ═══════ MAIN MODAL (เพิ่มข้อมูล) — ขยายใหญ่ขึ้น ═══════ */
-.modal-overlay{
-  display:none;position:fixed;inset:0;
-  background:rgba(15,23,42,.55);
-  z-index:500;
-  align-items:center;justify-content:center;
-  padding:20px;
-  backdrop-filter:blur(5px);
-}
-.modal-overlay.open{display:flex}
-.modal{
-  background:var(--surface);
-  border-radius:18px;
-  width:100%;
-  max-width:780px;
-  max-height:94vh;
-  display:flex;flex-direction:column;
-  box-shadow:0 24px 70px rgba(0,0,0,.22);
-  animation:modalIn .2s ease;
-}
-@keyframes modalIn{from{transform:translateY(20px);opacity:0}to{transform:translateY(0);opacity:1}}
-.modal-header{
-  padding:22px 28px 16px;
-  border-bottom:1px solid var(--border);
-  display:flex;align-items:center;justify-content:space-between;
-  flex-shrink:0;
-}
-.modal-title{font-size:18px;font-weight:600;color:var(--text)}
-.modal-close{
-  width:36px;height:36px;
-  border-radius:10px;
-  border:none;background:var(--surface2);
-  color:var(--text2);cursor:pointer;
-  font-size:17px;
-  display:flex;align-items:center;justify-content:center;
-  transition:background .15s;
-}
-.modal-close:hover{background:var(--border)}
-.modal-body{padding:22px 28px;overflow-y:auto;flex:1}
-.modal-footer{
-  padding:16px 28px;
-  border-top:1px solid var(--border);
-  display:flex;justify-content:flex-end;gap:12px;
-  flex-shrink:0;
-}
-
-/* Fullscreen modal — ขยายมากขึ้น */
-.modal.modal-fullscreen{
-  max-width:1320px!important;
-  width:97vw!important;
-  max-height:96vh!important;
-  height:96vh;
-}
-.modal.modal-fullscreen .modal-body{padding:28px 36px}
-
-/* Step indicator — ใหญ่ขึ้น */
-.step-indicator{display:flex;align-items:center;justify-content:center;margin-bottom:24px;width:100%}
-.step-item{display:flex;align-items:center;gap:10px;flex-shrink:0}
-.step-circle{
-  width:36px;height:36px;
-  border-radius:50%;
-  display:flex;align-items:center;justify-content:center;
-  font-size:14px;
-  font-weight:700;flex-shrink:0;
-  transition:all .3s;
-}
-.step-circle.active{background:var(--accent);color:#fff;box-shadow:0 0 0 5px rgba(37,99,235,.18)}
-.step-circle.done{background:var(--green);color:#fff}
-.step-circle.inactive{background:var(--border);color:var(--text3)}
-.step-label{font-size:13px;font-weight:600}
-.step-line{flex:0 0 140px;height:2px;margin:0 12px;border-radius:2px}
-
-/* Driver banner — ใหญ่ขึ้น */
-.driver-banner{
-  background:linear-gradient(135deg,var(--navy) 0%,var(--navy-light) 100%);
-  border-radius:var(--radius);
-  padding:18px 20px;
-  margin-bottom:20px;
-  display:flex;align-items:center;gap:14px;
-  color:#fff;
-}
-.driver-avatar-big{
-  width:52px;height:52px;
-  background:rgba(255,255,255,.15);
-  border-radius:50%;
-  display:flex;align-items:center;justify-content:center;
-  font-size:24px;
-  flex-shrink:0;
-}
-.driver-banner-name{font-size:19px;font-weight:700;line-height:1}
-.driver-banner-plate{font-size:13px;opacity:.7;margin-top:5px;font-family:monospace}
-
-/* Form grids — เพิ่ม gap */
-.driver-card-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px}
-.driver-card-grid .full{grid-column:1/-1}
-.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px}
-.form-grid .full{grid-column:1/-1}
-
-/* Labels & form controls — ใหญ่ขึ้น */
-.form-label{
-  display:block;
-  font-size:13px;
-  font-weight:600;color:var(--text2);
-  margin-bottom:7px;
-  text-transform:uppercase;letter-spacing:.5px;
-}
-.form-control{
-  width:100%;
-  padding:11px 14px;
-  border:1px solid var(--border);
-  border-radius:var(--radius-xs);
-  font-family:inherit;
-  font-size:15px;
-  color:var(--text);background:var(--surface);
-  outline:none;
-  transition:border-color .2s, box-shadow .2s;
-}
-.form-control:focus{border-color:var(--accent);box-shadow:0 0 0 3px rgba(37,99,235,.12)}
-.form-control.is-invalid{border-color:var(--red)}
-.form-control.auto-calc{background:var(--surface2);color:var(--text2);cursor:default}
-textarea.form-control{resize:vertical;min-height:80px}
-.invalid-feedback{font-size:12px;color:var(--red);margin-top:5px}
-.auto-hint{font-size:12px;color:var(--accent);margin-top:5px;font-weight:500}
-.section-divider{
-  font-size:12px;
-  font-weight:700;color:var(--text3);
-  text-transform:uppercase;letter-spacing:1px;
-  padding:6px 0 10px;
-  border-bottom:1px solid var(--border);
-  margin:18px 0 12px;
-  grid-column:1/-1;
-}
-
-/* Oil price banner — ใหญ่ขึ้น */
-.oil-price-banner{
-  background:linear-gradient(135deg,var(--navy) 0%,var(--navy-light) 100%);
-  border-radius:var(--radius);
-  padding:16px 18px;
-  margin-bottom:16px;color:#fff;
-}
-
-/* Calc box — ใหญ่ขึ้น */
-.calc-box{
-  background:rgba(22,163,74,.06);
-  border:1px solid rgba(22,163,74,.25);
-  border-radius:var(--radius-xs);
-  padding:16px 18px;
-  display:none;margin-top:14px;
-}
-.calc-grid{display:grid;grid-template-columns:repeat(4, 1fr);gap:14px}
-.calc-item .lbl{font-size:12px;color:var(--text3);font-weight:600}
-.calc-item .val{font-size:22px;font-weight:700;color:var(--green);margin-top:3px}
-.calc-item .val.amber{color:var(--amber)}
-.calc-item .unit{font-size:12px;color:var(--text3);margin-top:2px}
-
-/* Clock picker row — ใหญ่ขึ้น */
-.clock-picker-row{display:flex;align-items:flex-end;gap:14px;flex-wrap:wrap}
-.clock-block{flex:1;min-width:140px}
-.clock-label{font-size:12px;color:var(--text2);margin-bottom:6px;font-weight:600}
-.clock-display{
-  padding:13px 16px;
-  border:1px solid var(--border);
-  border-radius:var(--radius-xs);
-  background:var(--surface);
-  font-family:'Inter',monospace;
-  font-size:17px;
-  font-weight:600;color:var(--text);
-  cursor:pointer;text-align:center;
-  transition:all .15s;
-}
-.clock-display:hover{border-color:var(--accent);box-shadow:0 0 0 2px rgba(37,99,235,.1)}
-.clock-picker-row.is-invalid .clock-display{border-color:var(--red);background:rgba(220,38,38,.04)}
-.time-arrow{font-size:22px;color:var(--text3);padding-bottom:12px}
-
-/* ═══════ CLOCK PICKER MODAL — ขยายใหญ่ขึ้น ═══════ */
-.clock-modal{
-  position:fixed;inset:0;
-  background:rgba(15,23,42,.55);
-  z-index:10000;
-  display:flex;align-items:center;justify-content:center;
-  padding:20px;
-  backdrop-filter:blur(4px);
-}
-.clock-box{
-  background:#fff;
-  border-radius:20px;
-  padding:26px;
-  width:380px;
-  max-width:100%;
-  box-shadow:0 24px 60px rgba(0,0,0,.32);
-}
-.clock-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:16px}
-.clock-header span{font-weight:700;font-size:17px}
-.clock-close{
-  background:none;border:none;
-  font-size:28px;
-  cursor:pointer;color:#666;line-height:1;
-  width:32px;height:32px;
-  display:flex;align-items:center;justify-content:center;
-  border-radius:8px;
-  transition:background .15s;
-}
-.clock-close:hover{background:var(--surface2)}
-.clock-tabs{display:flex;gap:8px;margin-bottom:14px}
-.clock-tab{
-  flex:1;
-  padding:9px;
-  border:1px solid #ddd;
-  background:#f5f5f5;
-  border-radius:8px;
-  cursor:pointer;
-  font-size:13.5px;
-  font-weight:600;
-  font-family:inherit;
-  transition:all .15s;
-}
-.clock-tab.active{background:var(--accent);color:#fff;border-color:transparent}
-.clock-current{
-  text-align:center;
-  font-size:36px;
-  font-weight:700;
-  margin:12px 0;
-  color:var(--accent);
-  font-family:'Inter',monospace;
-  letter-spacing:.02em;
-}
-#clock-face{
-  display:block;margin:0 auto;cursor:pointer;
-  width:320px!important;
-  height:320px!important;
-}
-.clock-ok{
-  width:100%;
-  margin-top:16px;
-  padding:13px;
-  border:none;background:var(--accent);color:#fff;
-  border-radius:10px;
-  font-weight:700;cursor:pointer;
-  font-size:15px;
-  font-family:inherit;
-  transition:background .15s;
-}
-.clock-ok:hover{background:var(--accent-hover)}
-
-/* Job table inside modal */
-.job-table-wrap{border:1px solid var(--border);border-radius:var(--radius-xs);overflow:hidden}
-.job-table-wrap table{width:100%;border-collapse:collapse;font-size:12px}
-.job-table-wrap thead th{background:var(--surface2);padding:8px 12px;text-align:left;font-weight:600;font-size:11px;color:var(--text2);border-bottom:1px solid var(--border)}
-.job-table-wrap tbody td{padding:9px 12px;border-bottom:1px solid var(--border)}
-.job-loading{text-align:center;padding:18px;color:var(--text3);font-size:13px;background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius-xs)}
-.job-bill{font-family:monospace;font-size:11px;background:var(--surface2);border:1px solid var(--border);border-radius:3px;padding:1px 5px;color:var(--text2)}
-.job-summary-bar{display:flex;gap:8px;padding:10px 14px;background:var(--surface2);border-top:1px solid var(--border);flex-wrap:wrap}
-.job-chip{font-size:11px;font-weight:600;padding:3px 10px;border-radius:20px;border:1px solid var(--border);color:var(--text2);background:var(--surface)}
-.job-chip.ok{background:var(--green-light);color:#14532d;border-color:var(--green)}
-.job-chip.fail{background:var(--red-light);color:#7f1d1d;border-color:var(--red)}
-.job-date-chip{font-size:11px;color:var(--text3);background:var(--surface2);border:1px solid var(--border);border-radius:20px;padding:2px 9px}
-
-/* Toast */
-.toast{position:fixed;top:76px;right:20px;z-index:9999;min-width:240px;max-width:340px;background:var(--green);color:#fff;padding:14px 18px 18px 16px;border-radius:12px;box-shadow:0 6px 28px rgba(0,0,0,.22);display:flex;align-items:flex-start;gap:10px;font-family:inherit;font-size:14px;font-weight:500;animation:toastIn .35s cubic-bezier(.34,1.56,.64,1) both;overflow:hidden}
-.toast.hiding{animation:toastOut .35s ease forwards}
-.toast-icon{font-size:20px;flex-shrink:0;margin-top:1px}
-.toast-body{flex:1}
-.toast-title{font-weight:700;font-size:14px;margin-bottom:2px}
-.toast-msg{font-size:13px;opacity:.88}
-.toast-progress{position:absolute;bottom:0;left:0;height:4px;background:rgba(255,255,255,.45);width:100%}
-@keyframes toastIn{from{transform:translateX(110%);opacity:0}to{transform:translateX(0);opacity:1}}
-@keyframes toastOut{from{transform:translateX(0);opacity:1}to{transform:translateX(110%);opacity:0}}
-
-/* Date input lock */
-.date-input-locked{background:var(--surface2)!important;cursor:not-allowed!important;opacity:.6;pointer-events:none}
-.date-loading-hint{display:none;margin-top:6px;font-size:12px;color:var(--amber);font-weight:600}
-.date-loading-hint.show{display:flex;align-items:center;gap:6px}
-.date-loading-hint .spinner{display:inline-block;width:12px;height:12px;border:2px solid var(--amber);border-top-color:transparent;border-radius:50%;animation:spin .8s linear infinite}
-@keyframes spin{to{transform:rotate(360deg)}}
-
-@media(max-width:760px){
-  .topbar{padding:12px 16px;gap:10px}
-  .topbar-sub{display:none}
-  .main{padding:18px 16px}
-  .form-grid,.driver-card-grid{grid-template-columns:1fr}
-}
-
-/* Hide report page elements ที่ไม่ได้ใช้ในหน้านี้ — เก็บไว้เผื่อมี route */
-/* #pageReport visibility controlled via JS — start hidden via inline style */
-
-/* Keep all the report page styles for compatibility */
-.report-section-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;padding:16px 20px;background:linear-gradient(135deg,var(--navy) 0%,var(--navy-light) 100%);border-radius:var(--radius);color:#fff;flex-wrap:wrap;gap:10px;box-shadow:0 4px 16px rgba(15,23,42,.18)}
-.report-section-title{font-size:17px;font-weight:700;color:#fff;display:flex;align-items:center;gap:8px}
-.report-section-sub{font-size:12px;color:rgba(255,255,255,.65);margin-top:2px}
-.report-pie-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px;margin-bottom:18px}
-@media(max-width:900px){.report-pie-grid{grid-template-columns:1fr 1fr}}
-@media(max-width:600px){.report-pie-grid{grid-template-columns:1fr}}
-.pie-card{background:var(--surface);border-radius:var(--radius);padding:18px;border:1px solid var(--border);box-shadow:var(--shadow)}
-.pie-card-title{font-size:16px;font-weight:700;color:var(--text);margin-bottom:3px}
-.pie-card-sub{font-size:13px;color:var(--text2);margin-bottom:12px}
-.pie-canvas-wrap{position:relative;width:100%;height:200px}
-.pie-legend{margin-top:10px;display:flex;flex-direction:column;gap:5px}
-.pie-legend-item{display:flex;align-items:center;gap:8px;font-size:13px;color:var(--text2)}
-.pie-legend-dot{width:11px;height:11px;border-radius:50%;flex-shrink:0}
-.pie-legend-label{flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.pie-legend-val{font-weight:600;color:var(--text);white-space:nowrap;font-size:13px}
-.report-driver-table{background:var(--surface);border-radius:var(--radius);border:1px solid var(--border);box-shadow:var(--shadow);overflow:hidden;margin-bottom:18px}
-.report-stat-row{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;margin-bottom:18px}
-.report-stat-card{background:var(--surface);border-radius:var(--radius);padding:14px 16px;border:1px solid var(--border);box-shadow:var(--shadow);text-align:center}
-.report-stat-label{font-size:12px;color:var(--text2);font-weight:600;text-transform:uppercase;letter-spacing:.5px;margin-bottom:5px}
-.report-stat-value{font-size:22px;font-weight:700;color:var(--navy)}
-.report-stat-sub{font-size:12px;color:var(--text3);margin-top:2px}
-.kml-bar-wrap{display:flex;align-items:center;gap:8px}
-.kml-bar-bg{flex:1;height:6px;background:var(--surface2);border-radius:3px;overflow:hidden}
-.kml-bar-fill{height:100%;border-radius:3px;background:linear-gradient(90deg,var(--green),#10b981)}
-.rank-badge{display:inline-flex;align-items:center;justify-content:center;width:22px;height:22px;border-radius:50%;font-size:11px;font-weight:700;background:var(--surface2);color:var(--text2)}
-.rank-badge.gold{background:#fef3c7;color:#b45309}
-.rank-badge.silver{background:#f1f5f9;color:#475569}
-.rank-badge.bronze{background:#fef0e7;color:#9a3412}
-.filter-bar{display:flex;align-items:center;gap:8px;flex-wrap:wrap;background:var(--surface);padding:12px 16px;border-radius:var(--radius);border:1px solid var(--border);margin-bottom:18px}
-.dlv-filter-row{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;margin-bottom:12px}
-.btn{display:inline-flex;align-items:center;gap:7px;padding:9px 18px;border-radius:var(--radius-xs);font-family:inherit;font-size:14px;font-weight:500;cursor:pointer;border:none;transition:all .2s;text-decoration:none}
+@media (max-width: 1280px){.report-stat-row{grid-template-columns: repeat(3, 1fr)}}
+@media (max-width: 1024px){.dual-grid{grid-template-columns: 1fr}.dual-grid .card{min-height: 400px; max-height: 520px}.charts-grid{grid-template-columns: 1fr}.report-pie-grid{grid-template-columns: 1fr 1fr}}
+@media (max-width: 900px){.topnav-toggle{display: inline-flex}.topnav-main{padding: 0 16px; gap: 12px}.topnav-menu{position: absolute; top: 52px; left: 0; right: 0;background: rgba(255,255,255,.95);backdrop-filter: blur(20px);flex-direction: column; align-items: stretch;gap: 0; padding: 8px;border-bottom: 0.5px solid var(--separator);box-shadow: 0 8px 24px rgba(0,0,0,.08);display: none;}.topnav-menu.open{display: flex}.topnav-menu .nav-item{width: 100%; justify-content: flex-start;padding: 11px 14px; font-size: 14px;}.topnav-time{display: none}.topnav-filters{padding: 0 16px; gap: 10px}.filter-group-label{display: none}.main{padding: 18px 16px}.hero-title{font-size: 24px}.report-stat-row{grid-template-columns: repeat(2, 1fr)}.report-pie-grid{grid-template-columns: 1fr}.search-pill input{width: 140px}}
+@media (max-width: 600px){.topnav-brand .title-text{display: none}.hero{margin-bottom: 16px}.hero-title{font-size: 22px}.hero-sub{font-size: 14px}.card-head{padding: 14px 16px}.fuel-table thead th, .fuel-table tbody td{padding: 10px 8px}.fuel-table thead th:first-child, .fuel-table tbody td:first-child{padding-left: 12px}.fuel-table thead th:last-child, .fuel-table tbody td:last-child{padding-right: 12px}.search-pill input{width: 120px}}
 </style>
 </head>
 <body>
 
-{{-- Mobile sidebar toggle --}}
-<button type="button" class="sidebar-toggle" onclick="toggleSidebar()">☰</button>
-<div class="sidebar-overlay" id="sbOverlay" onclick="toggleSidebar()"></div>
-
-{{-- ═══════════════════════════════════════════════════════════════
-     APP LAYOUT: Sidebar (ซ้าย) + Content (ขวา)
-═══════════════════════════════════════════════════════════════ --}}
-<div class="app">
-
-<aside class="sidebar" id="appSidebar">
-  {{-- Brand --}}
-  <div class="sidebar-brand">
-    <div class="title">
+@php
+  $currentUser = request()->filled('create_by') ? request('create_by') : 'Guest';
+  $userQuery = $currentUser !== 'Guest' ? '?create_by='.urlencode($currentUser) : '';
+@endphp
+<nav class="topnav">
+  <div class="topnav-main">
+    <div class="topnav-brand">
       <div class="logo">⛽</div>
-      <div>ระบบติดตามน้ำมันรถ</div>
+      <div class="title-text">ติดตามน้ำมัน</div>
     </div>
-    <div class="sub">บันทึกและวิเคราะห์การใช้น้ำมัน</div>
-  </div>
-
-  {{-- Add button (top of sidebar) --}}
-  <button class="sidebar-add-btn sidebar-add-btn-top" onclick="openModal()">
-    <span style="font-size:15px">＋</span> เพิ่มข้อมูล
-  </button>
-
-  {{-- Main menu --}}
-  <div class="sidebar-section">
-    <div class="label">เมนูหลัก</div>
-    <button type="button" class="nav-item active" id="navHome" onclick="showTrackingPage();closeMobileSidebar();">
-      <span class="ic">📈</span>
-      <span>หน้าหลัก / ติดตาม</span>
-      <span class="badge-dot"></span>
+    <button type="button" class="topnav-toggle" onclick="toggleTopMenu()" aria-label="menu">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
     </button>
-    <a class="nav-item" id="navReport" href="#" onclick="event.preventDefault();showReportPage();closeMobileSidebar();">
-      <span class="ic">📊</span>
-      <span>สรุปรายงาน</span>
-    </a>
-    <a class="nav-item" href="{{ url('/service') }}">
-      <span class="ic">🚚</span>
-      <span>service</span>
-    </a>
-        <a class="nav-item" href="{{ url('/SOlist') }}" style="display: flex; align-items: center; padding: 10px 15px; text-decoration: none; color: inherit;">
-      <span class="ic" style="margin-right: 12px; display: flex; align-items: center;">
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"></path>
-          <polyline points="10 17 15 12 10 7"></polyline>
-          <line x1="15" y1="12" x2="3" y2="12"></line>
-        </svg>
+    <div class="topnav-menu" id="topMenu">
+      <button type="button" class="nav-item active" id="navHome" onclick="showTrackingPage();closeMobileMenu();">
+        <span class="ic"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12L12 3l9 9"/><path d="M5 10v10a1 1 0 0 0 1 1h4v-6h4v6h4a1 1 0 0 0 1-1V10"/></svg></span>
+        <span>หน้าหลัก</span>
+      </button>
+      <a class="nav-item" id="navReport" href="#" onclick="event.preventDefault();showReportPage();closeMobileMenu();">
+        <span class="ic"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/><line x1="3" y1="20" x2="21" y2="20"/></svg></span>
+        <span>รายงาน</span>
+      </a>
+      <a class="nav-item" href="{{ url('/service').$userQuery }}">
+        <span class="ic"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M1 3h15v13H1z"/><path d="M16 8h4l3 3v5h-7V8z"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg></span>
+        <span>Service</span>
+      </a>
+      <a class="nav-item" href="http://server_update:8000/solist{{ $userQuery }}">
+        <span class="ic"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="9" y1="13" x2="15" y2="13"/><line x1="9" y1="17" x2="13" y2="17"/></svg></span>
+        <span>SO List</span>
+      </a>
+    </div>
+    <div class="topnav-right">
+      <span class="topnav-user" title="ผู้ใช้ปัจจุบัน">
+        <span class="topnav-user-avatar">{{ mb_substr(request()->filled('create_by') ? request('create_by') : 'Guest', 0, 1) }}</span>
+        <span class="topnav-user-name">{{ request()->filled('create_by') ? request('create_by') : 'Guest' }}</span>
       </span>
-      <span style="font-weight: 500;">(SO List)</span>
-    </a>
-  </div>
-
-  {{-- View filter --}}
-  <div class="sidebar-section">
-    <div class="label">มุมมอง</div>
-    <div class="sidebar-view-tabs">
-      @foreach(['day'=>'📅 รายวัน','month'=>'🗓 รายเดือน','year'=>'📆 รายปี','all'=>'∞ ทั้งหมด'] as $v=>$label)
-      <button type="button" class="view-tab {{ $view===$v?'active':''}}" onclick="switchView('{{ $v }}')">{{ $label }}</button>
-      @endforeach
+      <span class="topnav-time">
+        <span class="pulse"></span>
+        <span id="navDate">—</span>
+      </span>
     </div>
   </div>
 
-  {{-- Date filter --}}
-  @if($view==='day')
-  @php
-    $dateFrom = request('date_from', request('date', $filterDay));
-    $dateTo   = request('date_to',   request('date', $filterDay));
-  @endphp
-  <div class="sidebar-section" style="padding-top:6px">
-    <div class="label">ช่วงวันที่</div>
-    <div class="sidebar-control">
-      <div class="drp-wrap" data-from="{{ $dateFrom }}" data-to="{{ $dateTo }}">
-        <button type="button" class="date-trigger" id="drpTrigger" onclick="drpToggle(event)">
-          <span class="ic">📅</span>
+  <div class="topnav-filters">
+    <div class="filter-group">
+      <span class="filter-group-label">มุมมอง</span>
+      <div class="segmented">
+        @foreach(['day'=>'รายวัน','month'=>'รายเดือน','year'=>'รายปี','all'=>'ทั้งหมด'] as $v=>$label)
+        <button type="button" class="seg-btn {{ $view===$v?'active':''}}" onclick="switchView('{{ $v }}')">{{ $label }}</button>
+        @endforeach
+      </div>
+    </div>
+
+    @if($view==='day')
+    @php
+      $dateFrom = request('date_from', request('date', $filterDay));
+      $dateTo   = request('date_to',   request('date', $filterDay));
+    @endphp
+    <div class="filter-group">
+      <span class="filter-group-label">ช่วงวันที่</span>
+      <div class="drp-wrap" data-from="{{ $dateFrom }}" data-to="{{ $dateTo }}" style="position:relative">
+        <button type="button" class="date-trigger-pill" id="drpTrigger" onclick="drpToggle(event)">
           <span id="drpLabel" style="flex:1">—</span>
-          <span class="arrow">▼</span>
+          <span class="arrow">⌄</span>
         </button>
         <div class="drp-popup" id="drpPopup">
           <div class="drp-header">
@@ -1249,9 +535,9 @@ textarea.form-control{resize:vertical;min-height:80px}
             <button type="button" class="drp-nav-btn" onclick="drpNavMonth(1)">›</button>
           </div>
           <div class="drp-weekdays">
-            <div class="drp-weekday">อา.</div><div class="drp-weekday">จ.</div><div class="drp-weekday">อ.</div>
-            <div class="drp-weekday">พ.</div><div class="drp-weekday">พฤ.</div><div class="drp-weekday">ศ.</div>
-            <div class="drp-weekday">ส.</div>
+            <div class="drp-weekday">อา</div><div class="drp-weekday">จ</div><div class="drp-weekday">อ</div>
+            <div class="drp-weekday">พ</div><div class="drp-weekday">พฤ</div><div class="drp-weekday">ศ</div>
+            <div class="drp-weekday">ส</div>
           </div>
           <div class="drp-days" id="drpDays"></div>
           <div class="drp-hint" id="drpHint">เลือกวันเริ่มต้น</div>
@@ -1266,15 +552,12 @@ textarea.form-control{resize:vertical;min-height:80px}
         </div>
       </div>
     </div>
-  </div>
-  @elseif($view==='year')
-  <div class="sidebar-section" style="padding-top:6px">
-    <div class="label">ปี</div>
-    <div class="sidebar-control">
-      <select class="driver-select" id="yearPicker" onchange="onYearChange()">
+    @elseif($view==='year')
+    <div class="filter-group">
+      <span class="filter-group-label">ปี</span>
+      <select class="pill-select" id="yearPicker" onchange="onYearChange()">
         @php
           $savedYear = request('year', date('Y'));
-          // Allow showing future years up to +2
           $yearMax = max((int)date('Y') + 2, (int)$savedYear);
         @endphp
         @for($y=$yearMax;$y>=2020;$y--)
@@ -1282,21 +565,16 @@ textarea.form-control{resize:vertical;min-height:80px}
         @endfor
       </select>
     </div>
-  </div>
-  @elseif($view!=='all')
-  <div class="sidebar-section" style="padding-top:6px">
-    <div class="label">เดือน</div>
-    <div class="sidebar-control">
-      <input type="month" class="driver-select" id="monthPicker" value="{{ $filterMonth }}" onchange="submitFilter()">
+    @elseif($view!=='all')
+    <div class="filter-group">
+      <span class="filter-group-label">เดือน</span>
+      <input type="month" class="pill-date" id="monthPicker" value="{{ $filterMonth }}" onchange="submitFilter()">
     </div>
-  </div>
-  @endif
+    @endif
 
-  {{-- Driver filter --}}
-  <div class="sidebar-section" style="padding-top:6px">
-    <div class="label">คนขับ</div>
-    <div class="sidebar-control">
-      <select class="driver-select" id="driverPicker" onchange="submitFilter()">
+    <div class="filter-group">
+      <span class="filter-group-label">คนขับ</span>
+      <select class="pill-select" id="driverPicker" onchange="submitFilter()">
         <option value="all" {{ $filterDriver==='all'?'selected':'' }}>คนขับทั้งหมด</option>
         @foreach($drivers as $d)
         <option value="{{ $d }}" {{ $filterDriver===$d?'selected':'' }}>{{ $d }}</option>
@@ -1304,19 +582,11 @@ textarea.form-control{resize:vertical;min-height:80px}
       </select>
     </div>
   </div>
-
-  {{-- Footer --}}
-  <div class="sidebar-footer">
-    <div class="live-time">อัปเดต <span id="navDate">—</span> น.</div>
-    <div style="margin-top:4px">© Oil Tracker</div>
-  </div>
-</aside>
-
-<div class="content-wrap">
+</nav>
 
 @if(session('success'))
 <div class="toast" id="successToast">
-  <div class="toast-icon">✅</div>
+  <div class="toast-icon">✓</div>
   <div class="toast-body">
     <div class="toast-title">บันทึกสำเร็จ</div>
     <div class="toast-msg">{{ session('success') }}</div>
@@ -1325,14 +595,12 @@ textarea.form-control{resize:vertical;min-height:80px}
 </div>
 <script>
 (function(){
-  var DURATION = 5000;
-  var toast = document.getElementById('successToast');
-  var bar   = document.getElementById('toastProgress');
-  if (!toast) return;
-  bar.style.transition = 'width ' + DURATION + 'ms linear';
-  requestAnimationFrame(function(){requestAnimationFrame(function(){bar.style.width = '0%';});});
-  setTimeout(function(){toast.classList.add('hiding');setTimeout(function(){ toast.remove(); }, 380);}, DURATION);
-  toast.addEventListener('click', function(){toast.classList.add('hiding');setTimeout(function(){ toast.remove(); }, 380);});
+  var D=5000,t=document.getElementById('successToast'),b=document.getElementById('toastProgress');
+  if(!t)return;
+  b.style.transition='width '+D+'ms linear';
+  requestAnimationFrame(function(){requestAnimationFrame(function(){b.style.width='0%';});});
+  setTimeout(function(){t.classList.add('hiding');setTimeout(function(){t.remove();},280);},D);
+  t.addEventListener('click',function(){t.classList.add('hiding');setTimeout(function(){t.remove();},280);});
 })();
 </script>
 @endif
@@ -1340,99 +608,125 @@ textarea.form-control{resize:vertical;min-height:80px}
 <main class="main">
 <div id="pageTracking">
 
-@php
-  $totalLogs       = $logs->count();
-  $totalLiters     = $metrics['total_liters']     ?? 0;
-  $totalPrice      = $metrics['total_price']      ?? 0;
-  $avgKml          = $metrics['avg_km_per_liter'] ?? 0;
-  $totalWorkHours  = $metrics['total_work_hours'] ?? 0;
+  @php
+    $driverList=['บังเดช','แชม','กอล์ฟ','หรั่ง','เก่ง','เอ','ยุทร','แฟรงค์','เอ้'];
+    foreach($drivers as $dbD){if(!in_array($dbD,$driverList))$driverList[]=$dbD;}
+    $plateList=['1 ฉผ 1276','1 ฉผ 3181','1ฉผ213','1ฉผศ7158','2 ฉธ 1620','2ฉมฎ3017','2ฉธ1619','2ฉธ1621','805','3ฉมก6071','3ฉมง3059','3ฉมณ6380','3ฉมย478','3ฉมห200','4กย1540','6762','City 8กค6309','City 9 กค4815','แจ๊ส 9กธ4830'];
+    foreach($plates as $dbP){if(!in_array($dbP,$plateList))$plateList[]=$dbP;}
+  @endphp
 
-  // ✅ คำนวณบาท/กม. แบบ weighted (รวมเงิน ÷ รวมระยะ) — สดๆ ไม่บันทึก
-  $totalDistance = 0;
-  foreach($logs as $r){
-    $totalDistance += $r['total_distance'] ?? 0;
-  }
-  $avgBpk = $totalDistance > 0 ? $totalPrice / $totalDistance : 0;
+  <div class="entry-layout">
 
-  $abnormalCount = 0;
-  foreach($logs as $r){
-    if(($r['km_per_liter'] ?? 0) > 0 && ($r['km_per_liter'] ?? 0) < 9){
-      $abnormalCount++;
-    }
-  }
-@endphp
+    <div class="entry-card">
+      <div class="entry-card-head">
+        <div class="entry-card-head-left">
+          <div class="entry-icon">⛽</div>
+          <div class="entry-titlewrap">
+            <span class="entry-title">บันทึกการเติมน้ำมัน</span>
+            <span class="entry-sub" id="entrySub">เลือกวันที่เพื่อโหลดคนขับของวันนั้น</span>
+          </div>
+          <input type="hidden" id="il-work-date" value="{{ request('date_from', request('date', $filterDay ?? date('Y-m-d'))) }}">
+          <div class="entry-oil-mini">
+            <span class="entry-oil-label" id="ilOilPriceLabel">ราคาดีเซล</span>
+            <span class="entry-oil-num">฿<span id="ilOilPriceShow">—</span></span>
+            <button type="button" id="ilBtnRefresh" class="entry-oil-refresh" onclick="ilRefreshOilPrice()" title="รีเฟรช">↻</button>
+          </div>
+          <button type="button" class="entry-export-btn" onclick="exportPDF()" title="ดาวน์โหลดรายงาน PDF">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+            <span>Export PDF</span>
+          </button>
+        </div>
+      </div>
 
-<div class="metrics">
-  <div class="metric-card green">
-    <div class="metric-label">น้ำมันรวม</div>
-    <div class="metric-row">
-      <div class="metric-value">{{ number_format($totalLiters, 2) }}</div>
-      <div class="metric-unit">ลิตร</div>
+      <div class="entry-oil-tabs">
+        @php $oilBtns=['diesel'=>'ดีเซล','95'=>'95','benzin95'=>'เบนซิน 95','91'=>'91','e20'=>'E20','e85'=>'E85']; @endphp
+        @foreach($oilBtns as $oilKey=>$oilLabel)
+        <button type="button" onclick="ilSwitchOilType('{{ $oilKey }}')" id="ilBtnOil-{{ $oilKey }}" class="entry-oil-tab {{ $oilKey==='diesel'?'active':'' }}">{{ $oilLabel }}</button>
+        @endforeach
+        <span class="entry-oil-status" id="ilOilPriceStatus">กำลังโหลด</span>
+        <span class="entry-oil-live loading" id="ilLiveWrap">
+          <span class="dot" id="ilLiveDot"></span>
+          <span id="ilLiveLabel">กำลังดึง</span>
+        </span>
+      </div>
+
+      <input type="hidden" id="il-price-per-liter" value="">
+
+      <div class="entry-loading-row" id="entryLoadingHint" style="display:none">
+        <span class="spinner"></span> กำลังโหลดข้อมูลคนขับ...
+      </div>
+
+      <div class="entry-rows-wrap">
+        <div class="entry-rows-header">
+          <div class="erh-driver">คนขับ</div>
+          <div class="erh-plate">ทะเบียนรถ</div>
+          <div class="erh-time">เวลา</div>
+          <div class="erh-price">ค่าน้ำมัน (฿)</div>
+          <div class="erh-distance">ระยะ (km)</div>
+          <div class="erh-summary">สรุป</div>
+          <div class="erh-action">บันทึก</div>
+        </div>
+        <div id="entryRowsBody">
+          <div class="entry-empty">เลือกวันที่เพื่อแสดงรายชื่อคนขับ</div>
+        </div>
+      </div>
     </div>
+
+    <aside class="jobs-panel" id="inlineJobsWrap">
+      <div class="jobs-panel-head">
+        <div class="jobs-panel-title">
+          <span class="ico">📋</span>
+          <span id="jobsPanelTitleText">รายการงาน</span>
+        </div>
+        <span id="ilJobDateChip" class="job-date-chip" style="display:none">วันนี้</span>
+      </div>
+      <div class="jobs-panel-body" id="inlineJobTableWrap">
+        <div class="job-loading">คลิกที่ช่องในแถวคนขับ<br>เพื่อดูรายการงานของคนนั้น</div>
+      </div>
+    </aside>
+
   </div>
 
-  <div class="metric-card blue">
-    <div class="metric-label">ค่าน้ำมันรวม</div>
-    <div class="metric-row">
-      <div class="metric-value">฿{{ number_format($totalPrice) }}</div>
-      <div class="metric-unit">บาท</div>
-    </div>
-  </div>
 
-  <div class="metric-card amber">
-    <div class="metric-label">เฉลี่ย km/L</div>
-    <div class="metric-row">
-      <div class="metric-value">{{ number_format($avgKml, 2) }}</div>
-      <div class="metric-unit">กม./ลิตร</div>
-    </div>
-  </div>
-
-  {{-- ✅ NEW: บาท/กม. --}}
-  <div class="metric-card purple">
-    <div class="metric-label">ต้นทุนต่อกิโล</div>
-    <div class="metric-row">
-      <div class="metric-value">฿{{ number_format($avgBpk, 2) }}</div>
-      <div class="metric-unit">บาท/กม.</div>
-    </div>
-  </div>
-
-  <div class="metric-card red">
-    <div class="metric-label">ชม.ทำงาน</div>
-    <div class="metric-row">
-      <div class="metric-value">{{ number_format($totalWorkHours, 0) }}</div>
-      <div class="metric-unit">ชั่วโมง</div>
-    </div>
-  </div>
-</div>
-  {{-- ═══════ DUAL GRID: ตารางเติมน้ำมัน (ซ้าย) + คนขับวันนี้ (ขวา) ═══════ --}}
   <div class="dual-grid {{ $view === 'day' ? 'single-col' : '' }}">
 
-    {{-- ── ตารางเติมน้ำมัน ── --}}
-    <div class="panel">
-      <div class="panel-header">
-        <div class="panel-title">
+    <div class="card">
+      <div class="card-head">
+        <div class="card-title">
           รายการเติมน้ำมัน
-          <span class="count-badge" id="oilCount">{{ $logs->count() }}</span>
-          <span class="panel-meta">เรียง: เวลาทำงาน <span class="arrow">↓</span></span>
+          <span class="card-count" id="oilCount">{{ $logs->count() }}</span>
+          <span class="card-meta">เรียงตามเวลาทำงาน</span>
         </div>
-        <div class="search-wrap">
-          <span class="si">🔍</span>
-          <input type="text" placeholder="เพื่อค้นหา..." oninput="filterOilTable(this.value)">
+        <div class="search-pill">
+          <span class="si">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
+          </span>
+          <input type="text" placeholder="ค้นหา" oninput="filterOilTable(this.value)">
         </div>
       </div>
 
       <div class="fuel-table-scroll">
       <table class="fuel-table">
+        <colgroup>
+          <col style="width:44px">
+          <col style="width:78px">
+          <col style="width:auto;min-width:170px">
+          <col style="width:110px">
+          <col style="width:80px">
+          <col style="width:66px">
+          <col style="width:84px">
+          <col style="width:74px">
+        </colgroup>
         <thead>
           <tr>
-            <th style="width:42px">#</th>
+            <th>#</th>
+            <th>วันที่</th>
             <th>คนขับ / ทะเบียน</th>
-            <th style="width:140px;white-space:nowrap">เวลาทำงาน</th>
-            <th class="num" style="width:80px">ระยะ</th>
-            <th class="num" style="width:70px">ลิตร</th>
-            <th class="num" style="width:80px">฿</th>
-            <th class="num" style="width:70px">KM/L</th>
-            <th class="num" style="width:80px">฿/KM</th>  
+            <th>เวลา</th>
+            <th class="num">ระยะ</th>
+            <th class="num">ลิตร</th>
+            <th class="num">฿</th>
+            <th class="num">KM/L</th>
           </tr>
         </thead>
         <tbody id="oilTbody">
@@ -1442,63 +736,44 @@ textarea.form-control{resize:vertical;min-height:80px}
             $rowNo++;
             $kml=$r['km_per_liter']??0;
             $dist=($r['total_distance']??0)>0?number_format($r['total_distance']).' km':'—';
-            $wh=$r['work_hours']??0;
-            $createdTH=$r['created_at']?\Carbon\Carbon::parse($r['created_at'])->timezone('Asia/Bangkok')->format('d/m/Y H:i'):'—';
             $name = $r['driver_name'] ?? '—';
             $plate = $r['vehicle_id'] ?? '—';
-            // Avatar: ใช้ตัวอักษร 2 ตัวแรก
-            $initials = mb_substr($name, 0, 2, 'UTF-8');
-            // สีของ avatar — hash ตามชื่อ
-            $palette = ['#16a34a','#2563eb','#eab308','#9333ea','#ea580c','#0891b2','#db2777','#dc2626'];
-            $avColor = $palette[abs(crc32($name)) % count($palette)];
-            // KML class
             $kmlClass = 'km-mid';
             if($kml >= 13) $kmlClass = 'km-good';
             elseif($kml > 0 && $kml < 9) $kmlClass = 'km-bad';
-            // Time pill
             $tStart = $r['start_time'] ?? '';
-            $tEnd   = $r['end_time']   ?? '';
-            // ตัด ":XX" เหลือ HH:MM
+            $tEnd = $r['end_time'] ?? '';
             if(strlen($tStart) >= 5) $tStart = substr($tStart, 0, 5);
-            if(strlen($tEnd)   >= 5) $tEnd   = substr($tEnd,   0, 5);
+            if(strlen($tEnd) >= 5) $tEnd = substr($tEnd, 0, 5);
             $timeText = ($tStart && $tEnd) ? $tStart.'-'.$tEnd : '—';
-            $distNum = (float)($r['total_distance'] ?? 0);
-            $priceNum = (float)($r['total_price'] ?? 0);
-            $bpk = ($distNum > 0 && $priceNum > 0) ? round($priceNum / $distNum, 2) : 0;
-            $bpkClass = 'km-mid';
-            if($bpk > 0 && $bpk <= 4) $bpkClass = 'km-good';
-            elseif($bpk > 6) $bpkClass = 'km-bad';
-            // ✅ NEW: flag — วันที่ไม่ได้เติมน้ำมัน
-            $noFuel = ($priceNum == 0 && (float)($r['liters'] ?? 0) == 0);
+            $workDate = $r['work_date'] ?? '';
+            $dateText = '—';
+            $dateFull = '';
+            if($workDate){
+              try {
+                $dt = \Carbon\Carbon::parse($workDate);
+                $dateText = $dt->format('d/m');
+                $dateFull = $dt->format('d/m/Y');
+              } catch(\Exception $e){ $dateText = '—'; }
+            }
           @endphp
           <tr data-driver="{{ strtolower($name) }}">
             <td class="row-idx">{{ str_pad((string)$rowNo, 2, '0', STR_PAD_LEFT) }}</td>
+            <td><span class="date-pill" title="{{ $dateFull }}">{{ $dateText }}</span></td>
             <td>
               <div class="driver-cell">
-                <div class="driver-info">
-                  <div class="driver-name">{{ $name }}</div>
-                  <div class="driver-plate">{{ $plate }}</div>
-                </div>
+                <div class="driver-name" title="{{ $name }}">{{ $name }}</div>
+                <div class="driver-plate" title="{{ $plate }}">{{ $plate }}</div>
               </div>
             </td>
             <td><span class="time-pill">{{ $timeText }}</span></td>
             <td class="num">{{ $dist }}</td>
-                @if($noFuel)
-                  <td class="num" colspan="4" style="text-align:center;color:var(--text3);font-style:italic;background:rgba(148,163,184,.06)">
-                   ไม่ได้เติมน้ำมัน
-                  </td>
-                @else
-                  <td class="num">{{ $r['liters']?number_format($r['liters'],1):'—' }}</td>
-                  <td class="num">{{ $r['total_price']?'฿'.number_format($r['total_price']):'—' }}</td>
-                  <td class="num">
-                    @if($kml>0)<span class="{{ $kmlClass }}">{{ number_format($kml,2) }}</span>
-                    @else<span style="color:var(--text3)">—</span>@endif
-                  </td>
-                  <td class="num">
-                    @if($bpk > 0)<span class="{{ $bpkClass }}">฿{{ number_format($bpk, 2) }}</span>
-                    @else<span style="color:var(--text3)">—</span>@endif
-                  </td>
-                @endif
+            <td class="num">{{ $r['liters']?number_format($r['liters'],1):'—' }}</td>
+            <td class="num">{{ $r['total_price']?'฿'.number_format($r['total_price']):'—' }}</td>
+            <td class="num">
+              @if($kml>0)<span class="{{ $kmlClass }}">{{ number_format($kml,2) }}</span>
+              @else<span style="color:var(--text4)">—</span>@endif
+            </td>
           </tr>
           @empty
           <tr><td colspan="8"><div class="empty-state"><div class="icon">⛽</div><p>ไม่พบรายการ</p></div></td></tr>
@@ -1506,98 +781,101 @@ textarea.form-control{resize:vertical;min-height:80px}
         </tbody>
       </table>
       </div>
-
-      <div class="pagination" id="oilPagination" style="display:none">
-        <div class="pagination-info">
-          แสดง <strong id="pgFrom">0</strong>–<strong id="pgTo">0</strong> จาก <strong id="pgTotal">0</strong> รายการ
-        </div>
-        <div class="pagination-controls" id="pgControls"></div>
-      </div>
     </div>
 
-    {{-- ── คนขับวันนี้ (ซ่อนเมื่อเป็น view รายวัน เพราะข้อมูลรายวันอยู่ในตารางหลักแล้ว) ── --}}
     @if($view !== 'day')
-    <div class="panel">
-      <div class="panel-header">
-        <div class="panel-title">
-          คนขับวันนี้
+    <div class="card">
+      <div class="card-head">
+        <div class="card-title">
+          อันดับคนขับ
           @php
-            // นับคนขับ unique ใน logs ปัจจุบัน
             $uniqueDrivers = [];
             foreach($logs as $r){
               $n = $r['driver_name'] ?? '';
               if(!isset($uniqueDrivers[$n])){
-                $uniqueDrivers[$n] = [
-                  'name' => $n,
-                  'rounds' => 0,
-                  'distance' => 0,
-                  'liters' => 0,
-                  'price' => 0,
-                  'kml_sum' => 0,
-                  'kml_count' => 0,
-                ];
+                $uniqueDrivers[$n] = ['name'=>$n,'rounds'=>0,'distance'=>0,'liters'=>0,'price'=>0,'kml_sum'=>0,'kml_count'=>0];
               }
-            $uniqueDrivers[$n]['rounds']++;
-            $uniqueDrivers[$n]['distance'] += $r['total_distance'] ?? 0;
-            $uniqueDrivers[$n]['liters']   += $r['liters'] ?? 0;
-            $uniqueDrivers[$n]['price']    += $r['total_price'] ?? 0;
-            // ✅ NEW: นับรอบที่ "ไม่ได้เติม" แยก
-            $rPrice = (float)($r['total_price'] ?? 0);
-            if($rPrice == 0){
-              if(!isset($uniqueDrivers[$n]['no_fuel_rounds'])) $uniqueDrivers[$n]['no_fuel_rounds'] = 0;
-              $uniqueDrivers[$n]['no_fuel_rounds']++;
+              $uniqueDrivers[$n]['rounds']++;
+              $uniqueDrivers[$n]['distance'] += $r['total_distance'] ?? 0;
+              $uniqueDrivers[$n]['liters']   += $r['liters'] ?? 0;
+              $uniqueDrivers[$n]['price']    += $r['total_price'] ?? 0;
+              if(($r['km_per_liter'] ?? 0) > 0){
+                $uniqueDrivers[$n]['kml_sum'] += $r['km_per_liter'];
+                $uniqueDrivers[$n]['kml_count']++;
+              }
             }
-            if(($r['km_per_liter'] ?? 0) > 0){
-              $uniqueDrivers[$n]['kml_sum'] += $r['km_per_liter'];
-              $uniqueDrivers[$n]['kml_count']++;
-            }
-            }
-            // sort by total price DESC
-            uasort($uniqueDrivers, fn($a,$b)=> $b['price'] <=> $a['price']);
+            $byPrice = $uniqueDrivers;
+            uasort($byPrice, fn($a,$b)=> $b['price'] <=> $a['price']);
+            $byDistance = $uniqueDrivers;
+            uasort($byDistance, fn($a,$b)=> $b['distance'] <=> $a['distance']);
           @endphp
-          <span class="count-badge">{{ count($uniqueDrivers) }}</span>
+          <span class="card-count">{{ count($uniqueDrivers) }}</span>
         </div>
-        <span class="panel-meta">เรียง: ค่าน้ำมัน <span class="arrow">↓</span></span>
+        <div class="sort-toggle">
+          <span class="sort-label">เรียงตาม</span>
+          <div class="sort-segmented">
+            <button type="button" class="sort-btn active" data-sort="price" onclick="switchRankSort('price')">฿ ค่าน้ำมัน</button>
+            <button type="button" class="sort-btn" data-sort="distance" onclick="switchRankSort('distance')">km ระยะทาง</button>
+          </div>
+        </div>
       </div>
 
-      <div class="driver-list">
+      <div class="driver-list" id="rankListPrice">
         @php $rankNo = 0; @endphp
-        @forelse($uniqueDrivers as $idx => $d)
+        @forelse($byPrice as $idx => $d)
         @php
           $rankNo++;
-          $rankPalette = ['#eab308','#16a34a','#eab308','#dc2626','#dc2626','#7c3aed','#0891b2'];
-          $rankColor = $rankPalette[($rankNo - 1) % count($rankPalette)];
-          $initials = mb_substr($d['name'], 0, 2, 'UTF-8');
           $avgKmlD = $d['kml_count'] > 0 ? $d['kml_sum'] / $d['kml_count'] : 0;
           $kmlBad = $avgKmlD > 0 && $avgKmlD < 9;
-          // ✅ NEW: บาท/กม. weighted = รวมเงิน ÷ รวมระยะ
-          $avgBpkD = $d['distance'] > 0 ? $d['price'] / $d['distance'] : 0;
-          $bpkBad = $avgBpkD > 6;
         @endphp
         <div class="driver-row">
-          <div class="driver-rank">
-            <div class="rank-num">{{ str_pad((string)$rankNo, 2, '0', STR_PAD_LEFT) }}</div>
-          </div>
+          <div class="driver-rank">{{ str_pad((string)$rankNo, 2, '0', STR_PAD_LEFT) }}</div>
           <div class="body">
-            <div class="name-row">
-              <div class="name">{{ $d['name'] }}</div>
-            </div>
+            <div class="name">{{ $d['name'] }}</div>
             <div class="stats">
               <span>{{ $d['rounds'] }} รอบ</span>
+              <span>·</span>
               <span>{{ number_format($d['distance']) }} km</span>
-              <span>{{ number_format($d['liters'],1) }} ลิตร</span>
-              @if(!empty($d['no_fuel_rounds']))
-                <span style="color:var(--amber);font-weight:600">{{ $d['no_fuel_rounds'] }} วันไม่เติม</span>
-              @endif
+              <span>·</span>
+              <span>{{ number_format($d['liters'],1) }} L</span>
             </div>
           </div>
           <div class="right">
             <div class="price">฿{{ number_format($d['price']) }}</div>
-            @if($avgBpkD > 0)
-              <div class="kml {{ $bpkBad ? 'warn' : '' }}">฿{{ number_format($avgBpkD,2) }}/km</div>
-            @endif
             @if($avgKmlD > 0)
-              <div class="kml {{ $kmlBad ? 'warn' : '' }}">{{ number_format($avgKmlD,2) }} km/L</div>
+            <div class="kml {{ $kmlBad ? 'warn' : '' }}">{{ number_format($avgKmlD,2) }} km/L</div>
+            @endif
+          </div>
+        </div>
+        @empty
+        <div class="empty-state"><div class="icon">👤</div><p>ไม่มีข้อมูล</p></div>
+        @endforelse
+      </div>
+
+      <div class="driver-list" id="rankListDistance" style="display:none">
+        @php $rankNo = 0; @endphp
+        @forelse($byDistance as $idx => $d)
+        @php
+          $rankNo++;
+          $avgKmlD = $d['kml_count'] > 0 ? $d['kml_sum'] / $d['kml_count'] : 0;
+          $kmlBad = $avgKmlD > 0 && $avgKmlD < 9;
+        @endphp
+        <div class="driver-row">
+          <div class="driver-rank">{{ str_pad((string)$rankNo, 2, '0', STR_PAD_LEFT) }}</div>
+          <div class="body">
+            <div class="name">{{ $d['name'] }}</div>
+            <div class="stats">
+              <span>{{ $d['rounds'] }} รอบ</span>
+              <span>·</span>
+              <span>฿{{ number_format($d['price']) }}</span>
+              <span>·</span>
+              <span>{{ number_format($d['liters'],1) }} L</span>
+            </div>
+          </div>
+          <div class="right">
+            <div class="price">{{ number_format($d['distance']) }} <span style="font-size: 14px;color:var(--text3);font-weight:500">km</span></div>
+            @if($avgKmlD > 0)
+            <div class="kml {{ $kmlBad ? 'warn' : '' }}">{{ number_format($avgKmlD,2) }} km/L</div>
             @endif
           </div>
         </div>
@@ -1607,163 +885,79 @@ textarea.form-control{resize:vertical;min-height:80px}
       </div>
     </div>
     @endif
-
   </div>
 
-  {{-- ═══════ CHARTS GRID ═══════ --}}
   <div class="charts-grid">
-
-    {{-- รายการสมบูรณ์ / รายการผิดพลาด (Stacked Bar) --}}
-    <div class="chart-panel">
+    <div class="chart-card">
       <div class="chart-head">
-        <div style="display:flex;align-items:center">
-          <div class="chart-title">รายการสมบูรณ์ / รายการผิดพลาด</div>
-          <div class="chart-sub">ประสิทธิภาพการส่งสินค้าแยกตามคนขับ</div>
-        </div>
+        <div class="chart-title">รายการสมบูรณ์ / ผิดพลาด</div>
+        <div class="chart-sub">ประสิทธิภาพการส่งสินค้าแยกตามคนขับ</div>
       </div>
-      <div class="chart-canvas chart-scroll" style="height:280px"><div class="chart-inner" id="deliveryChartInner"><canvas id="deliveryChart"></canvas></div></div>
+      <div class="chart-canvas chart-scroll" style="height:300px">
+        <div class="chart-inner" id="deliveryChartInner"><canvas id="deliveryChart"></canvas></div>
+      </div>
       <div class="chart-legend" id="dlvLegend"></div>
     </div>
 
-    {{-- น้ำมันต่อกิโล (km/L) — Bar Chart per driver --}}
-    <div class="chart-panel">
+    <div class="chart-card">
       <div class="chart-head">
-        <div style="display:flex;align-items:center">
-          <div class="chart-title">น้ำมันต่อกิโล (km/L)</div>
-          <div class="chart-sub">เฉลี่ย km/L แต่ละคน · เกณฑ์ 9.0</div>
-        </div>
+        <div class="chart-title">น้ำมันต่อกิโล</div>
+        <div class="chart-sub">เฉลี่ย km/L แต่ละคน · เกณฑ์ 9.0</div>
       </div>
-      <div class="chart-canvas chart-scroll" style="height:280px"><div class="chart-inner" id="chartKmlInner"><canvas id="chartKml"></canvas></div></div>
-        <div class="charts-grid" style="grid-template-columns:1fr">
-          <div class="chart-panel">
-            <div class="chart-head">
-              <div style="display:flex;align-items:center">
-                <div class="chart-title">ต้นทุนต่อกิโล (฿/km)</div>
-                <div class="chart-sub">ค่าน้ำมันเฉลี่ยต่อระยะทาง · แยกตามคนขับ</div>
-              </div>
-            </div>
-            <div class="chart-canvas chart-scroll" style="height:280px">
-              <div class="chart-inner" id="chartBpkInner">
-                <canvas id="chartBpk"></canvas>
-              </div>
-            </div>
-            <div class="chart-legend" id="bpkLegend"></div>
-          </div>
-        </div>
+      <div class="chart-canvas">
+        <div class="chart-inner" id="chartKmlInner"><canvas id="chartKml"></canvas></div>
+      </div>
+      <div class="chart-legend" id="kmlLegend"></div>
+    </div>
+
+    <div class="chart-card">
+      <div class="chart-head">
+        <div class="chart-title">ต้นทุนต่อกิโล (฿/km)</div>
+        <div class="chart-sub">ค่าน้ำมันเฉลี่ยต่อระยะทาง 1 กิโลเมตร · ยิ่งน้อยยิ่งดี</div>
+      </div>
+      <div class="chart-canvas">
+        <div class="chart-inner" id="chartCostInner"><canvas id="chartCost"></canvas></div>
+      </div>
+      <div class="chart-legend" id="costLegend"></div>
+    </div>
+  </div>
+
 </div>
 
-{{-- ═══════ HIDDEN: Report page (เก็บไว้เผื่อ route เดิม) ═══════ --}}
-<div id="pageReport" style="display:none;padding:24px 28px;max-width:1600px;margin:0 auto">
-  <div class="report-section-header">
-    <div><div class="report-section-title">📊 สรุปรายงาน</div><div class="report-section-sub">วิเคราะห์การใช้น้ำมันแยกตามคนขับ</div></div>
-    <button type="button" onclick="showTrackingPage()" style="background:rgba(255,255,255,.12);color:#fff;border:1px solid rgba(255,255,255,.25);padding:8px 14px;border-radius:8px;font-family:inherit;font-size:13px;font-weight:500;cursor:pointer">← กลับหน้าหลัก</button>
+<div id="pageReport" style="display:none">
+  <div class="report-header">
+    <div>
+      <div class="report-title">สรุปรายงาน</div>
+      <div class="report-sub">วิเคราะห์การใช้น้ำมันแยกตามคนขับ</div>
+    </div>
+    <button type="button" class="report-back" onclick="showTrackingPage()">← กลับ</button>
   </div>
   <div class="report-stat-row" id="repStatRow"></div>
   <div class="report-pie-grid">
-    <div class="pie-card"><div class="pie-card-title">สัดส่วนค่าน้ำมัน (฿)</div><div class="pie-card-sub">แยกตามคนขับ</div><div class="pie-canvas-wrap"><canvas id="pieCost"></canvas></div><div class="pie-legend" id="pieCostLegend"></div></div>
-    <div class="pie-card"><div class="pie-card-title">สัดส่วนลิตรที่เติม</div><div class="pie-card-sub">แยกตามคนขับ</div><div class="pie-canvas-wrap"><canvas id="pieLiters"></canvas></div><div class="pie-legend" id="pieLitersLegend"></div></div>
-    <div class="pie-card"><div class="pie-card-title">สัดส่วนชั่วโมงทำงาน</div><div class="pie-card-sub">แยกตามคนขับ</div><div class="pie-canvas-wrap"><canvas id="pieHours"></canvas></div><div class="pie-legend" id="pieHoursLegend"></div></div>
+    <div class="pie-card">
+      <div class="pie-card-title">ค่าน้ำมัน</div>
+      <div class="pie-card-sub">แยกตามคนขับ</div>
+      <div class="pie-canvas-wrap"><canvas id="pieCost"></canvas></div>
+      <div class="pie-legend" id="pieCostLegend"></div>
+    </div>
+    <div class="pie-card">
+      <div class="pie-card-title">ลิตรที่เติม</div>
+      <div class="pie-card-sub">แยกตามคนขับ</div>
+      <div class="pie-canvas-wrap"><canvas id="pieLiters"></canvas></div>
+      <div class="pie-legend" id="pieLitersLegend"></div>
+    </div>
+    <div class="pie-card">
+      <div class="pie-card-title">ชั่วโมงทำงาน</div>
+      <div class="pie-card-sub">แยกตามคนขับ</div>
+      <div class="pie-canvas-wrap"><canvas id="pieHours"></canvas></div>
+      <div class="pie-legend" id="pieHoursLegend"></div>
+    </div>
   </div>
   <canvas id="chartDriver" style="display:none"></canvas>
 </div>
 
 </main>
-</div>{{-- /.content-wrap --}}
-</div>{{-- /.app --}}
 
-{{-- ═══════════════════════════════════════════════════════════════
-     MODAL — ข้อมูลคนขับ (เหมือนเดิม)
-═══════════════════════════════════════════════════════════════ --}}
-<div class="modal-overlay" id="step1Modal">
-  <div class="modal modal-fullscreen">
-    <div class="modal-header"><div class="modal-title">🚗 ข้อมูลคนขับรถ</div><button type="button" class="modal-close" onclick="closeAllModals()">✕</button></div>
-    <div class="modal-body">
-      <div class="step-indicator">
-        <div class="step-item"><div class="step-circle active">1</div><div class="step-label active">ข้อมูลคนขับ</div></div>
-        <div class="step-line inactive"></div>
-        <div class="step-item"><div class="step-circle inactive">2</div><div class="step-label inactive">ข้อมูลน้ำมัน</div></div>
-      </div>
-      <div class="driver-banner" id="driverBanner" style="display:none">
-        <div class="driver-avatar-big">👤</div>
-        <div><div class="driver-banner-name" id="bannerName">—</div><div class="driver-banner-plate" id="bannerPlate">ทะเบียน: —</div></div>
-      </div>
-      <div class="driver-card-grid">
-        @php
-          $driverList=['บังเดช','แชม','กอล์ฟ','หรั่ง','เก่ง','เอ','ยุทร','แฟรงค์','เอ้'];
-          foreach($drivers as $dbD){if(!in_array($dbD,$driverList))$driverList[]=$dbD;}
-          $plateList=['1 ฉผ 1276','1 ฉผ 3181','1ฉผ213','1ฉผศ7158','2 ฉธ 1620','2ฉมฎ3017','2ฉธ1619','2ฉธ1621','805','3ฉมก6071','3ฉมง3059','3ฉมณ6380','3ฉมย478','3ฉมห200','4กย1540','6762','City 8กค6309','City 9 กค4815','แจ๊ส 9กธ4830'];
-          foreach($plates as $dbP){if(!in_array($dbP,$plateList))$plateList[]=$dbP;}
-        @endphp
-        <div class="full">
-          <label class="form-label">วันที่ทำงาน *</label>
-          <input type="date" id="s1-work-date" class="form-control" value="{{ date('Y-m-d') }}" onchange="onS1DateChange()">
-          <div class="invalid-feedback" id="s1-err-date" style="display:none">กรุณาเลือกวันที่</div>
-          <div class="date-loading-hint" id="s1-date-loading-hint">
-            <span class="spinner"></span><span>กำลังโหลดข้อมูลคนขับ</span>
-          </div>
-        </div>
-        <div>
-          <label class="form-label">คนขับ *</label>
-          <select id="s1-driver-select" class="form-control" onchange="onS1SelectOther(this,'s1-driver-name','s1-driver-other');updateDriverBanner();loadJobsForDriver()">
-            <option value="">— เลือกคนขับ —</option>
-            <option value="__other__">อื่นๆ (พิมพ์เอง)</option>
-          </select>
-          <input type="hidden" id="s1-driver-name" value="">
-          <input type="text" id="s1-driver-other" class="form-control" style="margin-top:6px;display:none" placeholder="ระบุชื่อคนขับ" oninput="document.getElementById('s1-driver-name').value=this.value;updateDriverBanner();loadJobsForDriver()">
-          <div class="invalid-feedback" id="s1-err-driver" style="display:none">กรุณาเลือกคนขับ</div>
-        </div>
-        <div>
-          <label class="form-label">ทะเบียนรถ *</label>
-          <select id="s1-plate-select" class="form-control" onchange="onS1SelectOther(this,'s1-vehicle-id','s1-plate-other');updateDriverBanner()">
-            <option value="">— เลือกทะเบียน —</option>
-            @foreach($plateList as $p)<option value="{{ $p }}">{{ $p }}</option>@endforeach
-            <option value="__other__">อื่นๆ</option>
-          </select>
-          <input type="hidden" id="s1-vehicle-id" value="">
-          <input type="text" id="s1-plate-other" class="form-control" style="margin-top:6px;display:none" placeholder="ระบุทะเบียน" oninput="document.getElementById('s1-vehicle-id').value=this.value;updateDriverBanner()">
-          <div class="invalid-feedback" id="s1-err-plate" style="display:none">กรุณาเลือกทะเบียนรถ</div>
-        </div>
-
-        <div class="full" style="margin-top:4px">
-          <label class="form-label">เวลาทำงาน (เวลาไทย) *</label>
-          <div class="clock-picker-row" id="s1-time-block">
-            <div class="clock-block">
-              <div class="clock-label">เวลาเริ่ม</div>
-              <div class="clock-display" onclick="openClock('start')"><span id="s1-start-display">00:00</span> น.</div>
-            </div>
-            <div class="time-arrow">→</div>
-            <div class="clock-block">
-              <div class="clock-label">เวลาสิ้นสุด</div>
-              <div class="clock-display" onclick="openClock('end')"><span id="s1-end-display">00:00</span> น.</div>
-            </div>
-          </div>
-          <div class="invalid-feedback" id="s1-err-time" style="display:none">กรุณาเลือกเวลาเริ่มและเวลาสิ้นสุด</div>
-          <div id="s1-wh-preview" style="margin-top:8px;font-size:12px;color:var(--amber);font-weight:600;display:none">
-            ⏱ <span id="s1-wh-val">0</span>
-          </div>
-          <input type="hidden" id="s1-start-h" value="0">
-          <input type="hidden" id="s1-start-m" value="0">
-          <input type="hidden" id="s1-end-h" value="0">
-          <input type="hidden" id="s1-end-m" value="0">
-        </div>
-      </div>
-
-      <div style="margin-top:18px;padding-top:16px;border-top:1px solid var(--border)">
-        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
-          <div style="font-size:13px;font-weight:600;color:var(--text2)">📋 รายการงานของคนขับ</div>
-          <span id="jobDateChip" class="job-date-chip" style="display:none"></span>
-        </div>
-        <div id="jobTableWrap"><div class="job-loading">เลือกคนขับเพื่อดูรายการงาน</div></div>
-      </div>
-    </div>
-    <div class="modal-footer">
-      <button type="button" class="btn btn-outline" onclick="closeAllModals()">ยกเลิก</button>
-      <button type="button" class="btn-primary" onclick="goToStep2()">ถัดไป — เพิ่มข้อมูลน้ำมัน →</button>
-    </div>
-  </div>
-</div>
-
-{{-- Clock modal --}}
 <div id="clock-modal" class="clock-modal" style="display:none" onclick="if(event.target===this)closeClock()">
   <div class="clock-box">
     <div class="clock-header">
@@ -1780,727 +974,335 @@ textarea.form-control{resize:vertical;min-height:80px}
   </div>
 </div>
 
-{{-- Fuel modal --}}
-<div class="modal-overlay" id="fuelModal">
-  <div class="modal">
-    <div class="modal-header">
-      <div style="display:flex;align-items:center;gap:10px">
-        <button type="button" id="backBtn" onclick="backToStep1()" style="width:30px;height:30px;border-radius:8px;border:none;background:var(--surface2);color:var(--text2);cursor:pointer;font-size:15px;display:flex;align-items:center;justify-content:center">←</button>
-        <div class="modal-title" id="modalTitle">เพิ่มข้อมูลเติมน้ำมัน</div>
-      </div>
-      <button type="button" class="modal-close" onclick="closeAllModals()">✕</button>
-    </div>
-    <form id="fuelForm" method="POST" action="{{ route('oil.store') }}" style="display:contents">
-      @csrf
-      <input type="hidden" name="_method" id="formMethod" value="">
-      <div class="modal-body">
-        @if($errors->any())
-        <div class="alert alert-error" style="margin-bottom:12px"><ul style="list-style:none;padding:0;margin:0">@foreach($errors->all() as $err)<li>• {{ $err }}</li>@endforeach</ul></div>
-        @endif
-        <div class="step-indicator" style="margin-bottom:14px">
-          <div class="step-item"><div class="step-circle done">✓</div><div class="step-label done">ข้อมูลคนขับ</div></div>
-          <div class="step-line done"></div>
-          <div class="step-item"><div class="step-circle active">2</div><div class="step-label active">ข้อมูลน้ำมัน</div></div>
-        </div>
-        <div class="summary-row" id="summaryRow" style="display:none">
-          <div class="summary-chip">👤 <strong id="chipDriver">—</strong></div>
-          <div class="summary-chip">🚗 <strong id="chipPlate">—</strong></div>
-          <div class="summary-chip">📅 <strong id="chipDate">—</strong></div>
-          <div class="summary-chip" id="chipTimeWrap" style="display:none">⏱ <strong id="chipTime">—</strong></div>
-        </div>
-        <input type="hidden" name="work_date" id="f-work-date">
-        <input type="hidden" name="driver_name" id="f-driver-name">
-        <input type="hidden" name="vehicle_id" id="f-vehicle-id">
-        <input type="hidden" name="start_time" id="f-start-time">
-        <input type="hidden" name="end_time" id="f-end-time">
-        <input type="hidden" name="ok" id="f-ok" value="0">
-        <input type="hidden" name="ng" id="f-ng" value="0">
-        <div class="oil-price-banner">
-          <div style="width:100%">
-            <div style="font-size:12px;opacity:.7" id="oilPriceLabel">ราคาน้ำมันดีเซล</div>
-            <div style="display:flex;align-items:baseline;gap:4px;margin:4px 0">
-              <span style="font-size:24px;font-weight:700" id="oilPriceShow">—</span>
-              <span style="font-size:12px;opacity:.7;margin-left:4px">บาท/ลิตร</span>
-              <div style="margin-left:auto;display:flex;align-items:center;gap:6px">
-                <div class="live-dot loading" id="liveDot"></div>
-                <span style="font-size:12px;opacity:.7" id="liveLabel">กำลังดึง</span>
-              </div>
-            </div>
-            <div style="font-size:12px;opacity:.6;font-style:italic;margin-bottom:8px" id="oilPriceStatus">กำลังโหลด...</div>
-            <div style="display:flex;gap:6px;flex-wrap:wrap">
-              @php $oilBtns=['diesel'=>'⛽ ดีเซล','95'=>'⛽ 95','benzin95'=>'⛽ เบนซิน 95','91'=>'⛽ 91','e20'=>'⛽ E20','e85'=>'⛽ E85']; @endphp
-              @foreach($oilBtns as $oilKey=>$oilLabel)
-              <button type="button" onclick="switchOilType('{{ $oilKey }}')" id="btnOil-{{ $oilKey }}" class="oil-btn" style="font-family:inherit;font-size:11px;font-weight:600;padding:5px 11px;border-radius:14px;cursor:pointer;border:2px solid {{ $oilKey==='diesel'?'#fff':'transparent' }};background:{{ $oilKey==='diesel'?'rgba(255,255,255,.3)':'rgba(255,255,255,.1)' }};color:{{ $oilKey==='diesel'?'#fff':'rgba(255,255,255,.7)' }}">{{ $oilLabel }}</button>
-              @endforeach
-              <button type="button" onclick="refreshOilPrice()" id="btnRefreshOil" style="font-family:inherit;font-size:11px;padding:5px 11px;border-radius:14px;border:2px solid rgba(255,255,255,.3);background:rgba(255,255,255,.05);color:rgba(255,255,255,.8);cursor:pointer">🔄</button>
-            </div>
-          </div>
-        </div>
-        <div class="form-grid">
-          <div class="section-divider">⛽ ข้อมูลน้ำมัน</div>
-          <div class="full">
-            <label class="form-label">ค่าน้ำมัน (฿) *</label>
-            <input type="number" name="total_price" id="f-total-price"
-                  class="form-control {{ $errors->has('total_price')?'is-invalid':'' }}"
-                  step="0.01" min="0"
-                  value="{{ old('total_price',$editLog['total_price']??'') }}"
-                  placeholder="กรอก 0 ถ้าไม่ได้เติมน้ำมันวันนี้"
-                  oninput="calcPreview()">
-            <div class="auto-hint" style="color:var(--text3)">💡 กรอก 0 หากวันนี้ไม่ได้เติมน้ำมัน (ระบบจะยังนับระยะทาง/ชม.ทำงาน)</div>
-            @error('total_price')<div class="invalid-feedback">{{ $message }}</div>@enderror
-          </div>
-          <div class="full"><label class="form-label">ระยะทางทั้งหมด (km)</label><input type="number" name="total_distance" id="f-total-distance" class="form-control" step="0.01" value="{{ old('total_distance',$editLog['total_distance']??'') }}" oninput="calcPreview()"></div>
-        </div>
-        <div><label class="form-label">จำนวนลิตร</label><input type="number" name="liters" id="f-liters" class="form-control auto-calc" step="0.01" value="{{ old('liters',$editLog['liters']??'') }}" readonly></div>
-        <div><label class="form-label">ราคาต่อลิตร (฿)</label><input type="number" name="price_per_liter" id="f-price-per-liter" class="form-control auto-calc" step="0.01" value="{{ old('price_per_liter',$editLog['price_per_liter']??'') }}" readonly></div>
-        <div class="calc-box" id="calcBox">
-          <div style="font-size:11px;color:var(--text2);font-weight:600;text-transform:uppercase;letter-spacing:.5px;margin-bottom:10px">📊 Preview</div>
-          <div class="calc-grid">
-            <div class="calc-item"><div class="lbl">ชั่วโมงทำงาน</div><div class="val amber" id="calcWorkHours">—</div><div class="unit">ชม.</div></div>
-            <div class="calc-item"><div class="lbl">ลิตร / ยอดเงิน</div><div class="val" id="calcLitersPreview">—</div><div class="unit">ล. / ฿</div></div>
-            <div class="calc-item"><div class="lbl">km/L</div><div class="val" id="calcKml">—</div><div class="unit">กม./ลิตร</div></div>
-            <div class="calc-item">
-                <div class="lbl">฿/km</div>
-                <div class="val" id="calcBpk" style="color:var(--purple)">—</div>
-                <div class="unit">บาท/กม.</div>
-            </div>
-          </div>
-        </div>
-        <div class="full"><label class="form-label">หมายเหตุ</label><textarea name="note" id="f-note" class="form-control">{{ old('note',$editLog['note']??'') }}</textarea></div>
-      </div>
-      <div class="modal-footer">
-        <button type="button" class="btn btn-outline" onclick="backToStep1()" id="backBtnFooter">← ย้อนกลับ</button>
-        <button type="submit" class="btn-primary">💾 บันทึกข้อมูล</button>
-      </div>
-    </form>
-  </div>
-</div>
-
 <script>
-/* ═══════════════════════════════════════════════════════════════
-   CONSTANTS
-═══════════════════════════════════════════════════════════════ */
-const COLORS=['#16a34a','#2563eb','#eab308','#dc2626','#9333ea','#0891b2','#ea580c','#db2777','#0d9488','#7c3aed','#84cc16','#f59e0b'];
 const ROUTE_STORE    = '{{ route("oil") }}';
 const ROUTE_FILTER   = '{{ route("oil.filter") }}';
-const ROUTE_UPDATE   = id => `{{ url("/oil/update") }}/${id}`;
 const ROUTE_PREVMILE = '{{ route("oil.prevMileage") }}';
 const ROUTE_SYNC_NG  = '{{ route("oil.syncNg") }}';
+const ROUTE_SAVED_DRIVERS = '{{ url("/oil/saved-drivers") }}';
+const CURRENT_USER   = @json(request()->filled('create_by') ? request('create_by') : 'Guest');
 const CSRF_TOKEN     = document.querySelector('meta[name="csrf-token"]')?.content ?? '';
 const TZ = 'Asia/Bangkok';
-let currentOilType = 'diesel', isEditMode = false, editId = null;
+const DB_DRIVERS = @json($drivers);
+window.PLATE_LIST = @json($plateList);
+const MAIN_VIEW = @json($view);
 
-const MAIN_VIEW   = @json($view);
-const MAIN_DRIVER = @json($filterDriver);
-const MAIN_YEAR   = parseInt(@json(request('year', date('Y'))));
+function toggleTopMenu(){document.getElementById('topMenu')?.classList.toggle('open');}
+function closeMobileMenu(){if(window.innerWidth>900)return;document.getElementById('topMenu')?.classList.remove('open');}
 
-/* ═══════════════════════════════════════════════════════════════
-   FILTER SUBMIT
-═══════════════════════════════════════════════════════════════ */
+function nowThai(){return new Date(new Date().toLocaleString('en-US',{timeZone:TZ}));}
+function todayStr(){const d=nowThai();return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;}
+function updateNavDate(){
+  const time = new Date().toLocaleTimeString('th-TH',{timeZone:TZ,hour:'2-digit',minute:'2-digit',hour12:false});
+  const el = document.getElementById('navDate'); if(el) el.textContent = time;
+}
+
 function submitFilterForm(params){
   const form = document.createElement('form');
-  form.method = 'POST'; form.action = ROUTE_FILTER; form.style.display = 'none';
-  const add = (name, value) => { if (value === undefined || value === null || value === '') return; const i = document.createElement('input'); i.type = 'hidden'; i.name = name; i.value = value; form.appendChild(i); };
-  add('_token', CSRF_TOKEN);
-  Object.keys(params).forEach(k => add(k, params[k]));
-  document.body.appendChild(form); form.submit();
+  form.method='POST';form.action=ROUTE_FILTER;form.style.display='none';
+  const add=(n,v)=>{if(v==null||v==='')return;const i=document.createElement('input');i.type='hidden';i.name=n;i.value=v;form.appendChild(i);};
+  add('_token',CSRF_TOKEN);
+  // แปะ create_by ลง form ทุกครั้งเพื่อให้ controller ส่งกลับมา + ใส่ใน URL หลัง redirect
+  if(CURRENT_USER && CURRENT_USER !== 'Guest') add('create_by', CURRENT_USER);
+  Object.keys(params).forEach(k=>add(k,params[k]));
+  document.body.appendChild(form);form.submit();
 }
 function switchView(v){
-  const params = { view: v };
-  const driverSel = document.getElementById('driverPicker');
-  if (driverSel && driverSel.value) params.driver_name = driverSel.value;
-  if (v === 'month') { const el = document.getElementById('monthPicker'); if (el && el.value) params.month = el.value; }
-  else if (v === 'year') { const el = document.getElementById('yearPicker'); if (el && el.value) params.year = el.value; }
+  const params={view:v};
+  const ds=document.getElementById('driverPicker');if(ds&&ds.value)params.driver_name=ds.value;
+  if(v==='month'){const el=document.getElementById('monthPicker');if(el&&el.value)params.month=el.value;}
+  else if(v==='year'){const el=document.getElementById('yearPicker');if(el&&el.value)params.year=el.value;}
   submitFilterForm(params);
 }
 function submitFilter(){
-  const params = { view: '{{ $view }}' };
-  const driverSel = document.getElementById('driverPicker');
-  if (driverSel && driverSel.value) params.driver_name = driverSel.value;
-  const monthEl = document.getElementById('monthPicker'); if (monthEl && monthEl.value) params.month = monthEl.value;
-  const yearEl = document.getElementById('yearPicker');  if (yearEl && yearEl.value)  params.year  = yearEl.value;
+  const params={view:MAIN_VIEW};
+  const ds=document.getElementById('driverPicker');if(ds&&ds.value)params.driver_name=ds.value;
+  const me=document.getElementById('monthPicker');if(me&&me.value)params.month=me.value;
+  const ye=document.getElementById('yearPicker');if(ye&&ye.value)params.year=ye.value;
   submitFilterForm(params);
 }
-/* Persist user-picked year so UI doesn't snap back if backend default overrides */
 function onYearChange(){
-  const yearEl = document.getElementById('yearPicker');
-  if (yearEl && yearEl.value) {
-    try { sessionStorage.setItem('oilPickedYear', yearEl.value); } catch(e){}
-  }
+  const ye=document.getElementById('yearPicker');
+  if(ye&&ye.value){try{sessionStorage.setItem('oilPickedYear',ye.value);}catch(e){}}
   submitFilter();
 }
-/* On page load: if backend returned a year that doesn't match what user just picked,
-   keep the user's choice visible in the dropdown */
-(function restoreYear(){
+(function restoreYear(){try{const s=sessionStorage.getItem('oilPickedYear');if(!s)return;document.addEventListener('DOMContentLoaded',()=>{const el=document.getElementById('yearPicker');if(!el)return;const ok=Array.from(el.options).some(o=>o.value===s);if(ok&&el.value!==s)el.value=s;});}catch(e){}})();
+
+function filterOilTable(q){oilSearchQuery=q.toLowerCase();renderOilPage();}
+
+function switchRankSort(mode){
+  document.querySelectorAll('.sort-btn').forEach(b=>{
+    b.classList.toggle('active', b.dataset.sort===mode);
+  });
+  const listPrice = document.getElementById('rankListPrice');
+  const listDist  = document.getElementById('rankListDistance');
+  if(listPrice && listDist){
+    listPrice.style.display = (mode==='price') ? '' : 'none';
+    listDist.style.display  = (mode==='distance') ? '' : 'none';
+  }
+  try { sessionStorage.setItem('oilRankSort', mode); } catch(e){}
+}
+(function restoreRankSort(){
   try {
-    const saved = sessionStorage.getItem('oilPickedYear');
-    if (!saved) return;
+    const saved = sessionStorage.getItem('oilRankSort');
+    if(!saved) return;
     document.addEventListener('DOMContentLoaded', () => {
-      const el = document.getElementById('yearPicker');
-      if (!el) return;
-      // Only restore if it's a valid option AND backend default is showing instead
-      const exists = Array.from(el.options).some(o => o.value === saved);
-      if (exists && el.value !== saved) {
-        el.value = saved;
+      if(document.getElementById('rankListPrice') && document.getElementById('rankListDistance')){
+        switchRankSort(saved);
       }
     });
   } catch(e){}
 })();
 
-/* ═══════════════════════════════════════════════════════════════
-   NAV DATE / TABLE FILTER / SIDEBAR
-═══════════════════════════════════════════════════════════════ */
-function nowThai(){return new Date(new Date().toLocaleString('en-US',{timeZone:TZ}));}
-function todayStr(){const d=nowThai();return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;}
-function updateNavDate(){
-  const now=new Date();
-  const time = now.toLocaleTimeString('th-TH',{timeZone:TZ,hour:'2-digit',minute:'2-digit',hour12:false});
-  const el = document.getElementById('navDate'); if(el) el.textContent = time;
-}
-function filterOilTable(q){
-  oilSearchQuery = q.toLowerCase();
-  oilCurrentPage = 1;
-  renderOilPage();
-}
-
-/* Mobile sidebar */
-function toggleSidebar(){
-  const sb = document.getElementById('appSidebar');
-  const ov = document.getElementById('sbOverlay');
-  if(!sb) return;
-  const isOpen = sb.classList.toggle('open');
-  ov.classList.toggle('show', isOpen);
-}
-function closeMobileSidebar(){
-  if(window.innerWidth > 900) return;
-  const sb = document.getElementById('appSidebar');
-  const ov = document.getElementById('sbOverlay');
-  sb?.classList.remove('open');
-  ov?.classList.remove('show');
-}
-
-/* Show/hide report page (สรุปรายงาน) */
 function showReportPage(){
-  const tracking = document.getElementById('pageTracking');
-  const report = document.getElementById('pageReport');
-  if(!tracking || !report) return;
-  tracking.style.display = 'none';
-  report.style.display = '';
-  document.querySelectorAll('.sidebar .nav-item').forEach(n => n.classList.remove('active'));
+  document.getElementById('pageTracking').style.display='none';
+  document.getElementById('pageReport').style.display='';
+  document.querySelectorAll('.topnav-menu .nav-item').forEach(n=>n.classList.remove('active'));
   document.getElementById('navReport')?.classList.add('active');
-  if(typeof renderReportPage === 'function') renderReportPage();
-  window.scrollTo({top:0, behavior:'smooth'});
+  if(typeof renderReportPage==='function')renderReportPage();
+  window.scrollTo({top:0,behavior:'smooth'});
 }
 function showTrackingPage(){
-  const tracking = document.getElementById('pageTracking');
-  const report = document.getElementById('pageReport');
-  if(!tracking || !report) return;
-  tracking.style.display = '';
-  report.style.display = 'none';
-  document.querySelectorAll('.sidebar .nav-item').forEach(n => n.classList.remove('active'));
+  document.getElementById('pageTracking').style.display='';
+  document.getElementById('pageReport').style.display='none';
+  document.querySelectorAll('.topnav-menu .nav-item').forEach(n=>n.classList.remove('active'));
   document.getElementById('navHome')?.classList.add('active');
-  window.scrollTo({top:0, behavior:'smooth'});
+  window.scrollTo({top:0,behavior:'smooth'});
 }
 
-
-/* ═══════════════════════════════════════════════════════════════
-   DELIVERY CHART (Stacked Bar) — รวม success/fail ต่อคนขับ
-═══════════════════════════════════════════════════════════════ */
-let dlvChart = null;
+let dlvChart=null;
 @php
-  $deliveryByDriver = [];
-  foreach ($logs as $log) {
-      $driver  = $log['driver_name'] ?? 'ไม่ระบุ';
-      if (!isset($deliveryByDriver[$driver])) {
-          $deliveryByDriver[$driver] = ['success'=>0,'fail'=>0,'plate'=>$log['vehicle_id']??''];
-      }
-      $deliveryByDriver[$driver]['success'] += (int)($log['delivery_success'] ?? $log['success_count'] ?? $log['ok_count']  ?? 0);
-      $deliveryByDriver[$driver]['fail']    += (int)($log['delivery_fail']    ?? $log['fail_count']    ?? $log['ng_count']   ?? 0);
+  $deliveryByDriver=[];
+  foreach($logs as $log){
+    $driver=$log['driver_name']??'ไม่ระบุ';
+    if(!isset($deliveryByDriver[$driver])){$deliveryByDriver[$driver]=['success'=>0,'fail'=>0,'plate'=>$log['vehicle_id']??''];}
+    $deliveryByDriver[$driver]['success']+=(int)($log['delivery_success']??$log['success_count']??$log['ok_count']??0);
+    $deliveryByDriver[$driver]['fail']+=(int)($log['delivery_fail']??$log['fail_count']??$log['ng_count']??0);
   }
 @endphp
-const DLV_BY_DRIVER = @json($deliveryByDriver);
-
+const DLV_BY_DRIVER=@json($deliveryByDriver);
 function renderDlv(){
-  const drivers = Object.keys(DLV_BY_DRIVER);
-  if(drivers.length === 0){
-    if(dlvChart) dlvChart.destroy();
-    document.getElementById('dlvLegend').innerHTML = '<span style="color:var(--text3)">ไม่มีข้อมูล</span>';
-    return;
+  const drivers=Object.keys(DLV_BY_DRIVER);
+  if(drivers.length===0){if(dlvChart)dlvChart.destroy();document.getElementById('dlvLegend').innerHTML='<span style="color:var(--text4)">ไม่มีข้อมูล</span>';return;}
+  const sorted=drivers.map(d=>({name:d,plate:DLV_BY_DRIVER[d].plate,s:DLV_BY_DRIVER[d].success,f:DLV_BY_DRIVER[d].fail})).sort((a,b)=>(b.s+b.f)-(a.s+a.f));
+  const inner=document.getElementById('deliveryChartInner');
+  const sw=inner?inner.parentElement:null;
+  if(inner&&sw){
+    // Fit container — บีบ bar เข้าให้พอดี ไม่ scroll
+    inner.style.width='100%';
+    inner.style.height='100%';
   }
-
-  // Sort by total (success+fail) desc — show all (scroll horizontal if > 4)
-  const sorted = drivers
-    .map(d => ({name:d, plate:DLV_BY_DRIVER[d].plate, s:DLV_BY_DRIVER[d].success, f:DLV_BY_DRIVER[d].fail}))
-    .sort((a,b) => (b.s+b.f) - (a.s+a.f));
-
-  // Lock chart width to panel: ≤4 drivers fit panel exactly; >4 scroll
-  const inner = document.getElementById('deliveryChartInner');
-  const scrollWrap = inner ? inner.parentElement : null;
-  if(inner && scrollWrap){
-    const BAR_PX = 140;
-    inner.style.width = '100%';
-    const panel = scrollWrap.closest('.chart-panel');
-    const panelW = panel ? (panel.clientWidth - 40) : scrollWrap.clientWidth;
-    const containerW = Math.max(scrollWrap.clientWidth, panelW);
-    const needed = sorted.length * BAR_PX;
-    const w = (sorted.length > 4 && needed > containerW) ? needed : containerW;
-    inner.style.width = w + 'px';
-    inner.style.height = '100%';
-  }
-
-  const labels = sorted.map(d => [d.name, d.plate || '']);
-  const success = sorted.map(d => d.s);
-  const fail = sorted.map(d => d.f);
-
-  if(dlvChart) dlvChart.destroy();
-  dlvChart = new Chart(document.getElementById('deliveryChart'), {
-    type: 'bar',
-    data: {
-      labels,
-      datasets: [
-        { label:'ส่งสำเร็จ',    data:success, backgroundColor:'#16a34a', borderRadius:{topLeft:0,topRight:0,bottomLeft:6,bottomRight:6}, borderSkipped:false, stack:'s', maxBarThickness:50 },
-        { label:'ส่งไม่สำเร็จ', data:fail,    backgroundColor:'#dc2626', borderRadius:{topLeft:6,topRight:6,bottomLeft:0,bottomRight:0}, borderSkipped:false, stack:'s', maxBarThickness:50 },
-      ],
-    },
-    plugins: [ChartDataLabels],
-    options: {
-      responsive: true, maintainAspectRatio: false,
-      layout: { padding: { top: 20, left: 10, right: 10 } },
-      plugins: {
-        legend: { display: false },
-        tooltip: {
-          callbacks: {
-            title: items => Array.isArray(items[0].label) ? items[0].label[0] : items[0].label,
-            label: ctx => `${ctx.dataset.label}: ${ctx.raw} รายการ`,
-            footer: items => 'รวม: ' + items.reduce((s, i) => s + i.raw, 0) + ' รายการ',
-          }
-        },
-        datalabels: {
-          color: '#fff',
-          font: { weight: '700', size: 13, family: 'Inter' },
-          formatter: v => v > 0 ? v : '',
-          display: ctx => ctx.dataset.data[ctx.dataIndex] > 0,
-          anchor: 'center', align: 'center',
-        },
+  const labels=sorted.map(d=>[d.name,d.plate||'']);
+  const success=sorted.map(d=>d.s);
+  const fail=sorted.map(d=>d.f);
+  if(dlvChart)dlvChart.destroy();
+  dlvChart=new Chart(document.getElementById('deliveryChart'),{
+    type:'bar',
+    data:{labels,datasets:[
+      {label:'ส่งสำเร็จ',data:success,backgroundColor:'#10b981',borderRadius:{topLeft:0,topRight:0,bottomLeft:6,bottomRight:6},borderSkipped:false,stack:'s',maxBarThickness:50},
+      {label:'ส่งไม่สำเร็จ',data:fail,backgroundColor:'#ef4444',borderRadius:{topLeft:6,topRight:6,bottomLeft:0,bottomRight:0},borderSkipped:false,stack:'s',maxBarThickness:50},
+    ]},
+    plugins:[ChartDataLabels],
+    options:{
+      responsive:true,maintainAspectRatio:false,
+      layout:{padding:{top:20,left:10,right:10}},
+      plugins:{
+        legend:{display:false},
+        tooltip:{callbacks:{title:items=>Array.isArray(items[0].label)?items[0].label[0]:items[0].label,label:ctx=>`${ctx.dataset.label}: ${ctx.raw} รายการ`,footer:items=>'รวม: '+items.reduce((s,i)=>s+i.raw,0)+' รายการ',}},
+        datalabels:{color:'#fff',font:{weight:'700',size:13,family:'Inter'},formatter:v=>v>0?v:'',display:ctx=>ctx.dataset.data[ctx.dataIndex]>0,anchor:'center',align:'center'},
       },
-      scales: {
-        x: {
-          stacked: true,
-          ticks: {
-            font: { size: 12, weight: '600', family: 'IBM Plex Sans Thai' },
-            color: '#0f172a',
-            autoSkip: false,
-            callback: function(value, idx) {
-              const l = this.getLabelForValue(value);
-              return Array.isArray(l) ? l : [l];
-            }
-          },
-          grid: { display:false }
-        },
-        y: {
-          stacked: true, beginAtZero: true,
-          ticks: { font: { size: 11, family: 'Inter' }, color: '#94a3b8', stepSize:2, callback: v => v + ' รายการ' },
-          grid: { color: 'rgba(15,23,42,.05)' },
-        },
+      scales:{
+        x:{stacked:true,ticks:{font:{size:14,weight:'600',family:'IBM Plex Sans Thai'},color:'#18181b',autoSkip:true,maxRotation:0,minRotation:0,callback:function(value){const l=this.getLabelForValue(value);return Array.isArray(l)?l:[l];}},grid:{display:false}},
+        y:{stacked:true,beginAtZero:true,ticks:{font:{size:14,family:'Inter'},color:'#71717a',stepSize:2,callback:v=>v+' '},grid:{color:'rgba(0,0,0,.05)'}},
       },
     },
   });
-
-  buildDlvLegend();
-}
-function buildDlvLegend(){
-  const wrap = document.getElementById('dlvLegend'); if(!wrap) return;
-  wrap.innerHTML = `
-    <div class="chart-legend-item"><span class="chart-legend-dot" style="background:#16a34a"></span>ส่งสำเร็จ</div>
-    <div class="chart-legend-item"><span class="chart-legend-dot" style="background:#dc2626"></span>ส่งไม่สำเร็จ</div>
+  document.getElementById('dlvLegend').innerHTML=`
+    <div class="chart-legend-item"><span class="chart-legend-dot" style="background:#10b981"></span>ส่งสำเร็จ</div>
+    <div class="chart-legend-item"><span class="chart-legend-dot" style="background:#ef4444"></span>ส่งไม่สำเร็จ</div>
   `;
 }
 
-/* ═══════════════════════════════════════════════════════════════
-   KML BAR CHART — น้ำมันต่อกิโล (avg km/L แต่ละคนขับ + เกณฑ์ 9.0)
-═══════════════════════════════════════════════════════════════ */
 @php
-  // คำนวณ avg km/L ต่อคนขับ
-  $kmlByDriver = [];
-  foreach ($logs as $log) {
-      $driver = $log['driver_name'] ?? 'ไม่ระบุ';
-      $kml    = (float)($log['km_per_liter'] ?? 0);
-      if ($kml <= 0) continue;
-      if (!isset($kmlByDriver[$driver])) $kmlByDriver[$driver] = ['sum'=>0,'count'=>0,'plate'=>$log['vehicle_id']??''];
-      $kmlByDriver[$driver]['sum']   += $kml;
-      $kmlByDriver[$driver]['count']++;
+  $kmlByDriver=[];
+  foreach($logs as $log){
+    $driver=$log['driver_name']??'ไม่ระบุ';
+    $kml=(float)($log['km_per_liter']??0);
+    if($kml<=0)continue;
+    if(!isset($kmlByDriver[$driver]))$kmlByDriver[$driver]=['sum'=>0,'count'=>0,'plate'=>$log['vehicle_id']??''];
+    $kmlByDriver[$driver]['sum']+=$kml;
+    $kmlByDriver[$driver]['count']++;
   }
 @endphp
-const KML_BY_DRIVER = @json($kmlByDriver);
-
-let kmlChart = null;
+const KML_BY_DRIVER=@json($kmlByDriver);
+let kmlChart=null;
 function renderKmlChart(){
-  // รวมข้อมูลและจัดเรียงจากมากไปน้อย
-  const drivers = Object.keys(KML_BY_DRIVER).map(name => ({
-    name,
-    plate: KML_BY_DRIVER[name].plate || '',
-    avg: KML_BY_DRIVER[name].count > 0 ? KML_BY_DRIVER[name].sum / KML_BY_DRIVER[name].count : 0,
-  })).filter(d => d.avg > 0).sort((a,b) => b.avg - a.avg);
-
-  if(drivers.length === 0){
-      if(kmlChart) kmlChart.destroy();
-      const lg = document.getElementById('kmlLegend');
-      if(lg) lg.innerHTML = '<span style="color:var(--text3)">ไม่มีข้อมูล</span>';
-      return;
+  const drivers=Object.keys(KML_BY_DRIVER).map(name=>({name,plate:KML_BY_DRIVER[name].plate||'',avg:KML_BY_DRIVER[name].count>0?KML_BY_DRIVER[name].sum/KML_BY_DRIVER[name].count:0})).filter(d=>d.avg>0).sort((a,b)=>b.avg-a.avg);
+  if(drivers.length===0){if(kmlChart)kmlChart.destroy();document.getElementById('kmlLegend').innerHTML='<span style="color:var(--text4)">ไม่มีข้อมูล</span>';return;}
+  const inner=document.getElementById('chartKmlInner');
+  const sw=inner?inner.parentElement:null;
+  if(inner&&sw){
+    const ROW=44;
+    const minH=Math.max(drivers.length*ROW+40, 300);
+    inner.style.width='100%';
+    inner.style.height=minH+'px';
+    sw.style.height='auto';
+    sw.style.maxHeight='none';
   }
-
-  // Lock chart width to panel: ≤4 drivers fit panel exactly; >4 scroll
-  const innerKml = document.getElementById('chartKmlInner');
-  const scrollWrapKml = innerKml ? innerKml.parentElement : null;
-  if(innerKml && scrollWrapKml){
-    const BAR_PX = 120;
-    // Reset first so we can read true container width
-    innerKml.style.width = '100%';
-    const panel = scrollWrapKml.closest('.chart-panel');
-    const panelW = panel ? (panel.clientWidth - 40) : scrollWrapKml.clientWidth; // 40 = padding
-    const containerW = Math.max(scrollWrapKml.clientWidth, panelW);
-    const needed = drivers.length * BAR_PX;
-    const w = (drivers.length > 4 && needed > containerW) ? needed : containerW;
-    innerKml.style.width = w + 'px';
-    innerKml.style.height = '100%';
-  }
-
-  const labels = drivers.map(d => d.name);
-  const data   = drivers.map(d => +d.avg.toFixed(2));
-
-  // แต่ละแท่งสีตาม performance: < 9 แดง / 9-12 อำพัน / > 12 เขียว / default น้ำเงิน
-  const barColors = data.map(v => v < 9 ? '#dc2626' : (v < 12 ? '#f59e0b' : '#16a34a'));
-
-  // ค่าเฉลี่ยรวมทั้งหมด
-  const overallAvg = data.reduce((a,b)=>a+b,0) / data.length;
-
-  // หา max เพื่อกำหนด y-axis
-  const maxVal = Math.max(...data, 9);
-  const yMax   = Math.ceil((maxVal + 1) / 2) * 2;
-
-  if(kmlChart) kmlChart.destroy();
-  kmlChart = new Chart(document.getElementById('chartKml'), {
-    type: 'bar',
-    data: {
-      labels,
-      datasets: [{
-        label: 'เฉลี่ย km/L',
-        data,
-        backgroundColor: barColors,
-        borderRadius: 6,
-        borderSkipped: false,
-        maxBarThickness: 50,
-      }],
-    },
-    plugins: [
-      ChartDataLabels,
-      {
-        // ลากเส้น threshold 9.0 บนกราฟ
-        id: 'kmlThreshold',
-        afterDatasetsDraw(chart){
-          const {ctx, chartArea: {left, right}, scales: {y}} = chart;
-          const yPos = y.getPixelForValue(9);
-          ctx.save();
-          ctx.strokeStyle = '#dc2626';
-          ctx.setLineDash([6, 4]);
-          ctx.lineWidth = 2;
-          ctx.beginPath();
-          ctx.moveTo(left, yPos);
-          ctx.lineTo(right, yPos);
-          ctx.stroke();
-          // Label
-          ctx.setLineDash([]);
-          ctx.fillStyle = '#dc2626';
-          ctx.font = '600 11px Inter';
-          ctx.textAlign = 'right';
-          ctx.fillText('เกณฑ์ 9.0', right - 6, yPos - 6);
-          ctx.restore();
-        },
+  const labels=drivers.map(d=>d.plate||d.name);
+  const data=drivers.map(d=>+d.avg.toFixed(2));
+  const barColors=data.map(v=>v<9?'#ef4444':(v<12?'#f59e0b':'#10b981'));
+  const overallAvg=data.reduce((a,b)=>a+b,0)/data.length;
+  const maxVal=Math.max(...data,9);
+  const xMax=Math.ceil((maxVal+1)/2)*2;
+  if(kmlChart)kmlChart.destroy();
+  kmlChart=new Chart(document.getElementById('chartKml'),{
+    type:'bar',
+    data:{labels,datasets:[{label:'เฉลี่ย km/L',data,backgroundColor:barColors,borderRadius:6,borderSkipped:false,maxBarThickness:28}]},
+    plugins:[ChartDataLabels,{id:'kmlThreshold',afterDatasetsDraw(chart){
+      const {ctx,chartArea:{top,bottom},scales:{x}}=chart;
+      const xPos=x.getPixelForValue(9);
+      ctx.save();ctx.strokeStyle='#ef4444';ctx.setLineDash([6,4]);ctx.lineWidth=2;
+      ctx.beginPath();ctx.moveTo(xPos,top);ctx.lineTo(xPos,bottom);ctx.stroke();
+      ctx.setLineDash([]);ctx.fillStyle='#ef4444';ctx.font='600 11px Inter';ctx.textAlign='left';
+      ctx.fillText('เกณฑ์ 9.0',xPos+6,top+12);ctx.restore();
+    }}],
+    options:{
+      indexAxis:'y',
+      responsive:true,maintainAspectRatio:false,
+      layout:{padding:{top:10,right:50,left:6,bottom:6}},
+      plugins:{
+        legend:{display:false},
+        tooltip:{callbacks:{label:ctx=>`เฉลี่ย: ${ctx.raw.toFixed(2)} km/L`,afterLabel:ctx=>{const d=drivers[ctx.dataIndex];return d.name?`คนขับ: ${d.name}`:'';}}},
+        datalabels:{color:'#18181b',font:{weight:'700',size:11,family:'Inter'},anchor:'end',align:'right',offset:4,formatter:v=>v.toFixed(2)+' km/L'},
       },
-    ],
-    options: {
-      responsive: true, maintainAspectRatio: false,
-      layout: { padding: { top: 24, right: 16, left: 6, bottom: 6 } },
-      plugins: {
-        legend: { display: false },
-        tooltip: {
-          callbacks: {
-            label: ctx => `เฉลี่ย: ${ctx.raw.toFixed(2)} km/L`,
-            afterLabel: ctx => {
-              const d = drivers[ctx.dataIndex];
-              return d.plate ? `ทะเบียน: ${d.plate}` : '';
-            },
-          },
-        },
-        datalabels: {
-          color: '#0f172a',
-          font: { weight: '700', size: 11, family: 'Inter' },
-          anchor: 'end', align: 'top', offset: 2,
-          formatter: v => v.toFixed(2),
-        },
-      },
-      scales: {
-        x: {
-          grid: { display: false },
-          ticks: {
-            font: { size: 11, family: 'IBM Plex Sans Thai' },
-            color: '#475569',
-            autoSkip: false,
-            maxRotation: 0,
-            callback: function(value){
-              const lbl = this.getLabelForValue(value);
-              // ตัดชื่อยาวให้สั้น
-              return lbl.length > 8 ? lbl.substring(0,7) + '…' : lbl;
-            },
-          },
-        },
-        y: {
-          beginAtZero: true,
-          suggestedMax: yMax,
-          ticks: {
-            stepSize: 2,
-            font: { size: 11, family: 'Inter' },
-            color: '#94a3b8',
-            callback: v => v + ' km/L',
-          },
-          grid: { color: 'rgba(15,23,42,.05)' },
-        },
+      scales:{
+        x:{beginAtZero:true,suggestedMax:xMax,ticks:{stepSize:2,font:{size:14,family:'Inter'},color:'#71717a',callback:v=>v+''},grid:{color:'rgba(0,0,0,.05)'}},
+        y:{grid:{display:false},ticks:{font:{size:14,weight:'600',family:'IBM Plex Sans Thai'},color:'#3f3f46',autoSkip:false}},
       },
     },
   });
-
-  // Legend
-  const wrap = document.getElementById('kmlLegend');
-  if(wrap){
-    wrap.innerHTML = `
-      <div class="chart-legend-item"><span class="chart-legend-dot" style="background:#16a34a"></span>ดี (≥ 12)</div>
-      <div class="chart-legend-item"><span class="chart-legend-dot" style="background:#f59e0b"></span>ปกติ (9–12)</div>
-      <div class="chart-legend-item"><span class="chart-legend-dot" style="background:#dc2626"></span>ผิดปกติ (&lt; 9)</div>
-      <div class="chart-legend-item" style="margin-left:auto;color:var(--text3)">เฉลี่ยรวม: <strong style="color:var(--text);margin-left:4px">${overallAvg.toFixed(2)} km/L</strong></div>
-    `;
-  }
+  document.getElementById('kmlLegend').innerHTML=`
+    <div class="chart-legend-item"><span class="chart-legend-dot" style="background:#10b981"></span>ดี (≥ 12)</div>
+    <div class="chart-legend-item"><span class="chart-legend-dot" style="background:#f59e0b"></span>ปกติ (9–12)</div>
+    <div class="chart-legend-item"><span class="chart-legend-dot" style="background:#ef4444"></span>ผิดปกติ (&lt; 9)</div>
+    <div class="chart-legend-item" style="margin-left:auto;color:var(--text4)">เฉลี่ย <strong style="color:var(--text);margin-left:4px">${overallAvg.toFixed(2)} km/L</strong></div>
+  `;
 }
-</script>
-<script>
-  /* ═══════════════════════════════════════════════════════════════
-   BPK BAR CHART — ต้นทุนต่อกิโล (บาท/กม.) — คำนวณสดจาก logs
-═══════════════════════════════════════════════════════════════ */
+
 @php
-  // คำนวณ บาท/กม. ต่อคนขับ แบบ weighted (รวมเงิน ÷ รวมระยะ)
-  $bpkByDriver = [];
-  foreach ($logs as $log) {
-      $driver = $log['driver_name'] ?? 'ไม่ระบุ';
-      $price  = (float)($log['total_price']    ?? 0);
-      $dist   = (float)($log['total_distance'] ?? 0);
-      if ($price <= 0 || $dist <= 0) continue;
-      if (!isset($bpkByDriver[$driver])) {
-          $bpkByDriver[$driver] = ['price_sum'=>0,'dist_sum'=>0,'plate'=>$log['vehicle_id']??''];
-      }
-      $bpkByDriver[$driver]['price_sum'] += $price;
-      $bpkByDriver[$driver]['dist_sum']  += $dist;
+  $costByDriver=[];
+  foreach($logs as $log){
+    $driver=$log['driver_name']??'ไม่ระบุ';
+    $price=(float)($log['total_price']??0);
+    $dist=(float)($log['total_distance']??0);
+    if($price<=0||$dist<=0)continue;
+    if(!isset($costByDriver[$driver]))$costByDriver[$driver]=['price'=>0,'dist'=>0,'plate'=>$log['vehicle_id']??''];
+    $costByDriver[$driver]['price']+=$price;
+    $costByDriver[$driver]['dist']+=$dist;
   }
 @endphp
-const BPK_BY_DRIVER = @json($bpkByDriver);
-
-let bpkChart = null;
-function renderBpkChart(){
-  const drivers = Object.keys(BPK_BY_DRIVER).map(name => ({
-    name,
-    plate: BPK_BY_DRIVER[name].plate || '',
-    avg: BPK_BY_DRIVER[name].dist_sum > 0
-        ? BPK_BY_DRIVER[name].price_sum / BPK_BY_DRIVER[name].dist_sum
-        : 0,
-  })).filter(d => d.avg > 0).sort((a,b) => a.avg - b.avg);  // เรียงน้อย→มาก (ถูกขึ้นก่อน)
-
-  if(drivers.length === 0){
-    if(bpkChart) bpkChart.destroy();
-    document.getElementById('bpkLegend').innerHTML = '<span style="color:var(--text3)">ไม่มีข้อมูล</span>';
-    return;
+const COST_BY_DRIVER=@json($costByDriver);
+let costChart=null;
+function renderCostChart(){
+  const drivers=Object.keys(COST_BY_DRIVER).map(name=>({
+    name,plate:COST_BY_DRIVER[name].plate||'',
+    cost:COST_BY_DRIVER[name].dist>0?COST_BY_DRIVER[name].price/COST_BY_DRIVER[name].dist:0,
+    price:COST_BY_DRIVER[name].price,dist:COST_BY_DRIVER[name].dist,
+  })).filter(d=>d.cost>0).sort((a,b)=>a.cost-b.cost);
+  if(drivers.length===0){if(costChart)costChart.destroy();document.getElementById('costLegend').innerHTML='<span style="color:var(--text4)">ไม่มีข้อมูล</span>';return;}
+  const inner=document.getElementById('chartCostInner');
+  const sw=inner?inner.parentElement:null;
+  if(inner&&sw){
+    const ROW=44;
+    const minH=Math.max(drivers.length*ROW+40, 300);
+    inner.style.width='100%';inner.style.height=minH+'px';
+    sw.style.height='auto';sw.style.maxHeight='none';
   }
-
-  // Width handling — เหมือน km/L chart
-  const inner = document.getElementById('chartBpkInner');
-  const scrollWrap = inner ? inner.parentElement : null;
-  if(inner && scrollWrap){
-    const BAR_PX = 120;
-    inner.style.width = '100%';
-    const panel = scrollWrap.closest('.chart-panel');
-    const panelW = panel ? (panel.clientWidth - 40) : scrollWrap.clientWidth;
-    const containerW = Math.max(scrollWrap.clientWidth, panelW);
-    const needed = drivers.length * BAR_PX;
-    const w = (drivers.length > 4 && needed > containerW) ? needed : containerW;
-    inner.style.width = w + 'px';
-    inner.style.height = '100%';
-  }
-
-  const labels = drivers.map(d => d.name);
-  const data   = drivers.map(d => +d.avg.toFixed(2));
-
-  // สี: ≤ 4 เขียว / 4–6 อำพัน / > 6 แดง
-  const barColors = data.map(v => v <= 4 ? '#16a34a' : (v <= 6 ? '#f59e0b' : '#dc2626'));
-
-  // weighted overall = รวมเงินทั้งหมด ÷ รวมระยะทั้งหมด
-  let totalPriceAll = 0, totalDistAll = 0;
-  Object.values(BPK_BY_DRIVER).forEach(d => {
-    totalPriceAll += d.price_sum;
-    totalDistAll  += d.dist_sum;
+  const labels=drivers.map(d=>d.plate||d.name);
+  const data=drivers.map(d=>+d.cost.toFixed(2));
+  const avg=data.reduce((a,b)=>a+b,0)/data.length;
+  const barColors=data.map(v=>{
+    if(v<=avg*0.85)return '#10b981';
+    if(v<=avg*1.05)return '#f59e0b';
+    return '#ef4444';
   });
-  const overallAvg = totalDistAll > 0 ? (totalPriceAll / totalDistAll) : 0;
-
-  const maxVal = Math.max(...data, 6);
-  const yMax = Math.ceil(maxVal + 1);
-
-  if(bpkChart) bpkChart.destroy();
-  bpkChart = new Chart(document.getElementById('chartBpk'), {
-    type: 'bar',
-    data: {
-      labels,
-      datasets: [{
-        label: 'เฉลี่ย ฿/km',
-        data,
-        backgroundColor: barColors,
-        borderRadius: 6,
-        borderSkipped: false,
-        maxBarThickness: 50,
-      }],
-    },
-    plugins: [
-      ChartDataLabels,
-      {
-        id: 'bpkThreshold',
-        afterDatasetsDraw(chart){
-          if(overallAvg <= 0) return;
-          const {ctx, chartArea: {left, right}, scales: {y}} = chart;
-          const yPos = y.getPixelForValue(overallAvg);
-          ctx.save();
-          ctx.strokeStyle = '#7c3aed';
-          ctx.setLineDash([6, 4]);
-          ctx.lineWidth = 2;
-          ctx.beginPath();
-          ctx.moveTo(left, yPos);
-          ctx.lineTo(right, yPos);
-          ctx.stroke();
-          ctx.setLineDash([]);
-          ctx.fillStyle = '#7c3aed';
-          ctx.font = '600 11px Inter';
-          ctx.textAlign = 'right';
-          ctx.fillText('เฉลี่ยรวม ฿' + overallAvg.toFixed(2), right - 6, yPos - 6);
-          ctx.restore();
-        },
+  const maxVal=Math.max(...data);
+  const xMax=Math.ceil(maxVal*1.15);
+  if(costChart)costChart.destroy();
+  costChart=new Chart(document.getElementById('chartCost'),{
+    type:'bar',
+    data:{labels,datasets:[{label:'฿/km',data,backgroundColor:barColors,borderRadius:6,borderSkipped:false,maxBarThickness:28}]},
+    plugins:[ChartDataLabels,{id:'costAvgLine',afterDatasetsDraw(chart){
+      const {ctx,chartArea:{top,bottom},scales:{x}}=chart;
+      const xPos=x.getPixelForValue(avg);
+      ctx.save();ctx.strokeStyle='#3b82f6';ctx.setLineDash([6,4]);ctx.lineWidth=2;
+      ctx.beginPath();ctx.moveTo(xPos,top);ctx.lineTo(xPos,bottom);ctx.stroke();
+      ctx.setLineDash([]);ctx.fillStyle='#3b82f6';ctx.font='600 11px Inter';ctx.textAlign='left';
+      ctx.fillText('เฉลี่ย ฿'+avg.toFixed(2),xPos+6,top+12);ctx.restore();
+    }}],
+    options:{
+      indexAxis:'y',
+      responsive:true,maintainAspectRatio:false,
+      layout:{padding:{top:10,right:70,left:6,bottom:6}},
+      plugins:{
+        legend:{display:false},
+        tooltip:{callbacks:{
+          label:ctx=>`฿${ctx.raw.toFixed(2)} / km`,
+          afterLabel:ctx=>{
+            const d=drivers[ctx.dataIndex];
+            const lines=[];
+            if(d.name)lines.push(`คนขับ: ${d.name}`);
+            lines.push(`รวม ฿${d.price.toLocaleString(undefined,{maximumFractionDigits:0})} / ${d.dist.toLocaleString()} km`);
+            return lines;
+          }
+        }},
+        datalabels:{color:'#18181b',font:{weight:'700',size:11,family:'Inter'},anchor:'end',align:'right',offset:4,formatter:v=>'฿'+v.toFixed(2)},
       },
-    ],
-    options: {
-      responsive: true, maintainAspectRatio: false,
-      layout: { padding: { top: 24, right: 16, left: 6, bottom: 6 } },
-      plugins: {
-        legend: { display: false },
-        tooltip: {
-          callbacks: {
-            label: ctx => `฿${ctx.raw.toFixed(2)} ต่อ กม.`,
-            afterLabel: ctx => {
-              const d = drivers[ctx.dataIndex];
-              return d.plate ? `ทะเบียน: ${d.plate}` : '';
-            },
-          },
-        },
-        datalabels: {
-          color: '#0f172a',
-          font: { weight: '700', size: 11, family: 'Inter' },
-          anchor: 'end', align: 'top', offset: 2,
-          formatter: v => '฿' + v.toFixed(2),
-        },
-      },
-      scales: {
-        x: {
-          grid: { display: false },
-          ticks: {
-            font: { size: 11, family: 'IBM Plex Sans Thai' },
-            color: '#475569',
-            autoSkip: false,
-            maxRotation: 0,
-            callback: function(value){
-              const lbl = this.getLabelForValue(value);
-              return lbl.length > 8 ? lbl.substring(0,7) + '…' : lbl;
-            },
-          },
-        },
-        y: {
-          beginAtZero: true,
-          suggestedMax: yMax,
-          ticks: {
-            font: { size: 11, family: 'Inter' },
-            color: '#94a3b8',
-            callback: v => '฿' + v,
-          },
-          grid: { color: 'rgba(15,23,42,.05)' },
-        },
+      scales:{
+        x:{beginAtZero:true,suggestedMax:xMax,ticks:{font:{size:14,family:'Inter'},color:'#71717a',callback:v=>'฿'+v},grid:{color:'rgba(0,0,0,.05)'}},
+        y:{grid:{display:false},ticks:{font:{size:14,weight:'600',family:'IBM Plex Sans Thai'},color:'#3f3f46',autoSkip:false}},
       },
     },
   });
-
-  const wrap = document.getElementById('bpkLegend');
-  if(wrap){
-    wrap.innerHTML = `
-      <div class="chart-legend-item"><span class="chart-legend-dot" style="background:#16a34a"></span>ดี (≤ ฿4)</div>
-      <div class="chart-legend-item"><span class="chart-legend-dot" style="background:#f59e0b"></span>ปกติ (฿4–6)</div>
-      <div class="chart-legend-item"><span class="chart-legend-dot" style="background:#dc2626"></span>แพง (&gt; ฿6)</div>
-      <div class="chart-legend-item" style="margin-left:auto;color:var(--text3)">
-        เฉลี่ยรวม: <strong style="color:var(--text);margin-left:4px">฿${overallAvg.toFixed(2)}/km</strong>
-      </div>
-    `;
-  }
+  document.getElementById('costLegend').innerHTML=`
+    <div class="chart-legend-item"><span class="chart-legend-dot" style="background:#10b981"></span>ดี (ต่ำกว่าเฉลี่ย ≥15%)</div>
+    <div class="chart-legend-item"><span class="chart-legend-dot" style="background:#f59e0b"></span>ปกติ (±5–15%)</div>
+    <div class="chart-legend-item"><span class="chart-legend-dot" style="background:#ef4444"></span>สูง (สูงกว่าเฉลี่ย >5%)</div>
+    <div class="chart-legend-item" style="margin-left:auto;color:var(--text4)">เฉลี่ย <strong style="color:var(--text);margin-left:4px">฿${avg.toFixed(2)}/km</strong></div>
+  `;
 }
-</script>
-<script>
-/* ═══════════════════════════════════════════════════════════════
-   DATE RANGE PICKER (เก็บ logic เดิม)
-═══════════════════════════════════════════════════════════════ */
-const TH_MONTHS_SHORT = ['ม.ค.','ก.พ.','มี.ค.','เม.ย.','พ.ค.','มิ.ย.','ก.ค.','ส.ค.','ก.ย.','ต.ค.','พ.ย.','ธ.ค.'];
-let drpViewYear=null, drpViewMonth=null, drpFrom=null, drpTo=null;
+
+const TH_MONTHS_SHORT=['ม.ค.','ก.พ.','มี.ค.','เม.ย.','พ.ค.','มิ.ย.','ก.ค.','ส.ค.','ก.ย.','ต.ค.','พ.ย.','ธ.ค.'];
+let drpViewYear=null,drpViewMonth=null,drpFrom=null,drpTo=null;
 function drpPad(n){return String(n).padStart(2,'0');}
 function drpFmt(d){return `${d.getFullYear()}-${drpPad(d.getMonth()+1)}-${drpPad(d.getDate())}`;}
 function drpParse(s){if(!s)return null;const p=s.split('-');return new Date(parseInt(p[0]),parseInt(p[1])-1,parseInt(p[2]));}
-function drpFormatLabel(fromStr,toStr){
-  if(!fromStr) return 'เลือกช่วงวันที่';
-  const f=drpParse(fromStr);
-  if(!toStr||fromStr===toStr) return `${f.getDate()} ${TH_MONTHS_SHORT[f.getMonth()]} ${f.getFullYear()+543}`;
-  const t=drpParse(toStr);
-  if(f.getFullYear()===t.getFullYear()&&f.getMonth()===t.getMonth()) return `${f.getDate()}–${t.getDate()} ${TH_MONTHS_SHORT[f.getMonth()]} ${f.getFullYear()+543}`;
-  return `${f.getDate()} ${TH_MONTHS_SHORT[f.getMonth()]} – ${t.getDate()} ${TH_MONTHS_SHORT[t.getMonth()]} ${f.getFullYear()+543}`;
+function drpFormatLabel(f,t){
+  if(!f)return 'เลือกช่วง';
+  const fd=drpParse(f);
+  if(!t||f===t)return `${fd.getDate()} ${TH_MONTHS_SHORT[fd.getMonth()]} ${fd.getFullYear()+543}`;
+  const td=drpParse(t);
+  if(fd.getFullYear()===td.getFullYear()&&fd.getMonth()===td.getMonth())return `${fd.getDate()}–${td.getDate()} ${TH_MONTHS_SHORT[fd.getMonth()]} ${fd.getFullYear()+543}`;
+  return `${fd.getDate()} ${TH_MONTHS_SHORT[fd.getMonth()]} – ${td.getDate()} ${TH_MONTHS_SHORT[td.getMonth()]} ${fd.getFullYear()+543}`;
 }
 function drpUpdateLabel(){const lbl=document.getElementById('drpLabel');if(lbl)lbl.textContent=drpFormatLabel(drpFrom,drpTo);}
 function drpPositionPopup(){
-  const pop = document.getElementById('drpPopup');
-  const trg = document.getElementById('drpTrigger');
-  if(!pop || !trg) return;
-  const r = trg.getBoundingClientRect();
-  const popW = 340, popH = 420;
-  const isMobile = window.innerWidth <= 900;
-  if(isMobile){
-    // Below the trigger
-    pop.style.top  = (r.bottom + 6) + 'px';
-    pop.style.left = Math.max(8, Math.min(r.left, window.innerWidth - popW - 8)) + 'px';
-  }else{
-    // To the right of the sidebar trigger; clamp inside viewport
-    let top  = r.top;
-    if(top + popH > window.innerHeight - 8) top = Math.max(8, window.innerHeight - popH - 8);
-    let left = r.right + 8;
-    if(left + popW > window.innerWidth - 8) left = Math.max(8, window.innerWidth - popW - 8);
-    pop.style.top  = top  + 'px';
-    pop.style.left = left + 'px';
-  }
+  const pop=document.getElementById('drpPopup');const trg=document.getElementById('drpTrigger');
+  if(!pop||!trg)return;
+  const r=trg.getBoundingClientRect();
+  const popW=340,popH=420;
+  let top=r.bottom+6;
+  if(top+popH>window.innerHeight-8)top=Math.max(8,r.top-popH-6);
+  let left=r.left;
+  if(left+popW>window.innerWidth-8)left=Math.max(8,window.innerWidth-popW-8);
+  pop.style.top=top+'px';pop.style.left=left+'px';
 }
 function drpToggle(e){
   if(e)e.stopPropagation();
   const pop=document.getElementById('drpPopup');const trg=document.getElementById('drpTrigger');
-  if(pop.classList.contains('open')){
-    pop.classList.remove('open');trg.classList.remove('active');
-  }else{
-    const a=drpFrom?drpParse(drpFrom):new Date();
-    drpViewYear=a.getFullYear();drpViewMonth=a.getMonth();drpRender();
-    drpPositionPopup();
-    pop.classList.add('open');trg.classList.add('active');
-  }
+  if(pop.classList.contains('open')){pop.classList.remove('open');trg.classList.remove('active');}
+  else{const a=drpFrom?drpParse(drpFrom):new Date();drpViewYear=a.getFullYear();drpViewMonth=a.getMonth();drpRender();drpPositionPopup();pop.classList.add('open');trg.classList.add('active');}
 }
 window.addEventListener('resize',()=>{const p=document.getElementById('drpPopup');if(p&&p.classList.contains('open'))drpPositionPopup();});
 window.addEventListener('scroll',()=>{const p=document.getElementById('drpPopup');if(p&&p.classList.contains('open'))drpPositionPopup();},true);
@@ -2508,52 +1310,21 @@ function drpNavMonth(d){drpViewMonth+=d;if(drpViewMonth<0){drpViewMonth=11;drpVi
 function drpRender(){
   document.getElementById('drpMonthTitle').textContent=`${TH_MONTHS_SHORT[drpViewMonth]} ${drpViewYear+543}`;
   const grid=document.getElementById('drpDays');
-  const fd=new Date(drpViewYear,drpViewMonth,1);
-  const fw=fd.getDay();
+  const fd=new Date(drpViewYear,drpViewMonth,1);const fw=fd.getDay();
   const dim=new Date(drpViewYear,drpViewMonth+1,0).getDate();
   const pmd=new Date(drpViewYear,drpViewMonth,0).getDate();
   const ts=drpFmt(new Date());
   let h='';
-  for(let i=fw-1;i>=0;i--){
-    const d=pmd-i;
-    const y=drpViewMonth===0?drpViewYear-1:drpViewYear;
-    const m=drpViewMonth===0?11:drpViewMonth-1;
-    const ds=`${y}-${drpPad(m+1)}-${drpPad(d)}`;
-    h+=drpDayBtn(ds,d,true,ts);
-  }
-  for(let d=1;d<=dim;d++){
-    const ds=`${drpViewYear}-${drpPad(drpViewMonth+1)}-${drpPad(d)}`;
-    h+=drpDayBtn(ds,d,false,ts);
-  }
-  const total=fw+dim;
-  const rem=(7-(total%7))%7;
-  for(let d=1;d<=rem;d++){
-    const y=drpViewMonth===11?drpViewYear+1:drpViewYear;
-    const m=drpViewMonth===11?0:drpViewMonth+1;
-    const ds=`${y}-${drpPad(m+1)}-${drpPad(d)}`;
-    h+=drpDayBtn(ds,d,true,ts);
-  }
+  for(let i=fw-1;i>=0;i--){const d=pmd-i;const y=drpViewMonth===0?drpViewYear-1:drpViewYear;const m=drpViewMonth===0?11:drpViewMonth-1;const ds=`${y}-${drpPad(m+1)}-${drpPad(d)}`;h+=drpDayBtn(ds,d,true,ts);}
+  for(let d=1;d<=dim;d++){const ds=`${drpViewYear}-${drpPad(drpViewMonth+1)}-${drpPad(d)}`;h+=drpDayBtn(ds,d,false,ts);}
+  const total=fw+dim;const rem=(7-(total%7))%7;
+  for(let d=1;d<=rem;d++){const y=drpViewMonth===11?drpViewYear+1:drpViewYear;const m=drpViewMonth===11?0:drpViewMonth+1;const ds=`${y}-${drpPad(m+1)}-${drpPad(d)}`;h+=drpDayBtn(ds,d,true,ts);}
   grid.innerHTML=h;
-
   const hint=document.getElementById('drpHint');
-  if(!drpFrom)hint.textContent='🖱️ กดค้างแล้วลากเพื่อเลือกช่วงวันที่ หรือคลิกวันเดียว';
-  else if(drpFrom===drpTo)hint.textContent=`เลือก ${drpFormatLabel(drpFrom,drpTo)}`;
-  else hint.textContent=`เลือกช่วง ${drpFormatLabel(drpFrom,drpTo)}`;
+  if(!drpFrom)hint.textContent='เลือกวันเริ่มต้น';
+  else if(drpFrom===drpTo)hint.textContent=drpFormatLabel(drpFrom,drpTo);
+  else hint.textContent=drpFormatLabel(drpFrom,drpTo);
   document.getElementById('drpApplyBtn').disabled=!drpFrom;
-
-  // ✅ ผูก click handler หลัง render เสร็จ — รองรับการกดวันเดียว
-  grid.querySelectorAll('.drp-day').forEach(btn=>{
-    btn.addEventListener('click', (ev)=>{
-      ev.stopPropagation();
-      const ds = btn.dataset.date;
-      if(!ds) return;
-      if(!drpDragging){
-        drpFrom = ds;
-        drpTo   = ds;
-        drpRender();
-      }
-    });
-  });
 }
 function drpDayBtn(ds,d,muted,ts){
   const c=['drp-day'];if(muted)c.push('muted');if(ds===ts)c.push('today');
@@ -2567,27 +1338,40 @@ function drpDayBtn(ds,d,muted,ts){
 }
 let drpDragging=false,drpDragStart=null;
 function drpGetDateFromEvent(e){const p=e.touches?e.touches[0]:e;if(!p)return null;const el=document.elementFromPoint(p.clientX,p.clientY);if(!el)return null;const b=el.closest('.drp-day');return b?b.dataset.date:null;}
-function drpStartDrag(e){
-  const ds=drpGetDateFromEvent(e);
-  if(!ds)return;
-  drpDragging=true;
-  drpDragStart=ds;
-  drpFrom=ds;
-  drpTo=ds;
-  drpRender();
-}
-function drpMoveDrag(e){
-  if(!drpDragging)return;
-  const ds=drpGetDateFromEvent(e);
-  if(!ds)return;
-  e.preventDefault();
-  if(ds<drpDragStart){drpFrom=ds;drpTo=drpDragStart;}
-  else{drpFrom=drpDragStart;drpTo=ds;}
-  drpRender();
-}
+function drpStartDrag(e){const ds=drpGetDateFromEvent(e);if(!ds)return;e.preventDefault();drpDragging=true;drpDragStart=ds;drpFrom=ds;drpTo=ds;drpRender();}
+function drpMoveDrag(e){if(!drpDragging)return;const ds=drpGetDateFromEvent(e);if(!ds)return;e.preventDefault();if(ds<drpDragStart){drpFrom=ds;drpTo=drpDragStart;}else{drpFrom=drpDragStart;drpTo=ds;}drpRender();}
 function drpEndDrag(){drpDragging=false;}
 function drpPreset(p){const n=new Date();let f,t;if(p==='today'){f=t=drpFmt(n);}else if(p==='7days'){t=drpFmt(n);const d=new Date(n);d.setDate(d.getDate()-6);f=drpFmt(d);}else if(p==='thismonth'){f=drpFmt(new Date(n.getFullYear(),n.getMonth(),1));t=drpFmt(n);}drpFrom=f;drpTo=t;const fd=drpParse(f);drpViewYear=fd.getFullYear();drpViewMonth=fd.getMonth();drpRender();}
-function drpApply(){if(!drpFrom)return;const to=drpTo||drpFrom;const params={view:'day',date_from:drpFrom,date_to:to};const ds=document.getElementById('driverPicker');if(ds&&ds.value)params.driver_name=ds.value;submitFilterForm(params);}
+function drpApply(){
+  if(!drpFrom)return;
+  const to=drpTo||drpFrom;
+  // ใช้ date_from เป็น "วันที่ทำงาน" ของ entry-card
+  const workDateInput = document.getElementById('il-work-date');
+  if(workDateInput){
+    workDateInput.value = drpFrom;
+    // Reload entry-card data ทันทีโดยไม่ต้อง submit form
+    if(typeof ilOnDateChange === 'function'){
+      ilOnDateChange();
+    }
+  }
+  // ปิด popup
+  const pop=document.getElementById('drpPopup');
+  const trg=document.getElementById('drpTrigger');
+  if(pop) pop.classList.remove('open');
+  if(trg) trg.classList.remove('active');
+  // อัปเดต label
+  drpUpdateLabel();
+  // ถ้าช่วงวันที่ต่างจาก URL ปัจจุบัน → submit form เพื่อ reload table ด้านล่าง
+  const wrap=document.querySelector('.drp-wrap[data-from]');
+  const curFrom = wrap?.dataset.from;
+  const curTo   = wrap?.dataset.to;
+  if(drpFrom !== curFrom || to !== curTo){
+    const params={view:'day',date_from:drpFrom,date_to:to};
+    const ds=document.getElementById('driverPicker');
+    if(ds&&ds.value)params.driver_name=ds.value;
+    submitFilterForm(params);
+  }
+}
 document.addEventListener('click',(e)=>{const pop=document.getElementById('drpPopup');const trg=document.getElementById('drpTrigger');if(!pop||!pop.classList.contains('open'))return;if(pop.contains(e.target)||trg.contains(e.target))return;pop.classList.remove('open');trg.classList.remove('active');});
 function drpInit(){
   const wrap=document.querySelector('.drp-wrap[data-from]');if(!wrap)return;
@@ -2597,375 +1381,635 @@ function drpInit(){
   if(grid){grid.addEventListener('mousedown',drpStartDrag);document.addEventListener('mousemove',drpMoveDrag);document.addEventListener('mouseup',drpEndDrag);grid.addEventListener('touchstart',drpStartDrag,{passive:false});document.addEventListener('touchmove',drpMoveDrag,{passive:false});document.addEventListener('touchend',drpEndDrag);}
 }
 
-/* ═══════════════════════════════════════════════════════════════
-   PAGINATION
-═══════════════════════════════════════════════════════════════ */
-const OIL_PAGE_SIZE = 10;
-let oilCurrentPage = 1;
-let oilSearchQuery = '';
+let oilSearchQuery='';
 function getVisibleRows(){const rows=Array.from(document.querySelectorAll('#oilTbody tr[data-driver]'));if(!oilSearchQuery)return rows;return rows.filter(r=>r.dataset.driver.includes(oilSearchQuery));}
 function renderOilPage(){
-  // Show all rows that match the search filter; scroll handled by .fuel-table-scroll container
-  const allRows=Array.from(document.querySelectorAll('#oilTbody tr[data-driver]'));
-  const visibleSet=new Set(getVisibleRows());
-  allRows.forEach(r=>{ r.style.display = visibleSet.has(r) ? '' : 'none'; });
-  const total=visibleSet.size;
-  const c=document.getElementById('oilCount');if(c)c.textContent=total;
-  // Hide pagination — using internal scroll instead
-  const pag=document.getElementById('oilPagination');if(pag)pag.style.display='none';
-}
-function renderPageButtons(tp){/* pagination disabled */}
-function gotoPage(n){/* pagination disabled — kept for backward compat */}
-
-/* ═══════════════════════════════════════════════════════════════
-   MODAL — Driver / Plate / Time / Jobs (เก็บ logic เดิม)
-═══════════════════════════════════════════════════════════════ */
-function buildTimeDropdowns(){}
-function getTimeVal(hId,mId){const hEl=document.getElementById(hId),mEl=document.getElementById(mId);if(!hEl||!mEl)return '';const h=hEl.value,m=mEl.value;if(h===''||m==='')return '';return String(h).padStart(2,'0')+':'+String(m).padStart(2,'0');}
-function setTimeDropdown(hId,mId,t){const hEl=document.getElementById(hId),mEl=document.getElementById(mId);if(!hEl||!mEl)return;if(!t){hEl.value='0';mEl.value='0';return;}const p=t.split(':');hEl.value=String(parseInt(p[0])||0);mEl.value=String(parseInt(p[1])||0);}
-function onS1SelectOther(sel,hid,tid){const v=sel.value,t=document.getElementById(tid),h=document.getElementById(hid);if(v==='__other__'){t.style.display='block';t.focus();h.value=t.value;}else{t.style.display='none';t.value='';h.value=v;}}
-function updateDriverBanner(){
-  const name=document.getElementById('s1-driver-name').value||document.getElementById('s1-driver-select').value;
-  const plate=document.getElementById('s1-vehicle-id').value||document.getElementById('s1-plate-select').value;
-  const banner=document.getElementById('driverBanner');
-  if(name&&name!=='__other__'&&plate&&plate!=='__other__'){
-    document.getElementById('bannerName').textContent=name;
-    document.getElementById('bannerPlate').textContent='ทะเบียน: '+plate;
-    banner.style.display='flex';
-  }else banner.style.display='none';
-  if(typeof calcWorkHours==='function')calcWorkHours();
+  const all=Array.from(document.querySelectorAll('#oilTbody tr[data-driver]'));
+  const vis=new Set(getVisibleRows());
+  all.forEach(r=>{r.style.display=vis.has(r)?'':'none';});
+  const c=document.getElementById('oilCount');if(c)c.textContent=vis.size;
 }
 
-const JOB_API_BASE = 'http://server_update:8000/api/getDeliveryPersonByDate';
-const jobApiCache = {};
+const JOB_API_BASE='http://server_update:8000/api/getDeliveryPersonByDate';
+const jobApiCache={};
 async function fetchJobsByDate(dateStr){
   if(jobApiCache[dateStr]!==undefined)return;
   jobApiCache[dateStr]=null;
   try{
     const res=await fetch(`${JOB_API_BASE}?date=${dateStr}`);if(!res.ok)throw new Error('HTTP '+res.status);
     const json=await res.json();
-    const drivers=(json.data||[]).map(block=>({
-      driver_name:block.bill_out_by||'ไม่ระบุ',
-      jobs:(block.jobs||[]).map(j=>({
-        bill_no:j.bill_no||'',so_id:j.so_id||'',customer_name:j.customer_name||'',
-        bill_in_by:j.bill_in_by||'',status:j.delivery_status||'',note:j.reason||'',
-      })),
+    const drivers=(json.data||[]).map(b=>({
+      driver_name:b.bill_out_by||'ไม่ระบุ',
+      jobs:(b.jobs||[]).map(j=>({bill_no:j.bill_no||'',so_id:j.so_id||'',customer_name:j.customer_name||'',bill_in_by:j.bill_in_by||'',status:j.delivery_status||'',note:j.reason||''})),
     }));
-    jobApiCache[dateStr]=[{date:json.date||dateStr,drivers:drivers}];
+    jobApiCache[dateStr]=[{date:json.date||dateStr,drivers}];
   }catch(e){console.warn('fetchJobsByDate:',e);jobApiCache[dateStr]=[];}
 }
-const DB_DRIVERS = @json($drivers);
-function populateDriverDropdown(dateStr){
-  const sel=document.getElementById('s1-driver-select');const hidEl=document.getElementById('s1-driver-name');
-  const dayBlocks=jobApiCache[dateStr]||[];const apiDrivers=[];
-  dayBlocks.forEach(day=>{(day.drivers||[]).forEach(d=>{if(d.driver_name&&!apiDrivers.includes(d.driver_name))apiDrivers.push(d.driver_name);});});
-  const prevVal=hidEl.value||sel.value;
-  sel.innerHTML='<option value="">— เลือกคนขับ —</option>';
-  if(apiDrivers.length>0){
-    apiDrivers.forEach(d=>{const o=document.createElement('option');o.value=d;o.textContent=d;sel.appendChild(o);});
-    const rest=DB_DRIVERS.filter(d=>!apiDrivers.includes(d));
-    if(rest.length){const grp=document.createElement('optgroup');grp.label='📋 คนขับอื่นๆ';rest.forEach(d=>{const o=document.createElement('option');o.value=d;o.textContent=d;grp.appendChild(o);});sel.appendChild(grp);}
-  }else{DB_DRIVERS.forEach(d=>{const o=document.createElement('option');o.value=d;o.textContent=d;sel.appendChild(o);});}
-  const oo=document.createElement('option');oo.value='__other__';oo.textContent='อื่นๆ (พิมพ์เอง)';sel.appendChild(oo);
-  if(prevVal&&prevVal!=='__other__'){const found=[...sel.options].find(o=>o.value===prevVal);if(found){sel.value=prevVal;hidEl.value=prevVal;}else{sel.value='';hidEl.value='';}}
-}
-let isLoadingDrivers=false,lastLoadedDate=null;
-function setDateInputLocked(locked){
-  const dateInput=document.getElementById('s1-work-date');const hint=document.getElementById('s1-date-loading-hint');
-  if(!dateInput)return;
-  if(locked){dateInput.classList.add('date-input-locked');dateInput.setAttribute('readonly','readonly');if(hint)hint.classList.add('show');isLoadingDrivers=true;}
-  else{dateInput.classList.remove('date-input-locked');dateInput.removeAttribute('readonly');if(hint)hint.classList.remove('show');isLoadingDrivers=false;}
-}
-async function onS1DateChange(){
-  if(isLoadingDrivers){if(lastLoadedDate)document.getElementById('s1-work-date').value=lastLoadedDate;return;}
-  updateDriverBanner();
-  const date=document.getElementById('s1-work-date').value;if(!date)return;
-  setDateInputLocked(true);
-  const sel=document.getElementById('s1-driver-select');
-  sel.innerHTML='<option value="">⏳ กำลังโหลด...</option>';sel.disabled=true;
-  document.getElementById('s1-driver-name').value='';
-  document.getElementById('jobTableWrap').innerHTML='<div class="job-loading">กำลังโหลดข้อมูลคนขับ...</div>';
-  document.getElementById('jobDateChip').style.display='none';
-  try{
-    await fetchJobsByDate(date);lastLoadedDate=date;sel.disabled=false;populateDriverDropdown(date);updateDriverBanner();
-    document.getElementById('jobTableWrap').innerHTML='<div class="job-loading">เลือกคนขับเพื่อดูรายการงาน</div>';
-  }catch(e){console.warn(e);sel.disabled=false;sel.innerHTML='<option value="">— เกิดข้อผิดพลาด —</option>';}
-  finally{setDateInputLocked(false);}
-}
-async function loadJobsForDriver(){
-  const name=document.getElementById('s1-driver-name').value||document.getElementById('s1-driver-select').value;
-  const date=document.getElementById('s1-work-date').value;
-  const wrap=document.getElementById('jobTableWrap');const chip=document.getElementById('jobDateChip');
-  if(!name||name==='__other__'||!name.trim()){wrap.innerHTML='<div class="job-loading">เลือกคนขับเพื่อดูรายการงาน</div>';chip.style.display='none';return;}
-  if(!date){wrap.innerHTML='<div class="job-loading">กรุณาเลือกวันที่ก่อน</div>';chip.style.display='none';return;}
-  wrap.innerHTML='<div class="job-loading">⏳ กำลังโหลดรายการงาน...</div>';chip.style.display='none';
-  await fetchJobsByDate(date);
-  const jobs=_collectJobs(name,date);chip.textContent='วันที่ '+date;chip.style.display='';
-  if(!jobs.length){wrap.innerHTML=`<div class="job-loading">ไม่พบรายการงานของ ${name} วันที่ ${date}</div>`;return;}
-  renderJobTable(jobs);
-}
-function renderJobTable(jobs){
-  const wrap = document.getElementById('jobTableWrap');
-
-  // ─── ✅ Helper: คำนวณ effective status (note override) ───
-  function getEffectiveStatus(j){
-    const raw = (j.status || '').trim();
-    const noteText = (j.note || '').trim();
-    const isNoteSuccess = (noteText === 'ส่งสำเร็จ' || noteText === 'สำเร็จ');
-    return isNoteSuccess ? 'ส่งสำเร็จ' : raw;
-  }
-  function isJobOk(j){
-    const s = getEffectiveStatus(j);
-    return s.includes('สำเร็จ') && !s.includes('ไม่');
-  }
-  function isJobNg(j){
-    const s = getEffectiveStatus(j);
-    return s.includes('ไม่สำเร็จ')
-        || s.toLowerCase() === 'ng'
-        || s.toLowerCase() === 'fail';
-  }
-
-  // ─── Render แต่ละแถว ───
-  const rows = jobs.map(j=>{
-    const raw = (j.status || '').trim();
-    const noteText = (j.note || '').trim();
-    const effectiveStatus = getEffectiveStatus(j);
-
-    const isOk = isJobOk(j);
-    const isNg = isJobNg(j);
-
-    const sb = isOk ? `<span class="job-chip ok">✅ สำเร็จ</span>`
-             : isNg ? `<span class="job-chip fail">❌ ไม่สำเร็จ</span>`
-             : `<span class="job-chip">— รอ</span>`;
-
-    // ซ่อน note ถ้าเป็น "ส่งสำเร็จ" / "สำเร็จ" (ไม่ต้องโชว์ซ้ำ) หรือเหมือน status
-    const isSuccessNote = (noteText === 'ส่งสำเร็จ' || noteText === 'สำเร็จ');
-    const nh = (noteText && noteText !== raw && !isSuccessNote)
-      ? `<div style="font-size:11px;color:var(--text3);margin-top:3px">${noteText}</div>`
-      : '';
-
-    const so = j.so_id
-      ? `<span class="job-bill" style="background:rgba(37,99,235,.08);color:var(--accent)">${j.so_id}</span>`
-      : `<span style="color:var(--text3);font-size:11px">—</span>`;
-
-    return `<tr>
-      <td><span class="job-bill">${j.bill_no}</span></td>
-      <td>${so}</td>
-      <td>${j.customer_name}</td>
-      <td style="color:var(--text2)">${j.bill_in_by}</td>
-      <td>${sb}${nh}</td>
-    </tr>`;
-  }).join('');
-
-  // ─── ✅ Summary bar — ใช้ helper ที่เช็ค note ด้วย ───
-  const t  = jobs.length;
-  const ok = jobs.filter(isJobOk).length;
-  const ng = jobs.filter(isJobNg).length;
-  const p  = t - ok - ng;
-
-  wrap.innerHTML = `
-    <div class="job-table-wrap">
-      <table>
-        <thead>
-          <tr>
-            <th>เลขบิล</th><th>SO ID</th><th>ลูกค้า</th><th>ผู้นำบิลเข้า</th><th>สถานะ</th>
-          </tr>
-        </thead>
-        <tbody>${rows}</tbody>
-      </table>
-      <div class="job-summary-bar">
-        <span class="job-chip">ทั้งหมด ${t}</span>
-        ${ok ? `<span class="job-chip ok">✅ ${ok}</span>` : ''}
-        ${ng ? `<span class="job-chip fail">❌ ${ng}</span>` : ''}
-        ${p  ? `<span class="job-chip">⏳ ${p}</span>` : ''}
-      </div>
-    </div>
-  `;
-}
-function _collectJobs(driverName,date){const jobs=[];(jobApiCache[date]||[]).forEach(day=>{(day.drivers||[]).forEach(d=>{if(d.driver_name!==driverName)return;(d.jobs||[]).forEach((j,i)=>{jobs.push({...j,_key:`${driverName}_${day.date}_${i}`,_date:day.date});});});});return jobs;}
-
-function goToStep2(){
-  let ok=true;
-  const date=document.getElementById('s1-work-date').value;
-  const driver=document.getElementById('s1-driver-name').value;
-  const plate=document.getElementById('s1-vehicle-id').value;
-  ['s1-err-date','s1-err-driver','s1-err-plate','s1-err-time'].forEach(id=>{const el=document.getElementById(id);if(el)el.style.display='none';});
-  ['s1-work-date','s1-driver-select','s1-plate-select'].forEach(id=>document.getElementById(id).classList.remove('is-invalid'));
-  document.getElementById('s1-time-block')?.classList.remove('is-invalid');
-  if(!date){document.getElementById('s1-err-date').style.display='block';document.getElementById('s1-work-date').classList.add('is-invalid');ok=false;}
-  if(!driver||driver==='__other__'){document.getElementById('s1-err-driver').style.display='block';document.getElementById('s1-driver-select').classList.add('is-invalid');ok=false;}
-  if(!plate||plate==='__other__'){document.getElementById('s1-err-plate').style.display='block';document.getElementById('s1-plate-select').classList.add('is-invalid');ok=false;}
-  const sh=+document.getElementById('s1-start-h').value||0;const sm=+document.getElementById('s1-start-m').value||0;
-  const eh=+document.getElementById('s1-end-h').value||0;const em=+document.getElementById('s1-end-m').value||0;
-  const startMin=sh*60+sm;const endMin=eh*60+em;
-  const errTime=document.getElementById('s1-err-time');
-  if(startMin===0&&endMin===0){if(errTime){errTime.textContent='กรุณาเลือกเวลาเริ่มและเวลาสิ้นสุด';errTime.style.display='block';}document.getElementById('s1-time-block')?.classList.add('is-invalid');ok=false;}
-  else if(startMin===endMin){if(errTime){errTime.textContent='เวลาเริ่มและเวลาสิ้นสุดต้องไม่เหมือนกัน';errTime.style.display='block';}document.getElementById('s1-time-block')?.classList.add('is-invalid');ok=false;}
-  if(!ok)return;
-
-  // ─── ✅ FIX: ดึงรายการ jobs จาก cache แล้วนับใหม่ ───
-  const jobs = _collectJobs(driver, date);
-  let okCount = 0, ngCount = 0;
-
-  jobs.forEach(j=>{
-      const raw = (j.status || '').trim();
-      const noteText = (j.note || '').trim();
-
-      // ✅ ถ้า note = "ส่งสำเร็จ" หรือ "สำเร็จ" ให้ถือว่าสำเร็จ (override status)
-      const isNoteSuccess = (noteText === 'ส่งสำเร็จ' || noteText === 'สำเร็จ');
-      const effectiveStatus = isNoteSuccess ? 'ส่งสำเร็จ' : raw;
-
-      const isOk = effectiveStatus.includes('สำเร็จ') && !effectiveStatus.includes('ไม่');
-      const isNg = effectiveStatus.includes('ไม่สำเร็จ')
-                || effectiveStatus.toLowerCase() === 'ng'
-                || effectiveStatus.toLowerCase() === 'fail';
-
-      if (isOk) okCount++;
-      else if (isNg) ngCount++;
+function _collectJobs(driverName,date){
+  const jobs=[];
+  (jobApiCache[date]||[]).forEach(day=>{
+    (day.drivers||[]).forEach(d=>{
+      if(d.driver_name!==driverName)return;
+      (d.jobs||[]).forEach((j,i)=>{jobs.push({...j,_key:`${driverName}_${day.date}_${i}`,_date:day.date});});
+    });
   });
-
-  setF('f-ok', okCount);
-  setF('f-ng', ngCount);
-
-  if(jobs.length>0){
-    fetch(ROUTE_SYNC_NG,{
-      method:'POST',
-      headers:{'Content-Type':'application/json','Accept':'application/json','X-CSRF-TOKEN':CSRF_TOKEN},
-      body:JSON.stringify({
-        date,
-        jobs: jobs.map(j=>{
-          // ✅ ส่ง status ที่ override แล้วไป backend ด้วย เพื่อให้ syncNg นับถูก
-          const raw = (j.status||'').trim();
-          const noteText = (j.note||'').trim();
-          const isNoteSuccess = (noteText === 'ส่งสำเร็จ' || noteText === 'สำเร็จ');
-          const effectiveStatus = isNoteSuccess ? 'ส่งสำเร็จ' : raw;
-          return {
-            bill_no: j.bill_no,
-            so_id: j.so_id || '',
-            driver_name: driver,
-            bill_in_by: j.bill_in_by || '',
-            customer_name: j.customer_name || '',
-            status: effectiveStatus,  // ← ใช้ effective status
-            note: noteText,
-          };
-        }),
-      })
-    }).catch(e=>console.warn(e));
-  }
-
-  const sT=getTimeVal('s1-start-h','s1-start-m'),eT=getTimeVal('s1-end-h','s1-end-m');
-  setF('f-work-date',date);setF('f-driver-name',driver);setF('f-vehicle-id',plate);setF('f-start-time',sT);setF('f-end-time',eT);
-  document.getElementById('chipDriver').textContent=driver;document.getElementById('chipPlate').textContent=plate;document.getElementById('chipDate').textContent=date;
-  if(sT&&eT){document.getElementById('chipTime').textContent=sT+' – '+eT+' น.';document.getElementById('chipTimeWrap').style.display='flex';}
-  else document.getElementById('chipTimeWrap').style.display='none';
-  document.getElementById('summaryRow').style.display='flex';
-  document.getElementById('step1Modal').classList.remove('open');document.getElementById('fuelModal').classList.add('open');
-  loadOilPrice('diesel');calcPreview();fetchPrevMileage(plate,date);
+  return jobs;
 }
-function backToStep1(){document.getElementById('fuelModal').classList.remove('open');document.getElementById('step1Modal').classList.add('open');}
-function openModal(id=null){
-  isEditMode=!!id;editId=id;
-  if(id){
-    const allLogs=@json($logs);const r=allLogs.find(l=>l.id===id);if(!r)return;
-    document.getElementById('modalTitle').textContent='แก้ไขข้อมูลเติมน้ำมัน';
-    document.getElementById('fuelForm').action=ROUTE_UPDATE(id);
-    document.getElementById('formMethod').value='PUT';
-    setF('f-work-date',r.work_date);setF('f-driver-name',r.driver_name);setF('f-vehicle-id',r.vehicle_id);
-    setF('f-start-time',r.start_time);setF('f-end-time',r.end_time);
-    setF('f-liters',r.liters);setF('f-total-distance',r.total_distance);setF('f-total-price',r.total_price);setF('f-note',r.note);setF('f-price-per-liter',r.price_per_liter);
-    document.getElementById('chipDriver').textContent=r.driver_name??'—';document.getElementById('chipPlate').textContent=r.vehicle_id??'—';document.getElementById('chipDate').textContent=r.work_date??'—';
-    if(r.start_time&&r.end_time){document.getElementById('chipTime').textContent=r.start_time+' – '+r.end_time+' น.';document.getElementById('chipTimeWrap').style.display='flex';}
-    else document.getElementById('chipTimeWrap').style.display='none';
-    document.getElementById('summaryRow').style.display='flex';document.getElementById('backBtn').style.display='none';
-    document.getElementById('backBtnFooter').style.display='none';document.getElementById('fuelModal').classList.add('open');
-    loadOilPrice('diesel');fetchPrevMileage(r.vehicle_id,r.work_date,id);calcPreview();
-  }else{
-    document.getElementById('modalTitle').textContent='เพิ่มข้อมูลเติมน้ำมัน';
-    document.getElementById('fuelForm').action=ROUTE_STORE;document.getElementById('formMethod').value='';
-    document.getElementById('backBtn').style.display='';document.getElementById('backBtnFooter').style.display='';
-    ['s1-driver-name','s1-vehicle-id'].forEach(i=>{const el=document.getElementById(i);if(el)el.value='';});
-    ['s1-driver-other','s1-plate-other'].forEach(i=>{const el=document.getElementById(i);if(el){el.style.display='none';el.value='';}});
-    document.getElementById('s1-plate-select').value='';
-    setTimeDropdown('s1-start-h','s1-start-m','');setTimeDropdown('s1-end-h','s1-end-m','');
-    document.getElementById('driverBanner').style.display='none';document.getElementById('s1-wh-preview').style.display='none';
-    ['f-liters','f-total-price','f-total-distance','f-note','f-price-per-liter'].forEach(i=>setF(i,''));
-    document.getElementById('calcBox').style.display='none';
-    ['s1-err-date','s1-err-driver','s1-err-plate'].forEach(id=>document.getElementById(id).style.display='none');
-    ['s1-work-date','s1-driver-select','s1-plate-select'].forEach(id=>document.getElementById(id).classList.remove('is-invalid'));
-    document.getElementById('jobDateChip').style.display='none';
-    const today=todayStr();document.getElementById('s1-work-date').value=today;
-    (async()=>{
-      setDateInputLocked(true);
-      const sel=document.getElementById('s1-driver-select');sel.innerHTML='<option value="">⏳ กำลังโหลดรายชื่อ...</option>';sel.disabled=true;
-      document.getElementById('jobTableWrap').innerHTML='<div class="job-loading">กำลังโหลดข้อมูลคนขับ...</div>';
-      try{await fetchJobsByDate(today);lastLoadedDate=today;sel.disabled=false;populateDriverDropdown(today);document.getElementById('jobTableWrap').innerHTML='<div class="job-loading">เลือกคนขับเพื่อดูรายการงาน</div>';}
-      catch(e){console.warn(e);sel.disabled=false;}
-      finally{setDateInputLocked(false);}
-    })();
-    document.getElementById('step1Modal').classList.add('open');
+
+let ilIsLoadingDrivers=false,ilLastLoadedDate=null;
+async function ilOnDateChange(){
+  if(ilIsLoadingDrivers)return;
+  const date=document.getElementById('il-work-date').value;if(!date)return;
+  ilLastLoadedDate=date;
+  ilIsLoadingDrivers=true;
+  const hint=document.getElementById('entryLoadingHint');
+  if(hint)hint.style.display='flex';
+  document.getElementById('entryRowsBody').innerHTML='';
+  document.getElementById('inlineJobTableWrap').innerHTML='<div class="job-loading">กำลังโหลด...</div>';
+  try{
+    delete SAVED_DRIVERS_CACHE[date];
+    delete jobApiCache[date];
+    await Promise.all([
+      fetchJobsByDate(date),
+      fetchSavedDrivers(date),
+    ]);
+    ilRenderDriverRows(date);
+    ilRenderAllJobs(date);
+  }catch(e){
+    console.warn(e);
+    document.getElementById('entryRowsBody').innerHTML='<div class="entry-empty" style="color:var(--red)">โหลดข้อมูลไม่สำเร็จ</div>';
+  }finally{
+    ilIsLoadingDrivers=false;
+    if(hint)hint.style.display='none';
   }
 }
-function closeAllModals(){document.getElementById('step1Modal').classList.remove('open');document.getElementById('fuelModal').classList.remove('open');}
-function setF(id,v){const el=document.getElementById(id);if(el)el.value=v??'';}
+
+function _jobStatusKind(j){
+  const raw=(j.status||'').trim();
+  const noteText=(j.note||'').trim();
+  const eff=(noteText==='ส่งสำเร็จ'||noteText==='สำเร็จ')?'ส่งสำเร็จ':raw;
+  if(eff.includes('สำเร็จ')&&!eff.includes('ไม่'))return 'ok';
+  if(eff.includes('ไม่สำเร็จ')||eff.toLowerCase()==='ng'||eff.toLowerCase()==='fail')return 'fail';
+  return 'pending';
+}
+
+const driverRowState = {};
+const SAVED_DRIVERS_CACHE = {};
+const SESSION_SAVED = {};
 
 /* ═══════════════════════════════════════════════════════════════
-   PREV MILEAGE / CALC PREVIEW / OIL PRICE
+   FIX #1: fetchSavedDrivers — อ่านจากตาราง logs ใน DOM ก่อน (เสถียร 100%)
+   แล้วค่อยลอง API เป็น bonus
 ═══════════════════════════════════════════════════════════════ */
-async function fetchPrevMileage(vid,wd,xid=null){
-  try{const p=new URLSearchParams({vehicle_id:vid,work_date:wd});if(xid)p.set('exclude_id',xid);
-    await fetch(`${ROUTE_PREVMILE}?${p}`,{headers:{'Accept':'application/json','X-Requested-With':'XMLHttpRequest'}});
-  }catch(_){}calcPreview();
+function _readSavedDriversFromDOM(date){
+  // อ่านจาก #oilTbody — แถวที่ render โดย Blade ($logs)
+  // โครงสร้าง row: <td class="date-pill" title="DD/MM/YYYY">...
+  //                <td>...<div class="driver-name">ชื่อ</div>...
+  const set = new Set();
+  if(!date) return set;
+  // แปลง date ค่า YYYY-MM-DD → DD/MM/YYYY (เทียบกับ title ของ date-pill)
+  const parts = date.split('-');
+  if(parts.length !== 3) return set;
+  const target = `${parts[2]}/${parts[1]}/${parts[0]}`; // DD/MM/YYYY
+  const rows = document.querySelectorAll('#oilTbody tr[data-driver]');
+  rows.forEach(tr => {
+    const dateEl = tr.querySelector('.date-pill');
+    const nameEl = tr.querySelector('.driver-name');
+    if(!dateEl || !nameEl) return;
+    const rowDate = (dateEl.getAttribute('title') || '').trim();
+    if(rowDate === target){
+      const name = (nameEl.textContent || '').trim();
+      if(name && name !== '—'){
+        set.add(name);
+        console.log('[DOM-read]', JSON.stringify(name),
+          '| chars:', [...name].map(c=>c.charCodeAt(0)).join(','));
+      }
+    }
+  });
+  return set;
 }
-function calcPreview(){
-  const sT=document.getElementById('f-start-time')?.value??'';const eT=document.getElementById('f-end-time')?.value??'';
-  const ppl=parseFloat(document.getElementById('f-price-per-liter')?.value)||0;const tp=parseFloat(document.getElementById('f-total-price')?.value)||0;
-  if(tp>0&&ppl>0)setF('f-liters',(tp/ppl).toFixed(2));
-  const liters=parseFloat(document.getElementById('f-liters')?.value)||0;
-  let wh=0;
-  if(sT&&eT){const[sh,sm]=sT.split(':').map(Number);const[eh,em]=eT.split(':').map(Number);const sM=sh*60+sm;let eM=eh*60+em;if(eM<sM)eM+=24*60;const dM=eM-sM;if(dM>0)wh=dM/60;}
-  const show=wh>0||liters>0||tp>0;const calcBox=document.getElementById('calcBox');if(calcBox)calcBox.style.display=show?'block':'none';
-  if(show){
-      const whEl=document.getElementById('calcWorkHours');
-      if(whEl){if(wh>0){const h=Math.floor(wh);const m=Math.round((wh-h)*60);if(m===0)whEl.textContent=h+'';else if(h===0)whEl.textContent=m+' น.';else whEl.textContent=`${h}:${String(m).padStart(2,'0')}`;}else whEl.textContent='—';}
 
-      const dist=parseFloat(document.getElementById('f-total-distance')?.value)||0;
+async function fetchSavedDrivers(date){
+  if(!date) return new Set();
+  if(SAVED_DRIVERS_CACHE[date]) return SAVED_DRIVERS_CACHE[date];
 
-      // ✅ NEW: ถ้า total_price = 0 → วันนี้ไม่เติมน้ำมัน
-      const noFuelToday = (tp === 0);
+  // 1. อ่านจาก DOM ก่อน (เสถียร — ใช้ข้อมูลที่ Blade render มาแล้ว)
+  const fromDOM = _readSavedDriversFromDOM(date);
+  console.log('[savedDrivers/DOM]', date, '→', Array.from(fromDOM));
 
-      const litEl=document.getElementById('calcLitersPreview');
-      if(litEl){
-        if(noFuelToday) litEl.textContent = 'ไม่เติม';
-        else litEl.textContent = liters>0 ? `${liters} / ฿${tp.toFixed(0)}` : '—';
-      }
+  // 2. ลอง API ถ้ามี — merge เข้ากับ DOM
+  try {
+    const res = await fetch(`${ROUTE_SAVED_DRIVERS}?date=${encodeURIComponent(date)}`, {
+      headers: {'Accept':'application/json','X-Requested-With':'XMLHttpRequest'}
+    });
+    if(res.ok){
+      const data = await res.json();
+      let raw = [];
+      if(Array.isArray(data)) raw = data;
+      else if(Array.isArray(data.drivers)) raw = data.drivers;
+      else if(Array.isArray(data.data)) raw = data.data;
+      else if(Array.isArray(data.saved)) raw = data.saved;
+      else if(Array.isArray(data.result)) raw = data.result;
+      raw.forEach(item => {
+        let n = '';
+        if(typeof item === 'string') n = item.trim();
+        else if(item && typeof item === 'object'){
+          n = (item.driver_name || item.name || item.driver || '').toString().trim();
+        }
+        if(n) fromDOM.add(n);
+      });
+      console.log('[savedDrivers/merged]', date, '→', Array.from(fromDOM));
+    }
+  } catch(e){
+    console.warn('[savedDrivers] API error, using DOM only', e);
+  }
 
-      const kmlEl=document.getElementById('calcKml');
-      if(kmlEl){
-        if(noFuelToday) kmlEl.textContent = '—';
-        else kmlEl.textContent = (liters>0&&dist>0)?(dist/liters).toFixed(2):'—';
-      }
+  SAVED_DRIVERS_CACHE[date] = fromDOM;
+  return fromDOM;
+}
 
-      const bpkEl = document.getElementById('calcBpk');
-      if(bpkEl){
-        if(noFuelToday) bpkEl.textContent = '—';
-        else bpkEl.textContent = (tp > 0 && dist > 0) ? '฿' + (tp/dist).toFixed(2) : '—';
-      }
+/* ═══════════════════════════════════════════════════════════════
+   FIX #2: isDriverSaved — เทียบแบบ normalize + ละเว้น zero-width chars
+═══════════════════════════════════════════════════════════════ */
+function _normalizeName(s){
+  if(!s) return '';
+  return String(s)
+    .replace(/[\u200B-\u200D\uFEFF]/g, '')  // ลบ zero-width chars
+    .replace(/\s+/g, ' ')                    // กลั่น whitespace
+    .trim()
+    .toLowerCase();
+}
+
+function isDriverSaved(date, driverName){
+  const n = _normalizeName(driverName);
+  if(!n || !date) return false;
+  const dbSet = SAVED_DRIVERS_CACHE[date];
+  if(dbSet){
+    for(const saved of dbSet){
+      if(_normalizeName(saved) === n) return true;
+    }
+  }
+  const sessSet = SESSION_SAVED[date];
+  if(sessSet){
+    for(const saved of sessSet){
+      if(_normalizeName(saved) === n) return true;
+    }
+  }
+  return false;
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   FIX #3: markDriverSaved — เพิ่ม log + trim
+═══════════════════════════════════════════════════════════════ */
+function markDriverSaved(date, driverName){
+  const n = (driverName||'').trim();
+  if(!n || !date) return;
+  if(!SESSION_SAVED[date]) SESSION_SAVED[date] = new Set();
+  SESSION_SAVED[date].add(n);
+  if(!SAVED_DRIVERS_CACHE[date]) SAVED_DRIVERS_CACHE[date] = new Set();
+  SAVED_DRIVERS_CACHE[date].add(n);
+  console.log('[markSaved]', date, '→', n);
+}
+
+function ilRenderDriverRows(date){
+  const tbody = document.getElementById('entryRowsBody');
+  if(!tbody) return;
+  const dayBlocks = jobApiCache[date] || [];
+  const driversMap = {};
+  dayBlocks.forEach(day=>{
+    (day.drivers||[]).forEach(d=>{
+      const n = d.driver_name || '';
+      if(!n) return;
+      if(!driversMap[n]) driversMap[n] = {name:n, jobs:[]};
+      (d.jobs||[]).forEach(j=>driversMap[n].jobs.push(j));
+    });
+  });
+  let driverList = Object.values(driversMap).filter(d => {
+    const saved = isDriverSaved(date, d.name);
+    console.log('[filter]', JSON.stringify(d.name), '→ saved?', saved,
+      '| chars:', [...d.name].map(c=>c.charCodeAt(0)).join(','));
+    return !saved;
+  });
+  const totalCount = Object.keys(driversMap).length;
+  const savedCount = totalCount - driverList.length;
+  driverList.sort((a,b)=>b.jobs.length - a.jobs.length);
+
+  if(driverList.length === 0){
+    if(totalCount === 0){
+      tbody.innerHTML = '<div class="entry-empty">ไม่พบคนขับสำหรับวันที่นี้</div>';
+      document.getElementById('entrySub').textContent = 'ไม่พบคนขับของวันนี้';
+    } else {
+      tbody.innerHTML = `<div class="entry-empty" style="color:var(--green-dark)">✓ บันทึกครบทุกคนแล้ว (${savedCount} คน)</div>`;
+      document.getElementById('entrySub').textContent = `บันทึกครบ ${savedCount} คน`;
+    }
+    return;
+  }
+
+  let subText = `${driverList.length} คนขับ · กรอกข้อมูลแล้วกดบันทึก`;
+  if(savedCount > 0) subText += ` · บันทึกแล้ว ${savedCount} คน`;
+  document.getElementById('entrySub').textContent = subText;
+
+  const plateOpts = (window.PLATE_LIST||[]).map(p=>`<option value="${p}">${p}</option>`).join('');
+
+  tbody.innerHTML = driverList.map((d,idx)=>{
+    const key = `row_${idx}_${d.name.replace(/[^a-zA-Z0-9ก-๙]/g,'_')}`;
+    let okC=0, failC=0;
+    d.jobs.forEach(j=>{const k=_jobStatusKind(j);if(k==='ok')okC++;else if(k==='fail')failC++;});
+    driverRowState[key] = {driverName:d.name, jobs:d.jobs, okCount:okC, failCount:failC, sh:0, sm:0, eh:0, em:0};
+    const ini = (d.name||'?').trim().charAt(0).toUpperCase();
+    return `<div class="entry-row" data-key="${key}" onclick="erFocusRow('${key}')">
+      <div class="er-driver">
+        <span class="er-driver-avatar">${ini}</span>
+        <div class="er-driver-info">
+          <div class="er-driver-name" title="${d.name}">${d.name}</div>
+          <div class="er-driver-jobs">${d.jobs.length} งาน · ${okC} ✓ ${failC>0?` · ${failC} ✕`:''}</div>
+        </div>
+      </div>
+      <div>
+        <select class="er-plate-select" data-key="${key}" onchange="erUpdateRow('${key}')" onfocus="erFocusRow('${key}')">
+          <option value="">— เลือกทะเบียน —</option>
+          ${plateOpts}
+        </select>
+      </div>
+      <div class="er-time-pair">
+        <button type="button" class="er-time-btn" onclick="event.stopPropagation();erFocusRow('${key}');erOpenClock('${key}','start')" id="${key}-start-display">00:00</button>
+        <span class="er-time-arrow">→</span>
+        <button type="button" class="er-time-btn" onclick="event.stopPropagation();erFocusRow('${key}');erOpenClock('${key}','end')" id="${key}-end-display">00:00</button>
+      </div>
+      <div>
+        <input type="number" class="er-num-input" placeholder="500" data-key="${key}" data-field="price" oninput="erUpdateRow('${key}')" onfocus="erFocusRow('${key}')" step="0.01">
+      </div>
+      <div>
+        <input type="number" class="er-num-input" placeholder="250" data-key="${key}" data-field="distance" oninput="erUpdateRow('${key}')" onfocus="erFocusRow('${key}')" step="0.01">
+      </div>
+      <div class="er-summary" id="${key}-summary">
+        <div class="er-summary-row"><span class="er-summary-label">L:</span><span class="er-summary-val empty">—</span></div>
+        <div class="er-summary-row"><span class="er-summary-label">km/L:</span><span class="er-summary-val empty">—</span></div>
+      </div>
+      <div style="text-align:center">
+        <button type="button" class="er-save-btn" id="${key}-save" onclick="event.stopPropagation();erSaveRow('${key}')">บันทึก</button>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function showSaveToast(driverName){
+  const existing = document.getElementById('saveToast');
+  if(existing) existing.remove();
+  const toast = document.createElement('div');
+  toast.id = 'saveToast';
+  toast.className = 'save-toast';
+  toast.innerHTML = `
+    <span class="save-toast-icon">✓</span>
+    <div class="save-toast-body">
+      <div class="save-toast-title">บันทึกสำเร็จ</div>
+      <div class="save-toast-msg">${driverName}</div>
+    </div>
+  `;
+  document.body.appendChild(toast);
+  setTimeout(()=>{toast.classList.add('hiding');setTimeout(()=>toast.remove(),250);}, 2500);
+}
+
+let _focusedRowKey = null;
+function erFocusRow(key){
+  if(_focusedRowKey === key) return;
+  _focusedRowKey = key;
+  document.querySelectorAll('.entry-row').forEach(r=>{
+    r.classList.toggle('focused', r.dataset.key === key);
+  });
+  const s = driverRowState[key];
+  if(!s) return;
+  ilRenderJobsForDriver(s.driverName, s.jobs);
+}
+
+function erUpdateRow(key){
+  const s = driverRowState[key]; if(!s) return;
+  const priceEl = document.querySelector(`.er-num-input[data-key="${key}"][data-field="price"]`);
+  const distEl  = document.querySelector(`.er-num-input[data-key="${key}"][data-field="distance"]`);
+  const price = parseFloat(priceEl?.value)||0;
+  const dist  = parseFloat(distEl?.value)||0;
+  const ppl   = parseFloat(document.getElementById('il-price-per-liter')?.value)||0;
+  const liters = (price>0 && ppl>0) ? (price/ppl) : 0;
+  const kml    = (dist>0 && liters>0) ? (dist/liters) : 0;
+  s.price = price; s.distance = dist; s.liters = liters; s.kml = kml;
+  const sum = document.getElementById(`${key}-summary`);
+  if(sum){
+    const litersTxt = liters>0 ? liters.toFixed(2)+' L' : '<span class="empty">—</span>';
+    let kmlCls='empty', kmlTxt='—';
+    if(kml>0){
+      kmlTxt = kml.toFixed(2)+' km/L';
+      kmlCls = kml>=12 ? 'green' : (kml<9 ? 'red' : '');
+    }
+    sum.innerHTML = `
+      <div class="er-summary-row"><span class="er-summary-label">L:</span><span class="er-summary-val ${liters>0?'':'empty'}">${litersTxt}</span></div>
+      <div class="er-summary-row"><span class="er-summary-label">km/L:</span><span class="er-summary-val ${kmlCls}">${kmlTxt}</span></div>
+    `;
   }
 }
-function switchOilType(t){
-  currentOilType=t;
-  document.querySelectorAll('.oil-btn').forEach(b=>{b.style.background='rgba(255,255,255,.1)';b.style.borderColor='transparent';b.style.color='rgba(255,255,255,.7)';});
-  const a=document.getElementById('btnOil-'+t);if(a){a.style.background='rgba(255,255,255,.3)';a.style.borderColor='#fff';a.style.color='#fff';}
-  loadOilPrice(t);
+
+function erUpdateAllRows(){
+  Object.keys(driverRowState).forEach(k=>erUpdateRow(k));
 }
-async function refreshOilPrice(){const btn=document.getElementById('btnRefreshOil');btn.disabled=true;btn.style.opacity='.5';await loadOilPrice(currentOilType);btn.disabled=false;btn.style.opacity='1';}
-async function loadOilPrice(type){
-  const config={'diesel':{label:'ดีเซล',matchName:'ดีเซล',maxPrice:55},'95':{label:'แก๊สโซฮอล์ 95',matchName:'แก๊สโซฮอล์ 95',maxPrice:50},'benzin95':{label:'เบนซิน 95',matchName:'เบนซิน 95',maxPrice:60},'91':{label:'แก๊สโซฮอล์ 91',matchName:'แก๊สโซฮอล์ 91',maxPrice:50},'e20':{label:'แก๊สโซฮอล์ E20',matchName:'E20',maxPrice:45},'e85':{label:'แก๊สโซฮอล์ E85',matchName:'E85',maxPrice:40}};
+
+let _erClockTargetKey = null;
+let _erClockTargetWhich = null;
+function erOpenClock(key, which){
+  _erClockTargetKey = key; _erClockTargetWhich = which;
+  const s = driverRowState[key]; if(!s) return;
+  clockState.target = '_er';
+  clockState.h = which==='start' ? s.sh : s.eh;
+  clockState.m = which==='start' ? s.sm : s.em;
+  clockState.mode = 'hour';
+  document.getElementById('clock-title').textContent = (which==='start'?'เวลาเริ่ม':'เวลาสิ้นสุด') + ' · ' + s.driverName;
+  document.getElementById('clock-modal').style.display = 'flex';
+  switchTab('hour'); updateDigital();
+}
+
+// แทรก row ใหม่ลงในตาราง "รายการเติมน้ำมัน" ด้านล่างทันที (ไม่ต้องรีหน้าเว็บ)
+function ilAppendLogRow(r){
+  const tbody = document.getElementById('oilTbody');
+  if(!tbody) return;
+
+  // ถ้ามี empty-state row อยู่ → ลบทิ้ง
+  const emptyTr = tbody.querySelector('tr td .empty-state');
+  if(emptyTr) emptyTr.closest('tr').remove();
+
+  const pad = n=>String(n).padStart(2,'0');
+  const dateParts = (r.date||'').split('-');
+  let dateText = '—', dateFull = '';
+  if(dateParts.length === 3){
+    dateText = `${dateParts[2]}/${dateParts[1]}`;
+    dateFull = `${dateParts[2]}/${dateParts[1]}/${dateParts[0]}`;
+  }
+  const tStart = `${pad(r.start_h)}:${pad(r.start_m)}`;
+  const tEnd   = `${pad(r.end_h)}:${pad(r.end_m)}`;
+  const timeText = `${tStart}-${tEnd}`;
+
+  const distText = (r.total_distance>0) ? `${Math.round(r.total_distance).toLocaleString()} km` : '—';
+  const litersText = (r.liters>0) ? r.liters.toFixed(1) : '—';
+  const priceText = (r.total_price>0) ? `฿${Math.round(r.total_price).toLocaleString()}` : '—';
+
+  let kmlHtml = '<span style="color:var(--text4)">—</span>';
+  if(r.km_per_liter > 0){
+    let cls = 'km-mid';
+    if(r.km_per_liter >= 13) cls = 'km-good';
+    else if(r.km_per_liter < 9) cls = 'km-bad';
+    kmlHtml = `<span class="${cls}">${r.km_per_liter.toFixed(2)}</span>`;
+  }
+
+  // นับ row ปัจจุบัน + 1
+  const existingRows = tbody.querySelectorAll('tr[data-driver]').length;
+  const rowNo = String(existingRows + 1).padStart(2, '0');
+
+  const tr = document.createElement('tr');
+  tr.setAttribute('data-driver', (r.driver_name||'').toLowerCase());
+  tr.innerHTML = `
+    <td class="row-idx">${rowNo}</td>
+    <td><span class="date-pill" title="${dateFull}">${dateText}</span></td>
+    <td>
+      <div class="driver-cell">
+        <div class="driver-name" title="${r.driver_name||''}">${r.driver_name||'—'}</div>
+        <div class="driver-plate" title="${r.vehicle_id||''}">${r.vehicle_id||'—'}</div>
+      </div>
+    </td>
+    <td><span class="time-pill">${timeText}</span></td>
+    <td class="num">${distText}</td>
+    <td class="num">${litersText}</td>
+    <td class="num">${priceText}</td>
+    <td class="num">${kmlHtml}</td>
+  `;
+  // แทรกท้ายตาราง
+  tbody.appendChild(tr);
+
+  // อัปเดต count
+  const countEl = document.getElementById('oilCount');
+  if(countEl) countEl.textContent = tbody.querySelectorAll('tr[data-driver]').length;
+
+  // Highlight ชั่วครู่
+  tr.style.transition = 'background .4s';
+  tr.style.background = 'rgba(16,185,129,.12)';
+  setTimeout(()=>{ tr.style.background = ''; }, 1500);
+
+  // Scroll ให้เห็น row ใหม่
+  tr.scrollIntoView({behavior:'smooth', block:'nearest'});
+
+  // ════ Update chart data + re-render ════
+  ilUpdateChartsAfterSave(r);
+}
+
+// Update 3 charts (delivery/KML/cost) after a new row is saved
+function ilUpdateChartsAfterSave(r){
+  const name = r.driver_name || 'ไม่ระบุ';
+  const plate = r.vehicle_id || '';
+
+  // 1. Delivery chart (success/fail counts per driver)
+  //    state.okCount/failCount มาจาก driverRowState ตอน save (job stats)
+  if(typeof DLV_BY_DRIVER !== 'undefined'){
+    if(!DLV_BY_DRIVER[name]) DLV_BY_DRIVER[name] = {success:0, fail:0, plate};
+    if(typeof r.ok_count === 'number')   DLV_BY_DRIVER[name].success += r.ok_count;
+    if(typeof r.fail_count === 'number') DLV_BY_DRIVER[name].fail    += r.fail_count;
+    if(plate) DLV_BY_DRIVER[name].plate = plate;
+    if(typeof renderDlv === 'function') renderDlv();
+  }
+
+  // 2. KML chart (avg km/L per driver)
+  if(typeof KML_BY_DRIVER !== 'undefined' && r.km_per_liter > 0){
+    if(!KML_BY_DRIVER[name]) KML_BY_DRIVER[name] = {sum:0, count:0, plate};
+    KML_BY_DRIVER[name].sum   += r.km_per_liter;
+    KML_BY_DRIVER[name].count += 1;
+    if(plate) KML_BY_DRIVER[name].plate = plate;
+    if(typeof renderKmlChart === 'function') renderKmlChart();
+  }
+
+  // 3. Cost/km chart (THB / km per driver)
+  if(typeof COST_BY_DRIVER !== 'undefined' && r.total_price > 0 && r.total_distance > 0){
+    if(!COST_BY_DRIVER[name]) COST_BY_DRIVER[name] = {price:0, dist:0, plate};
+    COST_BY_DRIVER[name].price += r.total_price;
+    COST_BY_DRIVER[name].dist  += r.total_distance;
+    if(plate) COST_BY_DRIVER[name].plate = plate;
+    if(typeof renderCostChart === 'function') renderCostChart();
+  }
+}
+
+async function erSaveRow(key){
+  const s = driverRowState[key]; if(!s) return;
+  const date = document.getElementById('il-work-date').value;
+  const plateEl = document.querySelector(`.er-plate-select[data-key="${key}"]`);
+  const plate = plateEl?.value || '';
+  const btn = document.getElementById(`${key}-save`);
+  const row = document.querySelector(`.entry-row[data-key="${key}"]`);
+
+  const errors = [];
+  if(!date) errors.push('เลือกวันที่');
+  if(!plate) errors.push('เลือกทะเบียนรถ');
+  if(!s.price || s.price<=0) errors.push('ใส่ค่าน้ำมัน');
+  const startMin = s.sh*60+s.sm; const endMin = s.eh*60+s.em;
+  if(startMin===0 && endMin===0) errors.push('เลือกเวลา');
+  else if(startMin===endMin) errors.push('เวลาเริ่ม-สิ้นสุดเหมือนกัน');
+  if(errors.length){
+    btn.textContent = '⚠ ' + errors[0];
+    setTimeout(()=>{btn.innerHTML='บันทึก';}, 2200);
+    return;
+  }
+
+  row?.classList.add('saving');
+  btn.disabled = true;
+  btn.innerHTML = '<span class="ic">⏳</span> กำลังบันทึก...';
+
+  const fd = new FormData();
+  fd.append('_token', CSRF_TOKEN);
+  fd.append('work_date', date);
+  fd.append('driver_name', s.driverName);
+  fd.append('vehicle_id', plate);
+  const pad = n=>String(n).padStart(2,'0');
+  fd.append('start_time', `${pad(s.sh)}:${pad(s.sm)}`);
+  fd.append('end_time',   `${pad(s.eh)}:${pad(s.em)}`);
+  fd.append('total_price', s.price);
+  if(s.distance>0) fd.append('total_distance', s.distance);
+  const ppl = parseFloat(document.getElementById('il-price-per-liter')?.value)||0;
+  if(ppl>0) fd.append('price_per_liter', ppl);
+  if(s.liters>0) fd.append('liters', s.liters.toFixed(2));
+  fd.append('ok', s.okCount);
+  fd.append('ng', s.failCount);
+  if(CURRENT_USER && CURRENT_USER !== 'Guest') fd.append('create_by', CURRENT_USER);
+
+  try{
+    const res = await fetch(ROUTE_STORE, {
+      method:'POST',
+      headers:{'X-CSRF-TOKEN':CSRF_TOKEN, 'Accept':'application/json'},
+      body: fd,
+    });
+    if(!res.ok && res.status !== 302) throw new Error('HTTP '+res.status);
+    markDriverSaved(date, s.driverName);
+    // ← เพิ่ม row ลงตาราง "รายการเติมน้ำมัน" ด้านล่างทันที (ไม่ต้องรีหน้า)
+    ilAppendLogRow({
+      date: date,
+      driver_name: s.driverName,
+      vehicle_id: plate,
+      start_h: s.sh, start_m: s.sm,
+      end_h: s.eh, end_m: s.em,
+      total_price: s.price,
+      total_distance: s.distance,
+      liters: s.liters,
+      km_per_liter: s.kml,
+      ok_count: s.okCount,
+      fail_count: s.failCount,
+    });
+    if(s.jobs.length>0){
+      fetch(ROUTE_SYNC_NG, {
+        method:'POST',
+        headers:{'Content-Type':'application/json','Accept':'application/json','X-CSRF-TOKEN':CSRF_TOKEN},
+        body: JSON.stringify({
+          date,
+          create_by: (CURRENT_USER && CURRENT_USER !== 'Guest') ? CURRENT_USER : null,
+          jobs: s.jobs.map(j=>({bill_no:j.bill_no, so_id:j.so_id||'', driver_name:s.driverName, bill_in_by:j.bill_in_by||'', customer_name:j.customer_name||'', status:(j.status||'').trim(), note:j.note||''}))
+        })
+      }).catch(()=>{});
+    }
+    if(_focusedRowKey === key){
+      _focusedRowKey = null;
+      ilResetJobsPanel();
+    }
+    delete driverRowState[key];
+    showSaveToast(s.driverName);
+    ilRenderDriverRows(date);
+    return;
+  }catch(e){
+    console.warn('save error', e);
+    row?.classList.remove('saving');
+    btn.disabled = false;
+    btn.innerHTML = '⚠ ลองอีกครั้ง';
+    setTimeout(()=>{btn.innerHTML='บันทึก';}, 2200);
+  }
+}
+
+function ilRenderJobsForDriver(driverName, jobs){
+  const wrap=document.getElementById('inlineJobTableWrap');
+  const chipEl=document.getElementById('ilJobDateChip');
+  const titleEl=document.getElementById('jobsPanelTitleText');
+  if(titleEl) titleEl.textContent = driverName || 'รายการงาน';
+  const date = document.getElementById('il-work-date')?.value || '';
+  if(chipEl){
+    if(date){const p=date.split('-');chipEl.textContent=(p.length===3)?`${p[2]}/${p[1]}/${p[0]}`:date;chipEl.style.display='';}
+    else chipEl.style.display='none';
+  }
+  if(!jobs || jobs.length===0){
+    wrap.innerHTML = `<div class="job-loading">ไม่มีงานของ <strong>${driverName}</strong> วันนี้</div>`;
+    return;
+  }
+  let okC=0,failC=0,pendC=0;
+  jobs.forEach(j=>{const k=_jobStatusKind(j);if(k==='ok')okC++;else if(k==='fail')failC++;else pendC++;});
+  const rowsHtml = jobs.map(j=>{
+    const k=_jobStatusKind(j);
+    const statusLabel = k==='ok'?'สำเร็จ':k==='fail'?'ไม่สำเร็จ':'รอ';
+    const customer = j.customer_name || '—';
+    return `<div class="dgj-row">
+      <span class="dgj-bill">${j.bill_no||'—'}</span>
+      <span class="dgj-customer" title="${customer.replace(/"/g,'&quot;')}">${customer}</span>
+      <span class="dgj-status ${k}">${statusLabel}</span>
+    </div>`;
+  }).join('');
+  const summary = `<div class="jobs-summary-bar">
+    <span class="jsb-chip">รวม <strong>${jobs.length}</strong></span>
+    ${okC>0?`<span class="jsb-chip ok">สำเร็จ <strong>${okC}</strong></span>`:''}
+    ${failC>0?`<span class="jsb-chip fail">ไม่สำเร็จ <strong>${failC}</strong></span>`:''}
+    ${pendC>0?`<span class="jsb-chip">รอ <strong>${pendC}</strong></span>`:''}
+  </div>`;
+  wrap.innerHTML = summary + `<div style="padding:10px">${rowsHtml}</div>`;
+}
+
+function ilResetJobsPanel(){
+  const wrap=document.getElementById('inlineJobTableWrap');
+  const chipEl=document.getElementById('ilJobDateChip');
+  const titleEl=document.getElementById('jobsPanelTitleText');
+  if(titleEl) titleEl.textContent = 'รายการงาน';
+  if(chipEl) chipEl.style.display='none';
+  if(wrap) wrap.innerHTML = '<div class="job-loading">คลิกที่แถวคนขับ<br>เพื่อดูรายการงานของคนนั้น</div>';
+}
+
+function ilRenderAllJobs(date){
+  ilResetJobsPanel();
+}
+
+function ilCalcPreview(){
+  if(typeof erUpdateAllRows==='function') erUpdateAllRows();
+}
+
+let ilCurrentOilType='diesel';
+function ilSwitchOilType(t){
+  ilCurrentOilType=t;
+  document.querySelectorAll('.aoil-type-btn, .entry-oil-tab').forEach(b=>b.classList.remove('active'));
+  document.getElementById('ilBtnOil-'+t)?.classList.add('active');
+  ilLoadOilPrice(t);
+}
+async function ilRefreshOilPrice(){
+  const btn=document.getElementById('ilBtnRefresh');
+  if(btn){btn.disabled=true;btn.style.opacity='.5';}
+  await ilLoadOilPrice(ilCurrentOilType);
+  if(btn){btn.disabled=false;btn.style.opacity='1';}
+}
+async function ilLoadOilPrice(type){
+  const config={
+    'diesel':{label:'ดีเซล',matchName:'ดีเซล',maxPrice:55},
+    '95':{label:'แก๊สโซฮอล์ 95',matchName:'แก๊สโซฮอล์ 95',maxPrice:50},
+    'benzin95':{label:'เบนซิน 95',matchName:'เบนซิน 95',maxPrice:60},
+    '91':{label:'แก๊สโซฮอล์ 91',matchName:'แก๊สโซฮอล์ 91',maxPrice:50},
+    'e20':{label:'แก๊สโซฮอล์ E20',matchName:'E20',maxPrice:45},
+    'e85':{label:'แก๊สโซฮอล์ E85',matchName:'E85',maxPrice:40}
+  };
   const cfg=config[type]??config['diesel'];
-  document.getElementById('oilPriceLabel').textContent=`ราคาน้ำมัน${cfg.label}`;
-  document.getElementById('oilPriceShow').textContent='...';document.getElementById('oilPriceStatus').textContent='⏳ กำลังดึง...';
-  document.getElementById('liveDot').className='live-dot loading';document.getElementById('liveLabel').textContent='กำลังดึง';
-  document.getElementById('f-price-per-liter').value='';
+  const labelEl=document.getElementById('ilOilPriceLabel');
+  if(labelEl)labelEl.textContent=`ราคา${cfg.label}`;
+  const showEl=document.getElementById('ilOilPriceShow');
+  if(showEl)showEl.textContent='...';
+  const statusEl=document.getElementById('ilOilPriceStatus');
+  if(statusEl)statusEl.textContent='กำลังดึง';
+  const wrapEl=document.getElementById('ilLiveWrap');
+  if(wrapEl)wrapEl.classList.add('loading');
+  const liveLabel=document.getElementById('ilLiveLabel');
+  if(liveLabel)liveLabel.textContent='กำลังดึง';
+  const pplEl=document.getElementById('il-price-per-liter');
+  if(pplEl)pplEl.value='';
   let fetched=null;
   try{
     const r=await Promise.race([fetch('https://api.chnwt.dev/thai-oil-api/latest'),new Promise((_,rj)=>setTimeout(()=>rj(new Error('t')),8000))]);
@@ -2976,40 +2020,48 @@ async function loadOilPrice(type){
     }
   }catch(_){}
   const now=new Date().toLocaleTimeString('th-TH',{timeZone:TZ,hour:'2-digit',minute:'2-digit',hour12:false});
-  if(fetched){document.getElementById('oilPriceShow').textContent=fetched.toFixed(2);document.getElementById('oilPriceStatus').textContent=`✅ ราคากลาง • ${now} น.`;document.getElementById('liveDot').className='live-dot';document.getElementById('liveLabel').textContent='Live';document.getElementById('f-price-per-liter').value=fetched.toFixed(2);}
-  else{document.getElementById('oilPriceShow').textContent='—';document.getElementById('oilPriceStatus').textContent=`❌ ดึงไม่ได้ • ${now} น.`;document.getElementById('liveDot').className='live-dot';document.getElementById('liveDot').style.background='var(--red)';document.getElementById('liveLabel').textContent='ไม่มีข้อมูล';document.getElementById('f-price-per-liter').value='';}
-  calcPreview();
+  if(fetched){
+    if(showEl)showEl.textContent=fetched.toFixed(2);
+    if(statusEl)statusEl.textContent=`อัปเดต ${now}`;
+    if(wrapEl)wrapEl.classList.remove('loading');
+    if(liveLabel)liveLabel.textContent='Live';
+    if(pplEl)pplEl.value=fetched.toFixed(2);
+  }else{
+    if(showEl)showEl.textContent='—';
+    if(statusEl)statusEl.textContent=`ดึงไม่ได้ ${now}`;
+    if(wrapEl)wrapEl.classList.remove('loading');
+    if(liveLabel)liveLabel.textContent='ออฟไลน์';
+    if(pplEl)pplEl.value='';
+  }
+  ilCalcPreview();
+  if(typeof erUpdateAllRows==='function') erUpdateAllRows();
 }
 
-/* ═══════════════════════════════════════════════════════════════
-   CLOCK PICKER (เก็บ logic เดิม)
-═══════════════════════════════════════════════════════════════ */
-const CLOCK_COLOR='#2563eb';
+const CLOCK_COLOR='#3b82f6';
 let clockState={target:'start',mode:'hour',h:0,m:0};
-function openClock(target){clockState.target=target;clockState.h=+document.getElementById(`s1-${target}-h`).value||0;clockState.m=+document.getElementById(`s1-${target}-m`).value||0;clockState.mode='hour';document.getElementById('clock-title').textContent=target==='start'?'เลือกเวลาเริ่ม':'เลือกเวลาสิ้นสุด';document.getElementById('clock-modal').style.display='flex';switchTab('hour');updateDigital();}
 function closeClock(){document.getElementById('clock-modal').style.display='none';}
 function switchTab(mode){clockState.mode=mode;document.getElementById('tab-hour').classList.toggle('active',mode==='hour');document.getElementById('tab-min').classList.toggle('active',mode==='min');drawClock();}
 function drawClock(){
   const svg=document.getElementById('clock-face');const cx=120,cy=120;const isHour=clockState.mode==='hour';
-  let html=`<circle cx="${cx}" cy="${cy}" r="115" fill="#eff6ff"/>`;
+  let html=`<circle cx="${cx}" cy="${cy}" r="115" fill="#f5f5f7"/>`;
   if(isHour){
     const rO=100,rI=65;
     for(let i=1;i<=12;i++){
       const ang=(i*30-90)*Math.PI/180;const oV=(i+12)%24;
       const ox=cx+rO*Math.cos(ang),oy=cy+rO*Math.sin(ang);const oS=clockState.h===oV;
       html+=`<circle cx="${ox}" cy="${oy}" r="15" fill="${oS?CLOCK_COLOR:'transparent'}" data-val="${oV}" style="cursor:pointer"/>`;
-      html+=`<text x="${ox}" y="${oy+4}" text-anchor="middle" font-size="12" font-weight="600" fill="${oS?'#fff':'#1e40af'}" style="pointer-events:none">${String(oV).padStart(2,'0')}</text>`;
+      html+=`<text x="${ox}" y="${oy+4}" text-anchor="middle" font-size="12" font-weight="600" fill="${oS?'#fff':'#424245'}" style="pointer-events:none">${String(oV).padStart(2,'0')}</text>`;
       const ix=cx+rI*Math.cos(ang),iy=cy+rI*Math.sin(ang);const iS=clockState.h===i;
       html+=`<circle cx="${ix}" cy="${iy}" r="14" fill="${iS?CLOCK_COLOR:'transparent'}" data-val="${i}" style="cursor:pointer"/>`;
-      html+=`<text x="${ix}" y="${iy+4}" text-anchor="middle" font-size="13" font-weight="600" fill="${iS?'#fff':'#1e3a8a'}" style="pointer-events:none">${i}</text>`;
+      html+=`<text x="${ix}" y="${iy+4}" text-anchor="middle" font-size="13" font-weight="600" fill="${iS?'#fff':'#1d1d1f'}" style="pointer-events:none">${i}</text>`;
     }
     const useO=clockState.h>=13||clockState.h===0;const handR=useO?rO-12:rI-10;const handH=clockState.h===0?12:(clockState.h>12?clockState.h-12:clockState.h);
     const hAng=(handH*30-90)*Math.PI/180;
     html+=`<line x1="${cx}" y1="${cy}" x2="${cx+handR*Math.cos(hAng)}" y2="${cy+handR*Math.sin(hAng)}" stroke="${CLOCK_COLOR}" stroke-width="2"/>`;
   }else{
     const rMa=100,rMi=82;
-    for(let i=0;i<60;i++){if(i%5===0)continue;const ang=(i*6-90)*Math.PI/180;const x=cx+rMi*Math.cos(ang),y=cy+rMi*Math.sin(ang);const iS=clockState.m===i;if(iS){html+=`<circle cx="${x}" cy="${y}" r="11" fill="${CLOCK_COLOR}" data-val="${i}" style="cursor:pointer"/><text x="${x}" y="${y+3}" text-anchor="middle" font-size="10" font-weight="600" fill="#fff" style="pointer-events:none">${String(i).padStart(2,'0')}</text>`;}else{html+=`<circle cx="${x}" cy="${y}" r="9" fill="transparent" data-val="${i}" style="cursor:pointer"/><circle cx="${x}" cy="${y}" r="2.5" fill="#93c5fd" style="pointer-events:none"/>`;}}
-    for(let i=0;i<60;i+=5){const ang=(i*6-90)*Math.PI/180;const x=cx+rMa*Math.cos(ang),y=cy+rMa*Math.sin(ang);const iS=clockState.m===i;html+=`<circle cx="${x}" cy="${y}" r="14" fill="${iS?CLOCK_COLOR:'transparent'}" data-val="${i}" style="cursor:pointer"/><text x="${x}" y="${y+4}" text-anchor="middle" font-size="13" font-weight="700" fill="${iS?'#fff':'#1e3a8a'}" style="pointer-events:none">${String(i).padStart(2,'0')}</text>`;}
+    for(let i=0;i<60;i++){if(i%5===0)continue;const ang=(i*6-90)*Math.PI/180;const x=cx+rMi*Math.cos(ang),y=cy+rMi*Math.sin(ang);const iS=clockState.m===i;if(iS){html+=`<circle cx="${x}" cy="${y}" r="11" fill="${CLOCK_COLOR}" data-val="${i}" style="cursor:pointer"/><text x="${x}" y="${y+3}" text-anchor="middle" font-size="10" font-weight="600" fill="#fff" style="pointer-events:none">${String(i).padStart(2,'0')}</text>`;}else{html+=`<circle cx="${x}" cy="${y}" r="9" fill="transparent" data-val="${i}" style="cursor:pointer"/><circle cx="${x}" cy="${y}" r="2.5" fill="#a1a1aa" style="pointer-events:none"/>`;}}
+    for(let i=0;i<60;i+=5){const ang=(i*6-90)*Math.PI/180;const x=cx+rMa*Math.cos(ang),y=cy+rMa*Math.sin(ang);const iS=clockState.m===i;html+=`<circle cx="${x}" cy="${y}" r="14" fill="${iS?CLOCK_COLOR:'transparent'}" data-val="${i}" style="cursor:pointer"/><text x="${x}" y="${y+4}" text-anchor="middle" font-size="13" font-weight="700" fill="${iS?'#fff':'#1d1d1f'}" style="pointer-events:none">${String(i).padStart(2,'0')}</text>`;}
     const iMS=clockState.m%5===0;const handR=(iMS?rMa:rMi)-14;const ang=(clockState.m*6-90)*Math.PI/180;
     html+=`<line x1="${cx}" y1="${cy}" x2="${cx+handR*Math.cos(ang)}" y2="${cy+handR*Math.sin(ang)}" stroke="${CLOCK_COLOR}" stroke-width="2"/>`;
   }
@@ -3020,48 +2072,347 @@ function drawClock(){
 function updateDigital(){document.getElementById('clock-h-val').textContent=String(clockState.h).padStart(2,'0');document.getElementById('clock-m-val').textContent=String(clockState.m).padStart(2,'0');}
 function confirmClock(){
   const t=clockState.target;
-  document.getElementById(`s1-${t}-h`).value=clockState.h;document.getElementById(`s1-${t}-m`).value=clockState.m;
-  document.getElementById(`s1-${t}-display`).textContent=`${String(clockState.h).padStart(2,'0')}:${String(clockState.m).padStart(2,'0')}`;
-  closeClock();calcWorkHours();
-  const errTimeEl=document.getElementById('s1-err-time');if(errTimeEl)errTimeEl.style.display='none';
-  document.getElementById('s1-time-block')?.classList.remove('is-invalid');
-}
-function calcWorkHours(){
-  const sh=+document.getElementById('s1-start-h').value||0;const sm=+document.getElementById('s1-start-m').value||0;
-  const eh=+document.getElementById('s1-end-h').value||0;const em=+document.getElementById('s1-end-m').value||0;
-  const sM=sh*60+sm;let eM=eh*60+em;if(eM<sM)eM+=24*60;const dM=eM-sM;
-  const preview=document.getElementById('s1-wh-preview');const valEl=document.getElementById('s1-wh-val');
-  if(dM<=0){preview.style.display='none';return;}
-  const h=Math.floor(dM/60);const m=dM%60;let txt='';if(h>0)txt+=h+' ชั่วโมง';if(m>0)txt+=(h>0?' ':'')+m+' นาที';if(!txt)txt='0 นาที';
-  valEl.textContent=txt;preview.style.display='block';
+  const h=clockState.h,m=clockState.m;
+  if(t==='_er' && _erClockTargetKey){
+    const s = driverRowState[_erClockTargetKey];
+    if(s){
+      if(_erClockTargetWhich==='start'){ s.sh=h; s.sm=m; }
+      else { s.eh=h; s.em=m; }
+      const el = document.getElementById(`${_erClockTargetKey}-${_erClockTargetWhich}-display`);
+      if(el) el.textContent = `${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}`;
+    }
+    closeClock();
+    _erClockTargetKey = null; _erClockTargetWhich = null;
+    return;
+  }
+  closeClock();
 }
 
-/* ═══════════════════════════════════════════════════════════════
-   REPORT PAGE — สรุปรายงาน (pie charts + stat cards)
-═══════════════════════════════════════════════════════════════ */
-const REPORT_LOGS = @json($logs);
-let reportRendered = false;
-let _reportCharts = {};
+const PDF_LOGS = @json($logs);
+const PDF_VIEW = @json($view);
+const PDF_FILTER_DAY   = @json($filterDay ?? '');
+const PDF_FILTER_MONTH = @json($filterMonth ?? '');
+
+async function exportPDF(){
+  const btn = document.querySelector('.entry-export-btn');
+  const origHTML = btn?.innerHTML;
+  if(btn){btn.disabled = true; btn.innerHTML = '<span>กำลังสร้าง PDF...</span>';}
+
+  // Build a hidden offscreen report DOM in Thai using the page's own fonts,
+  // snapshot it with html2canvas, then put each page-sized slice into jsPDF.
+  // This avoids jsPDF's lack of built-in Thai font support.
+  const reportEl = document.createElement('div');
+  reportEl.style.cssText = `
+    position:fixed; left:-99999px; top:0;
+    width:794px; padding:32px;
+    background:#fff; color:#18181b;
+    font-family:'IBM Plex Sans Thai','Inter',sans-serif;
+    font-size: 14px; line-height:1.5;
+    box-sizing:border-box;
+  `;
+
+  try{
+    const { jsPDF } = window.jspdf;
+    const logs = PDF_LOGS || [];
+    const today = new Date();
+    const dateNow = today.toLocaleDateString('th-TH',{year:'numeric',month:'2-digit',day:'2-digit'});
+    const timeNow = today.toLocaleTimeString('th-TH',{hour:'2-digit',minute:'2-digit'});
+
+    // Summary stats
+    let totalPrice=0, totalLiters=0, totalKm=0, kmlSum=0, kmlCount=0;
+    const drivers = new Set();
+    logs.forEach(r=>{
+      totalPrice += +(r.total_price||0);
+      totalLiters += +(r.liters||0);
+      totalKm += +(r.total_distance||0);
+      if((r.km_per_liter||0)>0){kmlSum+=+r.km_per_liter;kmlCount++;}
+      if(r.driver_name) drivers.add(r.driver_name);
+    });
+    const avgKml = kmlCount>0 ? kmlSum/kmlCount : 0;
+    const avgCostPerKm = totalKm>0 ? totalPrice/totalKm : 0;
+
+    let periodTxt = '';
+    if(PDF_VIEW === 'day') periodTxt = `วันที่: ${PDF_FILTER_DAY||dateNow}`;
+    else if(PDF_VIEW === 'month') periodTxt = `เดือน: ${PDF_FILTER_MONTH}`;
+    else if(PDF_VIEW === 'year') periodTxt = 'รายปี';
+    else periodTxt = 'ทั้งหมด';
+
+    // Per-driver summary
+    const byDriver = {};
+    logs.forEach(r=>{
+      const n = r.driver_name || '—';
+      if(!byDriver[n]) byDriver[n] = {name:n, plate:r.vehicle_id||'', rounds:0, distance:0, liters:0, price:0, kmlSum:0, kmlCount:0};
+      byDriver[n].rounds++;
+      byDriver[n].distance += +(r.total_distance||0);
+      byDriver[n].liters += +(r.liters||0);
+      byDriver[n].price += +(r.total_price||0);
+      if(!byDriver[n].plate && r.vehicle_id) byDriver[n].plate = r.vehicle_id;
+      if((r.km_per_liter||0)>0){byDriver[n].kmlSum += +r.km_per_liter;byDriver[n].kmlCount++;}
+    });
+    const sortedDrivers = Object.values(byDriver).sort((a,b)=>b.price-a.price);
+
+    const fmtNum = (n, d=0)=> Number(n||0).toLocaleString('en-US',{minimumFractionDigits:d, maximumFractionDigits:d});
+    const fmtMoney = n => '฿'+fmtNum(n,0);
+
+    // Build report HTML — Thai-safe, uses page fonts
+    let logRowsHtml = '';
+    logs.forEach((r,i)=>{
+      const date = r.work_date || '';
+      const dateOut = date ? date.split('-').reverse().slice(0,2).join('/') : '-';
+      const t1 = (r.start_time||'').slice(0,5);
+      const t2 = (r.end_time||'').slice(0,5);
+      const timeOut = (t1 && t2) ? `${t1}-${t2}` : '-';
+      logRowsHtml += `
+        <tr>
+          <td style="text-align:center;color:#71717a">${i+1}</td>
+          <td style="text-align:center">${dateOut}</td>
+          <td><strong>${r.driver_name||'-'}</strong></td>
+          <td>${r.vehicle_id||'-'}</td>
+          <td style="text-align:center;font-family:ui-monospace,monospace;font-size: 14px">${timeOut}</td>
+          <td style="text-align:right;font-family:ui-monospace,monospace">${fmtNum(r.total_distance,0)}</td>
+          <td style="text-align:right;font-family:ui-monospace,monospace">${fmtNum(r.liters,1)}</td>
+          <td style="text-align:right;font-family:ui-monospace,monospace">${fmtNum(r.total_price,0)}</td>
+          <td style="text-align:right;font-family:ui-monospace,monospace">${(r.km_per_liter>0)?fmtNum(r.km_per_liter,2):'-'}</td>
+        </tr>`;
+    });
+    if(!logRowsHtml) logRowsHtml = '<tr><td colspan="9" style="text-align:center;padding:20px;color:#a1a1aa">ไม่มีข้อมูล</td></tr>';
+
+    let driverRowsHtml = '';
+    sortedDrivers.forEach((d,i)=>{
+      const kml = d.kmlCount>0 ? d.kmlSum/d.kmlCount : 0;
+      const costKm = d.distance>0 ? d.price/d.distance : 0;
+      driverRowsHtml += `
+        <tr>
+          <td style="text-align:center;font-weight:600">${i+1}</td>
+          <td><strong>${d.name}</strong></td>
+          <td style="color:#71717a">${d.plate||'-'}</td>
+          <td style="text-align:right;font-family:ui-monospace,monospace">${d.rounds}</td>
+          <td style="text-align:right;font-family:ui-monospace,monospace">${fmtNum(d.distance,0)}</td>
+          <td style="text-align:right;font-family:ui-monospace,monospace">${fmtNum(d.liters,1)}</td>
+          <td style="text-align:right;font-family:ui-monospace,monospace">${fmtNum(d.price,0)}</td>
+          <td style="text-align:right;font-family:ui-monospace,monospace">${kml>0?fmtNum(kml,2):'-'}</td>
+          <td style="text-align:right;font-family:ui-monospace,monospace">${costKm>0?fmtNum(costKm,2):'-'}</td>
+        </tr>`;
+    });
+
+    const thS = 'padding:8px 6px;background:#10b981;color:#fff;font-weight:700;font-size: 14px;text-align:left;border:1px solid #059669';
+    const thSB = 'padding:8px 6px;background:#3b82f6;color:#fff;font-weight:700;font-size: 14px;text-align:left;border:1px solid #2563eb';
+    const tdS = 'padding:6px;border:1px solid #e5e7eb;font-size: 14px;background:#fff';
+
+    reportEl.innerHTML = `
+      <div style="background:linear-gradient(135deg,#10b981 0%,#059669 100%);color:#fff;padding:20px 24px;border-radius:14px;margin-bottom:20px;display:flex;justify-content:space-between;align-items:center">
+        <div>
+          <div style="font-size:22px;font-weight:700;letter-spacing:-0.02em">รายงานการเติมน้ำมัน</div>
+          <div style="font-size: 14px;opacity:.85;margin-top:4px">สร้างเมื่อ: ${dateNow} ${timeNow}</div>
+        </div>
+        <div style="font-size: 14px;opacity:.9;text-align:right">${periodTxt}</div>
+      </div>
+
+      <div style="font-size:15px;font-weight:700;margin-bottom:10px;color:#18181b">สรุปภาพรวม</div>
+      <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:20px">
+        ${[
+          ['รายการทั้งหมด', logs.length+' ครั้ง'],
+          ['คนขับ', drivers.size+' คน'],
+          ['ค่าน้ำมันรวม', fmtMoney(totalPrice)],
+          ['ลิตรรวม', fmtNum(totalLiters,1)+' L'],
+          ['ระยะทางรวม', fmtNum(totalKm,0)+' km'],
+          ['เฉลี่ย km/L', fmtNum(avgKml,2)],
+          ['ต้นทุนเฉลี่ย', fmtMoney(avgCostPerKm)+'/km'],
+          ['ช่วงข้อมูล', periodTxt.replace(/^[^:]+:\s*/,'')||'-'],
+        ].map(([l,v])=>`
+          <div style="background:#fafafa;border:1px solid #e5e7eb;border-radius:8px;padding:10px 12px">
+            <div style="font-size: 14px;color:#71717a;margin-bottom:3px">${l}</div>
+            <div style="font-size:14px;font-weight:700;color:#18181b">${v}</div>
+          </div>`).join('')}
+      </div>
+
+      <div style="font-size:15px;font-weight:700;margin:14px 0 8px;color:#18181b">รายการเติมน้ำมัน</div>
+      <table style="width:100%;border-collapse:collapse;margin-bottom:18px">
+        <thead><tr>
+          <th style="${thS};width:30px;text-align:center">#</th>
+          <th style="${thS};width:50px;text-align:center">วันที่</th>
+          <th style="${thS}">คนขับ</th>
+          <th style="${thS}">ทะเบียน</th>
+          <th style="${thS};text-align:center">เวลา</th>
+          <th style="${thS};text-align:right">ระยะ (km)</th>
+          <th style="${thS};text-align:right">ลิตร</th>
+          <th style="${thS};text-align:right">บาท</th>
+          <th style="${thS};text-align:right">km/L</th>
+        </tr></thead>
+        <tbody>${logRowsHtml}</tbody>
+      </table>
+
+      <div style="font-size:15px;font-weight:700;margin:14px 0 8px;color:#18181b">สรุปแยกตามคนขับ</div>
+      <table style="width:100%;border-collapse:collapse;margin-bottom:18px">
+        <thead><tr>
+          <th style="${thSB};width:40px;text-align:center">อันดับ</th>
+          <th style="${thSB}">คนขับ</th>
+          <th style="${thSB}">ทะเบียน</th>
+          <th style="${thSB};text-align:right">รอบ</th>
+          <th style="${thSB};text-align:right">ระยะ (km)</th>
+          <th style="${thSB};text-align:right">ลิตร</th>
+          <th style="${thSB};text-align:right">บาท</th>
+          <th style="${thSB};text-align:right">เฉลี่ย km/L</th>
+          <th style="${thSB};text-align:right">฿/km</th>
+        </tr></thead>
+        <tbody>${driverRowsHtml.replace(/<td style="/g,'<td style="'+tdS+';')}</tbody>
+      </table>
+    `;
+
+    // Inject td styles into log rows (they were created without inline padding/borders for brevity)
+    reportEl.querySelectorAll('tbody td').forEach(td=>{
+      const cur = td.getAttribute('style') || '';
+      if(!cur.includes('border:1px solid')){
+        td.setAttribute('style', tdS + ';' + cur);
+      }
+    });
+
+    document.body.appendChild(reportEl);
+
+    // Wait one frame so fonts render before snapshot
+    await new Promise(r=>requestAnimationFrame(()=>requestAnimationFrame(r)));
+
+    // Snapshot
+    const canvas = await html2canvas(reportEl, {
+      scale: 2,
+      backgroundColor: '#ffffff',
+      logging: false,
+      useCORS: true,
+    });
+
+    // Build PDF: paginate the big canvas into A4 pages
+    const doc = new jsPDF({orientation:'portrait', unit:'mm', format:'a4'});
+    const pageW = doc.internal.pageSize.getWidth();
+    const pageH = doc.internal.pageSize.getHeight();
+    const margin = 8;
+    const imgW = pageW - margin*2;
+    const imgFullH = (canvas.height * imgW) / canvas.width;
+
+    if(imgFullH <= pageH - margin*2){
+      // Fits on one page
+      const imgData = canvas.toDataURL('image/png');
+      doc.addImage(imgData, 'PNG', margin, margin, imgW, imgFullH);
+    } else {
+      // Multi-page: slice canvas vertically
+      const pageContentH = pageH - margin*2;
+      const sliceCanvasH = (pageContentH * canvas.width) / imgW; // canvas pixels per page
+
+      let yOffset = 0;
+      let pageNum = 0;
+      while(yOffset < canvas.height){
+        const sliceH = Math.min(sliceCanvasH, canvas.height - yOffset);
+        const sliceCanvas = document.createElement('canvas');
+        sliceCanvas.width = canvas.width;
+        sliceCanvas.height = sliceH;
+        const ctx = sliceCanvas.getContext('2d');
+        ctx.fillStyle = '#ffffff';
+        ctx.fillRect(0, 0, sliceCanvas.width, sliceCanvas.height);
+        ctx.drawImage(canvas, 0, yOffset, canvas.width, sliceH, 0, 0, canvas.width, sliceH);
+        const sliceData = sliceCanvas.toDataURL('image/png');
+        const sliceImgH = (sliceH * imgW) / canvas.width;
+        if(pageNum > 0) doc.addPage();
+        doc.addImage(sliceData, 'PNG', margin, margin, imgW, sliceImgH);
+        yOffset += sliceH;
+        pageNum++;
+      }
+    }
+
+    // Charts page — snapshot the on-page chart canvases (already in Thai-rendered Chart.js)
+    const chartConfigs = [
+      {id: 'deliveryChart',  title: 'รายการสมบูรณ์ / ผิดพลาด'},
+      {id: 'chartKml',       title: 'น้ำมันต่อกิโล (km/L)'},
+      {id: 'chartCost',      title: 'ต้นทุนต่อกิโล (฿/km)'},
+    ];
+
+    const chartReportEl = document.createElement('div');
+    chartReportEl.style.cssText = reportEl.style.cssText;
+    let chartHtml = `
+      <div style="background:linear-gradient(135deg,#10b981 0%,#059669 100%);color:#fff;padding:20px 24px;border-radius:14px;margin-bottom:20px">
+        <div style="font-size:22px;font-weight:700">กราฟวิเคราะห์</div>
+        <div style="font-size: 14px;opacity:.85;margin-top:4px">${dateNow} ${timeNow}</div>
+      </div>`;
+
+    let hasChart = false;
+    for(const cfg of chartConfigs){
+      const c = document.getElementById(cfg.id);
+      if(!c) continue;
+      try {
+        const dataUrl = c.toDataURL('image/png', 1.0);
+        chartHtml += `
+          <div style="margin-bottom:18px;page-break-inside:avoid">
+            <div style="font-size:14px;font-weight:700;margin-bottom:8px;color:#18181b">${cfg.title}</div>
+            <img src="${dataUrl}" style="width:100%;border:1px solid #e5e7eb;border-radius:8px"/>
+          </div>`;
+        hasChart = true;
+      } catch(e){ console.warn('chart capture', cfg.id, e); }
+    }
+
+    if(hasChart){
+      chartReportEl.innerHTML = chartHtml;
+      document.body.appendChild(chartReportEl);
+      await new Promise(r=>requestAnimationFrame(()=>requestAnimationFrame(r)));
+      const chartCanvas = await html2canvas(chartReportEl, {scale:2, backgroundColor:'#fff', logging:false});
+      const chartImgH = (chartCanvas.height * imgW) / chartCanvas.width;
+      if(chartImgH <= pageH - margin*2){
+        doc.addPage();
+        doc.addImage(chartCanvas.toDataURL('image/png'), 'PNG', margin, margin, imgW, chartImgH);
+      } else {
+        const pageContentH = pageH - margin*2;
+        const sliceCanvasH = (pageContentH * chartCanvas.width) / imgW;
+        let yOffset = 0;
+        while(yOffset < chartCanvas.height){
+          const sliceH = Math.min(sliceCanvasH, chartCanvas.height - yOffset);
+          const sliceCanvas = document.createElement('canvas');
+          sliceCanvas.width = chartCanvas.width;
+          sliceCanvas.height = sliceH;
+          const ctx = sliceCanvas.getContext('2d');
+          ctx.fillStyle = '#fff';
+          ctx.fillRect(0,0,sliceCanvas.width, sliceCanvas.height);
+          ctx.drawImage(chartCanvas, 0, yOffset, chartCanvas.width, sliceH, 0, 0, chartCanvas.width, sliceH);
+          doc.addPage();
+          const sliceImgH = (sliceH * imgW) / chartCanvas.width;
+          doc.addImage(sliceCanvas.toDataURL('image/png'), 'PNG', margin, margin, imgW, sliceImgH);
+          yOffset += sliceH;
+        }
+      }
+      document.body.removeChild(chartReportEl);
+    }
+
+    document.body.removeChild(reportEl);
+
+    const filename = `fuel-report-${today.toISOString().slice(0,10)}.pdf`;
+    doc.save(filename);
+
+  } catch(err){
+    console.error('PDF error:', err);
+    alert('เกิดข้อผิดพลาดในการสร้าง PDF: ' + err.message);
+    if(reportEl.parentNode) reportEl.parentNode.removeChild(reportEl);
+  } finally {
+    if(btn){btn.disabled = false; btn.innerHTML = origHTML;}
+  }
+}
+
+
+const REPORT_LOGS=@json($logs);
+let reportRendered=false,_reportCharts={};
 function renderReportPage(){
-  if(reportRendered) return;
-  reportRendered = true;
-  const logs = REPORT_LOGS || [];
-  const byDriver = {};
-  let totalPrice=0, totalLiters=0, totalHours=0, totalKm=0, kmlSum=0, kmlCount=0;
+  if(reportRendered)return;reportRendered=true;
+  const logs=REPORT_LOGS||[];
+  const byDriver={};
+  let totalPrice=0,totalLiters=0,totalHours=0,totalKm=0,kmlSum=0,kmlCount=0;
   logs.forEach(r=>{
-    const n = r.driver_name || '—';
-    if(!byDriver[n]) byDriver[n]={price:0,liters:0,hours:0,km:0,rounds:0,kmlSum:0,kmlCount:0};
-    const p = +(r.total_price||0), L = +(r.liters||0), h = +(r.work_hours||0), km = +(r.total_distance||0), kml = +(r.km_per_liter||0);
-    byDriver[n].price += p; byDriver[n].liters += L; byDriver[n].hours += h; byDriver[n].km += km; byDriver[n].rounds++;
-    if(kml>0){byDriver[n].kmlSum+=kml; byDriver[n].kmlCount++;}
-    totalPrice += p; totalLiters += L; totalHours += h; totalKm += km;
-    if(kml>0){kmlSum+=kml; kmlCount++;}
+    const n=r.driver_name||'—';
+    if(!byDriver[n])byDriver[n]={price:0,liters:0,hours:0,km:0,rounds:0,kmlSum:0,kmlCount:0};
+    const p=+(r.total_price||0),L=+(r.liters||0),h=+(r.work_hours||0),km=+(r.total_distance||0),kml=+(r.km_per_liter||0);
+    byDriver[n].price+=p;byDriver[n].liters+=L;byDriver[n].hours+=h;byDriver[n].km+=km;byDriver[n].rounds++;
+    if(kml>0){byDriver[n].kmlSum+=kml;byDriver[n].kmlCount++;}
+    totalPrice+=p;totalLiters+=L;totalHours+=h;totalKm+=km;
+    if(kml>0){kmlSum+=kml;kmlCount++;}
   });
-  const avgKml = kmlCount>0 ? (kmlSum/kmlCount) : 0;
-  // Stat cards
-  const statRow = document.getElementById('repStatRow');
+  const avgKml=kmlCount>0?(kmlSum/kmlCount):0;
+  const statRow=document.getElementById('repStatRow');
   if(statRow){
-    statRow.innerHTML = `
+    statRow.innerHTML=`
       <div class="report-stat-card"><div class="report-stat-label">รายการทั้งหมด</div><div class="report-stat-value">${logs.length}</div><div class="report-stat-sub">ครั้ง</div></div>
       <div class="report-stat-card"><div class="report-stat-label">ค่าน้ำมันรวม</div><div class="report-stat-value">฿${totalPrice.toLocaleString(undefined,{maximumFractionDigits:0})}</div><div class="report-stat-sub">บาท</div></div>
       <div class="report-stat-card"><div class="report-stat-label">ลิตรที่เติม</div><div class="report-stat-value">${totalLiters.toFixed(1)}</div><div class="report-stat-sub">ลิตร</div></div>
@@ -3070,55 +2421,60 @@ function renderReportPage(){
       <div class="report-stat-card"><div class="report-stat-label">ชั่วโมงรวม</div><div class="report-stat-value">${totalHours.toFixed(1)}</div><div class="report-stat-sub">ชม.</div></div>
     `;
   }
-  // Pie charts
-  const drivers = Object.keys(byDriver);
-  if(drivers.length === 0) return;
-  const sorted = drivers.map(n=>({name:n,...byDriver[n]})).sort((a,b)=>b.price-a.price);
-  const pieColors = ['#16a34a','#2563eb','#eab308','#dc2626','#9333ea','#0891b2','#ea580c','#db2777','#0d9488','#7c3aed','#84cc16','#f59e0b'];
-  function makePie(canvasId, legendId, dataKey, label, formatter){
-    const canvas = document.getElementById(canvasId); if(!canvas) return;
-    if(_reportCharts[canvasId]) _reportCharts[canvasId].destroy();
-    const data = sorted.map(d => +d[dataKey].toFixed(2));
-    const labels = sorted.map(d => d.name);
-    _reportCharts[canvasId] = new Chart(canvas, {
+  const drivers=Object.keys(byDriver);
+  if(drivers.length===0)return;
+  const sorted=drivers.map(n=>({name:n,...byDriver[n]})).sort((a,b)=>b.price-a.price);
+  const pieColors=['#3b82f6','#10b981','#f59e0b','#8b5cf6','#ec4899','#14b8a6','#ef4444','#6366f1','#06b6d4','#eab308','#f97316','#84cc16'];
+  function makePie(canvasId,legendId,dataKey,fmt){
+    const canvas=document.getElementById(canvasId);if(!canvas)return;
+    if(_reportCharts[canvasId])_reportCharts[canvasId].destroy();
+    const data=sorted.map(d=>+d[dataKey].toFixed(2));
+    const labels=sorted.map(d=>d.name);
+    _reportCharts[canvasId]=new Chart(canvas,{
       type:'doughnut',
-      data:{labels, datasets:[{data, backgroundColor:labels.map((_,i)=>pieColors[i%pieColors.length]), borderWidth:2, borderColor:'#fff'}]},
-      options:{responsive:true,maintainAspectRatio:false,cutout:'55%',plugins:{legend:{display:false},datalabels:{display:false},tooltip:{callbacks:{label:ctx=>`${ctx.label}: ${formatter(ctx.raw)}`}}}}
+      data:{labels,datasets:[{data,backgroundColor:labels.map((_,i)=>pieColors[i%pieColors.length]),borderWidth:2,borderColor:'#fff'}]},
+      options:{responsive:true,maintainAspectRatio:false,cutout:'58%',plugins:{legend:{display:false},datalabels:{display:false},tooltip:{callbacks:{label:ctx=>`${ctx.label}: ${fmt(ctx.raw)}`}}}}
     });
-    const lg = document.getElementById(legendId);
+    const lg=document.getElementById(legendId);
     if(lg){
-      const total = data.reduce((s,v)=>s+v,0);
-      lg.innerHTML = sorted.map((d,i)=>{
-        const v=data[i]; const pct = total>0 ? (v/total*100).toFixed(1) : '0';
-        return `<div class="pie-legend-item"><span class="pie-legend-dot" style="background:${pieColors[i%pieColors.length]}"></span><span class="pie-legend-label">${d.name}</span><span class="pie-legend-val">${formatter(v)} · ${pct}%</span></div>`;
-      }).join('');
+      const total=data.reduce((s,v)=>s+v,0);
+      lg.innerHTML=sorted.map((d,i)=>{const v=data[i];const pct=total>0?(v/total*100).toFixed(1):'0';return `<div class="pie-legend-item"><span class="pie-legend-dot" style="background:${pieColors[i%pieColors.length]}"></span><span class="pie-legend-label">${d.name}</span><span class="pie-legend-val">${fmt(v)} · ${pct}%</span></div>`;}).join('');
     }
   }
-  makePie('pieCost', 'pieCostLegend', 'price', 'ค่าน้ำมัน', v=>'฿'+v.toLocaleString(undefined,{maximumFractionDigits:0}));
-  makePie('pieLiters', 'pieLitersLegend', 'liters', 'ลิตร', v=>v.toFixed(1)+' L');
-  makePie('pieHours', 'pieHoursLegend', 'hours', 'ชั่วโมง', v=>v.toFixed(1)+' ชม.');
+  makePie('pieCost','pieCostLegend','price',v=>'฿'+v.toLocaleString(undefined,{maximumFractionDigits:0}));
+  makePie('pieLiters','pieLitersLegend','liters',v=>v.toFixed(1)+' L');
+  makePie('pieHours','pieHoursLegend','hours',v=>v.toFixed(1)+' ชม.');
 }
 
 document.addEventListener('DOMContentLoaded',()=>{
   updateNavDate();setInterval(updateNavDate,60000);
-  buildTimeDropdowns();
-  renderDlv();
-  renderKmlChart();
-  renderBpkChart();       
-  renderOilPage();
-  drpInit();
-  let _resizeTimer = null;
-  window.addEventListener('resize', () => {
-    clearTimeout(_resizeTimer);
-    _resizeTimer = setTimeout(() => {
-      renderDlv();
-      renderKmlChart();
-      renderBpkChart();   
-    }, 200);
-  });
-  @if($errors->any())
-  openModal({{ isset($editLog['id']) ? $editLog['id'] : 'null' }});
-  @endif
+  renderDlv();renderKmlChart();renderCostChart();renderOilPage();drpInit();
+  let _t=null;
+  window.addEventListener('resize',()=>{clearTimeout(_t);_t=setTimeout(()=>{renderDlv();renderKmlChart();renderCostChart();},200);});
+
+  ilLoadOilPrice('diesel');
+  (async()=>{
+    const dateInput = document.getElementById('il-work-date');
+    if(!dateInput) return;
+    const today = dateInput.value || todayStr();
+    const hint = document.getElementById('entryLoadingHint');
+    if(hint) hint.style.display = 'flex';
+    try{
+      await Promise.all([
+        fetchJobsByDate(today),
+        fetchSavedDrivers(today),
+      ]);
+      ilLastLoadedDate = today;
+      ilRenderDriverRows(today);
+      ilRenderAllJobs(today);
+    }catch(e){
+      console.warn(e);
+      const tbody = document.getElementById('entryRowsBody');
+      if(tbody) tbody.innerHTML = '<div class="entry-empty" style="color:var(--red)">โหลดข้อมูลไม่สำเร็จ</div>';
+    }finally{
+      if(hint) hint.style.display = 'none';
+    }
+  })();
 });
 </script>
 </body>
