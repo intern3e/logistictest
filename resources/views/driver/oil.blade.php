@@ -236,7 +236,7 @@ body{font-family: var(--font-thai);background: var(--bg);color: var(--text);min-
   .entry-card-head-left{gap: 10px}
   .entry-export-btn span{display: none}
   .entry-export-btn{padding: 7px 9px}
-  /* Hide secondary fuel-table cols on tablet */
+  /* Hide secondary fuel-table cols on tablet: ชม. + ระยะ */
   .fuel-table thead th:nth-child(5),
   .fuel-table tbody td:nth-child(5),
   .fuel-table thead th:nth-child(6),
@@ -250,13 +250,15 @@ body{font-family: var(--font-thai);background: var(--bg);color: var(--text);min-
   .entry-oil-mini .entry-oil-label{display: none}
   .topnav-user-name{display: none}
   .topnav-user{padding: 4px; max-width: none}
-  /* Hide more table cols on phone */
+  /* Hide more table cols on phone: # + เวลา + ลิตร + KM/L */
   .fuel-table thead th:nth-child(1),
   .fuel-table tbody td:nth-child(1),
   .fuel-table thead th:nth-child(4),
   .fuel-table tbody td:nth-child(4),
-  .fuel-table thead th:nth-child(8),
-  .fuel-table tbody td:nth-child(8){display: none}
+  .fuel-table thead th:nth-child(7),
+  .fuel-table tbody td:nth-child(7),
+  .fuel-table thead th:nth-child(9),
+  .fuel-table tbody td:nth-child(9){display: none}
 }
 @media (max-width: 600px){
   .entry-row{
@@ -284,9 +286,17 @@ body{font-family: var(--font-thai);background: var(--bg);color: var(--text);min-
 .jobs-panel-body::-webkit-scrollbar-track{background: transparent}
 .jobs-panel-body::-webkit-scrollbar-thumb{background: rgba(0,0,0,.12);border-radius: 100px;border: 2px solid #fff;background-clip: padding-box;}
 .jobs-panel-body::-webkit-scrollbar-thumb:hover{background: rgba(0,0,0,.22)}
-.dgj-row{display: grid;grid-template-columns: auto 1fr auto;gap: 8px; align-items: center;padding: 7px 12px;border-top: 1px solid var(--separator);font-size: 14px;}
+.dgj-row{padding: 8px 12px;border-top: 1px solid var(--separator);font-size: 14px;}
 .dgj-row:first-child{border-top: none}
-.dgj-bill{font-family: var(--font-mono);font-size: 14px; font-weight: 600;color: var(--text2);padding: 1px 6px;background: var(--bg-subtle);border-radius: 5px;white-space: nowrap;}
+.dgj-main{display: flex; flex-direction: column; gap: 4px;}
+.dgj-top{display: grid; grid-template-columns: auto 1fr auto; gap: 8px; align-items: center;}
+.dgj-meta{display: flex; flex-wrap: wrap; gap: 4px 6px; padding-left: 0; font-size: 14px; color: var(--text3); line-height: 1.4;}
+.dgj-meta-item{display: inline-flex; align-items: baseline; gap: 3px;}
+.dgj-meta-label{color: var(--text4); font-size: 14px;}
+.dgj-meta-sep{color: var(--text5)}
+.dgj-meta-item.dgj-note{color: var(--red)}
+.dgj-meta-item.dgj-note .dgj-meta-label{color: var(--red)}
+.dgj-bill{font-family: var(--font-mono);font-size: 14px; font-weight: 600;color: var(--text2);padding: 1px 6px;background: var(--bg-subtle);border-radius: 5px;white-space: nowrap;user-select: text;}
 .dgj-customer{color: var(--text2);font-size: 14px;white-space: nowrap; overflow: hidden; text-overflow: ellipsis;min-width: 0;}
 .dgj-status{display: inline-flex; align-items: center;padding: 1px 8px; border-radius: 100px;font-size: 14px; font-weight: 600;white-space: nowrap;}
 .dgj-status.ok{background: var(--green-light); color: var(--green-dark)}
@@ -344,6 +354,7 @@ body{font-family: var(--font-thai);background: var(--bg);color: var(--text);min-
 .driver-name{font-weight: 600; font-size: 14px;color: var(--text); letter-spacing: -0.01em;overflow: hidden;text-overflow: ellipsis;white-space: nowrap;}
 .driver-plate{font-size: 14px; color: var(--text3); margin-top: 1px;overflow: hidden;text-overflow: ellipsis;white-space: nowrap;}
 .time-pill{display: inline-block; padding: 2px 8px;background: var(--bg-subtle); color: var(--text2);border-radius: 100px; font-size: 14px; font-weight: 600;font-family: var(--font-mono);white-space: nowrap;}
+.hour-pill{display: inline-block; padding: 2px 9px;background: rgba(139,92,246,.10);color: #6d28d9;border-radius: 100px;font-size: 14px; font-weight: 600;font-family: var(--font-mono);white-space: nowrap;letter-spacing: -0.01em;}
 .date-pill{display: inline-block; padding: 2px 8px;background: rgba(59,130,246,.08);color: var(--blue-hover);border-radius: 100px;font-size: 14px; font-weight: 600;font-family: var(--font-mono);white-space: nowrap;letter-spacing: -0.01em;}
 .km-good{color: var(--green-dark); font-weight: 600}
 .km-mid{color: var(--text); font-weight: 500}
@@ -372,6 +383,10 @@ body{font-family: var(--font-thai);background: var(--bg);color: var(--text);min-
 .charts-grid{display: grid;grid-template-columns: 1fr;gap: 18px;}
 .chart-card{background: var(--bg-card);border-radius: var(--radius-xl);box-shadow: var(--shadow);border: 1px solid rgba(0,0,0,.04);padding: clamp(12px, 2vw, 22px);min-width: 0;overflow: hidden;}
 .chart-head{display: flex; align-items: baseline; gap: 10px;margin-bottom: 14px;flex-wrap: wrap;}
+.vehicle-toggle{margin-left: auto;display: inline-flex;background: rgba(0,0,0,.05);border-radius: 8px;padding: 3px;gap: 0;flex-shrink: 0;}
+.vt-btn{padding: 5px 12px;border: none;background: transparent;color: var(--text2);font-family: inherit;font-size: 14px; font-weight: 500;cursor: pointer;border-radius: 5px;white-space: nowrap;letter-spacing: -0.01em;transition: all .15s var(--ease);}
+.vt-btn:hover{color: var(--text)}
+.vt-btn.active{background: #fff;color: var(--text);font-weight: 600;box-shadow: 0 1px 3px rgba(0,0,0,.08), 0 1px 1px rgba(0,0,0,.04);}
 .chart-title{font-size: clamp(14px, 1.5vw, 16px); font-weight: 600;color: var(--text); letter-spacing: -0.02em;}
 .chart-sub{font-size: 14px; color: var(--text3); font-weight: 400;}
 .chart-canvas{position: relative; width: 100%; min-width: 0;}
@@ -466,6 +481,8 @@ body{font-family: var(--font-thai);background: var(--bg);color: var(--text);min-
 @php
   $currentUser = request()->filled('create_by') ? request('create_by') : 'Guest';
   $userQuery = $currentUser !== 'Guest' ? '?create_by='.urlencode($currentUser) : '';
+  $privilegedUsers = ['จัน','kanitin2','test101'];
+  $isPrivileged = in_array(trim($currentUser), $privilegedUsers, true);
 @endphp
 <nav class="topnav">
   <div class="topnav-main">
@@ -615,6 +632,7 @@ body{font-family: var(--font-thai);background: var(--bg);color: var(--text);min-
     foreach($plates as $dbP){if(!in_array($dbP,$plateList))$plateList[]=$dbP;}
   @endphp
 
+  @if($view === 'day' && $isPrivileged)
   <div class="entry-layout">
 
     <div class="entry-card">
@@ -661,7 +679,7 @@ body{font-family: var(--font-thai);background: var(--bg);color: var(--text);min-
           <div class="erh-driver">คนขับ</div>
           <div class="erh-plate">ทะเบียนรถ</div>
           <div class="erh-time">เวลา</div>
-          <div class="erh-price">ค่าน้ำมัน (฿)</div>
+          <div class="erh-price" title="ใส่ 0 ได้ถ้าไม่ได้เติมน้ำมัน">ค่าน้ำมัน (฿) <span style="font-weight:400;color:var(--text4);font-size:14px">· 0 = ไม่เติม</span></div>
           <div class="erh-distance">ระยะ (km)</div>
           <div class="erh-summary">สรุป</div>
           <div class="erh-action">บันทึก</div>
@@ -686,6 +704,7 @@ body{font-family: var(--font-thai);background: var(--bg);color: var(--text);min-
     </aside>
 
   </div>
+  @endif
 
 
   <div class="dual-grid {{ $view === 'day' ? 'single-col' : '' }}">
@@ -711,7 +730,8 @@ body{font-family: var(--font-thai);background: var(--bg);color: var(--text);min-
           <col style="width:44px">
           <col style="width:78px">
           <col style="width:auto;min-width:170px">
-          <col style="width:110px">
+          <col style="width:96px">
+          <col style="width:70px">
           <col style="width:80px">
           <col style="width:66px">
           <col style="width:84px">
@@ -723,6 +743,7 @@ body{font-family: var(--font-thai);background: var(--bg);color: var(--text);min-
             <th>วันที่</th>
             <th>คนขับ / ทะเบียน</th>
             <th>เวลา</th>
+            <th class="num">ชม.</th>
             <th class="num">ระยะ</th>
             <th class="num">ลิตร</th>
             <th class="num">฿</th>
@@ -746,6 +767,17 @@ body{font-family: var(--font-thai);background: var(--bg);color: var(--text);min-
             if(strlen($tStart) >= 5) $tStart = substr($tStart, 0, 5);
             if(strlen($tEnd) >= 5) $tEnd = substr($tEnd, 0, 5);
             $timeText = ($tStart && $tEnd) ? $tStart.'-'.$tEnd : '—';
+            // ระยะเวลาทำงาน (จาก work_hours ที่ controller คำนวณไว้แล้ว)
+            $wh = (float)($r['work_hours'] ?? 0);
+            $durText = '';
+            if($wh > 0){
+              $totalMin = (int) round($wh * 60);
+              $hh = intdiv($totalMin, 60);
+              $mm = $totalMin % 60;
+              if($hh > 0 && $mm > 0)      $durText = $hh.' ชม. '.$mm.' น.';
+              elseif($hh > 0)             $durText = $hh.' ชม.';
+              else                        $durText = $mm.' น.';
+            }
             $workDate = $r['work_date'] ?? '';
             $dateText = '—';
             $dateFull = '';
@@ -767,6 +799,7 @@ body{font-family: var(--font-thai);background: var(--bg);color: var(--text);min-
               </div>
             </td>
             <td><span class="time-pill">{{ $timeText }}</span></td>
+            <td class="num">{!! $durText ? '<span class="hour-pill">'.$durText.'</span>' : '<span style="color:var(--text4)">—</span>' !!}</td>
             <td class="num">{{ $dist }}</td>
             <td class="num">{{ $r['liters']?number_format($r['liters'],1):'—' }}</td>
             <td class="num">{{ $r['total_price']?'฿'.number_format($r['total_price']):'—' }}</td>
@@ -776,7 +809,7 @@ body{font-family: var(--font-thai);background: var(--bg);color: var(--text);min-
             </td>
           </tr>
           @empty
-          <tr><td colspan="8"><div class="empty-state"><div class="icon">⛽</div><p>ไม่พบรายการ</p></div></td></tr>
+          <tr><td colspan="9"><div class="empty-state"><div class="icon">⛽</div><p>ไม่พบรายการ</p></div></td></tr>
           @endforelse
         </tbody>
       </table>
@@ -903,6 +936,10 @@ body{font-family: var(--font-thai);background: var(--bg);color: var(--text);min-
       <div class="chart-head">
         <div class="chart-title">น้ำมันต่อกิโล</div>
         <div class="chart-sub">เฉลี่ย km/L แต่ละคน · เกณฑ์ 9.0</div>
+        <div class="vehicle-toggle" data-chart="kml">
+          <button type="button" class="vt-btn active" data-type="car" onclick="switchVehicleType('kml','car')">🚗 รถยนต์</button>
+          <button type="button" class="vt-btn" data-type="moto" onclick="switchVehicleType('kml','moto')">🏍 มอเตอร์ไซค์</button>
+        </div>
       </div>
       <div class="chart-canvas">
         <div class="chart-inner" id="chartKmlInner"><canvas id="chartKml"></canvas></div>
@@ -914,6 +951,10 @@ body{font-family: var(--font-thai);background: var(--bg);color: var(--text);min-
       <div class="chart-head">
         <div class="chart-title">ต้นทุนต่อกิโล (฿/km)</div>
         <div class="chart-sub">ค่าน้ำมันเฉลี่ยต่อระยะทาง 1 กิโลเมตร · ยิ่งน้อยยิ่งดี</div>
+        <div class="vehicle-toggle" data-chart="cost">
+          <button type="button" class="vt-btn active" data-type="car" onclick="switchVehicleType('cost','car')">🚗 รถยนต์</button>
+          <button type="button" class="vt-btn" data-type="moto" onclick="switchVehicleType('cost','moto')">🏍 มอเตอร์ไซค์</button>
+        </div>
       </div>
       <div class="chart-canvas">
         <div class="chart-inner" id="chartCostInner"><canvas id="chartCost"></canvas></div>
@@ -981,6 +1022,15 @@ const ROUTE_PREVMILE = '{{ route("oil.prevMileage") }}';
 const ROUTE_SYNC_NG  = '{{ route("oil.syncNg") }}';
 const ROUTE_SAVED_DRIVERS = '{{ url("/oil/saved-drivers") }}';
 const CURRENT_USER   = @json(request()->filled('create_by') ? request('create_by') : 'Guest');
+// รายชื่อ user ที่เห็นรายละเอียดเพิ่มเติม (ผู้รับเข้า + ลิงก์ไป sodetail)
+// คำนวณจาก PHP ฝั่ง server เพื่อกันการ tamper ที่ frontend
+const IS_PRIVILEGED = @json($isPrivileged);
+const URL_SODETAIL = 'http://server_update:8000/sodetail';
+console.log('[privilege]', {
+  CURRENT_USER,
+  IS_PRIVILEGED,
+  isPrivilegedType: typeof IS_PRIVILEGED,
+});
 const CSRF_TOKEN     = document.querySelector('meta[name="csrf-token"]')?.content ?? '';
 const TZ = 'Asia/Bangkok';
 const DB_DRIVERS = @json($drivers);
@@ -1135,10 +1185,36 @@ function renderDlv(){
   }
 @endphp
 const KML_BY_DRIVER=@json($kmlByDriver);
+// ตัวจำแนกรถยนต์/มอเตอร์ไซค์ จากชื่อทะเบียน
+function isMoto(plate){
+  const p = (plate||'').trim();
+  return p.startsWith('มอเตอร์ไซด์') || p.startsWith('มอเตอร์ไซค์') || p.startsWith('มอ.') || p.startsWith('มอ ');
+}
+// State ของ toggle (default: car)
+const VEHICLE_TYPE = {kml:'car', cost:'car'};
+function switchVehicleType(chart, type){
+  VEHICLE_TYPE[chart] = type;
+  // Update button active state
+  document.querySelectorAll(`.vehicle-toggle[data-chart="${chart}"] .vt-btn`).forEach(b=>{
+    b.classList.toggle('active', b.dataset.type === type);
+  });
+  // Re-render the chart
+  if(chart === 'kml') renderKmlChart();
+  else if(chart === 'cost') renderCostChart();
+}
 let kmlChart=null;
 function renderKmlChart(){
-  const drivers=Object.keys(KML_BY_DRIVER).map(name=>({name,plate:KML_BY_DRIVER[name].plate||'',avg:KML_BY_DRIVER[name].count>0?KML_BY_DRIVER[name].sum/KML_BY_DRIVER[name].count:0})).filter(d=>d.avg>0).sort((a,b)=>b.avg-a.avg);
-  if(drivers.length===0){if(kmlChart)kmlChart.destroy();document.getElementById('kmlLegend').innerHTML='<span style="color:var(--text4)">ไม่มีข้อมูล</span>';return;}
+  const vType = VEHICLE_TYPE.kml || 'car';
+  const drivers=Object.keys(KML_BY_DRIVER).map(name=>({name,plate:KML_BY_DRIVER[name].plate||'',avg:KML_BY_DRIVER[name].count>0?KML_BY_DRIVER[name].sum/KML_BY_DRIVER[name].count:0}))
+    .filter(d=>d.avg>0)
+    .filter(d => vType==='moto' ? isMoto(d.plate) : !isMoto(d.plate))
+    .sort((a,b)=>b.avg-a.avg);
+  if(drivers.length===0){
+    if(kmlChart)kmlChart.destroy();
+    const typeLabel = vType==='moto' ? 'มอเตอร์ไซค์' : 'รถยนต์';
+    document.getElementById('kmlLegend').innerHTML=`<span style="color:var(--text4)">ไม่มีข้อมูล${typeLabel}</span>`;
+    return;
+  }
   const inner=document.getElementById('chartKmlInner');
   const sw=inner?inner.parentElement:null;
   if(inner&&sw){
@@ -1205,12 +1281,21 @@ function renderKmlChart(){
 const COST_BY_DRIVER=@json($costByDriver);
 let costChart=null;
 function renderCostChart(){
+  const vType = VEHICLE_TYPE.cost || 'car';
   const drivers=Object.keys(COST_BY_DRIVER).map(name=>({
     name,plate:COST_BY_DRIVER[name].plate||'',
     cost:COST_BY_DRIVER[name].dist>0?COST_BY_DRIVER[name].price/COST_BY_DRIVER[name].dist:0,
     price:COST_BY_DRIVER[name].price,dist:COST_BY_DRIVER[name].dist,
-  })).filter(d=>d.cost>0).sort((a,b)=>a.cost-b.cost);
-  if(drivers.length===0){if(costChart)costChart.destroy();document.getElementById('costLegend').innerHTML='<span style="color:var(--text4)">ไม่มีข้อมูล</span>';return;}
+  }))
+    .filter(d=>d.cost>0)
+    .filter(d => vType==='moto' ? isMoto(d.plate) : !isMoto(d.plate))
+    .sort((a,b)=>a.cost-b.cost);
+  if(drivers.length===0){
+    if(costChart)costChart.destroy();
+    const typeLabel = vType==='moto' ? 'มอเตอร์ไซค์' : 'รถยนต์';
+    document.getElementById('costLegend').innerHTML=`<span style="color:var(--text4)">ไม่มีข้อมูล${typeLabel}</span>`;
+    return;
+  }
   const inner=document.getElementById('chartCostInner');
   const sw=inner?inner.parentElement:null;
   if(inner&&sw){
@@ -1637,7 +1722,7 @@ function ilRenderDriverRows(date){
         <button type="button" class="er-time-btn" onclick="event.stopPropagation();erFocusRow('${key}');erOpenClock('${key}','end')" id="${key}-end-display">00:00</button>
       </div>
       <div>
-        <input type="number" class="er-num-input" placeholder="500" data-key="${key}" data-field="price" oninput="erUpdateRow('${key}')" onfocus="erFocusRow('${key}')" step="0.01">
+        <input type="number" class="er-num-input" placeholder="0 = ไม่เติม" title="ใส่ 0 ถ้าไม่ได้เติมน้ำมัน" data-key="${key}" data-field="price" oninput="erUpdateRow('${key}')" onfocus="erFocusRow('${key}')" step="0.01" min="0">
       </div>
       <div>
         <input type="number" class="er-num-input" placeholder="250" data-key="${key}" data-field="distance" oninput="erUpdateRow('${key}')" onfocus="erFocusRow('${key}')" step="0.01">
@@ -1744,10 +1829,26 @@ function ilAppendLogRow(r){
   const tStart = `${pad(r.start_h)}:${pad(r.start_m)}`;
   const tEnd   = `${pad(r.end_h)}:${pad(r.end_m)}`;
   const timeText = `${tStart}-${tEnd}`;
+  // คำนวณระยะเวลา (นาที)
+  let durText = '';
+  const startMin = r.start_h*60 + r.start_m;
+  let endMin   = r.end_h*60   + r.end_m;
+  if(endMin < startMin) endMin += 24*60; // ข้ามคืน
+  const totalMin = endMin - startMin;
+  if(totalMin > 0){
+    const hh = Math.floor(totalMin/60);
+    const mm = totalMin % 60;
+    if(hh > 0 && mm > 0)      durText = `${hh} ชม. ${mm} น.`;
+    else if(hh > 0)           durText = `${hh} ชม.`;
+    else                      durText = `${mm} น.`;
+  }
 
   const distText = (r.total_distance>0) ? `${Math.round(r.total_distance).toLocaleString()} km` : '—';
   const litersText = (r.liters>0) ? r.liters.toFixed(1) : '—';
-  const priceText = (r.total_price>0) ? `฿${Math.round(r.total_price).toLocaleString()}` : '—';
+  // price = 0 = ไม่เติมน้ำมัน (วิ่งต่อ) → แสดง "฿0" ไม่ใช่ "—"
+  const priceText = (typeof r.total_price === 'number' && r.total_price >= 0)
+    ? `฿${Math.round(r.total_price).toLocaleString()}`
+    : '—';
 
   let kmlHtml = '<span style="color:var(--text4)">—</span>';
   if(r.km_per_liter > 0){
@@ -1773,6 +1874,7 @@ function ilAppendLogRow(r){
       </div>
     </td>
     <td><span class="time-pill">${timeText}</span></td>
+    <td class="num">${durText ? `<span class="hour-pill">${durText}</span>` : '<span style="color:var(--text4)">—</span>'}</td>
     <td class="num">${distText}</td>
     <td class="num">${litersText}</td>
     <td class="num">${priceText}</td>
@@ -1842,7 +1944,11 @@ async function erSaveRow(key){
   const errors = [];
   if(!date) errors.push('เลือกวันที่');
   if(!plate) errors.push('เลือกทะเบียนรถ');
-  if(!s.price || s.price<=0) errors.push('ใส่ค่าน้ำมัน');
+  // ค่าน้ำมัน: ยอมรับ 0 ได้ (ไม่ได้เติม แต่วิ่งต่อ) — เช็คแค่ว่าไม่ติดลบ + ไม่ใช่ NaN
+  const priceEl = document.querySelector(`.er-num-input[data-key="${key}"][data-field="price"]`);
+  const priceRaw = priceEl?.value ?? '';
+  if(priceRaw === '' || isNaN(parseFloat(priceRaw))) errors.push('ใส่ค่าน้ำมัน (ใส่ 0 ได้)');
+  else if(s.price < 0) errors.push('ค่าน้ำมันติดลบไม่ได้');
   const startMin = s.sh*60+s.sm; const endMin = s.eh*60+s.em;
   if(startMin===0 && endMin===0) errors.push('เลือกเวลา');
   else if(startMin===endMin) errors.push('เวลาเริ่ม-สิ้นสุดเหมือนกัน');
@@ -1943,10 +2049,27 @@ function ilRenderJobsForDriver(driverName, jobs){
     const k=_jobStatusKind(j);
     const statusLabel = k==='ok'?'สำเร็จ':k==='fail'?'ไม่สำเร็จ':'รอ';
     const customer = j.customer_name || '—';
+    const billIn   = (j.bill_in_by||'').trim();
+    const noteText = (j.note||'').trim();
+    const billNo   = j.bill_no || '';
+    const escAttr = s => String(s).replace(/"/g,'&quot;');
+    // Bill no — แสดงเป็น chip ปกติ (ไม่ใช่ลิงก์ ห้ามคลิก)
+    const billHtml = `<span class="dgj-bill">${billNo||'—'}</span>`;
+    // Sub-line — bill_in_by เห็นเฉพาะ privileged
+    const lineParts = [];
+    if(IS_PRIVILEGED && billIn) lineParts.push(`<span class="dgj-meta-item"><span class="dgj-meta-label">ผู้รับ:</span> ${billIn}</span>`);
+    const showNote = noteText && noteText !== 'ส่งสำเร็จ' && noteText !== 'สำเร็จ';
+    if(showNote) lineParts.push(`<span class="dgj-meta-item dgj-note"><span class="dgj-meta-label">หมายเหตุ:</span> ${noteText}</span>`);
+    const subLine = lineParts.length ? `<div class="dgj-meta">${lineParts.join('<span class="dgj-meta-sep">·</span>')}</div>` : '';
     return `<div class="dgj-row">
-      <span class="dgj-bill">${j.bill_no||'—'}</span>
-      <span class="dgj-customer" title="${customer.replace(/"/g,'&quot;')}">${customer}</span>
-      <span class="dgj-status ${k}">${statusLabel}</span>
+      <div class="dgj-main">
+        <div class="dgj-top">
+          ${billHtml}
+          <span class="dgj-customer" title="${escAttr(customer)}">${customer}</span>
+          <span class="dgj-status ${k}">${statusLabel}</span>
+        </div>
+        ${subLine}
+      </div>
     </div>`;
   }).join('');
   const summary = `<div class="jobs-summary-bar">
@@ -2452,29 +2575,32 @@ document.addEventListener('DOMContentLoaded',()=>{
   let _t=null;
   window.addEventListener('resize',()=>{clearTimeout(_t);_t=setTimeout(()=>{renderDlv();renderKmlChart();renderCostChart();},200);});
 
-  ilLoadOilPrice('diesel');
-  (async()=>{
-    const dateInput = document.getElementById('il-work-date');
-    if(!dateInput) return;
-    const today = dateInput.value || todayStr();
-    const hint = document.getElementById('entryLoadingHint');
-    if(hint) hint.style.display = 'flex';
-    try{
-      await Promise.all([
-        fetchJobsByDate(today),
-        fetchSavedDrivers(today),
-      ]);
-      ilLastLoadedDate = today;
-      ilRenderDriverRows(today);
-      ilRenderAllJobs(today);
-    }catch(e){
-      console.warn(e);
-      const tbody = document.getElementById('entryRowsBody');
-      if(tbody) tbody.innerHTML = '<div class="entry-empty" style="color:var(--red)">โหลดข้อมูลไม่สำเร็จ</div>';
-    }finally{
-      if(hint) hint.style.display = 'none';
-    }
-  })();
+  // Entry-card init (เฉพาะ view=day — element อาจไม่มีใน view อื่น)
+  if(document.getElementById('il-work-date')){
+    ilLoadOilPrice('diesel');
+    (async()=>{
+      const dateInput = document.getElementById('il-work-date');
+      if(!dateInput) return;
+      const today = dateInput.value || todayStr();
+      const hint = document.getElementById('entryLoadingHint');
+      if(hint) hint.style.display = 'flex';
+      try{
+        await Promise.all([
+          fetchJobsByDate(today),
+          fetchSavedDrivers(today),
+        ]);
+        ilLastLoadedDate = today;
+        ilRenderDriverRows(today);
+        ilRenderAllJobs(today);
+      }catch(e){
+        console.warn(e);
+        const tbody = document.getElementById('entryRowsBody');
+        if(tbody) tbody.innerHTML = '<div class="entry-empty" style="color:var(--red)">โหลดข้อมูลไม่สำเร็จ</div>';
+      }finally{
+        if(hint) hint.style.display = 'none';
+      }
+    })();
+  }
 });
 </script>
 </body>

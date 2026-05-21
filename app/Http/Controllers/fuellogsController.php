@@ -10,8 +10,20 @@ use Carbon\Carbon;
 class fuellogsController extends Controller
 {
     /* ══════════════════════════════════════════════════════════════════
-       ✅ NEW: รับ filter จาก form POST → เก็บใน session → redirect /oil
-       เพื่อให้ URL สะอาดเสมอ (ไม่มี query string)
+       Helper: คืน array params สำหรับ redirect — รวม create_by ถ้ามี
+       ใช้เป็น: return redirect()->route('oil', $this->urlParams($request))
+    ══════════════════════════════════════════════════════════════════ */
+    private function urlParams(Request $request): array
+    {
+        $params = [];
+        if ($request->filled('create_by')) {
+            $params['create_by'] = $request->input('create_by');
+        }
+        return $params;
+    }
+
+    /* ══════════════════════════════════════════════════════════════════
+       รับ filter จาก form POST → เก็บใน session → redirect /oil
     ══════════════════════════════════════════════════════════════════ */
     public function applyFilter(Request $request)
     {
@@ -26,11 +38,11 @@ class fuellogsController extends Controller
             ]
         ]);
 
-        return redirect()->route('oil');
+        return redirect()->route('oil', $this->urlParams($request));
     }
 
     /* ══════════════════════════════════════════════════════════════════
-       ✅ NEW: ดึง filter จาก session → ถ้าไม่มี fallback เป็น request
+       ดึง filter จาก session → ถ้าไม่มี fallback เป็น request
     ══════════════════════════════════════════════════════════════════ */
     private function getFilter(Request $request): array
     {
@@ -48,7 +60,6 @@ class fuellogsController extends Controller
 
     private function buildLogs(Request $request): \Illuminate\Support\Collection
     {
-        // ── ✅ ใช้ filter จาก session (ผ่าน getFilter) แทน request โดยตรง ──
         $f = $this->getFilter($request);
 
         $view         = $f['view'];
@@ -56,11 +67,9 @@ class fuellogsController extends Controller
         $filterYear   = $f['year'];
         $filterDriver = $f['driver_name'];
 
-        // ── รับช่วงวันที่ (date_from – date_to) ──
         $dateFrom = $f['date_from'];
         $dateTo   = $f['date_to'];
 
-        // ถ้ากลับหัว (from > to) ให้ swap
         if ($dateFrom && $dateTo && $dateFrom > $dateTo) {
             [$dateFrom, $dateTo] = [$dateTo, $dateFrom];
         }
@@ -162,7 +171,6 @@ class fuellogsController extends Controller
 
     public function oil(Request $request)
     {
-        // ── ✅ ดึง filter จาก session (fallback เป็น request) ──
         $f = $this->getFilter($request);
 
         $view         = $f['view'];
@@ -175,7 +183,6 @@ class fuellogsController extends Controller
 
         $logs = $this->buildLogs($request);
 
-        // ── ดึงข้อมูลทั้งหมด (ไม่ filter) สำหรับหน้า Report ──
         $allLogs = DB::table('fuel_logs')
             ->orderBy('work_date', 'desc')
             ->orderBy('id', 'desc')
@@ -250,7 +257,7 @@ class fuellogsController extends Controller
             'work_date'       => 'required|date',
             'driver_name'     => 'required|string|max:100',
             'vehicle_id'      => 'required|string|max:50',
-            'total_price'     => 'required|numeric|min:0.00',
+            'total_price'     => 'required|numeric|min:0',
             'total_distance'  => 'nullable|numeric|min:0',
             'liters'          => 'nullable|numeric|min:0',
             'price_per_liter' => 'nullable|numeric|min:0',
@@ -279,7 +286,8 @@ class fuellogsController extends Controller
             'created_at'      => now(),
         ]);
 
-        return redirect()->route('oil')->with('success', 'บันทึกข้อมูลน้ำมันสำเร็จ ✅');
+        return redirect()->route('oil', $this->urlParams($request))
+                         ->with('success', 'บันทึกข้อมูลน้ำมันสำเร็จ ✅');
     }
 
 
@@ -289,7 +297,7 @@ class fuellogsController extends Controller
             'work_date'       => 'required|date',
             'driver_name'     => 'required|string|max:100',
             'vehicle_id'      => 'required|string|max:50',
-            'total_price'     => 'required|numeric|min:0.01',
+            'total_price'     => 'required|numeric|min:0',
             'total_distance'  => 'nullable|numeric|min:0',
             'liters'          => 'nullable|numeric|min:0',
             'price_per_liter' => 'nullable|numeric|min:0',
@@ -319,16 +327,19 @@ class fuellogsController extends Controller
             'note'            => $request->note ? trim($request->note) : null,
         ]);
 
-        return redirect()->route('oil')->with('success', 'อัปเดตข้อมูลสำเร็จ ✅');
+        return redirect()->route('oil', $this->urlParams($request))
+                         ->with('success', 'อัปเดตข้อมูลสำเร็จ ✅');
     }
 
-    public function destroy($id)
+    public function destroy(Request $request, $id)
     {
         $deleted = DB::table('fuel_logs')->where('id', $id)->delete();
         if (!$deleted) {
-            return redirect()->route('oil')->with('error', 'ไม่พบรายการที่ต้องการลบ');
+            return redirect()->route('oil', $this->urlParams($request))
+                             ->with('error', 'ไม่พบรายการที่ต้องการลบ');
         }
-        return redirect()->route('oil')->with('success', 'ลบข้อมูลเรียบร้อย');
+        return redirect()->route('oil', $this->urlParams($request))
+                         ->with('success', 'ลบข้อมูลเรียบร้อย');
     }
 
 
@@ -423,8 +434,9 @@ class fuellogsController extends Controller
             'resolved' => $result['resolved'],
         ]);
     }
-public function service(Request $request)
-{
-    return view('driver.service');
-}
+
+    public function service(Request $request)
+    {
+        return view('driver.service');
+    }
 }
