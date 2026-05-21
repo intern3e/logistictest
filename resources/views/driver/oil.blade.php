@@ -1225,7 +1225,7 @@ function renderKmlChart(){
     sw.style.height='auto';
     sw.style.maxHeight='none';
   }
-  const labels=drivers.map(d=>d.plate||d.name);
+  const labels=drivers.map(d=>[d.plate||d.name, d.name && d.plate ? d.name : '']);
   const data=drivers.map(d=>+d.avg.toFixed(2));
   const barColors=data.map(v=>v<9?'#ef4444':(v<12?'#f59e0b':'#10b981'));
   const overallAvg=data.reduce((a,b)=>a+b,0)/data.length;
@@ -1254,7 +1254,7 @@ function renderKmlChart(){
       },
       scales:{
         x:{beginAtZero:true,suggestedMax:xMax,ticks:{stepSize:2,font:{size:14,family:'Inter'},color:'#71717a',callback:v=>v+''},grid:{color:'rgba(0,0,0,.05)'}},
-        y:{grid:{display:false},ticks:{font:{size:14,weight:'600',family:'IBM Plex Sans Thai'},color:'#3f3f46',autoSkip:false}},
+        y:{grid:{display:false},ticks:{font:{size:14,weight:'600',family:'IBM Plex Sans Thai'},color:'#3f3f46',autoSkip:false,callback:function(value){const l=this.getLabelForValue(value);return Array.isArray(l)?l:[l];}}},
       },
     },
   });
@@ -1272,7 +1272,7 @@ function renderKmlChart(){
     $driver=$log['driver_name']??'ไม่ระบุ';
     $price=(float)($log['total_price']??0);
     $dist=(float)($log['total_distance']??0);
-    if($price<=0||$dist<=0)continue;
+    // นับทุก row ที่มี price >= 0 (รวม 0 = ไม่เติม) — ใช้ผลรวมตรงกับ ranking
     if(!isset($costByDriver[$driver]))$costByDriver[$driver]=['price'=>0,'dist'=>0,'plate'=>$log['vehicle_id']??''];
     $costByDriver[$driver]['price']+=$price;
     $costByDriver[$driver]['dist']+=$dist;
@@ -1304,7 +1304,7 @@ function renderCostChart(){
     inner.style.width='100%';inner.style.height=minH+'px';
     sw.style.height='auto';sw.style.maxHeight='none';
   }
-  const labels=drivers.map(d=>d.plate||d.name);
+  const labels=drivers.map(d=>[d.plate||d.name, d.name && d.plate ? d.name : '']);
   const data=drivers.map(d=>+d.cost.toFixed(2));
   const avg=data.reduce((a,b)=>a+b,0)/data.length;
   const barColors=data.map(v=>{
@@ -1346,7 +1346,7 @@ function renderCostChart(){
       },
       scales:{
         x:{beginAtZero:true,suggestedMax:xMax,ticks:{font:{size:14,family:'Inter'},color:'#71717a',callback:v=>'฿'+v},grid:{color:'rgba(0,0,0,.05)'}},
-        y:{grid:{display:false},ticks:{font:{size:14,weight:'600',family:'IBM Plex Sans Thai'},color:'#3f3f46',autoSkip:false}},
+        y:{grid:{display:false},ticks:{font:{size:14,weight:'600',family:'IBM Plex Sans Thai'},color:'#3f3f46',autoSkip:false,callback:function(value){const l=this.getLabelForValue(value);return Array.isArray(l)?l:[l];}}},
       },
     },
   });
