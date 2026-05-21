@@ -355,6 +355,7 @@ body{font-family: var(--font-thai);background: var(--bg);color: var(--text);min-
 .driver-plate{font-size: 14px; color: var(--text3); margin-top: 1px;overflow: hidden;text-overflow: ellipsis;white-space: nowrap;}
 .time-pill{display: inline-block; padding: 2px 8px;background: var(--bg-subtle); color: var(--text2);border-radius: 100px; font-size: 14px; font-weight: 600;font-family: var(--font-mono);white-space: nowrap;}
 .hour-pill{display: inline-block; padding: 2px 9px;background: rgba(139,92,246,.10);color: #6d28d9;border-radius: 100px;font-size: 14px; font-weight: 600;font-family: var(--font-mono);white-space: nowrap;letter-spacing: -0.01em;}
+.carry-hint{font-size: 14px; color: var(--orange); font-weight: 500; margin-top: 2px;white-space: nowrap;font-family: var(--font-mono);}
 .date-pill{display: inline-block; padding: 2px 8px;background: rgba(59,130,246,.08);color: var(--blue-hover);border-radius: 100px;font-size: 14px; font-weight: 600;font-family: var(--font-mono);white-space: nowrap;letter-spacing: -0.01em;}
 .km-good{color: var(--green-dark); font-weight: 600}
 .km-mid{color: var(--text); font-weight: 500}
@@ -751,12 +752,72 @@ body{font-family: var(--font-thai);background: var(--bg);color: var(--text);min-
           </tr>
         </thead>
         <tbody id="oilTbody">
-          @php $rowNo = 0; @endphp
+          @php
+            $rowNo = 0;
+            // ════════════════════════════════════════════════════════════
+            // Carry-forward logic: ถ้า row ไหน "ไม่เติมน้ำมัน" (price=0)
+            // → ระยะของวันนั้นจะถูก carry ไปบวกกับครั้งถัดไปที่เติม
+            // (group by driver+plate, เรียงตามเวลา)
+            // ════════════════════════════════════════════════════════════
+            // 1. Group logs by driver+plate, sorted oldest → newest
+            $logsArr = $logs->all();
+            // sort old→new ภายใต้แต่ละ key (logs ปัจจุบันเรียง desc)
+            $byKey = [];
+            foreach($logsArr as $idx => $r){
+              $k = ($r['driver_name']??'').'|'.($r['vehicle_id']??'');
+              if(!isset($byKey[$k])) $byKey[$k] = [];
+              $byKey[$k][] = $idx;
+            }
+            // 2. Carry-forward + effective values keyed by row id
+            $effDistance = [];   // [rowId => effective km used in this row's km/L calc]
+            $effKml      = [];   // [rowId => recalculated km/L]
+            $isCarryRow  = [];   // [rowId => true if this row had price=0 (carry only)]
+            foreach($byKey as $k => $indices){
+              // เรียง old→new (ใน $logs เป็น desc → reverse)
+              $sorted = array_reverse($indices);
+              $pending = 0; // ระยะสะสมจากวันที่ไม่เติม
+              foreach($sorted as $idx){
+                $r = $logsArr[$idx];
+                $rid = $r['id'] ?? $idx;
+                $price = (float)($r['total_price'] ?? 0);
+                $thisDist = (float)($r['total_distance'] ?? 0);
+                if($price <= 0){
+                  // ไม่เติม → carry forward, row นี้ไม่ผลิตค่า kml
+                  $pending += $thisDist;
+                  $isCarryRow[$rid] = true;
+                  $effDistance[$rid] = 0;
+                  $effKml[$rid] = 0;
+                } else {
+                  // เติม → ระยะที่ใช้ = ระยะของวันนี้ + ที่สะสมมา
+                  $eff = $thisDist + $pending;
+                  $effDistance[$rid] = $eff;
+                  $liters = (float)($r['liters'] ?? 0);
+                  $effKml[$rid] = ($liters > 0 && $eff > 0) ? round($eff / $liters, 2) : 0;
+                  $isCarryRow[$rid] = false;
+                  $pending = 0;
+                }
+              }
+            }
+          @endphp
           @forelse($logs as $i => $r)
           @php
             $rowNo++;
-            $kml=$r['km_per_liter']??0;
-            $dist=($r['total_distance']??0)>0?number_format($r['total_distance']).' km':'—';
+            $rid = $r['id'] ?? $i;
+            // ใช้ค่าจาก carry-forward แทนค่าใน $r ตรงๆ
+            $isCarry = $isCarryRow[$rid] ?? false;
+            $effDist = $effDistance[$rid] ?? ((float)($r['total_distance']??0));
+            $kml = $effKml[$rid] ?? ($r['km_per_liter']??0);
+            $rawDist = (float)($r['total_distance']??0);
+            // ระยะที่แสดง — ถ้า row นี้เติม + มี carry → แสดง "200 km (+100)"
+            $carryAmt = $effDist - $rawDist;
+            if($rawDist > 0){
+              $distHtml = number_format($rawDist).' km';
+              if($carryAmt > 0){
+                $distHtml .= '<div class="carry-hint" title="รวมระยะจากวันที่ไม่เติม">+'.number_format($carryAmt).' km สะสม</div>';
+              }
+            } else {
+              $distHtml = '—';
+            }
             $name = $r['driver_name'] ?? '—';
             $plate = $r['vehicle_id'] ?? '—';
             $kmlClass = 'km-mid';
@@ -800,7 +861,7 @@ body{font-family: var(--font-thai);background: var(--bg);color: var(--text);min-
             </td>
             <td><span class="time-pill">{{ $timeText }}</span></td>
             <td class="num">{!! $durText ? '<span class="hour-pill">'.$durText.'</span>' : '<span style="color:var(--text4)">—</span>' !!}</td>
-            <td class="num">{{ $dist }}</td>
+            <td class="num">{!! $distHtml !!}</td>
             <td class="num">{{ $r['liters']?number_format($r['liters'],1):'—' }}</td>
             <td class="num">{{ $r['total_price']?'฿'.number_format($r['total_price']):'—' }}</td>
             <td class="num">
@@ -1174,12 +1235,14 @@ function renderDlv(){
 }
 
 @php
+  // ใช้ effective km/L ที่คำนวณจาก carry-forward (จะมีค่าเฉพาะ row ที่เติม)
   $kmlByDriver=[];
   foreach($logs as $log){
-    $driver=$log['driver_name']??'ไม่ระบุ';
-    $kml=(float)($log['km_per_liter']??0);
-    if($kml<=0)continue;
-    if(!isset($kmlByDriver[$driver]))$kmlByDriver[$driver]=['sum'=>0,'count'=>0,'plate'=>$log['vehicle_id']??''];
+    $rid = $log['id'] ?? null;
+    $driver = $log['driver_name'] ?? 'ไม่ระบุ';
+    $kml = ($rid !== null && isset($effKml[$rid])) ? $effKml[$rid] : (float)($log['km_per_liter']??0);
+    if($kml<=0) continue;
+    if(!isset($kmlByDriver[$driver])) $kmlByDriver[$driver]=['sum'=>0,'count'=>0,'plate'=>$log['vehicle_id']??''];
     $kmlByDriver[$driver]['sum']+=$kml;
     $kmlByDriver[$driver]['count']++;
   }
