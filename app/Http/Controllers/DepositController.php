@@ -20,7 +20,7 @@ class DepositController extends Controller
     private const STAMP_WIDTH     = 65;     // ความกว้าง (mm), 0 = อัตโนมัติ
     private const STAMP_HEIGHT    = 55;      // ความสูง (mm), 0 = อัตโนมัติ (รักษาสัดส่วน)
     private const STAMP_PAGE      = 0;      // หน้าที่จะ stamp (1 = หน้าแรก, 0 = ทุกหน้า)
-    private $adminUsers = ['kanitin2', 'dev'];
+    private $adminUsers = ['kanitin2', 'dev','Aom'];
     private const PDF_TEMPLATE_REL = 'deposit_templates/templates.pdf';
     private const PDF_OUTPUT_DIR = 'deposit_templates';
     public function insertdeposit()
