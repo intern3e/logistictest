@@ -199,7 +199,9 @@ class fuellogsController extends Controller
                     if ($diff > 0) $workHours = round($diff / 60, 2);
                 }
                 return [
+                    'id'             => (int) ($row['id'] ?? 0),
                     'driver_name'    => $row['driver_name']    ?? '',
+                    'vehicle_id'     => $row['vehicle_id']     ?? '',
                     'work_date'      => $row['work_date']      ?? '',
                     'total_price'    => (float) ($row['total_price']    ?? 0),
                     'liters'         => $liters,

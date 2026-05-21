@@ -250,7 +250,7 @@ body{font-family: var(--font-thai);background: var(--bg);color: var(--text);min-
   .entry-oil-mini .entry-oil-label{display: none}
   .topnav-user-name{display: none}
   .topnav-user{padding: 4px; max-width: none}
-  /* Hide more table cols on phone: # + เวลา + ลิตร + KM/L */
+  /* Hide more table cols on phone: # + เวลา + ลิตร + KM/L + ฿/km */
   .fuel-table thead th:nth-child(1),
   .fuel-table tbody td:nth-child(1),
   .fuel-table thead th:nth-child(4),
@@ -258,7 +258,9 @@ body{font-family: var(--font-thai);background: var(--bg);color: var(--text);min-
   .fuel-table thead th:nth-child(7),
   .fuel-table tbody td:nth-child(7),
   .fuel-table thead th:nth-child(9),
-  .fuel-table tbody td:nth-child(9){display: none}
+  .fuel-table tbody td:nth-child(9),
+  .fuel-table thead th:nth-child(10),
+  .fuel-table tbody td:nth-child(10){display: none}
 }
 @media (max-width: 600px){
   .entry-row{
@@ -378,6 +380,8 @@ body{font-family: var(--font-thai);background: var(--bg);color: var(--text);min-
 .driver-row .price{font-size: 14.5px; font-weight: 700; color: var(--text);font-family: var(--font-mono);letter-spacing: -0.02em;}
 .driver-row .kml{font-size: 14px; color: var(--green-dark); font-weight: 600;margin-top: 2px; font-family: var(--font-mono);}
 .driver-row .kml.warn{color: var(--red)}
+.driver-row .thb-km{font-size: 14px; color: var(--text3); font-weight: 500; margin-top: 1px; font-family: var(--font-mono);}
+.thb-km-val{color: var(--text2); font-weight: 600;}
 .empty-state{text-align: center; padding: 50px 20px;color: var(--text4);}
 .empty-state .icon{font-size: 30px; margin-bottom: 8px; opacity: .4}
 .empty-state p{margin: 0; font-size: 14px}
@@ -737,6 +741,7 @@ body{font-family: var(--font-thai);background: var(--bg);color: var(--text);min-
           <col style="width:66px">
           <col style="width:84px">
           <col style="width:74px">
+          <col style="width:78px">
         </colgroup>
         <thead>
           <tr>
@@ -749,46 +754,44 @@ body{font-family: var(--font-thai);background: var(--bg);color: var(--text);min-
             <th class="num">ลิตร</th>
             <th class="num">฿</th>
             <th class="num">KM/L</th>
+            <th class="num">฿/km</th>
           </tr>
         </thead>
         <tbody id="oilTbody">
           @php
             $rowNo = 0;
             // ════════════════════════════════════════════════════════════
-            // Carry-forward logic: ถ้า row ไหน "ไม่เติมน้ำมัน" (price=0)
-            // → ระยะของวันนั้นจะถูก carry ไปบวกกับครั้งถัดไปที่เติม
-            // (group by driver+plate, เรียงตามเวลา)
+            // Carry-forward logic — ใช้ $allLogs (ทุก row ใน DB)
+            // เพื่อให้ carry ข้ามเดือน/ปี ทำงานถูกต้อง
+            // จากนั้นค่อย apply กับ row ที่อยู่ใน $logs (filtered view)
             // ════════════════════════════════════════════════════════════
-            // 1. Group logs by driver+plate, sorted oldest → newest
-            $logsArr = $logs->all();
-            // sort old→new ภายใต้แต่ละ key (logs ปัจจุบันเรียง desc)
+            $allArr = $allLogs->all();
+            // Group by driver+plate
             $byKey = [];
-            foreach($logsArr as $idx => $r){
+            foreach($allArr as $idx => $r){
               $k = ($r['driver_name']??'').'|'.($r['vehicle_id']??'');
               if(!isset($byKey[$k])) $byKey[$k] = [];
               $byKey[$k][] = $idx;
             }
-            // 2. Carry-forward + effective values keyed by row id
-            $effDistance = [];   // [rowId => effective km used in this row's km/L calc]
-            $effKml      = [];   // [rowId => recalculated km/L]
-            $isCarryRow  = [];   // [rowId => true if this row had price=0 (carry only)]
+            $effDistance = [];   // [id => effective km used]
+            $effKml      = [];   // [id => recalculated km/L]
+            $isCarryRow  = [];   // [id => true if price=0]
             foreach($byKey as $k => $indices){
-              // เรียง old→new (ใน $logs เป็น desc → reverse)
+              // เรียง old→new — $allLogs เป็น desc → reverse
               $sorted = array_reverse($indices);
-              $pending = 0; // ระยะสะสมจากวันที่ไม่เติม
+              $pending = 0;
               foreach($sorted as $idx){
-                $r = $logsArr[$idx];
-                $rid = $r['id'] ?? $idx;
+                $r = $allArr[$idx];
+                $rid = (int)($r['id'] ?? 0);
+                if(!$rid) continue;
                 $price = (float)($r['total_price'] ?? 0);
                 $thisDist = (float)($r['total_distance'] ?? 0);
                 if($price <= 0){
-                  // ไม่เติม → carry forward, row นี้ไม่ผลิตค่า kml
                   $pending += $thisDist;
                   $isCarryRow[$rid] = true;
                   $effDistance[$rid] = 0;
                   $effKml[$rid] = 0;
                 } else {
-                  // เติม → ระยะที่ใช้ = ระยะของวันนี้ + ที่สะสมมา
                   $eff = $thisDist + $pending;
                   $effDistance[$rid] = $eff;
                   $liters = (float)($r['liters'] ?? 0);
@@ -802,13 +805,11 @@ body{font-family: var(--font-thai);background: var(--bg);color: var(--text);min-
           @forelse($logs as $i => $r)
           @php
             $rowNo++;
-            $rid = $r['id'] ?? $i;
-            // ใช้ค่าจาก carry-forward แทนค่าใน $r ตรงๆ
+            $rid = (int)($r['id'] ?? 0);
             $isCarry = $isCarryRow[$rid] ?? false;
             $effDist = $effDistance[$rid] ?? ((float)($r['total_distance']??0));
             $kml = $effKml[$rid] ?? ($r['km_per_liter']??0);
             $rawDist = (float)($r['total_distance']??0);
-            // ระยะที่แสดง — ถ้า row นี้เติม + มี carry → แสดง "200 km (+100)"
             $carryAmt = $effDist - $rawDist;
             if($rawDist > 0){
               $distHtml = number_format($rawDist).' km';
@@ -868,9 +869,17 @@ body{font-family: var(--font-thai);background: var(--bg);color: var(--text);min-
               @if($kml>0)<span class="{{ $kmlClass }}">{{ number_format($kml,2) }}</span>
               @else<span style="color:var(--text4)">—</span>@endif
             </td>
+            @php
+              // ฿/km = ราคา ÷ ระยะ effective (มี carry-forward แล้ว)
+              $thbPerKm = ($effDist > 0 && ($r['total_price']??0) > 0) ? ($r['total_price'] / $effDist) : 0;
+            @endphp
+            <td class="num">
+              @if($thbPerKm > 0)<span class="thb-km-val">฿{{ number_format($thbPerKm, 2) }}</span>
+              @else<span style="color:var(--text4)">—</span>@endif
+            </td>
           </tr>
           @empty
-          <tr><td colspan="9"><div class="empty-state"><div class="icon">⛽</div><p>ไม่พบรายการ</p></div></td></tr>
+          <tr><td colspan="10"><div class="empty-state"><div class="icon">⛽</div><p>ไม่พบรายการ</p></div></td></tr>
           @endforelse
         </tbody>
       </table>
@@ -921,6 +930,7 @@ body{font-family: var(--font-thai);background: var(--bg);color: var(--text);min-
           $rankNo++;
           $avgKmlD = $d['kml_count'] > 0 ? $d['kml_sum'] / $d['kml_count'] : 0;
           $kmlBad = $avgKmlD > 0 && $avgKmlD < 9;
+          $thbPerKmD = $d['distance'] > 0 ? $d['price'] / $d['distance'] : 0;
         @endphp
         <div class="driver-row">
           <div class="driver-rank">{{ str_pad((string)$rankNo, 2, '0', STR_PAD_LEFT) }}</div>
@@ -939,6 +949,9 @@ body{font-family: var(--font-thai);background: var(--bg);color: var(--text);min-
             @if($avgKmlD > 0)
             <div class="kml {{ $kmlBad ? 'warn' : '' }}">{{ number_format($avgKmlD,2) }} km/L</div>
             @endif
+            @if($thbPerKmD > 0)
+            <div class="thb-km">฿{{ number_format($thbPerKmD, 2) }}/km</div>
+            @endif
           </div>
         </div>
         @empty
@@ -953,6 +966,7 @@ body{font-family: var(--font-thai);background: var(--bg);color: var(--text);min-
           $rankNo++;
           $avgKmlD = $d['kml_count'] > 0 ? $d['kml_sum'] / $d['kml_count'] : 0;
           $kmlBad = $avgKmlD > 0 && $avgKmlD < 9;
+          $thbPerKmD = $d['distance'] > 0 ? $d['price'] / $d['distance'] : 0;
         @endphp
         <div class="driver-row">
           <div class="driver-rank">{{ str_pad((string)$rankNo, 2, '0', STR_PAD_LEFT) }}</div>
@@ -970,6 +984,9 @@ body{font-family: var(--font-thai);background: var(--bg);color: var(--text);min-
             <div class="price">{{ number_format($d['distance']) }} <span style="font-size: 14px;color:var(--text3);font-weight:500">km</span></div>
             @if($avgKmlD > 0)
             <div class="kml {{ $kmlBad ? 'warn' : '' }}">{{ number_format($avgKmlD,2) }} km/L</div>
+            @endif
+            @if($thbPerKmD > 0)
+            <div class="thb-km">฿{{ number_format($thbPerKmD, 2) }}/km</div>
             @endif
           </div>
         </div>
@@ -1921,6 +1938,13 @@ function ilAppendLogRow(r){
     kmlHtml = `<span class="${cls}">${r.km_per_liter.toFixed(2)}</span>`;
   }
 
+  // ฿/km = ราคา ÷ ระยะ
+  let thbKmHtml = '<span style="color:var(--text4)">—</span>';
+  if(r.total_price > 0 && r.total_distance > 0){
+    const tpk = r.total_price / r.total_distance;
+    thbKmHtml = `<span class="thb-km-val">฿${tpk.toFixed(2)}</span>`;
+  }
+
   // นับ row ปัจจุบัน + 1
   const existingRows = tbody.querySelectorAll('tr[data-driver]').length;
   const rowNo = String(existingRows + 1).padStart(2, '0');
@@ -1942,6 +1966,7 @@ function ilAppendLogRow(r){
     <td class="num">${litersText}</td>
     <td class="num">${priceText}</td>
     <td class="num">${kmlHtml}</td>
+    <td class="num">${thbKmHtml}</td>
   `;
   // แทรกท้ายตาราง
   tbody.appendChild(tr);
