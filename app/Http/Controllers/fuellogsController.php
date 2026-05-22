@@ -35,6 +35,7 @@ class fuellogsController extends Controller
                 'month'       => $request->input('month'),
                 'year'        => $request->input('year'),
                 'driver_name' => $request->input('driver_name', 'all'),
+                'vehicle_id'  => $request->input('vehicle_id', 'all'),
             ]
         ]);
 
@@ -55,6 +56,7 @@ class fuellogsController extends Controller
             'month'       => $filter['month']       ?? $request->input('month', date('Y-m')),
             'year'        => $filter['year']        ?? $request->input('year', date('Y')),
             'driver_name' => $filter['driver_name'] ?? $request->input('driver_name', 'all'),
+            'vehicle_id'  => $filter['vehicle_id']  ?? $request->input('vehicle_id', 'all'),
         ];
     }
 
@@ -66,6 +68,7 @@ class fuellogsController extends Controller
         $filterMonth  = $f['month'];
         $filterYear   = $f['year'];
         $filterDriver = $f['driver_name'];
+        $filterPlate  = $f['vehicle_id'];
 
         $dateFrom = $f['date_from'];
         $dateTo   = $f['date_to'];
@@ -88,11 +91,24 @@ class fuellogsController extends Controller
             $query->whereYear('work_date', $filterYear);
         }
 
-        if ($filterDriver !== 'all') {
-            $query->where('driver_name', $filterDriver);
+        if ($filterPlate !== 'all') {
+            $query->where('vehicle_id', $filterPlate);
         }
 
-        return $query->get()->map(function ($row) {
+        // helper normalize — ตัด zero-width + whitespace ส่วนเกิน + lowercase
+        $norm = function ($s) {
+            $s = preg_replace('/[\x{200B}-\x{200D}\x{FEFF}]/u', '', (string) $s);
+            return mb_strtolower(trim(preg_replace('/\s+/', ' ', $s)));
+        };
+        $driverTarget = ($filterDriver !== 'all') ? $norm($filterDriver) : null;
+
+        return $query->get()
+            ->filter(function ($row) use ($norm, $driverTarget) {
+                // กรองคนขับแบบ normalize (กันชื่อมี zero-width/ช่องว่างซ่อน)
+                if ($driverTarget === null) return true;
+                return $norm(((array) $row)['driver_name'] ?? '') === $driverTarget;
+            })
+            ->map(function ($row) {
             $row = (array) $row;
 
             $startTime = null;
@@ -133,23 +149,33 @@ class fuellogsController extends Controller
                 'note'            => $row['note']       ?? '',
                 'created_at'      => $row['created_at'] ?? null,
             ];
-        });
+        })->values();
     }
 
     private function parseTimes(?string $workDate, ?string $startStr, ?string $endStr): array
     {
-        if (!$workDate) return [null, null];
-
         $startDt = null;
         $endDt   = null;
 
-        if ($startStr && preg_match('/^\d{2}:\d{2}$/', $startStr)) {
-            $startDt = Carbon::createFromFormat('Y-m-d H:i', "{$workDate} {$startStr}");
-        }
-        if ($endStr && preg_match('/^\d{2}:\d{2}$/', $endStr)) {
-            $endDt = Carbon::createFromFormat('Y-m-d H:i', "{$workDate} {$endStr}");
-            if ($startDt && $endDt->lt($startDt)) $endDt->addDay();
-        }
+        // helper: รับได้ทั้ง "HH:MM", "HH:MM:SS", และ datetime เต็ม "Y-m-d H:i(:s)"
+        $parse = function (?string $str) use ($workDate) {
+            if (!$str) return null;
+            $str = trim($str);
+            // datetime เต็ม (มีทั้งวันที่+เวลา) → parse ตรงๆ
+            if (preg_match('/^\d{4}-\d{2}-\d{2}[ T]\d{2}:\d{2}/', $str)) {
+                try { return Carbon::parse($str); } catch (\Exception $e) { return null; }
+            }
+            // เวลาอย่างเดียว HH:MM หรือ HH:MM:SS → ต่อกับ workDate
+            if (preg_match('/^\d{2}:\d{2}(:\d{2})?$/', $str) && $workDate) {
+                try { return Carbon::parse("{$workDate} {$str}"); } catch (\Exception $e) { return null; }
+            }
+            return null;
+        };
+
+        $startDt = $parse($startStr);
+        $endDt   = $parse($endStr);
+        // ถ้าจบก่อนเริ่ม (เวลาอย่างเดียว ข้ามคืน) → +1 วัน
+        if ($startDt && $endDt && $endDt->lt($startDt)) $endDt->addDay();
 
         return [
             $startDt ? $startDt->format('Y-m-d H:i:s') : null,
@@ -178,6 +204,7 @@ class fuellogsController extends Controller
         $filterMonth  = $f['month'];
         $filterYear   = $f['year'];
         $filterDriver = $f['driver_name'];
+        $filterPlate  = $f['vehicle_id'];
         $dateFrom     = $f['date_from'];
         $dateTo       = $f['date_to'];
 
@@ -245,7 +272,7 @@ class fuellogsController extends Controller
 
         return view('driver.oil', compact(
             'logs', 'allLogs',
-            'view', 'filterDay', 'filterMonth', 'filterYear', 'filterDriver',
+            'view', 'filterDay', 'filterMonth', 'filterYear', 'filterDriver', 'filterPlate',
             'dateFrom', 'dateTo',
             'drivers', 'plates', 'metrics', 'costByDriver', 'kmlByDriver',
             'deliveryStats', 'editLog'
@@ -271,6 +298,20 @@ class fuellogsController extends Controller
         [$liters, $ppl] = $this->calcLitersPpl(
             $request->total_price, $request->price_per_liter, $request->liters
         );
+
+        // กันลงซ้ำสำหรับรายการ auto-store (คนนอก whitelist, vehicle_id = '-')
+        // ถ้ามี driver+date เดียวกันอยู่แล้ว → ไม่ลงซ้ำ
+        if (trim($request->vehicle_id) === '-') {
+            $exists = DB::table('fuel_logs')
+                ->where('driver_name', trim($request->driver_name))
+                ->where('work_date', $request->work_date)
+                ->where('vehicle_id', '-')
+                ->exists();
+            if ($exists) {
+                return redirect()->route('oil', $this->urlParams($request))
+                                 ->with('success', 'มีข้อมูลอยู่แล้ว');
+            }
+        }
 
         DB::table('fuel_logs')->insert([
             'driver_name'     => trim($request->driver_name),
@@ -342,6 +383,29 @@ class fuellogsController extends Controller
         }
         return redirect()->route('oil', $this->urlParams($request))
                          ->with('success', 'ลบข้อมูลเรียบร้อย');
+    }
+
+    /* ลบ record ขยะ — ที่ vehicle_id = '-' และชื่อไม่ใช่คนขับ
+       (ชื่อยาวเกิน 20 ตัว หรือมีคำต้องห้าม) */
+    public function cleanupGarbage(Request $request)
+    {
+        $banned = ['ลูกค้า','เซ็นบิล','เซ็น','บิล','สาขา','จำกัด','บริษัท','หจก','ร้าน','คุณ','ไป','ที่','กับ'];
+        $rows = DB::table('fuel_logs')->where('vehicle_id', '-')->get();
+        $deleteIds = [];
+        foreach ($rows as $row) {
+            $name = trim($row->driver_name ?? '');
+            $isGarbage = false;
+            if (mb_strlen($name) > 20) $isGarbage = true;
+            foreach ($banned as $w) { if (mb_strpos($name, $w) !== false) { $isGarbage = true; break; } }
+            if (preg_match_all('/\d/', $name) >= 4) $isGarbage = true;
+            if ($isGarbage) $deleteIds[] = $row->id;
+        }
+        $count = 0;
+        if (!empty($deleteIds)) {
+            $count = DB::table('fuel_logs')->whereIn('id', $deleteIds)->delete();
+        }
+        return redirect()->route('oil', $this->urlParams($request))
+                         ->with('success', "ลบข้อมูลขยะ {$count} รายการ");
     }
 
 
