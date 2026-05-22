@@ -2713,6 +2713,65 @@ function confirmPdfExport(){
   exportPDF(logs, rangeLabel);
 }
 
+// สร้างกราฟสำหรับ PDF จาก logs ของช่วงที่เลือก (offscreen canvas)
+async function buildPdfCharts(logs){
+  const results = [];
+  // เตรียมข้อมูล 3 กราฟ
+  // 1. km/L by plate|driver
+  const kmlMap = {};
+  logs.forEach(r=>{
+    const kml = +(r.km_per_liter||0);
+    if(kml<=0) return;
+    const key = (r.vehicle_id||'')+'|'+(r.driver_name||'');
+    if(!kmlMap[key]) kmlMap[key]={sum:0,n:0,label:(r.vehicle_id||'')+' '+(r.driver_name||'')};
+    kmlMap[key].sum+=kml; kmlMap[key].n++;
+  });
+  // 2. cost ฿/km
+  const costMap = {};
+  logs.forEach(r=>{
+    const price=+(r.total_price||0), dist=+(r.total_distance||0);
+    const key=(r.vehicle_id||'')+'|'+(r.driver_name||'');
+    if(!costMap[key]) costMap[key]={price:0,dist:0,label:(r.vehicle_id||'')+' '+(r.driver_name||'')};
+    costMap[key].price+=price; costMap[key].dist+=dist;
+  });
+
+  const mkChart = async (title, labels, data, color, fmt)=>{
+    if(labels.length===0) return;
+    const cv = document.createElement('canvas');
+    cv.width = 900; cv.height = Math.max(200, labels.length*40+80);
+    cv.style.cssText='position:fixed;left:-99999px;top:0';
+    document.body.appendChild(cv);
+    const chart = new Chart(cv, {
+      type:'bar',
+      data:{labels, datasets:[{data, backgroundColor:color, borderRadius:5}]},
+      options:{
+        indexAxis:'y', responsive:false, animation:false,
+        layout:{padding:{right:70}},   // เผื่อที่ให้ค่าที่ปลายแท่ง
+        plugins:{legend:{display:false}, datalabels:{anchor:'end',align:'end',clamp:true,color:'#111',font:{size:13,weight:'600',family:'IBM Plex Sans Thai'},formatter:fmt}},
+        scales:{
+          x:{ticks:{font:{size:12,family:'IBM Plex Sans Thai'}}, grace:'10%'},
+          y:{ticks:{font:{size:13,weight:'600',family:'IBM Plex Sans Thai'}}}
+        }
+      },
+      plugins:[ChartDataLabels]
+    });
+    await new Promise(r=>setTimeout(r,300));  // รอ render
+    let dataUrl='';
+    try{ dataUrl = cv.toDataURL('image/png',1.0); }catch(e){}
+    chart.destroy(); cv.remove();
+    if(dataUrl && dataUrl.length>2000) results.push({title, dataUrl});
+  };
+
+  // km/L
+  const kmlArr=Object.values(kmlMap).map(v=>({label:v.label,val:v.n>0?v.sum/v.n:0})).filter(v=>v.val>0).sort((a,b)=>b.val-a.val);
+  await mkChart('น้ำมันต่อกิโล (km/L)', kmlArr.map(v=>v.label), kmlArr.map(v=>+v.val.toFixed(2)), '#10b981', v=>fmtN(v)+' km/L');
+  // cost
+  const costArr=Object.values(costMap).map(v=>({label:v.label,val:v.dist>0?v.price/v.dist:0})).filter(v=>v.val>0).sort((a,b)=>a.val-b.val);
+  await mkChart('ต้นทุนต่อกิโล (฿/km)', costArr.map(v=>v.label), costArr.map(v=>+v.val.toFixed(2)), '#f59e0b', v=>'฿'+fmtN(v));
+
+  return results;
+}
+
 async function exportPDF(customLogs, rangeLabel){
   const btn = document.querySelector('.entry-export-btn');
   const origHTML = btn?.innerHTML;
@@ -2939,13 +2998,6 @@ async function exportPDF(customLogs, rangeLabel){
       }
     }
 
-    // Charts page — snapshot the on-page chart canvases (already in Thai-rendered Chart.js)
-    const chartConfigs = [
-      {id: 'deliveryChart',  title: 'รายการสมบูรณ์ / ผิดพลาด'},
-      {id: 'chartKml',       title: 'น้ำมันต่อกิโล (km/L)'},
-      {id: 'chartCost',      title: 'ต้นทุนต่อกิโล (฿/km)'},
-    ];
-
     const chartReportEl = document.createElement('div');
     chartReportEl.style.cssText = reportEl.style.cssText;
     let chartHtml = `
@@ -2954,19 +3006,19 @@ async function exportPDF(customLogs, rangeLabel){
         <div style="font-size: 14px;opacity:.85;margin-top:4px">${dateNow} ${timeNow}</div>
       </div>`;
 
+    // สร้างกราฟใหม่จาก logs ของช่วงที่เลือก (ไม่ใช้ canvas บนหน้าจอ
+    // เพราะอาจซ่อน/ว่าง/เป็นข้อมูลคนละช่วง)
+    const pdfCharts = await buildPdfCharts(logs);
+
     let hasChart = false;
-    for(const cfg of chartConfigs){
-      const c = document.getElementById(cfg.id);
-      if(!c) continue;
-      try {
-        const dataUrl = c.toDataURL('image/png', 1.0);
-        chartHtml += `
-          <div style="margin-bottom:18px;page-break-inside:avoid">
-            <div style="font-size:14px;font-weight:700;margin-bottom:8px;color:#18181b">${cfg.title}</div>
-            <img src="${dataUrl}" style="width:100%;border:1px solid #e5e7eb;border-radius:8px"/>
-          </div>`;
-        hasChart = true;
-      } catch(e){ console.warn('chart capture', cfg.id, e); }
+    for(const ch of pdfCharts){
+      if(!ch.dataUrl || ch.dataUrl.length < 2000) continue;
+      chartHtml += `
+        <div style="margin-bottom:18px;page-break-inside:avoid">
+          <div style="font-size:14px;font-weight:700;margin-bottom:8px;color:#18181b">${ch.title}</div>
+          <img src="${ch.dataUrl}" style="width:100%;border:1px solid #e5e7eb;border-radius:8px"/>
+        </div>`;
+      hasChart = true;
     }
 
     if(hasChart){
