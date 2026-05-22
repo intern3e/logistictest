@@ -242,8 +242,7 @@ body{font-family: var(--font-thai);background: var(--bg);color: var(--text);min-
 @media (max-width: 1024px){
   .topnav-user{max-width: 130px}
   .entry-card-head-left{gap: 10px}
-  .entry-export-btn span{display: none}
-  .entry-export-btn{padding: 7px 9px}
+  .entry-export-btn{padding: 7px 11px}
   /* Hide secondary fuel-table cols on tablet: ชม. + ระยะ */
   .fuel-table thead th:nth-child(5),
   .fuel-table tbody td:nth-child(5),
@@ -543,6 +542,25 @@ body{font-family: var(--font-thai);background: var(--bg);color: var(--text);min-
   .filter-group{flex-shrink: 0}
   .pill-select, .pill-date, .date-trigger-pill{min-width: auto}
 }
+.pdf-modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.45);display:none;align-items:center;justify-content:center;z-index:9999;backdrop-filter:blur(2px);}
+.pdf-modal-overlay.open{display:flex}
+.pdf-modal{background:#fff;border-radius:18px;width:min(420px,92vw);box-shadow:0 20px 60px rgba(0,0,0,.3);overflow:hidden;animation:pdfPop .2s var(--ease);}
+@keyframes pdfPop{from{opacity:0;transform:scale(.95) translateY(10px)}to{opacity:1;transform:none}}
+.pdf-modal-head{display:flex;align-items:center;justify-content:space-between;padding:18px 20px;border-bottom:1px solid var(--separator);font-size:16px;font-weight:700;}
+.pdf-modal-x{border:none;background:var(--bg-subtle);width:30px;height:30px;border-radius:8px;cursor:pointer;font-size:14px;color:var(--text2);}
+.pdf-modal-x:hover{background:var(--separator)}
+.pdf-modal-body{padding:20px}
+.pdf-mode-tabs{display:flex;gap:6px;background:var(--bg-subtle);padding:4px;border-radius:10px;margin-bottom:18px;}
+.pdf-mode-btn{flex:1;padding:8px 4px;border:none;background:transparent;border-radius:7px;font-family:inherit;font-size:14px;font-weight:600;color:var(--text2);cursor:pointer;transition:all .15s var(--ease);}
+.pdf-mode-btn.active{background:#fff;color:var(--text);box-shadow:0 1px 3px rgba(0,0,0,.1);}
+.pdf-field label{display:block;font-size:14px;font-weight:600;color:var(--text2);margin-bottom:8px;}
+.pdf-field input,.pdf-field select{width:100%;padding:11px 12px;border:1px solid var(--separator-strong);border-radius:10px;font-family:inherit;font-size:15px;color:var(--text);background:#fff;}
+.pdf-field input:focus,.pdf-field select:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-soft);}
+.pdf-modal-foot{display:flex;gap:10px;padding:16px 20px;border-top:1px solid var(--separator);}
+.pdf-btn-cancel{flex:1;padding:11px;border:1px solid var(--separator-strong);background:#fff;border-radius:10px;font-family:inherit;font-size:15px;font-weight:600;color:var(--text2);cursor:pointer;}
+.pdf-btn-cancel:hover{background:var(--bg-subtle)}
+.pdf-btn-go{flex:2;padding:11px;border:none;background:var(--accent);color:#000;border-radius:10px;font-family:inherit;font-size:15px;font-weight:700;cursor:pointer;transition:all .15s var(--ease);}
+.pdf-btn-go:hover{filter:brightness(1.05);transform:translateY(-1px);}
 </style>
 </head>
 <body>
@@ -726,7 +744,7 @@ body{font-family: var(--font-thai);background: var(--bg);color: var(--text);min-
             <span class="entry-oil-num">฿<span id="ilOilPriceShow">—</span></span>
             <button type="button" id="ilBtnRefresh" class="entry-oil-refresh" onclick="ilRefreshOilPrice()" title="รีเฟรช">↻</button>
           </div>
-          <button type="button" class="entry-export-btn" onclick="exportPDF()" title="ดาวน์โหลดรายงาน PDF">
+          <button type="button" class="entry-export-btn" onclick="openPdfRangeModal()" title="ดาวน์โหลดรายงาน PDF">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
             <span>Export PDF</span>
           </button>
@@ -2600,11 +2618,102 @@ function confirmClock(){
 }
 
 const PDF_LOGS = @json($logs);
+const PDF_ALL_LOGS = @json($allLogs);  // ทุก record — สำหรับเลือกช่วงเอง
 const PDF_VIEW = @json($view);
 const PDF_FILTER_DAY   = @json($filterDay ?? '');
 const PDF_FILTER_MONTH = @json($filterMonth ?? '');
 
-async function exportPDF(){
+// ════════════════════════════════════════════════════════════
+// Modal เลือกช่วงเวลาก่อน Export PDF
+// ════════════════════════════════════════════════════════════
+function openPdfRangeModal(){
+  let modal = document.getElementById('pdfRangeModal');
+  if(modal){ modal.classList.add('open'); return; }
+  modal = document.createElement('div');
+  modal.id = 'pdfRangeModal';
+  modal.className = 'pdf-modal-overlay open';
+  const thisYear = new Date().getFullYear();
+  const thisMonth = String(new Date().getMonth()+1).padStart(2,'0');
+  const today = new Date().toISOString().split('T')[0];
+  let yearOpts = '';
+  for(let y=thisYear; y>=thisYear-4; y--) yearOpts += `<option value="${y}">${y+543}</option>`;
+  modal.innerHTML = `
+    <div class="pdf-modal">
+      <div class="pdf-modal-head">
+        <span>เลือกช่วงเวลา Export PDF</span>
+        <button type="button" class="pdf-modal-x" onclick="closePdfRangeModal()">✕</button>
+      </div>
+      <div class="pdf-modal-body">
+        <div class="pdf-mode-tabs">
+          <button type="button" class="pdf-mode-btn active" data-mode="day"   onclick="setPdfMode('day')">รายวัน</button>
+          <button type="button" class="pdf-mode-btn" data-mode="month" onclick="setPdfMode('month')">รายเดือน</button>
+          <button type="button" class="pdf-mode-btn" data-mode="year"  onclick="setPdfMode('year')">รายปี</button>
+          <button type="button" class="pdf-mode-btn" data-mode="all"   onclick="setPdfMode('all')">ทั้งหมด</button>
+        </div>
+        <div class="pdf-field" id="pdfFieldDay">
+          <label>เลือกวันที่</label>
+          <input type="date" id="pdfDay" value="${today}">
+        </div>
+        <div class="pdf-field" id="pdfFieldMonth" style="display:none">
+          <label>เลือกเดือน</label>
+          <input type="month" id="pdfMonth" value="${thisYear}-${thisMonth}">
+        </div>
+        <div class="pdf-field" id="pdfFieldYear" style="display:none">
+          <label>เลือกปี</label>
+          <select id="pdfYear">${yearOpts}</select>
+        </div>
+        <div class="pdf-field" id="pdfFieldAll" style="display:none">
+          <p style="color:var(--text3);font-size:14px;margin:0">Export ข้อมูลทั้งหมดที่มี</p>
+        </div>
+      </div>
+      <div class="pdf-modal-foot">
+        <button type="button" class="pdf-btn-cancel" onclick="closePdfRangeModal()">ยกเลิก</button>
+        <button type="button" class="pdf-btn-go" onclick="confirmPdfExport()">📄 สร้าง PDF</button>
+      </div>
+    </div>
+  `;
+  document.body.appendChild(modal);
+  modal.addEventListener('click', e=>{ if(e.target===modal) closePdfRangeModal(); });
+}
+function closePdfRangeModal(){ document.getElementById('pdfRangeModal')?.classList.remove('open'); }
+let PDF_MODE = 'day';
+function setPdfMode(m){
+  PDF_MODE = m;
+  document.querySelectorAll('.pdf-mode-btn').forEach(b=>b.classList.toggle('active', b.dataset.mode===m));
+  document.getElementById('pdfFieldDay').style.display   = m==='day'   ? '' : 'none';
+  document.getElementById('pdfFieldMonth').style.display = m==='month' ? '' : 'none';
+  document.getElementById('pdfFieldYear').style.display  = m==='year'  ? '' : 'none';
+  document.getElementById('pdfFieldAll').style.display   = m==='all'   ? '' : 'none';
+}
+function confirmPdfExport(){
+  // กรอง PDF_ALL_LOGS ตามช่วงที่เลือก
+  let logs = PDF_ALL_LOGS || [];
+  let rangeLabel = '';
+  if(PDF_MODE==='day'){
+    const d = document.getElementById('pdfDay').value;
+    logs = logs.filter(r => (r.work_date||'').slice(0,10) === d);
+    rangeLabel = 'วันที่ ' + new Date(d).toLocaleDateString('th-TH',{year:'numeric',month:'long',day:'numeric'});
+  } else if(PDF_MODE==='month'){
+    const m = document.getElementById('pdfMonth').value;  // YYYY-MM
+    logs = logs.filter(r => (r.work_date||'').slice(0,7) === m);
+    const [y,mo] = m.split('-');
+    rangeLabel = 'เดือน ' + new Date(y,mo-1).toLocaleDateString('th-TH',{year:'numeric',month:'long'});
+  } else if(PDF_MODE==='year'){
+    const y = document.getElementById('pdfYear').value;
+    logs = logs.filter(r => (r.work_date||'').slice(0,4) === String(y));
+    rangeLabel = 'ปี ' + (parseInt(y)+543);
+  } else {
+    rangeLabel = 'ทั้งหมด';
+  }
+  closePdfRangeModal();
+  if(logs.length===0){
+    alert('ไม่มีข้อมูลในช่วงที่เลือก');
+    return;
+  }
+  exportPDF(logs, rangeLabel);
+}
+
+async function exportPDF(customLogs, rangeLabel){
   const btn = document.querySelector('.entry-export-btn');
   const origHTML = btn?.innerHTML;
   if(btn){btn.disabled = true; btn.innerHTML = '<span>กำลังสร้าง PDF...</span>';}
@@ -2624,7 +2733,7 @@ async function exportPDF(){
 
   try{
     const { jsPDF } = window.jspdf;
-    const logs = PDF_LOGS || [];
+    const logs = customLogs || PDF_LOGS || [];
     const today = new Date();
     const dateNow = today.toLocaleDateString('th-TH',{year:'numeric',month:'2-digit',day:'2-digit'});
     const timeNow = today.toLocaleTimeString('th-TH',{hour:'2-digit',minute:'2-digit'});
@@ -2643,7 +2752,9 @@ async function exportPDF(){
     const avgCostPerKm = totalKm>0 ? totalPrice/totalKm : 0;
 
     let periodTxt = '';
-    if(PDF_VIEW === 'day') periodTxt = `วันที่: ${PDF_FILTER_DAY||dateNow}`;
+    if(rangeLabel){
+      periodTxt = rangeLabel;
+    } else if(PDF_VIEW === 'day') periodTxt = `วันที่: ${PDF_FILTER_DAY||dateNow}`;
     else if(PDF_VIEW === 'month') periodTxt = `เดือน: ${PDF_FILTER_MONTH}`;
     else if(PDF_VIEW === 'year') periodTxt = 'รายปี';
     else periodTxt = 'ทั้งหมด';
