@@ -2835,28 +2835,61 @@ async function exportPDF(customLogs, rangeLabel){
     const fmtNum = (n, d=0)=> Number(n||0).toLocaleString('en-US',{minimumFractionDigits:d, maximumFractionDigits:d});
     const fmtMoney = n => '฿'+fmtNum(n,0);
 
-    // Build report HTML — Thai-safe, uses page fonts
-    let logRowsHtml = '';
-    logs.forEach((r,i)=>{
+    const thS = 'padding:8px 6px;background:#10b981;color:#fff;font-weight:700;font-size: 14px;text-align:left;border:1px solid #059669';
+    const thSB = 'padding:8px 6px;background:#3b82f6;color:#fff;font-weight:700;font-size: 14px;text-align:left;border:1px solid #2563eb';
+    const tdS = 'padding:6px;border:1px solid #e5e7eb;font-size: 14px;background:#fff';
+
+    // แบ่ง logs เป็น chunk ละ 20 แถว — แต่ละ chunk มีหัวตาราง + ขึ้นหน้าใหม่
+    const ROWS_PER_PAGE = 20;
+    const logTableHead = `
+      <thead><tr>
+        <th style="${thS};width:30px;text-align:center">#</th>
+        <th style="${thS};width:50px;text-align:center">วันที่</th>
+        <th style="${thS}">คนขับ</th>
+        <th style="${thS}">ทะเบียน</th>
+        <th style="${thS};text-align:center">เวลา</th>
+        <th style="${thS};text-align:right">ระยะ (km)</th>
+        <th style="${thS};text-align:right">ลิตร</th>
+        <th style="${thS};text-align:right">บาท</th>
+        <th style="${thS};text-align:right">km/L</th>
+      </tr></thead>`;
+
+    const buildLogRow = (r, i) => {
       const date = r.work_date || '';
       const dateOut = date ? date.split('-').reverse().slice(0,2).join('/') : '-';
       const t1 = (r.start_time||'').slice(0,5);
       const t2 = (r.end_time||'').slice(0,5);
       const timeOut = (t1 && t2) ? `${t1}-${t2}` : '-';
-      logRowsHtml += `
+      return `
         <tr>
-          <td style="text-align:center;color:#71717a">${i+1}</td>
-          <td style="text-align:center">${dateOut}</td>
-          <td><strong>${r.driver_name||'-'}</strong></td>
-          <td>${r.vehicle_id||'-'}</td>
-          <td style="text-align:center;font-family:ui-monospace,monospace;font-size: 14px">${timeOut}</td>
-          <td style="text-align:right;font-family:ui-monospace,monospace">${fmtNum(r.total_distance,0)}</td>
-          <td style="text-align:right;font-family:ui-monospace,monospace">${fmtNum(r.liters,1)}</td>
-          <td style="text-align:right;font-family:ui-monospace,monospace">${fmtNum(r.total_price,0)}</td>
-          <td style="text-align:right;font-family:ui-monospace,monospace">${(r.km_per_liter>0)?fmtNum(r.km_per_liter,2):'-'}</td>
+          <td style="${tdS};text-align:center;color:#71717a">${i+1}</td>
+          <td style="${tdS};text-align:center">${dateOut}</td>
+          <td style="${tdS}"><strong>${r.driver_name||'-'}</strong></td>
+          <td style="${tdS}">${r.vehicle_id||'-'}</td>
+          <td style="${tdS};text-align:center;font-family:ui-monospace,monospace;font-size:14px">${timeOut}</td>
+          <td style="${tdS};text-align:right;font-family:ui-monospace,monospace">${fmtNum(r.total_distance,0)}</td>
+          <td style="${tdS};text-align:right;font-family:ui-monospace,monospace">${fmtNum(r.liters,1)}</td>
+          <td style="${tdS};text-align:right;font-family:ui-monospace,monospace">${fmtNum(r.total_price,0)}</td>
+          <td style="${tdS};text-align:right;font-family:ui-monospace,monospace">${(r.km_per_liter>0)?fmtNum(r.km_per_liter,2):'-'}</td>
         </tr>`;
-    });
-    if(!logRowsHtml) logRowsHtml = '<tr><td colspan="9" style="text-align:center;padding:20px;color:#a1a1aa">ไม่มีข้อมูล</td></tr>';
+    };
+
+    let logTablesHtml = '';
+    if(logs.length === 0){
+      logTablesHtml = `<table style="width:100%;border-collapse:collapse;margin-bottom:18px">${logTableHead}<tbody><tr><td colspan="9" style="${tdS};text-align:center;padding:20px;color:#a1a1aa">ไม่มีข้อมูล</td></tr></tbody></table>`;
+    } else {
+      for(let start=0; start<logs.length; start+=ROWS_PER_PAGE){
+        const chunk = logs.slice(start, start+ROWS_PER_PAGE);
+        const rowsHtml = chunk.map((r,idx)=>buildLogRow(r, start+idx)).join('');
+        logTablesHtml += `
+          <div class="pdf-log-chunk">
+            <table style="width:100%;border-collapse:collapse;margin-bottom:18px">
+              ${logTableHead}
+              <tbody>${rowsHtml}</tbody>
+            </table>
+          </div>`;
+      }
+    }
 
     let driverRowsHtml = '';
     sortedDrivers.forEach((d,i)=>{
@@ -2876,68 +2909,55 @@ async function exportPDF(customLogs, rangeLabel){
         </tr>`;
     });
 
-    const thS = 'padding:8px 6px;background:#10b981;color:#fff;font-weight:700;font-size: 14px;text-align:left;border:1px solid #059669';
-    const thSB = 'padding:8px 6px;background:#3b82f6;color:#fff;font-weight:700;font-size: 14px;text-align:left;border:1px solid #2563eb';
-    const tdS = 'padding:6px;border:1px solid #e5e7eb;font-size: 14px;background:#fff';
-
     reportEl.innerHTML = `
-      <div style="background:linear-gradient(135deg,#10b981 0%,#059669 100%);color:#fff;padding:20px 24px;border-radius:14px;margin-bottom:20px;display:flex;justify-content:space-between;align-items:center">
-        <div>
-          <div style="font-size:22px;font-weight:700;letter-spacing:-0.02em">รายงานการเติมน้ำมัน</div>
-          <div style="font-size: 14px;opacity:.85;margin-top:4px">สร้างเมื่อ: ${dateNow} ${timeNow}</div>
+      <div class="pdf-head-section">
+        <div style="background:linear-gradient(135deg,#10b981 0%,#059669 100%);color:#fff;padding:20px 24px;border-radius:14px;margin-bottom:20px;display:flex;justify-content:space-between;align-items:center">
+          <div>
+            <div style="font-size:22px;font-weight:700;letter-spacing:-0.02em">รายงานการเติมน้ำมัน</div>
+            <div style="font-size: 14px;opacity:.85;margin-top:4px">สร้างเมื่อ: ${dateNow} ${timeNow}</div>
+          </div>
+          <div style="font-size: 14px;opacity:.9;text-align:right">${periodTxt}</div>
         </div>
-        <div style="font-size: 14px;opacity:.9;text-align:right">${periodTxt}</div>
+
+        <div style="font-size:15px;font-weight:700;margin-bottom:10px;color:#18181b">สรุปภาพรวม</div>
+        <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:20px">
+          ${[
+            ['รายการทั้งหมด', logs.length+' ครั้ง'],
+            ['คนขับ', drivers.size+' คน'],
+            ['ค่าน้ำมันรวม', fmtMoney(totalPrice)],
+            ['ลิตรรวม', fmtNum(totalLiters,1)+' L'],
+            ['ระยะทางรวม', fmtNum(totalKm,0)+' km'],
+            ['เฉลี่ย km/L', fmtNum(avgKml,2)],
+            ['ต้นทุนเฉลี่ย', fmtMoney(avgCostPerKm)+'/km'],
+            ['ช่วงข้อมูล', periodTxt.replace(/^[^:]+:\s*/,'')||'-'],
+          ].map(([l,v])=>`
+            <div style="background:#fafafa;border:1px solid #e5e7eb;border-radius:8px;padding:10px 12px">
+              <div style="font-size: 14px;color:#71717a;margin-bottom:3px">${l}</div>
+              <div style="font-size:14px;font-weight:700;color:#18181b">${v}</div>
+            </div>`).join('')}
+        </div>
+        <div style="font-size:15px;font-weight:700;margin:14px 0 8px;color:#18181b">รายการเติมน้ำมัน</div>
       </div>
 
-      <div style="font-size:15px;font-weight:700;margin-bottom:10px;color:#18181b">สรุปภาพรวม</div>
-      <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:20px">
-        ${[
-          ['รายการทั้งหมด', logs.length+' ครั้ง'],
-          ['คนขับ', drivers.size+' คน'],
-          ['ค่าน้ำมันรวม', fmtMoney(totalPrice)],
-          ['ลิตรรวม', fmtNum(totalLiters,1)+' L'],
-          ['ระยะทางรวม', fmtNum(totalKm,0)+' km'],
-          ['เฉลี่ย km/L', fmtNum(avgKml,2)],
-          ['ต้นทุนเฉลี่ย', fmtMoney(avgCostPerKm)+'/km'],
-          ['ช่วงข้อมูล', periodTxt.replace(/^[^:]+:\s*/,'')||'-'],
-        ].map(([l,v])=>`
-          <div style="background:#fafafa;border:1px solid #e5e7eb;border-radius:8px;padding:10px 12px">
-            <div style="font-size: 14px;color:#71717a;margin-bottom:3px">${l}</div>
-            <div style="font-size:14px;font-weight:700;color:#18181b">${v}</div>
-          </div>`).join('')}
+      ${logTablesHtml}
+
+      <div class="pdf-summary-section">
+        <div style="font-size:15px;font-weight:700;margin:14px 0 8px;color:#18181b">สรุปแยกตามคนขับ</div>
+        <table style="width:100%;border-collapse:collapse;margin-bottom:18px">
+          <thead><tr>
+            <th style="${thSB};width:40px;text-align:center">อันดับ</th>
+            <th style="${thSB}">คนขับ</th>
+            <th style="${thSB}">ทะเบียน</th>
+            <th style="${thSB};text-align:right">รอบ</th>
+            <th style="${thSB};text-align:right">ระยะ (km)</th>
+            <th style="${thSB};text-align:right">ลิตร</th>
+            <th style="${thSB};text-align:right">บาท</th>
+            <th style="${thSB};text-align:right">เฉลี่ย km/L</th>
+            <th style="${thSB};text-align:right">฿/km</th>
+          </tr></thead>
+          <tbody>${driverRowsHtml.replace(/<td style="/g,'<td style="'+tdS+';')}</tbody>
+        </table>
       </div>
-
-      <div style="font-size:15px;font-weight:700;margin:14px 0 8px;color:#18181b">รายการเติมน้ำมัน</div>
-      <table style="width:100%;border-collapse:collapse;margin-bottom:18px">
-        <thead><tr>
-          <th style="${thS};width:30px;text-align:center">#</th>
-          <th style="${thS};width:50px;text-align:center">วันที่</th>
-          <th style="${thS}">คนขับ</th>
-          <th style="${thS}">ทะเบียน</th>
-          <th style="${thS};text-align:center">เวลา</th>
-          <th style="${thS};text-align:right">ระยะ (km)</th>
-          <th style="${thS};text-align:right">ลิตร</th>
-          <th style="${thS};text-align:right">บาท</th>
-          <th style="${thS};text-align:right">km/L</th>
-        </tr></thead>
-        <tbody>${logRowsHtml}</tbody>
-      </table>
-
-      <div style="font-size:15px;font-weight:700;margin:14px 0 8px;color:#18181b">สรุปแยกตามคนขับ</div>
-      <table style="width:100%;border-collapse:collapse;margin-bottom:18px">
-        <thead><tr>
-          <th style="${thSB};width:40px;text-align:center">อันดับ</th>
-          <th style="${thSB}">คนขับ</th>
-          <th style="${thSB}">ทะเบียน</th>
-          <th style="${thSB};text-align:right">รอบ</th>
-          <th style="${thSB};text-align:right">ระยะ (km)</th>
-          <th style="${thSB};text-align:right">ลิตร</th>
-          <th style="${thSB};text-align:right">บาท</th>
-          <th style="${thSB};text-align:right">เฉลี่ย km/L</th>
-          <th style="${thSB};text-align:right">฿/km</th>
-        </tr></thead>
-        <tbody>${driverRowsHtml.replace(/<td style="/g,'<td style="'+tdS+';')}</tbody>
-      </table>
     `;
 
     // Inject td styles into log rows (they were created without inline padding/borders for brevity)
@@ -2949,54 +2969,57 @@ async function exportPDF(customLogs, rangeLabel){
     });
 
     document.body.appendChild(reportEl);
-
-    // Wait one frame so fonts render before snapshot
     await new Promise(r=>requestAnimationFrame(()=>requestAnimationFrame(r)));
 
-    // Snapshot
-    const canvas = await html2canvas(reportEl, {
-      scale: 2,
-      backgroundColor: '#ffffff',
-      logging: false,
-      useCORS: true,
-    });
-
-    // Build PDF: paginate the big canvas into A4 pages
+    // Build PDF
     const doc = new jsPDF({orientation:'portrait', unit:'mm', format:'a4'});
     const pageW = doc.internal.pageSize.getWidth();
     const pageH = doc.internal.pageSize.getHeight();
     const margin = 8;
     const imgW = pageW - margin*2;
-    const imgFullH = (canvas.height * imgW) / canvas.width;
+    let pageAdded = false;
 
-    if(imgFullH <= pageH - margin*2){
-      // Fits on one page
-      const imgData = canvas.toDataURL('image/png');
-      doc.addImage(imgData, 'PNG', margin, margin, imgW, imgFullH);
-    } else {
-      // Multi-page: slice canvas vertically
-      const pageContentH = pageH - margin*2;
-      const sliceCanvasH = (pageContentH * canvas.width) / imgW; // canvas pixels per page
-
-      let yOffset = 0;
-      let pageNum = 0;
-      while(yOffset < canvas.height){
-        const sliceH = Math.min(sliceCanvasH, canvas.height - yOffset);
-        const sliceCanvas = document.createElement('canvas');
-        sliceCanvas.width = canvas.width;
-        sliceCanvas.height = sliceH;
-        const ctx = sliceCanvas.getContext('2d');
-        ctx.fillStyle = '#ffffff';
-        ctx.fillRect(0, 0, sliceCanvas.width, sliceCanvas.height);
-        ctx.drawImage(canvas, 0, yOffset, canvas.width, sliceH, 0, 0, canvas.width, sliceH);
-        const sliceData = sliceCanvas.toDataURL('image/png');
-        const sliceImgH = (sliceH * imgW) / canvas.width;
-        if(pageNum > 0) doc.addPage();
-        doc.addImage(sliceData, 'PNG', margin, margin, imgW, sliceImgH);
-        yOffset += sliceH;
-        pageNum++;
+    // helper: snapshot 1 element → ใส่ลง PDF (slice ถ้าสูงเกิน 1 หน้า)
+    const addElementToPdf = async (el)=>{
+      const cv = await html2canvas(el, {scale:2, backgroundColor:'#ffffff', logging:false, useCORS:true});
+      const fullH = (cv.height * imgW) / cv.width;
+      const contentH = pageH - margin*2;
+      if(fullH <= contentH){
+        if(pageAdded) doc.addPage();
+        doc.addImage(cv.toDataURL('image/png'), 'PNG', margin, margin, imgW, fullH);
+        pageAdded = true;
+      } else {
+        // สูงเกิน → slice
+        const sliceCanvasH = (contentH * cv.width) / imgW;
+        let yOff = 0;
+        while(yOff < cv.height){
+          const sliceH = Math.min(sliceCanvasH, cv.height - yOff);
+          const sc = document.createElement('canvas');
+          sc.width = cv.width; sc.height = sliceH;
+          const cx = sc.getContext('2d');
+          cx.fillStyle='#ffffff'; cx.fillRect(0,0,sc.width,sc.height);
+          cx.drawImage(cv, 0, yOff, cv.width, sliceH, 0, 0, cv.width, sliceH);
+          if(pageAdded) doc.addPage();
+          doc.addImage(sc.toDataURL('image/png'), 'PNG', margin, margin, imgW, (sliceH*imgW)/cv.width);
+          pageAdded = true;
+          yOff += sliceH;
+        }
       }
+    };
+
+    // 1) หน้าแรก: header + สรุปภาพรวม
+    const headEl = reportEl.querySelector('.pdf-head-section');
+    if(headEl) await addElementToPdf(headEl);
+
+    // 2) ตาราง log — แต่ละ chunk (20 แถว) = 1 หน้า มีหัวตารางทุกหน้า
+    const chunks = reportEl.querySelectorAll('.pdf-log-chunk');
+    for(const chunkEl of chunks){
+      await addElementToPdf(chunkEl);
     }
+
+    // 3) สรุปแยกตามคนขับ
+    const summaryEl = reportEl.querySelector('.pdf-summary-section');
+    if(summaryEl) await addElementToPdf(summaryEl);
 
     const chartReportEl = document.createElement('div');
     chartReportEl.style.cssText = reportEl.style.cssText;
@@ -3025,30 +3048,7 @@ async function exportPDF(customLogs, rangeLabel){
       chartReportEl.innerHTML = chartHtml;
       document.body.appendChild(chartReportEl);
       await new Promise(r=>requestAnimationFrame(()=>requestAnimationFrame(r)));
-      const chartCanvas = await html2canvas(chartReportEl, {scale:2, backgroundColor:'#fff', logging:false});
-      const chartImgH = (chartCanvas.height * imgW) / chartCanvas.width;
-      if(chartImgH <= pageH - margin*2){
-        doc.addPage();
-        doc.addImage(chartCanvas.toDataURL('image/png'), 'PNG', margin, margin, imgW, chartImgH);
-      } else {
-        const pageContentH = pageH - margin*2;
-        const sliceCanvasH = (pageContentH * chartCanvas.width) / imgW;
-        let yOffset = 0;
-        while(yOffset < chartCanvas.height){
-          const sliceH = Math.min(sliceCanvasH, chartCanvas.height - yOffset);
-          const sliceCanvas = document.createElement('canvas');
-          sliceCanvas.width = chartCanvas.width;
-          sliceCanvas.height = sliceH;
-          const ctx = sliceCanvas.getContext('2d');
-          ctx.fillStyle = '#fff';
-          ctx.fillRect(0,0,sliceCanvas.width, sliceCanvas.height);
-          ctx.drawImage(chartCanvas, 0, yOffset, chartCanvas.width, sliceH, 0, 0, chartCanvas.width, sliceH);
-          doc.addPage();
-          const sliceImgH = (sliceH * imgW) / chartCanvas.width;
-          doc.addImage(sliceCanvas.toDataURL('image/png'), 'PNG', margin, margin, imgW, sliceImgH);
-          yOffset += sliceH;
-        }
-      }
+      await addElementToPdf(chartReportEl);
       document.body.removeChild(chartReportEl);
     }
 
