@@ -1288,8 +1288,7 @@ tbody tr:last-child td { border-bottom: 0 }
   .profile-v2-left   { padding-bottom: 22px }
   .profile-v2-right  { max-height: none }
   .cert-grid { grid-template-columns: repeat(2, 1fr) }
-}
-@media (max-width: 768px) {
+}@media (max-width: 768px) {
   .sidebar { transform: translateX(-100%); transition: .24s }
   .sidebar.open { transform: translateX(0) }
   .main { margin-left: 0; padding: 70px 16px 16px }
@@ -1315,8 +1314,7 @@ tbody tr:last-child td { border-bottom: 0 }
   .roster-add-tech-btn { width: 100% }
   #panel-customers .panel-actions .search-inp,
   #panel-customers .panel-actions .btn { width: 100% }
-}
-#roster-grid .emp-card-body::before {
+}#roster-grid .emp-card-body::before {
     content: '';
     position: absolute;
     top: -20px;
@@ -1326,31 +1324,25 @@ tbody tr:last-child td { border-bottom: 0 }
     background: #16459d;
     border-radius: 10px 10px 0 0;
     z-index: 1;
-}
-.pv2-sections {
+}.pv2-sections {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 16px;
   margin-bottom: 0;
-}
-.pv2-section {
+}.pv2-section {
   min-width: 0;
-}
-.pv2-comp-grid {
+}.pv2-comp-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 7px;
-}
-.pv2-comp-item {
+}.pv2-comp-item {
   min-width: 0;
-}
-.pv2-comp-key {
+}.pv2-comp-key {
   min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-}
-#roster-grid .emp-card-body::before {
+}#roster-grid .emp-card-body::before {
     content: '';
     position: absolute;
     top: -20px;
@@ -1360,27 +1352,30 @@ tbody tr:last-child td { border-bottom: 0 }
     background: #0C3E9B;
     border-radius: 10px 10px 0 0;
     z-index: 1;
-}
-#roster-grid .emp-card .emp-tag.emp-tag-head {
+}#roster-grid .emp-card .emp-tag.emp-tag-head {
   background: #fde047;
   color: #78350f;
   border: 1px solid #facc15;
   text-shadow: none;
   font-weight: 800;
-}
-
-#roster-grid .emp-card .emp-tag.emp-tag-member {
+}#roster-grid .emp-card .emp-tag.emp-tag-member {
   background: #dbeafe;
   color: #0e2f76;
   border: 1px solid #93c5fd;
   text-shadow: none;
   font-weight: 800;
-}
-
-#roster-grid .emp-card .emp-tag.emp-tag-head svg,
+}#roster-grid .emp-card .emp-tag.emp-tag-head svg,
 #roster-grid .emp-card .emp-tag.emp-tag-member svg {
   stroke: currentColor !important;
   opacity: 1 !important;
+}.flash.is-hiding {
+  opacity: 0;
+  transform: translateY(-6px);
+  max-height: 0;
+  margin: 0;
+  padding-top: 0;
+  padding-bottom: 0;
+  overflow: hidden;
 }
 </style>
 </head>
@@ -1442,7 +1437,6 @@ tbody tr:last-child td { border-bottom: 0 }
     + เพิ่มช่าง
   </button>
 </div>
-
         <div class="roster-filter">
           <div class="roster-filter-row">
             <span class="roster-filter-label">ทักษะ</span>
@@ -1488,12 +1482,10 @@ tbody tr:last-child td { border-bottom: 0 }
     <span class="initials">{{ $initial }}</span>
   @endif
 </div>
-
   <div class="emp-card-info emp-info-redesign">
     <div class="emp-card-name {{ $isHead ? 'emp-card-name-head' : '' }}">
       {{ $m->emp_name ?: $m->emp_id }}
     </div>
-
     <div class="emp-meta-row">
   <span>
     <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="vertical-align:-1px;opacity:.7">
@@ -1503,7 +1495,6 @@ tbody tr:last-child td { border-bottom: 0 }
   </span>
   <strong>{{ $m->emp_id }}</strong>
 </div>
-
 <div class="emp-meta-row">
   <span>
     <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="vertical-align:-1px;opacity:.7">
@@ -1511,9 +1502,20 @@ tbody tr:last-child td { border-bottom: 0 }
     </svg>
     เบอร์
   </span>
-  <strong>{{ $m->emp_phone ?: '-' }}</strong>
-</div>
+ @php
+  $phoneDigits = preg_replace('/\D+/', '', $m->emp_phone ?? '');
+  $phoneDisplay = '-';
 
+  if (strlen($phoneDigits) === 10) {
+    $phoneDisplay = preg_replace('/^(\d{3})(\d{3})(\d{4})$/', '$1-$2-$3', $phoneDigits);
+  } elseif (strlen($phoneDigits) === 9) {
+    $phoneDisplay = preg_replace('/^(\d{3})(\d{3})(\d{3})$/', '$1-$2-$3', $phoneDigits);
+  } elseif ($m->emp_phone) {
+    $phoneDisplay = $m->emp_phone;
+  }
+@endphp
+<strong>{{ $phoneDisplay }}</strong>
+</div>
 <div class="emp-meta-row" style="margin-top:3px;gap:5px;flex-wrap:wrap">
   @if($m->emp_nickname)
     <span class="ec-nick">
@@ -1539,19 +1541,15 @@ tbody tr:last-child td { border-bottom: 0 }
   </span>
 </div>
       </div>
-
       <div class="emp-status-dot"
         style="background:{{ ($m->status ?? 'active') === 'leave' ? '#ef4444' : '#22c55e' }}">
       </div>
-    </div>
-
-                
+    </div>          
                 <div class="emp-card-skills">
   @foreach($skills->take(4) as $sk)
     <span class="emp-skill-tag">#{{ $sk }}</span>
   @endforeach
 </div>
-
               </div>
             </article>
           @empty
@@ -1639,7 +1637,6 @@ tbody tr:last-child td { border-bottom: 0 }
         <div class="sched-week-head"><span>อา</span><span>จันทร์</span><span>อังคาร</span><span>พุธ</span><span>พฤหัส</span><span>ศุกร์</span><span>เสาร์</span></div>
         <div class="sched-month-grid" id="sched-month-grid"></div>
       </div>
-
       <div class="sched-list-card">
         <div class="sched-list-head">
           <div>
@@ -1675,7 +1672,6 @@ tbody tr:last-child td { border-bottom: 0 }
       <button class="btn btn-solar" type="button" onclick="openAddSchedModal()">+ เพิ่มงาน</button>
     </div>
   </div>
-
     @if($washAlerts->count() > 0)
       <div class="wash-alert-bar">
         <div class="wash-alert-title">แจ้งเตือนล้างแผง Solar ({{ $washAlerts->count() }} ราย)</div>
@@ -1787,7 +1783,6 @@ tbody tr:last-child td { border-bottom: 0 }
       </div>
     @endif
   </section>
-
   <section class="panel" id="panel-certifications">
     <div class="cert-board">
       <div class="cert-head">
@@ -1811,7 +1806,6 @@ tbody tr:last-child td { border-bottom: 0 }
     </div>
   </section>
 </main>
-
 <div class="overlay" id="overlay">
   <div class="pmodal profile-v2" onclick="event.stopPropagation()">
     <div class="profile-v2-layout">
@@ -1851,7 +1845,6 @@ tbody tr:last-child td { border-bottom: 0 }
   </div>
 </div>
 </div>
-
 <div class="overlay" id="modal-tech">
   <div class="pmodal pmodal-wide" onclick="event.stopPropagation()">
     <div class="pmodal-strip"></div>
@@ -1904,7 +1897,6 @@ tbody tr:last-child td { border-bottom: 0 }
     </div>
   </div>
 </div>
-
 <div class="overlay" id="modal-edit-tech">
   <div class="pmodal pmodal-wide" onclick="event.stopPropagation()">
     <div class="pmodal-strip"></div><div class="modal-header"><div class="modal-title">แก้ไขข้อมูลช่าง</div><button class="modal-close" type="button" onclick="closeModalById('modal-edit-tech')">×</button></div>
@@ -1941,7 +1933,6 @@ tbody tr:last-child td { border-bottom: 0 }
     </div>
   </div>
 </div>
-
 <div class="overlay" id="modal-sched">
   <div class="pmodal pmodal-wide" onclick="event.stopPropagation()">
     <div class="pmodal-strip"></div><div class="modal-header"><div class="modal-title">เพิ่มงานใหม่</div><button class="modal-close" type="button" onclick="closeModalById('modal-sched')">×</button></div>
@@ -1968,7 +1959,6 @@ tbody tr:last-child td { border-bottom: 0 }
     </div>
   </div>
 </div>
-
 <div class="overlay" id="modal-edit-sched">
   <div class="pmodal pmodal-wide" onclick="event.stopPropagation()">
     <div class="pmodal-strip"></div><div class="modal-header"><div class="modal-title">แก้ไขงาน</div><button class="modal-close" type="button" onclick="closeModalById('modal-edit-sched')">×</button></div>
@@ -1992,7 +1982,6 @@ tbody tr:last-child td { border-bottom: 0 }
     </div>
   </div>
 </div>
-
 <div class="overlay" id="modal-cust">
   <div class="pmodal pmodal-wide" onclick="event.stopPropagation()">
     <div class="pmodal-strip"></div><div class="modal-header"><div><div class="modal-title" id="cust-modal-title">เพิ่มลูกค้าใหม่</div><div class="modal-subtitle" id="cust-modal-sub"></div></div><button class="modal-close" type="button" onclick="closeModalById('modal-cust')">×</button></div>
@@ -2018,7 +2007,6 @@ tbody tr:last-child td { border-bottom: 0 }
     </div>
   </div>
 </div>
-
 <div class="overlay" id="modal-cust-detail">
   <div class="pmodal pmodal-wide" onclick="event.stopPropagation()">
     <div class="pmodal-strip"></div><div class="modal-header"><div><div class="modal-title" id="cd-name">รายละเอียดลูกค้า</div><div style="margin-top:4px" id="cd-type-tag"></div></div><button class="modal-close" type="button" onclick="closeModalById('modal-cust-detail')">×</button></div>
@@ -2603,6 +2591,66 @@ window.openModal = function(id) {
 window.openAddSchedModal = window.openAddSchedModal || function() {
   openModal('modal-sched');
 };
+function fmtPhone(v) {
+  const d = String(v || '').replace(/\D/g, '');
+  if (!d) return '-';
+  if (d.length === 10) return `${d.slice(0, 3)}-${d.slice(3, 6)}-${d.slice(6, 10)}`;
+  if (d.length === 9) return `${d.slice(0, 3)}-${d.slice(3, 6)}-${d.slice(6, 9)}`;
+  return v || '-';
+}
+function setHeadTeamBeforeSubmit(prefix) {
+  const pos = document.getElementById(prefix + '-emp_position')?.value;
+  if (pos !== 'หัวหน้าทีม') return true;
+
+  const form = document.getElementById(prefix === 'add' ? 'form-add-tech' : 'form-edit-tech');
+  const teamSelect = document.getElementById(prefix === 'add' ? 'add-team-select' : 'et-team-select');
+  const nameInput = form?.querySelector('input[name="emp_name"]');
+  const empIdInput = prefix === 'add'
+    ? form?.querySelector('input[name="emp_id"]')
+    : document.getElementById('et-emp_id');
+
+  const teamName = (nameInput?.value || empIdInput?.value || '').trim();
+
+  if (!teamName) return true;
+
+  let opt = Array.from(teamSelect.options).find(o => o.value === teamName);
+  if (!opt) {
+    opt = new Option(teamName, teamName, true, true);
+    teamSelect.add(opt);
+  }
+
+  teamSelect.value = teamName;
+  return true;
+}
+
+document.getElementById('form-add-tech')?.addEventListener('submit', () => {
+  setHeadTeamBeforeSubmit('add');
+});
+
+document.getElementById('form-edit-tech')?.addEventListener('submit', () => {
+  setHeadTeamBeforeSubmit('et');
+});
+function handlePositionChange(prefix) {
+  const isHead = document.getElementById(prefix + '-emp_position')?.value === 'หัวหน้าทีม';
+  const team = document.getElementById(prefix + '-team-wrap');
+  const info = document.getElementById(prefix + '-head-info');
+
+  if (team) team.style.display = isHead ? 'none' : '';
+  if (info) info.style.display = isHead ? '' : 'none';
+
+  if (isHead) setHeadTeamBeforeSubmit(prefix);
+}
+document.addEventListener('DOMContentLoaded', () => {
+  setTimeout(() => {
+    document.querySelectorAll('.flash').forEach(el => {
+      el.classList.add('is-hiding');
+
+      setTimeout(() => {
+        el.remove();
+      }, 400);
+    });
+  }, 5000);
+});
 </script>
 </body>
 </html>
