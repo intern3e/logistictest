@@ -34,6 +34,8 @@ class deposit extends Model
         'slip_time',     
         'tax_id',
         'note',
-        'po_document'
+        'po_document',
+        'wht_doc_no',
+        'wht_time',
     ];
 }

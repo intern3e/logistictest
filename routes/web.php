@@ -217,8 +217,9 @@ Route::post('/deposit/mark-printed-bulk', [DepositController::class, 'markPrinte
 Route::get('/deposit/preview', [DepositController::class, 'preview'])->name('deposit.preview');
 Route::post('/deposit/upload-bill-pdf', [DepositController::class, 'uploadBillPdf'])
      ->name('deposit.uploadBillPdf');
-Route::post('/deposit/upload-slip', [DepositController::class, 'uploadSlip']);
-
+Route::post('/deposit/update-fee', [DepositController::class, 'updateFee']);
+Route::post('/deposit/update-wht', [DepositController::class, 'updateWht']);
+Route::post('/deposit/delete', [DepositController::class, 'deleteDeposit']);
 
 
 use App\Http\Controllers\TechnicianController;

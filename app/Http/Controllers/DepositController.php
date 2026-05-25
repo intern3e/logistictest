@@ -15,18 +15,27 @@ use setasign\Fpdi\Fpdi as FpdiBasic;
 class DepositController extends Controller
 {
     private const STAMP_IMAGE_REL = 'deposit_templates/ly.png';
-    private const STAMP_X         = 4;   // ตำแหน่ง X (mm) จากซ้าย
-    private const STAMP_Y         = 215;    // ตำแหน่ง Y (mm) จากบน
-    private const STAMP_WIDTH     = 65;     // ความกว้าง (mm), 0 = อัตโนมัติ
-    private const STAMP_HEIGHT    = 55;      // ความสูง (mm), 0 = อัตโนมัติ (รักษาสัดส่วน)
-    private const STAMP_PAGE      = 0;      // หน้าที่จะ stamp (1 = หน้าแรก, 0 = ทุกหน้า)
+    private const STAMP_X         = 4;
+    private const STAMP_Y         = 215;
+    private const STAMP_WIDTH     = 65;
+    private const STAMP_HEIGHT    = 55;
+    private const STAMP_PAGE      = 0;
     private $adminUsers = ['kanitin2', 'dev','Aom'];
     private const PDF_TEMPLATE_REL = 'deposit_templates/templates.pdf';
     private const PDF_OUTPUT_DIR = 'deposit_templates';
+    private const SLIP_OUTPUT_DIR = 'deposit_templates/deposit_slip';
+
+    // ✅ Helper: now ใน Bangkok timezone — ใช้แทน now() ทุกจุด
+    private function nowBkk(): Carbon
+    {
+        return Carbon::now('Asia/Bangkok');
+    }
+
     public function insertdeposit()
     {
         return view('deposit.insertdeposit');
     }
+
     public function dashboarddeposit(Request $request)
     {
         $soKeyword = trim($request->get('so_keyword', ''));
@@ -52,7 +61,7 @@ class DepositController extends Controller
         $deposits = $query
             ->orderByDesc('time')
             ->orderByDesc('id')
-            ->paginate(15)
+            ->paginate(100)                          // ✅ เปลี่ยนจาก 15 → 100
             ->appends($request->query());
 
         return view('deposit.dashboarddeposit', compact('deposits'));
@@ -95,7 +104,7 @@ class DepositController extends Controller
     {
         $changedBy = strtolower(trim($request->input('changed_by', '')));
 
-        if (!in_array($changedBy, $this->adminUsers)) {
+        if (!in_array($changedBy, array_map('strtolower', $this->adminUsers))) {
             return response()->json([
                 'success' => false,
                 'message' => 'คุณไม่มีสิทธิ์เปลี่ยนสถานะ',
@@ -103,7 +112,7 @@ class DepositController extends Controller
         }
 
         $newStatus = $request->input('new_status');
-        $allowed   = ['รอยืนยัน', 'ยืนยัน'];
+        $allowed   = ['รอยืนยัน', 'ยืนยัน', 'มี WHT'];    // ✅ เพิ่ม 'มี WHT'
 
         if (!in_array($newStatus, $allowed)) {
             return response()->json([
@@ -136,7 +145,7 @@ class DepositController extends Controller
             ];
 
             if ($newStatus === 'ยืนยัน') {
-                $updateData['time_check'] = now();
+                $updateData['time_check'] = $this->nowBkk();    // ✅ Bangkok timezone
             } else {
                 $updateData['time_check'] = null;
             }
@@ -199,7 +208,7 @@ class DepositController extends Controller
             }
 
             $updateData = [
-                'print_time' => now(),
+                'print_time' => $this->nowBkk(),    // ✅ Bangkok timezone
             ];
 
             if ($billNo !== '') {
@@ -251,8 +260,8 @@ class DepositController extends Controller
         try {
             $affected = deposit::whereIn('id', $ids)
                 ->update([
-                    'print_time'  => now(),
-                    'status_bill' => 'ok',  
+                    'print_time'  => $this->nowBkk(),    // ✅ Bangkok timezone
+                    'status_bill' => 'ok',
                 ]);
 
             Log::info('Deposit bulk marked as printed', [
@@ -281,7 +290,7 @@ class DepositController extends Controller
         $request->validate([
             'deposit_id'      => 'required',
             'deposit_bill_id' => 'required|string|max:50',
-            'pdf_file'        => 'required|file|mimes:pdf|max:10240', // 10 MB
+            'pdf_file'        => 'required|file|mimes:pdf|max:10240',
             'printed_by'      => 'nullable|string|max:150',
         ]);
 
@@ -291,7 +300,6 @@ class DepositController extends Controller
         $file          = $request->file('pdf_file');
 
         try {
-            // ✅ บังคับชื่อไฟล์ = {deposit_bill_id}.pdf
             $safeName = $this->sanitizeDepositFilename($depositBillId);
             $fileName = $safeName . '.pdf';
 
@@ -299,7 +307,6 @@ class DepositController extends Controller
             $absDir  = storage_path('app/public/' . self::PDF_OUTPUT_DIR);
             $absPath = storage_path('app/public/' . $relPath);
 
-            // สร้างโฟลเดอร์ถ้ายังไม่มี
             if (!is_dir($absDir)) {
                 mkdir($absDir, 0775, true);
             }
@@ -309,15 +316,11 @@ class DepositController extends Controller
             }
             $file->move($absDir, $fileName);
 
-            // 🔥 Stamp ภาพ ly.png ลงบน PDF ที่อัปโหลดมา
             $this->stampPdfWithImage($absPath);
 
-
-            // ✅ อัปเดต DB ทุกแถวที่มี deposit_bill_id เดียวกัน (เพราะ 1 ใบบิลอาจมีหลายแถว)
-            // ถ้าต้องการอัปเดตเฉพาะแถวเดียว ใช้ where('id', $depositId) แทน
             $affected = deposit::where('deposit_bill_id', $depositBillId)
                 ->update([
-                    'print_time'   => now(),
+                    'print_time'   => $this->nowBkk(),    // ✅ Bangkok timezone
                     'status_bill'  => 'ok',
                     'deposit_bill' => $fileName,
                 ]);
@@ -347,13 +350,24 @@ class DepositController extends Controller
             ], 500);
         }
     }
+
+    // ✅ แก้ botdeposit() — ดึง 2 กลุ่ม:
+    //    1) "ยืนยัน" + ยังไม่มี status_bill → งานใหม่ให้ bot สร้างเอกสาร
+    //    2) "มี WHT" (ไม่ว่ามี status_bill หรือไม่) → งานที่ bot ต้องกลับมาแก้ไข
     public function botdeposit(Request $request)
     {
         $soKeyword = trim($request->get('so_keyword', ''));
 
         $query = deposit::query()
-            ->where('status', 'ยืนยัน')
-            ->whereNull('status_bill');   
+            ->where(function ($q) {
+                // กลุ่ม 1: ยืนยัน + ยังไม่เคยผ่าน bot (status_bill ยังว่าง)
+                $q->where(function ($q2) {
+                    $q2->where('status', 'ยืนยัน')
+                       ->whereNull('status_bill');
+                })
+                // กลุ่ม 2: มี WHT → bot ต้องกลับมาแก้ไขเอกสารเดิม
+                ->orWhere('status', 'มี WHT');
+            });
 
         if ($soKeyword !== '') {
             $query->where('so_id', 'like', "%{$soKeyword}%");
@@ -362,14 +376,15 @@ class DepositController extends Controller
         $deposits = $query
             ->orderBy('deposit_bill_id', 'asc')
             ->orderBy('id', 'asc')
-            ->paginate(15)
+            ->paginate(100)
             ->appends($request->query());
 
         return view('deposit.botdeposit', compact('deposits'));
     }
+
     private function generateDepositBillId()
     {
-        $now      = Carbon::now();
+        $now      = $this->nowBkk();                     // ✅ Bangkok timezone
         $yearBE   = $now->year + 543;
         $yy       = substr((string)$yearBE, -2);
         $mm       = $now->format('m');
@@ -402,7 +417,7 @@ class DepositController extends Controller
             'contactso'          => 'required|string|max:255',
             'customer_tel'       => 'nullable|string|max:50',
             'customer_address'   => 'nullable|string',
-            'note'            => 'nullable|string|max:1000',
+            'note'               => 'nullable|string|max:1000',
             'emp_name'           => 'nullable|string|max:150',
             'tax_id'             => 'nullable|string|max:150',
             'sale_name'          => 'nullable|string|max:150',
@@ -447,7 +462,7 @@ class DepositController extends Controller
                     'contactso'        => $validated['contactso'],
                     'customer_tel'     => $validated['customer_tel']     ?? null,
                     'customer_address' => $validated['customer_address'] ?? null,
-                    'note'          => $validated['note']          ?? null,
+                    'note'             => $validated['note']             ?? null,
                     'sale_name'        => $validated['sale_name']        ?? null,
                     'po_document'      => $validated['po_document']      ?? null,
                     'emp_name'         => $validated['emp_name']         ?? 'Guest',
@@ -455,7 +470,7 @@ class DepositController extends Controller
                     'dep_per'          => $dep['percent'],
                     'dep_price'        => $dep['amount'],
                     'grand_total'      => $netGrandTotal,
-                    'time'             => now(),
+                    'time'             => $this->nowBkk(),               // ✅ Bangkok timezone
                     'tax_id'           => $validated['tax_id']           ?? null,
                     'print_time'       => null,
                     'status'           => 'รอยืนยัน',
@@ -485,9 +500,8 @@ class DepositController extends Controller
                 $pdfPath = $this->generateDepositPdf($pdfData);
                 $pdfUrl  = asset('storage/' . $pdfPath);
 
-                // ✅ อัปเดตชื่อไฟล์ PDF เก็บไว้ในคอลัมน์ deposit_bill (เก็บเฉพาะชื่อไฟล์ ไม่มี path)
                 if ($pdfPath) {
-                    $fileNameOnly = basename($pdfPath); // เช่น RD6905-00004.pdf
+                    $fileNameOnly = basename($pdfPath);
                     deposit::whereIn('id', $inserted)
                         ->update(['deposit_bill' => $fileNameOnly]);
                 }
@@ -635,19 +649,20 @@ class DepositController extends Controller
         $pdf->SetXY(136, 51.7);
         $pdf->Cell(60, 6, $this->safeText($data['tax_id'] ?? ''), 0, 0, 'L');
 
-        // ✅ วาดเลขที่ใบมัดจำ (deposit_bill_id) — จะมีค่าเฉพาะตอนกดบันทึกเท่านั้น
         $pdf->SetXY(113, 58.1);
         $pdf->Cell(60, 6, $this->safeText($data['deposit_bill_id'] ?? ''), 0, 0, 'L');
 
+        // ✅ ใช้ Bangkok timezone สำหรับวันที่บน PDF
+        $nowBkk = $this->nowBkk();
         $pdf->SetXY(113, 64.5);
-        $pdf->Cell(60, 6, $this->safeText(Carbon::now()->format('d-m-') . (Carbon::now()->year + 543)), 0, 0, 'L');
+        $pdf->Cell(60, 6, $this->safeText($nowBkk->format('d-m-') . ($nowBkk->year + 543)), 0, 0, 'L');
 
-        // ✅ วาดหมายเหตุ (note)
         $pdf->SetXY(22, 173.5);
         $pdf->MultiCell(110, 5,
             $this->safeText($data['note'] ?? ''),
             0, 'L'
         );
+
         $startY = 93;
         $rowH   = 6;
         $deposits   = $data['deposits'] ?? [];
@@ -664,9 +679,9 @@ class DepositController extends Controller
             } else {
                 $fullPrice = $grandTotalData;
             }
-            $allPercent = max(0, 100 - $percent);        
-            $remain     = max(0, $fullPrice - $amount);   
-            $allTotal   = $remain * 1.07;                 
+            $allPercent = max(0, 100 - $percent);
+            $remain     = max(0, $fullPrice - $amount);
+            $allTotal   = $remain * 1.07;
 
             $typeName = ($dep['type'] ?? '') === 'service' ? 'บริการ' : 'สินค้า';
 
@@ -684,7 +699,6 @@ class DepositController extends Controller
             $y += $rowH;
         }
 
-        // Loop 2: วาดยอดมัดจำแต่ละแถว
         $y = $startY;
         foreach ($deposits as $dep) {
             $amount = (float)($dep['amount'] ?? 0);
@@ -695,27 +709,23 @@ class DepositController extends Controller
             $y += $rowH;
         }
 
-        // คำนวณยอดรวม + VAT
         $totalAmount = array_sum(array_column($deposits, 'amount'));
         $vat         = $totalAmount * 0.07;
         $grandTotal  = $totalAmount + $vat;
 
-        // 💰 ยอดรวมก่อน VAT
         $pdf->SetXY(162, 174);
         $pdf->Cell(40, $rowH, number_format($totalAmount, 2), 0, 0, 'R');
 
-        // 💰 VAT 7%
         $pdf->SetXY(162, 183);
         $pdf->Cell(40, $rowH, number_format($vat, 2), 0, 0, 'R');
 
-        // 💰 ยอดรวม VAT
         $pdf->SetXY(162, 192);
         $pdf->Cell(40, $rowH, number_format($grandTotal, 2), 0, 0, 'R');
 
-        // 📝 จำนวนเงินเป็นตัวอักษรไทย เช่น "หนึ่งพันห้าสิบสี่บาทห้าสิบสตางค์"
-        $pdf->SetXY(55, 192);                                          // 👈 ปรับ X, Y ให้ตรงช่อง
+        $pdf->SetXY(55, 192);
         $pdf->Cell(100, $rowH, $this->bahtText($grandTotal), 0, 0, 'L');
     }
+
     protected function sanitizeDepositFilename(string $name): string
     {
         $name = trim($name);
@@ -723,7 +733,8 @@ class DepositController extends Controller
         $name = preg_replace('/\s+/', '_', $name);
         return $name !== '' ? $name : 'deposit_' . date('YmdHis');
     }
-   protected function stampPdfWithImage(string $pdfAbsPath): void
+
+    protected function stampPdfWithImage(string $pdfAbsPath): void
     {
         $stampAbs = storage_path('app/public/' . self::STAMP_IMAGE_REL);
 
@@ -737,9 +748,8 @@ class DepositController extends Controller
         }
 
         try {
-            ob_start();   
+            ob_start();
 
-       
             $pdf = new FpdiBasic();
             $pdf->SetMargins(0, 0, 0);
             $pdf->SetAutoPageBreak(false, 0);
@@ -755,7 +765,6 @@ class DepositController extends Controller
 
                 $shouldStamp = (self::STAMP_PAGE === 0) || ($p === self::STAMP_PAGE);
                 if ($shouldStamp) {
-                    // ระบุ type 'PNG' ชัดเจน + ปลอดภัยกับ alpha channel
                     $pdf->Image(
                         $stampAbs,
                         self::STAMP_X,
@@ -781,16 +790,13 @@ class DepositController extends Controller
             ]);
         }
     }
+
     protected function safeText($text): string
     {
         if ($text === null) return '';
         return (string) $text;
     }
 
-    /**
-     * แปลงตัวเลขเป็นคำอ่านภาษาไทย
-     * เช่น 3000 → "สามพันบาทถ้วน", 1054.50 → "หนึ่งพันห้าสิบสี่บาทห้าสิบสตางค์"
-     */
     protected function bahtText($amount): string
     {
         $number = number_format((float)$amount, 2, '.', '');
@@ -841,14 +847,149 @@ class DepositController extends Controller
             $bahtText .= $convert($satang) . 'สตางค์';
         }
 
-        return '(' . $bahtText . ')';   // 👈 ครอบวงเล็บตรงนี้
+        return '(' . $bahtText . ')';
     }
-    private const SLIP_OUTPUT_DIR = 'deposit_templates/deposit_slip';
+
+    // ============================================================================
+    //  =====================  FEE / WHT / DELETE / SLIP  ==========================
+    // ============================================================================
+
+    public function updateFee(Request $request)
+    {
+        $savedBy = strtolower(trim($request->input('saved_by', '')));
+        if (!in_array($savedBy, array_map('strtolower', $this->adminUsers))) {
+            return response()->json(['success' => false, 'message' => 'ไม่มีสิทธิ์'], 403);
+        }
+
+        $request->validate([
+            'deposit_id' => 'required|integer',
+            'fee_amount' => 'nullable|numeric|min:0',
+        ]);
+
+        try {
+            $fee = (float) ($request->input('fee_amount', 0) ?? 0);
+            $affected = deposit::where('id', $request->input('deposit_id'))
+                ->update(['fee_amount' => $fee]);
+
+            if ($affected === 0) {
+                return response()->json(['success' => false, 'message' => 'ไม่พบรายการ'], 404);
+            }
+
+            Log::info('Deposit fee updated', [
+                'deposit_id' => $request->input('deposit_id'),
+                'fee_amount' => $fee,
+                'saved_by'   => $savedBy,
+            ]);
+
+            return response()->json(['success' => true, 'message' => 'บันทึกค่าธรรมเนียมสำเร็จ', 'fee_amount' => $fee]);
+
+        } catch (\Throwable $e) {
+            Log::error('Update fee failed: ' . $e->getMessage());
+            return response()->json(['success' => false, 'message' => $e->getMessage()], 500);
+        }
+    }
+
+    // ✅✅✅ updateWht — บันทึก WHT + เปลี่ยนสถานะเป็น "มี WHT" ให้ bot รู้
+    public function updateWht(Request $request)
+    {
+        $savedBy = strtolower(trim($request->input('saved_by', '')));
+        if (!in_array($savedBy, array_map('strtolower', $this->adminUsers))) {
+            return response()->json(['success' => false, 'message' => 'ไม่มีสิทธิ์'], 403);
+        }
+
+        $request->validate([
+            'deposit_id' => 'required|integer',
+            'wht_doc_no' => 'nullable|string|max:60',
+        ]);
+
+        try {
+            $wht = trim((string) $request->input('wht_doc_no', ''));
+            $now = $this->nowBkk();                      // ✅ Bangkok timezone
+
+            $updateData = [
+                'wht_doc_no' => $wht !== '' ? $wht : null,
+                'wht_time'   => $wht !== '' ? $now : null,
+            ];
+
+            // ✅✅✅ เปลี่ยนสถานะเป็น "มี WHT" เพื่อให้ bot เห็นงานใหม่
+            if ($wht !== '') {
+                $updateData['status'] = 'มี WHT';
+            }
+
+            // ถ้ามี so_id → update ทุก row ที่มี so_id เดียวกัน
+            $soId = $request->input('so_id');
+            if (!empty($soId)) {
+                $affected = deposit::where('so_id', $soId)
+                    ->update($updateData);
+            } else {
+                $affected = deposit::where('id', $request->input('deposit_id'))
+                    ->update($updateData);
+            }
+
+            if ($affected === 0) {
+                return response()->json(['success' => false, 'message' => 'ไม่พบรายการ'], 404);
+            }
+
+            Log::info('Deposit WHT updated + status changed', [
+                'deposit_id' => $request->input('deposit_id'),
+                'so_id'      => $soId,
+                'wht_doc_no' => $wht,
+                'new_status' => $wht !== '' ? 'มี WHT' : '(ไม่เปลี่ยน)',
+                'saved_by'   => $savedBy,
+            ]);
+
+            return response()->json([
+                'success'  => true,
+                'message'  => $wht !== ''
+                    ? 'บันทึก WHT สำเร็จ — สถานะเปลี่ยนเป็น "มี WHT"'
+                    : 'ลบ WHT สำเร็จ',
+                'status'   => $wht !== '' ? 'มี WHT' : null,
+                'wht_time' => $wht !== '' ? $now->format('H:i d/m/Y') : null,
+            ]);
+
+        } catch (\Throwable $e) {
+            Log::error('Update WHT failed: ' . $e->getMessage());
+            return response()->json(['success' => false, 'message' => $e->getMessage()], 500);
+        }
+    }
+
+    public function deleteDeposit(Request $request)
+    {
+        $deletedBy = strtolower(trim($request->input('deleted_by', '')));
+        if (!in_array($deletedBy, array_map('strtolower', $this->adminUsers))) {
+            return response()->json(['success' => false, 'message' => 'ไม่มีสิทธิ์'], 403);
+        }
+
+        $request->validate(['deposit_id' => 'required|integer']);
+        $id = $request->input('deposit_id');
+
+        try {
+            $rec = deposit::find($id);
+            if (!$rec) return response()->json(['success' => false, 'message' => 'ไม่พบรายการ'], 404);
+
+            Log::warning('Deposit DELETED', [
+                'deposit_id' => $id, 'so_id' => $rec->so_id,
+                'deposit_bill_id' => $rec->deposit_bill_id,
+                'customer_name' => $rec->customer_name,
+                'dep_price' => $rec->dep_price, 'deleted_by' => $deletedBy,
+            ]);
+
+            $rec->delete();
+
+            return response()->json(['success' => true, 'message' => 'ลบสำเร็จ']);
+
+        } catch (\Throwable $e) {
+            Log::error('Delete failed: ' . $e->getMessage());
+            return response()->json(['success' => false, 'message' => $e->getMessage()], 500);
+        }
+    }
+
     public function uploadSlip(Request $request)
     {
         $request->validate([
             'deposit_bill_id' => 'required|string|max:50',
-            'slip_file'       => 'required|file|mimes:pdf,jpg,jpeg,png,webp|max:10240', // 10 MB
+            'slip_file'       => 'required|file|mimes:pdf,jpg,jpeg,png,webp|max:10240',
+            'slip_date'       => 'nullable|date',
             'uploaded_by'     => 'nullable|string|max:150',
         ]);
 
@@ -856,62 +997,37 @@ class DepositController extends Controller
         $uploadedBy    = trim($request->input('uploaded_by', 'unknown'));
         $file          = $request->file('slip_file');
 
+        $slipDateInput = $request->input('slip_date');
+        $slipTime = $slipDateInput
+            ? Carbon::parse($slipDateInput)->setTimezone('Asia/Bangkok')->setTime(12, 0, 0)  // ✅ Bangkok
+            : $this->nowBkk();                                                                // ✅ Bangkok
+
         try {
             $safeName = $this->sanitizeDepositFilename($depositBillId);
             $ext      = strtolower($file->getClientOriginalExtension());
             $fileName = $safeName . '.' . $ext;
+            $absDir   = storage_path('app/public/' . self::SLIP_OUTPUT_DIR);
+            $relPath  = self::SLIP_OUTPUT_DIR . '/' . $fileName;
 
-            $absDir = storage_path('app/public/' . self::SLIP_OUTPUT_DIR);
-            $relPath = self::SLIP_OUTPUT_DIR . '/' . $fileName;
-            $absPath = storage_path('app/public/' . $relPath);
-
-            // สร้างโฟลเดอร์ถ้ายังไม่มี
-            if (!is_dir($absDir)) {
-                mkdir($absDir, 0775, true);
+            if (!is_dir($absDir)) mkdir($absDir, 0775, true);
+            foreach (['pdf','jpg','jpeg','png','webp'] as $x) {
+                $old = $absDir . DIRECTORY_SEPARATOR . $safeName . '.' . $x;
+                if (file_exists($old)) @unlink($old);
             }
-
-            // ✅ ลบไฟล์เดิมทุกนามสกุล (เผื่อเปลี่ยนจาก .pdf → .jpg)
-            foreach (['pdf','jpg','jpeg','png','webp'] as $oldExt) {
-                $oldFile = $absDir . DIRECTORY_SEPARATOR . $safeName . '.' . $oldExt;
-                if (file_exists($oldFile)) {
-                    @unlink($oldFile);
-                }
-            }
-
-            // ย้ายไฟล์ใหม่
             $file->move($absDir, $fileName);
 
-            // อัปเดต DB ทุกแถวที่มี deposit_bill_id เดียวกัน
-            $now = now();
-            $affected = deposit::where('deposit_bill_id', $depositBillId)
-                ->update([
-                    'deposit_slip' => $fileName,
-                    'slip_time'    => $now,
-                ]);
+            deposit::where('deposit_bill_id', $depositBillId)
+                ->update(['deposit_slip' => $fileName, 'slip_time' => $slipTime]);
 
-            Log::info('Deposit slip uploaded', [
-                'deposit_bill_id' => $depositBillId,
-                'file_name'       => $fileName,
-                'rows_affected'   => $affected,
-                'uploaded_by'     => $uploadedBy,
-            ]);
+            Log::info('Slip uploaded', compact('depositBillId', 'fileName', 'slipTime', 'uploadedBy'));
 
             return response()->json([
-                'success'   => true,
-                'message'   => 'อัปโหลดสลิปสำเร็จ',
-                'file_name' => $fileName,
-                'file_url'  => asset('storage/' . $relPath),
-                'slip_time' => $now->format('Y-m-d H:i:s'),
+                'success' => true, 'message' => 'อัปโหลดสำเร็จ',
+                'file_url' => asset('storage/' . $relPath),
             ]);
-
         } catch (\Throwable $e) {
-            Log::error('Upload deposit slip failed: ' . $e->getMessage(), [
-                'trace' => $e->getTraceAsString(),
-            ]);
-            return response()->json([
-                'success' => false,
-                'message' => 'เกิดข้อผิดพลาด: ' . $e->getMessage(),
-            ], 500);
+            Log::error('Slip upload failed: ' . $e->getMessage());
+            return response()->json(['success' => false, 'message' => $e->getMessage()], 500);
         }
     }
 }

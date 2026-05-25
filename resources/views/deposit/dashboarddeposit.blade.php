@@ -11,1330 +11,537 @@
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
 :root{
-  /* ===== ธีม Navy ทางการ (ธนาคาร) ===== */
-  --green-header:#0B2447;       /* Navy เข้ม - แถบหัวเรื่อง */
-  --green-header-2:#19376D;     /* Navy 2 - ไล่เฉด */
-  --green-table:#19376D;        /* หัวตาราง */
-  --green-row:#EAF1FB;           /* แถวอ่อน hover */
-  --green-row-alt:#F5F8FD;       /* แถวสลับ */
-  --green-row-hover:#D6E4F5;     /* hover เข้มขึ้น */
-  --green-line:#C5D6EC;          /* เส้นคั่น */
-  --green-confirmed:#DCE7F5;     /* แถวยืนยันแล้ว */
-  --green-text:#0B2447;          /* ตัวอักษรเน้น */
-  --green-link:#1E40AF;          /* ลิงก์ */
-
-  --red-btn:#9B1B1B;             /* แดงคล้ำ ทางการ */
-  --red-btn-hover:#7F1717;
-  --red-light:#FEE2E2;
-  --red-border:#FCA5A5;
-
-  --ink:#1F2937;
-  --steel:#374151;
-  --ash:#6B7280;
-  --mist:#9CA3AF;
-  --border:#D6D9DD;
-  --bg:#EEF2F7;                  /* พื้นหลังฟ้า-เทาอ่อน */
-  --white:#FFFFFF;
-  --r4:4px;--r6:6px;--r8:8px;
+  --navy:#0B2447;--navy2:#19376D;--ntbl:#19376D;
+  --rh:#EAF1FB;--rhov:#D6E4F5;--line:#C5D6EC;--txt:#0B2447;--link:#1E40AF;
+  --red:#9B1B1B;--red-h:#7F1717;--red-lt:#FEE2E2;--red-bd:#FCA5A5;
+  --ink:#1F2937;--steel:#374151;--ash:#6B7280;--mist:#9CA3AF;
+  --border:#D6D9DD;--bg:#EEF2F7;
 }
-
-html,body{width:100%;min-height:100vh}
 body{font-family:'Sarabun','Kanit',sans-serif;font-size:14px;background:var(--bg);color:var(--ink);line-height:1.5}
-
-.page{width:100%;padding:0;min-height:100vh}
-
-.topbar{
-  background:linear-gradient(180deg,var(--green-header) 0%,var(--green-header-2) 100%);
-  padding:14px 22px;
-  display:flex;align-items:center;justify-content:space-between;gap:14px;flex-wrap:wrap;
-  border-bottom:3px solid #061B3A;
-}
-.topbar-brand{display:flex;align-items:center;gap:12px}
-.brand-title{
-  font-family:'Kanit',sans-serif;
-  font-size:22px;font-weight:600;color:#fff;
-  letter-spacing:-.3px;
-  text-shadow:0 1px 2px rgba(0,0,0,.15);
-}
-.topbar-right{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
-
-.user-pill{
-  display:inline-flex;align-items:center;gap:8px;
-  padding:6px 14px 6px 8px;border-radius:6px;
-  background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.25);
-  font-size:13px;color:#fff;font-weight:500;
-}
-.user-ava{
-  width:22px;height:22px;border-radius:50%;background:#fff;
-  display:flex;align-items:center;justify-content:center;
-  color:var(--green-header);font-size:11px;font-weight:700;
-  font-family:'Kanit',sans-serif;
-}
-
-.btn-home{
-  display:inline-flex;align-items:center;gap:6px;
-  padding:7px 16px;border-radius:6px;
-  background:var(--red-btn);color:#fff;
-  font-size:13px;font-weight:500;border:none;cursor:pointer;text-decoration:none;
-  transition:background .15s;font-family:inherit;
-}
-.btn-home:hover{background:var(--red-btn-hover)}
-
-.filter-bar{
-  background:var(--bg);padding:12px 22px;
-  display:flex;align-items:center;gap:12px;flex-wrap:wrap;
-}
-.f-date{
-  display:inline-flex;align-items:center;gap:8px;
-  background:#fff;border:1px solid var(--border);
-  padding:6px 12px;border-radius:4px;font-size:13px;
-}
-.f-date-icon{
-  width:28px;height:28px;border-radius:4px;
-  background:var(--green-table);color:#fff;
-  display:flex;align-items:center;justify-content:center;
-  font-size:11px;font-weight:700;
-}
-.f-date input{
-  border:none;outline:none;background:transparent;
-  font-size:13px;font-family:inherit;color:var(--ink);
-}
-.f-clear{
-  margin-left:6px;width:20px;height:20px;border-radius:50%;
-  background:#FEE2E2;color:#9B1B1B;border:none;cursor:pointer;
-  font-size:11px;font-weight:700;display:none;align-items:center;justify-content:center;
-  transition:background .15s;
-}
-.f-clear.show{display:flex}
-.f-clear:hover{background:#FECACA}
-
-.f-search-wrap{
-  display:flex;align-items:center;gap:10px;margin-left:auto;flex-wrap:wrap;
-}
-.f-search{
-  display:flex;align-items:center;
-  background:#fff;border:1px solid var(--border);
-  border-radius:4px;padding:6px 12px;
-}
-.f-search input{
-  border:none;outline:none;background:transparent;
-  font-size:13px;font-family:inherit;color:var(--ink);
-  width:260px;text-align:right;direction:rtl;
-}
-.f-search input::placeholder{color:var(--mist)}
-
-.filter-info{
-  background:#fff;
-  margin:0 22px;
-  padding:8px 14px;
-  border:1px solid var(--green-line);
-  border-bottom:none;
-  font-size:12px;color:var(--ash);
-  display:none;
-  align-items:center;gap:8px;flex-wrap:wrap;
-}
-.filter-info.show{display:flex}
-.filter-info b{color:var(--green-text);font-weight:600}
-.filter-info .count{
-  background:var(--green-row);color:var(--green-text);
-  padding:2px 10px;border-radius:12px;font-weight:600;
-}
-
-.tbl-wrap{
-  background:#fff;
-  margin:0 22px 22px;
-  border:1px solid var(--green-line);
-  overflow-x:auto;-webkit-overflow-scrolling:touch;
-}
-table{width:100%;border-collapse:collapse;font-size:13px}
-
-thead tr{background:var(--green-table)}
-th{
-  padding:10px 12px;
-  font-size:13px;font-weight:600;color:#fff;
-  border-right:1px solid rgba(255,255,255,.15);
-  text-align:center;white-space:nowrap;
-  font-family:'Kanit',sans-serif;
-}
+.topbar{background:linear-gradient(180deg,var(--navy),var(--navy2));padding:11px 16px;display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;border-bottom:3px solid #061B3A}
+.brand{font-family:'Kanit';font-size:19px;font-weight:600;color:#fff}
+.topbar-r{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.pill{display:inline-flex;align-items:center;gap:5px;padding:4px 10px 4px 6px;border-radius:5px;background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.2);font-size:11px;color:#fff;font-weight:500}
+.ava{width:18px;height:18px;border-radius:50%;background:#fff;display:flex;align-items:center;justify-content:center;color:var(--navy);font-size:9px;font-weight:700;font-family:'Kanit'}
+.btn-home{display:inline-flex;align-items:center;gap:4px;padding:5px 12px;border-radius:5px;background:var(--red);color:#fff;font-size:11px;font-weight:500;border:none;cursor:pointer;text-decoration:none;font-family:inherit}
+.btn-home:hover{background:var(--red-h)}
+.fbar{padding:8px 16px;display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.fsearch{display:flex;align-items:center;background:#fff;border:1px solid var(--border);border-radius:4px;padding:5px 10px;flex:1;max-width:380px;min-width:0}
+.fsearch input{border:none;outline:none;background:none;font-size:12px;font-family:inherit;color:var(--ink);width:100%}
+.fsearch input::placeholder{color:var(--mist)}
+.fcount{font-size:11px;color:var(--ash);margin-left:auto;white-space:nowrap}
+.tw{background:#fff;margin:0 16px 16px;border:1px solid var(--line);overflow-x:auto;-webkit-overflow-scrolling:touch}
+table{width:100%;border-collapse:collapse;font-size:12px}
+thead tr{background:var(--ntbl)}
+th{padding:8px 8px;font-size:11px;font-weight:600;color:#fff;border-right:1px solid rgba(255,255,255,.12);text-align:center;white-space:nowrap;font-family:'Kanit'}
 th:last-child{border-right:none}
-
-tbody tr{background:#fff;transition:background .1s}
-tbody tr:nth-child(even){background:#fff}
-tbody tr:hover{background:var(--green-row)}
-tbody tr.confirmed{background:#fff}
+tbody tr{background:#fff;transition:background .08s}
+tbody tr:hover{background:var(--rh)}
 tbody tr.hidden-row{display:none}
-
-td{
-  padding:10px 12px;
-  border-bottom:1px solid var(--green-line);
-  border-right:1px solid var(--green-line);
-  vertical-align:middle;color:var(--ink);text-align:center;
-}
+td{padding:7px 8px;border-bottom:1px solid var(--line);border-right:1px solid var(--line);vertical-align:middle;text-align:center}
 td:last-child{border-right:none}
 tbody tr:last-child td{border-bottom:none}
-
-.c-link{
-  color:var(--green-link);font-weight:500;
-  cursor:pointer;text-decoration:none;
-  white-space:nowrap;transition:color .12s;
-}
-.c-link:hover{color:#1E3A8A;text-decoration:underline}
-
-.c-cust{text-align:left;max-width:280px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.c-emp{text-align:center}
-
-.c-money{font-family:'Sarabun',monospace;font-weight:500;text-align:right;white-space:nowrap}
-.c-money-sub{font-family:'Sarabun',monospace;text-align:right;white-space:nowrap;color:var(--steel)}
-.c-percent{font-family:'Sarabun',monospace;text-align:center;white-space:nowrap}
-
-.type-text{color:var(--green-text);font-weight:500}
-.type-text .plus{color:var(--green-link);font-weight:700;margin-left:4px}
-
-/* ===== คอลัมน์ deposit_bill_id + ปุ่ม PDF ===== */
-.c-billno{
-  display:inline-flex;align-items:center;gap:6px;
-  white-space:nowrap;
-}
-.c-billno-text{
-  font-weight:700;color:var(--green-text);
-  font-variant-numeric:tabular-nums;font-size:12.5px;
-}
-.btn-pdf{
-  display:inline-flex;align-items:center;justify-content:center;
-  width:26px;height:26px;
-  background:var(--red-light);
-  border:1px solid var(--red-border);
-  color:var(--red-btn);
-  text-decoration:none;
-  transition:all .15s;
-  flex-shrink:0;
-}
-.btn-pdf:hover{
-  background:var(--red-btn);
-  color:#fff;
-  border-color:var(--red-btn);
-  transform:translateY(-1px);
-  box-shadow:0 2px 6px rgba(155,27,27,.3);
-}
-
-/* ✅ เพิ่มใหม่: ปุ่ม PDF สีเขียวเมื่อ status_bill = 'ok' */
-.btn-pdf.is-ok{
-  background:#D1FAE5;
-  border-color:#6EE7B7;
-  color:#047857;
-}
-.btn-pdf.is-ok:hover{
-  background:#047857;
-  color:#fff;
-  border-color:#047857;
-  box-shadow:0 2px 6px rgba(4,120,87,.35);
-}
-
-/* ✅ เพิ่มใหม่: ข้อความ "สร้างเอกสารแล้วเมื่อ" */
-.status-cell .st-print-time{
-  color:#047857;
-  font-size:10.5px;
-  display:block;
-  margin-top:2px;
-  font-weight:500;
-}
-.no-bill{color:var(--mist);font-size:12px}
-
-/* ===== คอลัมน์ PO ลูกค้า ===== */
-.c-custpo{
-  font-weight:600;color:var(--green-text);
-  font-variant-numeric:tabular-nums;
-  white-space:nowrap;
-}
-
-.status-cell{text-align:center;line-height:1.35}
-.status-cell .st{color:var(--green-text);font-weight:600;font-size:13px;display:block}
-.status-cell .st-time{color:var(--ash);font-size:11px;display:block;margin-top:2px}
-.status-cell .st-check-time{
-  color:var(--green-link);font-size:10.5px;display:block;margin-top:2px;
-  font-weight:500;
-}
-.status-cancel{color:#9B1B1B;font-weight:600}
-.status-wait{color:#D97706;font-weight:600}
-.status-wip{color:var(--green-link);font-weight:600}
-
-/* ===== สถานะแบบกดได้ (admin) ===== */
-.status-clickable{
-  cursor:pointer;
-  display:inline-block;
-  padding:4px 12px;
-  border-radius:14px;
-  border:1.5px solid transparent;
-  transition:all .15s;
-  user-select:none;
-}
-.status-clickable:hover{
-  background:var(--green-row);
-  border-color:var(--green-table);
-  transform:translateY(-1px);
-  box-shadow:0 2px 6px rgba(25,55,109,.2);
-}
-.status-clickable.is-wait:hover{
-  background:#FEF3C7;
-  border-color:#D97706;
-  box-shadow:0 2px 6px rgba(217,119,6,.2);
-}
-.status-clickable .pen-ico{
-  display:inline-block;margin-left:5px;opacity:.5;
-  font-size:10px;
-}
-.status-clickable:hover .pen-ico{opacity:1}
-
-/* ===== Confirm Modal ===== */
-.confirm-bg{display:none;position:fixed;inset:0;background:rgba(13,15,18,.6);z-index:2000;align-items:center;justify-content:center;padding:16px;backdrop-filter:blur(3px)}
-.confirm-bg.open{display:flex}
-.confirm-box{
-  background:#fff;border-radius:12px;
-  width:100%;max-width:420px;
-  box-shadow:0 24px 60px rgba(0,0,0,.25);
-  overflow:hidden;
-  animation:popIn .2s ease-out;
-}
-@keyframes popIn{from{transform:scale(.92);opacity:0}to{transform:scale(1);opacity:1}}
-.confirm-head{
-  padding:20px 22px 14px;
-  text-align:center;
-}
-.confirm-ico{
-  width:56px;height:56px;border-radius:50%;
-  background:#FEF3C7;color:#D97706;
-  margin:0 auto 12px;
-  display:flex;align-items:center;justify-content:center;
-  font-size:28px;font-weight:700;
-}
-.confirm-ico.to-confirm{background:var(--green-row);color:var(--green-table)}
-.confirm-title{
-  font-size:17px;font-weight:600;color:var(--ink);
-  font-family:'Kanit',sans-serif;margin-bottom:6px;
-}
-.confirm-msg{font-size:13px;color:var(--ash);line-height:1.5}
-.confirm-msg b{color:var(--ink);font-weight:600}
-.confirm-detail{
-  margin:14px 22px;padding:10px 14px;
-  background:var(--green-row);border-radius:6px;
-  font-size:13px;color:var(--green-text);
-  display:flex;justify-content:space-between;gap:8px;
-}
-.confirm-detail .label{color:var(--ash);font-size:11px;text-transform:uppercase;letter-spacing:.05em}
-.confirm-foot{
-  padding:14px 22px 18px;
-  display:flex;gap:10px;
-}
-.confirm-foot button{
-  flex:1;padding:10px;border-radius:8px;
-  font-size:14px;font-weight:600;font-family:inherit;
-  cursor:pointer;border:none;transition:all .15s;
-}
-.btn-cancel{background:#F3F4F6;color:var(--steel)}
-.btn-cancel:hover{background:#E5E7EB}
-.btn-confirm{background:var(--green-table);color:#fff}
-.btn-confirm:hover{background:var(--green-header)}
-.btn-confirm.to-wait{background:#D97706}
-.btn-confirm.to-wait:hover{background:#B45309}
-.btn-confirm:disabled{opacity:.6;cursor:not-allowed}
-
-/* Toast แจ้งผล */
-.toast{
-  position:fixed;bottom:24px;left:50%;
-  transform:translateX(-50%) translateY(100px);
-  background:var(--green-header);color:#fff;
-  padding:12px 22px;border-radius:8px;
-  font-size:13px;font-weight:500;
-  box-shadow:0 8px 24px rgba(0,0,0,.2);
-  z-index:3000;opacity:0;
-  transition:all .25s ease-out;
-  display:flex;align-items:center;gap:8px;
-}
-.toast.show{transform:translateX(-50%) translateY(0);opacity:1}
-.toast.error{background:#9B1B1B}
-
-.empty,.no-match{padding:60px 20px;text-align:center;background:#fff}
-.empty-ico{
-  width:52px;height:52px;border-radius:8px;
-  background:var(--green-row);margin:0 auto 14px;
-  display:flex;align-items:center;justify-content:center;
-}
-.empty h4,.no-match h4{font-size:15px;font-weight:600;margin-bottom:5px;font-family:'Kanit',sans-serif;color:var(--green-text)}
-.empty p,.no-match p{font-size:12px;color:var(--ash)}
-.no-match-row{display:none}
-.no-match-row.show{display:table-row}
-
-.pg-bar{
-  display:flex;align-items:center;justify-content:space-between;
-  padding:11px 18px;border-top:1px solid var(--green-line);
-  flex-wrap:wrap;gap:8px;background:#fff;
-}
-.pg-info{font-size:12px;color:var(--ash)}
-
-nav[role="navigation"]>div{display:flex!important;align-items:center!important;justify-content:center!important;gap:4px;flex-wrap:nowrap!important}
+.cL{text-align:left}.cR{text-align:right}.cM{font-family:'Sarabun',monospace;font-weight:500;text-align:right;white-space:nowrap}
+.cB{font-weight:700;color:var(--txt)}.cN{white-space:nowrap}.cS{font-size:10.5px;color:var(--ash)}
+.bg{display:inline-block;padding:2px 8px;border-radius:10px;font-size:10px;font-weight:600;white-space:nowrap}
+.bg-ok{background:#D1FAE5;color:#047857}
+.bg-wait{background:#FEF3C7;color:#92400E}
+.bg-cancel{background:var(--red-lt);color:var(--red)}
+.bg-wip{background:#DBEAFE;color:var(--link)}
+.bg-wht{background:#EDE9FE;color:#6D28D9}
+.act{display:flex;align-items:center;gap:4px;justify-content:center;flex-wrap:wrap}
+.ab{display:inline-flex;align-items:center;justify-content:center;gap:3px;padding:3px 7px;border-radius:3px;font-size:10px;font-weight:600;border:1px solid;cursor:pointer;transition:all .12s;text-decoration:none;font-family:inherit;white-space:nowrap;line-height:1.3}
+.ab-pdf{background:var(--red-lt);border-color:var(--red-bd);color:var(--red)}
+.ab-pdf:hover{background:var(--red);color:#fff;border-color:var(--red)}
+.ab-pdf.ok{background:#D1FAE5;border-color:#6EE7B7;color:#047857}
+.ab-pdf.ok:hover{background:#047857;color:#fff}
+.ab-slip{background:#ECFDF5;border-color:#6EE7B7;color:#047857}
+.ab-slip:hover{background:#047857;color:#fff;border-color:#047857}
+.ab-add{background:#FFF7ED;border-color:#FDBA74;color:#C2410C}
+.ab-add:hover{background:#C2410C;color:#fff;border-color:#C2410C}
+.ab-info{background:var(--rh);border-color:var(--line);color:var(--ntbl)}
+.ab-info:hover{background:var(--ntbl);color:#fff}
+.ie{display:flex;align-items:center;gap:3px;justify-content:center}
+.ie input{width:80px;border:1px solid var(--border);border-radius:3px;padding:4px 6px;font-size:11px;font-family:inherit;color:var(--ink);outline:none;text-align:center}
+.ie input:focus{border-color:var(--ntbl);box-shadow:0 0 0 2px rgba(25,55,109,.1)}
+.ie input.dirty{border-color:#D97706;background:#FFFBEB}
+.ie-sv{width:24px;height:24px;display:flex;align-items:center;justify-content:center;background:var(--ntbl);color:#fff;border:none;border-radius:3px;cursor:pointer;flex-shrink:0;transition:all .12s}
+.ie-sv:hover{background:var(--navy)}
+.ie-sv:disabled{opacity:.4;cursor:not-allowed}
+.ie-sv.ok{background:#047857}
+.btn-del{display:inline-flex;align-items:center;gap:4px;padding:5px 12px;border-radius:5px;background:var(--red-lt);border:1px solid var(--red-bd);color:var(--red);font-size:11px;font-weight:600;cursor:pointer;font-family:inherit;transition:all .12s}
+.btn-del:hover{background:var(--red);color:#fff}
+.btn-st{display:inline-flex;align-items:center;gap:4px;padding:5px 12px;border-radius:5px;font-size:11px;font-weight:600;cursor:pointer;font-family:inherit;border:1px solid;transition:all .12s}
+.btn-st.cfm{background:#D1FAE5;border-color:#6EE7B7;color:#047857}
+.btn-st.cfm:hover{background:#047857;color:#fff}
+.btn-st.bk{background:#FEF3C7;border-color:#FDE68A;color:#92400E}
+.btn-st.bk:hover{background:#D97706;color:#fff}
+.pgb{display:flex;align-items:center;justify-content:space-between;padding:8px 14px;border-top:1px solid var(--line);flex-wrap:wrap;gap:6px;background:#fff}
+.pgi{font-size:11px;color:var(--ash)}
+nav[role="navigation"]>div{display:flex!important;align-items:center!important;justify-content:center!important;gap:3px;flex-wrap:wrap!important}
 nav[role="navigation"]>div>p{display:none!important}
 nav[role="navigation"] .sm\:hidden{display:none!important}
 nav[role="navigation"] a[rel="prev"] span,nav[role="navigation"] a[rel="next"] span{display:none!important}
-nav[role="navigation"] a[rel="prev"],nav[role="navigation"] a[rel="next"]{
-  width:30px;height:30px;border-radius:4px;
-  background:#fff;border:1px solid var(--border);
-  display:flex;align-items:center;justify-content:center;color:var(--ash);transition:all .12s;
-}
-nav[role="navigation"] a[rel="prev"]:hover,nav[role="navigation"] a[rel="next"]:hover{
-  border-color:var(--green-table);color:var(--green-table);background:var(--green-row);
-}
-nav[role="navigation"] svg{width:13px!important;height:13px!important}
-nav[role="navigation"] a.relative,nav[role="navigation"] span.relative{
-  min-width:30px;height:30px;display:flex;align-items:center;justify-content:center;
-  font-size:13px;font-weight:500;color:var(--green-link);
-  border-radius:4px;border:1px solid transparent;transition:all .12s;
-}
-nav[role="navigation"] a.relative:hover{background:var(--green-row);border-color:var(--green-line)}
-nav[role="navigation"] span[aria-current="page"]{
-  background:var(--green-table)!important;color:#fff!important;border-color:var(--green-table)!important;
-}
-
-.modal-bg{display:none;position:fixed;inset:0;background:rgba(13,15,18,.55);z-index:1000;align-items:center;justify-content:center;padding:16px;backdrop-filter:blur(2px)}
-.modal-bg.open{display:flex}
-.modal{
-  background:#fff;border-radius:8px;
-  width:100%;max-width:680px;max-height:90vh;overflow-y:auto;
-  border:1px solid var(--border);box-shadow:0 20px 60px rgba(0,0,0,.18);
-}
-.modal-head{
-  padding:14px 22px;
-  background:var(--green-header);color:#fff;
-  display:flex;align-items:center;justify-content:space-between;
-  position:sticky;top:0;z-index:1;
-}
-.modal-head h3{font-size:15px;font-weight:600;font-family:'Kanit',sans-serif}
-.modal-x{
-  width:28px;height:28px;border-radius:4px;
-  border:1px solid rgba(255,255,255,.25);background:transparent;
-  cursor:pointer;display:flex;align-items:center;justify-content:center;
-  color:#fff;transition:all .12s;flex-shrink:0;
-}
-.modal-x:hover{background:rgba(255,255,255,.15)}
-.modal-body{padding:18px 22px}
-.sec-ttl{
-  font-size:11px;font-weight:700;color:var(--green-text);
-  letter-spacing:.06em;text-transform:uppercase;
-  margin-bottom:10px;padding-bottom:7px;
-  border-bottom:2px solid var(--green-table);
-}
-.dg{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px}
-.df{display:flex;flex-direction:column;gap:3px}
+nav[role="navigation"] a[rel="prev"],nav[role="navigation"] a[rel="next"]{width:26px;height:26px;border-radius:3px;background:#fff;border:1px solid var(--border);display:flex;align-items:center;justify-content:center;color:var(--ash)}
+nav[role="navigation"] svg{width:11px!important;height:11px!important}
+nav[role="navigation"] a.relative,nav[role="navigation"] span.relative{min-width:26px;height:26px;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:500;color:var(--link);border-radius:3px;border:1px solid transparent}
+nav[role="navigation"] span[aria-current="page"]{background:var(--ntbl)!important;color:#fff!important;border-color:var(--ntbl)!important}
+/* Modal */
+.mo-bg{display:none;position:fixed;inset:0;background:rgba(13,15,18,.5);z-index:1000;align-items:center;justify-content:center;padding:10px;backdrop-filter:blur(2px)}
+.mo-bg.open{display:flex}
+.mo{background:#fff;border-radius:10px;width:100%;max-width:580px;max-height:90vh;overflow-y:auto;border:1px solid var(--border);box-shadow:0 16px 48px rgba(0,0,0,.18);animation:pop .18s ease-out}
+@keyframes pop{from{transform:scale(.93);opacity:0}to{transform:scale(1);opacity:1}}
+.mo-h{padding:11px 16px;background:var(--navy);color:#fff;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:1;border-radius:10px 10px 0 0}
+.mo-h h3{font-size:13px;font-weight:600;font-family:'Kanit'}
+.mo-x{width:24px;height:24px;border-radius:3px;border:1px solid rgba(255,255,255,.2);background:none;cursor:pointer;display:flex;align-items:center;justify-content:center;color:#fff}
+.mo-x:hover{background:rgba(255,255,255,.15)}
+.mo-b{padding:14px 16px}
+.sttl{font-size:9px;font-weight:700;color:var(--txt);letter-spacing:.06em;text-transform:uppercase;margin-bottom:8px;padding-bottom:5px;border-bottom:2px solid var(--ntbl)}
+.dg{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px}
+.df{display:flex;flex-direction:column;gap:2px}
 .df.full{grid-column:1/-1}
-.dl{font-size:10px;font-weight:700;color:var(--ash);letter-spacing:.06em;text-transform:uppercase}
-.dv{font-size:13px;color:var(--ink);font-weight:500}
-.modal-foot{padding:12px 22px;border-top:1px solid var(--green-line);display:flex;justify-content:flex-end}
-.btn-ghost{
-  padding:7px 16px;border-radius:6px;
-  border:1px solid var(--border);background:transparent;
-  font-size:13px;font-weight:500;color:var(--steel);
-  cursor:pointer;font-family:inherit;transition:all .15s;
-}
-.btn-ghost:hover{border-color:var(--green-table);color:var(--green-table);background:var(--green-row)}
-
+.dl{font-size:9px;font-weight:700;color:var(--ash);letter-spacing:.05em;text-transform:uppercase}
+.dv{font-size:12px;color:var(--ink);font-weight:500}
+.mo-f{padding:10px 16px;border-top:1px solid var(--line);display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end}
+.btn-g{padding:6px 14px;border-radius:5px;border:1px solid var(--border);background:none;font-size:11px;font-weight:500;color:var(--steel);cursor:pointer;font-family:inherit}
+.btn-g:hover{border-color:var(--ntbl);color:var(--ntbl);background:var(--rh)}
+/* Confirm */
+.cf-bg{display:none;position:fixed;inset:0;background:rgba(13,15,18,.6);z-index:2000;align-items:center;justify-content:center;padding:16px;backdrop-filter:blur(3px)}
+.cf-bg.open{display:flex}
+.cf-box{background:#fff;border-radius:12px;width:100%;max-width:380px;box-shadow:0 20px 50px rgba(0,0,0,.25);animation:pop .18s ease-out;text-align:center;padding:22px 20px}
+.cf-ico{width:48px;height:48px;border-radius:50%;margin:0 auto 10px;display:flex;align-items:center;justify-content:center;font-size:22px;font-weight:700}
+.cf-ico.w{background:#FEF3C7;color:#D97706}.cf-ico.d{background:var(--red-lt);color:var(--red)}.cf-ico.g{background:#D1FAE5;color:#047857}
+.cf-t{font-size:15px;font-weight:600;color:var(--ink);font-family:'Kanit';margin-bottom:5px}
+.cf-m{font-size:12px;color:var(--ash);line-height:1.5;margin-bottom:14px}
+.cf-m b{color:var(--ink)}
+.cf-btns{display:flex;gap:8px}
+.cf-btns button{flex:1;padding:9px;border-radius:7px;font-size:12px;font-weight:600;font-family:inherit;cursor:pointer;border:none;transition:all .12s}
+.cf-cn{background:#F3F4F6;color:var(--steel)}.cf-cn:hover{background:#E5E7EB}
+.cf-ok{background:var(--ntbl);color:#fff}.cf-ok:hover{background:var(--navy)}
+.cf-dl{background:var(--red);color:#fff}.cf-dl:hover{background:var(--red-h)}
+.cf-ok:disabled,.cf-dl:disabled{opacity:.5;cursor:not-allowed}
+/* Slip */
+.sl-df{margin-bottom:12px}
+.sl-df label{display:block;font-size:9px;font-weight:700;color:var(--txt);letter-spacing:.04em;margin-bottom:4px;text-transform:uppercase}
+.sl-df input[type=date]{width:100%;border:1px solid var(--border);border-radius:5px;padding:7px 10px;font-size:12px;font-family:inherit;color:var(--ink);outline:none}
+.sl-drop{display:block;width:100%;border:2px dashed var(--line);border-radius:8px;padding:20px 14px;text-align:center;background:#FAFBFE;cursor:pointer;transition:all .12s;margin:0}
+.sl-drop:hover,.sl-drop.dov{border-color:var(--ntbl);background:var(--rh)}
+.sl-drop input[type=file]{position:absolute;width:0;height:0;opacity:0;pointer-events:none}
+.sl-prev{margin-top:10px;display:none}
+.sl-prev.show{display:block}
+.sl-prev img{max-width:100%;max-height:220px;border-radius:5px;border:1px solid var(--line)}
+.toast{position:fixed;bottom:18px;left:50%;transform:translateX(-50%) translateY(80px);background:var(--navy);color:#fff;padding:9px 18px;border-radius:7px;font-size:11px;font-weight:500;box-shadow:0 6px 20px rgba(0,0,0,.2);z-index:3000;opacity:0;transition:all .22s;max-width:90vw}
+.toast.show{transform:translateX(-50%) translateY(0);opacity:1}
+.toast.err{background:var(--red)}
+.empty{padding:40px 16px;text-align:center;background:#fff}
+.empty h4{font-size:13px;font-weight:600;font-family:'Kanit';color:var(--txt);margin-bottom:3px}
+.empty p{font-size:11px;color:var(--ash)}
+.nmr{display:none}.nmr.show{display:table-row}
 @media(max-width:768px){
-  .filter-bar,.tbl-wrap,.filter-info{margin-left:10px;margin-right:10px}
-  .tbl-wrap{margin:0 10px 10px}
-  .f-search input{width:180px}
-  th,td{padding:8px 8px;font-size:12px}
-  .brand-title{font-size:18px}
+  .topbar{padding:9px 10px}.brand{font-size:16px}
+  .fbar{padding:6px 10px}.fsearch{max-width:100%}
+  .tw{margin:0 8px 10px}
+  th,td{padding:6px 5px;font-size:11px}
+  .ie input{width:65px;font-size:10px;padding:3px 4px}
+  .ab{font-size:9px;padding:2px 5px}
+  .mo{max-width:100%;border-radius:8px}.mo-b{padding:12px}.dg{grid-template-columns:1fr}
 }
-/* ===== ปุ่มแนบสลิป / ดูสลิป ===== */
-.btn-slip{
-  display:inline-flex;align-items:center;justify-content:center;gap:5px;
-  padding:5px 10px;height:26px;
-  border-radius:4px;cursor:pointer;
-  font-size:11.5px;font-weight:600;font-family:inherit;
-  border:1px solid;transition:all .15s;text-decoration:none;
-  white-space:nowrap;
-}
-.btn-slip.insert{
-  background:#FFF7ED;border-color:#FDBA74;color:#C2410C;
-}
-.btn-slip.insert:hover{
-  background:#C2410C;color:#fff;border-color:#C2410C;
-  transform:translateY(-1px);box-shadow:0 2px 6px rgba(194,65,12,.3);
-}
-.btn-slip.view{
-  background:#ECFDF5;border-color:#6EE7B7;color:#047857;
-}
-.btn-slip.view:hover{
-  background:#047857;color:#fff;border-color:#047857;
-  transform:translateY(-1px);box-shadow:0 2px 6px rgba(4,120,87,.3);
-}
-.st-slip-time{
-  color:#C2410C;font-size:10.5px;display:block;margin-top:2px;font-weight:500;
-}
-
-.slip-modal-body{
-  padding:20px 22px;
-}
-.slip-drop{
-  display:block;              /* ✅ บังคับให้เป็น block */
-  width:100%;                 /* ✅ เต็มความกว้าง */
-  box-sizing:border-box;      /* ✅ รวม padding ในความกว้าง */
-  border:2px dashed var(--green-line);
-  border-radius:8px;
-  padding:30px 20px;
-  text-align:center;
-  background:#FAFBFE;
-  cursor:pointer;
-  transition:all .15s;
-  margin:0;                   /* ✅ กัน margin default ของ label */
-}
-.slip-drop:hover,
-.slip-drop.dragover{
-  border-color:var(--green-table);
-  background:var(--green-row);
-}
-.slip-drop input[type=file]{
-  position:absolute;          /* ✅ ดึงออกจาก flow */
-  width:0;height:0;
-  opacity:0;
-  pointer-events:none;
-  overflow:hidden;
-}
-.slip-drop-ico{
-  width:48px;height:48px;border-radius:50%;
-  background:var(--green-row);color:var(--green-table);
-  margin:0 auto 10px;display:flex;align-items:center;justify-content:center;
-  font-size:22px;
-}
-.slip-drop-text{font-size:13px;color:var(--steel);font-weight:500;margin-bottom:4px}
-.slip-drop-hint{font-size:11px;color:var(--ash)}
-.slip-preview{margin-top:14px;display:none}
-.slip-preview.show{display:block}
-.slip-preview img{max-width:100%;max-height:300px;border-radius:6px;border:1px solid var(--green-line)}
-.slip-preview .pdf-box{
-  padding:14px;background:var(--green-row);border-radius:6px;
-  display:flex;align-items:center;gap:10px;
-  font-size:13px;color:var(--green-text);font-weight:500;
+@media(max-width:480px){
+  .topbar{padding:7px 8px;gap:6px}.brand{font-size:14px}
+  .pill{font-size:10px;padding:3px 7px 3px 5px}
+  .btn-home{padding:4px 8px;font-size:10px}
+  .tw{margin:0 4px 6px}
+  th,td{padding:5px 4px;font-size:10px}
+  .ie input{width:55px;font-size:9.5px}.ie-sv{width:20px;height:20px}
+  .ab{font-size:8.5px;padding:2px 4px}
+  .pgb{flex-direction:column;align-items:center}
 }
 </style>
 </head>
 <body>
-
 @php
-  $deposits = $deposits ?? new \Illuminate\Pagination\LengthAwarePaginator([], 0, 15);
-  $totalCount = $deposits->total();
-
-  $typeLabel = [
-    'product'  => 'สินค้า',
-    'service'  => 'บริการ',
-    'shipping' => 'ขนส่ง',
-  ];
-
-  // ===== ตรวจสอบสิทธิ์ admin (kanitin2, dev) =====
-  $currentUser = strtolower(request()->get('create_by', ''));
-  $adminUsers  = ['kanitin2', 'dev'];
-  $isAdmin     = in_array($currentUser, $adminUsers);
+  $deposits = $deposits ?? new \Illuminate\Pagination\LengthAwarePaginator([], 0, 100);
+  $tl = ['product'=>'สินค้า','service'=>'บริการ','shipping'=>'ขนส่ง'];
+  $cu = strtolower(request()->get('create_by', ''));
+  $adm = in_array($cu, ['kanitin2','dev','aom']);
 @endphp
 
-<div class="page">
-
-  <!-- TOPBAR -->
-  <div class="topbar">
-    <div class="topbar-brand">
-      <div class="brand-title">ข้อมูลใบมัดจำ</div>
+<div class="topbar">
+  <div class="brand">ข้อมูลใบมัดจำ</div>
+  <div class="topbar-r">
+    <div class="pill">
+      @php $cb=trim(request()->get('create_by','')); @endphp
+      @if($cb!=='')
+        <div class="ava">{{ strtoupper(substr($cb,0,2)) }}</div>{{ $cb }}
+      @else
+        <span style="font-size:12px">👤</span><span>ผู้ใช้</span>
+      @endif
     </div>
-    <div class="topbar-right">
-      <div class="user-pill">
-        @php $cb = trim(request()->get('create_by', '')); @endphp
-        @if($cb !== '')
-          <div class="user-ava">{{ strtoupper(substr($cb, 0, 2)) }}</div>
-          {{ $cb }}
-        @else
-          <span style="font-size:14px">👤</span>
-          <span>ผู้ใช้:</span>
-        @endif
+    <a href="http://server_update:8000/solist" class="btn-home">🏠 หน้าหลัก</a>
+  </div>
+</div>
+
+<div class="fbar">
+  <div class="fsearch">
+    <svg width="13" height="13" viewBox="0 0 14 14" fill="none" style="flex-shrink:0;margin-right:5px"><circle cx="6" cy="6" r="4.5" stroke="#9CA3AF" stroke-width="1.2"/><path d="M9.5 9.5l3 3" stroke="#9CA3AF" stroke-width="1.2" stroke-linecap="round"/></svg>
+    <input type="text" id="fQ" placeholder="ค้นหา ใบสั่งขาย / ใบมัดจำ / PO / ลูกค้า" oninput="doFilter()">
+  </div>
+  <span class="fcount" id="fC">{{ $deposits->total() }} รายการ</span>
+</div>
+
+<div class="tw">
+<table>
+<thead><tr>
+  <th>#</th>
+  <th>เลขใบมัดจำ</th>
+  <th>ใบสั่งขาย</th>
+  <th>ลูกค้า</th>
+  <th>ราคาเต็ม<br><span style="font-size:8px;font-weight:400;opacity:.75">รวม VAT</span></th>
+  <th>ยอดมัดจำ<br><span style="font-size:8px;font-weight:400;opacity:.75">รวม VAT</span></th>
+  <th>ค่าธรรมเนียม</th>
+  <th>WHT</th>
+  <th>สถานะ</th>
+  <th>เอกสาร</th>
+  @if($adm)<th>ลบ</th>@endif
+</tr></thead>
+<tbody id="tb">
+@forelse($deposits as $item)
+@php
+  $st = $item->status ?? 'รอยืนยัน';
+  $isCfm = in_array($st,['ยืนยัน','ยืนยันแล้ว','สำเร็จ','ออกบิลแล้ว','ปรับสำเร็จ']);
+  $isWht = $st === 'มี WHT';
+  $isCnl = $st==='ยกเลิก';
+  $dt = $item->dep_type ?? '';
+  $tn = $tl[$dt] ?? $dt;
+  $bid = $item->deposit_bill_id ?? '';
+  $cpo = $item->po_document ?? $item->billid ?? '';
+  $fee = (float)($item->fee_amount ?? 0);
+  $dpv = (float)($item->dep_price ?? 0) * 1.07;
+  $gtv = (float)($item->grand_total ?? 0) * 1.07;
+  $net = max(0, $dpv - $fee);
+  $wht = $item->wht_doc_no ?? '';
+
+  $pdfRow = $bid ? \App\Models\deposit::where('deposit_bill_id',$bid)->select('deposit_bill','status_bill','deposit_slip','slip_time')->first() : null;
+  $pdfF = $pdfRow->deposit_bill ?? null;
+  $pdfOk = ($pdfRow->status_bill ?? null)==='ok';
+  $slipF = $pdfRow->deposit_slip ?? null;
+
+  // ✅ แก้ timezone — ใช้ Asia/Bangkok ทุกจุด
+  $timeFormatted = $item->time ? \Carbon\Carbon::parse($item->time)->setTimezone('Asia/Bangkok')->format('H:i d/m/Y') : '';
+
+  $rj = json_encode([
+    'id'=>$item->id,'so_id'=>$item->so_id??'','deposit_bill_id'=>$bid,'cust_po'=>$cpo,
+    'customer_name'=>$item->customer_name??'','customer_id'=>$item->customer_id??'',
+    'sale_name'=>$item->sale_name??'','emp_name'=>$item->emp_name??'',
+    'date_dep'=>$item->date_dep??'',
+    'time'=>$timeFormatted,
+    'dep_type_name'=>$tn,'dep_per'=>(float)($item->dep_per??0),
+    'dep_price'=>(float)($item->dep_price??0),
+    'dep_price_vat'=>$dpv,'grand_total'=>(float)($item->grand_total??0),'grand_total_vat'=>$gtv,
+    'fee_amount'=>$fee,'net'=>$net,'wht_doc_no'=>$wht,
+    'status'=>$st,'is_confirmed'=>$isCfm,'is_wht'=>$isWht,'is_cancelled'=>$isCnl,
+    'time_check'=>$item->time_check ? \Carbon\Carbon::parse($item->time_check)->setTimezone('Asia/Bangkok')->format('H:i d/m/Y') : '',
+    'slip_time'=>$item->slip_time ? \Carbon\Carbon::parse($item->slip_time)->setTimezone('Asia/Bangkok')->format('d/m/Y') : '',
+    'print_time'=>$item->print_time ? \Carbon\Carbon::parse($item->print_time)->setTimezone('Asia/Bangkok')->format('H:i d/m/Y') : '',
+    'status_bill'=>$item->status_bill??'',
+    'contactso'=>$item->contactso??'','customer_tel'=>$item->customer_tel??'',
+    'customer_address'=>$item->customer_address??'','note'=>$item->note??'',
+  ], JSON_UNESCAPED_UNICODE|JSON_HEX_APOS);
+@endphp
+<tr data-q="{{ strtolower(($item->so_id??'').' '.$bid.' '.$cpo.' '.($item->customer_name??'')) }}">
+  <td class="cS row-idx">{{ ($deposits->currentPage()-1)*$deposits->perPage()+$loop->iteration }}</td>
+  <td><span class="cB cN" style="font-size:11px">{{ $bid ?: '—' }}</span></td>
+  <td class="cN" style="font-size:11px">{{ $item->so_id ?? '—' }}</td>
+  <td class="cL" style="max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="{{ $item->customer_name }}">{{ $item->customer_name ?? '—' }}</td>
+
+  {{-- ราคาเต็ม (รวม VAT) --}}
+  <td class="cM">{{ number_format($gtv,2) }}</td>
+
+  {{-- ยอดมัดจำ (รวม VAT) --}}
+  <td class="cM">{{ number_format($dpv,2) }}</td>
+
+  {{-- ค่าธรรมเนียม --}}
+  <td>
+    @if($adm)
+      <div class="ie">
+        <input type="number" step="0.01" min="0" id="fee-{{$item->id}}" value="{{ $fee>0?$fee:'' }}" placeholder="0" data-o="{{ $fee }}" oninput="chg(this,'fee-sv-{{$item->id}}')">
+        <button class="ie-sv" id="fee-sv-{{$item->id}}" disabled onclick="saveFee({{$item->id}})" title="บันทึกค่าธรรมเนียม">
+          <svg width="11" height="11" viewBox="0 0 14 14" fill="none"><path d="M3 7l3 3 5-6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </button>
       </div>
-  <a href="http://server_update:8000/solist" class="btn-home">
-      <svg width="13" height="13" viewBox="0 0 13 13" fill="none">
-          <path d="M2 6.5L6.5 2 11 6.5V11.5H8V8.5H5V11.5H2V6.5Z" stroke="white" stroke-width="1.4" stroke-linejoin="round"/>
-      </svg>
-      หน้าหลัก
-  </a>
-    </div>
-  </div>
-
-  <!-- FILTER -->
-  <div class="filter-bar">
-    <div class="f-date">
-      <div class="f-date-icon">17</div>
-      <span style="color:var(--ash);font-size:12px">วันที่ : เดือน / วัน / ปี</span>
-      <input type="date" id="filterDate" value="{{ date('Y-m-d') }}" oninput="applyFilter()">
-      <button type="button" class="f-clear" id="dateClear" onclick="clearDate()" title="ล้างวันที่">✕</button>
-    </div>
-
-    <div class="f-search-wrap">
-      <div class="f-search">
-        <input type="text" id="filterSO" placeholder="ค้นหา ใบสั่งขาย / เลขใบมัดจำ / PO ลูกค้า" oninput="applyFilter()">
-      </div>
-    </div>
-  </div>
-
-  <!-- ข้อความแสดงสถานะการกรอง -->
-  <div class="filter-info" id="filterInfo">
-    <span>กำลังกรอง:</span>
-    <span id="filterDateText"></span>
-    <span id="filterSOText"></span>
-    <span class="count" id="filterCount">0 รายการ</span>
-    <button type="button" onclick="clearAll()" style="background:none;border:none;color:var(--red-btn);cursor:pointer;font-size:12px;text-decoration:underline;font-family:inherit">ล้างทั้งหมด</button>
-  </div>
-
-  <!-- TABLE -->
-  <div class="tbl-wrap">
-    <table>
-      <thead>
-        <tr>
-          <th style="width:50px">ลำดับ</th>
-          <th>เลขที่ใบมัดจำ</th>
-          <th>ใบสั่งขาย</th>
-          <th>เลขที่ PO ลูกค้า</th>
-          <th>ชื่อลูกค้า</th>
-          <th>Sale</th>
-          <th>วันที่</th>
-          <th>ผู้เปิดบิล</th>
-          <th>เวลาบันทึก</th>
-          <th>ประเภท</th>
-          <th>%</th>
-          <th>ยอดมัดจำ<br><span style="font-size:10px;font-weight:400;opacity:.8">(รวม VAT 7%)</span></th>
-          <th>ยอดคงเหลือ<br><span style="font-size:10px;font-weight:400;opacity:.8">(รวม VAT 7%)</span></th>
-          <th>สถานะ</th>
-        </tr>
-      </thead>
-      <tbody id="tableBody">
-        @forelse($deposits as $item)
-        @php
-          $status = $item->status ?? 'รอยืนยัน';
-          $isConfirmed = in_array($status, ['ยืนยัน', 'ยืนยันแล้ว', 'สำเร็จ', 'ออกบิลแล้ว', 'ปรับสำเร็จ']);
-          $isCancelled = $status === 'ยกเลิก';
-          $depType = $item->dep_type ?? '';
-          $typeName = $typeLabel[$depType] ?? $depType;
-          $recordDate = $item->time ? \Carbon\Carbon::parse($item->time)->setTimezone('Asia/Bangkok')->format('Y-m-d') : '';
-          $billId = $item->deposit_bill_id ?? '';
-
-          // เลขที่ PO ลูกค้า (ฟิลด์ billid)
-          $custPoNo = $item->po_document ?? $item->billid ?? '';
-        @endphp
-        <tr class="{{ $isConfirmed ? 'confirmed' : '' }}"
-            data-record-date="{{ $recordDate }}"
-            data-so="{{ strtolower(($item->so_id ?? '') . ' ' . $billId . ' ' . $custPoNo) }}">
-          <td class="row-idx">{{ ($deposits->currentPage() - 1) * $deposits->perPage() + $loop->iteration }}</td>
-
-          {{-- เลขที่ใบมัดจำ + ปุ่ม PDF + ปุ่มสลิป --}}
-          <td>
-            @if($billId)
-              <div class="c-billno">
-                <span class="c-billno-text">{{ $billId }}</span>
-                @php
-                  // หาไฟล์ PDF + status_bill + สลิป จาก deposit_bill_id ตรงกัน
-                  $pdfRow = \App\Models\deposit::where('deposit_bill_id', $billId)
-                              ->select('deposit_bill', 'status_bill', 'deposit_slip', 'slip_time')
-                              ->first();
-                  $pdfFile     = $pdfRow->deposit_bill ?? null;
-                  $isBillReady = ($pdfRow->status_bill ?? null) === 'ok';
-                  $slipFile    = $pdfRow->deposit_slip ?? null;
-                  $slipTime    = $pdfRow->slip_time ?? null;
-                @endphp
-
-                @if($pdfFile)
-                  <a href="{{ asset('storage/deposit_templates/' . $pdfFile) }}"
-                    target="_blank" rel="noopener"
-                    class="btn-pdf {{ $isBillReady ? 'is-ok' : '' }}"
-                    title="{{ $isBillReady ? 'เปิดใบมัดจำ (พร้อมแล้ว)' : 'เปิดใบมัดจำ (PDF)' }}">
-                    <svg width="13" height="13" viewBox="0 0 14 14" fill="none">
-                      <path d="M3 1.5h5l3 3v8a.5.5 0 0 1-.5.5H3.5a.5.5 0 0 1-.5-.5v-11a.5.5 0 0 1 .5-.5z"
-                            stroke="currentColor" stroke-width="1.3" stroke-linejoin="round"/>
-                      <path d="M8 1.5V4.5h3" stroke="currentColor" stroke-width="1.3" stroke-linejoin="round"/>
-                      <text x="7" y="11.3" font-size="3.6" font-weight="700" text-anchor="middle"
-                            fill="currentColor" font-family="Arial, sans-serif">PDF</text>
-                    </svg>
-                  </a>
-                @else
-                  <span class="no-pdf" title="ยังไม่มีไฟล์ PDF">—</span>
-                @endif
-
-                {{-- ✅ ปุ่มแนบสลิป / ดูสลิป --}}
-                @if($slipFile)
-                  <a href="{{ asset('storage/deposit_templates/deposit_slip/' . $slipFile) }}"
-                    target="_blank" rel="noopener"
-                    class="btn-slip view"
-                    title="ดูสลิปการโอน">
-                    <svg width="11" height="11" viewBox="0 0 14 14" fill="none">
-                      <path d="M1 7s2.5-4.5 6-4.5S13 7 13 7s-2.5 4.5-6 4.5S1 7 1 7z"
-                            stroke="currentColor" stroke-width="1.3"/>
-                      <circle cx="7" cy="7" r="2" stroke="currentColor" stroke-width="1.3"/>
-                    </svg>
-                    ดูสลิป
-                  </a>
-                @else
-                  <button type="button"
-                          class="btn-slip insert"
-                          onclick="openSlipModal('{{ $billId }}')"
-                          title="แนบสลิปการโอน">
-                    <svg width="11" height="11" viewBox="0 0 14 14" fill="none">
-                      <path d="M7 2v10M2 7h10" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>
-                    </svg>
-                    แนบสลิป
-                  </button>
-                @endif
-              </div>
-            @else
-              <span class="no-bill">—</span>
-            @endif
-          </td>
-                    {{-- ✅ เพิ่ม: ใบสั่งขาย --}}
-     
-            <td class="c-cust" title="{{ $item->so_id }}">{{ $item->so_id ?? '—' }}</td>
-
-
-          {{-- ✅ เพิ่ม: เลขที่ PO ลูกค้า --}}
-          <td title="{{ $custPoNo }}">
-            @if(!empty($custPoNo))
-              <span class="c-custpo">{{ $custPoNo }}</span>
-            @else
-              <span class="no-bill">—</span>
-            @endif
-          </td>
-
-          <td class="c-cust" title="{{ $item->customer_name }}">{{ $item->customer_name ?? '—' }}</td>
-          <td class="c-emp" title="{{ $item->sale_name }}">{{ $item->sale_name ?? '—' }}</td>
-          <td>{{ $item->date_dep ? \Carbon\Carbon::parse($item->date_dep)->format('d/m/Y') : '—' }}</td>
-          <td class="c-emp">{{ $item->emp_name ?? '—' }}</td>
-          <td style="white-space:nowrap">{{ $item->time ? \Carbon\Carbon::parse($item->time)->setTimezone('Asia/Bangkok')->format('H:i d/m/Y') : '—' }}</td>
-          <td>
-            @if($depType)
-              <span class="type-text">{{ $typeName }}<span class="plus">+</span></span>
-            @else
-              —
-            @endif
-          </td>
-          <td class="c-percent">{{ number_format((float)($item->dep_per ?? 0), 2) }}%</td>
-          <td class="c-money">{{ number_format((float)($item->dep_price ?? 0) * 1.07, 2) }}</td>
-          <td class="c-money-sub">{{ number_format((float)($item->grand_total ?? 0) * 1.07, 2) }}</td>
-          <td class="status-cell">
-            @if($isCancelled)
-              <span class="st status-cancel">ยกเลิก</span>
-            @elseif($isAdmin && ($isConfirmed || $status === 'รอยืนยัน'))
-              {{-- Admin คลิกได้ --}}
-              @php
-                $nextStatus = $isConfirmed ? 'รอยืนยัน' : 'ยืนยัน';
-                $waitClass  = $status === 'รอยืนยัน' ? 'is-wait' : '';
-              @endphp
-              <span class="st status-clickable {{ $waitClass }}"
-                    style="{{ $isConfirmed ? '' : 'color:#D97706' }}"
-                    onclick="askChangeStatus(
-                      '{{ $item->so_id }}',
-                      '{{ $item->id ?? '' }}',
-                      '{{ $status }}',
-                      '{{ $nextStatus }}',
-                      '{{ addslashes($item->customer_name ?? '') }}'
-                    )"
-                    title="คลิกเพื่อเปลี่ยนสถานะ">
-                {{ $status }}
-                <span class="pen-ico">✎</span>
-              </span>
-            @elseif($isConfirmed)
-              <span class="st">{{ $status }}</span>
-            @elseif($status === 'รอยืนยัน')
-              <span class="st status-wait">รอยืนยัน</span>
-            @else
-              <span class="st status-wip">{{ $status }}</span>
-            @endif
-
-            {{-- เวลาบันทึกครั้งแรก --}}
-            <span class="st-time">
-              {{ $item->time ? \Carbon\Carbon::parse($item->time)->setTimezone('Asia/Bangkok')->format('H:i d/m/Y') : '' }}
-            </span>
-            @if(!empty($item->slip_time))
-              <span class="st-slip-time" title="เวลาที่แนบสลิป">
-                แนบสลิปแล้ว: {{ \Carbon\Carbon::parse($item->slip_time)->setTimezone('Asia/Bangkok')->format('H:i d/m/Y') }}
-              </span>
-            @endif
-              {{-- เวลายืนยัน (time_check) --}}
-              @if($isConfirmed && !empty($item->time_check))
-                <span class="st-check-time" title="เวลาที่ยืนยัน">
-                  ยืนยัน: {{ \Carbon\Carbon::parse($item->time_check)->setTimezone('Asia/Bangkok')->format('H:i d/m/Y') }}
-                </span>
-              @endif
-              @if(($item->status_bill ?? null) === 'ok' && !empty($item->print_time))
-                <span class="st-print-time" title="เวลาที่สร้างเอกสารใบมัดจำ">
-                  สร้างเอกสารแล้วเมื่อ: {{ \Carbon\Carbon::parse($item->print_time)->setTimezone('Asia/Bangkok')->format('H:i d/m/Y') }}
-                </span>
-              @endif
-          </td>
-        </tr>
-        @empty
-        <tr>
-          <td colspan="14" style="background:#fff;border-right:none">
-            <div class="empty">
-              <div class="empty-ico">
-                <svg width="22" height="22" viewBox="0 0 22 22" fill="none">
-                  <rect x="3" y="2" width="16" height="18" rx="2.5" stroke="#0B2447" stroke-width="1.5"/>
-                  <path d="M7 8h8M7 11h8M7 14h5" stroke="#0B2447" stroke-width="1.5" stroke-linecap="round"/>
-                </svg>
-              </div>
-              <h4>ไม่พบข้อมูล</h4>
-              <p>ยังไม่มีรายการใบมัดจำในระบบ</p>
-            </div>
-          </td>
-        </tr>
-        @endforelse
-
-        <!-- แถวแสดงเมื่อกรองแล้วไม่พบ -->
-        <tr class="no-match-row" id="noMatchRow">
-          <td colspan="14" style="background:#fff;border-right:none">
-            <div class="no-match">
-              <div class="empty-ico">
-                <svg width="22" height="22" viewBox="0 0 22 22" fill="none">
-                  <circle cx="10" cy="10" r="6" stroke="#0B2447" stroke-width="1.5"/>
-                  <path d="M14.5 14.5l4 4" stroke="#0B2447" stroke-width="1.5" stroke-linecap="round"/>
-                </svg>
-              </div>
-              <h4>ไม่พบรายการที่ตรงกับเงื่อนไข</h4>
-              <p>ลองเปลี่ยนวันที่ หรือ เลขใบสั่งขาย / เลขใบมัดจำ / PO ลูกค้าดูใหม่</p>
-            </div>
-          </td>
-        </tr>
-      </tbody>
-    </table>
-
-    @if($deposits->total() > 0)
-    <div class="pg-bar">
-      <span class="pg-info">แสดง {{ $deposits->firstItem() ?? 0 }}–{{ $deposits->lastItem() ?? 0 }} จาก {{ $deposits->total() }} รายการ</span>
-      <div>{{ $deposits->appends(['create_by' => request('create_by')])->links() }}</div>
-    </div>
+    @else
+      @if($fee>0)<span style="font-size:11px;color:#92400E;font-weight:600">{{ number_format($fee,2) }}</span>@else<span class="cS">—</span>@endif
     @endif
-  </div>
+  </td>
+  {{-- WHT --}}
+  <td>
+    @if($adm)
+      <div class="ie">
+        <input type="text" id="wht-{{$item->id}}" value="{{ $wht }}" placeholder="—" maxlength="60" data-o="{{ $wht }}" oninput="chg(this,'wht-sv-{{$item->id}}')">
+        <button class="ie-sv" id="wht-sv-{{$item->id}}" disabled onclick="saveWht({{$item->id}},'{{ $item->so_id }}')" title="บันทึก WHT (สถานะจะเปลี่ยนเป็น มี WHT)">
+          <svg width="11" height="11" viewBox="0 0 14 14" fill="none"><path d="M3 7l3 3 5-6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </button>
+      </div>
+    @else
+      @if($wht)<span style="font-size:11px;color:#6D28D9;font-weight:600">{{ $wht }}</span>@else<span class="cS">—</span>@endif
+    @endif
+  </td>
 
+  {{-- สถานะ --}}
+  <td>
+    @if($isCnl)<span class="bg bg-cancel">ยกเลิก</span>
+    @elseif($isWht)<span class="bg bg-wht">มี WHT</span>
+    @elseif($isCfm)<span class="bg bg-ok">{{ $st }}</span>
+    @elseif($st==='รอยืนยัน')<span class="bg bg-wait">รอยืนยัน</span>
+    @else<span class="bg bg-wip">{{ $st }}</span>@endif
+  </td>
+
+  {{-- เอกสาร --}}
+  <td>
+    <div class="act">
+      @if($pdfF)
+        <a href="{{ asset('storage/deposit_templates/'.$pdfF) }}" target="_blank" class="ab ab-pdf {{ $pdfOk?'ok':'' }}" onclick="event.stopPropagation()">PDF</a>
+      @endif
+      @if($slipF)
+        <a href="{{ asset('storage/deposit_templates/deposit_slip/'.$slipF) }}" target="_blank" class="ab ab-slip" onclick="event.stopPropagation()">สลิป</a>
+      @elseif($bid)
+        <button class="ab ab-add" onclick="event.stopPropagation();openSlip('{{ $bid }}')">+สลิป</button>
+      @endif
+      <button class="ab ab-info" onclick="event.stopPropagation();openInfo({!! htmlspecialchars($rj, ENT_QUOTES) !!})">ข้อมูล</button>
+    </div>
+  </td>
+
+  @if($adm)
+  <td>
+    <button class="ab" style="background:var(--red-lt);border-color:var(--red-bd);color:var(--red)" onclick="event.stopPropagation();askDel({{$item->id}},'{{ addslashes($item->so_id??'') }}','{{ addslashes($item->customer_name??'') }}')" title="ลบ">🗑</button>
+  </td>
+  @endif
+</tr>
+@empty
+<tr><td colspan="{{ $adm?12:11 }}" style="border-right:none"><div class="empty"><h4>ไม่พบข้อมูล</h4><p>ยังไม่มีรายการใบมัดจำ</p></div></td></tr>
+@endforelse
+<tr class="nmr" id="nmr"><td colspan="{{ $adm?12:11 }}" style="border-right:none"><div class="empty"><h4>ไม่พบรายการ</h4><p>ลองเปลี่ยนคำค้นหา</p></div></td></tr>
+</tbody>
+</table>
+@if($deposits->total()>0)
+<div class="pgb">
+  <span class="pgi">แสดง {{ $deposits->firstItem()??0 }}–{{ $deposits->lastItem()??0 }} จาก {{ $deposits->total() }}</span>
+  <div>{{ $deposits->appends(['create_by'=>request('create_by')])->links() }}</div>
+</div>
+@endif
 </div>
 
-<!-- MODAL -->
-<div class="modal-bg" id="detailModal">
-  <div class="modal">
-    <div class="modal-head">
-      <h3 id="modal-title">รายละเอียดใบมัดจำ</h3>
-      <button class="modal-x" onclick="closeDetail()">
-        <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
-          <path d="M2 2l8 8M10 2L2 10" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>
-        </svg>
-      </button>
+<!-- INFO POPUP -->
+<div class="mo-bg" id="infoM">
+<div class="mo">
+  <div class="mo-h"><h3 id="im-t">รายละเอียด</h3><button class="mo-x" onclick="closeInfo()"><svg width="11" height="11" viewBox="0 0 12 12" fill="none"><path d="M2 2l8 8M10 2L2 10" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg></button></div>
+  <div class="mo-b">
+    <div class="sttl">ข้อมูลทั่วไป</div>
+    <div class="dg">
+      <div class="df"><span class="dl">เลขใบมัดจำ</span><span class="dv cB" id="im-bill">—</span></div>
+      <div class="df"><span class="dl">ใบสั่งขาย</span><span class="dv" id="im-so">—</span></div>
+      <div class="df"><span class="dl">PO ลูกค้า</span><span class="dv cB" id="im-po">—</span></div>
+      <div class="df"><span class="dl">วันที่</span><span class="dv" id="im-date">—</span></div>
+      <div class="df full"><span class="dl">ลูกค้า</span><span class="dv" id="im-cust">—</span></div>
+      <div class="df"><span class="dl">ผู้ติดต่อ</span><span class="dv" id="im-con">—</span></div>
+      <div class="df"><span class="dl">เบอร์โทร</span><span class="dv" id="im-tel">—</span></div>
+      <div class="df full"><span class="dl">ที่อยู่</span><span class="dv" id="im-addr">—</span></div>
+      <div class="df"><span class="dl">ผู้เปิดบิล</span><span class="dv" id="im-emp">—</span></div>
+      <div class="df"><span class="dl">Sale</span><span class="dv" id="im-sale">—</span></div>
+      <div class="df"><span class="dl">ประเภท / %</span><span class="dv" id="im-type">—</span></div>
+      <div class="df"><span class="dl">เวลาบันทึก</span><span class="dv" id="im-time">—</span></div>
+      <div class="df full"><span class="dl">หมายเหตุ</span><span class="dv" id="im-note" style="color:var(--ash)">—</span></div>
     </div>
-    <div class="modal-body">
-      <div class="sec-ttl">ข้อมูลทั่วไป</div>
-      <div class="dg">
-        <div class="df"><span class="dl">ใบสั่งขาย</span><span class="dv" id="d-so">—</span></div>
-        <div class="df"><span class="dl">เลขที่ใบมัดจำ</span><span class="dv" id="d-billno" style="color:var(--green-text);font-weight:700">—</span></div>
-        <div class="df"><span class="dl">เลขที่ PO ลูกค้า</span><span class="dv" id="d-custpo" style="color:var(--green-text);font-weight:600">—</span></div>
-        <div class="df"><span class="dl">วันที่</span><span class="dv" id="d-date">—</span></div>
-        <div class="df full"><span class="dl">ชื่อลูกค้า</span><span class="dv" id="d-cust">—</span></div>
-        <div class="df"><span class="dl">ผู้ติดต่อ</span><span class="dv" id="d-contact">—</span></div>
-        <div class="df"><span class="dl">เบอร์โทร</span><span class="dv" id="d-tel">—</span></div>
-        <div class="df full"><span class="dl">ที่อยู่</span><span class="dv" id="d-addr">—</span></div>
-        <div class="df"><span class="dl">ผู้เปิดบิล</span><span class="dv" id="d-emp">—</span></div>
-        <div class="df"><span class="dl">พนักงานขาย</span><span class="dv" id="d-sale">—</span></div>
-      </div>
-
-      <div class="sec-ttl">รายการมัดจำทั้งหมดของใบสั่งขายนี้</div>
-      <div class="tbl-wrap" style="margin:0 0 16px">
-        <table>
-          <thead>
-            <tr>
-              <th>ID</th>
-              <th>ประเภท</th>
-              <th>%</th>
-              <th>ยอดมัดจำ (รวม VAT)</th>
-              <th>สถานะ</th>
-            </tr>
-          </thead>
-          <tbody id="d-items">
-            <tr><td colspan="5" style="background:#fff;color:var(--mist);padding:20px">กำลังโหลด...</td></tr>
-          </tbody>
-        </table>
-      </div>
-
-      <div class="sec-ttl">สรุปยอด</div>
-      <div class="dg">
-        <div class="df"><span class="dl">รวมยอดมัดจำ (รวม VAT 7%)</span><span class="dv" id="d-total-dep" style="color:var(--green-text);font-weight:700;font-size:15px">—</span></div>
-        <div class="df"><span class="dl">ยอดคงเหลือ (รวม VAT 7%)</span><span class="dv" id="d-grand" style="color:var(--ink);font-weight:700;font-size:15px">—</span></div>
-      </div>
+    <div class="sttl">ยอดเงิน</div>
+    <div class="dg">
+      <div class="df"><span class="dl">ราคาเต็ม (VAT)</span><span class="dv" id="im-grand">—</span></div>
+      <div class="df"><span class="dl">ยอดมัดจำ (VAT)</span><span class="dv cB" id="im-dep">—</span></div>
+      <div class="df"><span class="dl">ค่าธรรมเนียม</span><span class="dv" id="im-fee" style="color:#92400E">—</span></div>
+      <div class="df"><span class="dl">ยอดสุทธิ (หลังหัก)</span><span class="dv cB" id="im-net" style="color:#047857">—</span></div>
     </div>
-    <div class="modal-foot" id="modal-foot-actions">
-      <button class="btn-ghost" onclick="closeDetail()">ปิด</button>
-    </div>
-  </div>
-</div>
-
-<!-- ===== Confirm Modal: เปลี่ยนสถานะ ===== -->
-<div class="confirm-bg" id="confirmModal">
-  <div class="confirm-box">
-    <div class="confirm-head">
-      <div class="confirm-ico" id="confirmIco">!</div>
-      <div class="confirm-title" id="confirmTitle">ยืนยันการเปลี่ยนสถานะ</div>
-      <div class="confirm-msg" id="confirmMsg">—</div>
-    </div>
-    <div class="confirm-detail" id="confirmDetail">
-      <div>
-        <div class="label">ใบสั่งขาย</div>
-        <div id="confirmSO" style="font-weight:600">—</div>
-      </div>
-      <div style="text-align:right">
-        <div class="label">ลูกค้า</div>
-        <div id="confirmCust" style="font-weight:500">—</div>
-      </div>
-    </div>
-    <div class="confirm-foot">
-      <button class="btn-cancel" onclick="closeConfirm()">ยกเลิก</button>
-      <button class="btn-confirm" id="confirmBtn" onclick="doChangeStatus()">ยืนยัน</button>
-    </div>
-  </div>
-</div>
-<!-- ===== Slip Upload Modal ===== -->
-<div class="modal-bg" id="slipModal">
-  <div class="modal" style="max-width:520px">
-    <div class="modal-head">
-      <h3>แนบสลิปการโอน <span id="slipModalBillId" style="font-weight:400;opacity:.85;font-size:13px"></span></h3>
-      <button class="modal-x" onclick="closeSlipModal()">
-        <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
-          <path d="M2 2l8 8M10 2L2 10" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>
-        </svg>
-      </button>
-    </div>
-    <div class="slip-modal-body">
-      <label class="slip-drop" id="slipDrop">
-        <input type="file" id="slipFile" accept=".pdf,.jpg,.jpeg,.png,.webp" onchange="onSlipChange(event)">
-        <div class="slip-drop-ico">📎</div>
-        <div class="slip-drop-text">คลิกเพื่อเลือกไฟล์ หรือ ลากวางที่นี่</div>
-        <div class="slip-drop-hint">รองรับ JPG, PNG, WEBP, PDF (ขนาดไม่เกิน 10 MB)</div>
-      </label>
-
-      <div class="slip-preview" id="slipPreview"></div>
-    </div>
-    <div class="modal-foot" style="gap:10px">
-      <button class="btn-ghost" onclick="closeSlipModal()">ยกเลิก</button>
-      <button class="btn-confirm" id="slipUploadBtn" onclick="uploadSlip()" disabled
-              style="padding:7px 18px;border-radius:6px;font-size:13px;font-weight:600;font-family:inherit;cursor:pointer;border:none;background:var(--green-table);color:#fff">
-        อัปโหลด
-      </button>
+    <div class="sttl">สถานะ</div>
+    <div class="dg">
+      <div class="df"><span class="dl">สถานะ</span><span class="dv" id="im-st">—</span></div>
+      <div class="df"><span class="dl">WHT</span><span class="dv" id="im-wht" style="color:#6D28D9;font-weight:600">—</span></div>
+      <div class="df"><span class="dl">ยืนยันเมื่อ</span><span class="dv" id="im-tc">—</span></div>
+      <div class="df"><span class="dl">แนบสลิป</span><span class="dv" id="im-sl">—</span></div>
     </div>
   </div>
+  <div class="mo-f" id="im-f"><button class="btn-g" onclick="closeInfo()">ปิด</button></div>
 </div>
-<!-- Toast -->
-<div class="toast" id="toast">
-  <span id="toastMsg">—</span>
 </div>
+
+<!-- CONFIRM -->
+<div class="cf-bg" id="cfM">
+<div class="cf-box">
+  <div class="cf-ico" id="cf-ico">!</div>
+  <div class="cf-t" id="cf-t">—</div>
+  <div class="cf-m" id="cf-m">—</div>
+  <div class="cf-btns"><button class="cf-cn" onclick="closeCf()">ยกเลิก</button><button class="cf-ok" id="cf-btn" onclick="doCf()">ยืนยัน</button></div>
+</div>
+</div>
+
+<!-- SLIP -->
+<div class="mo-bg" id="slM">
+<div class="mo" style="max-width:440px">
+  <div class="mo-h"><h3>แนบสลิป <span id="sl-bid" style="font-weight:400;opacity:.8;font-size:11px"></span></h3><button class="mo-x" onclick="closeSl()"><svg width="11" height="11" viewBox="0 0 12 12" fill="none"><path d="M2 2l8 8M10 2L2 10" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg></button></div>
+  <div style="padding:14px 16px">
+    <div class="sl-df"><label>วันที่โอน</label><input type="date" id="slD" value="{{ date('Y-m-d') }}"></div>
+    <label class="sl-drop" id="slDrop">
+      <input type="file" id="slF" accept=".pdf,.jpg,.jpeg,.png,.webp" onchange="onSlF(event)">
+      <div style="font-size:16px;margin-bottom:4px">📎</div>
+      <div style="font-size:11px;color:var(--steel)">คลิกเลือกไฟล์ หรือ ลากวาง</div>
+      <div style="font-size:10px;color:var(--ash)">JPG, PNG, PDF (ไม่เกิน 10 MB)</div>
+    </label>
+    <div class="sl-prev" id="slP"></div>
+  </div>
+  <div class="mo-f" style="gap:6px"><button class="btn-g" onclick="closeSl()">ยกเลิก</button><button class="ie-sv" id="slBtn" onclick="doSl()" disabled style="width:auto;padding:6px 14px;border-radius:5px;font-size:11px;font-weight:600">อัปโหลด</button></div>
+</div>
+</div>
+
+<div class="toast" id="toast"><span id="toastM">—</span></div>
 
 <script>
-/* ===== ข้อมูล user/admin ส่งจาก server ===== */
-const IS_ADMIN     = {{ $isAdmin ? 'true' : 'false' }};
-const CURRENT_USER = '{{ $currentUser }}';
-const CSRF_TOKEN   = document.querySelector('meta[name="csrf-token"]')?.content || '';
+const ADM={{ $adm?'true':'false' }},CU='{{ $cu }}',CS=document.querySelector('meta[name="csrf-token"]')?.content||'';
+const H=()=>({'Content-Type':'application/json','X-CSRF-TOKEN':CS,'X-Requested-With':'XMLHttpRequest','Accept':'application/json'});
 
-/* ===== Client-side Filter ===== */
-function formatDateThai(ymd){
-  if(!ymd) return '';
-  const [y,m,d] = ymd.split('-');
-  return `${d}/${m}/${y}`;
+function doFilter(){
+  const q=document.getElementById('fQ').value.trim().toLowerCase();
+  const rs=document.querySelectorAll('#tb tr[data-q]');
+  let v=0,i=0;
+  rs.forEach(r=>{const m=!q||r.dataset.q.includes(q);r.classList.toggle('hidden-row',!m);if(m){v++;i++;const c=r.querySelector('.row-idx');if(c)c.textContent=i}});
+  document.getElementById('fC').textContent=v+' รายการ';
+  document.getElementById('nmr').classList.toggle('show',rs.length>0&&v===0&&!!q);
 }
 
-function applyFilter(){
-  const dateVal = document.getElementById('filterDate').value;
-  const soVal   = document.getElementById('filterSO').value.trim().toLowerCase();
+function chg(inp,btnId){
+  const btn=document.getElementById(btnId);
+  const dirty=inp.value!==inp.dataset.o;
+  inp.classList.toggle('dirty',dirty);
+  if(btn){btn.disabled=!dirty;btn.classList.remove('ok')}
+}
 
-  document.getElementById('dateClear').classList.toggle('show', !!dateVal);
+async function saveFee(id){
+  if(!ADM)return;
+  const inp=document.getElementById('fee-'+id),btn=document.getElementById('fee-sv-'+id);
+  btn.disabled=true;
+  try{
+    const res=await fetch('/deposit/update-fee',{method:'POST',headers:H(),body:JSON.stringify({deposit_id:id,fee_amount:parseFloat(inp.value)||0,saved_by:CU})});
+    const d=await res.json().catch(()=>({success:false}));
+    if(!res.ok||!d.success)throw new Error(d.message||'HTTP '+res.status);
+    inp.dataset.o=inp.value;inp.classList.remove('dirty');btn.classList.add('ok');
+    toast('บันทึกค่าธรรมเนียมสำเร็จ');setTimeout(()=>location.reload(),800);
+  }catch(e){toast('ล้มเหลว: '+e.message,1);btn.disabled=false}
+}
 
-  const rows = document.querySelectorAll('#tableBody tr[data-record-date]');
-  let visibleCount = 0;
-  let runningIdx = 0;
+/* ✅ บันทึก WHT → สถานะจะเปลี่ยนเป็น "มี WHT" ฝั่ง controller */
+async function saveWht(id,soId){
+  if(!ADM)return;
+  const inp=document.getElementById('wht-'+id),btn=document.getElementById('wht-sv-'+id);
+  btn.disabled=true;
+  try{
+    const res=await fetch('/deposit/update-wht',{method:'POST',headers:H(),body:JSON.stringify({deposit_id:id,so_id:soId,wht_doc_no:inp.value.trim(),saved_by:CU})});
+    const d=await res.json().catch(()=>({success:false}));
+    if(!res.ok||!d.success)throw new Error(d.message||'HTTP '+res.status);
+    inp.dataset.o=inp.value;inp.classList.remove('dirty');btn.classList.add('ok');
+    toast('บันทึก WHT สำเร็จ — สถานะเปลี่ยนเป็น "มี WHT"');setTimeout(()=>location.reload(),800);
+  }catch(e){toast('ล้มเหลว: '+e.message,1);btn.disabled=false}
+}
 
-  rows.forEach(r => {
-    const recDate = r.getAttribute('data-record-date');
-    const soId    = r.getAttribute('data-so'); // รวม so_id + deposit_bill_id + cust_po_no
-
-    let show = true;
-    if(dateVal && recDate !== dateVal) show = false;
-    if(soVal && !soId.includes(soVal)) show = false;
-
-    r.classList.toggle('hidden-row', !show);
-    if(show){
-      visibleCount++;
-      runningIdx++;
-      const idxCell = r.querySelector('.row-idx');
-      if(idxCell) idxCell.textContent = runningIdx;
-    }
-  });
-
-  const info  = document.getElementById('filterInfo');
-  const dText = document.getElementById('filterDateText');
-  const sText = document.getElementById('filterSOText');
-  const cText = document.getElementById('filterCount');
-
-  if(dateVal || soVal){
-    info.classList.add('show');
-    dText.innerHTML = dateVal ? `<b>วันที่บันทึก:</b> ${formatDateThai(dateVal)}` : '';
-    sText.innerHTML = soVal   ? `<b>ค้นหา:</b> ${soVal}` : '';
-    cText.textContent = `${visibleCount} รายการ`;
-  } else {
-    info.classList.remove('show');
+function openInfo(d){
+  const $=i=>document.getElementById(i);
+  $('im-t').textContent=d.deposit_bill_id||d.so_id||'รายละเอียด';
+  $('im-bill').textContent=d.deposit_bill_id||'—';
+  $('im-so').textContent=d.so_id||'—';
+  $('im-po').textContent=d.cust_po||'—';
+  $('im-date').textContent=d.date_dep?fD(d.date_dep):'—';
+  $('im-cust').textContent=d.customer_name||'—';
+  $('im-con').textContent=d.contactso||'—';
+  $('im-tel').textContent=d.customer_tel||'—';
+  $('im-addr').textContent=d.customer_address||'—';
+  $('im-emp').textContent=d.emp_name||'—';
+  $('im-sale').textContent=d.sale_name||'—';
+  $('im-type').textContent=(d.dep_type_name||'—')+' / '+d.dep_per.toFixed(2)+'%';
+  $('im-time').textContent=d.time||'—';
+  $('im-note').textContent=d.note||'—';
+  $('im-grand').textContent=fM(d.grand_total_vat)+' ฿';
+  $('im-dep').textContent=fM(d.dep_price_vat)+' ฿';
+  $('im-fee').textContent=d.fee_amount>0?fM(d.fee_amount)+' ฿':'—';
+  $('im-net').textContent=fM(d.net)+' ฿';
+  let sb='';
+  if(d.is_cancelled)sb='<span class="bg bg-cancel">ยกเลิก</span>';
+  else if(d.is_wht)sb='<span class="bg bg-wht">มี WHT</span>';
+  else if(d.is_confirmed)sb='<span class="bg bg-ok">'+d.status+'</span>';
+  else if(d.status==='รอยืนยัน')sb='<span class="bg bg-wait">รอยืนยัน</span>';
+  else sb='<span class="bg bg-wip">'+d.status+'</span>';
+  $('im-st').innerHTML=sb;
+  $('im-wht').textContent=d.wht_doc_no||'—';
+  $('im-tc').textContent=d.time_check||'—';
+  $('im-sl').textContent=d.slip_time||'ยังไม่แนบ';
+  // Footer
+  let f='';
+  if(ADM&&!d.is_cancelled){
+    if(d.is_confirmed||d.is_wht) f+=`<button class="btn-st bk" onclick="askSt('${d.so_id}',${d.id},'${d.status}','รอยืนยัน')">↩ กลับรอ</button>`;
+    else if(d.status==='รอยืนยัน') f+=`<button class="btn-st cfm" onclick="askSt('${d.so_id}',${d.id},'${d.status}','ยืนยัน')">✓ ยืนยัน</button>`;
+    f+=`<button class="btn-del" onclick="askDel(${d.id},'${esc(d.so_id)}','${esc(d.customer_name)}')">🗑 ลบ</button>`;
   }
-
-  const noMatch = document.getElementById('noMatchRow');
-  if(rows.length > 0 && visibleCount === 0 && (dateVal || soVal)){
-    noMatch.classList.add('show');
-  } else {
-    noMatch.classList.remove('show');
-  }
+  f+='<div style="flex:1"></div><button class="btn-g" onclick="closeInfo()">ปิด</button>';
+  $('im-f').innerHTML=f;
+  $('infoM').classList.add('open');document.body.style.overflow='hidden';
 }
+function closeInfo(){document.getElementById('infoM').classList.remove('open');document.body.style.overflow=''}
+document.getElementById('infoM').addEventListener('click',function(e){if(e.target===this)closeInfo()});
 
-function clearDate(){
-  document.getElementById('filterDate').value = '';
-  applyFilter();
+let pA=null;
+function askSt(so,id,cur,nxt){
+  pA={t:'status',so,id,cur,nxt};
+  const $=i=>document.getElementById(i);
+  if(nxt==='ยืนยัน'){$('cf-ico').className='cf-ico g';$('cf-ico').textContent='✓';$('cf-t').textContent='ยืนยัน?';$('cf-m').innerHTML='<b>รอยืนยัน</b> → <b style="color:#047857">ยืนยัน</b>';$('cf-btn').className='cf-ok';$('cf-btn').textContent='ยืนยัน'}
+  else{$('cf-ico').className='cf-ico w';$('cf-ico').textContent='!';$('cf-t').textContent='เปลี่ยนกลับ?';$('cf-m').innerHTML='<b>'+cur+'</b> → <b style="color:#D97706">รอยืนยัน</b>';$('cf-btn').className='cf-ok';$('cf-btn').style.background='#D97706';$('cf-btn').textContent='เปลี่ยนกลับ'}
+  $('cf-btn').disabled=false;$('cfM').classList.add('open');
 }
-
-function clearAll(){
-  document.getElementById('filterDate').value = '';
-  document.getElementById('filterSO').value = '';
-  applyFilter();
+function askDel(id,so,cn){
+  pA={t:'delete',id,so,cn};
+  const $=i=>document.getElementById(i);
+  $('cf-ico').className='cf-ico d';$('cf-ico').textContent='🗑';$('cf-t').textContent='ลบรายการนี้?';
+  $('cf-m').innerHTML='<b>ลบถาวร</b> ไม่กู้คืน<br>SO: <b>'+so+'</b>';
+  $('cf-btn').className='cf-dl';$('cf-btn').textContent='ลบถาวร';$('cf-btn').disabled=false;$('cfM').classList.add('open');
 }
-
-document.addEventListener('DOMContentLoaded', applyFilter);
-
-/* ===== Modal ===== */
-const typeLabels = {product:'สินค้า', service:'บริการ', shipping:'ขนส่ง'};
-
-function openDetail(soId){
-  document.getElementById('modal-title').textContent='รายละเอียด '+soId;
-
-  ['d-so','d-billno','d-custpo','d-date','d-cust','d-contact','d-tel','d-addr','d-emp','d-sale','d-total-dep','d-grand']
-    .forEach(id=>document.getElementById(id).textContent='—');
-
-  // ล้างปุ่ม PDF เก่าใน modal foot ถ้ามี
-  const foot = document.getElementById('modal-foot-actions');
-  const oldPdfBtn = document.getElementById('modal-pdf-btn');
-  if(oldPdfBtn) oldPdfBtn.remove();
-
-  const tb=document.getElementById('d-items');
-  tb.innerHTML='<tr><td colspan="5" style="background:#fff;color:var(--mist);padding:16px">กำลังโหลด...</td></tr>';
-
-  document.getElementById('detailModal').classList.add('open');
-  document.body.style.overflow='hidden';
-
-  fetch(`/deposit/detail/${encodeURIComponent(soId)}`,{headers:{'X-Requested-With':'XMLHttpRequest'}})
-    .then(r=>r.json())
-    .then(data=>{
-      if(!data || !data.items || data.items.length===0){
-        tb.innerHTML='<tr><td colspan="5" style="background:#fff;color:var(--mist);padding:16px">ไม่มีข้อมูล</td></tr>';
-        return;
-      }
-      const first = data.items[0];
-      document.getElementById('d-so').textContent      = first.so_id || '—';
-      document.getElementById('d-billno').textContent  = first.deposit_bill_id || '—';
-      // เลขที่ PO ลูกค้า (ฟิลด์ billid)
-     document.getElementById('d-custpo').textContent  = first.po_document || first.billid || '—';
-      document.getElementById('d-date').textContent    = first.date_dep ? formatDate(first.date_dep) : '—';
-      document.getElementById('d-cust').textContent    = first.customer_name || '—';
-      document.getElementById('d-contact').textContent = first.contactso || '—';
-      document.getElementById('d-tel').textContent     = first.customer_tel || '—';
-      document.getElementById('d-addr').textContent    = first.customer_address || '—';
-      document.getElementById('d-emp').textContent     = first.emp_name || '—';
-      document.getElementById('d-sale').textContent    = first.sale_name || '—';
-
-      // เพิ่มปุ่ม "เปิดใบมัดจำ" ใน modal foot ถ้ามี deposit_bill_id
-      if(first.deposit_bill_id){
-        const pdfBtn = document.createElement('a');
-        pdfBtn.id = 'modal-pdf-btn';
-        pdfBtn.href = `/deposit/bill/${encodeURIComponent(first.deposit_bill_id)}`;
-        pdfBtn.target = '_blank';
-        pdfBtn.rel = 'noopener';
-        pdfBtn.className = 'btn-ghost';
-        pdfBtn.style.cssText = 'background:var(--red-light);border-color:var(--red-border);color:var(--red-btn);text-decoration:none;display:inline-flex;align-items:center;gap:6px;margin-right:auto';
-        pdfBtn.innerHTML = `
-          <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
-            <path d="M3 1.5h5l3 3v8a.5.5 0 0 1-.5.5H3.5a.5.5 0 0 1-.5-.5v-11a.5.5 0 0 1 .5-.5z" stroke="currentColor" stroke-width="1.3" stroke-linejoin="round"/>
-            <path d="M8 1.5V4.5h3" stroke="currentColor" stroke-width="1.3" stroke-linejoin="round"/>
-          </svg>
-          เปิดใบมัดจำ (PDF)
-        `;
-        foot.insertBefore(pdfBtn, foot.firstChild);
-      }
-
-      let totalDep = 0;
-      tb.innerHTML = data.items.map(it=>{
-      totalDep += parseFloat(it.dep_price||0) * 1.07;
-        const tLabel = typeLabels[it.dep_type] || it.dep_type;
-        const st = it.status || 'รอยืนยัน';
-        let stCls = 'status-wait';
-        if(st==='ยกเลิก') stCls='status-cancel';
-        else if(['ยืนยัน','ยืนยันแล้ว','สำเร็จ','ออกบิลแล้ว','ปรับสำเร็จ'].includes(st)) stCls='';
-        return `<tr>
-          <td>${it.id}</td>
-          <td><span class="type-text">${tLabel}</span></td>
-          <td class="c-percent">${parseFloat(it.dep_per||0).toFixed(2)}%</td>
-          <td class="c-money">${(parseFloat(it.dep_price||0) * 1.07).toLocaleString('th-TH',{minimumFractionDigits:2})}</td>
-          <td><span class="${stCls}" style="font-weight:600;color:${stCls?'':'var(--green-text)'}">${st}</span></td>
-        </tr>`;
-      }).join('');
-
-      document.getElementById('d-total-dep').textContent = totalDep.toLocaleString('th-TH',{minimumFractionDigits:2}) + ' บาท';
-      document.getElementById('d-grand').textContent     = (parseFloat(first.grand_total||0) * 1.07).toLocaleString('th-TH',{minimumFractionDigits:2}) + ' บาท';
-    })
-    .catch(()=>{tb.innerHTML='<tr><td colspan="5" style="background:#fff;color:#9B1B1B;padding:16px">เกิดข้อผิดพลาด</td></tr>';});
+function closeCf(){document.getElementById('cfM').classList.remove('open');pA=null;document.getElementById('cf-btn').style.background=''}
+async function doCf(){
+  if(!pA)return;const btn=document.getElementById('cf-btn');btn.disabled=true;btn.textContent='กำลังดำเนินการ...';
+  try{
+    let url,body;
+    if(pA.t==='delete'){url='/deposit/delete';body={deposit_id:pA.id,deleted_by:CU}}
+    else{url='/deposit/update-status';body={so_id:pA.so,deposit_id:pA.id,new_status:pA.nxt,changed_by:CU}}
+    const res=await fetch(url,{method:'POST',headers:H(),body:JSON.stringify(body)});
+    const d=await res.json().catch(()=>({success:false}));
+    if(!res.ok||!d.success)throw new Error(d.message||'HTTP '+res.status);
+    toast((pA.t==='delete'?'ลบ':'เปลี่ยนสถานะ')+'สำเร็จ');closeCf();closeInfo();setTimeout(()=>location.reload(),600);
+  }catch(e){toast('ล้มเหลว: '+e.message,1);btn.disabled=false;btn.textContent=pA.t==='delete'?'ลบถาวร':'ยืนยัน'}
 }
+document.getElementById('cfM').addEventListener('click',function(e){if(e.target===this)closeCf()});
 
-function formatDate(d){
-  const dt = new Date(d);
-  if(isNaN(dt)) return d;
-  return String(dt.getDate()).padStart(2,'0')+'/'+String(dt.getMonth()+1).padStart(2,'0')+'/'+dt.getFullYear();
+let sBid=null,sFile=null;
+function openSlip(bid){sBid=bid;sFile=null;document.getElementById('sl-bid').textContent='('+bid+')';document.getElementById('slF').value='';const t=new Date();document.getElementById('slD').value=t.getFullYear()+'-'+String(t.getMonth()+1).padStart(2,'0')+'-'+String(t.getDate()).padStart(2,'0');document.getElementById('slP').classList.remove('show');document.getElementById('slP').innerHTML='';document.getElementById('slBtn').disabled=true;document.getElementById('slM').classList.add('open')}
+function closeSl(){document.getElementById('slM').classList.remove('open');sBid=null;sFile=null}
+function onSlF(e){const f=e.target.files[0];if(!f)return;if(f.size>10*1024*1024){toast('ไฟล์เกิน 10 MB',1);e.target.value='';return}sFile=f;const p=document.getElementById('slP');p.classList.add('show');if(f.type.startsWith('image/')){const r=new FileReader();r.onload=v=>{p.innerHTML=`<img src="${v.target.result}">`};r.readAsDataURL(f)}else{p.innerHTML=`<div style="padding:10px;background:var(--rh);border-radius:5px;font-size:11px">📄 ${f.name}</div>`}document.getElementById('slBtn').disabled=false}
+const slDr=document.getElementById('slDrop');
+if(slDr){['dragover','dragenter'].forEach(v=>{slDr.addEventListener(v,e=>{e.preventDefault();slDr.classList.add('dov')})});['dragleave','drop'].forEach(v=>{slDr.addEventListener(v,e=>{e.preventDefault();slDr.classList.remove('dov')})});slDr.addEventListener('drop',e=>{const f=e.dataTransfer.files[0];if(!f)return;const inp=document.getElementById('slF');const dt=new DataTransfer();dt.items.add(f);inp.files=dt.files;onSlF({target:inp})})}
+async function doSl(){
+  if(!sBid||!sFile){toast('เลือกไฟล์',1);return}const sd=document.getElementById('slD').value;if(!sd){toast('เลือกวันที่',1);return}
+  const btn=document.getElementById('slBtn');btn.disabled=true;btn.textContent='กำลังอัปโหลด...';
+  const fd=new FormData();fd.append('deposit_bill_id',sBid);fd.append('slip_file',sFile);fd.append('slip_date',sd);fd.append('uploaded_by',CU);
+  try{const res=await fetch('/deposit/upload-slip',{method:'POST',headers:{'X-CSRF-TOKEN':CS,'X-Requested-With':'XMLHttpRequest','Accept':'application/json'},body:fd});const d=await res.json().catch(()=>({success:false}));if(!res.ok||!d.success)throw new Error(d.message||'HTTP '+res.status);toast('อัปโหลดสำเร็จ');closeSl();setTimeout(()=>location.reload(),600)}
+  catch(e){toast('ล้มเหลว: '+e.message,1);btn.disabled=false;btn.textContent='อัปโหลด'}
 }
+document.getElementById('slM').addEventListener('click',function(e){if(e.target===this)closeSl()});
 
-function closeDetail(){document.getElementById('detailModal').classList.remove('open');document.body.style.overflow='';}
-document.getElementById('detailModal').addEventListener('click',function(e){if(e.target===this)closeDetail();});
-document.addEventListener('keydown',e=>{if(e.key==='Escape'){closeDetail();closeConfirm();closeSlipModal();}});
-
-/* ===== เปลี่ยนสถานะ (Admin เท่านั้น) ===== */
-let pendingChange = null;
-
-function askChangeStatus(soId, depId, currentStatus, nextStatus, custName){
-  if(!IS_ADMIN){
-    showToast('คุณไม่มีสิทธิ์เปลี่ยนสถานะ', true);
-    return;
-  }
-
-  pendingChange = { soId, depId, currentStatus, nextStatus, custName };
-
-  const ico   = document.getElementById('confirmIco');
-  const btn   = document.getElementById('confirmBtn');
-  const title = document.getElementById('confirmTitle');
-  const msg   = document.getElementById('confirmMsg');
-
-  if(nextStatus === 'ยืนยัน'){
-    ico.textContent = '✓';
-    ico.classList.add('to-confirm');
-    btn.classList.remove('to-wait');
-    btn.textContent = 'ยืนยัน';
-    title.textContent = 'ยืนยันรายการนี้?';
-    msg.innerHTML = `เปลี่ยนสถานะจาก <b>รอยืนยัน</b> → <b style="color:var(--green-table)">ยืนยัน</b><br><span style="font-size:12px;color:var(--ash)">ระบบจะบันทึกเวลายืนยันให้อัตโนมัติ</span>`;
-  } else {
-    ico.textContent = '!';
-    ico.classList.remove('to-confirm');
-    btn.classList.add('to-wait');
-    btn.textContent = 'เปลี่ยนกลับ';
-    title.textContent = 'เปลี่ยนกลับเป็นรอยืนยัน?';
-    msg.innerHTML = `เปลี่ยนสถานะจาก <b>${currentStatus}</b> → <b style="color:#D97706">รอยืนยัน</b><br><span style="font-size:12px;color:var(--ash)">เวลายืนยันเดิมจะถูกล้าง</span>`;
-  }
-
-  document.getElementById('confirmSO').textContent   = soId || '—';
-  document.getElementById('confirmCust').textContent = (custName || '—').length > 24
-    ? (custName.substring(0,22) + '...') : (custName || '—');
-
-  document.getElementById('confirmModal').classList.add('open');
-  document.body.style.overflow = 'hidden';
-}
-
-function closeConfirm(){
-  document.getElementById('confirmModal').classList.remove('open');
-  document.body.style.overflow = '';
-  pendingChange = null;
-  document.getElementById('confirmBtn').disabled = false;
-}
-
-async function doChangeStatus(){
-  if(!pendingChange) return;
-
-  const btn = document.getElementById('confirmBtn');
-  btn.disabled = true;
-  btn.textContent = 'กำลังบันทึก...';
-
-  try {
-    const res = await fetch('/deposit/update-status', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'X-CSRF-TOKEN': CSRF_TOKEN,
-        'X-Requested-With': 'XMLHttpRequest',
-        'Accept': 'application/json'
-      },
-      body: JSON.stringify({
-        so_id:      pendingChange.soId,
-        deposit_id: pendingChange.depId,
-        new_status: pendingChange.nextStatus,
-        changed_by: CURRENT_USER
-      })
-    });
-
-    if(!res.ok) throw new Error('HTTP ' + res.status);
-    const data = await res.json().catch(()=>({success:true}));
-
-    if(data.success === false){
-      throw new Error(data.message || 'บันทึกไม่สำเร็จ');
-    }
-
-    showToast(`เปลี่ยนสถานะเป็น "${pendingChange.nextStatus}" สำเร็จ`);
-    closeConfirm();
-
-    setTimeout(()=>location.reload(), 600);
-
-  } catch(err) {
-    console.error(err);
-    showToast('เกิดข้อผิดพลาด: ' + err.message, true);
-    btn.disabled = false;
-    btn.textContent = pendingChange.nextStatus === 'ยืนยัน' ? 'ยืนยัน' : 'เปลี่ยนกลับ';
-  }
-}
-
-function showToast(msg, isError){
-  const t = document.getElementById('toast');
-  document.getElementById('toastMsg').textContent = msg;
-  t.classList.toggle('error', !!isError);
-  t.classList.add('show');
-  setTimeout(()=>t.classList.remove('show'), 2800);
-}
-
-document.getElementById('confirmModal').addEventListener('click', function(e){
-  if(e.target === this) closeConfirm();
-});
-</script>
-<script>
-  /* ===== Slip Upload ===== */
-let slipBillId = null;
-let slipFileObj = null;
-
-function openSlipModal(billId){
-  slipBillId = billId;
-  slipFileObj = null;
-  document.getElementById('slipModalBillId').textContent = '(' + billId + ')';
-  document.getElementById('slipFile').value = '';
-  document.getElementById('slipPreview').classList.remove('show');
-  document.getElementById('slipPreview').innerHTML = '';
-  document.getElementById('slipUploadBtn').disabled = true;
-  document.getElementById('slipModal').classList.add('open');
-  document.body.style.overflow = 'hidden';
-}
-
-function closeSlipModal(){
-  document.getElementById('slipModal').classList.remove('open');
-  document.body.style.overflow = '';
-  slipBillId = null;
-  slipFileObj = null;
-}
-
-function onSlipChange(e){
-  const file = e.target.files[0];
-  if(!file) return;
-
-  // ตรวจขนาด
-  if(file.size > 10 * 1024 * 1024){
-    showToast('ไฟล์มีขนาดเกิน 10 MB', true);
-    e.target.value = '';
-    return;
-  }
-
-  slipFileObj = file;
-  const prev = document.getElementById('slipPreview');
-  prev.classList.add('show');
-
-  if(file.type.startsWith('image/')){
-    const reader = new FileReader();
-    reader.onload = (ev) => {
-      prev.innerHTML = `<img src="${ev.target.result}" alt="preview">`;
-    };
-    reader.readAsDataURL(file);
-  } else {
-    prev.innerHTML = `
-      <div class="pdf-box">
-        <svg width="22" height="22" viewBox="0 0 14 14" fill="none">
-          <path d="M3 1.5h5l3 3v8a.5.5 0 0 1-.5.5H3.5a.5.5 0 0 1-.5-.5v-11a.5.5 0 0 1 .5-.5z"
-                stroke="currentColor" stroke-width="1.3" stroke-linejoin="round"/>
-          <path d="M8 1.5V4.5h3" stroke="currentColor" stroke-width="1.3"/>
-        </svg>
-        <div>
-          <div>${file.name}</div>
-          <div style="font-size:11px;color:var(--ash);font-weight:400">${(file.size/1024).toFixed(1)} KB</div>
-        </div>
-      </div>
-    `;
-  }
-
-  document.getElementById('slipUploadBtn').disabled = false;
-}
-
-// Drag & Drop
-const slipDrop = document.getElementById('slipDrop');
-if(slipDrop){
-  ['dragover','dragenter'].forEach(ev=>{
-    slipDrop.addEventListener(ev, e=>{
-      e.preventDefault();
-      slipDrop.classList.add('dragover');
-    });
-  });
-  ['dragleave','drop'].forEach(ev=>{
-    slipDrop.addEventListener(ev, e=>{
-      e.preventDefault();
-      slipDrop.classList.remove('dragover');
-    });
-  });
-  slipDrop.addEventListener('drop', e=>{
-    const file = e.dataTransfer.files[0];
-    if(!file) return;
-    const inp = document.getElementById('slipFile');
-    const dt = new DataTransfer();
-    dt.items.add(file);
-    inp.files = dt.files;
-    onSlipChange({target: inp});
-  });
-}
-
-async function uploadSlip(){
-  if(!slipBillId || !slipFileObj){
-    showToast('กรุณาเลือกไฟล์', true);
-    return;
-  }
-
-  const btn = document.getElementById('slipUploadBtn');
-  btn.disabled = true;
-  btn.textContent = 'กำลังอัปโหลด...';
-
-  const fd = new FormData();
-  fd.append('deposit_bill_id', slipBillId);
-  fd.append('slip_file', slipFileObj);
-  fd.append('uploaded_by', CURRENT_USER);
-
-  try {
-    const res = await fetch('/deposit/upload-slip', {
-      method: 'POST',
-      headers: {
-        'X-CSRF-TOKEN': CSRF_TOKEN,
-        'X-Requested-With': 'XMLHttpRequest',
-        'Accept': 'application/json'
-      },
-      body: fd
-    });
-
-    const data = await res.json().catch(()=>({success:false, message:'response error'}));
-    if(!res.ok || data.success === false){
-      throw new Error(data.message || ('HTTP ' + res.status));
-    }
-
-    showToast('อัปโหลดสลิปสำเร็จ');
-    closeSlipModal();
-    setTimeout(()=>location.reload(), 600);
-
-  } catch(err){
-    console.error(err);
-    showToast('อัปโหลดล้มเหลว: ' + err.message, true);
-    btn.disabled = false;
-    btn.textContent = 'อัปโหลด';
-  }
-}
-
-document.getElementById('slipModal').addEventListener('click', function(e){
-  if(e.target === this) closeSlipModal();
-});
+function esc(s){return(s||'').replace(/'/g,"\\'").replace(/"/g,'&quot;')}
+function fD(d){if(!d)return'—';const t=new Date(d);if(isNaN(t))return d;return String(t.getDate()).padStart(2,'0')+'/'+String(t.getMonth()+1).padStart(2,'0')+'/'+t.getFullYear()}
+function fM(v){return parseFloat(v||0).toLocaleString('th-TH',{minimumFractionDigits:2,maximumFractionDigits:2})}
+function toast(m,e){const t=document.getElementById('toast');document.getElementById('toastM').textContent=m;t.classList.toggle('err',!!e);t.classList.add('show');setTimeout(()=>t.classList.remove('show'),2600)}
+document.addEventListener('keydown',e=>{if(e.key==='Escape'){closeInfo();closeCf();closeSl()}});
 </script>
 </body>
 </html>
