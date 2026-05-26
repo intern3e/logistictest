@@ -278,11 +278,10 @@ nav[role="navigation"] span[aria-current="page"]{background:var(--ntbl)!importan
       @if($fee>0)<span style="font-size:11px;color:#92400E;font-weight:600">{{ number_format($fee,2) }}</span>@else<span class="cS">—</span>@endif
     @endif
   </td>
-
-  {{-- ✅ WHT — มีปุ่ม clear (×) ให้ลบค่าได้ --}}
-{{-- ✅ WHT — เลขเอกสาร + วันที่ + ปุ่ม save/clear --}}
 <td>
-  @if($adm)
+  @if($dt !== 'service')
+    <span class="cS" style="color:var(--mist)">—</span>
+  @elseif($adm)
     <div style="display:flex;flex-direction:column;gap:4px;align-items:center">
       <div class="ie">
         <input type="text" id="wht-{{$item->id}}" value="{{ $wht }}" placeholder="—" maxlength="60" data-o="{{ $wht }}" oninput="chgWht({{$item->id}})">
@@ -294,11 +293,12 @@ nav[role="navigation"] span[aria-current="page"]{background:var(--ntbl)!importan
       <input type="date" id="whtd-{{$item->id}}" value="{{ $whtDate }}" data-o="{{ $whtDate }}" oninput="chgWht({{$item->id}})"
         style="border:1px solid var(--border);border-radius:3px;padding:3px 5px;font-size:10px;font-family:inherit;color:var(--ink);outline:none;width:118px" title="วันที่เอกสาร WHT">
     </div>
-  @else
-    @if($wht)
-      <span style="font-size:11px;color:#6D28D9;font-weight:600">{{ $wht }}</span>
-      @if($whtDate)<br><span class="cS">{{ \Carbon\Carbon::parse($whtDate)->format('d/m/').(\Carbon\Carbon::parse($whtDate)->year+543) }}</span>@endif
-    @else<span class="cS">—</span>@endif
+    @else
+      @if($wht)
+        <span style="font-size:11px;color:#6D28D9;font-weight:600">{{ $wht }}</span>
+        @if($whtDate)<br><span class="cS">{{ \Carbon\Carbon::parse($whtDate)->format('d/m/').(\Carbon\Carbon::parse($whtDate)->year+543) }}</span>@endif
+      @else<span class="cS">—</span>@endif
+    @endif
   @endif
 </td>
 
