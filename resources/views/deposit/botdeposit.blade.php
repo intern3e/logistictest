@@ -25,6 +25,7 @@
   --border:#CBD5E1;--bg:#F1F5F9;
   --emerald:#047857;--emerald-s:#D1FAE5;
   --purple:#6D28D9;--purple-s:#EDE9FE;
+  --amber:#D97706;--amber-s:#FEF3C7;
 }
 body{font-family:'Sarabun','Kanit',sans-serif;font-size:14px;background:var(--bg);color:var(--ink);line-height:1.55}
 .topbar{background:linear-gradient(180deg,var(--hd),var(--hd2));padding:14px 22px;display:flex;align-items:center;justify-content:space-between;gap:14px;flex-wrap:wrap;border-bottom:3px solid #0F172A}
@@ -54,7 +55,7 @@ body{font-family:'Sarabun','Kanit',sans-serif;font-size:14px;background:var(--bg
 .f-search input::placeholder{color:var(--mist)}
 
 .tw{background:#fff;margin:0 22px 22px;border:1px solid var(--line);overflow-x:auto}
-table{width:100%;border-collapse:collapse;font-size:13px}
+table{width:100%;border-collapse:collapse;font-size:13px;min-width:1100px}
 thead tr{background:var(--tbl)}
 thead tr.wht-head{background:var(--purple)}
 th{padding:10px 12px;font-size:12px;font-weight:600;color:#fff;border-right:1px solid rgba(255,255,255,.12);text-align:center;white-space:nowrap;font-family:'Kanit'}
@@ -80,6 +81,7 @@ tbody tr:last-child td{border-bottom:none}
 .b-transport{background:#FEF3C7;color:#92400E}
 .b-default{background:var(--rh);color:var(--ash)}
 .b-wht{background:var(--purple-s);color:var(--purple);font-weight:700;border:1px solid #C4B5FD}
+.b-fee{background:var(--amber-s);color:var(--amber);font-weight:700;border:1px solid #FCD34D}
 
 .processed-badge{display:inline-flex;align-items:center;gap:4px;padding:4px 10px;border-radius:12px;background:#DBEAFE;color:#1E40AF;font-size:11px;font-weight:600}
 .file-input{cursor:pointer;background:#fff}
@@ -137,8 +139,7 @@ nav[role="navigation"] span[aria-current="page"]{background:var(--tbl)!important
 
 {{-- ============================================================
      ส่วนที่ 1: งานสร้างเอกสารใหม่ (status = ยืนยัน, ไม่มี status_bill)
-     Bot ทำแค่แถวแรก — data-name ใส่เฉพาะ $loop->first (ไม่มี rowId)
-     Selenium: driver.find_element(By.CSS_SELECTOR, '[data-name="txt-new-so_id"]')
+     Bot ทำแค่แถวแรก — data-name ใส่เฉพาะ $loop->first
      ============================================================ --}}
 <div class="sec-header" data-section="new">
   <div class="sec-title">
@@ -158,7 +159,7 @@ nav[role="navigation"] span[aria-current="page"]{background:var(--tbl)!important
 <div class="tw">
 <table id="table-new" name="table-new" data-table="new" data-name="table-new">
 <thead><tr>
-  <th style="width:40px">☑</th>
+  <th style="width:36px">☑</th>
   <th>เลขที่บิล</th>
   <th>ใบสั่งขาย</th>
   <th>PO</th>
@@ -169,17 +170,51 @@ nav[role="navigation"] span[aria-current="page"]{background:var(--tbl)!important
   <th>ยอดมัดจำ</th>
   <th>ยอดคงเหลือ</th>
   <th>ประเภท</th>
+  <th>ค่าทำเนียม</th>
   <th>สลิป</th>
 </tr></thead>
 <tbody id="tbody-new" data-tbody="new">
 @forelse($newJobs as $item)
   @php
-    $dt=$item->dep_type??'';$tn=$tl[$dt]??$dt;$tc=$tm[$dt]??'b-default';
-    $dd=$item->date_dep?\Carbon\Carbon::parse($item->date_dep):null;
-    $df=$dd?($dd->format('d/m/').($dd->year+543)):'—';
-    $ip=!empty($item->print_time);
-    $remain=(float)($item->grand_total??0)+(float)($item->dep_price??0);
-    $f=$loop->first;
+    $dt   = $item->dep_type ?? '';
+    $tn   = $tl[$dt] ?? $dt;
+    $tc   = $tm[$dt] ?? 'b-default';
+    $dd   = $item->date_dep ? \Carbon\Carbon::parse($item->date_dep) : null;
+    $df   = $dd ? ($dd->format('d/m/').($dd->year+543)) : '—';
+    $ip   = !empty($item->print_time);
+
+    // ── ค่าตัวเลข ──
+    $depPer   = (float)($item->dep_per ?? 0);
+    $depPrice = (float)($item->dep_price ?? 0);
+    $grandTot = (float)($item->grand_total ?? 0);
+    $remain   = $grandTot + $depPrice;
+    $depFee   = (float)($item->dep_fee ?? 0);
+    $hasFee   = $depFee > 0;
+
+    // ── คำนวณ (Bot ไม่ต้องคำนวณเอง) ──
+    $totalBeforeVat = $depPer > 0 ? ($depPrice * 100 / $depPer) : 0;
+    $bathVat        = $depPrice * 1.07;
+    $allPercent     = 100 - $depPer;
+    $remainNoVat    = $depPer > 0 ? ($depPrice * (100 - $depPer) / $depPer) : 0;
+    $allTotal       = $remainNoVat * 1.07;
+
+    // ── วันที่สลิป → แปลงเป็นรูปแบบไทย ──
+    $slipDt = $item->slip_time ? \Carbon\Carbon::parse($item->slip_time)->setTimezone('Asia/Bangkok') : null;
+    if ($slipDt) {
+      $slipD    = $slipDt->format('d');
+      $slipM    = $slipDt->format('m');
+      $slipYthai= $slipDt->year + 543;
+      $dateRaw  = $slipD . $slipM . $slipYthai;       // "26052569"
+      $dateFor  = $slipD.'/'.$slipM.'/'.$slipYthai;    // "26/05/2569"
+      $slipDisplay = $slipDt->format('d/m/Y');          // "26/05/2026"
+    } else {
+      $dateRaw = $dateFor = $slipDisplay = '';
+    }
+
+    // ── PO ที่ใช้จริง ──
+    $poUse = !empty($item->po_document) ? $item->po_document : ($item->so_id ?? '');
+
+    $f = $loop->first;
   @endphp
   <tr class="{{ $ip?'processed':'' }} job-row"
       data-job="new"
@@ -191,27 +226,41 @@ nav[role="navigation"] span[aria-current="page"]{background:var(--tbl)!important
       data-dep-type="{{ $dt }}"
       data-printed="{{ $ip?'1':'0' }}"
       data-status="{{ $ip?'printed':'pending' }}"
-      data-has-slip="{{ !empty($item->slip_time)?'1':'0' }}"
+      data-has-slip="{{ $slipDt?'1':'0' }}"
+      data-has-fee="{{ $hasFee?'1':'0' }}"
+      data-dep-fee="{{ number_format($depFee,2) }}"
+      data-total-before-vat="{{ number_format($totalBeforeVat,2) }}"
+      data-bath-vat="{{ number_format($bathVat,2) }}"
+      data-all-percent="{{ rtrim(rtrim(number_format($allPercent,2),0),'.') }}"
+      data-all-total="{{ number_format($allTotal,2) }}"
+      data-po-use="{{ $poUse }}"
+      data-date-raw="{{ $dateRaw }}"
+      data-date-for="{{ $dateFor }}"
       @if($f) data-name="row-new" @endif>
+
     <td data-field="checkbox" @if($f) data-name="td-new-checkbox" @endif><input type="checkbox" class="chk chk-new" name="markprint-new[]" data-action="select-row" data-row-id="{{ $item->id }}" value="{{ $item->id }}" {{ $ip?'disabled':'' }} @if($f) data-name="chk-new" @endif></td>
+
     <td data-field="deposit_bill_id" data-value="{{ $item->deposit_bill_id }}" @if($f) data-name="td-new-deposit_bill_id" @endif>
       <div style="display:flex;align-items:center;gap:4px;justify-content:center;white-space:nowrap">
         <span class="c-code" data-text="deposit_bill_id" @if($f) data-name="txt-new-deposit_bill_id" @endif>{{ $item->deposit_bill_id??'—' }}</span>
         @if($item->deposit_bill_id)<button class="btn-copy" data-action="copy" data-copy-field="deposit_bill_id" @if($f) data-name="copy-new-deposit_bill_id" @endif onclick="cpText('{{ $item->deposit_bill_id }}',this)">คัดลอก</button>@endif
       </div>
     </td>
+
     <td data-field="so_id" data-value="{{ $item->so_id }}" @if($f) data-name="td-new-so_id" @endif>
       <div style="display:flex;align-items:center;gap:4px;justify-content:center;white-space:nowrap">
         <span style="font-size:12px;color:var(--steel)" data-text="so_id" @if($f) data-name="txt-new-so_id" @endif>{{ $item->so_id??'—' }}</span>
         @if($item->so_id)<button class="btn-copy" data-action="copy" data-copy-field="so_id" @if($f) data-name="copy-new-so_id" @endif onclick="cpText('{{ $item->so_id }}',this)">คัดลอก</button>@endif
       </div>
     </td>
+
     <td data-field="po_document" data-value="{{ $item->po_document }}" @if($f) data-name="td-new-po_document" @endif>
       <div style="display:flex;align-items:center;gap:4px;justify-content:center;white-space:nowrap">
         <span style="font-size:12px;color:var(--steel)" data-text="po_document" @if($f) data-name="txt-new-po_document" @endif>{{ $item->po_document??'—' }}</span>
         @if($item->po_document)<button class="btn-copy" data-action="copy" data-copy-field="po_document" @if($f) data-name="copy-new-po_document" @endif onclick="cpText('{{ $item->po_document }}',this)">คัดลอก</button>@endif
       </div>
     </td>
+
     <td data-field="customer_id" data-value="{{ $item->customer_id }}" @if($f) data-name="td-new-customer_id" @endif>
       @if($item->customer_id)
         <div style="display:flex;align-items:center;gap:4px;justify-content:center;white-space:nowrap">
@@ -220,26 +269,32 @@ nav[role="navigation"] span[aria-current="page"]{background:var(--tbl)!important
         </div>
       @else<span class="c-sm" @if($f) data-name="txt-new-customer_id" @endif>—</span>@endif
     </td>
+
     <td class="c-sm" data-field="date_dep" data-value="{{ $item->date_dep }}" @if($f) data-name="td-new-date_dep" @endif style="white-space:nowrap"><span @if($f) data-name="txt-new-date_dep" @endif>{{ $df }}</span></td>
+
     <td class="c-sm" data-field="emp_name" data-value="{{ $item->emp_name }}" @if($f) data-name="td-new-emp_name" @endif><span @if($f) data-name="txt-new-emp_name" @endif>{{ $item->emp_name??'—' }}</span></td>
-    <td data-field="dep_per" data-value="{{ (float)($item->dep_per??0) }}" @if($f) data-name="td-new-dep_per" @endif>
+
+    <td data-field="dep_per" data-value="{{ $depPer }}" @if($f) data-name="td-new-dep_per" @endif>
       <div style="display:flex;align-items:center;gap:4px;justify-content:center">
-        <span class="c-percent" data-text="dep_per" @if($f) data-name="txt-new-dep_per" @endif>{{ number_format((float)($item->dep_per??0),2) }}%</span>
-        <button class="btn-copy" data-action="copy" data-copy-field="dep_per" @if($f) data-name="copy-new-dep_per" @endif onclick="cpText('{{ number_format((float)($item->dep_per??0),2) }}',this)">คัดลอก</button>
+        <span class="c-percent" data-text="dep_per" @if($f) data-name="txt-new-dep_per" @endif>{{ number_format($depPer,2) }}%</span>
+        <button class="btn-copy" data-action="copy" data-copy-field="dep_per" @if($f) data-name="copy-new-dep_per" @endif onclick="cpText('{{ number_format($depPer,2) }}',this)">คัดลอก</button>
       </div>
     </td>
-    <td data-field="dep_price" data-value="{{ (float)($item->dep_price??0) }}" @if($f) data-name="td-new-dep_price" @endif>
+
+    <td data-field="dep_price" data-value="{{ $depPrice }}" @if($f) data-name="td-new-dep_price" @endif>
       <div style="display:flex;align-items:center;gap:4px;justify-content:center">
-        <span class="c-money" data-text="dep_price" @if($f) data-name="txt-new-dep_price" @endif>{{ number_format((float)($item->dep_price??0),2) }}</span>
-        <button class="btn-copy" data-action="copy" data-copy-field="dep_price" @if($f) data-name="copy-new-dep_price" @endif onclick="cpText('{{ number_format((float)($item->dep_price??0),2) }}',this)">คัดลอก</button>
+        <span class="c-money" data-text="dep_price" @if($f) data-name="txt-new-dep_price" @endif>{{ number_format($depPrice,2) }}</span>
+        <button class="btn-copy" data-action="copy" data-copy-field="dep_price" @if($f) data-name="copy-new-dep_price" @endif onclick="cpText('{{ number_format($depPrice,2) }}',this)">คัดลอก</button>
       </div>
     </td>
-    <td data-field="grand_total" data-value="{{ (float)($item->grand_total??0) }}" data-remain="{{ $remain }}" @if($f) data-name="td-new-grand_total" @endif>
+
+    <td data-field="grand_total" data-value="{{ $grandTot }}" data-remain="{{ $remain }}" @if($f) data-name="td-new-grand_total" @endif>
       <div style="display:flex;align-items:center;gap:4px;justify-content:center">
-        <span class="c-money" data-text="grand_total" @if($f) data-name="txt-new-grand_total" @endif>{{ number_format((float)($item->grand_total??0),2) }}</span>
+        <span class="c-money" data-text="grand_total" @if($f) data-name="txt-new-grand_total" @endif>{{ number_format($grandTot,2) }}</span>
         <button class="btn-copy" data-action="copy" data-copy-field="grand_total_plus_dep" @if($f) data-name="copy-new-grand_total" @endif onclick="cpText('{{ number_format($remain,2) }}',this)">คัดลอก</button>
       </div>
     </td>
+
     <td data-field="dep_type" data-value="{{ $dt }}" @if($f) data-name="td-new-dep_type" @endif>
       <div style="display:flex;flex-direction:column;gap:4px;align-items:center">
         @if($dt)<span class="badge {{ $tc }}" data-text="dep_type" @if($f) data-name="txt-new-dep_type" @endif>{{ $tn }}</span>@else<span class="c-sm" @if($f) data-name="txt-new-dep_type" @endif>—</span>@endif
@@ -254,16 +309,26 @@ nav[role="navigation"] span[aria-current="page"]{background:var(--tbl)!important
         @endif
       </div>
     </td>
+
+    {{-- ✅ คอลัมน์ใหม่: ค่าทำเนียม --}}
+    <td data-field="dep_fee" data-value="{{ $depFee }}" @if($f) data-name="td-new-dep_fee" @endif>
+      @if($hasFee)
+        <span class="badge b-fee" @if($f) data-name="txt-new-dep_fee" @endif>{{ number_format($depFee,2) }}</span>
+      @else
+        <span class="c-sm" style="color:var(--mist)" @if($f) data-name="txt-new-dep_fee" @endif>—</span>
+      @endif
+    </td>
+
     <td data-field="slip_time" data-value="{{ $item->slip_time }}" @if($f) data-name="td-new-slip_time" @endif>
-      @if(!empty($item->slip_time))
-        <span class="slip-badge" data-state="has-slip" @if($f) data-name="txt-new-slip_time" @endif>{{ \Carbon\Carbon::parse($item->slip_time)->setTimezone('Asia/Bangkok')->format('d/m/Y') }}</span>
+      @if($slipDt)
+        <span class="slip-badge" data-state="has-slip" @if($f) data-name="txt-new-slip_time" @endif>{{ $slipDisplay }}</span>
       @else
         <span class="no-slip" data-state="no-slip" @if($f) data-name="txt-new-slip_time" @endif>✕ ยังไม่มี</span>
       @endif
     </td>
   </tr>
 @empty
-  <tr data-empty="new"><td colspan="12"><div class="empty"><h4>ไม่มีงานสร้างเอกสารใหม่</h4><p>รอ admin ยืนยัน</p></div></td></tr>
+  <tr data-empty="new"><td colspan="13"><div class="empty"><h4>ไม่มีงานสร้างเอกสารใหม่</h4><p>รอ admin ยืนยัน</p></div></td></tr>
 @endforelse
 </tbody>
 </table>
@@ -271,8 +336,6 @@ nav[role="navigation"] span[aria-current="page"]{background:var(--tbl)!important
 
 {{-- ============================================================
      ส่วนที่ 2: งานแก้ไขเอกสาร (status = มี WHT)
-     Bot ทำแค่แถวแรก — data-name ใส่เฉพาะ $loop->first (ไม่มี rowId)
-     Selenium: driver.find_element(By.CSS_SELECTOR, '[data-name="txt-wht-wht_doc_no"]')
      ============================================================ --}}
 <div class="sec-header" data-section="wht">
   <div class="sec-title">
@@ -288,7 +351,7 @@ nav[role="navigation"] span[aria-current="page"]{background:var(--tbl)!important
 <div class="tw">
 <table id="table-wht" name="table-wht" data-table="wht" data-name="table-wht">
 <thead><tr class="wht-head">
-  <th style="width:40px">☑</th>
+  <th style="width:36px">☑</th>
   <th>เลขที่บิล</th>
   <th>ใบสั่งขาย</th>
   <th>PO</th>
@@ -298,16 +361,45 @@ nav[role="navigation"] span[aria-current="page"]{background:var(--tbl)!important
   <th>ยอดมัดจำ</th>
   <th>ยอดคงเหลือ</th>
   <th>ประเภท</th>
+  <th>ค่าทำเนียม</th>
   <th>สลิป</th>
 </tr></thead>
 <tbody id="tbody-wht" data-tbody="wht">
 @forelse($whtJobs as $item)
   @php
-    $dt=$item->dep_type??'';$tn=$tl[$dt]??$dt;$tc=$tm[$dt]??'b-default';
-    $whtTime = $item->wht_time ? \Carbon\Carbon::parse($item->wht_time) : null;
+    $dt   = $item->dep_type ?? '';
+    $tn   = $tl[$dt] ?? $dt;
+    $tc   = $tm[$dt] ?? 'b-default';
+    $whtTime   = $item->wht_time ? \Carbon\Carbon::parse($item->wht_time) : null;
     $printTime = $item->print_time ? \Carbon\Carbon::parse($item->print_time) : null;
-    $ip = $whtTime && $printTime && $printTime->greaterThan($whtTime);
-    $f=$loop->first;
+    $ip        = $whtTime && $printTime && $printTime->greaterThan($whtTime);
+
+    $depPer   = (float)($item->dep_per ?? 0);
+    $depPrice = (float)($item->dep_price ?? 0);
+    $grandTot = (float)($item->grand_total ?? 0);
+    $depFee   = (float)($item->dep_fee ?? 0);
+    $hasFee   = $depFee > 0;
+
+    $totalBeforeVat = $depPer > 0 ? ($depPrice * 100 / $depPer) : 0;
+    $bathVat        = $depPrice * 1.07;
+    $allPercent     = 100 - $depPer;
+    $remainNoVat    = $depPer > 0 ? ($depPrice * (100 - $depPer) / $depPer) : 0;
+    $allTotal       = $remainNoVat * 1.07;
+    $poUse          = !empty($item->po_document) ? $item->po_document : ($item->so_id ?? '');
+
+    $slipDt = $item->slip_time ? \Carbon\Carbon::parse($item->slip_time)->setTimezone('Asia/Bangkok') : null;
+    if ($slipDt) {
+      $slipD     = $slipDt->format('d');
+      $slipM     = $slipDt->format('m');
+      $slipYthai = $slipDt->year + 543;
+      $dateRaw   = $slipD . $slipM . $slipYthai;
+      $dateFor   = $slipD.'/'.$slipM.'/'.$slipYthai;
+      $slipDisplay = $slipDt->format('d/m/Y');
+    } else {
+      $dateRaw = $dateFor = $slipDisplay = '';
+    }
+
+    $f = $loop->first;
   @endphp
   <tr class="{{ $ip?'processed':'' }} job-row"
       data-job="wht"
@@ -320,28 +412,46 @@ nav[role="navigation"] span[aria-current="page"]{background:var(--tbl)!important
       data-dep-type="{{ $dt }}"
       data-printed="{{ $ip?'1':'0' }}"
       data-status="{{ $ip?'printed':'pending' }}"
-      data-has-slip="{{ !empty($item->slip_time)?'1':'0' }}"
+      data-has-slip="{{ $slipDt?'1':'0' }}"
+      data-has-fee="{{ $hasFee?'1':'0' }}"
+      data-dep-fee="{{ number_format($depFee,2) }}"
+      data-total-before-vat="{{ number_format($totalBeforeVat,2) }}"
+      data-bath-vat="{{ number_format($bathVat,2) }}"
+      data-all-percent="{{ rtrim(rtrim(number_format($allPercent,2),0),'.') }}"
+      data-all-total="{{ number_format($allTotal,2) }}"
+      data-po-use="{{ $poUse }}"
+      data-date-raw="{{ $dateRaw }}"
+      data-date-for="{{ $dateFor }}"
       @if($f) data-name="row-wht" @endif>
+
     <td data-field="checkbox" @if($f) data-name="td-wht-checkbox" @endif><input type="checkbox" class="chk chk-wht" name="markprint-wht[]" data-action="select-row" data-row-id="{{ $item->id }}" value="{{ $item->id }}" {{ $ip?'disabled':'' }} @if($f) data-name="chk-wht" @endif></td>
+
     <td data-field="deposit_bill_id" data-value="{{ $item->deposit_bill_id }}" @if($f) data-name="td-wht-deposit_bill_id" @endif>
       <div style="display:flex;align-items:center;gap:4px;justify-content:center;white-space:nowrap">
         <span class="c-code" data-text="deposit_bill_id" @if($f) data-name="txt-wht-deposit_bill_id" @endif>{{ $item->deposit_bill_id??'—' }}</span>
         @if($item->deposit_bill_id)<button class="btn-copy" data-action="copy" data-copy-field="deposit_bill_id" @if($f) data-name="copy-wht-deposit_bill_id" @endif onclick="cpText('{{ $item->deposit_bill_id }}',this)">คัดลอก</button>@endif
       </div>
     </td>
+
     <td data-field="so_id" data-value="{{ $item->so_id }}" @if($f) data-name="td-wht-so_id" @endif style="font-size:12px;color:var(--steel)"><span data-text="so_id" @if($f) data-name="txt-wht-so_id" @endif>{{ $item->so_id??'—' }}</span></td>
+
     <td data-field="po_document" data-value="{{ $item->po_document }}" @if($f) data-name="td-wht-po_document" @endif style="font-size:12px;color:var(--steel)"><span data-text="po_document" @if($f) data-name="txt-wht-po_document" @endif>{{ $item->po_document??'—' }}</span></td>
+
     <td data-field="customer_id" data-value="{{ $item->customer_id }}" @if($f) data-name="td-wht-customer_id" @endif style="font-size:12px;color:var(--steel)"><span data-text="customer_id" @if($f) data-name="txt-wht-customer_id" @endif>{{ $item->customer_id??'—' }}</span></td>
-    {{-- ✅ Bot จับคอลัมน์นี้: เลข WHT --}}
+
     <td data-field="wht_doc_no" data-value="{{ $item->wht_doc_no }}" @if($f) data-name="td-wht-wht_doc_no" @endif>
       <div style="display:flex;align-items:center;gap:4px;justify-content:center">
         <span class="badge b-wht" data-text="wht_doc_no" data-wht="{{ $item->wht_doc_no }}" @if($f) data-name="txt-wht-wht_doc_no" @endif>{{ $item->wht_doc_no ?? '—' }}</span>
         @if($item->wht_doc_no)<button class="btn-copy" data-action="copy" data-copy-field="wht_doc_no" @if($f) data-name="copy-wht-wht_doc_no" @endif onclick="cpText('{{ $item->wht_doc_no }}',this)">คัดลอก</button>@endif
       </div>
     </td>
-    <td class="c-percent" data-field="dep_per" data-value="{{ (float)($item->dep_per??0) }}" @if($f) data-name="td-wht-dep_per" @endif><span @if($f) data-name="txt-wht-dep_per" @endif>{{ number_format((float)($item->dep_per??0),2) }}%</span></td>
-    <td class="c-money" data-field="dep_price" data-value="{{ (float)($item->dep_price??0) }}" @if($f) data-name="td-wht-dep_price" @endif><span @if($f) data-name="txt-wht-dep_price" @endif>{{ number_format((float)($item->dep_price??0),2) }}</span></td>
-    <td class="c-money" data-field="grand_total" data-value="{{ (float)($item->grand_total??0) }}" @if($f) data-name="td-wht-grand_total" @endif><span @if($f) data-name="txt-wht-grand_total" @endif>{{ number_format((float)($item->grand_total??0),2) }}</span></td>
+
+    <td class="c-percent" data-field="dep_per" data-value="{{ $depPer }}" @if($f) data-name="td-wht-dep_per" @endif><span @if($f) data-name="txt-wht-dep_per" @endif>{{ number_format($depPer,2) }}%</span></td>
+
+    <td class="c-money" data-field="dep_price" data-value="{{ $depPrice }}" @if($f) data-name="td-wht-dep_price" @endif><span @if($f) data-name="txt-wht-dep_price" @endif>{{ number_format($depPrice,2) }}</span></td>
+
+    <td class="c-money" data-field="grand_total" data-value="{{ $grandTot }}" @if($f) data-name="td-wht-grand_total" @endif><span @if($f) data-name="txt-wht-grand_total" @endif>{{ number_format($grandTot,2) }}</span></td>
+
     <td data-field="dep_type" data-value="{{ $dt }}" @if($f) data-name="td-wht-dep_type" @endif>
       <div style="display:flex;flex-direction:column;gap:4px;align-items:center">
         @if($dt)<span class="badge {{ $tc }}" data-text="dep_type" @if($f) data-name="txt-wht-dep_type" @endif>{{ $tn }}</span>@else<span class="c-sm" @if($f) data-name="txt-wht-dep_type" @endif>—</span>@endif
@@ -356,16 +466,26 @@ nav[role="navigation"] span[aria-current="page"]{background:var(--tbl)!important
         @endif
       </div>
     </td>
+
+    {{-- ✅ คอลัมน์ใหม่: ค่าทำเนียม --}}
+    <td data-field="dep_fee" data-value="{{ $depFee }}" @if($f) data-name="td-wht-dep_fee" @endif>
+      @if($hasFee)
+        <span class="badge b-fee" @if($f) data-name="txt-wht-dep_fee" @endif>{{ number_format($depFee,2) }}</span>
+      @else
+        <span class="c-sm" style="color:var(--mist)" @if($f) data-name="txt-wht-dep_fee" @endif>—</span>
+      @endif
+    </td>
+
     <td data-field="slip_time" data-value="{{ $item->slip_time }}" @if($f) data-name="td-wht-slip_time" @endif>
-      @if(!empty($item->slip_time))
-        <span class="slip-badge" data-state="has-slip" @if($f) data-name="txt-wht-slip_time" @endif>{{ \Carbon\Carbon::parse($item->slip_time)->setTimezone('Asia/Bangkok')->format('d/m/Y') }}</span>
+      @if($slipDt)
+        <span class="slip-badge" data-state="has-slip" @if($f) data-name="txt-wht-slip_time" @endif>{{ $slipDisplay }}</span>
       @else
         <span class="no-slip" data-state="no-slip" @if($f) data-name="txt-wht-slip_time" @endif>✕ ยังไม่มี</span>
       @endif
     </td>
   </tr>
 @empty
-  <tr data-empty="wht"><td colspan="11"><div class="empty"><h4>ไม่มีงาน WHT</h4><p>ยังไม่มีรายการที่ต้องแก้ไขเอกสาร</p></div></td></tr>
+  <tr data-empty="wht"><td colspan="12"><div class="empty"><h4>ไม่มีงาน WHT</h4><p>ยังไม่มีรายการที่ต้องแก้ไขเอกสาร</p></div></td></tr>
 @endforelse
 </tbody>
 </table>
