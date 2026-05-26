@@ -137,27 +137,26 @@ nav[role="navigation"] span[aria-current="page"]{background:var(--tbl)!important
 
 {{-- ============================================================
      ส่วนที่ 1: งานสร้างเอกสารใหม่ (status = ยืนยัน, ไม่มี status_bill)
-     Bot selector หลัก: #table-new  /  [data-table="new"]
-     แต่ละแถว: tr[data-job="new"][data-row-id][data-so][data-bill][data-status]
-     แต่ละ cell: td[data-field="..."]  ← bot ดึงค่าตามชื่อ field ไม่ใช่ index
+     Bot ทำแค่แถวแรก — data-name ใส่เฉพาะ $loop->first (ไม่มี rowId)
+     Selenium: driver.find_element(By.CSS_SELECTOR, '[data-name="txt-new-so_id"]')
      ============================================================ --}}
 <div class="sec-header" data-section="new">
   <div class="sec-title">
     📄 สร้างเอกสารใหม่
-    <span class="sec-count" id="count-new" data-count="new">{{ $newJobs->count() }}</span>
+    <span class="sec-count" id="count-new" data-count="new" data-name="count-new">{{ $newJobs->count() }}</span>
   </div>
   <span class="sec-desc">รายการที่ยืนยันแล้ว — Bot จะสร้างเอกสารใหม่</span>
 </div>
 <div class="abar">
-  <button class="btn-print" id="btn-print-new" name="btn-print-new" data-action="mark-printed" data-job="new" onclick="markSelectedPrinted('new')">🖨 บันทึกการพิมพ์</button>
-  <label class="chk-all-label"><input type="checkbox" class="chk" id="chk-all-new" name="chk-all-new" data-action="select-all" data-job="new" onclick="toggleAll('new',this.checked)"> เลือกทั้งหมด</label>
+  <button class="btn-print" id="btn-print-new" name="btn-print-new" data-action="mark-printed" data-job="new" data-name="btn-print-new" onclick="markSelectedPrinted('new')">🖨 บันทึกการพิมพ์</button>
+  <label class="chk-all-label"><input type="checkbox" class="chk" id="chk-all-new" name="chk-all-new" data-action="select-all" data-job="new" data-name="chk-all-new" onclick="toggleAll('new',this.checked)"> เลือกทั้งหมด</label>
   <div class="f-search">
     <svg width="12" height="12" viewBox="0 0 13 13" fill="none"><circle cx="5.5" cy="5.5" r="3.5" stroke="#9CA3AF" stroke-width="1.2"/><path d="M8.5 8.5l3 3" stroke="#9CA3AF" stroke-width="1.2" stroke-linecap="round"/></svg>
-    <input type="text" id="search-new" name="search-new" data-action="search" data-job="new" placeholder="ค้นหา SO" oninput="searchTbl('table-new',this.value)">
+    <input type="text" id="search-new" name="search-new" data-action="search" data-job="new" data-name="search-input-new" placeholder="ค้นหา SO" oninput="searchTbl('table-new',this.value)">
   </div>
 </div>
 <div class="tw">
-<table id="table-new" name="table-new" data-table="new">
+<table id="table-new" name="table-new" data-table="new" data-name="table-new">
 <thead><tr>
   <th style="width:40px">☑</th>
   <th>เลขที่บิล</th>
@@ -180,6 +179,7 @@ nav[role="navigation"] span[aria-current="page"]{background:var(--tbl)!important
     $df=$dd?($dd->format('d/m/').($dd->year+543)):'—';
     $ip=!empty($item->print_time);
     $remain=(float)($item->grand_total??0)+(float)($item->dep_price??0);
+    $f=$loop->first;
   @endphp
   <tr class="{{ $ip?'processed':'' }} job-row"
       data-job="new"
@@ -191,72 +191,74 @@ nav[role="navigation"] span[aria-current="page"]{background:var(--tbl)!important
       data-dep-type="{{ $dt }}"
       data-printed="{{ $ip?'1':'0' }}"
       data-status="{{ $ip?'printed':'pending' }}"
-      data-has-slip="{{ !empty($item->slip_time)?'1':'0' }}">
-    <td data-field="checkbox"><input type="checkbox" class="chk chk-new" name="markprint-new[]" data-action="select-row" data-row-id="{{ $item->id }}" value="{{ $item->id }}" {{ $ip?'disabled':'' }}></td>
-    <td data-field="deposit_bill_id" data-value="{{ $item->deposit_bill_id }}">
+      data-has-slip="{{ !empty($item->slip_time)?'1':'0' }}"
+      @if($f) data-name="row-new" @endif>
+    <td data-field="checkbox" @if($f) data-name="td-new-checkbox" @endif><input type="checkbox" class="chk chk-new" name="markprint-new[]" data-action="select-row" data-row-id="{{ $item->id }}" value="{{ $item->id }}" {{ $ip?'disabled':'' }} @if($f) data-name="chk-new" @endif></td>
+    <td data-field="deposit_bill_id" data-value="{{ $item->deposit_bill_id }}" @if($f) data-name="td-new-deposit_bill_id" @endif>
       <div style="display:flex;align-items:center;gap:4px;justify-content:center;white-space:nowrap">
-        <span class="c-code" data-text="deposit_bill_id">{{ $item->deposit_bill_id??'—' }}</span>
-        @if($item->deposit_bill_id)<button class="btn-copy" data-action="copy" data-copy-field="deposit_bill_id" onclick="cpText('{{ $item->deposit_bill_id }}',this)">คัดลอก</button>@endif
+        <span class="c-code" data-text="deposit_bill_id" @if($f) data-name="txt-new-deposit_bill_id" @endif>{{ $item->deposit_bill_id??'—' }}</span>
+        @if($item->deposit_bill_id)<button class="btn-copy" data-action="copy" data-copy-field="deposit_bill_id" @if($f) data-name="copy-new-deposit_bill_id" @endif onclick="cpText('{{ $item->deposit_bill_id }}',this)">คัดลอก</button>@endif
       </div>
     </td>
-    <td data-field="so_id" data-value="{{ $item->so_id }}">
+    <td data-field="so_id" data-value="{{ $item->so_id }}" @if($f) data-name="td-new-so_id" @endif>
       <div style="display:flex;align-items:center;gap:4px;justify-content:center;white-space:nowrap">
-        <span style="font-size:12px;color:var(--steel)" data-text="so_id">{{ $item->so_id??'—' }}</span>
-        @if($item->so_id)<button class="btn-copy" data-action="copy" data-copy-field="so_id" onclick="cpText('{{ $item->so_id }}',this)">คัดลอก</button>@endif
+        <span style="font-size:12px;color:var(--steel)" data-text="so_id" @if($f) data-name="txt-new-so_id" @endif>{{ $item->so_id??'—' }}</span>
+        @if($item->so_id)<button class="btn-copy" data-action="copy" data-copy-field="so_id" @if($f) data-name="copy-new-so_id" @endif onclick="cpText('{{ $item->so_id }}',this)">คัดลอก</button>@endif
       </div>
     </td>
-    <td data-field="po_document" data-value="{{ $item->po_document }}">
+    <td data-field="po_document" data-value="{{ $item->po_document }}" @if($f) data-name="td-new-po_document" @endif>
       <div style="display:flex;align-items:center;gap:4px;justify-content:center;white-space:nowrap">
-        <span style="font-size:12px;color:var(--steel)" data-text="po_document">{{ $item->po_document??'—' }}</span>
-        @if($item->po_document)<button class="btn-copy" data-action="copy" data-copy-field="po_document" onclick="cpText('{{ $item->po_document }}',this)">คัดลอก</button>@endif
+        <span style="font-size:12px;color:var(--steel)" data-text="po_document" @if($f) data-name="txt-new-po_document" @endif>{{ $item->po_document??'—' }}</span>
+        @if($item->po_document)<button class="btn-copy" data-action="copy" data-copy-field="po_document" @if($f) data-name="copy-new-po_document" @endif onclick="cpText('{{ $item->po_document }}',this)">คัดลอก</button>@endif
       </div>
     </td>
-    <td data-field="customer_id" data-value="{{ $item->customer_id }}">
+    <td data-field="customer_id" data-value="{{ $item->customer_id }}" @if($f) data-name="td-new-customer_id" @endif>
       @if($item->customer_id)
         <div style="display:flex;align-items:center;gap:4px;justify-content:center;white-space:nowrap">
-          <span style="font-size:12px;color:var(--steel)" data-text="customer_id">{{ $item->customer_id }}</span>
-          <button class="btn-copy" data-action="copy" data-copy-field="customer_id" onclick="cpText('{{ $item->customer_id }}',this)">คัดลอก</button>
+          <span style="font-size:12px;color:var(--steel)" data-text="customer_id" @if($f) data-name="txt-new-customer_id" @endif>{{ $item->customer_id }}</span>
+          <button class="btn-copy" data-action="copy" data-copy-field="customer_id" @if($f) data-name="copy-new-customer_id" @endif onclick="cpText('{{ $item->customer_id }}',this)">คัดลอก</button>
         </div>
-      @else<span class="c-sm">—</span>@endif
+      @else<span class="c-sm" @if($f) data-name="txt-new-customer_id" @endif>—</span>@endif
     </td>
-    <td class="c-sm" data-field="date_dep" data-value="{{ $item->date_dep }}" style="white-space:nowrap">{{ $df }}</td>
-    <td class="c-sm" data-field="emp_name" data-value="{{ $item->emp_name }}">{{ $item->emp_name??'—' }}</td>
-    <td data-field="dep_per" data-value="{{ (float)($item->dep_per??0) }}">
+    <td class="c-sm" data-field="date_dep" data-value="{{ $item->date_dep }}" @if($f) data-name="td-new-date_dep" @endif style="white-space:nowrap"><span @if($f) data-name="txt-new-date_dep" @endif>{{ $df }}</span></td>
+    <td class="c-sm" data-field="emp_name" data-value="{{ $item->emp_name }}" @if($f) data-name="td-new-emp_name" @endif><span @if($f) data-name="txt-new-emp_name" @endif>{{ $item->emp_name??'—' }}</span></td>
+    <td data-field="dep_per" data-value="{{ (float)($item->dep_per??0) }}" @if($f) data-name="td-new-dep_per" @endif>
       <div style="display:flex;align-items:center;gap:4px;justify-content:center">
-        <span class="c-percent" data-text="dep_per">{{ number_format((float)($item->dep_per??0),2) }}%</span>
-        <button class="btn-copy" data-action="copy" data-copy-field="dep_per" onclick="cpText('{{ number_format((float)($item->dep_per??0),2) }}',this)">คัดลอก</button>
+        <span class="c-percent" data-text="dep_per" @if($f) data-name="txt-new-dep_per" @endif>{{ number_format((float)($item->dep_per??0),2) }}%</span>
+        <button class="btn-copy" data-action="copy" data-copy-field="dep_per" @if($f) data-name="copy-new-dep_per" @endif onclick="cpText('{{ number_format((float)($item->dep_per??0),2) }}',this)">คัดลอก</button>
       </div>
     </td>
-    <td data-field="dep_price" data-value="{{ (float)($item->dep_price??0) }}">
+    <td data-field="dep_price" data-value="{{ (float)($item->dep_price??0) }}" @if($f) data-name="td-new-dep_price" @endif>
       <div style="display:flex;align-items:center;gap:4px;justify-content:center">
-        <span class="c-money" data-text="dep_price">{{ number_format((float)($item->dep_price??0),2) }}</span>
-        <button class="btn-copy" data-action="copy" data-copy-field="dep_price" onclick="cpText('{{ number_format((float)($item->dep_price??0),2) }}',this)">คัดลอก</button>
+        <span class="c-money" data-text="dep_price" @if($f) data-name="txt-new-dep_price" @endif>{{ number_format((float)($item->dep_price??0),2) }}</span>
+        <button class="btn-copy" data-action="copy" data-copy-field="dep_price" @if($f) data-name="copy-new-dep_price" @endif onclick="cpText('{{ number_format((float)($item->dep_price??0),2) }}',this)">คัดลอก</button>
       </div>
     </td>
-    <td data-field="grand_total" data-value="{{ (float)($item->grand_total??0) }}" data-remain="{{ $remain }}">
+    <td data-field="grand_total" data-value="{{ (float)($item->grand_total??0) }}" data-remain="{{ $remain }}" @if($f) data-name="td-new-grand_total" @endif>
       <div style="display:flex;align-items:center;gap:4px;justify-content:center">
-        <span class="c-money" data-text="grand_total">{{ number_format((float)($item->grand_total??0),2) }}</span>
-        <button class="btn-copy" data-action="copy" data-copy-field="grand_total_plus_dep" onclick="cpText('{{ number_format($remain,2) }}',this)">คัดลอก</button>
+        <span class="c-money" data-text="grand_total" @if($f) data-name="txt-new-grand_total" @endif>{{ number_format((float)($item->grand_total??0),2) }}</span>
+        <button class="btn-copy" data-action="copy" data-copy-field="grand_total_plus_dep" @if($f) data-name="copy-new-grand_total" @endif onclick="cpText('{{ number_format($remain,2) }}',this)">คัดลอก</button>
       </div>
     </td>
-    <td data-field="dep_type" data-value="{{ $dt }}">
+    <td data-field="dep_type" data-value="{{ $dt }}" @if($f) data-name="td-new-dep_type" @endif>
       <div style="display:flex;flex-direction:column;gap:4px;align-items:center">
-        @if($dt)<span class="badge {{ $tc }}" data-text="dep_type">{{ $tn }}</span>@else<span class="c-sm">—</span>@endif
+        @if($dt)<span class="badge {{ $tc }}" data-text="dep_type" @if($f) data-name="txt-new-dep_type" @endif>{{ $tn }}</span>@else<span class="c-sm" @if($f) data-name="txt-new-dep_type" @endif>—</span>@endif
         @if($ip)
-          <span class="processed-badge" data-state="printed">✓ พิมพ์แล้ว</span>
+          <span class="processed-badge" data-state="printed" @if($f) data-name="badge-new-printed" @endif>✓ พิมพ์แล้ว</span>
         @else
           <input type="file" class="file-input" accept="application/pdf" style="width:140px;font-size:11px;padding:3px"
             name="pdf-upload-new-{{ $item->id }}"
             data-action="upload-pdf" data-job="new" data-row-id="{{ $item->id }}" data-bill="{{ $item->deposit_bill_id }}"
+            @if($f) data-name="file-new-pdf" @endif
             onchange="uploadPdf('{{ $item->id }}','{{ $item->deposit_bill_id }}',this)">
         @endif
       </div>
     </td>
-    <td data-field="slip_time" data-value="{{ $item->slip_time }}">
+    <td data-field="slip_time" data-value="{{ $item->slip_time }}" @if($f) data-name="td-new-slip_time" @endif>
       @if(!empty($item->slip_time))
-        <span class="slip-badge" data-state="has-slip">🕐 {{ \Carbon\Carbon::parse($item->slip_time)->setTimezone('Asia/Bangkok')->format('H:i d/m/Y') }}</span>
+        <span class="slip-badge" data-state="has-slip" @if($f) data-name="txt-new-slip_time" @endif>{{ \Carbon\Carbon::parse($item->slip_time)->setTimezone('Asia/Bangkok')->format('d/m/Y') }}</span>
       @else
-        <span class="no-slip" data-state="no-slip">✕ ยังไม่มี</span>
+        <span class="no-slip" data-state="no-slip" @if($f) data-name="txt-new-slip_time" @endif>✕ ยังไม่มี</span>
       @endif
     </td>
   </tr>
@@ -269,23 +271,22 @@ nav[role="navigation"] span[aria-current="page"]{background:var(--tbl)!important
 
 {{-- ============================================================
      ส่วนที่ 2: งานแก้ไขเอกสาร (status = มี WHT)
-     Bot selector หลัก: #table-wht  /  [data-table="wht"]  (thead สีม่วง)
-     แต่ละแถว: tr[data-job="wht"][data-row-id][data-so][data-wht-doc][data-status]
-     คอลัมน์สำคัญ: td[data-field="wht_doc_no"] → span[data-text="wht_doc_no"][data-wht]
+     Bot ทำแค่แถวแรก — data-name ใส่เฉพาะ $loop->first (ไม่มี rowId)
+     Selenium: driver.find_element(By.CSS_SELECTOR, '[data-name="txt-wht-wht_doc_no"]')
      ============================================================ --}}
 <div class="sec-header" data-section="wht">
   <div class="sec-title">
     📝 แก้ไขเอกสาร (มี WHT)
-    <span class="sec-count wht" id="count-wht" data-count="wht">{{ $whtJobs->count() }}</span>
+    <span class="sec-count wht" id="count-wht" data-count="wht" data-name="count-wht">{{ $whtJobs->count() }}</span>
   </div>
   <span class="sec-desc">รายการที่มี WHT</span>
 </div>
 <div class="abar">
-  <button class="btn-print" id="btn-print-wht" name="btn-print-wht" data-action="mark-printed" data-job="wht" style="background:var(--purple)" onclick="markSelectedPrinted('wht')">🖨 บันทึกการพิมพ์ (WHT)</button>
-  <label class="chk-all-label"><input type="checkbox" class="chk" id="chk-all-wht" name="chk-all-wht" data-action="select-all" data-job="wht" onclick="toggleAll('wht',this.checked)"> เลือกทั้งหมด</label>
+  <button class="btn-print" id="btn-print-wht" name="btn-print-wht" data-action="mark-printed" data-job="wht" data-name="btn-print-wht" style="background:var(--purple)" onclick="markSelectedPrinted('wht')">🖨 บันทึกการพิมพ์ (WHT)</button>
+  <label class="chk-all-label"><input type="checkbox" class="chk" id="chk-all-wht" name="chk-all-wht" data-action="select-all" data-job="wht" data-name="chk-all-wht" onclick="toggleAll('wht',this.checked)"> เลือกทั้งหมด</label>
 </div>
 <div class="tw">
-<table id="table-wht" name="table-wht" data-table="wht">
+<table id="table-wht" name="table-wht" data-table="wht" data-name="table-wht">
 <thead><tr class="wht-head">
   <th style="width:40px">☑</th>
   <th>เลขที่บิล</th>
@@ -306,6 +307,7 @@ nav[role="navigation"] span[aria-current="page"]{background:var(--tbl)!important
     $whtTime = $item->wht_time ? \Carbon\Carbon::parse($item->wht_time) : null;
     $printTime = $item->print_time ? \Carbon\Carbon::parse($item->print_time) : null;
     $ip = $whtTime && $printTime && $printTime->greaterThan($whtTime);
+    $f=$loop->first;
   @endphp
   <tr class="{{ $ip?'processed':'' }} job-row"
       data-job="wht"
@@ -318,45 +320,47 @@ nav[role="navigation"] span[aria-current="page"]{background:var(--tbl)!important
       data-dep-type="{{ $dt }}"
       data-printed="{{ $ip?'1':'0' }}"
       data-status="{{ $ip?'printed':'pending' }}"
-      data-has-slip="{{ !empty($item->slip_time)?'1':'0' }}">
-    <td data-field="checkbox"><input type="checkbox" class="chk chk-wht" name="markprint-wht[]" data-action="select-row" data-row-id="{{ $item->id }}" value="{{ $item->id }}" {{ $ip?'disabled':'' }}></td>
-    <td data-field="deposit_bill_id" data-value="{{ $item->deposit_bill_id }}">
+      data-has-slip="{{ !empty($item->slip_time)?'1':'0' }}"
+      @if($f) data-name="row-wht" @endif>
+    <td data-field="checkbox" @if($f) data-name="td-wht-checkbox" @endif><input type="checkbox" class="chk chk-wht" name="markprint-wht[]" data-action="select-row" data-row-id="{{ $item->id }}" value="{{ $item->id }}" {{ $ip?'disabled':'' }} @if($f) data-name="chk-wht" @endif></td>
+    <td data-field="deposit_bill_id" data-value="{{ $item->deposit_bill_id }}" @if($f) data-name="td-wht-deposit_bill_id" @endif>
       <div style="display:flex;align-items:center;gap:4px;justify-content:center;white-space:nowrap">
-        <span class="c-code" data-text="deposit_bill_id">{{ $item->deposit_bill_id??'—' }}</span>
-        @if($item->deposit_bill_id)<button class="btn-copy" data-action="copy" data-copy-field="deposit_bill_id" onclick="cpText('{{ $item->deposit_bill_id }}',this)">คัดลอก</button>@endif
+        <span class="c-code" data-text="deposit_bill_id" @if($f) data-name="txt-wht-deposit_bill_id" @endif>{{ $item->deposit_bill_id??'—' }}</span>
+        @if($item->deposit_bill_id)<button class="btn-copy" data-action="copy" data-copy-field="deposit_bill_id" @if($f) data-name="copy-wht-deposit_bill_id" @endif onclick="cpText('{{ $item->deposit_bill_id }}',this)">คัดลอก</button>@endif
       </div>
     </td>
-    <td data-field="so_id" data-value="{{ $item->so_id }}" style="font-size:12px;color:var(--steel)"><span data-text="so_id">{{ $item->so_id??'—' }}</span></td>
-    <td data-field="po_document" data-value="{{ $item->po_document }}" style="font-size:12px;color:var(--steel)"><span data-text="po_document">{{ $item->po_document??'—' }}</span></td>
-    <td data-field="customer_id" data-value="{{ $item->customer_id }}" style="font-size:12px;color:var(--steel)"><span data-text="customer_id">{{ $item->customer_id??'—' }}</span></td>
+    <td data-field="so_id" data-value="{{ $item->so_id }}" @if($f) data-name="td-wht-so_id" @endif style="font-size:12px;color:var(--steel)"><span data-text="so_id" @if($f) data-name="txt-wht-so_id" @endif>{{ $item->so_id??'—' }}</span></td>
+    <td data-field="po_document" data-value="{{ $item->po_document }}" @if($f) data-name="td-wht-po_document" @endif style="font-size:12px;color:var(--steel)"><span data-text="po_document" @if($f) data-name="txt-wht-po_document" @endif>{{ $item->po_document??'—' }}</span></td>
+    <td data-field="customer_id" data-value="{{ $item->customer_id }}" @if($f) data-name="td-wht-customer_id" @endif style="font-size:12px;color:var(--steel)"><span data-text="customer_id" @if($f) data-name="txt-wht-customer_id" @endif>{{ $item->customer_id??'—' }}</span></td>
     {{-- ✅ Bot จับคอลัมน์นี้: เลข WHT --}}
-    <td data-field="wht_doc_no" data-value="{{ $item->wht_doc_no }}">
+    <td data-field="wht_doc_no" data-value="{{ $item->wht_doc_no }}" @if($f) data-name="td-wht-wht_doc_no" @endif>
       <div style="display:flex;align-items:center;gap:4px;justify-content:center">
-        <span class="badge b-wht" data-text="wht_doc_no" data-wht="{{ $item->wht_doc_no }}">{{ $item->wht_doc_no ?? '—' }}</span>
-        @if($item->wht_doc_no)<button class="btn-copy" data-action="copy" data-copy-field="wht_doc_no" onclick="cpText('{{ $item->wht_doc_no }}',this)">คัดลอก</button>@endif
+        <span class="badge b-wht" data-text="wht_doc_no" data-wht="{{ $item->wht_doc_no }}" @if($f) data-name="txt-wht-wht_doc_no" @endif>{{ $item->wht_doc_no ?? '—' }}</span>
+        @if($item->wht_doc_no)<button class="btn-copy" data-action="copy" data-copy-field="wht_doc_no" @if($f) data-name="copy-wht-wht_doc_no" @endif onclick="cpText('{{ $item->wht_doc_no }}',this)">คัดลอก</button>@endif
       </div>
     </td>
-    <td class="c-percent" data-field="dep_per" data-value="{{ (float)($item->dep_per??0) }}">{{ number_format((float)($item->dep_per??0),2) }}%</td>
-    <td class="c-money" data-field="dep_price" data-value="{{ (float)($item->dep_price??0) }}">{{ number_format((float)($item->dep_price??0),2) }}</td>
-    <td class="c-money" data-field="grand_total" data-value="{{ (float)($item->grand_total??0) }}">{{ number_format((float)($item->grand_total??0),2) }}</td>
-    <td data-field="dep_type" data-value="{{ $dt }}">
+    <td class="c-percent" data-field="dep_per" data-value="{{ (float)($item->dep_per??0) }}" @if($f) data-name="td-wht-dep_per" @endif><span @if($f) data-name="txt-wht-dep_per" @endif>{{ number_format((float)($item->dep_per??0),2) }}%</span></td>
+    <td class="c-money" data-field="dep_price" data-value="{{ (float)($item->dep_price??0) }}" @if($f) data-name="td-wht-dep_price" @endif><span @if($f) data-name="txt-wht-dep_price" @endif>{{ number_format((float)($item->dep_price??0),2) }}</span></td>
+    <td class="c-money" data-field="grand_total" data-value="{{ (float)($item->grand_total??0) }}" @if($f) data-name="td-wht-grand_total" @endif><span @if($f) data-name="txt-wht-grand_total" @endif>{{ number_format((float)($item->grand_total??0),2) }}</span></td>
+    <td data-field="dep_type" data-value="{{ $dt }}" @if($f) data-name="td-wht-dep_type" @endif>
       <div style="display:flex;flex-direction:column;gap:4px;align-items:center">
-        @if($dt)<span class="badge {{ $tc }}" data-text="dep_type">{{ $tn }}</span>@else<span class="c-sm">—</span>@endif
+        @if($dt)<span class="badge {{ $tc }}" data-text="dep_type" @if($f) data-name="txt-wht-dep_type" @endif>{{ $tn }}</span>@else<span class="c-sm" @if($f) data-name="txt-wht-dep_type" @endif>—</span>@endif
         @if($ip)
-          <span class="processed-badge" data-state="printed">✓ พิมพ์แล้ว</span>
+          <span class="processed-badge" data-state="printed" @if($f) data-name="badge-wht-printed" @endif>✓ พิมพ์แล้ว</span>
         @else
           <input type="file" class="file-input" accept="application/pdf" style="width:140px;font-size:11px;padding:3px"
             name="pdf-upload-wht-{{ $item->id }}"
             data-action="upload-pdf" data-job="wht" data-row-id="{{ $item->id }}" data-bill="{{ $item->deposit_bill_id }}"
+            @if($f) data-name="file-wht-pdf" @endif
             onchange="uploadPdf('{{ $item->id }}','{{ $item->deposit_bill_id }}',this)">
         @endif
       </div>
     </td>
-    <td data-field="slip_time" data-value="{{ $item->slip_time }}">
+    <td data-field="slip_time" data-value="{{ $item->slip_time }}" @if($f) data-name="td-wht-slip_time" @endif>
       @if(!empty($item->slip_time))
-        <span class="slip-badge" data-state="has-slip">🕐 {{ \Carbon\Carbon::parse($item->slip_time)->setTimezone('Asia/Bangkok')->format('H:i d/m/Y') }}</span>
+        <span class="slip-badge" data-state="has-slip" @if($f) data-name="txt-wht-slip_time" @endif>{{ \Carbon\Carbon::parse($item->slip_time)->setTimezone('Asia/Bangkok')->format('d/m/Y') }}</span>
       @else
-        <span class="no-slip" data-state="no-slip">✕ ยังไม่มี</span>
+        <span class="no-slip" data-state="no-slip" @if($f) data-name="txt-wht-slip_time" @endif>✕ ยังไม่มี</span>
       @endif
     </td>
   </tr>
