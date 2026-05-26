@@ -640,10 +640,10 @@ hr.divider{border:none;border-top:1px solid var(--border-light);margin:0}
           </div>
 
           <div class="summary-footer">
-            <button type="button" class="btn-save" id="submitBill">
+            {{-- <button type="button" class="btn-save" id="submitBill">
               <svg width="17" height="17" viewBox="0 0 17 17" fill="none"><path d="M3.5 9l4 4 6-7" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
               บันทึกใบมัดจำ
-            </button>
+            </button> --}}
             <p class="btn-save-hint">ข้อมูลจะถูกบันทึกและส่งไปยังระบบ</p>
           </div>
         </div>
