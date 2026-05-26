@@ -189,11 +189,11 @@ nav[role="navigation"] span[aria-current="page"]{background:var(--ntbl)!importan
 <div class="tw">
 <table>
 <thead><tr>
-  <th>#</th>
-  <th>เลขใบมัดจำ</th>
+  <th>ลำดับ</th>
+  <th>ใบมัดจำ</th>
   <th>ใบสั่งขาย</th>
   <th>ลูกค้า</th>
-  <th>ราคาเต็ม<br><span style="font-size:8px;font-weight:400;opacity:.75">รวม 7% VAT</span></th>
+  <th>ชำระคงเหลือ<br><span style="font-size:8px;font-weight:400;opacity:.75">รวม 7% VAT</span></th>
   <th>ยอดมัดจำ<br><span style="font-size:8px;font-weight:400;opacity:.75">รวม 7% VAT</span></th>
   <th>ค่าธรรมเนียม</th>
   <th>WHT</th>
@@ -239,6 +239,7 @@ nav[role="navigation"] span[aria-current="page"]{background:var(--ntbl)!importan
     'slip_time'=>$item->slip_time ? \Carbon\Carbon::parse($item->slip_time)->setTimezone('Asia/Bangkok')->format('d/m/Y') : '',
     'print_time'=>$item->print_time ? \Carbon\Carbon::parse($item->print_time)->setTimezone('Asia/Bangkok')->format('H:i d/m/Y') : '',
     'status_bill'=>$item->status_bill??'',
+    'has_slip'=>(bool)($slipF || $item->slip_time),
     'contactso'=>$item->contactso??'','customer_tel'=>$item->customer_tel??'',
     'customer_address'=>$item->customer_address??'','note'=>$item->note??'',
   ], JSON_UNESCAPED_UNICODE|JSON_HEX_APOS);
@@ -251,9 +252,9 @@ nav[role="navigation"] span[aria-current="page"]{background:var(--ntbl)!importan
         <a href="{{ asset('storage/deposit_templates/'.$pdfF) }}" target="_blank" class="ab ab-pdf {{ $pdfOk?'ok':'' }}" onclick="event.stopPropagation()">PDF</a>
       @endif
       @if($slipF)
-        <a href="{{ asset('storage/deposit_templates/deposit_slip/'.$slipF) }}" target="_blank" class="ab ab-slip" onclick="event.stopPropagation()">สลิป</a>
+        <a href="{{ asset('storage/deposit_templates/deposit_slip/'.$slipF) }}" target="_blank" class="ab ab-slip" onclick="event.stopPropagation()">หลักฐานการชำระ</a>
       @elseif($bid)
-        <button class="ab ab-add" onclick="event.stopPropagation();openSlip('{{ $bid }}')">+สลิป</button>
+        <button class="ab ab-add" onclick="event.stopPropagation();openSlip('{{ $bid }}')">+หลักฐานการชำระ</button>
       @endif
       <button class="ab ab-info" onclick="event.stopPropagation();openInfo({!! htmlspecialchars($rj, ENT_QUOTES) !!})">ข้อมูล</button>
     </div></span></td>
@@ -328,12 +329,11 @@ nav[role="navigation"] span[aria-current="page"]{background:var(--ntbl)!importan
     </div>
     <div class="dg">
       <div class="df"><span class="dl">วันที่บันทึกลงระบบ</span><span class="dv" id="im-date">—</span></div>
-      <div class="df"><span class="dl">เวลาบันทึก</span><span class="dv" id="im-time">—</span></div>
       <div class="df full"><span class="dl">ลูกค้า</span><span class="dv" id="im-cust">—</span></div>
       <div class="df"><span class="dl">ผู้ติดต่อ</span><span class="dv" id="im-con">—</span></div>
       <div class="df"><span class="dl">เบอร์โทร</span><span class="dv" id="im-tel">—</span></div>
       <div class="df full"><span class="dl">ที่อยู่</span><span class="dv" id="im-addr">—</span></div>
-      <div class="df"><span class="dl">ผู้เปิดบิล</span><span class="dv" id="im-emp">—</span></div>
+      <div class="df"><span class="dl">ผู้บันทึกลงระบบ</span><span class="dv" id="im-emp">—</span></div>
       <div class="df"><span class="dl">Sale</span><span class="dv" id="im-sale">—</span></div>
       <div class="df"><span class="dl">ประเภท / %</span><span class="dv" id="im-type">—</span></div>
       <div class="df full"><span class="dl">หมายเหตุ</span><span class="dv" id="im-note" style="color:var(--ash)">—</span></div>
@@ -346,7 +346,7 @@ nav[role="navigation"] span[aria-current="page"]{background:var(--ntbl)!importan
       <div class="df"><span class="dl">ค่าธรรมเนียม</span><span class="dv" id="im-fee" style="color:#92400E;font-size:14px">—</span></div>
     </div>
     <div class="dg">
-      <div class="df"><span class="dl">ยอดสุทธิ (มัดจำ − ค่าธรรมเนียม)</span><span class="dv cB" id="im-net" style="color:#047857;font-size:14px">—</span></div>
+      <div class="df"><span class="dl">ยอดที่ถูกชำระ</span><span class="dv cB" id="im-net" style="color:#047857;font-size:14px">—</span></div>
       <div class="df"><span class="dl">WHT</span><span class="dv" id="im-wht2" style="color:#6D28D9;font-weight:600">—</span></div>
     </div>
     {{-- ✅ ยอดคงเหลือ เด่นชัด --}}
@@ -359,7 +359,7 @@ nav[role="navigation"] span[aria-current="page"]{background:var(--ntbl)!importan
     <div class="dg3">
       <div class="df"><span class="dl">สถานะ</span><span class="dv" id="im-st">—</span></div>
       <div class="df"><span class="dl">ยืนยันเมื่อ</span><span class="dv" id="im-tc">—</span></div>
-      <div class="df"><span class="dl">แนบสลิป</span><span class="dv" id="im-sl">—</span></div>
+      <div class="df"><span class="dl">แนบหลักฐานการชำระ</span><span class="dv" id="im-sl">—</span></div>
     </div>
   </div>
   <div class="mo-f" id="im-f"><button class="btn-g" onclick="closeInfo()">ปิด</button></div>
@@ -379,7 +379,7 @@ nav[role="navigation"] span[aria-current="page"]{background:var(--ntbl)!importan
 <!-- SLIP -->
 <div class="mo-bg" id="slM">
 <div class="mo" style="max-width:440px">
-  <div class="mo-h"><h3>แนบสลิป <span id="sl-bid" style="font-weight:400;opacity:.8;font-size:11px"></span></h3><button class="mo-x" onclick="closeSl()"><svg width="11" height="11" viewBox="0 0 12 12" fill="none"><path d="M2 2l8 8M10 2L2 10" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg></button></div>
+  <div class="mo-h"><h3>แนบหลักฐานการชำระ <span id="sl-bid" style="font-weight:400;opacity:.8;font-size:11px"></span></h3><button class="mo-x" onclick="closeSl()"><svg width="11" height="11" viewBox="0 0 12 12" fill="none"><path d="M2 2l8 8M10 2L2 10" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg></button></div>
   <div style="padding:14px 16px">
     <div class="sl-df"><label>วันที่โอน</label><input type="date" id="slD" value="{{ date('Y-m-d') }}"></div>
     <label class="sl-drop" id="slDrop">
@@ -469,6 +469,7 @@ async function clearWht(id,soId){
 }
 
 function openInfo(d){
+  pInfoHasSlip=!!d.has_slip;  
   const $=i=>document.getElementById(i);
   $('im-t').textContent=d.deposit_bill_id||d.so_id||'รายละเอียด';
   $('im-bill').textContent=d.deposit_bill_id||'—';
@@ -482,7 +483,6 @@ function openInfo(d){
   $('im-emp').textContent=d.emp_name||'—';
   $('im-sale').textContent=d.sale_name||'—';
   $('im-type').textContent=(d.dep_type_name||'—')+' / '+d.dep_per.toFixed(2)+'%';
-  $('im-time').textContent=d.time||'—';
   $('im-note').textContent=d.note||'—';
   $('im-grand').textContent=fM(d.grand_total_vat)+' ฿';
   $('im-dep').textContent=fM(d.dep_price_vat)+' ฿';
@@ -499,10 +499,19 @@ function openInfo(d){
   $('im-st').innerHTML=sb;
   $('im-tc').textContent=d.time_check||'—';
   $('im-sl').textContent=d.slip_time||'ยังไม่แนบ';
-  let f='';
+let f='';
   if(ADM&&!d.is_cancelled){
-    if(d.is_confirmed||d.is_wht) f+=`<button class="btn-st bk" onclick="askSt('${d.so_id}',${d.id},'${d.status}','รอยืนยัน')">↩ กลับรอ</button>`;
-    else if(d.status==='รอยืนยัน') f+=`<button class="btn-st cfm" onclick="askSt('${d.so_id}',${d.id},'${d.status}','ยืนยัน')">✓ ยืนยัน</button>`;
+    if(d.is_confirmed||d.is_wht){
+      f+=`<button class="btn-st bk" onclick="askSt('${d.so_id}',${d.id},'${d.status}','รอยืนยัน')">↩ กลับรอ</button>`;
+    } else if(d.status==='รอยืนยัน'){
+      if(d.has_slip){
+        f+=`<button class="btn-st cfm" onclick="askSt('${d.so_id}',${d.id},'${d.status}','ยืนยัน')">✓ ยืนยัน</button>`;
+      } else {
+        // ยังไม่แนบหลักฐานการชำระ — แสดงปุ่มเทากดไม่ได้ + บอกเหตุผล
+        f+=`<button class="btn-st cfm" disabled style="opacity:.45;cursor:not-allowed" title="ต้องแนบหลักฐานการชำระก่อนจึงจะยืนยันได้">✓ ยืนยัน</button>`;
+        f+=`<span style="font-size:10px;color:var(--red);font-weight:600;display:inline-flex;align-items:center;gap:3px">⚠ ต้องแนบหลักฐานการชำระก่อน</span>`;
+      }
+    }
     f+=`<button class="btn-del" onclick="askDel(${d.id},'${esc(d.so_id)}','${esc(d.customer_name)}')">🗑 ลบ</button>`;
   }
   f+='<div style="flex:1"></div><button class="btn-g" onclick="closeInfo()">ปิด</button>';
@@ -511,9 +520,13 @@ function openInfo(d){
 }
 function closeInfo(){document.getElementById('infoM').classList.remove('open');document.body.style.overflow=''}
 document.getElementById('infoM').addEventListener('click',function(e){if(e.target===this)closeInfo()});
-
+let pInfoHasSlip=null;
 let pA=null;
 function askSt(so,id,cur,nxt){
+    if(nxt==='ยืนยัน' && pInfoHasSlip===false){
+    toast('ต้องแนบหลักฐานการชำระก่อนจึงจะยืนยันได้',1);
+    return;
+  }
   pA={t:'status',so,id,cur,nxt};
   const $=i=>document.getElementById(i);
   if(nxt==='ยืนยัน'){$('cf-ico').className='cf-ico g';$('cf-ico').textContent='✓';$('cf-t').textContent='ยืนยัน?';$('cf-m').innerHTML='<b>รอยืนยัน</b> → <b style="color:#047857">ยืนยัน</b>';$('cf-btn').className='cf-ok';$('cf-btn').textContent='ยืนยัน'}
