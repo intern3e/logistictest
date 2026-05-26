@@ -215,6 +215,7 @@ nav[role="navigation"] span[aria-current="page"]{background:var(--ntbl)!importan
   $gtv = (float)($item->grand_total ?? 0) * 1.07;
   $net = max(0, $dpv - $fee);
   $wht = $item->wht_doc_no ?? '';
+  $whtDate = $item->date_wht ? \Carbon\Carbon::parse($item->date_wht)->format('Y-m-d') : '';
   $remaining = max(0, $gtv - $dpv);
 
   $pdfRow = $bid ? \App\Models\deposit::where('deposit_bill_id',$bid)->select('deposit_bill','status_bill','deposit_slip','slip_time')->first() : null;
@@ -279,19 +280,27 @@ nav[role="navigation"] span[aria-current="page"]{background:var(--ntbl)!importan
   </td>
 
   {{-- ✅ WHT — มีปุ่ม clear (×) ให้ลบค่าได้ --}}
-  <td>
-    @if($adm)
+{{-- ✅ WHT — เลขเอกสาร + วันที่ + ปุ่ม save/clear --}}
+<td>
+  @if($adm)
+    <div style="display:flex;flex-direction:column;gap:4px;align-items:center">
       <div class="ie">
-        <input type="text" id="wht-{{$item->id}}" value="{{ $wht }}" placeholder="—" maxlength="60" data-o="{{ $wht }}" oninput="chg(this,'wht-sv-{{$item->id}}','wht-cl-{{$item->id}}')">
+        <input type="text" id="wht-{{$item->id}}" value="{{ $wht }}" placeholder="—" maxlength="60" data-o="{{ $wht }}" oninput="chgWht({{$item->id}})">
         <button class="ie-sv" id="wht-sv-{{$item->id}}" disabled onclick="saveWht({{$item->id}},'{{ $item->deposit_bill_id }}')" title="บันทึก WHT (สถานะจะเปลี่ยนเป็น มี WHT)">
           <svg width="11" height="11" viewBox="0 0 14 14" fill="none"><path d="M3 7l3 3 5-6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
         </button>
         <button class="ie-cl" id="wht-cl-{{$item->id}}" {{ $wht?'':'disabled' }} onclick="clearWht({{$item->id}},'{{ $item->deposit_bill_id }}')" title="ลบ WHT">×</button>
       </div>
-    @else
-      @if($wht)<span style="font-size:11px;color:#6D28D9;font-weight:600">{{ $wht }}</span>@else<span class="cS">—</span>@endif
-    @endif
-  </td>
+      <input type="date" id="whtd-{{$item->id}}" value="{{ $whtDate }}" data-o="{{ $whtDate }}" oninput="chgWht({{$item->id}})"
+        style="border:1px solid var(--border);border-radius:3px;padding:3px 5px;font-size:10px;font-family:inherit;color:var(--ink);outline:none;width:118px" title="วันที่เอกสาร WHT">
+    </div>
+  @else
+    @if($wht)
+      <span style="font-size:11px;color:#6D28D9;font-weight:600">{{ $wht }}</span>
+      @if($whtDate)<br><span class="cS">{{ \Carbon\Carbon::parse($whtDate)->format('d/m/').(\Carbon\Carbon::parse($whtDate)->year+543) }}</span>@endif
+    @else<span class="cS">—</span>@endif
+  @endif
+</td>
 
   {{-- สถานะ --}}
   <td>
@@ -449,30 +458,41 @@ async function clearFee(id){
   }catch(e){toast('ล้มเหลว: '+e.message,1)}
 }
 
+// ✅ ตรวจ dirty ของ WHT (เช็คทั้งเลขเอกสารและวันที่)
+function chgWht(id){
+  const inp=document.getElementById('wht-'+id);
+  const dInp=document.getElementById('whtd-'+id);
+  const svBtn=document.getElementById('wht-sv-'+id);
+  const clBtn=document.getElementById('wht-cl-'+id);
+  const dirty=(inp.value!==inp.dataset.o)||(dInp.value!==dInp.dataset.o);
+  inp.classList.toggle('dirty',inp.value!==inp.dataset.o);
+  dInp.classList.toggle('dirty',dInp.value!==dInp.dataset.o);
+  if(svBtn){svBtn.disabled=!dirty;svBtn.classList.remove('ok')}
+  if(clBtn){clBtn.disabled=!inp.value.trim()}
+}
+
 async function saveWht(id,billId){
   if(!ADM)return;
-  const inp=document.getElementById('wht-'+id),btn=document.getElementById('wht-sv-'+id);
+  const inp=document.getElementById('wht-'+id),dInp=document.getElementById('whtd-'+id),btn=document.getElementById('wht-sv-'+id);
   btn.disabled=true;
   try{
-    const res=await fetch('/deposit/update-wht',{method:'POST',headers:H(),body:JSON.stringify({deposit_id:id,deposit_bill_id:billId,wht_doc_no:inp.value.trim(),saved_by:CU})});
+    const res=await fetch('/deposit/update-wht',{method:'POST',headers:H(),body:JSON.stringify({deposit_id:id,deposit_bill_id:billId,wht_doc_no:inp.value.trim(),date_wht:dInp.value||null,saved_by:CU})});
     const d=await res.json().catch(()=>({success:false}));
     if(!res.ok||!d.success)throw new Error(d.message||'HTTP '+res.status);
-    inp.dataset.o=inp.value;inp.classList.remove('dirty');btn.classList.add('ok');
+    inp.dataset.o=inp.value;dInp.dataset.o=dInp.value;inp.classList.remove('dirty');dInp.classList.remove('dirty');btn.classList.add('ok');
     toast('บันทึก WHT สำเร็จ — สถานะเปลี่ยนเป็น "มี WHT"');setTimeout(()=>location.reload(),800);
   }catch(e){toast('ล้มเหลว: '+e.message,1);btn.disabled=false}
 }
 
-// ✅ ลบ WHT (เซ็ตเป็นว่าง)
 async function clearWht(id,billId){
   if(!ADM||!confirm('ลบ WHT ของรายการนี้?'))return;
   try{
-    const res=await fetch('/deposit/update-wht',{method:'POST',headers:H(),body:JSON.stringify({deposit_id:id,deposit_bill_id:billId,wht_doc_no:'',saved_by:CU})});
+    const res=await fetch('/deposit/update-wht',{method:'POST',headers:H(),body:JSON.stringify({deposit_id:id,deposit_bill_id:billId,wht_doc_no:'',date_wht:null,saved_by:CU})});
     const d=await res.json().catch(()=>({success:false}));
     if(!res.ok||!d.success)throw new Error(d.message||'HTTP '+res.status);
     toast('ลบ WHT สำเร็จ');setTimeout(()=>location.reload(),600);
   }catch(e){toast('ล้มเหลว: '+e.message,1)}
 }
-
 function openInfo(d){
   pInfoHasSlip=!!d.has_slip;  
   const $=i=>document.getElementById(i);

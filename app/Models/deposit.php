@@ -37,5 +37,6 @@ class deposit extends Model
         'po_document',
         'wht_doc_no',
         'wht_time',
+        'date_wht'
     ];
 }

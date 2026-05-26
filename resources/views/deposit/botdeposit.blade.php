@@ -357,6 +357,7 @@ nav[role="navigation"] span[aria-current="page"]{background:var(--tbl)!important
   <th>PO</th>
   <th>รหัสลูกค้า</th>
   <th>WHT เลขเอกสาร</th>
+  <th>วันที่ WHT</th>
   <th>%</th>
   <th>ยอดมัดจำ</th>
   <th>ยอดคงเหลือ</th>
@@ -386,6 +387,15 @@ nav[role="navigation"] span[aria-current="page"]{background:var(--tbl)!important
     $remainNoVat    = $depPer > 0 ? ($depPrice * (100 - $depPer) / $depPer) : 0;
     $allTotal       = $remainNoVat * 1.07;
     $poUse          = !empty($item->po_document) ? $item->po_document : ($item->so_id ?? '');
+
+    // ── วันที่ WHT แบบไทย (ให้ bot อ่านไปใช้) ──
+    if (!empty($item->date_wht)) {
+      $wd         = \Carbon\Carbon::parse($item->date_wht);
+      $whtDateFor = $wd->format('d/m/').($wd->year+543);   // "26/05/2569"
+      $whtDateRaw = $wd->format('dm').($wd->year+543);      // "26052569"
+    } else {
+      $whtDateFor = $whtDateRaw = '';
+    }
 
     $slipDt = $item->slip_time ? \Carbon\Carbon::parse($item->slip_time)->setTimezone('Asia/Bangkok') : null;
     if ($slipDt) {
@@ -422,6 +432,8 @@ nav[role="navigation"] span[aria-current="page"]{background:var(--tbl)!important
       data-po-use="{{ $poUse }}"
       data-date-raw="{{ $dateRaw }}"
       data-date-for="{{ $dateFor }}"
+      data-wht-date-raw="{{ $whtDateRaw }}"
+      data-wht-date-for="{{ $whtDateFor }}"
       @if($f) data-name="row-wht" @endif>
 
     <td data-field="checkbox" @if($f) data-name="td-wht-checkbox" @endif><input type="checkbox" class="chk chk-wht" name="markprint-wht[]" data-action="select-row" data-row-id="{{ $item->id }}" value="{{ $item->id }}" {{ $ip?'disabled':'' }} @if($f) data-name="chk-wht" @endif></td>
@@ -438,12 +450,20 @@ nav[role="navigation"] span[aria-current="page"]{background:var(--tbl)!important
     <td data-field="po_document" data-value="{{ $item->po_document }}" @if($f) data-name="td-wht-po_document" @endif style="font-size:12px;color:var(--steel)"><span data-text="po_document" @if($f) data-name="txt-wht-po_document" @endif>{{ $item->po_document??'—' }}</span></td>
 
     <td data-field="customer_id" data-value="{{ $item->customer_id }}" @if($f) data-name="td-wht-customer_id" @endif style="font-size:12px;color:var(--steel)"><span data-text="customer_id" @if($f) data-name="txt-wht-customer_id" @endif>{{ $item->customer_id??'—' }}</span></td>
-
+    
     <td data-field="wht_doc_no" data-value="{{ $item->wht_doc_no }}" @if($f) data-name="td-wht-wht_doc_no" @endif>
       <div style="display:flex;align-items:center;gap:4px;justify-content:center">
         <span class="badge b-wht" data-text="wht_doc_no" data-wht="{{ $item->wht_doc_no }}" @if($f) data-name="txt-wht-wht_doc_no" @endif>{{ $item->wht_doc_no ?? '—' }}</span>
         @if($item->wht_doc_no)<button class="btn-copy" data-action="copy" data-copy-field="wht_doc_no" @if($f) data-name="copy-wht-wht_doc_no" @endif onclick="cpText('{{ $item->wht_doc_no }}',this)">คัดลอก</button>@endif
       </div>
+    </td>
+
+    <td data-field="date_wht" data-value="{{ $whtDateFor }}" @if($f) data-name="td-wht-date_wht" @endif>
+      @if($whtDateFor)
+        <span class="c-sm" data-text="date_wht" data-date-raw="{{ $whtDateRaw }}" @if($f) data-name="txt-wht-date_wht" @endif>{{ $whtDateFor }}</span>
+      @else
+        <span class="c-sm" style="color:var(--mist)" @if($f) data-name="txt-wht-date_wht" @endif>—</span>
+      @endif
     </td>
 
     <td class="c-percent" data-field="dep_per" data-value="{{ $depPer }}" @if($f) data-name="td-wht-dep_per" @endif><span @if($f) data-name="txt-wht-dep_per" @endif>{{ number_format($depPer,2) }}%</span></td>
@@ -485,7 +505,7 @@ nav[role="navigation"] span[aria-current="page"]{background:var(--tbl)!important
     </td>
   </tr>
 @empty
-  <tr data-empty="wht"><td colspan="12"><div class="empty"><h4>ไม่มีงาน WHT</h4><p>ยังไม่มีรายการที่ต้องแก้ไขเอกสาร</p></div></td></tr>
+  <tr data-empty="wht"><td colspan="13"><div class="empty"><h4>ไม่มีงาน WHT</h4><p>ยังไม่มีรายการที่ต้องแก้ไขเอกสาร</p></div></td></tr>
 @endforelse
 </tbody>
 </table>

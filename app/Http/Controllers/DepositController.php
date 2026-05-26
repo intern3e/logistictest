@@ -835,7 +835,6 @@ class DepositController extends Controller
         }
     }
 
-    // ✅✅✅ updateWht — update ตาม deposit_bill_id (ไม่ใช่ so_id)
     public function updateWht(Request $request)
     {
         $savedBy = strtolower(trim($request->input('saved_by', '')));
@@ -847,15 +846,18 @@ class DepositController extends Controller
             'deposit_id'      => 'required|integer',
             'deposit_bill_id' => 'nullable|string|max:50',
             'wht_doc_no'      => 'nullable|string|max:60',
+            'date_wht'        => 'nullable|date',
         ]);
 
         try {
-            $wht = trim((string) $request->input('wht_doc_no', ''));
-            $now = $this->nowBkk();
+            $wht     = trim((string) $request->input('wht_doc_no', ''));
+            $dateWht = $request->input('date_wht');
+            $now     = $this->nowBkk();
 
             $updateData = [
                 'wht_doc_no' => $wht !== '' ? $wht : null,
                 'wht_time'   => $wht !== '' ? $now : null,
+                'date_wht'   => ($wht !== '' && $dateWht) ? Carbon::parse($dateWht)->format('Y-m-d') : null,
             ];
 
             // ✅ เปลี่ยนสถานะเป็น "มี WHT" เพื่อให้ bot เห็นงานใหม่
