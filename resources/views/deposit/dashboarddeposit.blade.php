@@ -283,10 +283,10 @@ nav[role="navigation"] span[aria-current="page"]{background:var(--ntbl)!importan
     @if($adm)
       <div class="ie">
         <input type="text" id="wht-{{$item->id}}" value="{{ $wht }}" placeholder="—" maxlength="60" data-o="{{ $wht }}" oninput="chg(this,'wht-sv-{{$item->id}}','wht-cl-{{$item->id}}')">
-        <button class="ie-sv" id="wht-sv-{{$item->id}}" disabled onclick="saveWht({{$item->id}},'{{ $item->so_id }}')" title="บันทึก WHT (สถานะจะเปลี่ยนเป็น มี WHT)">
+        <button class="ie-sv" id="wht-sv-{{$item->id}}" disabled onclick="saveWht({{$item->id}},'{{ $item->deposit_bill_id }}')" title="บันทึก WHT (สถานะจะเปลี่ยนเป็น มี WHT)">
           <svg width="11" height="11" viewBox="0 0 14 14" fill="none"><path d="M3 7l3 3 5-6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
         </button>
-        <button class="ie-cl" id="wht-cl-{{$item->id}}" {{ $wht?'':'disabled' }} onclick="clearWht({{$item->id}},'{{ $item->so_id }}')" title="ลบ WHT">×</button>
+        <button class="ie-cl" id="wht-cl-{{$item->id}}" {{ $wht?'':'disabled' }} onclick="clearWht({{$item->id}},'{{ $item->deposit_bill_id }}')" title="ลบ WHT">×</button>
       </div>
     @else
       @if($wht)<span style="font-size:11px;color:#6D28D9;font-weight:600">{{ $wht }}</span>@else<span class="cS">—</span>@endif
@@ -355,11 +355,16 @@ nav[role="navigation"] span[aria-current="page"]{background:var(--ntbl)!importan
       <div class="dv" id="im-remain">—</div>
     </div>
 
-    <div class="sttl" style="margin-top:16px">สถานะ</div>
+   <div class="sttl" style="margin-top:16px">สถานะ</div>
     <div class="dg3">
       <div class="df"><span class="dl">สถานะ</span><span class="dv" id="im-st">—</span></div>
       <div class="df"><span class="dl">ยืนยันเมื่อ</span><span class="dv" id="im-tc">—</span></div>
       <div class="df"><span class="dl">แนบหลักฐานการชำระ</span><span class="dv" id="im-sl">—</span></div>
+    </div>
+    <div class="dg3">
+      <div class="df"><span class="dl">สถานะบิล</span><span class="dv" id="im-sb">—</span></div>
+      <div class="df"><span class="dl">พิมพ์เมื่อ</span><span class="dv" id="im-pt">—</span></div>
+      <div class="df"></div>
     </div>
   </div>
   <div class="mo-f" id="im-f"><button class="btn-g" onclick="closeInfo()">ปิด</button></div>
@@ -444,12 +449,12 @@ async function clearFee(id){
   }catch(e){toast('ล้มเหลว: '+e.message,1)}
 }
 
-async function saveWht(id,soId){
+async function saveWht(id,billId){
   if(!ADM)return;
   const inp=document.getElementById('wht-'+id),btn=document.getElementById('wht-sv-'+id);
   btn.disabled=true;
   try{
-    const res=await fetch('/deposit/update-wht',{method:'POST',headers:H(),body:JSON.stringify({deposit_id:id,so_id:soId,wht_doc_no:inp.value.trim(),saved_by:CU})});
+    const res=await fetch('/deposit/update-wht',{method:'POST',headers:H(),body:JSON.stringify({deposit_id:id,deposit_bill_id:billId,wht_doc_no:inp.value.trim(),saved_by:CU})});
     const d=await res.json().catch(()=>({success:false}));
     if(!res.ok||!d.success)throw new Error(d.message||'HTTP '+res.status);
     inp.dataset.o=inp.value;inp.classList.remove('dirty');btn.classList.add('ok');
@@ -458,10 +463,10 @@ async function saveWht(id,soId){
 }
 
 // ✅ ลบ WHT (เซ็ตเป็นว่าง)
-async function clearWht(id,soId){
+async function clearWht(id,billId){
   if(!ADM||!confirm('ลบ WHT ของรายการนี้?'))return;
   try{
-    const res=await fetch('/deposit/update-wht',{method:'POST',headers:H(),body:JSON.stringify({deposit_id:id,so_id:soId,wht_doc_no:'',saved_by:CU})});
+    const res=await fetch('/deposit/update-wht',{method:'POST',headers:H(),body:JSON.stringify({deposit_id:id,deposit_bill_id:billId,wht_doc_no:'',saved_by:CU})});
     const d=await res.json().catch(()=>({success:false}));
     if(!res.ok||!d.success)throw new Error(d.message||'HTTP '+res.status);
     toast('ลบ WHT สำเร็จ');setTimeout(()=>location.reload(),600);
@@ -499,6 +504,8 @@ function openInfo(d){
   $('im-st').innerHTML=sb;
   $('im-tc').textContent=d.time_check||'—';
   $('im-sl').textContent=d.slip_time||'ยังไม่แนบ';
+  $('im-sb').innerHTML=d.status_bill==='ok'?'<span class="bg bg-ok">ปริ้นบิลสำเร็จ</span>':'<span class="bg bg-wait">ยังไม่ปริ้น</span>';
+  $('im-pt').textContent=d.print_time||'—';
 let f='';
   if(ADM&&!d.is_cancelled){
     if(d.is_confirmed||d.is_wht){

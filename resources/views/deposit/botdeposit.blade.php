@@ -545,7 +545,6 @@ async function markSelectedPrinted(group){
   const sel=group==='wht'?'input[name="markprint-wht[]"]:checked':'input[name="markprint-new[]"]:checked';
   const checked=Array.from(document.querySelectorAll(sel));
   if(!checked.length){showToast('เลือกรายการก่อน',true);return}
-  if(!confirm('บันทึกพิมพ์ '+checked.length+' รายการ?'))return;
   const ids=checked.map(c=>c.value);
   try{
     const res=await fetch('/deposit/mark-printed-bulk',{method:'POST',headers:{'Content-Type':'application/json','X-CSRF-TOKEN':CS,'X-Requested-With':'XMLHttpRequest','Accept':'application/json'},body:JSON.stringify({deposit_ids:ids,printed_by:CU})});
