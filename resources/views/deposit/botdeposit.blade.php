@@ -188,7 +188,7 @@ nav[role="navigation"] span[aria-current="page"]{background:var(--tbl)!important
     $depPrice = (float)($item->dep_price ?? 0);
     $grandTot = (float)($item->grand_total ?? 0);
     $remain   = $grandTot + $depPrice;
-    $depFee   = (float)($item->dep_fee ?? 0);
+    $depFee   = (float)($item->fee_amount ?? 0);
     $hasFee   = $depFee > 0;
 
     // ── คำนวณ (Bot ไม่ต้องคำนวณเอง) ──
@@ -377,7 +377,7 @@ nav[role="navigation"] span[aria-current="page"]{background:var(--tbl)!important
     $depPer   = (float)($item->dep_per ?? 0);
     $depPrice = (float)($item->dep_price ?? 0);
     $grandTot = (float)($item->grand_total ?? 0);
-    $depFee   = (float)($item->dep_fee ?? 0);
+    $depFee   = (float)($item->fee_amount ?? 0);
     $hasFee   = $depFee > 0;
 
     $totalBeforeVat = $depPer > 0 ? ($depPrice * 100 / $depPer) : 0;
