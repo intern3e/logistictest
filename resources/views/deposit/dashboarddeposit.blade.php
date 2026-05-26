@@ -61,14 +61,22 @@ tbody tr:last-child td{border-bottom:none}
 .ab-add:hover{background:#C2410C;color:#fff;border-color:#C2410C}
 .ab-info{background:var(--rh);border-color:var(--line);color:var(--ntbl)}
 .ab-info:hover{background:var(--ntbl);color:#fff}
+
+/* ===== Inline edit (fee/wht) ===== */
 .ie{display:flex;align-items:center;gap:3px;justify-content:center}
-.ie input{width:80px;border:1px solid var(--border);border-radius:3px;padding:4px 6px;font-size:11px;font-family:inherit;color:var(--ink);outline:none;text-align:center}
+.ie input{width:90px;border:1px solid var(--border);border-radius:3px;padding:4px 6px;font-size:11px;font-family:inherit;color:var(--ink);outline:none;text-align:center;transition:border .12s,background .12s}
 .ie input:focus{border-color:var(--ntbl);box-shadow:0 0 0 2px rgba(25,55,109,.1)}
 .ie input.dirty{border-color:#D97706;background:#FFFBEB}
+/* ✅ ปุ่ม save */
 .ie-sv{width:24px;height:24px;display:flex;align-items:center;justify-content:center;background:var(--ntbl);color:#fff;border:none;border-radius:3px;cursor:pointer;flex-shrink:0;transition:all .12s}
 .ie-sv:hover{background:var(--navy)}
 .ie-sv:disabled{opacity:.4;cursor:not-allowed}
 .ie-sv.ok{background:#047857}
+/* ✅ ปุ่ม clear (ลบค่า) */
+.ie-cl{width:24px;height:24px;display:flex;align-items:center;justify-content:center;background:var(--red-lt);color:var(--red);border:1px solid var(--red-bd);border-radius:3px;cursor:pointer;flex-shrink:0;transition:all .12s;font-size:12px;font-weight:700;line-height:1}
+.ie-cl:hover{background:var(--red);color:#fff;border-color:var(--red)}
+.ie-cl:disabled{opacity:.3;cursor:not-allowed}
+
 .btn-del{display:inline-flex;align-items:center;gap:4px;padding:5px 12px;border-radius:5px;background:var(--red-lt);border:1px solid var(--red-bd);color:var(--red);font-size:11px;font-weight:600;cursor:pointer;font-family:inherit;transition:all .12s}
 .btn-del:hover{background:var(--red);color:#fff}
 .btn-st{display:inline-flex;align-items:center;gap:4px;padding:5px 12px;border-radius:5px;font-size:11px;font-weight:600;cursor:pointer;font-family:inherit;border:1px solid;transition:all .12s}
@@ -86,25 +94,33 @@ nav[role="navigation"] a[rel="prev"],nav[role="navigation"] a[rel="next"]{width:
 nav[role="navigation"] svg{width:11px!important;height:11px!important}
 nav[role="navigation"] a.relative,nav[role="navigation"] span.relative{min-width:26px;height:26px;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:500;color:var(--link);border-radius:3px;border:1px solid transparent}
 nav[role="navigation"] span[aria-current="page"]{background:var(--ntbl)!important;color:#fff!important;border-color:var(--ntbl)!important}
-/* Modal */
+
+/* ===== Modal (ใหญ่ขึ้น) ===== */
 .mo-bg{display:none;position:fixed;inset:0;background:rgba(13,15,18,.5);z-index:1000;align-items:center;justify-content:center;padding:10px;backdrop-filter:blur(2px)}
 .mo-bg.open{display:flex}
-.mo{background:#fff;border-radius:10px;width:100%;max-width:580px;max-height:90vh;overflow-y:auto;border:1px solid var(--border);box-shadow:0 16px 48px rgba(0,0,0,.18);animation:pop .18s ease-out}
+.mo{background:#fff;border-radius:10px;width:100%;max-width:720px;max-height:92vh;overflow-y:auto;border:1px solid var(--border);box-shadow:0 16px 48px rgba(0,0,0,.18);animation:pop .18s ease-out}
 @keyframes pop{from{transform:scale(.93);opacity:0}to{transform:scale(1);opacity:1}}
-.mo-h{padding:11px 16px;background:var(--navy);color:#fff;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:1;border-radius:10px 10px 0 0}
-.mo-h h3{font-size:13px;font-weight:600;font-family:'Kanit'}
-.mo-x{width:24px;height:24px;border-radius:3px;border:1px solid rgba(255,255,255,.2);background:none;cursor:pointer;display:flex;align-items:center;justify-content:center;color:#fff}
+.mo-h{padding:14px 20px;background:var(--navy);color:#fff;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:1;border-radius:10px 10px 0 0}
+.mo-h h3{font-size:15px;font-weight:600;font-family:'Kanit'}
+.mo-x{width:28px;height:28px;border-radius:4px;border:1px solid rgba(255,255,255,.2);background:none;cursor:pointer;display:flex;align-items:center;justify-content:center;color:#fff}
 .mo-x:hover{background:rgba(255,255,255,.15)}
-.mo-b{padding:14px 16px}
-.sttl{font-size:9px;font-weight:700;color:var(--txt);letter-spacing:.06em;text-transform:uppercase;margin-bottom:8px;padding-bottom:5px;border-bottom:2px solid var(--ntbl)}
-.dg{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px}
-.df{display:flex;flex-direction:column;gap:2px}
+.mo-b{padding:18px 22px}
+.sttl{font-size:10px;font-weight:700;color:var(--txt);letter-spacing:.06em;text-transform:uppercase;margin-bottom:10px;padding-bottom:6px;border-bottom:2px solid var(--ntbl)}
+.dg{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:16px}
+.dg3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-bottom:16px}
+.df{display:flex;flex-direction:column;gap:3px}
 .df.full{grid-column:1/-1}
 .dl{font-size:9px;font-weight:700;color:var(--ash);letter-spacing:.05em;text-transform:uppercase}
-.dv{font-size:12px;color:var(--ink);font-weight:500}
-.mo-f{padding:10px 16px;border-top:1px solid var(--line);display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end}
-.btn-g{padding:6px 14px;border-radius:5px;border:1px solid var(--border);background:none;font-size:11px;font-weight:500;color:var(--steel);cursor:pointer;font-family:inherit}
+.dv{font-size:13px;color:var(--ink);font-weight:500}
+.mo-f{padding:12px 22px;border-top:1px solid var(--line);display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end}
+.btn-g{padding:7px 16px;border-radius:5px;border:1px solid var(--border);background:none;font-size:12px;font-weight:500;color:var(--steel);cursor:pointer;font-family:inherit}
 .btn-g:hover{border-color:var(--ntbl);color:var(--ntbl);background:var(--rh)}
+
+/* ===== Money highlight box ===== */
+.money-box{background:linear-gradient(135deg,#EAF1FB,#F0F4FA);border:2px solid var(--ntbl);border-radius:8px;padding:14px 18px;text-align:center;margin-top:8px}
+.money-box .dl{font-size:11px;color:var(--ntbl);margin-bottom:4px}
+.money-box .dv{font-size:22px;font-weight:800;color:var(--navy)}
+
 /* Confirm */
 .cf-bg{display:none;position:fixed;inset:0;background:rgba(13,15,18,.6);z-index:2000;align-items:center;justify-content:center;padding:16px;backdrop-filter:blur(3px)}
 .cf-bg.open{display:flex}
@@ -137,25 +153,6 @@ nav[role="navigation"] span[aria-current="page"]{background:var(--ntbl)!importan
 .empty h4{font-size:13px;font-weight:600;font-family:'Kanit';color:var(--txt);margin-bottom:3px}
 .empty p{font-size:11px;color:var(--ash)}
 .nmr{display:none}.nmr.show{display:table-row}
-@media(max-width:768px){
-  .topbar{padding:9px 10px}.brand{font-size:16px}
-  .fbar{padding:6px 10px}.fsearch{max-width:100%}
-  .tw{margin:0 8px 10px}
-  th,td{padding:6px 5px;font-size:11px}
-  .ie input{width:65px;font-size:10px;padding:3px 4px}
-  .ab{font-size:9px;padding:2px 5px}
-  .mo{max-width:100%;border-radius:8px}.mo-b{padding:12px}.dg{grid-template-columns:1fr}
-}
-@media(max-width:480px){
-  .topbar{padding:7px 8px;gap:6px}.brand{font-size:14px}
-  .pill{font-size:10px;padding:3px 7px 3px 5px}
-  .btn-home{padding:4px 8px;font-size:10px}
-  .tw{margin:0 4px 6px}
-  th,td{padding:5px 4px;font-size:10px}
-  .ie input{width:55px;font-size:9.5px}.ie-sv{width:20px;height:20px}
-  .ab{font-size:8.5px;padding:2px 4px}
-  .pgb{flex-direction:column;align-items:center}
-}
 </style>
 </head>
 <body>
@@ -196,13 +193,11 @@ nav[role="navigation"] span[aria-current="page"]{background:var(--ntbl)!importan
   <th>เลขใบมัดจำ</th>
   <th>ใบสั่งขาย</th>
   <th>ลูกค้า</th>
-  <th>ราคาเต็ม<br><span style="font-size:8px;font-weight:400;opacity:.75">รวม VAT</span></th>
-  <th>ยอดมัดจำ<br><span style="font-size:8px;font-weight:400;opacity:.75">รวม VAT</span></th>
+  <th>ราคาเต็ม<br><span style="font-size:8px;font-weight:400;opacity:.75">รวม 7% VAT</span></th>
+  <th>ยอดมัดจำ<br><span style="font-size:8px;font-weight:400;opacity:.75">รวม 7% VAT</span></th>
   <th>ค่าธรรมเนียม</th>
   <th>WHT</th>
   <th>สถานะ</th>
-  <th>เอกสาร</th>
-  @if($adm)<th>ลบ</th>@endif
 </tr></thead>
 <tbody id="tb">
 @forelse($deposits as $item)
@@ -220,25 +215,25 @@ nav[role="navigation"] span[aria-current="page"]{background:var(--ntbl)!importan
   $gtv = (float)($item->grand_total ?? 0) * 1.07;
   $net = max(0, $dpv - $fee);
   $wht = $item->wht_doc_no ?? '';
+  $remaining = max(0, $gtv - $dpv);
 
   $pdfRow = $bid ? \App\Models\deposit::where('deposit_bill_id',$bid)->select('deposit_bill','status_bill','deposit_slip','slip_time')->first() : null;
   $pdfF = $pdfRow->deposit_bill ?? null;
   $pdfOk = ($pdfRow->status_bill ?? null)==='ok';
   $slipF = $pdfRow->deposit_slip ?? null;
 
-  // ✅ แก้ timezone — ใช้ Asia/Bangkok ทุกจุด
   $timeFormatted = $item->time ? \Carbon\Carbon::parse($item->time)->setTimezone('Asia/Bangkok')->format('H:i d/m/Y') : '';
 
   $rj = json_encode([
     'id'=>$item->id,'so_id'=>$item->so_id??'','deposit_bill_id'=>$bid,'cust_po'=>$cpo,
     'customer_name'=>$item->customer_name??'','customer_id'=>$item->customer_id??'',
     'sale_name'=>$item->sale_name??'','emp_name'=>$item->emp_name??'',
-    'date_dep'=>$item->date_dep??'',
     'time'=>$timeFormatted,
     'dep_type_name'=>$tn,'dep_per'=>(float)($item->dep_per??0),
     'dep_price'=>(float)($item->dep_price??0),
     'dep_price_vat'=>$dpv,'grand_total'=>(float)($item->grand_total??0),'grand_total_vat'=>$gtv,
     'fee_amount'=>$fee,'net'=>$net,'wht_doc_no'=>$wht,
+    'remaining'=>$remaining,
     'status'=>$st,'is_confirmed'=>$isCfm,'is_wht'=>$isWht,'is_cancelled'=>$isCnl,
     'time_check'=>$item->time_check ? \Carbon\Carbon::parse($item->time_check)->setTimezone('Asia/Bangkok')->format('H:i d/m/Y') : '',
     'slip_time'=>$item->slip_time ? \Carbon\Carbon::parse($item->slip_time)->setTimezone('Asia/Bangkok')->format('d/m/Y') : '',
@@ -250,37 +245,47 @@ nav[role="navigation"] span[aria-current="page"]{background:var(--ntbl)!importan
 @endphp
 <tr data-q="{{ strtolower(($item->so_id??'').' '.$bid.' '.$cpo.' '.($item->customer_name??'')) }}">
   <td class="cS row-idx">{{ ($deposits->currentPage()-1)*$deposits->perPage()+$loop->iteration }}</td>
-  <td><span class="cB cN" style="font-size:11px">{{ $bid ?: '—' }}</span></td>
+  <td><span class="cB cN" style="font-size:11px">{{ $bid ?: '—' }}
+        <div class="act">
+      @if($pdfF)
+        <a href="{{ asset('storage/deposit_templates/'.$pdfF) }}" target="_blank" class="ab ab-pdf {{ $pdfOk?'ok':'' }}" onclick="event.stopPropagation()">PDF</a>
+      @endif
+      @if($slipF)
+        <a href="{{ asset('storage/deposit_templates/deposit_slip/'.$slipF) }}" target="_blank" class="ab ab-slip" onclick="event.stopPropagation()">สลิป</a>
+      @elseif($bid)
+        <button class="ab ab-add" onclick="event.stopPropagation();openSlip('{{ $bid }}')">+สลิป</button>
+      @endif
+      <button class="ab ab-info" onclick="event.stopPropagation();openInfo({!! htmlspecialchars($rj, ENT_QUOTES) !!})">ข้อมูล</button>
+    </div></span></td>
   <td class="cN" style="font-size:11px">{{ $item->so_id ?? '—' }}</td>
   <td class="cL" style="max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="{{ $item->customer_name }}">{{ $item->customer_name ?? '—' }}</td>
-
-  {{-- ราคาเต็ม (รวม VAT) --}}
   <td class="cM">{{ number_format($gtv,2) }}</td>
-
-  {{-- ยอดมัดจำ (รวม VAT) --}}
   <td class="cM">{{ number_format($dpv,2) }}</td>
 
-  {{-- ค่าธรรมเนียม --}}
+  {{-- ✅ ค่าธรรมเนียม — มีปุ่ม clear (×) ให้ลบค่าได้ --}}
   <td>
     @if($adm)
       <div class="ie">
-        <input type="number" step="0.01" min="0" id="fee-{{$item->id}}" value="{{ $fee>0?$fee:'' }}" placeholder="0" data-o="{{ $fee }}" oninput="chg(this,'fee-sv-{{$item->id}}')">
+        <input type="number" step="0.01" min="0" id="fee-{{$item->id}}" value="{{ $fee>0?$fee:'' }}" placeholder="0" data-o="{{ $fee }}" oninput="chg(this,'fee-sv-{{$item->id}}','fee-cl-{{$item->id}}')">
         <button class="ie-sv" id="fee-sv-{{$item->id}}" disabled onclick="saveFee({{$item->id}})" title="บันทึกค่าธรรมเนียม">
           <svg width="11" height="11" viewBox="0 0 14 14" fill="none"><path d="M3 7l3 3 5-6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
         </button>
+        <button class="ie-cl" id="fee-cl-{{$item->id}}" {{ $fee>0?'':'disabled' }} onclick="clearFee({{$item->id}})" title="ลบค่าธรรมเนียม">×</button>
       </div>
     @else
       @if($fee>0)<span style="font-size:11px;color:#92400E;font-weight:600">{{ number_format($fee,2) }}</span>@else<span class="cS">—</span>@endif
     @endif
   </td>
-  {{-- WHT --}}
+
+  {{-- ✅ WHT — มีปุ่ม clear (×) ให้ลบค่าได้ --}}
   <td>
     @if($adm)
       <div class="ie">
-        <input type="text" id="wht-{{$item->id}}" value="{{ $wht }}" placeholder="—" maxlength="60" data-o="{{ $wht }}" oninput="chg(this,'wht-sv-{{$item->id}}')">
+        <input type="text" id="wht-{{$item->id}}" value="{{ $wht }}" placeholder="—" maxlength="60" data-o="{{ $wht }}" oninput="chg(this,'wht-sv-{{$item->id}}','wht-cl-{{$item->id}}')">
         <button class="ie-sv" id="wht-sv-{{$item->id}}" disabled onclick="saveWht({{$item->id}},'{{ $item->so_id }}')" title="บันทึก WHT (สถานะจะเปลี่ยนเป็น มี WHT)">
           <svg width="11" height="11" viewBox="0 0 14 14" fill="none"><path d="M3 7l3 3 5-6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
         </button>
+        <button class="ie-cl" id="wht-cl-{{$item->id}}" {{ $wht?'':'disabled' }} onclick="clearWht({{$item->id}},'{{ $item->so_id }}')" title="ลบ WHT">×</button>
       </div>
     @else
       @if($wht)<span style="font-size:11px;color:#6D28D9;font-weight:600">{{ $wht }}</span>@else<span class="cS">—</span>@endif
@@ -295,32 +300,11 @@ nav[role="navigation"] span[aria-current="page"]{background:var(--ntbl)!importan
     @elseif($st==='รอยืนยัน')<span class="bg bg-wait">รอยืนยัน</span>
     @else<span class="bg bg-wip">{{ $st }}</span>@endif
   </td>
-
-  {{-- เอกสาร --}}
-  <td>
-    <div class="act">
-      @if($pdfF)
-        <a href="{{ asset('storage/deposit_templates/'.$pdfF) }}" target="_blank" class="ab ab-pdf {{ $pdfOk?'ok':'' }}" onclick="event.stopPropagation()">PDF</a>
-      @endif
-      @if($slipF)
-        <a href="{{ asset('storage/deposit_templates/deposit_slip/'.$slipF) }}" target="_blank" class="ab ab-slip" onclick="event.stopPropagation()">สลิป</a>
-      @elseif($bid)
-        <button class="ab ab-add" onclick="event.stopPropagation();openSlip('{{ $bid }}')">+สลิป</button>
-      @endif
-      <button class="ab ab-info" onclick="event.stopPropagation();openInfo({!! htmlspecialchars($rj, ENT_QUOTES) !!})">ข้อมูล</button>
-    </div>
-  </td>
-
-  @if($adm)
-  <td>
-    <button class="ab" style="background:var(--red-lt);border-color:var(--red-bd);color:var(--red)" onclick="event.stopPropagation();askDel({{$item->id}},'{{ addslashes($item->so_id??'') }}','{{ addslashes($item->customer_name??'') }}')" title="ลบ">🗑</button>
-  </td>
-  @endif
 </tr>
 @empty
-<tr><td colspan="{{ $adm?12:11 }}" style="border-right:none"><div class="empty"><h4>ไม่พบข้อมูล</h4><p>ยังไม่มีรายการใบมัดจำ</p></div></td></tr>
+<tr><td colspan="9" style="border-right:none"><div class="empty"><h4>ไม่พบข้อมูล</h4><p>ยังไม่มีรายการใบมัดจำ</p></div></td></tr>
 @endforelse
-<tr class="nmr" id="nmr"><td colspan="{{ $adm?12:11 }}" style="border-right:none"><div class="empty"><h4>ไม่พบรายการ</h4><p>ลองเปลี่ยนคำค้นหา</p></div></td></tr>
+<tr class="nmr" id="nmr"><td colspan="9" style="border-right:none"><div class="empty"><h4>ไม่พบรายการ</h4><p>ลองเปลี่ยนคำค้นหา</p></div></td></tr>
 </tbody>
 </table>
 @if($deposits->total()>0)
@@ -331,17 +315,20 @@ nav[role="navigation"] span[aria-current="page"]{background:var(--ntbl)!importan
 @endif
 </div>
 
-<!-- INFO POPUP -->
+<!-- ✅ INFO POPUP (ใหญ่ขึ้น max-width:720px, เพิ่มยอดคงเหลือ) -->
 <div class="mo-bg" id="infoM">
 <div class="mo">
-  <div class="mo-h"><h3 id="im-t">รายละเอียด</h3><button class="mo-x" onclick="closeInfo()"><svg width="11" height="11" viewBox="0 0 12 12" fill="none"><path d="M2 2l8 8M10 2L2 10" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg></button></div>
+  <div class="mo-h"><h3 id="im-t">รายละเอียด</h3><button class="mo-x" onclick="closeInfo()"><svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M2 2l8 8M10 2L2 10" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg></button></div>
   <div class="mo-b">
     <div class="sttl">ข้อมูลทั่วไป</div>
-    <div class="dg">
+    <div class="dg3">
       <div class="df"><span class="dl">เลขใบมัดจำ</span><span class="dv cB" id="im-bill">—</span></div>
       <div class="df"><span class="dl">ใบสั่งขาย</span><span class="dv" id="im-so">—</span></div>
       <div class="df"><span class="dl">PO ลูกค้า</span><span class="dv cB" id="im-po">—</span></div>
-      <div class="df"><span class="dl">วันที่</span><span class="dv" id="im-date">—</span></div>
+    </div>
+    <div class="dg">
+      <div class="df"><span class="dl">วันที่บันทึกลงระบบ</span><span class="dv" id="im-date">—</span></div>
+      <div class="df"><span class="dl">เวลาบันทึก</span><span class="dv" id="im-time">—</span></div>
       <div class="df full"><span class="dl">ลูกค้า</span><span class="dv" id="im-cust">—</span></div>
       <div class="df"><span class="dl">ผู้ติดต่อ</span><span class="dv" id="im-con">—</span></div>
       <div class="df"><span class="dl">เบอร์โทร</span><span class="dv" id="im-tel">—</span></div>
@@ -349,20 +336,28 @@ nav[role="navigation"] span[aria-current="page"]{background:var(--ntbl)!importan
       <div class="df"><span class="dl">ผู้เปิดบิล</span><span class="dv" id="im-emp">—</span></div>
       <div class="df"><span class="dl">Sale</span><span class="dv" id="im-sale">—</span></div>
       <div class="df"><span class="dl">ประเภท / %</span><span class="dv" id="im-type">—</span></div>
-      <div class="df"><span class="dl">เวลาบันทึก</span><span class="dv" id="im-time">—</span></div>
       <div class="df full"><span class="dl">หมายเหตุ</span><span class="dv" id="im-note" style="color:var(--ash)">—</span></div>
     </div>
+
     <div class="sttl">ยอดเงิน</div>
-    <div class="dg">
-      <div class="df"><span class="dl">ราคาเต็ม (VAT)</span><span class="dv" id="im-grand">—</span></div>
-      <div class="df"><span class="dl">ยอดมัดจำ (VAT)</span><span class="dv cB" id="im-dep">—</span></div>
-      <div class="df"><span class="dl">ค่าธรรมเนียม</span><span class="dv" id="im-fee" style="color:#92400E">—</span></div>
-      <div class="df"><span class="dl">ยอดสุทธิ (หลังหัก)</span><span class="dv cB" id="im-net" style="color:#047857">—</span></div>
+    <div class="dg3">
+      <div class="df"><span class="dl">ราคาเต็ม (VAT)</span><span class="dv" id="im-grand" style="font-size:14px;font-weight:700">—</span></div>
+      <div class="df"><span class="dl">ยอดมัดจำ (VAT)</span><span class="dv cB" id="im-dep" style="font-size:14px">—</span></div>
+      <div class="df"><span class="dl">ค่าธรรมเนียม</span><span class="dv" id="im-fee" style="color:#92400E;font-size:14px">—</span></div>
     </div>
-    <div class="sttl">สถานะ</div>
     <div class="dg">
+      <div class="df"><span class="dl">ยอดสุทธิ (มัดจำ − ค่าธรรมเนียม)</span><span class="dv cB" id="im-net" style="color:#047857;font-size:14px">—</span></div>
+      <div class="df"><span class="dl">WHT</span><span class="dv" id="im-wht2" style="color:#6D28D9;font-weight:600">—</span></div>
+    </div>
+    {{-- ✅ ยอดคงเหลือ เด่นชัด --}}
+    <div class="money-box">
+      <div class="dl">ยอดคงเหลือที่ต้องชำระ (ราคาเต็ม − มัดจำ)</div>
+      <div class="dv" id="im-remain">—</div>
+    </div>
+
+    <div class="sttl" style="margin-top:16px">สถานะ</div>
+    <div class="dg3">
       <div class="df"><span class="dl">สถานะ</span><span class="dv" id="im-st">—</span></div>
-      <div class="df"><span class="dl">WHT</span><span class="dv" id="im-wht" style="color:#6D28D9;font-weight:600">—</span></div>
       <div class="df"><span class="dl">ยืนยันเมื่อ</span><span class="dv" id="im-tc">—</span></div>
       <div class="df"><span class="dl">แนบสลิป</span><span class="dv" id="im-sl">—</span></div>
     </div>
@@ -414,11 +409,15 @@ function doFilter(){
   document.getElementById('nmr').classList.toggle('show',rs.length>0&&v===0&&!!q);
 }
 
-function chg(inp,btnId){
-  const btn=document.getElementById(btnId);
+// ✅ chg — รับ clBtnId เพื่อ enable/disable ปุ่ม clear ด้วย
+function chg(inp,svBtnId,clBtnId){
+  const svBtn=document.getElementById(svBtnId);
+  const clBtn=clBtnId?document.getElementById(clBtnId):null;
   const dirty=inp.value!==inp.dataset.o;
   inp.classList.toggle('dirty',dirty);
-  if(btn){btn.disabled=!dirty;btn.classList.remove('ok')}
+  if(svBtn){svBtn.disabled=!dirty;svBtn.classList.remove('ok')}
+  // enable clear ถ้ามีค่า (ไม่ว่าจะ dirty หรือไม่)
+  if(clBtn){clBtn.disabled=!inp.value.trim()}
 }
 
 async function saveFee(id){
@@ -434,7 +433,17 @@ async function saveFee(id){
   }catch(e){toast('ล้มเหลว: '+e.message,1);btn.disabled=false}
 }
 
-/* ✅ บันทึก WHT → สถานะจะเปลี่ยนเป็น "มี WHT" ฝั่ง controller */
+// ✅ ลบค่าธรรมเนียม (เซ็ตเป็น 0)
+async function clearFee(id){
+  if(!ADM||!confirm('ลบค่าธรรมเนียมของรายการนี้?'))return;
+  try{
+    const res=await fetch('/deposit/update-fee',{method:'POST',headers:H(),body:JSON.stringify({deposit_id:id,fee_amount:0,saved_by:CU})});
+    const d=await res.json().catch(()=>({success:false}));
+    if(!res.ok||!d.success)throw new Error(d.message||'HTTP '+res.status);
+    toast('ลบค่าธรรมเนียมสำเร็จ');setTimeout(()=>location.reload(),600);
+  }catch(e){toast('ล้มเหลว: '+e.message,1)}
+}
+
 async function saveWht(id,soId){
   if(!ADM)return;
   const inp=document.getElementById('wht-'+id),btn=document.getElementById('wht-sv-'+id);
@@ -448,13 +457,24 @@ async function saveWht(id,soId){
   }catch(e){toast('ล้มเหลว: '+e.message,1);btn.disabled=false}
 }
 
+// ✅ ลบ WHT (เซ็ตเป็นว่าง)
+async function clearWht(id,soId){
+  if(!ADM||!confirm('ลบ WHT ของรายการนี้?'))return;
+  try{
+    const res=await fetch('/deposit/update-wht',{method:'POST',headers:H(),body:JSON.stringify({deposit_id:id,so_id:soId,wht_doc_no:'',saved_by:CU})});
+    const d=await res.json().catch(()=>({success:false}));
+    if(!res.ok||!d.success)throw new Error(d.message||'HTTP '+res.status);
+    toast('ลบ WHT สำเร็จ');setTimeout(()=>location.reload(),600);
+  }catch(e){toast('ล้มเหลว: '+e.message,1)}
+}
+
 function openInfo(d){
   const $=i=>document.getElementById(i);
   $('im-t').textContent=d.deposit_bill_id||d.so_id||'รายละเอียด';
   $('im-bill').textContent=d.deposit_bill_id||'—';
   $('im-so').textContent=d.so_id||'—';
   $('im-po').textContent=d.cust_po||'—';
-  $('im-date').textContent=d.date_dep?fD(d.date_dep):'—';
+  $('im-date').textContent=d.time||'—';
   $('im-cust').textContent=d.customer_name||'—';
   $('im-con').textContent=d.contactso||'—';
   $('im-tel').textContent=d.customer_tel||'—';
@@ -468,6 +488,8 @@ function openInfo(d){
   $('im-dep').textContent=fM(d.dep_price_vat)+' ฿';
   $('im-fee').textContent=d.fee_amount>0?fM(d.fee_amount)+' ฿':'—';
   $('im-net').textContent=fM(d.net)+' ฿';
+  $('im-wht2').textContent=d.wht_doc_no||'—';
+  $('im-remain').textContent=fM(d.remaining)+' ฿';
   let sb='';
   if(d.is_cancelled)sb='<span class="bg bg-cancel">ยกเลิก</span>';
   else if(d.is_wht)sb='<span class="bg bg-wht">มี WHT</span>';
@@ -475,10 +497,8 @@ function openInfo(d){
   else if(d.status==='รอยืนยัน')sb='<span class="bg bg-wait">รอยืนยัน</span>';
   else sb='<span class="bg bg-wip">'+d.status+'</span>';
   $('im-st').innerHTML=sb;
-  $('im-wht').textContent=d.wht_doc_no||'—';
   $('im-tc').textContent=d.time_check||'—';
   $('im-sl').textContent=d.slip_time||'ยังไม่แนบ';
-  // Footer
   let f='';
   if(ADM&&!d.is_cancelled){
     if(d.is_confirmed||d.is_wht) f+=`<button class="btn-st bk" onclick="askSt('${d.so_id}',${d.id},'${d.status}','รอยืนยัน')">↩ กลับรอ</button>`;

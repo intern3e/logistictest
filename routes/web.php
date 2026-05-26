@@ -220,6 +220,7 @@ Route::post('/deposit/upload-bill-pdf', [DepositController::class, 'uploadBillPd
 Route::post('/deposit/update-fee', [DepositController::class, 'updateFee']);
 Route::post('/deposit/update-wht', [DepositController::class, 'updateWht']);
 Route::post('/deposit/delete', [DepositController::class, 'deleteDeposit']);
+Route::post('/deposit/upload-slip', [DepositController::class, 'uploadSlip']);
 
 
 use App\Http\Controllers\TechnicianController;

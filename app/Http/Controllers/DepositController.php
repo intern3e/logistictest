@@ -999,8 +999,8 @@ class DepositController extends Controller
 
         $slipDateInput = $request->input('slip_date');
         $slipTime = $slipDateInput
-            ? Carbon::parse($slipDateInput)->setTimezone('Asia/Bangkok')->setTime(12, 0, 0)  // ✅ Bangkok
-            : $this->nowBkk();                                                                // ✅ Bangkok
+            ? Carbon::parse($slipDateInput)->setTimezone('Asia/Bangkok')->setTime(12, 0, 0)  
+            : $this->nowBkk();                                                                
 
         try {
             $safeName = $this->sanitizeDepositFilename($depositBillId);
