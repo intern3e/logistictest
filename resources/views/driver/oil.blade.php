@@ -1595,8 +1595,8 @@ async function fetchSavedDrivers(date){
   if(SAVED_DRIVERS_CACHE[date]) return SAVED_DRIVERS_CACHE[date];
   const fromDOM=_readSavedDriversFromDOM(date);
   try{
-    const res=await fetch(`${ROUTE_SAVED_DRIVERS}?date=${encodeURIComponent(date)}`,{headers:{'Accept':'application/json','X-Requested-With':'XMLHttpRequest'}});
-    if(res.ok){
+    const res=await fetch(`${ROUTE_SAVED_DRIVERS}?date=${encodeURIComponent(date)}`,{headers:{'Accept':'application/json','X-Requested-With':'XMLHttpRequest'}}).catch(()=>null);
+    if(res && res.ok){
       const data=await res.json();
       let raw=[];
       if(Array.isArray(data)) raw=data;
@@ -2135,7 +2135,7 @@ function _renderPie(canvasId,legendId,data,fmt){
   PDF EXPORT
 ═══════════════════════════════════════════════════════════════ */
 @php
-  $pdfLogsArr = $logs->map(function($l){
+  $pdfLogsArr = $allLogs->map(function($l){
     return ['driver'=>$l['driver_name']??'','plate'=>$l['vehicle_id']??'','date'=>$l['work_date']??'','start'=>$l['start_time']??'','end'=>$l['end_time']??'','price'=>(float)($l['total_price']??0),'distance'=>(float)($l['total_distance']??0),'liters'=>(float)($l['liters']??0),'kml'=>(float)($l['km_per_liter']??0),'hours'=>(float)($l['work_hours']??0)];
   })->values();
 @endphp
@@ -2180,77 +2180,145 @@ async function exportPDF(fromDate,toDate,reportTitle){
   if(btn){btn.disabled=true;btn.innerHTML='<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10" stroke-opacity=".25"/><path d="M12 2a10 10 0 0 1 10 10"/></svg> กำลังสร้าง...';}
   try{
     const rows=PDF_LOGS.filter(l=>{const d=l.date||'';return d>=fromDate&&d<=toDate;});
-    if(rows.length===0){alert('ไม่มีข้อมูลในช่วงวันที่นี้');return;}
+    if(rows.length===0){alert('ไม่มีข้อมูลในช่วงวันที่นี้');if(btn){btn.disabled=false;btn.innerHTML=orig;}return;}
     const {jsPDF}=window.jspdf;
-    const pdf=new jsPDF('p','mm','a4');
-    const pageW=210,pageH=297,margin=10;
+    const pdf=new jsPDF('l','mm','a4');  // ★ แนวนอน
+    const pageW=297,pageH=210,margin=10,usableW=pageW-margin*2,usableH=pageH-margin*2;
 
     const stage=document.createElement('div');
-    stage.style.cssText='position:fixed;left:-99999px;top:0;width:900px;background:#fff;font-family:"IBM Plex Sans Thai",sans-serif;padding:0;';
+    stage.style.cssText='position:fixed;left:-99999px;top:0;width:1200px;background:#fff;font-family:"IBM Plex Sans Thai",sans-serif;padding:0;';
     document.body.appendChild(stage);
 
+    // ── สรุปข้อมูล ──
     const totPrice=rows.reduce((s,r)=>s+r.price,0);
     const totDist=rows.reduce((s,r)=>s+r.distance,0);
     const totLiters=rows.reduce((s,r)=>s+r.liters,0);
     const avgKml=totLiters>0?totDist/totLiters:0;
+    const totHours=rows.reduce((s,r)=>s+r.hours,0);
 
-    const ROWS_PER_PAGE=20;
+    // ── จัดกลุ่มตามคนขับ (สำหรับกราฟ) ──
+    const byDriver={};
+    rows.forEach(r=>{
+      const n=r.driver||'ไม่ระบุ';
+      if(!byDriver[n])byDriver[n]={price:0,dist:0,liters:0,trips:0};
+      byDriver[n].price+=r.price;byDriver[n].dist+=r.distance;byDriver[n].liters+=r.liters;byDriver[n].trips++;
+    });
+    const driverNames=Object.keys(byDriver).sort((a,b)=>byDriver[b].price-byDriver[a].price);
+    const COLORS=['#3b82f6','#f59e0b','#10b981','#ef4444','#8b5cf6','#ec4899','#14b8a6','#f97316','#6366f1','#84cc16','#06b6d4','#a855f7'];
+
+    // ════════ PAGE 1: HEADER + STATS + CHARTS ════════
+    const p1=document.createElement('div');
+    p1.style.cssText='width:1200px;background:#fff;padding:36px 40px;box-sizing:border-box;';
+
+    // — Header
+    let h1=`<div style="display:flex;justify-content:space-between;align-items:flex-start;border-bottom:3px solid #3b82f6;padding-bottom:14px;margin-bottom:18px;">
+      <div><div style="font-size:22px;font-weight:700;color:#18181b;">${reportTitle}</div>
+      <div style="font-size:12px;color:#71717a;margin-top:3px;">ระบบติดตามน้ำมันรถ · ออกรายงานโดย ${CURRENT_USER}</div></div>
+      <div style="text-align:right;font-size:11px;color:#a1a1aa;">พิมพ์เมื่อ<br>${new Date().toLocaleString('th-TH',{timeZone:TZ})}</div>
+    </div>`;
+
+    // — Stats row
+    h1+=`<div style="display:grid;grid-template-columns:repeat(5,1fr);gap:10px;margin-bottom:22px;">
+      ${_pdfStat('ค่าน้ำมันรวม','฿'+Math.round(totPrice).toLocaleString())}
+      ${_pdfStat('ระยะทางรวม',Math.round(totDist).toLocaleString()+' km')}
+      ${_pdfStat('น้ำมันรวม',fmtN(totLiters)+' L')}
+      ${_pdfStat('เฉลี่ย km/L',fmtN(avgKml))}
+      ${_pdfStat('จำนวน',rows.length+' รายการ')}
+    </div>`;
+
+    // — Charts: ค่าน้ำมัน (bar) + สัดส่วน (pie) วาดด้วย inline SVG
+    const maxPrice=Math.max(...driverNames.map(n=>byDriver[n].price),1);
+    const barH=Math.min(driverNames.length*28+30,260);
+    let bars='';
+    driverNames.forEach((n,i)=>{
+      const d=byDriver[n],pct=d.price/maxPrice*100,col=COLORS[i%COLORS.length];
+      const y=i*28+24;
+      bars+=`<text x="0" y="${y+4}" style="font-size:11px;fill:#3f3f46;font-weight:600">${n.length>8?n.slice(0,8)+'…':n}</text>`;
+      bars+=`<rect x="100" y="${y-8}" width="${pct*4.6}" height="18" rx="4" fill="${col}"/>`;
+      bars+=`<text x="${104+pct*4.6}" y="${y+4}" style="font-size:10px;fill:#71717a">฿${Math.round(d.price).toLocaleString()}</text>`;
+    });
+
+    // Pie chart SVG
+    let pieSlices='',pieLegend='',angle=0;
+    driverNames.forEach((n,i)=>{
+      const d=byDriver[n],pct=totPrice>0?d.price/totPrice:0,col=COLORS[i%COLORS.length];
+      const a1=angle,a2=angle+pct*Math.PI*2;
+      const x1=Math.cos(a1)*80+90,y1=Math.sin(a1)*80+90;
+      const x2=Math.cos(a2)*80+90,y2=Math.sin(a2)*80+90;
+      const large=pct>0.5?1:0;
+      if(pct>0.005)pieSlices+=`<path d="M90,90 L${x1},${y1} A80,80 0 ${large},1 ${x2},${y2} Z" fill="${col}"/>`;
+      pieLegend+=`<div style="display:flex;align-items:center;gap:5px;font-size:10px;margin-bottom:3px;"><span style="width:8px;height:8px;border-radius:2px;background:${col};flex-shrink:0"></span><span style="color:#3f3f46">${n}</span><span style="color:#a1a1aa;margin-left:auto">${(pct*100).toFixed(1)}%</span></div>`;
+      angle=a2;
+    });
+
+    h1+=`<div style="display:grid;grid-template-columns:1.5fr 1fr;gap:20px;">
+      <div>
+        <div style="font-size:13px;font-weight:600;color:#18181b;margin-bottom:8px;">ค่าน้ำมันแยกตามคนขับ</div>
+        <svg viewBox="0 0 660 ${barH}" width="660" height="${barH}" xmlns="http://www.w3.org/2000/svg">${bars}</svg>
+      </div>
+      <div>
+        <div style="font-size:13px;font-weight:600;color:#18181b;margin-bottom:8px;">สัดส่วนค่าน้ำมัน</div>
+        <div style="display:flex;gap:14px;align-items:flex-start;">
+          <svg viewBox="0 0 180 180" width="140" height="140" xmlns="http://www.w3.org/2000/svg">${pieSlices}</svg>
+          <div style="flex:1;padding-top:4px">${pieLegend}</div>
+        </div>
+      </div>
+    </div>`;
+
+    p1.innerHTML=h1;
+    stage.appendChild(p1);
+    let canvas=await html2canvas(p1,{scale:1.5,backgroundColor:'#fff',logging:false});
+    let imgData=canvas.toDataURL('image/jpeg',0.82);
+    let imgW=usableW,imgH=canvas.height*imgW/canvas.width;
+    pdf.addImage(imgData,'JPEG',margin,margin,imgW,Math.min(imgH,usableH));
+    stage.removeChild(p1);
+
+    // ════════ PAGE 2+: DATA TABLE ════════
+    const ROWS_PER_PAGE=22;
     const chunks=[];
     for(let i=0;i<rows.length;i+=ROWS_PER_PAGE)chunks.push(rows.slice(i,i+ROWS_PER_PAGE));
 
     for(let pageIdx=0;pageIdx<chunks.length;pageIdx++){
       const chunk=chunks[pageIdx];
       const page=document.createElement('div');
-      page.style.cssText='width:900px;background:#fff;padding:40px;box-sizing:border-box;';
-      let head='';
-      if(pageIdx===0){
-        head=`<div style="display:flex;justify-content:space-between;align-items:flex-start;border-bottom:3px solid #3b82f6;padding-bottom:16px;margin-bottom:20px;">
-          <div><div style="font-size:24px;font-weight:700;color:#18181b;">${reportTitle}</div>
-          <div style="font-size:13px;color:#71717a;margin-top:4px;">ระบบติดตามน้ำมันรถ · ออกรายงานโดย ${CURRENT_USER}</div></div>
-          <div style="text-align:right;font-size:12px;color:#a1a1aa;">พิมพ์เมื่อ<br>${new Date().toLocaleString('th-TH',{timeZone:TZ})}</div>
-        </div>
-        <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:24px;">
-          ${_pdfStat('ค่าน้ำมันรวม','฿'+Math.round(totPrice).toLocaleString())}
-          ${_pdfStat('ระยะทางรวม',Math.round(totDist).toLocaleString()+' km')}
-          ${_pdfStat('น้ำมันรวม',fmtN(totLiters)+' L')}
-          ${_pdfStat('เฉลี่ย','km/L '+fmtN(avgKml))}
-        </div>`;
-      }
-      let tbl=`<table style="width:100%;border-collapse:collapse;font-size:12px;">
+      page.style.cssText='width:1200px;background:#fff;padding:30px 40px;box-sizing:border-box;';
+      let tbl=`<div style="font-size:11px;color:#71717a;margin-bottom:10px;">${reportTitle} — รายการข้อมูล (${pageIdx+1}/${chunks.length})</div>`;
+      tbl+=`<table style="width:100%;border-collapse:collapse;font-size:11px;">
         <thead><tr style="background:#f4f4f5;">
-          <th style="padding:8px 6px;text-align:left;border-bottom:2px solid #e4e4e7;color:#3f3f46;">วันที่</th>
-          <th style="padding:8px 6px;text-align:left;border-bottom:2px solid #e4e4e7;color:#3f3f46;">คนขับ</th>
-          <th style="padding:8px 6px;text-align:left;border-bottom:2px solid #e4e4e7;color:#3f3f46;">ทะเบียน</th>
-          <th style="padding:8px 6px;text-align:right;border-bottom:2px solid #e4e4e7;color:#3f3f46;">ค่าน้ำมัน</th>
-          <th style="padding:8px 6px;text-align:right;border-bottom:2px solid #e4e4e7;color:#3f3f46;">ระยะ</th>
-          <th style="padding:8px 6px;text-align:right;border-bottom:2px solid #e4e4e7;color:#3f3f46;">ลิตร</th>
-          <th style="padding:8px 6px;text-align:right;border-bottom:2px solid #e4e4e7;color:#3f3f46;">km/L</th>
+          <th style="padding:7px 6px;text-align:left;border-bottom:2px solid #e4e4e7;color:#3f3f46;width:80px">วันที่</th>
+          <th style="padding:7px 6px;text-align:left;border-bottom:2px solid #e4e4e7;color:#3f3f46;">คนขับ</th>
+          <th style="padding:7px 6px;text-align:left;border-bottom:2px solid #e4e4e7;color:#3f3f46;">ทะเบียน</th>
+          <th style="padding:7px 6px;text-align:right;border-bottom:2px solid #e4e4e7;color:#3f3f46;">ค่าน้ำมัน</th>
+          <th style="padding:7px 6px;text-align:right;border-bottom:2px solid #e4e4e7;color:#3f3f46;">ระยะ</th>
+          <th style="padding:7px 6px;text-align:right;border-bottom:2px solid #e4e4e7;color:#3f3f46;">ลิตร</th>
+          <th style="padding:7px 6px;text-align:right;border-bottom:2px solid #e4e4e7;color:#3f3f46;">km/L</th>
+          <th style="padding:7px 6px;text-align:right;border-bottom:2px solid #e4e4e7;color:#3f3f46;">฿/km</th>
         </tr></thead><tbody>`;
       chunk.forEach((r,i)=>{
         const dp=(r.date||'').split('-');
         const dateText=dp.length===3?`${dp[2]}/${dp[1]}/${dp[0]}`:'—';
         const bg=i%2?'#fafafa':'#fff';
+        const thbKm=(r.distance>0&&r.price>0)?(r.price/r.distance):0;
         tbl+=`<tr style="background:${bg};">
-          <td style="padding:7px 6px;border-bottom:1px solid #f4f4f5;">${dateText}</td>
-          <td style="padding:7px 6px;border-bottom:1px solid #f4f4f5;font-weight:600;">${r.driver||'—'}</td>
-          <td style="padding:7px 6px;border-bottom:1px solid #f4f4f5;">${r.plate||'—'}</td>
-          <td style="padding:7px 6px;border-bottom:1px solid #f4f4f5;text-align:right;">${r.price>0?'฿'+Math.round(r.price).toLocaleString():'—'}</td>
-          <td style="padding:7px 6px;border-bottom:1px solid #f4f4f5;text-align:right;">${r.distance>0?Math.round(r.distance).toLocaleString():'—'}</td>
-          <td style="padding:7px 6px;border-bottom:1px solid #f4f4f5;text-align:right;">${r.liters>0?fmtN(r.liters):'—'}</td>
-          <td style="padding:7px 6px;border-bottom:1px solid #f4f4f5;text-align:right;">${r.kml>0?fmtN(r.kml):'—'}</td>
+          <td style="padding:6px;border-bottom:1px solid #f4f4f5;">${dateText}</td>
+          <td style="padding:6px;border-bottom:1px solid #f4f4f5;font-weight:600;">${r.driver||'—'}</td>
+          <td style="padding:6px;border-bottom:1px solid #f4f4f5;">${r.plate||'—'}</td>
+          <td style="padding:6px;border-bottom:1px solid #f4f4f5;text-align:right;">${r.price>0?'฿'+Math.round(r.price).toLocaleString():'—'}</td>
+          <td style="padding:6px;border-bottom:1px solid #f4f4f5;text-align:right;">${r.distance>0?Math.round(r.distance).toLocaleString():'—'}</td>
+          <td style="padding:6px;border-bottom:1px solid #f4f4f5;text-align:right;">${r.liters>0?fmtN(r.liters):'—'}</td>
+          <td style="padding:6px;border-bottom:1px solid #f4f4f5;text-align:right;">${r.kml>0?fmtN(r.kml):'—'}</td>
+          <td style="padding:6px;border-bottom:1px solid #f4f4f5;text-align:right;">${thbKm>0?'฿'+fmtN(thbKm):'—'}</td>
         </tr>`;
       });
       tbl+='</tbody></table>';
-      if(chunks.length>1)tbl+=`<div style="text-align:right;font-size:11px;color:#a1a1aa;margin-top:12px;">หน้า ${pageIdx+1} / ${chunks.length}</div>`;
-      page.innerHTML=head+tbl;
+      page.innerHTML=tbl;
       stage.appendChild(page);
 
-      const canvas=await html2canvas(page,{scale:2,backgroundColor:'#fff',logging:false});
-      const imgData=canvas.toDataURL('image/jpeg',0.92);
-      const imgW=pageW-margin*2;
-      const imgH=canvas.height*imgW/canvas.width;
-      if(pageIdx>0)pdf.addPage();
-      pdf.addImage(imgData,'JPEG',margin,margin,imgW,Math.min(imgH,pageH-margin*2));
+      pdf.addPage();
+      canvas=await html2canvas(page,{scale:1.5,backgroundColor:'#fff',logging:false});
+      imgData=canvas.toDataURL('image/jpeg',0.80);
+      imgW=usableW;imgH=canvas.height*imgW/canvas.width;
+      pdf.addImage(imgData,'JPEG',margin,margin,imgW,Math.min(imgH,usableH));
       stage.removeChild(page);
     }
 

@@ -500,6 +500,23 @@ class fuellogsController extends Controller
             'resolved' => $result['resolved'],
         ]);
     }
+        public function savedDrivers(Request $request)
+    {
+        $date = $request->get('date');
+        if (!$date) {
+            return response()->json([]);
+        }
+ 
+        $drivers = DB::table('fuel_logs')
+            ->where('work_date', $date)
+            ->distinct()
+            ->pluck('driver_name')
+            ->filter()
+            ->values();
+ 
+        return response()->json($drivers);
+    }
+ 
 
     public function service(Request $request)
     {

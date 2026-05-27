@@ -188,6 +188,7 @@ Route::delete('/oil/{id}',      [fuellogsController::class, 'destroy'])->name('o
 Route::post('/oil/sync-ng',     [fuellogsController::class, 'syncNg'])->name('oil.syncNg');
 Route::get('/oil/ng-list',      [fuellogsController::class, 'ngList'])->name('oil.ngList');
 Route::post('/oil/filter',      [fuellogsController::class, 'applyFilter'])->name('oil.filter');
+Route::get('/oil/saved-drivers', [fuellogsController::class, 'savedDrivers'])->name('oil.savedDrivers');
 
 
 use App\Http\Controllers\ServiceController;
