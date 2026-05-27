@@ -61,22 +61,17 @@ tbody tr:last-child td{border-bottom:none}
 .ab-add:hover{background:#C2410C;color:#fff;border-color:#C2410C}
 .ab-info{background:var(--rh);border-color:var(--line);color:var(--ntbl)}
 .ab-info:hover{background:var(--ntbl);color:#fff}
-
-/* ===== Inline edit (fee/wht) ===== */
 .ie{display:flex;align-items:center;gap:3px;justify-content:center}
 .ie input{width:90px;border:1px solid var(--border);border-radius:3px;padding:4px 6px;font-size:11px;font-family:inherit;color:var(--ink);outline:none;text-align:center;transition:border .12s,background .12s}
 .ie input:focus{border-color:var(--ntbl);box-shadow:0 0 0 2px rgba(25,55,109,.1)}
 .ie input.dirty{border-color:#D97706;background:#FFFBEB}
-/* ✅ ปุ่ม save */
 .ie-sv{width:24px;height:24px;display:flex;align-items:center;justify-content:center;background:var(--ntbl);color:#fff;border:none;border-radius:3px;cursor:pointer;flex-shrink:0;transition:all .12s}
 .ie-sv:hover{background:var(--navy)}
 .ie-sv:disabled{opacity:.4;cursor:not-allowed}
 .ie-sv.ok{background:#047857}
-/* ✅ ปุ่ม clear (ลบค่า) */
 .ie-cl{width:24px;height:24px;display:flex;align-items:center;justify-content:center;background:var(--red-lt);color:var(--red);border:1px solid var(--red-bd);border-radius:3px;cursor:pointer;flex-shrink:0;transition:all .12s;font-size:12px;font-weight:700;line-height:1}
 .ie-cl:hover{background:var(--red);color:#fff;border-color:var(--red)}
 .ie-cl:disabled{opacity:.3;cursor:not-allowed}
-
 .btn-del{display:inline-flex;align-items:center;gap:4px;padding:5px 12px;border-radius:5px;background:var(--red-lt);border:1px solid var(--red-bd);color:var(--red);font-size:11px;font-weight:600;cursor:pointer;font-family:inherit;transition:all .12s}
 .btn-del:hover{background:var(--red);color:#fff}
 .btn-st{display:inline-flex;align-items:center;gap:4px;padding:5px 12px;border-radius:5px;font-size:11px;font-weight:600;cursor:pointer;font-family:inherit;border:1px solid;transition:all .12s}
@@ -94,8 +89,6 @@ nav[role="navigation"] a[rel="prev"],nav[role="navigation"] a[rel="next"]{width:
 nav[role="navigation"] svg{width:11px!important;height:11px!important}
 nav[role="navigation"] a.relative,nav[role="navigation"] span.relative{min-width:26px;height:26px;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:500;color:var(--link);border-radius:3px;border:1px solid transparent}
 nav[role="navigation"] span[aria-current="page"]{background:var(--ntbl)!important;color:#fff!important;border-color:var(--ntbl)!important}
-
-/* ===== Modal (ใหญ่ขึ้น) ===== */
 .mo-bg{display:none;position:fixed;inset:0;background:rgba(13,15,18,.5);z-index:1000;align-items:center;justify-content:center;padding:10px;backdrop-filter:blur(2px)}
 .mo-bg.open{display:flex}
 .mo{background:#fff;border-radius:10px;width:100%;max-width:720px;max-height:92vh;overflow-y:auto;border:1px solid var(--border);box-shadow:0 16px 48px rgba(0,0,0,.18);animation:pop .18s ease-out}
@@ -115,13 +108,9 @@ nav[role="navigation"] span[aria-current="page"]{background:var(--ntbl)!importan
 .mo-f{padding:12px 22px;border-top:1px solid var(--line);display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end}
 .btn-g{padding:7px 16px;border-radius:5px;border:1px solid var(--border);background:none;font-size:12px;font-weight:500;color:var(--steel);cursor:pointer;font-family:inherit}
 .btn-g:hover{border-color:var(--ntbl);color:var(--ntbl);background:var(--rh)}
-
-/* ===== Money highlight box ===== */
 .money-box{background:linear-gradient(135deg,#EAF1FB,#F0F4FA);border:2px solid var(--ntbl);border-radius:8px;padding:14px 18px;text-align:center;margin-top:8px}
 .money-box .dl{font-size:11px;color:var(--ntbl);margin-bottom:4px}
 .money-box .dv{font-size:22px;font-weight:800;color:var(--navy)}
-
-/* Confirm */
 .cf-bg{display:none;position:fixed;inset:0;background:rgba(13,15,18,.6);z-index:2000;align-items:center;justify-content:center;padding:16px;backdrop-filter:blur(3px)}
 .cf-bg.open{display:flex}
 .cf-box{background:#fff;border-radius:12px;width:100%;max-width:380px;box-shadow:0 20px 50px rgba(0,0,0,.25);animation:pop .18s ease-out;text-align:center;padding:22px 20px}
@@ -136,7 +125,6 @@ nav[role="navigation"] span[aria-current="page"]{background:var(--ntbl)!importan
 .cf-ok{background:var(--ntbl);color:#fff}.cf-ok:hover{background:var(--navy)}
 .cf-dl{background:var(--red);color:#fff}.cf-dl:hover{background:var(--red-h)}
 .cf-ok:disabled,.cf-dl:disabled{opacity:.5;cursor:not-allowed}
-/* Slip */
 .sl-df{margin-bottom:12px}
 .sl-df label{display:block;font-size:9px;font-weight:700;color:var(--txt);letter-spacing:.04em;margin-bottom:4px;text-transform:uppercase}
 .sl-df input[type=date]{width:100%;border:1px solid var(--border);border-radius:5px;padding:7px 10px;font-size:12px;font-family:inherit;color:var(--ink);outline:none}
@@ -193,7 +181,7 @@ nav[role="navigation"] span[aria-current="page"]{background:var(--ntbl)!importan
   <th>ใบมัดจำ</th>
   <th>ใบสั่งขาย</th>
   <th>ลูกค้า</th>
-  <th>ชำระคงเหลือ<br><span style="font-size:8px;font-weight:400;opacity:.75">รวม 7% VAT</span></th>
+  <th>ราคาเต็ม<br><span style="font-size:8px;font-weight:400;opacity:.75">รวม 7% VAT</span></th>
   <th>ยอดมัดจำ<br><span style="font-size:8px;font-weight:400;opacity:.75">รวม 7% VAT</span></th>
   <th>ค่าธรรมเนียม</th>
   <th>WHT</th>
@@ -212,11 +200,26 @@ nav[role="navigation"] span[aria-current="page"]{background:var(--ntbl)!importan
   $cpo = $item->po_document ?? $item->billid ?? '';
   $fee = (float)($item->fee_amount ?? 0);
   $dpv = (float)($item->dep_price ?? 0) * 1.07;
-  $gtv = (float)($item->grand_total ?? 0) * 1.07;
+
+  // ★ ราคาเต็ม (VAT): ใช้ grand_total เป็นหลัก
+  // fallback ย้อนคำนวณจาก dep_per เฉพาะกรณี grand_total ผิดปกติ (≤ dep_price)
+  $depPer = (float)($item->dep_per ?? 0);
+  $gtRaw  = (float)($item->grand_total ?? 0);
+  $gtv    = $gtRaw * 1.07;
+  if ($gtRaw > 0 && $gtv > $dpv) {
+    // grand_total ปกติ — ใช้ได้เลย
+    $fullVat = $gtv;
+  } elseif ($depPer > 0) {
+    // grand_total ผิดปกติ (เท่ากับหรือน้อยกว่ามัดจำ) — ย้อนจาก %
+    $fullVat = $dpv / ($depPer / 100);
+  } else {
+    $fullVat = $gtv;
+  }
+  $remaining = max(0, $fullVat - $dpv);
+
   $net = max(0, $dpv - $fee);
   $wht = $item->wht_doc_no ?? '';
   $whtDate = $item->date_wht ? \Carbon\Carbon::parse($item->date_wht)->format('Y-m-d') : '';
-  $remaining = max(0, $gtv - $dpv);
 
   $pdfRow = $bid ? \App\Models\deposit::where('deposit_bill_id',$bid)->select('deposit_bill','status_bill','deposit_slip','slip_time')->first() : null;
   $pdfF = $pdfRow->deposit_bill ?? null;
@@ -230,9 +233,11 @@ nav[role="navigation"] span[aria-current="page"]{background:var(--ntbl)!importan
     'customer_name'=>$item->customer_name??'','customer_id'=>$item->customer_id??'',
     'sale_name'=>$item->sale_name??'','emp_name'=>$item->emp_name??'',
     'time'=>$timeFormatted,
-    'dep_type_name'=>$tn,'dep_per'=>(float)($item->dep_per??0),
+    'dep_type_name'=>$tn,'dep_per'=>$depPer,
     'dep_price'=>(float)($item->dep_price??0),
-    'dep_price_vat'=>$dpv,'grand_total'=>(float)($item->grand_total??0),'grand_total_vat'=>$gtv,
+    'dep_price_vat'=>$dpv,
+    'full_price_vat'=>$fullVat,
+    'grand_total'=>(float)($item->grand_total??0),'grand_total_vat'=>((float)($item->grand_total??0))*1.07,
     'fee_amount'=>$fee,'net'=>$net,'wht_doc_no'=>$wht,
     'remaining'=>$remaining,
     'status'=>$st,'is_confirmed'=>$isCfm,'is_wht'=>$isWht,'is_cancelled'=>$isCnl,
@@ -261,10 +266,10 @@ nav[role="navigation"] span[aria-current="page"]{background:var(--ntbl)!importan
     </div></span></td>
   <td class="cN" style="font-size:11px">{{ $item->so_id ?? '—' }}</td>
   <td class="cL" style="max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="{{ $item->customer_name }}">{{ $item->customer_name ?? '—' }}</td>
-  <td class="cM">{{ number_format($gtv,2) }}</td>
+  <td class="cM">{{ number_format($fullVat,2) }}</td>
   <td class="cM">{{ number_format($dpv,2) }}</td>
 
-  {{-- ✅ ค่าธรรมเนียม — มีปุ่ม clear (×) ให้ลบค่าได้ --}}
+  {{-- ค่าธรรมเนียม --}}
   <td>
     @if($adm)
       <div class="ie">
@@ -326,7 +331,7 @@ nav[role="navigation"] span[aria-current="page"]{background:var(--ntbl)!importan
 @endif
 </div>
 
-<!-- ✅ INFO POPUP (ใหญ่ขึ้น max-width:720px, เพิ่มยอดคงเหลือ) -->
+<!-- INFO POPUP -->
 <div class="mo-bg" id="infoM">
 <div class="mo">
   <div class="mo-h"><h3 id="im-t">รายละเอียด</h3><button class="mo-x" onclick="closeInfo()"><svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M2 2l8 8M10 2L2 10" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg></button></div>
@@ -359,7 +364,6 @@ nav[role="navigation"] span[aria-current="page"]{background:var(--ntbl)!importan
       <div class="df"><span class="dl">ยอดที่ถูกชำระ</span><span class="dv cB" id="im-net" style="color:#047857;font-size:14px">—</span></div>
       <div class="df"><span class="dl">WHT</span><span class="dv" id="im-wht2" style="color:#6D28D9;font-weight:600">—</span></div>
     </div>
-    {{-- ✅ ยอดคงเหลือ เด่นชัด --}}
     <div class="money-box">
       <div class="dl">ยอดคงเหลือที่ต้องชำระ (ราคาเต็ม − มัดจำ)</div>
       <div class="dv" id="im-remain">—</div>
@@ -424,14 +428,12 @@ function doFilter(){
   document.getElementById('nmr').classList.toggle('show',rs.length>0&&v===0&&!!q);
 }
 
-// ✅ chg — รับ clBtnId เพื่อ enable/disable ปุ่ม clear ด้วย
 function chg(inp,svBtnId,clBtnId){
   const svBtn=document.getElementById(svBtnId);
   const clBtn=clBtnId?document.getElementById(clBtnId):null;
   const dirty=inp.value!==inp.dataset.o;
   inp.classList.toggle('dirty',dirty);
   if(svBtn){svBtn.disabled=!dirty;svBtn.classList.remove('ok')}
-  // enable clear ถ้ามีค่า (ไม่ว่าจะ dirty หรือไม่)
   if(clBtn){clBtn.disabled=!inp.value.trim()}
 }
 
@@ -448,7 +450,6 @@ async function saveFee(id){
   }catch(e){toast('ล้มเหลว: '+e.message,1);btn.disabled=false}
 }
 
-// ✅ ลบค่าธรรมเนียม (เซ็ตเป็น 0)
 async function clearFee(id){
   if(!ADM||!confirm('ลบค่าธรรมเนียมของรายการนี้?'))return;
   try{
@@ -459,7 +460,6 @@ async function clearFee(id){
   }catch(e){toast('ล้มเหลว: '+e.message,1)}
 }
 
-// ✅ ตรวจ dirty ของ WHT (เช็คทั้งเลขเอกสารและวันที่)
 function chgWht(id){
   const inp=document.getElementById('wht-'+id);
   const dInp=document.getElementById('whtd-'+id);
@@ -494,8 +494,9 @@ async function clearWht(id,billId){
     toast('ลบ WHT สำเร็จ');setTimeout(()=>location.reload(),600);
   }catch(e){toast('ล้มเหลว: '+e.message,1)}
 }
+
 function openInfo(d){
-  pInfoHasSlip=!!d.has_slip;  
+  pInfoHasSlip=!!d.has_slip;
   const $=i=>document.getElementById(i);
   $('im-t').textContent=d.deposit_bill_id||d.so_id||'รายละเอียด';
   $('im-bill').textContent=d.deposit_bill_id||'—';
@@ -510,12 +511,16 @@ function openInfo(d){
   $('im-sale').textContent=d.sale_name||'—';
   $('im-type').textContent=(d.dep_type_name||'—')+' / '+d.dep_per.toFixed(2)+'%';
   $('im-note').textContent=d.note||'—';
-  $('im-grand').textContent=fM(d.grand_total_vat)+' ฿';
+
+  // ★ แก้ไข: ใช้ full_price_vat (คำนวณจาก dep_per) แทน grand_total_vat
+  $('im-grand').textContent=fM(d.full_price_vat)+' ฿';
   $('im-dep').textContent=fM(d.dep_price_vat)+' ฿';
   $('im-fee').textContent=d.fee_amount>0?fM(d.fee_amount)+' ฿':'—';
   $('im-net').textContent=fM(d.net)+' ฿';
   $('im-wht2').textContent=d.wht_doc_no||'—';
+  // ★ แก้ไข: remaining คำนวณจาก full_price_vat - dep_price_vat
   $('im-remain').textContent=fM(d.remaining)+' ฿';
+
   let sb='';
   if(d.is_cancelled)sb='<span class="bg bg-cancel">ยกเลิก</span>';
   else if(d.is_wht)sb='<span class="bg bg-wht">มี WHT</span>';
@@ -527,7 +532,8 @@ function openInfo(d){
   $('im-sl').textContent=d.slip_time||'ยังไม่แนบ';
   $('im-sb').innerHTML=d.status_bill==='ok'?'<span class="bg bg-ok">ปริ้นบิลสำเร็จ</span>':'<span class="bg bg-wait">ยังไม่ปริ้น</span>';
   $('im-pt').textContent=d.print_time||'—';
-let f='';
+
+  let f='';
   if(ADM&&!d.is_cancelled){
     if(d.is_confirmed||d.is_wht){
       f+=`<button class="btn-st bk" onclick="askSt('${d.so_id}',${d.id},'${d.status}','รอยืนยัน')">↩ กลับรอ</button>`;
@@ -535,7 +541,6 @@ let f='';
       if(d.has_slip){
         f+=`<button class="btn-st cfm" onclick="askSt('${d.so_id}',${d.id},'${d.status}','ยืนยัน')">✓ ยืนยัน</button>`;
       } else {
-        // ยังไม่แนบหลักฐานการชำระ — แสดงปุ่มเทากดไม่ได้ + บอกเหตุผล
         f+=`<button class="btn-st cfm" disabled style="opacity:.45;cursor:not-allowed" title="ต้องแนบหลักฐานการชำระก่อนจึงจะยืนยันได้">✓ ยืนยัน</button>`;
         f+=`<span style="font-size:10px;color:var(--red);font-weight:600;display:inline-flex;align-items:center;gap:3px">⚠ ต้องแนบหลักฐานการชำระก่อน</span>`;
       }
@@ -548,10 +553,11 @@ let f='';
 }
 function closeInfo(){document.getElementById('infoM').classList.remove('open');document.body.style.overflow=''}
 document.getElementById('infoM').addEventListener('click',function(e){if(e.target===this)closeInfo()});
+
 let pInfoHasSlip=null;
 let pA=null;
 function askSt(so,id,cur,nxt){
-    if(nxt==='ยืนยัน' && pInfoHasSlip===false){
+  if(nxt==='ยืนยัน' && pInfoHasSlip===false){
     toast('ต้องแนบหลักฐานการชำระก่อนจึงจะยืนยันได้',1);
     return;
   }
