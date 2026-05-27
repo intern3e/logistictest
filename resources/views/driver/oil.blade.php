@@ -1420,20 +1420,46 @@ function drpStartDrag(e){const ds=drpGetDateFromEvent(e);if(!ds)return;e.prevent
 function drpMoveDrag(e){if(!drpDragging)return;const ds=drpGetDateFromEvent(e);if(!ds)return;e.preventDefault();if(ds<drpDragStart){drpFrom=ds;drpTo=drpDragStart;}else{drpFrom=drpDragStart;drpTo=ds;}drpRender();}
 function drpEndDrag(){drpDragging=false;}
 function drpPreset(p){const n=new Date();let f,t;if(p==='today'){f=t=drpFmt(n);}else if(p==='7days'){t=drpFmt(n);const d=new Date(n);d.setDate(d.getDate()-6);f=drpFmt(d);}else if(p==='thismonth'){f=drpFmt(new Date(n.getFullYear(),n.getMonth(),1));t=drpFmt(n);}drpFrom=f;drpTo=t;const fd=drpParse(f);drpViewYear=fd.getFullYear();drpViewMonth=fd.getMonth();drpRender();}
-function drpApply(){
+async function drpApply(){
   if(!drpFrom)return;
   const to=drpTo||drpFrom;
-  const workDateInput=document.getElementById('il-work-date');
-  if(workDateInput){
-    workDateInput.value=drpFrom;
-    if(typeof ilOnDateChange==='function') ilOnDateChange();
-  }
   const pop=document.getElementById('drpPopup'),trg=document.getElementById('drpTrigger');
   if(pop)pop.classList.remove('open');
   if(trg)trg.classList.remove('active');
-  drpUpdateLabel();
+
   const wrap=document.querySelector('.drp-wrap[data-from]');
-  if(drpFrom!==wrap?.dataset.from || to!==wrap?.dataset.to){
+  const prevFrom=wrap?.dataset.from||'';
+  const prevTo=wrap?.dataset.to||'';
+
+  // ★ เฉพาะ privileged + day view: โหลดคนขับก่อน แล้วค่อยตัดสินใจ
+  if(IS_PRIVILEGED && MAIN_VIEW==='day' && document.getElementById('entryRowsBody')){
+    const workDateInput=document.getElementById('il-work-date');
+    if(workDateInput) workDateInput.value=drpFrom;
+    drpUpdateLabel();
+
+    const pending=await ilOnDateChange();
+
+    if(pending>0){
+      // มีคนขับที่ยังไม่กรอก → อยู่หน้าเดิม (entry card แสดงแล้ว)
+      // อัปเดต wrap data เพื่อไม่ reload ซ้ำถ้ากด ตกลง อีกรอบ
+      if(wrap){wrap.dataset.from=drpFrom;wrap.dataset.to=to;}
+      return;
+    }
+    // pending===0 (กรอกครบ) หรือ pending===-1 (ไม่มีข้อมูล/error) → ย้อนกลับวันที่เดิม
+    if(workDateInput) workDateInput.value=prevFrom;
+    drpFrom=prevFrom; drpTo=prevTo;
+    drpUpdateLabel();
+    // โหลดคนขับวันเดิมกลับมา
+    if(prevFrom){
+      workDateInput.value=prevFrom;
+      await ilOnDateChange();
+    }
+    return;
+  }
+
+  // non-privileged หรือ non-day view → reload ปกติ
+  drpUpdateLabel();
+  if(drpFrom!==prevFrom || to!==prevTo){
     const params={view:'day',date_from:drpFrom,date_to:to};
     const ds=document.getElementById('driverPicker');if(ds&&ds.value)params.driver_name=ds.value;
     const ps=document.getElementById('platePicker');if(ps&&ps.value)params.vehicle_id=ps.value;
@@ -1648,18 +1674,23 @@ const driverRowState={};
 let ilIsLoadingDrivers=false, ilLastLoadedDate=null;
 
 async function ilOnDateChange(){
-  if(ilIsLoadingDrivers)return;
-  const date=document.getElementById('il-work-date').value;if(!date)return;
+  if(ilIsLoadingDrivers)return -1;
+  const date=document.getElementById('il-work-date').value;if(!date)return -1;
   ilLastLoadedDate=date;
   ilIsLoadingDrivers=true;
   const hint=document.getElementById('entryLoadingHint');if(hint)hint.style.display='flex';
   document.getElementById('entryRowsBody').innerHTML='';
   document.getElementById('inlineJobTableWrap').innerHTML='<div class="job-loading">กำลังโหลด...</div>';
+  let pendingCount=-1;
   try{
     delete SAVED_DRIVERS_CACHE[date];
     delete jobFetched[date];
-    delete JOBS_PROCESSED[date];   // ล้างของที่จัดไว้ ให้จัดใหม่
+    delete JOBS_PROCESSED[date];
     await Promise.all([fetchJobsByDate(date), fetchSavedDrivers(date)]);
+    // นับคนขับที่ยังไม่กรอก
+    const proc=JOBS_PROCESSED[date]||{whitelist:{},auto:{}};
+    const unsaved=Object.values(proc.whitelist).filter(d=>!isDriverSaved(date,d.name));
+    pendingCount=unsaved.length;
     ilRenderDriverRows(date);
     ilResetJobsPanel();
   }catch(e){
@@ -1669,6 +1700,7 @@ async function ilOnDateChange(){
     ilIsLoadingDrivers=false;
     if(hint)hint.style.display='none';
   }
+  return pendingCount;
 }
 
 // กันชื่อขยะจาก API (ไม่ใช่ชื่อคนขับ)
@@ -2182,144 +2214,275 @@ async function exportPDF(fromDate,toDate,reportTitle){
     const rows=PDF_LOGS.filter(l=>{const d=l.date||'';return d>=fromDate&&d<=toDate;});
     if(rows.length===0){alert('ไม่มีข้อมูลในช่วงวันที่นี้');if(btn){btn.disabled=false;btn.innerHTML=orig;}return;}
     const {jsPDF}=window.jspdf;
-    const pdf=new jsPDF('l','mm','a4');  // ★ แนวนอน
+    const pdf=new jsPDF('l','mm','a4');
     const pageW=297,pageH=210,margin=10,usableW=pageW-margin*2,usableH=pageH-margin*2;
 
     const stage=document.createElement('div');
-    stage.style.cssText='position:fixed;left:-99999px;top:0;width:1200px;background:#fff;font-family:"IBM Plex Sans Thai",sans-serif;padding:0;';
+    stage.style.cssText='position:fixed;left:-99999px;top:0;background:#fff;font-family:"IBM Plex Sans Thai",sans-serif;padding:0;';
     document.body.appendChild(stage);
 
-    // ── สรุปข้อมูล ──
     const totPrice=rows.reduce((s,r)=>s+r.price,0);
     const totDist=rows.reduce((s,r)=>s+r.distance,0);
     const totLiters=rows.reduce((s,r)=>s+r.liters,0);
     const avgKml=totLiters>0?totDist/totLiters:0;
-    const totHours=rows.reduce((s,r)=>s+r.hours,0);
+    const COLORS=['#3b82f6','#f59e0b','#10b981','#ef4444','#8b5cf6','#ec4899','#14b8a6','#f97316','#6366f1','#84cc16','#06b6d4','#a855f7'];
 
-    // ── จัดกลุ่มตามคนขับ (สำหรับกราฟ) ──
+    // ── จัดกลุ่มตามคนขับ ──
     const byDriver={};
     rows.forEach(r=>{
       const n=r.driver||'ไม่ระบุ';
-      if(!byDriver[n])byDriver[n]={price:0,dist:0,liters:0,trips:0};
-      byDriver[n].price+=r.price;byDriver[n].dist+=r.distance;byDriver[n].liters+=r.liters;byDriver[n].trips++;
+      if(!byDriver[n])byDriver[n]={rows:[],price:0,dist:0,liters:0,ok:0,fail:0};
+      byDriver[n].rows.push(r);
+      byDriver[n].price+=r.price;byDriver[n].dist+=r.distance;byDriver[n].liters+=r.liters;
     });
-    const driverNames=Object.keys(byDriver).sort((a,b)=>byDriver[b].price-byDriver[a].price);
-    const COLORS=['#3b82f6','#f59e0b','#10b981','#ef4444','#8b5cf6','#ec4899','#14b8a6','#f97316','#6366f1','#84cc16','#06b6d4','#a855f7'];
+    // เรียงคนขับตาม whitelist order แล้วตาม price
+    const orderIdx=name=>{const i=ALLOWED_DRIVERS.map(_normalizeDriver).indexOf(_normalizeDriver(name));return i<0?999:i;};
+    const driverNames=Object.keys(byDriver).sort((a,b)=>{const oa=orderIdx(a),ob=orderIdx(b);if(oa!==ob)return oa-ob;return byDriver[b].price-byDriver[a].price;});
+    // เรียงแต่ละคนตามวันที่
+    driverNames.forEach(n=>{byDriver[n].rows.sort((a,b)=>(a.date||'').localeCompare(b.date||''));});
 
-    // ════════ PAGE 1: HEADER + STATS + CHARTS ════════
+    // ═══ helper: render 1 page → addImage ═══
+    async function renderPage(el,isFirst){
+      stage.appendChild(el);
+      if(!isFirst)pdf.addPage();
+      const canvas=await html2canvas(el,{scale:1.5,backgroundColor:'#fff',logging:false});
+      const imgData=canvas.toDataURL('image/jpeg',0.80);
+      const imgW=usableW,imgH=canvas.height*imgW/canvas.width;
+      pdf.addImage(imgData,'JPEG',margin,margin,imgW,Math.min(imgH,usableH));
+      stage.removeChild(el);
+    }
+
+    // ════════════════════════════════════════════════════════════
+    //  PAGE 1: HEADER + STATS + SUMMARY + 3 CHARTS
+    // ════════════════════════════════════════════════════════════
     const p1=document.createElement('div');
-    p1.style.cssText='width:1200px;background:#fff;padding:36px 40px;box-sizing:border-box;';
-
-    // — Header
-    let h1=`<div style="display:flex;justify-content:space-between;align-items:flex-start;border-bottom:3px solid #3b82f6;padding-bottom:14px;margin-bottom:18px;">
-      <div><div style="font-size:22px;font-weight:700;color:#18181b;">${reportTitle}</div>
-      <div style="font-size:12px;color:#71717a;margin-top:3px;">ระบบติดตามน้ำมันรถ · ออกรายงานโดย ${CURRENT_USER}</div></div>
-      <div style="text-align:right;font-size:11px;color:#a1a1aa;">พิมพ์เมื่อ<br>${new Date().toLocaleString('th-TH',{timeZone:TZ})}</div>
+    p1.style.cssText='width:1200px;background:#fff;padding:30px 34px;box-sizing:border-box;';
+    let h1=`<div style="display:flex;justify-content:space-between;align-items:flex-start;border-bottom:3px solid #3b82f6;padding-bottom:10px;margin-bottom:14px;">
+      <div><div style="font-size:20px;font-weight:700;color:#18181b;">${reportTitle}</div>
+      <div style="font-size:11px;color:#71717a;margin-top:2px;">ระบบติดตามน้ำมันรถ · ${CURRENT_USER}</div></div>
+      <div style="text-align:right;font-size:10px;color:#a1a1aa;">พิมพ์เมื่อ ${new Date().toLocaleString('th-TH',{timeZone:TZ})}</div>
     </div>`;
 
-    // — Stats row
-    h1+=`<div style="display:grid;grid-template-columns:repeat(5,1fr);gap:10px;margin-bottom:22px;">
+    // ── Stats cards ──
+    const totHours=rows.reduce((s,r)=>s+(r.hours||0),0);
+    h1+=`<div style="display:grid;grid-template-columns:repeat(6,1fr);gap:7px;margin-bottom:14px;">
       ${_pdfStat('ค่าน้ำมันรวม','฿'+Math.round(totPrice).toLocaleString())}
       ${_pdfStat('ระยะทางรวม',Math.round(totDist).toLocaleString()+' km')}
       ${_pdfStat('น้ำมันรวม',fmtN(totLiters)+' L')}
       ${_pdfStat('เฉลี่ย km/L',fmtN(avgKml))}
-      ${_pdfStat('จำนวน',rows.length+' รายการ')}
+      ${_pdfStat('ชั่วโมงรวม',fmtN(totHours)+' ชม.')}
+      ${_pdfStat('จำนวน',rows.length+' รายการ · '+driverNames.length+' คน')}
     </div>`;
 
-    // — Charts: ค่าน้ำมัน (bar) + สัดส่วน (pie) วาดด้วย inline SVG
-    const maxPrice=Math.max(...driverNames.map(n=>byDriver[n].price),1);
-    const barH=Math.min(driverNames.length*28+30,260);
-    let bars='';
-    driverNames.forEach((n,i)=>{
-      const d=byDriver[n],pct=d.price/maxPrice*100,col=COLORS[i%COLORS.length];
-      const y=i*28+24;
-      bars+=`<text x="0" y="${y+4}" style="font-size:11px;fill:#3f3f46;font-weight:600">${n.length>8?n.slice(0,8)+'…':n}</text>`;
-      bars+=`<rect x="100" y="${y-8}" width="${pct*4.6}" height="18" rx="4" fill="${col}"/>`;
-      bars+=`<text x="${104+pct*4.6}" y="${y+4}" style="font-size:10px;fill:#71717a">฿${Math.round(d.price).toLocaleString()}</text>`;
+    // ── สรุปผล: ใครเติมมากสุด / ใช้เวลามากสุด / ขับไกลสุด ──
+    const rankPrice=[...driverNames].sort((a,b)=>byDriver[b].price-byDriver[a].price);
+    const rankDist=[...driverNames].sort((a,b)=>byDriver[b].dist-byDriver[a].dist);
+    const rankHours=[...driverNames].sort((a,b)=>{
+      const ha=byDriver[a].rows.reduce((s,r)=>s+(r.hours||0),0);
+      const hb=byDriver[b].rows.reduce((s,r)=>s+(r.hours||0),0);
+      return hb-ha;
+    });
+    const rankKml=[...driverNames].filter(n=>byDriver[n].liters>0).sort((a,b)=>{
+      const ka=byDriver[a].dist/byDriver[a].liters;
+      const kb=byDriver[b].dist/byDriver[b].liters;
+      return kb-ka;
     });
 
-    // Pie chart SVG
-    let pieSlices='',pieLegend='',angle=0;
-    driverNames.forEach((n,i)=>{
-      const d=byDriver[n],pct=totPrice>0?d.price/totPrice:0,col=COLORS[i%COLORS.length];
-      const a1=angle,a2=angle+pct*Math.PI*2;
-      const x1=Math.cos(a1)*80+90,y1=Math.sin(a1)*80+90;
-      const x2=Math.cos(a2)*80+90,y2=Math.sin(a2)*80+90;
-      const large=pct>0.5?1:0;
-      if(pct>0.005)pieSlices+=`<path d="M90,90 L${x1},${y1} A80,80 0 ${large},1 ${x2},${y2} Z" fill="${col}"/>`;
-      pieLegend+=`<div style="display:flex;align-items:center;gap:5px;font-size:10px;margin-bottom:3px;"><span style="width:8px;height:8px;border-radius:2px;background:${col};flex-shrink:0"></span><span style="color:#3f3f46">${n}</span><span style="color:#a1a1aa;margin-left:auto">${(pct*100).toFixed(1)}%</span></div>`;
-      angle=a2;
-    });
+    const medal=(i)=>i===0?'🥇':i===1?'🥈':i===2?'🥉':'';
+    const _rankRow=(arr,valFn,max)=>{
+      return arr.slice(0,max||3).map((n,i)=>{
+        return `<div style="display:flex;align-items:center;gap:6px;padding:4px 0;${i<arr.length-1?'border-bottom:1px solid #f4f4f5;':''}">
+          <span style="font-size:13px;width:20px;text-align:center;">${medal(i)}</span>
+          <span style="font-size:11px;font-weight:600;color:#18181b;flex:1;">${n}</span>
+          <span style="font-size:11px;font-weight:700;color:#3f3f46;font-family:ui-monospace,monospace;">${valFn(n)}</span>
+        </div>`;
+      }).join('');
+    };
 
-    h1+=`<div style="display:grid;grid-template-columns:1.5fr 1fr;gap:20px;">
-      <div>
-        <div style="font-size:13px;font-weight:600;color:#18181b;margin-bottom:8px;">ค่าน้ำมันแยกตามคนขับ</div>
-        <svg viewBox="0 0 660 ${barH}" width="660" height="${barH}" xmlns="http://www.w3.org/2000/svg">${bars}</svg>
+    h1+=`<div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:10px;margin-bottom:14px;">
+      <div style="background:#fefce8;border:1px solid #fde68a;border-radius:8px;padding:10px 12px;">
+        <div style="font-size:10px;font-weight:700;color:#92400e;margin-bottom:6px;">⛽ เติมน้ำมันมากสุด</div>
+        ${_rankRow(rankPrice,n=>'฿'+Math.round(byDriver[n].price).toLocaleString())}
       </div>
-      <div>
-        <div style="font-size:13px;font-weight:600;color:#18181b;margin-bottom:8px;">สัดส่วนค่าน้ำมัน</div>
-        <div style="display:flex;gap:14px;align-items:flex-start;">
-          <svg viewBox="0 0 180 180" width="140" height="140" xmlns="http://www.w3.org/2000/svg">${pieSlices}</svg>
-          <div style="flex:1;padding-top:4px">${pieLegend}</div>
-        </div>
+      <div style="background:#eff6ff;border:1px solid #bfdbfe;border-radius:8px;padding:10px 12px;">
+        <div style="font-size:10px;font-weight:700;color:#1e40af;margin-bottom:6px;">🛣️ ขับรถไกลสุด</div>
+        ${_rankRow(rankDist,n=>Math.round(byDriver[n].dist).toLocaleString()+' km')}
+      </div>
+      <div style="background:#f0fdf4;border:1px solid #bbf7d0;border-radius:8px;padding:10px 12px;">
+        <div style="font-size:10px;font-weight:700;color:#166534;margin-bottom:6px;">⏱️ ใช้เวลาทำงานมากสุด</div>
+        ${_rankRow(rankHours,n=>{const h=byDriver[n].rows.reduce((s,r)=>s+(r.hours||0),0);return fmtN(h)+' ชม.';})}
+      </div>
+      <div style="background:#faf5ff;border:1px solid #e9d5ff;border-radius:8px;padding:10px 12px;">
+        <div style="font-size:10px;font-weight:700;color:#6b21a8;margin-bottom:6px;">📊 ประหยัดน้ำมันสุด (km/L)</div>
+        ${_rankRow(rankKml,n=>{const k=byDriver[n].dist/byDriver[n].liters;return fmtN(k)+' km/L';})}
       </div>
     </div>`;
+
+    // ── ตารางสรุปแยกคนขับ (mini table) ──
+    h1+=`<div style="margin-bottom:14px;">
+      <div style="font-size:11px;font-weight:700;color:#18181b;margin-bottom:6px;">ค่าน้ำมันแยกตามคนขับ</div>
+      <table style="width:100%;border-collapse:collapse;font-size:10px;">
+        <thead><tr style="background:#f4f4f5;">
+          <th style="padding:5px 6px;text-align:left;border-bottom:1px solid #e4e4e7;color:#3f3f46;">คนขับ</th>
+          <th style="padding:5px 6px;text-align:right;border-bottom:1px solid #e4e4e7;color:#3f3f46;">ค่าน้ำมัน</th>
+          <th style="padding:5px 6px;text-align:right;border-bottom:1px solid #e4e4e7;color:#3f3f46;">ระยะ km</th>
+          <th style="padding:5px 6px;text-align:right;border-bottom:1px solid #e4e4e7;color:#3f3f46;">ลิตร</th>
+          <th style="padding:5px 6px;text-align:right;border-bottom:1px solid #e4e4e7;color:#3f3f46;">km/L</th>
+          <th style="padding:5px 6px;text-align:right;border-bottom:1px solid #e4e4e7;color:#3f3f46;">฿/km</th>
+          <th style="padding:5px 6px;text-align:right;border-bottom:1px solid #e4e4e7;color:#3f3f46;">ชม.</th>
+          <th style="padding:5px 6px;text-align:right;border-bottom:1px solid #e4e4e7;color:#3f3f46;">รายการ</th>
+        </tr></thead><tbody>`;
+    driverNames.forEach((n,i)=>{
+      const d=byDriver[n];const kml=d.liters>0?d.dist/d.liters:0;const thbKm=d.dist>0?d.price/d.dist:0;
+      const hrs=d.rows.reduce((s,r)=>s+(r.hours||0),0);
+      h1+=`<tr style="background:${i%2?'#fafafa':'#fff'};">
+        <td style="padding:4px 6px;border-bottom:1px solid #f4f4f5;font-weight:600;">${n}</td>
+        <td style="padding:4px 6px;border-bottom:1px solid #f4f4f5;text-align:right;">฿${Math.round(d.price).toLocaleString()}</td>
+        <td style="padding:4px 6px;border-bottom:1px solid #f4f4f5;text-align:right;">${Math.round(d.dist).toLocaleString()}</td>
+        <td style="padding:4px 6px;border-bottom:1px solid #f4f4f5;text-align:right;">${fmtN(d.liters)}</td>
+        <td style="padding:4px 6px;border-bottom:1px solid #f4f4f5;text-align:right;color:${kml>=13?'#059669':(kml>0&&kml<9?'#ef4444':'#18181b')};font-weight:600;">${kml>0?fmtN(kml):'—'}</td>
+        <td style="padding:4px 6px;border-bottom:1px solid #f4f4f5;text-align:right;">${thbKm>0?'฿'+fmtN(thbKm):'—'}</td>
+        <td style="padding:4px 6px;border-bottom:1px solid #f4f4f5;text-align:right;">${fmtN(hrs)}</td>
+        <td style="padding:4px 6px;border-bottom:1px solid #f4f4f5;text-align:right;">${d.rows.length}</td>
+      </tr>`;
+    });
+    h1+=`</tbody></table></div>`;
 
     p1.innerHTML=h1;
-    stage.appendChild(p1);
-    let canvas=await html2canvas(p1,{scale:1.5,backgroundColor:'#fff',logging:false});
-    let imgData=canvas.toDataURL('image/jpeg',0.82);
-    let imgW=usableW,imgH=canvas.height*imgW/canvas.width;
-    pdf.addImage(imgData,'JPEG',margin,margin,imgW,Math.min(imgH,usableH));
-    stage.removeChild(p1);
+    await renderPage(p1,true);
 
-    // ════════ PAGE 2+: DATA TABLE ════════
-    const ROWS_PER_PAGE=22;
-    const chunks=[];
-    for(let i=0;i<rows.length;i+=ROWS_PER_PAGE)chunks.push(rows.slice(i,i+ROWS_PER_PAGE));
+    // ════════════════════════════════════════════════════════════
+    //  PAGE 2: CHARTS (3 กราฟ)
+    // ════════════════════════════════════════════════════════════
+    const p2=document.createElement('div');
+    p2.style.cssText='width:1200px;background:#fff;padding:30px 34px;box-sizing:border-box;';
 
-    for(let pageIdx=0;pageIdx<chunks.length;pageIdx++){
-      const chunk=chunks[pageIdx];
-      const page=document.createElement('div');
-      page.style.cssText='width:1200px;background:#fff;padding:30px 40px;box-sizing:border-box;';
-      let tbl=`<div style="font-size:11px;color:#71717a;margin-bottom:10px;">${reportTitle} — รายการข้อมูล (${pageIdx+1}/${chunks.length})</div>`;
-      tbl+=`<table style="width:100%;border-collapse:collapse;font-size:11px;">
+    let h2=`<div style="font-size:14px;font-weight:700;color:#18181b;margin-bottom:14px;border-bottom:2px solid #3b82f6;padding-bottom:6px;">กราฟวิเคราะห์ · ${reportTitle}</div>`;
+
+    // ── Chart 1: ต้นทุนต่อกิโล (฿/km) — horizontal bar ──
+    const costData=driverNames.map(n=>({name:n,cost:byDriver[n].dist>0?byDriver[n].price/byDriver[n].dist:0})).filter(d=>d.cost>0).sort((a,b)=>a.cost-b.cost);
+    const costAvg=costData.length>0?costData.reduce((s,d)=>s+d.cost,0)/costData.length:0;
+    const costMax=Math.max(...costData.map(d=>d.cost),costAvg,1);
+    let costBars='';
+    costData.forEach((d,i)=>{
+      const y=i*22+18;const pct=d.cost/costMax*100;
+      const col=d.cost<=costAvg*0.85?'#10b981':(d.cost<=costAvg*1.05?'#f59e0b':'#ef4444');
+      costBars+=`<text x="0" y="${y+4}" style="font-size:10px;fill:#3f3f46;font-weight:600">${d.name.length>7?d.name.slice(0,7)+'…':d.name}</text>`;
+      costBars+=`<rect x="80" y="${y-7}" width="${pct*3.8}" height="15" rx="3" fill="${col}"/>`;
+      costBars+=`<text x="${84+pct*3.8}" y="${y+4}" style="font-size:9px;fill:#71717a">฿${fmtN(d.cost)}</text>`;
+    });
+    const costH=Math.max(costData.length*22+24,60);
+
+    // ── Chart 2: น้ำมันต่อกิโล (km/L) — horizontal bar ──
+    const kmlData=driverNames.map(n=>({name:n,kml:byDriver[n].liters>0?byDriver[n].dist/byDriver[n].liters:0})).filter(d=>d.kml>0).sort((a,b)=>b.kml-a.kml);
+    const kmlAvg=kmlData.length>0?kmlData.reduce((s,d)=>s+d.kml,0)/kmlData.length:0;
+    const kmlMax=Math.max(...kmlData.map(d=>d.kml),kmlAvg,1);
+    let kmlBars='';
+    kmlData.forEach((d,i)=>{
+      const y=i*22+18;const pct=d.kml/kmlMax*100;
+      const col=d.kml<kmlAvg*0.9?'#ef4444':(d.kml<kmlAvg?'#f59e0b':'#10b981');
+      kmlBars+=`<text x="0" y="${y+4}" style="font-size:10px;fill:#3f3f46;font-weight:600">${d.name.length>7?d.name.slice(0,7)+'…':d.name}</text>`;
+      kmlBars+=`<rect x="80" y="${y-7}" width="${pct*3.8}" height="15" rx="3" fill="${col}"/>`;
+      kmlBars+=`<text x="${84+pct*3.8}" y="${y+4}" style="font-size:9px;fill:#71717a">${fmtN(d.kml)} km/L</text>`;
+    });
+    const kmlH=Math.max(kmlData.length*22+24,60);
+
+    // ── Chart 3: ส่งสำเร็จ/ผิดพลาด — stacked bar (ใช้ DLV_BY_DRIVER จากหน้าเว็บ) ──
+    const dlvData=driverNames.map(n=>{const d=DLV_BY_DRIVER[n];if(!d)return null;return{name:n,ok:d.success||0,ng:d.fail||0,total:(d.success||0)+(d.fail||0)};}).filter(d=>d&&d.total>0);
+    const dlvMax=Math.max(...dlvData.map(d=>d.total),1);
+    let dlvBars='';
+    dlvData.forEach((d,i)=>{
+      const y=i*22+18;const pctOk=d.ok/dlvMax*100;const pctNg=d.ng/dlvMax*100;
+      dlvBars+=`<text x="0" y="${y+4}" style="font-size:10px;fill:#3f3f46;font-weight:600">${d.name.length>7?d.name.slice(0,7)+'…':d.name}</text>`;
+      dlvBars+=`<rect x="80" y="${y-7}" width="${pctOk*3.8}" height="15" rx="0" fill="#10b981"/>`;
+      if(d.ng>0)dlvBars+=`<rect x="${80+pctOk*3.8}" y="${y-7}" width="${pctNg*3.8}" height="15" rx="0" fill="#ef4444"/>`;
+      dlvBars+=`<text x="${84+(pctOk+pctNg)*3.8}" y="${y+4}" style="font-size:9px;fill:#71717a">${d.ok}✓${d.ng>0?' '+d.ng+'✕':''}</text>`;
+    });
+    const dlvH=Math.max(dlvData.length*22+24,60);
+
+    h2+=`<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px;">
+      <div><div style="font-size:11px;font-weight:700;color:#18181b;margin-bottom:6px;">ต้นทุนต่อกิโล (฿/km) <span style="color:#71717a;font-weight:400">ยิ่งน้อยยิ่งดี</span></div>
+        <svg viewBox="0 0 520 ${costH}" width="100%" xmlns="http://www.w3.org/2000/svg" style="display:block">${costBars}</svg></div>
+      <div><div style="font-size:11px;font-weight:700;color:#18181b;margin-bottom:6px;">น้ำมันต่อกิโล (km/L) <span style="color:#71717a;font-weight:400">ยิ่งมากยิ่งดี</span></div>
+        <svg viewBox="0 0 520 ${kmlH}" width="100%" xmlns="http://www.w3.org/2000/svg" style="display:block">${kmlBars}</svg></div>
+      <div><div style="font-size:11px;font-weight:700;color:#18181b;margin-bottom:6px;">รายการส่ง <span style="color:#10b981">สำเร็จ</span> / <span style="color:#ef4444">ผิดพลาด</span></div>
+        <svg viewBox="0 0 520 ${dlvH}" width="100%" xmlns="http://www.w3.org/2000/svg" style="display:block">${dlvBars}</svg></div>
+    </div>`;
+
+    p2.innerHTML=h2;
+    await renderPage(p2,false);
+
+    // ════════════════════════════════════════════════════════════
+    //  PAGE 2+: ตารางแยกตามคนขับ (เรียงวันภายในแต่ละคน)
+    // ════════════════════════════════════════════════════════════
+    const ROWS_PER_PAGE=24;
+    for(const drvName of driverNames){
+      const drvRows=byDriver[drvName].rows;
+      const drvPrice=byDriver[drvName].price;
+      const drvDist=byDriver[drvName].dist;
+      const drvLiters=byDriver[drvName].liters;
+      const drvKml=drvLiters>0?drvDist/drvLiters:0;
+      const drvThbKm=drvDist>0?drvPrice/drvDist:0;
+      const chunks=[];
+      for(let i=0;i<drvRows.length;i+=ROWS_PER_PAGE)chunks.push(drvRows.slice(i,i+ROWS_PER_PAGE));
+
+      for(let ci=0;ci<chunks.length;ci++){
+        const chunk=chunks[ci];
+        const page=document.createElement('div');
+        page.style.cssText='width:1200px;background:#fff;padding:28px 36px;box-sizing:border-box;';
+
+        // หัวตาราง: ชื่อคนขับ + สรุปย่อ
+        let html=`<div style="display:flex;align-items:center;justify-content:space-between;border-bottom:2px solid #3b82f6;padding-bottom:8px;margin-bottom:10px;">
+          <div style="display:flex;align-items:center;gap:10px;">
+            <div style="width:32px;height:32px;border-radius:50%;background:linear-gradient(135deg,#dbeafe,#fef3c7);display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:700;color:#2563eb;">${(drvName||'?')[0].toUpperCase()}</div>
+            <div>
+              <div style="font-size:16px;font-weight:700;color:#18181b;">${drvName}</div>
+              <div style="font-size:10px;color:#71717a;">${reportTitle}${chunks.length>1?' · ('+(ci+1)+'/'+chunks.length+')':''}</div>
+            </div>
+          </div>
+          <div style="display:flex;gap:14px;font-size:10px;color:#3f3f46;">
+            <span><b style="font-size:13px">฿${Math.round(drvPrice).toLocaleString()}</b> รวม</span>
+            <span><b style="font-size:13px">${Math.round(drvDist).toLocaleString()}</b> km</span>
+            <span><b style="font-size:13px">${fmtN(drvLiters)}</b> L</span>
+            ${drvKml>0?`<span><b style="font-size:13px;color:${drvKml>=13?'#059669':(drvKml<9?'#ef4444':'#18181b')}">${fmtN(drvKml)}</b> km/L</span>`:''}
+            ${drvThbKm>0?`<span><b style="font-size:13px">฿${fmtN(drvThbKm)}</b>/km</span>`:''}
+            <span><b style="font-size:13px">${drvRows.length}</b> รายการ</span>
+          </div>
+        </div>`;
+
+        html+=`<table style="width:100%;border-collapse:collapse;font-size:11px;">
         <thead><tr style="background:#f4f4f5;">
-          <th style="padding:7px 6px;text-align:left;border-bottom:2px solid #e4e4e7;color:#3f3f46;width:80px">วันที่</th>
-          <th style="padding:7px 6px;text-align:left;border-bottom:2px solid #e4e4e7;color:#3f3f46;">คนขับ</th>
-          <th style="padding:7px 6px;text-align:left;border-bottom:2px solid #e4e4e7;color:#3f3f46;">ทะเบียน</th>
-          <th style="padding:7px 6px;text-align:right;border-bottom:2px solid #e4e4e7;color:#3f3f46;">ค่าน้ำมัน</th>
-          <th style="padding:7px 6px;text-align:right;border-bottom:2px solid #e4e4e7;color:#3f3f46;">ระยะ</th>
-          <th style="padding:7px 6px;text-align:right;border-bottom:2px solid #e4e4e7;color:#3f3f46;">ลิตร</th>
-          <th style="padding:7px 6px;text-align:right;border-bottom:2px solid #e4e4e7;color:#3f3f46;">km/L</th>
-          <th style="padding:7px 6px;text-align:right;border-bottom:2px solid #e4e4e7;color:#3f3f46;">฿/km</th>
+          <th style="padding:6px;text-align:left;border-bottom:2px solid #e4e4e7;color:#3f3f46;width:80px">วันที่</th>
+          <th style="padding:6px;text-align:left;border-bottom:2px solid #e4e4e7;color:#3f3f46;">ทะเบียน</th>
+          <th style="padding:6px;text-align:left;border-bottom:2px solid #e4e4e7;color:#3f3f46;width:70px">เวลา</th>
+          <th style="padding:6px;text-align:right;border-bottom:2px solid #e4e4e7;color:#3f3f46;">ค่าน้ำมัน</th>
+          <th style="padding:6px;text-align:right;border-bottom:2px solid #e4e4e7;color:#3f3f46;">ระยะ</th>
+          <th style="padding:6px;text-align:right;border-bottom:2px solid #e4e4e7;color:#3f3f46;">ลิตร</th>
+          <th style="padding:6px;text-align:right;border-bottom:2px solid #e4e4e7;color:#3f3f46;">km/L</th>
+          <th style="padding:6px;text-align:right;border-bottom:2px solid #e4e4e7;color:#3f3f46;">฿/km</th>
         </tr></thead><tbody>`;
-      chunk.forEach((r,i)=>{
-        const dp=(r.date||'').split('-');
-        const dateText=dp.length===3?`${dp[2]}/${dp[1]}/${dp[0]}`:'—';
-        const bg=i%2?'#fafafa':'#fff';
-        const thbKm=(r.distance>0&&r.price>0)?(r.price/r.distance):0;
-        tbl+=`<tr style="background:${bg};">
-          <td style="padding:6px;border-bottom:1px solid #f4f4f5;">${dateText}</td>
-          <td style="padding:6px;border-bottom:1px solid #f4f4f5;font-weight:600;">${r.driver||'—'}</td>
-          <td style="padding:6px;border-bottom:1px solid #f4f4f5;">${r.plate||'—'}</td>
-          <td style="padding:6px;border-bottom:1px solid #f4f4f5;text-align:right;">${r.price>0?'฿'+Math.round(r.price).toLocaleString():'—'}</td>
-          <td style="padding:6px;border-bottom:1px solid #f4f4f5;text-align:right;">${r.distance>0?Math.round(r.distance).toLocaleString():'—'}</td>
-          <td style="padding:6px;border-bottom:1px solid #f4f4f5;text-align:right;">${r.liters>0?fmtN(r.liters):'—'}</td>
-          <td style="padding:6px;border-bottom:1px solid #f4f4f5;text-align:right;">${r.kml>0?fmtN(r.kml):'—'}</td>
-          <td style="padding:6px;border-bottom:1px solid #f4f4f5;text-align:right;">${thbKm>0?'฿'+fmtN(thbKm):'—'}</td>
-        </tr>`;
-      });
-      tbl+='</tbody></table>';
-      page.innerHTML=tbl;
-      stage.appendChild(page);
-
-      pdf.addPage();
-      canvas=await html2canvas(page,{scale:1.5,backgroundColor:'#fff',logging:false});
-      imgData=canvas.toDataURL('image/jpeg',0.80);
-      imgW=usableW;imgH=canvas.height*imgW/canvas.width;
-      pdf.addImage(imgData,'JPEG',margin,margin,imgW,Math.min(imgH,usableH));
-      stage.removeChild(page);
+        chunk.forEach((r,i)=>{
+          const dp=(r.date||'').split('-');
+          const dateText=dp.length===3?`${dp[2]}/${dp[1]}/${dp[0]}`:'—';
+          const bg=i%2?'#fafafa':'#fff';
+          const thbKm=(r.distance>0&&r.price>0)?(r.price/r.distance):0;
+          const startT=(r.start||'').substring(0,5);const endT=(r.end||'').substring(0,5);
+          const timeT=(startT&&endT)?startT+'-'+endT:'—';
+          html+=`<tr style="background:${bg};">
+            <td style="padding:5px 6px;border-bottom:1px solid #f4f4f5;">${dateText}</td>
+            <td style="padding:5px 6px;border-bottom:1px solid #f4f4f5;">${r.plate||'—'}</td>
+            <td style="padding:5px 6px;border-bottom:1px solid #f4f4f5;font-size:10px;color:#71717a;">${timeT}</td>
+            <td style="padding:5px 6px;border-bottom:1px solid #f4f4f5;text-align:right;font-weight:600;">${r.price>0?'฿'+Math.round(r.price).toLocaleString():'—'}</td>
+            <td style="padding:5px 6px;border-bottom:1px solid #f4f4f5;text-align:right;">${r.distance>0?Math.round(r.distance).toLocaleString():'—'}</td>
+            <td style="padding:5px 6px;border-bottom:1px solid #f4f4f5;text-align:right;">${r.liters>0?fmtN(r.liters):'—'}</td>
+            <td style="padding:5px 6px;border-bottom:1px solid #f4f4f5;text-align:right;color:${r.kml>=13?'#059669':(r.kml>0&&r.kml<9?'#ef4444':'#18181b')};font-weight:${r.kml>0?'600':'400'}">${r.kml>0?fmtN(r.kml):'—'}</td>
+            <td style="padding:5px 6px;border-bottom:1px solid #f4f4f5;text-align:right;">${thbKm>0?'฿'+fmtN(thbKm):'—'}</td>
+          </tr>`;
+        });
+        html+='</tbody></table>';
+        page.innerHTML=html;
+        await renderPage(page,false);
+      }
     }
 
     document.body.removeChild(stage);
