@@ -539,21 +539,32 @@ body{font-family:var(--font-thai);background:var(--bg);color:var(--text);min-hei
       <span class="filter-group-label">คนขับ</span>
       <select class="pill-select" id="driverPicker" onchange="submitFilter()">
         <option value="all" {{ $filterDriver==='all'?'selected':'' }}>คนขับทั้งหมด</option>
-        @php
-          $normDrv = function($s){
-            $s = preg_replace('/[\x{200B}-\x{200D}\x{FEFF}\x{0E4C}]/u', '', (string)$s);
-            return mb_strtolower(trim(preg_replace('/\s+/', ' ', $s)));
-          };
-          if($view === 'day'){
-            $drvSource = collect($logs)->pluck('driver_name')->map(fn($n)=>trim((string)$n))->filter()->unique()->values()->all();
-            $useWhitelist = false;
-          } else {
-            $drvSource = $drivers;
-            $useWhitelist = true;
-          }
-          $allowedNorm = array_map($normDrv, $allowedDrivers);
-          $seenDrv = [];
-        @endphp
+          @php
+            $normDrv = function($s){
+              $s = preg_replace('/[\x{200B}-\x{200D}\x{FEFF}\x{0E4C}]/u', '', (string)$s);
+              return mb_strtolower(trim(preg_replace('/\s+/', ' ', $s)));
+            };
+            // หาชื่อคนขับที่มีค่าน้ำมัน หรือ ระยะทาง อย่างน้อยหนึ่งแถว
+            $drvHasData = [];
+            foreach($logs as $r){
+              $nm = trim((string)($r['driver_name'] ?? ''));
+              if($nm === '') continue;
+              $price = (float)($r['total_price'] ?? 0);
+              $dist  = (float)($r['total_distance'] ?? 0);
+              if($price > 0 || $dist > 0) $drvHasData[$normDrv($nm)] = true;
+            }
+            if($view === 'day'){
+              $drvSource = collect($logs)->pluck('driver_name')->map(fn($n)=>trim((string)$n))
+                ->filter(fn($n)=> $n !== '' && isset($drvHasData[$normDrv($n)]))
+                ->unique()->values()->all();
+              $useWhitelist = false;
+            } else {
+              $drvSource = collect($drivers)->filter(fn($n)=> isset($drvHasData[$normDrv($n)]))->values()->all();
+              $useWhitelist = true;
+            }
+            $allowedNorm = array_map($normDrv, $allowedDrivers);
+            $seenDrv = [];
+          @endphp
         @foreach($drvSource as $d)
           @php $nd = $normDrv($d); @endphp
           @if(!in_array($nd, $seenDrv, true) && (!$useWhitelist || in_array($nd, $allowedNorm, true)))
