@@ -2246,7 +2246,11 @@ async function exportPDF(fromDate,toDate,reportTitle){
     });
     // เรียงคนขับตาม whitelist order แล้วตาม price
     const orderIdx=name=>{const i=ALLOWED_DRIVERS.map(_normalizeDriver).indexOf(_normalizeDriver(name));return i<0?999:i;};
-    const driverNames=Object.keys(byDriver).filter(n=>byDriver[n].price>0||byDriver[n].dist>0).sort((a,b)=>{const oa=orderIdx(a),ob=orderIdx(b);if(oa!==ob)return oa-ob;return byDriver[b].price-byDriver[a].price;});
+    const driverNames=Object.keys(byDriver).filter(n=>byDriver[n].price>0||byDriver[n].dist>0).sort((a,b)=>{
+    const thbKmA=byDriver[a].dist>0?byDriver[a].price/byDriver[a].dist:0;
+    const thbKmB=byDriver[b].dist>0?byDriver[b].price/byDriver[b].dist:0;
+    return thbKmB-thbKmA;
+  });
     // เรียงแต่ละคนตามวันที่
     driverNames.forEach(n=>{byDriver[n].rows.sort((a,b)=>(a.date||'').localeCompare(b.date||''));});
 
