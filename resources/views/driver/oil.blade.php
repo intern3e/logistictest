@@ -2517,7 +2517,20 @@ p1.innerHTML=h1;
             <td style="padding:5px 6px;border-bottom:1px solid #f4f4f5;text-align:right;">${thbKm>0?'฿'+fmtN(thbKm):'—'}</td>
           </tr>`;
         });
-        html+='</tbody></table>';
+      html+='</tbody>';
+        // ── แถวสรุปท้ายตาราง (เฉพาะ chunk สุดท้าย) ──
+        if(ci===chunks.length-1){
+          const drvThbKm=drvDist>0?drvPrice/drvDist:0;
+          html+=`<tfoot><tr style="background:#f0f7ff;border-top:3px solid #3b82f6;">
+            <td colspan="3" style="padding:10px 10px;font-weight:700;font-size:14px;color:#1e40af;">รวม ${drvName}</td>
+            <td style="padding:10px 10px;text-align:right;font-weight:700;font-size:14px;color:#18181b;">฿${Math.round(drvPrice).toLocaleString()}</td>
+            <td style="padding:10px 10px;text-align:right;font-weight:700;font-size:14px;color:#18181b;">${Math.round(drvDist).toLocaleString()} km</td>
+            <td style="padding:10px 10px;text-align:right;font-weight:700;font-size:14px;color:#18181b;">${fmtN(drvLiters)} L</td>
+            <td style="padding:10px 10px;text-align:right;font-weight:700;font-size:14px;color:${drvKml>=13?'#059669':(drvKml>0&&drvKml<9?'#ef4444':'#18181b')}">${drvKml>0?fmtN(drvKml)+' km/L':'—'}</td>
+            <td style="padding:10px 10px;text-align:right;font-weight:700;font-size:14px;color:#1e40af;">${drvThbKm>0?'฿'+fmtN(drvThbKm)+'/km':'—'}</td>
+          </tr></tfoot>`;
+        }
+        html+='</table>';
         page.innerHTML=html;
         await renderPage(page,false);
       }
