@@ -557,21 +557,18 @@ body{font-family:var(--font-thai);background:var(--bg);color:var(--text);min-hei
               $drvSource = collect($logs)->pluck('driver_name')->map(fn($n)=>trim((string)$n))
                 ->filter(fn($n)=> $n !== '' && isset($drvHasData[$normDrv($n)]))
                 ->unique()->values()->all();
-              $useWhitelist = false;
             } else {
               $drvSource = collect($drivers)->filter(fn($n)=> isset($drvHasData[$normDrv($n)]))->values()->all();
-              $useWhitelist = true;
             }
-            $allowedNorm = array_map($normDrv, $allowedDrivers);
             $seenDrv = [];
           @endphp
-        @foreach($drvSource as $d)
-          @php $nd = $normDrv($d); @endphp
-          @if(!in_array($nd, $seenDrv, true) && (!$useWhitelist || in_array($nd, $allowedNorm, true)))
-            @php $seenDrv[] = $nd; @endphp
-            <option value="{{ trim($d) }}" {{ trim($filterDriver)===trim($d)?'selected':'' }}>{{ trim($d) }}</option>
-          @endif
-        @endforeach
+          @foreach($drvSource as $d)
+            @php $nd = $normDrv($d); @endphp
+            @if(!in_array($nd, $seenDrv, true))
+              @php $seenDrv[] = $nd; @endphp
+              <option value="{{ trim($d) }}" {{ trim($filterDriver)===trim($d)?'selected':'' }}>{{ trim($d) }}</option>
+            @endif
+          @endforeach
       </select>
     </div>
 
