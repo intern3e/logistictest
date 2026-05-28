@@ -544,9 +544,8 @@ body{font-family:var(--font-thai);background:var(--bg);color:var(--text);min-hei
               $s = preg_replace('/[\x{200B}-\x{200D}\x{FEFF}\x{0E4C}]/u', '', (string)$s);
               return mb_strtolower(trim(preg_replace('/\s+/', ' ', $s)));
             };
-            // หาชื่อคนขับที่มีค่าน้ำมัน หรือ ระยะทาง อย่างน้อยหนึ่งแถว
             $drvHasData = [];
-            foreach($logs as $r){
+            foreach($allLogs as $r){
               $nm = trim((string)($r['driver_name'] ?? ''));
               if($nm === '') continue;
               $price = (float)($r['total_price'] ?? 0);
@@ -554,12 +553,14 @@ body{font-family:var(--font-thai);background:var(--bg);color:var(--text);min-hei
               if($price > 0 || $dist > 0) $drvHasData[$normDrv($nm)] = true;
             }
             if($view === 'day'){
-              $drvSource = collect($logs)->pluck('driver_name')->map(fn($n)=>trim((string)$n))
-                ->filter(fn($n)=> $n !== '' && isset($drvHasData[$normDrv($n)]))
-                ->unique()->values()->all();
-            } else {
-              $drvSource = collect($drivers)->filter(fn($n)=> isset($drvHasData[$normDrv($n)]))->values()->all();
-            }
+                $drvSource = collect($allLogs)->pluck('driver_name')->map(fn($n)=>trim((string)$n))
+                  ->filter(fn($n)=> $n !== '' && isset($drvHasData[$normDrv($n)]))
+                  ->unique()->values()->all();
+              } else {
+                $drvSource = collect($allLogs)->pluck('driver_name')->map(fn($n)=>trim((string)$n))
+                  ->filter(fn($n)=> $n !== '' && isset($drvHasData[$normDrv($n)]))
+                  ->unique()->values()->all();
+              }
             $seenDrv = [];
           @endphp
           @foreach($drvSource as $d)
