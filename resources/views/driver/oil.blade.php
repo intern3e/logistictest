@@ -2395,7 +2395,7 @@ p1.innerHTML=h1;
     }
 
     // ── กราฟ 1: ต้นทุนต่อกิโล (฿/km) ── ยิ่งน้อยยิ่งดี
-    const costData=driverNames.map(n=>({name:n,cost:byDriver[n].dist>0?byDriver[n].price/byDriver[n].dist:0})).filter(d=>d.cost>0).sort((a,b)=>a.cost-b.cost);
+    const costData=driverNames.map(n=>({name:n,cost:(byDriver[n].price>0&&byDriver[n].dist>0)?byDriver[n].price/byDriver[n].dist:0})).filter(d=>d.cost>0).sort((a,b)=>a.cost-b.cost);
     if(costData.length>0){
       const costAvg=costData.reduce((s,d)=>s+d.cost,0)/costData.length;
       await renderBigBarChart(
@@ -2407,7 +2407,7 @@ p1.innerHTML=h1;
     }
 
     // ── กราฟ 2: น้ำมันต่อกิโล (km/L) ── ยิ่งมากยิ่งดี
-    const kmlData=driverNames.map(n=>({name:n,kml:byDriver[n].liters>0?byDriver[n].dist/byDriver[n].liters:0})).filter(d=>d.kml>0).sort((a,b)=>b.kml-a.kml);
+    const kmlData=driverNames.map(n=>({name:n,kml:(byDriver[n].price>0&&byDriver[n].liters>0)?byDriver[n].dist/byDriver[n].liters:0})).filter(d=>d.kml>0).sort((a,b)=>b.kml-a.kml);
     if(kmlData.length>0){
       const kmlAvg=kmlData.reduce((s,d)=>s+d.kml,0)/kmlData.length;
       await renderBigBarChart(
