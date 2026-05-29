@@ -18,7 +18,7 @@ use Illuminate\Support\Facades\DB;
 class PoDocumentController extends Controller
 {
     private $specialCustomers = ['CUS-26039'];
-    private $tcusPerBillPage = 6;
+    private $tcusPerBillPage = 5;
     private $depositPdfPath = null; 
     private function isSpecialCustomer($customer_id): bool
     {
