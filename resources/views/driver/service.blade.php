@@ -289,7 +289,7 @@ textarea.form-control{resize:vertical;min-height:64px}
       <span>จัดการเซอร์วิส</span>
       <span class="badge-dot"></span>
     </a>
-    <a class="nav-item" href="{{ url('http://server-3e/3e/') }}" style="display: flex; align-items: center; padding: 10px 15px; text-decoration: none; color: inherit;">
+    <a class="nav-item" href="{{ url('/SOlist') }}" style="display: flex; align-items: center; padding: 10px 15px; text-decoration: none; color: inherit;">
       <span class="ic" style="margin-right: 12px; display: flex; align-items: center;">
         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
           <path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"></path>
@@ -297,7 +297,7 @@ textarea.form-control{resize:vertical;min-height:64px}
           <line x1="15" y1="12" x2="3" y2="12"></line>
         </svg>
       </span>
-      <span style="font-weight: 500;">หน้าหลัก</span>
+      <span style="font-weight: 500;">(SO List)</span>
     </a>
   </div>
 
