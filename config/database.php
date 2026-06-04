@@ -69,7 +69,7 @@ return [
                 'port' => env('DB_PG_PORT', '5432'),
                 'database' => env('DB_PG_DATABASE', 'so_detail'),
                 'username' => env('DB_PG_USERNAME', 'postgres'),
-                'password' => env('DB_PG_PASSWORD', ''),
+                'password' => env('DB_PG_PASSWORD', '123456'),
                 'charset' => 'utf8',
                 'prefix' => '',
                 'prefix_indexes' => true,
