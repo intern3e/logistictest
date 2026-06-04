@@ -249,5 +249,8 @@ Route::get('/deliverytrack', [DeliverytrackController::class, 'index'])->name('d
 Route::post('/return/{id}/new-bill', [DeliverytrackController::class, 'saveNewBill'])->name('deliverytrack.newbill');
 
 use App\Http\Controllers\SoItemController;
+ 
 Route::get('/SoItem', [SoItemController::class, 'index']);
 Route::post('/SoItem', [SoItemController::class, 'store']);
+Route::get('/SoItem/fuzzy-search', [SoItemController::class, 'fuzzySearch']);
+Route::get('/SoItem/sales-history/{groupId}', [SoItemController::class, 'salesHistory']);

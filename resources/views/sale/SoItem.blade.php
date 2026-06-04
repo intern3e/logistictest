@@ -3,6 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="csrf-token" content="{{ csrf_token() }}">
 <title>ระบบสร้างใบเสนอราคา (Quotation Generator)</title>
 <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
@@ -15,7 +16,15 @@
   body{margin:0;font-family:'Sarabun',sans-serif;background:var(--bg);color:#1f2937;}
   .topbar{background:linear-gradient(90deg,var(--navy2),var(--blue));color:#fff;padding:14px 22px;font-weight:600;font-size:18px;display:flex;align-items:center;gap:10px;}
   .topbar .dot{width:26px;height:26px;border-radius:6px;background:#fff3;display:flex;align-items:center;justify-content:center;}
-  .wrap{display:grid;grid-template-columns:1fr;gap:18px;padding:18px;max-width:900px;margin:0 auto;}
+  .wrap{display:grid;grid-template-columns:1fr;gap:18px;padding:18px;max-width:1400px;margin:0 auto;}
+
+  /* Tablet+ : ฟอร์มซ้าย + ตัวอย่างขวา */
+  @media(min-width:768px){
+    .wrap{grid-template-columns:minmax(380px,480px) 1fr;padding:22px;}
+  }
+  @media(min-width:1200px){
+    .wrap{grid-template-columns:480px 1fr;padding:28px 32px;}
+  }
   .card{background:#fff;border:1px solid var(--line);border-radius:12px;overflow:hidden;box-shadow:0 1px 3px #0000000a;}
   .tabs{display:flex;border-bottom:1px solid var(--line);}
   .tab{flex:1;padding:14px;text-align:center;cursor:pointer;font-weight:600;color:var(--muted);border-bottom:3px solid transparent;}
@@ -61,11 +70,47 @@
   .ocr-stats .os-num{flex:0 0 36px;text-align:right;font-weight:600;}
   .ocr-stats .os-txt{flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:#555;}
 
-  .item{border:1px solid var(--line);border-radius:10px;padding:8px;margin-bottom:8px;background:var(--soft);}
+  /* === item row === */
+  .item{border:1px solid var(--line);border-radius:10px;padding:8px;margin-bottom:8px;background:var(--soft);position:relative;}
   .ig{display:flex;gap:6px;margin-bottom:6px;}
   .ig:last-child{margin-bottom:0;}
   .ig input{padding:6px 7px;font-size:13px;}
   .ig .del{flex:none;width:34px;background:#fff;border:1px solid var(--line);border-radius:8px;cursor:pointer;color:#b91c1c;}
+  .ig .btn-history{flex:none;width:34px;background:#eef2ff;border:1px solid #c7d2fe;border-radius:8px;cursor:pointer;color:var(--blue);font-size:15px;display:flex;align-items:center;justify-content:center;transition:.15s;}
+  .ig .btn-history:hover{background:#dbeafe;border-color:var(--blue);}
+
+  /* === fuzzy dropdown per item === */
+  .fuzzy-wrap{position:relative;}
+  .fuzzy-list{position:absolute;top:100%;left:0;right:0;z-index:60;background:#fff;border:1px solid var(--line);border-radius:8px;box-shadow:0 6px 20px #0002;max-height:200px;overflow:auto;margin-top:2px;display:none;}
+  .fuzzy-list .fz-item{padding:8px 10px;cursor:pointer;border-bottom:1px solid #f0f0f0;font-size:12px;line-height:1.35;}
+  .fuzzy-list .fz-item:last-child{border-bottom:none;}
+  .fuzzy-list .fz-item:hover{background:#f0f5ff;}
+  .fuzzy-list .fz-item .fz-name{font-weight:700;color:#111;}
+  .fuzzy-list .fz-item .fz-sub{color:var(--muted);font-size:11px;}
+  .fuzzy-list .fz-empty{padding:10px;text-align:center;color:var(--muted);font-size:12px;}
+  .fuzzy-list .fz-loading{padding:10px;text-align:center;color:var(--blue);font-size:12px;}
+
+  /* === sales history modal === */
+  .modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:1000;display:none;align-items:center;justify-content:center;padding:20px;}
+  .modal-overlay.show{display:flex;}
+  .modal{background:#fff;border-radius:14px;box-shadow:0 20px 60px #0004;width:100%;max-width:900px;max-height:85vh;display:flex;flex-direction:column;overflow:hidden;animation:modalIn .2s ease-out;}
+  @keyframes modalIn{from{opacity:0;transform:translateY(16px) scale(.97)} to{opacity:1;transform:none}}
+  .modal-head{display:flex;justify-content:space-between;align-items:center;padding:16px 20px;border-bottom:1px solid var(--line);background:linear-gradient(135deg,#eef2ff,#f8faff);}
+  .modal-head h3{margin:0;font-size:16px;color:var(--navy);}
+  .modal-close{width:34px;height:34px;border:none;background:#f3f4f6;border-radius:8px;font-size:18px;cursor:pointer;color:#6b7280;display:flex;align-items:center;justify-content:center;}
+  .modal-close:hover{background:#e5e7eb;color:#111;}
+  .modal-body{overflow:auto;padding:0;flex:1;-webkit-overflow-scrolling:touch;}
+  .modal-table-wrap{overflow-x:auto;min-width:0;}
+  .modal-body table{width:100%;border-collapse:collapse;font-size:13px;min-width:700px;}
+  .modal-body thead{position:sticky;top:0;background:#f8fafc;z-index:2;}
+  .modal-body th{padding:10px 10px;font-weight:700;color:#374151;border-bottom:2px solid var(--line);text-align:left;white-space:nowrap;}
+  .modal-body td{padding:9px 10px;border-bottom:1px solid #f0f2f5;color:#1f2937;}
+  .modal-body tr:hover td{background:#f8faff;}
+  .modal-body .empty-msg{padding:40px;text-align:center;color:var(--muted);font-size:14px;}
+  .modal-meta{padding:12px 20px;border-bottom:1px solid var(--line);background:#fafbfc;display:flex;gap:10px;flex-wrap:wrap;font-size:13px;}
+  .modal-meta .mm-tag{background:#eef2ff;color:var(--navy);padding:4px 10px;border-radius:6px;font-weight:600;font-size:12px;}
+  .modal-body td.date-col{white-space:nowrap;font-variant-numeric:tabular-nums;}
+  .modal-body td.num-col{text-align:right;font-variant-numeric:tabular-nums;}
 
   .doc-tools{display:flex;justify-content:space-between;align-items:center;padding:12px 18px;border-bottom:1px solid var(--line);}
   .doc-scroll{padding:18px;background:#f1f4f9;overflow:auto;}
@@ -113,7 +158,7 @@
 
   @media print{
     @page{size:A4;margin:10mm;}
-    .topbar,.doc-tools{display:none!important;}
+    .topbar,.doc-tools,.modal-overlay{display:none!important;}
     .wrap{display:block!important;padding:0;margin:0;max-width:none;gap:0;}
     .wrap>.card:first-child{display:none!important;}
     .card{border:none!important;box-shadow:none!important;border-radius:0;}
@@ -122,12 +167,39 @@
     .doc.page:last-child{page-break-after:auto;}
     .flexspace{display:none;}
   }
-  @media(max-width:600px){
+
+  /* Tablet : ≥768 */
+  @media(min-width:768px){
+    .doc-scroll{max-height:calc(100vh - 80px);overflow:auto;position:sticky;top:18px;}
+    .modal{max-width:900px;}
+  }
+
+  /* Large desktop : ≥1200 */
+  @media(min-width:1200px){
+    .modal{max-width:1000px;max-height:80vh;}
+  }
+
+  /* Phone : <768 */
+  @media(max-width:767px){
     .wrap{padding:10px;gap:12px;}
     .pane{padding:14px;}
     .doc-scroll{padding:10px;max-height:none;}
     .doc{padding:16px 14px;}
     .row{grid-template-columns:1fr;}
+    .cinfo{flex-direction:column;gap:12px;}
+    .ssign{flex-direction:column;gap:30px;}
+
+    /* modal bottom-sheet style */
+    .modal-overlay{align-items:flex-end;padding:0;}
+    .modal{max-width:100%;max-height:92vh;border-radius:14px 14px 0 0;animation:modalSlideUp .25s ease-out;}
+    @keyframes modalSlideUp{from{transform:translateY(100%)} to{transform:none}}
+    .modal-head{padding:12px 16px;}
+    .modal-head h3{font-size:14px;}
+    .modal-meta{gap:6px;padding:10px 14px;}
+    .modal-meta .mm-tag{font-size:10px;padding:3px 7px;}
+    .modal-body table{font-size:11.5px;min-width:580px;}
+    .modal-body th{padding:8px 6px;font-size:11px;}
+    .modal-body td{padding:7px 6px;font-size:11px;}
   }
 </style>
 </head>
@@ -226,6 +298,20 @@
   </div>
 </div>
 
+{{-- ====== Sales History Modal ====== --}}
+<div class="modal-overlay" id="historyModal">
+  <div class="modal">
+    <div class="modal-head">
+      <h3 id="modalTitle">📊 ประวัติการขาย</h3>
+      <button class="modal-close" id="modalClose">✕</button>
+    </div>
+    <div class="modal-meta" id="modalMeta"></div>
+    <div class="modal-body" id="modalBody">
+      <div class="empty-msg">กำลังโหลด...</div>
+    </div>
+  </div>
+</div>
+
 <script>
 const $ = s => document.querySelector(s);
 const $$ = s => document.querySelectorAll(s);
@@ -237,16 +323,6 @@ const SELLER={
   tax:'0105547065721'
 };
 
-/* ========== PAGINATION ==========
-   หน้าแรก/กลาง : เติมเต็ม 14 รายการก่อน
-   หน้าสุดท้าย  : แสดงตาราง 12 แถวเสมอ (เติมแถวว่างถ้าไม่ครบ)
-   ตัวอย่าง:
-     12 ชิ้น → [12]
-     21 ชิ้น → [14, 7]  (หน้า 2 แสดง 7 รายการ + 5 แถวว่าง = 12 แถว)
-     26 ชิ้น → [14, 12]
-     30 ชิ้น → [14, 14, 2]
-     40 ชิ้น → [14, 14, 12]
-*/
 const FIRST_PAGE_MAX = 12;
 const OTHER_PAGE_MAX = 16;
 
@@ -292,7 +368,6 @@ $('#ocrBtn').onclick=async()=>{
       logger:m=>{ if(m.status==='recognizing text') prog.firstElementChild.style.width=(m.progress*100)+'%'; }
     });
     $('#ocrText').value=data.text.trim();
-
     const lines=(data.lines||[]).filter(l=>l.text.trim());
     const avgConf=lines.length ? (lines.reduce((s,l)=>s+l.confidence,0)/lines.length) : 0;
     let html=`<div class="os-head">📊 อ่านได้ ${lines.length} บรรทัด · ความมั่นใจเฉลี่ย ${avgConf.toFixed(1)}%</div>`;
@@ -309,7 +384,6 @@ $('#ocrBtn').onclick=async()=>{
     });
     $('#ocrStats').innerHTML=`<div class="ocr-stats">${html}</div>`;
     $('#ocrStats').style.display='block';
-
   }catch(err){ alert('OCR ผิดพลาด: '+err.message); }
   prog.style.display='none'; prog.firstElementChild.style.width='0';
   $('#ocrBtn').disabled=false; $('#ocrBtn').textContent='🔍 อ่านข้อความจากรูป (OCR)';
@@ -320,13 +394,187 @@ function esc(s){return (s+'').replace(/"/g,'&quot;');}
 function esc2(s){return (s+'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
 function fmt(n){return (Math.round(n*100)/100).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});}
 
-/* ---------- item entry ---------- */
+/* ================================================================
+   FUZZY SEARCH สินค้า
+   ================================================================ */
+const FUZZY_URL = '/SoItem/fuzzy-search';
+const HISTORY_URL = '/SoItem/sales-history';
+
+let fuzzyTimers = new WeakMap();
+
+function attachFuzzy(descInput, itemDiv) {
+  // สร้าง fuzzy dropdown
+  const wrap = document.createElement('div');
+  wrap.className = 'fuzzy-wrap';
+  descInput.parentNode.insertBefore(wrap, descInput);
+  wrap.appendChild(descInput);
+
+  const list = document.createElement('div');
+  list.className = 'fuzzy-list';
+  wrap.appendChild(list);
+
+  descInput.addEventListener('input', function(){
+    const v = this.value.trim();
+    clearTimeout(fuzzyTimers.get(descInput));
+    if(v.length < 2){ list.style.display='none'; return; }
+    fuzzyTimers.set(descInput, setTimeout(()=> doFuzzy(v, list, descInput, itemDiv), 350));
+  });
+
+  descInput.addEventListener('keydown', function(e){
+    if(e.key === 'Escape') list.style.display='none';
+  });
+
+  // ปิดเมื่อคลิกนอก
+  document.addEventListener('click', function(e){
+    if(!wrap.contains(e.target)) list.style.display='none';
+  });
+}
+
+async function doFuzzy(keyword, listEl, descInput, itemDiv){
+  listEl.innerHTML = '<div class="fz-loading">🔍 กำลังค้นหา...</div>';
+  listEl.style.display = 'block';
+  try {
+    const res = await fetch(`${FUZZY_URL}?q=${encodeURIComponent(keyword)}`);
+    if(!res.ok){
+      let errMsg = `HTTP ${res.status}`;
+      try { const j = await res.json(); errMsg = j.message || j.error || errMsg; } catch(_){}
+      console.error('fuzzy-search error:', errMsg);
+      listEl.innerHTML = `<div class="fz-empty">❌ ${esc2(errMsg)}</div>`;
+      return;
+    }
+    const data = await res.json();
+    // กรณี server ส่ง error object แทน array
+    if(data.error){
+      listEl.innerHTML = `<div class="fz-empty">❌ ${esc2(data.message||data.error)}</div>`;
+      return;
+    }
+    if(!Array.isArray(data) || !data.length){
+      listEl.innerHTML = '<div class="fz-empty">ไม่พบสินค้าที่ตรงกัน</div>';
+      return;
+    }
+    listEl.innerHTML = '';
+    data.forEach(item => {
+      const div = document.createElement('div');
+      div.className = 'fz-item';
+      div.innerHTML = `
+        <div class="fz-name">${esc2(item.product_name||item.item_name||'')}</div>
+        <div class="fz-sub">SKU: SKU-${item.group_id} · keyword: ${esc2(item.keyword||'-')}</div>
+      `;
+      div.onclick = () => {
+        descInput.value = item.product_name || item.item_name || '';
+        itemDiv.dataset.groupId = item.group_id;
+        itemDiv.dataset.sku = 'SKU-' + item.group_id;
+        itemDiv.dataset.productName = item.product_name || item.item_name || '';
+        listEl.style.display = 'none';
+        render();
+      };
+      listEl.appendChild(div);
+    });
+  } catch(err) {
+    console.error('doFuzzy catch:', err);
+    listEl.innerHTML = '<div class="fz-empty">❌ เชื่อมต่อ server ไม่ได้</div>';
+  }
+}
+
+/* ================================================================
+   SALES HISTORY POPUP
+   ================================================================ */
+async function openSalesHistory(groupId, productName) {
+  const modal = $('#historyModal');
+  const body  = $('#modalBody');
+  const meta  = $('#modalMeta');
+  modal.classList.add('show');
+  $('#modalTitle').innerHTML = `📊 ประวัติการขาย — ${esc2(productName)}`;
+  meta.innerHTML = `<span class="mm-tag">SKU-${groupId}</span><span class="mm-tag">${esc2(productName)}</span>`;
+  body.innerHTML = '<div class="empty-msg">⏳ กำลังโหลดข้อมูล...</div>';
+
+  try {
+    const res = await fetch(`${HISTORY_URL}/${encodeURIComponent(groupId)}`);
+    if(!res.ok) throw new Error('API error');
+    const records = await res.json();
+
+    if(!records.length){
+      body.innerHTML = '<div class="empty-msg">ไม่พบประวัติการขายสำหรับสินค้านี้</div>';
+      return;
+    }
+
+    // เรียงวันที่ล่าสุด → นานสุด (รองรับหลายฟอร์แมต)
+    function parseDate(s){
+      if(!s) return 0;
+      s = s.trim();
+      // ISO: 2024-01-15 or 2024/01/15
+      if(/^\d{4}[-\/]\d{2}[-\/]\d{2}/.test(s)) return new Date(s.replace(/\//g,'-')).getTime()||0;
+      // DD/MM/YYYY or DD-MM-YYYY
+      const m1 = s.match(/^(\d{1,2})[-\/](\d{1,2})[-\/](\d{4})$/);
+      if(m1) return new Date(`${m1[3]}-${m1[2].padStart(2,'0')}-${m1[1].padStart(2,'0')}`).getTime()||0;
+      // พ.ศ. → ค.ศ.
+      const m2 = s.match(/(\d{1,2})[-\/](\d{1,2})[-\/](\d{4})/);
+      if(m2){ let y=+m2[3]; if(y>2400)y-=543; return new Date(`${y}-${m2[2].padStart(2,'0')}-${m2[1].padStart(2,'0')}`).getTime()||0; }
+      return new Date(s).getTime()||0;
+    }
+    records.sort((a,b) => parseDate(b.doc_date_raw) - parseDate(a.doc_date_raw));
+
+    // Summary
+    const customers = [...new Set(records.map(r=>r.customer_name).filter(Boolean))];
+    meta.innerHTML = `
+      <span class="mm-tag">SKU-${groupId}</span>
+      <span class="mm-tag">${esc2(productName)}</span>
+      <span class="mm-tag">ขายทั้งหมด ${records.length} รายการ</span>
+      <span class="mm-tag">ลูกค้า ${customers.length} ราย</span>
+    `;
+
+    let html = `<div class="modal-table-wrap"><table>
+      <thead><tr>
+        <th>#</th>
+        <th>วันที่</th>
+        <th>ลูกค้า</th>
+        <th>พนักงานขาย</th>
+        <th>สินค้า</th>
+        <th style="text-align:right">จำนวน</th>
+        <th style="text-align:right">ราคา/หน่วย</th>
+        <th style="text-align:right">ยอดรวม</th>
+      </tr></thead><tbody>`;
+
+    records.forEach((r, i) => {
+      html += `<tr>
+        <td>${i+1}</td>
+        <td class="date-col">${esc2(r.doc_date_raw||'-')}</td>
+        <td>${esc2(r.customer_name||r.customer_code||'-')}</td>
+        <td>${esc2(r.salesperson||'-')}</td>
+        <td>${esc2(r.product_name||r.item_new_name||'-')}</td>
+        <td class="num-col">${fmt(r.qty||0)} ${esc2(r.unit||'')}</td>
+        <td class="num-col">${fmt(r.unit_price||0)}</td>
+        <td class="num-col" style="font-weight:600">${fmt(r.line_amount||0)}</td>
+      </tr>`;
+    });
+
+    html += '</tbody></table></div>';
+    body.innerHTML = html;
+
+  } catch(err) {
+    console.error(err);
+    body.innerHTML = '<div class="empty-msg">❌ เกิดข้อผิดพลาดในการโหลดข้อมูล</div>';
+  }
+}
+
+$('#modalClose').onclick = () => $('#historyModal').classList.remove('show');
+$('#historyModal').onclick = (e) => { if(e.target === e.currentTarget) e.currentTarget.classList.remove('show'); };
+document.addEventListener('keydown', e => { if(e.key==='Escape') $('#historyModal').classList.remove('show'); });
+
+/* ================================================================
+   ITEM ROW (พร้อม fuzzy + history button)
+   ================================================================ */
 function itemRow(d={}){
   const div=document.createElement('div');
   div.className='item';
+  if(d.groupId) div.dataset.groupId = d.groupId;
+  if(d.sku) div.dataset.sku = d.sku;
+  if(d.productName) div.dataset.productName = d.productName;
+
   div.innerHTML=`
     <div class="ig">
-      <input class="desc" placeholder="รายการ" style="flex:2.4" value="${esc(d.desc||'')}">
+      <input class="desc" placeholder="พิมพ์ชื่อสินค้า → ค้นหาอัตโนมัติ" style="flex:2.4" value="${esc(d.desc||'')}">
+      <button class="btn-history" title="ดูประวัติการขาย">📊</button>
       <button class="del" title="ลบ">✕</button>
     </div>
     <div class="ig">
@@ -334,8 +582,25 @@ function itemRow(d={}){
       <input class="unit" placeholder="หน่วย" value="${esc(d.unit||'')}">
       <input class="price" type="number" placeholder="ราคา/หน่วย" value="${d.price??0}">
     </div>`;
+
   div.querySelector('.del').onclick=()=>{div.remove();render();};
   div.querySelectorAll('input').forEach(i=>i.oninput=render);
+
+  // Attach fuzzy search to desc input
+  const descInput = div.querySelector('.desc');
+  setTimeout(()=> attachFuzzy(descInput, div), 0);
+
+  // History button
+  div.querySelector('.btn-history').onclick = () => {
+    const gid = div.dataset.groupId;
+    const pname = div.dataset.productName || descInput.value || '-';
+    if(!gid){
+      alert('กรุณาเลือกสินค้าจากรายการค้นหาก่อน เพื่อดูประวัติการขาย');
+      return;
+    }
+    openSalesHistory(gid, pname);
+  };
+
   return div;
 }
 $('#addItem').onclick=()=>{$('#itemRows').appendChild(itemRow());render();};
@@ -500,7 +765,6 @@ function render(){
       </tr>`;
     });
 
-    // เติมแถวว่าง: หน้าแรก→12 แถว, หน้าอื่น→16 แถว
     const padTarget = (pg === 0) ? FIRST_PAGE_MAX : OTHER_PAGE_MAX;
     if(isLast && count < padTarget){
       const pad = padTarget - count;
@@ -541,7 +805,6 @@ const API_URL = 'http://server_update:8000/api/getCustAndVendor';
 let allCompanies = [];
 let searchTimer = null;
 
-// พิมพ์ครบ 3 ตัว → ค้นหาอัตโนมัติ (debounce 400ms)
 $('#custCompany').addEventListener('input', function(){
   const v = this.value.trim();
   clearTimeout(searchTimer);
@@ -552,12 +815,10 @@ $('#custCompany').addEventListener('input', function(){
   }
 });
 
-// กด Enter → ค้นหาทันที
 $('#custCompany').addEventListener('keydown', function(e){
   if(e.key==='Enter'){ e.preventDefault(); searchCompany(this.value.trim()); }
 });
 
-// กดปุ่มค้นหา
 $('#searchCust').onclick = () => searchCompany($('#custCompany').value.trim());
 
 async function searchCompany(keyword){
@@ -615,7 +876,6 @@ function showAcResults(companies){
   });
 }
 
-// คลิกนอก dropdown → ปิด
 document.addEventListener('click', function(e){
   const wrap=$('.search-wrap');
   if(wrap && !wrap.contains(e.target)) $('#acList').style.display='none';
