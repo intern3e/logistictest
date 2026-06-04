@@ -248,3 +248,6 @@ use App\Http\Controllers\DeliverytrackController;
 Route::get('/deliverytrack', [DeliverytrackController::class, 'index'])->name('deliverytrack');
 Route::post('/return/{id}/new-bill', [DeliverytrackController::class, 'saveNewBill'])->name('deliverytrack.newbill');
 
+use App\Http\Controllers\SoItemController;
+Route::get('/SoItem', [SoItemController::class, 'index']);
+Route::post('/SoItem', [SoItemController::class, 'store']);
