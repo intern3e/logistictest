@@ -63,20 +63,19 @@ return [
             ]) : [],
         ],
 
-        'pgsql' => [
-            'driver' => 'pgsql',
-            'url' => env('DATABASE_URL'),
-            'host' => env('DB_HOST', '127.0.0.1'),
-            'port' => env('DB_PORT', '5432'),
-            'database' => env('DB_DATABASE', 'forge'),
-            'username' => env('DB_USERNAME', 'forge'),
-            'password' => env('DB_PASSWORD', ''),
-            'charset' => 'utf8',
-            'prefix' => '',
-            'prefix_indexes' => true,
-            'search_path' => 'public',
-            'sslmode' => 'prefer',
-        ],
+            'pgsql' => [
+                'driver' => 'pgsql',
+                'host' => env('DB_PG_HOST', '192.168.1.169'),
+                'port' => env('DB_PG_PORT', '5432'),
+                'database' => env('DB_PG_DATABASE', 'so_detail'),
+                'username' => env('DB_PG_USERNAME', 'postgres'),
+                'password' => env('DB_PG_PASSWORD', ''),
+                'charset' => 'utf8',
+                'prefix' => '',
+                'prefix_indexes' => true,
+                'search_path' => 'public',
+                'sslmode' => 'prefer',
+            ],
 
         'sqlsrv' => [
             'driver' => 'sqlsrv',
