@@ -16,15 +16,7 @@
   body{margin:0;font-family:'Sarabun',sans-serif;background:var(--bg);color:#1f2937;}
   .topbar{background:linear-gradient(90deg,var(--navy2),var(--blue));color:#fff;padding:14px 22px;font-weight:600;font-size:18px;display:flex;align-items:center;gap:10px;}
   .topbar .dot{width:26px;height:26px;border-radius:6px;background:#fff3;display:flex;align-items:center;justify-content:center;}
-  .wrap{display:grid;grid-template-columns:1fr;gap:18px;padding:18px;max-width:1400px;margin:0 auto;}
-
-  /* Tablet+ : ฟอร์มซ้าย + ตัวอย่างขวา */
-  @media(min-width:768px){
-    .wrap{grid-template-columns:minmax(380px,480px) 1fr;padding:22px;}
-  }
-  @media(min-width:1200px){
-    .wrap{grid-template-columns:480px 1fr;padding:28px 32px;}
-  }
+  .wrap{display:grid;grid-template-columns:1fr;gap:18px;padding:18px;max-width:900px;margin:0 auto;}
   .card{background:#fff;border:1px solid var(--line);border-radius:12px;overflow:hidden;box-shadow:0 1px 3px #0000000a;}
   .tabs{display:flex;border-bottom:1px solid var(--line);}
   .tab{flex:1;padding:14px;text-align:center;cursor:pointer;font-weight:600;color:var(--muted);border-bottom:3px solid transparent;}
@@ -168,15 +160,9 @@
     .flexspace{display:none;}
   }
 
-  /* Tablet : ≥768 */
+  /* Tablet+ : ≥768 */
   @media(min-width:768px){
-    .doc-scroll{max-height:calc(100vh - 80px);overflow:auto;position:sticky;top:18px;}
     .modal{max-width:900px;}
-  }
-
-  /* Large desktop : ≥1200 */
-  @media(min-width:1200px){
-    .modal{max-width:1000px;max-height:80vh;}
   }
 
   /* Phone : <768 */
@@ -466,6 +452,8 @@ async function doFuzzy(keyword, listEl, descInput, itemDiv){
         itemDiv.dataset.sku = 'SKU-' + item.group_id;
         itemDiv.dataset.productName = item.product_name || item.item_name || '';
         listEl.style.display = 'none';
+        // ดึงราคาล่าสุดมาใส่อัตโนมัติ
+        fillLatestPrice(item.group_id, itemDiv);
         render();
       };
       listEl.appendChild(div);
@@ -473,6 +461,40 @@ async function doFuzzy(keyword, listEl, descInput, itemDiv){
   } catch(err) {
     console.error('doFuzzy catch:', err);
     listEl.innerHTML = '<div class="fz-empty">❌ เชื่อมต่อ server ไม่ได้</div>';
+  }
+}
+
+/* ดึงราคาต่อหน่วยจากรายการขายล่าสุด (ปีใหม่สุด) มาเติมให้อัตโนมัติ */
+async function fillLatestPrice(groupId, itemDiv){
+  try {
+    const res = await fetch(`${HISTORY_URL}/${encodeURIComponent(groupId)}`);
+    if(!res.ok) return;
+    const records = await res.json();
+    if(!records || !records.length) return;
+
+    // เรียงวันที่ล่าสุดก่อน
+    function pd(s){
+      if(!s) return 0; s=s.trim();
+      if(/^\d{4}[-\/]\d{2}[-\/]\d{2}/.test(s)) return new Date(s.replace(/\//g,'-')).getTime()||0;
+      const m=s.match(/(\d{1,2})[-\/](\d{1,2})[-\/](\d{4})/);
+      if(m){ let y=+m[3]; if(y>2400)y-=543; return new Date(`${y}-${m[2].padStart(2,'0')}-${m[1].padStart(2,'0')}`).getTime()||0; }
+      return new Date(s).getTime()||0;
+    }
+    records.sort((a,b) => pd(b.doc_date_raw) - pd(a.doc_date_raw));
+
+    const latest = records[0];
+    const priceInput = itemDiv.querySelector('.price');
+    const unitInput  = itemDiv.querySelector('.unit');
+
+    if(latest.unit_price && priceInput){
+      priceInput.value = parseFloat(latest.unit_price)||0;
+    }
+    if(latest.unit && unitInput && !unitInput.value){
+      unitInput.value = latest.unit;
+    }
+    render();
+  } catch(e){
+    console.warn('fillLatestPrice error:', e);
   }
 }
 
@@ -606,19 +628,61 @@ function itemRow(d={}){
 $('#addItem').onclick=()=>{$('#itemRows').appendChild(itemRow());render();};
 
 /* ---------- auto-parse OCR ---------- */
-$('#parseBtn').onclick=()=>{
+/* ======== Auto-match: fuzzy search → เลือกตัวที่ดีที่สุด → ดึงราคาล่าสุด ======== */
+async function autoMatchItem(itemDiv){
+  const descInput = itemDiv.querySelector('.desc');
+  const keyword = (descInput.value||'').trim();
+  if(keyword.length < 2) return;
+
+  try {
+    const res = await fetch(`${FUZZY_URL}?q=${encodeURIComponent(keyword)}`);
+    if(!res.ok) return;
+    const data = await res.json();
+    if(!Array.isArray(data) || !data.length) return;
+
+    // เลือกตัวแรก (ตรงที่สุด)
+    const best = data[0];
+    descInput.value = best.product_name || best.item_name || descInput.value;
+    itemDiv.dataset.groupId = best.group_id;
+    itemDiv.dataset.sku = 'SKU-' + best.group_id;
+    itemDiv.dataset.productName = best.product_name || best.item_name || '';
+
+    // ดึงราคาล่าสุดมาใส่
+    await fillLatestPrice(best.group_id, itemDiv);
+  } catch(e){
+    console.warn('autoMatchItem error:', e);
+  }
+}
+
+$('#parseBtn').onclick=async()=>{
   const txt=$('#ocrText').value;
   const lines=txt.split(/\n/).map(l=>l.trim()).filter(Boolean);
   $('#itemRows').innerHTML=''; let added=0;
+  const rows=[];
   lines.forEach(l=>{
     if(/[ก-๙A-Za-z]/.test(l) && !/รวม|total|vat|ภาษี|สุทธิ/i.test(l)){
       const desc=l.trim();
-      if(desc){$('#itemRows').appendChild(itemRow({desc}));added++;}
+      if(desc){
+        const row=itemRow({desc});
+        $('#itemRows').appendChild(row);
+        rows.push(row);
+        added++;
+      }
     }
   });
-  if(!added)$('#itemRows').appendChild(itemRow());
+  if(!added){
+    $('#itemRows').appendChild(itemRow());
+    $$('.tab')[1].click(); render();
+    return;
+  }
   $$('.tab')[1].click(); render();
-  alert('แยกรายการเสร็จ — กรุณาตรวจสอบและแก้ไขในฟอร์ม');
+
+  // Auto-match ทุกรายการพร้อมกัน
+  const parseBtn=$('#parseBtn');
+  parseBtn.disabled=true; parseBtn.textContent='⏳ กำลังจับคู่สินค้า...';
+  await Promise.all(rows.map(r => autoMatchItem(r)));
+  render();
+  parseBtn.disabled=false; parseBtn.textContent='✨ แยกรายการอัตโนมัติ → กรอกฟอร์ม';
 };
 
 /* ---------- Thai baht text ---------- */
