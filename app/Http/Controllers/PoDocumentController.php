@@ -14,12 +14,15 @@ use Endroid\QrCode\Encoding\Encoding;
 use Endroid\QrCode\ErrorCorrectionLevel;
 use Endroid\QrCode\RoundBlockSizeMode;
 use Illuminate\Support\Facades\DB;
+use Smalot\PdfParser\Parser as PdfParser;
 
 class PoDocumentController extends Controller
 {
     private $specialCustomers = ['CUS-26039'];
     private $tcusPerBillPage = 5;
     private $depositPdfPath = null; 
+    private $dateOverlayPdfPath = null;
+
     private function isSpecialCustomer($customer_id): bool
     {
         $cleanCustomerId = trim($customer_id ?? '');
@@ -75,13 +78,11 @@ class PoDocumentController extends Controller
         }
 
         try {
-            // โหลดฟอนต์เป็น base64 เหมือนใน printNotes
             $fontNormal = base64_encode(file_get_contents(storage_path('fonts/THSarabun.ttf')));
             $fontBold = base64_encode(file_get_contents(storage_path('fonts/THSarabun Bold.ttf')));
 
             $textEscaped = htmlspecialchars($depositText, ENT_QUOTES, 'UTF-8');
 
-            // HTML สำหรับ deposit text - ใช้ A4 ขนาดเท่าบิล
             $html = '
             <html>
             <head>
@@ -122,10 +123,8 @@ class PoDocumentController extends Controller
             </body>
             </html>';
 
-            // ใช้ dompdf เหมือน printNotes
             $pdf = PDF::loadHTML($html)->setPaper('A4', 'portrait');
 
-            // บันทึกเป็นไฟล์ชั่วคราว
             $tempPath = storage_path('app/public/temp/deposit_' . uniqid() . '.pdf');
             if (!file_exists(dirname($tempPath))) {
                 mkdir(dirname($tempPath), 0777, true);
@@ -171,7 +170,6 @@ class PoDocumentController extends Controller
         }
 
         try {
-            // เก็บ source file ปัจจุบันไว้ก่อน (เพราะ setSourceFile จะ override)
             $pdf->setSourceFile($depositPdfPath);
             $depositTemplateId = $pdf->importPage(1);
             $pdf->useTemplate($depositTemplateId, 0, 0, $pageWidth, $pageHeight);
@@ -179,6 +177,167 @@ class PoDocumentController extends Controller
             Log::error("overlay deposit ไม่สำเร็จ: " . $e->getMessage());
         }
     }
+
+    // =============================================================
+    //  แปลงวันที่ พ.ศ. → ค.ศ. + วัน → Days (เฉพาะ specialCustomers)
+    // =============================================================
+
+    /**
+     * อ่านค่าจาก PDF → หาวันที่ พ.ศ. (dd/mm/25xx) + "XX วัน"
+     * แล้วคำนวณแปลงเป็น ค.ศ. (ลบ 543) + "XX Days"
+     */
+    private function extractAndConvertDates(string $filePath): array
+    {
+        $parser = new PdfParser();
+        $text   = $parser->parseFile($filePath)->getText();
+
+        $result = ['dates' => [], 'day_term' => null];
+
+        // หา dd/mm/25xx → ลบ 543
+        if (preg_match_all('/(\d{2}\/\d{2}\/)(25\d{2})/', $text, $matches, PREG_SET_ORDER)) {
+            foreach ($matches as $m) {
+                $result['dates'][] = [
+                    'original'  => $m[0],
+                    'converted' => $m[1] . ((int)$m[2] - 543),
+                ];
+            }
+        }
+
+        // หา "XX วัน" → "XX Days"
+        if (preg_match('/(\d+)\s*วัน/', $text, $dm)) {
+            $result['day_term'] = [
+                'original'  => $dm[0],
+                'converted' => $dm[1] . ' Days',
+            ];
+        }
+
+        return $result;
+    }
+
+    /**
+     * สร้าง overlay PDF (กล่องขาวทับข้อความเดิม + ปั้มวันที่ใหม่)
+     * pattern เดียวกับ createDepositPdf()
+     */
+private function convertDatesForSpecialCustomer(string $billId, string $stampImage, string $billDate = '', string $dueDate = ''): void
+{
+    $filePath = storage_path("app/public/doc_document/{$billId}.pdf");
+    if (!file_exists($filePath)) return;
+
+    $overlayPath = null;
+
+    try {
+        $convertedData = [
+            'dates' => [
+                ['converted' => $this->convertBuddhistDate($billDate)], // DATE
+                ['converted' => $this->convertBuddhistDate($dueDate)],  // DUE DATE
+            ],
+            'day_term' => null,
+        ];
+
+        Log::info("convertDates [{$billId}]", $convertedData);
+
+        $overlayPath = $this->createDateOverlayPdf($convertedData);
+        if (!$overlayPath) return;
+
+        $pdf = new Fpdi();
+        $pageCount = $pdf->setSourceFile($filePath);
+
+        for ($p = 1; $p <= $pageCount; $p++) {
+            $pdf->setSourceFile($filePath);
+            $tpl  = $pdf->importPage($p);
+            $size = $pdf->getTemplateSize($tpl);
+
+            $pdf->addPage($size['orientation'], [$size['width'], $size['height']]);
+            $pdf->useTemplate($tpl, 0, 0, $size['width'], $size['height']);
+
+            // ปั้มทุกหน้า (ลบ if ($p === 1) ออก)
+            $this->overlayDepositPdf($pdf, $overlayPath, $size['width'], $size['height']);
+
+            if (file_exists($stampImage)) {
+                $pdf->Image($stampImage, 170, 257, 22, 0, 'PNG');
+            }
+        }
+        $this->saveOutputFiles($pdf, $billId);
+        Log::info("✅ convertDates สำเร็จ: {$billId}");
+
+    } catch (\Exception $e) {
+        Log::error("❌ convertDates [{$billId}]: " . $e->getMessage());
+    } finally {
+        if ($overlayPath && file_exists($overlayPath)) {
+            @unlink($overlayPath);
+            $this->dateOverlayPdfPath = null;
+        }
+    }
+}
+private function createDateOverlayPdf(array $convertedData): ?string
+{
+    try {
+        $fontNormal = base64_encode(file_get_contents(storage_path('fonts/THSarabun.ttf')));
+        $fontBold   = base64_encode(file_get_contents(storage_path('fonts/THSarabun Bold.ttf')));
+
+        $date1 = htmlspecialchars($convertedData['dates'][0]['converted'] ?? ''); // DATE
+        $date2 = htmlspecialchars($convertedData['dates'][1]['converted'] ?? ''); // DUE DATE
+        $days  = '30 Days';
+
+       $html = '
+        <html>
+        <head>
+            <meta charset="utf-8">
+            <style>
+                @page { margin: 0; size: A4; }
+                body { margin: 0; padding: 0; }
+                .wrap {
+                    position: absolute;
+                    font-size: 8pt;
+                    font-family: Arial, sans-serif;
+                }
+                td {
+                    background-color: white;
+                    color: #000;
+                    padding: 0 3px;
+                    text-align: right;
+                    white-space: nowrap;
+                }
+                .date1 { top: 63mm; left: 148mm; }
+                .days  { top: 73mm; left: 166.5mm; }
+                .date2 { top: 84mm; left: 158mm; }
+            </style>
+        </head>
+        <body>
+            <div class="wrap date1"><table><tr><td>' . $date1 . '</td></tr></table></div>
+            <div class="wrap days"><table><tr><td>' . $days . '</td></tr></table></div>
+            <div class="wrap date2"><table><tr><td>' . $date2 . '</td></tr></table></div>
+        </body>
+        </html>';
+        $pdf = PDF::loadHTML($html)->setPaper('A4', 'portrait');
+
+        $tempPath = storage_path('app/public/temp/date_overlay_' . uniqid() . '.pdf');
+        if (!file_exists(dirname($tempPath))) {
+            mkdir(dirname($tempPath), 0777, true);
+        }
+        file_put_contents($tempPath, $pdf->output());
+
+        $this->dateOverlayPdfPath = $tempPath;
+        Log::info("✅ date overlay: date1={$date1} days={$days} date2={$date2}");
+
+        return $tempPath;
+
+    } catch (\Exception $e) {
+        Log::error("❌ createDateOverlayPdf: " . $e->getMessage());
+        return null;
+    }
+}
+private function convertBuddhistDate(string $date): string
+{
+    // dd/mm/25xx → dd/mm/20xx
+    return preg_replace_callback(
+        '/(\d{2}\/\d{2}\/)(25\d{2})/',
+        fn($m) => $m[1] . ((int)$m[2] - 543),
+        $date
+    );
+}
+
+
     public function addSoDetailIdToPoDocument($so_detail_id, $POdocument): JsonResponse
     {
         try {
@@ -241,6 +400,8 @@ class PoDocumentController extends Controller
             $so_id = $request->input('so_id');
             $customer_id = $request->input('customer_id');
             $deposit_bill_id = $request->input('deposit_bill_id');
+            $bill_Date = $request->input('bill_Date', '');
+            $due_date  = $request->input('due_date', '');
 
             Log::info("addIdToDocument - Customer: [{$customer_id}] | Deposit: [{$deposit_bill_id}]");
 
@@ -328,6 +489,12 @@ class PoDocumentController extends Controller
             }
 
             $this->saveOutputFiles($pdf, $billid);
+
+            // ✨ แปลงวันที่ พ.ศ. → ค.ศ. เฉพาะ specialCustomers
+if ($isSpecialCustomer) {
+    $this->convertDatesForSpecialCustomer($billid, $stampImage, $bill_Date, $due_date);
+}
+
             $this->cleanupDepositPdf();
             ob_end_clean();
 
@@ -355,6 +522,8 @@ class PoDocumentController extends Controller
             $so_id = $request->input('so_id');
             $customer_id = $request->input('customer_id');
             $deposit_bill_id = $request->input('deposit_bill_id');
+            $bill_Date = $request->input('bill_Date', '');
+            $due_date  = $request->input('due_date', '');
 
             Log::info("addIdToDocument3 - Customer: [{$customer_id}] | Deposit: [{$deposit_bill_id}]");
 
@@ -454,6 +623,12 @@ class PoDocumentController extends Controller
             }
 
             $this->saveOutputFiles($pdf, $billid);
+
+            // ✨ แปลงวันที่ พ.ศ. → ค.ศ. เฉพาะ specialCustomers
+if ($isSpecialCustomer) {
+    $this->convertDatesForSpecialCustomer($billid, $stampImage, $bill_Date, $due_date);
+}
+
             $this->cleanupDepositPdf();
             ob_end_clean();
 
@@ -481,6 +656,8 @@ class PoDocumentController extends Controller
             $so_id = $request->input('so_id');
             $customer_id = $request->input('customer_id');
             $deposit_bill_id = $request->input('deposit_bill_id');
+            $bill_Date = $request->input('bill_Date', '');
+            $due_date  = $request->input('due_date', '');
 
             Log::info("addIdToDocument5 - Customer: [{$customer_id}] | Deposit: [{$deposit_bill_id}]");
 
@@ -580,6 +757,12 @@ class PoDocumentController extends Controller
             }
 
             $this->saveOutputFiles($pdf, $billid);
+
+            // ✨ แปลงวันที่ พ.ศ. → ค.ศ. เฉพาะ specialCustomers
+if ($isSpecialCustomer) {
+    $this->convertDatesForSpecialCustomer($billid, $stampImage, $bill_Date, $due_date);
+}
+
             $this->cleanupDepositPdf();
             ob_end_clean();
 
@@ -718,7 +901,7 @@ class PoDocumentController extends Controller
         if (!file_exists($dataPdfPath)) {
             return;
         }
-
+ 
         $pdf = new TcpdfFpdi();
         $pdf->SetPrintHeader(false);
         $pdf->SetPrintFooter(false);

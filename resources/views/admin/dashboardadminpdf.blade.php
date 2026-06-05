@@ -526,12 +526,13 @@ document.getElementById('pullPoOutside').addEventListener('click', function () {
                             
 @php
     $date = \Carbon\Carbon::parse($item->date_of_dali);
-    $formatted = $date->format('d/m/') . ($date->year + 543);
+    $bill_Date = $date->format('d/m/') . ($date->year + 543);
+    $due_date = \Carbon\Carbon::parse($item->date_of_dali)->addDays(30)->format('d/m/') . (\Carbon\Carbon::parse($item->date_of_dali)->addDays(30)->year + 543);
 @endphp
 
 <td>
-    <span id = "datenaja" name="datenaja">{{ $formatted }}</span>
-    <button id="copydate" onclick="copydate('{{ $formatted }}', this)">📋 คัดลอก</button>
+    <span id = "datenaja" name="datenaja">{{ $bill_Date }}</span>
+    <button id="copydate" onclick="copydate('{{ $bill_Date }}', this)">📋 คัดลอก</button>
 </td>
 
 <script>
@@ -573,11 +574,11 @@ function copydate(text, button) {
                                         <input type="file" name="pdffile" id="pdffile" accept="application/pdf" required>
                                         <button type="submit" id="subpdffile">อัปโหลด PDF</button>
                                     </form>
-                                        <button style="background-color: red; color: white;"
-                                            id="Pumpbill"
-                                            onclick="checkBillTypeAndAddBill('{{ $item->so_detail_id }}','{{ $item->billid }}','{{ $item->billtype }}','{{ $item->so_id }}','{{ $item->customer_id }}','{{ $item->deposit_bill_id ?? '' }}')">
-                                            เพิ่มเลขบิล
-                                        </button>
+                                    <button style="background-color: red; color: white;"
+                                        id="Pumpbill"
+                                        onclick="checkBillTypeAndAddBill('{{ $item->so_detail_id }}','{{ $item->billid }}','{{ $item->billtype }}','{{ $item->so_id }}','{{ $item->customer_id }}','{{ $item->deposit_bill_id ?? '' }}','{{ $bill_Date }}','{{ $due_date }}')">
+                                        เพิ่มเลขบิล
+                                    </button>
                                     <button id="downloadbill"
                                         style="background-color: #27ae60; color: white;"
                                         onclick="openFileInNewTabbill(
@@ -981,19 +982,19 @@ function addIdToissueDocument(so_detail_id, bill_issue_no) {
             console.error("Error:", error);
         });
 }
-function checkBillTypeAndAddBill(so_detail_id, billid, billtype, so_id, customer_id, deposit_bill_id) {
+function checkBillTypeAndAddBill(so_detail_id, billid, billtype, so_id, customer_id, deposit_bill_id, bill_Date, due_date) {
     if (billtype && billtype.includes('งานบริการ')) {
-        addIdToDocument3(so_detail_id, billid, so_id, customer_id, deposit_bill_id);
+        addIdToDocument3(so_detail_id, billid, so_id, customer_id, deposit_bill_id, bill_Date, due_date);
     } 
     else if (billtype && billtype.includes('งานเช่า')) {
-        addIdToDocument5(so_detail_id, billid, so_id, customer_id, deposit_bill_id);
+        addIdToDocument5(so_detail_id, billid, so_id, customer_id, deposit_bill_id, bill_Date, due_date);
     } 
     else {
-        addIdToDocument(so_detail_id, billid, so_id, customer_id, deposit_bill_id);
+        addIdToDocument(so_detail_id, billid, so_id, customer_id, deposit_bill_id, bill_Date, due_date);
     }
 }
 
-function addIdToDocument(so_detail_id, billid, so_id, customer_id, deposit_bill_id) {
+function addIdToDocument(so_detail_id, billid, so_id, customer_id, deposit_bill_id, bill_Date, due_date) {
     fetch('/add-so-detail-id-to-bill', {
         method: 'POST',
         headers: {
@@ -1001,7 +1002,8 @@ function addIdToDocument(so_detail_id, billid, so_id, customer_id, deposit_bill_
             'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
         },
         body: JSON.stringify({
-            so_detail_id, billid, so_id, customer_id, deposit_bill_id
+            so_detail_id, billid, so_id, customer_id, deposit_bill_id, bill_Date, due_date
+            
         })
     })
     .then(response => response.json())
@@ -1011,7 +1013,7 @@ function addIdToDocument(so_detail_id, billid, so_id, customer_id, deposit_bill_
     .catch(error => console.error("Error:", error));
 }
 
-function addIdToDocument3(so_detail_id, billid, so_id, customer_id, deposit_bill_id) {
+function addIdToDocument3(so_detail_id, billid, so_id, customer_id, deposit_bill_id, bill_Date, due_date) {
     fetch('/add-so-detail-id-to-bill-3', {
         method: 'POST',
         headers: {
@@ -1019,7 +1021,7 @@ function addIdToDocument3(so_detail_id, billid, so_id, customer_id, deposit_bill
             'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
         },
         body: JSON.stringify({
-            so_detail_id, billid, so_id, customer_id, deposit_bill_id
+            so_detail_id, billid, so_id, customer_id, deposit_bill_id, bill_Date, due_date
         })
     })
     .then(response => response.json())
@@ -1029,7 +1031,7 @@ function addIdToDocument3(so_detail_id, billid, so_id, customer_id, deposit_bill
     .catch(error => console.error("Error:", error));
 }
 
-function addIdToDocument5(so_detail_id, billid, so_id, customer_id, deposit_bill_id) {
+function addIdToDocument5(so_detail_id, billid, so_id, customer_id, deposit_bill_id, bill_Date, due_date) {
     fetch('/add-so-detail-id-to-bill-5', {
         method: 'POST',
         headers: {
@@ -1037,7 +1039,7 @@ function addIdToDocument5(so_detail_id, billid, so_id, customer_id, deposit_bill
             'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
         },
         body: JSON.stringify({
-            so_detail_id, billid, so_id, customer_id, deposit_bill_id
+            so_detail_id, billid, so_id, customer_id, deposit_bill_id, bill_Date, due_date
         })
     })
     .then(response => response.json())
