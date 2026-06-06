@@ -1112,6 +1112,15 @@ function fetchDeposit(){
                 }
             });
         });
+
+        // ✅ Auto-select ตัวแรกที่เลือกได้
+        const firstAvailable = content.querySelector('input[name="deposit_select"]:not([disabled])');
+        if (firstAvailable) {
+            firstAvailable.checked = true;
+            firstAvailable.dataset.wasChecked = '1';
+            firstAvailable.closest('.deposit-item').classList.add('selected');
+            hidden.value = firstAvailable.value;
+        }
     })
     .catch(() => {
     });
