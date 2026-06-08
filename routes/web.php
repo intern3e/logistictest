@@ -250,7 +250,8 @@ Route::post('/return/{id}/new-bill', [DeliverytrackController::class, 'saveNewBi
 
 use App\Http\Controllers\SoItemController;
  
-Route::get('/SoItem', [SoItemController::class, 'index']);
-Route::post('/SoItem', [SoItemController::class, 'store']);
-Route::get('/SoItem/fuzzy-search', [SoItemController::class, 'fuzzySearch']);
-Route::get('/SoItem/sales-history/{groupId}', [SoItemController::class, 'salesHistory']);
+Route::get('/SoItem',                              [SoItemController::class, 'index']);
+Route::post('/SoItem',                             [SoItemController::class, 'store']);
+Route::post('/SoItem/batch-match',                 [SoItemController::class, 'batchMatch']);
+Route::get('/SoItem/sales-history/{customerCode}', [SoItemController::class, 'salesHistory']);
+ 

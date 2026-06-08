@@ -2,10 +2,8 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\FuzzyItem;
-use App\Models\SoDetail;
+use App\Models\fuzzy_so;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 
 class SoItemController extends Controller
@@ -17,117 +15,611 @@ class SoItemController extends Controller
 
     public function store(Request $request)
     {
-        return response()->json([
-            'status' => 'success',
-        ]);
+        return response()->json(['status' => 'success']);
     }
 
-    /**
-     * Fuzzy search: ค้นหาชื่อสินค้าจาก fuzzy_item
-     * GET /SoItem/fuzzy-search?q=keyword
-     */
-    public function fuzzySearch(Request $request)
+    /* ================================================================
+     *  POST /SoItem/batch-match
+     *
+     *  Flow:
+     *  1) Scored Match   : นับ keyword ที่ hit → score สูงสุด (ทุก input)
+     *  2) Reverse Exact  : model ของ DB อยู่ใน input
+     *  3) Fuzzy Reverse  : Levenshtein ≥ 80%
+     *  4) ★ Similarity Gate ≥ 50%
+     * ================================================================ */
+    public function batchMatch(Request $request)
     {
-        $q = trim($request->input('q', ''));
-        if (mb_strlen($q) < 2) {
+        $customerCode = trim($request->input('customer_code', ''));
+        $items        = $request->input('items', []);
+
+        if (empty($customerCode) || empty($items)) {
             return response()->json([]);
         }
 
-        // ===== ลอง pg_trgm ก่อน =====
-        try {
-            DB::connection('pgsql')->statement('CREATE EXTENSION IF NOT EXISTS pg_trgm');
+        $allRows = fuzzy_so::where('customer_code', $customerCode)
+            ->whereNotNull('product_name')
+            ->where('product_name', '!=', '')
+            ->orderByDesc('doc_date')
+            ->get(['item_new', 'product_name', 'unit_price', 'unit', 'doc_date']);
 
-            // DISTINCT ON (group_id) → 1 แถวต่อ SKU เรียงตาม similarity สูงสุด
-            $results = DB::connection('pgsql')
-                ->select("
-                    SELECT * FROM (
-                        SELECT DISTINCT ON (group_id)
-                            id, product_name, group_id, keyword, item_name,
-                            GREATEST(
-                                COALESCE(similarity(product_name, ?), 0),
-                                COALESCE(similarity(item_name, ?), 0)
-                            ) AS score
-                        FROM fuzzy_item
-                        WHERE product_name % ?
-                           OR item_name % ?
-                           OR keyword ILIKE ?
-                           OR product_name ILIKE ?
-                           OR item_name ILIKE ?
-                        ORDER BY group_id,
-                                 GREATEST(
-                                    COALESCE(similarity(product_name, ?), 0),
-                                    COALESCE(similarity(item_name, ?), 0)
-                                 ) DESC
-                    ) sub
-                    ORDER BY score DESC
-                    LIMIT 20
-                ", [$q, $q, $q, $q, "%{$q}%", "%{$q}%", "%{$q}%", $q, $q]);
+        $results = [];
+        foreach ($items as $inputName) {
+            $keyword = trim($inputName);
 
-            return response()->json($results);
+            $base = [
+                'input'         => $keyword,
+                'matched'       => false,
+                'item_new'      => null,
+                'product_name'  => null,
+                'unit_price'    => null,
+                'unit'          => null,
+                'doc_date'      => null,
+                'is_new'        => true,
+                'match_keyword' => null,
+            ];
 
-        } catch (\Exception $e) {
-            Log::warning('Fuzzy trgm failed: ' . $e->getMessage());
+            if (mb_strlen($keyword) < 2 || $allRows->isEmpty()) {
+                $results[] = $base;
+                continue;
+            }
+
+            $match   = null;
+            $matchKw = '';
+
+            // ===== ขั้น 1: ★ Scored Match — ทุก input (ไม่จำกัดความยาว) =====
+            $scored = $this->scoredMatch($keyword, $allRows);
+            if ($scored) {
+                $match   = $scored['row'];
+                $matchKw = $scored['keywords'];
+            }
+
+            // ===== ขั้น 2: Reverse Exact =====
+            if (!$match) {
+                $reversed = $this->reverseMatch($keyword, $allRows);
+                if ($reversed) {
+                    $match   = $reversed['row'];
+                    $matchKw = $reversed['keyword'];
+                }
+            }
+
+            // ===== ขั้น 3: Fuzzy Reverse (Levenshtein ≥ 80%) =====
+            if (!$match) {
+                $fuzzy = $this->fuzzyReverseMatch($keyword, $allRows);
+                if ($fuzzy) {
+                    $match   = $fuzzy['row'];
+                    $matchKw = $fuzzy['keyword'];
+                }
+            }
+
+            // ===== ★ ขั้น 4: Similarity Gate ≥ 50% =====
+            if ($match) {
+                $sim = $this->similarityCheck($keyword, $match->product_name);
+
+                if ($sim >= 50) {
+                    $results[] = [
+                        'input'         => $keyword,
+                        'matched'       => true,
+                        'item_new'      => $match->item_new,
+                        'product_name'  => $match->product_name,
+                        'unit_price'    => $match->unit_price !== null ? (float) $match->unit_price : null,
+                        'unit'          => $match->unit,
+                        'doc_date'      => $match->doc_date
+                            ? \Carbon\Carbon::parse($match->doc_date)->format('Y-m-d')
+                            : null,
+                        'is_new'        => false,
+                        'match_keyword' => $matchKw,
+                        'similarity'    => $sim,
+                    ];
+                } else {
+                    $base['match_keyword'] = $matchKw;
+                    $base['similarity']    = $sim;
+                    $results[] = $base;
+                }
+            } else {
+                $results[] = $base;
+            }
         }
 
-        // ===== Fallback: ILIKE + DISTINCT ON =====
-        try {
-            $results = DB::connection('pgsql')
-                ->select("
-                    SELECT DISTINCT ON (group_id)
-                        id, product_name, group_id, keyword, item_name
-                    FROM fuzzy_item
-                    WHERE product_name ILIKE ?
-                       OR item_name ILIKE ?
-                       OR keyword ILIKE ?
-                    ORDER BY group_id, product_name
-                    LIMIT 20
-                ", ["%{$q}%", "%{$q}%", "%{$q}%"]);
-
-            return response()->json($results);
-
-        } catch (\Exception $e) {
-            Log::error('FuzzySearch ILIKE failed: ' . $e->getMessage());
-            return response()->json([
-                'error'   => $e->getMessage(),
-                'message' => 'ไม่สามารถค้นหาได้ กรุณาตรวจสอบ DB connection และ table fuzzy_item'
-            ], 500);
-        }
+        return response()->json($results);
     }
 
-    /**
-     * Sales history: ดึงประวัติการขายจาก so_detail ตาม group_id
-     * GET /SoItem/sales-history/{groupId}
-     */
-    public function salesHistory($groupId)
+    /* ================================================================
+     *  ★ Scored Match — จับหลาย keyword พร้อมกัน
+     *
+     *  แยก token จาก input → วน loop ทุก DB row
+     *  → นับว่า row นั้น hit กี่ token
+     *  → model token: weight = ความยาว
+     *  → brand token: weight = 1
+     *  → เอา row ที่ score สูงสุด
+     *
+     *  เงื่อนไขผ่าน:
+     *  - มี model token → score ≥ 5 (model ยาวตัวเดียวก็พอ)
+     *  - ไม่มี model → ต้อง hit brand ≥ 2 ตัว (ตัวเดียวกว้างเกิน)
+     * ================================================================ */
+    private function scoredMatch(string $keyword, $allRows): ?array
+    {
+        $searchTokens = $this->extractAllSearchTokens($keyword);
+        if (empty($searchTokens)) return null;
+
+        $hasModel = false;
+        foreach ($searchTokens as $t) {
+            if ($t['is_model']) { $hasModel = true; break; }
+        }
+
+        $bestRow    = null;
+        $bestScore  = 0;
+        $bestHits   = 0;
+        $bestKws    = '';
+
+        foreach ($allRows as $row) {
+            $nameLower   = mb_strtolower($row->product_name);
+            $score       = 0;
+            $hits        = 0;
+            $hitKeywords = [];
+
+            foreach ($searchTokens as $token) {
+                $tokenLower = mb_strtolower($token['text']);
+                if (mb_strpos($nameLower, $tokenLower) !== false) {
+                    $weight = $token['is_model'] ? mb_strlen($token['text']) : 1;
+                    $score += $weight;
+                    $hits++;
+                    $hitKeywords[] = $token['text'];
+                }
+            }
+
+            if ($score > $bestScore) {
+                $bestScore = $score;
+                $bestHits  = $hits;
+                $bestRow   = $row;
+                $bestKws   = implode(' + ', $hitKeywords);
+            }
+        }
+
+        // ★ เงื่อนไขผ่าน
+        if ($bestRow) {
+            if ($hasModel && $bestScore >= 5) {
+                return ['row' => $bestRow, 'keywords' => $bestKws];
+            }
+            if (!$hasModel && $bestHits >= 2) {
+                return ['row' => $bestRow, 'keywords' => $bestKws];
+            }
+        }
+
+        return null;
+    }
+
+    /* ================================================================
+     *  Reverse Match Exact
+     * ================================================================ */
+    private function reverseMatch(string $keyword, $allRows): ?array
+    {
+        $inputLower = mb_strtolower($keyword);
+        $bestRow    = null;
+        $bestLen    = 0;
+        $bestKw     = '';
+
+        foreach ($allRows as $row) {
+            foreach ($this->extractModels($row->product_name) as $model) {
+                $modelLower = mb_strtolower($model);
+                if (mb_strlen($modelLower) >= 3
+                    && mb_strpos($inputLower, $modelLower) !== false
+                    && mb_strlen($model) > $bestLen
+                ) {
+                    $bestLen = mb_strlen($model);
+                    $bestRow = $row;
+                    $bestKw  = $model;
+                }
+            }
+        }
+
+        return $bestRow ? ['row' => $bestRow, 'keyword' => $bestKw] : null;
+    }
+
+    /* ================================================================
+     *  Fuzzy Reverse Match — Levenshtein ≥ 80%
+     * ================================================================ */
+    private function fuzzyReverseMatch(string $keyword, $allRows): ?array
+    {
+        $inputModels = $this->extractModels($keyword);
+        if (empty($inputModels)) return null;
+
+        $bestRow = null;
+        $bestSim = 0;
+        $bestKw  = '';
+
+        foreach ($allRows as $row) {
+            foreach ($this->extractModels($row->product_name) as $dModel) {
+                foreach ($inputModels as $iModel) {
+                    $sim = $this->levenshteinPercent($iModel, $dModel);
+                    if ($sim >= 80 && $sim > $bestSim) {
+                        $bestSim = $sim;
+                        $bestRow = $row;
+                        $bestKw  = $iModel . ' ≈ ' . $dModel . ' (' . round($sim) . '%)';
+                    }
+                }
+            }
+        }
+
+        return $bestRow ? ['row' => $bestRow, 'keyword' => $bestKw] : null;
+    }
+
+    /* ================================================================
+     *  ★ Similarity Gate ≥ 50%
+     *
+     *  มี model ทั้ง 2 ฝั่ง → best pair
+     *  ไม่มี model → brand overlap ratio
+     * ================================================================ */
+    private function similarityCheck(string $input, string $dbProductName): float
+    {
+        $inputModels = $this->extractModels($input);
+        $dbModels    = $this->extractModels($dbProductName);
+
+        if (!empty($inputModels) && !empty($dbModels)) {
+            return $this->bestPairSimilarity($inputModels, $dbModels);
+        }
+
+        if (!empty($inputModels) || !empty($dbModels)) {
+            $setA = !empty($inputModels) ? $inputModels : $this->extractBrands($input);
+            $setB = !empty($dbModels)    ? $dbModels    : $this->extractBrands($dbProductName);
+            if (!empty($setA) && !empty($setB)) {
+                return $this->bestPairSimilarity($setA, $setB);
+            }
+        }
+
+        $inputBrands = $this->extractBrands($input);
+        $dbBrands    = $this->extractBrands($dbProductName);
+
+        if (empty($inputBrands) || empty($dbBrands)) {
+            return $this->levenshteinPercent($input, $dbProductName);
+        }
+
+        return $this->overlapRatio($inputBrands, $dbBrands);
+    }
+
+    private function bestPairSimilarity(array $setA, array $setB): float
+    {
+        $bestSim = 0;
+        foreach ($setA as $a) {
+            $aLower = mb_strtolower($a);
+            foreach ($setB as $b) {
+                $bLower = mb_strtolower($b);
+
+                if (mb_strpos($bLower, $aLower) !== false || mb_strpos($aLower, $bLower) !== false) {
+                    $shorter = min(mb_strlen($aLower), mb_strlen($bLower));
+                    $longer  = max(mb_strlen($aLower), mb_strlen($bLower));
+                    $sim     = ($shorter / $longer) * 100;
+                } else {
+                    $sim = $this->levenshteinPercent($a, $b);
+                }
+                $bestSim = max($bestSim, $sim);
+            }
+        }
+        return round($bestSim, 1);
+    }
+
+    private function overlapRatio(array $inputBrands, array $dbBrands): float
+    {
+        if (empty($inputBrands)) return 0;
+
+        $dbLower = array_map(fn($b) => mb_strtolower($b), $dbBrands);
+        $hits    = 0;
+
+        foreach ($inputBrands as $ib) {
+            $ibLower = mb_strtolower($ib);
+            foreach ($dbLower as $db) {
+                if ($ibLower === $db || mb_strpos($db, $ibLower) !== false || mb_strpos($ibLower, $db) !== false) {
+                    $hits++;
+                    break;
+                }
+            }
+        }
+
+        return round(($hits / count($inputBrands)) * 100, 1);
+    }
+
+    private function levenshteinPercent(string $a, string $b): float
+    {
+        $a = mb_strtolower(trim($a));
+        $b = mb_strtolower(trim($b));
+        if ($a === $b) return 100.0;
+        $maxLen = max(strlen($a), strlen($b));
+        if ($maxLen === 0) return 100.0;
+        return max(0, (1 - levenshtein($a, $b) / $maxLen) * 100);
+    }
+
+    /* ================================================================
+     *  GET /SoItem/sales-history/{customerCode}
+     * ================================================================ */
+    public function salesHistory(string $customerCode, Request $request)
     {
         try {
-            $sku = 'SKU-' . $groupId;
+            $itemNew    = trim($request->input('item_new', ''));
+            $rawKeyword = trim($request->input('keyword', ''));
 
-            // Subquery: DISTINCT ON เอาแถวเดียวต่อ (วันที่+ลูกค้า)
-            // Outer: เรียงปีล่าสุดขึ้นก่อน
-            $records = DB::connection('pgsql')
-                ->select("
-                    SELECT * FROM (
-                        SELECT DISTINCT ON (doc_date_raw, customer_code)
-                            id, doc_date_raw, customer_code, customer_name,
-                            salesperson, item_new, item_new_name, product_name,
-                            qty, unit, unit_price, line_amount, so_total, source_file
-                        FROM so_detail
-                        WHERE item_new = ?
-                        ORDER BY doc_date_raw, customer_code, id DESC
-                    ) sub
-                    ORDER BY doc_date_raw DESC NULLS LAST
-                    LIMIT 50
-                ", [$sku]);
+            if (empty($itemNew) && empty($rawKeyword)) {
+                return response()->json([]);
+            }
 
-            return response()->json($records);
+            $records = collect();
+            $fields  = [
+                'so_no', 'doc_date', 'customer_code', 'customer_name',
+                'salesperson', 'item_new', 'product_name',
+                'qty', 'unit', 'unit_price', 'line_amount', 'so_total',
+            ];
+
+            if (!empty($itemNew)) {
+                $ref = fuzzy_so::where('customer_code', $customerCode)
+                    ->where('item_new', $itemNew)
+                    ->first(['product_name']);
+
+                if ($ref && $ref->product_name) {
+                    $keywords = $this->extractKeywords($ref->product_name);
+                    foreach ($keywords as $kw) {
+                        $found = fuzzy_so::where('customer_code', $customerCode)
+                            ->where('product_name', 'ILIKE', '%' . $kw . '%')
+                            ->orderByDesc('doc_date')
+                            ->limit(50)
+                            ->get($fields);
+
+                        if ($found->isNotEmpty()) {
+                            $records = $found;
+                            break;
+                        }
+                    }
+                }
+            }
+
+            if ($records->isEmpty() && !empty($rawKeyword)) {
+                $keywords = $this->extractKeywords($rawKeyword);
+                foreach ($keywords as $kw) {
+                    $found = fuzzy_so::where('customer_code', $customerCode)
+                        ->where('product_name', 'ILIKE', '%' . $kw . '%')
+                        ->orderByDesc('doc_date')
+                        ->limit(50)
+                        ->get($fields);
+
+                    if ($found->isNotEmpty()) {
+                        $records = $found;
+                        break;
+                    }
+                }
+            }
+
+            $mapped = $records->map(function ($r) {
+                return [
+                    'so_no'          => $r->so_no,
+                    'doc_date_raw'   => $r->doc_date
+                        ? \Carbon\Carbon::parse($r->doc_date)->format('d/m/Y')
+                        : '-',
+                    'customer_code'  => $r->customer_code,
+                    'customer_name'  => $r->customer_name,
+                    'salesperson'    => $r->salesperson,
+                    'item_new'       => $r->item_new,
+                    'product_name'   => $r->product_name,
+                    'qty'            => $r->qty !== null ? (float) $r->qty : 0,
+                    'unit'           => $r->unit,
+                    'unit_price'     => $r->unit_price !== null ? (float) $r->unit_price : 0,
+                    'line_amount'    => $r->line_amount !== null ? (float) $r->line_amount : 0,
+                    'so_total'       => $r->so_total !== null ? (float) $r->so_total : 0,
+                ];
+            });
+
+            return response()->json($mapped);
 
         } catch (\Exception $e) {
             Log::error('SalesHistory error: ' . $e->getMessage());
             return response()->json([
                 'error'   => $e->getMessage(),
-                'message' => 'ไม่สามารถดึงประวัติการขายได้'
+                'message' => 'ไม่สามารถดึงประวัติการขายได้',
             ], 500);
         }
+    }
+
+    /* ================================================================
+     *  TOKEN EXTRACTION
+     * ================================================================ */
+
+    private function extractAllSearchTokens(string $input): array
+    {
+        $clean  = $this->cleanQuotes($input);
+        $tokens = $this->smartSplit($clean);
+        $tokens = array_values(array_filter($tokens, fn($t) => mb_strlen($t) >= 2));
+
+        $models = [];
+        $brands = [];
+
+        foreach ($tokens as $t) {
+            if (preg_match('/^\d{1,3}$/', $t)) continue;
+            if ($this->isElecSpec($t)) continue;
+
+            if (preg_match('/[0-9]/', $t) && preg_match('/[A-Za-z]/u', $t)) {
+                $models[] = $t;
+            } elseif (!preg_match('/[0-9]/', $t)) {
+                $brands[] = $t;
+            }
+        }
+
+        usort($models, fn($a, $b) => mb_strlen($b) - mb_strlen($a));
+
+        $result = [];
+
+        if (!empty($brands) && !empty($models)) {
+            $mainBrand = $brands[0];
+            foreach ($models as $m) {
+                $result[] = ['text' => $mainBrand . ' ' . $m, 'is_model' => true];
+            }
+        }
+
+        foreach ($models as $m) {
+            $result[] = ['text' => $m, 'is_model' => true];
+        }
+        foreach ($brands as $b) {
+            $result[] = ['text' => $b, 'is_model' => false];
+        }
+
+        return $result;
+    }
+
+    private function extractKeywords(string $input): array
+    {
+        $clean    = $this->cleanQuotes($input);
+        $keywords = [];
+
+        if (mb_strlen($clean) <= 30) {
+            $keywords[] = $clean;
+        }
+
+        $tokens = $this->smartSplit($clean);
+        $tokens = array_filter($tokens, fn($t) => mb_strlen($t) >= 2);
+
+        $models = [];
+        $brands = [];
+
+        foreach ($tokens as $t) {
+            if (preg_match('/^\d{1,3}$/', $t)) continue;
+            if ($this->isElecSpec($t)) continue;
+
+            if (preg_match('/[0-9]/', $t) && preg_match('/[A-Za-z]/u', $t)) {
+                $models[] = $t;
+            } elseif (!preg_match('/[0-9]/', $t)) {
+                $brands[] = $t;
+            }
+        }
+
+        usort($models, fn($a, $b) => mb_strlen($b) - mb_strlen($a));
+        usort($brands, fn($a, $b) => mb_strlen($b) - mb_strlen($a));
+
+        foreach ($models as $m) {
+            if (!in_array($m, $keywords)) $keywords[] = $m;
+        }
+        if (empty($models)) {
+            foreach ($brands as $b) {
+                if (!in_array($b, $keywords)) $keywords[] = $b;
+            }
+        }
+
+        return $keywords;
+    }
+
+    private function extractModels(string $text): array
+    {
+        $clean  = $this->cleanQuotes($text);
+        $tokens = $this->smartSplit($clean);
+
+        $models = [];
+        foreach ($tokens as $t) {
+            if (preg_match('/^\d{1,3}$/', $t)) continue;
+            if ($this->isElecSpec($t)) continue;
+
+            if (mb_strlen($t) >= 3 && preg_match('/[0-9]/', $t) && preg_match('/[A-Za-z]/u', $t)) {
+                $models[] = $t;
+            }
+        }
+
+        usort($models, fn($a, $b) => mb_strlen($b) - mb_strlen($a));
+        return $models;
+    }
+
+    private function extractBrands(string $text): array
+    {
+        $clean  = $this->cleanQuotes($text);
+        $tokens = $this->smartSplit($clean);
+
+        $brands = [];
+        foreach ($tokens as $t) {
+            if (mb_strlen($t) >= 2 && !preg_match('/[0-9]/', $t)) {
+                $brands[] = $t;
+            }
+        }
+        return $brands;
+    }
+
+    /* ================================================================
+     *  smartSplit + camelBoundarySplit
+     * ================================================================ */
+    private function smartSplit(string $text): array
+    {
+        $rawTokens = preg_split('/[\s:,\(\)]+/u', $text, -1, PREG_SPLIT_NO_EMPTY);
+
+        $result = [];
+        foreach ($rawTokens as $token) {
+            foreach ($this->camelBoundarySplit($token) as $s) {
+                $s = trim($s);
+                if (mb_strlen($s) >= 1) $result[] = $s;
+            }
+        }
+        return $result;
+    }
+
+    private function camelBoundarySplit(string $token): array
+    {
+        if (mb_strlen($token) <= 3) return [$token];
+        if (preg_match('/^[A-Z0-9\-\/\.]+$/u', $token)) return [$token];
+
+        $chars = preg_split('//u', $token, -1, PREG_SPLIT_NO_EMPTY);
+        $parts = [];
+        $buf   = $chars[0];
+
+        for ($i = 1; $i < count($chars); $i++) {
+            $prev = $chars[$i - 1];
+            $curr = $chars[$i];
+            $cut  = false;
+
+            if (preg_match('/[a-z]/', $prev) && preg_match('/[A-Z]/', $curr)) {
+                $cut = true;
+            }
+
+            if (!$cut && preg_match('/[0-9]/', $prev) && preg_match('/[A-Z]/', $curr)) {
+                if (!preg_match('/^[VAWHKPDC]$/i', $curr)) {
+                    $cut = true;
+                }
+            }
+
+            if (!$cut && preg_match('/[A-Z]/', $prev) && preg_match('/[A-Z]/', $curr)) {
+                if (isset($chars[$i + 1]) && preg_match('/[a-z]/', $chars[$i + 1])) {
+                    $cut = true;
+                }
+            }
+
+            if (!$cut && preg_match('/[A-Za-z]/', $prev) && preg_match('/[0-9]/', $curr)) {
+                $alphaRun = 0;
+                for ($j = $i - 1; $j >= 0; $j--) {
+                    if (preg_match('/[A-Za-z]/', $chars[$j])) $alphaRun++;
+                    else break;
+                }
+                if ($alphaRun >= 3) $cut = true;
+            }
+
+            if ($cut) { $parts[] = $buf; $buf = $curr; }
+            else       { $buf .= $curr; }
+        }
+
+        if ($buf !== '') $parts[] = $buf;
+        return $parts;
+    }
+
+    /* ================================================================
+     *  isElecSpec
+     * ================================================================ */
+    private function isElecSpec(string $t): bool
+    {
+        $t = trim($t);
+
+        if (preg_match('/^[AD]C\d+[-\/]?\d*V?$/i', $t)) return true;
+        if (preg_match('/^\d+V(DC|AC)?$/i', $t)) return true;
+        if (preg_match('/^\d+[-\/]\d+V(DC|AC)?$/i', $t)) return true;
+        if (preg_match('/^\d+(\/\d+)?Hz\.?$/i', $t)) return true;
+        if (preg_match('/^\d+A$/i', $t)) return true;
+        if (preg_match('/^\d+(\.\d+)?(W|KW|MW|HP)$/i', $t)) return true;
+        if (preg_match('/^\d+P[Hh]?$/i', $t)) return true;
+        if (preg_match('/^\d+PHASE$/i', $t)) return true;
+        if (preg_match('/^\d+(nc|no)$/i', $t)) return true;
+
+        return false;
+    }
+
+    private function cleanQuotes(string $text): string
+    {
+        return str_replace(['"', "'", "\xe2\x80\x9c", "\xe2\x80\x9d", '`'], '', trim($text));
     }
 }
