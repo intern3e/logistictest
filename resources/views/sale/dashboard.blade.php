@@ -142,14 +142,26 @@ document.getElementById('searchInput').addEventListener('input', function () {
     $pdfPath = "doc_document/{$item->billid}.pdf";
     $billPath = "bill_document/{$item->billid}.pdf";
     $hasPdf  = \Illuminate\Support\Facades\Storage::disk('public')->exists($pdfPath);
+    $isNoMerge = ($item->customer_id === 'CUS-26039');
 @endphp
 
 <td @if($item->statusdeli == 1) style="background-color: #a5d6a7;" @endif>
     @if($hasPdf)
         <span style="white-space: nowrap;">
-            <a href="javascript:void(0);"
-               style="color:#0000FF; font-weight:bold; cursor:pointer;"
-               onclick="mergeAndOpenPdfs('{{ $item->billid }}')">{{ $item->billid }}</a>
+            @if($isNoMerge)
+                {{-- CUS-26039: เปิดไฟล์อย่างเดียว ไม่ merge --}}
+                <a href="{{ asset('storage/doc_document/' . $item->billid . '.pdf') }}"
+                   target="_blank"
+                   style="color:#0000FF; font-weight:bold; cursor:pointer;">
+                    {{ $item->billid }}
+                </a>
+            @else
+                <a href="javascript:void(0);"
+                   style="color:#0000FF; font-weight:bold; cursor:pointer;"
+                   onclick="mergeAndOpenPdfs('{{ $item->billid }}')">
+                    {{ $item->billid }}
+                </a>
+            @endif
         </span>
     @elseif($item->statusdeli == 1)
         <a href="https://drive.google.com/drive/u/0/search?q={{ $item->billid }}+parent:1WyDB1b01cDQ53Ap7B03UIGFbL6a2Y6WB"
@@ -160,7 +172,6 @@ document.getElementById('searchInput').addEventListener('input', function () {
         {{ $item->billid }}
     @endif
 </td>
-
 <script>
     function mergeAndOpenPdfs(billid) {
         const pdfDocUrl = "{{ asset('storage/doc_document') }}/" + billid + ".pdf";
@@ -233,10 +244,17 @@ document.getElementById('searchInput').addEventListener('input', function () {
                     <td>{{ $item->emp_name }}</td> 
                     <td>{{ $item->billtype }}
                         @if($hasPdf)
-                            <a href="javascript:void(0);"
-                            style="color:#28a745; font-weight:bold; cursor:pointer; margin-left:3px;"
-                            onclick="openBillOnly('{{ $item->billid }}')"
-                            title="เปิดไฟล์ใบเสร็จ">+</a>
+                            @if($isNoMerge)
+                                <a href="{{ asset('storage/bill_document/' . $item->billid . '.pdf') }}"
+                                target="_blank"
+                                style="color:#28a745; font-weight:bold; cursor:pointer; margin-left:3px;"
+                                title="เปิดไฟล์ใบเสร็จ">+</a>
+                            @else
+                                <a href="javascript:void(0);"
+                                style="color:#28a745; font-weight:bold; cursor:pointer; margin-left:3px;"
+                                onclick="openBillOnly('{{ $item->billid }}')"
+                                title="เปิดไฟล์ใบเสร็จ">+</a>
+                            @endif
                         @endif
                     </td>
                     <td>{{ \Carbon\Carbon::parse($item->time)->format('H:i d/m/Y ') }}</td>
