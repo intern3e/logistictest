@@ -243,6 +243,11 @@ Route::post('/solar-accounts/store',       [TechnicianController::class, 'accoun
 Route::post('/solar-accounts/{id}/update', [TechnicianController::class, 'accountUpdate'])->name('account.update');
 Route::post('/solar-accounts/{id}/delete', [TechnicianController::class, 'accountDestroy'])->name('account.delete');
 Route::post('/customers/{id}/status', [TechnicianController::class, 'customerStatusUpdate'])->name('cust.status');
+Route::post('/aircons/store', [TechnicianController::class, 'airconStore'])->name('aircons.store');
+Route::post('/aircons/{id}/update', [TechnicianController::class, 'airconUpdate'])->name('aircons.update');
+Route::post('/aircons/{id}/status', [TechnicianController::class, 'airconStatusUpdate'])->name('aircons.status');
+Route::post('/aircons/{id}/delete', [TechnicianController::class, 'airconDestroy'])->name('aircons.delete');
+
 
 use App\Http\Controllers\DeliverytrackController;
 Route::get('/deliverytrack', [DeliverytrackController::class, 'index'])->name('deliverytrack');
@@ -254,4 +259,5 @@ Route::get('/SoItem',                              [SoItemController::class, 'in
 Route::post('/SoItem',                             [SoItemController::class, 'store']);
 Route::post('/SoItem/batch-match',                 [SoItemController::class, 'batchMatch']);
 Route::get('/SoItem/sales-history/{customerCode}', [SoItemController::class, 'salesHistory']);
- 
+Route::get('/quotations',           [SoItemController::class, 'dashboard']);
+Route::get('/quotations/{id}/pdf',  [SoItemController::class, 'downloadPdf']);

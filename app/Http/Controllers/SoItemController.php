@@ -5,28 +5,196 @@ namespace App\Http\Controllers;
 use App\Models\fuzzy_so;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
+use App\Models\quotation;
+use App\Models\quotationItem;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Storage;
 
 class SoItemController extends Controller
 {
+    public function dashboard(Request $request)
+    {
+        $search = trim($request->input('search', ''));
+        $status = trim($request->input('status', ''));
+        $month  = trim($request->input('month', ''));
+ 
+        $query = Quotation::with('items')->orderByDesc('created_at');
+ 
+        if ($search) {
+            $query->where(function ($q) use ($search) {
+                $q->where('quotation_no', 'LIKE', "%{$search}%")
+                  ->orWhere('customer_company', 'LIKE', "%{$search}%")
+                  ->orWhere('customer_code', 'LIKE', "%{$search}%")
+                  ->orWhere('contact_name', 'LIKE', "%{$search}%");
+            });
+        }
+ 
+        if ($status) {
+            $query->where('status', $status);
+        }
+ 
+        if ($month) {
+            $query->whereRaw("DATE_FORMAT(doc_date, '%Y-%m') = ?", [$month]);
+        }
+ 
+        $quotations = $query->paginate(20)->withQueryString();
+ 
+        return view('sale.dashboardquotations', compact(
+            'quotations', 'search', 'status', 'month'
+        ));
+    }
+ 
+    /**
+     * GET /quotations/{id}/pdf
+     */
+    public function downloadPdf(int $id)
+    {
+        $qt = Quotation::findOrFail($id);
+ 
+        if (!$qt->hasPdf()) {
+            abort(404, 'ไม่พบไฟล์ PDF');
+        }
+ 
+        return response()->download(
+            $qt->pdf_full_path,
+            $qt->quotation_no . '.pdf'
+        );
+    }
     public function index()
     {
         return view('sale.SoItem');
     }
 
-    public function store(Request $request)
+ public function store(Request $request)
     {
-        return response()->json(['status' => 'success']);
+        $request->validate([
+            'doc_date'          => 'required|date',
+            'customer_code'     => 'nullable|string|max:50',
+            'customer_company'  => 'required|string|max:255',
+            'customer_address'  => 'required|string',
+            'customer_tel'      => 'required|string|max:100',
+            'customer_tax'      => 'nullable|string|max:50',
+            'customer_branch'   => 'nullable|string|max:100',
+            'contact_name'      => 'required|string|max:255',
+            'valid_days'        => 'required|integer|min:0',
+            'expire_date'       => 'nullable|date',
+            'credit_days'       => 'nullable|integer|min:0',
+            'note'              => 'nullable|string',
+            'items'             => 'required|array|min:1',
+            'items.*.desc'      => 'required|string',
+            'items.*.qty'       => 'required|numeric|min:0',
+            'items.*.unit'      => 'nullable|string|max:50',
+            'items.*.price'     => 'required|numeric|min:0',
+            'items.*.item_new'  => 'nullable|string',
+            'items.*.product_name' => 'nullable|string',
+            'items.*.is_new'    => 'nullable|boolean',
+            'pdf_base64'        => 'nullable|string',
+        ]);
+ 
+        try {
+            return DB::transaction(function () use ($request) {
+ 
+                // ★ 1) สร้างเลขที่ใบเสนอราคา
+                $quotationNo = $this->generateQuotationNo();
+ 
+                // ★ 2) สร้าง Quotation
+                $quotation = Quotation::create([
+                    'quotation_no'      => $quotationNo,
+                    'doc_date'          => $request->input('doc_date'),
+                    'customer_code'     => $request->input('customer_code'),
+                    'customer_company'  => $request->input('customer_company'),
+                    'customer_address'  => $request->input('customer_address'),
+                    'customer_tel'      => $request->input('customer_tel'),
+                    'customer_tax'      => $request->input('customer_tax'),
+                    'customer_branch'   => $request->input('customer_branch'),
+                    'contact_name'      => $request->input('contact_name'),
+                    'valid_days'        => $request->input('valid_days', 0),
+                    'expire_date'       => $request->input('expire_date'),
+                    'credit_days'       => $request->input('credit_days'),
+                    'note'              => $request->input('note'),
+                    'status'            => 'draft',
+                    'gross_amount'      => 0,
+                    'vat_amount'        => 0,
+                    'grand_total'       => 0,
+                ]);
+ 
+                // ★ 3) สร้าง QuotationItem
+                $items = $request->input('items', []);
+                foreach ($items as $idx => $item) {
+                    $desc  = trim($item['desc'] ?? '');
+                    $price = (float) ($item['price'] ?? 0);
+                    if (!$desc && $price <= 0) continue;
+ 
+                    QuotationItem::create([
+                        'quotation_id'  => $quotation->id,
+                        'line_no'       => $idx + 1,
+                        'description'   => $desc,
+                        'qty'           => (float) ($item['qty'] ?? 0),
+                        'unit'          => $item['unit'] ?? null,
+                        'unit_price'    => $price,
+                        'item_new'      => $item['item_new'] ?? null,
+                        'product_name'  => $item['product_name'] ?? null,
+                        'is_new'        => (bool) ($item['is_new'] ?? false),
+                        // amount จะ auto คำนวณจาก booted() ใน model
+                    ]);
+                }
+ 
+                // ★ 4) คำนวณยอดรวม
+                $quotation->load('items');
+                $quotation->recalculate();
+                $quotation->save();
+ 
+                // ★ 5) บันทึก PDF
+                $pdfBase64 = $request->input('pdf_base64');
+                if ($pdfBase64) {
+                    $quotation->storePdf($pdfBase64);
+                }
+ 
+                return response()->json([
+                    'status'       => 'success',
+                    'quotation_no' => $quotation->quotation_no,
+                    'id'           => $quotation->id,
+                    'grand_total'  => $quotation->grand_total,
+                    'pdf_path'     => $quotation->pdf_path,
+                    'message'      => "บันทึกใบเสนอราคา {$quotation->quotation_no} สำเร็จ",
+                ]);
+            });
+ 
+        } catch (\Exception $e) {
+            Log::error('Quotation store error: ' . $e->getMessage());
+            return response()->json([
+                'status'  => 'error',
+                'message' => 'บันทึกไม่สำเร็จ: ' . $e->getMessage(),
+            ], 500);
+        }
     }
-
-    /* ================================================================
-     *  POST /SoItem/batch-match
-     *
-     *  Flow:
-     *  1) Scored Match   : นับ keyword ที่ hit → score สูงสุด (ทุก input)
-     *  2) Reverse Exact  : model ของ DB อยู่ใน input
-     *  3) Fuzzy Reverse  : Levenshtein ≥ 80%
-     *  4) ★ Similarity Gate ≥ 50%
-     * ================================================================ */
+ 
+    /**
+     * สร้างเลขที่ใบเสนอราคา: QT-20260609143022-0001
+     * running number (0001) reset กลับ 1 ทุกต้นเดือน
+     */
+    private function generateQuotationNo(): string
+    {
+        $now      = now();
+        $datetime = $now->format('YmdHis');                       // 20260609143022
+        $monthPrefix = 'QT-' . $now->format('Ym');                // QT-202506
+ 
+        // หา running number ล่าสุดของเดือนนี้
+        $last = Quotation::where('quotation_no', 'LIKE', $monthPrefix . '%')
+            ->orderByDesc('quotation_no')
+            ->value('quotation_no');
+ 
+        if ($last) {
+            // QT-20260609143022-0003 → ตัด 4 ตัวท้าย → 0003 → +1
+            $seq = (int) substr($last, -4) + 1;
+        } else {
+            $seq = 1;
+        }
+ 
+        $running = str_pad($seq, 4, '0', STR_PAD_LEFT);          // 0001
+ 
+        return "QT-{$datetime}-{$running}";                       // QT-20260609143022-0001
+    }
     public function batchMatch(Request $request)
     {
         $customerCode = trim($request->input('customer_code', ''));
@@ -136,27 +304,28 @@ class SoItemController extends Controller
      *  - มี model token → score ≥ 5 (model ยาวตัวเดียวก็พอ)
      *  - ไม่มี model → ต้อง hit brand ≥ 2 ตัว (ตัวเดียวกว้างเกิน)
      * ================================================================ */
-    private function scoredMatch(string $keyword, $allRows): ?array
+     private function scoredMatch(string $keyword, $allRows): ?array
     {
         $searchTokens = $this->extractAllSearchTokens($keyword);
         if (empty($searchTokens)) return null;
-
+ 
         $hasModel = false;
         foreach ($searchTokens as $t) {
             if ($t['is_model']) { $hasModel = true; break; }
         }
-
+ 
         $bestRow    = null;
         $bestScore  = 0;
         $bestHits   = 0;
         $bestKws    = '';
-
+        $bestDate   = null;   // ★ เพิ่ม: เก็บวันที่ของ best row
+ 
         foreach ($allRows as $row) {
             $nameLower   = mb_strtolower($row->product_name);
             $score       = 0;
             $hits        = 0;
             $hitKeywords = [];
-
+ 
             foreach ($searchTokens as $token) {
                 $tokenLower = mb_strtolower($token['text']);
                 if (mb_strpos($nameLower, $tokenLower) !== false) {
@@ -166,16 +335,41 @@ class SoItemController extends Controller
                     $hitKeywords[] = $token['text'];
                 }
             }
-
-            if ($score > $bestScore) {
+ 
+            if ($score <= 0) continue;
+ 
+            // ★★★ FIX: score ใกล้เคียง ±1 → เลือก row ใหม่กว่า ★★★
+            $shouldReplace = false;
+ 
+            if (!$bestRow) {
+                $shouldReplace = true;
+            } else {
+                $diff = $score - $bestScore;
+ 
+                if ($diff > 1) {
+                    // score สูงกว่าชัดเจน (ห่าง > 1) → แทนที่
+                    $shouldReplace = true;
+                } elseif ($diff >= -1) {
+                    // score ใกล้เคียง (±1) → เลือก row ที่วันที่ใหม่กว่า
+                    $rowDate  = $row->doc_date ? strtotime($row->doc_date) : 0;
+                    $bestDt   = $bestDate      ? strtotime($bestDate)      : 0;
+                    if ($rowDate > $bestDt) {
+                        $shouldReplace = true;
+                    }
+                }
+                // diff < -1 → row เดิม score สูงกว่าชัดเจน → ไม่แทนที่
+            }
+ 
+            if ($shouldReplace) {
                 $bestScore = $score;
                 $bestHits  = $hits;
                 $bestRow   = $row;
                 $bestKws   = implode(' + ', $hitKeywords);
+                $bestDate  = $row->doc_date;   // ★ เก็บวันที่
             }
         }
-
-        // ★ เงื่อนไขผ่าน
+ 
+        // ★ เงื่อนไขผ่าน (ไม่เปลี่ยน)
         if ($bestRow) {
             if ($hasModel && $bestScore >= 5) {
                 return ['row' => $bestRow, 'keywords' => $bestKws];
@@ -184,7 +378,7 @@ class SoItemController extends Controller
                 return ['row' => $bestRow, 'keywords' => $bestKws];
             }
         }
-
+ 
         return null;
     }
 

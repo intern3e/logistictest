@@ -12,9 +12,13 @@
   $schedules = collect($schedules ?? []);
   $customers = collect($customers ?? []);
   $accounts = collect($accounts ?? []);
+  $aircons = collect($aircons ?? []);
   $washAlerts = collect($washAlerts ?? []);
   $stats = $stats ?? ['total_tech' => $technicians->count()];
   $availableTeams = collect($availableTeams ?? $teams->pluck('team_name')->filter()->values());
+  $airconTotal = $aircons->count();
+  $airconCleaned = $aircons->where('status', 'cleaned')->count();
+  $airconPending = $aircons->where('status', 'pending')->count();
 
   $jobTypes = $jobTypes ?? [
     'solar_install' => 'ติดตั้ง Solar',
@@ -22,9 +26,8 @@
     'solar_maintenance' => 'ซ่อมบำรุง Solar',
     'electrical' => 'งานไฟฟ้า',
     'civil' => 'งานโยธา',
-    'general' => 'งานทั่วไป',
+    'general' => 'งานทั่วไป', 
   ];
-
   $skillOptions = $skillOptions ?? ['Solar', 'Electrical', 'Civil', 'PLC', 'Inverter', 'Safety', 'Wiring', 'Maintenance'];
   $softwareOptions = $softwareOptions ?? ['AutoCAD', 'SketchUp', 'Excel', 'FusionSolar', 'SolarmanPV', 'MS Project'];
   $competencyList = $competencyList ?? [
@@ -73,11 +76,11 @@
 
   $certGroups = collect();
   foreach ($technicians as $tech) {
-    foreach (($tech->licenses ?? []) as $lic) {
+    foreach (($tech->licenses ?? []) as $licIndex => $lic) {
       $title = trim($lic['title'] ?? '');
       if ($title === '') continue;
       if (!$certGroups->has($title)) $certGroups[$title] = collect();
-      $certGroups[$title]->push(['tech' => $tech, 'license' => $lic]);
+      $certGroups[$title]->push(['tech' => $tech, 'license' => $lic, 'license_index' => $licIndex]);
     }
   }
   $certTotal = $technicians->flatMap(fn($t) => $t->licenses ?? [])->count();
@@ -196,7 +199,10 @@ a { color: inherit }
   transition: transform .22s ease, background .22s ease, color .22s ease, box-shadow .22s ease;
 }
 .sb-tab svg  { width: 18px; height: 18px; stroke: currentColor; fill: none; stroke-width: 2; flex: 0 0 auto; transition: transform .22s ease }
-.sb-tab .label { flex: 1 }
+.sb-tab .label {
+  flex: 1;
+  min-width: 0;
+}
 /* indicator bar */
 .sb-tab::before {
   content: ''; position: absolute; left: 7px; top: 50%;
@@ -231,10 +237,19 @@ a { color: inherit }
   background: #e8f1ff; color: #174ea6; border: 1px solid #cfe2ff;
   transition: transform .22s ease, background .22s ease, color .22s ease;
 }
-.sb-tab:hover .nav-badge-count { transform: scale(1.1) }
+.sb-tab .nav-badge-count {
+  width: 34px;
+  min-width: 34px;
+  height: 22px;
+  margin-left: auto;
+  flex: 0 0 34px;
+  line-height: 1;
+  transform: none !important;
+}
+.sb-tab:hover .nav-badge-count { transform: none !important }
 .sb-tab.active .nav-badge-count {
   background: rgba(255,255,255,.24); color: #fff; border-color: rgba(255,255,255,.28);
-  animation: badgePulse 1.9s ease-in-out infinite;
+  animation: none;
 }
 
 .sb-end { padding: 14px 16px; border-top: 1px solid var(--line); display: grid; gap: 8px; background: var(--navy-25) }
@@ -246,7 +261,7 @@ a { color: inherit }
    ============================================================ */
 .btn {
   border: 0; border-radius: var(--radius-sm);
-  padding: 10px 18px; font-size: 14px; font-weight: 600;
+font-weight: 600;
   cursor: pointer; display: inline-flex; align-items: center; justify-content: center; gap: 8px;
   transition: all .18s ease; text-decoration: none;
 }
@@ -261,8 +276,6 @@ a { color: inherit }
 .btn-ghost:hover { background: var(--navy-25); border-color: var(--navy-300); color: var(--navy-700) }
 .btn-danger { background: var(--danger-bg); color: var(--danger-text); border: 1px solid #fecaca }
 .btn-danger:hover { background: #fecaca }
-.btn-sm { padding: 6px 12px; font-size: 12px }
-
 /* ============================================================
    FLASH
    ============================================================ */
@@ -273,11 +286,6 @@ a { color: inherit }
 }
 .flash-success { background: var(--success-bg); color: var(--success-text); border: 1px solid #86efac }
 .flash-error   { background: var(--danger-bg);  color: var(--danger-text);  border: 1px solid #fca5a5 }
-.flash.is-hiding {
-  opacity: 0; transform: translateY(-6px); max-height: 0;
-  margin: 0; padding-top: 0; padding-bottom: 0; overflow: hidden;
-}
-
 /* ============================================================
    PANELS
    ============================================================ */
@@ -341,12 +349,12 @@ tbody tr:last-child td { border-bottom: 0 }
   display: inline-flex; align-items: center; gap: 5px;
   border-radius: 999px; padding: 4px 10px; font-size: 12px; font-weight: 600; white-space: nowrap;
 }
-.jt-solar_install     { background: var(--navy-50);   color: var(--navy-700) }
-.jt-solar_wash        { background: var(--navy-100);  color: var(--navy-800) }
-.jt-solar_maintenance { background: var(--navy-200);  color: var(--navy-900) }
-.jt-electrical { background: #fef3c7; color: #92400e }
-.jt-civil      { background: #dcfce7; color: #166534 }
-.jt-general    { background: var(--bg-soft); color: var(--muted) }
+.jt-solar_install     { background: #e0f2fe; color: #075985; border: 1px solid #7dd3fc }
+.jt-solar_wash        { background: #fef3c7; color: #92400e; border: 1px solid #fcd34d }
+.jt-solar_maintenance { background: #ccfbf1; color: #0f766e; border: 1px solid #5eead4 }
+.jt-electrical        { background: #e0e7ff; color: #3730a3; border: 1px solid #a5b4fc }
+.jt-civil             { background: #ede9fe; color: #5b21b6; border: 1px solid #c4b5fd }
+.jt-general           { background: #ffe4e6; color: #be123c; border: 1px solid #fda4af }
 
 .cst-quote                     { background: var(--info-bg);    color: var(--info-text) }
 .cst-active, .cst-installing   { background: var(--warn-bg);    color: var(--warn-text) }
@@ -420,23 +428,17 @@ tbody tr:last-child td { border-bottom: 0 }
    ============================================================ */
 #roster-grid {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 16px;
   align-items: stretch;
 }
 @media (max-width: 1100px) { #roster-grid { grid-template-columns: repeat(2, minmax(0, 1fr)) } }
 @media (max-width: 600px)  { #roster-grid { grid-template-columns: 1fr } }
 
 #roster-grid .emp-card {
-  background: transparent; border: none; box-shadow: none;
-  padding: 22px 0 0; display: flex; flex-direction: column; height: 100%;
-  cursor: pointer; overflow: visible; position: relative;
-  animation: popIn .45s cubic-bezier(.34,1.4,.64,1) forwards;
+flex-direction: column; height: 100%;
+  cursor: pointer; animation: popIn .45s cubic-bezier(.34,1.4,.64,1) forwards;
   opacity: 0;
   transition: transform .22s ease;
-}
-#roster-grid .emp-card:hover { transform: translateY(-4px) }
-#roster-grid .emp-card .emp-card-stripe { display: none }
+}#roster-grid .emp-card .emp-card-stripe { display: none }
 
 #roster-grid .emp-card-body {
   flex: 1; position: relative;
@@ -452,13 +454,7 @@ tbody tr:last-child td { border-bottom: 0 }
   box-shadow: 0 8px 24px rgba(10,46,122,.45);
 }
 
-/* Folder tab */
-#roster-grid .emp-card-body::before {
-  content: ''; position: absolute; top: -20px; left: 0;
-  width: 50%; height: 22px; background: #0f2b5f;
-  border-radius: 10px 10px 0 0; z-index: 1;
-}
-#roster-grid .emp-card.is-head .emp-card-body::before { background: #0a3fad }
+/* Folder tab */#roster-grid .emp-card.is-head .emp-card-body::before { background: #0a3fad }
 #roster-grid .emp-card-body::after { display: none }
 
 /* Hover */
@@ -521,12 +517,8 @@ tbody tr:last-child td { border-bottom: 0 }
 #roster-grid .emp-card-skills::before { display: none }
 
 #roster-grid .emp-skill-tag {
-  display: flex; align-items: center; justify-content: center;
-  background: #fff; color: #0C3E9B;
-  border: 1px solid #fff; border-radius: 10px;
-  padding: 7px 10px; font-size: 12px; font-weight: 800;
-  text-align: center; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
-  min-height: 34px; grid-column: span 1;
+text-align: center; overflow: hidden; text-overflow: ellipsis;
+  grid-column: span 1;
 }
 #roster-grid .emp-skill-tag.plus-tag {
   grid-column: 1 / -1; background: rgba(255,255,255,.08); color: rgba(255,255,255,.6);
@@ -634,17 +626,22 @@ tbody tr:last-child td { border-bottom: 0 }
 /* ============================================================
    SCHEDULE BOARD
    ============================================================ */
-.sched-board { min-height: calc(100vh - 48px) }
+.sched-board {
+  min-height: calc(100vh - 48px);
+  background: #ffffff;
+  color: var(--text);
+}
 .sched-board-top {
   display: flex; justify-content: space-between; align-items: flex-start;
   gap: 16px; margin-bottom: 20px; padding: 20px 24px;
-  background: var(--white); border: 1px solid var(--line);
+  background: #ffffff; border: 1px solid var(--line);
   border-radius: var(--radius-lg); box-shadow: var(--shadow-xs);
 }
 .sched-board-title { font-size: 24px; font-weight: 700; line-height: 1.2; color: var(--navy-900); letter-spacing: -.01em }
 .sched-board-sub   { margin-top: 8px; color: var(--muted); font-size: 13px; font-weight: 500 }
+.sched-board .sched-eyebrow { color: var(--navy-700); letter-spacing: .12em }
 .sched-controls { display: flex; align-items: center; gap: 8px; flex-wrap: wrap }
-.sched-select { height: 38px; min-width: 150px; padding: 0 12px; font-size: 13px; font-weight: 600 }
+.sched-select { height: 38px; min-width: 150px; font-weight: 600 }
 .sched-mode-group {
   height: 38px; display: flex; overflow: hidden;
   border: 1px solid var(--line); border-radius: var(--radius-sm); background: var(--white);
@@ -658,12 +655,12 @@ tbody tr:last-child td { border-bottom: 0 }
 .sched-nav-btn {
   min-width: 38px; height: 38px; padding: 0 14px;
   border: 1px solid var(--line); border-radius: var(--radius-sm);
-  background: var(--white); color: var(--text); font-size: 15px; font-weight: 600; cursor: pointer; transition: all .18s;
+  background: #ffffff; color: var(--text); font-size: 15px; font-weight: 600; cursor: pointer; transition: all .18s;
 }
 .sched-nav-btn:hover { border-color: var(--navy-400); color: var(--navy-700) }
 
 .sched-calendar-card {
-  background: var(--white); border: 1px solid var(--line);
+  background: #ffffff; border: 1px solid var(--line);
   border-radius: var(--radius-lg); overflow: hidden; box-shadow: var(--shadow-xs);
 }
 .sched-month-nav {
@@ -683,16 +680,18 @@ tbody tr:last-child td { border-bottom: 0 }
 
 .sched-day {
   min-height: 124px; position: relative; padding: 11px 9px;
-  background: var(--white);
+  background: #ffffff;
   border-right: 1px solid var(--line-soft); border-bottom: 1px solid var(--line-soft);
 }
 .sched-day:nth-child(7n) { border-right: 0 }
 .sched-day.other { background: var(--bg-soft) }
 .sched-day.other .sched-day-num { color: #cbd5e1 }
 .sched-day-num { display: block; margin: 0 0 9px; font-size: 14px; font-weight: 700; color: var(--text) }
+.sched-month-grid .sched-day:nth-child(7n+1) .sched-day-num { color: #ef4444 }
+.sched-month-grid .sched-day:nth-child(7n) .sched-day-num { color: #60a5fa }
 .sched-day.today .sched-day-num {
-  width: 26px; height: 26px; display: grid; place-items: center;
-  background: #0a27f9; color: #fff; border-radius: 999px;
+  width: auto; height: auto; display: block;
+  background: transparent; color: #60a5fa; border-radius: 0;
 }
 .sched-day-count {
   position: absolute; top: 9px; right: 9px;
@@ -706,19 +705,19 @@ tbody tr:last-child td { border-bottom: 0 }
 .sched-event {
   display: flex; width: 100%; min-height: 52px;
   margin-bottom: 5px; padding: 6px 8px;
-  border: 1px solid transparent; border-left: 5px solid transparent; border-radius: 9px;
+  border: 1px solid transparent; border-left: 4px solid transparent; border-radius: 6px;
   text-align: left; cursor: pointer; transition: filter .15s, transform .15s, box-shadow .15s;
   flex-direction: column; gap: 4px;
-  box-shadow: 0 4px 12px rgba(14,47,118,.08);
+  box-shadow: none;
 }
-.sched-event:hover { filter: brightness(.98); transform: translateY(-1px); box-shadow: 0 8px 18px rgba(14,47,118,.10), inset 0 0 0 1px rgba(255,255,255,.48) }
+.sched-event:hover { filter: brightness(.98); transform: translateY(-1px); box-shadow: 0 10px 22px rgba(0,0,0,.26), inset 0 0 0 1px rgba(255,255,255,.44) }
 .sched-event-title { font-size: 12px; font-weight: 900; line-height: 1.14; overflow: hidden; text-overflow: ellipsis; white-space: nowrap }
 .sched-event-meta { display: flex; align-items: center; gap: 5px; min-width: 0 }
 .sched-event-type {
   display: inline-flex; align-items: center; align-self: flex-start;
   max-width: 46%; min-height: 18px; padding: 2px 7px;
-  border-radius: 999px; background: rgba(255,255,255,.86);
-  border: 1px solid rgba(15,23,42,.10);
+  border-radius: 5px; background: rgba(255,255,255,.58);
+  border: 1px solid rgba(15,23,42,.08);
   font-size: 10px; font-weight: 900; line-height: 1.05;
   overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
 }
@@ -729,12 +728,71 @@ tbody tr:last-child td { border-bottom: 0 }
   background: currentColor; opacity: .55; flex: 0 0 5px;
 }
 
-.evc-1, .evc-5, .evc-9  { background: #ffe4ec; color: #9f1239; border-color: #f9a8c2; border-left-color: #e11d48 }
-.evc-2, .evc-6, .evc-10 { background: #dcfce7; color: #14532d; border-color: #86efac; border-left-color: #16a34a }
-.evc-3, .evc-7, .evc-11 { background: #ecfccb; color: #365314; border-color: #bef264; border-left-color: #65a30d }
-.evc-4, .evc-8, .evc-12 { background: #f3e8ff; color: #581c87; border-color: #d8b4fe; border-left-color: #9333ea }
+.evc-install,
+.evc-4, .evc-8, .evc-12 {
+  background: #eaf2ff;
+  color: #1d4ed8;
+  border-color: #bfdbfe;
+  border-left-color: #3b82f6;
+}
+.evc-wash,
+.evc-3, .evc-7, .evc-11 {
+  background: #e9fbea;
+  color: #15803d;
+  border-color: #bbf7d0;
+  border-left-color: #22c55e;
+}
+.evc-maintenance,
+.evc-2, .evc-6, .evc-10 {
+  background: #fff3e8;
+  color: #c2410c;
+  border-color: #fed7aa;
+  border-left-color: #f97316;
+}
+.evc-electrical {
+  background: #f6edff;
+  color: #7e22ce;
+  border-color: #d8b4fe;
+  border-left-color: #a855f7;
+}
+.evc-civil {
+  background: #eef2ff;
+  color: #4338ca;
+  border-color: #c7d2fe;
+  border-left-color: #6366f1;
+}
+.evc-general,
+.evc-1, .evc-5, .evc-9 {
+  background: #fff1f7;
+  color: #be185d;
+  border-color: #fbcfe8;
+  border-left-color: #ec4899;
+}
+.evc-install .sched-event-type { background: #dbeafe; color: #1d4ed8; border-color: #bfdbfe }
+.evc-wash .sched-event-type { background: #dcfce7; color: #15803d; border-color: #bbf7d0 }
+.evc-maintenance .sched-event-type { background: #ffedd5; color: #c2410c; border-color: #fed7aa }
+.evc-electrical .sched-event-type { background: #ede9fe; color: #7e22ce; border-color: #d8b4fe }
+.evc-civil .sched-event-type { background: #e0e7ff; color: #4338ca; border-color: #c7d2fe }
+.evc-general .sched-event-type { background: #fce7f3; color: #be185d; border-color: #fbcfe8 }
 
-.sched-more { padding-left: 4px; color: var(--muted); font-size: 11px; font-weight: 600 }
+.sched-more {
+  display: inline-flex; align-items: center;
+  margin-top: 2px; padding: 2px 6px;
+  border: 0; border-radius: 6px; background: transparent;
+  color: var(--navy-700); font-size: 11px; font-weight: 900;
+  cursor: pointer;
+}
+.sched-more:hover { background: var(--navy-50); color: var(--navy-900); text-decoration: underline }
+.cal-popup-bg { z-index: 780 !important }
+.cal-popup-inner { max-height: min(64vh, 520px); overflow: auto }
+.cal-ev-card {
+  display: block; width: 100%;
+  border-left-width: 5px !important;
+  text-align: left; cursor: pointer;
+  transition: transform .15s ease, box-shadow .15s ease, border-color .15s ease;
+}
+.cal-ev-card:hover { transform: translateY(-1px); box-shadow: 0 10px 22px rgba(14,47,118,.10) }
+.cal-ev-card::before { content: none !important; display: none !important }
 
 /* Schedule list */
 .sched-list-card { margin-top: 18px; background: var(--white); border: 1px solid var(--line); border-radius: var(--radius-lg); overflow: hidden; box-shadow: var(--shadow-xs) }
@@ -809,131 +867,844 @@ tbody tr:last-child td { border-bottom: 0 }
 .wac-date.overdue { color: var(--danger) }
 .wac-date.soon   { color: var(--warn) }
 
-.cust-name-btn    { border: 0; background: transparent; color: var(--navy-700); font-weight: 700; cursor: pointer; text-align: left; font-size: 14px }
-.cust-name-btn:hover { text-decoration: underline }
-.cust-date-chip, .wash-cycle-chip { display: inline-flex; align-items: center; border-radius: 999px; padding: 5px 11px; background: var(--navy-50); color: var(--navy-700); font-size: 12px; font-weight: 600; white-space: nowrap }
+.cust-name-btn    { border: 0; background: transparent;ursor: pointer; text-align: left;}.cust-date-chip, .wash-cycle-chip { display: inline-flex; align-items: center; border-radius: 999px; padding: 5px 11px; background: var(--navy-50); color: var(--navy-700); font-size: 12px; font-weight: 600; white-space: nowrap }
 .wash-cycle-cell      { display: grid; gap: 3px }
 .wash-cycle-cell small { color: var(--muted); font-size: 11px; font-weight: 500 }
-.cust-muted { color: var(--muted); font-weight: 500 }
-
-#panel-customers .panel-actions { display: flex; align-items: center; gap: 10px; flex-wrap: wrap }
+#panel-customers .panel-actions {ex-wrap: wrap }
 #panel-customers .panel-actions .btn { height: 40px; white-space: nowrap }
+
+/* === CODEX CUSTOMER PROJECT REDESIGN START === */
+#panel-customers {
+  --cust-ink: #082766;
+  --cust-blue: #0f4593;
+  --cust-line: #dbe8fb;
+  --cust-soft: #f6fbff;
+}
+
+#panel-customers .panel-header {
+  min-height: 92px;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 20px;
+  padding: 22px 26px;
+  margin-bottom: 16px;
+  border-radius: 14px;
+  background: #123b8d;
+  box-shadow: 0 16px 34px rgba(14,47,118,.16);
+}
+
+#panel-customers .panel-header::after { display: none }
+#panel-customers .panel-title { font-size: 22px; font-weight: 900; letter-spacing: 0 }
+
+.customer-eyebrow {
+  margin-bottom: 4px;
+  color: rgba(255,255,255,.72);
+  font-size: 11px;
+  font-weight: 900;
+  letter-spacing: .12em;
+  text-transform: uppercase;
+}
+
+.customer-hero-sub {
+  color: rgba(255,255,255,.72);
+  font-size: 12px;
+  font-weight: 800;
+  margin-top: 4px;
+}
+
+#panel-customers .panel-actions {
+  display: grid;
+  grid-template-columns: minmax(260px, 360px) auto;
+  align-items: center;
+  gap: 12px;
+}
+
+#panel-customers #cust-search {
+  width: 100%;
+  height: 46px;
+  min-width: 0;
+  padding: 0 16px;
+  border: 1px solid rgba(255,255,255,.42);
+  border-radius: 10px;
+  background: rgba(255,255,255,.98);
+  box-shadow: inset 0 0 0 2px rgba(170,192,225,.18);
+  color: var(--cust-ink);
+  font-weight: 800;
+}
+
+#panel-customers .btn-solar {
+  height: 46px;
+  border-radius: 10px;
+  padding: 0 18px;
+  background: #0d5be1;
+  box-shadow: 0 12px 26px rgba(13,91,225,.28);
+  font-weight: 900;
+}
+
+.cust-metrics {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.cust-metric {
+  min-height: 78px;
+  padding: 14px 16px;
+  border: 1px solid var(--cust-line);
+  border-radius: 12px;
+  background: linear-gradient(180deg, #fff 0%, #f8fbff 100%);
+  box-shadow: 0 8px 20px rgba(14,47,118,.06);
+}
+
+.cust-metric-label {
+  color: #64789d;
+  font-size: 11px;
+  font-weight: 900;
+}
+
+.cust-metric-value {
+  margin-top: 3px;
+  color: var(--cust-ink);
+  font-size: 26px;
+  font-weight: 900;
+  line-height: 1;
+}
+
+.cust-metric-note {
+  margin-top: 5px;
+  color: #64789d;
+  font-size: 11px;
+  font-weight: 800;
+}
+
+#panel-customers .cust-filter-bar {
+  position: sticky;
+  top: 0;
+  z-index: 4;
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-bottom: 16px;
+  padding: 12px;
+  border: 1px solid var(--cust-line);
+  border-radius: 12px;
+  background: rgba(255,255,255,.94);
+  box-shadow: 0 10px 26px rgba(14,47,118,.06);
+}
+
+#panel-customers .cust-filter-btn {
+  min-height: 36px;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  border-radius: 999px;
+  padding: 7px 15px;
+  border: 1px solid #cfe0f6;
+  background: #fff;
+  color: var(--cust-ink);
+  font-weight: 900;
+}
+
+#panel-customers .cust-filter-btn.active {
+  background: #123b8d;
+  border-color: #123b8d;
+  color: #fff;
+}
+
+#panel-customers .cust-filter-btn .fbc {
+  min-width: 24px;
+  height: 20px;
+  display: inline-grid;
+  place-items: center;
+  margin-left: 0;
+  padding: 0 7px;
+  background: #eaf2ff;
+  color: #174ea6;
+  font-size: 11px;
+  font-weight: 900;
+}
+
+#panel-customers .cust-filter-btn.active .fbc {
+  background: rgba(255,255,255,.22);
+  color: #fff;
+}
+
+#panel-customers .wash-alert-bar {
+  border-radius: 12px;
+  border-color: #fed7aa;
+  background: #fffaf2;
+  box-shadow: 0 10px 24px rgba(217,119,6,.08);
+}
+
+#panel-customers .wash-alert-title {
+  color: #9a5b00;
+  font-size: 13px;
+  font-weight: 900;
+}
+
+#panel-customers .wash-alert-chip {
+  border-radius: 10px;
+  background: #fff;
+}
+
+.customer-project-table-wrap {
+  border: 1px solid var(--cust-line);
+  border-radius: 14px;
+  background: #fff;
+  overflow: auto;
+  box-shadow: 0 14px 34px rgba(14,47,118,.08);
+}
+
+.customer-project-table {
+  min-width: 1080px;
+  border-collapse: separate;
+  border-spacing: 0;
+}
+
+.customer-project-table th {
+  position: sticky;
+  top: 0;
+  z-index: 3;
+  padding: 15px 18px;
+  background: #123f8f;
+  color: #fff;
+  font-size: 12px;
+  font-weight: 900;
+  letter-spacing: 0;
+  text-transform: none;
+}
+
+.customer-project-table td {
+  height: 82px;
+  padding: 16px 18px;
+  border-bottom: 1px solid #e4edf9;
+  color: var(--cust-ink);
+  font-size: 13px;
+  font-weight: 800;
+  background: #fff;
+}
+
+.customer-project-table tbody tr:hover td { background: var(--cust-soft) }
+.customer-project-table tbody tr:last-child td { border-bottom: 0 }
+
+.cust-index {
+  width: 28px;
+  height: 28px;
+  display: inline-grid;
+  place-items: center;
+  border-radius: 8px;
+  background: #eef5ff;
+  color: #0f4593;
+  font-size: 12px;
+  font-weight: 900;
+}
+
+.cust-name-btn {
+  display: inline-flex;
+  max-width: 360px;
+  color: var(--cust-ink);
+  font-size: 15px;
+  font-weight: 900;
+  line-height: 1.25;
+}
+
+.cust-name-btn:hover { color: #0d5be1; text-decoration: none }
+.cust-desc, .cust-contact {
+  margin-top: 3px;
+  color: #5f7399;
+  font-size: 12px;
+  font-weight: 800;
+  line-height: 1.25;
+}
+
+.cust-contact { font-size: 11px; color: #7184a4 }
+.cust-type-stack { display: grid; gap: 4px; justify-items: start }
+.cust-type-plain {
+  color: var(--cust-ink);
+  font-size: 13px;
+  font-weight: 900;
+  line-height: 1.25;
+}
+.cust-status-plain {
+  color: #64789d;
+  font-size: 11px;
+  font-weight: 800;
+  line-height: 1.2;
+}
+.cust-st { font-size: 11px; font-weight: 900; border: 1px solid transparent }
+
+#panel-customers .job-type-tag {
+  min-height: 30px;
+  padding: 6px 12px;
+  border-radius: 999px;
+  font-weight: 900;
+}
+
+#panel-customers .cust-date-chip,
+#panel-customers .wash-cycle-chip {
+  min-height: 30px;
+  padding: 6px 12px;
+  border-radius: 999px;
+  background: #e8f0fb;
+  color: #0f4593;
+  border: 1px solid #d9e6f8;
+  font-weight: 900;
+}
+
+#panel-customers .cust-date-plain {
+  color: var(--cust-ink);
+  font-size: 13px;
+  font-weight: 900;
+  line-height: 1.25;
+  white-space: nowrap;
+}
+
+#panel-customers .wash-cycle-cell {
+  display: inline-grid;
+  min-width: 210px;
+  gap: 3px;
+}
+
+
+#panel-customers .wash-cycle-cell small {
+  color: #5f7399;
+  font-size: 11px;
+  font-weight: 800;
+}
+
+.cust-muted {
+  display: inline-flex;
+  align-items: center;
+  color: #7890b0;
+  font-weight: 900;
+}
+
+.cust-row-actions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.cust-row-actions .btn {
+  min-width: 62px;
+  height: 34px;
+  border-radius: 8px;
+  padding: 0 13px;
+  font-weight: 900;
+}
+
+.cust-row-actions .btn-ghost {
+  border-color: #cfe0f6;
+  color: #0f4593;
+  background: #fff;
+}
+
+.cust-row-actions .btn-danger {
+  color: #b91c1c;
+  border-color: #fecaca;
+  background: #fee2e2;
+}
+
+.cust-empty-filter {
+  padding: 34px 16px !important;
+  text-align: center;
+  color: #64789d !important;
+  font-weight: 900 !important;
+}
+
+@media (max-width: 1200px) {
+  .cust-metrics { grid-template-columns: repeat(3, minmax(0, 1fr)) }
+}
+
+@media (max-width: 768px) {
+  #panel-customers .panel-header,
+  #panel-customers .panel-actions {
+    grid-template-columns: 1fr;
+    align-items: stretch;
+  }
+
+  .cust-metrics { grid-template-columns: repeat(2, minmax(0, 1fr)) }
+  #panel-customers #cust-search,
+  #panel-customers .panel-actions .btn { width: 100% }
+}
+/* === CODEX CUSTOMER PROJECT REDESIGN END === */
+
+/* === AIRCON WASH MENU START === */
+#panel-aircons { color: #0e2f76 }
+#panel-aircons .aircon-shell { display: grid; gap: 18px }
+#panel-aircons .aircon-metrics {
+  display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px;
+}
+#panel-aircons .aircon-metric {
+  min-height: 80px; display: flex; align-items: center; justify-content: space-between; gap: 14px;
+  background: #fff; border: 1px solid #d8e2f0; border-radius: 12px;
+  padding: 14px 16px; box-shadow: var(--shadow-sm); overflow: hidden;
+}
+#panel-aircons .aircon-metric-copy { min-width: 0 }
+#panel-aircons .aircon-metric-label { color: var(--muted); font-size: 12px; font-weight: 800 }
+#panel-aircons .aircon-metric-value {
+  margin-top: 4px; color: #0e2f76; font-size: 28px; line-height: 1; font-weight: 900;
+}
+#panel-aircons .aircon-metric-icon {
+  width: 46px; height: 46px; flex: 0 0 46px; display: inline-flex; align-items: center; justify-content: center;
+  border-radius: 14px; color: #fff; box-shadow: 0 10px 20px rgba(14,47,118,.16);
+}
+#panel-aircons .aircon-metric-icon svg {
+  width: 24px; height: 24px; stroke: currentColor; fill: none; stroke-width: 2;
+  stroke-linecap: round; stroke-linejoin: round;
+}
+#panel-aircons .aircon-metric-icon.total { background: #2563eb }
+#panel-aircons .aircon-metric-icon.cleaned { background: #16a34a }
+#panel-aircons .aircon-metric-icon.pending { background: #ef4444 }
+#panel-aircons .aircon-form-wrap { display: grid; place-items: start center }
+#panel-aircons .aircon-form-card {
+  width: min(560px, 100%); display: grid; gap: 14px;
+  background: #fff; border: 1px solid #d8e2f0; border-radius: 16px;
+  padding: 20px; box-shadow: 0 8px 22px rgba(14,47,118,.08);
+}
+#panel-aircons .aircon-field { display: grid; gap: 7px }
+#panel-aircons .aircon-label { color: #0e2f76; font-size: 13px; font-weight: 900 }
+#panel-aircons .aircon-label .req { color: #dc2626 }
+#panel-aircons .aircon-input,
+#panel-aircons .aircon-select,
+#panel-aircons .aircon-note {
+  width: 100%; min-height: 44px; border: 1px solid #d8e2f0; border-radius: 10px;
+  padding: 10px 13px; outline: none; color: #0e2f76; background: #fff; font-weight: 700;
+}
+#panel-aircons .aircon-note { min-height: 74px; resize: vertical }
+#panel-aircons .aircon-input:focus,
+#panel-aircons .aircon-select:focus,
+#panel-aircons .aircon-note:focus {
+  border-color: #4870c8; box-shadow: 0 0 0 3px rgba(170,192,225,.35);
+}
+#panel-aircons .aircon-upload-stack { display: grid; gap: 10px }
+#panel-aircons .aircon-file {
+  position: absolute; inline-size: 1px; block-size: 1px; opacity: 0; pointer-events: none;
+}
+#panel-aircons .aircon-upload {
+  min-height: 72px; display: grid; place-items: center; gap: 4px;
+  border: 1px dashed #aac0e1; border-radius: 10px; background: #f8fbff;
+  color: #3158b5; cursor: pointer; font-size: 13px; font-weight: 900; text-align: center;
+  transition: border-color .18s ease, background .18s ease, transform .18s ease;
+}
+#panel-aircons .aircon-upload:hover { border-color: #4870c8; background: #f0f6ff; transform: translateY(-1px) }
+#panel-aircons .aircon-upload svg {
+  width: 22px; height: 22px; stroke: currentColor; fill: none; stroke-width: 2;
+}
+#panel-aircons .aircon-upload small { color: var(--muted); font-size: 11px; font-weight: 700 }
+#panel-aircons .aircon-status-group {
+  display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px;
+}
+#panel-aircons .aircon-status-option {
+  min-height: 46px; display: flex; align-items: center; justify-content: center; gap: 8px;
+  border: 1px solid #d8e2f0; border-radius: 10px; background: #fff; color: #0e2f76;
+  cursor: pointer; font-size: 13px; font-weight: 900;
+}
+#panel-aircons .aircon-status-option input { accent-color: #16a34a }
+#panel-aircons .aircon-save {
+  width: 100%; min-height: 48px; border: 0; border-radius: 10px;
+  background: #2455dc; color: #fff; cursor: pointer; font-size: 15px; font-weight: 900;
+  box-shadow: 0 10px 18px rgba(36,85,220,.2);
+}
+#panel-aircons .aircon-save:hover { background: #173b8e }
+#panel-aircons .aircon-list-head {
+  display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-top: 6px;
+}
+#panel-aircons .aircon-list-title { color: #0e2f76; font-size: 16px; font-weight: 900 }
+#panel-aircons .aircon-search {
+  width: min(320px, 100%); height: 40px; border: 1px solid #d8e2f0; border-radius: 10px;
+  padding: 0 13px; color: #0e2f76; font-weight: 700; outline: none;
+}
+#panel-aircons .aircon-thumb-link {
+  position: relative; display: inline-flex; width: 56px; height: 42px;
+  border-radius: 8px; overflow: hidden; vertical-align: middle;
+  box-shadow: 0 6px 12px rgba(14,47,118,.12);
+}
+#panel-aircons .aircon-thumb {
+  width: 56px; height: 42px; object-fit: cover; border: 1px solid #d8e2f0;
+  border-radius: 8px; background: #f5feff;
+}
+#panel-aircons .aircon-thumb-count {
+  position: absolute; right: 4px; bottom: 4px; min-width: 18px; height: 18px;
+  display: inline-flex; align-items: center; justify-content: center;
+  border-radius: 999px; background: rgba(14,47,118,.88); color: #fff;
+  font-size: 10px; font-weight: 900; line-height: 1;
+}
+#panel-aircons .aircon-status-tag {
+  display: inline-flex; align-items: center; border-radius: 999px; padding: 5px 10px;
+  font-size: 12px; font-weight: 900; white-space: nowrap;
+}
+#panel-aircons .aircon-status-tag.cleaned { background: #dcfce7; color: #166534 }
+#panel-aircons .aircon-status-tag.pending { background: #fef3c7; color: #92400e }
+#panel-aircons .aircon-status-select {
+  min-width: 132px; height: 38px; border: 1px solid #d8e2f0; border-radius: 999px;
+  padding: 0 32px 0 13px; outline: none; cursor: pointer; font-size: 12px; font-weight: 900;
+  appearance: none; background-repeat: no-repeat; background-position: right 12px center; background-size: 10px 6px;
+  background-image: linear-gradient(45deg, transparent 50%, currentColor 50%), linear-gradient(135deg, currentColor 50%, transparent 50%);
+  background-position: calc(100% - 16px) 15px, calc(100% - 11px) 15px;
+  background-size: 5px 5px, 5px 5px; box-shadow: 0 4px 10px rgba(14,47,118,.06);
+}
+#panel-aircons .aircon-status-select.cleaned {
+  background-color: #dcfce7; color: #166534; border-color: #86efac;
+}
+#panel-aircons .aircon-status-select.pending {
+  background-color: #fef3c7; color: #92400e; border-color: #fde68a;
+}
+#panel-aircons .aircon-status-select:disabled {
+  opacity: .65; cursor: wait;
+}
+#panel-aircons .aircon-row-actions {
+  display: flex; align-items: center; gap: 6px; flex-wrap: wrap;
+}
+#panel-aircons .aircon-row-actions form { margin: 0 }
+#panel-aircons .aircon-edit-btn {
+  background: #eaf3ff; color: #174ea6; border: 1px solid #bdd7ff;
+}
+#panel-aircons .aircon-edit-btn:hover { background: #dbeafe }
+@media (max-width: 768px) {
+  #panel-aircons .aircon-metrics,
+  #panel-aircons .aircon-status-group { grid-template-columns: 1fr }
+  #panel-aircons .aircon-list-head { align-items: stretch; flex-direction: column }
+  #panel-aircons .aircon-search { width: 100% }
+}
+#panel-aircons .aircon-panel-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+#panel-aircons .aircon-add-btn {
+  min-height: 40px;
+  padding: 0 16px;
+  border: 0;
+  border-radius: 10px;
+  background: #2455dc;
+  color: #fff;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  font-size: 13px;
+  font-weight: 900;
+  box-shadow: 0 10px 18px rgba(36,85,220,.18);
+  transition: transform .18s ease, background .18s ease, box-shadow .18s ease;
+}
+#panel-aircons .aircon-add-btn:hover {
+  background: #173b8e;
+  transform: translateY(-1px);
+  box-shadow: 0 14px 24px rgba(36,85,220,.24);
+}
+#panel-aircons .aircon-add-btn svg {
+  width: 18px;
+  height: 18px;
+  stroke: currentColor;
+  fill: none;
+  stroke-width: 2.2;
+}
+#modal-aircon {
+  padding: 24px !important;
+}
+#modal-aircon .aircon-modal {
+  width: min(860px, calc(100vw - 48px));
+  max-height: min(96vh, 880px);
+  border-radius: 16px;
+  overflow: hidden;
+  background: #fff;
+  border: 1px solid #cfe0f6;
+  box-shadow: 0 24px 70px rgba(14,47,118,.28);
+}
+#modal-aircon .aircon-modal-head {
+  min-height: 78px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  padding: 20px 24px;
+  background: linear-gradient(135deg, #0e2f76 0%, #2455dc 100%);
+  color: #fff;
+}
+#modal-aircon .aircon-modal-title {
+  font-size: 22px;
+  line-height: 1.2;
+  font-weight: 900;
+}
+#modal-aircon .aircon-modal-sub {
+  margin-top: 3px;
+  color: rgba(255,255,255,.76);
+  font-size: 14px;
+  font-weight: 800;
+}
+#modal-aircon .aircon-modal-close {
+  width: 44px;
+  height: 44px;
+  border: 1px solid rgba(255,255,255,.34);
+  border-radius: 10px;
+  background: rgba(255,255,255,.12);
+  color: #fff;
+  cursor: pointer;
+  font-size: 30px;
+  line-height: 1;
+  display: grid;
+  place-items: center;
+}
+#modal-aircon .aircon-modal-close:hover {
+  background: #fff;
+  color: #0e2f76;
+}
+#modal-aircon .aircon-modal-body {
+  max-height: calc(min(96vh, 880px) - 78px);
+  overflow: auto;
+  padding: 22px;
+  background: #f5feff;
+}
+#modal-aircon .aircon-form-card {
+  width: 100%;
+  display: grid;
+  gap: 16px;
+  background: #fff;
+  border: 1px solid #d8e2f0;
+  border-radius: 14px;
+  padding: 22px;
+  box-shadow: 0 12px 26px rgba(14,47,118,.08);
+}
+#modal-aircon .aircon-field { display: grid; gap: 7px }
+#modal-aircon .aircon-label { color: #0e2f76; font-size: 15px; font-weight: 900 }
+#modal-aircon .aircon-label .req { color: #dc2626 }
+#modal-aircon .aircon-input,
+#modal-aircon .aircon-note {
+  width: 100%;
+  min-height: 52px;
+  border: 1px solid #d8e2f0;
+  border-radius: 10px;
+  padding: 12px 15px;
+  outline: none;
+  color: #0e2f76;
+  background: #fff;
+  font-size: 15px;
+  line-height: 1.4;
+  font-weight: 700;
+}
+#modal-aircon .aircon-note { min-height: 98px; resize: vertical }
+#modal-aircon .aircon-input:focus,
+#modal-aircon .aircon-note:focus {
+  border-color: #4870c8;
+  box-shadow: 0 0 0 3px rgba(170,192,225,.35);
+}
+#modal-aircon .aircon-upload-stack { display: grid; gap: 10px }
+#modal-aircon .aircon-file {
+  position: absolute;
+  inline-size: 1px;
+  block-size: 1px;
+  opacity: 0;
+  pointer-events: none;
+}
+#modal-aircon .aircon-upload {
+  min-height: 88px;
+  display: grid;
+  place-items: center;
+  gap: 4px;
+  border: 1px dashed #8fb3ec;
+  border-radius: 10px;
+  background: #f8fbff;
+  color: #2455dc;
+  cursor: pointer;
+  font-size: 15px;
+  font-weight: 900;
+  text-align: center;
+  transition: border-color .18s ease, background .18s ease, transform .18s ease;
+}
+#modal-aircon .aircon-upload:hover {
+  border-color: #2455dc;
+  background: #edf4ff;
+  transform: translateY(-1px);
+}
+#modal-aircon .aircon-upload svg {
+  width: 23px;
+  height: 23px;
+  stroke: currentColor;
+  fill: none;
+  stroke-width: 2;
+}
+#modal-aircon .aircon-upload small { color: #6b7d9b; font-size: 13px; font-weight: 700 }
+#modal-aircon .aircon-status-group {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+#modal-aircon .aircon-status-option {
+  min-height: 54px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  border: 1px solid #d8e2f0;
+  border-radius: 10px;
+  background: #fff;
+  color: #0e2f76;
+  cursor: pointer;
+  font-size: 15px;
+  font-weight: 900;
+}
+#modal-aircon .aircon-status-option input { accent-color: #16a34a }
+#modal-aircon .aircon-save {
+  width: 100%;
+  min-height: 54px;
+  border: 0;
+  border-radius: 10px;
+  background: #2455dc;
+  color: #fff;
+  cursor: pointer;
+  font-size: 16px;
+  font-weight: 900;
+  box-shadow: 0 10px 18px rgba(36,85,220,.2);
+}
+#modal-aircon .aircon-save:hover { background: #173b8e }
+#modal-aircon .aircon-cancel {
+  width: 100%;
+  min-height: 54px;
+  border: 1px solid #d8e2f0;
+  border-radius: 10px;
+  background: #fff;
+  color: #0e2f76;
+  cursor: pointer;
+  font-size: 16px;
+  font-weight: 900;
+}
+#modal-aircon .aircon-form-actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+#modal-aircon .aircon-form-error {
+  padding: 10px 12px;
+  border: 1px solid #fecaca;
+  border-radius: 10px;
+  background: #fee2e2;
+  color: #991b1b;
+  font-size: 14px;
+  font-weight: 800;
+}
+@media (min-width: 820px) {
+  #modal-aircon .aircon-form-card {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    align-items: start;
+  }
+  #modal-aircon .aircon-form-error,
+  #modal-aircon .aircon-form-actions {
+    grid-column: 1 / -1;
+  }
+  #modal-aircon .aircon-note {
+    min-height: 116px;
+  }
+}
+@media (max-width: 768px) {
+  #panel-aircons .aircon-panel-actions {
+    width: 100%;
+    align-items: stretch;
+    flex-direction: column;
+  }
+  #panel-aircons .aircon-panel-actions .search-inp,
+  #panel-aircons .aircon-add-btn {
+    width: 100%;
+  }
+  #modal-aircon { padding: 10px !important }
+  #modal-aircon .aircon-modal {
+    width: 100%;
+    max-height: calc(100vh - 20px);
+  }
+  #modal-aircon .aircon-modal-body {
+    max-height: calc(100vh - 98px);
+    padding: 12px;
+  }
+  #modal-aircon .aircon-form-card {
+    grid-template-columns: 1fr;
+    padding: 14px;
+  }
+  #modal-aircon .aircon-status-group,
+  #modal-aircon .aircon-form-actions {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* === AIRCON WASH POPUP END === */
+/* === AIRCON WASH MENU END === */
 
 /* ============================================================
    CERTIFICATIONS
    ============================================================ */
-#panel-certifications .cert-board { background: transparent; border: 0; padding: 0; box-shadow: none }
-#panel-certifications .cert-head {
-  border-radius: 18px; padding: 24px 28px;
-  background: linear-gradient(135deg, #0e2f76 0%, #1657c4 100%);
-  box-shadow: 0 18px 38px rgba(14,47,118,.20);
-  position: relative; overflow: hidden; align-items: flex-start;
-}
-#panel-certifications .cert-head::after {
-  content: ''; position: absolute; top: -80px; right: -80px;
-  width: 280px; height: 280px;
-  background: radial-gradient(circle, rgba(170,192,225,.2) 0%, transparent 70%);
-  border-radius: 50%;
-}
-#panel-certifications .cert-head > *, #panel-certifications .cert-head input { position: relative; z-index: 1 }
-
+#panel-certifications .cert-head { position: relative }
+#panel-certifications .cert-head > *,
+#panel-certifications .cert-head input { position: relative; z-index: 1 }
 .cert-kicker { background: rgba(255,255,255,.14); color: rgba(255,255,255,.95); border-color: rgba(255,255,255,.18) }
 .cert-kicker::before { background: #fff }
-.cert-title  { font-size: 28px; font-weight: 900; color: #fff }
-.cert-sub    { color: rgba(255,255,255,.78) }
+.cert-title { font-size: 28px; font-weight: 900; color: #fff }
+.cert-sub { color: rgba(255,255,255,.78) }
 .cert-search { height: 44px; width: 320px; padding: 0 16px; border: 1px solid rgba(255,255,255,.35); background: rgba(255,255,255,.96); border-radius: 12px }
-
-#panel-certifications .cert-grid {
-  display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 16px; margin-top: 18px;
-}
-@media (max-width: 1200px) { #panel-certifications .cert-grid { grid-template-columns: repeat(3, minmax(0, 1fr)) } }
-@media (max-width: 860px)  { #panel-certifications .cert-grid { grid-template-columns: repeat(2, minmax(0, 1fr)) } }
-@media (max-width: 560px)  { #panel-certifications .cert-grid { grid-template-columns: 1fr } }
-
+@media (max-width: 560px) { #panel-certifications .cert-grid { grid-template-columns: 1fr } }
 .cert-card {
-  min-height: 142px; border-radius: 16px;
-  border: 1px solid #d8e7fb;
+  min-height: 142px; border-radius: 16px; border: 1px solid #d8e7fb;
   background: linear-gradient(180deg, #fff 0%, #f8fbff 100%);
   box-shadow: 0 10px 24px rgba(14,47,118,.08);
-  position: relative; text-align: left; cursor: pointer;
-  overflow: hidden; transition: transform .2s, box-shadow .2s, border-color .2s;
+  position: relative; text-align: left; cursor: pointer; overflow: hidden;
+  transition: transform .2s, box-shadow .2s, border-color .2s;
 }
-.cert-card::before {
-  content: ''; position: absolute; inset: 0 auto 0 0;
-  width: 4px; background: linear-gradient(180deg, #1d4ed8, #60a5fa);
-}
+.cert-card::before { content: ''; position: absolute; inset: 0 auto 0 0; width: 4px; background: linear-gradient(180deg, #1d4ed8, #60a5fa) }
 .cert-card:hover { transform: translateY(-4px); border-color: #93c5fd; box-shadow: 0 16px 34px rgba(14,47,118,.16) }
-
-.cert-card-top {
-  min-height: 92px; padding: 18px 18px 14px 22px;
-  display: flex; gap: 12px; align-items: flex-start; border-bottom: 0;
-}
+.cert-card-top { min-height: 92px; padding: 18px 18px 14px 22px; display: flex; gap: 12px; align-items: flex-start; border-bottom: 0 }
 .cert-icon {
-  width: 44px; height: 44px; border-radius: 12px;
-  background: #eaf3ff; border: 1px solid #cfe2ff; color: #174ea6;
-  display: grid; place-items: center; font-size: 0;
+  width: 44px; height: 44px; border-radius: 12px; background: #eaf3ff;
+  border: 1px solid #cfe2ff; color: #174ea6; display: grid; place-items: center; font-size: 0;
 }
-.cert-icon::before { content: '★'; font-size: 18px }
+.cert-icon::before { content: ''; width: 22px; height: 22px; background: currentColor; display: block; -webkit-mask: var(--cert-medal-mask, none) center / contain no-repeat; mask: var(--cert-medal-mask, none) center / contain no-repeat }
 .cert-info { flex: 1; min-width: 0 }
-.cert-name       { color: #0e2f76; font-size: 16px; font-weight: 900; white-space: normal; line-height: 1.25 }
+.cert-name { color: #0e2f76; font-size: 16px; font-weight: 900; white-space: normal; line-height: 1.25 }
 .cert-count-text { font-size: 12px; color: #64789d; font-weight: 700; margin-top: 3px }
-.cert-count      { margin-left: auto; font-size: 34px; font-weight: 900; color: #174ea6; line-height: 1 }
+.cert-count { margin-left: auto; font-size: 34px; font-weight: 900; color: #174ea6; line-height: 1 }
 .cert-people {
-  min-height: 48px; padding: 11px 18px 14px 22px;
-  display: flex; gap: 6px; flex-wrap: wrap;
+  min-height: 48px; padding: 11px 18px 14px 22px; display: flex; gap: 6px; flex-wrap: wrap;
   border-top: 1px solid #e5eefb; background: #f7fbff;
 }
 .cert-people span { background: #eaf3ff; color: #174ea6; border: 1px solid #cfe2ff; border-radius: 8px; padding: 4px 8px; font-size: 10px; font-weight: 900 }
 
 /* ============================================================
-   MODALS / OVERLAYS
+   MODALS / FORMS / PROFILE BASE
    ============================================================ */
 .overlay, .cal-popup-bg {
-  display: none; position: fixed; inset: 0;
+  display: none; position: fixed; inset: 0; z-index: 500;
   background: rgba(14,47,118,.55); backdrop-filter: blur(8px);
-  align-items: center; justify-content: center; padding: 16px; z-index: 500;
+  align-items: center; justify-content: center;
 }
 .overlay.open, .cal-popup-bg.open { display: flex }
-
 .pmodal, .cert-modal, .borrow-modal, .borrow-form-modal, .cal-popup {
   background: var(--white); border-radius: var(--radius-lg); box-shadow: var(--shadow-lg);
-  max-width: calc(100vw - 32px); max-height: 92vh; overflow: auto;
-  font-family: var(--font-serif-thai);
+  max-width: calc(100vw - 32px); max-height: 92vh; overflow: auto; font-family: var(--font-serif-thai);
 }
-.pmodal { width: 780px }
-.pmodal-wide { width: 980px }
-.pmodal-sm   { width: 520px }
-.pmodal-strip { height: 4px; background: var(--navy-900) }
-
+.pmodal-strip, .cal-popup-strip { height: 4px; background: var(--navy-900) }
 .modal-header {
   display: flex; justify-content: space-between; align-items: flex-start;
-  gap: 16px; padding: 20px 26px; background: var(--navy-25); border-bottom: 1px solid var(--line);
+  gap: 16px; background: var(--navy-25); border-bottom: 1px solid var(--line);
 }
-.modal-title    { font-size: 19px; font-weight: 700; color: var(--navy-900) }
-.modal-subtitle { font-size: 12px; color: var(--muted); font-weight: 500; margin-top: 2px }
-
+.modal-title { font-weight: 700; color: var(--navy-900) }
+.modal-subtitle { color: var(--muted); font-weight: 500; margin-top: 2px }
 .modal-close, .cert-close, .borrow-x, .cal-popup-close, .tcal-close {
-  border: 0; background: var(--white); color: var(--text);
-  border-radius: 999px; cursor: pointer; font-weight: 600; display: grid; place-items: center; transition: all .18s;
+  border: 0; background: var(--white); color: var(--text); border-radius: 999px;
+  cursor: pointer; font-weight: 600; display: grid; place-items: center; transition: all .18s;
 }
-.modal-close { width: 34px; height: 34px; border: 1px solid var(--line) }
+.modal-close { border: 1px solid var(--line) }
 .modal-close:hover, .cert-close:hover, .cal-popup-close:hover { background: var(--navy-900); color: #fff; border-color: var(--navy-900) }
-
-.modal-body { padding: 24px 26px }
-.finput { width: 100%; padding: 11px 14px; font-size: 14px }
-.frow   { margin-bottom: 14px }
-.flabel { display: block; font-size: 11px; font-weight: 700; color: var(--navy-700); letter-spacing: .08em; text-transform: uppercase; margin-bottom: 6px }
-
-.fgrid, .sched-grid, .resume-fields, .borrow-form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px }
+.finput { width: 100% }
+.flabel { display: block; font-weight: 700; color: var(--navy-700); letter-spacing: .08em; text-transform: uppercase }
+.fgrid, .sched-grid, .resume-fields, .borrow-form-grid { display: grid; grid-template-columns: 1fr 1fr }
 .fcol-full, .sched-full { grid-column: 1 / -1 }
 .factions { display: flex; gap: 10px; justify-content: flex-end; margin-top: 22px; padding-top: 18px; border-top: 1px solid var(--line) }
-.ferr       { background: var(--danger-bg); color: var(--danger-text); border: 1px solid #fca5a5; border-radius: var(--radius-sm); padding: 11px 15px; font-weight: 600; margin-bottom: 14px }
+.ferr { background: var(--danger-bg); color: var(--danger-text); border: 1px solid #fca5a5; border-radius: var(--radius-sm); padding: 11px 15px; font-weight: 600; margin-bottom: 14px }
 .finfo-box, .head-info-box { background: var(--navy-50); border: 1px solid var(--navy-100); color: var(--navy-700); border-radius: var(--radius-sm); padding: 11px 15px; font-size: 13px; font-weight: 500 }
-
-/* Resume form */
-.resume-top   { display: flex; gap: 24px; padding: 22px 26px; background: var(--navy-25); border-bottom: 1px solid var(--line) }
-.photo-col    { display: flex; flex-direction: column; align-items: center; gap: 8px }
-.photo-box    { width: 114px; height: 140px; border: 2px dashed var(--navy-400); border-radius: var(--radius-md); background: var(--white); display: grid; place-items: center; position: relative; overflow: hidden; cursor: pointer }
+.resume-top { display: flex; background: var(--navy-25); border-bottom: 1px solid var(--line) }
+.photo-col { display: flex; flex-direction: column; align-items: center; gap: 8px }
+.photo-box { border: 2px dashed var(--navy-400); border-radius: var(--radius-md); background: var(--white); display: grid; place-items: center; position: relative; overflow: hidden; cursor: pointer }
 .photo-box img.resume-img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; display: none }
 .photo-box img.resume-img.has-img { display: block }
 .photo-overlay { position: absolute; inset: 0; background: rgba(14,47,118,.72); display: grid; place-items: center; color: #fff; font-size: 12px; font-weight: 600; opacity: 0; transition: opacity .18s }
@@ -944,130 +1715,82 @@ tbody tr:last-child td { border-bottom: 0 }
 .resume-badge-abs { position: absolute; top: -7px; right: -7px; background: var(--navy-900); color: #fff; font-size: 9px; font-weight: 700; padding: 3px 7px; border-radius: 6px; z-index: 2 }
 .dob-row { display: flex; gap: 8px }
 .dob-be { min-width: 124px; background: var(--navy-50); color: var(--navy-700); border: 1px solid var(--navy-100); border-radius: var(--radius-sm); padding: 11px; text-align: center; font-size: 13px; font-weight: 600 }
-
-.section-h { font-size: 13px; font-weight: 700; color: var(--navy-700); margin: 20px 0 12px; padding-bottom: 8px; border-bottom: 1px solid var(--line); text-transform: uppercase; letter-spacing: .06em }
-
-.skill-grid, .sw-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 7px }
-.skill-check { display: flex; align-items: center; gap: 8px; border: 1px solid var(--line); border-radius: var(--radius-sm); padding: 10px 12px; font-size: 13px; font-weight: 500; cursor: pointer; transition: all .18s }
-.skill-check:hover   { border-color: var(--navy-400); background: var(--navy-25) }
+.section-h { font-weight: 700; color: var(--navy-700); padding-bottom: 8px; border-bottom: 1px solid var(--line); text-transform: uppercase; letter-spacing: .06em }
+.skill-grid, .sw-grid { display: grid; grid-template-columns: repeat(3, 1fr) }
+.skill-check { display: flex; align-items: center; gap: 8px; border: 1px solid var(--line); border-radius: var(--radius-sm); font-weight: 500; cursor: pointer; transition: all .18s }
+.skill-check:hover { border-color: var(--navy-400); background: var(--navy-25) }
 .skill-check.checked { border-color: var(--navy-900); background: var(--navy-900); color: #fff }
-
-.comp-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px }
-.comp-card { border: 1px solid var(--line); border-radius: var(--radius-md); padding: 13px; background: var(--white) }
-.comp-head  { display: flex; gap: 8px; align-items: center; margin-bottom: 8px }
-.comp-label { font-size: 13px; font-weight: 700; color: var(--navy-900) }
-.comp-code  { margin-left: auto; background: var(--bg-soft); border-radius: 5px; padding: 2px 7px; font-size: 10px; color: var(--muted); font-weight: 700 }
-.comp-select { width: 100%; border: 1px solid var(--line); border-radius: var(--radius-sm); padding: 9px; font-size: 13px }
-.comp-select.lv-basic  { background: var(--warn-bg);    color: var(--warn-text);    border-color: #fde68a }
-.comp-select.lv-skill  { background: var(--info-bg);    color: var(--info-text);    border-color: var(--navy-200) }
+.comp-grid { display: grid; grid-template-columns: repeat(2, 1fr) }
+.comp-card { border: 1px solid var(--line); border-radius: var(--radius-md); background: var(--white) }
+.comp-head { display: flex; gap: 8px; align-items: center; margin-bottom: 8px }
+.comp-label { font-weight: 700; color: var(--navy-900) }
+.comp-code { margin-left: auto; background: var(--bg-soft); border-radius: 5px; padding: 2px 7px; font-size: 10px; color: var(--muted); font-weight: 700 }
+.comp-select { width: 100%; border: 1px solid var(--line); border-radius: var(--radius-sm); padding: 9px }
+.comp-select.lv-basic { background: var(--warn-bg); color: var(--warn-text); border-color: #fde68a }
+.comp-select.lv-skill { background: var(--info-bg); color: var(--info-text); border-color: var(--navy-200) }
 .comp-select.lv-expert { background: var(--success-bg); color: var(--success-text); border-color: #86efac; font-weight: 700 }
-
-.sw-custom-row  { display: flex; gap: 8px; margin-top: 10px }
+.sw-custom-row { display: flex; gap: 8px; margin-top: 10px }
 .sw-custom-tags { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px }
 .sw-tag { background: var(--navy-900); color: #fff; border-radius: 999px; padding: 5px 13px; font-size: 12px; font-weight: 600 }
 .sw-tag .x { cursor: pointer; margin-left: 6px }
-
 .btn-add-lic { width: 100%; padding: 12px; margin-top: 10px }
-.btn-other   { padding: 10px 17px }
-
+.btn-other { padding: 10px 17px }
 .lic-list { display: grid; gap: 10px }
 .lic-item { background: var(--navy-25); border: 1px solid var(--line); border-radius: var(--radius-md); padding: 14px }
 .lic-item-head { display: flex; align-items: center; gap: 8px; margin-bottom: 10px }
-.lic-num  { background: var(--navy-900); color: #fff; border-radius: 999px; padding: 3px 11px; font-size: 12px; font-weight: 700 }
-.lic-del  { margin-left: auto; background: var(--danger); color: #fff; border: 0; border-radius: 6px; padding: 5px 12px; font-weight: 600; font-size: 12px; cursor: pointer }
+.lic-num { background: var(--navy-900); color: #fff; border-radius: 999px; padding: 3px 11px; font-size: 12px; font-weight: 700 }
+.lic-del { margin-left: auto; background: var(--danger); color: #fff; border: 0; border-radius: 6px; padding: 5px 12px; font-weight: 600; font-size: 12px; cursor: pointer }
 .lic-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 9px }
 .lic-file-link { display: inline-block; margin-top: 8px; background: var(--success-bg); color: var(--success-text); border: 1px solid #86efac; border-radius: 6px; padding: 5px 12px; font-size: 12px; font-weight: 600; text-decoration: none }
-
-/* ============================================================
-   PROFILE V2 MODAL
-   ============================================================ */
-.profile-v2 { width: 1020px; padding: 0; overflow: hidden; border-radius: var(--radius-lg) }
-.profile-v2-layout { display: grid; grid-template-columns: 290px 1fr }
-
-.profile-v2-left {
-  background: var(--navy-900); padding: 32px 24px;
-  display: flex; flex-direction: column; align-items: center; position: relative;
-}
-.profile-v2-left::after {
-  content: ''; position: absolute; top: -100px; right: -100px;
-  width: 280px; height: 280px;
-  background: radial-gradient(circle, rgba(170,192,225,.18) 0%, transparent 70%);
-  border-radius: 50%; pointer-events: none;
-}
+.profile-v2 { padding: 0; overflow: hidden }
+.profile-v2-layout { display: grid }
+.profile-v2-left { display: flex; flex-direction: column; position: relative }
+.profile-v2-left::after { content: ''; position: absolute; top: -100px; right: -100px; width: 280px; height: 280px; background: radial-gradient(circle, rgba(170,192,225,.18) 0%, transparent 70%); border-radius: 50%; pointer-events: none }
 .profile-v2-left > * { position: relative; z-index: 1 }
-
-.profile-v2-photo {
-  width: 132px; height: 132px; border-radius: 50%;
-  border: 4px solid rgba(255,255,255,.4); overflow: hidden;
-  background: rgba(255,255,255,.15); display: grid; place-items: center;
-  font-size: 42px; font-weight: 700; color: #fff; margin-bottom: 18px; flex: 0 0 auto;
-}
+.profile-v2-photo { border-radius: 50%; border: 4px solid rgba(255,255,255,.4); overflow: hidden; background: rgba(255,255,255,.15); display: grid; place-items: center; font-weight: 700; color: #fff; margin-bottom: 18px; flex: 0 0 auto }
 .profile-v2-photo img { width: 100%; height: 100%; object-fit: cover; display: block }
-.profile-v2-name    { font-size: 22px; font-weight: 700; color: #fff; text-align: center; margin-bottom: 4px; line-height: 1.25 }
-.profile-v2-nameeng { font-size: 14px; color: rgba(255,255,255,.78); font-weight: 600; text-align: center; margin-bottom: 16px }
-.profile-v2-status  { display: inline-flex; align-items: center; gap: 7px; border-radius: 999px; padding: 7px 17px; font-size: 13px; font-weight: 700; margin-bottom: 18px }
+.profile-v2-name { font-weight: 700; color: #fff; text-align: center }
+.profile-v2-nameeng { color: rgba(255,255,255,.78); font-weight: 600; text-align: center }
+.profile-v2-status { display: inline-flex; align-items: center; gap: 7px; border-radius: 999px; font-weight: 700 }
 .pv2-status-active { background: var(--success-bg); color: var(--success-text) }
-.pv2-status-leave  { background: var(--danger-bg);  color: var(--danger-text) }
-.pv2-st-dot        { width: 8px; height: 8px; border-radius: 50% }
-.pv2-dot-active    { background: var(--success) }
-.pv2-dot-leave     { background: var(--danger) }
-
-.profile-v2-rolecard { width: 100%; margin-top: 6px; border-radius: 10px; overflow: hidden; border: 1px solid rgba(255,255,255,.18) }
-.pv2-rolerow {
-  display: flex; align-items: center; gap: 0; padding: 10px 13px;
-  background: rgba(255,255,255,.92); border-bottom: 1px solid #E8EFF8;
-}
-.pv2-rolerow:last-child { border-bottom: 0 }
-.pv2-rolekey { font-size: 11px; font-weight: 700; color: #6B7D9B; letter-spacing: .08em; text-transform: uppercase; white-space: nowrap; min-width: 64px }
-.pv2-roleval { font-size: 13px; font-weight: 700; color: #0E2F76; text-align: left; flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap }
-
-.profile-v2-infolist { width: 100%; margin-top: 10px; border-radius: 10px; overflow: hidden; border: 1px solid rgba(255,255,255,.18); display: flex; flex-direction: column; gap: 0 }
-.pv2-inforow {
-  display: flex; align-items: center; justify-content: space-between;
-  padding: 10px 13px; background: #fff; border-bottom: 1px solid #E8EFF8; border-radius: 0; margin: 0;
-}
+.pv2-status-leave { background: var(--danger-bg); color: var(--danger-text) }
+.pv2-st-dot { width: 8px; height: 8px; border-radius: 50% }
+.pv2-dot-active { background: var(--success) }
+.pv2-dot-leave { background: var(--danger) }
+.profile-v2-rolecard, .profile-v2-infolist { width: 100%; overflow: hidden; border: 1px solid rgba(255,255,255,.18) }
+.pv2-rolerow, .pv2-inforow { background: rgba(255,255,255,.92); border-bottom: 1px solid #E8EFF8 }
+.pv2-rolerow:last-child, .pv2-inforow:last-child { border-bottom: 0 }
+.pv2-rolekey, .pv2-infokey { font-weight: 700; white-space: nowrap }
+.pv2-roleval, .pv2-infoval { flex: 1; overflow: hidden; text-overflow: ellipsis }
+.profile-v2-infolist { margin-top: 10px; display: flex; flex-direction: column; gap: 0 }
+.pv2-inforow { justify-content: space-between; background: #fff; border-radius: 0; margin: 0 }
 .pv2-inforow:nth-child(even) { background: #F5FEFF }
-.pv2-inforow:last-child { border-bottom: 0 }
-.pv2-infokey { font-size: 11px; font-weight: 700; color: #6B7D9B; letter-spacing: .08em; text-transform: uppercase }
-.pv2-infoval { font-size: 13px; font-weight: 700; color: #0E2F76; text-align: left; flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap }
-
-.profile-v2-right  { background: var(--white); padding: 20px; overflow: auto; max-height: 80vh }
-.pv2-sections      { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 0 }
-.pv2-section       { background: var(--navy-25); border: 1px solid var(--line); border-radius: var(--radius-md); padding: 16px }
-.pv2-section-label { font-size: 11px; font-weight: 700; color: var(--muted); letter-spacing: .10em; margin-bottom: 12px; text-transform: uppercase }
-.pv2-tags          { display: flex; flex-wrap: wrap; gap: 6px }
-.pv2-tag    { background: var(--navy-50);  color: var(--navy-700); border: 1px solid var(--navy-100); border-radius: 6px; padding: 5px 11px; font-size: 13px; font-weight: 600 }
-.pv2-tag-sw { background: var(--navy-100); color: var(--navy-800); border-color: var(--navy-200) }
-
-.pv2-comp-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 7px }
-.pv2-comp-item { display: flex; justify-content: space-between; align-items: center; border-radius: var(--radius-sm); padding: 9px 12px; background: var(--white); border: 1px solid var(--line); gap: 10px }
-.pv2-comp-key  { font-size: 13px; font-weight: 700; color: var(--navy-900) }
-.pv2-comp-val  { font-size: 11px; font-weight: 700; padding: 3px 9px; border-radius: 5px; white-space: nowrap }
-.cv-none   { background: var(--bg-soft);   color: var(--muted) }
-.cv-basic  { background: var(--warn-bg);    color: var(--warn-text) }
-.cv-skill  { background: var(--info-bg);    color: var(--info-text) }
+.profile-v2-right { overflow: auto }
+.pv2-section-label { font-weight: 700; text-transform: uppercase }
+.pv2-tags { display: flex; flex-wrap: wrap }
+.pv2-tag { border: 1px solid var(--navy-100) }
+.pv2-tag-sw { color: var(--navy-800) }
+.pv2-comp-item { justify-content: space-between; align-items: center; border: 1px solid var(--line); gap: 10px }
+.pv2-comp-val { white-space: nowrap }
+.cv-none { background: var(--bg-soft); color: var(--muted) }
+.cv-basic { background: var(--warn-bg); color: var(--warn-text) }
+.cv-skill { background: var(--info-bg); color: var(--info-text) }
 .cv-expert { background: var(--success-bg); color: var(--success-text) }
-
-.pv2-lic-item { background: var(--navy-25); border: 1px solid var(--line); border-radius: var(--radius-sm); padding: 13px 15px; margin-bottom: 8px }
-.pv2-lic-name { font-weight: 700; font-size: 14px; color: var(--navy-900) }
-.pv2-lic-meta { font-size: 12px; color: var(--muted); font-weight: 500; margin-top: 4px }
-.pv2-muted    { color: var(--muted); font-weight: 500; font-size: 13px }
-
+.pv2-lic-item { border: 1px solid var(--line); margin-bottom: 8px }
+.pv2-lic-name { font-weight: 700; color: var(--navy-900) }
+.pv2-lic-meta { color: var(--muted); font-weight: 500; margin-top: 4px }
 .pv2-close-btn {
-  position: absolute; top: 14px; right: 14px;
-  width: 36px; height: 36px; border: 1px solid rgba(255,255,255,.25);
+  position: absolute; border: 1px solid rgba(255,255,255,.25);
   background: rgba(255,255,255,.12); color: #fff; border-radius: 50%;
-  cursor: pointer; font-weight: 600; font-size: 18px; display: grid; place-items: center;
-  transition: background .18s; z-index: 2;
+  cursor: pointer; font-weight: 600; display: grid; place-items: center; transition: background .18s; z-index: 2;
 }
 .pv2-close-btn:hover { background: rgba(255,255,255,.24) }
-
 .dtab-panel { display: none }
 .dtab-panel.active { display: block }
-.pinfo-grid   { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 12px }
-.pinfo-card   { background: var(--navy-25); border: 1px solid var(--line); border-radius: var(--radius-sm); padding: 13px }
-.pinfo-label  { font-size: 11px; font-weight: 700; color: var(--muted); letter-spacing: .06em; text-transform: uppercase }
-.pinfo-val    { font-weight: 600; color: var(--navy-900); margin-top: 3px }
+.pinfo-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 12px }
+.pinfo-card { background: var(--navy-25); border: 1px solid var(--line); border-radius: var(--radius-sm); padding: 13px }
+.pinfo-label { font-size: 11px; font-weight: 700; color: var(--muted); letter-spacing: .06em; text-transform: uppercase }
+.pinfo-val { font-weight: 600; color: var(--navy-900); margin-top: 3px }
 
 /* ============================================================
    TIMELINE CALENDAR
@@ -1095,8 +1818,7 @@ tbody tr:last-child td { border-bottom: 0 }
 .tl-dhdr         { text-align: center; color: var(--muted); font-size: 11px; font-weight: 700 }
 .tl-dhdr.weekend { color: var(--danger) }
 .tl-cell {
-  position: relative; aspect-ratio: 1; min-height: 40px;
-  border: 1px solid var(--line); border-radius: 6px; background: var(--white);
+  position: relative; aspect-ratio: 1;  border: 1px solid var(--line); border-radius: 6px; background: var(--white);
   display: grid; place-items: center; cursor: pointer; transition: all .15s;
 }
 .tl-cell:hover   { border-color: var(--navy-400); background: var(--navy-25) }
@@ -1105,7 +1827,7 @@ tbody tr:last-child td { border-bottom: 0 }
 .tl-busy         { background: repeating-linear-gradient(45deg,#fee2e2,#fee2e2 4px,#fecaca 4px,#fecaca 8px); border-color: #fca5a5; pointer-events: none }
 .tl-sel-s, .tl-sel-e { background: var(--navy-900) !important; color: #fff; border-color: var(--navy-900) !important }
 .tl-in-range     { background: var(--navy-100) !important; border-color: var(--navy-400) !important }
-.tl-d { font-size: 13px; font-weight: 600 }
+.tl-d {font-weight: 600 }
 .tl-busy-bar     { position: absolute; bottom: 3px; left: 3px; right: 3px; height: 3px; background: var(--danger); border-radius: 2px }
 .tl-jobs-count   { position: absolute; top: 2px; right: 2px; background: var(--white); color: var(--danger); border-radius: 6px; padding: 0 4px; font-size: 9px; font-weight: 700 }
 
@@ -1125,10 +1847,10 @@ tbody tr:last-child td { border-bottom: 0 }
    CERT MODAL
    ============================================================ */
 .cert-modal {
-  width: min(860px, calc(100vw - 32px)); border-radius: var(--radius-lg);
+border-radius: var(--radius-lg);
   overflow: hidden; background: var(--white); border: 1px solid var(--line); box-shadow: var(--shadow-lg); position: relative;
 }
-.cert-close, .borrow-x { position: absolute; top: 20px; right: 20px; width: 40px; height: 40px; font-size: 22px; z-index: 2 }
+.cert-close, .borrow-x { position: absolute; top: 20px; right: 20px;index: 2 }
 .cert-modal-head {
   padding: 28px 32px 26px; background: var(--navy-900); color: #fff; position: relative; overflow: hidden;
 }
@@ -1161,12 +1883,12 @@ tbody tr:last-child td { border-bottom: 0 }
 /* ============================================================
    BORROW MODAL
    ============================================================ */
-.borrow-modal { width: 1120px; padding: 26px; position: relative }
+.borrow-modal {osition: relative }
 .borrow-head  { display: flex; justify-content: space-between; gap: 18px; margin-bottom: 16px }
 .borrow-title { font-size: 22px; font-weight: 700; color: var(--navy-900) }
 .borrow-sub   { color: var(--muted); font-weight: 500; margin-top: 4px }
 .borrow-tools { display: flex; gap: 10px }
-.borrow-input { height: 40px; padding: 0 12px }
+.borrow-input { height: 40px;}
 .borrow-add   { border: 0; border-radius: var(--radius-sm); padding: 10px 17px; font-weight: 600; margin-bottom: 14px; cursor: pointer }
 .borrow-table-wrap { overflow: auto; border: 1px solid var(--line); border-radius: var(--radius-sm) }
 .borrow-table    { min-width: 1040px }
@@ -1181,7 +1903,7 @@ tbody tr:last-child td { border-bottom: 0 }
 .borrow-foot   { display: flex; justify-content: space-between; margin-top: 16px; color: var(--muted); font-weight: 500 }
 .borrow-page   { background: var(--navy-700); color: #fff; border: 0; border-radius: 6px; padding: 7px 13px }
 .borrow-nested { z-index: 900 }
-.borrow-form-modal { width: 690px; padding: 26px; position: relative }
+.borrow-form-modal {osition: relative }
 .borrow-form-title { font-size: 20px; font-weight: 700; color: var(--navy-700); margin-bottom: 16px }
 
 /* ============================================================
@@ -1212,8 +1934,7 @@ tbody tr:last-child td { border-bottom: 0 }
 .tcal-overlay.open { display: flex }
 .tcal-fs { width: 100%; height: 100%; background: var(--bg); display: flex; flex-direction: column }
 .tcal-header {
-  background: var(--navy-900); color: #fff; padding: 20px 30px;
-  display: flex; gap: 16px; align-items: center; flex-wrap: wrap; position: relative; overflow: hidden;
+  background: var(--navy-900); color: #fff;  display: flex; gap: 16px; align-items: center; flex-wrap: wrap; position: relative; overflow: hidden;
 }
 .tcal-header::after {
   content: ''; position: absolute; top: -80px; right: -80px; width: 280px; height: 280px;
@@ -1224,11 +1945,11 @@ tbody tr:last-child td { border-bottom: 0 }
 .tcal-icon svg { width: 22px; height: 22px; stroke: #fff; fill: none; stroke-width: 2 }
 .tcal-title-block { flex: 1; min-width: 0 }
 .tcal-eyebrow { font-size: 11px; color: rgba(255,255,255,.78); font-weight: 700; letter-spacing: .12em; text-transform: uppercase }
-.tcal-title   { font-size: 22px; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis }
+.tcal-title   {font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis }
 .tcal-stat    { display: inline-flex; margin-top: 5px; background: rgba(255,255,255,.18); border-radius: 999px; padding: 4px 13px; font-size: 12px; font-weight: 600 }
-.tcal-close   { width: 42px; height: 42px; background: rgba(255,255,255,.14); color: #fff; border: 1px solid rgba(255,255,255,.22) }
+.tcal-close   { background: rgba(255,255,255,.14); color: #fff; border: 1px solid rgba(255,255,255,.22) }
 .tcal-close:hover { background: rgba(255,255,255,.26) }
-.tcal-body    { flex: 1; overflow: auto; padding: 24px }
+.tcal-body    { flex: 1; overflow: auto;}
 .tcal-content { max-width: 1400px; margin: 0 auto }
 .tcal-content .sched-board { background: transparent; min-height: 0; padding: 0 }
 
@@ -1257,7 +1978,7 @@ tbody tr:last-child td { border-bottom: 0 }
 .cal-dhdrs, .cal-dgrid  { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px }
 .cal-dhdr { text-align: center; font-size: 12px; font-weight: 700; color: var(--muted) }
 .cal-day {
-  min-height: 54px; border: 1px solid var(--line); border-radius: var(--radius-sm);
+border: 1px solid var(--line); border-radius: var(--radius-sm);
   display: grid; place-items: center; position: relative; cursor: pointer; background: var(--white); transition: all .15s;
 }
 .cal-day:hover, .cal-day.cal-sel-s, .cal-day.cal-sel-e { background: var(--navy-50); border-color: var(--navy-700) }
@@ -1271,21 +1992,17 @@ tbody tr:last-child td { border-bottom: 0 }
 .cal-evcount { font-size: 9px; color: var(--navy-700); font-weight: 700 }
 .cal-legend, .cal-footer { display: flex; gap: 14px; align-items: center; flex-wrap: wrap; padding: 12px 16px; border-top: 1px solid var(--line); font-size: 12px; color: var(--muted); font-weight: 500 }
 .cal-footer-note { flex: 1 }
-
-.cal-popup      { width: 520px }
 .cal-popup-strip { height: 4px; background: var(--navy-900) }
-.cal-popup-head { display: flex; gap: 8px; align-items: center; padding: 14px 18px; border-bottom: 1px solid var(--line) }
+.cal-popup-head { display: flex; gap: 8px; align-items: center;border-bottom: 1px solid var(--line) }
 .cal-popup-date  { flex: 1; background: var(--navy-50); color: var(--navy-700); border-radius: var(--radius-sm); padding: 7px 12px; text-align: center; font-weight: 700 }
 .cal-popup-count { background: var(--navy-900); color: #fff; border-radius: 999px; padding: 4px 11px; font-size: 12px; font-weight: 600 }
-.cal-popup-close { width: 30px; height: 30px; border: 1px solid var(--line) }
-.cal-popup-inner { padding: 16px }
-.cal-ev-card { border: 1px solid var(--line); border-radius: var(--radius-md); padding: 13px 14px 13px 19px; margin-bottom: 9px; position: relative }
+.cal-popup-close {order: 1px solid var(--line) }.cal-ev-card { border: 1px solid var(--line); border-radius: var(--radius-md);margin-bottom: 9px; position: relative }
 .cal-ev-card::before { content: ''; position: absolute; left: 0; top: 0; bottom: 0; width: 4px; background: var(--navy-700); border-radius: var(--radius-md) 0 0 var(--radius-md) }
 .cal-ev-top  { display: flex; justify-content: space-between; gap: 8px }
 .cal-so      { background: var(--navy-50); color: var(--navy-700); border-radius: 6px; padding: 3px 8px; font-size: 10px; font-weight: 700 }
 .cal-ev-cust { font-weight: 700; color: var(--navy-900) }
-.cal-ev-job  { font-size: 12px; color: var(--muted); font-weight: 500; margin: 3px 0 8px }
-.cal-ev-meta { display: grid; grid-template-columns: auto 1fr; gap: 4px 12px; font-size: 12px }
+.cal-ev-job  {color: var(--muted); font-weight: 500; margin: 3px 0 8px }
+.cal-ev-meta { display: grid; grid-template-columns: auto 1fr; gap: 4px 12px;}
 .cal-ev-ml   { color: var(--muted); font-weight: 600 }
 .cal-ev-mv   { font-weight: 500; color: var(--text) }
 
@@ -1313,9 +2030,7 @@ tbody tr:last-child td { border-bottom: 0 }
    ============================================================ */
 @media (max-width: 1100px) {
   .sched-day { min-height: 100px }
-  .sched-event { font-size: 11px }
-  .profile-v2-layout { grid-template-columns: 1fr }
-  .profile-v2-left   { padding-bottom: 22px }
+  .sched-event { font-size: 11px }  .profile-v2-left   { padding-bottom: 22px }
   .profile-v2-right  { max-height: none }
   .cert-grid { grid-template-columns: repeat(2, 1fr) }
 }@media (max-width: 768px) {
@@ -1344,16 +2059,6 @@ tbody tr:last-child td { border-bottom: 0 }
   .roster-add-tech-btn { width: 100% }
   #panel-customers .panel-actions .search-inp,
   #panel-customers .panel-actions .btn { width: 100% }
-}#roster-grid .emp-card-body::before {
-    content: '';
-    position: absolute;
-    top: -20px;
-    left: 0;
-    width: 50%;
-    height: 22px;
-    background: #16459d;
-    border-radius: 10px 10px 0 0;
-    z-index: 1;
 }.pv2-sections {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -1363,15 +2068,10 @@ tbody tr:last-child td { border-bottom: 0 }
   min-width: 0;
 }.pv2-comp-grid {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 7px;
 }.pv2-comp-item {
   min-width: 0;
 }.pv2-comp-key {
   min-width: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
 }#roster-grid .emp-card-body::before {
     content: '';
     position: absolute;
@@ -1419,30 +2119,17 @@ tbody tr:last-child td { border-bottom: 0 }
 }
 
 #roster-grid .emp-card {
-  min-height: 254px !important;
   padding: 0 !important;
-  background:
-    linear-gradient(135deg, rgba(25,77,170,.06), transparent 42%),
-    #fff !important;
-  border: 1px solid #9fc8ff !important;
-  border-radius: 12px !important;
   box-shadow: none !important;
   display: grid !important;
-  grid-template-rows: 38px 1fr auto 32px !important;
-  overflow: hidden !important;
   position: relative !important;
   color: #0e2f76 !important;
 }
 
 #roster-grid .emp-card::before {
-  content: '3E';
   position: absolute;
-  right: 12px;
-  bottom: 42px;
-  font-size: 34px;
   line-height: 1;
   font-weight: 900;
-  color: #e8eef8;
   letter-spacing: 0;
   pointer-events: none;
 }
@@ -1465,20 +2152,17 @@ tbody tr:last-child td { border-bottom: 0 }
 
 #roster-grid .emp-id-header {
   min-width: 0;
-  background: #194daa;
   color: #fff;
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 10px;
-  padding: 0 14px;
 }
 
 #roster-grid .emp-id-brand {
   min-width: 0;
   display: inline-flex;
   align-items: center;
-  gap: 8px;
   font-size: 11px;
   font-weight: 900;
   white-space: nowrap;
@@ -1487,12 +2171,8 @@ tbody tr:last-child td { border-bottom: 0 }
 }
 
 #roster-grid .emp-id-mark {
-  width: 22px;
-  height: 22px;
-  border-radius: 5px;
   display: inline-grid;
   place-items: center;
-  background: rgba(255,255,255,.18);
   color: #fff;
   font-size: 10px;
   font-weight: 900;
@@ -1501,7 +2181,6 @@ tbody tr:last-child td { border-bottom: 0 }
 
 #roster-grid .emp-id-no {
   color: #ffe500;
-  font-size: 12px;
   font-weight: 900;
   white-space: nowrap;
 }
@@ -1510,19 +2189,11 @@ tbody tr:last-child td { border-bottom: 0 }
   position: relative;
   z-index: 1;
   display: grid;
-  grid-template-columns: 74px 1fr;
-  gap: 14px;
-  padding: 36px 14px 6px;
   min-width: 0;
 }
 
 #roster-grid .emp-id-photo {
-  width: 58px;
-  height: 68px;
   align-self: start;
-  border: 1px solid #9ec8ff;
-  border-radius: 6px;
-  background: #eaf5ff;
   color: #0d4d9e;
   display: grid;
   place-items: center;
@@ -1539,7 +2210,6 @@ tbody tr:last-child td { border-bottom: 0 }
 
 #roster-grid .emp-id-photo .initials {
   color: #0c397f;
-  font-size: 20px;
   font-weight: 900;
   line-height: 1;
 }
@@ -1548,10 +2218,8 @@ tbody tr:last-child td { border-bottom: 0 }
   position: absolute;
   left: 0;
   right: 0;
-  bottom: 7px;
   text-align: center;
   color: #0d4d9e;
-  font-size: 9px;
   font-weight: 900;
 }
 
@@ -1565,20 +2233,16 @@ tbody tr:last-child td { border-bottom: 0 }
 
 #roster-grid .emp-id-label {
   color: #667795;
-  font-size: 10px;
   font-weight: 800;
   line-height: 1.1;
 }
 
 #roster-grid .emp-id-name {
   color: #0d347a;
-  font-size: 15px;
   font-weight: 900;
-  line-height: 1.25;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  padding-bottom: 5px;
   border-bottom: 1px solid #e5ebf4;
 }
 
@@ -1595,23 +2259,17 @@ tbody tr:last-child td { border-bottom: 0 }
 
 #roster-grid .emp-id-row {
   display: grid;
-  grid-template-columns: 58px 1fr;
   gap: 8px;
   align-items: baseline;
   border-bottom: 1px solid #e5ebf4;
-  padding: 5px 0;
 }
 
 #roster-grid .emp-id-row span {
-  color: #667795;
-  font-size: 10px;
   font-weight: 800;
 }
 
 #roster-grid .emp-id-row strong {
   min-width: 0;
-  color: #0d347a;
-  font-size: 12px;
   font-weight: 900;
   white-space: nowrap;
   overflow: hidden;
@@ -1622,18 +2280,12 @@ tbody tr:last-child td { border-bottom: 0 }
   position: relative;
   z-index: 1;
   display: flex;
-  align-items: center;
-  gap: 6px;
-  padding: 8px 14px;
   border-top: 1px solid #dfe7f2;
-  background: #f8fbff;
   overflow: hidden;
 }
 
 #roster-grid .emp-skill-tag {
   width: auto !important;
-  min-height: 22px !important;
-  padding: 3px 10px !important;
   border-radius: 5px !important;
   display: inline-flex !important;
   align-items: center !important;
@@ -1641,7 +2293,6 @@ tbody tr:last-child td { border-bottom: 0 }
   background: #fff !important;
   border: 1px solid #9fc8ff !important;
   color: #0d4d9e !important;
-  font-size: 11px !important;
   font-weight: 900 !important;
   white-space: nowrap !important;
 }
@@ -1655,12 +2306,9 @@ tbody tr:last-child td { border-bottom: 0 }
 #roster-grid .emp-id-footer {
   position: relative;
   z-index: 1;
-  display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 10px;
-  padding: 0 12px 0 15px;
-  background: #194daa;
   color: #fff;
 }
 
@@ -1669,7 +2317,6 @@ tbody tr:last-child td { border-bottom: 0 }
   align-items: center;
   gap: 6px;
   color: #fff;
-  font-size: 11px;
   font-weight: 900;
   white-space: nowrap;
 }
@@ -1687,14 +2334,10 @@ tbody tr:last-child td { border-bottom: 0 }
 }
 
 #roster-grid .emp-id-role {
-  min-height: 18px;
   display: inline-flex;
   align-items: center;
-  padding: 2px 10px;
   border-radius: 4px;
   background: #ffe22e;
-  color: #7a5b00;
-  font-size: 10px;
   font-weight: 900;
   white-space: nowrap;
 }
@@ -1707,12 +2350,9 @@ tbody tr:last-child td { border-bottom: 0 }
 
 /* ID card v2 - more like an official identity card */
 #roster-grid .emp-card {
-  min-height: 278px !important;
-  grid-template-rows: 48px 1fr auto 34px !important;
   background:
     radial-gradient(circle at 88% 22%, rgba(25,77,170,.08), transparent 26%),
     linear-gradient(180deg, #ffffff 0%, #f7fbff 100%) !important;
-  border: 1px solid #7fb6ff !important;
 }
 
 #roster-grid .emp-card::before {
@@ -1728,7 +2368,6 @@ tbody tr:last-child td { border-bottom: 0 }
   height: 48px;
   background: linear-gradient(90deg, #123d91 0%, #1857c7 100%);
   border-bottom: 3px solid #c9dcff;
-  padding: 0 16px;
 }
 
 #roster-grid .emp-id-brand {
@@ -1750,7 +2389,6 @@ tbody tr:last-child td { border-bottom: 0 }
 
 #roster-grid .emp-id-brand-text b {
   color: #fff;
-  font-size: 14px;
   font-weight: 900;
   line-height: 1;
   white-space: nowrap;
@@ -1758,45 +2396,27 @@ tbody tr:last-child td { border-bottom: 0 }
 
 #roster-grid .emp-id-brand-text small {
   color: rgba(255,255,255,.78);
-  font-size: 9px;
   font-weight: 900;
   letter-spacing: .08em;
   line-height: 1;
 }
 
 #roster-grid .emp-id-no {
-  min-height: 22px;
   display: inline-flex;
   align-items: center;
-  padding: 2px 8px;
   border-radius: 5px;
   background: rgba(255,229,0,.16);
   border: 1px solid rgba(255,229,0,.42);
-  font-size: 11px;
-}
-
-#roster-grid .emp-id-body {
-  grid-template-columns: 98px 1fr;
-  gap: 16px;
-  padding: 18px 16px 8px;
 }
 
 #roster-grid .emp-id-photo {
-  width: 86px;
-  height: 108px;
-  border-radius: 4px;
   border: 1px solid #8dbdff;
   background: linear-gradient(180deg, #eef7ff, #dceeff);
   box-shadow: inset 0 0 0 3px #f7fbff;
 }
 
-#roster-grid .emp-id-photo .initials {
-  font-size: 26px;
-}
-
 #roster-grid .emp-id-photo small {
   bottom: 10px;
-  font-size: 9px;
 }
 
 #roster-grid .emp-id-number-row {
@@ -1806,7 +2426,6 @@ tbody tr:last-child td { border-bottom: 0 }
 
 #roster-grid .emp-id-number-row strong {
   font-family: Consolas, 'SF Mono', monospace;
-  font-size: 14px;
   letter-spacing: .04em;
 }
 
@@ -1815,12 +2434,7 @@ tbody tr:last-child td { border-bottom: 0 }
 }
 
 #roster-grid .emp-id-name {
-  font-size: 16px;
   padding-bottom: 6px;
-}
-
-#roster-grid .emp-id-row {
-  grid-template-columns: 82px 1fr;
 }
 
 #roster-grid .emp-id-row span {
@@ -1832,7 +2446,6 @@ tbody tr:last-child td { border-bottom: 0 }
 }
 
 #roster-grid .emp-id-skill-strip {
-  min-height: 42px;
   background: #f2f7ff;
   border-top-color: #d7e6fb;
 }
@@ -1870,11 +2483,6 @@ tbody tr:last-child td { border-bottom: 0 }
   line-height: 1.25 !important;
 }
 
-#roster-grid .emp-id-row {
-  grid-template-columns: 98px 1fr !important;
-  padding: 7px 0 !important;
-}
-
 #roster-grid .emp-id-row strong {
   font-size: 16px !important;
 }
@@ -1905,15 +2513,11 @@ tbody tr:last-child td { border-bottom: 0 }
 }
 
 #roster-grid .emp-card.is-head .emp-id-role {
-  background: #facc15 !important;
   border-color: #fde047 !important;
-  color: #1f2937 !important;
 }
 
 #roster-grid .emp-card:not(.is-head) .emp-id-role {
-  background: #e0f2fe !important;
   border-color: #7dd3fc !important;
-  color: #075985 !important;
 }
 
 #roster-grid .emp-id-photo .initials {
@@ -1946,12 +2550,7 @@ tbody tr:last-child td { border-bottom: 0 }
 }
 
 .profile-v2 {
-  width: min(1240px, calc(100vw - 56px)) !important;
   max-height: 94vh !important;
-}
-
-.profile-v2-layout {
-  grid-template-columns: 340px 1fr !important;
 }
 
 .cert-modal {
@@ -2081,52 +2680,12 @@ textarea.finput {
   height: 184px !important;
 }
 
-.profile-v2-left {
-  padding: 40px 30px !important;
-}
-
 .profile-v2-photo {
-  width: 164px !important;
-  height: 164px !important;
   font-size: 52px !important;
 }
 
-.profile-v2-name {
-  font-size: 28px !important;
-}
-
-.profile-v2-nameeng {
-  font-size: 17px !important;
-}
-
-.profile-v2-status {
-  font-size: 15px !important;
-  padding: 9px 20px !important;
-}
-
 .profile-v2-right {
-  padding: 28px !important;
   max-height: 88vh !important;
-}
-
-.pv2-section {
-  padding: 22px !important;
-}
-
-.pv2-section-label {
-  font-size: 13px !important;
-}
-
-.pv2-tag,
-.pv2-muted,
-.pv2-comp-key,
-.pv2-lic-name {
-  font-size: 15px !important;
-}
-
-.pv2-comp-val,
-.pv2-lic-meta {
-  font-size: 13px !important;
 }
 
 .tl-cell {
@@ -2582,7 +3141,6 @@ textarea.finput {
 }
 
 #roster-grid .emp-id-brand::after {
-  content: '';
   width: 34px;
   height: 22px;
   margin-left: auto;
@@ -3306,6 +3864,96 @@ textarea.finput {
 #cert-detail-overlay .cert-file-link:hover {
   background: #174ea6 !important;
 }
+#cert-detail-overlay .cert-holder-actions {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: flex-end !important;
+  flex-wrap: wrap !important;
+  gap: 8px !important;
+}
+
+#cert-detail-overlay .cert-file-empty {
+  min-height: 36px !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  padding: 8px 13px !important;
+  border-radius: 999px !important;
+  background: #f1f6ff !important;
+  border: 1px solid #cfe0f6 !important;
+  color: #174ea6 !important;
+  font-size: 12px !important;
+  font-weight: 900 !important;
+  white-space: nowrap !important;
+}
+
+#cert-detail-overlay .cert-attach-form {
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 8px !important;
+  margin: 0 !important;
+}
+
+#cert-detail-overlay .cert-file-input {
+  position: absolute !important;
+  inline-size: 1px !important;
+  block-size: 1px !important;
+  opacity: 0 !important;
+  pointer-events: none !important;
+}
+
+#cert-detail-overlay .cert-upload-trigger,
+#cert-detail-overlay .cert-submit {
+  min-height: 40px !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 7px !important;
+  border-radius: 10px !important;
+  padding: 9px 13px !important;
+  font-family: inherit !important;
+  font-size: 12px !important;
+  font-weight: 900 !important;
+  cursor: pointer !important;
+  white-space: nowrap !important;
+}
+
+#cert-detail-overlay .cert-upload-trigger {
+  max-width: 180px !important;
+  border: 1px dashed #8fb5ec !important;
+  background: #f6faff !important;
+  color: #174ea6 !important;
+}
+
+#cert-detail-overlay .cert-upload-trigger:hover {
+  background: #eaf3ff !important;
+  border-color: #4870c8 !important;
+}
+
+#cert-detail-overlay .cert-upload-trigger svg {
+  width: 16px !important;
+  height: 16px !important;
+  stroke: currentColor !important;
+  fill: none !important;
+  stroke-width: 2 !important;
+  flex: 0 0 16px !important;
+}
+
+#cert-detail-overlay .cert-upload-name {
+  min-width: 0 !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+}
+
+#cert-detail-overlay .cert-submit {
+  border: 0 !important;
+  background: #2455dc !important;
+  color: #fff !important;
+}
+
+#cert-detail-overlay .cert-submit:hover {
+  background: #173b8e !important;
+}
 
 @media (max-width: 1200px) {
   #panel-certifications .cert-grid {
@@ -3337,8 +3985,17 @@ textarea.finput {
     grid-template-columns: 48px minmax(0, 1fr) !important;
   }
 
-  #cert-detail-overlay .cert-file-link {
+  #cert-detail-overlay .cert-holder-actions {
     grid-column: 1 / -1 !important;
+    justify-content: stretch !important;
+  }
+
+  #cert-detail-overlay .cert-file-link,
+  #cert-detail-overlay .cert-file-empty,
+  #cert-detail-overlay .cert-attach-form,
+  #cert-detail-overlay .cert-upload-trigger,
+  #cert-detail-overlay .cert-submit {
+    width: 100% !important;
   }
 }
 /* === CODEX CERTIFICATIONS REDESIGN END === */
@@ -3436,13 +4093,13 @@ textarea.finput {
     <div class="sb-mark">3E</div>
     <div>
       <div class="sb-title">ทริปเปิ้ล อี เทรดดิ้ง</div>
-      <div class="sb-sub">ระบบจัดการทักษะช่าง</div>
+      <div class="sb-sub">ระบบจัดการช่าง</div>
     </div>
   </div>
   <div class="sb-tabs">
     <button class="sb-tab active" type="button" onclick="switchTab('teams',this)">
       <svg viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
-      <span class="label">ทักษะช่าง</span><span class="nav-badge-count">{{ $technicians->count() }}</span>
+      <span class="label">ทีมช่าง</span><span class="nav-badge-count">{{ $technicians->count() }}</span>
     </button>
     <button class="sb-tab" type="button" onclick="switchTab('schedules',this)">
       <svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
@@ -3450,15 +4107,19 @@ textarea.finput {
     </button>
     <button class="sb-tab" type="button" onclick="switchTab('customers',this)">
       <svg viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
-      <span class="label">ลูกค้า PROJECT</span><span class="nav-badge-count">{{ $customers->count() }}</span>
+      <span class="label">ลูกค้าและไซต์งาน</span><span class="nav-badge-count">{{ $customers->count() }}</span>
     </button>
     <button class="sb-tab" type="button" onclick="switchTab('accounts',this)">
       <svg viewBox="0 0 24 24"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
       <span class="label">บัญชี Solar</span><span class="nav-badge-count">{{ $accounts->count() }}</span>
     </button>
     <button class="sb-tab" type="button" onclick="switchTab('certifications',this)">
-      <svg viewBox="0 0 24 24"><path d="M12 2l2.8 6 6.2.8-4.5 4.4 1.1 6.2L12 16.4 6.4 19.4l1.1-6.2L3 8.8 9.2 8z"/></svg>
+      <svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="6"/><path d="M8.8 13.1 7 22l5-3 5 3-1.8-8.9"/></svg>
       <span class="label">ใบรับรอง</span><span class="nav-badge-count">{{ $certTotal }}</span>
+    </button>
+    <button class="sb-tab" type="button" onclick="switchTab('aircons',this)">
+      <svg viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="10" rx="2"/><path d="M7 19h10"/><path d="M9 15v4"/><path d="M15 15v4"/><path d="M7 9h10"/></svg>
+      <span class="label">ล้างแอร์</span><span class="nav-badge-count">{{ $airconTotal }}</span>
     </button>
   </div>
 </aside>
@@ -3467,7 +4128,7 @@ textarea.finput {
   @if($errors->has('delete'))<div class="flash flash-error">{{ $errors->first('delete') }}</div>@endif
 <section class="panel active" id="panel-teams">
     <div class="panel-header">
-      <div class="panel-title">ทักษะช่าง ({{ $teams->count() }} ทีม · {{ $stats['total_tech'] ?? $technicians->count() }} คน)</div>
+      <div class="panel-title">ทีมช่าง ({{ $teams->count() }} ทีม · {{ $stats['total_tech'] ?? $technicians->count() }} คน)</div>
       <div class="panel-actions"><input type="search" class="search-inp" placeholder="ค้นหาช่าง / ทักษะ..." oninput="filterTeams(this.value);filterRosterSearch(this.value)"></div>
     </div>
     <div class="view-tabs">
@@ -3620,8 +4281,9 @@ textarea.finput {
                 return strcmp($a->emp_name ?? $a->emp_id ?? '', $b->emp_name ?? $b->emp_id ?? '');
               })->values();
               $teamScheds = $schedules->where('team_name',$teamName)->values();
+              $teamSearch = strtolower(trim($teamName.' '.$allMbr->map(fn($m) => trim(($m->emp_name ?? '').' '.($m->emp_name_eng ?? '').' '.($m->emp_nickname ?? '').' '.($m->emp_id ?? '').' '.($m->emp_position ?? '').' '.($m->emp_skill ?? '').' '.collect($m->software_tools ?? [])->implode(' ')))->implode(' ')));
             @endphp
-            <article class="team-card">
+            <article class="team-card" data-search="{{ $teamSearch }}">
               <div class="team-head-bar">
                 <div style="flex:1;min-width:0">
                   <div class="team-title">{{ $teamName ?: '-' }}</div>
@@ -3670,13 +4332,6 @@ textarea.finput {
             <option value="all">ทุกโปรเจค</option>
             @foreach($jobTypes as $key => $label)<option value="{{ $key }}">{{ $label }}</option>@endforeach
           </select>
-          <select class="sched-select" id="sched-status-filter" onchange="SCHED_BOARD.render()">
-            <option value="all">ทุกสถานะ</option>
-            <option value="upcoming">กำลังจะมา</option>
-            <option value="doing">กำลังทำ</option>
-            <option value="done">เสร็จแล้ว</option>
-            <option value="cancel">ยกเลิก</option>
-          </select>
           <button class="sched-nav-btn" type="button" onclick="SCHED_BOARD.nav(-1)">‹</button>
           <button class="sched-nav-btn" type="button" onclick="SCHED_BOARD.nav(1)">›</button>
         </div>
@@ -3699,12 +4354,12 @@ textarea.finput {
             <thead>
               <tr>
                 <th style="width:60px">#</th>
-                <th style="width:130px">SO</th>
-                <th>ลูกค้า</th>
-                <th>งาน</th>
-                <th style="width:140px">ทีม</th>
-                <th style="width:200px">วันที่</th>
-                <th style="width:120px">สถานะ</th>
+                <th style="width:150px">&#3648;&#3621;&#3586;&#3591;&#3634;&#3609; (SO)</th>
+                <th>&#3594;&#3639;&#3656;&#3629;&#3621;&#3641;&#3585;&#3588;&#3657;&#3634;</th>
+                <th>&#3619;&#3634;&#3618;&#3621;&#3632;&#3648;&#3629;&#3637;&#3618;&#3604;&#3591;&#3634;&#3609;</th>
+                <th style="width:140px">&#3607;&#3637;&#3617;&#3594;&#3656;&#3634;&#3591;</th>
+                <th style="width:200px">&#3623;&#3633;&#3609;&#3607;&#3637;&#3656;&#3607;&#3635;&#3591;&#3634;&#3609;</th>
+                <th style="width:120px">&#3626;&#3606;&#3634;&#3609;&#3632;&#3591;&#3634;&#3609;</th>
               </tr>
             </thead>
             <tbody id="sched-list-tbody"></tbody>
@@ -3715,12 +4370,43 @@ textarea.finput {
   </section>
   <section class="panel" id="panel-customers">
   <div class="panel-header">
-    <div class="panel-title">ลูกค้า PROJECT ({{ $customers->count() }} ราย)</div>
+    <div>
+      <div class="customer-eyebrow">PROJECT CRM</div>
+      <div class="panel-title">ลูกค้าเเล้วไซต์งาน ({{ $customers->count() }} ราย)</div>
+      <div class="customer-hero-sub">Solar · ไฟฟ้า · โยธา · ทั่วไป</div>
+    </div>
     <div class="panel-actions">
       <input type="search" class="search-inp" id="cust-search" placeholder="ค้นหาลูกค้า..." oninput="filterCustTable(this.value)">
       <button class="btn btn-solar" type="button" onclick="openAddSchedModal()">+ เพิ่มงาน</button>
     </div>
   </div>
+    <div class="cust-metrics">
+      <div class="cust-metric">
+        <div class="cust-metric-label">ทั้งหมด</div>
+        <div class="cust-metric-value">{{ $customers->count() }}</div>
+        <div class="cust-metric-note">PROJECT</div>
+      </div>
+      <div class="cust-metric">
+        <div class="cust-metric-label">Solar</div>
+        <div class="cust-metric-value">{{ $custSummary['solar']->count() }}</div>
+        <div class="cust-metric-note">ติดตั้ง / ล้าง / ซ่อม</div>
+      </div>
+      <div class="cust-metric">
+        <div class="cust-metric-label">ไฟฟ้า</div>
+        <div class="cust-metric-value">{{ $custSummary['electrical']->count() }}</div>
+        <div class="cust-metric-note">Electrical</div>
+      </div>
+      <div class="cust-metric">
+        <div class="cust-metric-label">โยธา</div>
+        <div class="cust-metric-value">{{ $custSummary['civil']->count() }}</div>
+        <div class="cust-metric-note">Civil</div>
+      </div>
+      <div class="cust-metric">
+        <div class="cust-metric-label">ทั่วไป</div>
+        <div class="cust-metric-value">{{ $custSummary['general']->count() }}</div>
+        <div class="cust-metric-note">General</div>
+      </div>
+    </div>
     @if($washAlerts->count() > 0)
       <div class="wash-alert-bar">
         <div class="wash-alert-title">แจ้งเตือนล้างแผง Solar ({{ $washAlerts->count() }} ราย)</div>
@@ -3749,26 +4435,32 @@ textarea.finput {
     @if($customers->count() === 0)
       <div class="empty-state">ยังไม่มีลูกค้าในระบบ</div>
     @else
-      <div class="table-wrap">
-        <table>
+      <div class="customer-project-table-wrap">
+        <table class="customer-project-table">
           <thead><tr><th style="width:52px">#</th><th>ชื่อลูกค้า</th><th>ประเภท</th><th>วันติดตั้งสำเร็จ</th><th>รอบล้างแผง</th><th>จัดการ</th></tr></thead>
           <tbody id="cust-tbody">
             @foreach($customers as $idx => $c)
               @php
                 $cat = method_exists($c, 'getCategory') ? $c->getCategory() : (str_starts_with((string)($c->type_project ?? ''), 'solar') ? 'solar' : (($c->type_project ?? '') ?: 'general'));
                 $isSolar = str_starts_with((string)($c->type_project ?? ''), 'solar');
+                $custStatus = $c->status ?? '';
               @endphp
-              <tr data-cat="{{ $cat }}" data-search="{{ strtolower(($c->name ?? '').' '.($c->desc ?? '').' '.($c->contact_name ?? '')) }}">
-                <td>{{ $idx + 1 }}</td>
+              <tr class="cust-row" data-cat="{{ $cat }}" data-search="{{ strtolower(($c->name ?? '').' '.($c->desc ?? '').' '.($c->contact_name ?? '').' '.($c->phone ?? '').' '.($c->status ?? '').' '.($c->type_project ?? '')) }}">
+                <td><span class="cust-index">{{ $idx + 1 }}</span></td>
                 <td>
                   <button class="cust-name-btn" type="button" data-cust="{{ json_encode($c, JSON_UNESCAPED_UNICODE|JSON_HEX_APOS|JSON_HEX_QUOT|JSON_HEX_TAG|JSON_HEX_AMP) }}" onclick="openCustDetail(this)">{{ $c->name }}</button>
-                  @if($c->desc)<div style="color:var(--muted);font-size:12px;font-weight:700">{{ $c->desc }}</div>@endif
-                  @if($c->contact_name)<div style="color:var(--muted);font-size:11px;font-weight:700">{{ $c->contact_name }}@if($c->phone) · {{ $c->phone }}@endif</div>@endif
+                  @if($c->desc)<div class="cust-desc">{{ $c->desc }}</div>@endif
+                  @if($c->contact_name)<div class="cust-contact">{{ $c->contact_name }}@if($c->phone) · {{ $c->phone }}@endif</div>@endif
                 </td>
-                <td><span class="job-type-tag jt-{{ $c->type_project ?: 'general' }}">{{ $jobTypes[$c->type_project ?? 'general'] ?? ($c->type_project ?: 'ทั่วไป') }}</span></td>
+                <td>
+                  <div class="cust-type-stack">
+                    <span class="cust-type-plain">{{ $jobTypes[$c->type_project ?? 'general'] ?? ($c->type_project ?: 'ทั่วไป') }}</span>
+                    <span class="cust-status-plain">{{ $custStatus ?: '-' }}</span>
+                  </div>
+                </td>
                 <td>
                   @if($c->supervisor)
-                    <span class="cust-date-chip">{{ \Carbon\Carbon::parse($c->supervisor)->format('d/m/') }}{{ \Carbon\Carbon::parse($c->supervisor)->year + 543 }}</span>
+                    <span class="cust-date-plain">{{ \Carbon\Carbon::parse($c->supervisor)->format('d/m/') }}{{ \Carbon\Carbon::parse($c->supervisor)->year + 543 }}</span>
                   @else
                     <span class="cust-muted">-</span>
                   @endif
@@ -3788,13 +4480,16 @@ textarea.finput {
                   @endif
                 </td>
                 <td>
-                  <div style="display:flex;gap:6px;flex-wrap:wrap">
+                  <div class="cust-row-actions">
                     <button class="btn btn-sm btn-ghost" type="button" data-cust="{{ json_encode($c, JSON_UNESCAPED_UNICODE|JSON_HEX_APOS|JSON_HEX_QUOT|JSON_HEX_TAG|JSON_HEX_AMP) }}" onclick="openCustEdit(this)">แก้ไข</button>
                     <form method="POST" action="{{ route('cust.delete', $c->id) }}" onsubmit="return confirm('ลบลูกค้า {{ addslashes($c->name) }} ?')">@csrf<button class="btn btn-sm btn-danger" type="submit">ลบ</button></form>
                   </div>
                 </td>
               </tr>
             @endforeach
+            <tr id="cust-empty-row" style="display:none">
+              <td colspan="6" class="cust-empty-filter">ไม่พบลูกค้าตามเงื่อนไขที่ค้นหา</td>
+            </tr>
           </tbody>
         </table>
       </div>
@@ -3832,6 +4527,209 @@ textarea.finput {
       </div>
     @endif
   </section>
+  <section class="panel" id="panel-aircons">
+    <div class="panel-header">
+      <div class="panel-title">ล้างแอร์ ({{ $airconTotal }} เครื่อง)</div>
+      <div class="panel-actions aircon-panel-actions">
+        <button class="aircon-add-btn" type="button" onclick="openAirconAdd()">
+          <svg viewBox="0 0 24 24"><path d="M12 5v14"/><path d="M5 12h14"/></svg>
+          <span>เพิ่มเครื่องแอร์</span>
+        </button>
+        <input type="search" class="search-inp" placeholder="ค้นหาเครื่องแอร์..." oninput="filterAirconTable(this.value)">
+      </div>
+    </div>
+
+    <div class="aircon-shell">
+      <div class="aircon-metrics">
+        <div class="aircon-metric">
+          <div class="aircon-metric-copy">
+            <div class="aircon-metric-label">เครื่องทั้งหมด</div>
+            <div class="aircon-metric-value" id="aircon-metric-total">{{ $airconTotal }}</div>
+          </div>
+          <div class="aircon-metric-icon total"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="5" width="18" height="8" rx="2"/><text x="12" y="10.7" text-anchor="middle" font-size="5" font-weight="900" fill="currentColor" stroke="none">AC</text><path d="M7 16h10"/><path d="M9 19h6"/></svg></div>
+        </div>
+        <div class="aircon-metric">
+          <div class="aircon-metric-copy">
+            <div class="aircon-metric-label">ล้างแล้ว</div>
+            <div class="aircon-metric-value" id="aircon-metric-cleaned">{{ $airconCleaned }}</div>
+          </div>
+          <div class="aircon-metric-icon cleaned"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="m8 12.5 2.6 2.6L16.5 9"/></svg></div>
+        </div>
+        <div class="aircon-metric">
+          <div class="aircon-metric-copy">
+            <div class="aircon-metric-label">ยังไม่ได้ล้าง</div>
+            <div class="aircon-metric-value" id="aircon-metric-pending">{{ $airconPending }}</div>
+          </div>
+          <div class="aircon-metric-icon pending"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="m9 9 6 6"/><path d="m15 9-6 6"/></svg></div>
+        </div>
+      </div>
+
+      <div class="aircon-list-head">
+        <div class="aircon-list-title">ประวัติงานล้างแอร์</div>
+        <input class="aircon-search" type="search" placeholder="ค้นหารหัสเครื่อง / ยี่ห้อ / จุดติดตั้ง" oninput="filterAirconTable(this.value)">
+      </div>
+
+      @if($aircons->count() === 0)
+        <div class="empty-state">ยังไม่มีข้อมูลเครื่องแอร์</div>
+      @else
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th style="width:52px">#</th>
+                <th>ภาพเครื่อง</th>
+                <th>รหัสเครื่อง</th>
+                <th>ยี่ห้อ / รุ่นแอร์</th>
+                <th>จุดติดตั้ง</th>
+                <th>วันที่ล้าง / ตรวจ</th>
+                <th>ผลการล้าง</th>
+                <th>แก้ไข / ลบ</th>
+              </tr>
+            </thead>
+            <tbody id="aircon-tbody">
+              @foreach($aircons as $idx => $ac)
+                @php
+                  $status = $ac->status ?? 'pending';
+                  $statusText = $status === 'cleaned' ? 'ล้างแล้ว' : 'ยังไม่ได้ล้าง';
+                  $serviceDate = $ac->service_date ?: $ac->updated_at;
+                  $airconImages = is_array($ac->images) ? array_values(array_filter($ac->images)) : [];
+                  $displayImage = $ac->cover_image ?: ($airconImages[0] ?? null);
+                  $displayImageUrl = $displayImage ? request()->getBaseUrl().'/storage/'.ltrim($displayImage, '/') : null;
+                  $airconSearchBase = strtolower(($ac->aircon_code ?? '').' '.($ac->brand ?? '').' '.($ac->model_name ?? '').' '.($ac->location ?? '').' '.($serviceDate ? $serviceDate->format('Y-m-d') : ''));
+                  $airconPayload = [
+                    'id' => $ac->id,
+                    'aircon_code' => $ac->aircon_code,
+                    'brand' => $ac->brand,
+                    'model_name' => $ac->model_name,
+                    'location' => $ac->location,
+                    'service_date' => $serviceDate ? $serviceDate->format('Y-m-d') : '',
+                    'status' => $status,
+                    'notes' => $ac->notes ?? '',
+                  ];
+                @endphp
+                <tr data-search="{{ trim($airconSearchBase.' '.strtolower($statusText)) }}" data-search-base="{{ $airconSearchBase }}">
+                  <td>{{ $idx + 1 }}</td>
+                  <td>
+                    @if($displayImage)
+                      <a class="aircon-thumb-link" href="{{ $displayImageUrl }}" target="_blank" rel="noopener">
+                        <img class="aircon-thumb" src="{{ $displayImageUrl }}" alt="{{ $ac->aircon_code }}">
+                        @if(count($airconImages) > 1)
+                          <span class="aircon-thumb-count">+{{ count($airconImages) - 1 }}</span>
+                        @endif
+                      </a>
+                    @else
+                      <span class="cust-muted">-</span>
+                    @endif
+                  </td>
+                  <td><strong>{{ $ac->aircon_code }}</strong></td>
+                  <td><strong>{{ $ac->brand }}</strong><div style="font-size:12px;color:var(--muted);font-weight:800">{{ $ac->model_name }}</div></td>
+                  <td>{{ $ac->location }}</td>
+                  <td>
+                    @if($serviceDate)
+                      {{ $serviceDate->format('d/m/') }}{{ $serviceDate->year + 543 }}
+                    @else
+                      -
+                    @endif
+                  </td>
+                  <td>
+                    <select class="aircon-status-select {{ $status }}" data-aircon-id="{{ $ac->id }}" data-prev="{{ $status }}" onchange="updateAirconStatus(this)">
+                      <option value="cleaned" {{ $status === 'cleaned' ? 'selected' : '' }}>ล้างแล้ว</option>
+                      <option value="pending" {{ $status === 'pending' ? 'selected' : '' }}>ยังไม่ได้ล้าง</option>
+                    </select>
+                  </td>
+
+                  <td>
+                    <div class="aircon-row-actions">
+                      <button class="btn btn-sm aircon-edit-btn" type="button" data-aircon="{{ json_encode($airconPayload, JSON_UNESCAPED_UNICODE|JSON_HEX_APOS|JSON_HEX_QUOT|JSON_HEX_TAG|JSON_HEX_AMP) }}" onclick="openAirconEdit(this)">แก้ไข</button>
+                      <form method="POST" action="{{ route('aircons.delete', $ac->id) }}" onsubmit="return confirm('ลบเครื่อง {{ addslashes($ac->aircon_code) }} ?')">
+                        @csrf
+                        <button class="btn btn-sm btn-danger" type="submit">ลบ</button>
+                      </form>
+                    </div>
+                  </td>
+                </tr>
+              @endforeach
+              <tr id="aircon-empty-row" style="display:none">
+                <td colspan="8" class="cust-empty-filter">ไม่พบข้อมูลตามคำค้นหา</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      @endif
+    </div>
+  </section>
+<div class="overlay" id="modal-aircon">
+  <div class="aircon-modal" onclick="event.stopPropagation()">
+    <div class="aircon-modal-head">
+      <div>
+        <div class="aircon-modal-title" id="aircon-modal-title">เพิ่มข้อมูลเครื่องแอร์</div>
+        <div class="aircon-modal-sub" id="aircon-modal-sub">ล้างแอร์</div>
+      </div>
+      <button class="aircon-modal-close" type="button" onclick="closeModalById('modal-aircon')">×</button>
+    </div>
+    <div class="aircon-modal-body">
+      <form class="aircon-form-card" id="form-aircon" method="POST" action="{{ route('aircons.store') }}" enctype="multipart/form-data">
+        @csrf
+        <input type="hidden" name="_aircon_form" value="1">
+        @if($errors->any() && old('_aircon_form'))
+          <div class="aircon-form-error">{{ $errors->first() }}</div>
+        @endif
+        <div class="aircon-field">
+          <label class="aircon-label">รหัสเครื่อง <span class="req">*</span></label>
+          <input class="aircon-input" type="text" name="aircon_code" value="{{ old('aircon_code') }}" placeholder="พิมพ์ ID เช่น AC-001" required>
+        </div>
+        <div class="aircon-field">
+          <label class="aircon-label">ยี่ห้อ <span class="req">*</span></label>
+          <input class="aircon-input" type="text" name="brand" value="{{ old('brand') }}" placeholder="เช่น Daikin, Mitsubishi, Samsung" required>
+        </div>
+        <div class="aircon-field">
+          <label class="aircon-label">ชื่อรุ่นแอร์ <span class="req">*</span></label>
+          <input class="aircon-input" type="text" name="model_name" value="{{ old('model_name') }}" placeholder="เช่น FTKM09SV2S, Inverter 12000BTU" required>
+        </div>
+        <div class="aircon-field">
+          <label class="aircon-label">จุดติดตั้ง <span class="req">*</span></label>
+          <input class="aircon-input" type="text" name="location" value="{{ old('location') }}" placeholder="เช่น ชั้น 2 ห้องประชุม" required>
+        </div>
+        <div class="aircon-field">
+          <label class="aircon-label">วันที่ล้าง / ตรวจ <span class="req">*</span></label>
+          <input class="aircon-input" type="date" name="service_date" value="{{ old('service_date', now()->toDateString()) }}" required>
+        </div>
+        <div class="aircon-field">
+          <label class="aircon-label">รูปเครื่องแอร์ (แนบได้หลายรูป)</label>
+          <div class="aircon-upload-stack">
+            <input class="aircon-file" id="aircon-gallery-images" type="file" name="images[]" accept="image/*" multiple>
+            <label class="aircon-upload" for="aircon-gallery-images" data-file-label>
+              <svg viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-5-5L5 21"/></svg>
+              <span>เลือกจากแกลเลอรี</span>
+              <small>เลือกได้หลายรูป</small>
+            </label>
+          </div>
+        </div>
+        <div class="aircon-field">
+          <label class="aircon-label">สถานะการล้าง <span class="req">*</span></label>
+          @php $oldAirconStatus = old('status', 'cleaned'); @endphp
+          <div class="aircon-status-group">
+            <label class="aircon-status-option"><input type="radio" name="status" value="cleaned" {{ $oldAirconStatus === 'cleaned' ? 'checked' : '' }}><span>ล้างแล้ว</span></label>
+            <label class="aircon-status-option"><input type="radio" name="status" value="pending" {{ $oldAirconStatus === 'pending' ? 'checked' : '' }}><span>ยังไม่ได้ล้าง</span></label>
+          </div>
+        </div>
+        <div class="aircon-field">
+          <label class="aircon-label">หมายเหตุ</label>
+          <textarea class="aircon-note" name="notes" placeholder="รายละเอียดเพิ่มเติม เช่น น้ำหยด / เสียงดัง / ต้องนัดซ่อม">{{ old('notes') }}</textarea>
+        </div>
+        <div class="aircon-form-actions">
+          <button class="aircon-cancel" type="button" onclick="closeModalById('modal-aircon')">ยกเลิก</button>
+          <button class="aircon-save" id="aircon-save-btn" type="submit">บันทึกข้อมูล</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+@if($errors->any() && old('_aircon_form'))
+  <script>
+    document.addEventListener('DOMContentLoaded', () => openModal('modal-aircon'));
+  </script>
+@endif
   <section class="panel" id="panel-certifications">
     <div class="cert-board">
       <div class="cert-head">
@@ -3842,7 +4740,7 @@ textarea.finput {
         @forelse($certGroups as $certName => $items)
           @php
             $abbrs = $items->map(fn($item) => mb_substr(preg_split('/\s+/u', trim($item['tech']->emp_name ?: $item['tech']->emp_id))[0] ?? ($item['tech']->emp_name ?: $item['tech']->emp_id), 0, 2))->unique()->take(4)->values();
-            $payload = $items->map(fn($item) => ['tech' => $item['tech'], 'license' => $item['license']])->values();
+            $payload = $items->map(fn($item) => ['tech' => $item['tech'], 'license' => $item['license'], 'license_index' => $item['license_index']])->values();
           @endphp
           <button class="cert-card" type="button" data-cert-search="{{ strtolower($certName) }}" data-cert-name="{{ $certName }}" data-cert-items="{{ json_encode($payload, JSON_UNESCAPED_UNICODE|JSON_HEX_APOS|JSON_HEX_QUOT|JSON_HEX_TAG|JSON_HEX_AMP) }}" onclick="openCertDetail(this)">
             <div class="cert-card-top"><div class="cert-icon">☆</div><div class="cert-info"><div class="cert-name">{{ $certName }}</div><div class="cert-count-text">{{ $items->count() }} คนในองค์กร</div></div><div class="cert-count">{{ $items->count() }}</div></div>
@@ -4090,6 +4988,18 @@ textarea.finput {
 <div class="overlay" id="modal-add-milestone"><div class="pmodal pmodal-sm" onclick="event.stopPropagation()"><div class="pmodal-strip"></div><div class="modal-header"><div class="modal-title">เพิ่ม Milestone</div><button class="modal-close" type="button" onclick="closeModalById('modal-add-milestone')">×</button></div><div class="modal-body"><form method="POST" id="form-add-milestone" action="">@csrf<div class="frow"><label class="flabel">วันที่ *</label><input class="finput" type="date" name="milestone_date" id="am-date" required></div><div class="frow"><label class="flabel">รายละเอียด *</label><textarea class="finput" name="milestone_note" id="am-note" rows="3" required></textarea></div><div class="frow"><label class="flabel">บันทึกโดย</label><input class="finput" type="text" name="milestone_by" id="am-by"></div><div class="factions"><button type="button" class="btn btn-ghost" onclick="closeModalById('modal-add-milestone')">ยกเลิก</button><button type="submit" class="btn btn-primary">บันทึก</button></div></form></div></div></div>
 <div class="overlay" id="modal-account"><div class="pmodal" onclick="event.stopPropagation()"><div class="pmodal-strip"></div><div class="modal-header"><div class="modal-title" id="acc-modal-title">เพิ่มบัญชีผู้ใช้ Solar</div><button class="modal-close" type="button" onclick="closeModalById('modal-account')">×</button></div><div class="modal-body"><form method="POST" id="form-account" action="{{ route('account.store') }}">@csrf<div class="fgrid"><div class="frow"><label class="flabel">เลขที่ / รหัส</label><input class="finput" type="text" name="no" id="af-no" readonly></div><div class="frow"><label class="flabel">Inverter / ยี่ห้อ</label><input class="finput" type="text" name="inverter" id="af-inverter"></div><div class="frow fcol-full"><label class="flabel">ชื่อระบบ / Platform *</label><input class="finput" type="text" name="plane" id="af-plane" required></div><div class="frow fcol-full"><label class="flabel">ลูกค้า / สถานที่ติดตั้ง</label><div class="autocomp"><input class="finput" type="text" name="customer" id="af-customer" autocomplete="off" oninput="accCustAutocomp(this.value)"><div class="autocomp-list" id="af-cust-list"></div></div></div><div class="frow"><label class="flabel">Username</label><input class="finput" type="text" name="username" id="af-username" autocomplete="off"></div><div class="frow"><label class="flabel">Password</label><div style="position:relative"><input class="finput" type="password" name="password" id="af-password" autocomplete="new-password" style="padding-right:44px"><button type="button" onclick="toggleInputPw('af-password',this)" style="position:absolute;right:10px;top:50%;transform:translateY(-50%);border:0;background:transparent;cursor:pointer;font-weight:900;color:var(--muted)">ดู</button></div></div><div class="frow"><label class="flabel">Email</label><input class="finput" type="text" name="email" id="af-email"></div><div class="frow"><label class="flabel">App Password</label><div style="position:relative"><input class="finput" type="password" name="app_password" id="af-app_password" autocomplete="new-password" style="padding-right:44px"><button type="button" onclick="toggleInputPw('af-app_password',this)" style="position:absolute;right:10px;top:50%;transform:translateY(-50%);border:0;background:transparent;cursor:pointer;font-weight:900;color:var(--muted)">ดู</button></div></div></div><div class="factions"><button type="button" class="btn btn-ghost" onclick="closeModalById('modal-account')">ยกเลิก</button><button type="submit" class="btn btn-solar">บันทึก</button></div></form></div></div></div>
 
+<div class="cal-popup-bg" id="cal-popup-bg">
+  <div class="cal-popup" onclick="event.stopPropagation()">
+    <div class="cal-popup-strip"></div>
+    <div class="cal-popup-head">
+      <div class="cal-popup-date" id="cal-popup-date">-</div>
+      <span class="cal-popup-count" id="cal-popup-count">0 งาน</span>
+      <button class="cal-popup-close" type="button" onclick="closeScheduleDayPopup()">×</button>
+    </div>
+    <div class="cal-popup-inner" id="cal-popup-body"></div>
+  </div>
+</div>
+
 <div class="tcal-overlay" id="tcal-overlay">
   <div class="tcal-fs">
     <div class="tcal-header">
@@ -4140,11 +5050,11 @@ textarea.finput {
                 <thead>
                   <tr>
                     <th style="width:60px">#</th>
-                    <th style="width:130px">SO</th>
-                    <th>ลูกค้า</th>
-                    <th>งาน</th>
-                    <th style="width:200px">วันที่</th>
-                    <th style="width:120px">สถานะ</th>
+                    <th style="width:150px">&#3648;&#3621;&#3586;&#3591;&#3634;&#3609; (SO)</th>
+                    <th>&#3594;&#3639;&#3656;&#3629;&#3621;&#3641;&#3585;&#3588;&#3657;&#3634;</th>
+                    <th>&#3619;&#3634;&#3618;&#3621;&#3632;&#3648;&#3629;&#3637;&#3618;&#3604;&#3591;&#3634;&#3609;</th>
+                    <th style="width:200px">&#3623;&#3633;&#3609;&#3607;&#3637;&#3656;&#3607;&#3635;&#3591;&#3634;&#3609;</th>
+                    <th style="width:120px">&#3626;&#3606;&#3634;&#3609;&#3632;&#3591;&#3634;&#3609;</th>
                   </tr>
                 </thead>
                 <tbody id="tcal-list-tbody"></tbody>
@@ -4303,33 +5213,48 @@ function schedStatusKey(v) {
   };
   return SCHED_STATUS_OPTIONS[s] ? s : (aliases[s] || '');
 }
+function schedDateKey(v) {
+  if (!v) return '';
+  const s = String(v).trim();
+  const m = s.match(/^(\d{4})-(\d{2})-(\d{2})/);
+  if (m) return `${m[1]}-${m[2]}-${m[3]}`;
+  const d = new Date(s);
+  return isNaN(d) ? '' : ymd(d);
+}
+function dateLinkedScheduleStatusKey(job) {
+  const start = schedDateKey(job?.start_date);
+  const end = schedDateKey(job?.end_date || job?.start_date);
+  const today = ymd(new Date());
+  if (end && end < today) return 'done';
+  if (start && start > today) return 'upcoming';
+  if (start || end) return 'doing';
+  return '';
+}
 function resolveScheduleStatus(job) {
   const explicit = schedStatusKey(job?.status);
-  if (explicit) {
-    return { key: explicit, label: SCHED_STATUS_OPTIONS[explicit], cls: SCHED_STATUS_CLASSES[explicit] };
-  }
-  const today = ymd(new Date());
-  if (job.end_date < today) return { key: 'done', label: SCHED_STATUS_OPTIONS.done, cls: SCHED_STATUS_CLASSES.done };
-  if (job.start_date > today) return { key: 'upcoming', label: SCHED_STATUS_OPTIONS.upcoming, cls: SCHED_STATUS_CLASSES.upcoming };
-  return { key: 'doing', label: SCHED_STATUS_OPTIONS.doing, cls: SCHED_STATUS_CLASSES.doing };
+  const key = explicit || dateLinkedScheduleStatusKey(job) || 'upcoming';
+  return {
+    key,
+    label: SCHED_STATUS_OPTIONS[key] || SCHED_STATUS_OPTIONS.upcoming,
+    cls: SCHED_STATUS_CLASSES[key] || SCHED_STATUS_CLASSES.upcoming,
+  };
 }
 function schedStatusOptionsHtml(active) {
   return Object.entries(SCHED_STATUS_OPTIONS)
     .map(([key, label]) => `<option value="${key}" ${active === key ? 'selected' : ''}>${label}</option>`)
     .join('');
 }
-function renderScheduleStatusSelect(job) {
-  const st = resolveScheduleStatus(job);
-  return `<select class="sched-status-select ${st.cls}" data-sched-id="${escHtml(job.id || '')}" data-prev="${st.key}" onclick="event.stopPropagation()" onchange="updateScheduleStatus(this)">${schedStatusOptionsHtml(st.key)}</select>`;
-}
 function teamEventClass(job) {
-  const seed = String(job.team_name || 'no-team');
-  let hash = 0;
-  for (let i = 0; i < seed.length; i++) {
-    hash = ((hash << 5) - hash) + seed.charCodeAt(i);
-    hash |= 0;
-  }
-  return 'evc-' + ((Math.abs(hash) % 12) + 1);
+  const type = String(job?.job_type || 'general');
+  const map = {
+    solar_install: 'evc-install',
+    solar_wash: 'evc-wash',
+    solar_maintenance: 'evc-maintenance',
+    electrical: 'evc-electrical',
+    civil: 'evc-civil',
+    general: 'evc-general',
+  };
+  return map[type] || 'evc-general';
 }
 function renderCalendarEventContent(job) {
   const typeKey = job?.job_type || 'general';
@@ -4338,12 +5263,49 @@ function renderCalendarEventContent(job) {
   const customer = job?.customer_name || '-';
   return `<span class="sched-event-title">${escHtml(title)}</span><span class="sched-event-meta"><span class="sched-event-type">${escHtml(typeLabel)}</span><span class="sched-event-customer">${escHtml(customer)}</span></span>`;
 }
-function fmtPhone(v) {
-  const d = String(v || '').replace(/\D/g, '');
-  if (!d) return '-';
-  if (d.length <= 3) return d;
-  if (d.length <= 6) return `${d.slice(0, 3)}-${d.slice(3)}`;
-  return `${d.slice(0, 3)}-${d.slice(3, 6)}-${d.slice(6, 9)}`;
+function scheduleJobsForDate(dateStr,source='main'){
+  const pool=source==='team'&&window.TCAL?.jobs?window.TCAL.jobs:SCHED_DATA;
+  const filterId=source==='team'?'tcal-type-filter':'sched-type-filter';
+  const filter=document.getElementById(filterId)?.value||'all';
+  return (pool||[])
+    .filter(s=>s.start_date<=dateStr&&s.end_date>=dateStr)
+    .map(s=>({...s,job_type:s.job_type||'general'}))
+    .filter(s=>filter==='all'||s.job_type===filter)
+    .sort((a,b)=>(a.start_date||'').localeCompare(b.start_date||'')||(a.so_number||'').localeCompare(b.so_number||''));
+}
+function closeScheduleDayPopup(){
+  document.getElementById('cal-popup-bg')?.classList.remove('open');
+  if(!document.querySelector('.overlay.open,.tcal-overlay.open,.cal-popup-bg.open'))document.body.style.overflow='';
+}
+function openScheduleFromDayPopup(btn,source='main'){
+  closeScheduleDayPopup();
+  if(source==='team'&&document.getElementById('tcal-overlay')?.classList.contains('open')){
+    closeTeamCalendar();
+    setTimeout(()=>openEditSchedFromEl(btn),100);
+    return;
+  }
+  openEditSchedFromEl(btn);
+}
+function openScheduleDayPopup(dateStr,source='main'){
+  const popup=document.getElementById('cal-popup-bg'),body=document.getElementById('cal-popup-body');
+  if(!popup||!body)return;
+  const jobs=scheduleJobsForDate(dateStr,source);
+  const dateEl=document.getElementById('cal-popup-date'),countEl=document.getElementById('cal-popup-count');
+  if(dateEl)dateEl.textContent=fmtDate(dateStr);
+  if(countEl)countEl.textContent=`${jobs.length} งาน`;
+  body.innerHTML=jobs.length?jobs.map(s=>{
+    const typeKey=s.job_type||'general';
+    const typeLabel=JOB_TYPES[typeKey]||typeKey||'งานทั่วไป';
+    const dateText=s.start_date===s.end_date?fmtDate(s.start_date):`${fmtDate(s.start_date)} - ${fmtDate(s.end_date)}`;
+    return `<button type="button" class="cal-ev-card ${teamEventClass(s)}" data-sched-id="${escHtml(s.id||'')}" data-sched='${JSON.stringify(s).replace(/'/g,"&#39;")}' onclick="openScheduleFromDayPopup(this,'${source}')">
+      <div class="cal-ev-top"><span class="cal-so">${escHtml(s.so_number||'-')}</span><span class="job-type-tag jt-${escHtml(typeKey)}">${escHtml(typeLabel)}</span></div>
+      <div class="cal-ev-cust">${escHtml(s.customer_name||'-')}</div>
+      <div class="cal-ev-job">${escHtml(s.job_title||'-')}</div>
+      <div class="cal-ev-meta"><span class="cal-ev-ml">ทีม</span><span class="cal-ev-mv">${escHtml(s.team_name||'-')}</span><span class="cal-ev-ml">วันที่</span><span class="cal-ev-mv">${escHtml(dateText)}</span></div>
+    </button>`;
+  }).join(''):'<div class="empty-state">ไม่มีงานในวันนี้</div>';
+  popup.classList.add('open');
+  document.body.style.overflow='hidden';
 }
 function escHtml(s){return String(s??'').replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/'/g,'&#39;').replace(/</g,'&lt;').replace(/>/g,'&gt;')}
 function fmtDate(d){if(!d)return '-';const dt=new Date(d);if(isNaN(dt))return d;return `${dt.getDate()}/${dt.getMonth()+1}/${dt.getFullYear()+543}`}
@@ -4351,13 +5313,54 @@ function ymd(d){const dt=(d instanceof Date)?d:new Date(d);return `${dt.getFullY
 function daysBetween(a,b){return Math.round((new Date(b)-new Date(a))/86400000)}
 function normalizeDate(v){return v?ymd(v):''}
 function getCategory(type){if(!type)return 'general';if(String(type).startsWith('solar'))return 'solar';if(type==='electrical')return 'electrical';if(type==='civil')return 'civil';return 'general'}
-function switchTab(tab,el){document.querySelectorAll('.panel').forEach(p=>p.classList.remove('active'));document.querySelectorAll('.sb-tab').forEach(t=>t.classList.remove('active'));document.getElementById('panel-'+tab)?.classList.add('active');el?.classList.add('active');if(tab==='schedules')SCHED_BOARD.render();if(innerWidth<=768)document.querySelector('.sidebar')?.classList.remove('open')}
-function openModal(id){document.getElementById(id)?.classList.add('open');document.body.style.overflow='hidden'}
+const DASHBOARD_TABS = ['teams','schedules','customers','accounts','certifications','aircons'];
+function rememberDashboardTab(tab){
+  if (!DASHBOARD_TABS.includes(tab)) return;
+  const url = new URL(window.location.href);
+  url.searchParams.set('tab', tab);
+  window.history.replaceState(null, '', url.toString());
+}
+function switchTab(tab,el){document.querySelectorAll('.panel').forEach(p=>p.classList.remove('active'));document.querySelectorAll('.sb-tab').forEach(t=>t.classList.remove('active'));document.getElementById('panel-'+tab)?.classList.add('active');el?.classList.add('active');rememberDashboardTab(tab);if(tab==='schedules')SCHED_BOARD.render();if(innerWidth<=768)document.querySelector('.sidebar')?.classList.remove('open')}
 function closeModalById(id){document.getElementById(id)?.classList.remove('open');if(!document.querySelector('.overlay.open,.tcal-overlay.open,.cal-popup-bg.open'))document.body.style.overflow=''}
-document.addEventListener('click',e=>{if(e.target.classList?.contains('overlay'))closeModalById(e.target.id);if(e.target.id==='cal-popup-bg')e.target.classList.remove('open')})
+document.addEventListener('click',e=>{if(e.target.classList?.contains('overlay'))closeModalById(e.target.id);if(e.target.id==='cal-popup-bg')closeScheduleDayPopup()})
 document.addEventListener('keydown',e=>{if(e.key==='Escape'){if(document.getElementById('tcal-overlay')?.classList.contains('open'))closeTeamCalendar();document.querySelectorAll('.overlay.open,.cal-popup-bg.open').forEach(el=>el.classList.remove('open'));document.body.style.overflow=''}})
 function filterTable(tbodyId,q){const kw=(q||'').toLowerCase().trim();document.querySelectorAll('#'+tbodyId+' tr[data-search]').forEach(r=>r.style.display=(!kw||(r.dataset.search||'').includes(kw))?'':'none')}
-function filterTeams(q){const kw=(q||'').toLowerCase().trim();document.querySelectorAll('#team-grid-wrap .team-card').forEach(card=>card.style.display=(!kw||(card.textContent||'').toLowerCase().includes(kw))?'':'none')}
+function filterAirconTable(q){const kw=(q||'').toLowerCase().trim();const rows=Array.from(document.querySelectorAll('#aircon-tbody tr[data-search]'));let shown=0;rows.forEach(r=>{const visible=!kw||(r.dataset.search||'').includes(kw);r.style.display=visible?'':'none';if(visible)shown++});const empty=document.getElementById('aircon-empty-row');if(empty)empty.style.display=rows.length&&shown===0?'':'none'}
+function airconStatusLabel(status){return status==='cleaned'?'ล้างแล้ว':'ยังไม่ได้ล้าง'}
+function setAirconStatusClass(sel,status){sel.classList.remove('cleaned','pending');sel.classList.add(status)}
+function updateAirconMetric(id,value){const el=document.getElementById(id);if(el&&value!=null)el.textContent=value}
+async function updateAirconStatus(sel){
+  const id=sel.dataset.airconId,prev=sel.dataset.prev||'pending',status=sel.value;
+  if(!id)return;
+  sel.disabled=true;
+  setAirconStatusClass(sel,status);
+  try{
+    const base=window.location.pathname.split('/dashboardtechnician')[0]||'';
+    const res=await fetch(`${base}/aircons/${encodeURIComponent(id)}/status`,{
+      method:'POST',
+      headers:{'Content-Type':'application/json','Accept':'application/json','X-CSRF-TOKEN':CSRF},
+      body:JSON.stringify({status})
+    });
+    if(!res.ok)throw new Error('aircon status update failed');
+    const data=await res.json();
+    const finalStatus=data.status||status,finalLabel=data.label||airconStatusLabel(finalStatus);
+    sel.value=finalStatus;sel.dataset.prev=finalStatus;setAirconStatusClass(sel,finalStatus);
+    const row=sel.closest('tr');
+    if(row)row.dataset.search=`${row.dataset.searchBase||''} ${finalLabel}`.toLowerCase().trim();
+    updateAirconMetric('aircon-metric-total',data.counts?.total);
+    updateAirconMetric('aircon-metric-cleaned',data.counts?.cleaned);
+    updateAirconMetric('aircon-metric-pending',data.counts?.pending);
+  }catch(err){
+    sel.value=prev;setAirconStatusClass(sel,prev);
+    alert('บันทึกสถานะไม่สำเร็จ');
+  }finally{
+    sel.disabled=false;
+  }
+}
+function resetAirconFileLabels(){document.querySelectorAll('#modal-aircon .aircon-upload').forEach(label=>{const text=label.querySelector('span');if(text)text.textContent='เลือกจากแกลเลอรี'})}
+function openAirconAdd(){const form=document.getElementById('form-aircon');form?.reset();resetAirconFileLabels();openModal('modal-aircon');setTimeout(()=>document.querySelector('#modal-aircon input[name="aircon_code"]')?.focus(),80)}
+document.addEventListener('change',e=>{if(!e.target.matches('#modal-aircon .aircon-file'))return;const input=e.target;const label=document.querySelector(`label[for="${input.id}"]`);const text=label?.querySelector('span');if(!text||!input.files||input.files.length===0)return;text.textContent=input.files.length===1?input.files[0].name:`เลือกแล้ว ${input.files.length} รูป`});
+function filterTeams(q){const kw=(q||'').toLowerCase().trim();document.querySelectorAll('#team-grid-wrap .team-card').forEach(card=>{const haystack=`${card.dataset.search||''} ${card.textContent||''}`.toLowerCase();card.style.display=(!kw||haystack.includes(kw))?'':'none'})}
 function switchViewTab(tab,btn){document.querySelectorAll('.view-tabs .dtab').forEach(b=>b.classList.remove('active'));btn.classList.add('active');document.getElementById('view-all').style.display=tab==='all'?'':'none';document.getElementById('view-team').style.display=tab==='team'?'':'none'}
 function showTeamRosterView(){
   document.querySelectorAll('.panel').forEach(p=>p.classList.remove('active'));
@@ -4385,7 +5388,6 @@ function openProfileFromEl(el){if(!el?.dataset.tech)return;try{openProfileModal(
 let CURRENT_PROFILE_TECH = null;
 function openProfileModal(t){CURRENT_PROFILE_TECH=t;const set=(id,v)=>{const el=document.getElementById(id);if(el)el.textContent=(v==null||v==='')?'-':v};const img=document.getElementById('m-img'),initial=document.getElementById('m-initial');if(img){if(t.img){img.src=`/storage/${t.img}`;img.style.display='block';if(initial)initial.style.display='none'}else{img.removeAttribute('src');img.style.display='none';if(initial){initial.style.display='block';initial.textContent=(t.emp_name||t.emp_id||'3E').substring(0,2)}}}set('m-name',t.emp_name||t.emp_id);set('m-name-eng',t.emp_name_eng);set('m-position',t.emp_position||'ลูกทีม');set('m-team',t.emp_team);set('m-empid',t.emp_id);set('m-nickname',t.emp_nickname);set('m-phone', fmtPhone(t.emp_phone));set('m-dob',t.date_of_birth?fmtDate(t.date_of_birth):'-');const isLeave=t.status==='leave';const statusEl=document.getElementById('m-status'),dotEl=document.getElementById('m-st-dot'),txtEl=document.getElementById('m-st-text');if(statusEl)statusEl.className='profile-v2-status '+(isLeave?'pv2-status-leave':'pv2-status-active');if(dotEl)dotEl.className='pv2-st-dot '+(isLeave?'pv2-dot-leave':'pv2-dot-active');if(txtEl)txtEl.textContent=isLeave?'ลาออก':'พร้อมทำงาน';const skills=(t.emp_skill||'').split(',').map(s=>s.trim()).filter(Boolean);document.getElementById('m-skills').innerHTML=skills.length?skills.map(s=>`<span class="pv2-tag">${escHtml(s)}</span>`).join(''):'<span class="pv2-muted">-</span>';const lv={none:'ไม่มี',basic:'พื้นฐาน',skill:'ชำนาญ',expert:'เชี่ยวชาญ'};const comps=t.core_competencies||{};const compEntries=Object.entries(comps).filter(([k,v])=>v&&v!=='none');document.getElementById('m-competencies').innerHTML=compEntries.length?compEntries.map(([k,v])=>`<div class="pv2-comp-item"><span class="pv2-comp-key">${escHtml(k)}</span><span class="pv2-comp-val cv-${escHtml(v)}">${lv[v]||escHtml(v)}</span></div>`).join(''):'<span class="pv2-muted">-</span>';const lics=t.licenses||[];document.getElementById('m-licenses').innerHTML=lics.length?lics.map(l=>`<div class="pv2-lic-item"><div class="pv2-lic-name">${escHtml(l.title||'-')}</div><div class="pv2-lic-meta">${l.doc_no?'เลขที่: '+escHtml(l.doc_no):''}${l.date_issued?' · '+escHtml(l.date_issued):''}${l.file?` · <a href="/storage/${escHtml(l.file)}" target="_blank" style="color:var(--blue);font-weight:900">เปิดไฟล์</a>`:''}</div></div>`).join(''):'<span class="pv2-muted">-</span>';const sw=t.software_tools||[];document.getElementById('m-software').innerHTML=sw.length?sw.map(s=>`<span class="pv2-tag pv2-tag-sw">${escHtml(s)}</span>`).join(''):'<span class="pv2-muted">-</span>';openModal('overlay')}
 function updateBE(prefix){const inp=document.getElementById(prefix+'-dob'),lbl=document.getElementById(prefix+'-dob-be');if(!inp||!lbl)return;if(inp.value){const d=new Date(inp.value);if(!isNaN(d)){lbl.textContent=`พ.ศ. ${d.getFullYear()+543}`;return}}lbl.textContent='พ.ศ. -'}
-function handlePositionChange(prefix){const isHead=document.getElementById(prefix+'-emp_position')?.value==='หัวหน้าทีม';const team=document.getElementById(prefix+'-team-wrap'),info=document.getElementById(prefix+'-head-info');if(team)team.style.display=isHead?'none':'';if(info)info.style.display=isHead?'':'none'}
 function updateCompClass(sel){
   if(!sel)return;
   const lvls=['none','basic','skill','expert'];
@@ -4398,12 +5400,11 @@ function updateAllCompClasses(scope){
 }
 function resumePreview(input,prefix){const file=input.files?.[0];const img=document.getElementById(prefix+'-img-preview');const ph=document.getElementById(prefix+'-img-ph');if(!file||!img)return;const r=new FileReader();r.onload=e=>{img.src=e.target.result;img.style.display='block';img.classList.add('has-img');if(ph)ph.style.display='none'};r.readAsDataURL(file)}
 let _licIdx={add:0,et:0};
-function addLicense(prefix,lic=null){const i=_licIdx[prefix]++,list=document.getElementById(prefix+'-lic-list');if(!list)return;const row=document.createElement('div');row.className='lic-item';row.innerHTML=`<div class="lic-item-head"><span class="lic-num">#${i+1}</span><button type="button" class="lic-del" onclick="this.closest('.lic-item').remove()">ลบ</button></div><div class="lic-grid"><input class="finput" name="licenses[${i}][title]" placeholder="ชื่อใบรับรอง" value="${escHtml(lic?.title||'')}"><input class="finput" name="licenses[${i}][doc_no]" placeholder="เลขที่" value="${escHtml(lic?.doc_no||'')}"><input class="finput" name="licenses[${i}][date_issued]" placeholder="วันที่ออก (YYYY-MM-DD)" value="${escHtml(lic?.date_issued||'')}"><input type="file" name="licenses[${i}][file_upload]" accept=".jpg,.jpeg,.png,.webp,.pdf"></div>${lic?.file?`<input type="hidden" name="licenses[${i}][existing_file]" value="${escHtml(lic.file)}"><a href="/storage/${escHtml(lic.file)}" target="_blank" class="lic-file-link">ไฟล์เดิม</a>`:''}`;list.appendChild(row)}
+function addLicense(prefix,lic=null){const i=_licIdx[prefix]++,list=document.getElementById(prefix+'-lic-list');if(!list)return;const row=document.createElement('div');row.className='lic-item';row.innerHTML=`<div class="lic-item-head"><span class="lic-num">#${i+1}</span><button type="button" class="lic-del" onclick="this.closest('.lic-item').remove()">ลบ</button></div><div class="lic-grid"><input class="finput" name="licenses[${i}][title]" placeholder="ชื่อใบรับรอง" value="${escHtml(lic?.title||'')}"><input class="finput" name="licenses[${i}][doc_no]" placeholder="เลขที่" value="${escHtml(lic?.doc_no||'')}"><input class="finput" type="date" name="licenses[${i}][date_issued]" aria-label="วันที่ออก" value="${escHtml(normalizeDate(lic?.date_issued||''))}"><input type="file" name="licenses[${i}][file_upload]" accept=".jpg,.jpeg,.png,.webp,.pdf"></div>${lic?.file?`<input type="hidden" name="licenses[${i}][existing_file]" value="${escHtml(lic.file)}"><a href="/storage/${escHtml(lic.file)}" target="_blank" class="lic-file-link">ไฟล์เดิม</a>`:''}`;list.appendChild(row)}
 function addCustomSw(prefix){const inp=document.getElementById(prefix+'-sw-custom'),tags=document.getElementById(prefix+'-sw-custom-tags');const val=inp?.value.trim();if(!val||!tags)return;const tag=document.createElement('span');tag.className='sw-tag';tag.innerHTML=`<input type="hidden" name="software_tools[]" value="${escHtml(val)}">${escHtml(val)}<span class="x" onclick="this.parentElement.remove()">×</span>`;tags.appendChild(tag);inp.value=''}
 function openEditTechFromEl(memberEl){if(!memberEl?.dataset.tech)return;let t;try{t=JSON.parse(memberEl.dataset.tech)}catch(e){return}document.getElementById('form-edit-tech').action=URL_TECH_UPDATE(t.emp_id);const v=(id,val)=>{const el=document.getElementById(id);if(el)el.value=val??''};v('et-emp_id',t.emp_id);v('et-emp_name',t.emp_name);v('et-emp_name_eng',t.emp_name_eng);v('et-emp_nickname',t.emp_nickname);v('et-emp_phone',t.emp_phone);v('et-dob',normalizeDate(t.date_of_birth));v('et-emp_position',t.emp_position||'ลูกทีม');v('et-team-select',t.emp_team);v('et-status',t.status||'active');updateBE('et');handlePositionChange('et');const img=document.getElementById('et-img-preview'),ph=document.getElementById('et-img-ph');if(img){if(t.img){img.src=`/storage/${t.img}`;img.style.display='block';img.classList.add('has-img');if(ph)ph.style.display='none'}else{img.removeAttribute('src');img.style.display='none';img.classList.remove('has-img');if(ph)ph.style.display='grid'}}const skills=(t.emp_skill||'').split(',').map(s=>s.trim()).filter(Boolean);document.querySelectorAll('#et-skill-grid label').forEach(l=>{const cb=l.querySelector('input');cb.checked=skills.includes(cb.value);l.classList.toggle('checked',cb.checked)});const comps=t.core_competencies||{};document.querySelectorAll('#et-comp-grid select[data-comp]').forEach(s=>{s.value=comps[s.dataset.comp]||'none';updateCompClass(s)});const sw=t.software_tools||[];document.querySelectorAll('#et-sw-grid label').forEach(l=>{const cb=l.querySelector('input');cb.checked=sw.includes(cb.value);l.classList.toggle('checked',cb.checked)});const tags=document.getElementById('et-sw-custom-tags');tags.innerHTML='';const predefined=Array.from(document.querySelectorAll('#et-sw-grid input')).map(i=>i.value);sw.forEach(s=>{if(!predefined.includes(s)){const tag=document.createElement('span');tag.className='sw-tag';tag.innerHTML=`<input type="hidden" name="software_tools[]" value="${escHtml(s)}">${escHtml(s)}<span class="x" onclick="this.parentElement.remove()">×</span>`;tags.appendChild(tag)}});document.getElementById('et-lic-list').innerHTML='';_licIdx.et=0;(t.licenses||[]).forEach(l=>addLicense('et',l));openModal('modal-edit-tech')}
 
 function openAddSchedModal(){document.getElementById('form-add-sched')?.reset();document.getElementById('add-customer_id').value='';['add-ncf-1','add-ncf-2','add-ncf-3','add-ncf-4'].forEach(id=>{const el=document.getElementById(id);if(el)el.style.display='none'});document.getElementById('add-cust-banner').style.display='none';TL.init('add');TL._state.add.start=null;TL._state.add.end=null;TL._state.add.team='';TL.gotoToday('add');TL.onTeamChange('add');openModal('modal-sched')}
-function openEditSchedFromEl(btn){if(!btn?.dataset.sched)return;let s;try{s=JSON.parse(btn.dataset.sched)}catch(e){return}document.getElementById('form-edit-sched').action=URL_SCHED_UPDATE(s.id);const v=(id,val)=>{const el=document.getElementById(id);if(el)el.value=val??''};v('es-so_number',s.so_number);v('es-customer_name',s.customer_name);v('es-job_type',s.job_type||'general');v('es-status',schedStatusKey(s.status));v('es-job_title',s.job_title);v('es-job_location',s.job_location);v('es-job_la_long',s.job_la_long);v('es-team_name',s.team_name);v('es-note',s.note);TL.setRange('es',s.start_date,s.end_date,s.team_name,s.id);openModal('modal-edit-sched')}
 let _acIdx=-1;
 function custAutocomp(q,prefix){const list=document.getElementById(prefix+'-ac-list'),cid=document.getElementById(prefix+'-customer_id'),banner=document.getElementById(prefix+'-cust-banner'),kw=(q||'').toLowerCase().trim();if(!list)return;if(!kw){list.classList.remove('open');if(cid)cid.value='';if(banner)banner.style.display='none';showNewCustFields(prefix,false);return}const matches=CUST_DATA.filter(c=>(c.name||'').toLowerCase().includes(kw)||(c.desc||'').toLowerCase().includes(kw)).slice(0,6);if(!matches.length){list.classList.remove('open');list.innerHTML='';if(cid)cid.value='';if(banner){banner.className='cust-banner cust-banner-new';banner.style.display='flex';banner.textContent='ลูกค้าใหม่ — กรุณากรอกรายละเอียดเพิ่มเติม'}showNewCustFields(prefix,true);return}list.innerHTML=matches.map((c,i)=>`<div class="ac-item" data-idx="${i}" onclick="pickCust('${prefix}',${Number(c.id)})"><div class="ac-item-name">${escHtml(c.name)}</div>${c.desc?`<div class="ac-item-meta">${escHtml(c.desc)}</div>`:''}</div>`).join('');list.classList.add('open');_acIdx=-1}
 function custAutocompKey(e,prefix){const list=document.getElementById(prefix+'-ac-list');if(!list?.classList.contains('open'))return;const items=list.querySelectorAll('.ac-item');if(!items.length)return;if(e.key==='ArrowDown'){e.preventDefault();_acIdx=Math.min(_acIdx+1,items.length-1)}else if(e.key==='ArrowUp'){e.preventDefault();_acIdx=Math.max(_acIdx-1,0)}else if(e.key==='Enter'&&_acIdx>=0){e.preventDefault();items[_acIdx].click();return}else if(e.key==='Escape'){list.classList.remove('open');return}else return;items.forEach(i=>i.classList.remove('ac-active'));items[_acIdx]?.classList.add('ac-active')}
@@ -4416,7 +5417,7 @@ function openCustEdit(btn){if(!btn?.dataset.cust)return;let c;try{c=JSON.parse(b
 let _custCat='all',_custKw='';
 function filterCustCat(cat,btn){_custCat=cat;document.querySelectorAll('.cust-filter-btn').forEach(b=>b.classList.remove('active'));btn?.classList.add('active');applyCustFilter()}
 function filterCustTable(q){_custKw=(q||'').toLowerCase().trim();applyCustFilter()}
-function applyCustFilter(){document.querySelectorAll('#cust-tbody tr[data-cat]').forEach(r=>{const ok=(_custCat==='all'||r.dataset.cat===_custCat)&&(!_custKw||(r.dataset.search||'').includes(_custKw));r.style.display=ok?'':'none'})}
+function applyCustFilter(){let shown=0;document.querySelectorAll('#cust-tbody tr[data-cat]').forEach(r=>{const ok=(_custCat==='all'||r.dataset.cat===_custCat)&&(!_custKw||(r.dataset.search||'').includes(_custKw));r.style.display=ok?'':'none';if(ok)shown++});const empty=document.getElementById('cust-empty-row');if(empty)empty.style.display=shown?'none':''}
 let _detailCust=null;
 function custStatusClass(status){if(status==='เสนอ'||status==='เสนอราคา')return'cst-quote';if(status==='ดำเนินการ'||status==='กำลังติดตั้ง')return'cst-active';if(status==='เสร็จสิ้น'||status==='ติดตั้งสำเร็จ'||status==='ปิดการขาย')return'cst-done';if(status==='ยกเลิก')return'cst-cancel';return'cst-other'}
 function openCustDetail(btn){if(!btn?.dataset.cust)return;let c;try{c=JSON.parse(btn.dataset.cust)}catch(e){return}_detailCust=c;const cat=getCategory(c.type_project);document.getElementById('cd-name').textContent=c.name||'-';document.getElementById('cd-type-tag').innerHTML=`<span class="job-type-tag jt-${escHtml(c.type_project||'general')}">${escHtml(JOB_TYPES[c.type_project||'general']||c.type_project||'ทั่วไป')}</span> <span class="cust-st ${custStatusClass(c.status)}">${escHtml(c.status||'-')}</span>`;const set=(id,val)=>{const el=document.getElementById(id);if(el)el.textContent=(val==null||val==='')?'-':val};set('cd-desc',c.desc);set('cd-status',c.status);set('cd-contact',c.contact_name);set('cd-phone',c.phone);set('cd-size',c.size);set('cd-price',c.price?Number(c.price).toLocaleString()+' ฿':'-');set('cd-loc',c.loc);set('cd-finish_date',c.supervisor?fmtDate(c.supervisor):'-');set('cd-notes',c.notes);document.getElementById('cd-size-lbl').textContent=cat==='solar'?'ขนาดติดตั้ง':'ขนาด';document.getElementById('cd-finish-lbl').textContent=cat==='solar'?'วันติดตั้งเสร็จ':'วันสิ้นสุด';document.getElementById('dtab-btn-wash').style.display=cat==='solar'?'':'none';document.getElementById('dtab-btn-milestone').style.display=cat==='solar'?'none':'';const wlogs=(c.wash_logs||[]).filter(w=>!w.type||w.type==='wash');document.getElementById('cd-wash-count').textContent=`(${wlogs.length} ครั้ง)`;document.getElementById('cd-wash-body').innerHTML=wlogs.length?`<table class="wash-log-tbl"><thead><tr><th>#</th><th>วันที่</th><th>ทีม/ช่าง</th><th>หมายเหตุ</th><th></th></tr></thead><tbody>${wlogs.map(w=>`<tr><td>${escHtml(w.num)}</td><td>${fmtDate(w.date)}</td><td>${escHtml(w.tech||'-')}</td><td>${escHtml(w.note||'-')}</td><td><form method="POST" action="${URL_WASH_DEL(c.id,w.num)}" onsubmit="return confirm('ลบประวัติ #${escHtml(w.num)}?')"><input type="hidden" name="_token" value="${CSRF}"><button class="btn btn-sm btn-danger" type="submit">ลบ</button></form></td></tr>`).join('')}</tbody></table>`:'<div class="empty-state">ยังไม่มีประวัติการล้าง</div>';document.getElementById('form-add-wash').action=URL_WASH_STORE(c.id);const mlogs=(c.wash_logs||[]).filter(w=>w.type==='milestone');document.getElementById('cd-milestone-body').innerHTML=mlogs.length?mlogs.map((ms,i)=>`<div class="pinfo-card" style="margin-bottom:10px"><div style="font-size:11px;color:#64748b;font-weight:900">${fmtDate(ms.date)}</div><div style="font-weight:900">${escHtml(ms.note||'-')}</div>${ms.by?`<div style="font-size:11px;color:#64748b;font-weight:800">โดย: ${escHtml(ms.by)}</div>`:''}<form method="POST" action="${URL_MILESTONE_DEL(c.id,i)}" onsubmit="return confirm('ลบ?')" style="margin-top:6px"><input type="hidden" name="_token" value="${CSRF}"><button class="btn btn-sm btn-danger" type="submit">ลบ</button></form></div>`).join(''):'<div class="empty-state">ยังไม่มี milestone</div>';document.getElementById('form-add-milestone').action=URL_MILESTONE_STORE(c.id);const linked=SCHED_DATA.filter(s=>s.customer_name===c.name);document.getElementById('cd-schedules').innerHTML=linked.length?`<div class="table-wrap"><table><thead><tr><th>SO</th><th>งาน</th><th>ประเภท</th><th>วันเริ่ม</th><th>วันสิ้นสุด</th><th>ทีม</th></tr></thead><tbody>${linked.map(s=>`<tr><td>${escHtml(s.so_number)}</td><td>${escHtml(s.job_title)}</td><td>${escHtml(JOB_TYPES[s.job_type||'general']||s.job_type)}</td><td>${fmtDate(s.start_date)}</td><td>${fmtDate(s.end_date)}</td><td>${escHtml(s.team_name)}</td></tr>`).join('')}</tbody></table></div>`:'<div class="empty-state">ยังไม่มีงานที่ผูกกับลูกค้านี้</div>';switchDTab('info',document.getElementById('dtab-btn-info'));openModal('modal-cust-detail')}
@@ -4429,39 +5430,6 @@ function openAccEdit(btn){if(!btn?.dataset.acc)return;let a;try{a=JSON.parse(btn
 function togglePw(btn){const span=btn.previousElementSibling;if(!span?.classList.contains('acc-pw-text'))return;if(span.textContent==='••••••••'){span.textContent=span.dataset.pw;btn.textContent='ซ่อน'}else{span.textContent='••••••••';btn.textContent='แสดง'}}
 function toggleInputPw(id,btn){const inp=document.getElementById(id);if(!inp)return;inp.type=inp.type==='password'?'text':'password';btn.textContent=inp.type==='password'?'ดู':'ซ่อน'}
 function copyText(text,btn){navigator.clipboard?.writeText(text).then(()=>{const old=btn.textContent;btn.textContent='คัดลอกแล้ว';setTimeout(()=>btn.textContent=old,1000)}).catch(()=>alert('คัดลอกไม่สำเร็จ'))}
-async function updateScheduleStatus(sel) {
-  const id = sel.dataset.schedId;
-  const status = sel.value;
-  const prev = sel.dataset.prev || '';
-  if (!id) return;
-  sel.disabled = true;
-  try {
-    const res = await fetch(URL_SCHED_STATUS(id), {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Accept': 'application/json',
-        'X-CSRF-TOKEN': CSRF,
-      },
-      body: JSON.stringify({ status }),
-    });
-    if (!res.ok) throw new Error('status update failed');
-    SCHED_DATA.forEach(job => {
-      if (String(job.id) === String(id)) job.status = status;
-    });
-    sel.dataset.prev = status;
-    SCHED_BOARD.render();
-    if (document.getElementById('tcal-overlay')?.classList.contains('open')) {
-      TCAL.jobs = SCHED_DATA.filter(job => job.team_name === TCAL.team);
-      TCAL.render();
-    }
-  } catch (err) {
-    alert('บันทึกสถานะไม่สำเร็จ');
-    sel.value = prev;
-  } finally {
-    sel.disabled = false;
-  }
-}
 function accCustAutocomp(q){const list=document.getElementById('af-cust-list'),kw=(q||'').toLowerCase().trim();if(!kw){list.classList.remove('open');return}const matches=CUST_DATA.filter(c=>(c.name||'').toLowerCase().includes(kw)).slice(0,6);if(!matches.length){list.classList.remove('open');return}list.innerHTML=matches.map(c=>`<div class="ac-item" onclick="document.getElementById('af-customer').value=${JSON.stringify(c.name||'')};this.parentElement.classList.remove('open')"><div class="ac-item-name">${escHtml(c.name)}</div>${c.desc?`<div class="ac-item-meta">${escHtml(c.desc)}</div>`:''}</div>`).join('');list.classList.add('open')}
 const TCAL={
   team:'',
@@ -4496,7 +5464,7 @@ const TCAL={
       const st=this.jobStatus(s);
       const sameDay=s.start_date===s.end_date;
       const dateHtml=sameDay?fmtDate(s.start_date):`${fmtDate(s.start_date)}<small>ถึง ${fmtDate(s.end_date)}</small>`;
-      return `<tr data-sched='${JSON.stringify(s).replace(/'/g,"&#39;")}' onclick="closeTeamCalendar();setTimeout(()=>openEditSchedFromEl(this),100)" style="cursor:pointer">
+      return `<tr data-sched-id="${escHtml(s.id||'')}" data-sched='${JSON.stringify(s).replace(/'/g,"&#39;")}' onclick="closeTeamCalendar();setTimeout(()=>openEditSchedFromEl(this),100)" style="cursor:pointer">
         <td>${i+1}</td>
         <td><span class="sched-list-so">${escHtml(s.so_number||'-')}</span></td>
         <td><div class="sched-list-cust">${escHtml(s.customer_name||'-')}</div>${s.job_location?`<div style="font-size:11px;color:#64748b;font-weight:700">${escHtml(s.job_location)}</div>`:''}</td>
@@ -4522,7 +5490,7 @@ const TCAL={
       let dayJobs=this.jobs.filter(s=>s.start_date<=ds&&s.end_date>=ds).map(s=>({...s,job_type:s.job_type||'general'}));
       if(filter!=='all')dayJobs=dayJobs.filter(s=>s.job_type===filter);
       const visible=dayJobs.slice(0,2);
-      html+=`<div class="sched-day ${ds===today?'today':''}"><div class="sched-day-num">${d}</div>${dayJobs.length>0?`<div class="sched-day-count">${dayJobs.length}</div>`:''}${visible.map(s=>`<button type="button" class="sched-event ${this.eventClass(s)}" data-sched='${JSON.stringify(s).replace(/'/g,"&#39;")}' onclick="event.stopPropagation();closeTeamCalendar();setTimeout(()=>openEditSchedFromEl(this),100)">${renderCalendarEventContent(s)}</button>`).join('')}${dayJobs.length>2?`<div class="sched-more">+${dayJobs.length-2} \u0E23\u0E32\u0E22\u0E01\u0E32\u0E23</div>`:''}</div>`;
+      html+=`<div class="sched-day ${ds===today?'today':''}"><div class="sched-day-num">${d}</div>${dayJobs.length>0?`<div class="sched-day-count">${dayJobs.length}</div>`:''}${visible.map(s=>`<button type="button" class="sched-event ${this.eventClass(s)}" data-sched-id="${escHtml(s.id||'')}" data-sched='${JSON.stringify(s).replace(/'/g,"&#39;")}' onclick="event.stopPropagation();closeTeamCalendar();setTimeout(()=>openEditSchedFromEl(this),100)">${renderCalendarEventContent(s)}</button>`).join('')}${dayJobs.length>2?`<button type="button" class="sched-more" onclick="event.stopPropagation();openScheduleDayPopup('${ds}','team')">+${dayJobs.length-2} รายการ</button>`:''}</div>`;
     }
     const rest=(7-((first+total)%7))%7;
     for(let i=1;i<=rest;i++)html+=`<div class="sched-day other"><div class="sched-day-num">${i}</div></div>`;
@@ -4613,11 +5581,9 @@ const SCHED_BOARD={
     const monthStart=`${y}-${String(m+1).padStart(2,'0')}-01`;
     const monthEnd=`${y}-${String(m+1).padStart(2,'0')}-${String(new Date(y,m+1,0).getDate()).padStart(2,'0')}`;
     const filter=document.getElementById('sched-type-filter')?.value||'all';
-    const statusFilter=document.getElementById('sched-status-filter')?.value||'all';
     return SCHED_DATA.filter(s=>{
       if(s.end_date<monthStart||s.start_date>monthEnd)return false;
       if(filter!=='all'&&(s.job_type||'general')!==filter)return false;
-      if(statusFilter!=='all'&&this.jobStatus(s).key!==statusFilter)return false;
       return true;
     });
   },
@@ -4635,7 +5601,7 @@ const SCHED_BOARD={
       const st=this.jobStatus(s);
       const sameDay=s.start_date===s.end_date;
       const dateHtml=sameDay?fmtDate(s.start_date):`${fmtDate(s.start_date)}<small>ถึง ${fmtDate(s.end_date)}</small>`;
-      return `<tr data-sched='${JSON.stringify(s).replace(/'/g,"&#39;")}' onclick="openEditSchedFromEl(this)">
+      return `<tr data-sched-id="${escHtml(s.id||'')}" data-sched='${JSON.stringify(s).replace(/'/g,"&#39;")}' onclick="openEditSchedFromEl(this)">
         <td>${i+1}</td>
         <td><span class="sched-list-so">${escHtml(s.so_number||'-')}</span></td>
         <td><div class="sched-list-cust">${escHtml(s.customer_name||'-')}</div>${s.job_location?`<div style="font-size:11px;color:#64748b;font-weight:700">${escHtml(s.job_location)}</div>`:''}</td>
@@ -4651,7 +5617,6 @@ const SCHED_BOARD={
     const thMonthsFull=['มกราคม','กุมภาพันธ์','มีนาคม','เมษายน','พฤษภาคม','มิถุนายน','กรกฎาคม','สิงหาคม','กันยายน','ตุลาคม','พฤศจิกายน','ธันวาคม'];
     const y=this.date.getFullYear(),m=this.date.getMonth();
     const filter=document.getElementById('sched-type-filter')?.value||'all';
-    const statusFilter=document.getElementById('sched-status-filter')?.value||'all';
     document.getElementById('sched-board-month').textContent=`${thMonthsFull[m]} ${y+543}`;
     const eyebrow=document.querySelector('.sched-eyebrow');
     if(eyebrow)eyebrow.textContent=`SCHEDULE · ${thMonthsFull[m].toUpperCase()} ${y+543}`;
@@ -4662,13 +5627,12 @@ const SCHED_BOARD={
       const ds=`${y}-${String(m+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
       let jobs=SCHED_DATA.filter(s=>s.start_date<=ds&&s.end_date>=ds).map(s=>({...s,job_type:s.job_type||'general'}));
       if(filter!=='all')jobs=jobs.filter(s=>s.job_type===filter);
-      if(statusFilter!=='all')jobs=jobs.filter(s=>this.jobStatus(s).key===statusFilter);
       const visible=jobs.slice(0,2);
       html+=`<div class="sched-day ${ds===today?'today':''}"><div class="sched-day-num">${d}</div>${jobs.length>0?`<div class="sched-day-count">${jobs.length}</div>`:''}
-      ${visible.map(s=>`<button type="button" class="sched-event ${this.eventClass(s)}" data-sched='${JSON.stringify(s).replace(/'/g,"&#39;")}' onclick="openEditSchedFromEl(this)">
+      ${visible.map(s=>`<button type="button" class="sched-event ${this.eventClass(s)}" data-sched-id="${escHtml(s.id||'')}" data-sched='${JSON.stringify(s).replace(/'/g,"&#39;")}' onclick="openEditSchedFromEl(this)">
   ${renderCalendarEventContent(s)}
 </button>`).join('')}
-      ${jobs.length>2?`<div class="sched-more">+${jobs.length-2} \u0E23\u0E32\u0E22\u0E01\u0E32\u0E23</div>`:''}</div>`;
+      ${jobs.length>2?`<button type="button" class="sched-more" onclick="event.stopPropagation();openScheduleDayPopup('${ds}','main')">+${jobs.length-2} รายการ</button>`:''}</div>`;
     }
     const rest=(7-((first+total)%7))%7;
     for(let i=1;i<=rest;i++)html+=`<div class="sched-day other"><div class="sched-day-num">${i}</div></div>`;
@@ -4677,12 +5641,6 @@ const SCHED_BOARD={
   }
 };
 let ROSTER_SKILL='all',ROSTER_SEARCH='';
-function filterRosterSkill(skill,btn){ROSTER_SKILL=skill;btn.closest('.roster-filter-row')?.querySelectorAll('.roster-chip').forEach(b=>b.classList.remove('active'));btn.classList.add('active');applyRosterFilter()}
-function filterRosterSearch(q){ROSTER_SEARCH=(q||'').toLowerCase().trim();applyRosterFilter()}
-function applyRosterFilter(){let shown=0,total=0;document.querySelectorAll('#roster-grid .emp-card').forEach(card=>{total++;const skillData=(card.dataset.skill||'').toLowerCase();const searchData=(card.dataset.search||'').toLowerCase();const ok=(ROSTER_SKILL==='all'||skillData.includes(String(ROSTER_SKILL).toLowerCase()))&&(!ROSTER_SEARCH||searchData.includes(ROSTER_SEARCH));card.style.display=ok?'':'none';if(ok)shown++});const c=document.getElementById('roster-count');if(c)c.textContent=`ทักษะ · ${shown} / ${total}`}
-function filterCertCards(q){const kw=(q||'').toLowerCase().trim();document.querySelectorAll('#cert-grid .cert-card').forEach(card=>card.style.display=!kw||(card.dataset.certSearch||'').includes(kw)?'':'none')}
-function openCertDetail(btn){let items=[];try{items=JSON.parse(btn.dataset.certItems||'[]')}catch(e){}document.getElementById('cert-detail-title').textContent=btn.dataset.certName||'-';document.getElementById('cert-detail-sub').textContent=`${items.length} คนในองค์กร`;document.getElementById('cert-holder-list').innerHTML=items.length?items.map(item=>{const tech=item.tech||{},lic=item.license||{},name=tech.emp_name||tech.emp_id||'-';return `<div class="cert-holder"><div class="cert-holder-avatar">${escHtml(String(name).slice(0,2))}</div><div class="cert-holder-main"><div class="cert-holder-name">${escHtml(name)}</div><div class="cert-holder-meta">${escHtml(tech.emp_team||'-')}${lic.doc_no?' · เลขที่ '+escHtml(lic.doc_no):''}${lic.date_issued?' · ออก: '+escHtml(lic.date_issued):''}</div></div>${lic.file?`<a class="cert-file-link" href="/storage/${escHtml(lic.file)}" target="_blank">เปิดไฟล์</a>`:''}</div>`}).join(''):'<div class="empty-state">ยังไม่มีข้อมูลใบรับรอง</div>';openModal('cert-detail-overlay')}
-function closeCertDetail(){closeModalById('cert-detail-overlay')}
 document.addEventListener('click',e=>{
   const tl=e.target.closest('[data-tl-nav]');
   if(tl){e.stopPropagation();TL.nav(tl.dataset.tlPrefix,tl.dataset.tlNav==='prev'?-1:1);return}
@@ -4801,6 +5759,7 @@ function applyRosterFilter() {
         if (input.value !== value) input.value = value;
       });
     applyRosterFilter();
+    if (typeof window.filterTeams === 'function') window.filterTeams(value);
   }
   document.addEventListener('click', (e) => {
     const btn = e.target.closest('#panel-teams .roster-chip');
@@ -4825,10 +5784,15 @@ function applyRosterFilter() {
   window.filterRosterSearch = setSearch;
   window.applyRosterFilter = applyRosterFilter;
 
+  function initSearchFilter() {
+    const firstSearch = document.querySelector('#panel-teams .search-inp, #panel-teams .roster-search');
+    setSearch(firstSearch?.value || '');
+  }
+
   if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', applyRosterFilter);
+    document.addEventListener('DOMContentLoaded', initSearchFilter);
   } else {
-    applyRosterFilter();
+    initSearchFilter();
   }
 })();
 document.addEventListener('DOMContentLoaded', () => {
@@ -5012,11 +5976,15 @@ window.openCertDetail = function openCertDetail(btn) {
   const txtPeople = '\u0E04\u0E19\u0E43\u0E19\u0E2D\u0E07\u0E04\u0E4C\u0E01\u0E23';
   const txtNoFile = '\u0E44\u0E21\u0E48\u0E21\u0E35\u0E44\u0E1F\u0E25\u0E4C\u0E41\u0E19\u0E1A';
   const txtOpenFile = '\u0E40\u0E1B\u0E34\u0E14\u0E44\u0E1F\u0E25\u0E4C';
+  const txtAttachFile = '\u0E41\u0E19\u0E1A\u0E44\u0E1F\u0E25\u0E4C/\u0E23\u0E39\u0E1B';
+  const txtChangeFile = '\u0E40\u0E1B\u0E25\u0E35\u0E48\u0E22\u0E19\u0E44\u0E1F\u0E25\u0E4C';
+  const txtSaveFile = '\u0E1A\u0E31\u0E19\u0E17\u0E36\u0E01';
   const txtTeam = '\u0E17\u0E35\u0E21';
   const txtPosition = '\u0E15\u0E33\u0E41\u0E2B\u0E19\u0E48\u0E07';
   const txtDocNo = '\u0E40\u0E25\u0E02\u0E17\u0E35\u0E48';
   const txtIssued = '\u0E2D\u0E2D\u0E01\u0E27\u0E31\u0E19\u0E17\u0E35\u0E48';
   const txtEmpty = '\u0E22\u0E31\u0E07\u0E44\u0E21\u0E48\u0E21\u0E35\u0E02\u0E49\u0E2D\u0E21\u0E39\u0E25\u0E43\u0E1A\u0E23\u0E31\u0E1A\u0E23\u0E2D\u0E07';
+  const appBase = window.location.pathname.split('/dashboardtechnician')[0] || '';
 
   const title = btn.dataset.certName || '-';
   const titleEl = document.getElementById('cert-detail-title');
@@ -5028,17 +5996,34 @@ window.openCertDetail = function openCertDetail(btn) {
 
   if (listEl) {
     listEl.innerHTML = items.length
-      ? items.map(item => {
+      ? items.map((item, rowIndex) => {
           const tech = item.tech || {};
           const lic = item.license || {};
           const name = tech.emp_name || tech.emp_id || '-';
+          const empId = tech.emp_id || '';
+          const licenseIndex = item.license_index ?? item.licenseIndex ?? '';
           const team = tech.emp_team || '-';
           const position = tech.emp_position || '-';
           const docNo = lic.doc_no || '-';
           const issued = lic.date_issued ? fmtDate(lic.date_issued) : '-';
-          const fileLink = lic.file
-            ? `<a class="cert-file-link" href="/storage/${escHtml(lic.file)}" target="_blank" onclick="event.stopPropagation()">${txtOpenFile}</a>`
-            : `<span class="cert-holder-chip">${txtNoFile}</span>`;
+          const safeEmp = String(empId).replace(/[^A-Za-z0-9_-]/g, '_');
+          const safeLic = String(licenseIndex).replace(/[^A-Za-z0-9_-]/g, '_');
+          const inputId = `cert-file-${rowIndex}-${safeEmp}-${safeLic}`;
+          const fileUrl = lic.file ? `${appBase}/storage/${String(lic.file).replace(/^\/+/, '')}` : '';
+          const fileState = lic.file
+            ? `<a class="cert-file-link" href="${escHtml(fileUrl)}" target="_blank" onclick="event.stopPropagation()">${txtOpenFile}</a>`
+            : `<span class="cert-file-empty">${txtNoFile}</span>`;
+          const uploadForm = empId !== '' && licenseIndex !== ''
+            ? `<form class="cert-attach-form" method="POST" action="${appBase}/technicians/${encodeURIComponent(empId)}/licenses/${encodeURIComponent(licenseIndex)}/file" enctype="multipart/form-data" onclick="event.stopPropagation()">
+                <input type="hidden" name="_token" value="${CSRF}">
+                <input class="cert-file-input" id="${escHtml(inputId)}" type="file" name="cert_file" accept=".jpg,.jpeg,.png,.webp,.pdf" onchange="handleCertAttachFile(this)">
+                <label class="cert-upload-trigger" for="${escHtml(inputId)}">
+                  <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14"/><path d="M5 12h14"/><path d="M19 21H5a2 2 0 0 1-2-2V7"/></svg>
+                  <span class="cert-upload-name">${lic.file ? txtChangeFile : txtAttachFile}</span>
+                </label>
+                <button class="cert-submit" type="submit">${txtSaveFile}</button>
+              </form>`
+            : '';
 
           return `
             <div class="cert-holder">
@@ -5052,7 +6037,7 @@ window.openCertDetail = function openCertDetail(btn) {
                   <span class="cert-holder-chip">${txtIssued}: ${escHtml(issued)}</span>
                 </div>
               </div>
-              ${fileLink}
+              <div class="cert-holder-actions">${fileState}${uploadForm}</div>
             </div>
           `;
         }).join('')
@@ -5060,6 +6045,12 @@ window.openCertDetail = function openCertDetail(btn) {
   }
 
   openModal('cert-detail-overlay');
+};
+
+window.handleCertAttachFile = function handleCertAttachFile(input) {
+  const name = input.files && input.files.length ? input.files[0].name : '';
+  const label = input.closest('.cert-attach-form')?.querySelector('.cert-upload-name');
+  if (label && name) label.textContent = name;
 };
 
 window.closeCertDetail = function closeCertDetail() {
@@ -5081,15 +6072,19 @@ function schedJobType(job) {
 }
 
 window.openEditSchedFromEl = function openEditSchedFromEl(btn) {
-  if (!btn?.dataset.sched) return;
-  let s;
+  if (!btn) return;
+  let s = null;
   try {
-    s = JSON.parse(btn.dataset.sched);
+    s = btn.dataset.sched ? JSON.parse(btn.dataset.sched) : null;
   } catch (e) {
-    return;
+    s = null;
   }
+  if (!s && btn.dataset.schedId) {
+    s = SCHED_DATA.find(job => String(job.id) === String(btn.dataset.schedId));
+  }
+  if (!s) return;
 
-  document.getElementById('form-edit-sched').action = URL_SCHED_UPDATE(s.id);
+  document.getElementById('form-edit-sched').action = URL_SCHED_UPDATE(s.id || btn.dataset.schedId);
   const v = (id, val) => {
     const el = document.getElementById(id);
     if (el) el.value = val ?? '';
@@ -5098,7 +6093,7 @@ window.openEditSchedFromEl = function openEditSchedFromEl(btn) {
   v('es-so_number', s.so_number);
   v('es-customer_name', s.customer_name);
   v('es-job_type', schedJobType(s));
-  v('es-status', schedStatusKey(s.status));
+  v('es-status', resolveScheduleStatus(s).key);
   v('es-job_title', s.job_title);
   v('es-job_location', s.job_location);
   v('es-job_la_long', s.job_la_long);
@@ -5120,7 +6115,7 @@ document.getElementById('form-edit-sched')?.addEventListener('submit', () => {
 /* === CODEX RETURN TO CUSTOMERS TAB START === */
 document.addEventListener('DOMContentLoaded', () => {
   const tab = new URLSearchParams(window.location.search).get('tab');
-  const allowedTabs = ['customers', 'schedules', 'teams', 'accounts', 'certifications'];
+  const allowedTabs = ['customers', 'schedules', 'teams', 'accounts', 'aircons', 'certifications'];
   if (!allowedTabs.includes(tab)) return;
 
   const btn = Array.from(document.querySelectorAll('.sb-tab'))
@@ -5311,5 +6306,108 @@ document.addEventListener('DOMContentLoaded', () => {
 })();
 </script>
 <!-- CODEX TEAM DRAG DROP JS END -->
+<script>
+/* === CODEX AIRCON EDIT ACTION START === */
+(function(){
+  const STORE_URL = "{{ route('aircons.store') }}";
+  const TXT_ADD_TITLE = 'เพิ่มข้อมูลเครื่องแอร์';
+  const TXT_EDIT_TITLE = 'แก้ไขข้อมูลเครื่องแอร์';
+  const TXT_SUB = 'ล้างแอร์';
+  const TXT_SAVE_ADD = 'บันทึกข้อมูล';
+  const TXT_SAVE_EDIT = 'บันทึกการแก้ไข';
+  const TXT_GALLERY = 'เลือกจากแกลเลอรี';
+
+  function appBase(){
+    return window.location.pathname.split('/dashboardtechnician')[0] || '';
+  }
+
+  function modalOpen(){
+    const modal = document.getElementById('modal-aircon');
+    if (modal) modal.classList.add('open');
+    document.body.style.overflow = 'hidden';
+  }
+
+  function setText(id, text){
+    const el = document.getElementById(id);
+    if (el) el.textContent = text;
+  }
+
+  function setField(form, name, value){
+    const el = form?.querySelector(`[name="${name}"]`);
+    if (el) el.value = value ?? '';
+  }
+
+  function cleanAirconImportNotes(value){
+    return String(value || '')
+      .split(/\r?\n/)
+      .map(line => line.trim())
+      .filter(line => {
+        if (!line) return false;
+        return !(
+          /^นำเข้าจาก\s*CSV\s*แอร์/i.test(line) ||
+          /^วันที่บันทึก\s*:/i.test(line) ||
+          /^รอบล้างถัดไป\s*:/i.test(line) ||
+          /^จำนวนรูป\s*:/i.test(line)
+        );
+      })
+      .join('\n');
+  }
+
+  function setStatus(form, status){
+    const target = status === 'pending' ? 'pending' : 'cleaned';
+    form?.querySelectorAll('[name="status"]').forEach(input => {
+      input.checked = input.value === target;
+    });
+  }
+
+  function resetAirconFileLabels(){
+    document.querySelectorAll('#modal-aircon .aircon-upload').forEach(label => {
+      const text = label.querySelector('span');
+      if (!text) return;
+      text.textContent = TXT_GALLERY;
+    });
+  }
+
+  window.openAirconAdd = function openAirconAdd(){
+    const form = document.getElementById('form-aircon');
+    if (!form) return;
+    form.reset();
+    form.action = STORE_URL;
+    setText('aircon-modal-title', TXT_ADD_TITLE);
+    setText('aircon-modal-sub', TXT_SUB);
+    setText('aircon-save-btn', TXT_SAVE_ADD);
+    setStatus(form, 'cleaned');
+    resetAirconFileLabels();
+    modalOpen();
+    setTimeout(() => form.querySelector('[name="aircon_code"]')?.focus(), 80);
+  };
+
+  window.openAirconEdit = function openAirconEdit(btn){
+    const form = document.getElementById('form-aircon');
+    if (!form || !btn?.dataset.aircon) return;
+    let data = {};
+    try { data = JSON.parse(btn.dataset.aircon || '{}'); } catch (err) { data = {}; }
+    const rowStatus = btn.closest('tr')?.querySelector('.aircon-status-select')?.value;
+    if (rowStatus) data.status = rowStatus;
+
+    form.reset();
+    form.action = `${appBase()}/aircons/${encodeURIComponent(data.id || '')}/update`;
+    setText('aircon-modal-title', TXT_EDIT_TITLE);
+    setText('aircon-modal-sub', `${TXT_SUB} · ${data.aircon_code || ''}`);
+    setText('aircon-save-btn', TXT_SAVE_EDIT);
+    setField(form, 'aircon_code', data.aircon_code || '');
+    setField(form, 'brand', data.brand || '');
+    setField(form, 'model_name', data.model_name || '');
+    setField(form, 'location', data.location || '');
+    setField(form, 'service_date', data.service_date || '');
+    setField(form, 'notes', cleanAirconImportNotes(data.notes));
+    setStatus(form, data.status || 'cleaned');
+    resetAirconFileLabels();
+    modalOpen();
+    setTimeout(() => form.querySelector('[name="aircon_code"]')?.focus(), 80);
+  };
+})();
+/* === CODEX AIRCON EDIT ACTION END === */
+</script>
 </body>
 </html>

@@ -4,11 +4,13 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Carbon;
 use App\Models\Technician;
 use App\Models\Schedule;
 use App\Models\project_cust;
 use App\Models\SolarAccount;
+use App\Models\AirConditioner;
 
 class TechnicianController extends Controller
 {
@@ -158,6 +160,9 @@ class TechnicianController extends Controller
 
         // ── Accounts ─────────────────────────────────────────────
         $accounts = SolarAccount::orderBy('id')->get();
+        $aircons = Schema::hasTable('air_conditioners')
+            ? AirConditioner::latest()->get()
+            : collect();
 
         // ── Stats ────────────────────────────────────────────────
         $stats = [
@@ -172,7 +177,7 @@ class TechnicianController extends Controller
         return view('project.dashboardtechnician', compact(
             'technicians', 'schedules', 'teams', 'availableTeams',
             'stats', 'teamFilter', 'search',
-            'customers', 'accounts', 'washAlerts', 'custSummary'
+            'customers', 'accounts', 'aircons', 'washAlerts', 'custSummary'
         ) + [
             'skillOptions'     => self::SKILL_OPTIONS,
             'competencyList'   => self::COMPETENCY_LIST,
@@ -240,6 +245,67 @@ class TechnicianController extends Controller
         return redirect()->route('technician.dashboard')->with('success', 'แก้ไขช่างเรียบร้อย');
     }
 
+
+    public function updateLicenseFile(Request $request, $empId, $licenseIndex)
+    {
+        $request->validate([
+            'cert_file' => ['required', 'file', 'mimes:jpg,jpeg,png,webp,pdf', 'max:5120'],
+        ]);
+
+        $tech = Technician::where('emp_id', $empId)->firstOrFail();
+        $licenses = $tech->licenses ?? [];
+        $index = (int) $licenseIndex;
+
+        if (! array_key_exists($index, $licenses)) {
+            return back()->withErrors(['cert_file' => 'ไม่พบรายการใบรับรองนี้']);
+        }
+
+        if (! empty($licenses[$index]['file'])) {
+            Storage::disk('public')->delete($licenses[$index]['file']);
+        }
+
+        $file = $request->file('cert_file');
+        $ext = strtolower($file->getClientOriginalExtension() ?: 'pdf');
+        $safeId = $this->sanitizeId($tech->emp_id);
+        $filename = "{$safeId}_lic_{$index}_" . now()->format('YmdHis') . ".{$ext}";
+        $path = self::LICENSE_FOLDER . '/' . $filename;
+
+        $file->storeAs(self::LICENSE_FOLDER, $filename, 'public');
+
+        $licenses[$index]['file'] = $path;
+        $tech->licenses = array_values($licenses);
+        $tech->save();
+
+        return redirect()->route('technician.dashboard', ['tab' => 'certifications'])
+            ->with('success', 'แนบไฟล์ใบรับรองแล้ว');
+    }
+    public function moveTechnicianTeam(Request $request, $empId)
+    {
+        $data = $request->validate([
+            'team_name' => 'required|string|max:255',
+        ]);
+
+        $tech = Technician::where('emp_id', $empId)->firstOrFail();
+        $targetTeam = trim($data['team_name']);
+
+        $targetExists = Technician::where('emp_team', $targetTeam)->exists();
+        if (! $targetExists) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Target team was not found.',
+            ], 422);
+        }
+
+        $tech->emp_team = $targetTeam;
+        $tech->save();
+
+        return response()->json([
+            'success' => true,
+            'emp_id' => $tech->emp_id,
+            'team_name' => $tech->emp_team,
+            'emp_position' => $tech->emp_position,
+        ]);
+    }
     public function destroyTechnician($empId)
     {
         $tech = Technician::where('emp_id', $empId)->firstOrFail();
@@ -267,6 +333,18 @@ class TechnicianController extends Controller
     //  SCHEDULE CRUD
     // ══════════════════════════════════════════════════════════════
 
+    private function scheduleCleanNote(?string $note): string
+    {
+        $note = (string) ($note ?? '');
+        return trim(preg_replace('/^\s*\[[a-zA-Z0-9_-]+\]\s*/', '', $note) ?? $note);
+    }
+
+    private function scheduleNoteWithJobType(?string $jobType, ?string $note): string
+    {
+        $jobType = $jobType ?: 'general';
+        $noteStr = $this->scheduleCleanNote($note);
+        return trim("[$jobType] " . $noteStr);
+    }
     public function storeSchedule(Request $request)
     {
         $data = $request->validate([
@@ -274,6 +352,7 @@ class TechnicianController extends Controller
             'customer_id'       => 'nullable|integer',
             'customer_name'     => 'required|string',
             'job_type'          => 'nullable|string|max:50',
+            'status'            => 'nullable|in:upcoming,doing,done,cancel',
             'job_title'         => 'required|string',
             'job_location'      => 'nullable|string',
             'job_la_long'       => 'nullable|string',
@@ -300,9 +379,8 @@ class TechnicianController extends Controller
 
         // เก็บ job_type ลง note (Schedule table ไม่มี column นี้)
         $jobType = $data['job_type'] ?? 'general';
-        $noteStr = $data['note'] ?? '';
-        // prepend marker เพื่อให้ Model ตรวจ category ของงานได้
-        $finalNote = "[$jobType] " . $noteStr;
+        $noteStr = $this->scheduleCleanNote($data['note'] ?? '');
+        $finalNote = $this->scheduleNoteWithJobType($jobType, $noteStr);
 
         Schedule::create([
             'so_number'    => $data['so_number'],
@@ -313,6 +391,7 @@ class TechnicianController extends Controller
             'team_name'    => $data['team_name'],
             'start_date'   => $data['start_date'],
             'end_date'     => $data['end_date'],
+            'status'       => $data['status'] ?? null,
             'note'         => trim($finalNote),
         ]);
 
@@ -337,7 +416,7 @@ class TechnicianController extends Controller
             }
         }
 
-        return redirect()->route('technician.dashboard')->with('success', 'เพิ่มงานเรียบร้อย');
+        return redirect()->route('technician.dashboard', ['tab' => 'customers'])->with('success', 'เพิ่มงานเรียบร้อย');
     }
 
     public function updateSchedule(Request $request, $id)
@@ -347,6 +426,7 @@ class TechnicianController extends Controller
             'so_number'    => 'required|string|max:100',
             'customer_name'=> 'required|string',
             'job_type'     => 'nullable|string|max:50',
+            'status'       => 'nullable|in:upcoming,doing,done,cancel',
             'job_title'    => 'required|string',
             'job_location' => 'nullable|string',
             'job_la_long'  => 'nullable|string',
@@ -358,8 +438,8 @@ class TechnicianController extends Controller
 
         // เก็บ job_type ลง note
         $jobType = $data['job_type'] ?? 'general';
-        $noteStr = $data['note'] ?? '';
-        $finalNote = "[$jobType] " . $noteStr;
+        $noteStr = $this->scheduleCleanNote($data['note'] ?? '');
+        $finalNote = $this->scheduleNoteWithJobType($jobType, $noteStr);
 
         $schedule->update([
             'so_number'    => $data['so_number'],
@@ -370,10 +450,27 @@ class TechnicianController extends Controller
             'team_name'    => $data['team_name'],
             'start_date'   => $data['start_date'],
             'end_date'     => $data['end_date'],
+            'status'       => $data['status'] ?? null,
             'note'         => trim($finalNote),
         ]);
 
-        return redirect()->route('technician.dashboard')->with('success', 'แก้ไขงานเรียบร้อย');
+        return redirect()->route('technician.dashboard', ['tab' => 'schedules'])->with('success', 'แก้ไขงานเรียบร้อย');
+    }
+
+    public function updateScheduleStatus(Request $request, $id)
+    {
+        $data = $request->validate([
+            'status' => 'required|in:upcoming,doing,done,cancel',
+        ]);
+
+        $schedule = Schedule::findOrFail($id);
+        $schedule->status = $data['status'];
+        $schedule->save();
+
+        return response()->json([
+            'success' => true,
+            'status'  => $schedule->status,
+        ]);
     }
 
     public function destroySchedule($id)
@@ -406,7 +503,7 @@ class TechnicianController extends Controller
         }
 
         project_cust::create($data);
-        return redirect()->route('technician.dashboard')->with('success', 'เพิ่มลูกค้าเรียบร้อย');
+        return redirect()->route('technician.dashboard', ['tab' => 'customers'])->with('success', 'เพิ่มลูกค้าเรียบร้อย');
     }
 
     public function customerUpdate(Request $r, $id)
@@ -438,7 +535,7 @@ class TechnicianController extends Controller
         }
 
         $c->update($data);
-        return redirect()->route('technician.dashboard')->with('success', 'แก้ไขลูกค้าเรียบร้อย');
+        return redirect()->route('technician.dashboard', ['tab' => 'customers'])->with('success', 'แก้ไขลูกค้าเรียบร้อย');
     }
 
     public function customerDestroy($id)
@@ -448,7 +545,7 @@ class TechnicianController extends Controller
             return back()->withErrors(['delete' => 'ไม่สามารถลบระบบเก่าได้']);
         }
         $c->delete();
-        return redirect()->route('technician.dashboard')->with('success', 'ลบลูกค้าเรียบร้อย');
+        return redirect()->route('technician.dashboard', ['tab' => 'customers'])->with('success', 'ลบลูกค้าเรียบร้อย');
     }
 
     // ══════════════════════════════════════════════════════════════
@@ -464,7 +561,7 @@ class TechnicianController extends Controller
         ]);
         $c = project_cust::findOrFail($id);
         $c->addWashLog($data['wash_date'], $data['tech'], $data['note'] ?? '');
-        return redirect()->route('technician.dashboard')->with('success', 'บันทึกการล้างแผงเรียบร้อย');
+        return redirect()->route('technician.dashboard', ['tab' => 'customers'])->with('success', 'บันทึกการล้างแผงเรียบร้อย');
     }
 
     public function washDestroy($id, $num)
@@ -477,7 +574,7 @@ class TechnicianController extends Controller
             return back()->withErrors(['delete' => 'ไม่พบรายการ']);
         }
         $c->removeWashLog((int) $num);
-        return redirect()->route('technician.dashboard')->with('success', 'ลบประวัติการล้างเรียบร้อย');
+        return redirect()->route('technician.dashboard', ['tab' => 'customers'])->with('success', 'ลบประวัติการล้างเรียบร้อย');
     }
 
     // ══════════════════════════════════════════════════════════════
@@ -493,38 +590,178 @@ class TechnicianController extends Controller
         ]);
         $c = project_cust::findOrFail($id);
         $c->addMilestone($data['milestone_date'], $data['milestone_note'], $data['milestone_by'] ?? '');
-        return redirect()->route('technician.dashboard')->with('success', 'บันทึก milestone เรียบร้อย');
+        return redirect()->route('technician.dashboard', ['tab' => 'customers'])->with('success', 'บันทึก milestone เรียบร้อย');
     }
 
     public function milestoneDestroy($id, $index)
     {
         $c = project_cust::findOrFail($id);
         $c->removeMilestone((int) $index);
-        return redirect()->route('technician.dashboard')->with('success', 'ลบ milestone เรียบร้อย');
+        return redirect()->route('technician.dashboard', ['tab' => 'customers'])->with('success', 'ลบ milestone เรียบร้อย');
     }
 
     // ══════════════════════════════════════════════════════════════
     //  SOLAR ACCOUNTS CRUD
     // ══════════════════════════════════════════════════════════════
 
+    public function airconStore(Request $r)
+    {
+        $data = $r->validate([
+            'aircon_code' => ['required', 'string', 'max:50', 'unique:air_conditioners,aircon_code'],
+            'brand' => ['required', 'string', 'max:100'],
+            'model_name' => ['required', 'string', 'max:150'],
+            'location' => ['required', 'string', 'max:255'],
+            'service_date' => ['required', 'date'],
+            'status' => ['required', 'in:cleaned,pending'],
+            'cover_image' => ['nullable', 'image', 'max:5120'],
+            'images' => ['nullable', 'array'],
+            'images.*' => ['nullable', 'image', 'max:5120'],
+            'notes' => ['nullable', 'string'],
+        ]);
+
+        if ($r->hasFile('cover_image')) {
+            $data['cover_image'] = $r->file('cover_image')->store('aircons', 'public');
+        }
+
+        $gallery = [];
+        foreach ($r->file('images', []) as $image) {
+            $gallery[] = $image->store('aircons', 'public');
+        }
+
+        $data['images'] = $gallery;
+        if (empty($data['cover_image']) && ! empty($gallery)) {
+            $data['cover_image'] = $gallery[0];
+        }
+        $data['cleaned_at'] = $data['status'] === 'cleaned'
+            ? Carbon::parse($data['service_date'])->startOfDay()
+            : null;
+
+        AirConditioner::create($data);
+
+        return redirect()->route('technician.dashboard', ['tab' => 'aircons'])
+            ->with('success', 'บันทึกข้อมูลเครื่องแอร์แล้ว');
+    }
+
+
+
+    public function airconUpdate(Request $r, $id)
+    {
+        $aircon = AirConditioner::findOrFail($id);
+
+        $data = $r->validate([
+            'aircon_code' => ['required', 'string', 'max:50', 'unique:air_conditioners,aircon_code,' . $aircon->id],
+            'brand' => ['required', 'string', 'max:100'],
+            'model_name' => ['required', 'string', 'max:150'],
+            'location' => ['required', 'string', 'max:255'],
+            'service_date' => ['required', 'date'],
+            'status' => ['required', 'in:cleaned,pending'],
+            'cover_image' => ['nullable', 'image', 'max:5120'],
+            'images' => ['nullable', 'array'],
+            'images.*' => ['nullable', 'image', 'max:5120'],
+            'notes' => ['nullable', 'string'],
+        ]);
+
+        $gallery = is_array($aircon->images) ? array_values(array_filter($aircon->images)) : [];
+
+        if ($r->hasFile('cover_image')) {
+            if ($aircon->cover_image && ! in_array($aircon->cover_image, $gallery, true)) {
+                Storage::disk('public')->delete($aircon->cover_image);
+            }
+            $data['cover_image'] = $r->file('cover_image')->store('aircons', 'public');
+        } else {
+            unset($data['cover_image']);
+        }
+
+        foreach ($r->file('images', []) as $image) {
+            $gallery[] = $image->store('aircons', 'public');
+        }
+
+        $data['images'] = $gallery;
+
+        if (empty($data['cover_image']) && empty($aircon->cover_image) && ! empty($gallery)) {
+            $data['cover_image'] = $gallery[0];
+        }
+
+        $data['cleaned_at'] = $data['status'] === 'cleaned'
+            ? Carbon::parse($data['service_date'])->startOfDay()
+            : null;
+
+        $aircon->update($data);
+
+        return redirect()->route('technician.dashboard', ['tab' => 'aircons'])
+            ->with('success', 'แก้ไขข้อมูลเครื่องแอร์แล้ว');
+    }
+    public function airconStatusUpdate(Request $r, $id)
+    {
+        $data = $r->validate([
+            'status' => ['required', 'in:cleaned,pending'],
+        ]);
+
+        $aircon = AirConditioner::findOrFail($id);
+        $aircon->status = $data['status'];
+        $aircon->cleaned_at = $data['status'] === 'cleaned'
+            ? Carbon::parse($aircon->service_date ?: now())->startOfDay()
+            : null;
+        $aircon->save();
+
+        $counts = [
+            'total' => AirConditioner::count(),
+            'cleaned' => AirConditioner::where('status', 'cleaned')->count(),
+            'pending' => AirConditioner::where('status', 'pending')->count(),
+        ];
+
+        $label = $aircon->status === 'cleaned' ? 'ล้างแล้ว' : 'ยังไม่ได้ล้าง';
+
+        if ($r->expectsJson()) {
+            return response()->json([
+                'success' => true,
+                'id' => $aircon->id,
+                'status' => $aircon->status,
+                'label' => $label,
+                'counts' => $counts,
+            ]);
+        }
+
+        return redirect()->route('technician.dashboard', ['tab' => 'aircons'])
+            ->with('success', 'อัปเดตสถานะเครื่องแอร์แล้ว');
+    }
+    public function airconDestroy($id)
+    {
+        $aircon = AirConditioner::findOrFail($id);
+
+        if ($aircon->cover_image) {
+            Storage::disk('public')->delete($aircon->cover_image);
+        }
+
+        foreach (($aircon->images ?? []) as $image) {
+            if ($image) {
+                Storage::disk('public')->delete($image);
+            }
+        }
+
+        $aircon->delete();
+
+        return redirect()->route('technician.dashboard', ['tab' => 'aircons'])
+            ->with('success', 'ลบข้อมูลเครื่องแอร์แล้ว');
+    }
     public function accountStore(Request $r)
     {
         $data = $this->validateAccount($r);
         SolarAccount::create($data);
-        return redirect()->route('technician.dashboard')->with('success', 'เพิ่มบัญชีเรียบร้อย');
+        return redirect()->route('technician.dashboard', ['tab' => 'accounts'])->with('success', 'เพิ่มบัญชีเรียบร้อย');
     }
 
     public function accountUpdate(Request $r, $id)
     {
         $a = SolarAccount::findOrFail($id);
         $a->fill($this->validateAccount($r))->save();
-        return redirect()->route('technician.dashboard')->with('success', 'บันทึกเรียบร้อย');
+        return redirect()->route('technician.dashboard', ['tab' => 'accounts'])->with('success', 'บันทึกเรียบร้อย');
     }
 
     public function accountDestroy($id)
     {
         SolarAccount::findOrFail($id)->delete();
-        return redirect()->route('technician.dashboard')->with('success', 'ลบเรียบร้อย');
+        return redirect()->route('technician.dashboard', ['tab' => 'accounts'])->with('success', 'ลบเรียบร้อย');
     }
 
     // ══════════════════════════════════════════════════════════════
@@ -756,7 +993,6 @@ class TechnicianController extends Controller
         }
         return $result;
     }
-
     private function processSoftwareTools(Request $request): array
     {
         $input = $request->input('software_tools', []);
@@ -768,7 +1004,6 @@ class TechnicianController extends Controller
         }
         return $clean;
     }
-
     private function validateTeamRules(array $data, ?Technician $tech)
     {
         $position = $data['emp_position'] ?? null;
@@ -818,7 +1053,7 @@ class TechnicianController extends Controller
             }
 
             $c->save();
-            return redirect()->route('technician.dashboard')
+            return redirect()->route('technician.dashboard', ['tab' => 'customers'])
                 ->with('success', 'อัปเดตสถานะเรียบร้อย');
         }
 }
