@@ -465,4 +465,56 @@ class PooutsideController extends Controller
             'data' => $allData
         ]);
     }
+        public function invoicePage(Request $request)
+    {
+        return view('pooutside.invoice_search');
+    }
+ 
+    /**
+     * GET /pooutside/invoice-suggest?q=INV
+     * Autocomplete: คืน invoice ที่ใกล้เคียง (ไม่เกิน 15 รายการ)
+     */
+    public function invoiceSuggest(Request $request): JsonResponse
+    {
+        $q = trim($request->input('q', ''));
+ 
+        if (strlen($q) < 2) {
+            return response()->json(['suggestions' => []]);
+        }
+ 
+        $suggestions = Pooutside::where('invoice', 'LIKE', "%{$q}%")
+            ->select('invoice', 'name', 'date_invoice')
+            ->orderByRaw("CASE WHEN invoice LIKE ? THEN 0 ELSE 1 END", ["{$q}%"])
+            ->orderBy('date_invoice', 'desc')
+            ->limit(15)
+            ->get()
+            ->unique('invoice')
+            ->values();
+ 
+        return response()->json(['suggestions' => $suggestions]);
+    }
+ 
+    /**
+     * GET /pooutside/invoice-search?invoice=INV001
+     * ดึงทุก row ที่ invoice ตรง
+     */
+    public function invoiceSearch(Request $request): JsonResponse
+    {
+        $invoice = trim($request->input('invoice', ''));
+ 
+        if (empty($invoice)) {
+            return response()->json(['success' => false, 'message' => 'กรุณากรอกหมายเลข Invoice'], 422);
+        }
+ 
+        $rows = Pooutside::where('invoice', $invoice)
+            ->orderBy('date_invoice', 'desc')
+            ->get(['date_invoice', 'invoice', 'name', 'quantity', 'ponum', 'note'])
+            ->toArray();
+ 
+        return response()->json([
+            'success' => true,
+            'count'   => count($rows),
+            'rows'    => $rows,
+        ]);
+    }
 }

@@ -161,7 +161,10 @@ Route::get('/pooutside', [PooutsideController::class, 'dashboard']);
 
 Route::get('/pooutside/search', [PooutsideController::class, 'search'])->name('pooutside.search');
 Route::get('/pooutside/check',  [PooutsideController::class, 'checkLocalPO']);
-Route::post('/pull-po-outside', [PooutsideController::class, 'pull'])->name('pull.pooutside');;
+Route::post('/pull-po-outside', [PooutsideController::class, 'pull'])->name('pull.pooutside');
+Route::get('/pooutside/invoice',         [PooutsideController::class, 'invoicePage']);
+Route::get('/pooutside/invoice-suggest', [PooutsideController::class, 'invoiceSuggest']);
+Route::get('/pooutside/invoice-search',  [PooutsideController::class, 'invoiceSearch']);
 
 
 use App\Http\Controllers\PooutsidereturnController;

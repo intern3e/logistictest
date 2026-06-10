@@ -113,6 +113,12 @@
     </span>
 </div>
     <div style="display: flex; gap: 8px;">
+        <a href="/pooutside/invoice?create_by={{ urlencode(request()->get('create_by', $userName ?? 'Guest')) }}"
+    style="display: inline-block; background-color: #4a90d9; color: white; padding: 8px 16px; border-radius: 6px; text-decoration: none; font-weight: bold;"
+    onmouseover="this.style.backgroundColor='#357abd'"
+    onmouseout="this.style.backgroundColor='#4a90d9'">
+    ค้นหา Invoice
+</a>
         <a href="dashboardreturn"
             style="display: inline-block; background-color: #28a745; color: white; padding: 8px 16px; border-radius: 6px; text-decoration: none; font-weight: bold;"
             onmouseover="this.style.backgroundColor='#218838'"
