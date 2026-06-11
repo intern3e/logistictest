@@ -437,7 +437,7 @@ private function convertBuddhistDate(string $date): string
             if ($useTemplate) {
                 for ($billPageNo = 1; $billPageNo <= $billPageCount; $billPageNo++) {
                     for ($tcusOffset = 1; $tcusOffset <= $this->tcusPerBillPage; $tcusOffset++) {
-                        $tcusPageNo = (($billPageNo - 1) * $this->tcusPerBillPage) + $tcusOffset;
+                        $tcusPageNo = $tcusOffset;
 
                         $pdf->setSourceFile($filePath);
                         $templateBillId = $pdf->importPage($billPageNo);

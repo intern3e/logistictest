@@ -17,9 +17,9 @@ class SoItemController extends Controller
         $search = trim($request->input('search', ''));
         $status = trim($request->input('status', ''));
         $month  = trim($request->input('month', ''));
- 
+
         $query = Quotation::with('items')->orderByDesc('created_at');
- 
+
         if ($search) {
             $query->where(function ($q) use ($search) {
                 $q->where('quotation_no', 'LIKE', "%{$search}%")
@@ -28,44 +28,45 @@ class SoItemController extends Controller
                   ->orWhere('contact_name', 'LIKE', "%{$search}%");
             });
         }
- 
+
         if ($status) {
             $query->where('status', $status);
         }
- 
+
         if ($month) {
             $query->whereRaw("DATE_FORMAT(doc_date, '%Y-%m') = ?", [$month]);
         }
- 
+
         $quotations = $query->paginate(20)->withQueryString();
- 
+
         return view('sale.dashboardquotations', compact(
             'quotations', 'search', 'status', 'month'
         ));
     }
- 
+
     /**
      * GET /quotations/{id}/pdf
      */
     public function downloadPdf(int $id)
     {
         $qt = Quotation::findOrFail($id);
- 
+
         if (!$qt->hasPdf()) {
             abort(404, 'ไม่พบไฟล์ PDF');
         }
- 
+
         return response()->download(
             $qt->pdf_full_path,
             $qt->quotation_no . '.pdf'
         );
     }
+
     public function index()
     {
         return view('sale.SoItem');
     }
 
- public function store(Request $request)
+    public function store(Request $request)
     {
         $request->validate([
             'doc_date'          => 'required|date',
@@ -90,13 +91,13 @@ class SoItemController extends Controller
             'items.*.is_new'    => 'nullable|boolean',
             'pdf_base64'        => 'nullable|string',
         ]);
- 
+
         try {
             return DB::transaction(function () use ($request) {
- 
+
                 // ★ 1) สร้างเลขที่ใบเสนอราคา
                 $quotationNo = $this->generateQuotationNo();
- 
+
                 // ★ 2) สร้าง Quotation
                 $quotation = Quotation::create([
                     'quotation_no'      => $quotationNo,
@@ -117,14 +118,14 @@ class SoItemController extends Controller
                     'vat_amount'        => 0,
                     'grand_total'       => 0,
                 ]);
- 
+
                 // ★ 3) สร้าง QuotationItem
                 $items = $request->input('items', []);
                 foreach ($items as $idx => $item) {
                     $desc  = trim($item['desc'] ?? '');
                     $price = (float) ($item['price'] ?? 0);
                     if (!$desc && $price <= 0) continue;
- 
+
                     QuotationItem::create([
                         'quotation_id'  => $quotation->id,
                         'line_no'       => $idx + 1,
@@ -138,18 +139,18 @@ class SoItemController extends Controller
                         // amount จะ auto คำนวณจาก booted() ใน model
                     ]);
                 }
- 
+
                 // ★ 4) คำนวณยอดรวม
                 $quotation->load('items');
                 $quotation->recalculate();
                 $quotation->save();
- 
+
                 // ★ 5) บันทึก PDF
                 $pdfBase64 = $request->input('pdf_base64');
                 if ($pdfBase64) {
                     $quotation->storePdf($pdfBase64);
                 }
- 
+
                 return response()->json([
                     'status'       => 'success',
                     'quotation_no' => $quotation->quotation_no,
@@ -159,7 +160,7 @@ class SoItemController extends Controller
                     'message'      => "บันทึกใบเสนอราคา {$quotation->quotation_no} สำเร็จ",
                 ]);
             });
- 
+
         } catch (\Exception $e) {
             Log::error('Quotation store error: ' . $e->getMessage());
             return response()->json([
@@ -168,7 +169,7 @@ class SoItemController extends Controller
             ], 500);
         }
     }
- 
+
     /**
      * สร้างเลขที่ใบเสนอราคา: QT-20260609143022-0001
      * running number (0001) reset กลับ 1 ทุกต้นเดือน
@@ -178,23 +179,33 @@ class SoItemController extends Controller
         $now      = now();
         $datetime = $now->format('YmdHis');                       // 20260609143022
         $monthPrefix = 'QT-' . $now->format('Ym');                // QT-202506
- 
+
         // หา running number ล่าสุดของเดือนนี้
         $last = Quotation::where('quotation_no', 'LIKE', $monthPrefix . '%')
             ->orderByDesc('quotation_no')
             ->value('quotation_no');
- 
+
         if ($last) {
             // QT-20260609143022-0003 → ตัด 4 ตัวท้าย → 0003 → +1
             $seq = (int) substr($last, -4) + 1;
         } else {
             $seq = 1;
         }
- 
+
         $running = str_pad($seq, 4, '0', STR_PAD_LEFT);          // 0001
- 
+
         return "QT-{$datetime}-{$running}";                       // QT-20260609143022-0001
     }
+
+    /* ================================================================
+     *  POST /SoItem/batch-match
+     *
+     *  Flow:
+     *  1) ค้นประวัติลูกค้ารายนี้ → matchOne() (pipeline กลาง)
+     *     ├─ เจอ + มีราคา      → ใช้เลย
+     *     ├─ เจอ + ไม่มีราคา   → findRefSuggestions() (logic เดียวกัน)
+     *     └─ ไม่เจอ (ใหม่)     → findRefSuggestions() (logic เดียวกัน)
+     * ================================================================ */
     public function batchMatch(Request $request)
     {
         $customerCode = trim($request->input('customer_code', ''));
@@ -215,80 +226,166 @@ class SoItemController extends Controller
             $keyword = trim($inputName);
 
             $base = [
-                'input'         => $keyword,
-                'matched'       => false,
-                'item_new'      => null,
-                'product_name'  => null,
-                'unit_price'    => null,
-                'unit'          => null,
-                'doc_date'      => null,
-                'is_new'        => true,
-                'match_keyword' => null,
+                'input'           => $keyword,
+                'matched'         => false,
+                'item_new'        => null,
+                'product_name'    => null,
+                'unit_price'      => null,
+                'has_price'       => false,
+                'ref_suggestions' => [],
+                'unit'            => null,
+                'doc_date'        => null,
+                'is_new'          => true,
+                'match_keyword'   => null,
             ];
 
-            if (mb_strlen($keyword) < 2 || $allRows->isEmpty()) {
+            if (mb_strlen($keyword) < 2) {
                 $results[] = $base;
                 continue;
             }
 
-            $match   = null;
-            $matchKw = '';
+            // ★ ขั้น 1: ค้นในประวัติลูกค้ารายนี้ — pipeline กลาง
+            $m = $allRows->isNotEmpty() ? $this->matchOne($keyword, $allRows) : null;
 
-            // ===== ขั้น 1: ★ Scored Match — ทุก input (ไม่จำกัดความยาว) =====
-            $scored = $this->scoredMatch($keyword, $allRows);
-            if ($scored) {
-                $match   = $scored['row'];
-                $matchKw = $scored['keywords'];
-            }
+            if ($m) {
+                $match     = $m['row'];
+                $unitPrice = $match->unit_price !== null ? (float) $match->unit_price : null;
+                $hasPrice  = $unitPrice !== null && $unitPrice > 0;
 
-            // ===== ขั้น 2: Reverse Exact =====
-            if (!$match) {
-                $reversed = $this->reverseMatch($keyword, $allRows);
-                if ($reversed) {
-                    $match   = $reversed['row'];
-                    $matchKw = $reversed['keyword'];
-                }
-            }
+                // ★ matched แต่ไม่มีราคา → ค้นลูกค้าอื่นด้วย keyword + logic เดียวกัน
+                $refSuggestions = $hasPrice ? [] : $this->findRefSuggestions($keyword);
 
-            // ===== ขั้น 3: Fuzzy Reverse (Levenshtein ≥ 80%) =====
-            if (!$match) {
-                $fuzzy = $this->fuzzyReverseMatch($keyword, $allRows);
-                if ($fuzzy) {
-                    $match   = $fuzzy['row'];
-                    $matchKw = $fuzzy['keyword'];
-                }
-            }
-
-            // ===== ★ ขั้น 4: Similarity Gate ≥ 50% =====
-            if ($match) {
-                $sim = $this->similarityCheck($keyword, $match->product_name);
-
-                if ($sim >= 50) {
-                    $results[] = [
-                        'input'         => $keyword,
-                        'matched'       => true,
-                        'item_new'      => $match->item_new,
-                        'product_name'  => $match->product_name,
-                        'unit_price'    => $match->unit_price !== null ? (float) $match->unit_price : null,
-                        'unit'          => $match->unit,
-                        'doc_date'      => $match->doc_date
-                            ? \Carbon\Carbon::parse($match->doc_date)->format('Y-m-d')
-                            : null,
-                        'is_new'        => false,
-                        'match_keyword' => $matchKw,
-                        'similarity'    => $sim,
-                    ];
-                } else {
-                    $base['match_keyword'] = $matchKw;
-                    $base['similarity']    = $sim;
-                    $results[] = $base;
-                }
+                $results[] = [
+                    'input'           => $keyword,
+                    'matched'         => true,
+                    'item_new'        => $match->item_new,
+                    'product_name'    => $match->product_name,
+                    'unit_price'      => $unitPrice,
+                    'has_price'       => $hasPrice,
+                    'ref_suggestions' => $refSuggestions,
+                    'unit'            => $match->unit,
+                    'doc_date'        => $match->doc_date
+                        ? \Carbon\Carbon::parse($match->doc_date)->format('Y-m-d')
+                        : null,
+                    'is_new'          => false,
+                    'match_keyword'   => $m['keyword'],
+                    'similarity'      => $m['similarity'],
+                ];
             } else {
+                // ★ สินค้าใหม่สำหรับลูกค้ารายนี้ → ค้นลูกค้าอื่นด้วย keyword + logic เดียวกัน
+                $base['ref_suggestions'] = $this->findRefSuggestions($keyword);
                 $results[] = $base;
             }
         }
 
         return response()->json($results);
+    }
+
+    /* ================================================================
+     *  ★★★ Matching pipeline กลาง ★★★
+     *  ใช้ทั้งค้นลูกค้ารายนี้ + ลูกค้าอื่น (logic เดียวกันเป๊ะ)
+     *
+     *  scored → reverse → fuzzy → similarity gate ≥ 50
+     *  คืน null ถ้าไม่ผ่านขั้นใดขั้นหนึ่ง
+     * ================================================================ */
+    private function matchOne(string $keyword, $rows): ?array
+    {
+        $match   = null;
+        $matchKw = '';
+
+        // ===== ขั้น 1: Scored Match =====
+        $scored = $this->scoredMatch($keyword, $rows);
+        if ($scored) {
+            $match   = $scored['row'];
+            $matchKw = $scored['keywords'];
+        }
+
+        // ===== ขั้น 2: Reverse Exact =====
+        if (!$match) {
+            $reversed = $this->reverseMatch($keyword, $rows);
+            if ($reversed) {
+                $match   = $reversed['row'];
+                $matchKw = $reversed['keyword'];
+            }
+        }
+
+        // ===== ขั้น 3: Fuzzy Reverse (Levenshtein ≥ 80%) =====
+        if (!$match) {
+            $fuzzy = $this->fuzzyReverseMatch($keyword, $rows);
+            if ($fuzzy) {
+                $match   = $fuzzy['row'];
+                $matchKw = $fuzzy['keyword'];
+            }
+        }
+
+        if (!$match) return null;
+
+        // ===== ขั้น 4: Similarity Gate ≥ 50% =====
+        $sim = $this->similarityCheck($keyword, $match->product_name);
+        if ($sim < 50) return null;
+
+        return ['row' => $match, 'keyword' => $matchKw, 'similarity' => $sim];
+    }
+
+    /* ================================================================
+     *  ★★★ ค้นราคาอ้างอิงจากลูกค้าอื่น ★★★
+     *  ใช้ keyword เดียวกัน + matching logic เดียวกับค้นลูกค้ารายนี้
+     *
+     *  1) Prefilter: ดึง candidate rows ด้วย keyword (performance)
+     *  2) Group ตามบริษัท → run matchOne() ต่อบริษัท
+     *  3) เรียงวันที่ล่าสุด → เอา 3 บริษัท
+     * ================================================================ */
+    private function findRefSuggestions(string $keyword): array
+    {
+        // --- 1) Prefilter candidate rows จากทุกลูกค้า ---
+        $searchKeywords = $this->extractKeywords($keyword);
+        $candidates = collect();
+
+        foreach ($searchKeywords as $kw) {
+            if (mb_strlen($kw) < 3) continue;
+
+            $found = fuzzy_so::where('product_name', 'ILIKE', '%' . $kw . '%')
+                ->whereNotNull('unit_price')
+                ->where('unit_price', '>', 0)
+                ->orderByDesc('doc_date')
+                ->limit(500)
+                ->get(['unit_price', 'so_no', 'customer_code', 'customer_name',
+                       'doc_date', 'product_name', 'item_new', 'unit']);
+
+            if ($found->isNotEmpty()) {
+                $candidates = $found;
+                break;
+            }
+        }
+
+        if ($candidates->isEmpty()) return [];
+
+        // --- 2) Group ตามบริษัท → run pipeline เดียวกับค้นลูกค้ารายนี้ ---
+        $matches = [];
+        foreach ($candidates->groupBy('customer_code') as $custCode => $rows) {
+            $m = $this->matchOne($keyword, $rows);   // ★ logic เดียวกันเป๊ะ
+            if ($m) {
+                $matches[] = $m['row'];
+            }
+        }
+
+        if (empty($matches)) return [];
+
+        // --- 3) เรียงวันที่ล่าสุด → 3 บริษัท ---
+        return collect($matches)
+            ->sortByDesc(fn($r) => $r->doc_date ? strtotime($r->doc_date) : 0)
+            ->take(3)
+            ->values()
+            ->map(fn($r) => [
+                'unit_price'    => (float) $r->unit_price,
+                'so_no'         => $r->so_no,
+                'customer_name' => $r->customer_name,
+                'doc_date'      => $r->doc_date
+                    ? \Carbon\Carbon::parse($r->doc_date)->format('d/m/Y')
+                    : '-',
+                'product_name'  => $r->product_name,
+            ])
+            ->toArray();
     }
 
     /* ================================================================
@@ -304,28 +401,28 @@ class SoItemController extends Controller
      *  - มี model token → score ≥ 5 (model ยาวตัวเดียวก็พอ)
      *  - ไม่มี model → ต้อง hit brand ≥ 2 ตัว (ตัวเดียวกว้างเกิน)
      * ================================================================ */
-     private function scoredMatch(string $keyword, $allRows): ?array
+    private function scoredMatch(string $keyword, $allRows): ?array
     {
         $searchTokens = $this->extractAllSearchTokens($keyword);
         if (empty($searchTokens)) return null;
- 
+
         $hasModel = false;
         foreach ($searchTokens as $t) {
             if ($t['is_model']) { $hasModel = true; break; }
         }
- 
+
         $bestRow    = null;
         $bestScore  = 0;
         $bestHits   = 0;
         $bestKws    = '';
-        $bestDate   = null;   // ★ เพิ่ม: เก็บวันที่ของ best row
- 
+        $bestDate   = null;   // ★ เก็บวันที่ของ best row
+
         foreach ($allRows as $row) {
             $nameLower   = mb_strtolower($row->product_name);
             $score       = 0;
             $hits        = 0;
             $hitKeywords = [];
- 
+
             foreach ($searchTokens as $token) {
                 $tokenLower = mb_strtolower($token['text']);
                 if (mb_strpos($nameLower, $tokenLower) !== false) {
@@ -335,41 +432,41 @@ class SoItemController extends Controller
                     $hitKeywords[] = $token['text'];
                 }
             }
- 
+
             if ($score <= 0) continue;
- 
-            // ★★★ FIX: score ใกล้เคียง ±1 → เลือก row ใหม่กว่า ★★★
+
+            // ★ score ใกล้เคียง ±1 → เลือก row ใหม่กว่า
             $shouldReplace = false;
- 
+
             if (!$bestRow) {
                 $shouldReplace = true;
             } else {
                 $diff = $score - $bestScore;
- 
+
                 if ($diff > 1) {
                     // score สูงกว่าชัดเจน (ห่าง > 1) → แทนที่
                     $shouldReplace = true;
                 } elseif ($diff >= -1) {
                     // score ใกล้เคียง (±1) → เลือก row ที่วันที่ใหม่กว่า
-                    $rowDate  = $row->doc_date ? strtotime($row->doc_date) : 0;
-                    $bestDt   = $bestDate      ? strtotime($bestDate)      : 0;
+                    $rowDate = $row->doc_date ? strtotime($row->doc_date) : 0;
+                    $bestDt  = $bestDate     ? strtotime($bestDate)      : 0;
                     if ($rowDate > $bestDt) {
                         $shouldReplace = true;
                     }
                 }
                 // diff < -1 → row เดิม score สูงกว่าชัดเจน → ไม่แทนที่
             }
- 
+
             if ($shouldReplace) {
                 $bestScore = $score;
                 $bestHits  = $hits;
                 $bestRow   = $row;
                 $bestKws   = implode(' + ', $hitKeywords);
-                $bestDate  = $row->doc_date;   // ★ เก็บวันที่
+                $bestDate  = $row->doc_date;
             }
         }
- 
-        // ★ เงื่อนไขผ่าน (ไม่เปลี่ยน)
+
+        // ★ เงื่อนไขผ่าน
         if ($bestRow) {
             if ($hasModel && $bestScore >= 5) {
                 return ['row' => $bestRow, 'keywords' => $bestKws];
@@ -378,7 +475,7 @@ class SoItemController extends Controller
                 return ['row' => $bestRow, 'keywords' => $bestKws];
             }
         }
- 
+
         return null;
     }
 
@@ -627,7 +724,13 @@ class SoItemController extends Controller
             if ($this->isElecSpec($t)) continue;
 
             if (preg_match('/[0-9]/', $t) && preg_match('/[A-Za-z]/u', $t)) {
-                $models[] = $t;
+                // ★ dimension เช่น 4x4, 2x4 → treat as brand (low weight)
+                //   ไม่ใช่ model เพราะมันปรากฏในสินค้าต่างประเภทได้
+                if ($this->isPureDimension($t)) {
+                    $brands[] = $t;
+                } else {
+                    $models[] = $t;
+                }
             } elseif (!preg_match('/[0-9]/', $t)) {
                 $brands[] = $t;
             }
@@ -705,7 +808,11 @@ class SoItemController extends Controller
             if (preg_match('/^\d{1,3}$/', $t)) continue;
             if ($this->isElecSpec($t)) continue;
 
-            if (mb_strlen($t) >= 3 && preg_match('/[0-9]/', $t) && preg_match('/[A-Za-z]/u', $t)) {
+            if (mb_strlen($t) >= 3
+                && preg_match('/[0-9]/', $t)
+                && preg_match('/[A-Za-z]/u', $t)
+                && !$this->isPureDimension($t)  // ★ ไม่ใช้ 4x4, 2x4 เป็น model
+            ) {
                 $models[] = $t;
             }
         }
@@ -815,5 +922,16 @@ class SoItemController extends Controller
     private function cleanQuotes(string $text): string
     {
         return str_replace(['"', "'", "\xe2\x80\x9c", "\xe2\x80\x9d", '`'], '', trim($text));
+    }
+
+    /* ================================================================
+     *  isPureDimension — 4x4, 2x4, 1.5x2.5 ไม่ใช่ model
+     * ================================================================ */
+    private function isPureDimension(string $t): bool
+    {
+        $t = trim($t);
+        // NxN, NxNxN, N.NxN.N (รวม optional " หรือ ' ท้าย)
+        if (preg_match('/^\d+(\.\d+)?[xX×]\d+(\.\d+)?([xX×]\d+(\.\d+)?)?["\']?$/u', $t)) return true;
+        return false;
     }
 }

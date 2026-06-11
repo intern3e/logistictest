@@ -264,3 +264,9 @@ Route::post('/SoItem/batch-match',                 [SoItemController::class, 'ba
 Route::get('/SoItem/sales-history/{customerCode}', [SoItemController::class, 'salesHistory']);
 Route::get('/quotations',           [SoItemController::class, 'dashboard']);
 Route::get('/quotations/{id}/pdf',  [SoItemController::class, 'downloadPdf']);
+
+use App\Http\Controllers\PoitemController;
+ 
+Route::get('/poitem',             [PoitemController::class, 'index'])->name('po.search');
+Route::post('/po-search/search',  [PoitemController::class, 'search'])->name('po.search.api');
+Route::get('/po-search/detail',   [PoitemController::class, 'detail'])->name('po.detail.api');

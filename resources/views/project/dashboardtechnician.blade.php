@@ -7,7 +7,10 @@
 <title>Triple 3E Group — ระบบจัดการทักษะช่าง</title>
 <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600;700;800;900&family=IBM+Plex+Sans+Thai:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 @php
-  $teams = collect($teams ?? []);
+  $teams = collect($teams ?? [])
+    ->filter(fn($team) => trim((string) data_get($team, 'team_name', '')) !== '')
+    ->unique(fn($team) => trim((string) data_get($team, 'team_name', '')))
+    ->values();
   $technicians = collect($technicians ?? []);
   $schedules = collect($schedules ?? []);
   $customers = collect($customers ?? []);
@@ -15,7 +18,10 @@
   $aircons = collect($aircons ?? []);
   $washAlerts = collect($washAlerts ?? []);
   $stats = $stats ?? ['total_tech' => $technicians->count()];
-  $availableTeams = collect($availableTeams ?? $teams->pluck('team_name')->filter()->values());
+  $availableTeams = collect($availableTeams ?? $teams->pluck('team_name')->filter()->values())
+    ->filter()
+    ->unique()
+    ->values();
   $airconTotal = $aircons->count();
   $airconCleaned = $aircons->where('status', 'cleaned')->count();
   $airconPending = $aircons->where('status', 'pending')->count();
@@ -410,9 +416,28 @@ tbody tr:last-child td { border-bottom: 0 }
 .roster-sub,   .cert-sub   { color: var(--muted); font-size: 14px; font-weight: 500; margin-top: 8px; max-width: 600px }
 
 /* Filter bar */
-.roster-filter { background: var(--navy-25); border: 1px solid var(--line); border-radius: var(--radius-md); padding: 14px 16px; margin-bottom: 20px }
-.roster-filter-row { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; padding: 7px 0; border-bottom: 1px solid var(--line-soft) }
-.roster-filter-row:last-child { border-bottom: 0 }
+.roster-filter {
+  display: grid;
+  grid-template-columns: minmax(260px, 1fr) minmax(220px, 320px) auto;
+  gap: 12px;
+  align-items: end;
+  background: var(--navy-25);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-md);
+  padding: 14px 16px;
+  margin-bottom: 20px;
+}
+.roster-filter-row {
+  display: grid;
+  gap: 7px;
+  padding: 0;
+}
+.roster-filter-actions {
+  align-self: end;
+}
+.roster-filter-actions .roster-add-tech-btn {
+  min-width: 120px;
+}
 .roster-filter-label { font-size: 11px; font-weight: 700; color: var(--muted); letter-spacing: .12em; text-transform: uppercase; min-width: 60px }
 .roster-chip {
   border: 1px solid var(--line); border-radius: 999px; padding: 6px 14px;
@@ -420,8 +445,32 @@ tbody tr:last-child td { border-bottom: 0 }
 }
 .roster-chip:hover  { border-color: var(--navy-300); color: var(--navy-700); background: var(--navy-25) }
 .roster-chip.active { background: var(--navy-900); border-color: var(--navy-900); color: #fff }
-.roster-search { height: 38px; min-width: 280px; flex: 1; padding: 0 14px; border: 1px solid var(--line) }
+.roster-search,
+.roster-skill-select,
+.team-filter-search,
+.team-skill-select {
+  width: 100%;
+  height: 40px;
+  padding: 0 14px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  background: #fff;
+  color: var(--dk);
+  font-weight: 800;
+  outline: none;
+}
+.roster-search:focus,
+.roster-skill-select:focus,
+.team-filter-search:focus,
+.team-skill-select:focus {
+  border-color: var(--navy-500);
+  box-shadow: 0 0 0 3px rgba(170,192,225,.35);
+}
 .roster-add-tech-btn { white-space: nowrap; height: 42px; padding: 0 18px }
+#panel-teams > .panel-header .panel-actions { display: none !important }
+@media (max-width: 768px) {
+  .roster-filter { grid-template-columns: 1fr }
+}
 
 /* ============================================================
    ROSTER GRID — Employee Cards (Dark Navy Folder Style)
@@ -640,8 +689,21 @@ text-align: center; overflow: hidden; text-overflow: ellipsis;
 .sched-board-title { font-size: 24px; font-weight: 700; line-height: 1.2; color: var(--navy-900); letter-spacing: -.01em }
 .sched-board-sub   { margin-top: 8px; color: var(--muted); font-size: 13px; font-weight: 500 }
 .sched-board .sched-eyebrow { color: var(--navy-700); letter-spacing: .12em }
-.sched-controls { display: flex; align-items: center; gap: 8px; flex-wrap: wrap }
+.sched-controls { display: flex; align-items: center; justify-content: flex-end; gap: 10px; flex-wrap: wrap }
 .sched-select { height: 38px; min-width: 150px; font-weight: 600 }
+.sched-add-job-btn { height: 42px; padding: 0 18px; white-space: nowrap }
+.sched-nav-group {
+  display: inline-flex; align-items: center; gap: 8px;
+  padding: 4px; border: 1px solid var(--line);
+  border-radius: var(--radius-md); background: var(--navy-25);
+}
+.sched-control-month {
+  min-width: 170px; height: 38px; display: inline-flex;
+  align-items: center; justify-content: center; padding: 0 16px;
+  border: 1px solid var(--line); border-radius: var(--radius-sm);
+  background: #fff; color: var(--navy-900);
+  font-size: 15px; font-weight: 800; white-space: nowrap;
+}
 .sched-mode-group {
   height: 38px; display: flex; overflow: hidden;
   border: 1px solid var(--line); border-radius: var(--radius-sm); background: var(--white);
@@ -915,7 +977,7 @@ text-align: center; overflow: hidden; text-overflow: ellipsis;
 
 #panel-customers .panel-actions {
   display: grid;
-  grid-template-columns: minmax(260px, 360px) auto;
+  grid-template-columns: minmax(320px, 420px);
   align-items: center;
   gap: 12px;
 }
@@ -1058,9 +1120,11 @@ text-align: center; overflow: hidden; text-overflow: ellipsis;
 }
 
 .customer-project-table {
-  min-width: 1080px;
+  width: 100%;
+  min-width: 1160px;
   border-collapse: separate;
   border-spacing: 0;
+  table-layout: fixed;
 }
 
 .customer-project-table th {
@@ -1074,16 +1138,19 @@ text-align: center; overflow: hidden; text-overflow: ellipsis;
   font-weight: 900;
   letter-spacing: 0;
   text-transform: none;
+  white-space: nowrap;
+  vertical-align: middle;
 }
 
 .customer-project-table td {
-  height: 82px;
   padding: 16px 18px;
   border-bottom: 1px solid #e4edf9;
   color: var(--cust-ink);
   font-size: 13px;
   font-weight: 800;
   background: #fff;
+  line-height: 1.35;
+  vertical-align: top;
 }
 
 .customer-project-table tbody tr:hover td { background: var(--cust-soft) }
@@ -1104,34 +1171,57 @@ text-align: center; overflow: hidden; text-overflow: ellipsis;
 .cust-name-btn {
   display: inline-flex;
   max-width: 360px;
+  padding: 0;
+  border: 0;
+  background: transparent;
   color: var(--cust-ink);
+  cursor: pointer;
   font-size: 15px;
   font-weight: 900;
   line-height: 1.25;
+  text-align: left;
 }
 
 .cust-name-btn:hover { color: #0d5be1; text-decoration: none }
 .cust-desc, .cust-contact {
+  display: flex;
+  align-items: flex-start;
+  gap: 7px;
   margin-top: 3px;
   color: #5f7399;
   font-size: 12px;
   font-weight: 800;
   line-height: 1.25;
+  overflow-wrap: anywhere;
 }
 
 .cust-contact { font-size: 11px; color: #7184a4 }
-.cust-type-stack { display: grid; gap: 4px; justify-items: start }
+.cust-line-label {
+  flex: 0 0 auto;
+  min-width: 48px;
+  color: #0f4593;
+  font-size: 11px;
+  font-weight: 900;
+}
+.cust-line-text { min-width: 0 }
+.cust-type-stack { display: grid; gap: 6px; justify-items: start }
+.cust-type-label {
+  color: #64789d;
+  font-size: 10px;
+  font-weight: 900;
+}
 .cust-type-plain {
+  display: inline-flex;
+  align-items: center;
+  min-height: 28px;
+  padding: 5px 10px;
+  border: 1px solid #d9e6f8;
+  border-radius: 8px;
+  background: #f3f7ff;
   color: var(--cust-ink);
   font-size: 13px;
   font-weight: 900;
   line-height: 1.25;
-}
-.cust-status-plain {
-  color: #64789d;
-  font-size: 11px;
-  font-weight: 800;
-  line-height: 1.2;
 }
 .cust-st { font-size: 11px; font-weight: 900; border: 1px solid transparent }
 
@@ -1154,6 +1244,13 @@ text-align: center; overflow: hidden; text-overflow: ellipsis;
 }
 
 #panel-customers .cust-date-plain {
+  display: inline-flex;
+  align-items: center;
+  min-height: 28px;
+  padding: 5px 10px;
+  border: 1px solid #d9e6f8;
+  border-radius: 8px;
+  background: #f8fbff;
   color: var(--cust-ink);
   font-size: 13px;
   font-weight: 900;
@@ -1163,8 +1260,9 @@ text-align: center; overflow: hidden; text-overflow: ellipsis;
 
 #panel-customers .wash-cycle-cell {
   display: inline-grid;
-  min-width: 210px;
+  min-width: 220px;
   gap: 3px;
+  align-content: start;
 }
 
 
@@ -1177,14 +1275,21 @@ text-align: center; overflow: hidden; text-overflow: ellipsis;
 .cust-muted {
   display: inline-flex;
   align-items: center;
+  min-height: 28px;
+  padding: 5px 10px;
+  border: 1px solid #e4edf9;
+  border-radius: 8px;
+  background: #f8fbff;
   color: #7890b0;
   font-weight: 900;
+  white-space: nowrap;
 }
 
 .cust-row-actions {
   display: flex;
   gap: 8px;
   flex-wrap: wrap;
+  align-items: center;
 }
 
 .cust-row-actions .btn {
@@ -1193,6 +1298,7 @@ text-align: center; overflow: hidden; text-overflow: ellipsis;
   border-radius: 8px;
   padding: 0 13px;
   font-weight: 900;
+  white-space: nowrap;
 }
 
 .cust-row-actions .btn-ghost {
@@ -1228,6 +1334,10 @@ text-align: center; overflow: hidden; text-overflow: ellipsis;
   .cust-metrics { grid-template-columns: repeat(2, minmax(0, 1fr)) }
   #panel-customers #cust-search,
   #panel-customers .panel-actions .btn { width: 100% }
+}
+#panel-customers .cust-metrics,
+#panel-customers .cust-filter-bar {
+  display: none !important;
 }
 /* === CODEX CUSTOMER PROJECT REDESIGN END === */
 
@@ -1317,21 +1427,6 @@ text-align: center; overflow: hidden; text-overflow: ellipsis;
   width: min(320px, 100%); height: 40px; border: 1px solid #d8e2f0; border-radius: 10px;
   padding: 0 13px; color: #0e2f76; font-weight: 700; outline: none;
 }
-#panel-aircons .aircon-thumb-link {
-  position: relative; display: inline-flex; width: 56px; height: 42px;
-  border-radius: 8px; overflow: hidden; vertical-align: middle;
-  box-shadow: 0 6px 12px rgba(14,47,118,.12);
-}
-#panel-aircons .aircon-thumb {
-  width: 56px; height: 42px; object-fit: cover; border: 1px solid #d8e2f0;
-  border-radius: 8px; background: #f5feff;
-}
-#panel-aircons .aircon-thumb-count {
-  position: absolute; right: 4px; bottom: 4px; min-width: 18px; height: 18px;
-  display: inline-flex; align-items: center; justify-content: center;
-  border-radius: 999px; background: rgba(14,47,118,.88); color: #fff;
-  font-size: 10px; font-weight: 900; line-height: 1;
-}
 #panel-aircons .aircon-status-tag {
   display: inline-flex; align-items: center; border-radius: 999px; padding: 5px 10px;
   font-size: 12px; font-weight: 900; white-space: nowrap;
@@ -1355,19 +1450,323 @@ text-align: center; overflow: hidden; text-overflow: ellipsis;
 #panel-aircons .aircon-status-select:disabled {
   opacity: .65; cursor: wait;
 }
-#panel-aircons .aircon-row-actions {
-  display: flex; align-items: center; gap: 6px; flex-wrap: wrap;
+#panel-aircons .aircon-code-btn {
+  border: 0;
+  background: transparent;
+  color: #082766;
+  cursor: pointer;
+  font: inherit;
+  font-weight: 900;
+  text-align: left;
+  padding: 0;
+  text-decoration: none;
 }
-#panel-aircons .aircon-row-actions form { margin: 0 }
-#panel-aircons .aircon-edit-btn {
-  background: #eaf3ff; color: #174ea6; border: 1px solid #bdd7ff;
+#panel-aircons .aircon-code-btn:hover {
+  color: #2455dc;
+  text-decoration: underline;
 }
-#panel-aircons .aircon-edit-btn:hover { background: #dbeafe }
+#panel-aircons .aircon-date-chip {
+  display: inline;
+  font-size: 13px;
+  font-weight: 900;
+  white-space: nowrap;
+}
+#panel-aircons .aircon-date-chip.latest {
+  color: #1d4ed8;
+}
+#panel-aircons .aircon-date-chip.next {
+  color: #b91c1c;
+}
+#panel-aircons .aircon-date-chip.empty {
+  color: #94a3b8;
+}
+#modal-aircon-history {
+  padding: 24px !important;
+}
+#modal-aircon-history .aircon-history-modal {
+  width: min(860px, calc(100vw - 48px));
+  max-height: min(92vh, 760px);
+  overflow: hidden;
+  border-radius: 16px;
+  background: #fff;
+  border: 1px solid #cfe0f6;
+  box-shadow: 0 24px 70px rgba(14,47,118,.28);
+}
+#modal-aircon-history .aircon-history-head {
+  min-height: 78px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 20px 24px;
+  background: #123b8d;
+  color: #fff;
+}
+#modal-aircon-history .aircon-history-title {
+  font-size: 22px;
+  line-height: 1.2;
+  font-weight: 900;
+}
+#modal-aircon-history .aircon-history-sub {
+  margin-top: 4px;
+  color: rgba(255,255,255,.78);
+  font-size: 13px;
+  font-weight: 800;
+}
+#modal-aircon-history .aircon-history-close {
+  width: 42px;
+  height: 42px;
+  border: 1px solid rgba(255,255,255,.36);
+  border-radius: 10px;
+  background: rgba(255,255,255,.12);
+  color: #fff;
+  cursor: pointer;
+  font-size: 26px;
+  line-height: 1;
+}
+#modal-aircon-history .aircon-history-close:hover {
+  background: #fff;
+  color: #0e2f76;
+}
+#modal-aircon-history .aircon-history-body {
+  max-height: calc(min(92vh, 760px) - 78px);
+  overflow: auto;
+  padding: 22px;
+  background: #f5feff;
+}
+#modal-aircon-history .aircon-history-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+#modal-aircon-history .aircon-history-card,
+#modal-aircon-history .aircon-history-note,
+#modal-aircon-history .aircon-history-record {
+  border: 1px solid #d8e2f0;
+  border-radius: 12px;
+  background: #fff;
+  padding: 14px 16px;
+}
+#modal-aircon-history .aircon-history-label {
+  color: #64789d;
+  font-size: 12px;
+  font-weight: 900;
+}
+#modal-aircon-history .aircon-history-value {
+  margin-top: 5px;
+  color: #082766;
+  font-size: 16px;
+  font-weight: 900;
+  line-height: 1.35;
+}
+#modal-aircon-history .aircon-history-note,
+#modal-aircon-history .aircon-history-record {
+  margin-top: 12px;
+}
+#modal-aircon-history .aircon-history-record {
+  display: grid;
+  gap: 10px;
+}
+#modal-aircon-history .aircon-history-timeline {
+  display: grid;
+  grid-template-columns: 120px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 12px;
+  padding: 12px;
+  border: 1px solid #d8e2f0;
+  border-radius: 10px;
+  background: #f9fbff;
+}
+#modal-aircon-history .aircon-history-status {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 30px;
+  padding: 5px 12px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 900;
+}
+#modal-aircon-history .aircon-history-status.cleaned {
+  background: #dcfce7;
+  color: #166534;
+  border: 1px solid #86efac;
+}
+#modal-aircon-history .aircon-history-status.pending {
+  background: #fef3c7;
+  color: #92400e;
+  border: 1px solid #fde68a;
+}
+#modal-aircon-history .aircon-wash-card {
+  padding: 14px;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  background: #fff;
+}
+#modal-aircon-history .aircon-wash-top {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+#modal-aircon-history .aircon-wash-title {
+  color: #061d4f;
+  font-size: 16px;
+  line-height: 1.25;
+  font-weight: 900;
+}
+#modal-aircon-history .aircon-wash-status {
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 28px;
+  padding: 4px 13px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 900;
+}
+#modal-aircon-history .aircon-wash-status.cleaned {
+  background: #dcfce7;
+  color: #15803d;
+}
+#modal-aircon-history .aircon-wash-status.pending {
+  background: #fef3c7;
+  color: #92400e;
+}
+#modal-aircon-history .aircon-wash-place {
+  margin-top: 5px;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  color: #355078;
+  font-size: 13px;
+  font-weight: 800;
+}
+#modal-aircon-history .aircon-wash-pin {
+  width: 7px;
+  height: 7px;
+  border-radius: 999px;
+  background: #ec4899;
+  box-shadow: 0 0 0 2px #fbcfe8;
+}
+#modal-aircon-history .aircon-next-strip {
+  margin-top: 12px;
+  min-height: 36px;
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding: 8px 12px;
+  border-radius: 8px;
+  background: #f0e3ff;
+  color: #6d28d9;
+  font-size: 13px;
+  font-weight: 900;
+}
+#modal-aircon-history .aircon-next-mark {
+  width: 10px;
+  height: 14px;
+  border: 1.7px solid currentColor;
+  border-radius: 3px;
+  position: relative;
+}
+#modal-aircon-history .aircon-next-mark:before,
+#modal-aircon-history .aircon-next-mark:after {
+  content: "";
+  position: absolute;
+  left: 2px;
+  right: 2px;
+  height: 1.5px;
+  background: currentColor;
+}
+#modal-aircon-history .aircon-next-mark:before { top: 3px }
+#modal-aircon-history .aircon-next-mark:after { bottom: 3px }
+#modal-aircon-history .aircon-wash-meta {
+  margin-top: 12px;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+  color: #5a6f92;
+  font-size: 13px;
+  font-weight: 800;
+}
+#modal-aircon-history .aircon-wash-meta span {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
+#modal-aircon-history .aircon-meta-icon {
+  width: 13px;
+  height: 13px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 3px;
+  border: 1px solid #cbd5e1;
+  color: #64748b;
+  font-size: 9px;
+  line-height: 1;
+}
+#modal-aircon-history .aircon-wash-note {
+  margin-top: 12px;
+  padding: 10px 12px;
+  border: 1px solid #d8e2f0;
+  border-radius: 8px;
+  background: #f8fbff;
+}
+#modal-aircon-history .aircon-wash-note-label,
+#modal-aircon-history .aircon-wash-gallery-label {
+  color: #64789d;
+  font-size: 12px;
+  font-weight: 900;
+}
+#modal-aircon-history .aircon-wash-note-text {
+  margin-top: 4px;
+  color: #082766;
+  font-size: 14px;
+  font-weight: 800;
+  line-height: 1.5;
+  white-space: pre-wrap;
+}
+#modal-aircon-history .aircon-wash-gallery-wrap {
+  margin-top: 12px;
+}
+#modal-aircon-history .aircon-wash-gallery {
+  margin-top: 8px;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(108px, 1fr));
+  gap: 8px;
+}
+#modal-aircon-history .aircon-wash-gallery a {
+  display: block;
+  aspect-ratio: 4 / 3;
+  overflow: hidden;
+  border: 1px solid #d8e2f0;
+  border-radius: 8px;
+  background: #eef5ff;
+}
+#modal-aircon-history .aircon-wash-gallery img {
+  width: 100%;
+  height: 100%;
+  display: block;
+  object-fit: cover;
+}
+#modal-aircon-history .aircon-wash-gallery-empty {
+  margin-top: 8px;
+  color: #64789d;
+  font-size: 13px;
+  font-weight: 800;
+}
 @media (max-width: 768px) {
   #panel-aircons .aircon-metrics,
   #panel-aircons .aircon-status-group { grid-template-columns: 1fr }
   #panel-aircons .aircon-list-head { align-items: stretch; flex-direction: column }
   #panel-aircons .aircon-search { width: 100% }
+  #modal-aircon-history .aircon-history-grid,
+  #modal-aircon-history .aircon-history-timeline { grid-template-columns: 1fr }
+  #modal-aircon-history .aircon-wash-top,
+  #modal-aircon-history .aircon-wash-meta { align-items: flex-start; flex-direction: column }
 }
 #panel-aircons .aircon-panel-actions {
   display: flex;
@@ -1606,7 +2005,6 @@ text-align: center; overflow: hidden; text-overflow: ellipsis;
     align-items: stretch;
     flex-direction: column;
   }
-  #panel-aircons .aircon-panel-actions .search-inp,
   #panel-aircons .aircon-add-btn {
     width: 100%;
   }
@@ -2010,6 +2408,133 @@ border: 1px solid var(--line); border-radius: var(--radius-sm);
 .sb-ripple { position: absolute; width: 10px; height: 10px; border-radius: 999px; background: rgba(255,255,255,.45); transform: translate(-50%, -50%) scale(1); animation: sbRipple .55s ease-out forwards; pointer-events: none; z-index: 2 }
 
 /* ============================================================
+   SCHEDULE FORM MAP PICKER
+   ============================================================ */
+#modal-sched .sched-grid,
+#modal-edit-sched .sched-grid {
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  gap: 18px 20px !important;
+  align-items: start;
+}
+#modal-sched .modal-body,
+#modal-edit-sched .modal-body {
+  padding: 28px 34px !important;
+}
+#modal-sched .frow,
+#modal-edit-sched .frow {
+  grid-column: span 3;
+  margin-bottom: 0 !important;
+  min-width: 0;
+}
+#modal-sched .sched-third,
+#modal-edit-sched .sched-third {
+  grid-column: span 2;
+}
+#modal-sched .sched-full,
+#modal-edit-sched .sched-full {
+  grid-column: 1 / -1;
+}
+#modal-sched .finput,
+#modal-edit-sched .finput {
+  height: 48px !important;
+}
+#modal-sched textarea.finput,
+#modal-edit-sched textarea.finput {
+  height: auto !important;
+}
+.sched-form-section {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 10px 0 0;
+  color: var(--navy-900);
+  font-size: 14px;
+  font-weight: 900;
+}
+.sched-form-section:first-child {
+  margin-top: 0;
+}
+.sched-form-section::after {
+  content: '';
+  height: 1px;
+  flex: 1;
+  background: var(--line);
+}
+.sched-field-compact {
+  max-width: 100%;
+}
+.sched-map-picker {
+  display: grid;
+  gap: 10px;
+}
+.sched-map-toolbar {
+  display: grid;
+  grid-template-columns: minmax(260px, 1fr) auto;
+  gap: 10px;
+  align-items: stretch;
+}
+.sched-map-btn {
+  white-space: nowrap;
+}
+.sched-map-hint {
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  background: var(--navy-25);
+  color: var(--navy-700);
+  padding: 9px 12px;
+  font-size: 12px;
+  font-weight: 700;
+}
+.sched-map {
+  height: 280px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-md);
+  overflow: hidden;
+  background: #eef6ff;
+  position: relative;
+  z-index: 1;
+}
+.sched-map iframe {
+  width: 100%;
+  height: 100%;
+  border: 0;
+  display: block;
+}
+.sched-map-coord-badge {
+  position: absolute;
+  top: 12px;
+  left: 12px;
+  z-index: 3;
+  max-width: calc(100% - 24px);
+  padding: 8px 12px;
+  border: 1px solid rgba(14,47,118,.18);
+  border-radius: 999px;
+  background: rgba(255,255,255,.94);
+  color: var(--navy-900);
+  font-size: 12px;
+  font-weight: 900;
+  box-shadow: 0 8px 20px rgba(14,47,118,.16);
+  pointer-events: none;
+}
+.sched-map-fallback {
+  height: 100%;
+  display: grid;
+  place-items: center;
+  color: var(--muted);
+  font-weight: 700;
+  text-align: center;
+  padding: 18px;
+}
+@media (max-width: 900px) {
+  .sched-map-toolbar {
+    grid-template-columns: 1fr;
+  }
+  .sched-map {
+    height: 240px;
+  }
+}
+
+/* ============================================================
    KEYFRAMES
    ============================================================ */
 @keyframes fadeUp       { from { opacity: 0; transform: translateY(8px) } to { opacity: 1; transform: none } }
@@ -2043,6 +2568,12 @@ border: 1px solid var(--line); border-radius: var(--radius-sm);
   .search-inp, .cert-search { width: 100%; min-width: 0 }
   .fgrid, .sched-grid, .resume-fields, .borrow-form-grid,
   .skill-grid, .sw-grid, .comp-grid, .pinfo-grid { grid-template-columns: 1fr }
+  #modal-sched .frow,
+  #modal-edit-sched .frow,
+  #modal-sched .sched-third,
+  #modal-edit-sched .sched-third {
+    grid-column: 1 / -1;
+  }
   .resume-top { flex-direction: column }
   .team-grid, .cert-grid { grid-template-columns: 1fr }
   .cal-months, .tl-months { grid-template-columns: 1fr }
@@ -2811,6 +3342,14 @@ textarea.finput {
   margin-bottom: 18px !important;
 }
 
+.profile-v2-rolecard .profile-v2-nameeng {
+  color: #0e2f76 !important;
+  font-size: 16px !important;
+  line-height: 1.25 !important;
+  margin: 0 !important;
+  text-align: left !important;
+}
+
 .profile-v2-status {
   align-self: center !important;
   min-height: 46px;
@@ -2828,7 +3367,30 @@ textarea.finput {
 
 .profile-v2-rolecard {
   margin-top: 0 !important;
-  margin-bottom: 14px !important;
+  margin-bottom: 0 !important;
+  border-bottom: 0 !important;
+  border-radius: 12px 12px 0 0 !important;
+  box-shadow: none !important;
+}
+
+.profile-v2-infolist {
+  margin-top: 0 !important;
+  border-top: 0 !important;
+  border-radius: 0 0 12px 12px !important;
+}
+
+.profile-v2-rolecard + .profile-v2-infolist {
+  margin-top: 0 !important;
+}
+
+.profile-v2-rolecard .pv2-rolerow:last-child {
+  border-bottom: 1px solid #E8EFF8 !important;
+}
+
+.profile-v2-rolecard .pv2-rolerow,
+.profile-v2-infolist .pv2-inforow,
+.profile-v2-infolist .pv2-inforow:nth-child(even) {
+  background: #fff !important;
 }
 
 .pv2-rolerow,
@@ -2884,6 +3446,12 @@ textarea.finput {
   box-shadow: 0 12px 26px rgba(14,47,118,.07);
 }
 
+.pv2-profile-summary,
+.pv2-license-section {
+  grid-column: 1 / -1 !important;
+  min-height: 0 !important;
+}
+
 .pv2-section-label {
   display: flex !important;
   align-items: center !important;
@@ -2901,6 +3469,38 @@ textarea.finput {
   border-radius: 999px;
   background: #1d4ed8;
   flex: 0 0 auto;
+}
+
+.pv2-combined-grid {
+  display: grid !important;
+  grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  gap: 14px !important;
+}
+
+.pv2-combined-group {
+  min-width: 0 !important;
+  padding: 16px !important;
+  border: 1px solid #d8e7fb !important;
+  border-radius: 12px !important;
+  background: #f9fbff !important;
+}
+
+.pv2-combined-wide {
+  grid-column: 1 / -1 !important;
+}
+
+.pv2-sub-label {
+  margin-bottom: 12px !important;
+  color: #5b6f95 !important;
+  font-size: 12px !important;
+  font-weight: 900 !important;
+  letter-spacing: .08em !important;
+  text-transform: uppercase !important;
+}
+
+.pv2-profile-summary .pv2-tags {
+  display: flex !important;
+  flex-wrap: wrap !important;
 }
 
 .pv2-tags {
@@ -3018,8 +3618,13 @@ textarea.finput {
 
   .pv2-rolerow,
   .pv2-inforow,
+  .pv2-combined-grid,
   .pv2-comp-grid {
     grid-template-columns: 1fr !important;
+  }
+
+  .pv2-combined-wide {
+    grid-column: auto !important;
   }
 }
 
@@ -3247,6 +3852,16 @@ textarea.finput {
   min-width: 1120px !important;
   border-collapse: separate !important;
   border-spacing: 0 !important;
+}
+
+#panel-schedules .sched-list-table {
+  min-width: 1260px !important;
+  table-layout: fixed !important;
+}
+
+#panel-schedules .sched-list-table td,
+#panel-schedules .sched-list-table td * {
+  overflow-wrap: anywhere !important;
 }
 
 #panel-schedules .sched-list-table th,
@@ -3710,6 +4325,7 @@ textarea.finput {
 #cert-detail-overlay .cert-modal {
   width: min(1040px, calc(100vw - 56px)) !important;
   max-height: 92vh !important;
+  position: relative !important;
   border: 1px solid #cfe0f6 !important;
   border-radius: 18px !important;
   overflow: hidden !important;
@@ -3723,6 +4339,31 @@ textarea.finput {
   background:
     linear-gradient(135deg, rgba(255,255,255,.10), rgba(255,255,255,0) 42%),
     linear-gradient(135deg, #0e2f76 0%, #174ea6 100%) !important;
+}
+
+#cert-detail-overlay .cert-detail-close-btn {
+  position: absolute !important;
+  top: 22px !important;
+  right: 28px !important;
+  width: 44px !important;
+  height: 44px !important;
+  min-height: 44px !important;
+  padding: 0 !important;
+  display: grid !important;
+  place-items: center !important;
+  border: 1px solid rgba(255,255,255,.55) !important;
+  border-radius: 9px !important;
+  background: rgba(255,255,255,.12) !important;
+  color: #fff !important;
+  font-size: 32px !important;
+  line-height: 1 !important;
+  font-weight: 900 !important;
+  cursor: pointer !important;
+  box-shadow: none !important;
+}
+
+#cert-detail-overlay .cert-detail-close-btn:hover {
+  background: rgba(255,255,255,.26) !important;
 }
 
 #cert-detail-overlay .cert-modal-kicker {
@@ -3951,6 +4592,15 @@ textarea.finput {
   color: #fff !important;
 }
 
+#cert-detail-overlay .cert-submit[hidden],
+#cert-detail-overlay .cert-attach-form:not(.is-ready) .cert-submit {
+  display: none !important;
+}
+
+#cert-detail-overlay .cert-attach-form.is-ready .cert-submit {
+  display: inline-flex !important;
+}
+
 #cert-detail-overlay .cert-submit:hover {
   background: #173b8e !important;
 }
@@ -4139,26 +4789,28 @@ textarea.finput {
       <div class="roster-board">
         <div class="roster-head">
   <div>
-    <div class="roster-kicker" id="roster-count">ทักษะ · {{ $sortedTechnicians->count() }} / {{ $sortedTechnicians->count() }}</div>
     <div class="roster-title">ภาพรวมทักษะช่าง</div>
-    <div class="roster-sub">หัวหน้าทีมขึ้นก่อน แล้วตามด้วยลูกทีม · ใช้ข้อมูลเดิมทั้งหมด · คลิกการ์ดเพื่อดูโปรไฟล์</div>
+    
   </div>
-
-  <button class="btn btn-primary roster-add-tech-btn" type="button" onclick="openModal('modal-tech')">
-    + เพิ่มช่าง
-  </button>
 </div>
         <div class="roster-filter">
           <div class="roster-filter-row">
-            <span class="roster-filter-label">ทักษะ</span>
-            <button class="roster-chip active" type="button" onclick="filterRosterSkill('all',this)">ทุกทักษะ</button>
-            @foreach($skillFilters as $skill)
-              <button class="roster-chip" type="button" onclick="filterRosterSkill(@js($skill),this)">{{ $skill }}</button>
-            @endforeach
+            <label class="roster-filter-label" for="roster-name-search">ค้นหาชื่อ</label>
+            <input id="roster-name-search" class="roster-search" type="search" placeholder="ค้นหาชื่อช่าง / รหัส / ชื่อเล่น..." oninput="filterRosterSearch(this.value)">
           </div>
           <div class="roster-filter-row">
-            <span class="roster-filter-label">ค้นหา</span>
-            <input class="roster-search" placeholder="ค้นหาช่าง, ทีม, ทักษะ, Software..." oninput="filterRosterSearch(this.value)">
+            <label class="roster-filter-label" for="roster-skill-filter">ทักษะ</label>
+            <select id="roster-skill-filter" class="roster-skill-select" onchange="filterRosterSkill(this.value)">
+              <option value="all">ทุกทักษะ</option>
+              @foreach($skillFilters as $skill)
+                <option value="{{ $skill }}">{{ $skill }}</option>
+              @endforeach
+            </select>
+          </div>
+          <div class="roster-filter-row roster-filter-actions">
+            <button class="btn btn-primary roster-add-tech-btn" type="button" onclick="openModal('modal-tech')">
+              + เพิ่มช่าง
+            </button>
           </div>
         </div>
 <div class="emp-card-grid" id="roster-grid">
@@ -4183,6 +4835,7 @@ textarea.finput {
             <article class="emp-card {{ $isHead ? 'is-head' : '' }}"
               data-team="{{ $m->emp_team }}"
               data-skill="{{ strtolower($skills->implode(' ')) }}"
+              data-name="{{ strtolower(($m->emp_name ?? '').' '.($m->emp_name_eng ?? '').' '.($m->emp_nickname ?? '').' '.($m->emp_id ?? '')) }}"
               data-search="{{ strtolower(($m->emp_name ?? '').' '.($m->emp_name_eng ?? '').' '.($m->emp_nickname ?? '').' '.($m->emp_id ?? '').' '.($m->emp_team ?? '').' '.($m->emp_skill ?? '').' '.collect($m->software_tools ?? [])->implode(' ')) }}"
               data-tech="{{ json_encode($m, JSON_UNESCAPED_UNICODE|JSON_HEX_APOS|JSON_HEX_QUOT|JSON_HEX_TAG|JSON_HEX_AMP) }}"
               onclick="openProfileFromEl(this)">
@@ -4202,7 +4855,7 @@ textarea.finput {
                     <img
                       src="{{ asset('storage/'.$m->img) }}"
                       alt="{{ $m->emp_name }}"
-                      onerror="this.remove();this.parentElement.querySelector('.initials').style.display='grid'"
+                      onerror="this.onerror=null;const initials=this.parentElement?.querySelector('.initials');if(initials)initials.style.display='grid';this.remove();"
                     >
                     <span class="initials" style="display:none">{{ $initial }}</span>
                   @else
@@ -4266,6 +4919,26 @@ textarea.finput {
       </div>
     </div>
     <div id="view-team" style="display:none">
+      <div class="roster-filter">
+        <div class="roster-filter-row">
+          <label class="roster-filter-label" for="team-name-search">ค้นหาชื่อ</label>
+          <input id="team-name-search" class="team-filter-search" type="search" placeholder="ค้นหาชื่อช่าง / รหัส / ชื่อเล่น..." oninput="filterTeamSearch(this.value)">
+        </div>
+        <div class="roster-filter-row">
+          <label class="roster-filter-label" for="team-skill-filter">ทักษะ</label>
+          <select id="team-skill-filter" class="team-skill-select" onchange="filterTeamSkill(this.value)">
+            <option value="all">ทุกทักษะ</option>
+            @foreach($skillFilters as $skill)
+              <option value="{{ $skill }}">{{ $skill }}</option>
+            @endforeach
+          </select>
+        </div>
+        <div class="roster-filter-row roster-filter-actions">
+          <button class="btn btn-primary roster-add-tech-btn" type="button" onclick="openModal('modal-tech')">
+            + เพิ่มช่าง
+          </button>
+        </div>
+      </div>
       @if($teams->count() === 0)
         <div class="empty-state">ยังไม่มีทีมช่างในระบบ</div>
       @else
@@ -4281,9 +4954,10 @@ textarea.finput {
                 return strcmp($a->emp_name ?? $a->emp_id ?? '', $b->emp_name ?? $b->emp_id ?? '');
               })->values();
               $teamScheds = $schedules->where('team_name',$teamName)->values();
-              $teamSearch = strtolower(trim($teamName.' '.$allMbr->map(fn($m) => trim(($m->emp_name ?? '').' '.($m->emp_name_eng ?? '').' '.($m->emp_nickname ?? '').' '.($m->emp_id ?? '').' '.($m->emp_position ?? '').' '.($m->emp_skill ?? '').' '.collect($m->software_tools ?? [])->implode(' ')))->implode(' ')));
+              $teamSearch = strtolower(trim($teamName.' '.$allMbr->map(fn($m) => trim(($m->emp_name ?? '').' '.($m->emp_name_eng ?? '').' '.($m->emp_nickname ?? '').' '.($m->emp_id ?? '').' '.($m->emp_position ?? '')))->implode(' ')));
+              $teamSkillSearch = strtolower($allMbr->flatMap(fn($m) => collect(explode(',', $m->emp_skill ?? ''))->map(fn($x) => trim($x))->filter())->implode(' '));
             @endphp
-            <article class="team-card" data-search="{{ $teamSearch }}">
+            <article class="team-card" data-search="{{ $teamSearch }}" data-skill="{{ $teamSkillSearch }}">
               <div class="team-head-bar">
                 <div style="flex:1;min-width:0">
                   <div class="team-title">{{ $teamName ?: '-' }}</div>
@@ -4316,6 +4990,7 @@ textarea.finput {
             </article>
           @endforeach
         </div>
+        <div class="empty-state" id="team-empty-filter" style="display:none">ไม่พบทีมตามเงื่อนไขที่ค้นหา</div>
       @endif
     </div>
   </section>
@@ -4328,16 +5003,15 @@ textarea.finput {
           <div class="sched-board-sub">ใช้ข้อมูลเดิม · คลิกงานเพื่อแก้ไขรายละเอียด</div>
         </div>
         <div class="sched-controls">
-          <select class="sched-select" id="sched-type-filter" onchange="SCHED_BOARD.render()">
-            <option value="all">ทุกโปรเจค</option>
-            @foreach($jobTypes as $key => $label)<option value="{{ $key }}">{{ $label }}</option>@endforeach
-          </select>
-          <button class="sched-nav-btn" type="button" onclick="SCHED_BOARD.nav(-1)">‹</button>
-          <button class="sched-nav-btn" type="button" onclick="SCHED_BOARD.nav(1)">›</button>
+          <button class="btn btn-primary sched-add-job-btn" type="button" onclick="openAddSchedModal()">+ เพิ่มงาน</button>
+          <div class="sched-nav-group">
+            <button class="sched-nav-btn" type="button" onclick="SCHED_BOARD.nav(-1)">‹</button>
+            <div class="sched-control-month" id="sched-board-control-month">-</div>
+            <button class="sched-nav-btn" type="button" onclick="SCHED_BOARD.nav(1)">›</button>
+          </div>
         </div>
       </div>
       <div class="sched-calendar-card">
-        <div class="sched-month-nav"><div class="sched-month-name" id="sched-board-month">-</div></div>
         <div class="sched-week-head"><span>อา</span><span>จันทร์</span><span>อังคาร</span><span>พุธ</span><span>พฤหัส</span><span>ศุกร์</span><span>เสาร์</span></div>
         <div class="sched-month-grid" id="sched-month-grid"></div>
       </div>
@@ -4351,15 +5025,24 @@ textarea.finput {
         </div>
         <div class="sched-list-wrap">
           <table class="sched-list-table">
+            <colgroup>
+              <col style="width:60px">
+              <col style="width:calc((100% - 60px) / 6)">
+              <col style="width:calc((100% - 60px) / 6)">
+              <col style="width:calc((100% - 60px) / 6)">
+              <col style="width:calc((100% - 60px) / 6)">
+              <col style="width:calc((100% - 60px) / 6)">
+              <col style="width:calc((100% - 60px) / 6)">
+            </colgroup>
             <thead>
               <tr>
                 <th style="width:60px">#</th>
-                <th style="width:150px">&#3648;&#3621;&#3586;&#3591;&#3634;&#3609; (SO)</th>
-                <th>&#3594;&#3639;&#3656;&#3629;&#3621;&#3641;&#3585;&#3588;&#3657;&#3634;</th>
+                <th>&#3623;&#3633;&#3609;&#3607;&#3637;&#3656;&#3607;&#3635;&#3591;&#3634;&#3609;</th>
+                <th>&#3607;&#3637;&#3617;&#3594;&#3656;&#3634;&#3591;</th>
                 <th>&#3619;&#3634;&#3618;&#3621;&#3632;&#3648;&#3629;&#3637;&#3618;&#3604;&#3591;&#3634;&#3609;</th>
-                <th style="width:140px">&#3607;&#3637;&#3617;&#3594;&#3656;&#3634;&#3591;</th>
-                <th style="width:200px">&#3623;&#3633;&#3609;&#3607;&#3637;&#3656;&#3607;&#3635;&#3591;&#3634;&#3609;</th>
-                <th style="width:120px">&#3626;&#3606;&#3634;&#3609;&#3632;&#3591;&#3634;&#3609;</th>
+                <th>&#3648;&#3621;&#3586;&#3591;&#3634;&#3609; (SO)</th>
+                <th>&#3594;&#3639;&#3656;&#3629;&#3621;&#3641;&#3585;&#3588;&#3657;&#3634;</th>
+                <th>&#3626;&#3606;&#3634;&#3609;&#3632;&#3591;&#3634;&#3609;</th>
               </tr>
             </thead>
             <tbody id="sched-list-tbody"></tbody>
@@ -4371,20 +5054,19 @@ textarea.finput {
   <section class="panel" id="panel-customers">
   <div class="panel-header">
     <div>
-      <div class="customer-eyebrow">PROJECT CRM</div>
-      <div class="panel-title">ลูกค้าเเล้วไซต์งาน ({{ $customers->count() }} ราย)</div>
-      <div class="customer-hero-sub">Solar · ไฟฟ้า · โยธา · ทั่วไป</div>
+      <div class="customer-eyebrow">CUSTOMER / SITE</div>
+      <div class="panel-title">ลูกค้า / ไซต์งาน ({{ $customers->count() }} ราย)</div>
+      <div class="customer-hero-sub">รวมข้อมูลลูกค้า สถานที่ติดตั้ง รอบดูแล และสถานะงาน</div>
     </div>
     <div class="panel-actions">
-      <input type="search" class="search-inp" id="cust-search" placeholder="ค้นหาลูกค้า..." oninput="filterCustTable(this.value)">
-      <button class="btn btn-solar" type="button" onclick="openAddSchedModal()">+ เพิ่มงาน</button>
+      <input type="search" class="search-inp" id="cust-search" placeholder="ค้นหาชื่อลูกค้า / สถานที่ / ผู้ติดต่อ / เบอร์โทร..." oninput="filterCustTable(this.value)">
     </div>
   </div>
     <div class="cust-metrics">
       <div class="cust-metric">
         <div class="cust-metric-label">ทั้งหมด</div>
         <div class="cust-metric-value">{{ $customers->count() }}</div>
-        <div class="cust-metric-note">PROJECT</div>
+        <div class="cust-metric-note">รายการลูกค้า/ไซต์งาน</div>
       </div>
       <div class="cust-metric">
         <div class="cust-metric-label">Solar</div>
@@ -4394,17 +5076,17 @@ textarea.finput {
       <div class="cust-metric">
         <div class="cust-metric-label">ไฟฟ้า</div>
         <div class="cust-metric-value">{{ $custSummary['electrical']->count() }}</div>
-        <div class="cust-metric-note">Electrical</div>
+        <div class="cust-metric-note">งานไฟฟ้า</div>
       </div>
       <div class="cust-metric">
         <div class="cust-metric-label">โยธา</div>
         <div class="cust-metric-value">{{ $custSummary['civil']->count() }}</div>
-        <div class="cust-metric-note">Civil</div>
+        <div class="cust-metric-note">งานโยธา</div>
       </div>
       <div class="cust-metric">
         <div class="cust-metric-label">ทั่วไป</div>
         <div class="cust-metric-value">{{ $custSummary['general']->count() }}</div>
-        <div class="cust-metric-note">General</div>
+        <div class="cust-metric-note">งานทั่วไป</div>
       </div>
     </div>
     @if($washAlerts->count() > 0)
@@ -4437,58 +5119,60 @@ textarea.finput {
     @else
       <div class="customer-project-table-wrap">
         <table class="customer-project-table">
-          <thead><tr><th style="width:52px">#</th><th>ชื่อลูกค้า</th><th>ประเภท</th><th>วันติดตั้งสำเร็จ</th><th>รอบล้างแผง</th><th>จัดการ</th></tr></thead>
+          <thead><tr><th style="width:68px">ลำดับ</th><th>ลูกค้า / ไซต์งาน</th><th>ประเภทงาน</th><th>วันที่เสร็จงาน</th><th>รอบดูแล Solar</th><th>การทำงาน</th></tr></thead>
           <tbody id="cust-tbody">
             @foreach($customers as $idx => $c)
               @php
                 $cat = method_exists($c, 'getCategory') ? $c->getCategory() : (str_starts_with((string)($c->type_project ?? ''), 'solar') ? 'solar' : (($c->type_project ?? '') ?: 'general'));
                 $isSolar = str_starts_with((string)($c->type_project ?? ''), 'solar');
-                $custStatus = $c->status ?? '';
+                $custContactText = trim(($c->contact_name ?? '').((($c->contact_name ?? '') && ($c->phone ?? '')) ? ' · ' : '').(($c->phone ?? '') ? 'โทร '.($c->phone ?? '') : ''));
               @endphp
               <tr class="cust-row" data-cat="{{ $cat }}" data-search="{{ strtolower(($c->name ?? '').' '.($c->desc ?? '').' '.($c->contact_name ?? '').' '.($c->phone ?? '').' '.($c->status ?? '').' '.($c->type_project ?? '')) }}">
                 <td><span class="cust-index">{{ $idx + 1 }}</span></td>
                 <td>
                   <button class="cust-name-btn" type="button" data-cust="{{ json_encode($c, JSON_UNESCAPED_UNICODE|JSON_HEX_APOS|JSON_HEX_QUOT|JSON_HEX_TAG|JSON_HEX_AMP) }}" onclick="openCustDetail(this)">{{ $c->name }}</button>
-                  @if($c->desc)<div class="cust-desc">{{ $c->desc }}</div>@endif
-                  @if($c->contact_name)<div class="cust-contact">{{ $c->contact_name }}@if($c->phone) · {{ $c->phone }}@endif</div>@endif
+                  @if($c->desc)<div class="cust-desc"><span class="cust-line-label">ไซต์งาน</span><span class="cust-line-text">{{ $c->desc }}</span></div>@endif
+                  @if($custContactText)
+                    <div class="cust-contact"><span class="cust-line-label">ติดต่อ</span><span class="cust-line-text">{{ $custContactText }}</span></div>
+                  @endif
                 </td>
                 <td>
                   <div class="cust-type-stack">
+                    <span class="cust-type-label">ประเภทงาน</span>
                     <span class="cust-type-plain">{{ $jobTypes[$c->type_project ?? 'general'] ?? ($c->type_project ?: 'ทั่วไป') }}</span>
-                    <span class="cust-status-plain">{{ $custStatus ?: '-' }}</span>
                   </div>
                 </td>
                 <td>
                   @if($c->supervisor)
                     <span class="cust-date-plain">{{ \Carbon\Carbon::parse($c->supervisor)->format('d/m/') }}{{ \Carbon\Carbon::parse($c->supervisor)->year + 543 }}</span>
                   @else
-                    <span class="cust-muted">-</span>
+                    <span class="cust-muted">ยังไม่ระบุ</span>
                   @endif
                 </td>
                 <td>
                   @if($isSolar)
                     <div class="wash-cycle-cell">
-                      <span class="wash-cycle-chip">{{ $c->wash_cycle ?? 6 }} เดือน</span>
+                      <span class="wash-cycle-chip">ทุก {{ $c->wash_cycle ?? 6 }} เดือน</span>
                       @if($c->wash_next)
-                        <small>ครั้งถัดไป {{ \Carbon\Carbon::parse($c->wash_next)->format('d/m/') }}{{ \Carbon\Carbon::parse($c->wash_next)->year + 543 }}</small>
+                        <small>รอบถัดไป {{ \Carbon\Carbon::parse($c->wash_next)->format('d/m/') }}{{ \Carbon\Carbon::parse($c->wash_next)->year + 543 }}</small>
                       @else
-                        <small>ยังไม่ตั้งกำหนด</small>
+                        <small>ยังไม่กำหนดวันถัดไป</small>
                       @endif
                     </div>
                   @else
-                    <span class="cust-muted">-</span>
+                    <span class="cust-muted">ไม่ใช่งาน Solar</span>
                   @endif
                 </td>
                 <td>
                   <div class="cust-row-actions">
                     <button class="btn btn-sm btn-ghost" type="button" data-cust="{{ json_encode($c, JSON_UNESCAPED_UNICODE|JSON_HEX_APOS|JSON_HEX_QUOT|JSON_HEX_TAG|JSON_HEX_AMP) }}" onclick="openCustEdit(this)">แก้ไข</button>
-                    <form method="POST" action="{{ route('cust.delete', $c->id) }}" onsubmit="return confirm('ลบลูกค้า {{ addslashes($c->name) }} ?')">@csrf<button class="btn btn-sm btn-danger" type="submit">ลบ</button></form>
+                    <form method="POST" action="{{ route('cust.delete', $c->id) }}" onsubmit="return confirm('ต้องการลบลูกค้า/ไซต์งาน {{ addslashes($c->name) }} ?')">@csrf<button class="btn btn-sm btn-danger" type="submit">ลบ</button></form>
                   </div>
                 </td>
               </tr>
             @endforeach
             <tr id="cust-empty-row" style="display:none">
-              <td colspan="6" class="cust-empty-filter">ไม่พบลูกค้าตามเงื่อนไขที่ค้นหา</td>
+              <td colspan="6" class="cust-empty-filter">ไม่พบข้อมูลลูกค้า/ไซต์งานตามคำค้นหา</td>
             </tr>
           </tbody>
         </table>
@@ -4535,7 +5219,6 @@ textarea.finput {
           <svg viewBox="0 0 24 24"><path d="M12 5v14"/><path d="M5 12h14"/></svg>
           <span>เพิ่มเครื่องแอร์</span>
         </button>
-        <input type="search" class="search-inp" placeholder="ค้นหาเครื่องแอร์..." oninput="filterAirconTable(this.value)">
       </div>
     </div>
 
@@ -4577,25 +5260,63 @@ textarea.finput {
             <thead>
               <tr>
                 <th style="width:52px">#</th>
-                <th>ภาพเครื่อง</th>
                 <th>รหัสเครื่อง</th>
                 <th>ยี่ห้อ / รุ่นแอร์</th>
                 <th>จุดติดตั้ง</th>
-                <th>วันที่ล้าง / ตรวจ</th>
+                <th>วันที่ล้างล่าสุด</th>
+                <th>ล้างครั้งถัดไป</th>
                 <th>ผลการล้าง</th>
-                <th>แก้ไข / ลบ</th>
               </tr>
             </thead>
             <tbody id="aircon-tbody">
               @foreach($aircons as $idx => $ac)
                 @php
-                  $status = $ac->status ?? 'pending';
-                  $statusText = $status === 'cleaned' ? 'ล้างแล้ว' : 'ยังไม่ได้ล้าง';
-                  $serviceDate = $ac->service_date ?: $ac->updated_at;
                   $airconImages = is_array($ac->images) ? array_values(array_filter($ac->images)) : [];
-                  $displayImage = $ac->cover_image ?: ($airconImages[0] ?? null);
-                  $displayImageUrl = $displayImage ? request()->getBaseUrl().'/storage/'.ltrim($displayImage, '/') : null;
-                  $airconSearchBase = strtolower(($ac->aircon_code ?? '').' '.($ac->brand ?? '').' '.($ac->model_name ?? '').' '.($ac->location ?? '').' '.($serviceDate ? $serviceDate->format('Y-m-d') : ''));
+                  if ($ac->cover_image && ! in_array($ac->cover_image, $airconImages, true)) {
+                    $airconImages[] = $ac->cover_image;
+                  }
+                  $airconImageUrl = function ($image) {
+                    $image = trim((string) $image);
+                    if ($image === '') return null;
+                    if (preg_match('/^https?:\/\//i', $image)) return $image;
+                    $imagePath = ltrim($image, '/');
+                    return preg_match('/^(storage|uploads)\//i', $imagePath) ? asset($imagePath) : asset('storage/'.$imagePath);
+                  };
+                  $airconImageUrls = collect($airconImages)->map($airconImageUrl)->filter()->values()->all();
+                  $airconWashLogs = collect(is_array($ac->wash_logs) ? $ac->wash_logs : [])->map(function ($log) use ($airconImageUrl) {
+                    $logDate = $log['date'] ?? $log['service_date'] ?? '';
+                    $logStatus = $log['status'] ?? 'pending';
+                    $logImages = collect($log['images'] ?? [])->map($airconImageUrl)->filter()->values()->all();
+                    return [
+                      'date' => $logDate,
+                      'next_service_date' => ! empty($log['next_date']) ? $log['next_date'] : ($logDate ? \Carbon\Carbon::parse($logDate)->copy()->addDays(365)->format('Y-m-d') : ''),
+                      'status' => $logStatus,
+                      'status_text' => $log['status_text'] ?? ($logStatus === 'cleaned' ? 'ล้างแล้ว' : 'ยังไม่ได้ล้าง'),
+                      'notes' => $log['notes'] ?? '',
+                      'image_urls' => $logImages,
+                      'image_count' => count($logImages),
+                    ];
+                  })->filter(fn ($log) => ! empty($log['date']) || ! empty($log['notes']) || ! empty($log['image_urls']))->sortByDesc('date')->values();
+                  $legacyServiceDate = $ac->service_date ?: $ac->updated_at;
+                  if ($airconWashLogs->isEmpty()) {
+                    $legacyStatus = $ac->status ?? 'pending';
+                    $legacyDateText = $legacyServiceDate ? \Carbon\Carbon::parse($legacyServiceDate)->format('Y-m-d') : '';
+                    $airconWashLogs = collect([[
+                      'date' => $legacyDateText,
+                      'next_service_date' => $legacyServiceDate ? \Carbon\Carbon::parse($legacyServiceDate)->copy()->addDays(365)->format('Y-m-d') : '',
+                      'status' => $legacyStatus,
+                      'status_text' => $legacyStatus === 'cleaned' ? 'ล้างแล้ว' : 'ยังไม่ได้ล้าง',
+                      'notes' => $ac->notes ?? '',
+                      'image_urls' => $airconImageUrls,
+                      'image_count' => count($airconImageUrls),
+                    ]]);
+                  }
+                  $latestAirconLog = $airconWashLogs->first();
+                  $status = $latestAirconLog['status'] ?? ($ac->status ?? 'pending');
+                  $statusText = $latestAirconLog['status_text'] ?? ($status === 'cleaned' ? 'ล้างแล้ว' : 'ยังไม่ได้ล้าง');
+                  $serviceDate = ! empty($latestAirconLog['date']) ? \Carbon\Carbon::parse($latestAirconLog['date']) : $legacyServiceDate;
+                  $nextServiceDate = ! empty($latestAirconLog['next_service_date']) ? \Carbon\Carbon::parse($latestAirconLog['next_service_date']) : ($serviceDate ? \Carbon\Carbon::parse($serviceDate)->copy()->addDays(365) : null);
+                  $airconSearchBase = strtolower(($ac->aircon_code ?? '').' '.($ac->brand ?? '').' '.($ac->model_name ?? '').' '.($ac->location ?? '').' '.($serviceDate ? $serviceDate->format('Y-m-d') : '').' '.($nextServiceDate ? $nextServiceDate->format('Y-m-d') : ''));
                   $airconPayload = [
                     'id' => $ac->id,
                     'aircon_code' => $ac->aircon_code,
@@ -4603,32 +5324,35 @@ textarea.finput {
                     'model_name' => $ac->model_name,
                     'location' => $ac->location,
                     'service_date' => $serviceDate ? $serviceDate->format('Y-m-d') : '',
+                    'next_service_date' => $nextServiceDate ? $nextServiceDate->format('Y-m-d') : '',
+                    'image_count' => count($airconImages),
+                    'image_urls' => $airconImageUrls,
+                    'history_count' => $airconWashLogs->count(),
+                    'wash_logs' => $airconWashLogs->values()->all(),
                     'status' => $status,
+                    'status_text' => $statusText,
                     'notes' => $ac->notes ?? '',
                   ];
                 @endphp
                 <tr data-search="{{ trim($airconSearchBase.' '.strtolower($statusText)) }}" data-search-base="{{ $airconSearchBase }}">
                   <td>{{ $idx + 1 }}</td>
                   <td>
-                    @if($displayImage)
-                      <a class="aircon-thumb-link" href="{{ $displayImageUrl }}" target="_blank" rel="noopener">
-                        <img class="aircon-thumb" src="{{ $displayImageUrl }}" alt="{{ $ac->aircon_code }}">
-                        @if(count($airconImages) > 1)
-                          <span class="aircon-thumb-count">+{{ count($airconImages) - 1 }}</span>
-                        @endif
-                      </a>
-                    @else
-                      <span class="cust-muted">-</span>
-                    @endif
+                    <button class="aircon-code-btn" type="button" data-aircon="{{ json_encode($airconPayload, JSON_UNESCAPED_UNICODE|JSON_HEX_APOS|JSON_HEX_QUOT|JSON_HEX_TAG|JSON_HEX_AMP) }}" onclick="openAirconHistory(this)">{{ $ac->aircon_code }}</button>
                   </td>
-                  <td><strong>{{ $ac->aircon_code }}</strong></td>
                   <td><strong>{{ $ac->brand }}</strong><div style="font-size:12px;color:var(--muted);font-weight:800">{{ $ac->model_name }}</div></td>
                   <td>{{ $ac->location }}</td>
                   <td>
                     @if($serviceDate)
-                      {{ $serviceDate->format('d/m/') }}{{ $serviceDate->year + 543 }}
+                      <span class="aircon-date-chip latest">{{ $serviceDate->format('d/m/') }}{{ $serviceDate->year + 543 }}</span>
                     @else
-                      -
+                      <span class="aircon-date-chip empty">-</span>
+                    @endif
+                  </td>
+                  <td>
+                    @if($nextServiceDate)
+                      <span class="aircon-date-chip next">{{ $nextServiceDate->format('d/m/') }}{{ $nextServiceDate->year + 543 }}</span>
+                    @else
+                      <span class="aircon-date-chip empty">-</span>
                     @endif
                   </td>
                   <td>
@@ -4637,20 +5361,10 @@ textarea.finput {
                       <option value="pending" {{ $status === 'pending' ? 'selected' : '' }}>ยังไม่ได้ล้าง</option>
                     </select>
                   </td>
-
-                  <td>
-                    <div class="aircon-row-actions">
-                      <button class="btn btn-sm aircon-edit-btn" type="button" data-aircon="{{ json_encode($airconPayload, JSON_UNESCAPED_UNICODE|JSON_HEX_APOS|JSON_HEX_QUOT|JSON_HEX_TAG|JSON_HEX_AMP) }}" onclick="openAirconEdit(this)">แก้ไข</button>
-                      <form method="POST" action="{{ route('aircons.delete', $ac->id) }}" onsubmit="return confirm('ลบเครื่อง {{ addslashes($ac->aircon_code) }} ?')">
-                        @csrf
-                        <button class="btn btn-sm btn-danger" type="submit">ลบ</button>
-                      </form>
-                    </div>
-                  </td>
                 </tr>
               @endforeach
               <tr id="aircon-empty-row" style="display:none">
-                <td colspan="8" class="cust-empty-filter">ไม่พบข้อมูลตามคำค้นหา</td>
+                <td colspan="7" class="cust-empty-filter">ไม่พบข้อมูลตามคำค้นหา</td>
               </tr>
             </tbody>
           </table>
@@ -4725,6 +5439,41 @@ textarea.finput {
     </div>
   </div>
 </div>
+<div class="overlay" id="modal-aircon-history">
+  <div class="aircon-history-modal" onclick="event.stopPropagation()">
+    <div class="aircon-history-head">
+      <div>
+        <div class="aircon-history-title" id="aircon-history-title">ประวัติการล้างแอร์</div>
+        <div class="aircon-history-sub" id="aircon-history-sub">-</div>
+      </div>
+      <button class="aircon-history-close" type="button" onclick="closeModalById('modal-aircon-history')">&times;</button>
+    </div>
+    <div class="aircon-history-body">
+      <div class="aircon-history-grid">
+        <div class="aircon-history-card">
+          <div class="aircon-history-label">รหัสเครื่อง</div>
+          <div class="aircon-history-value" id="aircon-history-code">-</div>
+        </div>
+        <div class="aircon-history-card">
+          <div class="aircon-history-label">ยี่ห้อ / รุ่น</div>
+          <div class="aircon-history-value" id="aircon-history-brand">-</div>
+        </div>
+        <div class="aircon-history-card">
+          <div class="aircon-history-label">จุดติดตั้ง</div>
+          <div class="aircon-history-value" id="aircon-history-location">-</div>
+        </div>
+        <div class="aircon-history-card">
+          <div class="aircon-history-label">วันที่ล้าง / ตรวจล่าสุด</div>
+          <div class="aircon-history-value" id="aircon-history-date">-</div>
+        </div>
+      </div>
+      <div class="aircon-history-record">
+        <div class="aircon-history-label">ประวัติการล้าง</div>
+        <div id="aircon-history-records"></div>
+      </div>
+    </div>
+  </div>
+</div>
 @if($errors->any() && old('_aircon_form'))
   <script>
     document.addEventListener('DOMContentLoaded', () => openModal('modal-aircon'));
@@ -4756,8 +5505,8 @@ textarea.finput {
 <!-- === CODEX CERTIFICATIONS DETAIL MODAL START === -->
 <div class="overlay" id="cert-detail-overlay">
   <div class="cert-modal" onclick="event.stopPropagation()">
-    <button class="cert-close" type="button" onclick="closeCertDetail()">&times;</button>
     <div class="cert-modal-head">
+      <button class="cert-detail-close-btn" type="button" onclick="closeCertDetail()">&times;</button>
       <div class="cert-modal-kicker">CERTIFICATE DETAIL</div>
       <div class="cert-modal-title" id="cert-detail-title">-</div>
       <div class="cert-modal-sub" id="cert-detail-sub">0 &#x0E04;&#x0E19;&#x0E43;&#x0E19;&#x0E2D;&#x0E07;&#x0E04;&#x0E4C;&#x0E01;&#x0E23;</div>
@@ -4773,11 +5522,10 @@ textarea.finput {
         <button class="pv2-close-btn" type="button" onclick="closeModalById('overlay')">×</button>
         <div class="profile-v2-photo"><img id="m-img" src="" alt="" style="display:none"><span id="m-initial">3E</span></div>
         <div class="profile-v2-name" id="m-name"></div>
-        <div class="profile-v2-nameeng" id="m-name-eng"></div>
         <div class="profile-v2-status pv2-status-active" id="m-status"><span class="pv2-st-dot pv2-dot-active" id="m-st-dot"></span><span id="m-st-text">พร้อมทำงาน</span></div>
        <div class="profile-v2-rolecard">
   <div class="pv2-rolerow">
-    <span class="pv2-rolekey" >ตำแหน่ง :</span><span class="pv2-roleval" id="m-position">-</span>
+    <span class="pv2-rolekey" >ชื่ออังกฤษ :</span><span class="pv2-roleval profile-v2-nameeng" id="m-name-eng">-</span>
   </div>
   <div class="pv2-rolerow">
     <span class="pv2-rolekey">ทีม :</span>
@@ -4793,14 +5541,24 @@ textarea.finput {
       </div>
       <div class="profile-v2-right">
   <div style="display:flex;flex-direction:column;gap:16px">
-    <div class="pv2-sections">
-          <div class="pv2-section"><div class="pv2-section-label">ทักษะ</div><div class="pv2-tags" id="m-skills"></div></div>
-          <div class="pv2-section"><div class="pv2-section-label">Software & Tools</div><div class="pv2-tags" id="m-software"></div></div>
+    <div class="pv2-section pv2-profile-summary">
+      <div class="pv2-section-label">ทักษะและความสามารถ</div>
+      <div class="pv2-combined-grid">
+        <div class="pv2-combined-group">
+          <div class="pv2-sub-label">ทักษะ</div>
+          <div class="pv2-tags" id="m-skills"></div>
         </div>
-        <div class="pv2-sections">
-          <div class="pv2-section"><div class="pv2-section-label">Core Competencies</div><div class="pv2-comp-grid" id="m-competencies"></div></div>
-          <div class="pv2-section"><div class="pv2-section-label">Licenses & Experience</div><div id="m-licenses"></div></div>
+        <div class="pv2-combined-group">
+          <div class="pv2-sub-label">Software & Tools</div>
+          <div class="pv2-tags" id="m-software"></div>
+        </div>
+        <div class="pv2-combined-group pv2-combined-wide">
+          <div class="pv2-sub-label">Core Competencies</div>
+          <div class="pv2-comp-grid" id="m-competencies"></div>
+        </div>
       </div>
+    </div>
+    <div class="pv2-section pv2-license-section"><div class="pv2-section-label">Licenses & Experience</div><div id="m-licenses"></div></div>
     </div>
   </div>
 </div>
@@ -4901,18 +5659,22 @@ textarea.finput {
       @if($errors->any() && !old('_edit_sched') && old('so_number') && !old('emp_id'))<div class="ferr">{{ $errors->first() }}</div>@endif
       <form method="POST" action="{{ route('sched.store') }}" id="form-add-sched">@csrf<input type="hidden" name="customer_id" id="add-customer_id" value="">
         <div class="sched-grid">
-          <div class="frow"><label class="flabel">ประเภทงาน *</label><select class="finput" name="job_type" id="add-job_type" required><option value="">-- เลือกประเภท --</option>@foreach($jobTypes as $key=>$label)<option value="{{ $key }}" {{ old('job_type')===$key?'selected':'' }}>{{ $label }}</option>@endforeach</select></div>
-          <div class="frow"><label class="flabel">สถานะ</label><select class="finput sched-status-input" name="status" id="add-status"><option value="">อัตโนมัติตามวันที่</option><option value="upcoming" {{ old('status')==='upcoming'?'selected':'' }}>กำลังจะมา</option><option value="doing" {{ old('status')==='doing'?'selected':'' }}>กำลังทำ</option><option value="done" {{ old('status')==='done'?'selected':'' }}>เสร็จแล้ว</option><option value="cancel" {{ old('status')==='cancel'?'selected':'' }}>ยกเลิก</option></select></div>
-          <div class="frow"><label class="flabel">เลข SO *</label><input class="finput" type="text" name="so_number" value="{{ old('so_number') }}" required placeholder="SO-2026-001"></div>
+          <div class="sched-form-section sched-full">ข้อมูลงาน</div>
+          <div class="frow sched-third"><label class="flabel">ประเภทงาน *</label><select class="finput" name="job_type" id="add-job_type" required><option value="">-- เลือกประเภท --</option>@foreach($jobTypes as $key=>$label)<option value="{{ $key }}" {{ old('job_type')===$key?'selected':'' }}>{{ $label }}</option>@endforeach</select></div>
+          <div class="frow sched-third"><label class="flabel">สถานะ</label><select class="finput sched-status-input" name="status" id="add-status"><option value="">อัตโนมัติตามวันที่</option><option value="upcoming" {{ old('status')==='upcoming'?'selected':'' }}>กำลังจะมา</option><option value="doing" {{ old('status')==='doing'?'selected':'' }}>กำลังทำ</option><option value="done" {{ old('status')==='done'?'selected':'' }}>เสร็จแล้ว</option><option value="cancel" {{ old('status')==='cancel'?'selected':'' }}>ยกเลิก</option></select></div>
+          <div class="frow sched-third"><label class="flabel">เลข SO *</label><input class="finput" type="text" name="so_number" value="{{ old('so_number') }}" required placeholder="SO-2026-001"></div>
+          <div class="sched-form-section sched-full">ข้อมูลลูกค้า</div>
           <div class="frow sched-full autocomp"><label class="flabel">ชื่อลูกค้า *</label><input class="finput" type="text" name="customer_name" id="add-customer_name" value="{{ old('customer_name') }}" required autocomplete="off" placeholder="พิมพ์ชื่อลูกค้า..." oninput="custAutocomp(this.value,'add')" onkeydown="custAutocompKey(event,'add')"><div class="autocomp-list" id="add-ac-list"></div><div class="cust-banner cust-banner-old" id="add-cust-banner"></div></div>
           <div class="frow" id="add-ncf-1" style="display:none"><label class="flabel">รายละเอียดโครงการ</label><input class="finput" type="text" name="cust_desc"></div>
           <div class="frow" id="add-ncf-2" style="display:none"><label class="flabel">ชื่อผู้ติดต่อ</label><input class="finput" type="text" name="cust_contact_name"></div>
           <div class="frow" id="add-ncf-3" style="display:none"><label class="flabel">เบอร์โทรลูกค้า</label><input class="finput" type="text" name="cust_phone"></div>
           <div class="frow" id="add-ncf-4" style="display:none"><label class="flabel">ขนาดติดตั้ง</label><input class="finput" type="text" name="cust_size"></div>
+          <div class="sched-form-section sched-full">ทีมและสถานที่</div>
           <div class="frow"><label class="flabel">ทีมที่รับผิดชอบ *</label><select class="finput" name="team_name" id="add-team_name" required onchange="TL.onTeamChange('add')"><option value="">-- เลือกทีม --</option>@foreach($teams as $t)@php $tn = data_get($t, 'team_name', ''); @endphp<option value="{{ $tn }}" {{ old('team_name')===$tn?'selected':'' }}>{{ $tn }}</option>@endforeach</select></div>
           <div class="frow"><label class="flabel">ชื่องาน *</label><input class="finput" type="text" name="job_title" value="{{ old('job_title') }}" required></div>
-          <div class="frow"><label class="flabel">สถานที่</label><input class="finput" type="text" name="job_location" id="add-job_location" value="{{ old('job_location') }}"></div>
-          <div class="frow"><label class="flabel">ละติจูด,ลองจิจูด</label><input class="finput" type="text" name="job_la_long" id="add-job_la_long" value="{{ old('job_la_long') }}"></div>
+          <div class="frow sched-full"><label class="flabel">สถานที่</label><input class="finput" type="text" name="job_location" id="add-job_location" value="{{ old('job_location') }}"></div>
+          <div class="frow sched-full"><label class="flabel">ละติจูด,ลองจิจูด</label><div class="sched-map-picker"><div class="sched-map-toolbar"><input class="finput" type="text" name="job_la_long" id="add-job_la_long" value="{{ old('job_la_long') }}" oninput="scheduleMapInputChanged('add')" onchange="showGoogleScheduleMap('add')"><button class="btn btn-ghost sched-map-btn" type="button" onclick="openScheduleGoogleMap('add')">Google Map</button></div><div class="sched-map-hint">ใส่พิกัดรูปแบบ ละติจูด,ลองจิจูด แล้ว Google Maps จะแสดงตำแหน่งนั้น</div><div class="sched-map" id="add-map-picker"></div></div></div>
+          <div class="sched-form-section sched-full">ช่วงวันที่และหมายเหตุ</div>
           <div class="frow sched-full"><label class="flabel">ช่วงวันที่ทำงาน *</label><div class="tl-wrap" id="add-tl-wrap"><div class="tl-header"><button type="button" class="tl-mnav-btn" data-tl-nav="prev" data-tl-prefix="add">‹</button><div class="tl-mname" id="add-tl-mname"></div><button type="button" class="tl-today-btn" onclick="TL.gotoToday('add')">วันนี้</button><button type="button" class="tl-mnav-btn" data-tl-nav="next" data-tl-prefix="add">›</button></div><div class="tl-team-info no-team" id="add-tl-team-info">เลือกทีมก่อนเพื่อดูวันที่ทีมว่าง</div><div class="tl-months"><div class="tl-month-block"><div class="tl-month-title" id="add-tl-mname-left"></div><div class="tl-dhdrs" id="add-tl-dhdrs-left"></div><div class="tl-grid" id="add-tl-grid-left"></div></div><div class="tl-month-block"><div class="tl-month-title" id="add-tl-mname-right"></div><div class="tl-dhdrs" id="add-tl-dhdrs-right"></div><div class="tl-grid" id="add-tl-grid-right"></div></div></div><div class="tl-summary"><div class="tl-summary-info" id="add-tl-summary">กรุณาเลือกช่วงวันที่</div><button type="button" class="tl-clear-btn" onclick="TL.clear('add')">ล้าง</button></div><div class="tl-legend"><span class="tl-leg"><i class="tl-leg-box today"></i>วันนี้</span><span class="tl-leg"><i class="tl-leg-box busy"></i>ทีมมีงาน</span><span class="tl-leg"><i class="tl-leg-box sel"></i>เลือก</span><span class="tl-leg"><i class="tl-leg-box range"></i>ช่วงเลือก</span></div></div></div>
           <div class="frow sched-full"><label class="flabel">หมายเหตุ</label><textarea class="finput" name="note" rows="3">{{ old('note') }}</textarea></div>
         </div>
@@ -4928,15 +5690,17 @@ textarea.finput {
       @if($errors->any() && old('_edit_sched'))<div class="ferr">{{ $errors->first() }}</div>@endif
       <form method="POST" id="form-edit-sched" action="">@csrf<input type="hidden" name="_edit_sched" value="1">
         <div class="sched-grid">
-          <div class="frow"><label class="flabel">เลข SO *</label><input class="finput" type="text" name="so_number" id="es-so_number" required></div>
-          <div class="frow"><label class="flabel">ชื่อลูกค้า *</label><input class="finput" type="text" name="customer_name" id="es-customer_name" required></div>
-          <div class="frow"><label class="flabel">ประเภทงาน</label><select class="finput" name="job_type" id="es-job_type"><option value="">-- เลือกประเภท --</option>@foreach($jobTypes as $key=>$label)<option value="{{ $key }}">{{ $label }}</option>@endforeach</select></div>
+          <div class="sched-form-section sched-full">ข้อมูลงาน</div>
+          <div class="frow sched-third"><label class="flabel">เลข SO *</label><input class="finput" type="text" name="so_number" id="es-so_number" required></div>
+          <div class="frow sched-third"><label class="flabel">ชื่อลูกค้า *</label><input class="finput" type="text" name="customer_name" id="es-customer_name" required></div>
+          <div class="frow sched-third"><label class="flabel">ประเภทงาน</label><select class="finput" name="job_type" id="es-job_type"><option value="">-- เลือกประเภท --</option>@foreach($jobTypes as $key=>$label)<option value="{{ $key }}">{{ $label }}</option>@endforeach</select></div>
           <div class="frow"><label class="flabel">สถานะ</label><select class="finput sched-status-input" name="status" id="es-status"><option value="">อัตโนมัติตามวันที่</option><option value="upcoming">กำลังจะมา</option><option value="doing">กำลังทำ</option><option value="done">เสร็จแล้ว</option><option value="cancel">ยกเลิก</option></select></div>
           <div class="frow"><label class="flabel">ชื่องาน *</label><input class="finput" type="text" name="job_title" id="es-job_title" required></div>
-          <div class="frow"><label class="flabel">สถานที่</label><input class="finput" type="text" name="job_location" id="es-job_location"></div>
-          <div class="frow"><label class="flabel">ละติจูด,ลองจิจูด</label><input class="finput" type="text" name="job_la_long" id="es-job_la_long"></div>
+          <div class="sched-form-section sched-full">ทีมและสถานที่</div>
           <div class="frow"><label class="flabel">ทีม *</label><select class="finput" name="team_name" id="es-team_name" required onchange="TL.onTeamChange('es')"><option value="">-- เลือกทีม --</option>@foreach($teams as $t)@php $tn = data_get($t, 'team_name', ''); @endphp<option value="{{ $tn }}">{{ $tn }}</option>@endforeach</select></div>
-          <div class="frow"></div>
+          <div class="frow"><label class="flabel">สถานที่</label><input class="finput" type="text" name="job_location" id="es-job_location"></div>
+          <div class="frow sched-full"><label class="flabel">ละติจูด,ลองจิจูด</label><div class="sched-map-picker"><div class="sched-map-toolbar"><input class="finput" type="text" name="job_la_long" id="es-job_la_long" oninput="scheduleMapInputChanged('es')" onchange="showGoogleScheduleMap('es')"><button class="btn btn-ghost sched-map-btn" type="button" onclick="openScheduleGoogleMap('es')">Google Map</button></div><div class="sched-map-hint">ใส่พิกัดรูปแบบ ละติจูด,ลองจิจูด แล้ว Google Maps จะแสดงตำแหน่งนั้น</div><div class="sched-map" id="es-map-picker"></div></div></div>
+          <div class="sched-form-section sched-full">ช่วงวันที่และหมายเหตุ</div>
           <div class="frow sched-full"><label class="flabel">ช่วงวันที่ทำงาน *</label><div class="tl-wrap" id="es-tl-wrap"><div class="tl-header"><button type="button" class="tl-mnav-btn" data-tl-nav="prev" data-tl-prefix="es">‹</button><div class="tl-mname" id="es-tl-mname"></div><button type="button" class="tl-today-btn" onclick="TL.gotoToday('es')">วันนี้</button><button type="button" class="tl-mnav-btn" data-tl-nav="next" data-tl-prefix="es">›</button></div><div class="tl-team-info no-team" id="es-tl-team-info">เลือกทีมก่อน</div><div class="tl-months"><div class="tl-month-block"><div class="tl-month-title" id="es-tl-mname-left"></div><div class="tl-dhdrs" id="es-tl-dhdrs-left"></div><div class="tl-grid" id="es-tl-grid-left"></div></div><div class="tl-month-block"><div class="tl-month-title" id="es-tl-mname-right"></div><div class="tl-dhdrs" id="es-tl-dhdrs-right"></div><div class="tl-grid" id="es-tl-grid-right"></div></div></div><div class="tl-summary"><div class="tl-summary-info" id="es-tl-summary">กรุณาเลือกช่วงวันที่</div><button type="button" class="tl-clear-btn" onclick="TL.clear('es')">ล้าง</button></div><div class="tl-legend"><span class="tl-leg"><i class="tl-leg-box today"></i>วันนี้</span><span class="tl-leg"><i class="tl-leg-box busy"></i>ทีมมีงาน</span><span class="tl-leg"><i class="tl-leg-box sel"></i>เลือก</span><span class="tl-leg"><i class="tl-leg-box range"></i>ช่วงเลือก</span></div></div></div>
           <div class="frow sched-full"><label class="flabel">หมายเหตุ</label><textarea class="finput" name="note" id="es-note" rows="3"></textarea></div>
         </div>
@@ -5023,9 +5787,6 @@ textarea.finput {
               <div class="sched-board-sub">คลิกงานเพื่อดู/แก้ไขรายละเอียด · เปลี่ยนเดือนเพื่อดูงานเดือนอื่น</div>
             </div>
             <div class="sched-controls">
-              <select class="sched-select" id="tcal-type-filter" onchange="TCAL.render()">
-                <option value="all">ทุกโปรเจค</option>
-              </select>
               <button class="sched-nav-btn" type="button" onclick="TCAL.nav(-1)">‹</button>
               <button class="sched-nav-btn" type="button" onclick="TCAL.gotoToday()">วันนี้</button>
               <button class="sched-nav-btn" type="button" onclick="TCAL.nav(1)">›</button>
@@ -5071,103 +5832,6 @@ textarea.finput {
     </div>
   </div>
 </div>
-
-<script>
-(() => {
-  function forceTeamView() {
-    document.querySelectorAll('.panel').forEach(panel => panel.classList.remove('active'));
-    document.getElementById('panel-teams')?.classList.add('active');
-    document.querySelectorAll('.sb-tab').forEach(tab => tab.classList.remove('active'));
-    document.querySelector('.sb-tab[onclick*="teams"]')?.classList.add('active');
-
-    const allView = document.getElementById('view-all');
-    const teamView = document.getElementById('view-team');
-    if (allView) allView.style.display = 'none';
-    if (teamView) teamView.style.display = '';
-
-    const viewTabs = Array.from(document.querySelectorAll('.view-tabs .dtab'));
-    viewTabs.forEach(tab => tab.classList.remove('active'));
-    const teamTab = viewTabs.find(tab => (tab.getAttribute('onclick') || '').includes("'team'")) || viewTabs[1];
-    teamTab?.classList.add('active');
-  }
-
-  function mountTeamCalendarOverlay() {
-    const overlay = document.getElementById('tcal-overlay');
-    if (overlay && overlay.parentElement !== document.body) {
-      document.body.appendChild(overlay);
-    }
-    return overlay;
-  }
-
-  function fallbackOpenTeamCalendar(btnOrTeam) {
-    const btn = btnOrTeam?.classList?.contains('team-cal-btn') ? btnOrTeam : null;
-    const team = typeof btnOrTeam === 'string'
-      ? btnOrTeam
-      : (btn?.dataset?.team || btn?.closest('.team-card')?.querySelector('.team-title')?.textContent?.trim() || '');
-    const overlay = mountTeamCalendarOverlay();
-    if (!overlay) return;
-
-    forceTeamView();
-    const title = document.getElementById('tcal-team-name');
-    if (title) title.textContent = team || '-';
-    const badgeCount = btn?.querySelector('.badge-count')?.textContent?.trim();
-    const jobCount = document.getElementById('tcal-job-count');
-    if (jobCount && badgeCount) jobCount.textContent = `${badgeCount} \u0e07\u0e32\u0e19`;
-
-    overlay.classList.add('open');
-    document.body.style.overflow = 'hidden';
-
-    if (window.TCAL && typeof window.TCAL.render === 'function') {
-      window.TCAL.team = team;
-      window.TCAL.date = new Date();
-      if (Array.isArray(window.SCHED_DATA)) {
-        window.TCAL.jobs = window.SCHED_DATA.filter(job => job.team_name === team);
-      }
-      try {
-        window.TCAL.render();
-      } catch (err) {
-        console.error('Team calendar render failed', err);
-      }
-    }
-  }
-
-  window.showTeamRosterView = window.showTeamRosterView || forceTeamView;
-  window.openTeamCalendar = window.openTeamCalendar || fallbackOpenTeamCalendar;
-  window.closeTeamCalendar = window.closeTeamCalendar || function closeTeamCalendar(){
-  document.getElementById('tcal-overlay')?.classList.remove('open');
-  showTeamRosterView();
-  if(!document.querySelector('.overlay.open,.tcal-overlay.open'))
-    document.body.style.overflow='';
-  
-  // scroll ไปหาการ์ดทีมที่เพิ่งดู
-  const team = String(TCAL.team || '').trim();
-  setTimeout(() => {
-    const teamCard = Array.from(document.querySelectorAll('.team-card'))
-      .find(card => (card.querySelector('.team-title')?.textContent || '').trim() === team);
-    teamCard?.scrollIntoView({ behavior: 'smooth', block: 'center' });
-  }, 50);
-}
-  if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', mountTeamCalendarOverlay);
-  } else {
-    mountTeamCalendarOverlay();
-  }
-
-  document.addEventListener('click', event => {
-    const btn = event.target.closest('.team-cal-btn');
-    if (!btn) return;
-    event.preventDefault();
-    event.stopPropagation();
-    event.stopImmediatePropagation();
-
-    if (typeof window.openTeamCalendarFromButton === 'function') {
-      window.openTeamCalendarFromButton(btn);
-    } else {
-      fallbackOpenTeamCalendar(btn);
-    }
-  }, true);
-})();
-</script>
 
 <script>
 const URL_TECH_UPDATE = (id) => `/technicians/${encodeURIComponent(id)}/update`;
@@ -5286,6 +5950,21 @@ function openScheduleFromDayPopup(btn,source='main'){
   }
   openEditSchedFromEl(btn);
 }
+function openScheduleEditFromCalendar(event,btn,source='main'){
+  if(event){
+    event.preventDefault();
+    event.stopPropagation();
+  }
+  if(!btn)return false;
+  closeScheduleDayPopup();
+  if(source==='team'&&document.getElementById('tcal-overlay')?.classList.contains('open')){
+    closeTeamCalendar();
+    setTimeout(()=>openEditSchedFromEl(btn),100);
+    return false;
+  }
+  openEditSchedFromEl(btn);
+  return false;
+}
 function openScheduleDayPopup(dateStr,source='main'){
   const popup=document.getElementById('cal-popup-bg'),body=document.getElementById('cal-popup-body');
   if(!popup||!body)return;
@@ -5297,7 +5976,7 @@ function openScheduleDayPopup(dateStr,source='main'){
     const typeKey=s.job_type||'general';
     const typeLabel=JOB_TYPES[typeKey]||typeKey||'งานทั่วไป';
     const dateText=s.start_date===s.end_date?fmtDate(s.start_date):`${fmtDate(s.start_date)} - ${fmtDate(s.end_date)}`;
-    return `<button type="button" class="cal-ev-card ${teamEventClass(s)}" data-sched-id="${escHtml(s.id||'')}" data-sched='${JSON.stringify(s).replace(/'/g,"&#39;")}' onclick="openScheduleFromDayPopup(this,'${source}')">
+    return `<button type="button" class="cal-ev-card ${teamEventClass(s)}" data-sched-source="${escHtml(source)}" data-sched-id="${escHtml(s.id||'')}" data-sched='${JSON.stringify(s).replace(/'/g,"&#39;")}' onclick="return openScheduleEditFromCalendar(event,this,'${source}')">
       <div class="cal-ev-top"><span class="cal-so">${escHtml(s.so_number||'-')}</span><span class="job-type-tag jt-${escHtml(typeKey)}">${escHtml(typeLabel)}</span></div>
       <div class="cal-ev-cust">${escHtml(s.customer_name||'-')}</div>
       <div class="cal-ev-job">${escHtml(s.job_title||'-')}</div>
@@ -5309,6 +5988,8 @@ function openScheduleDayPopup(dateStr,source='main'){
 }
 function escHtml(s){return String(s??'').replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/'/g,'&#39;').replace(/</g,'&lt;').replace(/>/g,'&gt;')}
 function fmtDate(d){if(!d)return '-';const dt=new Date(d);if(isNaN(dt))return d;return `${dt.getDate()}/${dt.getMonth()+1}/${dt.getFullYear()+543}`}
+function fmtDateCE(d){if(!d)return '-';const dt=new Date(d);if(isNaN(dt))return d;return `${String(dt.getDate()).padStart(2,'0')}/${String(dt.getMonth()+1).padStart(2,'0')}/${dt.getFullYear()}`}
+function airconNextDueText(d){if(!d)return '';const dt=new Date(d);if(isNaN(dt))return '';const target=new Date(dt.getFullYear(),dt.getMonth(),dt.getDate());const now=new Date();const today=new Date(now.getFullYear(),now.getMonth(),now.getDate());const diff=Math.ceil((target-today)/86400000);if(diff>0)return `(อีก ${diff.toLocaleString('en-US')} วัน)`;if(diff===0)return '(วันนี้)';return `(เลยกำหนด ${Math.abs(diff).toLocaleString('en-US')} วัน)`}
 function ymd(d){const dt=(d instanceof Date)?d:new Date(d);return `${dt.getFullYear()}-${String(dt.getMonth()+1).padStart(2,'0')}-${String(dt.getDate()).padStart(2,'0')}`}
 function daysBetween(a,b){return Math.round((new Date(b)-new Date(a))/86400000)}
 function normalizeDate(v){return v?ymd(v):''}
@@ -5322,11 +6003,110 @@ function rememberDashboardTab(tab){
 }
 function switchTab(tab,el){document.querySelectorAll('.panel').forEach(p=>p.classList.remove('active'));document.querySelectorAll('.sb-tab').forEach(t=>t.classList.remove('active'));document.getElementById('panel-'+tab)?.classList.add('active');el?.classList.add('active');rememberDashboardTab(tab);if(tab==='schedules')SCHED_BOARD.render();if(innerWidth<=768)document.querySelector('.sidebar')?.classList.remove('open')}
 function closeModalById(id){document.getElementById(id)?.classList.remove('open');if(!document.querySelector('.overlay.open,.tcal-overlay.open,.cal-popup-bg.open'))document.body.style.overflow=''}
-document.addEventListener('click',e=>{if(e.target.classList?.contains('overlay'))closeModalById(e.target.id);if(e.target.id==='cal-popup-bg')closeScheduleDayPopup()})
+document.addEventListener('click',e=>{if(e.target.classList?.contains('overlay')||e.target.id==='cal-popup-bg'){e.preventDefault();e.stopPropagation()}})
 document.addEventListener('keydown',e=>{if(e.key==='Escape'){if(document.getElementById('tcal-overlay')?.classList.contains('open'))closeTeamCalendar();document.querySelectorAll('.overlay.open,.cal-popup-bg.open').forEach(el=>el.classList.remove('open'));document.body.style.overflow=''}})
 function filterTable(tbodyId,q){const kw=(q||'').toLowerCase().trim();document.querySelectorAll('#'+tbodyId+' tr[data-search]').forEach(r=>r.style.display=(!kw||(r.dataset.search||'').includes(kw))?'':'none')}
 function filterAirconTable(q){const kw=(q||'').toLowerCase().trim();const rows=Array.from(document.querySelectorAll('#aircon-tbody tr[data-search]'));let shown=0;rows.forEach(r=>{const visible=!kw||(r.dataset.search||'').includes(kw);r.style.display=visible?'':'none';if(visible)shown++});const empty=document.getElementById('aircon-empty-row');if(empty)empty.style.display=rows.length&&shown===0?'':'none'}
 function airconStatusLabel(status){return status==='cleaned'?'ล้างแล้ว':'ยังไม่ได้ล้าง'}
+function cleanAirconHistoryNotes(value){
+  return String(value||'')
+    .split(/\r?\n/)
+    .map(line=>line.trim())
+    .filter(line=>line && !(/^นำเข้าจาก\s*CSV\s*แอร์/i.test(line)||/^วันที่บันทึก\s*:/i.test(line)||/^รอบล้างถัดไป\s*:/i.test(line)||/^จำนวนรูป\s*:/i.test(line)))
+    .join('\n');
+}
+function airconStorageUrl(src){
+  const value=String(src||'').trim();
+  if(!value)return '';
+  if(/^(https?:)?\/\//i.test(value)||/^(data|blob):/i.test(value))return value;
+  const base=window.location.pathname.split('/dashboardtechnician')[0]||'';
+  if(value.startsWith('/storage/')||value.startsWith('/uploads/'))return `${base}${value}`;
+  if(value.startsWith('/'))return `${base}${value}`;
+  return `${base}/storage/${value.replace(/^\/+/,'')}`;
+}
+function airconWashGalleryHtml(images){
+  const urls=(Array.isArray(images)?images:[]).map(airconStorageUrl).filter(Boolean);
+  if(!urls.length)return '<div class="aircon-wash-gallery-empty">ไม่มีรูปแนบ</div>';
+  return `<div class="aircon-wash-gallery">${urls.map((url,index)=>`<a href="${escHtml(url)}" target="_blank" rel="noopener"><img src="${escHtml(url)}" alt="รูปประวัติการล้าง ${index+1}" loading="lazy"></a>`).join('')}</div>`;
+}
+function openAirconHistory(btn){
+  if(!btn?.dataset.aircon)return;
+  let data={};
+  try{data=JSON.parse(btn.dataset.aircon||'{}')}catch(e){data={}}
+  const row=btn.closest('tr');
+  const statusSelect=row?.querySelector('.aircon-status-select');
+  if(statusSelect){
+    data.status=statusSelect.value||data.status||'pending';
+    data.status_text=airconStatusLabel(data.status);
+  }
+  const set=(id,val)=>{const el=document.getElementById(id);if(el)el.textContent=(val==null||val==='')?'-':val};
+  const brandModel=[data.brand,data.model_name].filter(Boolean).join(' / ');
+  const dateText=data.service_date?fmtDate(data.service_date):'-';
+  const status=data.status||'pending';
+  const statusClass=status==='cleaned'?'cleaned':'pending';
+  const statusText=data.status_text||airconStatusLabel(statusClass);
+  set('aircon-history-title',`ประวัติการล้างแอร์ ${data.aircon_code||''}`.trim());
+  set('aircon-history-sub',brandModel||'-');
+  set('aircon-history-code',data.aircon_code);
+  set('aircon-history-brand',brandModel);
+  set('aircon-history-location',data.location);
+  set('aircon-history-date',dateText);
+  const records=document.getElementById('aircon-history-records');
+  if(records){
+    const recordTitle=`${data.aircon_code||'-'} · ${data.brand||'-'} ${data.model_name||'-'}`;
+    const fallbackImages=Array.isArray(data.image_urls)?data.image_urls:(Array.isArray(data.images)?data.images:[]);
+    const logs=(Array.isArray(data.wash_logs)&&data.wash_logs.length?data.wash_logs:[{
+      date:data.service_date,
+      next_service_date:data.next_service_date,
+      status:data.status,
+      status_text:data.status_text,
+      notes:data.notes,
+      image_urls:fallbackImages,
+      image_count:data.image_count
+    }]);
+    records.innerHTML=logs.map((log,index)=>{
+      const isLatest=index===0;
+      const logStatus=isLatest?(data.status||log.status||'pending'):(log.status||'pending');
+      const logStatusClass=logStatus==='cleaned'?'cleaned':'pending';
+      const logStatusText=(isLatest?data.status_text:null)||log.status_text||airconStatusLabel(logStatus);
+      const logDate=log.date||log.service_date||'';
+      const latestDate=logDate?fmtDateCE(logDate):'-';
+      const nextRaw=log.next_service_date||log.next_date||(isLatest?data.next_service_date:'');
+      const nextDate=nextRaw?fmtDateCE(nextRaw):'-';
+      const nextDue=nextRaw?airconNextDueText(nextRaw):'';
+      const imageUrls=Array.isArray(log.image_urls)?log.image_urls:(Array.isArray(log.images)?log.images:[]);
+      const imageCount=Number(log.image_count||imageUrls.length||0);
+      const cleanNotes=cleanAirconHistoryNotes(log.notes||'')||'-';
+      const roundNumber=logs.length-index;
+      const title=logs.length>1?`${recordTitle} · ครั้งที่ ${roundNumber}`:recordTitle;
+      return `<div class="aircon-wash-card">
+      <div class="aircon-wash-top">
+        <div>
+          <div class="aircon-wash-title">${escHtml(title)}</div>
+          <div class="aircon-wash-place"><span class="aircon-wash-pin"></span><span>${escHtml(data.location||'-')}</span></div>
+        </div>
+        <span class="aircon-wash-status ${escHtml(logStatusClass)}">${escHtml(logStatusText)}</span>
+      </div>
+      <div class="aircon-next-strip"><span class="aircon-next-mark"></span><span>รอบถัดไป ${escHtml(nextDate)} ${escHtml(nextDue)}</span></div>
+      <div class="aircon-wash-meta">
+        <span><i class="aircon-meta-icon">1</i> ล้างล่าสุด ${escHtml(latestDate)}</span>
+        <span><i class="aircon-meta-icon"></i> ${imageCount.toLocaleString('en-US')} รูป</span>
+        <span><i class="aircon-meta-icon"></i> ${roundNumber.toLocaleString('en-US')} ครั้ง</span>
+      </div>
+      <div class="aircon-wash-note">
+        <div class="aircon-wash-note-label">หมายเหตุ</div>
+        <div class="aircon-wash-note-text">${escHtml(cleanNotes)}</div>
+      </div>
+      <div class="aircon-wash-gallery-wrap">
+        <div class="aircon-wash-gallery-label">รูปภาพ</div>
+        ${airconWashGalleryHtml(imageUrls)}
+      </div>
+    </div>`;
+    }).join('');
+  }
+  openModal('modal-aircon-history');
+}
+window.openAirconHistory=openAirconHistory;
 function setAirconStatusClass(sel,status){sel.classList.remove('cleaned','pending');sel.classList.add(status)}
 function updateAirconMetric(id,value){const el=document.getElementById(id);if(el&&value!=null)el.textContent=value}
 async function updateAirconStatus(sel){
@@ -5357,10 +6137,28 @@ async function updateAirconStatus(sel){
     sel.disabled=false;
   }
 }
-function resetAirconFileLabels(){document.querySelectorAll('#modal-aircon .aircon-upload').forEach(label=>{const text=label.querySelector('span');if(text)text.textContent='เลือกจากแกลเลอรี'})}
-function openAirconAdd(){const form=document.getElementById('form-aircon');form?.reset();resetAirconFileLabels();openModal('modal-aircon');setTimeout(()=>document.querySelector('#modal-aircon input[name="aircon_code"]')?.focus(),80)}
 document.addEventListener('change',e=>{if(!e.target.matches('#modal-aircon .aircon-file'))return;const input=e.target;const label=document.querySelector(`label[for="${input.id}"]`);const text=label?.querySelector('span');if(!text||!input.files||input.files.length===0)return;text.textContent=input.files.length===1?input.files[0].name:`เลือกแล้ว ${input.files.length} รูป`});
-function filterTeams(q){const kw=(q||'').toLowerCase().trim();document.querySelectorAll('#team-grid-wrap .team-card').forEach(card=>{const haystack=`${card.dataset.search||''} ${card.textContent||''}`.toLowerCase();card.style.display=(!kw||haystack.includes(kw))?'':'none'})}
+let TEAM_FILTER_SEARCH = '';
+let TEAM_FILTER_SKILL = 'all';
+function applyTeamFilters(){
+  let shown=0;
+  let total=0;
+  document.querySelectorAll('#team-grid-wrap .team-card').forEach(card=>{
+    total++;
+    const haystack=`${card.dataset.search||''} ${card.textContent||''}`.toLowerCase();
+    const skills=(card.dataset.skill||'').toLowerCase();
+    const searchOk=!TEAM_FILTER_SEARCH||haystack.includes(TEAM_FILTER_SEARCH);
+    const skillOk=TEAM_FILTER_SKILL==='all'||skills.includes(TEAM_FILTER_SKILL);
+    const visible=searchOk&&skillOk;
+    card.style.display=visible?'':'none';
+    if(visible)shown++;
+  });
+  const empty=document.getElementById('team-empty-filter');
+  if(empty)empty.style.display=total&&shown===0?'':'none';
+}
+function filterTeams(q){TEAM_FILTER_SEARCH=(q||'').toLowerCase().trim();const search=document.getElementById('team-name-search');if(search&&search.value!==q)search.value=q||'';applyTeamFilters()}
+function filterTeamSearch(q){filterTeams(q)}
+function filterTeamSkill(skill){TEAM_FILTER_SKILL=(skill||'all').toLowerCase().trim()||'all';const select=document.getElementById('team-skill-filter');if(select&&select.value!==skill)select.value=skill||'all';applyTeamFilters()}
 function switchViewTab(tab,btn){document.querySelectorAll('.view-tabs .dtab').forEach(b=>b.classList.remove('active'));btn.classList.add('active');document.getElementById('view-all').style.display=tab==='all'?'':'none';document.getElementById('view-team').style.display=tab==='team'?'':'none'}
 function showTeamRosterView(){
   document.querySelectorAll('.panel').forEach(p=>p.classList.remove('active'));
@@ -5384,7 +6182,122 @@ function showTeamRosterView(){
 const TL=(()=>{const state={};function init(prefix){if(state[prefix])return state[prefix];const t=new Date();return state[prefix]={year:t.getFullYear(),month:t.getMonth(),start:null,end:null,team:'',busyDays:{},isDragging:false,editingId:null}}function getTeamSchedules(team){return team?SCHED_DATA.filter(s=>s.team_name===team):[]}function buildBusyDays(prefix,excludeId){const st=state[prefix];st.busyDays={};getTeamSchedules(st.team).forEach(s=>{if(excludeId&&String(s.id)===String(excludeId))return;let d=new Date(s.start_date),end=new Date(s.end_date);while(d<=end){const k=ymd(d);st.busyDays[k]=(st.busyDays[k]||0)+1;d.setDate(d.getDate()+1)}})}function onTeamChange(prefix){const st=init(prefix),sel=document.getElementById(prefix==='add'?'add-team_name':'es-team_name');st.team=sel?.value||'';const info=document.getElementById(prefix+'-tl-team-info');if(info){if(st.team){info.classList.remove('no-team');info.innerHTML=`ทีม <strong>${escHtml(st.team)}</strong> มีงาน ${getTeamSchedules(st.team).length} งาน`}else{info.classList.add('no-team');info.textContent='เลือกทีมก่อนเพื่อดูวันที่ทีมว่าง'}}buildBusyDays(prefix,prefix==='es'?state.es?.editingId:null);render(prefix)}function gotoToday(prefix){const st=init(prefix),t=new Date();st.year=t.getFullYear();st.month=t.getMonth();render(prefix)}function clear(prefix){const st=init(prefix);st.start=null;st.end=null;syncHidden(prefix);render(prefix)}function nav(prefix,dir){const st=init(prefix);st.month+=dir;if(st.month<0){st.month=11;st.year--}if(st.month>11){st.month=0;st.year++}render(prefix)}function selectDate(prefix,dateStr){const st=init(prefix);if(!st.start||(st.start&&st.end)){st.start=dateStr;st.end=null}else if(dateStr<st.start){st.end=st.start;st.start=dateStr}else st.end=dateStr;syncHidden(prefix);render(prefix)}function startDrag(prefix,dateStr){const st=init(prefix);st.isDragging=true;st.start=dateStr;st.end=dateStr;syncHidden(prefix);render(prefix)}function dragOver(prefix,dateStr){const st=init(prefix);if(!st.isDragging)return;if(dateStr<st.start){st.end=st.start;st.start=dateStr}else st.end=dateStr;render(prefix)}function endDrag(prefix){const st=init(prefix);st.isDragging=false;syncHidden(prefix)}function syncHidden(prefix){const st=state[prefix],form=document.getElementById(prefix==='add'?'form-add-sched':'form-edit-sched');if(!st||!form)return;let s=form.querySelector('input[name="start_date"]'),e=form.querySelector('input[name="end_date"]');if(!s){s=document.createElement('input');s.type='hidden';s.name='start_date';form.appendChild(s)}if(!e){e=document.createElement('input');e.type='hidden';e.name='end_date';form.appendChild(e)}s.value=st.start||'';e.value=st.end||st.start||''}function render(prefix){const st=init(prefix),months=['มกราคม','กุมภาพันธ์','มีนาคม','เมษายน','พฤษภาคม','มิถุนายน','กรกฎาคม','สิงหาคม','กันยายน','ตุลาคม','พฤศจิกายน','ธันวาคม'],hdr=['อา','จ','อ','พ','พฤ','ศ','ส'];const mname=document.getElementById(prefix+'-tl-mname');if(mname)mname.textContent=`${months[st.month]} ${st.year+543}`;function renderMonth(yr,mo,side){document.getElementById(`${prefix}-tl-mname-${side}`).textContent=`${months[mo]} ${yr+543}`;document.getElementById(`${prefix}-tl-dhdrs-${side}`).innerHTML=hdr.map((d,i)=>`<div class="tl-dhdr ${i===0||i===6?'weekend':''}">${d}</div>`).join('');const grid=document.getElementById(`${prefix}-tl-grid-${side}`);const first=new Date(yr,mo,1).getDay(),days=new Date(yr,mo+1,0).getDate(),today=ymd(new Date());let html='';for(let i=0;i<first;i++)html+='<div class="tl-cell tl-other"></div>';for(let d=1;d<=days;d++){const ds=`${yr}-${String(mo+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`,busy=st.busyDays[ds]||0,cls=['tl-cell'];if(ds===today)cls.push('tl-today');if(busy)cls.push('tl-busy');if(st.start&&ds===st.start)cls.push('tl-sel-s');if(st.end&&ds===st.end)cls.push('tl-sel-e');if(st.start&&st.end&&ds>st.start&&ds<st.end)cls.push('tl-in-range');html+=`<div class="${cls.join(' ')}" data-date="${ds}" ${busy?'':`onmousedown="TL.startDrag('${prefix}','${ds}');event.preventDefault()" onmouseenter="TL.dragOver('${prefix}','${ds}')" onclick="TL.selectDate('${prefix}','${ds}')"`}><div class="tl-d">${d}</div>${busy?`<div class="tl-busy-bar"></div><div class="tl-jobs-count">${busy}</div>`:''}</div>`}grid.innerHTML=html}const nextMo=st.month===11?0:st.month+1,nextYr=st.month===11?st.year+1:st.year;renderMonth(st.year,st.month,'left');renderMonth(nextYr,nextMo,'right');const summary=document.getElementById(prefix+'-tl-summary');if(summary){if(st.start&&st.end){let conflict=0,cur=new Date(st.start),end=new Date(st.end);while(cur<=end){if(st.busyDays[ymd(cur)])conflict++;cur.setDate(cur.getDate()+1)}summary.innerHTML=`เลือก: <strong>${fmtDate(st.start)}</strong> ถึง <strong>${fmtDate(st.end)}</strong> (${daysBetween(st.start,st.end)+1} วัน) ${conflict?`<span class="tl-summary-warn">ทับซ้อน ${conflict} วัน</span>`:''}`}else if(st.start)summary.innerHTML=`เริ่ม: <strong>${fmtDate(st.start)}</strong> — เลือกวันสิ้นสุด`;else summary.textContent='กรุณาเลือกช่วงวันที่'}}function setRange(prefix,start,end,team,id){const st=init(prefix);st.team=team||'';st.start=normalizeDate(start)||null;st.end=normalizeDate(end)||null;st.editingId=id;if(st.start){const d=new Date(st.start);st.year=d.getFullYear();st.month=d.getMonth()}buildBusyDays(prefix,id);syncHidden(prefix);render(prefix);const info=document.getElementById(prefix+'-tl-team-info');if(info&&team){info.classList.remove('no-team');info.innerHTML=`ทีม <strong>${escHtml(team)}</strong> มีงาน ${getTeamSchedules(team).length} งาน`}}return{init,onTeamChange,gotoToday,clear,nav,selectDate,startDrag,dragOver,endDrag,setRange,render,_state:state}})();
 document.addEventListener('mouseup',()=>{TL.endDrag('add');TL.endDrag('es')});
 
-function openProfileFromEl(el){if(!el?.dataset.tech)return;try{openProfileModal(JSON.parse(el.dataset.tech))}catch(e){}}
+const SCHEDULE_MAP_INPUT_TIMERS = {};
+
+function scheduleLatLngInput(prefix) {
+  return document.getElementById(prefix + '-job_la_long');
+}
+
+function parseScheduleLatLng(value) {
+  const text = String(value || '').trim();
+  const match = text.match(/(-?\d+(?:\.\d+)?)\s*[, ]\s*(-?\d+(?:\.\d+)?)/);
+  if (!match) return null;
+  const lat = Number(match[1]);
+  const lng = Number(match[2]);
+  if (!Number.isFinite(lat) || !Number.isFinite(lng)) return null;
+  if (Math.abs(lat) > 90 || Math.abs(lng) > 180) return null;
+  return { lat, lng };
+}
+
+function writeScheduleLatLng(prefix, lat, lng) {
+  const input = scheduleLatLngInput(prefix);
+  if (input) input.value = `${Number(lat).toFixed(6)},${Number(lng).toFixed(6)}`;
+}
+
+function scheduleMapPoint(prefix) {
+  return parseScheduleLatLng(scheduleLatLngInput(prefix)?.value);
+}
+
+function scheduleForm(prefix) {
+  return document.getElementById(prefix === 'add' ? 'form-add-sched' : 'form-edit-sched');
+}
+
+function scheduleFieldValue(prefix, name) {
+  const form = scheduleForm(prefix);
+  const field = document.getElementById(`${prefix}-${name}`) || form?.querySelector(`[name="${name}"]`);
+  return String(field?.value || '').trim();
+}
+
+function compactScheduleSearchText(parts) {
+  const seen = new Set();
+  return parts
+    .map(value => String(value || '').trim())
+    .filter(Boolean)
+    .filter(value => {
+      const key = value.toLowerCase();
+      if (seen.has(key)) return false;
+      seen.add(key);
+      return true;
+    })
+    .join(' ');
+}
+
+function scheduleMapSearchQuery(prefix) {
+  const rawLatLng = String(scheduleLatLngInput(prefix)?.value || '').trim();
+  return compactScheduleSearchText([
+    scheduleFieldValue(prefix, 'job_location'),
+    scheduleFieldValue(prefix, 'customer_name'),
+    scheduleFieldValue(prefix, 'job_title'),
+    scheduleFieldValue(prefix, 'so_number'),
+    scheduleMapPoint(prefix) ? '' : rawLatLng,
+  ]);
+}
+
+function googleScheduleMapSrc(point) {
+  const lat = Number(point.lat).toFixed(6);
+  const lng = Number(point.lng).toFixed(6);
+  return `https://maps.google.com/maps?q=${encodeURIComponent(`${lat},${lng}`)}&z=16&output=embed`;
+}
+
+function googleScheduleSearchUrl(query) {
+  return query
+    ? `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(query)}`
+    : 'https://www.google.com/maps';
+}
+
+function scheduleMapCoordBadge(point) {
+  const lat = Number(point.lat).toFixed(6);
+  const lng = Number(point.lng).toFixed(6);
+  return `<div class="sched-map-coord-badge">พิกัด: ${lat}, ${lng}</div>`;
+}
+
+function showGoogleScheduleMap(prefix) {
+  const mapEl = document.getElementById(prefix + '-map-picker');
+  if (!mapEl) return;
+  let point = scheduleMapPoint(prefix);
+  if (!point) {
+    mapEl.innerHTML = '<div class="sched-map-fallback">ใส่พิกัดละติจูด,ลองจิจูด แล้ว Google Maps จะแสดงตำแหน่งนั้น</div>';
+    return;
+  }
+
+  mapEl.innerHTML = `<iframe title="Google Maps" loading="lazy" referrerpolicy="no-referrer-when-downgrade" src="${googleScheduleMapSrc(point)}"></iframe>${scheduleMapCoordBadge(point)}`;
+}
+
+function openScheduleGoogleMap(prefix) {
+  const point = scheduleMapPoint(prefix);
+  if (!point) {
+    window.open(googleScheduleSearchUrl(scheduleMapSearchQuery(prefix)), '_blank', 'noopener');
+    return;
+  }
+  const lat = Number(point.lat).toFixed(6);
+  const lng = Number(point.lng).toFixed(6);
+  window.open(`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(`${lat},${lng}`)}`, '_blank', 'noopener');
+}
+
+function scheduleMapInputChanged(prefix) {
+  clearTimeout(SCHEDULE_MAP_INPUT_TIMERS[prefix]);
+  SCHEDULE_MAP_INPUT_TIMERS[prefix] = setTimeout(() => showGoogleScheduleMap(prefix), 450);
+}
+
+function initScheduleMapPicker(prefix) {
+  showGoogleScheduleMap(prefix);
+}
+
+function refreshScheduleMapFromInput(prefix) {
+  showGoogleScheduleMap(prefix);
+}
+
+function openProfileFromEl(el){if(!el?.dataset.tech)return;try{const t=JSON.parse(el.dataset.tech);openProfileModal(t);const statusEl=document.getElementById('m-status'),dotEl=document.getElementById('m-st-dot'),txtEl=document.getElementById('m-st-text');if(statusEl)statusEl.className='profile-v2-status pv2-status-active';if(dotEl)dotEl.className='pv2-st-dot pv2-dot-active';if(txtEl)txtEl.textContent=t.emp_position||'ลูกทีม'}catch(e){}}
 let CURRENT_PROFILE_TECH = null;
 function openProfileModal(t){CURRENT_PROFILE_TECH=t;const set=(id,v)=>{const el=document.getElementById(id);if(el)el.textContent=(v==null||v==='')?'-':v};const img=document.getElementById('m-img'),initial=document.getElementById('m-initial');if(img){if(t.img){img.src=`/storage/${t.img}`;img.style.display='block';if(initial)initial.style.display='none'}else{img.removeAttribute('src');img.style.display='none';if(initial){initial.style.display='block';initial.textContent=(t.emp_name||t.emp_id||'3E').substring(0,2)}}}set('m-name',t.emp_name||t.emp_id);set('m-name-eng',t.emp_name_eng);set('m-position',t.emp_position||'ลูกทีม');set('m-team',t.emp_team);set('m-empid',t.emp_id);set('m-nickname',t.emp_nickname);set('m-phone', fmtPhone(t.emp_phone));set('m-dob',t.date_of_birth?fmtDate(t.date_of_birth):'-');const isLeave=t.status==='leave';const statusEl=document.getElementById('m-status'),dotEl=document.getElementById('m-st-dot'),txtEl=document.getElementById('m-st-text');if(statusEl)statusEl.className='profile-v2-status '+(isLeave?'pv2-status-leave':'pv2-status-active');if(dotEl)dotEl.className='pv2-st-dot '+(isLeave?'pv2-dot-leave':'pv2-dot-active');if(txtEl)txtEl.textContent=isLeave?'ลาออก':'พร้อมทำงาน';const skills=(t.emp_skill||'').split(',').map(s=>s.trim()).filter(Boolean);document.getElementById('m-skills').innerHTML=skills.length?skills.map(s=>`<span class="pv2-tag">${escHtml(s)}</span>`).join(''):'<span class="pv2-muted">-</span>';const lv={none:'ไม่มี',basic:'พื้นฐาน',skill:'ชำนาญ',expert:'เชี่ยวชาญ'};const comps=t.core_competencies||{};const compEntries=Object.entries(comps).filter(([k,v])=>v&&v!=='none');document.getElementById('m-competencies').innerHTML=compEntries.length?compEntries.map(([k,v])=>`<div class="pv2-comp-item"><span class="pv2-comp-key">${escHtml(k)}</span><span class="pv2-comp-val cv-${escHtml(v)}">${lv[v]||escHtml(v)}</span></div>`).join(''):'<span class="pv2-muted">-</span>';const lics=t.licenses||[];document.getElementById('m-licenses').innerHTML=lics.length?lics.map(l=>`<div class="pv2-lic-item"><div class="pv2-lic-name">${escHtml(l.title||'-')}</div><div class="pv2-lic-meta">${l.doc_no?'เลขที่: '+escHtml(l.doc_no):''}${l.date_issued?' · '+escHtml(l.date_issued):''}${l.file?` · <a href="/storage/${escHtml(l.file)}" target="_blank" style="color:var(--blue);font-weight:900">เปิดไฟล์</a>`:''}</div></div>`).join(''):'<span class="pv2-muted">-</span>';const sw=t.software_tools||[];document.getElementById('m-software').innerHTML=sw.length?sw.map(s=>`<span class="pv2-tag pv2-tag-sw">${escHtml(s)}</span>`).join(''):'<span class="pv2-muted">-</span>';openModal('overlay')}
 function updateBE(prefix){const inp=document.getElementById(prefix+'-dob'),lbl=document.getElementById(prefix+'-dob-be');if(!inp||!lbl)return;if(inp.value){const d=new Date(inp.value);if(!isNaN(d)){lbl.textContent=`พ.ศ. ${d.getFullYear()+543}`;return}}lbl.textContent='พ.ศ. -'}
@@ -5404,11 +6317,11 @@ function addLicense(prefix,lic=null){const i=_licIdx[prefix]++,list=document.get
 function addCustomSw(prefix){const inp=document.getElementById(prefix+'-sw-custom'),tags=document.getElementById(prefix+'-sw-custom-tags');const val=inp?.value.trim();if(!val||!tags)return;const tag=document.createElement('span');tag.className='sw-tag';tag.innerHTML=`<input type="hidden" name="software_tools[]" value="${escHtml(val)}">${escHtml(val)}<span class="x" onclick="this.parentElement.remove()">×</span>`;tags.appendChild(tag);inp.value=''}
 function openEditTechFromEl(memberEl){if(!memberEl?.dataset.tech)return;let t;try{t=JSON.parse(memberEl.dataset.tech)}catch(e){return}document.getElementById('form-edit-tech').action=URL_TECH_UPDATE(t.emp_id);const v=(id,val)=>{const el=document.getElementById(id);if(el)el.value=val??''};v('et-emp_id',t.emp_id);v('et-emp_name',t.emp_name);v('et-emp_name_eng',t.emp_name_eng);v('et-emp_nickname',t.emp_nickname);v('et-emp_phone',t.emp_phone);v('et-dob',normalizeDate(t.date_of_birth));v('et-emp_position',t.emp_position||'ลูกทีม');v('et-team-select',t.emp_team);v('et-status',t.status||'active');updateBE('et');handlePositionChange('et');const img=document.getElementById('et-img-preview'),ph=document.getElementById('et-img-ph');if(img){if(t.img){img.src=`/storage/${t.img}`;img.style.display='block';img.classList.add('has-img');if(ph)ph.style.display='none'}else{img.removeAttribute('src');img.style.display='none';img.classList.remove('has-img');if(ph)ph.style.display='grid'}}const skills=(t.emp_skill||'').split(',').map(s=>s.trim()).filter(Boolean);document.querySelectorAll('#et-skill-grid label').forEach(l=>{const cb=l.querySelector('input');cb.checked=skills.includes(cb.value);l.classList.toggle('checked',cb.checked)});const comps=t.core_competencies||{};document.querySelectorAll('#et-comp-grid select[data-comp]').forEach(s=>{s.value=comps[s.dataset.comp]||'none';updateCompClass(s)});const sw=t.software_tools||[];document.querySelectorAll('#et-sw-grid label').forEach(l=>{const cb=l.querySelector('input');cb.checked=sw.includes(cb.value);l.classList.toggle('checked',cb.checked)});const tags=document.getElementById('et-sw-custom-tags');tags.innerHTML='';const predefined=Array.from(document.querySelectorAll('#et-sw-grid input')).map(i=>i.value);sw.forEach(s=>{if(!predefined.includes(s)){const tag=document.createElement('span');tag.className='sw-tag';tag.innerHTML=`<input type="hidden" name="software_tools[]" value="${escHtml(s)}">${escHtml(s)}<span class="x" onclick="this.parentElement.remove()">×</span>`;tags.appendChild(tag)}});document.getElementById('et-lic-list').innerHTML='';_licIdx.et=0;(t.licenses||[]).forEach(l=>addLicense('et',l));openModal('modal-edit-tech')}
 
-function openAddSchedModal(){document.getElementById('form-add-sched')?.reset();document.getElementById('add-customer_id').value='';['add-ncf-1','add-ncf-2','add-ncf-3','add-ncf-4'].forEach(id=>{const el=document.getElementById(id);if(el)el.style.display='none'});document.getElementById('add-cust-banner').style.display='none';TL.init('add');TL._state.add.start=null;TL._state.add.end=null;TL._state.add.team='';TL.gotoToday('add');TL.onTeamChange('add');openModal('modal-sched')}
+function openAddSchedModal(){document.getElementById('form-add-sched')?.reset();document.getElementById('add-customer_id').value='';['add-ncf-1','add-ncf-2','add-ncf-3','add-ncf-4'].forEach(id=>{const el=document.getElementById(id);if(el)el.style.display='none'});document.getElementById('add-cust-banner').style.display='none';TL.init('add');TL._state.add.start=null;TL._state.add.end=null;TL._state.add.team='';TL.gotoToday('add');TL.onTeamChange('add');openModal('modal-sched');setTimeout(()=>initScheduleMapPicker('add'),160)}
 let _acIdx=-1;
 function custAutocomp(q,prefix){const list=document.getElementById(prefix+'-ac-list'),cid=document.getElementById(prefix+'-customer_id'),banner=document.getElementById(prefix+'-cust-banner'),kw=(q||'').toLowerCase().trim();if(!list)return;if(!kw){list.classList.remove('open');if(cid)cid.value='';if(banner)banner.style.display='none';showNewCustFields(prefix,false);return}const matches=CUST_DATA.filter(c=>(c.name||'').toLowerCase().includes(kw)||(c.desc||'').toLowerCase().includes(kw)).slice(0,6);if(!matches.length){list.classList.remove('open');list.innerHTML='';if(cid)cid.value='';if(banner){banner.className='cust-banner cust-banner-new';banner.style.display='flex';banner.textContent='ลูกค้าใหม่ — กรุณากรอกรายละเอียดเพิ่มเติม'}showNewCustFields(prefix,true);return}list.innerHTML=matches.map((c,i)=>`<div class="ac-item" data-idx="${i}" onclick="pickCust('${prefix}',${Number(c.id)})"><div class="ac-item-name">${escHtml(c.name)}</div>${c.desc?`<div class="ac-item-meta">${escHtml(c.desc)}</div>`:''}</div>`).join('');list.classList.add('open');_acIdx=-1}
 function custAutocompKey(e,prefix){const list=document.getElementById(prefix+'-ac-list');if(!list?.classList.contains('open'))return;const items=list.querySelectorAll('.ac-item');if(!items.length)return;if(e.key==='ArrowDown'){e.preventDefault();_acIdx=Math.min(_acIdx+1,items.length-1)}else if(e.key==='ArrowUp'){e.preventDefault();_acIdx=Math.max(_acIdx-1,0)}else if(e.key==='Enter'&&_acIdx>=0){e.preventDefault();items[_acIdx].click();return}else if(e.key==='Escape'){list.classList.remove('open');return}else return;items.forEach(i=>i.classList.remove('ac-active'));items[_acIdx]?.classList.add('ac-active')}
-function pickCust(prefix,id){const c=CUST_DATA.find(x=>Number(x.id)===Number(id));if(!c)return;document.getElementById(prefix+'-customer_name').value=c.name||'';document.getElementById(prefix+'-customer_id').value=c.id||'';document.getElementById(prefix+'-ac-list').classList.remove('open');const banner=document.getElementById(prefix+'-cust-banner');banner.className='cust-banner cust-banner-old';banner.style.display='flex';banner.innerHTML=`ลูกค้าเดิม: <strong>${escHtml(c.name)}</strong>${c.desc?' · '+escHtml(c.desc):''}`;showNewCustFields(prefix,false);const ll=document.getElementById(prefix+'-job_la_long'),loc=document.getElementById(prefix+'-job_location');if(ll&&!ll.value&&c.loc)ll.value=c.loc;if(loc&&!loc.value)loc.value=c.desc?`${c.name} · ${c.desc}`:c.name}
+function pickCust(prefix,id){const c=CUST_DATA.find(x=>Number(x.id)===Number(id));if(!c)return;document.getElementById(prefix+'-customer_name').value=c.name||'';document.getElementById(prefix+'-customer_id').value=c.id||'';document.getElementById(prefix+'-ac-list').classList.remove('open');const banner=document.getElementById(prefix+'-cust-banner');banner.className='cust-banner cust-banner-old';banner.style.display='flex';banner.innerHTML=`ลูกค้าเดิม: <strong>${escHtml(c.name)}</strong>${c.desc?' · '+escHtml(c.desc):''}`;showNewCustFields(prefix,false);const ll=document.getElementById(prefix+'-job_la_long'),loc=document.getElementById(prefix+'-job_location');if(ll&&!ll.value&&c.loc)ll.value=c.loc;if(loc&&!loc.value)loc.value=c.desc?`${c.name} · ${c.desc}`:c.name;refreshScheduleMapFromInput(prefix)}
 function showNewCustFields(prefix,show){if(prefix!=='add')return;['add-ncf-1','add-ncf-2','add-ncf-3','add-ncf-4'].forEach(id=>{const el=document.getElementById(id);if(el)el.style.display=show?'':'none'})}
 const STATUS_OPTS={solar:['เสนอ','ดำเนินการ','เสร็จสิ้น','ยกเลิก'],electrical:['เสนอ','ดำเนินการ','เสร็จสิ้น','ยกเลิก'],civil:['เสนอ','ดำเนินการ','เสร็จสิ้น','ยกเลิก'],general:['เสนอ','ดำเนินการ','เสร็จสิ้น','ยกเลิก']};
 function onCustTypeChange(typeVal){const cat=getCategory(typeVal),sel=document.getElementById('cf-status'),cur=sel?.value;if(sel)sel.innerHTML=(STATUS_OPTS[cat]||STATUS_OPTS.general).map(s=>`<option value="${s}"${s===cur?' selected':''}>${s}</option>`).join('');document.getElementById('cf-wash-wrap').style.display=cat==='solar'?'':'none';document.getElementById('cf-solar-info').style.display=cat==='solar'?'':'none';document.getElementById('cf-finish-lbl').textContent=cat==='solar'?'วันติดตั้งสำเร็จ':'วันสิ้นสุด';document.getElementById('cf-size-lbl').textContent=cat==='solar'?'ขนาดติดตั้ง (kW)':cat==='electrical'?'ขนาดงาน':cat==='civil'?'พื้นที่/ขอบเขต':'ขนาด/ปริมาณ'}
@@ -5603,11 +6516,11 @@ const SCHED_BOARD={
       const dateHtml=sameDay?fmtDate(s.start_date):`${fmtDate(s.start_date)}<small>ถึง ${fmtDate(s.end_date)}</small>`;
       return `<tr data-sched-id="${escHtml(s.id||'')}" data-sched='${JSON.stringify(s).replace(/'/g,"&#39;")}' onclick="openEditSchedFromEl(this)">
         <td>${i+1}</td>
+        <td><div class="sched-list-date">${dateHtml}</div></td>
+        <td><span class="sched-list-team">${escHtml(s.team_name||'-')}</span></td>
+        <td><div class="sched-list-job">${escHtml(s.job_title||'-')}</div><span class="job-type-tag jt-${escHtml(s.job_type||'general')}" style="margin-top:4px">${escHtml(JOB_TYPES[s.job_type||'general']||s.job_type||'-')}</span></td>
         <td><span class="sched-list-so">${escHtml(s.so_number||'-')}</span></td>
         <td><div class="sched-list-cust">${escHtml(s.customer_name||'-')}</div>${s.job_location?`<div style="font-size:11px;color:#64748b;font-weight:700">${escHtml(s.job_location)}</div>`:''}</td>
-        <td><div class="sched-list-job">${escHtml(s.job_title||'-')}</div><span class="job-type-tag jt-${escHtml(s.job_type||'general')}" style="margin-top:4px">${escHtml(JOB_TYPES[s.job_type||'general']||s.job_type||'-')}</span></td>
-        <td><span class="sched-list-team">${escHtml(s.team_name||'-')}</span></td>
-        <td><div class="sched-list-date">${dateHtml}</div></td>
         <td onclick="event.stopPropagation()">${renderScheduleStatusSelect(s)}</td>
       </tr>`;
     }).join('');
@@ -5617,7 +6530,11 @@ const SCHED_BOARD={
     const thMonthsFull=['มกราคม','กุมภาพันธ์','มีนาคม','เมษายน','พฤษภาคม','มิถุนายน','กรกฎาคม','สิงหาคม','กันยายน','ตุลาคม','พฤศจิกายน','ธันวาคม'];
     const y=this.date.getFullYear(),m=this.date.getMonth();
     const filter=document.getElementById('sched-type-filter')?.value||'all';
-    document.getElementById('sched-board-month').textContent=`${thMonthsFull[m]} ${y+543}`;
+    const monthText=`${thMonthsFull[m]} ${y+543}`;
+    ['sched-board-month','sched-board-control-month'].forEach(id=>{
+      const el=document.getElementById(id);
+      if(el)el.textContent=monthText;
+    });
     const eyebrow=document.querySelector('.sched-eyebrow');
     if(eyebrow)eyebrow.textContent=`SCHEDULE · ${thMonthsFull[m].toUpperCase()} ${y+543}`;
     const first=new Date(y,m,1).getDay(),total=new Date(y,m+1,0).getDate(),prev=new Date(y,m,0).getDate(),today=ymd(new Date());
@@ -5640,7 +6557,6 @@ const SCHED_BOARD={
     this.renderList();
   }
 };
-let ROSTER_SKILL='all',ROSTER_SEARCH='';
 document.addEventListener('click',e=>{
   const tl=e.target.closest('[data-tl-nav]');
   if(tl){e.stopPropagation();TL.nav(tl.dataset.tlPrefix,tl.dataset.tlNav==='prev'?-1:1);return}
@@ -5681,30 +6597,6 @@ document.addEventListener('DOMContentLoaded', () => {
     card.style.animationDelay = `${i * 0.07}s`;
   });
 });
-function filterRosterSkill(skill, btn) {
-  ROSTER_SKILL = skill;
-  btn.closest('.roster-filter-row')?.querySelectorAll('.roster-chip').forEach(b => b.classList.remove('active'));
-  btn.classList.add('active');
-  applyRosterFilter();
-}
-function filterRosterSearch(q) {
-  ROSTER_SEARCH = (q || '').toLowerCase().trim();
-  applyRosterFilter();
-}
-function applyRosterFilter() {
-  let shown = 0, total = 0;
-  document.querySelectorAll('#roster-grid .emp-card').forEach(card => {
-    total++;
-    const skillData = (card.dataset.skill || '').toLowerCase();
-    const searchData = (card.dataset.search || '').toLowerCase();
-    const ok = (ROSTER_SKILL === 'all' || skillData.includes(String(ROSTER_SKILL).toLowerCase()))
-             && (!ROSTER_SEARCH || searchData.includes(ROSTER_SEARCH));
-    card.style.display = ok ? '' : 'none';
-    if (ok) shown++;
-  });
-  const c = document.getElementById('roster-count');
-  if (c) c.textContent = `ทักษะ · ${shown} / ${total}`;
-}
 </script>
 <script>
 (() => {
@@ -5721,7 +6613,7 @@ function applyRosterFilter() {
   }
   function cardSearch(card) {
     return norm(
-      (card.getAttribute('data-search') || '') + ' ' + card.textContent
+      card.getAttribute('data-name') || card.getAttribute('data-search') || ''
     );
   }
   function applyRosterFilter() {
@@ -5744,11 +6636,15 @@ function applyRosterFilter() {
   function setSkillFromButton(btn) {
     let label = norm(btn.textContent).replace(/^#/, '');
     if (label.includes('ทุกทักษะ')) label = 'all';
-    state.skill = label;
+    setSkill(label);
+  }
+  function setSkill(value) {
+    state.skill = norm(value) || 'all';
     document
       .querySelectorAll('#panel-teams .roster-chip')
       .forEach(chip => chip.classList.remove('active'));
-    btn.classList.add('active');
+    const select = document.getElementById('roster-skill-filter');
+    if (select && select.value !== value) select.value = value || 'all';
     applyRosterFilter();
   }
   function setSearch(value) {
@@ -5774,11 +6670,15 @@ function applyRosterFilter() {
     e.stopImmediatePropagation();
     setSearch(e.target.value);
   }, true);
+  document.addEventListener('change', (e) => {
+    if (!e.target.matches('#roster-skill-filter')) return;
+    e.stopImmediatePropagation();
+    setSkill(e.target.value);
+  }, true);
 
   window.filterRosterSkill = (skill, btn) => {
-    state.skill = norm(skill) || 'all';
     if (btn) setSkillFromButton(btn);
-    else applyRosterFilter();
+    else setSkill(skill);
   };
 
   window.filterRosterSearch = setSearch;
@@ -5878,7 +6778,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
 <script>
 /* === CODEX SCHEDULE STATUS DROPDOWN REAL FIX START === */
-window.renderScheduleStatusSelect = function renderScheduleStatusSelect(job) {
+window.renderScheduleStatusSelect = function(job) {
   const st = resolveScheduleStatus(job);
   return `
     <span class="sched-status-control ${st.cls}" onclick="event.stopPropagation()">
@@ -5895,7 +6795,7 @@ window.renderScheduleStatusSelect = function renderScheduleStatusSelect(job) {
   `;
 };
 
-window.setScheduleStatusClass = function setScheduleStatusClass(sel, key) {
+window.setScheduleStatusClass = function(sel, key) {
   const wrap = sel.closest('.sched-status-control');
   const nextClass = SCHED_STATUS_CLASSES[key] || SCHED_STATUS_CLASSES.upcoming;
   const classes = Object.values(SCHED_STATUS_CLASSES);
@@ -5905,7 +6805,7 @@ window.setScheduleStatusClass = function setScheduleStatusClass(sel, key) {
   }
 };
 
-window.updateScheduleStatus = async function updateScheduleStatus(sel) {
+window.updateScheduleStatus = async function(sel) {
   const id = sel.dataset.schedId;
   const status = sel.value;
   const prev = sel.dataset.prev || '';
@@ -5957,7 +6857,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
 <script>
 /* === CODEX CERTIFICATIONS CLICK DETAIL START === */
-window.filterCertCards = function filterCertCards(q) {
+window.filterCertCards = function(q) {
   const kw = String(q || '').toLowerCase().trim();
   document.querySelectorAll('#cert-grid .cert-card').forEach(card => {
     const text = `${card.dataset.certSearch || ''} ${card.textContent || ''}`.toLowerCase();
@@ -5965,7 +6865,7 @@ window.filterCertCards = function filterCertCards(q) {
   });
 };
 
-window.openCertDetail = function openCertDetail(btn) {
+window.openCertDetail = function(btn) {
   let items = [];
   try {
     items = JSON.parse(btn.dataset.certItems || '[]');
@@ -6019,9 +6919,9 @@ window.openCertDetail = function openCertDetail(btn) {
                 <input class="cert-file-input" id="${escHtml(inputId)}" type="file" name="cert_file" accept=".jpg,.jpeg,.png,.webp,.pdf" onchange="handleCertAttachFile(this)">
                 <label class="cert-upload-trigger" for="${escHtml(inputId)}">
                   <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14"/><path d="M5 12h14"/><path d="M19 21H5a2 2 0 0 1-2-2V7"/></svg>
-                  <span class="cert-upload-name">${lic.file ? txtChangeFile : txtAttachFile}</span>
+                  <span class="cert-upload-name" data-default-label="${escHtml(lic.file ? txtChangeFile : txtAttachFile)}">${lic.file ? txtChangeFile : txtAttachFile}</span>
                 </label>
-                <button class="cert-submit" type="submit">${txtSaveFile}</button>
+                <button class="cert-submit" type="submit" disabled hidden>${txtSaveFile}</button>
               </form>`
             : '';
 
@@ -6047,13 +6947,21 @@ window.openCertDetail = function openCertDetail(btn) {
   openModal('cert-detail-overlay');
 };
 
-window.handleCertAttachFile = function handleCertAttachFile(input) {
-  const name = input.files && input.files.length ? input.files[0].name : '';
-  const label = input.closest('.cert-attach-form')?.querySelector('.cert-upload-name');
-  if (label && name) label.textContent = name;
+window.handleCertAttachFile = function(input) {
+  const form = input.closest('.cert-attach-form');
+  const hasFile = !!(input.files && input.files.length);
+  const name = hasFile ? input.files[0].name : '';
+  const label = form?.querySelector('.cert-upload-name');
+  const submit = form?.querySelector('.cert-submit');
+  if (label) label.textContent = hasFile ? name : (label.dataset.defaultLabel || label.textContent);
+  if (submit) {
+    submit.disabled = !hasFile;
+    submit.hidden = !hasFile;
+  }
+  if (form) form.classList.toggle('is-ready', hasFile);
 };
 
-window.closeCertDetail = function closeCertDetail() {
+window.closeCertDetail = function() {
   closeModalById('cert-detail-overlay');
 };
 /* === CODEX CERTIFICATIONS CLICK DETAIL END === */
@@ -6071,7 +6979,7 @@ function schedJobType(job) {
   return match ? match[1] : 'general';
 }
 
-window.openEditSchedFromEl = function openEditSchedFromEl(btn) {
+window.openEditSchedFromEl = function(btn) {
   if (!btn) return;
   let s = null;
   try {
@@ -6102,7 +7010,18 @@ window.openEditSchedFromEl = function openEditSchedFromEl(btn) {
 
   TL.setRange('es', s.start_date, s.end_date, s.team_name, s.id);
   openModal('modal-edit-sched');
+  setTimeout(() => initScheduleMapPicker('es'), 160);
 };
+
+document.addEventListener('click', event => {
+  const btn = event.target.closest('.sched-event[data-sched-id], .sched-event[data-sched], .cal-ev-card[data-sched-id], .cal-ev-card[data-sched]');
+  if (!btn || event.target.closest('.sched-more, .sched-status-select')) return;
+  event.preventDefault();
+  event.stopPropagation();
+
+  const source = btn.dataset.schedSource || (btn.closest('#tcal-overlay') ? 'team' : 'main');
+  openScheduleEditFromCalendar(event, btn, source);
+}, true);
 
 document.getElementById('form-edit-sched')?.addEventListener('submit', () => {
   const note = document.getElementById('es-note');
@@ -6368,7 +7287,7 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
-  window.openAirconAdd = function openAirconAdd(){
+  window.openAirconAdd = function(){
     const form = document.getElementById('form-aircon');
     if (!form) return;
     form.reset();
@@ -6382,7 +7301,7 @@ document.addEventListener('DOMContentLoaded', () => {
     setTimeout(() => form.querySelector('[name="aircon_code"]')?.focus(), 80);
   };
 
-  window.openAirconEdit = function openAirconEdit(btn){
+  window.openAirconEdit = function(btn){
     const form = document.getElementById('form-aircon');
     if (!form || !btn?.dataset.aircon) return;
     let data = {};

@@ -10,6 +10,42 @@
 <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.2/dist/jspdf.umd.min.js"></script>
 <style>
+  /* ===== ref-tag + panel ===== */
+.ref-tag{
+  font-size:11px;color:#92400e;background:#fffbeb;
+  border:1px solid #fcd34d;border-radius:6px;
+  padding:3px 8px;margin-top:3px;display:inline-block;
+  line-height:1.6;cursor:pointer;position:relative;
+}
+.ref-tag:hover{background:#fef3c7;}
+.ref-panel{
+  display:none;position:absolute;z-index:300;
+  background:#fff;border:1px solid var(--line);border-radius:10px;
+  box-shadow:0 8px 28px #0002;min-width:480px;
+  animation:popIn .15s ease-out;left:0;top:100%;margin-top:4px;
+}
+.ref-panel .rp-head{
+  padding:8px 12px;font-size:11px;font-weight:700;color:var(--navy);
+  border-bottom:1px solid var(--line);background:#fffbeb;
+  border-radius:10px 10px 0 0;
+}
+.ref-panel table{width:100%;border-collapse:collapse;font-size:12px;}
+.ref-panel th{
+  padding:6px 8px;font-weight:700;color:#374151;
+  border-bottom:1px solid var(--line);background:#f8fafc;text-align:left;
+  white-space:nowrap;
+}
+.ref-panel td{padding:6px 8px;border-bottom:1px solid #f5f5f5;vertical-align:top;}
+.ref-panel tr:last-child td{border-bottom:none;}
+.ref-panel tr.rp-row:hover td{background:#fffbeb;cursor:pointer;}
+.ref-panel .rp-price{text-align:right;font-weight:700;color:var(--navy);font-variant-numeric:tabular-nums;white-space:nowrap;}
+.ref-panel .rp-pname{max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:#555;font-size:11px;}
+.ref-panel .rp-use{
+  font-size:10px;color:#fff;background:var(--blue);
+  border:none;border-radius:4px;padding:2px 8px;
+  cursor:pointer;white-space:nowrap;
+}
+.ref-panel .rp-use:hover{background:var(--navy2);}
   :root{
     --navy:#1f3a93; --navy2:#16306f; --blue:#1e50c8; --bg:#eef1f6; --line:#dfe4ec;
     --green:#16a34a; --muted:#6b7280; --soft:#f7f9fc; --docline:#6c6cf0;
@@ -369,6 +405,8 @@ function paginate(total) {
    ================================================================ */
 let currentCustomerCode = '';
 let sellerSigData       = null;
+let lastSeparators = [];  
+let lastOcrLines   = []; 
 
 /* ================================================================
    HELPERS
@@ -539,25 +577,110 @@ function preprocessImage(dataUrl) {
   });
 }
 
-/* ---- OCR post-process ---- */
 function postProcessOCR(text) {
   let t = text;
+
+  // ★ รวมอักษรไทยที่เว้นวรรคผิด — แต่ห้ามข้าม \n (ไม่งั้นบรรทัดจะรวมกัน)
   for (let i = 0; i < 10; i++) {
     const prev = t;
-    t = t.replace(/([\u0E00-\u0E7F])\s+([\u0E00-\u0E7F])/g, '$1$2');
+    t = t.replace(/([\u0E00-\u0E7F])[^\S\n]+([\u0E00-\u0E7F])/g, '$1$2');
     if (t === prev) break;
   }
+
   t = t.replace(/^[.:;|,\s]+/gm, '');
   t = t.replace(/[.|,\s]+$/gm, '');
-  t = t.replace(/%/g, 'x');
+
+  // ★ แก้ % → x เฉพาะที่อยู่ระหว่างตัวเลข (เช่น 2%4 → 2x4)
+  //   แต่ไม่แก้ 5% (เปอร์เซ็นต์จริง)
+  t = t.replace(/(\d)%(\d)/g, '$1x$2');
+
   t = t.replace(/\bO(\d)/g, '0$1');
   t = t.replace(/(\d)O/g, '$10');
   t = t.replace(/(\d)l(\d)/g, '$11$2');
   t = t.replace(/\bS(\d)/g, '5$1');
+
+  // ★ แก้ Thai→Latin mixed tokens
+  t = t.split('\n').map(line => fixMixedTokens(line)).join('\n');
+
+  // ★ Known product code fixes
+  const knownCodeFixes = [
+    [/(?<=^|[\s])โทพ(?=$|[\s])/gm, 'THW'],
+    [/(?<=^|[\s])โท(?=[A-Z0-9])/gm, 'TH'],
+    [/(?<=[A-Z0-9])พ(?=$|[\s])/gm,  'W'],
+    [/(?<=^|[\s])ทว(?=$|[\s])/gm,   'HW'],
+  ];
+  knownCodeFixes.forEach(([rx, rep]) => { t = t.replace(rx, rep); });
+
   t = t.split('\n').map(l => l.trim()).filter(l => l.length > 0).join('\n');
   return t;
 }
 
+/* ================================================================
+   ★ Thai-to-Latin OCR confusion map
+   ================================================================ */
+const THAI_TO_LATIN_MAP = {
+  'ท': 'H',  'ห': 'H',  'ฟ': 'F',
+  'โ': 'T',  'ต': 'T',
+  'พ': 'W',  'ว': 'W',  'ช': 'U',
+  'ย': 'Y',  'ซ': 'Z',  'ค': 'K',  'ก': 'K',
+  'ล': 'L',  'ม': 'M',  'น': 'N',  'ข': 'X',
+  'อ': 'O',  'ป': 'P',  'ร': 'R',  'ส': 'S',
+  'บ': 'B',  'ด': 'D',  'ฉ': 'C',  'จ': 'C',
+  'ฝ': 'F',
+  // สระ/วรรณยุกต์ที่ไม่ควรมีใน code → ลบทิ้ง
+  'ิ': '',   'ั': '',   '่': '',
+  '้': '',   '๊': '',   '็': '',
+};
+
+
+/* ================================================================
+   ★ fixMixedTokens — แก้ token ที่ OCR อ่านไทยแทน Latin
+   ================================================================ */
+function fixMixedTokens(line) {
+  return line.split(/(\s+)/).map(token => {
+    const hasAsciiLetter = /[A-Za-z0-9]/.test(token);
+    const hasThai        = /[\u0E00-\u0E7F]/.test(token);
+
+    if (!hasThai) return token; // ไม่มีไทย → ไม่ต้องแก้
+
+    // ★ กรณี 1: token สั้น ≤ 12 ตัว + มี ASCII ด้วย → น่าจะเป็น model code ที่ปนไทย
+    //   เช่น "Tโทพ", "ABCทว", "1x2.5โทพ" ฯลฯ
+    if (hasAsciiLetter && token.length <= 12) {
+      return convertThaiToLatin(token);
+    }
+
+    // ★ กรณี 2: token สั้น ≤ 6 ตัว + ทุกตัวเป็นไทย แต่ดูเหมือน product code
+    //   "โทพ" → พยัญชนะ "ทพ" (2 ตัว) + "โ" เป็น leading vowel ไม่ใช่ real vowel combo
+    if (!hasAsciiLetter && token.length <= 6) {
+      const consonantsOnly = token.replace(/[\u0E30-\u0E4E]/g, ''); // ตัดสระบน/ล่าง/วรรณยุกต์
+
+      if (/^[\u0E01-\u0E2E]{2,5}$/.test(consonantsOnly) && consonantsOnly.length >= 2) {
+        // ★ ตรวจว่ามีสระที่บ่งบอกว่าเป็นคำไทยจริงหรือไม่
+        // สระ: -ะ -า -ำ -ิ -ี -ึ -ื -ุ -ู เ- แ- ใ- ไ-
+        // หมายเหตุ: "โ" (U+0E42) ไม่อยู่ใน list นี้ → "โทพ" จะผ่านเงื่อนไข
+        const hasRealVowelCombo = /[\u0E30\u0E32\u0E33\u0E34\u0E35\u0E36\u0E37\u0E38\u0E39\u0E40\u0E41\u0E43\u0E44]/.test(token);
+
+        if (!hasRealVowelCombo) {
+          return convertThaiToLatin(token);
+        }
+      }
+    }
+
+    return token;
+  }).join('');
+}
+
+
+/* ================================================================
+   ★ convertThaiToLatin — แปลงอักษรไทยใน token เป็น Latin
+   ================================================================ */
+function convertThaiToLatin(token) {
+  let result = '';
+  for (const ch of token) {
+    result += THAI_TO_LATIN_MAP[ch] ?? ch;
+  }
+  return result;
+}
 $('#ocrBtn').onclick = async () => {
   if (!imgData) { alert('กรุณาเลือกรูปก่อน'); return; }
   const prog = $('#prog');
@@ -690,6 +813,93 @@ $('#addItem').onclick = () => { $('#itemRows').appendChild(itemRow()); render();
 /* ================================================================
    NEW-TAG helpers
    ================================================================ */
+/* ================================================================
+   REF-TAG helpers — ราคาอ้างอิงจากลูกค้าอื่น
+   ================================================================ */
+function clearRefTag(tr) {
+  tr.querySelector('.ref-tag')?.remove();
+}
+
+function setRefTag(tr, suggestions) {
+  const td = tr.querySelector('.td-desc');
+  clearRefTag(tr);
+  if (!suggestions?.length) return;
+
+  const best = suggestions[0];
+
+  const wrap = document.createElement('div');
+  wrap.style.position = 'relative';
+
+  // --- tag แสดงบรรทัดเดียว ---
+  const tag = document.createElement('div');
+  tag.className = 'ref-tag';
+  tag.innerHTML =
+    `💡 ราคาอ้างอิง: <b>${fmt(best.unit_price)}</b> บาท` +
+    ` · ${esc2(best.so_no || '-')}` +
+    ` · ${esc2(best.customer_name || '-')}` +
+    (suggestions.length > 1
+      ? ` <span style="color:var(--blue)">▾ ${suggestions.length} บริษัท</span>`
+      : '');
+
+  // --- panel ตาราง 3 บริษัท ---
+  const panel = document.createElement('div');
+  panel.className = 'ref-panel';
+
+  let rows = '';
+  suggestions.forEach((s, i) => {
+    rows += `
+      <tr class="rp-row">
+        <td>${i + 1}</td>
+        <td>${esc2(s.customer_name || '-')}</td>
+        <td style="white-space:nowrap">${esc2(s.so_no || '-')}</td>
+        <td style="white-space:nowrap">${esc2(s.doc_date || '-')}</td>
+        <td class="rp-pname" title="${esc2(s.product_name || '')}">${esc2(s.product_name || '-')}</td>
+        <td class="rp-price">${fmt(s.unit_price)}</td>
+        <td><button class="rp-use" data-i="${i}">ใช้ราคานี้</button></td>
+      </tr>`;
+  });
+
+  panel.innerHTML = `
+    <div class="rp-head">
+      📋 ราคาอ้างอิงจากลูกค้าอื่น (${suggestions.length} บริษัทล่าสุด)
+    </div>
+    <table>
+      <thead><tr>
+        <th>#</th><th>บริษัท</th><th>SO No.</th><th>วันที่</th>
+        <th>ชื่อสินค้า</th>
+        <th style="text-align:right">ราคา/หน่วย</th><th></th>
+      </tr></thead>
+      <tbody>${rows}</tbody>
+    </table>`;
+
+  // toggle panel
+  tag.onclick = e => {
+    e.stopPropagation();
+    const showing = panel.style.display === 'block';
+    document.querySelectorAll('.ref-panel').forEach(p => p.style.display = 'none');
+    panel.style.display = showing ? 'none' : 'block';
+  };
+
+  // ปุ่ม "ใช้ราคานี้"
+  panel.querySelectorAll('.rp-use').forEach(btn => {
+    btn.onclick = e => {
+      e.stopPropagation();
+      const s = suggestions[parseInt(btn.dataset.i)];
+      const priceEl = tr.querySelector('.price');
+      if (priceEl) { priceEl.value = s.unit_price; render(); }
+      panel.style.display = 'none';
+    };
+  });
+
+  wrap.appendChild(tag);
+  wrap.appendChild(panel);
+  td.appendChild(wrap);
+}
+
+// ปิด ref-panel เมื่อคลิกที่อื่น
+document.addEventListener('click', () => {
+  document.querySelectorAll('.ref-panel').forEach(p => p.style.display = 'none');
+});
 function setNewTag(tr, isNew) {
   const td  = tr.querySelector('.td-desc');
   let   tag = td.querySelector('.new-tag');
@@ -747,20 +957,31 @@ async function batchMatchItems(rows) {
       tr.dataset.productName = r.product_name || '';
       tr.dataset.keyword     = r.match_keyword || names[i] || '';
 
+      clearRefTag(tr);   // ล้าง ref tag เก่าก่อนเสมอ
+
       if (!r.is_new) {
         const priceEl = tr.querySelector('.price');
         const unitEl  = tr.querySelector('.unit');
-        if (r.unit_price != null && priceEl) {
+
+        if (r.has_price && priceEl) {
+          // ★ มีราคาจากลูกค้ารายนี้ → ใช้เลย
           priceEl.value = r.unit_price;
+
+        } else if (r.ref_suggestions?.length && priceEl) {
+          // ★ ไม่มีราคาจากลูกค้ารายนี้ → auto-fill จากอันล่าสุด + แสดง panel
+          priceEl.value = r.ref_suggestions[0].unit_price;
+          setRefTag(tr, r.ref_suggestions);
         }
-        if (r.unit && unitEl && !unitEl.value)  unitEl.value = r.unit;
+
+        if (r.unit && unitEl && !unitEl.value) unitEl.value = r.unit;
         matched++;
       }
 
       setNewTag(tr, !!r.is_new);
     });
 
-    $('#matchBarTxt').textContent = `จับคู่สำเร็จ ${matched} รายการ · สินค้าใหม่ ${names.length - matched} รายการ`;
+    $('#matchBarTxt').textContent =
+      `จับคู่สำเร็จ ${matched} รายการ · สินค้าใหม่ ${names.length - matched} รายการ`;
     render();
 
   } catch (err) {
@@ -770,7 +991,6 @@ async function batchMatchItems(rows) {
 
   setTimeout(() => { bar.style.display = 'none'; }, 4000);
 }
-
 async function onCustomerSelected() {
   const rows = [...$$('#itemRows .item')];
   if (rows.length) await batchMatchItems(rows);
@@ -1084,6 +1304,9 @@ function renderHistContent(records, itemNew, productName, head, body, currentPri
     const priceColor = isUsed ? 'color:#16a34a;font-weight:700;' : 'color:#374151;';
     const rowBg      = isUsed ? 'background:#f0fdf4;' : '';
     const usedBadge  = isUsed ? ' <span style="font-size:10px;color:#16a34a;background:#dcfce7;border:1px solid #bbf7d0;border-radius:4px;padding:1px 5px;">✓ ราคาที่ใช้</span>' : '';
+    const priceDisplay = (r.unit_price != null && r.unit_price > 0)
+    ? fmt(r.unit_price)
+    : '<span style="color:#9ca3af;font-size:11px;">ไม่ระบุ</span>';
 
     html += `<tr class="hist-row" data-idx="${i}" style="${rowBg}cursor:pointer;" title="ดับเบิ้ลคลิกเพื่อใช้ราคา ${fmt(r.unit_price || 0)}">
       <td>${i + 1}</td>
@@ -1091,7 +1314,7 @@ function renderHistContent(records, itemNew, productName, head, body, currentPri
       <td style="white-space:nowrap;font-variant-numeric:tabular-nums;">${esc2(r.doc_date_raw || '-')}</td>
       <td style="max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="${esc2(r.product_name || '')}">${esc2(r.product_name || '-')}${usedBadge}</td>
       <td style="text-align:right;font-variant-numeric:tabular-nums;">${fmt(r.qty || 0)} ${esc2(r.unit || '')}</td>
-      <td style="text-align:right;font-variant-numeric:tabular-nums;${priceColor}">${fmt(r.unit_price || 0)}</td>
+      <td style="text-align:right;${priceColor}">${priceDisplay}</td>
     </tr>`;
   });
 
