@@ -39,7 +39,7 @@
 .ref-panel tr:last-child td{border-bottom:none;}
 .ref-panel tr.rp-row:hover td{background:#fffbeb;cursor:pointer;}
 .ref-panel .rp-price{text-align:right;font-weight:700;color:var(--navy);font-variant-numeric:tabular-nums;white-space:nowrap;}
-.ref-panel .rp-pname{max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:#555;font-size:11px;}
+.ref-panel .rp-pname{color:#555;font-size:11px;white-space:normal;word-break:break-word;}
 .ref-panel .rp-use{
   font-size:10px;color:#fff;background:var(--blue);
   border:none;border-radius:4px;padding:2px 8px;
@@ -830,17 +830,18 @@ function setRefTag(tr, suggestions) {
   const wrap = document.createElement('div');
   wrap.style.position = 'relative';
 
-  // --- tag แสดงบรรทัดเดียว ---
-  const tag = document.createElement('div');
-  tag.className = 'ref-tag';
-  tag.innerHTML =
+const tag = document.createElement('div');
+tag.className = 'ref-tag';
+tag.innerHTML =
     `💡 ราคาอ้างอิง: <b>${fmt(best.unit_price)}</b> บาท` +
     ` · ${esc2(best.so_no || '-')}` +
     ` · ${esc2(best.customer_name || '-')}` +
+    (best.match_keyword
+      ? `<br>🔍 จับคู่: <b>${esc2(best.match_keyword)}</b>`
+      : '') +
     (suggestions.length > 1
       ? ` <span style="color:var(--blue)">▾ ${suggestions.length} บริษัท</span>`
       : '');
-
   // --- panel ตาราง 3 บริษัท ---
   const panel = document.createElement('div');
   panel.className = 'ref-panel';
@@ -853,7 +854,8 @@ function setRefTag(tr, suggestions) {
         <td>${esc2(s.customer_name || '-')}</td>
         <td style="white-space:nowrap">${esc2(s.so_no || '-')}</td>
         <td style="white-space:nowrap">${esc2(s.doc_date || '-')}</td>
-        <td class="rp-pname" title="${esc2(s.product_name || '')}">${esc2(s.product_name || '-')}</td>
+        <td class="rp-pname">${esc2(s.product_name || '-')}</td>
+        <td style="white-space:nowrap;font-size:10px;color:var(--blue);">${esc2(s.match_keyword || '-')}</td>
         <td class="rp-price">${fmt(s.unit_price)}</td>
         <td><button class="rp-use" data-i="${i}">ใช้ราคานี้</button></td>
       </tr>`;
@@ -867,6 +869,7 @@ function setRefTag(tr, suggestions) {
       <thead><tr>
         <th>#</th><th>บริษัท</th><th>SO No.</th><th>วันที่</th>
         <th>ชื่อสินค้า</th>
+        <th>keyword</th>
         <th style="text-align:right">ราคา/หน่วย</th><th></th>
       </tr></thead>
       <tbody>${rows}</tbody>
@@ -922,8 +925,8 @@ function setNewTag(tr, isNew) {
 /* ================================================================
    BATCH MATCH
    ================================================================ */
-const BATCH_URL   = '/SoItem/batch-match';
-const HISTORY_URL = '/SoItem/sales-history';
+const BATCH_URL   = '/soitem/batch-match';
+const HISTORY_URL = '/soitem/sales-history';
 
 async function batchMatchItems(rows) {
   if (!currentCustomerCode || !rows.length) return;
@@ -957,28 +960,41 @@ async function batchMatchItems(rows) {
       tr.dataset.productName = r.product_name || '';
       tr.dataset.keyword     = r.match_keyword || names[i] || '';
 
-      clearRefTag(tr);   // ล้าง ref tag เก่าก่อนเสมอ
+clearRefTag(tr);
+setNewTag(tr, false); 
+if (!r.is_new) {
+    // ===== เจอในลูกค้ารายนี้ =====
+    const priceEl = tr.querySelector('.price');
+    const unitEl  = tr.querySelector('.unit');
 
-      if (!r.is_new) {
-        const priceEl = tr.querySelector('.price');
-        const unitEl  = tr.querySelector('.unit');
+    if (r.has_price && priceEl) {
+        priceEl.value = r.unit_price;
+        // ★ มีราคาจากลูกค้ารายนี้ → ไม่ต้อง ref
+    } else if (r.ref_suggestions?.length && priceEl) {
+        // ★ เจอแต่ไม่มีราคา → ref เป็นข้อมูลเพิ่ม
+        priceEl.value = r.ref_suggestions[0].unit_price;
+        setRefTag(tr, r.ref_suggestions);
+    }
 
-        if (r.has_price && priceEl) {
-          // ★ มีราคาจากลูกค้ารายนี้ → ใช้เลย
-          priceEl.value = r.unit_price;
+    if (r.unit && unitEl && !unitEl.value) unitEl.value = r.unit;
+    matched++;
+    // ★ ไม่แสดง 🆕 เพราะเจอในลูกค้ารายนี้แล้ว
 
-        } else if (r.ref_suggestions?.length && priceEl) {
-          // ★ ไม่มีราคาจากลูกค้ารายนี้ → auto-fill จากอันล่าสุด + แสดง panel
-          priceEl.value = r.ref_suggestions[0].unit_price;
-          setRefTag(tr, r.ref_suggestions);
+} else {
+    // ===== ไม่เจอในลูกค้ารายนี้ =====
+    const priceEl = tr.querySelector('.price');
+    const unitEl  = tr.querySelector('.unit');
+
+    if (r.ref_suggestions?.length) {
+        if (priceEl) priceEl.value = r.ref_suggestions[0].unit_price;
+        setRefTag(tr, r.ref_suggestions);   // ★ ref ก่อน
+        if (unitEl && !unitEl.value && r.ref_suggestions[0].unit) {
+            unitEl.value = r.ref_suggestions[0].unit;
         }
+    }
 
-        if (r.unit && unitEl && !unitEl.value) unitEl.value = r.unit;
-        matched++;
-      }
-
-      setNewTag(tr, !!r.is_new);
-    });
+    setNewTag(tr, true);}  // ★ 🆕 ทีหลัง (อยู่ล่างเสมอ)
+});
 
     $('#matchBarTxt').textContent =
       `จับคู่สำเร็จ ${matched} รายการ · สินค้าใหม่ ${names.length - matched} รายการ`;
@@ -993,9 +1009,22 @@ async function batchMatchItems(rows) {
 }
 async function onCustomerSelected() {
   const rows = [...$$('#itemRows .item')];
+  // ★ รีเซ็ตราคา/หน่วย/tag ของลูกค้าเก่า
+  rows.forEach(tr => {
+    const priceEl = tr.querySelector('.price');
+    const unitEl  = tr.querySelector('.unit');
+    if (priceEl) priceEl.value = 0;
+    if (unitEl)  unitEl.value  = '';
+    tr.dataset.itemNew     = '';
+    tr.dataset.productName = '';
+    tr.dataset.keyword     = '';
+    tr.dataset.isNew       = '0';
+    setNewTag(tr, false);
+    clearRefTag(tr);
+  });
+  render();
   if (rows.length) await batchMatchItems(rows);
 }
-
 /* ================================================================
    SEARCH COMPANY (API)
    ================================================================ */

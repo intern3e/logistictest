@@ -462,7 +462,7 @@ private function convertBuddhistDate(string $date): string
                         $this->stampCommonInfo($pdf, $so_detail_id, $so_id, $stampImage);
 
                         // ✨ Layer 4: ซ้อน deposit เฉพาะหน้าสุดท้ายของบิลเดิม + tcusOffset สุดท้าย
-                        $isLastPage = ($billPageNo == $billPageCount && $tcusOffset == $this->tcusPerBillPage);
+                        $isLastPage = ($tcusOffset == $this->tcusPerBillPage && $billPageNo == $billPageCount);
                         if ($hasDeposit && $depositPdfPath && $isLastPage) {
                             $this->overlayDepositPdf($pdf, $depositPdfPath, $pageWidth, $pageHeight);
                         }
@@ -559,9 +559,9 @@ if ($isSpecialCustomer) {
             }
 
             if ($useTemplate) {
-                for ($billPageNo = 1; $billPageNo <= $billPageCount; $billPageNo++) {
-                    for ($tcusOffset = 1; $tcusOffset <= $this->tcusPerBillPage; $tcusOffset++) {
-                        $tcusPageNo = (($billPageNo - 1) * $this->tcusPerBillPage) + $tcusOffset;
+                for ($tcusOffset = 1; $tcusOffset <= $this->tcusPerBillPage; $tcusOffset++) {
+                    for ($billPageNo = 1; $billPageNo <= $billPageCount; $billPageNo++) {
+                        $tcusPageNo = $tcusOffset;
 
                         $pdf->setSourceFile($filePath);
                         $templateBillId = $pdf->importPage($billPageNo);
@@ -591,7 +591,7 @@ if ($isSpecialCustomer) {
                         }
 
                         // ✨ Layer 5: ซ้อน deposit เฉพาะหน้าสุดท้าย
-                        $isLastPage = ($billPageNo == $billPageCount && $tcusOffset == $this->tcusPerBillPage);
+                        $isLastPage = ($tcusOffset == $this->tcusPerBillPage && $billPageNo == $billPageCount);
                         if ($hasDeposit && $depositPdfPath && $isLastPage) {
                             $this->overlayDepositPdf($pdf, $depositPdfPath, $pageWidth, $pageHeight);
                         }
@@ -725,7 +725,7 @@ if ($isSpecialCustomer) {
                         }
 
                         // ✨ Layer 5: ซ้อน deposit เฉพาะหน้าสุดท้าย
-                        $isLastPage = ($billPageNo == $billPageCount && $tcusOffset == $this->tcusPerBillPage);
+                        $isLastPage = ($tcusOffset == $this->tcusPerBillPage && $billPageNo == $billPageCount);
                         if ($hasDeposit && $depositPdfPath && $isLastPage) {
                             $this->overlayDepositPdf($pdf, $depositPdfPath, $pageWidth, $pageHeight);
                         }

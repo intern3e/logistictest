@@ -258,10 +258,10 @@ Route::post('/return/{id}/new-bill', [DeliverytrackController::class, 'saveNewBi
 
 use App\Http\Controllers\SoItemController;
  
-Route::get('/SoItem',                              [SoItemController::class, 'index']);
-Route::post('/SoItem',                             [SoItemController::class, 'store']);
-Route::post('/SoItem/batch-match',                 [SoItemController::class, 'batchMatch']);
-Route::get('/SoItem/sales-history/{customerCode}', [SoItemController::class, 'salesHistory']);
+Route::get('/soitem',                              [SoItemController::class, 'index']);
+Route::post('/soitem',                             [SoItemController::class, 'store']);
+Route::post('/soitem/batch-match',                 [SoItemController::class, 'batchMatch']);
+Route::get('/soitem/sales-history/{customerCode}', [SoItemController::class, 'salesHistory']);
 Route::get('/quotations',           [SoItemController::class, 'dashboard']);
 Route::get('/quotations/{id}/pdf',  [SoItemController::class, 'downloadPdf']);
 

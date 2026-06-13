@@ -360,32 +360,32 @@ class SoItemController extends Controller
 
         if ($candidates->isEmpty()) return [];
 
-        // --- 2) Group ตามบริษัท → run pipeline เดียวกับค้นลูกค้ารายนี้ ---
         $matches = [];
         foreach ($candidates->groupBy('customer_code') as $custCode => $rows) {
-            $m = $this->matchOne($keyword, $rows);   // ★ logic เดียวกันเป๊ะ
+            $m = $this->matchOne($keyword, $rows);
             if ($m) {
-                $matches[] = $m['row'];
+                $matches[] = [
+                    'row'     => $m['row'],
+                    'keyword' => $m['keyword'],
+                ];
             }
         }
-
         if (empty($matches)) return [];
-
-        // --- 3) เรียงวันที่ล่าสุด → 3 บริษัท ---
-        return collect($matches)
-            ->sortByDesc(fn($r) => $r->doc_date ? strtotime($r->doc_date) : 0)
-            ->take(3)
-            ->values()
-            ->map(fn($r) => [
-                'unit_price'    => (float) $r->unit_price,
-                'so_no'         => $r->so_no,
-                'customer_name' => $r->customer_name,
-                'doc_date'      => $r->doc_date
-                    ? \Carbon\Carbon::parse($r->doc_date)->format('d/m/Y')
-                    : '-',
-                'product_name'  => $r->product_name,
-            ])
-            ->toArray();
+            return collect($matches)
+                ->sortByDesc(fn($m) => $m['row']->doc_date ? strtotime($m['row']->doc_date) : 0)
+                ->take(3)
+                ->values()
+                ->map(fn($m) => [
+                    'unit_price'     => (float) $m['row']->unit_price,
+                    'so_no'          => $m['row']->so_no,
+                    'customer_name'  => $m['row']->customer_name,
+                    'doc_date'       => $m['row']->doc_date
+                        ? \Carbon\Carbon::parse($m['row']->doc_date)->format('d/m/Y')
+                        : '-',
+                    'product_name'   => $m['row']->product_name,
+                    'match_keyword'  => $m['keyword'],
+                ])
+                ->toArray();
     }
 
     /* ================================================================
@@ -466,16 +466,33 @@ class SoItemController extends Controller
             }
         }
 
-        // ★ เงื่อนไขผ่าน
-        if ($bestRow) {
-            if ($hasModel && $bestScore >= 5) {
-                return ['row' => $bestRow, 'keywords' => $bestKws];
-            }
-            if (!$hasModel && $bestHits >= 2) {
-                return ['row' => $bestRow, 'keywords' => $bestKws];
+if ($bestRow) {
+    // ★ ตรวจว่า model token ตัวไหน hit จริง
+    $modelActuallyHit = false;
+    $shortestHitModel = 999;
+    if ($hasModel) {
+        $bestNameLower = mb_strtolower($bestRow->product_name);
+        foreach ($searchTokens as $t) {
+            if ($t['is_model'] && mb_strpos($bestNameLower, mb_strtolower($t['text'])) !== false) {
+                $modelActuallyHit = true;
+                $shortestHitModel = min($shortestHitModel, mb_strlen($t['text']));
             }
         }
+    }
 
+    // ★ threshold ยืดหยุ่นตามความยาว model ที่สั้นที่สุดที่ hit
+    //   model ยาว ≥5 ตัว → score ≥ 5 (เดิม)
+    //   model สั้น 3-4 ตัว → score ≥ 3 (ผ่อนปรน)
+    $minScore = $modelActuallyHit ? min(5, max(3, $shortestHitModel)) : 5;
+
+    if ($hasModel && $modelActuallyHit && $bestScore >= $minScore) {
+        return ['row' => $bestRow, 'keywords' => $bestKws];
+    }
+    // ★ model ไม่ hit เลย → fallback brand logic
+    if ((!$hasModel || !$modelActuallyHit) && $bestHits >= 2) {
+        return ['row' => $bestRow, 'keywords' => $bestKws];
+    }
+}
         return null;
     }
 
@@ -789,12 +806,10 @@ class SoItemController extends Controller
         foreach ($models as $m) {
             if (!in_array($m, $keywords)) $keywords[] = $m;
         }
-        if (empty($models)) {
-            foreach ($brands as $b) {
-                if (!in_array($b, $keywords)) $keywords[] = $b;
-            }
+        // ★ เพิ่ม brand เป็น fallback เสมอ (ถ้า model ค้นไม่เจอจะได้ลองต่อ)
+        foreach ($brands as $b) {
+            if (!in_array($b, $keywords)) $keywords[] = $b;
         }
-
         return $keywords;
     }
 
@@ -856,6 +871,7 @@ class SoItemController extends Controller
     {
         if (mb_strlen($token) <= 3) return [$token];
         if (preg_match('/^[A-Z0-9\-\/\.]+$/u', $token)) return [$token];
+        if (strpos($token, '-') !== false) return [$token];
 
         $chars = preg_split('//u', $token, -1, PREG_SPLIT_NO_EMPTY);
         $parts = [];
