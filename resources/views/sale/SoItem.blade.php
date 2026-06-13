@@ -10,7 +10,65 @@
 <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.2/dist/jspdf.umd.min.js"></script>
 <style>
-  /* ===== ref-tag + panel ===== */
+ /* ===== PO Detail Modal (nested) ===== */
+.po-detail-bg{display:none;position:fixed;inset:0;z-index:1000;background:rgba(0,0,0,.5);justify-content:center;padding:20px 0;overflow-y:auto;scrollbar-width:none;-ms-overflow-style:none;}
+.po-detail-bg::-webkit-scrollbar{display:none;}
+.po-detail-bg.show{display:flex;align-items:flex-start;}
+.po-detail-box{background:#fff;border-radius:12px;width:min(95vw,1300px);overflow:hidden;box-shadow:0 16px 48px rgba(0,0,0,.3);animation:popIn .15s ease-out;margin:20px auto;flex-shrink:0;}
+.po-detail-head{display:flex;align-items:center;padding:12px 16px;background:#f8fafc;border-bottom:1.5px solid var(--line);}
+.po-detail-head .pdt{font-weight:700;font-size:14px;color:var(--navy);flex:1;}
+.po-detail-head .pdc{border:none;background:#eee;border-radius:6px;width:28px;height:28px;cursor:pointer;font-size:14px;color:#888;}
+.po-detail-head .pdc:hover{background:#ddd;color:#333;}
+.po-detail-body{padding:0;overflow-x:auto;}
+
+/* ===== PO Cost Modal ===== */
+.po-modal-bg{display:none;position:fixed;inset:0;z-index:999;background:rgba(0,0,0,.4);justify-content:center;padding:20px 0;overflow-y:auto;scrollbar-width:none;-ms-overflow-style:none;}
+.po-modal-bg::-webkit-scrollbar{display:none;}
+.po-modal-bg.show{display:flex;align-items:flex-start;}
+.po-modal-box{background:#fff;border-radius:12px;width:min(95vw,1200px);overflow:hidden;box-shadow:0 16px 48px rgba(0,0,0,.25);animation:popIn .15s ease-out;margin:20px auto;flex-shrink:0;}
+.po-modal-head{display:flex;align-items:center;padding:12px 16px;background:linear-gradient(135deg,#f0f4ff,#f8faff);border-bottom:1.5px solid var(--line);}
+.po-modal-head .pmt{font-weight:700;font-size:14px;color:var(--navy);flex:1;}
+.po-modal-head .pmc{border:none;background:#eee;border-radius:6px;width:28px;height:28px;cursor:pointer;font-size:14px;color:#888;}
+.po-modal-head .pmc:hover{background:#ddd;color:#333;}
+.po-modal-body{padding:0;overflow-x:auto;}
+.po-modal-body table{width:max-content;min-width:100%;border-collapse:collapse;font-size:12px;}
+.po-modal-body th{padding:7px 10px;text-align:left;font-size:10px;font-weight:700;color:#666;text-transform:uppercase;border-bottom:1.5px solid var(--line);background:#fafbfc;white-space:nowrap;position:sticky;top:0;}
+.po-modal-body th.r{text-align:right;}
+.po-modal-body td{padding:7px 10px;border-bottom:1px solid #f2f3f6;vertical-align:top;white-space:nowrap;}
+.po-modal-body tr:hover td{background:#f8f9fb;}
+.po-modal-body .best{color:#2e7d32;font-weight:700;}
+.po-modal-body .worst{color:#c62828;font-weight:700;}
+.po-modal-loading{text-align:center;padding:40px;color:var(--muted);font-size:13px;}
+.po-modal-sum{padding:8px 14px;font-size:12px;color:#555;background:#f0fdf4;border-bottom:1px solid var(--line);font-weight:600;}
+.po-modal-body, .po-detail-body{
+    padding:0;
+    overflow:auto;
+    max-height:70vh;
+    cursor:grab;
+}
+.po-modal-body:active, .po-detail-body:active{
+    cursor:grabbing;
+}
+/* scrollbar สวยๆ */
+.po-modal-body::-webkit-scrollbar,
+.po-detail-body::-webkit-scrollbar{
+    width:6px;
+    height:6px;
+}
+.po-modal-body::-webkit-scrollbar-thumb,
+.po-detail-body::-webkit-scrollbar-thumb{
+    background:#ccc;
+    border-radius:3px;
+}
+.po-modal-body::-webkit-scrollbar-thumb:hover,
+.po-detail-body::-webkit-scrollbar-thumb:hover{
+    background:#aaa;
+}
+.cart-btn{
+  width:26px;height:26px;background:none;border:1px solid transparent;border-radius:6px;
+  cursor:pointer;color:#aaa;font-size:14px;transition:.15s;display:inline-flex;align-items:center;justify-content:center;
+}
+.cart-btn:hover{background:#eff6ff;border-color:#bfdbfe;color:var(--blue);}
 .ref-tag{
   font-size:11px;color:#92400e;background:#fffbeb;
   border:1px solid #fcd34d;border-radius:6px;
@@ -55,7 +113,7 @@
   .topbar{background:linear-gradient(90deg,var(--navy2),var(--blue));color:#fff;padding:14px 22px;font-weight:600;font-size:18px;display:flex;align-items:center;gap:10px;}
   .topbar .dot{width:26px;height:26px;border-radius:6px;background:#fff3;display:flex;align-items:center;justify-content:center;}
   .wrap{display:grid;grid-template-columns:1fr;gap:18px;padding:18px;max-width:900px;margin:0 auto;}
-  .card{background:#fff;border:1px solid var(--line);border-radius:12px;overflow:hidden;box-shadow:0 1px 3px #0000000a;}
+  .card{background:#fff;border:1px solid var(--line);border-radius:12px;overflow:visible;box-shadow:0 1px 3px #0000000a;}
   .tabs{display:flex;border-bottom:1px solid var(--line);}
   .tab{flex:1;padding:14px;text-align:center;cursor:pointer;font-weight:600;color:var(--muted);border-bottom:3px solid transparent;}
   .tab.active{color:var(--blue);border-bottom-color:var(--blue);}
@@ -68,7 +126,7 @@
   .sec-title{font-weight:700;color:var(--navy);margin:18px 0 6px;border-bottom:1px solid var(--line);padding-bottom:4px;}
   .search-wrap{position:relative;display:flex;gap:6px;}
   .search-wrap input{flex:1;}
-  .ac-list{position:absolute;top:100%;left:0;right:0;z-index:50;background:#fff;border:1px solid var(--line);border-radius:8px;box-shadow:0 6px 20px #0002;max-height:220px;overflow:auto;margin-top:4px;display:none;}
+  .ac-list{position:absolute;top:100%;left:0;right:0;z-index:50;background:#fff;border:1px solid var(--line);border-radius:8px;box-shadow:0 6px 20px #0002;margin-top:4px;display:none;}
   .ac-list .ac-item{padding:10px 12px;cursor:pointer;border-bottom:1px solid #f0f0f0;font-size:13px;line-height:1.4;}
   .ac-list .ac-item:last-child{border-bottom:none;}
   .ac-list .ac-item:hover{background:#f0f5ff;}
@@ -99,7 +157,7 @@
   .ocr-stats .os-txt{flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:#555;}
 
   /* === Items Table === */
-  .items-table-wrap{overflow-x:auto;margin:8px 0;border:1px solid var(--line);border-radius:10px;background:#fff;}
+  .items-table-wrap{margin:8px 0;border:1px solid var(--line);border-radius:10px;background:#fff;}
   .items-table{width:100%;border-collapse:collapse;font-size:13px;}
   .items-table thead th{
     background:linear-gradient(180deg,#f8fafc,#f1f4f9);
@@ -125,7 +183,7 @@
   .hist-popover{
     position:absolute;z-index:500;background:#fff;border:1px solid var(--line);border-radius:12px;
     box-shadow:0 12px 40px rgba(0,0,0,.18),0 0 0 1px rgba(0,0,0,.04);
-    width:min(680px,90vw);max-height:380px;overflow:hidden;display:none;
+    width:min(680px,90vw);overflow:visible;display:none;
     animation:popIn .15s ease-out;
   }
   @keyframes popIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
@@ -133,8 +191,8 @@
   .hist-popover .hp-head .mm-tag{background:#dbeafe;color:var(--navy);padding:2px 8px;border-radius:5px;font-size:11px;font-weight:600;}
   .hist-popover .hp-close{border:none;background:#f3f4f6;border-radius:6px;width:26px;height:26px;cursor:pointer;font-size:13px;color:#6b7280;flex-shrink:0;}
   .hist-popover .hp-close:hover{background:#e5e7eb;color:#111;}
-  .hist-popover .hp-body{overflow:auto;max-height:310px;-webkit-overflow-scrolling:touch;}
-  .hist-popover table{width:100%;border-collapse:collapse;font-size:11.5px;min-width:500px;}
+  .hist-popover .hp-body{}
+  .hist-popover table{width:100%;border-collapse:collapse;font-size:11.5px;}
   .hist-popover th{padding:7px 6px;font-weight:700;color:#374151;border-bottom:2px solid var(--line);text-align:left;white-space:nowrap;background:#f8fafc;position:sticky;top:0;z-index:1;}
   .hist-popover td{padding:6px 6px;border-bottom:1px solid #f0f2f5;}
   .hist-popover tr:hover td{background:#f8faff;}
@@ -144,7 +202,8 @@
   .items-table .td-unit{width:76px;}
   .items-table .td-price{width:108px;}
   .items-table .td-amt{width:108px;text-align:right;font-weight:700;font-variant-numeric:tabular-nums;color:var(--navy);white-space:nowrap;padding-right:10px;font-size:13px;vertical-align:middle;}
-  .items-table .td-act{width:36px;text-align:center;vertical-align:middle;}
+.items-table .td-act{width:56px;text-align:center;vertical-align:middle;white-space:nowrap;}
+.items-table .td-act .act-wrap{display:inline-flex;gap:2px;align-items:center;}
 
   .items-table input{
     width:100%;padding:7px 8px;border:1px solid transparent;border-radius:6px;
@@ -168,7 +227,7 @@
 
   /* === Document preview === */
   .doc-tools{display:flex;justify-content:space-between;align-items:center;padding:12px 18px;border-bottom:1px solid var(--line);}
-  .doc-scroll{padding:18px;background:#f1f4f9;overflow:auto;}
+  .doc-scroll{padding:18px;background:#f1f4f9;}
   .doc{background:#fff;width:100%;max-width:760px;margin:0 auto;padding:44px 46px;box-shadow:0 2px 14px #0003;font-size:13px;color:#1a1a1a;}
   .doc.page{display:flex;flex-direction:column;min-height:1000px;}
   .doc.page + .doc.page{margin-top:22px;}
@@ -216,7 +275,7 @@
     .wrap{display:block!important;padding:0;margin:0;max-width:none;gap:0;}
     .wrap>.card:first-child{display:none!important;}
     .card{border:none!important;box-shadow:none!important;border-radius:0;}
-    .doc-scroll{padding:0!important;background:#fff!important;max-height:none!important;overflow:visible!important;}
+    .doc-scroll{padding:0!important;background:#fff!important;}
     .doc.page{box-shadow:none!important;max-width:none!important;width:100%!important;margin:0!important;padding:10mm 12mm!important;display:flex!important;flex-direction:column!important;min-height:0!important;height:287mm!important;page-break-after:always;}
     .doc.page:last-child{page-break-after:auto;}
     .flexspace{flex:1 1 auto!important;min-height:0!important;display:block!important;}
@@ -225,14 +284,8 @@
     .cfoot{flex-direction:row!important;}
   }
 
-  @media(max-width:767px){
-    .wrap{padding:10px;gap:12px;}
-    .pane{padding:14px;}
-    .doc-scroll{padding:10px;max-height:none;}
-    .doc{padding:16px 14px;}
-    .row{grid-template-columns:1fr;}
-    .ssign{flex-direction:column;gap:30px;}
-  }
+  /* ★ รองรับ tablet ขึ้นไป — ไม่รองรับ mobile */
+  body{min-width:900px;}
 </style>
 </head>
 <body>
@@ -356,6 +409,28 @@
       <div id="validateMsg" class="muted" style="font-size:12px;color:#dc2626;text-align:center;"></div>
     </div>
   </div>
+  <div class="po-modal-bg" id="poModal" onclick="if(event.target===this)closePoModal()">
+    <div class="po-detail-bg" id="poDetailModal" onclick="if(event.target===this)closePoDetail()">
+  <div class="po-detail-box">
+    <div class="po-detail-head">
+      <span class="pdt" id="poDetailTitle">📋 รายละเอียด PO</span>
+      <button class="pdc" onclick="closePoDetail()">✕</button>
+    </div>
+    <div class="po-detail-body" id="poDetailBody">
+      <div class="po-modal-loading">⏳</div>
+    </div>
+  </div>
+</div>
+  <div class="po-modal-box">
+    <div class="po-modal-head">
+      <span class="pmt" id="poModalTitle">🛒</span>
+      <button class="pmc" onclick="closePoModal()">✕</button>
+    </div>
+    <div class="po-modal-body" id="poModalBody">
+      <div class="po-modal-loading">กำลังโหลด...</div>
+    </div>
+  </div>
+</div>
 </div>
 
 {{-- ========== Sales History Popover ========== --}}
@@ -405,8 +480,8 @@ function paginate(total) {
    ================================================================ */
 let currentCustomerCode = '';
 let sellerSigData       = null;
-let lastSeparators = [];  
-let lastOcrLines   = []; 
+let lastSeparators = [];
+let lastOcrLines   = [];
 
 /* ================================================================
    HELPERS
@@ -449,13 +524,12 @@ function handleFile(f) {
 }
 
 /* ================================================================
-   ★★★ IMAGE PREPROCESSING (แก้ไข: ลบเส้นตารางก่อน OCR) ★★★
+   IMAGE PREPROCESSING
    ================================================================ */
 function preprocessImage(dataUrl) {
   return new Promise(resolve => {
     const img = new Image();
     img.onload = () => {
-      /* ---- 1) Scale up ถ้าเล็ก ---- */
       let scale = 1;
       if (img.width < 1200) scale = Math.min(3, 1200 / img.width);
       const w = Math.round(img.width * scale);
@@ -469,13 +543,11 @@ function preprocessImage(dataUrl) {
       const id = ctx.getImageData(0, 0, w, h);
       const d  = id.data;
 
-      /* ---- 2) Grayscale ---- */
       for (let i = 0; i < d.length; i += 4) {
         const g = d[i] * 0.299 + d[i+1] * 0.587 + d[i+2] * 0.114;
         d[i] = d[i+1] = d[i+2] = g;
       }
 
-      /* ---- 3) Otsu threshold ---- */
       const hist = new Array(256).fill(0);
       for (let i = 0; i < d.length; i += 4) hist[d[i]]++;
       const total = w * h;
@@ -491,27 +563,22 @@ function preprocessImage(dataUrl) {
         if (v > maxVar) { maxVar = v; threshold = t; }
       }
 
-      /* ---- 4) Binarize ---- */
       for (let i = 0; i < d.length; i += 4) {
         const v = d[i] > threshold ? 255 : 0;
         d[i] = d[i+1] = d[i+2] = v;
       }
 
-      /* ---- 5) ★ ลบเส้นตารางแนวนอน (Horizontal line removal) ---- */
-      const minLineW = Math.round(w * 0.25);  // เส้นยาว ≥25% ของภาพ = เส้นตาราง
-      const lineThick = Math.max(3, Math.round(h * 0.008)); // ความหนาเส้นที่จะลบ ±px
+      const minLineW = Math.round(w * 0.25);
+      const lineThick = Math.max(3, Math.round(h * 0.008));
 
       for (let y = 0; y < h; y++) {
         let runStart = -1;
         for (let x = 0; x <= w; x++) {
           const idx = (y * w + x) * 4;
           const isBlack = (x < w) && (d[idx] === 0);
-          if (isBlack && runStart < 0) {
-            runStart = x;
-          }
+          if (isBlack && runStart < 0) { runStart = x; }
           if (!isBlack && runStart >= 0) {
             if ((x - runStart) >= minLineW) {
-              // ลบเส้นนี้ + ขยาย ±lineThick px บน/ล่าง
               for (let dy = -lineThick; dy <= lineThick; dy++) {
                 const yy = y + dy;
                 if (yy < 0 || yy >= h) continue;
@@ -526,17 +593,13 @@ function preprocessImage(dataUrl) {
         }
       }
 
-      /* ---- 6) ★ ลบเส้นตารางแนวตั้ง (Vertical line removal) ---- */
       const minLineH = Math.round(h * 0.25);
-
       for (let x = 0; x < w; x++) {
         let runStart = -1;
         for (let y = 0; y <= h; y++) {
           const idx = (y * w + x) * 4;
           const isBlack = (y < h) && (d[idx] === 0);
-          if (isBlack && runStart < 0) {
-            runStart = y;
-          }
+          if (isBlack && runStart < 0) { runStart = y; }
           if (!isBlack && runStart >= 0) {
             if ((y - runStart) >= minLineH) {
               for (let dx = -lineThick; dx <= lineThick; dx++) {
@@ -553,13 +616,11 @@ function preprocessImage(dataUrl) {
         }
       }
 
-      /* ---- 7) ★ Dilate เล็กน้อย เพื่อฟื้นตัวอักษรที่โดนกินไป ---- */
       const copy = new Uint8ClampedArray(d);
       for (let y = 1; y < h - 1; y++) {
         for (let x = 1; x < w - 1; x++) {
           const idx = (y * w + x) * 4;
-          if (copy[idx] === 0) continue; // ดำอยู่แล้ว ข้าม
-          // ถ้า pixel รอบข้าง (4-connected) มีดำ → ทำให้ตัวเองดำ
+          if (copy[idx] === 0) continue;
           const up    = copy[((y-1) * w + x) * 4];
           const down  = copy[((y+1) * w + x) * 4];
           const left  = copy[(y * w + (x-1)) * 4];
@@ -579,30 +640,19 @@ function preprocessImage(dataUrl) {
 
 function postProcessOCR(text) {
   let t = text;
-
-  // ★ รวมอักษรไทยที่เว้นวรรคผิด — แต่ห้ามข้าม \n (ไม่งั้นบรรทัดจะรวมกัน)
   for (let i = 0; i < 10; i++) {
     const prev = t;
     t = t.replace(/([\u0E00-\u0E7F])[^\S\n]+([\u0E00-\u0E7F])/g, '$1$2');
     if (t === prev) break;
   }
-
   t = t.replace(/^[.:;|,\s]+/gm, '');
   t = t.replace(/[.|,\s]+$/gm, '');
-
-  // ★ แก้ % → x เฉพาะที่อยู่ระหว่างตัวเลข (เช่น 2%4 → 2x4)
-  //   แต่ไม่แก้ 5% (เปอร์เซ็นต์จริง)
   t = t.replace(/(\d)%(\d)/g, '$1x$2');
-
   t = t.replace(/\bO(\d)/g, '0$1');
   t = t.replace(/(\d)O/g, '$10');
   t = t.replace(/(\d)l(\d)/g, '$11$2');
   t = t.replace(/\bS(\d)/g, '5$1');
-
-  // ★ แก้ Thai→Latin mixed tokens
   t = t.split('\n').map(line => fixMixedTokens(line)).join('\n');
-
-  // ★ Known product code fixes
   const knownCodeFixes = [
     [/(?<=^|[\s])โทพ(?=$|[\s])/gm, 'THW'],
     [/(?<=^|[\s])โท(?=[A-Z0-9])/gm, 'TH'],
@@ -610,77 +660,41 @@ function postProcessOCR(text) {
     [/(?<=^|[\s])ทว(?=$|[\s])/gm,   'HW'],
   ];
   knownCodeFixes.forEach(([rx, rep]) => { t = t.replace(rx, rep); });
-
   t = t.split('\n').map(l => l.trim()).filter(l => l.length > 0).join('\n');
   return t;
 }
 
-/* ================================================================
-   ★ Thai-to-Latin OCR confusion map
-   ================================================================ */
 const THAI_TO_LATIN_MAP = {
-  'ท': 'H',  'ห': 'H',  'ฟ': 'F',
-  'โ': 'T',  'ต': 'T',
-  'พ': 'W',  'ว': 'W',  'ช': 'U',
-  'ย': 'Y',  'ซ': 'Z',  'ค': 'K',  'ก': 'K',
-  'ล': 'L',  'ม': 'M',  'น': 'N',  'ข': 'X',
-  'อ': 'O',  'ป': 'P',  'ร': 'R',  'ส': 'S',
-  'บ': 'B',  'ด': 'D',  'ฉ': 'C',  'จ': 'C',
-  'ฝ': 'F',
-  // สระ/วรรณยุกต์ที่ไม่ควรมีใน code → ลบทิ้ง
-  'ิ': '',   'ั': '',   '่': '',
-  '้': '',   '๊': '',   '็': '',
+  'ท': 'H','ห': 'H','ฟ': 'F','โ': 'T','ต': 'T',
+  'พ': 'W','ว': 'W','ช': 'U','ย': 'Y','ซ': 'Z','ค': 'K','ก': 'K',
+  'ล': 'L','ม': 'M','น': 'N','ข': 'X','อ': 'O','ป': 'P','ร': 'R','ส': 'S',
+  'บ': 'B','ด': 'D','ฉ': 'C','จ': 'C','ฝ': 'F',
+  'ิ': '','ั': '','่': '','้': '','๊': '','็': '',
 };
 
-
-/* ================================================================
-   ★ fixMixedTokens — แก้ token ที่ OCR อ่านไทยแทน Latin
-   ================================================================ */
 function fixMixedTokens(line) {
   return line.split(/(\s+)/).map(token => {
     const hasAsciiLetter = /[A-Za-z0-9]/.test(token);
     const hasThai        = /[\u0E00-\u0E7F]/.test(token);
-
-    if (!hasThai) return token; // ไม่มีไทย → ไม่ต้องแก้
-
-    // ★ กรณี 1: token สั้น ≤ 12 ตัว + มี ASCII ด้วย → น่าจะเป็น model code ที่ปนไทย
-    //   เช่น "Tโทพ", "ABCทว", "1x2.5โทพ" ฯลฯ
-    if (hasAsciiLetter && token.length <= 12) {
-      return convertThaiToLatin(token);
-    }
-
-    // ★ กรณี 2: token สั้น ≤ 6 ตัว + ทุกตัวเป็นไทย แต่ดูเหมือน product code
-    //   "โทพ" → พยัญชนะ "ทพ" (2 ตัว) + "โ" เป็น leading vowel ไม่ใช่ real vowel combo
+    if (!hasThai) return token;
+    if (hasAsciiLetter && token.length <= 12) return convertThaiToLatin(token);
     if (!hasAsciiLetter && token.length <= 6) {
-      const consonantsOnly = token.replace(/[\u0E30-\u0E4E]/g, ''); // ตัดสระบน/ล่าง/วรรณยุกต์
-
+      const consonantsOnly = token.replace(/[\u0E30-\u0E4E]/g, '');
       if (/^[\u0E01-\u0E2E]{2,5}$/.test(consonantsOnly) && consonantsOnly.length >= 2) {
-        // ★ ตรวจว่ามีสระที่บ่งบอกว่าเป็นคำไทยจริงหรือไม่
-        // สระ: -ะ -า -ำ -ิ -ี -ึ -ื -ุ -ู เ- แ- ใ- ไ-
-        // หมายเหตุ: "โ" (U+0E42) ไม่อยู่ใน list นี้ → "โทพ" จะผ่านเงื่อนไข
         const hasRealVowelCombo = /[\u0E30\u0E32\u0E33\u0E34\u0E35\u0E36\u0E37\u0E38\u0E39\u0E40\u0E41\u0E43\u0E44]/.test(token);
-
-        if (!hasRealVowelCombo) {
-          return convertThaiToLatin(token);
-        }
+        if (!hasRealVowelCombo) return convertThaiToLatin(token);
       }
     }
-
     return token;
   }).join('');
 }
 
-
-/* ================================================================
-   ★ convertThaiToLatin — แปลงอักษรไทยใน token เป็น Latin
-   ================================================================ */
 function convertThaiToLatin(token) {
   let result = '';
-  for (const ch of token) {
-    result += THAI_TO_LATIN_MAP[ch] ?? ch;
-  }
+  for (const ch of token) { result += THAI_TO_LATIN_MAP[ch] ?? ch; }
   return result;
 }
+
 $('#ocrBtn').onclick = async () => {
   if (!imgData) { alert('กรุณาเลือกรูปก่อน'); return; }
   const prog = $('#prog');
@@ -723,29 +737,23 @@ $('#ocrBtn').onclick = async () => {
 $('#ocrText').addEventListener('input', function () { autoResize(this); });
 
 /* ================================================================
-   PARSE BUTTON — OCR → rows
+   PARSE BUTTON
    ================================================================ */
 $('#parseBtn').onclick = async () => {
   const txt   = $('#ocrText').value;
   const lines = txt.split(/\n/).map(l => l.trim()).filter(Boolean);
   $('#itemRows').innerHTML = '';
   const rows = [];
-
   lines.forEach(l => {
     if (/[ก-๙A-Za-z]/.test(l) && !/รวม|total|vat|ภาษี|สุทธิ/i.test(l)) {
       const desc = l.trim();
       if (desc) { const tr = itemRow({ desc }); $('#itemRows').appendChild(tr); rows.push(tr); }
     }
   });
-
   if (!rows.length) { $('#itemRows').appendChild(itemRow()); }
-
   $$('.tab')[1].click();
   render();
-
-  if (currentCustomerCode && rows.length) {
-    await batchMatchItems(rows);
-  }
+  if (currentCustomerCode && rows.length) { await batchMatchItems(rows); }
 };
 
 /* ================================================================
@@ -754,15 +762,12 @@ $('#parseBtn').onclick = async () => {
 function itemRow(d = {}) {
   const tr = document.createElement('tr');
   tr.className = 'item';
-
   if (d.itemNew)       tr.dataset.itemNew       = d.itemNew;
   if (d.productName)   tr.dataset.productName   = d.productName;
   tr.dataset.isNew     = d.isNew ? '1' : '0';
-
   const qty   = d.qty   ?? 1;
   const price = d.price ?? 0;
   const amt   = qty * price;
-
   tr.innerHTML = `
     <td class="td-num" title="ดูประวัติการขาย"></td>
     <td class="td-desc">
@@ -772,26 +777,28 @@ function itemRow(d = {}) {
     <td class="td-unit"><input class="unit" placeholder="หน่วย" value="${esc(d.unit || '')}"></td>
     <td class="td-price"><input class="price" type="number" placeholder="ราคา/หน่วย" value="${price}" min="0"></td>
     <td class="td-amt">${fmt(amt)}</td>
-    <td class="td-act"><button class="del" title="ลบ">✕</button></td>
+    <td class="td-act">
+      <button class="cart-btn" title="ค้นราคาต้นทุน">🛒</button>
+      <button class="del" title="ลบ">✕</button>
+    </td>
   `;
-
   tr.querySelector('.del').onclick = () => { tr.remove(); render(); };
+  tr.querySelector('.cart-btn').onclick = () => {
+    const keyword = tr.querySelector('.desc')?.value?.trim();
+    if (!keyword || keyword.length < 2) { alert('กรุณาพิมพ์ชื่อสินค้าก่อน'); return; }
+    openPoModal(keyword);
+  };
   tr.querySelectorAll('input').forEach(i => i.oninput = render);
   const descInput = tr.querySelector('.desc');
   let lastDesc = (d.desc || '').trim();
-
-  descInput.addEventListener('focus', function () {
-    lastDesc = this.value.trim();
-  });
-
+  descInput.addEventListener('focus', function () { lastDesc = this.value.trim(); });
   descInput.addEventListener('blur', async function () {
     const newDesc = this.value.trim();
     if (!newDesc || newDesc === lastDesc || !currentCustomerCode) return;
     if (newDesc.length < 2) return;
     lastDesc = newDesc;
-    await batchMatchItems([tr]);   // ★ ค้นแค่ row นี้ row เดียว
+    await batchMatchItems([tr]);
   });
-
   tr.querySelector('.td-num').onclick = () => {
     if (!currentCustomerCode) return;
     if (tr.dataset.isNew === '1') return;
@@ -799,91 +806,243 @@ function itemRow(d = {}) {
     if (!keyword) return;
     const pname   = tr.dataset.productName || keyword;
     const itemNew = tr.dataset.itemNew || '';
-    const currentPrice = parseFloat(tr.querySelector('.price')?.value) || 0;  // ★ ราคาปัจจุบันในช่อง
+    const currentPrice = parseFloat(tr.querySelector('.price')?.value) || 0;
     showHistPopover(keyword, pname, currentCustomerCode, tr, itemNew, currentPrice);
   };
-
   if (d.isNew) setNewTag(tr, true);
-
   return tr;
 }
 
 $('#addItem').onclick = () => { $('#itemRows').appendChild(itemRow()); render(); };
 
 /* ================================================================
-   NEW-TAG helpers
+   PO COST MODAL
    ================================================================ */
-/* ================================================================
-   REF-TAG helpers — ราคาอ้างอิงจากลูกค้าอื่น
-   ================================================================ */
-function clearRefTag(tr) {
-  tr.querySelector('.ref-tag')?.remove();
+const poSearchCache = {};
+
+async function openPoModal(keyword) {
+  const modal = $('#poModal');
+  const title = $('#poModalTitle');
+  const body  = $('#poModalBody');
+  title.textContent = `🛒 ราคาต้นทุน: ${keyword}`;
+  body.innerHTML = '<div class="po-modal-loading">⏳ กำลังค้นหา...</div>';
+  modal.classList.add('show');
+  if (poSearchCache[keyword]) { renderPoResults(poSearchCache[keyword], keyword); return; }
+  try {
+    const res = await fetch('/po-search/search', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content },
+      body: JSON.stringify({ items: [keyword] }),
+    });
+    if (!res.ok) throw new Error('HTTP ' + res.status);
+    const data = await res.json();
+    poSearchCache[keyword] = data;
+    renderPoResults(data, keyword);
+  } catch (e) {
+    body.innerHTML = `<div class="po-modal-loading" style="color:#b91c1c">❌ ค้นไม่สำเร็จ: ${esc2(e.message)}</div>`;
+  }
+}
+
+function closePoModal() { $('#poModal').classList.remove('show'); }
+
+function renderPoResults(data, keyword) {
+  const body = $('#poModalBody');
+  const item = data && data[0];
+  const recs = (item?.records || []).slice().sort((a, b) => {
+    const da = new Date(a.doc_date || 0), db = new Date(b.doc_date || 0);
+    return db - da;
+  });
+  if (!recs.length) {
+    const method = item?.method === 'fuzzy' ? ' (ค้นแบบใกล้เคียง)' : '';
+    body.innerHTML = `<div class="po-modal-loading">ไม่พบราคาต้นทุนสำหรับ "${esc2(keyword)}"${method}</div>`;
+    return;
+  }
+  const isFuzzy = item.method === 'fuzzy';
+  const prices = recs.map(r => parseFloat(r.unit_price_thb || r.unit_price) || 0).filter(p => p > 0);
+  const mn = prices.length ? Math.min(...prices) : 0;
+  const mx = prices.length ? Math.max(...prices) : 0;
+  const latest = item.latest;
+  let h = '';
+  if (prices.length) {
+    h += `<div class="po-modal-sum">
+      📊 ${recs.length} รายการ${isFuzzy ? ' <span style="color:#e65100;font-size:10px;background:#fff3e0;padding:2px 6px;border-radius:4px;">ค้นแบบใกล้เคียง</span>' : ''}
+      · ต่ำสุด <b style="color:#2e7d32">${poFmt(mn)}</b>
+      · สูงสุด <b style="color:#c62828">${poFmt(mx)}</b>
+      ${latest ? ' · ล่าสุด <b>' + poFmt(parseFloat(latest.unit_price_thb || latest.unit_price) || 0) + '</b> (' + poThD(latest.doc_date) + ')' : ''}
+    </div>`;
+  }
+  h += '<div><table>';
+  h += `<thead><tr>
+    <th>#</th><th>วันที่</th><th>เลขที่ PO</th><th>ผู้ขาย</th>
+    <th>ชื่อสินค้า</th><th class="r">จำนวน</th><th>หน่วย</th>
+    <th class="r">ราคา/หน่วย</th>
+    <th class="r">ส่วนลด(%)</th><th class="r">ส่วนลด(฿)</th>
+    <th class="r">ส่วนลดบิล(%)</th><th class="r">ส่วนลดบิล(฿)</th>
+    <th class="r">ราคา(฿)</th><th>สกุลเงิน</th>
+  </tr></thead><tbody>`;
+  recs.forEach((r, i) => {
+    const p = parseFloat(r.unit_price_thb || r.unit_price) || 0;
+    let pc = '';
+    if (mn > 0 && mx > 0 && mn !== mx) {
+      if (p <= mn) pc = 'best'; else if (p >= mx) pc = 'worst';
+    }
+    const isLatest = latest && r.doc_no === latest.doc_no && r.product_name === latest.product_name;
+    const docNoSafe = (r.doc_no||'').replace(/'/g,"\\'");
+    const pnameSafe = (r.product_name||'').replace(/'/g,"\\'");
+    h += `<tr style="${isLatest ? 'background:#f0fdf4;' : ''}">
+      <td style="text-align:center;color:#aaa">${i + 1}</td>
+      <td>${poThD(r.doc_date)}</td>
+      <td><a href="#" style="color:var(--blue);font-weight:700;text-decoration:none;" onclick="openPoDetail('${docNoSafe}','${pnameSafe}');return false;">${esc2(r.doc_no || '-')}</a></td>
+      <td>${esc2(r.vendor_name || '-')}</td>
+      <td>${esc2(r.product_name || '-')}${isLatest ? ' <span style="font-size:9px;color:#16a34a;background:#dcfce7;border-radius:3px;padding:1px 5px;">ล่าสุด</span>' : ''}</td>
+      <td class="r">${poFmtQ(r.qty)}</td>
+      <td>${esc2(r.unit || '-')}</td>
+      <td class="r" style="font-weight:600">${poFmt(r.unit_price)}</td>
+      <td class="r">${poRaw(r.item_discount_pct)}</td>
+      <td class="r">${poRaw(r.item_discount_amt)}</td>
+      <td class="r">${poRaw(r.bill_discount_pct)}</td>
+      <td class="r">${poRaw(r.bill_discount_amt)}</td>
+      <td class="r ${pc}" style="font-weight:700">${poFmt(r.unit_price_thb || r.unit_price)}</td>
+      <td style="color:#888">${esc2(r.currency || 'THB')}</td>
+    </tr>`;
+  });
+  h += '</tbody></table></div>';
+  body.innerHTML = h;
+}
+
+const THAI_M2 = ['ม.ค.','ก.พ.','มี.ค.','เม.ย.','พ.ค.','มิ.ย.','ก.ค.','ส.ค.','ก.ย.','ต.ค.','พ.ย.','ธ.ค.'];
+function poThD(ds) { if (!ds) return '—'; const d = new Date(ds); if (isNaN(d)) return ds; return d.getDate() + ' ' + THAI_M2[d.getMonth()] + ' ' + (d.getFullYear() + 543); }
+function poFmt(n) { return (parseFloat(n) || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }); }
+function poFmtQ(n) { const v = parseFloat(n) || 0; return v === Math.floor(v) ? v.toLocaleString('en-US') : v.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 4 }); }
+function poRaw(v) { if (v == null || v === '') return '—'; return esc2(String(v)); }
+
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape') {
+    if ($('#poDetailModal').classList.contains('show')) closePoDetail();
+    else if ($('#poModal').classList.contains('show')) closePoModal();
+  }
+});
+
+function clearRefTag(tr) { tr.querySelector('.ref-tag')?.remove(); }
+
+const poDetailCache = {};
+
+async function openPoDetail(docNo, highlightName) {
+  if (!docNo || docNo === '-') return;
+  const modal = $('#poDetailModal');
+  const title = $('#poDetailTitle');
+  const body  = $('#poDetailBody');
+  title.textContent = `📋 ${docNo}`;
+  body.innerHTML = '<div class="po-modal-loading">⏳ กำลังโหลด...</div>';
+  modal.classList.add('show');
+  if (poDetailCache[docNo]) { renderPoDetailContent(poDetailCache[docNo], docNo, highlightName); return; }
+  try {
+    const res = await fetch('/po-search/detail', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content },
+      body: JSON.stringify({ doc_no: docNo }),
+    });
+    if (!res.ok) throw new Error('HTTP ' + res.status);
+    const data = await res.json();
+    poDetailCache[docNo] = data;
+    renderPoDetailContent(data, docNo, highlightName);
+  } catch (e) {
+    body.innerHTML = `<div class="po-modal-loading" style="color:#c62828">❌ โหลดไม่สำเร็จ: ${esc2(e.message)}</div>`;
+  }
+}
+
+function closePoDetail() { $('#poDetailModal').classList.remove('show'); }
+
+function renderPoDetailContent(records, docNo, highlightName) {
+  const body = $('#poDetailBody');
+  if (!records || !records.length) {
+    body.innerHTML = '<div class="po-modal-loading">ไม่พบรายการใน PO นี้</div>';
+    return;
+  }
+  const vendor = records[0].vendor_name || '-';
+  const date = poThD(records[0].doc_date);
+  const poTotal = records[0].po_total;
+  const hlLower = (highlightName || '').toLowerCase();
+  let h = `<div style="padding:10px 16px;font-size:12px;color:#555;background:#fafbfc;border-bottom:1px solid var(--line);">
+    📅 ${date} · 🏢 ${esc2(vendor)} · ${records.length} รายการ${poTotal ? ' · รวม PO <b>' + poRaw(poTotal) + '</b> บาท' : ''}
+  </div>`;
+  h += '<div><table class="po-modal-body">';
+  h += `<thead><tr>
+    <th>#</th><th>รหัสสินค้า</th><th>ชื่อสินค้า</th>
+    <th class="r">จำนวน</th><th>หน่วย</th><th class="r">ราคา/หน่วย</th>
+    <th class="r">ส่วนลด(%)</th><th class="r">ส่วนลด(฿)</th>
+    <th class="r">เงินสินค้า</th><th class="r">รวม PO</th>
+    <th class="r">ส่วนลดบิล(%)</th><th class="r">ส่วนลดบิล(฿)</th>
+    <th class="r">ก่อนภาษี</th><th class="r">ภาษีซื้อ</th>
+    <th class="r">รวมทั้งสิ้น</th><th class="r">ราคา(฿)</th><th>สกุลเงิน</th>
+  </tr></thead><tbody>`;
+  records.forEach((r, i) => {
+    const isHL = hlLower && (r.product_name || '').toLowerCase() === hlLower;
+    const rowStyle = isHL ? 'background:#fff8e1;' : '';
+    const nameStyle = isHL ? 'font-weight:800;color:#e65100;' : '';
+    h += `<tr style="${rowStyle}">
+      <td style="text-align:center;color:#aaa">${i + 1}</td>
+      <td>${esc2(r.product_code || '-')}</td>
+      <td style="${nameStyle}">${esc2(r.product_name || '-')}${isHL ? ' <span style="font-size:9px;background:#ffe082;color:#e65100;border-radius:3px;padding:1px 5px;font-weight:700;">◀ สินค้าที่ค้นหา</span>' : ''}</td>
+      <td class="r">${poFmtQ(r.qty)}</td>
+      <td>${esc2(r.unit || '-')}</td>
+      <td class="r" style="font-weight:600">${poFmt(r.unit_price)}</td>
+      <td class="r">${poRaw(r.item_discount_pct)}</td>
+      <td class="r">${poRaw(r.item_discount_amt)}</td>
+      <td class="r">${poRaw(r.item_amount)}</td>
+      <td class="r">${poRaw(r.po_total)}</td>
+      <td class="r">${poRaw(r.bill_discount_pct)}</td>
+      <td class="r">${poRaw(r.bill_discount_amt)}</td>
+      <td class="r">${poRaw(r.before_tax)}</td>
+      <td class="r">${poRaw(r.input_tax)}</td>
+      <td class="r" style="font-weight:700">${poRaw(r.grand_total)}</td>
+      <td class="r" style="font-weight:700">${poFmt(r.unit_price_thb || r.unit_price)}</td>
+      <td style="color:#888">${esc2(r.currency || 'THB')}</td>
+    </tr>`;
+  });
+  h += '</tbody></table></div>';
+  body.innerHTML = h;
 }
 
 function setRefTag(tr, suggestions) {
   const td = tr.querySelector('.td-desc');
   clearRefTag(tr);
   if (!suggestions?.length) return;
-
   const best = suggestions[0];
-
   const wrap = document.createElement('div');
   wrap.style.position = 'relative';
-
-const tag = document.createElement('div');
-tag.className = 'ref-tag';
-tag.innerHTML =
+  const tag = document.createElement('div');
+  tag.className = 'ref-tag';
+  tag.innerHTML =
     `💡 ราคาอ้างอิง: <b>${fmt(best.unit_price)}</b> บาท` +
     ` · ${esc2(best.so_no || '-')}` +
     ` · ${esc2(best.customer_name || '-')}` +
-    (best.match_keyword
-      ? `<br>🔍 จับคู่: <b>${esc2(best.match_keyword)}</b>`
-      : '') +
-    (suggestions.length > 1
-      ? ` <span style="color:var(--blue)">▾ ${suggestions.length} บริษัท</span>`
-      : '');
-  // --- panel ตาราง 3 บริษัท ---
+    (best.match_keyword ? `<br>🔍 จับคู่: <b>${esc2(best.match_keyword)}</b>` : '') +
+    (suggestions.length > 1 ? ` <span style="color:var(--blue)">▾ ${suggestions.length} บริษัท</span>` : '');
   const panel = document.createElement('div');
   panel.className = 'ref-panel';
-
   let rows = '';
   suggestions.forEach((s, i) => {
-    rows += `
-      <tr class="rp-row">
-        <td>${i + 1}</td>
-        <td>${esc2(s.customer_name || '-')}</td>
-        <td style="white-space:nowrap">${esc2(s.so_no || '-')}</td>
-        <td style="white-space:nowrap">${esc2(s.doc_date || '-')}</td>
-        <td class="rp-pname">${esc2(s.product_name || '-')}</td>
-        <td style="white-space:nowrap;font-size:10px;color:var(--blue);">${esc2(s.match_keyword || '-')}</td>
-        <td class="rp-price">${fmt(s.unit_price)}</td>
-        <td><button class="rp-use" data-i="${i}">ใช้ราคานี้</button></td>
-      </tr>`;
+    rows += `<tr class="rp-row">
+      <td>${i + 1}</td>
+      <td>${esc2(s.customer_name || '-')}</td>
+      <td style="white-space:nowrap">${esc2(s.so_no || '-')}</td>
+      <td style="white-space:nowrap">${esc2(s.doc_date || '-')}</td>
+      <td class="rp-pname">${esc2(s.product_name || '-')}</td>
+      <td style="white-space:nowrap;font-size:10px;color:var(--blue);">${esc2(s.match_keyword || '-')}</td>
+      <td class="rp-price">${fmt(s.unit_price)}</td>
+      <td><button class="rp-use" data-i="${i}">ใช้ราคานี้</button></td>
+    </tr>`;
   });
-
-  panel.innerHTML = `
-    <div class="rp-head">
-      📋 ราคาอ้างอิงจากลูกค้าอื่น (${suggestions.length} บริษัทล่าสุด)
-    </div>
-    <table>
-      <thead><tr>
-        <th>#</th><th>บริษัท</th><th>SO No.</th><th>วันที่</th>
-        <th>ชื่อสินค้า</th>
-        <th>keyword</th>
-        <th style="text-align:right">ราคา/หน่วย</th><th></th>
-      </tr></thead>
-      <tbody>${rows}</tbody>
-    </table>`;
-
-  // toggle panel
+  panel.innerHTML = `<div class="rp-head">📋 ราคาอ้างอิงจากลูกค้าอื่น (${suggestions.length} บริษัทล่าสุด)</div>
+    <table><thead><tr><th>#</th><th>บริษัท</th><th>SO No.</th><th>วันที่</th><th>ชื่อสินค้า</th><th>keyword</th><th style="text-align:right">ราคา/หน่วย</th><th></th></tr></thead>
+    <tbody>${rows}</tbody></table>`;
   tag.onclick = e => {
     e.stopPropagation();
     const showing = panel.style.display === 'block';
     document.querySelectorAll('.ref-panel').forEach(p => p.style.display = 'none');
     panel.style.display = showing ? 'none' : 'block';
   };
-
-  // ปุ่ม "ใช้ราคานี้"
   panel.querySelectorAll('.rp-use').forEach(btn => {
     btn.onclick = e => {
       e.stopPropagation();
@@ -893,26 +1052,20 @@ tag.innerHTML =
       panel.style.display = 'none';
     };
   });
-
   wrap.appendChild(tag);
   wrap.appendChild(panel);
   td.appendChild(wrap);
 }
 
-// ปิด ref-panel เมื่อคลิกที่อื่น
 document.addEventListener('click', () => {
   document.querySelectorAll('.ref-panel').forEach(p => p.style.display = 'none');
 });
+
 function setNewTag(tr, isNew) {
   const td  = tr.querySelector('.td-desc');
   let   tag = td.querySelector('.new-tag');
   if (isNew) {
-    if (!tag) {
-      tag = document.createElement('div');
-      tag.className   = 'new-tag';
-      tag.textContent = '🆕 สินค้าใหม่ — ยังไม่เคยขายลูกค้ารายนี้';
-      td.appendChild(tag);
-    }
+    if (!tag) { tag = document.createElement('div'); tag.className = 'new-tag'; td.appendChild(tag); }
     tr.dataset.isNew = '1';
     tr.querySelector('.td-num').classList.add('no-hist');
   } else {
@@ -930,118 +1083,84 @@ const HISTORY_URL = '/soitem/sales-history';
 
 async function batchMatchItems(rows) {
   if (!currentCustomerCode || !rows.length) return;
-
   const names = rows.map(tr => (tr.querySelector('.desc')?.value || '').trim());
   if (names.every(n => n.length < 2)) return;
-
   const bar = $('#matchBar');
   bar.style.display = 'flex';
   $('#matchBarTxt').textContent = `กำลังดึงราคา ${names.length} รายการ จากประวัติลูกค้า...`;
-
   try {
     const res = await fetch(BATCH_URL, {
-      method:  'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
-      },
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content },
       body: JSON.stringify({ customer_code: currentCustomerCode, items: names }),
     });
-
     if (!res.ok) throw new Error('HTTP ' + res.status);
     const results = await res.json();
-
     let matched = 0;
     results.forEach((r, i) => {
       const tr = rows[i];
       if (!tr) return;
-
       tr.dataset.itemNew     = r.item_new     || '';
       tr.dataset.productName = r.product_name || '';
       tr.dataset.keyword     = r.match_keyword || names[i] || '';
-
-clearRefTag(tr);
-setNewTag(tr, false); 
-if (!r.is_new) {
-    // ===== เจอในลูกค้ารายนี้ =====
-    const priceEl = tr.querySelector('.price');
-    const unitEl  = tr.querySelector('.unit');
-
-    if (r.has_price && priceEl) {
-        priceEl.value = r.unit_price;
-        // ★ มีราคาจากลูกค้ารายนี้ → ไม่ต้อง ref
-    } else if (r.ref_suggestions?.length && priceEl) {
-        // ★ เจอแต่ไม่มีราคา → ref เป็นข้อมูลเพิ่ม
-        priceEl.value = r.ref_suggestions[0].unit_price;
-        setRefTag(tr, r.ref_suggestions);
-    }
-
-    if (r.unit && unitEl && !unitEl.value) unitEl.value = r.unit;
-    matched++;
-    // ★ ไม่แสดง 🆕 เพราะเจอในลูกค้ารายนี้แล้ว
-
-} else {
-    // ===== ไม่เจอในลูกค้ารายนี้ =====
-    const priceEl = tr.querySelector('.price');
-    const unitEl  = tr.querySelector('.unit');
-
-    if (r.ref_suggestions?.length) {
-        if (priceEl) priceEl.value = r.ref_suggestions[0].unit_price;
-        setRefTag(tr, r.ref_suggestions);   // ★ ref ก่อน
-        if (unitEl && !unitEl.value && r.ref_suggestions[0].unit) {
-            unitEl.value = r.ref_suggestions[0].unit;
+      clearRefTag(tr);
+      setNewTag(tr, false);
+      if (!r.is_new) {
+        const priceEl = tr.querySelector('.price');
+        const unitEl  = tr.querySelector('.unit');
+        if (r.has_price && priceEl) { priceEl.value = r.unit_price; }
+        else if (r.ref_suggestions?.length && priceEl) { priceEl.value = r.ref_suggestions[0].unit_price; setRefTag(tr, r.ref_suggestions); }
+        if (r.unit && unitEl && !unitEl.value) unitEl.value = r.unit;
+        matched++;
+      } else {
+        const priceEl = tr.querySelector('.price');
+        const unitEl  = tr.querySelector('.unit');
+        if (r.ref_suggestions?.length) {
+          if (priceEl) priceEl.value = r.ref_suggestions[0].unit_price;
+          setRefTag(tr, r.ref_suggestions);
+          if (unitEl && !unitEl.value && r.ref_suggestions[0].unit) unitEl.value = r.ref_suggestions[0].unit;
         }
-    }
-
-    setNewTag(tr, true);}  // ★ 🆕 ทีหลัง (อยู่ล่างเสมอ)
-});
-
-    $('#matchBarTxt').textContent =
-      `จับคู่สำเร็จ ${matched} รายการ · สินค้าใหม่ ${names.length - matched} รายการ`;
+        setNewTag(tr, true);
+      }
+    });
+    $('#matchBarTxt').textContent = `จับคู่สำเร็จ ${matched} รายการ · สินค้าใหม่ ${names.length - matched} รายการ`;
     render();
-
   } catch (err) {
     console.warn('batchMatchItems error:', err);
     $('#matchBarTxt').textContent = '❌ ดึงราคาไม่สำเร็จ — ' + err.message;
   }
-
   setTimeout(() => { bar.style.display = 'none'; }, 4000);
 }
+
 async function onCustomerSelected() {
   const rows = [...$$('#itemRows .item')];
-  // ★ รีเซ็ตราคา/หน่วย/tag ของลูกค้าเก่า
   rows.forEach(tr => {
     const priceEl = tr.querySelector('.price');
     const unitEl  = tr.querySelector('.unit');
     if (priceEl) priceEl.value = 0;
     if (unitEl)  unitEl.value  = '';
-    tr.dataset.itemNew     = '';
-    tr.dataset.productName = '';
-    tr.dataset.keyword     = '';
-    tr.dataset.isNew       = '0';
-    setNewTag(tr, false);
-    clearRefTag(tr);
+    tr.dataset.itemNew = ''; tr.dataset.productName = ''; tr.dataset.keyword = ''; tr.dataset.isNew = '0';
+    setNewTag(tr, false); clearRefTag(tr);
   });
   render();
   if (rows.length) await batchMatchItems(rows);
 }
+
 /* ================================================================
-   SEARCH COMPANY (API)
+   SEARCH COMPANY
    ================================================================ */
 const API_URL = 'http://server_update:8000/api/getCustAndVendor';
 let searchTimer = null;
 
-/* ★ ฟังก์ชันกลาง — clean + search (ใช้ร่วมกันทั้ง input / paste / Enter) */
 function triggerCompanySearch(el) {
   clearTimeout(searchTimer);
   const raw = el.value.trim();
   if (raw.length < 2) { $('#acList').style.display = 'none'; return; }
   const cleaned = cleanThaiCompanyName(raw);
-  if (cleaned !== raw) el.value = cleaned;   // แก้ข้อความในช่อง input ถ้ามีคำผิดจาก PDF
+  if (cleaned !== raw) el.value = cleaned;
   searchCompany(cleaned);
 }
 
-/* ★ input event — ทำงานทั้งพิมพ์ + paste (debounce 300ms) */
 $('#custCompany').addEventListener('input', function () {
   clearTimeout(searchTimer);
   const v = this.value.trim();
@@ -1050,11 +1169,9 @@ $('#custCompany').addEventListener('input', function () {
   searchTimer = setTimeout(() => triggerCompanySearch(el), 300);
 });
 
-/* ★ paste event — ใช้ delay สั้นกว่า input เพื่อให้ paste ทำงานก่อน */
 $('#custCompany').addEventListener('paste', function () {
   clearTimeout(searchTimer);
   const el = this;
-  /* delay 50ms ให้ browser ใส่ค่าลงช่อง input ก่อน แล้ว search ทันที */
   searchTimer = setTimeout(() => triggerCompanySearch(el), 50);
 });
 
@@ -1064,25 +1181,15 @@ $('#custCompany').addEventListener('keydown', function (e) {
 
 async function searchCompany(keyword) {
   if (!keyword) return;
-
-  /* ★ ทำความสะอาดข้อความที่ copy มาจาก PDF/OCR */
   let cleaned = cleanThaiCompanyName(keyword);
-
-  /* ★ ตัดคำนำหน้า/ท้ายออก → เหลือชื่อแก่น */
   let coreName = extractCoreName(cleaned);
-
-  /* ★★★ แยกเป็นคำๆ แล้วค้น API ทีละคำ ★★★
-     "โลหะกิจ เม็ททอล" → ค้น "โลหะกิจ" + ค้น "เม็ททอล" → เอาผลลัพธ์ที่ตรงทุกคำ */
   const words = coreName.split(/\s+/).filter(w => w.length >= 2);
-
   if (!words.length) {
     $('#acList').innerHTML = '<div class="ac-empty">ไม่พบข้อมูลบริษัท</div>';
     $('#acList').style.display = 'block';
     return;
   }
-
   try {
-    /* ค้นทุกคำพร้อมกัน (parallel) */
     const allResults = await Promise.all(
       words.map(async (word) => {
         try {
@@ -1093,48 +1200,25 @@ async function searchCompany(keyword) {
         } catch { return []; }
       })
     );
-
-    /* ★ ถ้ามีคำเดียว → ใช้ผลลัพธ์ตรงๆ */
     if (words.length === 1) {
       const companies = allResults[0] || [];
-      if (!companies.length) {
-        $('#acList').innerHTML = '<div class="ac-empty">ไม่พบข้อมูลบริษัท</div>';
-        $('#acList').style.display = 'block';
-      } else {
-        showAcResults(companies);
-      }
+      if (!companies.length) { $('#acList').innerHTML = '<div class="ac-empty">ไม่พบข้อมูลบริษัท</div>'; $('#acList').style.display = 'block'; }
+      else { showAcResults(companies); }
       return;
     }
-
-    /* ★ หลายคำ → หา intersection (บริษัทที่ปรากฏในทุกผลลัพธ์)
-       ใช้ CustCode/VendorCode เป็น key */
     const getCode = c => (c.CustCode || c.VendorCode || '').trim();
-
-    /* เริ่มจากผลลัพธ์คำแรก */
     let matchedCodes = new Set(allResults[0].map(getCode));
-
-    /* intersect กับผลลัพธ์คำอื่นๆ */
     for (let i = 1; i < allResults.length; i++) {
       const codes = new Set(allResults[i].map(getCode));
       matchedCodes = new Set([...matchedCodes].filter(c => codes.has(c)));
     }
-
-    /* กรองเอาเฉพาะบริษัทที่ตรงทุกคำ */
     let companies = allResults[0].filter(c => matchedCodes.has(getCode(c)));
-
-    /* ★ Fallback: ถ้า intersection ว่าง → ลอง search ด้วยคำที่ยาวที่สุด (น่าจะเฉพาะเจาะจงสุด) */
     if (!companies.length) {
       const longestIdx = words.reduce((best, w, i) => w.length > words[best].length ? i : best, 0);
       companies = allResults[longestIdx] || [];
     }
-
-    if (!companies.length) {
-      $('#acList').innerHTML = '<div class="ac-empty">ไม่พบข้อมูลบริษัท</div>';
-      $('#acList').style.display = 'block';
-    } else {
-      showAcResults(companies);
-    }
-
+    if (!companies.length) { $('#acList').innerHTML = '<div class="ac-empty">ไม่พบข้อมูลบริษัท</div>'; $('#acList').style.display = 'block'; }
+    else { showAcResults(companies); }
   } catch (err) {
     console.error(err);
     $('#acList').innerHTML = '<div class="ac-empty">เกิดข้อผิดพลาดในการดึงข้อมูล</div>';
@@ -1142,57 +1226,29 @@ async function searchCompany(keyword) {
   }
 }
 
-/* ★★★ ดึงชื่อแก่นบริษัทออกจากชื่อเต็ม (สำหรับ API search) ★★★
-   "บริษัท โลหะกิจ เม็ททอล จำกัด (มหาชน)" → "โลหะกิจ เม็ททอล"
-   "ห้างหุ้นส่วนจำกัด สมชาย"                → "สมชาย"
-   "โลหะกิจ"                                 → "โลหะกิจ" (ไม่เปลี่ยน)  */
 function extractCoreName(name) {
   let t = name;
-
-  /* ลบคำนำหน้า */
   t = t.replace(/^(บริษัท|บจก\.|บจก|บมจ\.|บมจ|หจก\.|หจก|ห้างหุ้นส่วนจำกัด|ห้างหุ้นส่วนสามัญ|ห้าง)\s*/i, '');
-
-  /* ลบคำท้าย */
   t = t.replace(/\s*(จำกัด|\(มหาชน\)|มหาชน|จก\.|จก)\s*/g, '');
-
-  /* ลบวงเล็บว่าง + ช่องว่างซ้ำ */
   t = t.replace(/\(\s*\)/g, '').replace(/\s{2,}/g, ' ').trim();
-
-  /* ถ้าตัดแล้วเหลือว่าง → ใช้ชื่อเดิม */
   return t.length >= 2 ? t : name;
 }
 
-/* ★★★ ทำความสะอาดชื่อบริษัทที่ copy มาจาก PDF ★★★
-   PDF มักตัดคำผิด เช่น "จ ากัด" → "จำกัด", "บริ ษัท" → "บริษัท" */
 function cleanThaiCompanyName(text) {
   let t = text;
-
-  /* 1) ลบ zero-width / non-breaking spaces */
   t = t.replace(/[\u200B\u200C\u200D\uFEFF\u00A0]/g, '');
-
-  /* 2) แก้คำที่ PDF ตัดผิดบ่อย (เว้นวรรคตรงกลางคำ) */
   const pdfFixes = [
-    [/จ\s*ำ\s*กั\s*ด/g,     'จำกัด'],
-    [/ม\s*ห\s*า\s*ช\s*น/g,  'มหาชน'],
-    [/บ\s*ริ\s*ษั\s*ท/g,    'บริษัท'],
-    [/ห้\s*า\s*ง/g,          'ห้าง'],
-    [/หุ้\s*น\s*ส่\s*วน/g,  'หุ้นส่วน'],
+    [/จ\s*ำ\s*กั\s*ด/g,'จำกัด'],[/ม\s*ห\s*า\s*ช\s*น/g,'มหาชน'],
+    [/บ\s*ริ\s*ษั\s*ท/g,'บริษัท'],[/ห้\s*า\s*ง/g,'ห้าง'],[/หุ้\s*น\s*ส่\s*วน/g,'หุ้นส่วน'],
   ];
   pdfFixes.forEach(([rx, rep]) => { t = t.replace(rx, rep); });
-
-  /* 3) ลบช่องว่างระหว่างสระ/วรรณยุกต์กับพยัญชนะไทย
-     เช่น "เม็ ททอล" → "เม็ททอล" */
   for (let i = 0; i < 5; i++) {
     const prev = t;
-    // สระบน/ล่าง/วรรณยุกต์ ติดกับพยัญชนะ ไม่ควรมีเว้นวรรค
     t = t.replace(/([\u0E31\u0E34-\u0E3A\u0E47-\u0E4E])\s+([\u0E01-\u0E2E])/g, '$1$2');
     t = t.replace(/([\u0E01-\u0E2E])\s+([\u0E31\u0E34-\u0E3A\u0E47-\u0E4E])/g, '$1$2');
     if (t === prev) break;
   }
-
-  /* 4) ลดช่องว่างซ้ำเหลือ 1 */
   t = t.replace(/\s{2,}/g, ' ').trim();
-
   return t;
 }
 
@@ -1200,42 +1256,23 @@ function showAcResults(companies) {
   const list = $('#acList');
   list.innerHTML = '';
   list.style.display = 'block';
-
   companies.forEach(c => {
-    const code    = (c.CustCode    || c.VendorCode   || '').trim();
-    const title   = (c.CustTitle   || c.VendorTitle  || '').trim();
-    const rawName = (c.CustName    || c.VendorName   || '').trim();
-    const name    = (title && !rawName.startsWith(title)) ? title + ' ' + rawName : rawName;
-    const addr    = [c.ContAddr1, c.ContAddr2, c.ContDistrict, c.ContAmphur, c.ContProvince, c.ContPostCode]
-                    .filter(p => p && p.trim()).join(' ').trim() || (c.CustAddr1 || '').trim();
-    const tel     = (c.ContTel  || c.Telephone || c.Tel   || c.Phone || '').trim();
-    const tax     = (c.TaxId    || c.TaxNo     || c.TaxID || c.IDCardNo || '').trim();
-    const branch  = (c.BrchID   || c.Branch    || c.BranchName || '').trim();
-
+    const code    = (c.CustCode||c.VendorCode||'').trim();
+    const title   = (c.CustTitle||c.VendorTitle||'').trim();
+    const rawName = (c.CustName||c.VendorName||'').trim();
+    const name    = (title && !rawName.startsWith(title)) ? title+' '+rawName : rawName;
+    const addr    = [c.ContAddr1,c.ContAddr2,c.ContDistrict,c.ContAmphur,c.ContProvince,c.ContPostCode].filter(p=>p&&p.trim()).join(' ').trim()||(c.CustAddr1||'').trim();
+    const tel     = (c.ContTel||c.Telephone||c.Tel||c.Phone||'').trim();
+    const tax     = (c.TaxId||c.TaxNo||c.TaxID||c.IDCardNo||'').trim();
+    const branch  = (c.BrchID||c.Branch||c.BranchName||'').trim();
     const div = document.createElement('div');
     div.className = 'ac-item';
-    div.innerHTML = `
-      <div class="ac-name">
-        ${code ? `<span style="color:var(--blue);margin-right:6px;">[${esc2(code)}]</span>` : ''}
-        ${esc2(name)}
-      </div>
-      <div class="ac-sub">${esc2(addr || '—')}</div>
-    `;
-
+    div.innerHTML = `<div class="ac-name">${code?`<span style="color:var(--blue);margin-right:6px;">[${esc2(code)}]</span>`:''} ${esc2(name)}</div><div class="ac-sub">${esc2(addr||'—')}</div>`;
     div.onclick = () => {
-      $('#custCode').value    = code;
-      $('#custCompany').value = name;
-      $('#custAddr').value    = addr;
-      $('#custTel').value     = tel;
-      $('#custTax').value     = tax;
-      $('#custBranch').value  = branch;
-      list.style.display = 'none';
-
-      currentCustomerCode = code;
-      render();
-      onCustomerSelected();
+      $('#custCode').value=code;$('#custCompany').value=name;$('#custAddr').value=addr;
+      $('#custTel').value=tel;$('#custTax').value=tax;$('#custBranch').value=branch;
+      list.style.display='none';currentCustomerCode=code;render();onCustomerSelected();
     };
-
     list.appendChild(div);
   });
 }
@@ -1243,9 +1280,7 @@ function showAcResults(companies) {
 document.addEventListener('click', e => {
   if (!$('.search-wrap')?.contains(e.target)) $('#acList').style.display = 'none';
   const pop = $('#histPopover');
-  if (pop.style.display === 'block' && !pop.contains(e.target) && !e.target.closest('.td-num')) {
-    pop.style.display = 'none';
-  }
+  if (pop.style.display === 'block' && !pop.contains(e.target) && !e.target.closest('.td-num')) pop.style.display = 'none';
 });
 
 /* ================================================================
@@ -1257,27 +1292,17 @@ async function showHistPopover(keyword, productName, customerCode, rowEl, itemNe
   const pop  = $('#histPopover');
   const head = $('#hpHead');
   const body = $('#hpBody');
-
   positionPopover(pop, rowEl);
   pop.style.display = 'block';
-
   const cacheKey = `${customerCode}__${itemNewCode || keyword}`;
-  if (histCache[cacheKey]) {
-    renderHistContent(histCache[cacheKey], keyword, productName, head, body, currentPrice, rowEl);
-    return;
-  }
-
+  if (histCache[cacheKey]) { renderHistContent(histCache[cacheKey], keyword, productName, head, body, currentPrice, rowEl); return; }
   head.innerHTML = `⏳ กำลังโหลด...`;
   body.innerHTML = '<div style="padding:24px;text-align:center;color:var(--muted);font-size:12px;">⏳</div>';
-
   try {
     const params = new URLSearchParams();
     if (itemNewCode) params.set('item_new', itemNewCode);
     params.set('keyword', keyword);
-
-    const res = await fetch(
-      `${HISTORY_URL}/${encodeURIComponent(customerCode)}?${params.toString()}`
-    );
+    const res = await fetch(`${HISTORY_URL}/${encodeURIComponent(customerCode)}?${params.toString()}`);
     if (!res.ok) throw new Error('HTTP ' + res.status);
     const records = await res.json();
     histCache[cacheKey] = records;
@@ -1290,8 +1315,8 @@ async function showHistPopover(keyword, productName, customerCode, rowEl, itemNe
 function positionPopover(pop, rowEl) {
   const rect = rowEl.getBoundingClientRect();
   const popW = Math.min(680, window.innerWidth * 0.9);
-  let top    = rect.bottom + window.scrollY + 6;
-  let left   = rect.left   + window.scrollX;
+  let top  = rect.bottom + window.scrollY + 6;
+  let left = rect.left + window.scrollX;
   if (left + popW > window.innerWidth) left = Math.max(8, window.innerWidth - popW - 8);
   pop.style.top  = top  + 'px';
   pop.style.left = left + 'px';
@@ -1299,44 +1324,28 @@ function positionPopover(pop, rowEl) {
 
 function renderHistContent(records, itemNew, productName, head, body, currentPrice, itemRowEl) {
   const tag = txt => `<span class="mm-tag">${esc2(txt)}</span>`;
-
   if (!records || !records.length) {
     head.innerHTML = `📊 ${esc2(productName)} ${tag('ไม่พบประวัติ')}`;
     body.innerHTML = '<div style="padding:24px;text-align:center;color:var(--muted);font-size:12px;">ลูกค้ายังไม่เคยสั่งซื้อสินค้านี้</div>';
     return;
   }
-
+  /* ★ เรียงวันที่ล่าสุดขึ้นก่อน */
+  records = records.slice().sort((a, b) => {
+    const da = new Date(a.doc_date || a.doc_date_raw || 0);
+    const db = new Date(b.doc_date || b.doc_date_raw || 0);
+    return db - da;
+  });
   head.innerHTML = `📊 ${esc2(productName)} ${tag(records.length + ' รายการ')}`;
-
-  let html = `
-    <div style="padding:4px 14px 0;font-size:11px;color:var(--muted);">💡 ดับเบิ้ลคลิกที่รายการเพื่อใช้ราคานั้น</div>
-    <table>
-      <thead><tr>
-        <th>#</th>
-        <th>SO No.</th>
-        <th>วันที่</th>
-        <th>ชื่อสินค้า</th>
-        <th style="text-align:right">จำนวน</th>
-        <th style="text-align:right">ราคา/หน่วย</th>
-      </tr></thead>
-      <tbody>
-  `;
-
-  /* ★ หา record ที่ราคาตรงกับราคาปัจจุบัน */
+  let html = `<div style="padding:4px 14px 0;font-size:11px;color:var(--muted);">💡 ดับเบิ้ลคลิกที่รายการเพื่อใช้ราคานั้น</div>
+    <table><thead><tr><th>#</th><th>SO No.</th><th>วันที่</th><th>ชื่อสินค้า</th><th style="text-align:right">จำนวน</th><th style="text-align:right">ราคา/หน่วย</th></tr></thead><tbody>`;
   let matchedIdx = -1;
-  if (currentPrice > 0) {
-    matchedIdx = records.findIndex(r => Math.abs((r.unit_price || 0) - currentPrice) < 0.01);
-  }
-
+  if (currentPrice > 0) matchedIdx = records.findIndex(r => Math.abs((r.unit_price || 0) - currentPrice) < 0.01);
   records.forEach((r, i) => {
     const isUsed = (i === matchedIdx);
     const priceColor = isUsed ? 'color:#16a34a;font-weight:700;' : 'color:#374151;';
     const rowBg      = isUsed ? 'background:#f0fdf4;' : '';
     const usedBadge  = isUsed ? ' <span style="font-size:10px;color:#16a34a;background:#dcfce7;border:1px solid #bbf7d0;border-radius:4px;padding:1px 5px;">✓ ราคาที่ใช้</span>' : '';
-    const priceDisplay = (r.unit_price != null && r.unit_price > 0)
-    ? fmt(r.unit_price)
-    : '<span style="color:#9ca3af;font-size:11px;">ไม่ระบุ</span>';
-
+    const priceDisplay = (r.unit_price != null && r.unit_price > 0) ? fmt(r.unit_price) : '<span style="color:#9ca3af;font-size:11px;">ไม่ระบุ</span>';
     html += `<tr class="hist-row" data-idx="${i}" style="${rowBg}cursor:pointer;" title="ดับเบิ้ลคลิกเพื่อใช้ราคา ${fmt(r.unit_price || 0)}">
       <td>${i + 1}</td>
       <td style="white-space:nowrap;">${esc2(r.so_no || '-')}</td>
@@ -1346,26 +1355,17 @@ function renderHistContent(records, itemNew, productName, head, body, currentPri
       <td style="text-align:right;${priceColor}">${priceDisplay}</td>
     </tr>`;
   });
-
   html += '</tbody></table>';
   body.innerHTML = html;
-
-  /* ★★★ ดับเบิ้ลคลิกเลือกราคา → ใส่ราคาในฟอร์ม + ปิด popover ★★★ */
   body.querySelectorAll('.hist-row').forEach(tr => {
     tr.addEventListener('dblclick', () => {
       const idx = parseInt(tr.dataset.idx);
       const rec = records[idx];
       if (!rec || !itemRowEl) return;
-
-      /* ใส่ราคาในช่อง input */
       const priceEl = itemRowEl.querySelector('.price');
       if (priceEl) priceEl.value = rec.unit_price || 0;
-
-      /* ใส่หน่วย ถ้ายังว่าง */
       const unitEl = itemRowEl.querySelector('.unit');
       if (unitEl && !unitEl.value && rec.unit) unitEl.value = rec.unit;
-
-      /* ปิด popover + render */
       $('#histPopover').style.display = 'none';
       render();
     });
@@ -1393,13 +1393,13 @@ function sigMove(e)  {
 }
 function sigEnd() { sigDrawing = false; sellerSigData = sigCanvas.toDataURL('image/png'); render(); }
 
-sigCanvas.addEventListener('mousedown',  sigStart);
-sigCanvas.addEventListener('mousemove',  sigMove);
-sigCanvas.addEventListener('mouseup',    sigEnd);
+sigCanvas.addEventListener('mousedown', sigStart);
+sigCanvas.addEventListener('mousemove', sigMove);
+sigCanvas.addEventListener('mouseup', sigEnd);
 sigCanvas.addEventListener('mouseleave', sigEnd);
 sigCanvas.addEventListener('touchstart', sigStart, { passive: false });
-sigCanvas.addEventListener('touchmove',  sigMove,  { passive: false });
-sigCanvas.addEventListener('touchend',   sigEnd);
+sigCanvas.addEventListener('touchmove', sigMove, { passive: false });
+sigCanvas.addEventListener('touchend', sigEnd);
 $('#sigClear').onclick = () => { sigCtx.clearRect(0, 0, sigCanvas.width, sigCanvas.height); sellerSigData = null; render(); };
 
 /* ================================================================
@@ -1422,42 +1422,16 @@ function sellerSigHtml() {
 }
 
 function custInfoHtml() {
-  const codeHtml = rawVal('custCode')
-    ? `<span style="color:var(--navy);font-size:12px;">[${val('custCode')}]</span>`
-    : '';
+  const codeHtml = rawVal('custCode') ? `<span style="color:var(--navy);font-size:12px;">[${val('custCode')}]</span>` : '';
   return `
     <div class="cust-head">ข้อมูลลูกค้า ${codeHtml}</div>
     <table class="cinfo-table">
-      <tr>
-        <td class="ck">ชื่อลูกค้า</td>
-        <td class="cv" colspan="2">${val('custCompany')}</td>
-        <td class="ck">เลขประจำตัวผู้เสียภาษี</td>
-        <td class="cv">${val('custTax')}</td>
-        <td class="ck" style="width:1%">สาขา</td>
-        <td class="cv" style="width:1%;white-space:nowrap">${val('custBranch')}</td>
-      </tr>
-      <tr>
-        <td class="ck">ผู้ติดต่อ</td>
-        <td class="cv" colspan="2">${val('contactName')}</td>
-        <td class="ck">เบอร์โทรศัพท์</td>
-        <td class="cv" colspan="3">${val('custTel')}</td>
-      </tr>
-      <tr>
-        <td class="ck" rowspan="3" style="vertical-align:top">ที่อยู่</td>
-        <td class="cv" colspan="2" rowspan="3" style="vertical-align:top">${val('custAddr')}</td>
-        <td class="ck">ยืนราคาภายใน</td>
-        <td class="cv" colspan="3">${val('validDays')}${rawVal('validDays') ? ' วัน' : ''}</td>
-      </tr>
-      <tr>
-        <td class="ck">Expire Date</td>
-        <td class="cv" colspan="3">${val('expireDate')}</td>
-      </tr>
-      <tr>
-        <td class="ck">จำนวนวันเครดิต</td>
-        <td class="cv" colspan="3">${val('creditDays')}${rawVal('creditDays') ? ' วัน' : ''}</td>
-      </tr>
-    </table>
-  `;
+      <tr><td class="ck">ชื่อลูกค้า</td><td class="cv" colspan="2">${val('custCompany')}</td><td class="ck">เลขประจำตัวผู้เสียภาษี</td><td class="cv">${val('custTax')}</td><td class="ck" style="width:1%">สาขา</td><td class="cv" style="width:1%;white-space:nowrap">${val('custBranch')}</td></tr>
+      <tr><td class="ck">ผู้ติดต่อ</td><td class="cv" colspan="2">${val('contactName')}</td><td class="ck">เบอร์โทรศัพท์</td><td class="cv" colspan="3">${val('custTel')}</td></tr>
+      <tr><td class="ck" rowspan="3" style="vertical-align:top">ที่อยู่</td><td class="cv" colspan="2" rowspan="3" style="vertical-align:top">${val('custAddr')}</td><td class="ck">ยืนราคาภายใน</td><td class="cv" colspan="3">${val('validDays')}${rawVal('validDays') ? ' วัน' : ''}</td></tr>
+      <tr><td class="ck">Expire Date</td><td class="cv" colspan="3">${val('expireDate')}</td></tr>
+      <tr><td class="ck">จำนวนวันเครดิต</td><td class="cv" colspan="3">${val('creditDays')}${rawVal('creditDays') ? ' วัน' : ''}</td></tr>
+    </table>`;
 }
 
 function pageHtml(rows, pg, pageCount, isLast, isFirst, T) {
@@ -1476,7 +1450,6 @@ function pageHtml(rows, pg, pageCount, isLast, isFirst, T) {
         </div>
       </div>
     </div>` : '';
-
   return `<div class="doc page">
     <div class="qhead">
       <div class="seller-top">
@@ -1511,93 +1484,63 @@ function render() {
   const items = [];
   $$('#itemRows .item').forEach((tr, idx) => {
     const desc  = tr.querySelector('.desc').value;
-    const qty   = parseFloat(tr.querySelector('.qty').value)   || 0;
+    const qty   = parseFloat(tr.querySelector('.qty').value) || 0;
     const unit  = tr.querySelector('.unit').value;
     const price = parseFloat(tr.querySelector('.price').value) || 0;
-
     const numCell = tr.querySelector('.td-num');
     if (numCell) {
       numCell.textContent = idx + 1;
       const hasHist = tr.dataset.keyword || tr.dataset.itemNew;
-      if (!hasHist) numCell.classList.add('no-hist');
-      else numCell.classList.remove('no-hist');
+      if (!hasHist) numCell.classList.add('no-hist'); else numCell.classList.remove('no-hist');
     }
-
     const amtCell = tr.querySelector('.td-amt');
     if (amtCell) amtCell.textContent = fmt(qty * price);
-
     if (!desc && !price) return;
     items.push({ desc, qty, unit, price });
   });
-
   const gross = items.reduce((s, it) => s + it.qty * it.price, 0);
   const vat   = gross * 0.07;
   const grand = gross + vat;
   const T     = { gross, vat, grand };
-
   const foot = $('#itemFoot');
   if (items.length) { foot.style.display = ''; $('#footGross').textContent = fmt(gross); }
   else foot.style.display = 'none';
-
   const sizes     = paginate(items.length);
   const pageCount = sizes.length;
   let out = '', offset = 0;
-
   for (let pg = 0; pg < pageCount; pg++) {
     const count  = sizes[pg];
     const slice  = items.slice(offset, offset + count);
     const isLast = pg === pageCount - 1;
     let rows = '';
-
     slice.forEach((it, idx) => {
-      rows += `<tr>
-        <td class="c">${offset + idx + 1}</td>
-        <td class="l">${esc2(it.desc || '-')}</td>
-        <td class="c">${it.qty || ''}${it.unit ? ' ' + esc2(it.unit) : ''}</td>
-        <td class="r">${fmt(it.price || 0)}</td>
-        <td class="r">${fmt(it.qty * it.price)}</td>
-      </tr>`;
+      rows += `<tr><td class="c">${offset + idx + 1}</td><td class="l">${esc2(it.desc || '-')}</td><td class="c">${it.qty || ''}${it.unit ? ' ' + esc2(it.unit) : ''}</td><td class="r">${fmt(it.price || 0)}</td><td class="r">${fmt(it.qty * it.price)}</td></tr>`;
     });
-
     const padTarget = pg === 0 ? FIRST_PAGE_MAX : OTHER_PAGE_MAX;
     if (isLast && count < padTarget) {
-      for (let e = 0; e < padTarget - count; e++) {
-        rows += `<tr class="empty-row"><td class="c"></td><td class="l"></td><td class="c"></td><td class="r"></td><td class="r"></td></tr>`;
-      }
+      for (let e = 0; e < padTarget - count; e++) rows += `<tr class="empty-row"><td class="c"></td><td class="l"></td><td class="c"></td><td class="r"></td><td class="r"></td></tr>`;
     }
-
     if (!items.length) {
       rows = '';
-      for (let e = 0; e < FIRST_PAGE_MAX; e++) {
-        rows += `<tr class="empty-row">
-          <td class="c">${e === 0 ? '1' : ''}</td>
-          <td class="l">${e === 0 ? '—' : ''}</td>
-          <td class="c"></td><td class="r"></td><td class="r"></td>
-        </tr>`;
-      }
+      for (let e = 0; e < FIRST_PAGE_MAX; e++) rows += `<tr class="empty-row"><td class="c">${e===0?'1':''}</td><td class="l">${e===0?'—':''}</td><td class="c"></td><td class="r"></td><td class="r"></td></tr>`;
     }
-
     out += pageHtml(rows, pg + 1, pageCount, isLast, pg === 0, T);
     offset += count;
   }
-
   $('#pages').innerHTML = out;
   validateForm();
 }
 
 /* ================================================================
-   ★★★ FORM VALIDATION — ตรวจข้อมูลก่อนจัดส่ง ★★★
+   FORM VALIDATION
    ================================================================ */
 function validateForm() {
   const errors = [];
-
   if (!rawVal('custCompany'))  errors.push('ชื่อบริษัทลูกค้า');
   if (!rawVal('custAddr'))     errors.push('ที่อยู่ลูกค้า');
   if (!rawVal('custTel'))      errors.push('เบอร์โทรลูกค้า');
   if (!rawVal('contactName'))  errors.push('ชื่อผู้ติดต่อ');
   if (!rawVal('validDays'))    errors.push('ยืนราคาภายใน (วัน)');
-
-  /* ตรวจรายการสินค้า — ต้องมีอย่างน้อย 1 รายการที่มีชื่อ + ราคา */
   const rows = $$('#itemRows .item');
   let hasValidItem = false;
   rows.forEach(tr => {
@@ -1606,17 +1549,10 @@ function validateForm() {
     if (desc && price > 0) hasValidItem = true;
   });
   if (!hasValidItem) errors.push('รายการสินค้า (อย่างน้อย 1 รายการที่มีชื่อและราคา)');
-
   const btn = $('#printBtn');
   const msg = $('#validateMsg');
-
-  if (errors.length) {
-    btn.disabled = true;
-    msg.textContent = '⚠️ กรุณากรอก: ' + errors.join(', ');
-  } else {
-    btn.disabled = false;
-    msg.textContent = '';
-  }
+  if (errors.length) { btn.disabled = true; msg.textContent = '⚠️ กรุณากรอก: ' + errors.join(', '); }
+  else { btn.disabled = false; msg.textContent = ''; }
 }
 
 /* ================================================================
@@ -1651,7 +1587,6 @@ function bahtText(n) {
  'custTax','custBranch','validDays','expireDate','creditDays','note']
   .forEach(id => { $('#' + id).oninput = $('#' + id).onchange = render; });
 
-/* ★★★ ยืนราคาภายใน (วัน) → คำนวณ Expire Date อัตโนมัติ ★★★ */
 function calcExpireDate() {
   const days = parseInt($('#validDays').value) || 0;
   const baseDate = $('#docDate').value;
@@ -1664,38 +1599,29 @@ function calcExpireDate() {
 }
 $('#validDays').addEventListener('input', calcExpireDate);
 $('#validDays').addEventListener('change', calcExpireDate);
-$('#docDate').addEventListener('change', calcExpireDate);  // เปลี่ยนวันที่เอกสาร → คำนวณใหม่
+$('#docDate').addEventListener('change', calcExpireDate);
 
-/* ★★★ บันทึก PDF — จับภาพแต่ละหน้า → สร้างไฟล์ PDF → ดาวน์โหลด ★★★ */
+/* ★★★ บันทึก PDF ★★★ */
 $('#printBtn').onclick = async () => {
   const btn = $('#printBtn');
   const origText = btn.textContent;
   btn.disabled = true;
   btn.textContent = '⏳ กำลังสร้าง PDF...';
-
   try {
     const { jsPDF } = window.jspdf || {};
     if (!jsPDF) { alert('jsPDF โหลดไม่สำเร็จ'); return; }
     const pages = document.querySelectorAll('#pages .doc.page');
     if (!pages.length) { alert('ไม่มีข้อมูลใบเสนอราคา'); return; }
-
-    /* ---- 1) สร้าง PDF ---- */
     const pdf = new jsPDF({ orientation:'portrait', unit:'mm', format:'a4' });
     for (let i = 0; i < pages.length; i++) {
       if (i > 0) pdf.addPage();
-      const canvas = await html2canvas(pages[i], {
-        scale:2, useCORS:true, backgroundColor:'#ffffff', logging:false,
-      });
+      const canvas = await html2canvas(pages[i], { scale:2, useCORS:true, backgroundColor:'#ffffff', logging:false });
       const imgData = canvas.toDataURL('image/jpeg', 0.92);
       const ratio = Math.min(210/canvas.width, 297/canvas.height);
       pdf.addImage(imgData,'JPEG',(210-canvas.width*ratio)/2, 0, canvas.width*ratio, canvas.height*ratio);
     }
-
-    /* ---- 2) แปลง PDF → base64 ---- */
     btn.textContent = '⏳ กำลังบันทึกลงระบบ...';
     const pdfBase64 = await blobToBase64(pdf.output('blob'));
-
-    /* ---- 3) รวบรวมข้อมูลรายการสินค้า ---- */
     const items = [];
     $$('#itemRows .item').forEach((tr, idx) => {
       const desc  = (tr.querySelector('.desc')?.value || '').trim();
@@ -1703,55 +1629,33 @@ $('#printBtn').onclick = async () => {
       if (!desc && price <= 0) return;
       items.push({
         desc, price,
-        qty:          parseFloat(tr.querySelector('.qty')?.value) || 0,
-        unit:         (tr.querySelector('.unit')?.value || '').trim(),
-        item_new:     tr.dataset.itemNew     || null,
+        qty: parseFloat(tr.querySelector('.qty')?.value) || 0,
+        unit: (tr.querySelector('.unit')?.value || '').trim(),
+        item_new: tr.dataset.itemNew || null,
         product_name: tr.dataset.productName || null,
-        is_new:       tr.dataset.isNew === '1',
+        is_new: tr.dataset.isNew === '1',
       });
     });
-
-    /* ---- 4) ส่งไป backend → บันทึก DB + storage ---- */
     const res = await fetch('/SoItem', {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
-      },
+      headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content },
       body: JSON.stringify({
-        doc_date:          rawVal('docDate'),
-        customer_code:     rawVal('custCode'),
-        customer_company:  rawVal('custCompany'),
-        customer_address:  rawVal('custAddr'),
-        customer_tel:      rawVal('custTel'),
-        customer_tax:      rawVal('custTax'),
-        customer_branch:   rawVal('custBranch'),
-        contact_name:      rawVal('contactName'),
-        valid_days:        parseInt($('#validDays').value) || 0,
-        expire_date:       rawVal('expireDate') || null,
-        credit_days:       parseInt($('#creditDays').value) || null,
-        note:              rawVal('note') || null,
-        items,
-        pdf_base64:        pdfBase64,
+        doc_date: rawVal('docDate'), customer_code: rawVal('custCode'), customer_company: rawVal('custCompany'),
+        customer_address: rawVal('custAddr'), customer_tel: rawVal('custTel'), customer_tax: rawVal('custTax'),
+        customer_branch: rawVal('custBranch'), contact_name: rawVal('contactName'),
+        valid_days: parseInt($('#validDays').value) || 0, expire_date: rawVal('expireDate') || null,
+        credit_days: parseInt($('#creditDays').value) || null, note: rawVal('note') || null, items, pdf_base64: pdfBase64,
       }),
     });
-
     const result = await res.json();
-    if (!res.ok || result.status === 'error') {
-      throw new Error(result.message || 'HTTP ' + res.status);
-    }
-
-    /* ---- 5) ★ ดาวน์โหลด PDF ลงเครื่องทันที ---- */
+    if (!res.ok || result.status === 'error') throw new Error(result.message || 'HTTP ' + res.status);
     const custName = (rawVal('custCompany') || 'QT').replace(/[^ก-๙A-Za-z0-9]/g,'_').substring(0,30);
     pdf.save(`${result.quotation_no}_${custName}.pdf`);
-
-    /* ---- 6) แสดงผลสำเร็จ ---- */
     btn.textContent = `✅ บันทึกแล้ว (${result.quotation_no})`;
     btn.disabled = true;
     const msg = $('#validateMsg');
     msg.style.color = '#16a34a';
     msg.textContent = `✅ ${result.message}`;
-
   } catch (err) {
     console.error('Save error:', err);
     alert('บันทึกไม่สำเร็จ: ' + err.message);
@@ -1760,7 +1664,6 @@ $('#printBtn').onclick = async () => {
   }
 };
 
-/* ---- Blob → base64 ---- */
 function blobToBase64(blob) {
   return new Promise((resolve, reject) => {
     const r = new FileReader();
@@ -1773,7 +1676,45 @@ function blobToBase64(blob) {
 $('#docDate').value = new Date().toISOString().slice(0, 10);
 $('#itemRows').appendChild(itemRow({ desc: 'สินค้า/บริการ ตัวอย่าง', qty: 1, unit: 'ชิ้น', price: 1000 }));
 render();
-</script>
+/* ===== Drag-to-scroll สำหรับ modal body ===== */
+document.querySelectorAll('.po-modal-body, .po-detail-body').forEach(el => {
+    let isDown = false, startX, startY, scrollLeft, scrollTop;
 
+    el.style.cursor = 'grab';
+
+    el.addEventListener('mousedown', e => {
+        // ไม่ทำงานถ้าคลิกลิงก์หรือปุ่ม
+        if (e.target.closest('a, button, input, select')) return;
+        isDown = true;
+        el.style.cursor = 'grabbing';
+        el.style.userSelect = 'none';
+        startX = e.pageX - el.offsetLeft;
+        startY = e.pageY - el.offsetTop;
+        scrollLeft = el.scrollLeft;
+        scrollTop = el.scrollTop;
+    });
+
+    el.addEventListener('mouseleave', () => {
+        isDown = false;
+        el.style.cursor = 'grab';
+        el.style.userSelect = '';
+    });
+
+    el.addEventListener('mouseup', () => {
+        isDown = false;
+        el.style.cursor = 'grab';
+        el.style.userSelect = '';
+    });
+
+    el.addEventListener('mousemove', e => {
+        if (!isDown) return;
+        e.preventDefault();
+        const x = e.pageX - el.offsetLeft;
+        const y = e.pageY - el.offsetTop;
+        el.scrollLeft = scrollLeft - (x - startX);
+        el.scrollTop = scrollTop - (y - startY);
+    });
+});
+</script>
 </body>
 </html>

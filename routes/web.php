@@ -269,4 +269,4 @@ use App\Http\Controllers\PoitemController;
  
 Route::get('/poitem',             [PoitemController::class, 'index'])->name('po.search');
 Route::post('/po-search/search',  [PoitemController::class, 'search'])->name('po.search.api');
-Route::get('/po-search/detail',   [PoitemController::class, 'detail'])->name('po.detail.api');
+Route::post('/po-search/detail',  [PoitemController::class, 'detail'])->name('po.detail.api');

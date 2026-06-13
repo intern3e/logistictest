@@ -22,19 +22,11 @@ class fuzzy_po extends Model
     ];
 
     protected $casts = [
-        'doc_date'          => 'date',
-        'qty'               => 'decimal:4',
-        'unit_price'        => 'decimal:4',
-        'unit_price_thb'    => 'decimal:4',
-        'item_discount_pct' => 'decimal:2',
-        'item_discount_amt' => 'decimal:4',
-        'item_amount'       => 'decimal:4',
-        'po_total'          => 'decimal:4',
-        'bill_discount_pct' => 'decimal:2',
-        'bill_discount_amt' => 'decimal:4',
-        'before_tax'        => 'decimal:4',
-        'input_tax'         => 'decimal:4',
-        'grand_total'       => 'decimal:4',
+        'doc_date'       => 'date',
+        'qty'            => 'decimal:4',
+        'unit_price'     => 'decimal:4',
+        'unit_price_thb' => 'decimal:4',
+        'grand_total'    => 'decimal:4',
     ];
 
     /* ================================================================
