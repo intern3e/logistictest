@@ -107,7 +107,7 @@
 .ref-panel .rp-cust{max-width:160px;white-space:normal;word-break:break-word;line-height:1.4;font-weight:500;}
 .ref-panel .rp-price{text-align:right;font-weight:700;color:var(--navy);font-variant-numeric:tabular-nums;white-space:nowrap;font-size:13px;}
 .ref-panel .rp-pname{color:#555;font-size:11px;white-space:normal;word-break:break-word;max-width:180px;line-height:1.4;}
-.ref-panel .rp-kw{white-space:nowrap;font-size:10px;color:var(--blue);font-weight:600;}
+.ref-panel .rp-kw{font-size:8px;color:var(--blue);font-weight:600;white-space:normal;line-height:1.5;}
 .ref-panel .rp-use{
   font-size:11px;color:#fff;background:var(--blue);
   border:none;border-radius:5px;padding:4px 12px;
@@ -416,7 +416,7 @@
       <div class="drop" id="drop">
         <div id="dropEmpty">
           <div style="font-size:34px">⬆️</div>
-          <div style="font-weight:600;margin-top:6px">คลิกหรือลากไฟล์มาวาง</div>
+          <div style="font-weight:600;margin-top:6px">คลิก ลากไฟล์มาวาง หรือ Ctrl+V วางรูป</div>
           <div class="muted">รองรับ JPG, PNG, PDF, Excel (.xlsx, .xls, .csv)</div>
         </div>
         <img id="preview" style="display:none">
@@ -638,6 +638,20 @@ $('#drop').onclick    = () => $('#file').click();
 $('#drop').ondragover = e => e.preventDefault();
 $('#drop').ondrop     = e => { e.preventDefault(); handleFile(e.dataTransfer.files[0]); };
 $('#file').onchange   = e => handleFile(e.target.files[0]);
+
+// วางรูปจาก clipboard (Ctrl+V / คลิกขวา→วาง)
+document.addEventListener('paste', e => {
+  const items = e.clipboardData?.items;
+  if (!items) return;
+  for (const item of items) {
+    if (item.type.startsWith('image/')) {
+      e.preventDefault();
+      const blob = item.getAsFile();
+      if (blob) handleFile(blob);
+      return;
+    }
+  }
+});
 
 function handleFile(f) {
   if (!f) return;
@@ -875,7 +889,6 @@ $('#ocrBtn').onclick = async () => {
         { key:'desc',  label:'รายการสินค้า', color:'#dbeafe', border:'#3b82f6', icon:'📦' },
         { key:'qty',   label:'จำนวน',       color:'#dcfce7', border:'#22c55e', icon:'🔢' },
         { key:'unit',  label:'หน่วย',        color:'#fef3c7', border:'#f59e0b', icon:'📏' },
-        { key:'price', label:'ราคา/หน่วย',  color:'#f3e8ff', border:'#a855f7', icon:'💰' },
       ];
 
       prog.firstElementChild.style.width = '100%';
@@ -1087,7 +1100,6 @@ $('#ocrBtn').onclick = async () => {
         { key:'desc',  label:'รายการสินค้า', color:'#dbeafe', border:'#3b82f6', icon:'📦' },
         { key:'qty',   label:'จำนวน',       color:'#dcfce7', border:'#22c55e', icon:'🔢' },
         { key:'unit',  label:'หน่วย',        color:'#fef3c7', border:'#f59e0b', icon:'📏' },
-        { key:'price', label:'ราคา/หน่วย',  color:'#f3e8ff', border:'#a855f7', icon:'💰' },
       ];
 
       function renderPdfTable() {
@@ -1227,8 +1239,7 @@ $('#parseBtn').onclick = async () => {
       if (!desc) return;
       const qty   = map.qty != null ? (parseFloat(row[map.qty]) || 1) : 1;
       const unit  = map.unit != null ? String(row[map.unit] ?? '').trim() : '';
-      const price = map.price != null ? (parseFloat(String(row[map.price]).replace(/,/g,'')) || 0) : 0;
-      const tr = itemRow({ desc, qty, unit, price });
+      const tr = itemRow({ desc, qty, unit });
       $('#itemRows').appendChild(tr);
       rows.push(tr);
     });
@@ -1540,7 +1551,10 @@ function setRefTag(tr, suggestions) {
     `💡 ราคาอ้างอิง: <b>${fmt(best.unit_price)}</b> บาท` +
     ` · ${esc2(best.so_no || '-')}` +
     ` · ${esc2(best.customer_name || '-')}` +
-    (best.match_keyword ? `<br>🔍 จับคู่: <b>${esc2(best.match_keyword)}</b>` : '') +
+    (best.match_keyword ? `<br>🔍 จับคู่: <b>${best.match_keyword.split(/\s*\+\s*/).reduce((acc, kw, i) => {
+      if (i === 0) return esc2(kw);
+      return acc + (i % 2 === 0 ? '<br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;+ ' : ' + ') + esc2(kw);
+    }, '')}</b>` : '') +
     (suggestions.length > 1 ? ` <span style="color:var(--blue)">▾ ${suggestions.length} บริษัท</span>` : '');
 
   /* สร้าง panel + backdrop (append เข้า body ตอนเปิด) */
@@ -1556,7 +1570,10 @@ function setRefTag(tr, suggestions) {
       <td style="white-space:nowrap">${esc2(s.so_no || '-')}</td>
       <td style="white-space:nowrap">${esc2(s.doc_date || '-')}</td>
       <td class="rp-pname">${esc2(s.product_name || '-')}</td>
-      <td class="rp-kw">${esc2(s.match_keyword || '-')}</td>
+      <td class="rp-kw">${((s.match_keyword || '-').split(/\s*\+\s*/).reduce((acc, kw, i) => {
+        if (i === 0) return esc2(kw);
+        return acc + (i % 2 === 0 ? '<br>+ ' : ' + ') + esc2(kw);
+      }, ''))}</td>
       <td class="rp-price">${fmt(s.unit_price)}</td>
       <td><button class="rp-use" data-i="${i}">ใช้ราคานี้</button></td>
     </tr>`;
@@ -1679,7 +1696,7 @@ async function batchMatchItems(rows) {
         const unitEl  = tr.querySelector('.unit');
         if (r.has_price && priceEl) { priceEl.value = r.unit_price; }
         else if (r.ref_suggestions?.length && priceEl) { priceEl.value = r.ref_suggestions[0].unit_price; setRefTag(tr, r.ref_suggestions); }
-        if (r.unit && unitEl && !unitEl.value) unitEl.value = r.unit;
+        if (r.unit && unitEl) unitEl.value = r.unit;
         matched++;
       } else {
         const priceEl = tr.querySelector('.price');
@@ -1687,7 +1704,7 @@ async function batchMatchItems(rows) {
         if (r.ref_suggestions?.length) {
           if (priceEl) priceEl.value = r.ref_suggestions[0].unit_price;
           setRefTag(tr, r.ref_suggestions);
-          if (unitEl && !unitEl.value && r.ref_suggestions[0].unit) unitEl.value = r.ref_suggestions[0].unit;
+          if (unitEl && r.ref_suggestions[0].unit) unitEl.value = r.ref_suggestions[0].unit;
         }
         setNewTag(tr, true);
       }
@@ -1705,9 +1722,8 @@ async function onCustomerSelected() {
   const rows = [...$$('#itemRows .item')];
   rows.forEach(tr => {
     const priceEl = tr.querySelector('.price');
-    const unitEl  = tr.querySelector('.unit');
     if (priceEl) priceEl.value = 0;
-    if (unitEl)  unitEl.value  = '';
+    // ไม่ล้าง unit — เก็บค่าเดิมไว้
     tr.dataset.itemNew = ''; tr.dataset.productName = ''; tr.dataset.keyword = ''; tr.dataset.isNew = '0';
     setNewTag(tr, false); clearRefTag(tr);
   });
@@ -2115,7 +2131,40 @@ function render() {
   if (items.length) { foot.style.display = ''; $('#footGross').textContent = fmt(gross); }
   else foot.style.display = 'none';
   
-  const sizes     = paginate(items.length);
+  // คำนวณ weight: item = 1 แถว, sub-detail แต่ละบรรทัด = 1 แถว
+  const itemWeights = items.map(it => {
+    const sub = it.subDetail ? it.subDetail.split('\n').filter(l => l.trim()).length : 0;
+    return 1 + sub;
+  });
+
+  // แบ่งหน้าแบบ Word: ค่าคงที่เดิม แต่นับ sub-detail เป็นแถวเพิ่ม
+  function buildPages() {
+    const totalW = itemWeights.reduce((s, w) => s + w, 0);
+    if (totalW <= FIRST_LAST_PAGE_MAX) return [items.length];
+    const pages = [];
+    let idx = 0;
+    while (idx < items.length) {
+      const isFirst = pages.length === 0;
+      const remW = itemWeights.slice(idx).reduce((s, w) => s + w, 0);
+      // ดูว่าหน้านี้เป็นหน้าสุดท้ายไหม
+      const maxFull = isFirst ? FIRST_PAGE_MAX : OTHER_PAGE_MAX;
+      const maxLast = isFirst ? FIRST_LAST_PAGE_MAX : OTHER_LAST_PAGE_MAX;
+      // ลองใส่ให้เต็ม
+      let w = 0, cnt = 0;
+      while (idx + cnt < items.length && w + itemWeights[idx + cnt] <= maxFull) { w += itemWeights[idx + cnt]; cnt++; }
+      // ถ้าใส่ทั้งหมดที่เหลือพอดี ใช้ maxLast แทน
+      if (idx + cnt >= items.length) {
+        w = 0; cnt = 0;
+        while (idx + cnt < items.length && w + itemWeights[idx + cnt] <= maxLast) { w += itemWeights[idx + cnt]; cnt++; }
+      }
+      if (cnt === 0) cnt = 1; // อย่างน้อย 1 item
+      pages.push(cnt);
+      idx += cnt;
+    }
+    return pages;
+  }
+
+  const sizes     = buildPages();
   const pageCount = sizes.length;
   let out = '', offset = 0;
   for (let pg = 0; pg < pageCount; pg++) {
@@ -2134,15 +2183,14 @@ slice.forEach((it, idx) => {
     <td class="r">${fmt(it.qty * it.price)}</td>
   </tr>`;
 });
-    /* padTarget: เลือกตามหน้าแรก/กลาง × หน้าสุดท้ายหรือไม่ */
+    /* pad empty rows: นับ weight ของ slice */
+    const sliceW = slice.reduce((s, it, i) => s + itemWeights[offset + i], 0);
     let padTarget;
-    if (pg === 0) {
-      padTarget = isLast ? FIRST_LAST_PAGE_MAX : FIRST_PAGE_MAX;
-    } else {
-      padTarget = isLast ? OTHER_LAST_PAGE_MAX : OTHER_PAGE_MAX;
-    }
-    if (isLast && count < padTarget) {
-      for (let e = 0; e < padTarget - count; e++) rows += `<tr class="empty-row"><td class="c"></td><td class="l"></td><td class="c"></td><td class="c"></td><td class="r"></td><td class="r"></td></tr>`;
+    if (pg === 0) padTarget = isLast ? FIRST_LAST_PAGE_MAX : FIRST_PAGE_MAX;
+    else padTarget = isLast ? OTHER_LAST_PAGE_MAX : OTHER_PAGE_MAX;
+    const pad = Math.max(0, padTarget - sliceW);
+    if (isLast && pad > 0) {
+      for (let e = 0; e < pad; e++) rows += `<tr class="empty-row"><td class="c"></td><td class="l"></td><td class="c"></td><td class="c"></td><td class="r"></td><td class="r"></td></tr>`;
     }
     if (!items.length) {
       rows = '';
