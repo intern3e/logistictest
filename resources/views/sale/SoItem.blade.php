@@ -860,19 +860,16 @@ $('#ocrBtn').onclick = async () => {
   $('#ocrStats').style.display = 'none';
   try {
     if (fileType === 'excel') {
-      // === Excel: อ่านด้วย SheetJS → เลือก role แล้วคลิกคอลัมน์ ===
+      // === Excel: อ่านด้วย SheetJS → เลือกชีท + เลือกคอลัมน์ ===
       $('#ocrBtn').textContent = '⏳ กำลังอ่าน Excel...';
       prog.firstElementChild.style.width = '50%';
       const data = await uploadedFile.arrayBuffer();
       const wb = XLSX.read(data, { type: 'array' });
-      const ws = wb.Sheets[wb.SheetNames[0]];
-      const rows = XLSX.utils.sheet_to_json(ws, { header: 1, defval: '' });
-      if (!rows.length) throw new Error('ไม่พบข้อมูลในไฟล์');
-      const maxCols = Math.max(...rows.map(r => r.length));
 
-      window._excelRows = rows;
+      window._excelWb = wb;
       window._excelColMap = {};
       window._activeRole = null;
+      window._activeSheet = 0;
 
       const roles = [
         { key:'desc',  label:'รายการสินค้า', color:'#dbeafe', border:'#3b82f6', icon:'📦' },
@@ -886,14 +883,47 @@ $('#ocrBtn').onclick = async () => {
       $('#ocrText').style.display = 'none';
       $('#excelTableWrap').style.display = 'block';
 
+      function loadSheet(idx) {
+        const ws = wb.Sheets[wb.SheetNames[idx]];
+        const rows = XLSX.utils.sheet_to_json(ws, { header: 1, defval: '' });
+        const maxCols = rows.length ? Math.max(...rows.map(r => r.length)) : 0;
+        rows.forEach(r => { while (r.length < maxCols) r.push(''); });
+        window._excelRows = rows;
+        window._activeSheet = idx;
+        window._excelColMap = {};
+        window._activeRole = null;
+        return { rows, maxCols };
+      }
+
+      let { rows, maxCols } = loadSheet(0);
+
       function renderExcelTable() {
+        const sheetData = { rows: window._excelRows, maxCols: window._excelRows[0]?.length || 0 };
         const map = window._excelColMap;
         const active = window._activeRole;
         const reverseMap = {};
         Object.entries(map).forEach(([k,v]) => { reverseMap[v] = roles.find(r => r.key === k); });
 
+        let h = '';
+
+        // Sheet tabs (แสดงเฉพาะถ้ามี 2+ ชีท)
+        if (wb.SheetNames.length > 1) {
+          h += `<div style="display:flex;border-bottom:2px solid var(--line);background:#f0f2f5;">`;
+          wb.SheetNames.forEach((name, si) => {
+            const isActive = si === window._activeSheet;
+            h += `<button class="sheet-tab" data-si="${si}" style="
+              padding:8px 16px;border:none;background:${isActive ? '#fff' : 'transparent'};
+              font-size:13px;font-weight:${isActive ? '700' : '400'};color:${isActive ? 'var(--navy)' : '#888'};
+              cursor:pointer;font-family:inherit;border-bottom:${isActive ? '2px solid var(--blue)' : '2px solid transparent'};
+              margin-bottom:-2px;transition:.15s;">
+              ${esc2(name)}
+            </button>`;
+          });
+          h += `</div>`;
+        }
+
         // Role buttons
-        let h = `<div style="padding:10px 12px;background:#f8fafc;border-bottom:1px solid var(--line);display:flex;gap:6px;flex-wrap:wrap;align-items:center;">
+        h += `<div style="padding:10px 12px;background:#f8fafc;border-bottom:1px solid var(--line);display:flex;gap:6px;flex-wrap:wrap;align-items:center;">
           <span style="font-size:11px;color:#888;margin-right:4px;">เลือกฟิลด์:</span>`;
         roles.forEach(r => {
           const assigned = map[r.key] != null;
@@ -920,64 +950,62 @@ $('#ocrBtn').onclick = async () => {
         }
 
         // Table
-        h += `<div style="overflow:auto;max-height:50vh;">
-          <table style="width:max-content;min-width:100%;border-collapse:collapse;font-size:12px;">`;
-
-        // Header
-        h += '<tr>';
-        for (let ci = 0; ci < maxCols; ci++) {
-          const role = reverseMap[ci];
-          const bg = role ? role.color : (active ? '#f0f4ff' : '#f0f4ff');
-          const bc = role ? role.border : '#bbb';
-          const cursor = active ? 'cursor:pointer;' : 'cursor:default;';
-          const hoverHint = active ? 'opacity:0.9;' : '';
-          const label = role ? `<div style="font-size:9px;color:${role.border};margin-top:2px;font-weight:700;">${role.icon} ${role.label}</div>` : '';
-          const val = rows[0][ci] != null ? String(rows[0][ci]) : `Col ${ci+1}`;
-          h += `<th data-col="${ci}" class="excel-th" style="padding:6px 8px;border:1.5px solid ${bc};white-space:nowrap;
-            background:${bg};font-weight:700;color:var(--navy);user-select:none;transition:.15s;${cursor}${hoverHint}">
-            ${esc2(val)}${label}</th>`;
+        const theRows = sheetData.rows;
+        const mc = sheetData.maxCols;
+        if (!theRows.length) {
+          h += `<div style="padding:20px;text-align:center;color:#999;">ชีทนี้ไม่มีข้อมูล</div>`;
+        } else {
+          h += `<div style="overflow:auto;max-height:50vh;">
+            <table style="width:max-content;min-width:100%;border-collapse:collapse;font-size:12px;">`;
+          theRows.forEach((row, ri) => {
+            const isHead = ri === 0;
+            const tag = isHead ? 'th' : 'td';
+            h += '<tr>';
+            for (let ci = 0; ci < mc; ci++) {
+              const role = reverseMap[ci];
+              const bg = isHead ? (role ? role.color : '#f0f4ff') : (role ? role.color + '88' : (ri % 2 === 0 ? '#fff' : '#f8f9fb'));
+              const bc = isHead && role ? role.border : '#bbb';
+              const cursor = isHead && active ? 'cursor:pointer;' : '';
+              const label = isHead && role ? `<div style="font-size:9px;color:${role.border};margin-top:2px;font-weight:700;">${role.icon} ${role.label}</div>` : '';
+              const val = row[ci] != null ? String(row[ci]) : '';
+              const align = !isNaN(val.replace(/,/g,'')) && val !== '' ? 'text-align:right;' : '';
+              const weight = isHead ? 'font-weight:700;color:var(--navy);' : '';
+              h += `<${tag} ${isHead ? 'data-col="'+ci+'" class="excel-th"' : ''} style="padding:${isHead?'6':'4'}px 8px;border:${isHead?'1.5':'1'}px solid ${isHead?bc:'#ccc'};white-space:nowrap;background:${bg};${align}${weight}${cursor}">${esc2(val)}${label}</${tag}>`;
+            }
+            h += '</tr>';
+          });
+          h += '</table></div>';
         }
-        h += '</tr>';
-
-        // Data
-        rows.forEach((row, ri) => {
-          if (ri === 0) return;
-          const bg = ri % 2 === 0 ? '#fff' : '#f8f9fb';
-          h += '<tr>';
-          for (let ci = 0; ci < maxCols; ci++) {
-            const role = reverseMap[ci];
-            const cellBg = role ? role.color + '88' : bg;
-            const val = row[ci] != null ? String(row[ci]) : '';
-            const align = !isNaN(val) && val !== '' ? 'text-align:right;' : '';
-            h += `<td style="padding:4px 8px;border:1px solid #ccc;white-space:nowrap;background:${cellBg};${align}">${esc2(val)}</td>`;
-          }
-          h += '</tr>';
-        });
-        h += '</table></div>';
 
         $('#excelTableWrap').innerHTML = `<div style="border:2px solid #999;border-radius:6px;overflow:hidden;margin-top:8px;">${h}</div>`;
 
-        // Bind role button clicks
+        // Bind sheet tabs
+        $('#excelTableWrap').querySelectorAll('.sheet-tab').forEach(tab => {
+          tab.onclick = () => {
+            loadSheet(parseInt(tab.dataset.si));
+            renderExcelTable();
+            const r = window._excelRows;
+            $('#ocrStats').querySelector('.os-head').innerHTML = `📊 ${esc2(wb.SheetNames[window._activeSheet])} · ${Math.max(0, r.length - 1)} รายการ`;
+          };
+        });
+
+        // Bind role buttons
         $('#excelTableWrap').querySelectorAll('.role-btn').forEach(btn => {
           btn.onclick = () => {
-            const key = btn.dataset.role;
-            window._activeRole = (window._activeRole === key) ? null : key;
+            window._activeRole = (window._activeRole === btn.dataset.role) ? null : btn.dataset.role;
             renderExcelTable();
           };
         });
 
-        // Bind column header clicks
+        // Bind column headers
         $('#excelTableWrap').querySelectorAll('.excel-th').forEach(th => {
           th.onclick = () => {
             if (!window._activeRole) return;
             const ci = parseInt(th.dataset.col);
             const map = window._excelColMap;
             const roleKey = window._activeRole;
-            // ลบคอลัมน์เดิมที่ assign role นี้
             if (map[roleKey] != null) delete map[roleKey];
-            // ลบ role เดิมของคอลัมน์นี้
             Object.keys(map).forEach(k => { if (map[k] === ci) delete map[k]; });
-            // assign ใหม่
             map[roleKey] = ci;
             window._activeRole = null;
             renderExcelTable();
