@@ -9,6 +9,8 @@
 <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.2/dist/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 <style>
  /* ===== PO Detail Modal (nested) ===== */
 .po-detail-bg{display:none;position:fixed;inset:0;z-index:1000;background:rgba(0,0,0,.5);justify-content:center;padding:20px 0;overflow-y:auto;scrollbar-width:none;-ms-overflow-style:none;}
@@ -325,7 +327,7 @@
   table.itbl{width:100%;border-collapse:collapse;font-size:13px;}
   .itbl th{border-bottom:2px solid #333;padding:8px 5px;font-weight:700;color:#222;}
   .itbl td{padding:8px 5px;}
-  .itbl th.l,.itbl td.l{text-align:left;}
+  .itbl th.l,.itbl td.l{text-align:left;word-break:break-word;white-space:normal;}
   .itbl th.c,.itbl td.c{text-align:center;}
   .itbl th.r,.itbl td.r{text-align:right;}
   .itbl tr.empty-row td{height:auto;padding:8px 5px;}
@@ -338,10 +340,10 @@
   .ctot .baht{text-align:right;font-size:12px;color:#444;margin-top:1px;}
 
   .cfoot{display:flex;justify-content:space-between;gap:30px;align-items:flex-end;margin-top:14px;}
-  .ssign{display:flex;gap:120px;}
-  .sg{flex:1;width:230px;text-align:center;font-size:12px;position:relative;}
-  .sg .sgline{border-top:1px solid #555;margin:20px 14px 3px;padding-top:3px;}
-  .sg .sig-img{position:absolute;left:50%;bottom:28px;transform:translateX(-50%);height:70px;pointer-events:none;}
+  .ssign{display:flex;gap:20px;justify-content:space-between;width:100%;}
+  .sg{flex:1;text-align:center;font-size:12px;position:relative;white-space:nowrap;}
+  .sg .sgline{border-top:1px solid #555;margin:40px 0 3px;padding-top:16px;}
+  .sg .sig-img{position:absolute;left:50%;bottom:28px;transform:translateX(-50%);max-height:55px;max-width:80%;height:auto;pointer-events:none;}
 
   .page-footer-keep{page-break-inside:avoid;break-inside:avoid;}
 
@@ -374,6 +376,15 @@
     .preview-header{display:flex;}
   }
 
+  /* ===== Page number bottom-right ===== */
+  .page-number{
+    text-align:right;
+    font-size:11px;
+    color:#888;
+    padding-top:4px;
+    margin-top:2px;
+  }
+
   @media print{
     @page{size:A4;margin:0;}
     .topbar,.doc-tools,.hist-popover,.preview-header{display:none!important;}
@@ -385,7 +396,7 @@
     .doc.page:last-child{page-break-after:auto;}
     .flexspace{flex:1 1 auto!important;min-height:0!important;display:block!important;}
     .page-footer-keep{page-break-inside:avoid!important;break-inside:avoid!important;}
-    .ssign{flex-direction:row!important;gap:120px!important;}
+    .ssign{flex-direction:row!important;gap:20px!important;justify-content:space-between!important;width:100%!important;}
     .cfoot{flex-direction:row!important;}
   }
 </style>
@@ -405,56 +416,58 @@
       <div class="drop" id="drop">
         <div id="dropEmpty">
           <div style="font-size:34px">⬆️</div>
-          <div style="font-weight:600;margin-top:6px">คลิกหรือลากรูปใบเสนอราคามาวาง</div>
-          <div class="muted">รองรับ JPG, PNG · ระบบจะอ่านข้อความ (OCR) ภาษาไทย/อังกฤษ</div>
+          <div style="font-weight:600;margin-top:6px">คลิกหรือลากไฟล์มาวาง</div>
+          <div class="muted">รองรับ JPG, PNG, PDF, Excel (.xlsx, .xls, .csv)</div>
         </div>
         <img id="preview" style="display:none">
+        <div id="fileInfo" style="display:none;font-size:13px;color:var(--navy);font-weight:600;"></div>
       </div>
-      <input type="file" id="file" accept="image/*" hidden>
+      <input type="file" id="file" accept="image/*,.pdf,.xlsx,.xls,.csv" hidden>
       <div class="progress" id="prog"><span></span></div>
       <div class="btn-row">
-        <button class="btn btn-primary" id="ocrBtn">🔍 อ่านข้อความจากรูป (OCR)</button>
+        <button class="btn btn-primary" id="ocrBtn" style="flex:1">🔍 อ่านข้อความ</button>
+        <button class="btn btn-ghost" id="clearBtn" style="flex:0 0 auto;padding:11px 20px;">🗑️ ล้างค่า</button>
       </div>
       <div id="ocrStats" style="display:none"></div>
-      <label>ข้อความที่อ่านได้ / วางข้อความเอง</label>
-      <textarea id="ocrText" rows="2" placeholder="ผลลัพธ์ OCR จะแสดงที่นี่ — แก้ไขได้" style="min-height:60px;overflow:hidden;"></textarea>
+      <label id="ocrTextLabel">ข้อความที่อ่านได้ / วางข้อความเอง</label>
+      <textarea id="ocrText" rows="2" placeholder="ผลลัพธ์จะแสดงที่นี่ — แก้ไขได้" style="min-height:60px;overflow:hidden;"></textarea>
+      <div id="excelTableWrap" style="display:none;"></div>
       <div class="btn-row">
         <button class="btn btn-green" id="parseBtn" style="flex:1">✨ แยกรายการอัตโนมัติ → กรอกฟอร์ม</button>
       </div>
       <div class="hint">
-        <b>เคล็ดลับ:</b> อ่าน OCR → แยกรายการสินค้า → <b>เลือกบริษัทลูกค้า</b> ระบบจะดึงราคาขายครั้งล่าสุดให้อัตโนมัติ
+        <b>เคล็ดลับ:</b> อ่านไฟล์ → แยกรายการสินค้า → <b>เลือกบริษัทลูกค้า</b> ระบบจะดึงราคาขายครั้งล่าสุดให้อัตโนมัติ
         · ถ้าสินค้าไม่เคยขายลูกค้ารายนั้นจะแสดง <span class="new-tag">🆕 สินค้าใหม่</span>
       </div>
     </div>
 
     {{-- ========== TAB: Manual ========== --}}
     <div class="pane" id="pane-manual">
-      <div class="sec-title">ข้อมูลเอกสาร</div>
-      <label>วันที่</label><input id="docDate" type="date" readonly style="background:#f7f9fc;color:var(--navy);font-weight:600;">
 
-      <div class="sec-title">ข้อมูลลูกค้า</div>
-      <div class="row">
-        <div><label>รหัสลูกค้า</label><input id="custCode" placeholder="เลือกจากชื่อบริษัท" readonly style="background:#f7f9fc;color:var(--navy);font-weight:600;"></div>
-        <div><label>ชื่อผู้ติดต่อ</label><input id="contactName" placeholder="ชื่อผู้ติดต่อ"></div>
-      </div>
-      <label>ชื่อบริษัท</label>
-      <div class="search-wrap">
-        <input id="custCompany" placeholder="พิมพ์หรือวางชื่อบริษัท (อย่างน้อย 2 ตัวอักษร)">
-        <div class="ac-list" id="acList"></div>
-      </div>
-      <label>ที่อยู่</label>
-      <textarea id="custAddr" rows="2" placeholder="ที่อยู่ลูกค้า ..."></textarea>
-      <div class="row">
-        <div><label>โทร.</label><input id="custTel" placeholder="0xx-xxx-xxxx"></div>
-        <div><label>เลขประจำตัวผู้เสียภาษี</label><input id="custTax" placeholder=""></div>
-      </div>
-      <div class="row">
-        <div><label>สาขา</label><input id="custBranch" placeholder="สำนักงานใหญ่"></div>
-        <div><label>ยืนราคาภายใน (วัน)</label><input id="validDays" type="number" placeholder="30" min="0"></div>
-      </div>
-      <div class="row">
-        <div><label>Expire Date</label><input id="expireDate" type="date" readonly style="background:#f7f9fc;color:var(--navy);font-weight:600;"></div>
-        <div><label>จำนวนวันเครดิต</label><input id="creditDays" placeholder=""></div>
+      {{-- ===== Compact Header ===== --}}
+      <div style="background:#f8fafc;border:1px solid var(--line);border-radius:6px;padding:12px 14px;margin-bottom:14px;">
+        <div style="display:flex;gap:8px;align-items:center;margin-bottom:8px;flex-wrap:wrap;">
+          <span style="font-size:12px;color:var(--navy);font-weight:700;white-space:nowrap;">วันที่</span>
+          <input id="docDate" type="date" readonly style="background:#fff;color:var(--navy);font-weight:600;padding:5px 8px;font-size:13px;border-radius:6px;width:150px;">
+          <span style="font-size:12px;color:var(--navy);font-weight:700;white-space:nowrap;margin-left:auto;">ลูกค้า</span>
+          <input id="custCode" placeholder="รหัส" readonly style="background:#fff;color:var(--navy);font-weight:600;padding:5px 8px;font-size:12px;border-radius:6px;width:90px;">
+        </div>
+        <div class="search-wrap" style="margin-bottom:8px;">
+          <input id="custCompany" placeholder="พิมพ์ชื่อบริษัท..." style="padding:8px 10px;font-size:13px;">
+          <div class="ac-list" id="acList"></div>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;">
+          <input id="contactName" placeholder="ผู้ติดต่อ" style="padding:8px 10px;font-size:13px;">
+          <input id="custTel" placeholder="โทร." style="padding:8px 10px;font-size:13px;">
+          <input id="custBranch" placeholder="สาขา" style="padding:8px 10px;font-size:13px;">
+        </div>
+        <textarea id="custAddr" rows="1" placeholder="ที่อยู่ลูกค้า ..." style="padding:8px 10px;font-size:13px;margin-top:6px;min-height:30px;overflow:hidden;"></textarea>
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:6px;margin-top:6px;">
+          <input id="custTax" placeholder="เลขผู้เสียภาษี" style="padding:8px 10px;font-size:13px;">
+          <input id="validDays" type="number" placeholder="ยืนราคา (วัน)" min="0" style="padding:8px 10px;font-size:13px;">
+          <input id="expireDate" type="text" readonly placeholder="Expire" style="background:#f7f9fc;color:var(--navy);font-weight:600;padding:8px 10px;font-size:13px;">
+          <input id="creditDays" placeholder="เครดิต (วัน)" style="padding:8px 10px;font-size:13px;">
+        </div>
       </div>
 
       <div class="sec-title">รายการสินค้า / บริการ</div>
@@ -492,8 +505,8 @@
       <label style="margin-top:14px">หมายเหตุ</label>
       <textarea id="note" rows="2" placeholder="หมายเหตุ ..."></textarea>
 
-      <div class="sec-title">ลายเซ็นผู้เสนอราคา</div>
-      <canvas id="sigPad" width="760" height="140" style="border:1px solid var(--line);border-radius:8px;cursor:crosshair;background:#fff;display:block;width:100%;touch-action:none;"></canvas>
+      <div class="sec-title">ลายเซ็นพนักงานขาย</div>
+      <canvas id="sigPad" width="760" height="140" style="border:1px solid var(--line);border-radius:8px;cursor:crosshair;background:#fff;display:block;width:100%;max-width:100%;box-sizing:border-box;touch-action:none;"></canvas>
       <div class="btn-row">
         <button class="btn btn-ghost" id="sigClear" style="flex:1;font-size:12px">🗑️ ล้างลายเซ็น</button>
       </div>
@@ -508,7 +521,7 @@
       <div id="pages"></div>
     </div>
     <div class="doc-tools" style="border-top:1px solid var(--line);border-bottom:none;justify-content:center;padding:14px 18px;flex-direction:column;align-items:center;gap:6px;">
-      <button class="btn btn-green" id="printBtn" style="min-width:280px;max-width:400px;width:100%;padding:13px 40px;font-size:16px;" disabled>บันทึกใบเสนอราคา</button>
+      <button class="btn btn-green" id="printBtn" style="min-width:280px;max-width:400px;width:100%;padding:13px 40px;font-size:16px;">บันทึกใบเสนอราคา</button>
       <div id="validateMsg" class="muted" style="font-size:12px;color:#dc2626;text-align:center;"></div>
     </div>
   </div>
@@ -588,6 +601,7 @@ function paginate(total) {
 
 let currentCustomerCode = '';
 let sellerSigData       = null;
+let currentQuotationNo  = '';
 let lastSeparators = [];
 let lastOcrLines   = [];
 
@@ -617,6 +631,9 @@ $$('.tab').forEach(t => t.onclick = () => {
 });
 
 let imgData = null;
+let uploadedFile = null;
+let fileType = null; // 'image' | 'pdf' | 'excel'
+
 $('#drop').onclick    = () => $('#file').click();
 $('#drop').ondragover = e => e.preventDefault();
 $('#drop').ondrop     = e => { e.preventDefault(); handleFile(e.dataTransfer.files[0]); };
@@ -624,15 +641,47 @@ $('#file').onchange   = e => handleFile(e.target.files[0]);
 
 function handleFile(f) {
   if (!f) return;
-  const r = new FileReader();
-  r.onload = () => {
-    imgData = r.result;
-    $('#preview').src = imgData;
-    $('#preview').style.display = 'block';
-    $('#dropEmpty').style.display = 'none';
-  };
-  r.readAsDataURL(f);
+  uploadedFile = f;
+  const ext = f.name.split('.').pop().toLowerCase();
+  const isImage = f.type.startsWith('image/');
+  const isPdf = ext === 'pdf' || f.type === 'application/pdf';
+  const isExcel = ['xlsx','xls','csv'].includes(ext);
+
+  $('#dropEmpty').style.display = 'none';
+  $('#preview').style.display = 'none';
+  $('#fileInfo').style.display = 'none';
+
+  if (isImage) {
+    fileType = 'image';
+    const r = new FileReader();
+    r.onload = () => { imgData = r.result; $('#preview').src = imgData; $('#preview').style.display = 'block'; };
+    r.readAsDataURL(f);
+  } else {
+    fileType = isPdf ? 'pdf' : 'excel';
+    imgData = null;
+    const icon = isPdf ? '📄' : '📊';
+    $('#fileInfo').innerHTML = `<div style="font-size:28px;margin-bottom:6px;">${icon}</div>${esc2(f.name)}<br><span class="muted">${(f.size/1024).toFixed(0)} KB</span>`;
+    $('#fileInfo').style.display = 'block';
+  }
 }
+
+// ปุ่มล้างค่า
+$('#clearBtn').onclick = () => {
+  imgData = null; uploadedFile = null; fileType = null;
+  window._excelRows = null; window._excelColMap = {};
+  $('#preview').style.display = 'none';
+  $('#fileInfo').style.display = 'none';
+  $('#dropEmpty').style.display = '';
+  $('#ocrText').value = '';
+  $('#ocrText').style.display = '';
+  $('#ocrText').style.minHeight = '60px';
+  $('#ocrTextLabel').style.display = '';
+  $('#excelTableWrap').style.display = 'none';
+  $('#excelTableWrap').innerHTML = '';
+  $('#ocrStats').style.display = 'none';
+  $('#file').value = '';
+  autoResize($('#ocrText'));
+};
 
 function preprocessImage(dataUrl) {
   return new Promise(resolve => {
@@ -804,57 +853,369 @@ function convertThaiToLatin(token) {
 }
 
 $('#ocrBtn').onclick = async () => {
-  if (!imgData) { alert('กรุณาเลือกรูปก่อน'); return; }
+  if (!uploadedFile && !imgData) { alert('กรุณาเลือกไฟล์ก่อน'); return; }
   const prog = $('#prog');
   prog.style.display = 'block';
   $('#ocrBtn').disabled = true;
   $('#ocrStats').style.display = 'none';
   try {
-    $('#ocrBtn').textContent = '⏳ กำลังปรับภาพ + ลบเส้นตาราง...';
-    const ocrInput = await preprocessImage(imgData);
-    $('#ocrBtn').textContent = '⏳ กำลังอ่านข้อความ...';
-    const { data } = await Tesseract.recognize(ocrInput, 'eng+tha', {
-      logger: m => { if (m.status === 'recognizing text') prog.firstElementChild.style.width = (m.progress * 100) + '%'; }
-    });
-    const cleaned = postProcessOCR(data.text.trim());
-    $('#ocrText').value = cleaned;
-    autoResize($('#ocrText'));
-    const lines = (data.lines || []).filter(l => l.text.trim());
-    const avgConf = lines.length ? (lines.reduce((s, l) => s + l.confidence, 0) / lines.length) : 0;
-    let html = `<div class="os-head">📊 อ่านได้ ${lines.length} บรรทัด · ความมั่นใจเฉลี่ย ${avgConf.toFixed(1)}%</div>`;
-    lines.forEach((l, i) => {
-      const c = l.confidence;
-      const color = c >= 80 ? '#16a34a' : c >= 50 ? '#ca8a04' : '#dc2626';
-      const txt   = postProcessOCR(l.text.trim()).substring(0, 60);
-      html += `<div class="os-line">
-        <span style="flex:0 0 22px;color:#888;">${i+1}</span>
-        <div class="os-bar"><div class="os-fill" style="width:${c}%;background:${color}"></div></div>
-        <span class="os-num" style="color:${color}">${c.toFixed(0)}%</span>
-        <span class="os-txt">${esc2(txt)}</span>
-      </div>`;
-    });
-    $('#ocrStats').innerHTML = `<div class="ocr-stats">${html}</div>`;
-    $('#ocrStats').style.display = 'block';
-  } catch (err) { alert('OCR ผิดพลาด: ' + err.message); }
+    if (fileType === 'excel') {
+      // === Excel: อ่านด้วย SheetJS → เลือก role แล้วคลิกคอลัมน์ ===
+      $('#ocrBtn').textContent = '⏳ กำลังอ่าน Excel...';
+      prog.firstElementChild.style.width = '50%';
+      const data = await uploadedFile.arrayBuffer();
+      const wb = XLSX.read(data, { type: 'array' });
+      const ws = wb.Sheets[wb.SheetNames[0]];
+      const rows = XLSX.utils.sheet_to_json(ws, { header: 1, defval: '' });
+      if (!rows.length) throw new Error('ไม่พบข้อมูลในไฟล์');
+      const maxCols = Math.max(...rows.map(r => r.length));
+
+      window._excelRows = rows;
+      window._excelColMap = {};
+      window._activeRole = null;
+
+      const roles = [
+        { key:'desc',  label:'รายการสินค้า', color:'#dbeafe', border:'#3b82f6', icon:'📦' },
+        { key:'qty',   label:'จำนวน',       color:'#dcfce7', border:'#22c55e', icon:'🔢' },
+        { key:'unit',  label:'หน่วย',        color:'#fef3c7', border:'#f59e0b', icon:'📏' },
+        { key:'price', label:'ราคา/หน่วย',  color:'#f3e8ff', border:'#a855f7', icon:'💰' },
+      ];
+
+      prog.firstElementChild.style.width = '100%';
+      $('#ocrTextLabel').style.display = 'none';
+      $('#ocrText').style.display = 'none';
+      $('#excelTableWrap').style.display = 'block';
+
+      function renderExcelTable() {
+        const map = window._excelColMap;
+        const active = window._activeRole;
+        const reverseMap = {};
+        Object.entries(map).forEach(([k,v]) => { reverseMap[v] = roles.find(r => r.key === k); });
+
+        // Role buttons
+        let h = `<div style="padding:10px 12px;background:#f8fafc;border-bottom:1px solid var(--line);display:flex;gap:6px;flex-wrap:wrap;align-items:center;">
+          <span style="font-size:11px;color:#888;margin-right:4px;">เลือกฟิลด์:</span>`;
+        roles.forEach(r => {
+          const assigned = map[r.key] != null;
+          const isActive = active === r.key;
+          const bg = isActive ? r.border : (assigned ? r.color : '#fff');
+          const textColor = isActive ? '#fff' : (assigned ? r.border : '#666');
+          const bdr = isActive ? r.border : (assigned ? r.border : '#ddd');
+          h += `<button class="role-btn" data-role="${r.key}" style="
+            padding:6px 14px;border-radius:6px;font-size:12px;font-weight:600;cursor:pointer;
+            border:2px solid ${bdr};background:${bg};color:${textColor};
+            transition:.15s;font-family:inherit;display:inline-flex;align-items:center;gap:4px;
+            ${isActive ? 'box-shadow:0 2px 8px '+r.border+'44;transform:scale(1.05);' : ''}">
+            ${r.icon} ${r.label}${assigned ? ' ✓' : ''}
+          </button>`;
+        });
+        h += `</div>`;
+
+        // Hint
+        if (active) {
+          const ar = roles.find(r => r.key === active);
+          h += `<div style="padding:6px 12px;background:${ar.color};border-bottom:1px solid ${ar.border}44;font-size:12px;color:${ar.border};font-weight:600;">
+            👆 คลิกคอลัมน์ที่ต้องการกำหนดเป็น "${ar.label}"
+          </div>`;
+        }
+
+        // Table
+        h += `<div style="overflow:auto;max-height:50vh;">
+          <table style="width:max-content;min-width:100%;border-collapse:collapse;font-size:12px;">`;
+
+        // Header
+        h += '<tr>';
+        for (let ci = 0; ci < maxCols; ci++) {
+          const role = reverseMap[ci];
+          const bg = role ? role.color : (active ? '#f0f4ff' : '#f0f4ff');
+          const bc = role ? role.border : '#bbb';
+          const cursor = active ? 'cursor:pointer;' : 'cursor:default;';
+          const hoverHint = active ? 'opacity:0.9;' : '';
+          const label = role ? `<div style="font-size:9px;color:${role.border};margin-top:2px;font-weight:700;">${role.icon} ${role.label}</div>` : '';
+          const val = rows[0][ci] != null ? String(rows[0][ci]) : `Col ${ci+1}`;
+          h += `<th data-col="${ci}" class="excel-th" style="padding:6px 8px;border:1.5px solid ${bc};white-space:nowrap;
+            background:${bg};font-weight:700;color:var(--navy);user-select:none;transition:.15s;${cursor}${hoverHint}">
+            ${esc2(val)}${label}</th>`;
+        }
+        h += '</tr>';
+
+        // Data
+        rows.forEach((row, ri) => {
+          if (ri === 0) return;
+          const bg = ri % 2 === 0 ? '#fff' : '#f8f9fb';
+          h += '<tr>';
+          for (let ci = 0; ci < maxCols; ci++) {
+            const role = reverseMap[ci];
+            const cellBg = role ? role.color + '88' : bg;
+            const val = row[ci] != null ? String(row[ci]) : '';
+            const align = !isNaN(val) && val !== '' ? 'text-align:right;' : '';
+            h += `<td style="padding:4px 8px;border:1px solid #ccc;white-space:nowrap;background:${cellBg};${align}">${esc2(val)}</td>`;
+          }
+          h += '</tr>';
+        });
+        h += '</table></div>';
+
+        $('#excelTableWrap').innerHTML = `<div style="border:2px solid #999;border-radius:6px;overflow:hidden;margin-top:8px;">${h}</div>`;
+
+        // Bind role button clicks
+        $('#excelTableWrap').querySelectorAll('.role-btn').forEach(btn => {
+          btn.onclick = () => {
+            const key = btn.dataset.role;
+            window._activeRole = (window._activeRole === key) ? null : key;
+            renderExcelTable();
+          };
+        });
+
+        // Bind column header clicks
+        $('#excelTableWrap').querySelectorAll('.excel-th').forEach(th => {
+          th.onclick = () => {
+            if (!window._activeRole) return;
+            const ci = parseInt(th.dataset.col);
+            const map = window._excelColMap;
+            const roleKey = window._activeRole;
+            // ลบคอลัมน์เดิมที่ assign role นี้
+            if (map[roleKey] != null) delete map[roleKey];
+            // ลบ role เดิมของคอลัมน์นี้
+            Object.keys(map).forEach(k => { if (map[k] === ci) delete map[k]; });
+            // assign ใหม่
+            map[roleKey] = ci;
+            window._activeRole = null;
+            renderExcelTable();
+          };
+          th.onmouseenter = () => { if (window._activeRole) th.style.opacity = '0.7'; };
+          th.onmouseleave = () => { th.style.opacity = '1'; };
+        });
+      }
+
+      renderExcelTable();
+      $('#ocrStats').innerHTML = `<div class="ocr-stats"><div class="os-head">📊 ${esc2(wb.SheetNames[0])} · ${rows.length - 1} รายการ</div></div>`;
+      $('#ocrStats').style.display = 'block';
+
+    } else if (fileType === 'pdf') {
+      // === PDF: อ่านด้วย pdf.js → แยกเป็นตาราง ===
+      $('#ocrTextLabel').style.display = 'none';
+      $('#ocrText').style.display = 'none';
+      $('#excelTableWrap').style.display = 'block';
+      $('#ocrBtn').textContent = '⏳ กำลังอ่าน PDF...';
+      const data = await uploadedFile.arrayBuffer();
+      pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+      const pdf = await pdfjsLib.getDocument({ data }).promise;
+
+      // ดึง text items พร้อมตำแหน่ง จากทุกหน้า
+      const allItems = [];
+      for (let i = 1; i <= pdf.numPages; i++) {
+        prog.firstElementChild.style.width = (i / pdf.numPages * 100) + '%';
+        const page = await pdf.getPage(i);
+        const content = await page.getTextContent();
+        content.items.forEach(item => {
+          if (!item.str.trim()) return;
+          const y = Math.round(item.transform[5]);
+          const x = Math.round(item.transform[4]);
+          allItems.push({ text: item.str.trim(), x, y });
+        });
+      }
+
+      // จัดกลุ่มเป็นแถวตาม y (tolerance ±3px)
+      allItems.sort((a, b) => b.y - a.y || a.x - b.x);
+      const lineGroups = [];
+      let currentY = null;
+      allItems.forEach(item => {
+        if (currentY === null || Math.abs(item.y - currentY) > 3) {
+          lineGroups.push([]);
+          currentY = item.y;
+        }
+        lineGroups[lineGroups.length - 1].push(item);
+      });
+
+      // แต่ละแถว sort ตาม x แล้วแยกเป็นคอลัมน์ (ช่องว่าง > 15px = คอลัมน์ใหม่)
+      const tableRows = [];
+      lineGroups.forEach(group => {
+        group.sort((a, b) => a.x - b.x);
+        const cols = [];
+        let lastX = -999;
+        group.forEach(item => {
+          if (item.x - lastX > 15) {
+            cols.push(item.text);
+          } else {
+            cols[cols.length - 1] += ' ' + item.text;
+          }
+          lastX = item.x + (item.text.length * 5);
+        });
+        if (cols.some(c => c.trim())) tableRows.push(cols);
+      });
+
+      if (!tableRows.length) throw new Error('ไม่พบข้อมูลใน PDF');
+
+      // Pad ให้ทุกแถวมีจำนวนคอลัมน์เท่ากัน
+      const maxCols = Math.max(...tableRows.map(r => r.length));
+      tableRows.forEach(r => { while (r.length < maxCols) r.push(''); });
+
+      // ใช้ระบบเดียวกับ Excel
+      window._excelRows = tableRows;
+      window._excelColMap = {};
+      window._activeRole = null;
+
+      const roles = [
+        { key:'desc',  label:'รายการสินค้า', color:'#dbeafe', border:'#3b82f6', icon:'📦' },
+        { key:'qty',   label:'จำนวน',       color:'#dcfce7', border:'#22c55e', icon:'🔢' },
+        { key:'unit',  label:'หน่วย',        color:'#fef3c7', border:'#f59e0b', icon:'📏' },
+        { key:'price', label:'ราคา/หน่วย',  color:'#f3e8ff', border:'#a855f7', icon:'💰' },
+      ];
+
+      function renderPdfTable() {
+        const map = window._excelColMap;
+        const active = window._activeRole;
+        const reverseMap = {};
+        Object.entries(map).forEach(([k,v]) => { reverseMap[v] = roles.find(r => r.key === k); });
+
+        let h = `<div style="padding:10px 12px;background:#f8fafc;border-bottom:1px solid var(--line);display:flex;gap:6px;flex-wrap:wrap;align-items:center;">
+          <span style="font-size:11px;color:#888;margin-right:4px;">เลือกฟิลด์:</span>`;
+        roles.forEach(r => {
+          const assigned = map[r.key] != null;
+          const isActive = active === r.key;
+          const bg = isActive ? r.border : (assigned ? r.color : '#fff');
+          const textColor = isActive ? '#fff' : (assigned ? r.border : '#666');
+          const bdr = isActive ? r.border : (assigned ? r.border : '#ddd');
+          h += `<button class="role-btn" data-role="${r.key}" style="
+            padding:6px 14px;border-radius:6px;font-size:12px;font-weight:600;cursor:pointer;
+            border:2px solid ${bdr};background:${bg};color:${textColor};
+            transition:.15s;font-family:inherit;display:inline-flex;align-items:center;gap:4px;
+            ${isActive ? 'box-shadow:0 2px 8px '+r.border+'44;transform:scale(1.05);' : ''}">
+            ${r.icon} ${r.label}${assigned ? ' ✓' : ''}
+          </button>`;
+        });
+        h += `</div>`;
+
+        if (active) {
+          const ar = roles.find(r => r.key === active);
+          h += `<div style="padding:6px 12px;background:${ar.color};border-bottom:1px solid ${ar.border}44;font-size:12px;color:${ar.border};font-weight:600;">
+            👆 คลิกคอลัมน์ที่ต้องการกำหนดเป็น "${ar.label}"
+          </div>`;
+        }
+
+        h += `<div style="overflow:auto;max-height:50vh;">
+          <table style="width:max-content;min-width:100%;border-collapse:collapse;font-size:12px;">`;
+
+        tableRows.forEach((row, ri) => {
+          const isHead = ri === 0;
+          const tag = isHead ? 'th' : 'td';
+          h += '<tr>';
+          for (let ci = 0; ci < maxCols; ci++) {
+            const role = reverseMap[ci];
+            const bg = isHead ? (role ? role.color : '#f0f4ff') : (role ? role.color + '88' : (ri % 2 === 0 ? '#fff' : '#f8f9fb'));
+            const bc = isHead && role ? role.border : '#bbb';
+            const cursor = isHead && active ? 'cursor:pointer;' : '';
+            const label = isHead && role ? `<div style="font-size:9px;color:${role.border};margin-top:2px;font-weight:700;">${role.icon} ${role.label}</div>` : '';
+            const val = row[ci] != null ? String(row[ci]) : '';
+            const align = !isNaN(val.replace(/,/g,'')) && val !== '' ? 'text-align:right;' : '';
+            const weight = isHead ? 'font-weight:700;color:var(--navy);' : '';
+            h += `<${tag} ${isHead ? 'data-col="'+ci+'" class="excel-th"' : ''} style="padding:${isHead?'6':'4'}px 8px;border:${isHead?'1.5':'1'}px solid ${isHead?bc:'#ccc'};white-space:nowrap;background:${bg};${align}${weight}${cursor}">${esc2(val)}${label}</${tag}>`;
+          }
+          h += '</tr>';
+        });
+        h += '</table></div>';
+
+        $('#excelTableWrap').innerHTML = `<div style="border:2px solid #999;border-radius:6px;overflow:hidden;margin-top:8px;">${h}</div>`;
+
+        $('#excelTableWrap').querySelectorAll('.role-btn').forEach(btn => {
+          btn.onclick = () => {
+            window._activeRole = (window._activeRole === btn.dataset.role) ? null : btn.dataset.role;
+            renderPdfTable();
+          };
+        });
+
+        $('#excelTableWrap').querySelectorAll('.excel-th').forEach(th => {
+          th.onclick = () => {
+            if (!window._activeRole) return;
+            const ci = parseInt(th.dataset.col);
+            const map = window._excelColMap;
+            const roleKey = window._activeRole;
+            if (map[roleKey] != null) delete map[roleKey];
+            Object.keys(map).forEach(k => { if (map[k] === ci) delete map[k]; });
+            map[roleKey] = ci;
+            window._activeRole = null;
+            renderPdfTable();
+          };
+          th.onmouseenter = () => { if (window._activeRole) th.style.opacity = '0.7'; };
+          th.onmouseleave = () => { th.style.opacity = '1'; };
+        });
+      }
+
+      renderPdfTable();
+      $('#ocrStats').innerHTML = `<div class="ocr-stats"><div class="os-head">📄 PDF · ${pdf.numPages} หน้า · ${tableRows.length - 1} รายการ</div></div>`;
+      $('#ocrStats').style.display = 'block';
+
+    } else {
+      // === Image: OCR ด้วย Tesseract ===
+      $('#ocrTextLabel').style.display = '';
+      $('#ocrText').style.display = '';
+      $('#excelTableWrap').style.display = 'none';
+      $('#ocrBtn').textContent = '⏳ กำลังปรับภาพ + ลบเส้นตาราง...';
+      const ocrInput = await preprocessImage(imgData);
+      $('#ocrBtn').textContent = '⏳ กำลังอ่านข้อความ...';
+      const { data } = await Tesseract.recognize(ocrInput, 'eng+tha', {
+        logger: m => { if (m.status === 'recognizing text') prog.firstElementChild.style.width = (m.progress * 100) + '%'; }
+      });
+      const cleaned = postProcessOCR(data.text.trim());
+      $('#ocrText').value = cleaned;
+      autoResize($('#ocrText'));
+      const lines = (data.lines || []).filter(l => l.text.trim());
+      const avgConf = lines.length ? (lines.reduce((s, l) => s + l.confidence, 0) / lines.length) : 0;
+      let html = `<div class="os-head">📊 อ่านได้ ${lines.length} บรรทัด · ความมั่นใจเฉลี่ย ${avgConf.toFixed(1)}%</div>`;
+      lines.forEach((l, i) => {
+        const c = l.confidence;
+        const color = c >= 80 ? '#16a34a' : c >= 50 ? '#ca8a04' : '#dc2626';
+        const txt   = postProcessOCR(l.text.trim()).substring(0, 60);
+        html += `<div class="os-line">
+          <span style="flex:0 0 22px;color:#888;">${i+1}</span>
+          <div class="os-bar"><div class="os-fill" style="width:${c}%;background:${color}"></div></div>
+          <span class="os-num" style="color:${color}">${c.toFixed(0)}%</span>
+          <span class="os-txt">${esc2(txt)}</span>
+        </div>`;
+      });
+      $('#ocrStats').innerHTML = `<div class="ocr-stats">${html}</div>`;
+      $('#ocrStats').style.display = 'block';
+    }
+  } catch (err) { alert('อ่านไฟล์ผิดพลาด: ' + err.message); }
   prog.style.display = 'none';
   prog.firstElementChild.style.width = '0';
   $('#ocrBtn').disabled = false;
-  $('#ocrBtn').textContent = '🔍 อ่านข้อความจากรูป (OCR)';
+  $('#ocrBtn').textContent = '🔍 อ่านข้อความ';
 };
 
 $('#ocrText').addEventListener('input', function () { autoResize(this); });
 
 $('#parseBtn').onclick = async () => {
-  const txt   = $('#ocrText').value;
-  const lines = txt.split(/\n/).map(l => l.trim()).filter(Boolean);
   $('#itemRows').innerHTML = '';
   const rows = [];
-  lines.forEach(l => {
-    if (/[ก-๙A-Za-z]/.test(l) && !/รวม|total|vat|ภาษี|สุทธิ/i.test(l)) {
-      const desc = l.trim();
-      if (desc) { const tr = itemRow({ desc }); $('#itemRows').appendChild(tr); rows.push(tr); }
-    }
-  });
+
+  if ((fileType === 'excel' || fileType === 'pdf') && window._excelRows && window._excelColMap) {
+    // === Excel/PDF: ใช้คอลัมน์ที่เลือก ===
+    const map = window._excelColMap;
+    const dataRows = window._excelRows.slice(1); // ข้ามหัวตาราง
+    if (map.desc == null) { alert('กรุณาคลิกเลือกคอลัมน์ "รายการสินค้า" ก่อน'); return; }
+    dataRows.forEach(row => {
+      const desc  = String(row[map.desc] ?? '').trim();
+      if (!desc) return;
+      const qty   = map.qty != null ? (parseFloat(row[map.qty]) || 1) : 1;
+      const unit  = map.unit != null ? String(row[map.unit] ?? '').trim() : '';
+      const price = map.price != null ? (parseFloat(String(row[map.price]).replace(/,/g,'')) || 0) : 0;
+      const tr = itemRow({ desc, qty, unit, price });
+      $('#itemRows').appendChild(tr);
+      rows.push(tr);
+    });
+  } else {
+    // === Text: parse จาก textarea ===
+    const txt   = $('#ocrText').value;
+    const lines = txt.split(/\n/).map(l => l.trim()).filter(Boolean);
+    lines.forEach(l => {
+      if (/[ก-๙A-Za-z]/.test(l) && !/รวม|total|vat|ภาษี|สุทธิ/i.test(l)) {
+        const desc = l.trim();
+        if (desc) { const tr = itemRow({ desc }); $('#itemRows').appendChild(tr); rows.push(tr); }
+      }
+    });
+  }
+
   if (!rows.length) { $('#itemRows').appendChild(itemRow()); }
   $$('.tab')[1].click();
   render();
@@ -887,9 +1248,6 @@ function itemRow(d = {}) {
     </td>
   `;
   tr.querySelector('.del').onclick = () => { 
-    // ลบ sub-items ทั้งหมดที่อยู่กับ item นี้
-    const subItems = tr.parentNode.querySelectorAll(`.sub-item[data-parent="${tr.dataset.itemId}"]`);
-    subItems.forEach(sub => sub.remove());
     tr.remove(); 
     render(); 
   };
@@ -922,46 +1280,34 @@ function itemRow(d = {}) {
   return tr;
 }
 
-// ฟังก์ชันเพิ่ม sub-item - แก้ไขใหม่: มีแค่ช่องรายละเอียดกับปุ่มลบ เท่านั้น
+// ฟังก์ชันเพิ่ม/โฟกัส รายละเอียดย่อย (textarea ตัวเดียวใน td-desc)
 function addSubItem(btn) {
   const parentRow = btn.closest('tr.item');
-  const parentId = parentRow.dataset.itemId;
-  
-  // นับจำนวน sub-items ที่มีอยู่แล้ว
-  const existingSubs = parentRow.parentNode.querySelectorAll(`.sub-item[data-parent="${parentId}"]`);
-  const subCount = existingSubs.length + 1;
-  
-  const subTr = document.createElement('tr');
-  subTr.className = 'item sub-item';
-  subTr.dataset.parent = parentId;
-  
-  // แก้ไข: แสดงแค่ลำดับ + ช่องรายละเอียด (colspan=5) + ปุ่มลบ
-  // ไม่มีช่อง จำนวน, หน่วย, ราคา, จำนวนเงิน เลย
-  subTr.innerHTML = `
-    <td class="td-num" style="opacity:0.6;font-size:11px;color:#9ca3af;vertical-align:middle;">${subCount}</td>
-    <td class="td-desc" style="padding-left:24px;" colspan="5">
-      <input class="sub-desc" placeholder="พิมพ์รายละเอียดย่อย..." value="" style="width:100%;border:none;background:transparent;padding:6px 8px;font-size:12px;color:#555;">
-    </td>
-    <td class="td-act" style="vertical-align:middle;">
-      <button class="del" title="ลบ" style="width:22px;height:22px;font-size:12px;">✕</button>
-    </td>
-  `;
-  
-  subTr.querySelector('.del').onclick = (e) => { 
-    e.stopPropagation();
-    subTr.remove(); 
-    render(); 
-  };
-  subTr.querySelector('.sub-desc').oninput = render;
-  
-  // แทรกหลัง parentRow และ sub-items อื่นๆ ของ parent นี้
-  const lastSub = existingSubs[existingSubs.length - 1];
-  if (lastSub) {
-    lastSub.after(subTr);
-  } else {
-    parentRow.after(subTr);
-  }
-  
+  const tdDesc = parentRow.querySelector('.td-desc');
+  let wrap = tdDesc.querySelector('.sub-wrap');
+  if (wrap) { wrap.querySelector('.sub-detail').focus(); return; }
+  wrap = document.createElement('div');
+  wrap.className = 'sub-wrap';
+  wrap.style.cssText = 'position:relative;margin-top:2px;';
+  const ta = document.createElement('textarea');
+  ta.className = 'sub-detail';
+  ta.placeholder = 'พิมพ์รายละเอียดย่อย... (กด Enter ขึ้นบรรทัดใหม่)';
+  ta.style.cssText = 'width:100%;border:1px solid var(--line);border-radius:6px;background:#fafbfc;padding:4px 28px 4px 8px;font-size:11.5px;color:#555;font-family:inherit;resize:none;min-height:28px;overflow:hidden;transition:border-color .15s,background .15s;';
+  ta.rows = 1;
+  ta.oninput = function() { this.style.height = 'auto'; this.style.height = this.scrollHeight + 'px'; render(); };
+  ta.addEventListener('focus', function() { this.style.borderColor = 'var(--blue)'; this.style.background = '#fff'; });
+  ta.addEventListener('blur', function() { this.style.borderColor = 'var(--line)'; this.style.background = '#fafbfc'; });
+  const delBtn = document.createElement('button');
+  delBtn.innerHTML = '✕';
+  delBtn.title = 'ลบรายละเอียดย่อย';
+  delBtn.style.cssText = 'position:absolute;top:3px;right:3px;width:20px;height:20px;border:none;background:none;color:#ccc;font-size:11px;cursor:pointer;border-radius:4px;display:flex;align-items:center;justify-content:center;transition:.15s;';
+  delBtn.onmouseenter = function() { this.style.background = '#fef2f2'; this.style.color = '#b91c1c'; };
+  delBtn.onmouseleave = function() { this.style.background = 'none'; this.style.color = '#ccc'; };
+  delBtn.onclick = function(e) { e.stopPropagation(); wrap.remove(); render(); };
+  wrap.appendChild(ta);
+  wrap.appendChild(delBtn);
+  tdDesc.appendChild(wrap);
+  ta.focus();
   render();
 }
 
@@ -1576,7 +1922,41 @@ function sigMove(e)  {
   sigCtx.lineWidth = 2.2; sigCtx.lineCap = 'round'; sigCtx.lineJoin = 'round';
   sigCtx.strokeStyle = '#111'; sigCtx.lineTo(p.x, p.y); sigCtx.stroke();
 }
-function sigEnd() { sigDrawing = false; sellerSigData = sigCanvas.toDataURL('image/png'); render(); }
+function sigEnd() {
+  sigDrawing = false;
+  sellerSigData = trimSignature(sigCanvas);
+  render();
+}
+
+function trimSignature(canvas) {
+  const ctx = canvas.getContext('2d');
+  const w = canvas.width, h = canvas.height;
+  const img = ctx.getImageData(0, 0, w, h);
+  const d = img.data;
+  let top = h, left = w, bottom = 0, right = 0;
+  for (let y = 0; y < h; y++) {
+    for (let x = 0; x < w; x++) {
+      const a = d[(y * w + x) * 4 + 3];
+      if (a > 10) {
+        if (y < top) top = y;
+        if (y > bottom) bottom = y;
+        if (x < left) left = x;
+        if (x > right) right = x;
+      }
+    }
+  }
+  if (top > bottom) return null; // ว่างเปล่า
+  const pad = 10;
+  top = Math.max(0, top - pad);
+  left = Math.max(0, left - pad);
+  bottom = Math.min(h - 1, bottom + pad);
+  right = Math.min(w - 1, right + pad);
+  const tw = right - left + 1, th = bottom - top + 1;
+  const tc = document.createElement('canvas');
+  tc.width = tw; tc.height = th;
+  tc.getContext('2d').drawImage(canvas, left, top, tw, th, 0, 0, tw, th);
+  return tc.toDataURL('image/png');
+}
 
 sigCanvas.addEventListener('mousedown', sigStart);
 sigCanvas.addEventListener('mousemove', sigMove);
@@ -1593,10 +1973,17 @@ function val(id)     { return esc2($('#' + id).value || ''); }
 function rawVal(id)  { return ($('#' + id).value || '').trim(); }
 
 function fmtThaiDate() {
-  const v = rawVal('docDate');
+  return fmtThaiDateStr(rawVal('docDate'));
+}
+
+function fmtThaiDateStr(v) {
   if (!v) return '—';
   const d = new Date(v);
-  return d.getDate() + ' ' + THAI_MONTHS[d.getMonth()] + ' ' + (d.getFullYear() + 543);
+  if (isNaN(d)) return v;
+  const dd = String(d.getDate()).padStart(2, '0');
+  const mm = String(d.getMonth() + 1).padStart(2, '0');
+  const yy = d.getFullYear() + 543;
+  return dd + '/' + mm + '/' + yy;
 }
 
 function sellerSigHtml() {
@@ -1608,11 +1995,12 @@ function custInfoHtml() {
   return `
     <div class="cust-head">ข้อมูลลูกค้า ${codeHtml}</div>
     <table class="cinfo-table">
-      <tr><td class="ck">ชื่อลูกค้า</td><td class="cv" colspan="2">${val('custCompany')}</td><td class="ck">เลขประจำตัวผู้เสียภาษี</td><td class="cv">${val('custTax')}</td><td class="ck" style="width:1%">สาขา</td><td class="cv" style="width:1%;white-space:nowrap">${val('custBranch')}</td></tr>
-      <tr><td class="ck">ผู้ติดต่อ</td><td class="cv" colspan="2">${val('contactName')}</td><td class="ck">เบอร์โทรศัพท์</td><td class="cv" colspan="3">${val('custTel')}</td></tr>
-      <tr><td class="ck" rowspan="3" style="vertical-align:top">ที่อยู่</td><td class="cv" colspan="2" rowspan="3" style="vertical-align:top">${val('custAddr')}</td><td class="ck">ยืนราคาภายใน</td><td class="cv" colspan="3">${val('validDays')}${rawVal('validDays') ? ' วัน' : ''}</td></tr>
-      <tr><td class="ck">Expire Date</td><td class="cv" colspan="3">${val('expireDate')}</td></tr>
-      <tr><td class="ck">จำนวนวันเครดิต</td><td class="cv" colspan="3">${val('creditDays')}${rawVal('creditDays') ? ' วัน' : ''}</td></tr>
+      <tr><td class="ck">ชื่อลูกค้า</td><td class="cv" colspan="2">${val('custCompany')}</td><td class="ck">ยืนราคาภายใน</td><td class="cv" colspan="3">${val('validDays')}${rawVal('validDays') ? ' วัน' : ''}</td></tr>
+      <tr><td class="ck">ผู้ติดต่อ</td><td class="cv" colspan="2">${val('contactName')}</td><td class="ck">Expire Date</td><td class="cv" colspan="3">${fmtThaiDateStr($('#expireDate').dataset.raw || '')}</td></tr>
+      <tr><td class="ck" rowspan="2" style="vertical-align:top">ที่อยู่</td><td class="cv" colspan="2" rowspan="2" style="vertical-align:top">${val('custAddr')}</td><td class="ck">จำนวนวันเครดิต</td><td class="cv" colspan="3">${val('creditDays')}${rawVal('creditDays') ? ' วัน' : ''}</td></tr>
+      <tr><td class="ck" colspan="4"></td></tr>
+      <tr><td colspan="7" style="padding:1.5px 4px;"><span class="ck" style="display:inline;">เลขประจำตัวผู้เสียภาษี</span> <span class="cv" style="display:inline;margin-right:8px;">${val('custTax')}</span><span class="ck" style="display:inline;">สาขา</span> <span class="cv" style="display:inline;">${val('custBranch')}</span></td></tr>
+      <tr><td class="ck">เบอร์โทรศัพท์</td><td class="cv" colspan="6">${val('custTel')}</td></tr>
     </table>`;
 }
 
@@ -1625,10 +2013,11 @@ function pageHtml(rows, pg, pageCount, isLast, isFirst, T) {
         <div class="tr grand"><span>รวมเป็นเงินทั้งสิ้น</span><span>${fmt(T.grand)}</span></div>
         <div class="baht">(${bahtText(T.grand)})</div>
       </div>
-      <div class="cfoot" style="justify-content:center">
+      <div class="cfoot" style="margin-top:60px;">
         <div class="ssign">
-          <div class="sg"><div class="sgline">${val('custCompany') || '&nbsp;'}<br>ผู้ซื้อ</div></div>
-          <div class="sg">${sellerSigHtml()}<div class="sgline">${esc2(SELLER.name)}<br>ผู้เสนอราคา</div></div>
+          <div class="sg"><div class="sgline">ผู้อนุมัติซื้อ</div></div>
+          <div class="sg">${sellerSigHtml()}<div class="sgline">พนักงานขาย</div></div>
+          <div class="sg"><div class="sgline">ผู้จัดการฝ่ายขาย</div></div>
         </div>
       </div>
     </div>` : '';
@@ -1642,7 +2031,7 @@ function pageHtml(rows, pg, pageCount, isLast, isFirst, T) {
       </div>
       <div style="text-align:right">
         <div class="qbig">Quotation</div>
-        <div class="qmeta">วันที่ ${fmtThaiDate()}<br>หน้า ${pg} / ${pageCount}</div>
+        <div class="qmeta">วันที่ ${fmtThaiDate()}${currentQuotationNo ? '<br><span style="font-size:10px;color:#666;">เลขที่ ' + esc2(currentQuotationNo) + '</span>' : ''}</div>
       </div>
     </div>
     <div class="bluebar">ใบเสนอราคา</div>
@@ -1660,6 +2049,7 @@ function pageHtml(rows, pg, pageCount, isLast, isFirst, T) {
     </table>
     <div class="flexspace"></div>
     ${foot}
+    <div class="page-number">หน้า ${pg} / ${pageCount}</div>
   </div>`;
 }
 
@@ -1668,32 +2058,14 @@ function render() {
   let mainItemIndex = 0;
   
   $$('#itemRows .item').forEach((tr) => {
-    const isSubItem = tr.classList.contains('sub-item');
-    
-      if (isSubItem) {
-    // จัดการ sub-item - ไม่เก็บจำนวน/หน่วย/ราคา
-    const desc  = tr.querySelector('.sub-desc').value;
-    
-    if (desc) {
-      // หา parent item index
-      const parentId = tr.dataset.parent;
-      const parentRow = document.querySelector(`.item[data-item-id="${parentId}"]`);
-      const parentIndex = Array.from(parentRow.parentNode.children).filter(r => r.classList.contains('item') && !r.classList.contains('sub-item')).indexOf(parentRow) + 1;
-      const subCount = Array.from(parentRow.parentNode.children).filter(r => r.classList.contains('sub-item') && r.dataset.parent === parentId).indexOf(tr) + 1;
-      
-      const numCell = tr.querySelector('.td-num');
-      if (numCell) numCell.textContent = `${parentIndex}.${subCount}`;
-      
-      // ไม่เก็บ qty/unit/price สำหรับ sub-item
-      items.push({ desc, isSub: true, parentIndex, subCount });
-    }
-  } else {
-    // จัดการ main item (เหมือนเดิม)
+    if (tr.classList.contains('sub-item')) return; // skip old sub-item rows (ไม่มีแล้ว)
     mainItemIndex++;
     const desc  = tr.querySelector('.desc').value;
     const qty   = parseFloat(tr.querySelector('.qty').value) || 0;
     const unit  = tr.querySelector('.unit').value;
     const price = parseFloat(tr.querySelector('.price').value) || 0;
+    const subTa = tr.querySelector('.sub-detail');
+    const subDetail = subTa ? subTa.value.trim() : '';
     const numCell = tr.querySelector('.td-num');
     if (numCell) {
       numCell.textContent = mainItemIndex;
@@ -1703,17 +2075,16 @@ function render() {
     const amtCell = tr.querySelector('.td-amt');
     if (amtCell) amtCell.textContent = fmt(qty * price);
     if (!desc && !price) return;
-    items.push({ desc, qty, unit, price, isSub: false, index: mainItemIndex });
-  }
+    items.push({ desc, qty, unit, price, isSub: false, index: mainItemIndex, subDetail });
   });
   
-  // คำนวณยอดรวม (เฉพาะ main items)
-  const gross = items.filter(it => !it.isSub).reduce((s, it) => s + it.qty * it.price, 0);
+  // คำนวณยอดรวม
+  const gross = items.reduce((s, it) => s + it.qty * it.price, 0);
   const vat   = gross * 0.07;
   const grand = gross + vat;
   const T     = { gross, vat, grand };
   const foot = $('#itemFoot');
-  if (items.filter(it => !it.isSub).length) { foot.style.display = ''; $('#footGross').textContent = fmt(gross); }
+  if (items.length) { foot.style.display = ''; $('#footGross').textContent = fmt(gross); }
   else foot.style.display = 'none';
   
   const sizes     = paginate(items.length);
@@ -1725,21 +2096,15 @@ function render() {
     const isLast = pg === pageCount - 1;
     let rows = '';
 slice.forEach((it, idx) => {
-  if (it.isSub) {
-    rows += `<tr class="sub-row" style="background:#ffffff !important;">
-      <td class="c" style="background:#ffffff !important; border:none !important; color:#666; font-size:12px;">${it.parentIndex}.${it.subCount}</td>
-      <td class="l" style="background:#ffffff !important; border:none !important; padding-left:24px; color:#555; font-size:12px;" colspan="5">${esc2(it.desc || '-')}</td>
-    </tr>`;
-  } else {
-    rows += `<tr>
-      <td class="c">${it.index}</td>
-      <td class="l">${esc2(it.desc || '-')}</td>
-      <td class="c">${it.qty || ''}</td>
-      <td class="c">${it.unit ? esc2(it.unit) : ''}</td>
-      <td class="r">${fmt(it.price || 0)}</td>
-      <td class="r">${fmt(it.qty * it.price)}</td>
-    </tr>`;
-  }
+  const subLines = it.subDetail ? it.subDetail.split('\n').filter(l => l.trim()).map(l => `<div style="font-size:11px;color:#555;padding-left:12px;line-height:1.4;word-break:break-word;white-space:normal;">${esc2(l)}</div>`).join('') : '';
+  rows += `<tr>
+    <td class="c">${it.index}</td>
+    <td class="l" style="word-break:break-word;white-space:normal;">${esc2(it.desc || '-')}${subLines}</td>
+    <td class="c">${it.qty || ''}</td>
+    <td class="c">${it.unit ? esc2(it.unit) : ''}</td>
+    <td class="r">${fmt(it.price || 0)}</td>
+    <td class="r">${fmt(it.qty * it.price)}</td>
+  </tr>`;
 });
     /* padTarget: เลือกตามหน้าแรก/กลาง × หน้าสุดท้ายหรือไม่ */
     let padTarget;
@@ -1763,24 +2128,8 @@ slice.forEach((it, idx) => {
 }
 
 function validateForm() {
-  const errors = [];
-  if (!rawVal('custCompany'))  errors.push('ชื่อบริษัทลูกค้า');
-  if (!rawVal('custAddr'))     errors.push('ที่อยู่ลูกค้า');
-  if (!rawVal('custTel'))      errors.push('เบอร์โทรลูกค้า');
-  if (!rawVal('contactName'))  errors.push('ชื่อผู้ติดต่อ');
-  if (!rawVal('validDays'))    errors.push('ยืนราคาภายใน (วัน)');
-  const rows = $$('#itemRows .item:not(.sub-item)');
-  let hasValidItem = false;
-  rows.forEach(tr => {
-    const desc  = (tr.querySelector('.desc')?.value || '').trim();
-    const price = parseFloat(tr.querySelector('.price')?.value) || 0;
-    if (desc && price > 0) hasValidItem = true;
-  });
-  if (!hasValidItem) errors.push('รายการสินค้า (อย่างน้อย 1 รายการที่มีชื่อและราคา)');
-  const btn = $('#printBtn');
-  const msg = $('#validateMsg');
-  if (errors.length) { btn.disabled = true; msg.textContent = '⚠️ กรุณากรอก: ' + errors.join(', '); }
-  else { btn.disabled = false; msg.textContent = ''; }
+  $('#printBtn').disabled = false;
+  $('#validateMsg').textContent = '';
 }
 
 function bahtText(n) {
@@ -1815,7 +2164,9 @@ function calcExpireDate() {
   if (days > 0 && baseDate) {
     const d = new Date(baseDate);
     d.setDate(d.getDate() + days);
-    $('#expireDate').value = d.toISOString().slice(0, 10);
+    const raw = d.toISOString().slice(0, 10);
+    $('#expireDate').dataset.raw = raw;
+    $('#expireDate').value = fmtThaiDateStr(raw);
     render();
   }
 }
@@ -1827,10 +2178,61 @@ $('#printBtn').onclick = async () => {
   const btn = $('#printBtn');
   const origText = btn.textContent;
   btn.disabled = true;
-  btn.textContent = '⏳ กำลังสร้าง PDF...';
+  btn.textContent = '⏳ กำลังบันทึกลงระบบ...';
   try {
     const { jsPDF } = window.jspdf || {};
     if (!jsPDF) { alert('jsPDF โหลดไม่สำเร็จ'); return; }
+
+    // 1) รวบรวม items
+    const items = [];
+    $$('#itemRows .item').forEach((tr, idx) => {
+      const desc  = (tr.querySelector('.desc')?.value || '').trim();
+      const price = parseFloat(tr.querySelector('.price')?.value) || 0;
+      if (!desc && price <= 0) return;
+      const subTa = tr.querySelector('.sub-detail');
+      const subDetail = subTa ? subTa.value.trim() : null;
+      items.push({
+        desc, price,
+        qty: parseFloat(tr.querySelector('.qty')?.value) || 0,
+        unit: (tr.querySelector('.unit')?.value || '').trim(),
+        item_new: tr.dataset.itemNew || null,
+        product_name: tr.dataset.productName || null,
+        is_new: tr.dataset.isNew === '1',
+        sub_detail: subDetail || null,
+      });
+    });
+
+    // 2) ส่งข้อมูลไป server ก่อน (ยังไม่มี PDF) → ได้เลขใบสั่งขาย
+    const res = await fetch('/soitem', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Accept': 'application/json', 'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content },
+      body: JSON.stringify({
+        doc_date: rawVal('docDate') || new Date().toISOString().slice(0,10),
+        customer_code: rawVal('custCode') || '-',
+        customer_company: rawVal('custCompany') || '-',
+        customer_address: rawVal('custAddr') || '-',
+        customer_tel: rawVal('custTel') || '-',
+        customer_tax: rawVal('custTax') || '',
+        customer_branch: rawVal('custBranch') || '',
+        contact_name: rawVal('contactName') || '-',
+        valid_days: parseInt($('#validDays').value) || 0,
+        expire_date: $('#expireDate').dataset.raw || null,
+        credit_days: parseInt($('#creditDays').value) || null,
+        note: rawVal('note') || null,
+        items: items.length ? items : [{ desc: '-', qty: 0, unit: '', price: 0 }],
+        pdf_base64: null,
+      }),
+    });
+    const result = await res.json();
+    if (!res.ok || result.status === 'error') throw new Error(result.message || 'HTTP ' + res.status);
+
+    // 3) ได้เลขแล้ว → render ใหม่ให้มีเลขในเอกสาร
+    currentQuotationNo = result.quotation_no;
+    render();
+    await new Promise(r => setTimeout(r, 100)); // รอ DOM update
+
+    // 4) สร้าง PDF จากเอกสารที่มีเลขแล้ว
+    btn.textContent = '⏳ กำลังสร้าง PDF...';
     const pages = document.querySelectorAll('#pages .doc.page');
     if (!pages.length) { alert('ไม่มีข้อมูลใบเสนอราคา'); return; }
     const pdf = new jsPDF({ orientation:'portrait', unit:'mm', format:'a4' });
@@ -1849,52 +2251,16 @@ $('#printBtn').onclick = async () => {
       const ratio = Math.min(210/canvas.width, 297/canvas.height);
       pdf.addImage(imgData,'JPEG',(210-canvas.width*ratio)/2, 0, canvas.width*ratio, canvas.height*ratio);
     }
-    btn.textContent = '⏳ กำลังบันทึกลงระบบ...';
+
+    // 5) อัพเดท PDF กลับไป server
     const pdfBase64 = await blobToBase64(pdf.output('blob'));
-    const items = [];
-    $$('#itemRows .item:not(.sub-item)').forEach((tr, idx) => {
-      const desc  = (tr.querySelector('.desc')?.value || '').trim();
-      const price = parseFloat(tr.querySelector('.price')?.value) || 0;
-      if (!desc && price <= 0) return;
-      
-      // รวบรวม sub-items
-      const subItems = [];
-      const itemId = tr.dataset.itemId;
-      const subRows = document.querySelectorAll(`.sub-item[data-parent="${itemId}"]`);
-      subRows.forEach(subTr => {
-        const subDesc = (subTr.querySelector('.sub-desc')?.value || '').trim();
-        if (subDesc) {
-          subItems.push({
-            desc: subDesc,
-            qty: parseFloat(subTr.querySelector('.sub-qty')?.value) || 0,
-            unit: (subTr.querySelector('.sub-unit')?.value || '').trim(),
-          });
-        }
-      });
-      
-      items.push({
-        desc, price,
-        qty: parseFloat(tr.querySelector('.qty')?.value) || 0,
-        unit: (tr.querySelector('.unit')?.value || '').trim(),
-        item_new: tr.dataset.itemNew || null,
-        product_name: tr.dataset.productName || null,
-        is_new: tr.dataset.isNew === '1',
-        sub_items: subItems.length > 0 ? subItems : null,
-      });
-    });
-    const res = await fetch('/soitem', {
+    await fetch('/soitem/' + encodeURIComponent(result.quotation_no) + '/pdf', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content },
-      body: JSON.stringify({
-        doc_date: rawVal('docDate'), customer_code: rawVal('custCode'), customer_company: rawVal('custCompany'),
-        customer_address: rawVal('custAddr'), customer_tel: rawVal('custTel'), customer_tax: rawVal('custTax'),
-        customer_branch: rawVal('custBranch'), contact_name: rawVal('contactName'),
-        valid_days: parseInt($('#validDays').value) || 0, expire_date: rawVal('expireDate') || null,
-        credit_days: parseInt($('#creditDays').value) || null, note: rawVal('note') || null, items, pdf_base64: pdfBase64,
-      }),
-    });
-    const result = await res.json();
-    if (!res.ok || result.status === 'error') throw new Error(result.message || 'HTTP ' + res.status);
+      headers: { 'Content-Type': 'application/json', 'Accept': 'application/json', 'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content },
+      body: JSON.stringify({ pdf_base64: pdfBase64 }),
+    }).catch(() => {});
+
+    // 6) Save PDF ลงเครื่อง
     const custName = (rawVal('custCompany') || 'QT').replace(/[^ก-๙A-Za-z0-9]/g,'_').substring(0,30);
     pdf.save(`${result.quotation_no}_${custName}.pdf`);
     btn.textContent = `✅ บันทึกแล้ว (${result.quotation_no})`;
