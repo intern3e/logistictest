@@ -49,7 +49,6 @@
 .po-modal-body:active, .po-detail-body:active{
     cursor:grabbing;
 }
-/* scrollbar สวยๆ */
 .po-modal-body::-webkit-scrollbar,
 .po-detail-body::-webkit-scrollbar{
     width:6px;
@@ -77,31 +76,40 @@
 }
 .ref-tag:hover{background:#fef3c7;}
 .ref-panel{
-  display:none;position:absolute;z-index:300;
-  background:#fff;border:1px solid var(--line);border-radius:10px;
-  box-shadow:0 8px 28px #0002;min-width:480px;
-  animation:popIn .15s ease-out;left:0;top:100%;margin-top:4px;
+  display:none;position:fixed;z-index:300;
+  background:#fff;border:1px solid var(--line);border-radius:12px;
+  box-shadow:0 12px 40px rgba(0,0,0,.2),0 0 0 1px rgba(0,0,0,.04);
+  width:min(820px,94vw);
+  animation:popIn .15s ease-out;
+}
+.ref-panel-backdrop{
+  display:none;position:fixed;inset:0;z-index:299;background:transparent;
 }
 .ref-panel .rp-head{
-  padding:8px 12px;font-size:11px;font-weight:700;color:var(--navy);
+  padding:10px 14px;font-size:12px;font-weight:700;color:var(--navy);
   border-bottom:1px solid var(--line);background:#fffbeb;
   border-radius:10px 10px 0 0;
 }
-.ref-panel table{width:100%;border-collapse:collapse;font-size:12px;}
+.ref-panel .rp-scroll{overflow-x:auto;max-height:50vh;overflow-y:auto;}
+.ref-panel .rp-scroll::-webkit-scrollbar{width:5px;height:5px;}
+.ref-panel .rp-scroll::-webkit-scrollbar-thumb{background:#ccc;border-radius:3px;}
+.ref-panel table{width:max-content;min-width:100%;border-collapse:collapse;font-size:12px;}
 .ref-panel th{
-  padding:6px 8px;font-weight:700;color:#374151;
-  border-bottom:1px solid var(--line);background:#f8fafc;text-align:left;
-  white-space:nowrap;
+  padding:8px 10px;font-weight:700;color:#374151;
+  border-bottom:1.5px solid var(--line);background:#f8fafc;text-align:left;
+  white-space:nowrap;position:sticky;top:0;z-index:1;
 }
-.ref-panel td{padding:6px 8px;border-bottom:1px solid #f5f5f5;vertical-align:top;}
+.ref-panel td{padding:8px 10px;border-bottom:1px solid #f0f2f5;vertical-align:top;}
 .ref-panel tr:last-child td{border-bottom:none;}
 .ref-panel tr.rp-row:hover td{background:#fffbeb;cursor:pointer;}
-.ref-panel .rp-price{text-align:right;font-weight:700;color:var(--navy);font-variant-numeric:tabular-nums;white-space:nowrap;}
-.ref-panel .rp-pname{color:#555;font-size:11px;white-space:normal;word-break:break-word;}
+.ref-panel .rp-cust{max-width:160px;white-space:normal;word-break:break-word;line-height:1.4;font-weight:500;}
+.ref-panel .rp-price{text-align:right;font-weight:700;color:var(--navy);font-variant-numeric:tabular-nums;white-space:nowrap;font-size:13px;}
+.ref-panel .rp-pname{color:#555;font-size:11px;white-space:normal;word-break:break-word;max-width:180px;line-height:1.4;}
+.ref-panel .rp-kw{white-space:nowrap;font-size:10px;color:var(--blue);font-weight:600;}
 .ref-panel .rp-use{
-  font-size:10px;color:#fff;background:var(--blue);
-  border:none;border-radius:4px;padding:2px 8px;
-  cursor:pointer;white-space:nowrap;
+  font-size:11px;color:#fff;background:var(--blue);
+  border:none;border-radius:5px;padding:4px 12px;
+  cursor:pointer;white-space:nowrap;font-weight:600;
 }
 .ref-panel .rp-use:hover{background:var(--navy2);}
   :root{
@@ -109,13 +117,67 @@
     --green:#16a34a; --muted:#6b7280; --soft:#f7f9fc; --docline:#6c6cf0;
   }
   *{box-sizing:border-box;}
-  body{margin:0;font-family:'Sarabun',sans-serif;background:var(--bg);color:#1f2937;}
+  body{margin:0;font-family:'Sarabun',sans-serif;background:var(--bg);color:#1f2937;min-width:0;}
   .topbar{background:linear-gradient(90deg,var(--navy2),var(--blue));color:#fff;padding:14px 22px;font-weight:600;font-size:18px;display:flex;align-items:center;gap:10px;}
   .topbar .dot{width:26px;height:26px;border-radius:6px;background:#fff3;display:flex;align-items:center;justify-content:center;}
-  .wrap{display:grid;grid-template-columns:1fr;gap:18px;padding:18px;max-width:900px;margin:0 auto;}
+
+  /* ===== RESPONSIVE WRAP LAYOUT ===== */
+  .wrap{
+    display:grid;
+    grid-template-columns:1fr;
+    gap:18px;
+    padding:18px;
+    margin:0 auto;
+  }
+  /* Wide screen: side-by-side (≥24" monitor / 1920px) */
+  @media (min-width:1920px) {
+    .wrap{
+      grid-template-columns:minmax(600px,850px) 1fr;
+      max-width:1800px;
+      align-items:start;
+    }
+    .wrap > .card-preview{
+      position:sticky;
+      top:18px;
+      max-height:calc(100vh - 36px);
+      overflow-y:auto;
+      scrollbar-width:thin;
+    }
+    .wrap > .card-preview::-webkit-scrollbar{width:6px;}
+    .wrap > .card-preview::-webkit-scrollbar-thumb{background:#ccc;border-radius:3px;}
+    .wrap > .card-preview::-webkit-scrollbar-thumb:hover{background:#aaa;}
+  }
+  /* Ultra wide */
+  @media (min-width:2400px) {
+    .wrap{
+      grid-template-columns:800px 1fr;
+    }
+  }
+  /* Medium: single column, capped width */
+  @media (max-width:1919px) {
+    .wrap{
+      max-width:900px;
+    }
+  }
+  /* ===== OCR MODE: center & enlarge when preview hidden ===== */
+  .wrap.ocr-mode{
+    max-width:1000px;
+    margin:0 auto;
+    justify-content:center;
+  }
+  .wrap.ocr-mode > .card:first-child{
+    width:100%;
+  }
+  @media (min-width:1920px){
+    .wrap.ocr-mode{
+      grid-template-columns:1fr;
+      max-width:1000px;
+    }
+  }
+
   .card{background:#fff;border:1px solid var(--line);border-radius:12px;overflow:visible;box-shadow:0 1px 3px #0000000a;}
   .tabs{display:flex;border-bottom:1px solid var(--line);}
-  .tab{flex:1;padding:14px;text-align:center;cursor:pointer;font-weight:600;color:var(--muted);border-bottom:3px solid transparent;}
+  .tab{flex:1;padding:14px;text-align:center;cursor:pointer;font-weight:600;color:var(--muted);border-bottom:3px solid transparent;font-size:14px;}
   .tab.active{color:var(--blue);border-bottom-color:var(--blue);}
   .pane{padding:18px;display:none;}
   .pane.active{display:block;}
@@ -126,7 +188,7 @@
   .sec-title{font-weight:700;color:var(--navy);margin:18px 0 6px;border-bottom:1px solid var(--line);padding-bottom:4px;}
   .search-wrap{position:relative;display:flex;gap:6px;}
   .search-wrap input{flex:1;}
-  .ac-list{position:absolute;top:100%;left:0;right:0;z-index:50;background:#fff;border:1px solid var(--line);border-radius:8px;box-shadow:0 6px 20px #0002;margin-top:4px;display:none;}
+  .ac-list{position:absolute;top:100%;left:0;right:0;z-index:50;background:#fff;border:1px solid var(--line);border-radius:8px;box-shadow:0 6px 20px #0002;margin-top:4px;display:none;max-height:300px;overflow-y:auto;}
   .ac-list .ac-item{padding:10px 12px;cursor:pointer;border-bottom:1px solid #f0f0f0;font-size:13px;line-height:1.4;}
   .ac-list .ac-item:last-child{border-bottom:none;}
   .ac-list .ac-item:hover{background:#f0f5ff;}
@@ -138,6 +200,9 @@
   input,textarea,select{width:100%;padding:9px 11px;border:1px solid var(--line);border-radius:8px;font-family:inherit;font-size:14px;background:#fff;}
   textarea{resize:vertical;}
   .row{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+  @media (max-width:500px){
+    .row{grid-template-columns:1fr;}
+  }
   .btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;border:none;border-radius:8px;padding:11px 16px;font-family:inherit;font-weight:600;font-size:14px;cursor:pointer;}
   .btn-primary{background:var(--blue);color:#fff;width:100%;}
   .btn-primary:hover{background:var(--navy2);}
@@ -157,8 +222,8 @@
   .ocr-stats .os-txt{flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:#555;}
 
   /* === Items Table === */
-  .items-table-wrap{margin:8px 0;border:1px solid var(--line);border-radius:10px;background:#fff;}
-  .items-table{width:100%;border-collapse:collapse;font-size:13px;}
+  .items-table-wrap{margin:8px 0;border:1px solid var(--line);border-radius:10px;background:#fff;overflow-x:auto;}
+  .items-table{width:100%;border-collapse:collapse;font-size:13px;min-width:580px;}
   .items-table thead th{
     background:linear-gradient(180deg,#f8fafc,#f1f4f9);
     padding:10px 8px;font-weight:700;font-size:12px;color:var(--navy);
@@ -176,7 +241,6 @@
   .items-table .td-num.no-hist:hover{background:none;}
   .items-table .td-desc{min-width:180px;}
 
-  /* new-tag */
   .new-tag{font-size:10px;color:#b45309;background:#fef3c7;border:1px solid #fde68a;border-radius:4px;padding:1px 5px;margin-top:2px;display:inline-block;line-height:1.4;}
 
   /* === hist popover === */
@@ -202,7 +266,7 @@
   .items-table .td-unit{width:76px;}
   .items-table .td-price{width:108px;}
   .items-table .td-amt{width:108px;text-align:right;font-weight:700;font-variant-numeric:tabular-nums;color:var(--navy);white-space:nowrap;padding-right:10px;font-size:13px;vertical-align:middle;}
-.items-table .td-act{width:56px;text-align:center;vertical-align:middle;white-space:nowrap;}
+.items-table .td-act{width:80px;text-align:center;vertical-align:middle;white-space:nowrap;}
 .items-table .td-act .act-wrap{display:inline-flex;gap:2px;align-items:center;}
 
   .items-table input{
@@ -220,6 +284,17 @@
   .items-table .del:hover{background:#fef2f2;border-color:#fecaca;color:#b91c1c;}
   .items-table tfoot td{padding:10px 8px;font-weight:700;font-size:13px;border-top:2px solid var(--line);background:#f8fafc;}
 
+/* Sub-item styles */
+.items-table .sub-item{background:#ffffff;}
+.items-table .sub-item td{border-bottom:1px solid #e5e7eb;}
+.items-table .sub-item .td-num{color:#9ca3af;font-size:11px;}
+.items-table .sub-item .td-desc{padding-left:24px;}
+.items-table .sub-item input{font-size:12px;color:#374151;}
+.items-table .sub-item .td-amt{color:#9ca3af;font-size:12px;}
+
+/* ในหน้าพิมพ์/PDF */
+.itbl tr.sub-row td{font-size:11px;color:#555555;padding:6px 5px 6px 24px;background:#ffffff !important;border:none !important;}
+
   /* ===== batch-match status bar ===== */
   .match-bar{display:none;align-items:center;gap:8px;padding:8px 12px;background:#eff6ff;border:1px solid #bfdbfe;border-radius:8px;margin-top:8px;font-size:12px;color:var(--navy);}
   .match-bar .spin{animation:spin .8s linear infinite;display:inline-block;}
@@ -228,70 +303,97 @@
   /* === Document preview === */
   .doc-tools{display:flex;justify-content:space-between;align-items:center;padding:12px 18px;border-bottom:1px solid var(--line);}
   .doc-scroll{padding:18px;background:#f1f4f9;}
-  .doc{background:#fff;width:100%;max-width:760px;margin:0 auto;padding:44px 46px;box-shadow:0 2px 14px #0003;font-size:13px;color:#1a1a1a;}
-  .doc.page{display:flex;flex-direction:column;min-height:1000px;}
+  .doc{background:#fff;width:100%;max-width:760px;margin:0 auto;padding:22px 30px;box-shadow:0 2px 14px #0003;font-size:13px;color:#1a1a1a;}
+  .doc.page{display:flex;flex-direction:column;min-height:1080px;}
   .doc.page + .doc.page{margin-top:22px;}
-  .flexspace{flex:1 1 auto;min-height:24px;}
+  .flexspace{flex:1 1 auto;min-height:8px;}
 
-  .qhead{display:flex;justify-content:space-between;align-items:flex-start;gap:20px;}
+  .qhead{display:flex;justify-content:space-between;align-items:flex-start;gap:14px;}
   .qhead .qbig{font-size:38px;font-weight:800;color:var(--navy);letter-spacing:-1px;line-height:1;text-align:right;}
-  .qmeta{font-size:12px;color:#333;margin-top:8px;line-height:1.5;}
-  .seller-top{line-height:1.45;}
+  .qmeta{font-size:12px;color:#333;margin-top:4px;line-height:1.3;}
+  .seller-top{line-height:1.3;}
   .seller-top .co{font-size:18px;font-weight:800;color:#111;}
   .seller-top .sln{font-size:11.5px;color:#333;}
-  .bluebar{background:none;color:#1f3a93;font-weight:800;padding:6px 0;margin:14px 0 22px;font-size:26px;letter-spacing:1px;border-bottom:2px solid #1f3a93;text-align:center;}
+  .bluebar{background:none;color:#1f3a93;font-weight:800;padding:3px 0;margin:4px 0 8px;font-size:26px;letter-spacing:1px;border-bottom:2px solid #1f3a93;text-align:center;}
 
-  .cust-head{font-weight:700;font-size:14px;margin-bottom:8px;display:flex;align-items:center;gap:8px;}
-  .cinfo-table{width:100%;border-collapse:collapse;font-size:12px;margin-bottom:20px;}
-  .cinfo-table td{padding:3px 6px;vertical-align:top;}
+  .cust-head{font-weight:700;font-size:14px;margin-bottom:3px;display:flex;align-items:center;gap:8px;}
+  .cinfo-table{width:100%;border-collapse:collapse;font-size:12px;margin-bottom:6px;}
+  .cinfo-table td{padding:1.5px 4px;vertical-align:top;}
   .cinfo-table .ck{color:#444;font-weight:500;white-space:nowrap;width:1%;padding-right:4px;}
   .cinfo-table .cv{font-weight:600;color:#111;}
 
   table.itbl{width:100%;border-collapse:collapse;font-size:13px;}
-  .itbl th{border-bottom:2px solid #333;padding:8px 6px;font-weight:700;color:#222;}
-  .itbl td{padding:7px 6px;}
+  .itbl th{border-bottom:2px solid #333;padding:8px 5px;font-weight:700;color:#222;}
+  .itbl td{padding:8px 5px;}
   .itbl th.l,.itbl td.l{text-align:left;}
   .itbl th.c,.itbl td.c{text-align:center;}
   .itbl th.r,.itbl td.r{text-align:right;}
-  .itbl tr.empty-row td{height:24px;}
+  .itbl tr.empty-row td{height:auto;padding:8px 5px;}
+  .itbl tr.sub-row td{font-size:11px;color:#6b7280;padding:4px 5px 4px 20px;background:#f9fafb;}
 
   .ctot{margin-left:auto;width:300px;font-size:13px;}
-  .ctot .tr{display:flex;justify-content:space-between;padding:3px 0;}
+  .ctot .tr{display:flex;justify-content:space-between;padding:2px 0;}
   .ctot .tr .lbl{color:#333;}
-  .ctot .grand{border-top:2px solid var(--navy);margin-top:4px;padding-top:8px;font-size:17px;font-weight:800;color:var(--navy);}
-  .ctot .baht{text-align:right;font-size:12px;color:#444;margin-top:2px;}
+  .ctot .grand{border-top:2px solid var(--navy);margin-top:3px;padding-top:6px;font-size:17px;font-weight:800;color:var(--navy);}
+  .ctot .baht{text-align:right;font-size:12px;color:#444;margin-top:1px;}
 
-  .cfoot{display:flex;justify-content:space-between;gap:30px;align-items:flex-end;margin-top:50px;}
+  .cfoot{display:flex;justify-content:space-between;gap:30px;align-items:flex-end;margin-top:14px;}
   .ssign{display:flex;gap:120px;}
   .sg{flex:1;width:230px;text-align:center;font-size:12px;position:relative;}
-  .sg .sgline{border-top:1px solid #555;margin:40px 14px 4px;padding-top:4px;}
+  .sg .sgline{border-top:1px solid #555;margin:20px 14px 3px;padding-top:3px;}
   .sg .sig-img{position:absolute;left:50%;bottom:28px;transform:translateX(-50%);height:70px;pointer-events:none;}
 
   .page-footer-keep{page-break-inside:avoid;break-inside:avoid;}
 
+  /* ===== Mobile adjustments for document preview ===== */
+  @media (max-width:700px){
+    .doc{padding:14px 16px;}
+    .qhead .qbig{font-size:24px;}
+    .seller-top .co{font-size:15px;}
+    .bluebar{font-size:18px;}
+    .cinfo-table{font-size:11px;}
+    .ssign{gap:40px;}
+    .sg{width:auto;}
+    .ctot{width:100%;}
+    .tab{padding:10px 8px;font-size:13px;}
+  }
+
+  /* ===== Preview panel header for wide layout ===== */
+  .preview-header{
+    display:none;
+    padding:14px 18px;
+    font-weight:700;
+    font-size:14px;
+    color:var(--navy);
+    border-bottom:1px solid var(--line);
+    background:linear-gradient(180deg,#f8fafc,#fff);
+    gap:8px;
+    align-items:center;
+  }
+  @media (min-width:1920px){
+    .preview-header{display:flex;}
+  }
+
   @media print{
     @page{size:A4;margin:0;}
-    .topbar,.doc-tools,.hist-popover{display:none!important;}
+    .topbar,.doc-tools,.hist-popover,.preview-header{display:none!important;}
     .wrap{display:block!important;padding:0;margin:0;max-width:none;gap:0;}
     .wrap>.card:first-child{display:none!important;}
     .card{border:none!important;box-shadow:none!important;border-radius:0;}
     .doc-scroll{padding:0!important;background:#fff!important;}
-    .doc.page{box-shadow:none!important;max-width:none!important;width:100%!important;margin:0!important;padding:10mm 12mm!important;display:flex!important;flex-direction:column!important;min-height:0!important;height:287mm!important;page-break-after:always;}
+    .doc.page{box-shadow:none!important;max-width:none!important;width:100%!important;margin:0!important;padding:6mm 10mm!important;display:flex!important;flex-direction:column!important;min-height:0!important;height:287mm!important;page-break-after:always;}
     .doc.page:last-child{page-break-after:auto;}
     .flexspace{flex:1 1 auto!important;min-height:0!important;display:block!important;}
     .page-footer-keep{page-break-inside:avoid!important;break-inside:avoid!important;}
     .ssign{flex-direction:row!important;gap:120px!important;}
     .cfoot{flex-direction:row!important;}
   }
-
-  /* ★ รองรับ tablet ขึ้นไป — ไม่รองรับ mobile */
-  body{min-width:900px;}
 </style>
 </head>
 <body>
 <div class="topbar"><span class="dot">📄</span> ระบบสร้างใบเสนอราคา · Quotation Generator</div>
 
-<div class="wrap">
+<div class="wrap ocr-mode">
   <div class="card">
     <div class="tabs">
       <div class="tab active" data-tab="upload">🖼️ อัพโหลดรูปภาพ (OCR)</div>
@@ -357,7 +459,6 @@
 
       <div class="sec-title">รายการสินค้า / บริการ</div>
 
-      {{-- batch-match status --}}
       <div class="match-bar" id="matchBar">
         <span class="spin">⏳</span>
         <span id="matchBarTxt">กำลังดึงราคาจากประวัติการขาย...</span>
@@ -373,7 +474,7 @@
               <th class="c" style="width:76px">หน่วย</th>
               <th class="r" style="width:108px">ราคา/หน่วย</th>
               <th class="r" style="width:108px">จำนวนเงิน</th>
-              <th class="c" style="width:36px"></th>
+              <th class="c" style="width:80px"></th>
             </tr>
           </thead>
           <tbody id="itemRows"></tbody>
@@ -392,7 +493,7 @@
       <textarea id="note" rows="2" placeholder="หมายเหตุ ..."></textarea>
 
       <div class="sec-title">ลายเซ็นผู้เสนอราคา</div>
-      <canvas id="sigPad" width="380" height="120" style="border:1px solid var(--line);border-radius:8px;cursor:crosshair;background:#fff;display:block;width:100%;touch-action:none;"></canvas>
+      <canvas id="sigPad" width="760" height="140" style="border:1px solid var(--line);border-radius:8px;cursor:crosshair;background:#fff;display:block;width:100%;touch-action:none;"></canvas>
       <div class="btn-row">
         <button class="btn btn-ghost" id="sigClear" style="flex:1;font-size:12px">🗑️ ล้างลายเซ็น</button>
       </div>
@@ -400,15 +501,18 @@
   </div>
 
   {{-- ========== Document Preview ========== --}}
-  <div class="card">
+  <!-- ★ CHANGED: ซ่อน preview ตั้งแต่โหลดหน้า (แท็บ OCR เป็น default) -->
+  <div class="card card-preview" style="display:none">
+    <div class="preview-header">📄 ตัวอย่างใบเสนอราคา</div>
     <div class="doc-scroll">
       <div id="pages"></div>
     </div>
     <div class="doc-tools" style="border-top:1px solid var(--line);border-bottom:none;justify-content:center;padding:14px 18px;flex-direction:column;align-items:center;gap:6px;">
-      <button class="btn btn-green" id="printBtn" style="min-width:320px;padding:13px 40px;font-size:16px;" disabled>บันทึกใบเสนอราคา</button>
+      <button class="btn btn-green" id="printBtn" style="min-width:280px;max-width:400px;width:100%;padding:13px 40px;font-size:16px;" disabled>บันทึกใบเสนอราคา</button>
       <div id="validateMsg" class="muted" style="font-size:12px;color:#dc2626;text-align:center;"></div>
     </div>
   </div>
+
   <div class="po-modal-bg" id="poModal" onclick="if(event.target===this)closePoModal()">
     <div class="po-detail-bg" id="poDetailModal" onclick="if(event.target===this)closePoDetail()">
   <div class="po-detail-box">
@@ -423,7 +527,6 @@
 </div>
   <div class="po-modal-box">
     <div class="po-modal-head">
-      <span class="pmt" id="poModalTitle">🛒</span>
       <button class="pmc" onclick="closePoModal()">✕</button>
     </div>
     <div class="po-modal-body" id="poModalBody">
@@ -442,17 +545,10 @@
   <div class="hp-body" id="hpBody"></div>
 </div>
 
-{{-- ================================================================
-     JAVASCRIPT
-     ================================================================ --}}
 <script>
-/* ---- shortcuts ---- */
 const $  = s => document.querySelector(s);
 const $$ = s => document.querySelectorAll(s);
 
-/* ================================================================
-   SELLER INFO
-   ================================================================ */
 const SELLER = {
   name:      'บริษัท ทริปเปิ้ล อี เทรดดิ้ง จำกัด',
   tel:       '02-4727341-48',
@@ -460,51 +556,66 @@ const SELLER = {
   tax:       '0105547065721',
 };
 
-/* ================================================================
-   PAGINATION CONFIG
-   ================================================================ */
-const FIRST_PAGE_MAX = 14;
-const OTHER_PAGE_MAX = 24;
+/* ===== Pagination: items per page =====
+   หน้าแรกมี header + ข้อมูลลูกค้า → จุได้น้อยกว่า
+   หน้าสุดท้ายมี footer (ยอดรวม + ลายเซ็น) → ต้องเผื่อที่
+   ค่าต่าง ๆ คำนวณจาก min-height 1080px ของ .doc.page */
+const FIRST_PAGE_MAX      = 20;  // หน้าแรก (ไม่ใช่หน้าสุดท้าย)
+const FIRST_LAST_PAGE_MAX = 15;  // หน้าแรก + หน้าสุดท้าย (มี footer)
+const OTHER_PAGE_MAX      = 23;  // หน้ากลาง
+const OTHER_LAST_PAGE_MAX = 18;  // หน้าสุดท้าย (ไม่ใช่หน้าแรก, มี footer)
 
 function paginate(total) {
-  if (total <= FIRST_PAGE_MAX) return [total];
-  const sizes = [FIRST_PAGE_MAX];
-  let rem = total - FIRST_PAGE_MAX;
-  while (rem > OTHER_PAGE_MAX) { sizes.push(OTHER_PAGE_MAX); rem -= OTHER_PAGE_MAX; }
+  // กรณีหน้าเดียว — ต้องพอใส่ทั้ง items + footer
+  if (total <= FIRST_LAST_PAGE_MAX) return [total];
+
+  // หลายหน้า — เผื่อที่ให้หน้าสุดท้ายเสมอ (min 1 item)
+  const first = Math.min(total - 1, FIRST_PAGE_MAX);
+  const sizes = [first];
+  let rem = total - first;
+
+  // หน้ากลาง — ใส่ได้เต็ม แต่ต้องเหลือให้หน้าสุดท้าย
+  while (rem > OTHER_LAST_PAGE_MAX) {
+    const chunk = Math.min(rem - 1, OTHER_PAGE_MAX);
+    sizes.push(chunk);
+    rem -= chunk;
+  }
+  // หน้าสุดท้าย — items ≤ OTHER_LAST_PAGE_MAX เพื่อเผื่อ footer
   if (rem > 0) sizes.push(rem);
+
   return sizes;
 }
 
-/* ================================================================
-   STATE
-   ================================================================ */
 let currentCustomerCode = '';
 let sellerSigData       = null;
 let lastSeparators = [];
 let lastOcrLines   = [];
 
-/* ================================================================
-   HELPERS
-   ================================================================ */
 function esc(s)  { return (s + '').replace(/"/g, '&quot;'); }
 function esc2(s) { return (s + '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
 function fmt(n)  { return (Math.round(n * 100) / 100).toLocaleString('en-US', {minimumFractionDigits:2, maximumFractionDigits:2}); }
 
 function autoResize(el) { el.style.height = 'auto'; el.style.height = el.scrollHeight + 'px'; }
 
-/* ================================================================
-   TABS
-   ================================================================ */
+/* ★ CHANGED: สลับแสดง/ซ่อน preview ตาม tab + จัดกลางตอน OCR */
 $$('.tab').forEach(t => t.onclick = () => {
   $$('.tab').forEach(x => x.classList.remove('active'));
   $$('.pane').forEach(x => x.classList.remove('active'));
   t.classList.add('active');
   $('#pane-' + t.dataset.tab).classList.add('active');
+  const isOcr = t.dataset.tab === 'upload';
+  // ซ่อน preview ตอนอยู่แท็บ OCR, แสดงตอนอยู่แท็บ manual
+  const preview = $('.card-preview');
+  if (preview) {
+    preview.style.display = isOcr ? 'none' : '';
+  }
+  // จัดกลาง + ขยายตอนอยู่แท็บ OCR
+  const wrap = $('.wrap');
+  if (wrap) {
+    wrap.classList.toggle('ocr-mode', isOcr);
+  }
 });
 
-/* ================================================================
-   IMAGE UPLOAD + OCR
-   ================================================================ */
 let imgData = null;
 $('#drop').onclick    = () => $('#file').click();
 $('#drop').ondragover = e => e.preventDefault();
@@ -523,9 +634,6 @@ function handleFile(f) {
   r.readAsDataURL(f);
 }
 
-/* ================================================================
-   IMAGE PREPROCESSING
-   ================================================================ */
 function preprocessImage(dataUrl) {
   return new Promise(resolve => {
     const img = new Image();
@@ -736,9 +844,6 @@ $('#ocrBtn').onclick = async () => {
 
 $('#ocrText').addEventListener('input', function () { autoResize(this); });
 
-/* ================================================================
-   PARSE BUTTON
-   ================================================================ */
 $('#parseBtn').onclick = async () => {
   const txt   = $('#ocrText').value;
   const lines = txt.split(/\n/).map(l => l.trim()).filter(Boolean);
@@ -756,9 +861,6 @@ $('#parseBtn').onclick = async () => {
   if (currentCustomerCode && rows.length) { await batchMatchItems(rows); }
 };
 
-/* ================================================================
-   ITEM ROW
-   ================================================================ */
 function itemRow(d = {}) {
   const tr = document.createElement('tr');
   tr.className = 'item';
@@ -778,15 +880,18 @@ function itemRow(d = {}) {
     <td class="td-price"><input class="price" type="number" placeholder="ราคา/หน่วย" value="${price}" min="0"></td>
     <td class="td-amt">${fmt(amt)}</td>
     <td class="td-act">
-      <button class="cart-btn" title="ค้นราคาต้นทุน">🛒</button>
-      <button class="del" title="ลบ">✕</button>
+      <div class="act-wrap">
+        <button class="cart-btn" title="เพิ่มรายละเอียดย่อย" onclick="addSubItem(this)">➕</button>
+        <button class="del" title="ลบ">✕</button>
+      </div>
     </td>
   `;
-  tr.querySelector('.del').onclick = () => { tr.remove(); render(); };
-  tr.querySelector('.cart-btn').onclick = () => {
-    const keyword = tr.querySelector('.desc')?.value?.trim();
-    if (!keyword || keyword.length < 2) { alert('กรุณาพิมพ์ชื่อสินค้าก่อน'); return; }
-    openPoModal(keyword);
+  tr.querySelector('.del').onclick = () => { 
+    // ลบ sub-items ทั้งหมดที่อยู่กับ item นี้
+    const subItems = tr.parentNode.querySelectorAll(`.sub-item[data-parent="${tr.dataset.itemId}"]`);
+    subItems.forEach(sub => sub.remove());
+    tr.remove(); 
+    render(); 
   };
   tr.querySelectorAll('input').forEach(i => i.oninput = render);
   const descInput = tr.querySelector('.desc');
@@ -810,14 +915,58 @@ function itemRow(d = {}) {
     showHistPopover(keyword, pname, currentCustomerCode, tr, itemNew, currentPrice);
   };
   if (d.isNew) setNewTag(tr, true);
+  
+  // สร้าง unique ID สำหรับ item นี้
+  tr.dataset.itemId = 'item_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+  
   return tr;
+}
+
+// ฟังก์ชันเพิ่ม sub-item - แก้ไขใหม่: มีแค่ช่องรายละเอียดกับปุ่มลบ เท่านั้น
+function addSubItem(btn) {
+  const parentRow = btn.closest('tr.item');
+  const parentId = parentRow.dataset.itemId;
+  
+  // นับจำนวน sub-items ที่มีอยู่แล้ว
+  const existingSubs = parentRow.parentNode.querySelectorAll(`.sub-item[data-parent="${parentId}"]`);
+  const subCount = existingSubs.length + 1;
+  
+  const subTr = document.createElement('tr');
+  subTr.className = 'item sub-item';
+  subTr.dataset.parent = parentId;
+  
+  // แก้ไข: แสดงแค่ลำดับ + ช่องรายละเอียด (colspan=5) + ปุ่มลบ
+  // ไม่มีช่อง จำนวน, หน่วย, ราคา, จำนวนเงิน เลย
+  subTr.innerHTML = `
+    <td class="td-num" style="opacity:0.6;font-size:11px;color:#9ca3af;vertical-align:middle;">${subCount}</td>
+    <td class="td-desc" style="padding-left:24px;" colspan="5">
+      <input class="sub-desc" placeholder="พิมพ์รายละเอียดย่อย..." value="" style="width:100%;border:none;background:transparent;padding:6px 8px;font-size:12px;color:#555;">
+    </td>
+    <td class="td-act" style="vertical-align:middle;">
+      <button class="del" title="ลบ" style="width:22px;height:22px;font-size:12px;">✕</button>
+    </td>
+  `;
+  
+  subTr.querySelector('.del').onclick = (e) => { 
+    e.stopPropagation();
+    subTr.remove(); 
+    render(); 
+  };
+  subTr.querySelector('.sub-desc').oninput = render;
+  
+  // แทรกหลัง parentRow และ sub-items อื่นๆ ของ parent นี้
+  const lastSub = existingSubs[existingSubs.length - 1];
+  if (lastSub) {
+    lastSub.after(subTr);
+  } else {
+    parentRow.after(subTr);
+  }
+  
+  render();
 }
 
 $('#addItem').onclick = () => { $('#itemRows').appendChild(itemRow()); render(); };
 
-/* ================================================================
-   PO COST MODAL
-   ================================================================ */
 const poSearchCache = {};
 
 async function openPoModal(keyword) {
@@ -1019,46 +1168,95 @@ function setRefTag(tr, suggestions) {
     ` · ${esc2(best.customer_name || '-')}` +
     (best.match_keyword ? `<br>🔍 จับคู่: <b>${esc2(best.match_keyword)}</b>` : '') +
     (suggestions.length > 1 ? ` <span style="color:var(--blue)">▾ ${suggestions.length} บริษัท</span>` : '');
+
+  /* สร้าง panel + backdrop (append เข้า body ตอนเปิด) */
   const panel = document.createElement('div');
   panel.className = 'ref-panel';
+  const backdrop = document.createElement('div');
+  backdrop.className = 'ref-panel-backdrop';
   let rows = '';
   suggestions.forEach((s, i) => {
     rows += `<tr class="rp-row">
-      <td>${i + 1}</td>
-      <td>${esc2(s.customer_name || '-')}</td>
+      <td style="text-align:center;color:#aaa">${i + 1}</td>
+      <td class="rp-cust">${esc2(s.customer_name || '-')}</td>
       <td style="white-space:nowrap">${esc2(s.so_no || '-')}</td>
       <td style="white-space:nowrap">${esc2(s.doc_date || '-')}</td>
       <td class="rp-pname">${esc2(s.product_name || '-')}</td>
-      <td style="white-space:nowrap;font-size:10px;color:var(--blue);">${esc2(s.match_keyword || '-')}</td>
+      <td class="rp-kw">${esc2(s.match_keyword || '-')}</td>
       <td class="rp-price">${fmt(s.unit_price)}</td>
       <td><button class="rp-use" data-i="${i}">ใช้ราคานี้</button></td>
     </tr>`;
   });
   panel.innerHTML = `<div class="rp-head">📋 ราคาอ้างอิงจากลูกค้าอื่น (${suggestions.length} บริษัทล่าสุด)</div>
-    <table><thead><tr><th>#</th><th>บริษัท</th><th>SO No.</th><th>วันที่</th><th>ชื่อสินค้า</th><th>keyword</th><th style="text-align:right">ราคา/หน่วย</th><th></th></tr></thead>
-    <tbody>${rows}</tbody></table>`;
+    <div class="rp-scroll"><table><thead><tr><th style="width:30px">#</th><th>บริษัท</th><th>SO No.</th><th>วันที่</th><th>ชื่อสินค้า</th><th>keyword</th><th style="text-align:right">ราคา/หน่วย</th><th></th></tr></thead>
+    <tbody>${rows}</tbody></table></div>`;
+
+  function closePanel() {
+    panel.style.display = 'none';
+    backdrop.style.display = 'none';
+    if (panel.parentNode) panel.remove();
+    if (backdrop.parentNode) backdrop.remove();
+  }
+
   tag.onclick = e => {
     e.stopPropagation();
-    const showing = panel.style.display === 'block';
-    document.querySelectorAll('.ref-panel').forEach(p => p.style.display = 'none');
-    panel.style.display = showing ? 'none' : 'block';
+    const wasOpen = panel.style.display === 'block';
+    closeAllRefPanels();
+    if (wasOpen) return;
+
+    document.body.appendChild(backdrop);
+    document.body.appendChild(panel);
+    backdrop.style.display = 'block';
+    panel.style.display = 'block';
+
+    /* คำนวณตำแหน่ง: อยู่ใต้ tag ถ้าพอ / ขึ้นบนถ้าล้น */
+    requestAnimationFrame(() => {
+      const tagRect = tag.getBoundingClientRect();
+      const panelH  = panel.offsetHeight;
+      const panelW  = panel.offsetWidth;
+      const vw = window.innerWidth, vh = window.innerHeight;
+
+      let top, left;
+      /* แนวตั้ง */
+      if (tagRect.bottom + panelH + 6 <= vh) {
+        top = tagRect.bottom + 4;                       /* เปิดลงล่าง */
+      } else if (tagRect.top - panelH - 6 >= 0) {
+        top = tagRect.top - panelH - 4;                 /* เปิดขึ้นบน */
+      } else {
+        top = Math.max(8, vh - panelH - 8);             /* ชิดล่างสุด */
+      }
+      /* แนวนอน */
+      left = tagRect.left;
+      if (left + panelW > vw - 8) left = Math.max(8, vw - panelW - 8);
+
+      panel.style.top  = top  + 'px';
+      panel.style.left = left + 'px';
+    });
   };
+
+  backdrop.onclick = closePanel;
+
   panel.querySelectorAll('.rp-use').forEach(btn => {
     btn.onclick = e => {
       e.stopPropagation();
       const s = suggestions[parseInt(btn.dataset.i)];
       const priceEl = tr.querySelector('.price');
       if (priceEl) { priceEl.value = s.unit_price; render(); }
-      panel.style.display = 'none';
+      closePanel();
     };
   });
+  panel.addEventListener('click', e => e.stopPropagation());
   wrap.appendChild(tag);
-  wrap.appendChild(panel);
   td.appendChild(wrap);
 }
 
+function closeAllRefPanels() {
+  document.querySelectorAll('.ref-panel').forEach(p => { p.style.display = 'none'; p.remove(); });
+  document.querySelectorAll('.ref-panel-backdrop').forEach(b => { b.style.display = 'none'; b.remove(); });
+}
+
 document.addEventListener('click', () => {
-  document.querySelectorAll('.ref-panel').forEach(p => p.style.display = 'none');
+  closeAllRefPanels();
 });
 
 function setNewTag(tr, isNew) {
@@ -1075,9 +1273,6 @@ function setNewTag(tr, isNew) {
   }
 }
 
-/* ================================================================
-   BATCH MATCH
-   ================================================================ */
 const BATCH_URL   = '/soitem/batch-match';
 const HISTORY_URL = '/soitem/sales-history';
 
@@ -1146,9 +1341,6 @@ async function onCustomerSelected() {
   if (rows.length) await batchMatchItems(rows);
 }
 
-/* ================================================================
-   SEARCH COMPANY
-   ================================================================ */
 const API_URL = 'http://server_update:8000/api/getCustAndVendor';
 let searchTimer = null;
 
@@ -1283,9 +1475,6 @@ document.addEventListener('click', e => {
   if (pop.style.display === 'block' && !pop.contains(e.target) && !e.target.closest('.td-num')) pop.style.display = 'none';
 });
 
-/* ================================================================
-   SALES HISTORY POPOVER
-   ================================================================ */
 const histCache = {};
 
 async function showHistPopover(keyword, productName, customerCode, rowEl, itemNewCode, currentPrice) {
@@ -1329,7 +1518,6 @@ function renderHistContent(records, itemNew, productName, head, body, currentPri
     body.innerHTML = '<div style="padding:24px;text-align:center;color:var(--muted);font-size:12px;">ลูกค้ายังไม่เคยสั่งซื้อสินค้านี้</div>';
     return;
   }
-  /* ★ เรียงวันที่ล่าสุดขึ้นก่อน */
   records = records.slice().sort((a, b) => {
     const da = new Date(a.doc_date || a.doc_date_raw || 0);
     const db = new Date(b.doc_date || b.doc_date_raw || 0);
@@ -1372,9 +1560,6 @@ function renderHistContent(records, itemNew, productName, head, body, currentPri
   });
 }
 
-/* ================================================================
-   SIGNATURE PAD
-   ================================================================ */
 const sigCanvas = $('#sigPad');
 const sigCtx    = sigCanvas.getContext('2d');
 let sigDrawing  = false;
@@ -1402,9 +1587,6 @@ sigCanvas.addEventListener('touchmove', sigMove, { passive: false });
 sigCanvas.addEventListener('touchend', sigEnd);
 $('#sigClear').onclick = () => { sigCtx.clearRect(0, 0, sigCanvas.width, sigCanvas.height); sellerSigData = null; render(); };
 
-/* ================================================================
-   DOCUMENT RENDER
-   ================================================================ */
 const THAI_MONTHS = ['ม.ค.','ก.พ.','มี.ค.','เม.ย.','พ.ค.','มิ.ย.','ก.ค.','ส.ค.','ก.ย.','ต.ค.','พ.ย.','ธ.ค.'];
 
 function val(id)     { return esc2($('#' + id).value || ''); }
@@ -1422,7 +1604,7 @@ function sellerSigHtml() {
 }
 
 function custInfoHtml() {
-  const codeHtml = rawVal('custCode') ? `<span style="color:var(--navy);font-size:12px;">[${val('custCode')}]</span>` : '';
+  const codeHtml = rawVal('custCode') ? `<span style="color:var(--navy);font-size:11px;">[${val('custCode')}]</span>` : '';
   return `
     <div class="cust-head">ข้อมูลลูกค้า ${codeHtml}</div>
     <table class="cinfo-table">
@@ -1467,11 +1649,12 @@ function pageHtml(rows, pg, pageCount, isLast, isFirst, T) {
     ${isFirst ? custInfoHtml() : ''}
     <table class="itbl">
       <thead><tr>
-        <th class="c" style="width:60px">ลำดับ</th>
+        <th class="c" style="width:8%">ลำดับ</th>
         <th class="l">รายการสินค้า</th>
-        <th class="c" style="width:80px">จำนวน</th>
-        <th class="r" style="width:110px">ราคา/หน่วย</th>
-        <th class="r" style="width:120px">ราคารวม</th>
+        <th class="c" style="width:10%">จำนวน</th>
+        <th class="c" style="width:8%">หน่วย</th>
+        <th class="r" style="width:15%">ราคา/หน่วย</th>
+        <th class="r" style="width:16%">ราคารวม</th>
       </tr></thead>
       <tbody>${rows}</tbody>
     </table>
@@ -1482,29 +1665,57 @@ function pageHtml(rows, pg, pageCount, isLast, isFirst, T) {
 
 function render() {
   const items = [];
-  $$('#itemRows .item').forEach((tr, idx) => {
+  let mainItemIndex = 0;
+  
+  $$('#itemRows .item').forEach((tr) => {
+    const isSubItem = tr.classList.contains('sub-item');
+    
+      if (isSubItem) {
+    // จัดการ sub-item - ไม่เก็บจำนวน/หน่วย/ราคา
+    const desc  = tr.querySelector('.sub-desc').value;
+    
+    if (desc) {
+      // หา parent item index
+      const parentId = tr.dataset.parent;
+      const parentRow = document.querySelector(`.item[data-item-id="${parentId}"]`);
+      const parentIndex = Array.from(parentRow.parentNode.children).filter(r => r.classList.contains('item') && !r.classList.contains('sub-item')).indexOf(parentRow) + 1;
+      const subCount = Array.from(parentRow.parentNode.children).filter(r => r.classList.contains('sub-item') && r.dataset.parent === parentId).indexOf(tr) + 1;
+      
+      const numCell = tr.querySelector('.td-num');
+      if (numCell) numCell.textContent = `${parentIndex}.${subCount}`;
+      
+      // ไม่เก็บ qty/unit/price สำหรับ sub-item
+      items.push({ desc, isSub: true, parentIndex, subCount });
+    }
+  } else {
+    // จัดการ main item (เหมือนเดิม)
+    mainItemIndex++;
     const desc  = tr.querySelector('.desc').value;
     const qty   = parseFloat(tr.querySelector('.qty').value) || 0;
     const unit  = tr.querySelector('.unit').value;
     const price = parseFloat(tr.querySelector('.price').value) || 0;
     const numCell = tr.querySelector('.td-num');
     if (numCell) {
-      numCell.textContent = idx + 1;
+      numCell.textContent = mainItemIndex;
       const hasHist = tr.dataset.keyword || tr.dataset.itemNew;
       if (!hasHist) numCell.classList.add('no-hist'); else numCell.classList.remove('no-hist');
     }
     const amtCell = tr.querySelector('.td-amt');
     if (amtCell) amtCell.textContent = fmt(qty * price);
     if (!desc && !price) return;
-    items.push({ desc, qty, unit, price });
+    items.push({ desc, qty, unit, price, isSub: false, index: mainItemIndex });
+  }
   });
-  const gross = items.reduce((s, it) => s + it.qty * it.price, 0);
+  
+  // คำนวณยอดรวม (เฉพาะ main items)
+  const gross = items.filter(it => !it.isSub).reduce((s, it) => s + it.qty * it.price, 0);
   const vat   = gross * 0.07;
   const grand = gross + vat;
   const T     = { gross, vat, grand };
   const foot = $('#itemFoot');
-  if (items.length) { foot.style.display = ''; $('#footGross').textContent = fmt(gross); }
+  if (items.filter(it => !it.isSub).length) { foot.style.display = ''; $('#footGross').textContent = fmt(gross); }
   else foot.style.display = 'none';
+  
   const sizes     = paginate(items.length);
   const pageCount = sizes.length;
   let out = '', offset = 0;
@@ -1513,16 +1724,36 @@ function render() {
     const slice  = items.slice(offset, offset + count);
     const isLast = pg === pageCount - 1;
     let rows = '';
-    slice.forEach((it, idx) => {
-      rows += `<tr><td class="c">${offset + idx + 1}</td><td class="l">${esc2(it.desc || '-')}</td><td class="c">${it.qty || ''}${it.unit ? ' ' + esc2(it.unit) : ''}</td><td class="r">${fmt(it.price || 0)}</td><td class="r">${fmt(it.qty * it.price)}</td></tr>`;
-    });
-    const padTarget = pg === 0 ? FIRST_PAGE_MAX : OTHER_PAGE_MAX;
+slice.forEach((it, idx) => {
+  if (it.isSub) {
+    rows += `<tr class="sub-row" style="background:#ffffff !important;">
+      <td class="c" style="background:#ffffff !important; border:none !important; color:#666; font-size:12px;">${it.parentIndex}.${it.subCount}</td>
+      <td class="l" style="background:#ffffff !important; border:none !important; padding-left:24px; color:#555; font-size:12px;" colspan="5">${esc2(it.desc || '-')}</td>
+    </tr>`;
+  } else {
+    rows += `<tr>
+      <td class="c">${it.index}</td>
+      <td class="l">${esc2(it.desc || '-')}</td>
+      <td class="c">${it.qty || ''}</td>
+      <td class="c">${it.unit ? esc2(it.unit) : ''}</td>
+      <td class="r">${fmt(it.price || 0)}</td>
+      <td class="r">${fmt(it.qty * it.price)}</td>
+    </tr>`;
+  }
+});
+    /* padTarget: เลือกตามหน้าแรก/กลาง × หน้าสุดท้ายหรือไม่ */
+    let padTarget;
+    if (pg === 0) {
+      padTarget = isLast ? FIRST_LAST_PAGE_MAX : FIRST_PAGE_MAX;
+    } else {
+      padTarget = isLast ? OTHER_LAST_PAGE_MAX : OTHER_PAGE_MAX;
+    }
     if (isLast && count < padTarget) {
-      for (let e = 0; e < padTarget - count; e++) rows += `<tr class="empty-row"><td class="c"></td><td class="l"></td><td class="c"></td><td class="r"></td><td class="r"></td></tr>`;
+      for (let e = 0; e < padTarget - count; e++) rows += `<tr class="empty-row"><td class="c"></td><td class="l"></td><td class="c"></td><td class="c"></td><td class="r"></td><td class="r"></td></tr>`;
     }
     if (!items.length) {
       rows = '';
-      for (let e = 0; e < FIRST_PAGE_MAX; e++) rows += `<tr class="empty-row"><td class="c">${e===0?'1':''}</td><td class="l">${e===0?'—':''}</td><td class="c"></td><td class="r"></td><td class="r"></td></tr>`;
+      for (let e = 0; e < FIRST_LAST_PAGE_MAX; e++) rows += `<tr class="empty-row"><td class="c">${e===0?'1':''}</td><td class="l">${e===0?'—':''}</td><td class="c"></td><td class="c"></td><td class="r"></td><td class="r"></td></tr>`;
     }
     out += pageHtml(rows, pg + 1, pageCount, isLast, pg === 0, T);
     offset += count;
@@ -1531,9 +1762,6 @@ function render() {
   validateForm();
 }
 
-/* ================================================================
-   FORM VALIDATION
-   ================================================================ */
 function validateForm() {
   const errors = [];
   if (!rawVal('custCompany'))  errors.push('ชื่อบริษัทลูกค้า');
@@ -1541,7 +1769,7 @@ function validateForm() {
   if (!rawVal('custTel'))      errors.push('เบอร์โทรลูกค้า');
   if (!rawVal('contactName'))  errors.push('ชื่อผู้ติดต่อ');
   if (!rawVal('validDays'))    errors.push('ยืนราคาภายใน (วัน)');
-  const rows = $$('#itemRows .item');
+  const rows = $$('#itemRows .item:not(.sub-item)');
   let hasValidItem = false;
   rows.forEach(tr => {
     const desc  = (tr.querySelector('.desc')?.value || '').trim();
@@ -1555,9 +1783,6 @@ function validateForm() {
   else { btn.disabled = false; msg.textContent = ''; }
 }
 
-/* ================================================================
-   THAI BAHT TEXT
-   ================================================================ */
 function bahtText(n) {
   n = Math.round(n * 100) / 100;
   const baht = Math.floor(n), satang = Math.round((n - baht) * 100);
@@ -1580,9 +1805,6 @@ function bahtText(n) {
   return r;
 }
 
-/* ================================================================
-   INIT
-   ================================================================ */
 ['docDate','contactName','custCode','custCompany','custAddr','custTel',
  'custTax','custBranch','validDays','expireDate','creditDays','note']
   .forEach(id => { $('#' + id).oninput = $('#' + id).onchange = render; });
@@ -1601,7 +1823,6 @@ $('#validDays').addEventListener('input', calcExpireDate);
 $('#validDays').addEventListener('change', calcExpireDate);
 $('#docDate').addEventListener('change', calcExpireDate);
 
-/* ★★★ บันทึก PDF ★★★ */
 $('#printBtn').onclick = async () => {
   const btn = $('#printBtn');
   const origText = btn.textContent;
@@ -1613,20 +1834,44 @@ $('#printBtn').onclick = async () => {
     const pages = document.querySelectorAll('#pages .doc.page');
     if (!pages.length) { alert('ไม่มีข้อมูลใบเสนอราคา'); return; }
     const pdf = new jsPDF({ orientation:'portrait', unit:'mm', format:'a4' });
+    const PDF_WIDTH = '640px';
+    const PDF_MIN_H = '905px';
     for (let i = 0; i < pages.length; i++) {
       if (i > 0) pdf.addPage();
-      const canvas = await html2canvas(pages[i], { scale:2, useCORS:true, backgroundColor:'#ffffff', logging:false });
-      const imgData = canvas.toDataURL('image/jpeg', 0.92);
+      const pg = pages[i];
+      const _w = pg.style.maxWidth, _h = pg.style.minHeight;
+      pg.style.maxWidth  = PDF_WIDTH;
+      pg.style.minHeight = PDF_MIN_H;
+      pg.offsetHeight;
+      const canvas = await html2canvas(pg, { scale:3, useCORS:true, backgroundColor:'#ffffff', logging:false });
+      pg.style.maxWidth = _w; pg.style.minHeight = _h;
+      const imgData = canvas.toDataURL('image/jpeg', 0.95);
       const ratio = Math.min(210/canvas.width, 297/canvas.height);
       pdf.addImage(imgData,'JPEG',(210-canvas.width*ratio)/2, 0, canvas.width*ratio, canvas.height*ratio);
     }
     btn.textContent = '⏳ กำลังบันทึกลงระบบ...';
     const pdfBase64 = await blobToBase64(pdf.output('blob'));
     const items = [];
-    $$('#itemRows .item').forEach((tr, idx) => {
+    $$('#itemRows .item:not(.sub-item)').forEach((tr, idx) => {
       const desc  = (tr.querySelector('.desc')?.value || '').trim();
       const price = parseFloat(tr.querySelector('.price')?.value) || 0;
       if (!desc && price <= 0) return;
+      
+      // รวบรวม sub-items
+      const subItems = [];
+      const itemId = tr.dataset.itemId;
+      const subRows = document.querySelectorAll(`.sub-item[data-parent="${itemId}"]`);
+      subRows.forEach(subTr => {
+        const subDesc = (subTr.querySelector('.sub-desc')?.value || '').trim();
+        if (subDesc) {
+          subItems.push({
+            desc: subDesc,
+            qty: parseFloat(subTr.querySelector('.sub-qty')?.value) || 0,
+            unit: (subTr.querySelector('.sub-unit')?.value || '').trim(),
+          });
+        }
+      });
+      
       items.push({
         desc, price,
         qty: parseFloat(tr.querySelector('.qty')?.value) || 0,
@@ -1634,9 +1879,10 @@ $('#printBtn').onclick = async () => {
         item_new: tr.dataset.itemNew || null,
         product_name: tr.dataset.productName || null,
         is_new: tr.dataset.isNew === '1',
+        sub_items: subItems.length > 0 ? subItems : null,
       });
     });
-    const res = await fetch('/SoItem', {
+    const res = await fetch('/soitem', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content },
       body: JSON.stringify({
@@ -1676,14 +1922,11 @@ function blobToBase64(blob) {
 $('#docDate').value = new Date().toISOString().slice(0, 10);
 $('#itemRows').appendChild(itemRow({ desc: 'สินค้า/บริการ ตัวอย่าง', qty: 1, unit: 'ชิ้น', price: 1000 }));
 render();
-/* ===== Drag-to-scroll สำหรับ modal body ===== */
+
 document.querySelectorAll('.po-modal-body, .po-detail-body').forEach(el => {
     let isDown = false, startX, startY, scrollLeft, scrollTop;
-
     el.style.cursor = 'grab';
-
     el.addEventListener('mousedown', e => {
-        // ไม่ทำงานถ้าคลิกลิงก์หรือปุ่ม
         if (e.target.closest('a, button, input, select')) return;
         isDown = true;
         el.style.cursor = 'grabbing';
@@ -1693,19 +1936,8 @@ document.querySelectorAll('.po-modal-body, .po-detail-body').forEach(el => {
         scrollLeft = el.scrollLeft;
         scrollTop = el.scrollTop;
     });
-
-    el.addEventListener('mouseleave', () => {
-        isDown = false;
-        el.style.cursor = 'grab';
-        el.style.userSelect = '';
-    });
-
-    el.addEventListener('mouseup', () => {
-        isDown = false;
-        el.style.cursor = 'grab';
-        el.style.userSelect = '';
-    });
-
+    el.addEventListener('mouseleave', () => { isDown = false; el.style.cursor = 'grab'; el.style.userSelect = ''; });
+    el.addEventListener('mouseup', () => { isDown = false; el.style.cursor = 'grab'; el.style.userSelect = ''; });
     el.addEventListener('mousemove', e => {
         if (!isDown) return;
         e.preventDefault();
