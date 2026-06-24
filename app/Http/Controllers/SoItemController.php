@@ -2,952 +2,959 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\customers;
 use App\Models\fuzzy_so;
-use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Log;
+use App\Models\historyquotation;
 use App\Models\quotation;
 use App\Models\quotationItem;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
-
+use Illuminate\Support\Facades\Cache;
 class SoItemController extends Controller
 {
-    public function dashboard(Request $request)
+    private const CE_MIN_SCORE = 70.0;
+
+    private function postJson(string $url, array $payload, int $timeout = 60): array
     {
-        $search = trim($request->input('search', ''));
-        $status = trim($request->input('status', ''));
-        $month  = trim($request->input('month', ''));
-
-        $query = Quotation::with('items')->orderByDesc('created_at');
-
-        if ($search) {
-            $query->where(function ($q) use ($search) {
-                $q->where('quotation_no', 'LIKE', "%{$search}%")
-                  ->orWhere('customer_company', 'LIKE', "%{$search}%")
-                  ->orWhere('customer_code', 'LIKE', "%{$search}%")
-                  ->orWhere('contact_name', 'LIKE', "%{$search}%");
-            });
-        }
-
-        if ($status) {
-            $query->where('status', $status);
-        }
-
-        if ($month) {
-            $query->whereRaw("DATE_FORMAT(doc_date, '%Y-%m') = ?", [$month]);
-        }
-
-        $quotations = $query->paginate(20)->withQueryString();
-
-        return view('sale.dashboardquotations', compact(
-            'quotations', 'search', 'status', 'month'
-        ));
+        $ch = curl_init($url);
+        curl_setopt_array($ch, [
+            CURLOPT_POST => true, CURLOPT_POSTFIELDS => json_encode($payload),
+            CURLOPT_HTTPHEADER => ['Content-Type: application/json'],
+            CURLOPT_RETURNTRANSFER => true, CURLOPT_TIMEOUT => $timeout, CURLOPT_CONNECTTIMEOUT => 5,
+        ]);
+        $raw = curl_exec($ch); $status = curl_getinfo($ch, CURLINFO_HTTP_CODE); curl_close($ch);
+        return ($status === 200 && $raw) ? (json_decode($raw, true) ?: []) : [];
     }
 
-    /**
-     * GET /quotations/{id}/pdf
-     */
-    public function downloadPdf(int $id)
+    private function getJson(string $url, int $timeout = 10): array
     {
-        $qt = Quotation::findOrFail($id);
-
-        if (!$qt->hasPdf()) {
-            abort(404, 'ไม่พบไฟล์ PDF');
-        }
-
-        return response()->download(
-            $qt->pdf_full_path,
-            $qt->quotation_no . '.pdf'
-        );
+        $ch = curl_init($url);
+        curl_setopt_array($ch, [CURLOPT_RETURNTRANSFER => true, CURLOPT_TIMEOUT => $timeout, CURLOPT_CONNECTTIMEOUT => 5]);
+        $raw = curl_exec($ch); $status = curl_getinfo($ch, CURLINFO_HTTP_CODE); curl_close($ch);
+        return ($status === 200 && $raw) ? (json_decode($raw, true) ?: []) : [];
     }
-
-    public function index()
-    {
-        return view('sale.SoItem');
-    }
+    public function index(Request $request) { return view('sale.SoItem'); }
 
     public function store(Request $request)
     {
         $request->validate([
-            'doc_date'          => 'required|date',
-            'customer_code'     => 'nullable|string|max:50',
-            'customer_company'  => 'required|string|max:255',
-            'customer_address'  => 'required|string',
-            'customer_tel'      => 'required|string|max:100',
-            'customer_tax'      => 'nullable|string|max:50',
-            'customer_branch'   => 'nullable|string|max:100',
-            'contact_name'      => 'required|string|max:255',
-            'valid_days'        => 'required|integer|min:0',
-            'expire_date'       => 'nullable|date',
-            'credit_days'       => 'nullable|integer|min:0',
-            'note'              => 'nullable|string',
-            'items'             => 'required|array|min:1',
-            'items.*.desc'      => 'required|string',
-            'items.*.qty'       => 'required|numeric|min:0',
-            'items.*.unit'      => 'nullable|string|max:50',
-            'items.*.price'     => 'required|numeric|min:0',
-            'items.*.item_new'  => 'nullable|string',
-            'items.*.product_name' => 'nullable|string',
-            'items.*.is_new'    => 'nullable|boolean',
-            'pdf_base64'        => 'nullable|string',
+            'doc_date'             => 'required|date',
+            'customer_code'        => 'nullable|string|max:50',
+            'customer_company'     => 'required|string|max:255',
+            'customer_address'     => 'required|string',
+            'customer_tel'         => 'required|string|max:100',
+            'customer_tax'         => 'nullable|string|max:50',
+            'customer_branch'      => 'nullable|string|max:100',
+            'contact_name'         => 'required|string|max:255',
+            'valid_days'           => 'required|integer|min:0',
+            'expire_date'          => 'nullable|date',
+            'credit_days'          => 'nullable|integer|min:0',
+            'note'                 => 'nullable|string',
+            'items'                => 'required|array|min:1',
+            'items.*.desc'         => 'required|string',
+            'items.*.qty'          => 'required|numeric|min:0',
+            'items.*.unit'         => 'nullable|string|max:50',
+            'items.*.price'        => 'required|numeric|min:0',
+            'pdf_base64'           => 'nullable|string',
         ]);
 
         try {
             return DB::transaction(function () use ($request) {
-
-                // ★ 1) สร้างเลขที่ใบเสนอราคา
                 $quotationNo = $this->generateQuotationNo();
-
-                // ★ 2) สร้าง Quotation
                 $quotation = Quotation::create([
-                    'quotation_no'      => $quotationNo,
-                    'doc_date'          => $request->input('doc_date'),
-                    'customer_code'     => $request->input('customer_code'),
-                    'customer_company'  => $request->input('customer_company'),
-                    'customer_address'  => $request->input('customer_address'),
-                    'customer_tel'      => $request->input('customer_tel'),
-                    'customer_tax'      => $request->input('customer_tax'),
-                    'customer_branch'   => $request->input('customer_branch'),
-                    'contact_name'      => $request->input('contact_name'),
-                    'valid_days'        => $request->input('valid_days', 0),
-                    'expire_date'       => $request->input('expire_date'),
-                    'credit_days'       => $request->input('credit_days'),
-                    'note'              => $request->input('note'),
-                    'status'            => 'draft',
-                    'gross_amount'      => 0,
-                    'vat_amount'        => 0,
-                    'grand_total'       => 0,
+                    'quotation_no'     => $quotationNo,
+                    'doc_date'         => $request->input('doc_date'),
+                    'customer_code'    => $request->input('customer_code'),
+                    'customer_company' => $request->input('customer_company'),
+                    'customer_address' => $request->input('customer_address'),
+                    'customer_tel'     => $request->input('customer_tel'),
+                    'customer_tax'     => $request->input('customer_tax'),
+                    'customer_branch'  => $request->input('customer_branch'),
+                    'contact_name'     => $request->input('contact_name'),
+                    'valid_days'       => $request->input('valid_days', 0),
+                    'expire_date'      => $request->input('expire_date'),
+                    'credit_days'      => $request->input('credit_days'),
+                    'note'             => $request->input('note'),
+                    'status'           => 'draft',
+                    'gross_amount'     => 0, 'vat_amount' => 0, 'grand_total' => 0,
                 ]);
-
-                // ★ 3) สร้าง QuotationItem
-                $items = $request->input('items', []);
-                foreach ($items as $idx => $item) {
+                foreach ($request->input('items', []) as $idx => $item) {
                     $desc  = trim($item['desc'] ?? '');
                     $price = (float) ($item['price'] ?? 0);
                     if (!$desc && $price <= 0) continue;
-
                     QuotationItem::create([
-                        'quotation_id'  => $quotation->id,
-                        'line_no'       => $idx + 1,
-                        'description'   => $desc,
-                        'qty'           => (float) ($item['qty'] ?? 0),
-                        'unit'          => $item['unit'] ?? null,
-                        'unit_price'    => $price,
-                        'item_new'      => $item['item_new'] ?? null,
-                        'product_name'  => $item['product_name'] ?? null,
-                        'is_new'        => (bool) ($item['is_new'] ?? false),
-                        // amount จะ auto คำนวณจาก booted() ใน model
+                        'quotation_no' => $quotation->quotation_no, 'line_no' => $idx + 1,
+                        'description'  => $desc, 'qty' => (float) ($item['qty'] ?? 0),
+                        'unit' => $item['unit'] ?? null, 'unit_price' => $price,
                     ]);
                 }
-
-                // ★ 4) คำนวณยอดรวม
                 $quotation->load('items');
                 $quotation->recalculate();
                 $quotation->save();
-
-                // ★ 5) บันทึก PDF
-                $pdfBase64 = $request->input('pdf_base64');
-                if ($pdfBase64) {
-                    $quotation->storePdf($pdfBase64);
-                }
-
+                if ($pdfBase64 = $request->input('pdf_base64')) $quotation->storePdf($pdfBase64);
                 return response()->json([
-                    'status'       => 'success',
-                    'quotation_no' => $quotation->quotation_no,
-                    'id'           => $quotation->id,
-                    'grand_total'  => $quotation->grand_total,
-                    'pdf_path'     => $quotation->pdf_path,
-                    'message'      => "บันทึกใบเสนอราคา {$quotation->quotation_no} สำเร็จ",
+                    'status' => 'success', 'quotation_no' => $quotation->quotation_no,
+                   'id' => $quotation->quotation_no, 'grand_total'=> $quotation->grand_total,
+                    'pdf_path' => $quotation->pdf_path,
+                    'message' => "บันทึกใบเสนอราคา {$quotation->quotation_no} สำเร็จ",
                 ]);
             });
-
         } catch (\Exception $e) {
             Log::error('Quotation store error: ' . $e->getMessage());
-            return response()->json([
-                'status'  => 'error',
-                'message' => 'บันทึกไม่สำเร็จ: ' . $e->getMessage(),
-            ], 500);
+            return response()->json(['status' => 'error', 'message' => 'บันทึกไม่สำเร็จ: ' . $e->getMessage()], 500);
         }
     }
 
-    /**
-     * สร้างเลขที่ใบเสนอราคา: QT-20260609143022-0001
-     * running number (0001) reset กลับ 1 ทุกต้นเดือน
-     */
     private function generateQuotationNo(): string
     {
-        $now      = now();
-        $datetime = $now->format('YmdHis');                       // 20260609143022
-        $monthPrefix = 'QT-' . $now->format('Ym');                // QT-202506
-
-        // หา running number ล่าสุดของเดือนนี้
-        $last = Quotation::where('quotation_no', 'LIKE', $monthPrefix . '%')
-            ->orderByDesc('quotation_no')
-            ->value('quotation_no');
-
-        if ($last) {
-            // QT-20260609143022-0003 → ตัด 4 ตัวท้าย → 0003 → +1
-            $seq = (int) substr($last, -4) + 1;
-        } else {
-            $seq = 1;
-        }
-
-        $running = str_pad($seq, 4, '0', STR_PAD_LEFT);          // 0001
-
-        return "QT-{$datetime}-{$running}";                       // QT-20260609143022-0001
+        $monthPrefix = 'QT' . now()->format('ym');
+        $last = Quotation::where('quotation_no', 'LIKE', $monthPrefix . '-%')
+            ->orderByDesc('quotation_no')->value('quotation_no');
+        $seq = $last ? ((int) substr($last, -4) + 1) : 1;
+        return "{$monthPrefix}-" . str_pad($seq, 4, '0', STR_PAD_LEFT);
     }
 
-    /* ================================================================
-     *  POST /SoItem/batch-match
-     *
-     *  Flow:
-     *  1) ค้นประวัติลูกค้ารายนี้ → matchOne() (pipeline กลาง)
-     *     ├─ เจอ + มีราคา      → ใช้เลย
-     *     ├─ เจอ + ไม่มีราคา   → findRefSuggestions() (logic เดียวกัน)
-     *     └─ ไม่เจอ (ใหม่)     → findRefSuggestions() (logic เดียวกัน)
-     * ================================================================ */
-    public function batchMatch(Request $request)
+    public function uploadPdf(string $quotationNo, Request $request)
     {
-        $customerCode = trim($request->input('customer_code', ''));
-        $items        = $request->input('items', []);
+        $request->validate(['pdf_base64' => 'required|string']);
+        $quotation = Quotation::where('quotation_no', $quotationNo)->firstOrFail();
+        try {
+            $pdfData = base64_decode($request->input('pdf_base64'), true);
+            if ($pdfData === false) return response()->json(['status' => 'error', 'message' => 'Invalid base64'], 400);
+            $file = 'quotations/' . $quotation->quotation_no . '.pdf';
+            Storage::disk('public')->put($file, $pdfData);
+            $quotation->update(['pdf_path' => $file]);
+            return response()->json(['status' => 'success', 'pdf_path' => $quotation->pdf_path]);
+        } catch (\Exception $e) {
+            Log::error('Upload PDF error: ' . $e->getMessage());
+            return response()->json(['status' => 'error', 'message' => $e->getMessage()], 500);
+        }
+    }
 
-        if (empty($customerCode) || empty($items)) {
-            return response()->json([]);
+    // ══════════════════════════════════════════════════
+    // OCR
+    // ══════════════════════════════════════════════════
+    public function ocrProcess(Request $request)
+    {
+        set_time_limit(0);
+        $request->validate(['files' => 'nullable|array|max:20', 'files.*' => 'file|max:51200', 'text' => 'nullable|string|max:100000']);
+        $textInput = trim($request->input('text', ''));
+        $files = $request->file('files', []);
+        if (empty($files) && empty($textInput)) return response()->json(['status' => 'error', 'message' => 'กรุณาอัพโหลดไฟล์หรือวางข้อความ'], 422);
+        $pythonUrl = config('services.ocr.url', 'http://localhost:8010');
+        $boundary = '----FormBoundary' . bin2hex(random_bytes(8));
+        $body = '';
+        foreach ($files as $file) {
+            $body .= "--{$boundary}\r\nContent-Disposition: form-data; name=\"files[]\"; filename=\"{$file->getClientOriginalName()}\"\r\nContent-Type: " . ($file->getMimeType() ?: 'application/octet-stream') . "\r\n\r\n" . file_get_contents($file->getRealPath()) . "\r\n";
+        }
+        $body .= "--{$boundary}\r\nContent-Disposition: form-data; name=\"text\"\r\n\r\n{$textInput}\r\n--{$boundary}--\r\n";
+        $ch = curl_init("{$pythonUrl}/api/ocr/process");
+        curl_setopt_array($ch, [CURLOPT_POST => true, CURLOPT_POSTFIELDS => $body, CURLOPT_HTTPHEADER => ["Content-Type: multipart/form-data; boundary={$boundary}"], CURLOPT_RETURNTRANSFER => true, CURLOPT_TIMEOUT => 60]);
+        $raw = curl_exec($ch); $status = curl_getinfo($ch, CURLINFO_HTTP_CODE); $curlErr = curl_error($ch); curl_close($ch);
+        if ($curlErr) return response()->json(['status' => 'error', 'message' => 'เชื่อมต่อ Python ไม่ได้: ' . $curlErr], 503);
+        $result = json_decode($raw, true);
+        if ($status !== 200 || empty($result['job_name'])) return response()->json(['status' => 'error', 'message' => 'Python ตอบกลับผิดพลาด: ' . substr($raw, 0, 200)], 502);
+        return response()->json(['status' => 'processing', 'job_name' => $result['job_name'], 'message' => 'กำลังประมวลผล...']);
+    }
+
+    public function ocrStatus(string $jobName)
+    {
+        $jobName = preg_replace('/[^a-zA-Z0-9_]/', '', $jobName);
+        $pythonUrl = config('services.ocr.url', 'http://localhost:8010');
+        $ch = curl_init("{$pythonUrl}/api/ocr/status/{$jobName}");
+        curl_setopt_array($ch, [CURLOPT_RETURNTRANSFER => true, CURLOPT_TIMEOUT => 10, CURLOPT_CONNECTTIMEOUT => 5]);
+        $raw = curl_exec($ch); $status = curl_getinfo($ch, CURLINFO_HTTP_CODE); curl_close($ch);
+        if (!$raw || $status !== 200) return response()->json(['status' => 'processing']);
+        $result = json_decode($raw, true);
+        if (($result['status'] ?? '') !== 'done') return response()->json(['status' => 'processing']);
+        return response()->json(['status' => 'done', 'job_name' => $jobName, 'table' => $result['table'] ?? [], 'ocr_text' => $result['ocr_text'] ?? '', 'message' => $result['message'] ?? 'OCR สำเร็จ']);
+    }
+
+    public function ocrDownload(string $type, string $filename)
+    {
+        if (!in_array($type, ['ocr', 'output'])) abort(404);
+        $path = storage_path("app/public/quotation/{$type}/" . basename($filename));
+        if (!file_exists($path)) abort(404);
+        return response()->download($path, basename($filename), ['Content-Type' => $type === 'ocr' ? 'text/plain' : 'text/csv']);
+    }
+
+    // ══════════════════════════════════════════════════
+    // CUSTOMER SEARCH + RELATED
+    // ══════════════════════════════════════════════════
+    public function searchCustomers(Request $request)
+    {
+        $q = trim($request->input('q', ''));
+        if (mb_strlen($q) < 2) return response()->json([]);
+        $rows = customers::where(function ($query) use ($q) {
+            $query->where('customer_name', 'LIKE', "%{$q}%")->orWhere('customer_code', 'LIKE', "%{$q}%")->orWhere('contact_name', 'LIKE', "%{$q}%");
+        })->limit(20)->get(['customer_code','customer_name','address','phone','tax_id','branch','branch_type','contact_name','email']);
+        return response()->json($rows->map(fn($c) => [
+            'customer_code' => $c->customer_code, 'customer_name' => $c->customer_name,
+            'address' => $c->address, 'phone' => $c->phone, 'tax_id' => $c->tax_id,
+            'branch' => $c->branch, 'branch_type' => $c->branch_type,
+            'contact_name' => $c->contact_name, 'email' => $c->email,
+        ]));
+    }
+
+    public function relatedCustomers(string $customerCode)
+    {
+        $dot = strpos($customerCode, '.');
+        $headCode = $dot !== false ? substr($customerCode, 0, $dot) : $customerCode;
+        $rows = DB::connection('pgsql')->table('fuzzy_so')
+            ->where(function($q) use ($headCode) {
+                $q->where('customer_code', $headCode)->orWhere('customer_code', 'LIKE', $headCode.'.%');
+            })
+            ->where('customer_code', '!=', $customerCode)
+            ->whereNotNull('customer_name')
+            ->select('customer_code','customer_name')
+            ->distinct()->orderBy('customer_code')->get();
+        return response()->json($rows->unique('customer_code')->values()->map(fn($c) => [
+            'customer_code' => $c->customer_code, 'customer_name' => $c->customer_name,
+        ]));
+    }
+
+    // ══════════════════════════════════════════════════
+    // ★ HELPER: เรียก Python CE rerank
+    // ══════════════════════════════════════════════════
+    private function callCeRerank(array $items, int $topK = 5, float $minScore = 1.0): array
+    {
+        $pythonUrl = config('services.ocr.url', 'http://localhost:8010');
+
+        $ch = curl_init("{$pythonUrl}/api/batch-rerank");
+        curl_setopt_array($ch, [
+            CURLOPT_POST           => true,
+            CURLOPT_POSTFIELDS     => json_encode([
+                'items'     => $items,
+                'top_k'     => $topK,
+                'min_score' => $minScore,
+            ]),
+            CURLOPT_HTTPHEADER     => ['Content-Type: application/json'],
+            CURLOPT_RETURNTRANSFER => true,
+            CURLOPT_TIMEOUT        => 180,
+            CURLOPT_CONNECTTIMEOUT => 5,
+        ]);
+
+        $raw    = curl_exec($ch);
+        $status = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+        $err    = curl_error($ch);
+        curl_close($ch);
+
+        if ($err || $status !== 200) {
+            Log::warning("[CE] rerank failed: HTTP={$status} err={$err}");
+            return [];
         }
 
-        $allRows = fuzzy_so::where('customer_code', $customerCode)
+        $resp = json_decode($raw, true);
+        $timing = $resp['timing_ms'] ?? '?';
+        $count  = count($resp['results'] ?? []);
+        Log::info("[CE] rerank OK: {$count} items in {$timing}ms");
+
+        return $resp['results'] ?? [];
+    }
+
+    // ══════════════════════════════════════════════════
+    // ★ HELPER: tokenize เบาๆ สำหรับ DB query เท่านั้น
+    //   (ไม่ใช้ scoring อีกต่อไป — CE ทำแทน)
+    // ══════════════════════════════════════════════════
+    private function extractSearchTerms(string $text): array
+    {
+        // ── sanitize UTF-8 ก่อน — ป้องกัน byte ไม่ครบ (Thai char split) ──
+        $text = mb_convert_encoding($text, 'UTF-8', 'UTF-8');
+        if (!mb_check_encoding($text, 'UTF-8')) {
+            $text = iconv('UTF-8', 'UTF-8//IGNORE', $text);
+        }
+        $text = str_replace(['"', "'", '`', '%', '_'], ' ', $text);
+        $raw  = preg_split('/[\s,\(\)\[\]:\/]+/u', $text, -1, PREG_SPLIT_NO_EMPTY);
+
+        $terms = [];
+        foreach ($raw as $t) {
+            $t = trim($t, '.-·•');
+            // ── ตรวจ UTF-8 valid ทุก term — ป้องกัน PG error ──
+            $t = mb_convert_encoding($t, 'UTF-8', 'UTF-8');
+            if (!mb_check_encoding($t, 'UTF-8')) continue;
+            // ตรวจว่าไม่มี byte เสีย (0xe0 0xb8 ไม่ครบ 3 bytes)
+            if (preg_match('/[\x80-\xff]/', $t) && !preg_match('//u', $t)) continue;
+            if (mb_strlen($t) < 3) continue;
+            if (preg_match('/^\d+(\.\d+)?$/', $t)) continue;
+            if (preg_match('/^(EA|PCS?|SET|BOX|ROL|KG|ชิ้น|อัน|เส้น|ม้วน|แผ่น|กล่อง|ชุด)\.?$/iu', $t)) continue;
+            $terms[] = $t;
+        }
+
+        $terms = array_values(array_unique($terms));
+        usort($terms, fn($a, $b) => mb_strlen($b) - mb_strlen($a));
+
+        return $terms;
+    }
+
+    // ══════════════════════════════════════════════════
+    // ★ HELPER: embed search / status / build
+    // ══════════════════════════════════════════════════
+    private function callEmbedSearch(array $queries, int $topK = 20, float $minScore = 30): array
+    {
+        $pythonUrl = config('services.ocr.url', 'http://localhost:8010');
+
+        $ch = curl_init("{$pythonUrl}/api/embed-search");
+        curl_setopt_array($ch, [
+            CURLOPT_POST           => true,
+            CURLOPT_POSTFIELDS     => json_encode([
+                'queries'   => $queries,
+                'top_k'     => $topK,
+                'min_score' => $minScore,
+            ]),
+            CURLOPT_HTTPHEADER     => ['Content-Type: application/json'],
+            CURLOPT_RETURNTRANSFER => true,
+            CURLOPT_TIMEOUT        => 30,
+            CURLOPT_CONNECTTIMEOUT => 5,
+        ]);
+
+        $raw    = curl_exec($ch);
+        $status = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+        $err    = curl_error($ch);
+        curl_close($ch);
+
+        if ($err || $status !== 200) {
+            Log::warning("[EMBED] search failed: HTTP={$status} err={$err}");
+            return [];
+        }
+
+        $resp = json_decode($raw, true);
+        return $resp['results'] ?? [];
+    }
+
+    private function ensureEmbedIndex(): bool
+    {
+        $pythonUrl = config('services.ocr.url', 'http://localhost:8010');
+        try {
+            $ch = curl_init("{$pythonUrl}/api/embed-status");
+            curl_setopt_array($ch, [
+                CURLOPT_RETURNTRANSFER => true,
+                CURLOPT_TIMEOUT        => 3,
+                CURLOPT_CONNECTTIMEOUT => 2,
+            ]);
+            $raw = curl_exec($ch);
+            curl_close($ch);
+            $status = json_decode($raw, true);
+            return ($status['index_count'] ?? 0) > 100;
+        } catch (\Exception $e) {
+            return false;
+        }
+    }
+
+    public function buildEmbedIndex()
+    {
+        $pythonUrl = config('services.ocr.url', 'http://localhost:8010');
+
+        $allNames = DB::connection('pgsql')->table('fuzzy_so')
+            ->whereNotNull('product_name')
+            ->where('product_name', '!=', '')
+            ->where('doc_date', '>=', now()->subYears(2))
+            ->distinct()
+            ->pluck('product_name')
+            ->take(100000)
+            ->toArray();
+
+        if (empty($allNames)) {
+            return response()->json(['status' => 'error', 'message' => 'no products']);
+        }
+
+        $ch = curl_init("{$pythonUrl}/api/embed-index");
+        curl_setopt_array($ch, [
+            CURLOPT_POST           => true,
+            CURLOPT_POSTFIELDS     => json_encode(['products' => $allNames]),
+            CURLOPT_HTTPHEADER     => ['Content-Type: application/json'],
+            CURLOPT_RETURNTRANSFER => true,
+            CURLOPT_TIMEOUT        => 5,
+        ]);
+        curl_exec($ch);
+        curl_close($ch);
+
+        return response()->json(['status' => 'building', 'count' => count($allNames)]);
+    }
+
+    // ══════════════════════════════════════════════════
+    // ★ FLOW 1: BATCH MATCH (💰 ราคา — fuzzy_so กลุ่มลูกค้า)
+    //   ใช้ CE rerank แทน tokenSimilarity()
+    // ══════════════════════════════════════════════════
+    public function batchMatch(Request $request)
+    {
+        set_time_limit(120);
+        $customerCodes = (array) $request->input('customer_codes', []);
+        $items         = (array) $request->input('items', []);
+
+        if (empty($customerCodes) || empty($items)) return response()->json([]);
+
+        // ── 1) Preload ทุก product ของ customer group ──
+        $allRows = fuzzy_so::whereIn('customer_code', $customerCodes)
             ->whereNotNull('product_name')
             ->where('product_name', '!=', '')
             ->orderByDesc('doc_date')
-            ->get(['item_new', 'product_name', 'unit_price', 'unit', 'doc_date']);
+            ->get(['product_name','unit_price','unit','doc_date','customer_code','so_no','customer_name']);
 
-        $results = [];
-        foreach ($items as $inputName) {
-            $keyword = trim($inputName);
+        Log::info("[batchMatch] codes=" . count($customerCodes) . " items=" . count($items) . " db_rows=" . $allRows->count());
 
-            $base = [
-                'input'           => $keyword,
-                'matched'         => false,
-                'item_new'        => null,
-                'product_name'    => null,
-                'unit_price'      => null,
-                'has_price'       => false,
-                'ref_suggestions' => [],
-                'unit'            => null,
-                'doc_date'        => null,
-                'is_new'          => true,
-                'match_keyword'   => null,
-            ];
+        // ── 2) Embed search — semantic candidates (ทำทีเดียวทั้ง batch) ──
+        $hasEmbed = $this->ensureEmbedIndex();
+        $embedResults = $hasEmbed ? $this->callEmbedSearch($items, 20, 30) : [];
 
+        // ── 3) สำหรับแต่ละ item: merge ILIKE + embed candidates ──
+        $ceItems   = [];
+        $candMeta  = [];
+
+        foreach ($items as $i => $itemName) {
+            $keyword = trim($itemName);
             if (mb_strlen($keyword) < 2) {
-                $results[] = $base;
+                $ceItems[]  = ['query' => $keyword, 'candidates' => []];
+                $candMeta[] = collect();
                 continue;
             }
 
-            // ★ ขั้น 1: ค้นในประวัติลูกค้ารายนี้ — pipeline กลาง
-            $m = $allRows->isNotEmpty() ? $this->matchOne($keyword, $allRows) : null;
-
-            if ($m) {
-                $match     = $m['row'];
-                $unitPrice = $match->unit_price !== null ? (float) $match->unit_price : null;
-                $hasPrice  = $unitPrice !== null && $unitPrice > 0;
-
-                // ★ matched แต่ไม่มีราคา → ค้นลูกค้าอื่นด้วย keyword + logic เดียวกัน
-                $refSuggestions = $hasPrice ? [] : $this->findRefSuggestions($keyword);
-
-                $results[] = [
-                    'input'           => $keyword,
-                    'matched'         => true,
-                    'item_new'        => $match->item_new,
-                    'product_name'    => $match->product_name,
-                    'unit_price'      => $unitPrice,
-                    'has_price'       => $hasPrice,
-                    'ref_suggestions' => $refSuggestions,
-                    'unit'            => $match->unit,
-                    'doc_date'        => $match->doc_date
-                        ? \Carbon\Carbon::parse($match->doc_date)->format('Y-m-d')
-                        : null,
-                    'is_new'          => false,
-                    'match_keyword'   => $m['keyword'],
-                    'similarity'      => $m['similarity'],
-                ];
-            } else {
-                // ★ สินค้าใหม่สำหรับลูกค้ารายนี้ → ค้นลูกค้าอื่นด้วย keyword + logic เดียวกัน
-                $base['ref_suggestions'] = $this->findRefSuggestions($keyword);
-                $results[] = $base;
+            $terms = $this->extractSearchTerms($keyword);
+            if (empty($terms)) {
+                $ceItems[]  = ['query' => $keyword, 'candidates' => []];
+                $candMeta[] = collect();
+                continue;
             }
+
+            // ★ FIX: ใช้ ALL terms (ไม่ใช่แค่ top 2)
+            $filtered = $allRows->filter(function ($row) use ($terms) {
+                $nameLower = mb_strtolower($row->product_name);
+                foreach ($terms as $tok) {
+                    if (mb_strpos($nameLower, mb_strtolower($tok)) !== false) return true;
+                }
+                return false;
+            });
+
+            // ★ NEW: merge embed search results (เฉพาะที่อยู่ใน customer group)
+            $embedHits = $embedResults[$i] ?? [];
+            foreach ($embedHits as $hit) {
+                $embedName = $hit['product_name'] ?? '';
+                if (!$embedName) continue;
+                $matchedRows = $allRows->where('product_name', $embedName);
+                if ($matchedRows->isNotEmpty()) {
+                    $filtered = $filtered->merge($matchedRows);
+                }
+            }
+
+            // ★ FIX: เพิ่มจาก 15 → 20 candidates
+            $uniq      = $filtered->unique('product_name')->take(20);
+            $candNames = $uniq->pluck('product_name')->values()->toArray();
+
+            $ceItems[]  = ['query' => $keyword, 'candidates' => $candNames];
+            $candMeta[] = $uniq->values();
+        }
+        DB::disconnect('pgsql');
+        DB::disconnect();
+
+        // ── 4) ส่ง CE rerank batch ──
+        $ceResults = $this->callCeRerank($ceItems, 3, self::CE_MIN_SCORE);
+
+        // ── 5) Map CE results → full product data ──
+        $results = [];
+        foreach ($items as $i => $itemName) {
+            $ranked = $ceResults[$i] ?? [];
+            $meta   = $candMeta[$i] ?? collect();
+
+            if (empty($ranked) || $meta->isEmpty()) {
+                $results[] = ['input' => $itemName, 'matches' => []];
+                continue;
+            }
+
+            $matches = [];
+            $seen = [];
+            foreach ($ranked as $r) {
+                $candIdx = $r['index'] ?? -1;
+                if ($candIdx < 0 || !isset($meta[$candIdx])) continue;
+
+                $matchedName = $meta[$candIdx]->product_name;
+
+                $rows = $allRows->where('product_name', $matchedName)
+                    ->sortByDesc('doc_date');
+
+                foreach ($rows as $row) {
+                    $key = $row->product_name . '|' . ((float)$row->unit_price) . '|' . $row->so_no;
+                    if (isset($seen[$key])) continue;
+                    $seen[$key] = true;
+
+                    $matches[] = [
+                        'product_name'  => $row->product_name,
+                        'unit_price'    => $row->unit_price !== null ? (float) $row->unit_price : null,
+                        'unit'          => $row->unit,
+                        'doc_date'      => $row->doc_date ? $row->doc_date->format('d/m/Y') : '-',
+                        'customer_code' => $row->customer_code,
+                        'customer_name' => $row->customer_name,
+                        'so_no'         => $row->so_no,
+                        'similarity'    => $r['ce_score'],
+                        'matched_tokens'=> ['CE ' . $r['ce_score'] . '%'],
+                    ];
+
+                    if (count($matches) >= 3) break 2;
+                }
+            }
+
+            $results[] = ['input' => $itemName, 'matches' => array_slice($matches, 0, 3)];
         }
 
         return response()->json($results);
     }
 
-    /* ================================================================
-     *  ★★★ Matching pipeline กลาง ★★★
-     *  ใช้ทั้งค้นลูกค้ารายนี้ + ลูกค้าอื่น (logic เดียวกันเป๊ะ)
-     *
-     *  scored → reverse → fuzzy → similarity gate ≥ 50
-     *  คืน null ถ้าไม่ผ่านขั้นใดขั้นหนึ่ง
-     * ================================================================ */
-    private function matchOne(string $keyword, $rows): ?array
-    {
-        $match   = null;
-        $matchKw = '';
+    // ══════════════════════════════════════════════════
+    // ★ FLOW 2: AI FALLBACK MATCH (🤖)
+    //   CE rerank candidates ก่อน → ส่ง top-5 ให้ Qwen
+    // ══════════════════════════════════════════════════
+   public function aiFallbackMatch(Request $request)
+{
+    set_time_limit(120);
+    $items         = (array) $request->input('items', []);
+    $customerCodes = (array) $request->input('customer_codes', []);
+    $type          = $request->input('type', 'price');
+    if (empty($items)) return response()->json(['status' => 'done', 'results' => []]);
 
-        // ===== ขั้น 1: Scored Match =====
-        $scored = $this->scoredMatch($keyword, $rows);
-        if ($scored) {
-            $match   = $scored['row'];
-            $matchKw = $scored['keywords'];
-        }
+    $pythonUrl = config('services.ocr.url', 'http://localhost:8010');
 
-        // ===== ขั้น 2: Reverse Exact =====
-        if (!$match) {
-            $reversed = $this->reverseMatch($keyword, $rows);
-            if ($reversed) {
-                $match   = $reversed['row'];
-                $matchKw = $reversed['keyword'];
-            }
-        }
+    // ── 1) build candidates (DB) — เหมือนเดิม แต่เก็บแค่ "ชื่อ" ไว้ cache ──
+    $batchPayload = [];
+    $candNamesPerItem = [];
+    foreach ($items as $item) {
+        $keyword = trim($item['name'] ?? '');
+        $terms   = mb_strlen($keyword) >= 2 ? $this->extractSearchTerms($keyword) : [];
+        if (empty($terms)) { $batchPayload[] = ['keyword'=>$keyword,'candidates'=>[]]; $candNamesPerItem[] = []; continue; }
 
-        // ===== ขั้น 3: Fuzzy Reverse (Levenshtein ≥ 80%) =====
-        if (!$match) {
-            $fuzzy = $this->fuzzyReverseMatch($keyword, $rows);
-            if ($fuzzy) {
-                $match   = $fuzzy['row'];
-                $matchKw = $fuzzy['keyword'];
-            }
-        }
+        $candidates = $type === 'price'
+            ? $this->buildAiPriceCandidates($keyword, $terms, $customerCodes)
+            : $this->buildAiDocCandidates($keyword, $terms);
 
-        if (!$match) return null;
-
-        // ===== ขั้น 4: Similarity Gate ≥ 50% =====
-        $sim = $this->similarityCheck($keyword, $match->product_name);
-        if ($sim < 50) return null;
-
-        return ['row' => $match, 'keyword' => $matchKw, 'similarity' => $sim];
+        $candNames = $candidates->map(fn($c) => $c->product_name)->values()->toArray();
+        $batchPayload[]     = ['keyword'=>$keyword, 'candidates'=>array_map(fn($n)=>['product_name'=>$n], $candNames)];
+        $candNamesPerItem[] = $candNames;
     }
 
-    /* ================================================================
-     *  ★★★ ค้นราคาอ้างอิงจากลูกค้าอื่น ★★★
-     *  ใช้ keyword เดียวกัน + matching logic เดียวกับค้นลูกค้ารายนี้
-     *
-     *  1) Prefilter: ดึง candidate rows ด้วย keyword (performance)
-     *  2) Group ตามบริษัท → run matchOne() ต่อบริษัท
-     *  3) เรียงวันที่ล่าสุด → เอา 3 บริษัท
-     * ================================================================ */
-    private function findRefSuggestions(string $keyword): array
+    // ── ปล่อย DB ก่อนคุย Python ──
+    DB::disconnect('pgsql'); DB::disconnect();
+
+    $nonEmpty = array_filter($batchPayload, fn($p) => !empty($p['candidates']));
+    if (empty($nonEmpty)) {
+        return response()->json(['status'=>'done', 'results'=>array_map(fn()=>['matches'=>[]], $items)]);
+    }
+
+    $resp = $this->postJson("{$pythonUrl}/api/match-product", ['items'=>$batchPayload], 120);
+
+    // Python คืน results ตรงๆ (≤5 รายการ) → map เลย
+    if (isset($resp['results'])) {
+        return response()->json(['status'=>'done',
+            'results'=>$this->mapAiResults($items, $resp['results'], $candNamesPerItem, $type)]);
+    }
+
+    // Python คืน job_id → เก็บ candidate ไว้ใน cache แล้วให้ browser มา poll
+    if (isset($resp['job_id'])) {
+        Cache::put("aimatch:{$resp['job_id']}", [
+            'items'=>$items, 'candNames'=>$candNamesPerItem, 'type'=>$type,
+        ], now()->addMinutes(10));
+        return response()->json(['status'=>'processing', 'job_id'=>$resp['job_id']]);
+    }
+
+    return response()->json(['status'=>'done', 'results'=>array_map(fn()=>['matches'=>[]], $items)]);
+}
+
+    // ── AI candidates helpers ──
+    private function buildAiPriceCandidates(string $keyword, array $terms, array $customerCodes): \Illuminate\Support\Collection
     {
-        // --- 1) Prefilter candidate rows จากทุกลูกค้า ---
-        $searchKeywords = $this->extractKeywords($keyword);
-        $candidates = collect();
+        usort($terms, fn($a, $b) => mb_strlen($b) - mb_strlen($a));
 
-        foreach ($searchKeywords as $kw) {
-            if (mb_strlen($kw) < 3) continue;
+        // ★ FIX: merge results จากทุก term (ไม่ break ที่ตัวแรก)
+        $allFound = collect();
 
-            $found = fuzzy_so::where('product_name', 'ILIKE', '%' . $kw . '%')
-                ->whereNotNull('unit_price')
-                ->where('unit_price', '>', 0)
-                ->orderByDesc('doc_date')
-                ->limit(500)
-                ->get(['unit_price', 'so_no', 'customer_code', 'customer_name',
-                       'doc_date', 'product_name', 'item_new', 'unit']);
+        foreach ($terms as $term) {
+            if (mb_strlen($term) < 3) continue;
+            if (!mb_check_encoding($term, 'UTF-8') || !preg_match('//u', $term)) continue;
+            try {
+                $found = fuzzy_so::where('product_name', 'ILIKE', '%' . $term . '%')
+                    ->whereNotNull('unit_price')->where('unit_price', '>', 0)
+                    ->orderByDesc('doc_date')->limit(100)
+                    ->get(['product_name','unit_price','unit','doc_date','customer_code','so_no','customer_name']);
 
-            if ($found->isNotEmpty()) {
-                $candidates = $found;
-                break;
+                if ($found->isNotEmpty()) {
+                    $allFound = $allFound->merge($found);
+                }
+            } catch (\Exception $e) {
+                Log::warning('[aiPriceCand] error: ' . mb_substr($e->getMessage(), 0, 80));
+                continue;
+            }
+
+            // หยุดเมื่อมี candidates เพียงพอ (ไม่ต้องค้นเพิ่ม)
+            if ($allFound->unique('product_name')->count() >= 20) break;
+        }
+
+        // ★ NEW: เพิ่ม embed search เป็น fallback
+        if ($allFound->unique('product_name')->count() < 5 && $this->ensureEmbedIndex()) {
+            $embedHits = $this->callEmbedSearch([$keyword], 15, 25);
+            $embedNames = collect($embedHits[0] ?? [])->pluck('product_name')->filter()->toArray();
+            if (!empty($embedNames)) {
+                try {
+                    $embedRows = fuzzy_so::whereIn('product_name', $embedNames)
+                        ->whereNotNull('unit_price')->where('unit_price', '>', 0)
+                        ->orderByDesc('doc_date')->limit(50)
+                        ->get(['product_name','unit_price','unit','doc_date','customer_code','so_no','customer_name']);
+                    $allFound = $allFound->merge($embedRows);
+                } catch (\Exception $e) { /* skip */ }
             }
         }
 
-        if ($candidates->isEmpty()) return [];
+        if ($allFound->isEmpty()) return collect();
+
+        return $allFound->unique('product_name')->take(15)->values();
+    }
+
+    private function buildAiDocCandidates(string $keyword, array $terms): \Illuminate\Support\Collection
+    {
+        usort($terms, fn($a, $b) => mb_strlen($b) - mb_strlen($a));
+
+        // ★ FIX: merge results จากทุก term
+        $allMerged = collect();
+
+        foreach ($terms as $term) {
+            if (mb_strlen($term) < 3) continue;
+            if (!mb_check_encoding($term, 'UTF-8') || !preg_match('//u', $term)) continue;
+            try {
+                $hq = historyquotation::where('product', 'ILIKE', '%' . $term . '%')
+                    ->orderByDesc('quotation_date')->limit(30)->get(['product', 'quotation_date']);
+                $qi = QuotationItem::join('quotations', 'quotation_items.quotation_no', '=', 'quotations.quotation_no')
+                    ->where('quotation_items.description', 'LIKE', '%' . $term . '%')
+                    ->orderByDesc('quotations.doc_date')->limit(30)
+                    ->select(['quotation_items.description as product', 'quotations.doc_date as quotation_date'])->get();
+
+                $allMerged = $allMerged->merge($hq)->merge($qi);
+            } catch (\Exception $e) {
+                Log::warning('[aiDocCand] error: ' . $e->getMessage());
+            }
+
+            if ($allMerged->unique('product')->count() >= 10) break;
+        }
+
+        if ($allMerged->isEmpty()) return collect();
+
+        return $allMerged->unique('product')->take(10)->map(fn($r) => (object) [
+            'product_name' => $r->product,
+            'doc_date'     => $r->quotation_date,
+        ])->values();
+    }
+public function aiFallbackStatus(string $jobId)
+{
+    $jobId = preg_replace('/[^a-zA-Z0-9\-]/', '', $jobId);
+    $pythonUrl = config('services.ocr.url', 'http://localhost:8010');
+    $poll = $this->getJson("{$pythonUrl}/api/match-status/{$jobId}", 10);
+
+    if (($poll['status'] ?? '') !== 'done') return response()->json(['status'=>'processing']);
+
+    $cached = Cache::pull("aimatch:{$jobId}");
+    if (!$cached) return response()->json(['status'=>'done', 'results'=>[]]);
+
+    return response()->json(['status'=>'done',
+        'results'=>$this->mapAiResults($cached['items'], $poll['results'] ?? [], $cached['candNames'], $cached['type'])]);
+}
+
+private function mapAiResults(array $items, array $llmResults, array $candNamesPerItem, string $type): array
+{
+    $output = [];
+    foreach ($items as $j => $item) {
+        $keyword    = trim($item['name'] ?? '');
+        $coreTokens = array_slice($this->extractSearchTerms($keyword), 0, 3);
+        $llm        = $llmResults[$j] ?? ['index'=>-1];
+        $matchedIdx = (int) ($llm['index'] ?? -1);
+        $ceScore    = (float) ($llm['ce_score'] ?? 0);
+        $source     = $llm['source'] ?? 'unknown';
+        $candNames  = $candNamesPerItem[$j] ?? [];
+
+        if ($matchedIdx < 0 || !isset($candNames[$matchedIdx])) {
+            $output[] = ['matches'=>[], 'search_tokens'=>$coreTokens, 'candidates'=>$candNames,
+                         'llm_picked'=>-1, 'ce_score'=>$ceScore, 'source'=>$source];
+            continue;
+        }
+
+        $matchedName = $candNames[$matchedIdx];
+        $label = "🤖 CE:{$ceScore}% ({$source})";
+
+        if ($type === 'price') {
+            $rows = fuzzy_so::whereIn('product_name', $candNames)
+                ->whereNotNull('unit_price')->where('unit_price', '>', 0)
+                ->orderByDesc('doc_date')->limit(50)
+                ->get(['product_name','unit_price','unit','doc_date','customer_code','so_no','customer_name'])
+                ->sortBy(fn($r) => [$r->product_name === $matchedName ? 0 : 1, $r->doc_date ? -strtotime($r->doc_date) : 0]);
+            $matches = $rows->unique('so_no')->take(3)->map(fn($r) => [
+                'product_name'=>$r->product_name, 'unit_price'=>(float)$r->unit_price, 'unit'=>$r->unit,
+                'doc_date'=>$r->doc_date ? $r->doc_date->format('d/m/Y') : '-',
+                'customer_code'=>$r->customer_code, 'customer_name'=>$r->customer_name, 'so_no'=>$r->so_no,
+                'similarity'=>$ceScore, 'matched_tokens'=>[$label],
+            ])->values()->toArray();
+        } else {
+            $matches = $this->searchQuotationHistory($matchedName, 3);
+        }
+
+        $output[] = ['matches'=>$matches, 'search_tokens'=>$coreTokens, 'candidates'=>$candNames,
+                     'llm_picked'=>$matchedIdx, 'llm_matched'=>$matchedName, 'ce_score'=>$ceScore, 'source'=>$source];
+    }
+    return $output;
+}
+    // ══════════════════════════════════════════════════
+    // ★ FLOW 3: QUOTATION HISTORY (📁 เอกสาร)
+    //   ใช้ CE rerank แทน tokenSimilarity()
+    // ══════════════════════════════════════════════════
+    public function quotationHistory(Request $request)
+    {
+        $keyword = trim($request->input('keyword', ''));
+        return response()->json($this->searchQuotationHistory($keyword));
+    }
+
+    public function batchQuotationHistory(Request $request)
+    {
+        set_time_limit(120);
+        $items = (array) $request->input('items', []);
+        if (empty($items)) return response()->json([]);
+
+        // ★ NEW: embed search ทีเดียวทั้ง batch
+        $hasEmbed = $this->ensureEmbedIndex();
+        $embedResults = $hasEmbed ? $this->callEmbedSearch($items, 10, 30) : [];
+
+        // ── 1) ดึง candidates ทั้งหมดจาก DB ──
+        $ceItems  = [];
+        $rowsMeta = [];
+
+        foreach ($items as $idx => $itemName) {
+            $keyword = trim((string) $itemName);
+            if (mb_strlen($keyword) < 2) {
+                $ceItems[]  = ['query' => $keyword, 'candidates' => []];
+                $rowsMeta[] = ['hq' => collect(), 'qi' => collect()];
+                continue;
+            }
+
+            $terms = $this->extractSearchTerms($keyword);
+            if (empty($terms)) {
+                $ceItems[]  = ['query' => $keyword, 'candidates' => []];
+                $rowsMeta[] = ['hq' => collect(), 'qi' => collect()];
+                continue;
+            }
+
+            // ★ FIX: ใช้ ALL terms (ไม่ slice)
+            $searchTerms = array_filter($terms, fn($t) =>
+                mb_check_encoding($t, 'UTF-8') && preg_match('//u', $t)
+            );
+            if (empty($searchTerms)) {
+                $ceItems[]  = ['query' => $keyword, 'candidates' => []];
+                $rowsMeta[] = ['hq' => collect(), 'qi' => collect()];
+                continue;
+            }
+
+            // ── query history_quotation (PG) ──
+            $hqRows = collect();
+            try {
+                $hqQuery = historyquotation::query();
+                $hqQuery->where(function ($q) use ($searchTerms) {
+                    foreach ($searchTerms as $tok) $q->orWhere('product', 'ILIKE', '%' . $tok . '%');
+                });
+                $hqRows = $hqQuery->orderByDesc('quotation_date')->limit(50)->get();
+            } catch (\Exception $e) { /* skip */ }
+
+            // ── query quotation_items (MySQL) ──
+            $qiRows = collect();
+            try {
+                $qiQuery = QuotationItem::join('quotations', 'quotation_items.quotation_no', '=', 'quotations.quotation_no');
+                $qiQuery->where(function ($q) use ($searchTerms) {
+                    foreach ($searchTerms as $tok) $q->orWhere('quotation_items.description', 'LIKE', '%' . $tok . '%');
+                });
+                $qiRows = $qiQuery->orderByDesc('quotations.doc_date')->limit(50)
+                    ->select([
+                        'quotations.quotation_no', 'quotations.doc_date as raw_date',
+                        'quotations.customer_company', 'quotation_items.description as product',
+                        'quotation_items.unit', 'quotation_items.unit_price as price_per_unit',
+                    ])->get();
+            } catch (\Exception $e) { /* skip */ }
+
+            // ── merge + unique product names ──
+            $allProducts = $hqRows->pluck('product')
+                ->merge($qiRows->pluck('product'))
+                ->filter()->unique()->values();
+
+            // ★ NEW: merge embed search results
+            $embedHits = $embedResults[$idx] ?? [];
+            foreach ($embedHits as $hit) {
+                $embedName = $hit['product_name'] ?? '';
+                if ($embedName && !$allProducts->contains($embedName)) {
+                    $allProducts->push($embedName);
+                }
+            }
+
+            $ceItems[]  = ['query' => $keyword, 'candidates' => $allProducts->values()->toArray()];
+            $rowsMeta[] = ['hq' => $hqRows, 'qi' => $qiRows];
+        }
+        DB::disconnect('pgsql');
+        DB::disconnect();
+
+        // ── 2) CE rerank batch ──
+        $ceResults = $this->callCeRerank($ceItems, 5, self::CE_MIN_SCORE);
+
+        // ── 3) Map CE results → full quotation data ──
+        $results = [];
+        foreach ($items as $i => $itemName) {
+            $ranked = $ceResults[$i] ?? [];
+            $meta   = $rowsMeta[$i] ?? [];
+            $hqRows = $meta['hq'] ?? collect();
+            $qiRows = $meta['qi'] ?? collect();
+
+            if (empty($ranked)) {
+                $results[] = ['matches' => []];
+                continue;
+            }
+
+            $qtNos = $hqRows->pluck('quotation_no')->unique()->values()->toArray();
+            $companyMap = !empty($qtNos)
+                ? Quotation::whereIn('quotation_no', $qtNos)->pluck('customer_company', 'quotation_no')->toArray()
+                : [];
+
+            $matches = [];
+            $seen = [];
+
+            foreach ($ranked as $r) {
+                $candName = $r['candidate'] ?? '';
+                $ceScore  = $r['ce_score'] ?? 0;
+                if (!$candName) continue;
+
+                foreach ($hqRows->where('product', $candName) as $row) {
+                    $dedupKey = mb_strtolower($row->product) . '|' . round((float)$row->price_per_unit, 2);
+                    if (isset($seen[$dedupKey])) continue;
+                    $seen[$dedupKey] = true;
+
+                    $matches[] = [
+                        'quotation_no'     => $row->quotation_no,
+                        'quotation_date'   => $row->quotation_date ? $row->quotation_date->format('d/m/Y') : '-',
+                        'customer_company' => $companyMap[$row->quotation_no] ?? '-',
+                        'product'          => $row->product,
+                        'unit'             => $row->unit,
+                        'price_per_unit'   => (float) $row->price_per_unit,
+                        'similarity'       => $ceScore,
+                        'matched_tokens'   => ['CE ' . $ceScore . '%'],
+                    ];
+                    if (count($matches) >= 3) break 2;
+                }
+
+                foreach ($qiRows->where('product', $candName) as $row) {
+                    $dedupKey = mb_strtolower($row->product) . '|' . round((float)$row->price_per_unit, 2);
+                    if (isset($seen[$dedupKey])) continue;
+                    $seen[$dedupKey] = true;
+
+                    $matches[] = [
+                        'quotation_no'     => $row->quotation_no,
+                        'quotation_date'   => $row->raw_date ? \Carbon\Carbon::parse($row->raw_date)->format('d/m/Y') : '-',
+                        'customer_company' => $row->customer_company ?? '-',
+                        'product'          => $row->product,
+                        'unit'             => $row->unit,
+                        'price_per_unit'   => (float) $row->price_per_unit,
+                        'similarity'       => $ceScore,
+                        'matched_tokens'   => ['CE ' . $ceScore . '%'],
+                    ];
+                    if (count($matches) >= 3) break 2;
+                }
+            }
+
+            $results[] = ['matches' => array_slice($matches, 0, 3)];
+        }
+
+        return response()->json($results);
+    }
+
+    // ── searchQuotationHistory (single item) — ใช้ใน AI fallback doc type ──
+    private function searchQuotationHistory(string $keyword, int $limit = 10): array
+    {
+        $keyword = trim($keyword);
+        if (mb_strlen($keyword) < 2) return [];
+
+        $terms = $this->extractSearchTerms($keyword);
+        if (empty($terms)) return [];
+
+        $searchTerms = array_slice($terms, 0, 3);
+        $searchTerms = array_filter($searchTerms, fn($t) => mb_check_encoding($t, 'UTF-8') && preg_match('//u', $t));
+        if (empty($searchTerms)) return [];
+
+        $hqRows = collect();
+        try {
+            $hqQuery = historyquotation::query();
+            $hqQuery->where(function ($q) use ($searchTerms) {
+                foreach ($searchTerms as $tok) $q->orWhere('product', 'ILIKE', '%' . $tok . '%');
+            });
+            $hqRows = $hqQuery->orderByDesc('quotation_date')->limit(30)->get();
+        } catch (\Exception $e) { /* skip */ }
+
+        $qiRows = collect();
+        try {
+            $qiQuery = QuotationItem::join('quotations', 'quotation_items.quotation_no', '=', 'quotations.quotation_no');
+            $qiQuery->where(function ($q) use ($searchTerms) {
+                foreach ($searchTerms as $tok) $q->orWhere('quotation_items.description', 'LIKE', '%' . $tok . '%');
+            });
+            $qiRows = $qiQuery->orderByDesc('quotations.doc_date')->limit(30)
+                ->select([
+                    'quotations.quotation_no', 'quotations.doc_date as raw_date',
+                    'quotations.customer_company', 'quotation_items.description as product',
+                    'quotation_items.unit', 'quotation_items.unit_price as price_per_unit',
+                ])->get();
+        } catch (\Exception $e) { /* skip */ }
+
+        // ── CE rerank ──
+        $allProducts = $hqRows->pluck('product')
+            ->merge($qiRows->pluck('product'))
+            ->filter()->unique()->values()->toArray();
+
+        if (empty($allProducts)) return [];
+
+        $ceResults = $this->callCeRerank(
+            [['query' => $keyword, 'candidates' => $allProducts]],
+            $limit, self::CE_MIN_SCORE
+        );
+
+        $ranked = $ceResults[0] ?? [];
+        if (empty($ranked)) return [];
+
+        $qtNos = $hqRows->pluck('quotation_no')->unique()->values()->toArray();
+        $companyMap = !empty($qtNos)
+            ? Quotation::whereIn('quotation_no', $qtNos)->pluck('customer_company', 'quotation_no')->toArray()
+            : [];
 
         $matches = [];
-        foreach ($candidates->groupBy('customer_code') as $custCode => $rows) {
-            $m = $this->matchOne($keyword, $rows);
-            if ($m) {
+        $seen = [];
+
+        foreach ($ranked as $r) {
+            $candName = $r['candidate'] ?? '';
+            $ceScore  = $r['ce_score'] ?? 0;
+            if (!$candName) continue;
+
+            foreach ($hqRows->where('product', $candName) as $row) {
+                $dk = mb_strtolower($row->product) . '|' . round((float)$row->price_per_unit, 2);
+                if (isset($seen[$dk])) continue;
+                $seen[$dk] = true;
                 $matches[] = [
-                    'row'     => $m['row'],
-                    'keyword' => $m['keyword'],
+                    'quotation_no' => $row->quotation_no,
+                    'quotation_date' => $row->quotation_date ? $row->quotation_date->format('d/m/Y') : '-',
+                    'customer_company' => $companyMap[$row->quotation_no] ?? '-',
+                    'product' => $row->product, 'unit' => $row->unit,
+                    'price_per_unit' => (float) $row->price_per_unit,
+                    'similarity' => $ceScore, 'matched_tokens' => ['CE ' . $ceScore . '%'],
+                ];
+            }
+
+            foreach ($qiRows->where('product', $candName) as $row) {
+                $dk = mb_strtolower($row->product) . '|' . round((float)$row->price_per_unit, 2);
+                if (isset($seen[$dk])) continue;
+                $seen[$dk] = true;
+                $matches[] = [
+                    'quotation_no' => $row->quotation_no,
+                    'quotation_date' => $row->raw_date ? \Carbon\Carbon::parse($row->raw_date)->format('d/m/Y') : '-',
+                    'customer_company' => $row->customer_company ?? '-',
+                    'product' => $row->product, 'unit' => $row->unit,
+                    'price_per_unit' => (float) $row->price_per_unit,
+                    'similarity' => $ceScore, 'matched_tokens' => ['CE ' . $ceScore . '%'],
                 ];
             }
         }
-        if (empty($matches)) return [];
-            return collect($matches)
-                ->sortByDesc(fn($m) => $m['row']->doc_date ? strtotime($m['row']->doc_date) : 0)
-                ->take(3)
-                ->values()
-                ->map(fn($m) => [
-                    'unit_price'     => (float) $m['row']->unit_price,
-                    'so_no'          => $m['row']->so_no,
-                    'customer_name'  => $m['row']->customer_name,
-                    'doc_date'       => $m['row']->doc_date
-                        ? \Carbon\Carbon::parse($m['row']->doc_date)->format('d/m/Y')
-                        : '-',
-                    'product_name'   => $m['row']->product_name,
-                    'match_keyword'  => $m['keyword'],
-                ])
-                ->toArray();
-    }
 
-    /* ================================================================
-     *  ★ Scored Match — จับหลาย keyword พร้อมกัน
-     *
-     *  แยก token จาก input → วน loop ทุก DB row
-     *  → นับว่า row นั้น hit กี่ token
-     *  → model token: weight = ความยาว
-     *  → brand token: weight = 1
-     *  → เอา row ที่ score สูงสุด
-     *
-     *  เงื่อนไขผ่าน:
-     *  - มี model token → score ≥ 5 (model ยาวตัวเดียวก็พอ)
-     *  - ไม่มี model → ต้อง hit brand ≥ 2 ตัว (ตัวเดียวกว้างเกิน)
-     * ================================================================ */
-    private function scoredMatch(string $keyword, $allRows): ?array
-    {
-        $searchTokens = $this->extractAllSearchTokens($keyword);
-        if (empty($searchTokens)) return null;
-
-        $hasModel = false;
-        foreach ($searchTokens as $t) {
-            if ($t['is_model']) { $hasModel = true; break; }
-        }
-
-        $bestRow    = null;
-        $bestScore  = 0;
-        $bestHits   = 0;
-        $bestKws    = '';
-        $bestDate   = null;   // ★ เก็บวันที่ของ best row
-
-        foreach ($allRows as $row) {
-            $nameLower   = mb_strtolower($row->product_name);
-            $score       = 0;
-            $hits        = 0;
-            $hitKeywords = [];
-
-            foreach ($searchTokens as $token) {
-                $tokenLower = mb_strtolower($token['text']);
-                if (mb_strpos($nameLower, $tokenLower) !== false) {
-                    $weight = $token['is_model'] ? mb_strlen($token['text']) : 1;
-                    $score += $weight;
-                    $hits++;
-                    $hitKeywords[] = $token['text'];
-                }
-            }
-
-            if ($score <= 0) continue;
-
-            // ★ score ใกล้เคียง ±1 → เลือก row ใหม่กว่า
-            $shouldReplace = false;
-
-            if (!$bestRow) {
-                $shouldReplace = true;
-            } else {
-                $diff = $score - $bestScore;
-
-                if ($diff > 1) {
-                    // score สูงกว่าชัดเจน (ห่าง > 1) → แทนที่
-                    $shouldReplace = true;
-                } elseif ($diff >= -1) {
-                    // score ใกล้เคียง (±1) → เลือก row ที่วันที่ใหม่กว่า
-                    $rowDate = $row->doc_date ? strtotime($row->doc_date) : 0;
-                    $bestDt  = $bestDate     ? strtotime($bestDate)      : 0;
-                    if ($rowDate > $bestDt) {
-                        $shouldReplace = true;
-                    }
-                }
-                // diff < -1 → row เดิม score สูงกว่าชัดเจน → ไม่แทนที่
-            }
-
-            if ($shouldReplace) {
-                $bestScore = $score;
-                $bestHits  = $hits;
-                $bestRow   = $row;
-                $bestKws   = implode(' + ', $hitKeywords);
-                $bestDate  = $row->doc_date;
-            }
-        }
-
-if ($bestRow) {
-    // ★ ตรวจว่า model token ตัวไหน hit จริง
-    $modelActuallyHit = false;
-    $shortestHitModel = 999;
-    if ($hasModel) {
-        $bestNameLower = mb_strtolower($bestRow->product_name);
-        foreach ($searchTokens as $t) {
-            if ($t['is_model'] && mb_strpos($bestNameLower, mb_strtolower($t['text'])) !== false) {
-                $modelActuallyHit = true;
-                $shortestHitModel = min($shortestHitModel, mb_strlen($t['text']));
-            }
-        }
-    }
-
-    // ★ threshold ยืดหยุ่นตามความยาว model ที่สั้นที่สุดที่ hit
-    //   model ยาว ≥5 ตัว → score ≥ 5 (เดิม)
-    //   model สั้น 3-4 ตัว → score ≥ 3 (ผ่อนปรน)
-    $minScore = $modelActuallyHit ? min(5, max(3, $shortestHitModel)) : 5;
-
-    if ($hasModel && $modelActuallyHit && $bestScore >= $minScore) {
-        return ['row' => $bestRow, 'keywords' => $bestKws];
-    }
-    // ★ model ไม่ hit เลย → fallback brand logic
-    if ((!$hasModel || !$modelActuallyHit) && $bestHits >= 2) {
-        return ['row' => $bestRow, 'keywords' => $bestKws];
-    }
-}
-        return null;
-    }
-
-    /* ================================================================
-     *  Reverse Match Exact
-     * ================================================================ */
-    private function reverseMatch(string $keyword, $allRows): ?array
-    {
-        $inputLower = mb_strtolower($keyword);
-        $bestRow    = null;
-        $bestLen    = 0;
-        $bestKw     = '';
-
-        foreach ($allRows as $row) {
-            foreach ($this->extractModels($row->product_name) as $model) {
-                $modelLower = mb_strtolower($model);
-                if (mb_strlen($modelLower) >= 3
-                    && mb_strpos($inputLower, $modelLower) !== false
-                    && mb_strlen($model) > $bestLen
-                ) {
-                    $bestLen = mb_strlen($model);
-                    $bestRow = $row;
-                    $bestKw  = $model;
-                }
-            }
-        }
-
-        return $bestRow ? ['row' => $bestRow, 'keyword' => $bestKw] : null;
-    }
-
-    /* ================================================================
-     *  Fuzzy Reverse Match — Levenshtein ≥ 80%
-     * ================================================================ */
-    private function fuzzyReverseMatch(string $keyword, $allRows): ?array
-    {
-        $inputModels = $this->extractModels($keyword);
-        if (empty($inputModels)) return null;
-
-        $bestRow = null;
-        $bestSim = 0;
-        $bestKw  = '';
-
-        foreach ($allRows as $row) {
-            foreach ($this->extractModels($row->product_name) as $dModel) {
-                foreach ($inputModels as $iModel) {
-                    $sim = $this->levenshteinPercent($iModel, $dModel);
-                    if ($sim >= 80 && $sim > $bestSim) {
-                        $bestSim = $sim;
-                        $bestRow = $row;
-                        $bestKw  = $iModel . ' ≈ ' . $dModel . ' (' . round($sim) . '%)';
-                    }
-                }
-            }
-        }
-
-        return $bestRow ? ['row' => $bestRow, 'keyword' => $bestKw] : null;
-    }
-
-    /* ================================================================
-     *  ★ Similarity Gate ≥ 50%
-     *
-     *  มี model ทั้ง 2 ฝั่ง → best pair
-     *  ไม่มี model → brand overlap ratio
-     * ================================================================ */
-    private function similarityCheck(string $input, string $dbProductName): float
-    {
-        $inputModels = $this->extractModels($input);
-        $dbModels    = $this->extractModels($dbProductName);
-
-        if (!empty($inputModels) && !empty($dbModels)) {
-            return $this->bestPairSimilarity($inputModels, $dbModels);
-        }
-
-        if (!empty($inputModels) || !empty($dbModels)) {
-            $setA = !empty($inputModels) ? $inputModels : $this->extractBrands($input);
-            $setB = !empty($dbModels)    ? $dbModels    : $this->extractBrands($dbProductName);
-            if (!empty($setA) && !empty($setB)) {
-                return $this->bestPairSimilarity($setA, $setB);
-            }
-        }
-
-        $inputBrands = $this->extractBrands($input);
-        $dbBrands    = $this->extractBrands($dbProductName);
-
-        if (empty($inputBrands) || empty($dbBrands)) {
-            return $this->levenshteinPercent($input, $dbProductName);
-        }
-
-        return $this->overlapRatio($inputBrands, $dbBrands);
-    }
-
-    private function bestPairSimilarity(array $setA, array $setB): float
-    {
-        $bestSim = 0;
-        foreach ($setA as $a) {
-            $aLower = mb_strtolower($a);
-            foreach ($setB as $b) {
-                $bLower = mb_strtolower($b);
-
-                if (mb_strpos($bLower, $aLower) !== false || mb_strpos($aLower, $bLower) !== false) {
-                    $shorter = min(mb_strlen($aLower), mb_strlen($bLower));
-                    $longer  = max(mb_strlen($aLower), mb_strlen($bLower));
-                    $sim     = ($shorter / $longer) * 100;
-                } else {
-                    $sim = $this->levenshteinPercent($a, $b);
-                }
-                $bestSim = max($bestSim, $sim);
-            }
-        }
-        return round($bestSim, 1);
-    }
-
-    private function overlapRatio(array $inputBrands, array $dbBrands): float
-    {
-        if (empty($inputBrands)) return 0;
-
-        $dbLower = array_map(fn($b) => mb_strtolower($b), $dbBrands);
-        $hits    = 0;
-
-        foreach ($inputBrands as $ib) {
-            $ibLower = mb_strtolower($ib);
-            foreach ($dbLower as $db) {
-                if ($ibLower === $db || mb_strpos($db, $ibLower) !== false || mb_strpos($ibLower, $db) !== false) {
-                    $hits++;
-                    break;
-                }
-            }
-        }
-
-        return round(($hits / count($inputBrands)) * 100, 1);
-    }
-
-    private function levenshteinPercent(string $a, string $b): float
-    {
-        $a = mb_strtolower(trim($a));
-        $b = mb_strtolower(trim($b));
-        if ($a === $b) return 100.0;
-        $maxLen = max(strlen($a), strlen($b));
-        if ($maxLen === 0) return 100.0;
-        return max(0, (1 - levenshtein($a, $b) / $maxLen) * 100);
-    }
-
-    /* ================================================================
-     *  GET /SoItem/sales-history/{customerCode}
-     * ================================================================ */
-    public function salesHistory(string $customerCode, Request $request)
-    {
-        try {
-            $itemNew    = trim($request->input('item_new', ''));
-            $rawKeyword = trim($request->input('keyword', ''));
-
-            if (empty($itemNew) && empty($rawKeyword)) {
-                return response()->json([]);
-            }
-
-            $records = collect();
-            $fields  = [
-                'so_no', 'doc_date', 'customer_code', 'customer_name',
-                'salesperson', 'item_new', 'product_name',
-                'qty', 'unit', 'unit_price', 'line_amount', 'so_total',
-            ];
-
-            if (!empty($itemNew)) {
-                $ref = fuzzy_so::where('customer_code', $customerCode)
-                    ->where('item_new', $itemNew)
-                    ->first(['product_name']);
-
-                if ($ref && $ref->product_name) {
-                    $keywords = $this->extractKeywords($ref->product_name);
-                    foreach ($keywords as $kw) {
-                        $found = fuzzy_so::where('customer_code', $customerCode)
-                            ->where('product_name', 'ILIKE', '%' . $kw . '%')
-                            ->orderByDesc('doc_date')
-                            ->limit(50)
-                            ->get($fields);
-
-                        if ($found->isNotEmpty()) {
-                            $records = $found;
-                            break;
-                        }
-                    }
-                }
-            }
-
-            if ($records->isEmpty() && !empty($rawKeyword)) {
-                $keywords = $this->extractKeywords($rawKeyword);
-                foreach ($keywords as $kw) {
-                    $found = fuzzy_so::where('customer_code', $customerCode)
-                        ->where('product_name', 'ILIKE', '%' . $kw . '%')
-                        ->orderByDesc('doc_date')
-                        ->limit(50)
-                        ->get($fields);
-
-                    if ($found->isNotEmpty()) {
-                        $records = $found;
-                        break;
-                    }
-                }
-            }
-
-            $mapped = $records->map(function ($r) {
-                return [
-                    'so_no'          => $r->so_no,
-                    'doc_date_raw'   => $r->doc_date
-                        ? \Carbon\Carbon::parse($r->doc_date)->format('d/m/Y')
-                        : '-',
-                    'customer_code'  => $r->customer_code,
-                    'customer_name'  => $r->customer_name,
-                    'salesperson'    => $r->salesperson,
-                    'item_new'       => $r->item_new,
-                    'product_name'   => $r->product_name,
-                    'qty'            => $r->qty !== null ? (float) $r->qty : 0,
-                    'unit'           => $r->unit,
-                    'unit_price'     => $r->unit_price !== null ? (float) $r->unit_price : 0,
-                    'line_amount'    => $r->line_amount !== null ? (float) $r->line_amount : 0,
-                    'so_total'       => $r->so_total !== null ? (float) $r->so_total : 0,
-                ];
-            });
-
-            return response()->json($mapped);
-
-        } catch (\Exception $e) {
-            Log::error('SalesHistory error: ' . $e->getMessage());
-            return response()->json([
-                'error'   => $e->getMessage(),
-                'message' => 'ไม่สามารถดึงประวัติการขายได้',
-            ], 500);
-        }
-    }
-
-    /* ================================================================
-     *  TOKEN EXTRACTION
-     * ================================================================ */
-
-    private function extractAllSearchTokens(string $input): array
-    {
-        $clean  = $this->cleanQuotes($input);
-        $tokens = $this->smartSplit($clean);
-        $tokens = array_values(array_filter($tokens, fn($t) => mb_strlen($t) >= 2));
-
-        $models = [];
-        $brands = [];
-
-        foreach ($tokens as $t) {
-            if (preg_match('/^\d{1,3}$/', $t)) continue;
-            if ($this->isElecSpec($t)) continue;
-
-            if (preg_match('/[0-9]/', $t) && preg_match('/[A-Za-z]/u', $t)) {
-                // ★ dimension เช่น 4x4, 2x4 → treat as brand (low weight)
-                //   ไม่ใช่ model เพราะมันปรากฏในสินค้าต่างประเภทได้
-                if ($this->isPureDimension($t)) {
-                    $brands[] = $t;
-                } else {
-                    $models[] = $t;
-                }
-            } elseif (!preg_match('/[0-9]/', $t)) {
-                $brands[] = $t;
-            }
-        }
-
-        usort($models, fn($a, $b) => mb_strlen($b) - mb_strlen($a));
-
-        $result = [];
-
-        if (!empty($brands) && !empty($models)) {
-            $mainBrand = $brands[0];
-            foreach ($models as $m) {
-                $result[] = ['text' => $mainBrand . ' ' . $m, 'is_model' => true];
-            }
-        }
-
-        foreach ($models as $m) {
-            $result[] = ['text' => $m, 'is_model' => true];
-        }
-        foreach ($brands as $b) {
-            $result[] = ['text' => $b, 'is_model' => false];
-        }
-
-        return $result;
-    }
-
-    private function extractKeywords(string $input): array
-    {
-        $clean    = $this->cleanQuotes($input);
-        $keywords = [];
-
-        if (mb_strlen($clean) <= 30) {
-            $keywords[] = $clean;
-        }
-
-        $tokens = $this->smartSplit($clean);
-        $tokens = array_filter($tokens, fn($t) => mb_strlen($t) >= 2);
-
-        $models = [];
-        $brands = [];
-
-        foreach ($tokens as $t) {
-            if (preg_match('/^\d{1,3}$/', $t)) continue;
-            if ($this->isElecSpec($t)) continue;
-
-            if (preg_match('/[0-9]/', $t) && preg_match('/[A-Za-z]/u', $t)) {
-                $models[] = $t;
-            } elseif (!preg_match('/[0-9]/', $t)) {
-                $brands[] = $t;
-            }
-        }
-
-        usort($models, fn($a, $b) => mb_strlen($b) - mb_strlen($a));
-        usort($brands, fn($a, $b) => mb_strlen($b) - mb_strlen($a));
-
-        foreach ($models as $m) {
-            if (!in_array($m, $keywords)) $keywords[] = $m;
-        }
-        // ★ เพิ่ม brand เป็น fallback เสมอ (ถ้า model ค้นไม่เจอจะได้ลองต่อ)
-        foreach ($brands as $b) {
-            if (!in_array($b, $keywords)) $keywords[] = $b;
-        }
-        return $keywords;
-    }
-
-    private function extractModels(string $text): array
-    {
-        $clean  = $this->cleanQuotes($text);
-        $tokens = $this->smartSplit($clean);
-
-        $models = [];
-        foreach ($tokens as $t) {
-            if (preg_match('/^\d{1,3}$/', $t)) continue;
-            if ($this->isElecSpec($t)) continue;
-
-            if (mb_strlen($t) >= 3
-                && preg_match('/[0-9]/', $t)
-                && preg_match('/[A-Za-z]/u', $t)
-                && !$this->isPureDimension($t)  // ★ ไม่ใช้ 4x4, 2x4 เป็น model
-            ) {
-                $models[] = $t;
-            }
-        }
-
-        usort($models, fn($a, $b) => mb_strlen($b) - mb_strlen($a));
-        return $models;
-    }
-
-    private function extractBrands(string $text): array
-    {
-        $clean  = $this->cleanQuotes($text);
-        $tokens = $this->smartSplit($clean);
-
-        $brands = [];
-        foreach ($tokens as $t) {
-            if (mb_strlen($t) >= 2 && !preg_match('/[0-9]/', $t)) {
-                $brands[] = $t;
-            }
-        }
-        return $brands;
-    }
-
-    /* ================================================================
-     *  smartSplit + camelBoundarySplit
-     * ================================================================ */
-    private function smartSplit(string $text): array
-    {
-        $rawTokens = preg_split('/[\s:,\(\)]+/u', $text, -1, PREG_SPLIT_NO_EMPTY);
-
-        $result = [];
-        foreach ($rawTokens as $token) {
-            foreach ($this->camelBoundarySplit($token) as $s) {
-                $s = trim($s);
-                if (mb_strlen($s) >= 1) $result[] = $s;
-            }
-        }
-        return $result;
-    }
-
-    private function camelBoundarySplit(string $token): array
-    {
-        if (mb_strlen($token) <= 3) return [$token];
-        if (preg_match('/^[A-Z0-9\-\/\.]+$/u', $token)) return [$token];
-        if (strpos($token, '-') !== false) return [$token];
-
-        $chars = preg_split('//u', $token, -1, PREG_SPLIT_NO_EMPTY);
-        $parts = [];
-        $buf   = $chars[0];
-
-        for ($i = 1; $i < count($chars); $i++) {
-            $prev = $chars[$i - 1];
-            $curr = $chars[$i];
-            $cut  = false;
-
-            if (preg_match('/[a-z]/', $prev) && preg_match('/[A-Z]/', $curr)) {
-                $cut = true;
-            }
-
-            if (!$cut && preg_match('/[0-9]/', $prev) && preg_match('/[A-Z]/', $curr)) {
-                if (!preg_match('/^[VAWHKPDC]$/i', $curr)) {
-                    $cut = true;
-                }
-            }
-
-            if (!$cut && preg_match('/[A-Z]/', $prev) && preg_match('/[A-Z]/', $curr)) {
-                if (isset($chars[$i + 1]) && preg_match('/[a-z]/', $chars[$i + 1])) {
-                    $cut = true;
-                }
-            }
-
-            if (!$cut && preg_match('/[A-Za-z]/', $prev) && preg_match('/[0-9]/', $curr)) {
-                $alphaRun = 0;
-                for ($j = $i - 1; $j >= 0; $j--) {
-                    if (preg_match('/[A-Za-z]/', $chars[$j])) $alphaRun++;
-                    else break;
-                }
-                if ($alphaRun >= 3) $cut = true;
-            }
-
-            if ($cut) { $parts[] = $buf; $buf = $curr; }
-            else       { $buf .= $curr; }
-        }
-
-        if ($buf !== '') $parts[] = $buf;
-        return $parts;
-    }
-
-    /* ================================================================
-     *  isElecSpec
-     * ================================================================ */
-    private function isElecSpec(string $t): bool
-    {
-        $t = trim($t);
-
-        if (preg_match('/^[AD]C\d+[-\/]?\d*V?$/i', $t)) return true;
-        if (preg_match('/^\d+V(DC|AC)?$/i', $t)) return true;
-        if (preg_match('/^\d+[-\/]\d+V(DC|AC)?$/i', $t)) return true;
-        if (preg_match('/^\d+(\/\d+)?Hz\.?$/i', $t)) return true;
-        if (preg_match('/^\d+A$/i', $t)) return true;
-        if (preg_match('/^\d+(\.\d+)?(W|KW|MW|HP)$/i', $t)) return true;
-        if (preg_match('/^\d+P[Hh]?$/i', $t)) return true;
-        if (preg_match('/^\d+PHASE$/i', $t)) return true;
-        if (preg_match('/^\d+(nc|no)$/i', $t)) return true;
-
-        return false;
-    }
-
-    private function cleanQuotes(string $text): string
-    {
-        return str_replace(['"', "'", "\xe2\x80\x9c", "\xe2\x80\x9d", '`'], '', trim($text));
-    }
-
-    /* ================================================================
-     *  isPureDimension — 4x4, 2x4, 1.5x2.5 ไม่ใช่ model
-     * ================================================================ */
-    private function isPureDimension(string $t): bool
-    {
-        $t = trim($t);
-        // NxN, NxNxN, N.NxN.N (รวม optional " หรือ ' ท้าย)
-        if (preg_match('/^\d+(\.\d+)?[xX×]\d+(\.\d+)?([xX×]\d+(\.\d+)?)?["\']?$/u', $t)) return true;
-        return false;
+        return array_slice($matches, 0, $limit);
     }
 }

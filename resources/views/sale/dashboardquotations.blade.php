@@ -3,6 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="csrf-token" content="{{ csrf_token() }}">
 <title>ประวัติใบเสนอราคา — Dashboard</title>
 <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <style>
@@ -11,183 +12,138 @@
     --line:#dfe4ec; --green:#16a34a; --muted:#6b7280; --soft:#f7f9fc;
     --amber:#f59e0b; --red:#dc2626;
   }
-  * { box-sizing:border-box; }
-  body { margin:0; font-family:'Sarabun',sans-serif; background:var(--bg); color:#1f2937; }
+  *{box-sizing:border-box;}
+  body{margin:0;font-family:'Sarabun',sans-serif;background:var(--bg);color:#1f2937;}
 
-  .topbar {
-    background:linear-gradient(90deg,var(--navy2),var(--blue));
-    color:#fff; padding:14px 22px; font-weight:600; font-size:18px;
-    display:flex; align-items:center; gap:10px;
-  }
-  .topbar .dot { width:26px; height:26px; border-radius:6px; background:#fff3; display:flex; align-items:center; justify-content:center; }
-  .topbar a { color:#fff; text-decoration:none; margin-left:auto; font-size:13px; opacity:.8; }
-  .topbar a:hover { opacity:1; }
+  .topbar{background:linear-gradient(90deg,var(--navy2),var(--blue));color:#fff;padding:14px 22px;font-weight:600;font-size:18px;display:flex;align-items:center;gap:10px;}
+  .topbar .dot{width:26px;height:26px;border-radius:6px;background:#fff3;display:flex;align-items:center;justify-content:center;}
+  .topbar a{color:#fff;text-decoration:none;margin-left:auto;font-size:13px;opacity:.8;}
+  .topbar a:hover{opacity:1;}
 
-  .wrap { max-width:1100px; margin:0 auto; padding:20px 18px; }
+  .wrap{max-width:1100px;margin:0 auto;padding:20px 18px;}
 
-  /* ---- filter bar ---- */
-  .filter-bar {
-    display:flex; gap:10px; flex-wrap:wrap; align-items:center;
-    background:#fff; border:1px solid var(--line); border-radius:12px;
-    padding:12px 16px; margin-bottom:16px;
-  }
-  .filter-bar input, .filter-bar select {
-    padding:8px 12px; border:1px solid var(--line); border-radius:8px;
-    font-family:inherit; font-size:13px; background:#fff;
-  }
-  .filter-bar input[type=text] { flex:1; min-width:180px; }
-  .filter-bar select { min-width:120px; }
-  .filter-bar .btn-search {
-    padding:8px 20px; background:var(--blue); color:#fff; border:none;
-    border-radius:8px; font-family:inherit; font-weight:600; font-size:13px; cursor:pointer;
-  }
-  .filter-bar .btn-search:hover { background:var(--navy2); }
-  .filter-bar .btn-reset {
-    padding:8px 14px; background:#fff; border:1px solid var(--line); color:var(--muted);
-    border-radius:8px; font-family:inherit; font-size:13px; cursor:pointer; text-decoration:none;
-  }
+  /* filter */
+  .filter-bar{display:flex;gap:10px;flex-wrap:wrap;align-items:center;background:#fff;border:1px solid var(--line);border-radius:12px;padding:12px 16px;margin-bottom:16px;}
+  .filter-bar input,.filter-bar select{padding:8px 12px;border:1px solid var(--line);border-radius:8px;font-family:inherit;font-size:13px;background:#fff;}
+  .filter-bar input[type=text]{flex:1;min-width:180px;}
+  .filter-bar select{min-width:120px;}
+  .filter-bar .btn-search{padding:8px 20px;background:var(--blue);color:#fff;border:none;border-radius:8px;font-family:inherit;font-weight:600;font-size:13px;cursor:pointer;}
+  .filter-bar .btn-search:hover{background:var(--navy2);}
+  .filter-bar .btn-reset{padding:8px 14px;background:#fff;border:1px solid var(--line);color:var(--muted);border-radius:8px;font-family:inherit;font-size:13px;cursor:pointer;text-decoration:none;}
 
-  /* ---- table ---- */
-  .table-wrap {
-    background:#fff; border:1px solid var(--line); border-radius:12px;
-    overflow:hidden; box-shadow:0 1px 3px #0000000a;
-  }
-  table.main { width:100%; border-collapse:collapse; font-size:13px; }
-  .main thead th {
-    background:linear-gradient(180deg,#f8fafc,#f1f4f9);
-    padding:12px 10px; font-weight:700; font-size:11px; color:var(--navy);
-    text-align:left; border-bottom:2px solid var(--line);
-    text-transform:uppercase; letter-spacing:.04em; white-space:nowrap;
-  }
-  .main thead th.r { text-align:right; }
-  .main thead th.c { text-align:center; }
-  .main tbody td { padding:10px 10px; border-bottom:1px solid #f0f2f5; vertical-align:middle; }
-  .main tbody tr:last-child td { border-bottom:none; }
-  .main tbody tr { cursor:pointer; }
-  .main tbody tr:hover td { background:#f0f5ff; }
+  /* table */
+  .table-wrap{background:#fff;border:1px solid var(--line);border-radius:12px;overflow:hidden;box-shadow:0 1px 3px #0000000a;}
+  table.main{width:100%;border-collapse:collapse;font-size:13px;}
+  .main thead th{background:linear-gradient(180deg,#f8fafc,#f1f4f9);padding:12px 10px;font-weight:700;font-size:11px;color:var(--navy);text-align:left;border-bottom:2px solid var(--line);text-transform:uppercase;letter-spacing:.04em;white-space:nowrap;}
+  .main thead th.r{text-align:right;}
+  .main thead th.c{text-align:center;}
+  .main tbody td{padding:10px 10px;border-bottom:1px solid #f0f2f5;vertical-align:middle;}
+  .main tbody tr:last-child td{border-bottom:none;}
+  .main tbody tr{cursor:pointer;}
+  .main tbody tr:hover td{background:#f0f5ff;}
 
-  .qt-no { font-weight:700; color:var(--blue); white-space:nowrap; }
-  .cust-name { font-weight:600; color:#111; }
-  .cust-code { font-size:11px; color:var(--muted); }
-  .amt { text-align:right; font-weight:700; font-variant-numeric:tabular-nums; color:var(--navy); white-space:nowrap; }
-  .date { white-space:nowrap; font-variant-numeric:tabular-nums; color:#555; }
-  .items-count { text-align:center; color:var(--muted); font-size:12px; }
+  .qt-no{font-weight:700;color:var(--blue);white-space:nowrap;}
+  .cust-name{font-weight:600;color:#111;}
+  .cust-code{font-size:11px;color:var(--muted);}
+  .amt{text-align:right;font-weight:700;font-variant-numeric:tabular-nums;color:var(--navy);white-space:nowrap;}
+  .date{white-space:nowrap;font-variant-numeric:tabular-nums;color:#555;}
+  .items-count{text-align:center;color:var(--muted);font-size:12px;}
 
-  .badge { display:inline-block; padding:2px 10px; border-radius:6px; font-size:11px; font-weight:700; white-space:nowrap; }
-  .badge-draft    { background:#fef3c7; color:#92400e; border:1px solid #fde68a; }
-  .badge-approved { background:#dcfce7; color:#166534; border:1px solid #bbf7d0; }
-  .badge-cancelled{ background:#fee2e2; color:#991b1b; border:1px solid #fecaca; }
+  .badge{display:inline-block;padding:2px 10px;border-radius:6px;font-size:11px;font-weight:700;white-space:nowrap;}
+  .badge-draft{background:#fef3c7;color:#92400e;border:1px solid #fde68a;}
+  .badge-approved{background:#dcfce7;color:#166534;border:1px solid #bbf7d0;}
+  .badge-cancelled{background:#fee2e2;color:#991b1b;border:1px solid #fecaca;}
 
-  .act-btn {
-    display:inline-flex; align-items:center; gap:4px;
-    padding:5px 10px; border-radius:6px; font-size:11px; font-weight:600;
-    text-decoration:none; border:1px solid var(--line); color:#374151;
-    background:#fff; cursor:pointer; white-space:nowrap;
-  }
-  .act-btn:hover { background:#f0f5ff; border-color:var(--blue); color:var(--blue); }
-  .act-btn.pdf { color:var(--green); border-color:#bbf7d0; }
-  .act-btn.pdf:hover { background:#f0fdf4; }
+  .act-btn{display:inline-flex;align-items:center;gap:4px;padding:5px 10px;border-radius:6px;font-size:11px;font-weight:600;text-decoration:none;border:1px solid var(--line);color:#374151;background:#fff;cursor:pointer;white-space:nowrap;font-family:inherit;}
+  .act-btn:hover{background:#f0f5ff;border-color:var(--blue);color:var(--blue);}
+  .act-btn.pdf{color:var(--green);border-color:#bbf7d0;}
+  .act-btn.pdf:hover{background:#f0fdf4;}
 
-  /* ---- pagination ---- */
-  .pagi { display:flex; justify-content:center; gap:4px; padding:14px; }
-  .pagi a, .pagi span {
-    display:inline-flex; align-items:center; justify-content:center;
-    min-width:34px; height:34px; border-radius:8px; font-size:13px; font-weight:600;
-    text-decoration:none; border:1px solid var(--line); color:#374151; background:#fff;
-  }
-  .pagi a:hover { background:#eff6ff; border-color:var(--blue); color:var(--blue); }
-  .pagi span.current { background:var(--blue); color:#fff; border-color:var(--blue); }
+  /* pagination */
+  .pagi{display:flex;justify-content:center;gap:4px;padding:14px;}
+  .pagi a,.pagi span{display:inline-flex;align-items:center;justify-content:center;min-width:34px;height:34px;border-radius:8px;font-size:13px;font-weight:600;text-decoration:none;border:1px solid var(--line);color:#374151;background:#fff;}
+  .pagi a:hover{background:#eff6ff;border-color:var(--blue);color:var(--blue);}
+  .pagi span.current{background:var(--blue);color:#fff;border-color:var(--blue);}
 
-  /* ---- empty ---- */
-  .empty-state { text-align:center; padding:60px 20px; color:var(--muted); }
-  .empty-state .em-icon { font-size:48px; margin-bottom:10px; }
-  .empty-state .em-title { font-size:16px; font-weight:700; color:#374151; }
-  .empty-state .em-sub { font-size:13px; margin-top:4px; }
+  /* empty */
+  .empty-state{text-align:center;padding:60px 20px;color:var(--muted);}
+  .empty-state .em-icon{font-size:48px;margin-bottom:10px;}
+  .empty-state .em-title{font-size:16px;font-weight:700;color:#374151;}
+  .empty-state .em-sub{font-size:13px;margin-top:4px;}
 
-  /* ===== MODAL ===== */
-  .modal-bg {
-    display:none; position:fixed; inset:0; z-index:900;
-    background:rgba(0,0,0,.45); backdrop-filter:blur(3px);
-    align-items:center; justify-content:center; padding:20px;
-  }
-  .modal-bg.open { display:flex; }
-  .modal {
-    background:#fff; border-radius:14px; width:100%; max-width:820px;
-    max-height:90vh; overflow:hidden; display:flex; flex-direction:column;
-    box-shadow:0 20px 60px rgba(0,0,0,.25); animation:modalIn .2s ease-out;
-  }
-  @keyframes modalIn { from{opacity:0;transform:translateY(20px)} to{opacity:1;transform:none} }
+  /* ===== VIEW MODAL ===== */
+  .modal-bg{display:none;position:fixed;inset:0;z-index:900;background:rgba(0,0,0,.45);backdrop-filter:blur(3px);align-items:center;justify-content:center;padding:20px;}
+  .modal-bg.open{display:flex;}
+  .modal{background:#fff;border-radius:14px;width:100%;max-width:820px;max-height:90vh;overflow:hidden;display:flex;flex-direction:column;box-shadow:0 20px 60px rgba(0,0,0,.25);animation:modalIn .2s ease-out;}
+  @keyframes modalIn{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:none}}
 
-  .modal-head {
-    display:flex; align-items:center; gap:10px; padding:16px 22px;
-    background:linear-gradient(135deg,#eef2ff,#f8faff); border-bottom:1px solid var(--line);
-  }
-  .modal-head .mh-title { flex:1; font-size:16px; font-weight:800; color:var(--navy); }
-  .modal-head .mh-no { font-size:13px; color:var(--blue); font-weight:600; }
-  .modal-head .mh-close {
-    width:32px; height:32px; border:none; background:#f3f4f6; border-radius:8px;
-    cursor:pointer; font-size:16px; color:#6b7280; display:flex; align-items:center; justify-content:center;
-  }
-  .modal-head .mh-close:hover { background:#e5e7eb; color:#111; }
+  .modal-head{display:flex;align-items:center;gap:10px;padding:16px 22px;background:linear-gradient(135deg,#eef2ff,#f8faff);border-bottom:1px solid var(--line);}
+  .modal-head .mh-title{flex:1;font-size:16px;font-weight:800;color:var(--navy);}
+  .modal-head .mh-no{font-size:13px;color:var(--blue);font-weight:600;}
+  .modal-head .mh-close{width:32px;height:32px;border:none;background:#f3f4f6;border-radius:8px;cursor:pointer;font-size:16px;color:#6b7280;display:flex;align-items:center;justify-content:center;}
+  .modal-head .mh-close:hover{background:#e5e7eb;color:#111;}
+  .modal-body{overflow-y:auto;padding:20px 22px;flex:1;}
 
-  .modal-body { overflow-y:auto; padding:20px 22px; flex:1; }
+  .info-grid{display:grid;grid-template-columns:1fr 1fr;gap:2px 20px;font-size:13px;margin-bottom:18px;}
+  .info-grid .ig-label{color:var(--muted);font-size:11px;font-weight:600;margin-top:8px;text-transform:uppercase;letter-spacing:.03em;}
+  .info-grid .ig-val{font-weight:600;color:#111;padding-bottom:6px;border-bottom:1px solid #f0f2f5;}
+  .info-grid .ig-full{grid-column:1/-1;}
 
-  /* info grid */
-  .info-grid { display:grid; grid-template-columns:1fr 1fr; gap:2px 20px; font-size:13px; margin-bottom:18px; }
-  .info-grid .ig-label { color:var(--muted); font-size:11px; font-weight:600; margin-top:8px; text-transform:uppercase; letter-spacing:.03em; }
-  .info-grid .ig-val { font-weight:600; color:#111; padding-bottom:6px; border-bottom:1px solid #f0f2f5; }
-  .info-grid .ig-full { grid-column:1/-1; }
+  .mitbl{width:100%;border-collapse:collapse;font-size:12px;margin-top:14px;}
+  .mitbl th{background:#f8fafc;padding:8px 8px;font-weight:700;font-size:11px;color:var(--navy);text-align:left;border-bottom:2px solid var(--line);text-transform:uppercase;letter-spacing:.03em;}
+  .mitbl th.r{text-align:right;}
+  .mitbl th.c{text-align:center;}
+  .mitbl td{padding:7px 8px;border-bottom:1px solid #f0f2f5;}
+  .mitbl tr:last-child td{border-bottom:none;}
+  .mitbl .r{text-align:right;font-variant-numeric:tabular-nums;}
+  .mitbl .c{text-align:center;}
+  .mitbl .new-tag{font-size:9px;color:#b45309;background:#fef3c7;border:1px solid #fde68a;border-radius:3px;padding:1px 5px;margin-left:4px;}
 
-  /* items table in modal */
-  .mitbl { width:100%; border-collapse:collapse; font-size:12px; margin-top:14px; }
-  .mitbl th {
-    background:#f8fafc; padding:8px 8px; font-weight:700; font-size:11px;
-    color:var(--navy); text-align:left; border-bottom:2px solid var(--line);
-    text-transform:uppercase; letter-spacing:.03em;
-  }
-  .mitbl th.r { text-align:right; }
-  .mitbl th.c { text-align:center; }
-  .mitbl td { padding:7px 8px; border-bottom:1px solid #f0f2f5; }
-  .mitbl tr:last-child td { border-bottom:none; }
-  .mitbl .r { text-align:right; font-variant-numeric:tabular-nums; }
-  .mitbl .c { text-align:center; }
-  .mitbl .new-tag { font-size:9px; color:#b45309; background:#fef3c7; border:1px solid #fde68a; border-radius:3px; padding:1px 5px; margin-left:4px; }
+  .total-box{margin-top:14px;margin-left:auto;width:280px;border:1px solid var(--line);border-radius:10px;overflow:hidden;}
+  .total-box .trow{display:flex;justify-content:space-between;padding:8px 14px;font-size:13px;}
+  .total-box .trow:not(:last-child){border-bottom:1px solid #f0f2f5;}
+  .total-box .trow .tlbl{color:#555;}
+  .total-box .trow .tval{font-weight:700;font-variant-numeric:tabular-nums;}
+  .total-box .trow.grand{background:linear-gradient(135deg,#eef2ff,#f0f5ff);}
+  .total-box .trow.grand .tlbl{color:var(--navy);font-weight:800;font-size:14px;}
+  .total-box .trow.grand .tval{color:var(--navy);font-weight:800;font-size:16px;}
 
-  .total-box {
-    margin-top:14px; margin-left:auto; width:280px;
-    border:1px solid var(--line); border-radius:10px; overflow:hidden;
-  }
-  .total-box .trow { display:flex; justify-content:space-between; padding:8px 14px; font-size:13px; }
-  .total-box .trow:not(:last-child) { border-bottom:1px solid #f0f2f5; }
-  .total-box .trow .tlbl { color:#555; }
-  .total-box .trow .tval { font-weight:700; font-variant-numeric:tabular-nums; }
-  .total-box .trow.grand { background:linear-gradient(135deg,#eef2ff,#f0f5ff); }
-  .total-box .trow.grand .tlbl { color:var(--navy); font-weight:800; font-size:14px; }
-  .total-box .trow.grand .tval { color:var(--navy); font-weight:800; font-size:16px; }
+  .modal-foot{display:flex;gap:8px;justify-content:flex-end;align-items:center;padding:14px 22px;border-top:1px solid var(--line);background:#fafbfc;}
+  .modal-foot .note-text{font-size:12px;color:var(--muted);font-style:italic;}
+  .btn-dl{display:inline-flex;align-items:center;gap:6px;padding:9px 20px;background:var(--green);color:#fff;border:none;border-radius:8px;font-family:inherit;font-weight:700;font-size:13px;cursor:pointer;text-decoration:none;}
+  .btn-dl:hover{background:#15803d;}
+  .btn-dl.disabled{background:#d1d5db;cursor:not-allowed;}
 
-  .modal-foot {
-    display:flex; gap:10px; justify-content:flex-end; align-items:center;
-    padding:14px 22px; border-top:1px solid var(--line); background:#fafbfc;
-  }
-  .modal-foot .note-text { flex:1; font-size:12px; color:var(--muted); font-style:italic; }
-  .btn-dl {
-    display:inline-flex; align-items:center; gap:6px;
-    padding:9px 20px; background:var(--green); color:#fff; border:none;
-    border-radius:8px; font-family:inherit; font-weight:700; font-size:13px;
-    cursor:pointer; text-decoration:none;
-  }
-  .btn-dl:hover { background:#15803d; }
-  .btn-dl.disabled { background:#d1d5db; cursor:not-allowed; }
+  /* ── LOG SECTION ── */
+  .log-sec{margin-top:22px;border-top:2px solid var(--line);padding-top:16px;}
+  .log-sec-title{font-size:13px;font-weight:700;color:var(--navy);margin-bottom:10px;display:flex;align-items:center;gap:6px;}
+  .log-tbl{width:100%;border-collapse:collapse;font-size:11px;}
+  .log-tbl th{background:#f8fafc;padding:7px 8px;font-weight:700;font-size:10px;color:var(--navy);border-bottom:2px solid var(--line);text-transform:uppercase;letter-spacing:.03em;text-align:left;}
+  .log-tbl td{padding:6px 8px;border-bottom:1px solid #f5f5f5;vertical-align:top;}
+  .log-tbl tr:last-child td{border-bottom:none;}
+  .log-tbl tr:hover td{background:#fafbff;}
+  .log-old{color:var(--red);max-width:130px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+  .log-new{color:var(--green);max-width:130px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+  .log-items-note{color:var(--muted);font-style:italic;}
+  /* ── log: ชื่อสินค้า + สี label ตามชนิดการแก้ ── */
+  .log-item-name{color:var(--muted);font-weight:400;display:inline-block;max-width:170px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;vertical-align:bottom;}
+  .lf-add{color:var(--green);}
+  .lf-remove{color:var(--red);}
+  .lf-edit{color:var(--blue);}
 
-  @media(max-width:767px) {
-    .wrap { padding:10px; }
-    .filter-bar { flex-direction:column; }
-    .filter-bar input[type=text] { min-width:100%; }
-    .table-wrap { overflow-x:auto; }
-    table.main { min-width:750px; }
-    .modal { max-width:100%; margin:10px; }
-    .info-grid { grid-template-columns:1fr; }
-    .total-box { width:100%; }
+  /* btn edit in footer */
+  .btn-edit{background:#eff6ff;border-color:var(--blue);color:var(--blue);}
+  .btn-edit:hover{background:#dbeafe;}
+
+  @media(max-width:767px){
+    .wrap{padding:10px;}
+    .filter-bar{flex-direction:column;}
+    .filter-bar input[type=text]{min-width:100%;}
+    .table-wrap{overflow-x:auto;}
+    table.main{min-width:750px;}
+    .modal{max-width:100%;margin:10px;}
+    .info-grid{grid-template-columns:1fr;}
+    .total-box{width:100%;}
   }
 </style>
 </head>
@@ -200,7 +156,7 @@
 
 <div class="wrap">
 
-  {{-- ========== Filter Bar ========== --}}
+  {{-- ===== Filter Bar ===== --}}
   <form class="filter-bar" method="GET" action="/quotations">
     <input type="text" name="search" placeholder="🔍 ค้นหา เลขที่ / ชื่อบริษัท / รหัสลูกค้า ..." value="{{ $search }}">
     <select name="status">
@@ -216,7 +172,7 @@
     @endif
   </form>
 
-  {{-- ========== Table ========== --}}
+  {{-- ===== Table ===== --}}
   <div class="table-wrap">
     @if($quotations->count())
     <table class="main">
@@ -271,7 +227,7 @@
     @endif
   </div>
 
-  {{-- ========== Pagination ========== --}}
+  {{-- ===== Pagination ===== --}}
   @if($quotations->hasPages())
   <div class="pagi">
     @if($quotations->onFirstPage())
@@ -296,13 +252,13 @@
 
 </div>
 
-{{-- ========== DETAIL MODAL ========== --}}
+{{-- ===== VIEW MODAL ===== --}}
 <div class="modal-bg" id="modalBg" onclick="if(event.target===this)closeModal()">
   <div class="modal">
     <div class="modal-head">
       <div>
         <div class="mh-title" id="mTitle">ใบเสนอราคา</div>
-        <div class="mh-no" id="mNo"></div>
+        <div class="mh-no"  id="mNo"></div>
       </div>
       <button class="mh-close" onclick="closeModal()">✕</button>
     </div>
@@ -313,102 +269,169 @@
   </div>
 </div>
 
-{{-- ★ ส่งข้อมูล quotations ทั้งหมด (รวม items) เป็น JSON ให้ JS ใช้แสดง modal --}}
+{{-- QT_DATA: quotations พร้อม items + logs --}}
 <script>
 const QT_DATA = @json($quotations->getCollection()->keyBy('id'));
 
-function fmt(n) { return Number(n||0).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2}); }
-function esc(s) { const d=document.createElement('div'); d.textContent=s; return d.innerHTML; }
+/* ── constants ── */
+const FIELD_LABELS = {
+    doc_date:'วันที่เอกสาร', customer_code:'รหัสลูกค้า',
+    customer_company:'ชื่อบริษัท', customer_address:'ที่อยู่',
+    customer_tel:'เบอร์โทร', customer_tax:'เลขผู้เสียภาษี',
+    customer_branch:'สาขา', contact_name:'ผู้ติดต่อ',
+    valid_days:'ยืนราคา (วัน)', expire_date:'วันหมดอายุ',
+    credit_days:'เครดิต (วัน)', note:'หมายเหตุ',
+    status:'สถานะ', items:'รายการสินค้า',
+    // ★ log รายการสินค้าแบบละเอียด
+    item_add:'➕ เพิ่มรายการ',
+    item_remove:'➖ ลบรายการ',
+    item_rename:'📝 เปลี่ยนชื่อสินค้า',
+    item_price:'💰 แก้ไขราคา',
+    item_qty:'🔢 แก้ไขจำนวน',
+    item_unit:'📐 แก้ไขหน่วย',
+};
+const STATUS_LABELS = { draft:'แบบร่าง', approved:'อนุมัติ', cancelled:'ยกเลิก' };
 
-function openModal(id) {
-  const qt = QT_DATA[id];
-  if (!qt) return;
+/* ── utils ── */
+function fmt(n){return Number(n||0).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});}
+function esc(s){const d=document.createElement('div');d.textContent=s;return d.innerHTML;}
+function escAttr(s){return(s||'').replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+function formatDate(d){if(!d)return'-';const p=(d+'').split('T')[0].split('-');return p.length===3?p[2]+'/'+p[1]+'/'+p[0]:d;}
 
-  document.getElementById('mTitle').textContent = qt.customer_company;
-  document.getElementById('mNo').textContent = qt.quotation_no + '  ·  ' + formatDate(qt.doc_date);
+/* ════════════════════════════════════════
+   VIEW MODAL
+════════════════════════════════════════ */
+function openModal(id){
+    const qt=QT_DATA[id];
+    if(!qt)return;
 
-  /* ---- info ---- */
-  let html = '<div class="info-grid">';
-  html += ig('รหัสลูกค้า',        qt.customer_code || '-');
-  html += ig('ผู้ติดต่อ',          qt.contact_name || '-');
-  html += ig('เบอร์โทร',          qt.customer_tel || '-');
-  html += ig('เลขผู้เสียภาษี',     qt.customer_tax || '-');
-  html += ig('สาขา',              qt.customer_branch || '-');
-  html += ig('ยืนราคา',           qt.valid_days ? qt.valid_days + ' วัน' : '-');
-  html += ig('Expire Date',       qt.expire_date ? formatDate(qt.expire_date) : '-');
-  html += ig('เครดิต',            qt.credit_days ? qt.credit_days + ' วัน' : '-');
-  html += igFull('ที่อยู่',        qt.customer_address || '-');
-  if (qt.note) html += igFull('หมายเหตุ', qt.note);
-  html += '</div>';
+    document.getElementById('mTitle').textContent=qt.customer_company;
+    document.getElementById('mNo').textContent=qt.quotation_no+'  ·  '+formatDate(qt.doc_date);
 
-  /* ---- items table ---- */
-  const items = qt.items || [];
-  html += '<table class="mitbl"><thead><tr>';
-  html += '<th class="c" style="width:40px">#</th><th>รายการสินค้า</th>';
-  html += '<th class="c" style="width:70px">จำนวน</th><th class="c" style="width:60px">หน่วย</th>';
-  html += '<th class="r" style="width:100px">ราคา/หน่วย</th><th class="r" style="width:110px">จำนวนเงิน</th>';
-  html += '</tr></thead><tbody>';
+    /* info grid */
+    let html='<div class="info-grid">';
+    html+=ig('รหัสลูกค้า',       qt.customer_code||'-');
+    html+=ig('ผู้ติดต่อ',         qt.contact_name||'-');
+    html+=ig('เบอร์โทร',         qt.customer_tel||'-');
+    html+=ig('เลขผู้เสียภาษี',    qt.customer_tax||'-');
+    html+=ig('สาขา',             qt.customer_branch||'-');
+    html+=ig('ยืนราคา',          qt.valid_days?qt.valid_days+' วัน':'-');
+    html+=ig('Expire Date',      qt.expire_date?formatDate(qt.expire_date):'-');
+    html+=ig('เครดิต',           qt.credit_days?qt.credit_days+' วัน':'-');
+    html+=igFull('ที่อยู่',       qt.customer_address||'-');
+    if(qt.note)html+=igFull('หมายเหตุ',qt.note);
+    html+='</div>';
 
-  items.forEach((it, i) => {
-    const amt = (it.qty||0) * (it.unit_price||0);
-    const newTag = it.is_new ? '<span class="new-tag">ใหม่</span>' : '';
-    html += '<tr>';
-    html += '<td class="c">' + (i+1) + '</td>';
-    html += '<td>' + esc(it.description||'-') + newTag + '</td>';
-    html += '<td class="c">' + fmt(it.qty) + '</td>';
-    html += '<td class="c">' + esc(it.unit||'') + '</td>';
-    html += '<td class="r">' + fmt(it.unit_price) + '</td>';
-    html += '<td class="r" style="font-weight:700;color:var(--navy);">' + fmt(amt) + '</td>';
-    html += '</tr>';
-  });
-  html += '</tbody></table>';
+    /* items table */
+    const items=qt.items||[];
+    html+='<table class="mitbl"><thead><tr>';
+    html+='<th class="c" style="width:40px">#</th><th>รายการสินค้า</th>';
+    html+='<th class="c" style="width:70px">จำนวน</th><th class="c" style="width:60px">หน่วย</th>';
+    html+='<th class="r" style="width:100px">ราคา/หน่วย</th><th class="r" style="width:110px">จำนวนเงิน</th>';
+    html+='</tr></thead><tbody>';
+    items.forEach((it,i)=>{
+        const amt=(it.qty||0)*(it.unit_price||0);
+        const newTag=it.is_new?'<span class="new-tag">ใหม่</span>':'';
+        html+='<tr>';
+        html+='<td class="c">'+(i+1)+'</td>';
+        html+='<td>'+esc(it.description||'-')+newTag+'</td>';
+        html+='<td class="c">'+fmt(it.qty)+'</td>';
+        html+='<td class="c">'+esc(it.unit||'')+'</td>';
+        html+='<td class="r">'+fmt(it.unit_price)+'</td>';
+        html+='<td class="r" style="font-weight:700;color:var(--navy);">'+fmt(amt)+'</td>';
+        html+='</tr>';
+    });
+    html+='</tbody></table>';
 
-  /* ---- totals ---- */
-  html += '<div class="total-box">';
-  html += trow('รวมก่อน VAT', fmt(qt.gross_amount));
-  html += trow('VAT 7%',      fmt(qt.vat_amount));
-  html += trow('รวมทั้งสิ้น',  fmt(qt.grand_total), true);
-  html += '</div>';
+    /* totals */
+    html+='<div class="total-box">';
+    html+=trow('รวมก่อน VAT',fmt(qt.gross_amount));
+    html+=trow('VAT 7%',     fmt(qt.vat_amount));
+    html+=trow('รวมทั้งสิ้น', fmt(qt.grand_total),true);
+    html+='</div>';
 
-  document.getElementById('mBody').innerHTML = html;
+    /* log section */
+    const logs=qt.logs||[];
+    if(logs.length){
+        html+='<div class="log-sec">';
+        html+='<div class="log-sec-title">📋 ประวัติการแก้ไข <span style="font-weight:400;font-size:12px;color:var(--muted);">('+logs.length+' รายการ)</span></div>';
+        html+='<table class="log-tbl"><thead><tr><th>วันที่/เวลา</th><th>โดย</th><th>ฟิลด์</th><th>ค่าเดิม</th><th>ค่าใหม่</th></tr></thead><tbody>';
+        logs.forEach(log=>{
+            const dt=log.created_at?(log.created_at+'').substring(0,16).replace('T',' '):'-';
+            const field=log.field_changed||'';
+            const flbl=FIELD_LABELS[field]||field||log.action||'-';
+            const isLegacyItems=field==='items';              // log เก่า (JSON ก้อนเดียว)
+            const isItemDetail=field.indexOf('item_')===0;    // item_add / item_price / ...
+            const trunc=(s,n=55)=>(s||'').length>n?(s||'').substring(0,n)+'…':(s||'');
 
-  /* ---- footer ---- */
-  let foot = '';
-  if (qt.note) foot += '<div class="note-text">📝 ' + esc(qt.note) + '</div>';
-  if (qt.pdf_path) {
-    foot += '<a href="/quotations/' + qt.id + '/pdf" class="btn-dl">📥 ดาวน์โหลด PDF</a>';
-  } else {
-    foot += '<span class="btn-dl disabled">ไม่มีไฟล์ PDF</span>';
-  }
-  document.getElementById('mFoot').innerHTML = foot;
+            // status -> label ไทย
+            let oldV=log.old_value||'';
+            let newV=log.new_value||'';
+            if(field==='status'){oldV=STATUS_LABELS[oldV]||oldV;newV=STATUS_LABELS[newV]||newV;}
 
-  document.getElementById('modalBg').classList.add('open');
-  document.body.style.overflow = 'hidden';
+            // สี label ตามชนิด
+            let lblClass='';
+            if(field==='item_add')         lblClass='lf-add';
+            else if(field==='item_remove') lblClass='lf-remove';
+            else if(isItemDetail)          lblClass='lf-edit';
+
+            // ช่องฟิลด์ — ถ้าเป็น item_* เอาชื่อสินค้า (เก็บใน note) มาต่อท้าย
+            let fieldCell='<span class="'+lblClass+'">'+esc(flbl)+'</span>';
+            if(isItemDetail && log.note){
+                fieldCell+=' <span class="log-item-name" title="'+escAttr(log.note)+'">· '+esc(log.note)+'</span>';
+            }
+
+            html+='<tr>';
+            html+='<td style="white-space:nowrap;font-size:11px;">'+esc(dt)+'</td>';
+            html+='<td style="font-size:11px;">'+esc(log.created_by||'-')+'</td>';
+            html+='<td style="font-weight:600;">'+fieldCell+'</td>';
+            if(isLegacyItems){
+                html+='<td colspan="2" class="log-items-note">'+esc(log.note||'แก้ไขรายการสินค้า')+'</td>';
+            }else{
+                html+='<td class="log-old" title="'+escAttr(log.old_value||'')+'">'+esc(trunc(oldV)||'-')+'</td>';
+                html+='<td class="log-new" title="'+escAttr(log.new_value||'')+'">'+esc(trunc(newV)||'-')+'</td>';
+            }
+            html+='</tr>';
+        });
+        html+='</tbody></table></div>';
+    }
+
+    document.getElementById('mBody').innerHTML=html;
+
+    /* footer — ปุ่มแก้ไขเด้งไปหน้า SoItem (โหมดแก้ไข) เพื่อสร้าง PDF ใหม่ด้วย pipeline เดิม */
+    let foot='<button class="act-btn btn-edit" onclick="location.href=\'/soitem?edit='+id+'\'">✏️ แก้ไข</button>';
+    foot+='<div style="flex:1;"></div>';
+    if(qt.pdf_path){
+        foot+='<a href="/quotations/'+qt.id+'/pdf" class="btn-dl">📥 ดาวน์โหลด PDF</a>';
+    }else{
+        foot+='<span class="btn-dl disabled" title="ยังไม่มีไฟล์ PDF">ไม่มีไฟล์ PDF</span>';
+    }
+    document.getElementById('mFoot').innerHTML=foot;
+
+    document.getElementById('modalBg').classList.add('open');
+    document.body.style.overflow='hidden';
 }
 
-function closeModal() {
-  document.getElementById('modalBg').classList.remove('open');
-  document.body.style.overflow = '';
+function closeModal(){
+    document.getElementById('modalBg').classList.remove('open');
+    document.body.style.overflow='';
 }
 
-document.addEventListener('keydown', e => { if (e.key === 'Escape') closeModal(); });
+/* ── keyboard ── */
+document.addEventListener('keydown',e=>{
+    if(e.key==='Escape') closeModal();
+});
 
-/* helpers */
-function ig(label, val) {
-  return '<div class="ig-label">' + label + '</div><div class="ig-val">' + esc(val) + '</div>';
+/* ── helpers ── */
+function ig(label,val){
+    return '<div class="ig-label">'+label+'</div><div class="ig-val">'+esc(val)+'</div>';
 }
-function igFull(label, val) {
-  return '<div class="ig-label ig-full">' + label + '</div><div class="ig-val ig-full">' + esc(val) + '</div>';
+function igFull(label,val){
+    return '<div class="ig-label ig-full">'+label+'</div><div class="ig-val ig-full">'+esc(val)+'</div>';
 }
-function trow(label, val, grand) {
-  const cls = grand ? ' grand' : '';
-  return '<div class="trow' + cls + '"><span class="tlbl">' + label + '</span><span class="tval">' + val + '</span></div>';
-}
-function formatDate(d) {
-  if (!d) return '-';
-  const p = d.split('-');
-  if (p.length !== 3) return d;
-  return p[2] + '/' + p[1] + '/' + p[0];
+function trow(label,val,grand){
+    const cls=grand?' grand':'';
+    return '<div class="trow'+cls+'"><span class="tlbl">'+label+'</span><span class="tval">'+val+'</span></div>';
 }
 </script>
 

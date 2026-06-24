@@ -257,14 +257,34 @@ Route::get('/deliverytrack', [DeliverytrackController::class, 'index'])->name('d
 Route::post('/return/{id}/new-bill', [DeliverytrackController::class, 'saveNewBill'])->name('deliverytrack.newbill');
 
 use App\Http\Controllers\SoItemController;
+Route::get('/soitem',                                  [SoItemController::class, 'index']);
+Route::post('/soitem',                                 [SoItemController::class, 'store']);
+Route::post('/soitem/{quotationNo}/pdf',               [SoItemController::class, 'uploadPdf']);
  
-Route::get('/soitem',                              [SoItemController::class, 'index']);
-Route::post('/soitem',                             [SoItemController::class, 'store']);
-Route::post('/soitem/batch-match',                 [SoItemController::class, 'batchMatch']);
-Route::get('/soitem/sales-history/{customerCode}', [SoItemController::class, 'salesHistory']);
-Route::get('/quotations',           [SoItemController::class, 'dashboard']);
-Route::get('/quotations/{id}/pdf',  [SoItemController::class, 'downloadPdf']);
+// ── ลูกค้า ──
+Route::get('/soitem/customers/search',                 [SoItemController::class, 'searchCustomers']);
+Route::get('/soitem/customers/related/{customerCode}', [SoItemController::class, 'relatedCustomers']);
+ 
+// ── OCR ──
+Route::post('/soitem/ocr/process',                     [SoItemController::class, 'ocrProcess']);
+Route::get('/soitem/ocr/status/{jobName}',             [SoItemController::class, 'ocrStatus']);
+Route::get('/soitem/ocr/file/{type}/{filename}',       [SoItemController::class, 'ocrDownload']);
+ 
+// ── จับคู่ราคา / สินค้า ──
+Route::post('/soitem/batch-match',                     [SoItemController::class, 'batchMatch']);
+Route::post('/soitem/ai-fallback-match',               [SoItemController::class, 'aiFallbackMatch']);
+Route::post('/soitem/batch-quotation-history',         [SoItemController::class, 'batchQuotationHistory']);
+ 
+// ── embed index (admin / maintenance) ──
+Route::post('/soitem/embed/build',                     [SoItemController::class, 'buildEmbedIndex']);
+Route::post('/soitem/ai-fallback-match',          [SoItemController::class, 'aiFallbackMatch']);
+Route::get('/soitem/ai-fallback-status/{jobId}', [SoItemController::class, 'aiFallbackStatus']);
 
+use App\Http\Controllers\QuotationsController;
+Route::get('/quotations',                              [QuotationsController::class, 'dashboard']);
+Route::get('/quotations/{id}/pdf',                     [QuotationsController::class, 'downloadPdf']);
+Route::put('/quotations/{id}',                         [QuotationsController::class, 'updateQuotation']);
+ 
 use App\Http\Controllers\PoitemController;
  
 Route::get('/poitem',             [PoitemController::class, 'index'])->name('po.search');
