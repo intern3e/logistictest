@@ -23,7 +23,7 @@ class fuellogsController extends Controller
     }
 
     /* ══════════════════════════════════════════════════════════════════
-       รับ filter จาก form POST → เก็บใน session → redirect /oil
+       รับ filter จาก form POST → เก็บใน session → redirect /oil หรือ /oil/report
     ══════════════════════════════════════════════════════════════════ */
     public function applyFilter(Request $request)
     {
@@ -38,6 +38,11 @@ class fuellogsController extends Controller
                 'vehicle_id'  => $request->input('vehicle_id', 'all'),
             ]
         ]);
+
+        // ★ ถ้ามาจากหน้ารายงาน → redirect กลับไปหน้ารายงาน
+        if ($request->input('redirect_to') === 'report') {
+            return redirect()->route('oil.report', $this->urlParams($request));
+        }
 
         return redirect()->route('oil', $this->urlParams($request));
     }
@@ -54,7 +59,7 @@ class fuellogsController extends Controller
             'date_from'   => $filter['date_from']   ?? $request->input('date_from', date('Y-m-d')),
             'date_to'     => $filter['date_to']     ?? $request->input('date_to', date('Y-m-d')),
             'month'       => $filter['month']       ?? $request->input('month', date('Y-m')),
-            'year'        => $filter['year']        ?? $request->input('year', date('Y')),
+            'year'        => $filter['year']         ?? $request->input('year', date('Y')),
             'driver_name' => $filter['driver_name'] ?? $request->input('driver_name', 'all'),
             'vehicle_id'  => $filter['vehicle_id']  ?? $request->input('vehicle_id', 'all'),
         ];
@@ -195,7 +200,10 @@ class fuellogsController extends Controller
         return [$ltr > 0 ? round($ltr, 2) : null, $ppl > 0 ? round($ppl, 2) : null];
     }
 
-    public function oil(Request $request)
+    /* ══════════════════════════════════════════════════════════════════
+       Helper: ดึง data กลางที่ใช้ร่วมทั้ง oil() และ report()
+    ══════════════════════════════════════════════════════════════════ */
+    private function buildViewData(Request $request): array
     {
         $f = $this->getFilter($request);
 
@@ -235,6 +243,10 @@ class fuellogsController extends Controller
                     'total_distance' => $distance,
                     'km_per_liter'   => $kml,
                     'work_hours'     => $workHours,
+                    'start_time'     => $row['start_time'] ?? null,
+                    'end_time'       => $row['end_time']   ?? null,
+                    'ok'             => (int) ($row['ok'] ?? 0),
+                    'ng'             => (int) ($row['ng'] ?? 0),
                 ];
             });
 
@@ -270,13 +282,29 @@ class fuellogsController extends Controller
         $deliveryStats = null;
         $editLog       = null;
 
-        return view('driver.oil', compact(
+        return compact(
             'logs', 'allLogs',
             'view', 'filterDay', 'filterMonth', 'filterYear', 'filterDriver', 'filterPlate',
             'dateFrom', 'dateTo',
             'drivers', 'plates', 'metrics', 'costByDriver', 'kmlByDriver',
             'deliveryStats', 'editLog'
-        ));
+        );
+    }
+
+    /* ══════════════════════════════════════════════════════════════════
+       หน้าหลัก — ติดตามน้ำมัน
+    ══════════════════════════════════════════════════════════════════ */
+    public function oil(Request $request)
+    {
+        return view('driver.oil', $this->buildViewData($request));
+    }
+
+    /* ══════════════════════════════════════════════════════════════════
+       ★ หน้าสรุปรายงาน — ใช้ data ชุดเดียวกัน, คนละ view
+    ══════════════════════════════════════════════════════════════════ */
+    public function report(Request $request)
+    {
+        return view('driver.report', $this->buildViewData($request));
     }
 
 
@@ -500,23 +528,23 @@ class fuellogsController extends Controller
             'resolved' => $result['resolved'],
         ]);
     }
-        public function savedDrivers(Request $request)
+
+    public function savedDrivers(Request $request)
     {
         $date = $request->get('date');
         if (!$date) {
             return response()->json([]);
         }
- 
+
         $drivers = DB::table('fuel_logs')
             ->where('work_date', $date)
             ->distinct()
             ->pluck('driver_name')
             ->filter()
             ->values();
- 
+
         return response()->json($drivers);
     }
- 
 
     public function service(Request $request)
     {

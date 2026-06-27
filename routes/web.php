@@ -182,8 +182,9 @@ Route::post('/return/{id}/reject',        [PooutsidereturnController::class, 're
 
 
 use App\Http\Controllers\fuellogsController;
- 
+
 Route::get('/oil/prev-mileage', [fuellogsController::class, 'prevMileage'])->name('oil.prevMileage');
+Route::get('/oil/report',       [fuellogsController::class, 'report'])->name('oil.report');  // ← เพิ่มตรงนี้
 Route::get('/oil',              [fuellogsController::class, 'oil'])->name('oil');
 Route::post('/oil',             [fuellogsController::class, 'store'])->name('oil.store');
 Route::put('/oil/update/{id}',  [fuellogsController::class, 'update'])->name('oil.update');

@@ -291,6 +291,13 @@ table.itbl{width:100%;border-collapse:collapse;font-size:13px;}
           <span style="font-size:11px;color:#a16207;" id="refCodesDisplay"></span>
         </div>
         <div id="refChips" style="display:grid;grid-template-columns:1fr 1fr;gap:4px;"></div>
+        {{-- ★ ช่องค้นหาเพิ่มลูกค้าเข้ากลุ่ม --}}
+        <div style="position:relative;margin-top:6px;">
+          <div style="display:flex;gap:4px;">
+            <input id="refCustSearch" placeholder="＋ พิมพ์ชื่อหรือรหัสลูกค้าเพิ่มเข้ากลุ่ม..." style="flex:1;padding:6px 10px;font-size:12px;border:1px dashed #d97706;border-radius:6px;background:#fff;">
+          </div>
+          <div class="ac-list" id="refAcList" style="display:none;"></div>
+        </div>
       </div>
 
       {{-- ── ปุ่มเริ่มจับคู่ราคา ── --}}
@@ -588,7 +595,14 @@ async function runAiFallback(payload, headers){
 function renderAiResult(data){
   $('#aiResultTitle').textContent=`📋 รายการที่พบ (${data.table.length} รายการ)`;
   const body=$('#aiResultBody');body.innerHTML='';
-  if(data.ocr_text){$('#aiOcrText').value=data.ocr_text;$('#aiOcrTextWrap').style.display='block';}
+    const ocrText = (data.ocr_text || '').trim();
+  const isRealOcr = ocrText.length > 30 && !ocrText.startsWith('[Direct extract');
+  if(isRealOcr){
+    $('#aiOcrText').value = ocrText;
+    $('#aiOcrTextWrap').style.display = 'block';
+  } else {
+    $('#aiOcrTextWrap').style.display = 'none';
+  }
   if(!data.table.length){
     body.innerHTML='<tr><td colspan="4" style="padding:20px;text-align:center;color:var(--muted);">ไม่พบรายการสินค้า</td></tr>';
   } else {
@@ -639,9 +653,9 @@ function itemRow(d={}){
     <td class="td-desc">
       <input class="desc" placeholder="ชื่อสินค้า" value="${esc(d.desc||'')}">
       <div class="desc-icons">
-        <button class="desc-icon ic-price" title="ค้นราคาจากประวัติขาย" onclick="onIconPrice(this)">💰 ราคาขาย</button>
-        <button class="desc-icon ic-ai" title="AI ค้นสินค้าใกล้เคียง" onclick="onIconAi(this)">🤖 AI</button>
-        <button class="desc-icon ic-doc" title="ประวัติใบเสนอราคา" onclick="onIconDoc(this)">📁 เคยเสนอ</button>
+        <button class="desc-icon ic-price" title="ราคาจากกลุ่มลูกค้าที่เลือก" onclick="onIconPrice(this)">💰 กลุ่มลูกค้า</button>
+        <button class="desc-icon ic-ai" title="AI ค้นราคาจากลูกค้าทั้งหมด (นอกกลุ่ม)" onclick="onIconAi(this)">🤖 ลูกค้าทั้งหมด</button>
+        <button class="desc-icon ic-doc" title="ประวัติใบเสนอราคาที่เคยทำ" onclick="onIconDoc(this)">📁 เคยเสนอ</button>
       </div>
     </td>
     <td class="td-qty"><input class="qty" type="text" inputmode="decimal" placeholder="จำนวน" value="${fmtComma(qty)}" style="text-align:right;font-variant-numeric:tabular-nums;"></td>
@@ -713,7 +727,7 @@ function showAiPopup(anchorEl,desc,matches,tr,meta){
   if(top+400>window.innerHeight)top=Math.max(8,rect.top-406);
   pop.style.left=left+'px';pop.style.top=top+'px';pop.style.display='block';
 
-  $('#ppTitle').textContent='AI ค้นสินค้าใกล้เคียง: '+(desc.length>45?desc.slice(0,45)+'…':desc);
+  $('#ppTitle').textContent='🤖 ราคาจากลูกค้าทั้งหมด: '+(desc.length>45?desc.slice(0,45)+'…':desc);
 
   // ── แสดง search tokens + candidates + LLM picked ──
   const tokEl=$('#ppTokens');
@@ -747,7 +761,7 @@ function showAiPopup(anchorEl,desc,matches,tr,meta){
 
   const body=$('#ppBody');
   if(!matches.length){
-    body.innerHTML='<div class="pp-empty">ยังไม่มีข้อมูล — กด "เริ่มจับคู่ราคา" แล้ว AI จะค้นให้อัตโนมัติ</div>';
+    body.innerHTML='<div class="pp-empty">ยังไม่มีข้อมูล — กด "เริ่มจับคู่ราคา" แล้ว AI จะค้นจากลูกค้าทั้งหมดให้</div>';
     return;
   }
 
@@ -892,7 +906,7 @@ function showPricePopup(anchorEl,desc,matches,tr){
   if(top+400>window.innerHeight)top=Math.max(8,rect.top-406);
   pop.style.left=left+'px';pop.style.top=top+'px';pop.style.display='block';
 
-  $('#ppTitle').textContent='💰 ราคาจากประวัติขาย: '+(desc.length>50?desc.slice(0,50)+'…':desc);
+  $('#ppTitle').textContent='💰 ราคาจากกลุ่มลูกค้า: '+(desc.length>50?desc.slice(0,50)+'…':desc);
 
   const tokEl=$('#ppTokens');
   if(matches.length&&matches[0].matched_tokens?.length){
@@ -907,7 +921,7 @@ function showPricePopup(anchorEl,desc,matches,tr){
 
   const body=$('#ppBody');
   if(!matches.length){
-    body.innerHTML='<div class="pp-empty">ยังไม่มีข้อมูล — กด "เริ่มจับคู่ราคา" ก่อน</div>';
+    body.innerHTML='<div class="pp-empty">ยังไม่มีข้อมูลจากกลุ่มลูกค้า — กด "เริ่มจับคู่ราคา" ก่อน</div>';
     return;
   }
 
@@ -1049,13 +1063,11 @@ function updateMatchPriceBtn(){
   if(!hasCust){
     btn.disabled=true;
     btn.style.opacity='.5';
-    if(hint) hint.textContent=' กรุณาเลือกลูกค้าก่อนจึงจะจับคู่ราคาได้';
   } else {
     btn.disabled=false;
     btn.style.opacity='1';
     const count=document.querySelectorAll('#itemRows .item').length;
     const allCodes=getAllSearchCodes();
-    if(hint) hint.textContent=`พร้อมจับคู่ ${count} รายการ · ค้นจาก ${allCodes.length} รหัสลูกค้า: ${allCodes.join(', ')}`;
   }
 }
 
@@ -1263,19 +1275,111 @@ async function onCustomerSelected(){
 
 function renderRefChips(){
   const wrap=$('#refCustWrap'),chips=$('#refChips');
-  if(!refCustomers.length){wrap.style.display='none';return;}
+  // ★ แสดง wrap เสมอเมื่อมีลูกค้าหลัก (เพื่อให้เพิ่มได้)
+  if(!currentCustomerCode && !refCustomers.length){wrap.style.display='none';return;}
   wrap.style.display='';
-  $('#refCodesDisplay').textContent=refCustomers.length+' ราย';
+  $('#refCodesDisplay').textContent=refCustomers.length ? refCustomers.length+' ราย' : 'ยังไม่มี — พิมพ์ค้นหาเพิ่มด้านล่าง';
   chips.innerHTML='';
   refCustomers.sort((a,b)=>a.code.localeCompare(b.code));
   refCustomers.forEach(c=>{
+    const isManual = c.manual || manualRefCodes.has(c.code);
     const chip=document.createElement('div');
-    chip.style.cssText='display:flex;align-items:center;gap:4px;background:#fef3c7;border:1px solid #fcd34d;border-radius:8px;padding:4px 8px;font-size:11px;color:#92400e;min-width:0;';
-    chip.innerHTML=`<span style="font-weight:700;white-space:nowrap;flex-shrink:0;color:#b45309;">${esc2(c.code)}</span><span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1;min-width:0;">${esc2(c.name)}</span>`;
+    chip.style.cssText='display:flex;align-items:center;gap:4px;border-radius:8px;padding:4px 8px;font-size:11px;min-width:0;'
+      + (isManual
+        ? 'background:#dbeafe;border:1px solid #93c5fd;color:#1e40af;'
+        : 'background:#fef3c7;border:1px solid #fcd34d;color:#92400e;');
+    chip.innerHTML=`<span style="font-weight:700;white-space:nowrap;flex-shrink:0;color:${isManual?'#2563eb':'#b45309'};">${esc2(c.code)}</span>`
+      +`<span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1;min-width:0;">${esc2(c.name)}</span>`
+      + (isManual
+        ? `<button onclick="removeRefCustomer('${esc(c.code)}')" style="border:none;background:none;color:#93c5fd;cursor:pointer;font-size:13px;padding:0 2px;line-height:1;flex-shrink:0;" title="ลบออกจากกลุ่ม">✕</button>`
+        : '');
     chips.appendChild(chip);
   });
 }
+// ══════════════════════════════════════════
+// ★ MANUAL ADD CUSTOMER TO GROUP
+// ══════════════════════════════════════════
+let manualRefCodes = new Set(); // เก็บรหัสที่เพิ่มเอง
 
+let refSearchTimer = null;
+$('#refCustSearch').addEventListener('input', function () {
+  clearTimeout(refSearchTimer);
+  const q = this.value.trim();
+  if (q.length < 2) { $('#refAcList').style.display = 'none'; return; }
+  refSearchTimer = setTimeout(() => searchRefCustomer(q), 300);
+});
+$('#refCustSearch').addEventListener('keydown', function (e) {
+  if (e.key === 'Enter') { e.preventDefault(); clearTimeout(refSearchTimer); searchRefCustomer(this.value.trim()); }
+});
+
+async function searchRefCustomer(keyword) {
+  if (!keyword || keyword.length < 2) return;
+  try {
+    const res = await fetch('/soitem/customers/search?q=' + encodeURIComponent(keyword), {
+      headers: { 'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content }
+    });
+    if (!res.ok) throw new Error('HTTP ' + res.status);
+    const data = await res.json();
+    const list = $('#refAcList');
+    list.innerHTML = '';
+    list.style.display = 'block';
+
+    // กรองเฉพาะที่ยังไม่อยู่ในกลุ่ม
+    const existingCodes = new Set([currentCustomerCode, ...refCustomers.map(c => c.code)]);
+    const filtered = data.filter(c => c.customer_code && !existingCodes.has(c.customer_code));
+
+    if (!filtered.length) {
+      list.innerHTML = '<div class="ac-empty">' + (data.length ? 'ลูกค้าทั้งหมดอยู่ในกลุ่มแล้ว' : 'ไม่พบข้อมูลลูกค้า') + '</div>';
+      return;
+    }
+
+    filtered.forEach(c => {
+      const code = (c.customer_code || '').trim();
+      const name = (c.customer_name || '').trim();
+      const div = document.createElement('div');
+      div.className = 'ac-item';
+      div.innerHTML = '<div class="ac-name">'
+        + (code ? '<span style="color:#b45309;margin-right:6px;">[' + esc2(code) + ']</span>' : '')
+        + esc2(name) + '</div>'
+        + '<div class="ac-sub" style="color:#16a34a;">คลิกเพื่อเพิ่มเข้ากลุ่ม</div>';
+      div.onclick = () => {
+        addRefCustomer(code, name);
+        list.style.display = 'none';
+        $('#refCustSearch').value = '';
+      };
+      list.appendChild(div);
+    });
+  } catch (err) {
+    $('#refAcList').innerHTML = '<div class="ac-empty">เกิดข้อผิดพลาด: ' + esc2(err.message) + '</div>';
+    $('#refAcList').style.display = 'block';
+  }
+}
+
+function addRefCustomer(code, name) {
+  if (!code) return;
+  // เช็คซ้ำ
+  if (code === currentCustomerCode) return;
+  if (refCustomers.some(c => c.code === code)) return;
+  refCustomers.push({ code, name, manual: true });
+  manualRefCodes.add(code);
+  renderRefChips();
+  updateMatchPriceBtn();
+}
+
+function removeRefCustomer(code) {
+  refCustomers = refCustomers.filter(c => c.code !== code);
+  manualRefCodes.delete(code);
+  renderRefChips();
+  updateMatchPriceBtn();
+}
+
+// ปิด dropdown เมื่อคลิกนอก
+document.addEventListener('click', e => {
+  const wrap = document.querySelector('#refCustWrap');
+  if (wrap && !wrap.contains(e.target)) {
+    $('#refAcList').style.display = 'none';
+  }
+});
 // ══════════════════════════════════════════
 // SIGNATURE
 // ══════════════════════════════════════════
@@ -1528,12 +1632,12 @@ $('#printBtn').onclick=async()=>{
     msg.style.color='#16a34a';
     msg.textContent=`✅ ${result.message}`;
     setAllBtnsLoading(false);
-
-    // ── 7) reset ฟอร์ม ──
     setTimeout(()=>{
       ['custCode','custCompany','custAddr','custTel','custTax','custBranch',
-       'contactName','validDays','expireDate','creditDays','note','sellerTel','sellerEmail']
+      'contactName','expireDate','note','sellerTel','sellerEmail']
         .forEach(id=>{const el=$('#'+id);if(el)el.value='';});
+      $('#validDays').value=30;        // ← set กลับ 30
+      $('#creditDays').value=30;       // ← set กลับ 30
       $('#expireDate').dataset.raw='';
       $('#itemRows').innerHTML='';
       $('#itemRows').appendChild(itemRow({desc:'สินค้า/บริการ ตัวอย่าง',qty:1,unit:'ชิ้น',price:1000}));
@@ -1541,6 +1645,7 @@ $('#printBtn').onclick=async()=>{
       sellerSigData=null;sigUploadData=null;
       currentCustomerCode='';currentQuotationNo='';
       refCustomers=[];renderRefChips();
+      manualRefCodes.clear(); 
       aiFiles=[];renderAiChips();
       $('#aiPasteText').value='';
       $('#aiStatus').style.display='none';
@@ -1568,6 +1673,9 @@ $('#printBtn').onclick=async()=>{
 function blobToBase64(blob){return new Promise((resolve,reject)=>{const r=new FileReader();r.onload=()=>resolve(r.result.split(',')[1]);r.onerror=reject;r.readAsDataURL(blob);});}
 // ── Init ──
 $('#docDate').value=new Date().toISOString().slice(0,10);
+$('#validDays').value=30;        // ← เพิ่ม
+$('#creditDays').value=30;       // ← เพิ่ม
+calcExpireDate();                // ← เพิ่ม เพื่อคำนวณ Expire Date
 $('#itemRows').appendChild(itemRow({desc:'สินค้า/บริการ ตัวอย่าง',qty:1,unit:'ชิ้น',price:1000}));
 render();
 updateMatchPriceBtn();
