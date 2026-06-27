@@ -1136,25 +1136,49 @@ async function startBatchMatch(){
     // ═══ ขั้น 2: AI fallback — chunk by chunk ═══
     if(needAiPrice.length||needAiDoc.length){
       const aiChunks=Math.ceil(Math.max(needAiPrice.length,needAiDoc.length)/CHUNK);
+    for(let c=0;c<Math.ceil(needAiPrice.length/CHUNK);c++){
+      const slice=needAiPrice.slice(c*CHUNK,(c+1)*CHUNK);
+      if(!slice.length)break;
+      $('#matchBarTxt').textContent=`⏳ ขั้น 2 AI ราคา รอบ ${c+1}: ${slice.length} รายการ...`;
+      try{
+        const data = await runAiFallback({items:slice, customer_codes:allCodes, type:'price'}, headers);
+        data.forEach((result,j)=>{
+          const origIdx=slice[j]?.idx; if(origIdx==null)return;
+          const tr=rows[origIdx]; if(!tr)return;
+          const itemId=tr.dataset.itemId||'';
+          const matches=result.matches||[];
+          if(!matches.length)return;
 
-      for(let c=0;c<Math.ceil(needAiPrice.length/CHUNK);c++){
-        const slice=needAiPrice.slice(c*CHUNK,(c+1)*CHUNK);
-        if(!slice.length)break;
-        $('#matchBarTxt').textContent=`⏳ ขั้น 2 AI ราคา รอบ ${c+1}: ${slice.length} รายการ...`;
-        try{
-          const data = await runAiFallback({items:slice, customer_codes:allCodes, type:'price'}, headers);
-          data.forEach((result,j)=>{
-            const origIdx=slice[j]?.idx; if(origIdx==null)return;
-            const tr=rows[origIdx]; if(!tr)return;
-            const itemId=tr.dataset.itemId||'';
-            const matches=result.matches||[];
-            if(matches.length){
-              aiMatchData.set(itemId,{matches,search_tokens:result.search_tokens||[],candidates:result.candidates||[],llm_picked:result.llm_picked,llm_matched:result.llm_matched||''});
-              updateAiBadge(tr);applyPriceToRow(tr,matches[0]);totalPrice++;
+          // ★ แยก matches เป็น "ในกลุ่ม" กับ "นอกกลุ่ม"
+          const groupSet=new Set(allCodes);
+          const inGroup=matches.filter(m=>groupSet.has(m.customer_code));
+          const outGroup=matches.filter(m=>!groupSet.has(m.customer_code));
+
+          if(inGroup.length){
+            // ★ มีผลในกลุ่ม → ขึ้น 💰 กลุ่มลูกค้า (ไม่ใช่ 🤖)
+            priceMatchData.set(itemId,inGroup.slice(0,3));
+            updatePriceBadge(tr);
+            applyPriceToRow(tr,inGroup[0]);
+            totalPrice++;
+            // ถ้ามีนอกกลุ่มด้วย เก็บไว้ใน 🤖 เป็นทางเลือกเสริม
+            if(outGroup.length){
+              aiMatchData.set(itemId,{matches:outGroup.slice(0,3),
+                search_tokens:result.search_tokens||[],candidates:result.candidates||[],
+                llm_picked:result.llm_picked,llm_matched:result.llm_matched||''});
+              updateAiBadge(tr);
             }
-          });
-        }catch(e){console.warn('ai price chunk',c,e);}
-      }
+          } else {
+            // ★ ไม่มีในกลุ่มเลย → ขึ้น 🤖 ลูกค้าทั้งหมด ตามเดิม
+            aiMatchData.set(itemId,{matches:outGroup.slice(0,3),
+              search_tokens:result.search_tokens||[],candidates:result.candidates||[],
+              llm_picked:result.llm_picked,llm_matched:result.llm_matched||''});
+            updateAiBadge(tr);
+            applyPriceToRow(tr,outGroup[0]);
+            totalPrice++;
+          }
+        });
+      }catch(e){console.warn('ai price chunk',c,e);}
+    }
 
       for(let c=0;c<Math.ceil(needAiDoc.length/CHUNK);c++){
         const slice=needAiDoc.slice(c*CHUNK,(c+1)*CHUNK);
@@ -1201,12 +1225,15 @@ function applyPriceToRow(tr,m){
   const srcName=esc2((m.product_name||'').substring(0,35));
   const srcPrice=fmt(m.unit_price);
   const srcUnit=esc2(m.unit||'');
-  const isAi=m.matched_tokens&&m.matched_tokens[0]==='🤖 AI';
-  src.innerHTML=(isAi?'🤖 ':'✔ ')+srcDate+' · '+srcCust+' · '+srcSo+' · '+srcName+' · <b>'+srcPrice+'</b> '+srcUnit;
-  if(isAi)src.style.color='#7c3aed';
+
+  // ★ ตัดสิน in-group จาก customer_code จริง ไม่ใช่จาก label
+  const allCodes=getAllSearchCodes();
+  const isInGroup=allCodes.includes(m.customer_code);
+
+  src.innerHTML=(isInGroup?'✔ ':'🤖 ')+srcDate+' · '+srcCust+' · '+srcSo+' · '+srcName+' · <b>'+srcPrice+'</b> '+srcUnit;
+  if(!isInGroup)src.style.color='#7c3aed';
   tr.querySelector('.td-desc').appendChild(src);
 }
-
 $('#addItem').onclick=()=>{
   const tbody = $('#itemRows');
   const newRow = itemRow();
