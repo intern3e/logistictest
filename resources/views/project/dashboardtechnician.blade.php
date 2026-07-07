@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta name="csrf-token" content="{{ csrf_token() }}">
-<title>Triple 3E Group — ระบบจัดการทักษะช่าง</title>
+<title>Triple 3E Group — ระบบจัดการโปรเจค</title>
 <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600;700;800;900&family=IBM+Plex+Sans+Thai:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 @php
   $teams = collect($teams ?? [])
@@ -317,13 +317,13 @@ font-weight: 600;
 /* ============================================================
    INPUTS
    ============================================================ */
-.search-inp, .finput, .cert-search, .roster-search, .borrow-input, .sched-select {
+.search-inp, .finput, .roster-search, .borrow-input, .sched-select {
   border: 1px solid var(--line); background: var(--white);
   border-radius: var(--radius-sm); outline: none; color: var(--dk);
   font-weight: 500; transition: border-color .18s, box-shadow .18s;
 }
 .search-inp { height: 40px; padding: 0 14px; min-width: 250px }
-.search-inp:focus, .finput:focus, .cert-search:focus,
+.search-inp:focus, .finput:focus,
 .roster-search:focus, .borrow-input:focus, .sched-select:focus {
   border-color: var(--navy-500); box-shadow: 0 0 0 3px rgba(170,192,225,.35);
 }
@@ -427,6 +427,14 @@ tbody tr:last-child td { border-bottom: 0 }
   padding: 14px 16px;
   margin-bottom: 20px;
 }
+#panel-accounts .account-monitoring-filter {
+  grid-template-columns: minmax(260px, 1fr) auto;
+}
+#panel-accounts .account-monitoring-filter .btn-solar {
+  min-height: 40px;
+  padding: 0 16px;
+  white-space: nowrap;
+}
 .roster-filter-row {
   display: grid;
   gap: 7px;
@@ -470,6 +478,8 @@ tbody tr:last-child td { border-bottom: 0 }
 #panel-teams > .panel-header .panel-actions { display: none !important }
 @media (max-width: 768px) {
   .roster-filter { grid-template-columns: 1fr }
+  #panel-accounts .account-monitoring-filter { grid-template-columns: 1fr }
+  #panel-accounts .account-monitoring-filter .btn-solar { width: 100% }
 }
 
 /* ============================================================
@@ -975,24 +985,40 @@ text-align: center; overflow: hidden; text-overflow: ellipsis;
   margin-top: 4px;
 }
 
-#panel-customers .panel-actions {
+#panel-customers .customer-site-search-wrap {
   display: grid;
-  grid-template-columns: minmax(320px, 420px);
-  align-items: center;
-  gap: 12px;
+  grid-template-columns: 1fr;
+  gap: 7px;
+  margin-bottom: 16px;
+  background: var(--navy-25);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-md);
+  padding: 14px 16px;
 }
 
-#panel-customers #cust-search {
+#panel-customers .customer-site-search-label {
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: .12em;
+  text-transform: uppercase;
+}
+
+#panel-customers .customer-site-search {
   width: 100%;
-  height: 46px;
-  min-width: 0;
-  padding: 0 16px;
-  border: 1px solid rgba(255,255,255,.42);
-  border-radius: 10px;
-  background: rgba(255,255,255,.98);
-  box-shadow: inset 0 0 0 2px rgba(170,192,225,.18);
-  color: var(--cust-ink);
+  height: 40px;
+  padding: 0 14px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  background: #fff;
+  color: var(--dk);
   font-weight: 800;
+  outline: none;
+}
+
+#panel-customers .customer-site-search:focus {
+  border-color: var(--navy-500);
+  box-shadow: 0 0 0 3px rgba(170,192,225,.35);
 }
 
 #panel-customers .btn-solar {
@@ -1325,15 +1351,12 @@ text-align: center; overflow: hidden; text-overflow: ellipsis;
 }
 
 @media (max-width: 768px) {
-  #panel-customers .panel-header,
-  #panel-customers .panel-actions {
+  #panel-customers .panel-header {
     grid-template-columns: 1fr;
     align-items: stretch;
   }
 
   .cust-metrics { grid-template-columns: repeat(2, minmax(0, 1fr)) }
-  #panel-customers #cust-search,
-  #panel-customers .panel-actions .btn { width: 100% }
 }
 #panel-customers .cust-metrics,
 #panel-customers .cust-filter-bar {
@@ -1420,12 +1443,45 @@ text-align: center; overflow: hidden; text-overflow: ellipsis;
 }
 #panel-aircons .aircon-save:hover { background: #173b8e }
 #panel-aircons .aircon-list-head {
-  display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-top: 6px;
+  display: grid; gap: 12px; margin-top: 6px;
 }
 #panel-aircons .aircon-list-title { color: #0e2f76; font-size: 16px; font-weight: 900 }
-#panel-aircons .aircon-search {
-  width: min(320px, 100%); height: 40px; border: 1px solid #d8e2f0; border-radius: 10px;
-  padding: 0 13px; color: #0e2f76; font-weight: 700; outline: none;
+#panel-aircons .aircon-history-filter {
+  display: grid;
+  grid-template-columns: minmax(260px, 1fr) auto;
+  gap: 12px;
+  align-items: end;
+  background: var(--navy-25);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-md);
+  padding: 14px 16px;
+}
+#panel-aircons .aircon-history-search-row {
+  display: grid;
+  gap: 7px;
+  min-width: 0;
+}
+#panel-aircons .aircon-history-label {
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: .12em;
+  text-transform: uppercase;
+}
+#panel-aircons .aircon-history-search {
+  width: 100%;
+  height: 40px;
+  padding: 0 14px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  background: #fff;
+  color: var(--dk);
+  font-weight: 800;
+  outline: none;
+}
+#panel-aircons .aircon-history-search:focus {
+  border-color: var(--navy-500);
+  box-shadow: 0 0 0 3px rgba(170,192,225,.35);
 }
 #panel-aircons .aircon-status-tag {
   display: inline-flex; align-items: center; border-radius: 999px; padding: 5px 10px;
@@ -1761,8 +1817,7 @@ text-align: center; overflow: hidden; text-overflow: ellipsis;
 @media (max-width: 768px) {
   #panel-aircons .aircon-metrics,
   #panel-aircons .aircon-status-group { grid-template-columns: 1fr }
-  #panel-aircons .aircon-list-head { align-items: stretch; flex-direction: column }
-  #panel-aircons .aircon-search { width: 100% }
+
   #modal-aircon-history .aircon-history-grid,
   #modal-aircon-history .aircon-history-timeline { grid-template-columns: 1fr }
   #modal-aircon-history .aircon-wash-top,
@@ -2000,6 +2055,9 @@ text-align: center; overflow: hidden; text-overflow: ellipsis;
   }
 }
 @media (max-width: 768px) {
+  #panel-aircons .aircon-history-filter {
+    grid-template-columns: 1fr;
+  }
   #panel-aircons .aircon-panel-actions {
     width: 100%;
     align-items: stretch;
@@ -2026,21 +2084,17 @@ text-align: center; overflow: hidden; text-overflow: ellipsis;
     grid-template-columns: 1fr;
   }
 }
-
 /* === AIRCON WASH POPUP END === */
 /* === AIRCON WASH MENU END === */
-
 /* ============================================================
    CERTIFICATIONS
    ============================================================ */
 #panel-certifications .cert-head { position: relative }
-#panel-certifications .cert-head > *,
-#panel-certifications .cert-head input { position: relative; z-index: 1 }
+#panel-certifications .cert-head > * { position: relative; z-index: 1 }
 .cert-kicker { background: rgba(255,255,255,.14); color: rgba(255,255,255,.95); border-color: rgba(255,255,255,.18) }
 .cert-kicker::before { background: #fff }
 .cert-title { font-size: 28px; font-weight: 900; color: #fff }
 .cert-sub { color: rgba(255,255,255,.78) }
-.cert-search { height: 44px; width: 320px; padding: 0 16px; border: 1px solid rgba(255,255,255,.35); background: rgba(255,255,255,.96); border-radius: 12px }
 @media (max-width: 560px) { #panel-certifications .cert-grid { grid-template-columns: 1fr } }
 .cert-card {
   min-height: 142px; border-radius: 16px; border: 1px solid #d8e7fb;
@@ -2565,7 +2619,7 @@ border: 1px solid var(--line); border-radius: var(--radius-sm);
   .sb-toggle { display: grid; position: fixed; top: 14px; left: 14px; width: 44px; height: 44px; border: 1px solid var(--line); border-radius: var(--radius-sm); background: var(--white); z-index: 120; box-shadow: var(--shadow-md); place-items: center }
   .panel-header, .cert-head, .roster-head, .sched-board-top,
   .borrow-head, .borrow-tools, .sched-controls { flex-direction: column; align-items: stretch }
-  .search-inp, .cert-search { width: 100%; min-width: 0 }
+  .search-inp { width: 100%; min-width: 0 }
   .fgrid, .sched-grid, .resume-fields, .borrow-form-grid,
   .skill-grid, .sw-grid, .comp-grid, .pinfo-grid { grid-template-columns: 1fr }
   #modal-sched .frow,
@@ -2588,8 +2642,7 @@ border: 1px solid var(--line); border-radius: var(--radius-sm);
   .sched-list-head { flex-direction: column; align-items: stretch }
   .sched-list-search { min-width: 0; width: 100% }
   .roster-add-tech-btn { width: 100% }
-  #panel-customers .panel-actions .search-inp,
-  #panel-customers .panel-actions .btn { width: 100% }
+
 }.pv2-sections {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -4079,7 +4132,7 @@ textarea.finput {
 #panel-certifications .cert-head {
   min-height: 172px !important;
   display: grid !important;
-  grid-template-columns: minmax(0, 1fr) minmax(280px, 360px) !important;
+  grid-template-columns: 1fr !important;
   align-items: end !important;
   gap: 22px !important;
   padding: 30px 34px !important;
@@ -4159,24 +4212,6 @@ textarea.finput {
   color: rgba(255,255,255,.78) !important;
   font-size: 15px !important;
   font-weight: 800 !important;
-}
-
-#panel-certifications .cert-search {
-  width: 100% !important;
-  height: 48px !important;
-  padding: 0 17px !important;
-  border: 1px solid rgba(255,255,255,.35) !important;
-  border-radius: 12px !important;
-  background: rgba(255,255,255,.96) !important;
-  color: #0e2f76 !important;
-  font-size: 15px !important;
-  font-weight: 800 !important;
-  box-shadow: 0 12px 28px rgba(0,0,0,.12) !important;
-}
-
-#panel-certifications .cert-search:focus {
-  border-color: #fff !important;
-  box-shadow: 0 0 0 4px rgba(255,255,255,.18), 0 12px 28px rgba(0,0,0,.12) !important;
 }
 
 #panel-certifications .cert-grid {
@@ -4771,6 +4806,10 @@ textarea.finput {
       <svg viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="10" rx="2"/><path d="M7 19h10"/><path d="M9 15v4"/><path d="M15 15v4"/><path d="M7 9h10"/></svg>
       <span class="label">ล้างแอร์</span><span class="nav-badge-count">{{ $airconTotal }}</span>
     </button>
+    <button class="sb-tab" type="button" onclick="switchTab('aircons',this)">
+      <svg viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="10" rx="2"/><path d="M7 19h10"/><path d="M9 15v4"/><path d="M15 15v4"/><path d="M7 9h10"/></svg>
+      <span class="label">อุปกรณ์คอมพิวเตอร์</span><span class="nav-badge-count">{{ $airconTotal }}</span>
+    </button>
   </div>
 </aside>
 <main class="main">
@@ -5058,10 +5097,11 @@ textarea.finput {
       <div class="panel-title">ลูกค้า / ไซต์งาน ({{ $customers->count() }} ราย)</div>
       <div class="customer-hero-sub">รวมข้อมูลลูกค้า สถานที่ติดตั้ง รอบดูแล และสถานะงาน</div>
     </div>
-    <div class="panel-actions">
-      <input type="search" class="search-inp" id="cust-search" placeholder="ค้นหาชื่อลูกค้า / สถานที่ / ผู้ติดต่อ / เบอร์โทร..." oninput="filterCustTable(this.value)">
-    </div>
   </div>
+    <div class="customer-site-search-wrap">
+      <label class="customer-site-search-label" for="cust-search">ค้นหาข้อมูล</label>
+      <input type="search" class="customer-site-search" id="cust-search" placeholder="ค้นหาชื่อลูกค้า / ไซต์งาน / ผู้ติดต่อ / เบอร์โทร..." oninput="filterCustTable(this.value)">
+    </div>
     <div class="cust-metrics">
       <div class="cust-metric">
         <div class="cust-metric-label">ทั้งหมด</div>
@@ -5182,7 +5222,15 @@ textarea.finput {
   <section class="panel" id="panel-accounts">
     <div class="panel-header">
       <div class="panel-title">บัญชีผู้ใช้ Solar / Monitoring ({{ $accounts->count() }} บัญชี)</div>
-      <div class="panel-actions"><input type="search" class="search-inp" placeholder="ค้นหาบัญชี..." oninput="filterTable('acc-tbody',this.value)"><button class="btn btn-solar" type="button" onclick="openAccAdd()">+ เพิ่มบัญชี</button></div>
+    </div>
+    <div class="roster-filter account-monitoring-filter">
+      <div class="roster-filter-row">
+        <label class="roster-filter-label" for="account-monitoring-search">ค้นหาชื่อ</label>
+        <input id="account-monitoring-search" class="roster-search" type="search" placeholder="ค้นหาชื่อระบบ / ลูกค้า / Inverter / Username / Email..." oninput="filterTable('acc-tbody',this.value)">
+      </div>
+      <div class="roster-filter-row roster-filter-actions">
+        <button class="btn btn-solar" type="button" onclick="openAccAdd()">+ เพิ่มบัญชี</button>
+      </div>
     </div>
     @if($accounts->count() === 0)
       <div class="empty-state">ยังไม่มีบัญชีในระบบ</div>
@@ -5214,12 +5262,6 @@ textarea.finput {
   <section class="panel" id="panel-aircons">
     <div class="panel-header">
       <div class="panel-title">ล้างแอร์ ({{ $airconTotal }} เครื่อง)</div>
-      <div class="panel-actions aircon-panel-actions">
-        <button class="aircon-add-btn" type="button" onclick="openAirconAdd()">
-          <svg viewBox="0 0 24 24"><path d="M12 5v14"/><path d="M5 12h14"/></svg>
-          <span>เพิ่มเครื่องแอร์</span>
-        </button>
-      </div>
     </div>
 
     <div class="aircon-shell">
@@ -5249,7 +5291,16 @@ textarea.finput {
 
       <div class="aircon-list-head">
         <div class="aircon-list-title">ประวัติงานล้างแอร์</div>
-        <input class="aircon-search" type="search" placeholder="ค้นหารหัสเครื่อง / ยี่ห้อ / จุดติดตั้ง" oninput="filterAirconTable(this.value)">
+        <div class="aircon-history-filter">
+          <div class="aircon-history-search-row">
+            <label class="aircon-history-label" for="aircon-history-search">ค้นหาข้อมูล</label>
+            <input id="aircon-history-search" class="aircon-history-search" type="search" placeholder="ค้นหารหัสเครื่อง / ยี่ห้อ / รุ่น / จุดติดตั้ง..." oninput="filterAirconTable(this.value)">
+          </div>
+          <button class="aircon-add-btn" type="button" onclick="openAirconAdd()">
+            <svg viewBox="0 0 24 24"><path d="M12 5v14"/><path d="M5 12h14"/></svg>
+            <span>เพิ่มเครื่องแอร์</span>
+          </button>
+        </div>
       </div>
 
       @if($aircons->count() === 0)
@@ -5483,7 +5534,6 @@ textarea.finput {
     <div class="cert-board">
       <div class="cert-head">
         <div><div class="cert-kicker">CERTIFICATIONS · {{ $certGroups->count() }} UNIQUE</div><div class="cert-title">รวมใบรับรององค์กร</div><div class="cert-sub">ใบรับรองวิชาชีพรวม {{ $certTotal }} ฉบับ</div></div>
-        <input class="cert-search" placeholder="ค้นหาใบรับรอง..." oninput="filterCertCards(this.value)">
       </div>
       <div class="cert-grid" id="cert-grid">
         @forelse($certGroups as $certName => $items)
@@ -5491,7 +5541,7 @@ textarea.finput {
             $abbrs = $items->map(fn($item) => mb_substr(preg_split('/\s+/u', trim($item['tech']->emp_name ?: $item['tech']->emp_id))[0] ?? ($item['tech']->emp_name ?: $item['tech']->emp_id), 0, 2))->unique()->take(4)->values();
             $payload = $items->map(fn($item) => ['tech' => $item['tech'], 'license' => $item['license'], 'license_index' => $item['license_index']])->values();
           @endphp
-          <button class="cert-card" type="button" data-cert-search="{{ strtolower($certName) }}" data-cert-name="{{ $certName }}" data-cert-items="{{ json_encode($payload, JSON_UNESCAPED_UNICODE|JSON_HEX_APOS|JSON_HEX_QUOT|JSON_HEX_TAG|JSON_HEX_AMP) }}" onclick="openCertDetail(this)">
+          <button class="cert-card" type="button" data-cert-name="{{ $certName }}" data-cert-items="{{ json_encode($payload, JSON_UNESCAPED_UNICODE|JSON_HEX_APOS|JSON_HEX_QUOT|JSON_HEX_TAG|JSON_HEX_AMP) }}" onclick="openCertDetail(this)">
             <div class="cert-card-top"><div class="cert-icon">☆</div><div class="cert-info"><div class="cert-name">{{ $certName }}</div><div class="cert-count-text">{{ $items->count() }} คนในองค์กร</div></div><div class="cert-count">{{ $items->count() }}</div></div>
             <div class="cert-people">@foreach($abbrs as $abbr)<span>{{ $abbr }}</span>@endforeach</div>
           </button>
@@ -6857,14 +6907,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
 <script>
 /* === CODEX CERTIFICATIONS CLICK DETAIL START === */
-window.filterCertCards = function(q) {
-  const kw = String(q || '').toLowerCase().trim();
-  document.querySelectorAll('#cert-grid .cert-card').forEach(card => {
-    const text = `${card.dataset.certSearch || ''} ${card.textContent || ''}`.toLowerCase();
-    card.style.display = !kw || text.includes(kw) ? '' : 'none';
-  });
-};
-
 window.openCertDetail = function(btn) {
   let items = [];
   try {
@@ -7326,6 +7368,7 @@ document.addEventListener('DOMContentLoaded', () => {
     setTimeout(() => form.querySelector('[name="aircon_code"]')?.focus(), 80);
   };
 })();
+
 /* === CODEX AIRCON EDIT ACTION END === */
 </script>
 </body>

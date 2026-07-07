@@ -19,7 +19,7 @@ use Smalot\PdfParser\Parser as PdfParser;
 class PoDocumentController extends Controller
 {
     private $specialCustomers = ['CUS-26039'];
-    private $tcusPerBillPage = 5;
+    private $tcusPerBillPage = 6;
     private $depositPdfPath = null; 
     private $dateOverlayPdfPath = null;
 
@@ -177,15 +177,6 @@ class PoDocumentController extends Controller
             Log::error("overlay deposit ไม่สำเร็จ: " . $e->getMessage());
         }
     }
-
-    // =============================================================
-    //  แปลงวันที่ พ.ศ. → ค.ศ. + วัน → Days (เฉพาะ specialCustomers)
-    // =============================================================
-
-    /**
-     * อ่านค่าจาก PDF → หาวันที่ พ.ศ. (dd/mm/25xx) + "XX วัน"
-     * แล้วคำนวณแปลงเป็น ค.ศ. (ลบ 543) + "XX Days"
-     */
     private function extractAndConvertDates(string $filePath): array
     {
         $parser = new PdfParser();
@@ -202,8 +193,6 @@ class PoDocumentController extends Controller
                 ];
             }
         }
-
-        // หา "XX วัน" → "XX Days"
         if (preg_match('/(\d+)\s*วัน/', $text, $dm)) {
             $result['day_term'] = [
                 'original'  => $dm[0],
@@ -213,11 +202,6 @@ class PoDocumentController extends Controller
 
         return $result;
     }
-
-    /**
-     * สร้าง overlay PDF (กล่องขาวทับข้อความเดิม + ปั้มวันที่ใหม่)
-     * pattern เดียวกับ createDepositPdf()
-     */
 private function convertDatesForSpecialCustomer(string $billId, string $stampImage, string $billDate = '', string $dueDate = ''): void
 {
     $filePath = storage_path("app/public/doc_document/{$billId}.pdf");
@@ -228,8 +212,8 @@ private function convertDatesForSpecialCustomer(string $billId, string $stampIma
     try {
         $convertedData = [
             'dates' => [
-                ['converted' => $this->convertBuddhistDate($billDate)], // DATE
-                ['converted' => $this->convertBuddhistDate($dueDate)],  // DUE DATE
+                ['converted' => $this->convertBuddhistDate($billDate)],
+                ['converted' => $this->convertBuddhistDate($dueDate)],  
             ],
             'day_term' => null,
         ];
@@ -249,8 +233,6 @@ private function convertDatesForSpecialCustomer(string $billId, string $stampIma
 
             $pdf->addPage($size['orientation'], [$size['width'], $size['height']]);
             $pdf->useTemplate($tpl, 0, 0, $size['width'], $size['height']);
-
-            // ปั้มทุกหน้า (ลบ if ($p === 1) ออก)
             $this->overlayDepositPdf($pdf, $overlayPath, $size['width'], $size['height']);
 
             if (file_exists($stampImage)) {

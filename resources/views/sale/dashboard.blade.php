@@ -28,7 +28,7 @@
     <label for="date">📅 วันที่: เดือน / วัน / ปี</label>
     
     <input type="date" id="date" name="date"
-        value="{{ request('date', \Carbon\Carbon::today()->format('Y-m-d')) }}">
+        value="{{ request('date') }}">
 
     {{-- 👇 เพิ่ม dropdown ผู้บันทึก --}}
     <label for="emp_name" style="margin-left: 15px;">ผู้บันทึก:</label>
@@ -57,21 +57,22 @@
   
     
     <script>
-        const form = document.getElementById('autoSearchForm');
-        const dateInput = document.getElementById('date');
-    
-        // ส่งฟอร์มเมื่อเปลี่ยนวันที่
-        dateInput.addEventListener('change', () => {
-            form.submit();
-        });
-    
-        // ส่งฟอร์มอัตโนมัติเมื่อเข้าหน้าเว็บครั้งแรกเท่านั้น
-        window.addEventListener('load', () => {
-            if (!sessionStorage.getItem('hasAutoSubmitted')) {
-                sessionStorage.setItem('hasAutoSubmitted', 'true');
-                form.submit();
-            }
-        });
+const form = document.getElementById('autoSearchForm');
+const dateInput = document.getElementById('date');
+
+dateInput.addEventListener('change', () => {
+    form.submit();
+});
+
+window.addEventListener('load', () => {
+    if (!sessionStorage.getItem('hasAutoSubmitted')) {
+        sessionStorage.setItem('hasAutoSubmitted', 'true');
+        if (!dateInput.value) {
+            dateInput.value = new Date().toISOString().slice(0, 10);
+        }
+        form.submit();
+    }
+});
     </script>
     </div>
 <form method="GET" action="{{ route('sale.dashboard') }}" class="search-box">

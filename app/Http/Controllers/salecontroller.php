@@ -55,22 +55,21 @@ public function login(Request $request)
 public function dashboard(Request $request)
 {
     $date      = $request->get('date');
-    $keyword   = $request->get('keyword');   // ค้นหา billid
-    $soKeyword = $request->get('so_keyword'); // ค้นหา so_id
-    $empName   = $request->get('emp_name');  // 👈 เพิ่ม filter ผู้เปิดบิล
+    $keyword   = $request->get('keyword');  
+    $soKeyword = $request->get('so_keyword'); 
+    $empName   = $request->get('emp_name');  
     $message   = null;
+    $empListQuery = Bill::whereNotNull('emp_name')
+        ->where('emp_name', '!=', '');
 
-    // 👇 ดึงรายชื่อผู้เปิดบิลของวันนั้น (auto distinct)
-    $empList = collect();
     if ($date) {
-        $empList = Bill::whereDate('time', $date)
-            ->whereNotNull('emp_name')
-            ->where('emp_name', '!=', '')
-            ->distinct()
-            ->orderBy('emp_name')
-            ->pluck('emp_name');
+        $empListQuery->whereDate('time', $date);  
     }
 
+    $empList = $empListQuery
+        ->distinct()
+        ->orderBy('emp_name')
+        ->pluck('emp_name');
     $query = Bill::query();
 
     if ($date) {
