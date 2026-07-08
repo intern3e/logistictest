@@ -604,43 +604,83 @@ class TechnicianController extends Controller
     //  SOLAR ACCOUNTS CRUD
     // ══════════════════════════════════════════════════════════════
 
-    public function airconStore(Request $r)
-    {
-        $data = $r->validate([
-            'aircon_code' => ['required', 'string', 'max:50', 'unique:air_conditioners,aircon_code'],
-            'brand' => ['required', 'string', 'max:100'],
-            'model_name' => ['required', 'string', 'max:150'],
-            'location' => ['required', 'string', 'max:255'],
-            'service_date' => ['required', 'date'],
-            'status' => ['required', 'in:cleaned,pending'],
-            'cover_image' => ['nullable', 'image', 'max:5120'],
-            'images' => ['nullable', 'array'],
-            'images.*' => ['nullable', 'image', 'max:5120'],
-            'notes' => ['nullable', 'string'],
-        ]);
+   public function airconStore(Request $r)
+{
+    $data = $r->validate([
+        'aircon_code'   => ['required', 'string', 'max:50'], // เอา unique ออก
+        'brand'         => ['required', 'string', 'max:100'],
+        'model_name'    => ['required', 'string', 'max:150'],
+        'location'      => ['required', 'string', 'max:255'],
+        'service_date'  => ['required', 'date'],
+        'status'        => ['required', 'in:cleaned,pending'],
+        'cover_image'   => ['nullable', 'image', 'max:5120'],
+        'images'        => ['nullable', 'array'],
+        'images.*'      => ['nullable', 'image', 'max:5120'],
+        'notes'         => ['nullable', 'string'],
+    ]);
 
-        if ($r->hasFile('cover_image')) {
-            $data['cover_image'] = $r->file('cover_image')->store('aircons', 'public');
-        }
+    $uploadedGallery = [];
+    foreach ($r->file('images', []) as $image) {
+        $uploadedGallery[] = $image->store('aircons', 'public');
+    }
 
-        $gallery = [];
-        foreach ($r->file('images', []) as $image) {
-            $gallery[] = $image->store('aircons', 'public');
-        }
+    $coverImage = $r->hasFile('cover_image')
+        ? $r->file('cover_image')->store('aircons', 'public')
+        : null;
 
-        $data['images'] = $gallery;
-        if (empty($data['cover_image']) && ! empty($gallery)) {
-            $data['cover_image'] = $gallery[0];
-        }
-        $data['cleaned_at'] = $data['status'] === 'cleaned'
+    $aircon = AirConditioner::where('aircon_code', $data['aircon_code'])->first();
+
+    $newLog = [
+        'date'   => $data['service_date'],
+        'status' => $data['status'],
+        'notes'  => $data['notes'] ?? '',
+        'images' => $uploadedGallery,
+    ];
+
+    if ($aircon) {
+        // รหัสเครื่องนี้มีอยู่แล้ว -> เพิ่มเป็นประวัติการล้างใหม่ของเครื่องเดิม
+        $logs = is_array($aircon->wash_logs) ? $aircon->wash_logs : [];
+        array_unshift($logs, $newLog);
+
+        $gallery = is_array($aircon->images) ? array_values(array_filter($aircon->images)) : [];
+        $gallery = array_values(array_unique(array_merge($gallery, $uploadedGallery)));
+
+        $aircon->brand        = $data['brand'];
+        $aircon->model_name   = $data['model_name'];
+        $aircon->location     = $data['location'];
+        $aircon->service_date = $data['service_date'];
+        $aircon->status       = $data['status'];
+        $aircon->notes        = $data['notes'] ?? '';
+        $aircon->wash_logs    = $logs;
+        $aircon->images       = $gallery;
+        $aircon->cleaned_at   = $data['status'] === 'cleaned'
             ? Carbon::parse($data['service_date'])->startOfDay()
             : null;
 
-        AirConditioner::create($data);
+        if ($coverImage) {
+            $aircon->cover_image = $coverImage;
+        } elseif (empty($aircon->cover_image) && ! empty($gallery)) {
+            $aircon->cover_image = $gallery[0];
+        }
+
+        $aircon->save();
 
         return redirect()->route('technician.dashboard', ['tab' => 'aircons'])
-            ->with('success', 'บันทึกข้อมูลเครื่องแอร์แล้ว');
+            ->with('success', "เพิ่มประวัติการล้างเครื่อง {$aircon->aircon_code} เรียบร้อยแล้ว");
     }
+
+    $data['images']      = $uploadedGallery;
+    $data['cover_image'] = $coverImage ?: ($uploadedGallery[0] ?? null);
+    $data['wash_logs']   = [$newLog];
+    $data['cleaned_at']  = $data['status'] === 'cleaned'
+        ? Carbon::parse($data['service_date'])->startOfDay()
+        : null;
+
+    AirConditioner::create($data);
+
+    return redirect()->route('technician.dashboard', ['tab' => 'aircons'])
+        ->with('success', 'บันทึกข้อมูลเครื่องแอร์แล้ว');
+}
 
 
 

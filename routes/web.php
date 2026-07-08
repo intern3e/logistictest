@@ -251,6 +251,8 @@ Route::post('/aircons/store', [TechnicianController::class, 'airconStore'])->nam
 Route::post('/aircons/{id}/update', [TechnicianController::class, 'airconUpdate'])->name('aircons.update');
 Route::post('/aircons/{id}/status', [TechnicianController::class, 'airconStatusUpdate'])->name('aircons.status');
 Route::post('/aircons/{id}/delete', [TechnicianController::class, 'airconDestroy'])->name('aircons.delete');
+Route::post('/technicians/{id}/move-team', [TechnicianController::class, 'moveTechnicianTeam'])->name('tech.moveTeam');
+
 
 
 use App\Http\Controllers\DeliverytrackController;

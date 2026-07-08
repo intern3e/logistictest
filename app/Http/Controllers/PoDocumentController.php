@@ -430,23 +430,23 @@ private function convertBuddhistDate(string $date): string
 
                         $pdf->addPage($sizeBill['orientation'], [$pageWidth, $pageHeight]);
 
-                        // Layer 1: TCUS
                         $pdf->setSourceFile($templatePdfPath);
                         $templateSpecialId = $pdf->importPage($tcusPageNo);
                         $pdf->useTemplate($templateSpecialId, 0, 0, $pageWidth, $pageHeight);
 
-                        // Layer 2: บิลเดิม
                         $pdf->setSourceFile($filePath);
                         $templateBillId = $pdf->importPage($billPageNo);
                         $pdf->useTemplate($templateBillId, 0, 0, $pageWidth, $pageHeight);
 
-                        // Layer 3: ปั้มข้อมูลทั่วไป (ทุกหน้า)
                         $this->stampCommonInfo($pdf, $so_detail_id, $so_id, $stampImage);
-
-                        // ✨ Layer 4: ซ้อน deposit เฉพาะหน้าสุดท้ายของบิลเดิม + tcusOffset สุดท้าย
                         $isLastPage = ($tcusOffset == $this->tcusPerBillPage && $billPageNo == $billPageCount);
+
                         if ($hasDeposit && $depositPdfPath && $isLastPage) {
-                            $this->overlayDepositPdf($pdf, $depositPdfPath, $pageWidth, $pageHeight);
+                            $this->overlayDepositPdf($pdf, $depositPdfPath, $sizeBill['width'], $sizeBill['height']);
+                        }
+
+                        if ($isSpecialCustomer && $isLastPage) {
+                            $this->stampNoWithholdingTax($pdf);
                         }
                     }
                 }
@@ -494,6 +494,14 @@ if ($isSpecialCustomer) {
             return response()->json(['success' => false, 'error' => $e->getMessage()]);
         }
     }
+
+private function stampNoWithholdingTax($pdf): void
+{
+    $pdf->SetFont('Helvetica', '', 16);
+    $pdf->SetTextColor(0, 0, 0);
+    $pdf->SetXY(10, 194);
+    $pdf->Cell(0, 10, 'No withholding tax is required', 0, 0, 'L');
+}
     public function addIdToDocument3(Request $request): JsonResponse
     {
         try {

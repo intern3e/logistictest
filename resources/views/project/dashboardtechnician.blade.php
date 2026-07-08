@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta name="csrf-token" content="{{ csrf_token() }}">
-<title>Triple 3E Group — ระบบจัดการโปรเจค</title>
+<title>Triple 3E Group — ระบบจัดการทักษะช่าง</title>
 <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600;700;800;900&family=IBM+Plex+Sans+Thai:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 @php
   $teams = collect($teams ?? [])
@@ -4685,6 +4685,242 @@ textarea.finput {
 }
 /* === CODEX CERTIFICATIONS REDESIGN END === */
 
+/* CODEX OVERVIEW TEAM CARD REDESIGN START */
+#roster-grid {
+  grid-template-columns: repeat(auto-fill, minmax(320px, 340px)) !important;
+  justify-content: start !important;
+  align-items: start !important;
+  gap: 18px !important;
+  padding: 18px !important;
+  background: #ffffff !important;
+  border-radius: 10px !important;
+}
+
+#roster-grid .emp-card {
+  width: 100% !important;
+  min-height: 188px !important;
+  display: flex !important;
+  grid-template-rows: none !important;
+  flex-direction: column !important;
+  padding: 0 !important;
+  border: 0 !important;
+  border-radius: 14px !important;
+  overflow: hidden !important;
+  background: #aac0e1 !important;
+  color: #fff !important;
+  box-shadow: 0 12px 26px rgba(14,47,118,.18) !important;
+  cursor: pointer !important;
+  opacity: 1 !important;
+  animation: popIn .45s cubic-bezier(.34,1.4,.64,1) forwards;
+  transition: transform .18s ease, box-shadow .18s ease !important;
+}
+
+#roster-grid .emp-card::before,
+#roster-grid .emp-card::after {
+  content: none !important;
+  display: none !important;
+}
+
+#roster-grid .emp-card:hover {
+  transform: translateY(-2px) !important;
+  border-color: transparent !important;
+  box-shadow: 0 18px 34px rgba(14,47,118,.24) !important;
+}
+
+#roster-grid .overview-person-top {
+  min-height: 110px;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 108px;
+  gap: 12px;
+  padding: 18px 18px 14px;
+  background: linear-gradient(90deg, #17387f 0%, #17387f 62%, #1d4693 62%, #1d4693 100%);
+  color: #fff;
+}
+
+#roster-grid .overview-person-copy {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+#roster-grid .overview-person-id {
+  color: rgba(255,255,255,.66);
+  font-size: 11px;
+  font-weight: 800;
+  line-height: 1.2;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+#roster-grid .overview-person-name {
+  color: #fff;
+  font-size: 18px;
+  font-weight: 900;
+  line-height: 1.18;
+  margin-top: 4px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+#roster-grid .overview-person-role,
+#roster-grid .overview-person-phone {
+  color: rgba(255,255,255,.82);
+  font-size: 12px;
+  font-weight: 800;
+  line-height: 1.28;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+#roster-grid .overview-person-role {
+  margin-top: 2px;
+}
+
+#roster-grid .overview-person-phone {
+  color: rgba(255,255,255,.68);
+}
+
+#roster-grid .overview-person-media {
+  position: relative;
+  display: grid;
+  place-items: end center;
+  align-content: end;
+}
+
+#roster-grid .overview-person-brand {
+  position: absolute;
+  top: -12px;
+  right: -12px;
+  width: 28px;
+  height: 28px;
+  display: grid;
+  place-items: center;
+  border-radius: 8px;
+  background: #4163a7;
+  color: #fff;
+  font-size: 12px;
+  font-weight: 900;
+}
+
+#roster-grid .overview-avatar {
+  width: 74px;
+  height: 74px;
+  border-radius: 50%;
+  overflow: hidden;
+  display: grid;
+  place-items: center;
+  background: #3e5b9a;
+  color: #fff;
+  font-size: 22px;
+  font-weight: 900;
+  box-shadow: inset 0 0 0 1px rgba(255,255,255,.08);
+}
+
+#roster-grid .overview-avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+#roster-grid .overview-avatar .initials {
+  width: 100%;
+  height: 100%;
+  display: grid;
+  place-items: center;
+}
+
+#roster-grid .overview-person-skills {
+  display: flex !important;
+  flex-wrap: wrap !important;
+  align-items: flex-start !important;
+  gap: 8px !important;
+  min-height: 76px !important;
+  margin: 0 !important;
+  padding: 10px 16px 14px !important;
+  border: 0 !important;
+  background: #aac0e1 !important;
+  overflow: hidden !important;
+}
+
+#roster-grid .overview-person-skills::before {
+  display: none !important;
+}
+
+#roster-grid .emp-skill-tag,
+#roster-grid .emp-id-skill-strip .emp-skill-tag,
+#roster-grid .emp-id-skill-strip .emp-skill-tag:first-child {
+  min-height: 24px !important;
+  display: inline-flex !important;
+  grid-column: auto !important;
+  align-items: center !important;
+  gap: 5px !important;
+  padding: 4px 10px !important;
+  border: 0 !important;
+  border-radius: 999px !important;
+  background: #f5feff !important;
+  color: #0e2f76 !important;
+  font-size: 12px !important;
+  font-weight: 800 !important;
+  line-height: 1 !important;
+  text-align: left !important;
+  box-shadow: 0 1px 0 rgba(255,255,255,.55) !important;
+}
+
+#roster-grid .emp-skill-tag svg {
+  width: 12px !important;
+  height: 12px !important;
+  flex: 0 0 12px !important;
+  stroke: currentColor !important;
+  fill: none !important;
+  stroke-width: 2 !important;
+  stroke-linecap: round !important;
+  stroke-linejoin: round !important;
+}
+
+#roster-grid .emp-skill-tag.plus-tag {
+  background: rgba(255,255,255,.72) !important;
+  color: #17387f !important;
+}
+
+@media (max-width: 780px) {
+  #roster-grid {
+    grid-template-columns: minmax(0, 1fr) !important;
+  }
+
+  #roster-grid .overview-person-top {
+    grid-template-columns: minmax(0, 1fr) 96px;
+    padding: 16px 16px 13px;
+  }
+}
+
+@media (max-width: 420px) {
+  #roster-grid .overview-person-top {
+    grid-template-columns: minmax(0, 1fr) 82px;
+    gap: 8px;
+  }
+
+  #roster-grid .overview-person-name {
+    font-size: 16px;
+  }
+
+  #roster-grid .overview-person-id,
+  #roster-grid .overview-person-role,
+  #roster-grid .overview-person-phone {
+    font-size: 11px;
+  }
+
+  #roster-grid .overview-avatar {
+    width: 62px;
+    height: 62px;
+    font-size: 18px;
+  }
+}
+/* CODEX OVERVIEW TEAM CARD REDESIGN END */
+
 /* CODEX TEAM DRAG DROP START */
 #view-team .team-card {
   position: relative;
@@ -4768,6 +5004,54 @@ textarea.finput {
 .team-dnd-toast.error {
   background: #991b1b;
 }
+#roster-grid .overview-person-skills {
+    display: flex !important;
+    flex-wrap: wrap !important;
+    align-items: flex-start !important;
+    gap: 8px !important;
+    min-height: 76px !important;
+    margin: 0 !important;
+    padding: 10px 16px 14px !important;
+    border: 0 !important;
+    background: #ffffff !important;
+    overflow: hidden !important;
+}
+#roster-grid .emp-card {
+    width: 100% !important;
+    min-height: 188px !important;
+    display: flex !important;
+    grid-template-rows: none !important;
+    flex-direction: column !important;
+    padding: 0 !important;
+    border: 0 !important;
+    border-radius: 14px !important;
+    overflow: hidden !important;
+    background: #aac0e1 !important;
+    color: #fff !important;
+    box-shadow: 0 12px 26px rgba(14, 47, 118, .18) !important;
+    cursor: pointer !important;
+    opacity: 1 !important;
+    animation: popIn .45s cubic-bezier(.34, 1.4, .64, 1) forwards;
+    transition: transform .18s ease, box-shadow .18s ease !important;
+}
+#roster-grid .emp-card {
+    width: 100% !important;
+    min-height: 188px !important;
+    display: flex !important;
+    grid-template-rows: none !important;
+    flex-direction: column !important;
+    padding: 0 !important;
+    border: 0 !important;
+    border-radius: 14px !important;
+    overflow: hidden !important;
+    background: #fdfdfd !important;
+    color: #fff !important;
+    box-shadow: 0 12px 26px rgba(14, 47, 118, .18) !important;
+    cursor: pointer !important;
+    opacity: 1 !important;
+    animation: popIn .45s cubic-bezier(.34, 1.4, .64, 1) forwards;
+    transition: transform .18s ease, box-shadow .18s ease !important;
+}
 /* CODEX TEAM DRAG DROP END */
 </style>
 </head>
@@ -4794,10 +5078,6 @@ textarea.finput {
       <svg viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
       <span class="label">ลูกค้าและไซต์งาน</span><span class="nav-badge-count">{{ $customers->count() }}</span>
     </button>
-    <button class="sb-tab" type="button" onclick="switchTab('accounts',this)">
-      <svg viewBox="0 0 24 24"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
-      <span class="label">บัญชี Solar</span><span class="nav-badge-count">{{ $accounts->count() }}</span>
-    </button>
     <button class="sb-tab" type="button" onclick="switchTab('certifications',this)">
       <svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="6"/><path d="M8.8 13.1 7 22l5-3 5 3-1.8-8.9"/></svg>
       <span class="label">ใบรับรอง</span><span class="nav-badge-count">{{ $certTotal }}</span>
@@ -4805,10 +5085,6 @@ textarea.finput {
     <button class="sb-tab" type="button" onclick="switchTab('aircons',this)">
       <svg viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="10" rx="2"/><path d="M7 19h10"/><path d="M9 15v4"/><path d="M15 15v4"/><path d="M7 9h10"/></svg>
       <span class="label">ล้างแอร์</span><span class="nav-badge-count">{{ $airconTotal }}</span>
-    </button>
-    <button class="sb-tab" type="button" onclick="switchTab('aircons',this)">
-      <svg viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="10" rx="2"/><path d="M7 19h10"/><path d="M9 15v4"/><path d="M15 15v4"/><path d="M7 9h10"/></svg>
-      <span class="label">อุปกรณ์คอมพิวเตอร์</span><span class="nav-badge-count">{{ $airconTotal }}</span>
     </button>
   </div>
 </aside>
@@ -4878,77 +5154,42 @@ textarea.finput {
               data-search="{{ strtolower(($m->emp_name ?? '').' '.($m->emp_name_eng ?? '').' '.($m->emp_nickname ?? '').' '.($m->emp_id ?? '').' '.($m->emp_team ?? '').' '.($m->emp_skill ?? '').' '.collect($m->software_tools ?? [])->implode(' ')) }}"
               data-tech="{{ json_encode($m, JSON_UNESCAPED_UNICODE|JSON_HEX_APOS|JSON_HEX_QUOT|JSON_HEX_TAG|JSON_HEX_AMP) }}"
               onclick="openProfileFromEl(this)">
-              <div class="emp-id-header">
-                <div class="emp-id-brand">
-                  <span class="emp-id-mark">3E</span>
-                  <span class="emp-id-brand-text">
-                    <b>บัตรประจำตัวช่าง</b>
-                    <small>TRIPLE 3E GROUP</small>
-                  </span>
+              <div class="overview-person-top">
+                <div class="overview-person-copy">
+                  <div class="overview-person-id">เลขประจำตัว {{ $m->emp_id ?: '-' }}</div>
+                  <div class="overview-person-name" title="{{ $m->emp_name ?: $m->emp_id }}">{{ $m->emp_name ?: $m->emp_id }}</div>
+                  <div class="overview-person-role">{{ $isHead ? 'หัวหน้าทีม' : ($m->emp_position ?: 'ลูกทีม') }}</div>
+                  <div class="overview-person-phone">โทร {{ $phoneDisplay }}</div>
                 </div>
-              </div>
-
-              <div class="emp-id-body">
-                <div class="emp-id-photo">
-                  @if($m->img)
-                    <img
-                      src="{{ asset('storage/'.$m->img) }}"
-                      alt="{{ $m->emp_name }}"
-                      onerror="this.onerror=null;const initials=this.parentElement?.querySelector('.initials');if(initials)initials.style.display='grid';this.remove();"
-                    >
-                    <span class="initials" style="display:none">{{ $initial }}</span>
-                  @else
-                    <span class="initials">{{ $initial }}</span>
-                  @endif
-                  <small>PHOTO</small>
-                </div>
-
-                <div class="emp-id-info">
-                  <div class="emp-id-row emp-id-number-row">
-                    <span>
-                      <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="4" width="18" height="16" rx="3"/><path d="M7 9h4M7 13h6M16 9h1"/></svg>
-                      เลขประจำตัว
-                    </span>
-                    <strong>{{ $m->emp_id }}</strong>
-                  </div>
-                  <div class="emp-id-row emp-id-fullname-row">
-                    <span>
-                      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 21a8 8 0 0 0-16 0"/><circle cx="12" cy="8" r="4"/></svg>
-                      ชื่อ-นามสกุล
-                    </span>
-                    <strong>{{ $m->emp_name ?: $m->emp_id }}</strong>
-                  </div>
-
-                  <div class="emp-id-row emp-id-position-row">
-                    <span>
-                      <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="7" width="18" height="13" rx="2"/><path d="M8 7V5a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2M3 12h18"/></svg>
-                      ตำแหน่ง
-                    </span>
-                    <strong>{{ $isHead ? 'หัวหน้าทีม' : 'ลูกทีม' }}</strong>
-                  </div>
-                  <div class="emp-id-row emp-id-phone-row">
-                    <span>
-                      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M22 16.92v3a2 2 0 0 1-2.18 2A19.8 19.8 0 0 1 3.09 5.18 2 2 0 0 1 5.08 3h3a2 2 0 0 1 2 1.72c.12.89.34 1.76.66 2.59a2 2 0 0 1-.45 2.11L9.03 10.7a16 16 0 0 0 4.27 4.27l1.28-1.26a2 2 0 0 1 2.11-.45c.83.32 1.7.54 2.59.66A2 2 0 0 1 22 16.92z"/></svg>
-                      เบอร์โทร
-                    </span>
-                    <strong>{{ $phoneDisplay }}</strong>
+                <div class="overview-person-media">
+                  <div class="overview-person-brand">3E</div>
+                  <div class="overview-avatar">
+                    @if($m->img)
+                      <img
+                        src="{{ asset('storage/'.$m->img) }}"
+                        alt="{{ $m->emp_name }}"
+                        onerror="this.onerror=null;this.style.display='none';const initials=this.parentElement?.querySelector('.initials');if(initials)initials.style.display='grid';"
+                      >
+                      <span class="initials" style="display:none">{{ $initial }}</span>
+                    @else
+                      <span class="initials">{{ $initial }}</span>
+                    @endif
                   </div>
                 </div>
               </div>
 
-              <div class="emp-id-skill-strip">
-                @foreach($skills->take(4) as $sk)
+              <div class="overview-person-skills emp-card-skills">
+                @forelse($skills as $sk)
                   <span class="emp-skill-tag">
-                    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20.59 13.41 13.42 20.6a2 2 0 0 1-2.83 0L3 13V3h10l7.59 7.59a2 2 0 0 1 0 2.82z"/><circle cx="7.5" cy="7.5" r="1.5"/></svg>
+                    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M13 2 4 14h7l-1 8 9-12h-7l1-8z"/></svg>
                     {{ $sk }}
                   </span>
-                @endforeach
-              </div>
-
-              <div class="emp-id-footer">
-                <span class="emp-id-status {{ $isLeave ? 'is-leave' : '' }}">
-                  <i></i>{{ $isLeave ? 'ลาออก' : 'ปฏิบัติงาน' }}
-                </span>
+                @empty
+                  <span class="emp-skill-tag">
+                    <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 8v4l3 2"/></svg>
+                    ทั่วไป
+                  </span>
+                @endforelse
               </div>
             </article>
           @empty
@@ -6896,7 +7137,6 @@ window.updateScheduleStatus = async function(sel) {
     sel.disabled = false;
   }
 };
-
 document.addEventListener('DOMContentLoaded', () => {
   if (window.SCHED_BOARD && typeof window.SCHED_BOARD.render === 'function') {
     window.SCHED_BOARD.render();
@@ -6904,7 +7144,6 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 /* === CODEX SCHEDULE STATUS DROPDOWN REAL FIX END === */
 </script>
-
 <script>
 /* === CODEX CERTIFICATIONS CLICK DETAIL START === */
 window.openCertDetail = function(btn) {
@@ -6914,7 +7153,6 @@ window.openCertDetail = function(btn) {
   } catch (err) {
     items = [];
   }
-
   const txtPeople = '\u0E04\u0E19\u0E43\u0E19\u0E2D\u0E07\u0E04\u0E4C\u0E01\u0E23';
   const txtNoFile = '\u0E44\u0E21\u0E48\u0E21\u0E35\u0E44\u0E1F\u0E25\u0E4C\u0E41\u0E19\u0E1A';
   const txtOpenFile = '\u0E40\u0E1B\u0E34\u0E14\u0E44\u0E1F\u0E25\u0E4C';
