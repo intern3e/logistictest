@@ -927,10 +927,56 @@ document.addEventListener('click',(e)=>{const pop=document.getElementById('drpPo
 function drpInit(){const wrap=document.querySelector('.drp-wrap[data-from]');if(!wrap)return;if(wrap.dataset.from)drpFrom=wrap.dataset.from;if(wrap.dataset.to)drpTo=wrap.dataset.to;drpUpdateLabel();const grid=document.getElementById('drpDays');if(grid){grid.addEventListener('mousedown',drpStartDrag);document.addEventListener('mousemove',drpMoveDrag);document.addEventListener('mouseup',drpEndDrag);grid.addEventListener('touchstart',drpStartDrag,{passive:false});document.addEventListener('touchmove',drpMoveDrag,{passive:false});document.addEventListener('touchend',drpEndDrag);}}
 
 /* ── OIL PRICE ── */
-let OIL_PRICE_CACHE=null;let _oilFetchPromise=null;
-async function _fetchOilOnce(){if(OIL_PRICE_CACHE)return OIL_PRICE_CACHE;if(_oilFetchPromise)return _oilFetchPromise;_oilFetchPromise=(async()=>{try{const r=await Promise.race([fetch('https://api.chnwt.dev/thai-oil-api/latest'),new Promise((_,rj)=>setTimeout(()=>rj(new Error('t')),8000))]);if(r.ok){const json=await r.json();OIL_PRICE_CACHE=json?.response?.stations||null;}}catch(_){OIL_PRICE_CACHE=null;}return OIL_PRICE_CACHE;})();return _oilFetchPromise;}
-function _extractPrice(stations,cfg){if(!stations)return null;const prices=[];for(const station of Object.values(stations))for(const fuel of Object.values(station))if(fuel?.name?.includes(cfg.matchName)&&fuel?.price){const n=parseFloat(fuel.price);if(!isNaN(n)&&n>0&&n<cfg.maxPrice)prices.push(n);}if(prices.length===0)return null;const freq={};for(const p of prices){const k=p.toFixed(2);freq[k]=(freq[k]||0)+1;}return parseFloat(Object.entries(freq).sort((a,b)=>b[1]-a[1])[0][0]);}
-const OIL_CONFIG={'diesel':{label:'ดีเซล',matchName:'ดีเซล',maxPrice:55},'95':{label:'แก๊สโซฮอล์ 95',matchName:'แก๊สโซฮอล์ 95',maxPrice:50},'benzin95':{label:'เบนซิน 95',matchName:'เบนซิน 95',maxPrice:60},'91':{label:'แก๊สโซฮอล์ 91',matchName:'แก๊สโซฮอล์ 91',maxPrice:50},'e20':{label:'แก๊สโซฮอล์ E20',matchName:'E20',maxPrice:45},'e85':{label:'แก๊สโซฮอล์ E85',matchName:'E85',maxPrice:40}};
+let OIL_PRICE_CACHE = null;
+let _oilFetchPromise = null;
+
+async function _fetchOilOnce() {
+  if (OIL_PRICE_CACHE) return OIL_PRICE_CACHE;
+  if (_oilFetchPromise) return _oilFetchPromise;
+  _oilFetchPromise = (async () => {
+    try {
+      const r = await Promise.race([
+        fetch('/oil/oil-price-proxy'),
+        new Promise((_, rj) => setTimeout(() => rj(new Error('timeout')), 8000))
+      ]);
+      if (r.ok) {
+        const json = await r.json();
+        // json is an array, OilList is a JSON string inside
+        const data = Array.isArray(json) ? json[0] : json;
+        if (data && data.OilList) {
+          const oils = typeof data.OilList === 'string'
+            ? JSON.parse(data.OilList)
+            : data.OilList;
+          OIL_PRICE_CACHE = oils; // array of {OilName, PriceToday, ...}
+        }
+      }
+    } catch (_) {
+      OIL_PRICE_CACHE = null;
+    }
+    return OIL_PRICE_CACHE;
+  })();
+  return _oilFetchPromise;
+}
+
+function _extractPrice(oils, cfg) {
+  if (!oils || !Array.isArray(oils)) return null;
+  for (const oil of oils) {
+    if (oil.OilName && oil.OilName.toLowerCase().includes(cfg.matchKey)) {
+      const p = parseFloat(oil.PriceToday);
+      if (!isNaN(p) && p > 0) return p;
+    }
+  }
+  return null;
+}
+
+const OIL_CONFIG = {
+  'diesel':    { label: 'ดีเซล',            matchKey: 'hi diesel s' },
+  '95':        { label: 'แก๊สโซฮอล์ 95',    matchKey: 'gasohol 95' },
+  'benzin95':  { label: 'Hi Premium 98',     matchKey: 'hi premium 98' },
+  '91':        { label: 'แก๊สโซฮอล์ 91',    matchKey: 'gasohol 91' },
+  'e20':       { label: 'แก๊สโซฮอล์ E20',   matchKey: 'gasohol e20' },
+  'e85':       { label: 'แก๊สโซฮอล์ E85',   matchKey: 'gasohol e85' }
+};
 let ilCurrentOilType='diesel';
 function ilSwitchOilType(t){ilCurrentOilType=t;document.querySelectorAll('.entry-oil-tab').forEach(b=>b.classList.remove('active'));document.getElementById('ilBtnOil-'+t)?.classList.add('active');ilLoadOilPrice(t);}
 async function ilRefreshOilPrice(){OIL_PRICE_CACHE=null;_oilFetchPromise=null;const btn=document.getElementById('ilBtnRefresh');if(btn){btn.disabled=true;btn.style.opacity='.5';}await ilLoadOilPrice(ilCurrentOilType);if(btn){btn.disabled=false;btn.style.opacity='1';}}

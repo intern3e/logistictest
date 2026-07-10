@@ -193,7 +193,29 @@ Route::post('/oil/sync-ng',     [fuellogsController::class, 'syncNg'])->name('oi
 Route::get('/oil/ng-list',      [fuellogsController::class, 'ngList'])->name('oil.ngList');
 Route::post('/oil/filter',      [fuellogsController::class, 'applyFilter'])->name('oil.filter');
 Route::get('/oil/saved-drivers', [fuellogsController::class, 'savedDrivers'])->name('oil.savedDrivers');
+Route::get('/oil/oil-price-proxy', function () {
+    try {
+        $response = \Illuminate\Support\Facades\Http::timeout(8)
+            ->get('https://oil-price.bangchak.co.th/ApiOilPrice2/en');
 
+        if ($response->successful()) {
+            return response()->json($response->json());
+        }
+    } catch (\Exception $e) {
+        // fallback: try thai-oil-api
+        try {
+            $response2 = \Illuminate\Support\Facades\Http::timeout(8)
+                ->get('https://api.chnwt.dev/thai-oil-api/latest');
+            if ($response2->successful()) {
+                return response()->json([
+                    'source' => 'thai-oil-api',
+                    'data'   => $response2->json(),
+                ]);
+            }
+        } catch (\Exception $e2) {}
+    }
+    return response()->json(['error' => 'ดึงราคาน้ำมันไม่ได้'], 502);
+})->name('oil.priceProxy');
 
 use App\Http\Controllers\ServiceController;
 Route::get('/service',              [ServiceController::class, 'index'])->name('service');
@@ -293,3 +315,33 @@ use App\Http\Controllers\PoitemController;
 Route::get('/poitem',             [PoitemController::class, 'index'])->name('po.search');
 Route::post('/po-search/search',  [PoitemController::class, 'search'])->name('po.search.api');
 Route::post('/po-search/detail',  [PoitemController::class, 'detail'])->name('po.detail.api');
+
+
+use App\Http\Controllers\InventoryController;
+
+// Pages
+Route::get('/inventory/transaction', [InventoryController::class, 'transactionDashboard'])->name('inventory.transaction');
+Route::get('/inventory/item',        [InventoryController::class, 'inventoryDashboard'])->name('inventory.item');
+Route::get('/admin', function (\Illuminate\Http\Request $request) {
+    return redirect()->route('inventory.transaction', $request->query());
+});
+
+// API: Items
+Route::get('/api/items/pagedata',      [InventoryController::class, 'getPageData']);
+Route::post('/api/items',              [InventoryController::class, 'addProduct']);
+Route::post('/api/items/sub',          [InventoryController::class, 'addSubProduct']);
+Route::put('/api/items/{id}',          [InventoryController::class, 'updateProduct']);
+Route::delete('/api/items/{id}',       [InventoryController::class, 'deleteProduct']);
+Route::get('/api/items/{id}/tx-count', [InventoryController::class, 'countTxByItem']);
+
+// API: Transactions
+Route::get('/api/transaction',                  [InventoryController::class, 'getTransactionPage']);
+Route::get('/api/transaction/by-item/{itemId}', [InventoryController::class, 'getTransactionByItemId']);
+Route::put('/api/transaction/{id}',             [InventoryController::class, 'updateTransaction']);
+Route::delete('/api/transaction/{id}',          [InventoryController::class, 'deleteTransaction']);
+
+// API: Users
+Route::get('/api/users',          [InventoryController::class, 'getUsers']);
+Route::post('/api/users',         [InventoryController::class, 'addUser']);
+Route::put('/api/users/{id}',     [InventoryController::class, 'updateUser']);
+Route::delete('/api/users/{id}',  [InventoryController::class, 'deleteUser']);
