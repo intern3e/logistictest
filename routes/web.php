@@ -216,7 +216,25 @@ Route::get('/oil/oil-price-proxy', function () {
     }
     return response()->json(['error' => 'ดึงราคาน้ำมันไม่ได้'], 502);
 })->name('oil.priceProxy');
+Route::get('/oil/last-plates', function (\Illuminate\Http\Request $request) {
+    $result = \Illuminate\Support\Facades\DB::table('fuel_logs')
+        ->select('driver_name', 'vehicle_id', \Illuminate\Support\Facades\DB::raw('MAX(id) as max_id'))
+        ->where('vehicle_id', '!=', '-')
+        ->where('vehicle_id', '!=', '')
+        ->whereNotNull('vehicle_id')
+        ->groupBy('driver_name', 'vehicle_id')
+        ->orderBy('max_id', 'desc')
+        ->get();
 
+    $map = [];
+    foreach ($result as $row) {
+        $name = trim($row->driver_name);
+        if ($name && !isset($map[$name])) {
+            $map[$name] = trim($row->vehicle_id);
+        }
+    }
+    return response()->json($map);
+})->name('oil.lastPlates');
 use App\Http\Controllers\ServiceController;
 Route::get('/service',              [ServiceController::class, 'index'])->name('service');
 Route::get('/service/list',         [ServiceController::class, 'list'])->name('service.list');
