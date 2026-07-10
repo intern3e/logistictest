@@ -408,7 +408,7 @@ body{font-family:var(--font-thai);background:var(--bg);color:var(--text);min-hei
   $userQuery = $currentUser !== 'Guest' ? '?create_by='.urlencode($currentUser) : '';
   $privilegedUsers = ['จัน','kanitin2','test101'];
   $isPrivileged = in_array(trim($currentUser), $privilegedUsers, true);
-  $allowedDrivers = ['บังเดช','กอลฟ์','เก่ง','หรั่ง','เอ้','แซม','เอ','แฟงค์','yuth','แมน','กบ','joey'];
+  $allowedDrivers = ['บังเดช','กอลฟ์','เก่ง','หรั่ง','เอ้','แซม','เอ','แฟงค์','yuth','แมน','กบ','joey','บอย'];
 @endphp
 
 <nav class="topnav">
