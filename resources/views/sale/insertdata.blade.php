@@ -771,8 +771,8 @@ table.table tbody tr:hover td{background:#f8fafc}
                     </div>
                     <div class="field">
                         <label for="formtype">แบบฟอร์มเอกสาร <span class="req">*</span></label>
-                        <select id="formtype" name="formtype" required>
-                            <option value="ไม่มีข้อมูล" disabled selected>ไม่มีข้อมูล</option>
+                        <select id="formtype" disabled>
+                            <option value="ไม่มีข้อมูล" selected>ไม่มีข้อมูล ติดต่อบัญชี</option>
                             <option value="บิล/PO3">บิล/PO3</option>
                             <option value="บิล/PO3/วางบิล">บิล/PO3/วางบิล</option>
                             <option value="บิล/PO3/วางบิล/สำเนาหน้าบิล2">บิล/PO3/วางบิล/สำเนาหน้าบิล2</option>
@@ -780,6 +780,7 @@ table.table tbody tr:hover td{background:#f8fafc}
                             <option value="บิล/PO5/สำเนาหน้าบิล3">บิล/PO5/สำเนาหน้าบิล3</option>
                             <option value="บิล/PO3/บัญชี">บิล/PO3/บัญชี</option>
                         </select>
+                        <input type="hidden" id="formtype_hidden" name="formtype">
                     </div>
                 </div>
 
@@ -921,45 +922,73 @@ async function safeJson(response, label){
 }
 
 /* ====================== Form-type fetch ====================== */
-function fetchFormType(){
+/* ====================== Form-type fetch ====================== */
+function fetchFormType() {
     const customer_id = (document.getElementById("customer_id").value || '').trim();
     const formtypeSelect = document.getElementById("formtype");
-    if(!customer_id){
+    const formtypeHidden = document.getElementById("formtype_hidden");
+
+    if (!customer_id) {
         formtypeSelect.value = 'ไม่มีข้อมูล';
+        formtypeHidden.value = ''; // ไม่ส่งค่า
+
         document.getElementById("customer_la_long").value = '';
         document.getElementById("notes").value = '';
+
+        updateMap();
+        refreshSubmitState();
         return;
     }
+
     fetch('/fetch-formtype', {
-        method:'POST',
-        credentials:'same-origin',
-        headers:{
-            'Content-Type':'application/json',
-            'Accept':'application/json',
-            'X-Requested-With':'XMLHttpRequest',
-            'X-CSRF-TOKEN':document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+        method: 'POST',
+        credentials: 'same-origin',
+        cache: 'no-store', 
+        headers: {
+            'Content-Type': 'application/json',
+            'Accept': 'application/json',
+            'X-Requested-With': 'XMLHttpRequest',
+            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
         },
-        body:JSON.stringify({customer_id})
+        body: JSON.stringify({ customer_id })
     })
     .then(r => safeJson(r, 'fetch-formtype'))
-    .then(data=>{
-        if(data.formtype){
-            const exists = Array.from(formtypeSelect.options).some(o=>o.value===data.formtype);
-            if(!exists) formtypeSelect.add(new Option(data.formtype, data.formtype));
+    .then(data => {
+
+        if (data.formtype && data.formtype !== 'ไม่มีข้อมูล') {
+
+            const exists = Array.from(formtypeSelect.options)
+                .some(o => o.value === data.formtype);
+
+            if (!exists) {
+            formtypeSelect.add(new Option(data.formtype, data.formtype));
+            }
+
             formtypeSelect.value = data.formtype;
+            formtypeHidden.value = data.formtype; // ส่งค่า
+
         } else {
+
             formtypeSelect.value = 'ไม่มีข้อมูล';
+            formtypeHidden.value = ''; // ไม่ส่งค่า
+
         }
+
         const laLong = data.customer_la_long || '';
         const isValidCoords = /^-?\d+(\.\d+)?,\s*-?\d+(\.\d+)?$/.test(laLong.trim());
+
         document.getElementById("customer_la_long").value = isValidCoords ? laLong : '';
         document.getElementById("notes").value = data.note || '';
+
         updateMap();
         refreshSubmitState();
     })
-    .catch(err=>{
+    .catch(err => {
+        console.error(err);
 
         formtypeSelect.value = 'ไม่มีข้อมูล';
+        formtypeHidden.value = ''; // ไม่ส่งค่า
+
         refreshSubmitState();
     });
 }
