@@ -14,7 +14,16 @@ class InventoryController extends Controller
 {
     private string $baseUrl = 'https://api.hikaripower.com';
     private string $apiKey  = 'hikari20259f3c6e1b0f2d9c9c0e5e0b4d8b4e6e9c0c6c2f3e7b8a9f1d2e3c4b5a6f7d8e9';
+    public function entry(Request $request)
+    {
+        $authUser = $this->checkAuth($request);
+        $role = $authUser['auth'] ?? 'viewer';
+        $q = ['create_by' => $authUser['username']]; 
 
+        return $role === 'viewer'
+            ? redirect()->route('inventory.item', $q)
+            : redirect()->route('inventory.transaction', $q);
+    }
     private function api(string $method, string $path, array $data = null)
     {
         $url = $this->baseUrl . $path;

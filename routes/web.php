@@ -340,9 +340,7 @@ use App\Http\Controllers\InventoryController;
 // Pages
 Route::get('/inventory/transaction', [InventoryController::class, 'transactionDashboard'])->name('inventory.transaction');
 Route::get('/inventory/item',        [InventoryController::class, 'inventoryDashboard'])->name('inventory.item');
-Route::get('/admin', function (\Illuminate\Http\Request $request) {
-    return redirect()->route('inventory.transaction', $request->query());
-});
+Route::get('/inventory',             [InventoryController::class, 'entry']);
 
 // API: Items
 Route::get('/api/items/pagedata',      [InventoryController::class, 'getPageData']);
@@ -363,3 +361,15 @@ Route::get('/api/users',          [InventoryController::class, 'getUsers']);
 Route::post('/api/users',         [InventoryController::class, 'addUser']);
 Route::put('/api/users/{id}',     [InventoryController::class, 'updateUser']);
 Route::delete('/api/users/{id}',  [InventoryController::class, 'deleteUser']);
+
+use App\Http\Controllers\InternalpoController;
+Route::get('/internalpo', [InternalpoController::class, 'dashboard'])->name('internal_po.dashboard');
+Route::post('/internalpo/finish', [InternalpoController::class, 'markFinish'])->name('internal_po.finish');
+Route::post('/internalpo/cancel', [InternalpoController::class, 'markCancel'])->name('internal_po.cancel');
+
+
+use App\Http\Controllers\MobilePoappController ;
+Route::get('/mobile-app', [MobilePoappController ::class, 'index'])->name('mobile.app');
+Route::get('/api/getPODetail', [MobilePoappController ::class, 'getPODetail'])->name('mobile.po.detail');
+Route::post('/api/receivePO', [MobilePoappController ::class, 'receivePO'])->name('mobile.po.receive');
+ 

@@ -12,9 +12,7 @@ class UserAuth extends Model
     public    $incrementing = false;
     public    $timestamps   = false;
 
-    protected $fillable = ['id_emp', 'name', 'username', 'password', 'auth'];
-    protected $hidden   = ['password'];
-
+    protected $fillable = ['id_emp', 'name', 'username', 'password', 'auth','page'];
     public static function nextIdEmp(): string
     {
         $last = static::orderByRaw("CAST(SUBSTRING(id_emp, 5) AS UNSIGNED) DESC")->value('id_emp');
