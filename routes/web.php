@@ -388,8 +388,8 @@ Route::post('/internalpo/finish', [InternalpoController::class, 'markFinish'])->
 Route::post('/internalpo/cancel', [InternalpoController::class, 'markCancel'])->name('internal_po.cancel');
 
 
-use App\Http\Controllers\MobilePoappController ;
-Route::get('/mobile-app', [MobilePoappController ::class, 'index'])->name('mobile.app');
-Route::get('/api/getPODetail', [MobilePoappController ::class, 'getPODetail'])->name('mobile.po.detail');
-Route::post('/api/receivePO', [MobilePoappController ::class, 'receivePO'])->name('mobile.po.receive');
- 
+use App\Http\Controllers\MobilePoappController;
+Route::get('/mobile-app', [MobilePoappController::class, 'index'])->name('mobile.app');
+Route::get('/api/getPODetail', [MobilePoappController::class, 'getPODetail'])->name('mobile.po.detail');
+Route::post('/api/receivePO', [MobilePoappController::class, 'receivePO'])->name('mobile.po.receive');
+Route::get('/api/receivePO/history', [MobilePoappController::class, 'history'])->name('mobile.po.receive.history');

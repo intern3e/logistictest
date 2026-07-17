@@ -5,182 +5,352 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <title>รับสินค้าเข้า (PO)</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@400;500&display=swap" rel="stylesheet">
 <style>
+    /* ===== Tesla-inspired tokens ===== */
     :root{
-        --navy:#16324a;
-        --navy-2:#1f4364;
-        --accent:#f5a623;
-        --green:#1e9e6a;
-        --green-dark:#187f55;
-        --bg:#eef1f4;
-        --card:#ffffff;
-        --line:#e3e8ee;
-        --text:#22303c;
-        --muted:#7b8794;
-        --danger:#d64545;
+        --blue:#3E6AE1;          /* Electric Blue */
+        --blue-dark:#3457B1;
+        --canvas:#FFFFFF;        /* Pure White */
+        --ash:#F4F4F4;           /* Light Ash */
+        --carbon:#171A20;        /* Carbon Dark */
+        --graphite:#393C41;      /* Graphite */
+        --pewter:#5C5E62;        /* Pewter */
+        --silver:#8E8E8E;        /* Silver Fog */
+        --cloud:#EEEEEE;         /* Cloud Gray */
+        --pale:#D0D1D2;          /* Pale Silver */
+        --mobile-w:480px;
+        --r:4px;
+        --t:0.33s;
     }
     *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+    html{background:#E9E9E9}
     body{
-        font-family:'Sarabun',sans-serif;
-        background:var(--bg);
-        color:var(--text);
+        font-family:'Sarabun',-apple-system,Arial,sans-serif;
+        background:var(--ash);
+        color:var(--graphite);
         min-height:100vh;
-        padding-bottom:110px; /* เผื่อที่ให้แถบปุ่มรับเข้าด้านล่าง */
+        padding-bottom:110px;
+        max-width:var(--mobile-w);
+        margin:0 auto;
+        position:relative;
+        font-weight:400;
     }
 
-    /* ===== Header + ช่องค้นหา ===== */
+    /* ===== Header ===== */
     .topbar{
-        background:linear-gradient(160deg,var(--navy) 0%,var(--navy-2) 100%);
-        padding:18px 16px 22px;
-        border-radius:0 0 22px 22px;
+        background:rgba(244,244,244,0.8);
+        backdrop-filter:blur(12px);
+        -webkit-backdrop-filter:blur(12px);
+        padding:20px 16px 16px;
         position:sticky;top:0;z-index:20;
-        box-shadow:0 4px 14px rgba(22,50,74,.25);
     }
     .topbar h1{
-        color:#fff;font-size:17px;font-weight:600;
-        display:flex;align-items:center;gap:8px;margin-bottom:14px;
+        color:var(--carbon);font-size:22px;font-weight:500;
+        display:flex;align-items:center;gap:10px;margin-bottom:14px;
     }
     .topbar h1 .badge{
-        background:var(--accent);color:#4a3000;
-        font-size:11px;font-weight:700;padding:2px 8px;border-radius:20px;
+        color:var(--pewter);font-size:13px;font-weight:400;
     }
     .searchrow{display:flex;gap:8px}
     .searchrow input{
-        flex:1;height:48px;border:none;border-radius:12px;
-        padding:0 14px;font-size:16px;font-family:inherit;
-        outline:none;background:#fff;
+        flex:1;height:40px;
+        border:1px solid var(--pale);border-radius:var(--r);
+        padding:0 12px;font-size:15px;font-family:inherit;
+        outline:none;background:var(--canvas);min-width:0;color:var(--carbon);
+        transition:border-color var(--t);
     }
+    .searchrow input:focus{border-color:var(--blue)}
+    .searchrow input::placeholder{color:var(--silver)}
     .searchrow button{
-        height:48px;min-width:86px;border:none;border-radius:12px;
-        background:var(--accent);color:#4a3000;font-size:15px;font-weight:700;
-        font-family:inherit;cursor:pointer;
-        display:flex;align-items:center;justify-content:center;gap:6px;
+        height:40px;min-width:100px;
+        border:none;border-radius:var(--r);
+        background:var(--blue);color:#FFFFFF;
+        font-size:14px;font-weight:500;font-family:inherit;cursor:pointer;
+        transition:background-color var(--t);
     }
-    .searchrow button:active{transform:scale(.97)}
-    .searchrow button:disabled{opacity:.6}
+    .searchrow button:active{background:var(--blue-dark)}
+    .searchrow button:disabled{background:var(--pale);color:#fff}
 
-    /* ===== ส่วนหัวเอกสาร PO ===== */
+    /* ===== Stepper Progress Bar ===== */
+    .stepper{
+        display:none;
+        background:var(--canvas);
+        margin:8px 16px 0;
+        padding:12px 16px;
+        border-radius:var(--r);
+        justify-content:space-between;
+        align-items:center;
+        border-bottom:1px solid var(--cloud);
+    }
+    .stepper.show{display:flex}
+    .step-item{
+        display:flex;align-items:center;gap:6px;
+        font-size:13px;color:var(--silver);font-weight:400;
+    }
+    .step-item .num{
+        width:22px;height:22px;border-radius:50%;
+        background:var(--cloud);color:var(--pewter);
+        display:flex;align-items:center;justify-content:center;
+        font-size:12px;font-weight:500;
+    }
+    .step-item.active{color:var(--blue);font-weight:500}
+    .step-item.active .num{background:var(--blue);color:#fff}
+    .step-item.done{color:var(--carbon)}
+    .step-item.done .num{background:var(--carbon);color:#fff}
+    .step-line{flex:1;height:2px;background:var(--cloud);margin:0 8px}
+
+    /* ===== PO Head ===== */
     .po-head{
-        margin:14px 12px 0;background:var(--card);
-        border:1px solid var(--line);border-radius:14px;padding:14px;
+        margin:8px 16px 0;background:var(--canvas);
+        border-radius:var(--r);padding:16px;
     }
-    .po-head .docu{font-size:17px;font-weight:700;color:var(--navy)}
-    .po-head .vendor{font-size:13px;color:var(--text);margin-top:4px;line-height:1.45}
+    .po-head .docu{font-size:17px;font-weight:500;color:var(--carbon)}
+    .po-head .vendor{font-size:14px;font-weight:400;color:var(--graphite);margin-top:4px;line-height:1.45}
     .po-head .meta{
-        display:flex;gap:14px;margin-top:10px;padding-top:10px;
-        border-top:1px dashed var(--line);
-        font-size:12px;color:var(--muted);flex-wrap:wrap;
+        display:flex;gap:16px;margin-top:12px;padding-top:12px;
+        border-top:1px solid var(--cloud);
+        font-size:13px;color:var(--pewter);flex-wrap:wrap;
     }
-    .po-head .meta b{color:var(--text);font-weight:600}
+    .po-head .meta b{color:var(--carbon);font-weight:500}
+    .po-head .meta .v-amnt b{color:var(--blue)}
 
-    /* ===== รายการสินค้า ===== */
+    /* ===== Step Containers ===== */
+    .step-page{display:none}
+    .step-page.active{display:block}
+
+    /* ===== Step 1: Items List ===== */
     .list-title{
-        margin:16px 14px 8px;font-size:13px;font-weight:600;color:var(--muted);
+        margin:16px 16px 10px;
         display:flex;justify-content:space-between;align-items:center;
     }
+    #itemCountLabel{font-size:14px;font-weight:500;color:var(--carbon)}
     .select-all{
-        font-size:13px;color:var(--navy);font-weight:600;
+        font-size:14px;color:var(--pewter);font-weight:400;
         background:none;border:none;font-family:inherit;cursor:pointer;
+        transition:color var(--t);
     }
+    .select-all:active{color:var(--blue)}
     .item{
-        margin:0 12px 10px;background:var(--card);
-        border:1.5px solid var(--line);border-radius:14px;
-        padding:12px;display:flex;gap:12px;align-items:flex-start;
-        transition:border-color .15s, background .15s;
+        margin:0 16px 8px;background:var(--canvas);
+        border:1px solid transparent;border-radius:var(--r);
+        padding:14px;display:flex;gap:12px;align-items:flex-start;
+        transition:border-color var(--t), background-color var(--t);
     }
-    .item.checked{border-color:var(--green);background:#f2fbf7}
+    .item.checked{border-color:var(--blue);background:#F5F8FE}
     .item input[type=checkbox]{
-        width:24px;height:24px;flex-shrink:0;margin-top:4px;
-        accent-color:var(--green);
+        width:22px;height:22px;flex-shrink:0;
+        align-self:center;
+        accent-color:var(--blue);
     }
     .item .info{flex:1;min-width:0}
-    .item .gname{font-size:14.5px;font-weight:600;line-height:1.4;word-break:break-word}
-    .item .gcode{font-size:11.5px;color:var(--muted);margin-top:2px;word-break:break-all}
-    .item .price{font-size:12.5px;color:var(--muted);margin-top:4px}
-    .item .price b{color:var(--navy)}
+    .item .gname{font-size:14px;font-weight:500;line-height:1.4;word-break:break-word;color:var(--carbon)}
+    .item .gcode{font-size:12px;font-weight:400;color:var(--pewter);margin-top:2px;word-break:break-all}
+    .item .price{font-size:12.5px;font-weight:400;color:var(--pewter);margin-top:4px}
+    .item .price .unit{color:var(--blue);font-weight:500}
+    .item .price .total{color:var(--blue);font-weight:500}
 
     .qtybox{display:flex;flex-direction:column;align-items:center;gap:4px;flex-shrink:0}
-    .qtybox label{font-size:11px;color:var(--muted)}
-    .qty-ctrl{display:flex;align-items:center;gap:0;border:1.5px solid var(--line);border-radius:10px;overflow:hidden;background:#fff}
+    .qtybox label{font-size:12px;font-weight:400;color:var(--pewter)}
+    .qty-ctrl{
+        display:flex;align-items:center;gap:0;
+        border:1px solid var(--pale);border-radius:var(--r);
+        overflow:hidden;background:var(--canvas);
+    }
     .qty-ctrl button{
-        width:34px;height:40px;border:none;background:#f4f6f8;
-        font-size:20px;color:var(--navy);cursor:pointer;font-family:inherit;
+        width:36px;height:38px;border:none;background:var(--ash);
+        font-size:18px;color:var(--carbon);cursor:pointer;font-family:inherit;
+        transition:background-color var(--t);
     }
-    .qty-ctrl button:active{background:#e3e8ee}
+    .qty-ctrl button:active{background:var(--cloud)}
     .qty-ctrl input{
-        width:56px;height:40px;border:none;text-align:center;
-        font-size:16px;font-weight:700;font-family:inherit;outline:none;color:var(--text);
+        width:52px;height:38px;border:none;text-align:center;
+        font-size:15px;font-weight:500;font-family:inherit;outline:none;color:var(--carbon);
+        background:var(--canvas);
     }
-    .qty-ctrl input:focus{background:#fffbe9}
+    .qty-ctrl input:focus{background:var(--ash)}
+    .qty-ctrl input::-webkit-outer-spin-button,
+    .qty-ctrl input::-webkit-inner-spin-button{
+        -webkit-appearance:none;margin:0;
+    }
+    .qty-ctrl input[type=number]{
+        -moz-appearance:textfield;appearance:textfield;
+    }
 
-    /* ===== สถานะต่าง ๆ ===== */
-    .state{
-        margin:60px 24px;text-align:center;color:var(--muted);font-size:14px;line-height:1.7;
+    /* ===== Step 2 & 3 Sections ===== */
+    .card-section{
+        margin:16px;background:var(--canvas);
+        border-radius:var(--r);padding:20px 16px;
     }
-    .state .icon{font-size:44px;margin-bottom:10px}
+    .card-section .lbl{font-size:15px;font-weight:500;color:var(--carbon);margin-bottom:12px}
+    .card-section .lbl small{color:var(--pewter);font-weight:400;font-size:13px}
+
+    .shelf-input{
+        width:100%;height:44px;
+        border:1px solid var(--pale);border-radius:var(--r);
+        padding:0 14px;font-size:15px;font-family:inherit;
+        outline:none;background:var(--canvas);color:var(--carbon);
+        transition:border-color var(--t);
+    }
+    .shelf-input:focus{border-color:var(--blue)}
+    .shelf-input::placeholder{color:var(--silver)}
+
+    .photo-row{display:flex;align-items:center;gap:16px;margin-top:8px}
+    .photo-preview{
+        width:90px;height:90px;border-radius:var(--r);flex-shrink:0;
+        background:var(--ash);border:1px dashed var(--pale);
+        display:flex;align-items:center;justify-content:center;overflow:hidden;
+    }
+    .photo-preview img{width:100%;height:100%;object-fit:cover}
+    .photo-preview .ph-icon{font-size:32px;color:var(--silver)}
+    .photo-actions{display:flex;flex-direction:column;gap:10px;flex:1}
+    .photo-actions button{
+        height:40px;border:1px solid var(--pale);border-radius:var(--r);
+        background:var(--canvas);color:var(--carbon);font-size:14px;font-weight:500;
+        font-family:inherit;cursor:pointer;transition:background-color var(--t), border-color var(--t);
+    }
+    .photo-actions button.primary{background:var(--blue);color:#fff;border-color:var(--blue)}
+    .photo-actions button.primary:active{background:var(--blue-dark)}
+    .photo-actions button.remove{color:var(--pewter)}
+
+    /* Summary Selected Items in Step 2 & 3 */
+    .summary-box{
+        margin:0 16px;padding:12px 14px;background:#EBF1FF;
+        border-radius:var(--r);font-size:13.5px;color:var(--graphite);
+    }
+    .summary-box b{color:var(--blue)}
+
+    /* ===== State Box ===== */
+    .state{
+        position:fixed;
+        top:50%;left:50%;
+        transform:translate(-50%,-50%);
+        width:calc(100% - 48px);
+        max-width:calc(var(--mobile-w) - 48px);
+        text-align:center;color:var(--pewter);font-size:14px;line-height:1.7;
+        z-index:10;
+    }
+    .state .icon{font-size:40px;margin-bottom:12px;opacity:.85}
     .spinner{
-        width:34px;height:34px;border:4px solid var(--line);
-        border-top-color:var(--navy);border-radius:50%;
-        margin:0 auto 12px;animation:spin .8s linear infinite;
+        width:32px;height:32px;border:3px solid var(--cloud);
+        border-top-color:var(--blue);border-radius:50%;
+        margin:0 auto 14px;animation:spin .8s linear infinite;
     }
     @keyframes spin{to{transform:rotate(360deg)}}
-    .err{color:var(--danger)}
+    .err{color:var(--graphite)}
 
-    /* ===== แถบปุ่มรับเข้า (ล่างจอ) ===== */
-    .receive-bar{
-        position:fixed;left:0;right:0;bottom:0;z-index:30;
-        background:#fff;border-top:1px solid var(--line);
-        padding:12px 14px calc(12px + env(safe-area-inset-bottom));
-        display:none;gap:12px;align-items:center;
-        box-shadow:0 -4px 16px rgba(0,0,0,.08);
+    /* ===== Bottom Navigation Bar ===== */
+    .nav-bar{
+        position:fixed;bottom:0;z-index:30;
+        left:50%;transform:translateX(-50%);
+        width:100%;max-width:var(--mobile-w);
+        background:rgba(255,255,255,0.9);
+        backdrop-filter:blur(12px);
+        -webkit-backdrop-filter:blur(12px);
+        border-top:1px solid var(--cloud);
+        padding:12px 16px calc(12px + env(safe-area-inset-bottom));
+        display:none;gap:10px;align-items:center;
     }
-    .receive-bar.show{display:flex}
-    .receive-bar .count{font-size:13px;color:var(--muted);line-height:1.4}
-    .receive-bar .count b{font-size:17px;color:var(--navy)}
-    .btn-receive{
-        flex:1;height:52px;border:none;border-radius:14px;
-        background:var(--green);color:#fff;font-size:17px;font-weight:700;
-        font-family:inherit;cursor:pointer;
-        display:flex;align-items:center;justify-content:center;gap:8px;
+    .nav-bar.show{display:flex}
+    .nav-bar .btn-nav{
+        height:44px;border:none;border-radius:var(--r);
+        font-size:14px;font-weight:500;font-family:inherit;cursor:pointer;
+        transition:background-color var(--t);
+        display:flex;align-items:center;justify-content:center;gap:6px;
     }
-    .btn-receive:active{background:var(--green-dark)}
-    .btn-receive:disabled{background:#b8c4ce}
+    .btn-back{
+        background:var(--ash);color:var(--carbon);
+        border:1px solid var(--pale) !important;
+        padding:0 18px;
+    }
+    .btn-back:active{background:var(--cloud)}
+    .btn-next{
+        flex:1;background:var(--blue);color:#FFFFFF;
+    }
+    .btn-next:active{background:var(--blue-dark)}
+    .btn-next:disabled{background:var(--pale);cursor:not-allowed}
 
     /* ===== Toast ===== */
     #toast{
-        position:fixed;left:50%;bottom:130px;transform:translateX(-50%) translateY(20px);
-        background:var(--navy);color:#fff;font-size:14px;
-        padding:12px 20px;border-radius:30px;opacity:0;pointer-events:none;
-        transition:all .25s;z-index:50;white-space:nowrap;max-width:90vw;
-        overflow:hidden;text-overflow:ellipsis;
+        position:fixed;left:50%;bottom:120px;transform:translateX(-50%) translateY(20px);
+        background:var(--carbon);color:#FFFFFF;font-size:13px;font-weight:400;
+        padding:11px 20px;border-radius:var(--r);opacity:0;pointer-events:none;
+        transition:all .25s;z-index:50;
+        max-width:calc(var(--mobile-w) - 40px);
+        white-space:normal;word-break:break-word;text-align:center;line-height:1.5;
     }
     #toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
-    #toast.ok{background:var(--green)}
-    #toast.error{background:var(--danger)}
+    #toast.ok{background:var(--blue)}
+    #toast.error{background:var(--carbon)}
 </style>
 </head>
 <body>
 
 <!-- ส่วนหัว + ค้นหา -->
 <div class="topbar">
-    <h1>📦 รับสินค้าเข้า <span class="badge">PO</span></h1>
+    <h1>รับสินค้าเข้า <span class="badge">Purchase Order</span></h1>
     <div class="searchrow">
         <input type="text" id="poInput" placeholder="พิมพ์เลขที่ PO"
                inputmode="text" autocomplete="off" onkeydown="if(event.key==='Enter')searchPO()">
-        <button id="btnSearch" onclick="searchPO()">🔍 ค้นหา</button>
+        <button id="btnSearch" onclick="searchPO()">ค้นหา</button>
+    </div>
+</div>
+
+<!-- Stepper Progress Bar -->
+<div class="stepper" id="stepper">
+    <div class="step-item active" id="st-1">
+        <span class="num">1</span> เลือกสินค้า
+    </div>
+    <div class="step-line"></div>
+    <div class="step-item" id="st-2">
+        <span class="num">2</span> ระบุชั้นวาง
+    </div>
+    <div class="step-line"></div>
+    <div class="step-item" id="st-3">
+        <span class="num">3</span> ถ่ายรูป
     </div>
 </div>
 
 <!-- ส่วนหัวเอกสาร -->
 <div id="poHead"></div>
 
-<!-- รายการสินค้า -->
-<div id="listTitle" class="list-title" style="display:none">
-    <span id="itemCountLabel">รายการสินค้า</span>
-    <button class="select-all" onclick="toggleAll()">เลือกทั้งหมด</button>
+<!-- ================= STEP 1: รายการสินค้า ================= -->
+<div class="step-page active" id="pageStep1">
+    <div id="listTitle" class="list-title" style="display:none">
+        <span id="itemCountLabel">รายการสินค้า</span>
+        <button class="select-all" onclick="toggleAll()">เลือกทั้งหมด</button>
+    </div>
+    <div id="itemList"></div>
 </div>
-<div id="itemList"></div>
+
+<!-- ================= STEP 2: ระบุชั้นวาง ================= -->
+<div class="step-page" id="pageStep2">
+    <div class="summary-box" id="sumStep2"></div>
+    <div class="card-section">
+        <div class="lbl">ชั้นวาง / ตำแหน่งจัดเก็บ <small>(ระบุเพื่อความสะดวกในการจัดเก็บ)</small></div>
+        <input type="text" id="shelfInput" class="shelf-input" placeholder="พิมพ์ชั้นวาง เช่น A-01"
+               autocomplete="off" maxlength="100">
+    </div>
+</div>
+
+<!-- ================= STEP 3: แนบรูปถ่าย ================= -->
+<div class="step-page" id="pageStep3">
+    <div class="summary-box" id="sumStep3"></div>
+    <div class="card-section">
+        <div class="lbl">แนบรูปถ่ายหน้างาน <small>(1 รูป สำหรับการรับเข้าครั้งนี้)</small></div>
+        <div class="photo-row">
+            <div class="photo-preview" id="photoPreview">
+                <span class="ph-icon" id="photoIcon">📷</span>
+                <img id="photoImg" style="display:none" alt="รูปถ่ายที่แนบ">
+            </div>
+            <div class="photo-actions">
+                <button type="button" class="primary" onclick="triggerPhoto()">ถ่ายรูป / เลือกรูป</button>
+                <button type="button" class="remove" id="btnRemovePhoto" onclick="removePhoto()" style="display:none">ลบรูป</button>
+            </div>
+        </div>
+        <input type="file" id="photoInput" accept="image/*" capture="environment" style="display:none" onchange="onPhotoSelected(event)">
+    </div>
+</div>
 
 <!-- สถานะเริ่มต้น / โหลด / error -->
 <div id="stateBox" class="state">
@@ -188,23 +358,188 @@
     พิมพ์เลขที่ PO ด้านบน แล้วกดค้นหา<br>เพื่อดึงรายการสินค้ามารับเข้า
 </div>
 
-<!-- แถบปุ่มรับเข้า -->
-<div class="receive-bar" id="receiveBar">
-    <div class="count">เลือกแล้ว<br><b id="selCount">0</b> รายการ</div>
-    <button class="btn-receive" id="btnReceive" onclick="receiveItems()">✅ รับเข้า</button>
+<!-- แถบปุ่มควบคุมล่างจอ (Nav Bar) -->
+<div class="nav-bar" id="navBar">
+    <button class="btn-nav btn-back" id="btnBack" onclick="prevStep()">ย้อนกลับ</button>
+    <button class="btn-nav btn-next" id="btnNext" onclick="nextStep()">ถัดไป</button>
 </div>
 
 <div id="toast"></div>
 
 <script>
-// เรียกผ่าน route ของ Laravel (Controller เป็นคน proxy ไปหา server_update ให้ กัน CORS)
 const API_URL = '{{ url('/api/getPODetail') }}';
 const RECEIVE_URL = '{{ url('/api/receivePO') }}';
+const HISTORY_URL = '{{ url('/api/receivePO/history') }}';
 const CSRF_TOKEN = '{{ csrf_token() }}';
 
-let currentPO = null;   // เก็บข้อมูล PO ที่ค้นเจอล่าสุด
+let currentPO = null;   
+let capturedPhoto = null; 
+let currentStep = 1;
 
 const $ = id => document.getElementById(id);
+
+function normName(s){
+    return String(s || '').trim().toLowerCase().replace(/\s+/g, ' ');
+}
+
+async function getReceivedQtyMap(ponum){
+    try{
+        const res = await fetch(`${HISTORY_URL}?PONum=${encodeURIComponent(ponum)}`);
+        if(!res.ok) return new Map();
+        const rows = await res.json();
+        const map = new Map();
+        (rows || []).forEach(r => {
+            if(!r.good_name) return;
+            const key = normName(r.good_name);
+            const qty = parseFloat(r.recv_qty || 0);
+            map.set(key, (map.get(key) || 0) + qty);
+        });
+        return map;
+    }catch(e){
+        return new Map();
+    }
+}
+
+/* ---------- จัดการขั้นตอน Step Flow ---------- */
+function goToStep(step){
+    currentStep = step;
+
+    // อัปเดต stepper UI
+    [1, 2, 3].forEach(s => {
+        const el = $('st-' + s);
+        el.classList.remove('active', 'done');
+        if(s === currentStep){
+            el.classList.add('active');
+        }else if(s < currentStep){
+            el.classList.add('done');
+        }
+    });
+
+    // ซ่อน/แสดง หน้า Step
+    $('pageStep1').classList.toggle('active', currentStep === 1);
+    $('pageStep2').classList.toggle('active', currentStep === 2);
+    $('pageStep3').classList.toggle('active', currentStep === 3);
+
+    // ปรับปุ่มควบคุมด้านล่าง
+    $('btnBack').style.display = currentStep === 1 ? 'none' : 'block';
+
+    if(currentStep === 1){
+        updateCount();
+    } else if(currentStep === 2){
+        $('btnNext').textContent = 'ถัดไป';
+        $('btnNext').disabled = false;
+        const selCount = getSelectedItems().length;
+        $('sumStep2').innerHTML = `กำลังทำรายการรับเข้า <b>${selCount}</b> รายการ`;
+    } else if(currentStep === 3){
+        $('btnNext').textContent = 'บันทึกรับเข้า';
+        $('btnNext').disabled = false;
+        const selCount = getSelectedItems().length;
+        const shelf = $('shelfInput').value.trim() || 'ไม่ได้ระบุ';
+        $('sumStep3').innerHTML = `กำลังทำรายการรับเข้า <b>${selCount}</b> รายการ<br>ชั้นวาง: <b>${esc(shelf)}</b>`;
+    }
+}
+
+function nextStep(){
+    if(currentStep === 1){
+        const selected = getSelectedItems();
+        if(selected.length === 0){
+            toast('กรุณาเลือกรายการสินค้าอย่างน้อย 1 รายการ','error');
+            return;
+        }
+        if(selected.some(s => s.RecvQty <= 0)){
+            toast('จำนวนรับต้องมากกว่า 0','error');
+            return;
+        }
+        goToStep(2);
+    } else if(currentStep === 2){
+        goToStep(3);
+    } else if(currentStep === 3){
+        receiveItems();
+    }
+}
+
+function prevStep(){
+    if(currentStep > 1){
+        goToStep(currentStep - 1);
+    }
+}
+
+function getSelectedItems(){
+    if(!currentPO || !currentPO.ms_podt) return [];
+    return currentPO.ms_podt
+        .map((it,i)=> ({it,i}))
+        .filter(x => $('chk-'+x.i) && $('chk-'+x.i).checked)
+        .map(x => ({
+            GoodID:    x.it.GoodID,
+            GoodName:  x.it.GoodName,
+            UnitPrice: parseFloat(x.it.GoodPrice2 || 0),
+            RecvQty:   parseFloat($('qty-'+x.i).value || 0)
+        }));
+}
+
+/* ---------- แนบรูปถ่าย ---------- */
+function triggerPhoto(){
+    $('photoInput').click();
+}
+
+function onPhotoSelected(event){
+    const file = event.target.files && event.target.files[0];
+    event.target.value = ''; 
+    if(!file) return;
+
+    compressImage(file, 1600, 0.75).then(dataUrl => {
+        capturedPhoto = dataUrl;
+        $('photoImg').src = dataUrl;
+        $('photoImg').style.display = 'block';
+        $('photoIcon').style.display = 'none';
+        $('btnRemovePhoto').style.display = 'block';
+    }).catch(() => {
+        toast('อ่านไฟล์รูปไม่สำเร็จ','error');
+    });
+}
+
+function removePhoto(){
+    capturedPhoto = null;
+    $('photoImg').src = '';
+    $('photoImg').style.display = 'none';
+    $('photoIcon').style.display = 'block';
+    $('btnRemovePhoto').style.display = 'none';
+}
+
+function compressImage(file, maxDim, quality){
+    return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onerror = reject;
+        reader.onload = e => {
+            const img = new Image();
+            img.onerror = reject;
+            img.onload = () => {
+                let {width, height} = img;
+                if(width > maxDim || height > maxDim){
+                    const scale = Math.min(maxDim / width, maxDim / height);
+                    width = Math.round(width * scale);
+                    height = Math.round(height * scale);
+                }
+                const canvas = document.createElement('canvas');
+                canvas.width = width; canvas.height = height;
+                canvas.getContext('2d').drawImage(img, 0, 0, width, height);
+                resolve(canvas.toDataURL('image/jpeg', quality));
+            };
+            img.src = e.target.result;
+        };
+        reader.readAsDataURL(file);
+    });
+}
+
+function showNotFound(poNumber){
+    clearResult();
+    $('stateBox').innerHTML =
+        '<div class="icon">❌</div>' +
+        '<span class="err" style="font-size:16px;font-weight:500;color:var(--carbon)">ไม่มีเลข PO นี้</span><br>' +
+        esc(poNumber) + '<br>' +
+        'กรุณาตรวจสอบเลขที่ PO แล้วค้นหาใหม่';
+    $('stateBox').style.display = 'block';
+}
 
 /* ---------- ค้นหา PO ---------- */
 async function searchPO(){
@@ -218,27 +553,54 @@ async function searchPO(){
 
     try{
         const res = await fetch(`${API_URL}?PONum=${encodeURIComponent(poNumber)}`);
-        if(!res.ok) throw new Error('HTTP ' + res.status);
+
+        if(!res.ok){
+            if(res.status === 404 || res.status === 500){
+                showNotFound(poNumber);
+                return;
+            }
+            const body = await res.json().catch(() => null);
+            throw new Error((body && body.message) || ('HTTP ' + res.status));
+        }
+
         let data = await res.json();
 
-        // รองรับทั้งกรณี API ส่ง object ตรง ๆ หรือห่อมาใน data / array
         if(Array.isArray(data)) data = data[0];
         if(data && data.data) data = Array.isArray(data.data) ? data.data[0] : data.data;
 
         if(!data || !data.ms_podt || data.ms_podt.length === 0){
-            $('stateBox').innerHTML = '<div class="icon">❌</div><span class="err">ไม่พบข้อมูล PO เลขที่ ' + esc(poNumber) + '</span>';
+            showNotFound(poNumber);
             return;
         }
+
+        const receivedQtyMap = await getReceivedQtyMap(data.DocuNo || poNumber);
+        data.ms_podt = data.ms_podt
+            .map(it => {
+                const ordered  = parseFloat(it.AppvQty2 || it.GoodQty2 || 0);
+                const received = receivedQtyMap.get(normName(it.GoodName)) || 0;
+                return { ...it, _remainingQty: ordered - received };
+            })
+            .filter(it => it._remainingQty > 0);
+
+        if(data.ms_podt.length === 0){
+            clearResult();
+            $('stateBox').innerHTML = '<div class="icon">✅</div>สินค้าทั้งหมดของ PO นี้ถูกรับเข้าไปแล้ว';
+            $('stateBox').style.display = 'block';
+            return;
+        }
+
         currentPO = data;
         renderPO(data);
     }catch(err){
+        clearResult();
         $('stateBox').innerHTML = '<div class="icon">⚠️</div><span class="err">เชื่อมต่อ server ไม่ได้<br>' + esc(err.message) + '</span>';
+        $('stateBox').style.display = 'block';
     }finally{
         $('btnSearch').disabled = false;
     }
 }
 
-/* ---------- แสดงผล ---------- */
+/* ---------- แสดงผล PO ---------- */
 function renderPO(po){
     $('stateBox').style.display = 'none';
 
@@ -249,7 +611,7 @@ function renderPO(po){
             <div class="meta">
                 <span>วันที่: <b>${fmtDate(po.DocuDate)}</b></span>
                 <span>กำหนดส่ง: <b>${fmtDate(po.ShipDate)}</b></span>
-                <span>ยอดสุทธิ: <b>${fmtNum(po.NetAmnt)} ฿</b></span>
+                <span class="v-amnt">ยอดสุทธิ: <b>${fmtNum(po.NetAmnt)} ฿</b></span>
             </div>
         </div>`;
 
@@ -259,116 +621,179 @@ function renderPO(po){
 
     $('itemList').innerHTML = items.map((it, i) => {
         const {name, code} = splitGoodName(it.GoodName);
-        // จำนวน fix มาจากใบ PO (แก้ไขได้)
-        const qty = parseFloat(it.AppvQty2 || it.GoodQty2 || 0);
+        const ordered = parseFloat(it.AppvQty2 || it.GoodQty2 || 0);
+        const qty = (it._remainingQty !== undefined) ? it._remainingQty : ordered;
         return `
         <div class="item" id="item-${i}">
             <input type="checkbox" id="chk-${i}" onchange="onCheck(${i})">
             <div class="info" onclick="toggleItem(${i})">
                 <div class="gname">${esc(name)}</div>
                 ${code ? `<div class="gcode">${esc(code)}</div>` : ''}
-                <div class="price">ราคา/หน่วย <b>${fmtNum(it.GoodPrice2)}</b> ฿ · รวม <b>${fmtNum(it.GoodAmnt)}</b> ฿</div>
+                <div class="price">ราคา/หน่วย <b class="unit">${fmtNum(it.GoodPrice2)}</b> ฿ · รวม <b class="total">${fmtNum(it.GoodAmnt)}</b> ฿</div>
+                ${qty < ordered ? `<div class="gcode">รับไปแล้ว ${fmtQty(ordered - qty)} จาก ${fmtQty(ordered)} · เหลือรับ ${fmtQty(qty)}</div>` : ''}
             </div>
             <div class="qtybox">
                 <label>จำนวนรับ</label>
                 <div class="qty-ctrl">
                     <button type="button" onclick="stepQty(${i},-1)">−</button>
-                    <input type="number" id="qty-${i}" value="${qty}" min="0" inputmode="decimal" onclick="event.stopPropagation()">
+                    <input type="number" id="qty-${i}" value="${qty}" min="0" max="${qty}" data-max="${qty}" inputmode="decimal" onclick="event.stopPropagation()" onchange="clampQty(${i})">
                     <button type="button" onclick="stepQty(${i},1)">+</button>
                 </div>
             </div>
         </div>`;
     }).join('');
 
-    $('receiveBar').classList.add('show');
-    updateCount();
+    $('stepper').classList.add('show');
+    $('navBar').classList.add('show');
+    goToStep(1);
 }
 
-/* ---------- checkbox / จำนวน ---------- */
-function onCheck(i){
-    $('item-'+i).classList.toggle('checked', $('chk-'+i).checked);
-    updateCount();
-}
-function toggleItem(i){
-    const c = $('chk-'+i);
-    c.checked = !c.checked;
-    onCheck(i);
-}
-function toggleAll(){
-    if(!currentPO) return;
-    const items = currentPO.ms_podt;
-    const allChecked = items.every((_,i)=> $('chk-'+i).checked);
-    items.forEach((_,i)=>{ $('chk-'+i).checked = !allChecked; onCheck(i); });
-}
-function stepQty(i, d){
-    const inp = $('qty-'+i);
-    let v = parseFloat(inp.value || 0) + d;
-    if(v < 0) v = 0;
-    inp.value = v;
-    // กด +/- แล้วติ๊กเลือกให้อัตโนมัติ
-    if(!$('chk-'+i).checked){ $('chk-'+i).checked = true; onCheck(i); }
-}
-function updateCount(){
-    if(!currentPO) return;
-    const n = currentPO.ms_podt.filter((_,i)=> $('chk-'+i).checked).length;
-    $('selCount').textContent = n;
-    $('btnReceive').disabled = n === 0;
-}
-
-/* ---------- กดรับเข้า ---------- */
+/* ---------- กดบันทึกรับเข้า (ใน Step 3) ---------- */
 async function receiveItems(){
-    const selected = currentPO.ms_podt
-        .map((it,i)=> ({it,i}))
-        .filter(x => $('chk-'+x.i).checked)
-        .map(x => ({
-            POID:    x.it.POID,
-            ListNo:  x.it.ListNo,
-            GoodID:  x.it.GoodID,
-            GoodName:x.it.GoodName,
-            RecvQty: parseFloat($('qty-'+x.i).value || 0)
-        }));
+    const selected = getSelectedItems();
 
-    if(selected.length === 0){ toast('ยังไม่ได้เลือกรายการ','error'); return; }
-    if(selected.some(s => s.RecvQty <= 0)){ toast('จำนวนรับต้องมากกว่า 0','error'); return; }
+    if(selected.length === 0){
+        toast('ยังไม่ได้เลือกรายการ','error');
+        goToStep(1);
+        return;
+    }
 
-    if(!confirm(`ยืนยันรับเข้า ${selected.length} รายการ จาก ${currentPO.DocuNo} ?`)) return;
+    if(!capturedPhoto){
+        toast('กรุณาถ่ายรูปหรือเลือกรูปแนบก่อนกดบันทึก','error');
+        return;
+    }
 
-    $('btnReceive').disabled = true;
-    $('btnReceive').textContent = 'กำลังบันทึก...';
+    $('btnNext').disabled = true;
+    $('btnNext').textContent = 'กำลังบันทึก...';
 
     try{
-        const res = await fetch(RECEIVE_URL, {
+        const res = await fetch(RECEIVE_URL,{
             method:'POST',
             headers:{
                 'Content-Type':'application/json',
-                'X-CSRF-TOKEN': CSRF_TOKEN,
+                'X-CSRF-TOKEN':CSRF_TOKEN,
                 'Accept':'application/json'
             },
-            body: JSON.stringify({
-                PONum:  currentPO.DocuNo,
-                POID:   currentPO.POID,
-                items:  selected
+            body:JSON.stringify({
+                PONum: currentPO.DocuNo,
+                Shelf: $('shelfInput').value.trim() || null,
+                items: selected,
+                Photo: capturedPhoto
             })
         });
-        if(!res.ok) throw new Error('HTTP ' + res.status);
-        toast(`✅ รับเข้าสำเร็จ ${selected.length} รายการ`,'ok');
 
-        // เอา checkbox ออกหลังบันทึกสำเร็จ
-        selected.forEach(s=>{
-            const i = currentPO.ms_podt.findIndex(it=>it.ListNo===s.ListNo);
-            if(i>-1){ $('chk-'+i).checked=false; onCheck(i); }
+        const result = await res.json();
+
+        if(!res.ok){
+            throw new Error(result.message || ('HTTP '+res.status));
+        }
+
+        toast(`รับเข้าสำเร็จ ${selected.length} รายการ`,'ok');
+        removePhoto();
+        $('shelfInput').value = '';
+
+        selected.forEach(sel => {
+            const key = normName(sel.GoodName);
+            const idx = currentPO.ms_podt.findIndex(it => normName(it.GoodName) === key);
+            if(idx === -1) return;
+
+            const item = currentPO.ms_podt[idx];
+            const ordered = parseFloat(item.AppvQty2 || item.GoodQty2 || 0);
+            const before = (item._remainingQty !== undefined) ? item._remainingQty : ordered;
+            const after = before - sel.RecvQty;
+
+            if(after <= 0){
+                currentPO.ms_podt.splice(idx, 1);
+            }else{
+                item._remainingQty = after;
+            }
         });
+
+        if(currentPO.ms_podt.length === 0){
+            clearResult();
+            $('stateBox').innerHTML = `
+                <div class="icon">✅</div>
+                สินค้าทั้งหมดของ PO นี้ถูกรับเข้าไปแล้ว
+            `;
+            $('stateBox').style.display = 'block';
+        }else{
+            renderPO(currentPO);
+        }
+
     }catch(err){
-        toast('บันทึกไม่สำเร็จ: ' + err.message,'error');
+        toast('บันทึกไม่สำเร็จ : '+err.message,'error');
     }finally{
-        $('btnReceive').disabled = false;
-        $('btnReceive').innerHTML = '✅ รับเข้า';
-        updateCount();
+        $('btnNext').disabled = false;
+        $('btnNext').textContent = 'บันทึกรับเข้า';
     }
 }
 
-/* ---------- helpers ---------- */
-// แยกชื่อสินค้าออกจากรหัสท้ายชื่อ เช่น ++--++C.11362++S.014472++--++
+/* ---------- Checkbox Handlers ---------- */
+function onCheck(i){
+    const chk = $('chk-'+i);
+    const item = $('item-'+i);
+    if(!chk || !item) return;
+    item.classList.toggle('checked', chk.checked);
+    updateCount();
+}
+
+function toggleItem(i){
+    const chk = $('chk-'+i);
+    if(!chk) return;
+    chk.checked = !chk.checked;
+    onCheck(i);
+}
+
+function toggleAll(){
+    if(!currentPO) return;
+    const items = currentPO.ms_podt || [];
+    const allChecked = items.every((_, i) => $('chk-'+i) && $('chk-'+i).checked);
+    items.forEach((_, i) => {
+        const chk = $('chk-'+i);
+        if(!chk) return;
+        chk.checked = !allChecked;
+        onCheck(i);
+    });
+}
+
+function updateCount(){
+    if(currentStep !== 1) return;
+    if(!currentPO || !currentPO.ms_podt){
+        $('btnNext').textContent = 'ถัดไป (เลือก 0)';
+        $('btnNext').disabled = true;
+        return;
+    }
+    let count = 0;
+    currentPO.ms_podt.forEach((_, i) => {
+        const chk = $('chk-'+i);
+        if(chk && chk.checked) count++;
+    });
+    $('btnNext').textContent = `ถัดไป (เลือก ${count})`;
+    $('btnNext').disabled = count === 0;
+}
+
+/* ---------- Qty Handlers ---------- */
+function stepQty(i, delta){
+    const input = $('qty-'+i);
+    if(!input) return;
+    const max = parseFloat(input.dataset.max ?? input.max ?? Infinity);
+    let val = (parseFloat(input.value) || 0) + delta;
+    if(val < 0) val = 0;
+    if(val > max) val = max;
+    input.value = val;
+}
+
+function clampQty(i){
+    const input = $('qty-'+i);
+    if(!input) return;
+    const max = parseFloat(input.dataset.max ?? input.max ?? Infinity);
+    let val = parseFloat(input.value);
+    if(isNaN(val) || val < 0) val = 0;
+    if(val > max) val = max;
+    input.value = val;
+}
+
+/* ---------- Helpers ---------- */
 function splitGoodName(raw){
     if(!raw) return {name:'-', code:''};
     const idx = raw.indexOf('++');
@@ -377,6 +802,10 @@ function splitGoodName(raw){
         name: raw.substring(0, idx).trim(),
         code: raw.substring(idx).replace(/\+\+|--/g,' ').replace(/\s+/g,' ').trim()
     };
+}
+function fmtQty(v){
+    const n = parseFloat(v || 0);
+    return (n % 1 === 0) ? String(n) : n.toFixed(2);
 }
 function fmtNum(v){
     const n = parseFloat(v || 0);
@@ -393,10 +822,18 @@ function esc(s){
 }
 function clearResult(){
     currentPO = null;
+    currentStep = 1;
     $('poHead').innerHTML = '';
     $('itemList').innerHTML = '';
     $('listTitle').style.display = 'none';
-    $('receiveBar').classList.remove('show');
+    $('stepper').classList.remove('show');
+    $('navBar').classList.remove('show');
+    $('shelfInput').value = '';
+    
+    // ซ่อนหน้า Step ทั้งหมด
+    document.querySelectorAll('.step-page').forEach(el => el.classList.remove('active'));
+    
+    removePhoto();
 }
 let toastTimer;
 function toast(msg, type=''){
@@ -404,7 +841,7 @@ function toast(msg, type=''){
     t.textContent = msg;
     t.className = 'show ' + type;
     clearTimeout(toastTimer);
-    toastTimer = setTimeout(()=> t.className='', 2600);
+    toastTimer = setTimeout(()=> t.className='', type === 'error' ? 8000 : 2600);
 }
 </script>
 </body>
