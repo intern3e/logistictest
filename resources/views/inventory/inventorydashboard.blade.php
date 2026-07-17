@@ -117,6 +117,29 @@
     input:focus,select:focus{outline:none;border-color:#2358a4}
     .toast{position:fixed;bottom:20px;right:20px;padding:10px 18px;font-size:14px;font-weight:600;z-index:9999;color:#fff;opacity:0;transition:opacity .3s}
     @media(max-width:768px){.abar{flex-direction:column} .abar input,.abar select{min-width:100%!important;max-width:100%!important}}
+    .btn-home{
+  display:inline-flex;
+  align-items:center;
+  gap:6px;
+  padding:7px 18px;
+  font-family:'Sarabun',sans-serif;
+  font-size:14px;
+  font-weight:600;
+  color:#fff;
+  text-decoration:none;
+  cursor:pointer;
+  white-space:nowrap;
+  border:1px solid #8b0000;
+  background:linear-gradient(180deg,#e03030 0%,#b00000 50%,#8b0000 100%);
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.3),1px 1px 3px rgba(0,0,0,.3);
+}
+.btn-home:hover{
+  background:linear-gradient(180deg,#ff4444 0%,#cc0000 50%,#a00000 100%);
+}
+.btn-home:active{
+  box-shadow:inset 1px 1px 3px rgba(0,0,0,.4);
+  transform:translateY(1px);
+}
   </style>
 </head>
 <body>
@@ -136,8 +159,8 @@
   <div class="sb-head"><img src="https://img2.pic.in.th/pic/article_aac164a0b0.png" alt="Logo"><span>3E TRADING</span><button class="sb-close" onclick="closeSB()">&#10005;</button></div>
 <div class="sb-nav">
     <div class="sb-sec">เมนูหลัก</div>
-    <a class="sb-item" href="{{ route('inventory.transaction', ['create_by' => $authUser['username'] ?? '']) }}"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>รายการสินค้า เข้า-ออก</a>
-    <a class="sb-item cur" href="{{ route('inventory.item', ['create_by' => $authUser['username'] ?? '']) }}"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 16V8a2 2 0 00-1-1.73l-7-4a2 2 0 00-2 0l-7 4A2 2 0 003 8v8a2 2 0 001 1.73l7 4a2 2 0 002 0l7-4A2 2 0 0021 16z"/></svg>ค้นหาสินค้า</a>
+    <a class="sb-item" target="_blank" href="{{ route('inventory.transaction', ['create_by' => $authUser['name'] ?? '']) }}"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>รายการสินค้า เข้า-ออก</a>
+    <a class="sb-item cur" target="_blank"href="{{ route('inventory.item', ['create_by' => $authUser['name'] ?? '']) }}"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 16V8a2 2 0 00-1-1.73l-7-4a2 2 0 00-2 0l-7 4A2 2 0 003 8v8a2 2 0 001 1.73l7 4a2 2 0 002 0l7-4A2 2 0 0021 16z"/></svg>ค้นหาสินค้า</a>
 </div>
 </div>
 
@@ -146,6 +169,7 @@
   <img src="https://img2.pic.in.th/pic/article_aac164a0b0.png" alt="Logo" class="topbar-logo">
   <span class="topbar-title">3E TRADING</span>
   <div class="topbar-right"><span class="topbar-name">{{ $authUser['name'] ?? '' }}</span><span class="topbar-badge">{{ strtoupper($authRole) }}</span></div>
+  <a href="http://server_update:8000/solist" button  type="submit" class="btn-home">🚪 หน้าหลัก</a>
 </div>
 
 <div id="content">

@@ -336,12 +336,18 @@ Route::post('/po-search/detail',  [PoitemController::class, 'detail'])->name('po
 
 
 use App\Http\Controllers\InventoryController;
-
+Route::get('/api/items/one/{id}', [InventoryController::class, 'getOneItem']);
+Route::post('/api/tx-cache/clear', [InventoryController::class, 'clearTransactionCache']);
 // Pages
-Route::get('/inventory/transaction', [InventoryController::class, 'transactionDashboard'])->name('inventory.transaction');
-Route::get('/inventory/item',        [InventoryController::class, 'inventoryDashboard'])->name('inventory.item');
-Route::get('/inventory',             [InventoryController::class, 'entry']);
-
+Route::get('/inventory/transaction',  [InventoryController::class, 'transactionDashboard'])->name('inventory.transaction');
+Route::get('/inventory/item',         [InventoryController::class, 'inventoryDashboard'])->name('inventory.item');
+Route::get('/inventory/stockout',     [InventoryController::class, 'stockoutPage'])->name('inventory.stockout');
+Route::get('/inventory/withdraw',     [InventoryController::class, 'withdrawPage'])->name('inventory.withdraw');
+Route::get('/inventory/pr',           [InventoryController::class, 'prPage'])->name('inventory.pr');
+Route::get('/inventory/pr/dashboard', [InventoryController::class, 'prDashboardPage'])->name('inventory.pr.dashboard');
+Route::get('/inventory/users',        [InventoryController::class, 'manageUsersPage'])->name('inventory.users');
+Route::get('/inventory',              [InventoryController::class, 'entry']);
+ 
 // API: Items
 Route::get('/api/items/pagedata',      [InventoryController::class, 'getPageData']);
 Route::post('/api/items',              [InventoryController::class, 'addProduct']);
@@ -349,18 +355,32 @@ Route::post('/api/items/sub',          [InventoryController::class, 'addSubProdu
 Route::put('/api/items/{id}',          [InventoryController::class, 'updateProduct']);
 Route::delete('/api/items/{id}',       [InventoryController::class, 'deleteProduct']);
 Route::get('/api/items/{id}/tx-count', [InventoryController::class, 'countTxByItem']);
-
+ 
 // API: Transactions
 Route::get('/api/transaction',                  [InventoryController::class, 'getTransactionPage']);
 Route::get('/api/transaction/by-item/{itemId}', [InventoryController::class, 'getTransactionByItemId']);
 Route::put('/api/transaction/{id}',             [InventoryController::class, 'updateTransaction']);
 Route::delete('/api/transaction/{id}',          [InventoryController::class, 'deleteTransaction']);
-
-// API: Users
-Route::get('/api/users',          [InventoryController::class, 'getUsers']);
-Route::post('/api/users',         [InventoryController::class, 'addUser']);
-Route::put('/api/users/{id}',     [InventoryController::class, 'updateUser']);
-Route::delete('/api/users/{id}',  [InventoryController::class, 'deleteUser']);
+ 
+// API: Stockout / Withdraw
+Route::post('/api/stockout', [InventoryController::class, 'saveStockout']);
+Route::post('/api/withdraw', [InventoryController::class, 'saveWithdraw']);
+ 
+// API: PR (ใบขอซื้อ)
+Route::post('/api/pr/upload',         [InventoryController::class, 'uploadPrImage']);
+Route::get('/api/pr',                 [InventoryController::class, 'getPrList']);
+Route::post('/api/pr',                [InventoryController::class, 'savePr']);
+Route::post('/api/pr/{prId}/approve', [InventoryController::class, 'approvePr']);
+Route::post('/api/pr/{prId}/reject',  [InventoryController::class, 'rejectPr']);
+Route::get('/api/exchange-rates',     [InventoryController::class, 'getExchangeRates']);
+ 
+// API: Users (sync 2 ฐาน: API 4 ฟิลด์ + DB local มี page)
+Route::get('/api/users',         [InventoryController::class, 'getUsers']);
+Route::post('/api/users',        [InventoryController::class, 'addUser']);
+Route::put('/api/users/{id}',    [InventoryController::class, 'updateUser']);
+Route::delete('/api/users/{id}', [InventoryController::class, 'deleteUser']);
+ 
+ 
 
 use App\Http\Controllers\InternalpoController;
 Route::get('/internalpo', [InternalpoController::class, 'dashboard'])->name('internal_po.dashboard');

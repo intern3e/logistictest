@@ -6,6 +6,8 @@
   <meta name="csrf-token" content="{{ csrf_token() }}">
   <title>รายการสินค้า เข้า-ออก - 3E TRADING</title>
   <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
   <style>
     *{margin:0;padding:0;box-sizing:border-box}
     body{font-family:'Sarabun',Arial,sans-serif;background:#ece9d8;min-height:100vh;padding-bottom:40px}
@@ -47,6 +49,10 @@
     .finput:focus{outline:none;border-color:#2358a4}
     .btn-clr{padding:7px 16px;border:1px solid #999;cursor:pointer;font-weight:600;font-size:14px;font-family:'Sarabun',sans-serif;background:linear-gradient(180deg,#f0f0f0,#d0d0d0);color:#555}
     .btn-clr:hover{background:linear-gradient(180deg,#fff,#e0e0e0)}
+    .pdf-btn{padding:7px 18px;border:1px solid #8b0000;cursor:pointer;font-weight:600;font-size:14px;font-family:'Sarabun',sans-serif;color:#fff;background:linear-gradient(180deg,#e03030 0%,#b00000 50%,#8b0000 100%);box-shadow:inset 0 1px 0 rgba(255,255,255,.3),1px 1px 3px rgba(0,0,0,.3);display:flex;align-items:center;gap:6px;white-space:nowrap;align-self:flex-end}
+    .pdf-btn::before{content:'';display:inline-block;width:12px;height:15px;background:#fff;clip-path:polygon(0 0,65% 0,100% 30%,100% 100%,0 100%);opacity:.9;flex-shrink:0}
+    .pdf-btn:hover{background:linear-gradient(180deg,#ff4444 0%,#cc0000 50%,#a00000 100%)}
+    .pdf-btn:disabled{opacity:.5;cursor:not-allowed}
     .tbl-wrap{background:#fff;overflow-x:auto}
     table{width:100%;border-collapse:collapse;font-size:13px}
     thead{background:linear-gradient(180deg,#555,#333)}
@@ -73,20 +79,57 @@
     .toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:#333;color:#fff;padding:10px 24px;font-size:14px;font-weight:600;z-index:9999;display:none}
     .toast.on{display:block}
     @media(max-width:768px){.fbar{flex-direction:column} .fbox{width:100%!important}}
+    .btn-home{
+  display:inline-flex;
+  align-items:center;
+  gap:6px;
+  padding:7px 18px;
+  font-family:'Sarabun',sans-serif;
+  font-size:14px;
+  font-weight:600;
+  color:#fff;
+  text-decoration:none;
+  cursor:pointer;
+  white-space:nowrap;
+  border:1px solid #8b0000;
+  background:linear-gradient(180deg,#e03030 0%,#b00000 50%,#8b0000 100%);
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.3),1px 1px 3px rgba(0,0,0,.3);
+}
+.btn-home:hover{
+  background:linear-gradient(180deg,#ff4444 0%,#cc0000 50%,#a00000 100%);
+}
+.btn-home:active{
+  box-shadow:inset 1px 1px 3px rgba(0,0,0,.4);
+  transform:translateY(1px);
+}
   </style>
 </head>
 <body>
-<div class="ov" id="ov"><div><div class="sp"></div><p>กำลังโหลดข้อมูล...</p></div></div>
+<div class="ov" id="ov"><div><div class="sp"></div><p id="ovText">กำลังโหลดข้อมูล...</p></div></div>
 <div class="toast" id="toast"></div>
 
+@php $q = ['create_by' => $authUser['name'] ?? '']; @endphp
 <div class="sb-ov" id="sbOv" onclick="closeSB()"></div>
 <div class="sidebar" id="sidebar">
   <div class="sb-head"><img src="https://img2.pic.in.th/pic/article_aac164a0b0.png" alt="Logo"><span>3E TRADING</span><button class="sb-close" onclick="closeSB()">&#10005;</button></div>
-<div class="sb-nav">
+  <div class="sb-nav">
     <div class="sb-sec">เมนูหลัก</div>
-    <a class="sb-item cur" href="{{ route('inventory.transaction', ['create_by' => $authUser['username'] ?? '']) }}"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>รายการสินค้า เข้า-ออก</a>
-    <a class="sb-item" href="{{ route('inventory.item', ['create_by' => $authUser['username'] ?? '']) }}"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 16V8a2 2 0 00-1-1.73l-7-4a2 2 0 00-2 0l-7 4A2 2 0 003 8v8a2 2 0 001 1.73l7 4a2 2 0 002 0l7-4A2 2 0 0021 16z"/></svg>ค้นหาสินค้า</a>
-</div>
+    <a class="sb-item cur" href="{{ route('inventory.transaction', $q) }}"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>รายการสินค้า เข้า-ออก</a>
+    <a class="sb-item"target="_blank" href="{{ route('inventory.item', $q) }}"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 16V8a2 2 0 00-1-1.73l-7-4a2 2 0 00-2 0l-7 4A2 2 0 003 8v8a2 2 0 001 1.73l7 4a2 2 0 002 0l7-4A2 2 0 0021 16z"/></svg>ค้นหาสินค้า</a>
+    @if(str_contains($authUser['page'] ?? '', 'pr'))
+      <a class="sb-item"target="_blank" href="{{ route('inventory.pr', $q) }}"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 16V8a2 2 0 00-1-1.73l-7-4a2 2 0 00-2 0l-7 4A2 2 0 003 8v8a2 2 0 001 1.73l7 4a2 2 0 002 0l7-4A2 2 0 0021 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/></svg>สร้างใบขอซื้อ</a>
+    @endif
+    @if(in_array($authRole, ['admin','user']))
+      <div style="height:1px;background:#a8c3e0;margin:5px 12px"></div>
+      <div class="sb-sec">ดำเนินการ</div>
+      <a class="sb-item"target="_blank" href="{{ route('inventory.stockout', $q) }}"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 002 1.61h9.72a2 2 0 002-1.61L23 6H6"/></svg>ขายสินค้าออก</a>
+      <a class="sb-item" target="_blank"href="{{ route('inventory.withdraw', $q) }}"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>เบิกของ</a>
+    @endif
+      @if(in_array($authRole,['admin']))
+      <a class="sb-item"target="_blank" href="{{ route('inventory.users', $q) }}"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 16V8a2 2 0 00-1-1.73l-7-4a2 2 0 00-2 0l-7 4A2 2 0 003 8v8a2 2 0 001 1.73l7 4a2 2 0 002 0l7-4A2 2 0 0021 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/></svg>จัดการผู้ใช้งาน</a>
+      <a class="sb-item"target="_blank" href="{{ route('inventory.pr.dashboard', $q) }}"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 16V8a2 2 0 00-1-1.73l-7-4a2 2 0 00-2 0l-7 4A2 2 0 003 8v8a2 2 0 001 1.73l7 4a2 2 0 002 0l7-4A2 2 0 0021 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/></svg>ขอซื้อ</a>
+    @endif
+  </div>
 </div>
 
 <div class="topbar">
@@ -96,6 +139,7 @@
   <div class="topbar-right">
     <span class="topbar-name">{{ $authUser['name'] ?? '' }}</span>
     <span class="topbar-badge">{{ strtoupper($authRole) }}</span>
+    <a href="http://server_update:8000/solist" button  type="submit" class="btn-home">🚪 หน้าหลัก</a>
   </div>
 </div>
 
@@ -114,6 +158,9 @@
         </select>
       </div>
       <div class="fbox" style="width:130px"><label>ชั้นวาง</label><input type="text" id="fShelf" class="finput" placeholder="ค้นหา..." oninput="applyFilter()"></div>
+      @if(in_array($authRole, ['admin','user']))
+        <button class="pdf-btn" id="pdfBtn" onclick="generatePDF()">PDF</button>
+      @endif
       <button class="btn-clr" onclick="clearFilter()">ล้างตัวกรอง</button>
     </div>
   </div>
@@ -145,7 +192,7 @@ const API={
 let pageData=[], pg=1, lastPage=1, total=0;
 let _debounce=null;
 
-function showOv(){document.getElementById('ov').classList.add('on')}
+function showOv(t){document.getElementById('ovText').textContent=t||'กำลังโหลดข้อมูล...';document.getElementById('ov').classList.add('on')}
 function hideOv(){document.getElementById('ov').classList.remove('on')}
 function openSB(){document.getElementById('sidebar').classList.add('open');document.getElementById('sbOv').classList.add('open')}
 function closeSB(){document.getElementById('sidebar').classList.remove('open');document.getElementById('sbOv').classList.remove('open')}
@@ -153,10 +200,10 @@ function toast(m,e){const t=document.getElementById('toast');t.textContent=m;t.s
 function esc(s){return(s||'').replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;').replace(/>/g,'&gt;')}
 
 /** สร้าง query string จาก filter + page */
-function buildQuery(page){
+function buildQuery(page,limit){
   const fD=document.getElementById('fDate').value;
   const p=new URLSearchParams();
-  p.set('page',page); p.set('limit',PG);
+  p.set('page',page); p.set('limit',limit||PG);
   if(fD){const parts=fD.split('-');p.set('fDate',parts[2]+'/'+parts[1]+'/'+parts[0])}
   const fOp=document.getElementById('fOp').value.trim();    if(fOp) p.set('fOp',fOp);
   const fBill=document.getElementById('fBill').value.trim();if(fBill) p.set('fBill',fBill);
@@ -218,6 +265,104 @@ function editRow(i){
 }
 async function saveRow(i){const row=pageData[i];const op=document.getElementById('eOp').value.trim(),bill=document.getElementById('eBill').value.trim();if(!op||!bill){alert('กรุณากรอกข้อมูลให้ครบ');return}if(!confirm('ต้องการบันทึก?'))return;showOv();try{await API.put('/api/transaction/'+encodeURIComponent(row.transaction_id),{operator:op,type:document.getElementById('eType').value,bill,quantity:document.getElementById('eQty').value,price:document.getElementById('ePrice').value||'',shelf:document.getElementById('eShelf').value.trim(),note:document.getElementById('eNote').value.trim(),image:document.getElementById('eImg').value.trim(),oldQuantity:row['จำนวน'],oldType:row['ประเภทข้อมูล'],oldItemId:row['item_id']});toast('บันทึกสำเร็จ');await loadPage(pg,true)}catch(e){toast(e.message,true);hideOv()}}
 async function delRow(i){const row=pageData[i];if(!confirm(`ลบรายการ?\nเอกสาร: ${row['หมายเลขเอกสาร']}\nรายการ: ${row['รายการ']}`))return;showOv();try{await API.del('/api/transaction/'+encodeURIComponent(row.transaction_id));toast('ลบเรียบร้อย');await loadPage(pg,true)}catch(e){toast(e.message,true);hideOv()}}
+
+// ═══════════ PDF EXPORT (port จาก Apps Script) ═══════════
+let _fontN=null,_fontB=null;
+
+async function _fetchFontB64(url){
+  const buf=await(await fetch(url)).arrayBuffer();
+  const bytes=new Uint8Array(buf);let bin='';
+  for(let i=0;i<bytes.length;i+=8192)bin+=String.fromCharCode.apply(null,bytes.subarray(i,i+8192));
+  return btoa(bin);
+}
+async function loadFonts(){
+  if(_fontN&&_fontB)return;
+  [_fontN,_fontB]=await Promise.all([
+    _fetchFontB64('https://cdn.jsdelivr.net/gh/google/fonts@main/ofl/sarabun/Sarabun-Regular.ttf'),
+    _fetchFontB64('https://cdn.jsdelivr.net/gh/google/fonts@main/ofl/sarabun/Sarabun-Bold.ttf')
+  ]);
+}
+function normalizeThai(t){return typeof t==='string'?t.normalize('NFC'):String(t??'-')}
+function convertDateFormat(ymd){
+  if(!ymd)return'-';
+  const[y,m,d]=ymd.split('-');
+  const months=['','ม.ค.','ก.พ.','มี.ค.','เม.ย.','พ.ค.','มิ.ย.','ก.ค.','ส.ค.','ก.ย.','ต.ค.','พ.ย.','ธ.ค.'];
+  return`${parseInt(d)} ${months[parseInt(m)]} ${parseInt(y)+543}`;
+}
+
+async function generatePDF(){
+  const dateEl=document.getElementById('fDate');
+  if(!dateEl.value){alert('กรุณาเลือกวันที่');return}
+  if(typeof window.jspdf==='undefined'){alert('กำลังโหลด library PDF กรุณารอสักครู่แล้วลองอีกครั้ง');return}
+  const btn=document.getElementById('pdfBtn');btn.disabled=true;
+  showOv('กำลังสร้าง PDF...');
+  try{
+    // ดึงข้อมูลทั้งหมดตาม filter ปัจจุบัน (ไม่จำกัดหน้า)
+    const res=await API.get(buildQuery(1,1000000));
+    let dataToUse=res.data||[];
+    if(!dataToUse.length){alert('ไม่มีข้อมูล');return}
+
+    await loadFonts();
+    const{jsPDF}=window.jspdf;
+    const doc=new jsPDF('p','mm','a4');
+    doc.addFileToVFS('Sarabun-R.ttf',_fontN);doc.addFont('Sarabun-R.ttf','Sarabun','normal');
+    doc.addFileToVFS('Sarabun-B.ttf',_fontB);doc.addFont('Sarabun-B.ttf','Sarabun','bold');
+
+    const typeValue=document.getElementById('fType').value||'ทั้งหมด';
+    const rawDate=dateEl.value;
+    const fileName=`รายงาน(${typeValue})สต็อก-(${rawDate}).pdf`;
+
+    if(typeValue==='ทั้งหมด'){
+      const typeOrder={'รับเข้าสต็อก':1,'คืนเข้าสต็อก':2,'ขายสินค้าออก':3,'ยืมสินค้า':4,'เบิกของ':5};
+      dataToUse=[...dataToUse].sort((a,b)=>(typeOrder[a['ประเภทข้อมูล']]||999)-(typeOrder[b['ประเภทข้อมูล']]||999));
+    }
+
+    const tableBody=dataToUse.map(r=>[
+      normalizeThai(r.Timestamp||'-'),
+      normalizeThai(r['ชื่อผู้ดำเนินงาน']||'-'),
+      normalizeThai(r['ประเภทข้อมูล']||'-'),
+      normalizeThai(r['หมายเลขเอกสาร']||'-'),
+      normalizeThai(r['รายการ']||'-'),
+      normalizeThai(String(r['จำนวน']??'-')),
+      normalizeThai(String(r['ราคาต่อหน่วย']??'-')),
+      normalizeThai(r['ชั้นวาง']||'-'),
+    ]);
+
+    doc.setFont('Sarabun','bold');doc.setFontSize(18);doc.setTextColor(0,0,0);
+    doc.text(normalizeThai('3E TRADING'),105,15,{align:'center'});
+    doc.setFontSize(14);
+    doc.text(normalizeThai(`รายงานประวัติการดำเนินการคลังสินค้า (${typeValue})`),105,23,{align:'center'});
+    doc.setFont('Sarabun','normal');doc.setFontSize(12);
+    doc.text(normalizeThai(`วันที่รายงาน: ${convertDateFormat(rawDate)}`),15,32);
+
+    doc.autoTable({
+      startY:38,
+      head:[['เวลา','ผู้ดำเนินงาน','ประเภท','หมายเลขเอกสาร','รายการสินค้า','จำนวน','ราคาต่อหน่วย','ชั้น'].map(normalizeThai)],
+      body:tableBody,
+      theme:'grid',
+      rowPageBreak:'avoid',
+      margin:{top:30,bottom:25,left:10,right:10},
+      styles:{font:'Sarabun',fontSize:11,cellPadding:{top:4,right:2,bottom:2,left:2},valign:'middle',textColor:[0,0,0],lineColor:[0,0,0],lineWidth:.1,overflow:'linebreak'},
+      headStyles:{fillColor:[255,255,255],textColor:[0,0,0],fontStyle:'bold',halign:'center',lineWidth:.2},
+      alternateRowStyles:{fillColor:[255,255,255]},
+      columnStyles:{0:{cellWidth:28},1:{cellWidth:20,halign:'center'},2:{cellWidth:24,halign:'center'},3:{cellWidth:26},4:{cellWidth:'auto'},5:{cellWidth:14,halign:'center'},6:{cellWidth:26,halign:'right'},7:{cellWidth:14,halign:'center'}},
+    });
+
+    const pageCount=doc.internal.getNumberOfPages();
+    for(let i=1;i<=pageCount;i++){
+      doc.setPage(i);doc.setFont('Sarabun','normal');doc.setFontSize(9);doc.setTextColor(0,0,0);
+      doc.text(normalizeThai(`พิมพ์เมื่อ: ${new Date().toLocaleString('th-TH')}`),15,285);
+      doc.text(normalizeThai(`หน้า ${i} จาก ${pageCount}`),195,285,{align:'right'});
+    }
+    doc.save(fileName);
+    toast('สร้าง PDF เรียบร้อย: '+fileName);
+  }catch(err){
+    console.error(err);
+    alert('Error: '+err.message);
+  }finally{
+    btn.disabled=false;hideOv();
+  }
+}
 
 // ── Init ──
 loadPage(1,true);
