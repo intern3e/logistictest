@@ -14,8 +14,6 @@ use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Cache;
 class SoItemController extends Controller
 {
-    private const CE_MIN_SCORE = 70.0;
-
     private function postJson(string $url, array $payload, int $timeout = 60): array
     {
         $ch = curl_init($url);
@@ -218,42 +216,38 @@ class SoItemController extends Controller
     // ══════════════════════════════════════════════════
     // ★ HELPER: เรียก Python CE rerank
     // ══════════════════════════════════════════════════
-    private function callCeRerank(array $items, int $topK = 5, float $minScore = 1.0): array
+    private function callCeRerank(array $items, int $topK = 5, float $minScore = 0.0): array
     {
+        // ★ เปลี่ยน: min_score default = 0.0 (เดิมเป็น 1.0 ซึ่ง Python แปลงเป็น %)
         $pythonUrl = config('services.ocr.url', 'http://localhost:8010');
-
+    
         $ch = curl_init("{$pythonUrl}/api/batch-rerank");
         curl_setopt_array($ch, [
             CURLOPT_POST           => true,
             CURLOPT_POSTFIELDS     => json_encode([
                 'items'     => $items,
                 'top_k'     => $topK,
-                'min_score' => $minScore,
+                'min_score' => $minScore,  // ★ ส่ง 0 = ไม่ตัด
             ]),
             CURLOPT_HTTPHEADER     => ['Content-Type: application/json'],
             CURLOPT_RETURNTRANSFER => true,
             CURLOPT_TIMEOUT        => 180,
             CURLOPT_CONNECTTIMEOUT => 5,
         ]);
-
+    
         $raw    = curl_exec($ch);
         $status = curl_getinfo($ch, CURLINFO_HTTP_CODE);
         $err    = curl_error($ch);
         curl_close($ch);
-
+    
         if ($err || $status !== 200) {
             Log::warning("[CE] rerank failed: HTTP={$status} err={$err}");
             return [];
         }
-
+    
         $resp = json_decode($raw, true);
-        $timing = $resp['timing_ms'] ?? '?';
-        $count  = count($resp['results'] ?? []);
-        Log::info("[CE] rerank OK: {$count} items in {$timing}ms");
-
         return $resp['results'] ?? [];
     }
-
     // ══════════════════════════════════════════════════
     // ★ HELPER: tokenize สำหรับ DB query
     // ══════════════════════════════════════════════════
@@ -284,15 +278,14 @@ class SoItemController extends Controller
         return $terms;
     }
 
+// ══════════════════════════════════════════════════
+    // ★ HELPER: DB search (pg_trgm)
     // ══════════════════════════════════════════════════
-    // ★ HELPER: embed search (ตอนนี้ redirect ไป pg_trgm)
-    //   เก็บไว้เพื่อ backward compat — Python ตอบ pg_trgm แทน
-    // ══════════════════════════════════════════════════
-    private function callEmbedSearch(array $queries, int $topK = 20, float $minScore = 30): array
+    private function callDbSearch(array $queries, int $topK = 20, float $minScore = 30): array
     {
         $pythonUrl = config('services.ocr.url', 'http://localhost:8010');
 
-        $ch = curl_init("{$pythonUrl}/api/embed-search");
+        $ch = curl_init("{$pythonUrl}/api/db-search");
         curl_setopt_array($ch, [
             CURLOPT_POST           => true,
             CURLOPT_POSTFIELDS     => json_encode([
@@ -312,164 +305,239 @@ class SoItemController extends Controller
         curl_close($ch);
 
         if ($err || $status !== 200) {
-            Log::warning("[EMBED] search failed: HTTP={$status} err={$err}");
+            Log::warning("[DB-SEARCH] search failed: HTTP={$status} err={$err}");
             return [];
         }
 
         $resp = json_decode($raw, true);
         return $resp['results'] ?? [];
     }
-
-    private function ensureEmbedIndex(): bool
-    {
-        // ★ pg_trgm ไม่ต้อง build index — return true เสมอ
-        return true;
-    }
-
-    public function buildEmbedIndex()
-    {
-        // ★ pg_trgm ไม่ต้อง build — ตอบ OK เลย
-        return response()->json(['status' => 'ready', 'message' => 'pg_trgm uses live DB, no build needed']);
-    }
-
     // ══════════════════════════════════════════════════
     // ★ FLOW 1: BATCH MATCH (💰 ราคา — fuzzy_so กลุ่มลูกค้า)
     //   ★ ใช้ Qwen ตัดสินเหมือน Flow 2 (ไม่ใช่ CE อย่างเดียว)
     //   Python _match_one() จะ: CE score → Qwen เลือก (ดู CE + doc_date)
     // ══════════════════════════════════════════════════
-    public function batchMatch(Request $request)
-    {
-        set_time_limit(120);
-        $customerCodes = (array) $request->input('customer_codes', []);
-        $items         = (array) $request->input('items', []);
-
-        if (empty($customerCodes) || empty($items)) return response()->json([]);
-
-        // ── 1) Preload ทุก product ของ customer group ──
-        $allRows = fuzzy_so::whereIn('customer_code', $customerCodes)
+   public function batchMatch(Request $request)
+{
+    set_time_limit(180);
+ 
+    $customerCodes = (array) $request->input('customer_codes', []);
+    $items         = (array) $request->input('items', []);
+ 
+    if (empty($items)) return response()->json([]);
+ 
+    $pythonUrl = config('services.ocr.url', 'http://localhost:8010');
+    $results   = array_fill(0, count($items), null);
+ 
+    // ═══ Phase 1: ค้นในกลุ่มลูกค้า ═══
+    $unmatchedIndices = [];
+ 
+    if (!empty($customerCodes)) {
+        $groupRows = fuzzy_so::whereIn('customer_code', $customerCodes)
             ->whereNotNull('product_name')
             ->where('product_name', '!=', '')
             ->orderByDesc('doc_date')
             ->get(['product_name','unit_price','unit','doc_date','customer_code','so_no','customer_name']);
-
-        Log::info("[batchMatch] codes=" . count($customerCodes) . " items=" . count($items) . " db_rows=" . $allRows->count());
-
-        // ── 2) สร้าง candidates จากกลุ่มลูกค้า ──
-        $batchPayload   = [];
+ 
+        Log::info("[batchMatch] Phase1: codes=" . count($customerCodes)
+            . " items=" . count($items) . " db_rows=" . $groupRows->count());
+ 
+        $batchPayload    = [];
         $candNamesPerItem = [];
-
+ 
         foreach ($items as $i => $itemName) {
-            $keyword = trim($itemName);
-            if (mb_strlen($keyword) < 2) {
+            $keyword = trim((string) $itemName);
+            $terms   = $this->extractSearchTerms($keyword);
+ 
+            if (mb_strlen($keyword) < 2 || empty($terms)) {
                 $batchPayload[]     = ['keyword' => $keyword, 'candidates' => []];
                 $candNamesPerItem[] = [];
                 continue;
             }
-
-            $terms = $this->extractSearchTerms($keyword);
-            if (empty($terms)) {
-                $batchPayload[]     = ['keyword' => $keyword, 'candidates' => []];
-                $candNamesPerItem[] = [];
-                continue;
-            }
-
-            // ILIKE filter จาก customer group
-            $filtered = $allRows->filter(function ($row) use ($terms) {
+ 
+            $filtered = $groupRows->filter(function ($row) use ($terms) {
                 $nameLower = mb_strtolower($row->product_name);
                 foreach ($terms as $tok) {
                     if (mb_strpos($nameLower, mb_strtolower($tok)) !== false) return true;
                 }
                 return false;
             });
-
-            $uniq      = $filtered->unique('product_name')->take(20);
-            $candNames = $uniq->pluck('product_name')->values()->toArray();
-
-            $batchPayload[]     = [
-                'keyword'    => $keyword,
-                'candidates' => array_map(fn($n) => ['product_name' => $n], $candNames),
-            ];
+ 
+            $uniq = $filtered->groupBy('product_name')->map(function ($group) {
+                $latest = $group->sortByDesc('doc_date')->first();
+                return [
+                    'product_name' => $latest->product_name,
+                    'doc_date'     => $latest->doc_date ? $latest->doc_date->format('Y-m-d') : '',
+                ];
+            })->values()->take(20)->toArray();
+ 
+            $candNames = array_column($uniq, 'product_name');
+            $batchPayload[]     = ['keyword' => $keyword, 'candidates' => $uniq];
             $candNamesPerItem[] = $candNames;
         }
-
+ 
         DB::disconnect('pgsql');
         DB::disconnect();
-
-        // ── 3) ★ ส่ง Python /api/match-product (CE + Qwen + DB search) ──
-        $pythonUrl = config('services.ocr.url', 'http://localhost:8010');
-        $resp = $this->postJson("{$pythonUrl}/api/match-product", ['items' => $batchPayload], 120);
-
-        $llmResults = $resp['results'] ?? [];
-
-        // ── 4) Map ผลลัพธ์ → ราคาจาก allRows (กลุ่มลูกค้า) ──
-        $results = [];
+ 
+        // ★ ส่ง Python — ไม่มี threshold, LLM ตัดสินทุกอย่าง
+        $resp       = $this->postJson("{$pythonUrl}/api/match-product", ['items' => $batchPayload], 120);
+        $llmResults = isset($resp['job_id'])
+            ? $this->pollMatchJob($resp['job_id'])
+            : ($resp['results'] ?? []);
+ 
         foreach ($items as $i => $itemName) {
-            $llm        = $llmResults[$i] ?? ['index' => -1];
-            $matchedIdx = (int) ($llm['index'] ?? -1);
-            $ceScore    = (float) ($llm['ce_score'] ?? 0);
-            $source     = $llm['source'] ?? 'unknown';
-            $candNames  = $candNamesPerItem[$i] ?? [];
-
-            // ★ หา matchedName: จาก PHP candidates หรือ Python DB search
-            $matchedName = null;
-            if ($matchedIdx >= 0 && isset($candNames[$matchedIdx])) {
+            $keyword     = trim((string) $itemName);
+            $coreTokens  = array_slice($this->extractSearchTerms($keyword), 0, 3);
+            $llm         = $llmResults[$i] ?? ['index' => -1];
+            $matchedIdx  = (int) ($llm['index'] ?? -1);
+            $ceScore     = (float) ($llm['ce_score'] ?? 0);
+            $matchedName = $llm['matched_name'] ?? '';
+            $candNames   = $candNamesPerItem[$i] ?? [];
+ 
+            if (!$matchedName && $matchedIdx >= 0 && isset($candNames[$matchedIdx])) {
                 $matchedName = $candNames[$matchedIdx];
-            } elseif (!empty($llm['matched']['product_name'])) {
-                $matchedName = $llm['matched']['product_name'];
             }
-
+ 
+            // ★ ไม่เช็ค CE score — ถ้า LLM บอกไม่ตรง ก็คือไม่ตรง
             if (!$matchedName) {
-                $results[] = ['input' => $itemName, 'matches' => []];
+                $unmatchedIndices[] = $i;
+                $results[$i] = [
+                    'input'         => $itemName,
+                    'matches'       => [],
+                    'source'        => 'none',
+                    'search_tokens' => $coreTokens,
+                    'ce_score'      => $ceScore,
+                ];
                 continue;
             }
-
-            // ── ดึงราคาจาก allRows (กลุ่มลูกค้า) ก่อน ──
-            $rows = $allRows->where('product_name', $matchedName)->sortByDesc('doc_date');
-
-            // ★ ถ้ากลุ่มลูกค้าไม่มี → ค้นจาก DB ทั้งหมด
-            if ($rows->isEmpty()) {
-                try {
-                    $rows = fuzzy_so::where('product_name', $matchedName)
-                        ->whereNotNull('unit_price')->where('unit_price', '>', 0)
-                        ->orderByDesc('doc_date')->limit(5)
-                        ->get(['product_name','unit_price','unit','doc_date','customer_code','so_no','customer_name']);
-                } catch (\Exception $e) {
-                    $rows = collect();
-                }
-            }
-
-            $matches = [];
-            $seen = [];
-            foreach ($rows as $row) {
-                $key = $row->product_name . '|' . ((float)$row->unit_price) . '|' . $row->so_no;
-                if (isset($seen[$key])) continue;
-                $seen[$key] = true;
-
-                $label = ($source === 'db_search' || $matchedIdx < 0)
-                    ? "🤖 CE:{$ceScore}% ({$source})"
-                    : "CE {$ceScore}%";
-
-                $matches[] = [
-                    'product_name'  => $row->product_name,
-                    'unit_price'    => $row->unit_price !== null ? (float) $row->unit_price : null,
-                    'unit'          => $row->unit,
-                    'doc_date'      => $row->doc_date ? $row->doc_date->format('d/m/Y') : '-',
-                    'customer_code' => $row->customer_code,
-                    'customer_name' => $row->customer_name,
-                    'so_no'         => $row->so_no,
-                    'similarity'    => $ceScore,
-                    'matched_tokens'=> [$label],
-                ];
-
-                if (count($matches) >= 3) break;
-            }
-
-            $results[] = ['input' => $itemName, 'matches' => array_slice($matches, 0, 3)];
+ 
+            $priceRows = $groupRows->where('product_name', $matchedName)->sortByDesc('doc_date');
+            $matches   = $this->buildMatchResults($priceRows, $matchedName, $ceScore, 'group');
+ 
+            $results[$i] = [
+                'input'         => $itemName,
+                'matches'       => $matches,
+                'source'        => 'group',
+                'search_tokens' => $coreTokens,
+                'ce_score'      => $ceScore,
+                'matched_name'  => $matchedName,
+            ];
         }
+    } else {
+        $unmatchedIndices = range(0, count($items) - 1);
+        foreach ($items as $i => $itemName) {
+            $results[$i] = [
+                'input'         => $itemName,
+                'matches'       => [],
+                'source'        => 'none',
+                'search_tokens' => array_slice($this->extractSearchTerms(trim($itemName)), 0, 3),
+                'ce_score'      => 0,
+            ];
+        }
+    }
+ 
+if (!empty($unmatchedIndices)) {
+    Log::info("[batchMatch] Phase2: " . count($unmatchedIndices) . " unmatched → self-search (Python)");
 
-        return response()->json($results);
+    $batchPayload2 = [];
+    foreach ($unmatchedIndices as $i) {
+    $keyword = trim((string) $items[$i]);
+    $terms   = array_slice($this->extractSearchTerms($keyword), 0, 5);
+    $batchPayload2[] = ['keyword' => $keyword, 'candidates' => [], 'search_terms' => $terms];
     }
 
+    DB::disconnect('pgsql');
+    DB::disconnect();
+
+    $resp2       = $this->postJson("{$pythonUrl}/api/match-product", ['items' => $batchPayload2], 120);
+    $llmResults2 = isset($resp2['job_id'])
+        ? $this->pollMatchJob($resp2['job_id'])
+        : ($resp2['results'] ?? []);
+
+    foreach ($unmatchedIndices as $j => $i) {
+        $keyword     = trim((string) $items[$i]);
+        $coreTokens  = array_slice($this->extractSearchTerms($keyword), 0, 3);
+        $llm         = $llmResults2[$j] ?? ['index' => -1];
+        $ceScore     = (float) ($llm['ce_score'] ?? 0);
+        $matchedName = $llm['matched_name'] ?? ($llm['matched']['product_name'] ?? '');
+
+        if (!$matchedName) {
+            $results[$i]['source']   = 'none';
+            $results[$i]['ce_score'] = $ceScore;
+            continue;
+        }
+
+        try {
+            $priceRows = fuzzy_so::where('product_name', $matchedName)
+                ->whereNotNull('unit_price')->where('unit_price', '>', 0)
+                ->orderByDesc('doc_date')->limit(5)
+                ->get(['product_name','unit_price','unit','doc_date','customer_code','so_no','customer_name']);
+        } catch (\Exception $e) {
+            $priceRows = collect();
+        }
+
+        $matches = $this->buildMatchResults($priceRows, $matchedName, $ceScore, 'all');
+
+        $results[$i] = [
+            'input'         => $items[$i],
+            'matches'       => $matches,
+            'source'        => 'all',
+            'search_tokens' => $coreTokens,
+            'ce_score'      => $ceScore,
+            'matched_name'  => $matchedName,
+        ];
+    }
+}
+    return response()->json($results);
+}
+private function pollMatchJob(string $jobId, int $timeoutSec = 150): array
+{
+    $pythonUrl = config('services.ocr.url', 'http://localhost:8010');
+    $start = time();
+
+    while (time() - $start < $timeoutSec) {
+        $poll = $this->getJson("{$pythonUrl}/api/match-status/{$jobId}", 10);
+        if (($poll['status'] ?? '') === 'done') {
+            return $poll['results'] ?? [];
+        }
+        usleep(800000); // 0.8s
+    }
+
+    Log::warning("[batchMatch] poll timeout job_id={$jobId}");
+    return [];
+}
+private function buildMatchResults($rows, string $matchedName, float $ceScore, string $source): array
+{
+    $matches = [];
+    $seen    = [];
+ 
+    foreach ($rows as $row) {
+        $key = $row->product_name . '|' . ((float)$row->unit_price) . '|' . $row->so_no;
+        if (isset($seen[$key])) continue;
+        $seen[$key] = true;
+ 
+        $label = $source === 'all'
+            ? "🤖 CE:{$ceScore}%"
+            : "💰 CE:{$ceScore}%";
+ 
+        $matches[] = [
+            'product_name'   => $row->product_name,
+            'unit_price'     => $row->unit_price !== null ? (float) $row->unit_price : null,
+            'unit'           => $row->unit,
+            'doc_date'       => $row->doc_date ? $row->doc_date->format('d/m/Y') : '-',
+            'customer_code'  => $row->customer_code,
+            'customer_name'  => $row->customer_name,
+            'so_no'          => $row->so_no,
+            'similarity'     => $ceScore,
+            'matched_tokens' => [$label],
+        ];
+ 
+        if (count($matches) >= 3) break;
+    }
+ 
+    return $matches;
+}
+ 
     // ══════════════════════════════════════════════════
     // ★ FLOW 2: AI FALLBACK MATCH (🤖)
     //   Python _match_one() ค้น DB เองแล้ว
@@ -674,14 +742,14 @@ private function mapAiResults(array $items, array $llmResults, array $candNamesP
         return response()->json($this->searchQuotationHistory($keyword));
     }
 
-    public function batchQuotationHistory(Request $request)
+public function batchQuotationHistory(Request $request)
     {
         set_time_limit(120);
         $items = (array) $request->input('items', []);
         if (empty($items)) return response()->json([]);
 
-        // ★ DB search (pg_trgm) — แทน embed
-        $embedResults = $this->callEmbedSearch($items, 10, 30);
+        // ★ DB search (pg_trgm)
+        $dbSearchResults = $this->callDbSearch($items, 10, 30);
 
         // ── 1) ดึง candidates ทั้งหมดจาก DB ──
         $ceItems  = [];
@@ -742,11 +810,11 @@ private function mapAiResults(array $items, array $llmResults, array $candNamesP
                 ->filter()->unique()->values();
 
             // merge DB search results
-            $embedHits = $embedResults[$idx] ?? [];
-            foreach ($embedHits as $hit) {
-                $embedName = $hit['product_name'] ?? '';
-                if ($embedName && !$allProducts->contains($embedName)) {
-                    $allProducts->push($embedName);
+            $dbHits = $dbSearchResults[$idx] ?? [];
+            foreach ($dbHits as $hit) {
+                $dbName = $hit['product_name'] ?? '';
+                if ($dbName && !$allProducts->contains($dbName)) {
+                    $allProducts->push($dbName);
                 }
             }
 
@@ -757,7 +825,7 @@ private function mapAiResults(array $items, array $llmResults, array $candNamesP
         DB::disconnect();
 
         // ── 2) CE rerank batch ──
-        $ceResults = $this->callCeRerank($ceItems, 5, self::CE_MIN_SCORE);
+        $ceResults = $this->callCeRerank($ceItems, 5);
 
         // ── 3) Map CE results → full quotation data ──
         $results = [];
@@ -827,7 +895,6 @@ private function mapAiResults(array $items, array $llmResults, array $candNamesP
 
         return response()->json($results);
     }
-
     // ── searchQuotationHistory (single item) ──
     private function searchQuotationHistory(string $keyword, int $limit = 10): array
     {
@@ -873,7 +940,7 @@ private function mapAiResults(array $items, array $llmResults, array $candNamesP
 
         $ceResults = $this->callCeRerank(
             [['query' => $keyword, 'candidates' => $allProducts]],
-            $limit, self::CE_MIN_SCORE
+            $limit
         );
 
         $ranked = $ceResults[0] ?? [];

@@ -14,25 +14,31 @@ class InternalpoController extends Controller
         'test101',
     ];
 
-    public function dashboard(Request $request)
+    private function allowed(?string $user): bool
     {
-        $creator = $request->input('create_by');
+        return in_array($user, self::ALLOWED_USERS, true);
+    }
 
-        if (!in_array($creator, self::ALLOWED_USERS, true)) {
-            abort(403, 'ไม่มีสิทธิ์เข้าใช้งาน');
-        }
-
+    /* โหลดรายการตามสถานะที่กำหนด + ดันงาน "ที่ยังไม่กด" ขึ้นบน */
+    private function loadLines(Request $request, ?array $statuses, string $todoStatus)
+    {
         $q = internal_poline::query();
 
+        if ($statuses !== null) {
+            $q->whereIn('status', $statuses);          // ด่าน 2/3 ต้องผ่านด่านก่อนหน้าก่อนถึงจะเห็น
+        }
         if ($request->filled('SONum')) {
             $q->where('SO_id', 'LIKE', '%' . $request->input('SONum') . '%');
         }
 
-        $lines = $q->orderByRaw('FIELD(status, ?) DESC', [internal_poline::ST_PENDING])
+        return $q->orderByRaw('FIELD(status, ?) DESC', [$todoStatus])
             ->orderBy('internal_id')
             ->orderBy('id')
             ->get();
+    }
 
+    private function decorate($lines): array
+    {
         $heads = internal_po::whereIn('internal_id', $lines->pluck('internal_id')->unique())
             ->get()->keyBy('internal_id');
 
@@ -41,80 +47,157 @@ class InternalpoController extends Controller
             ->orderBy('timestamp', 'desc')
             ->limit(200)
             ->pluck('item_location')
-            ->unique()
-            ->take(50)
-            ->values();
+            ->unique()->take(50)->values();
+
+        return [$heads, $locations];
+    }
+
+    /* ตัวช่วยเปลี่ยนสถานะ (transaction + ข้อความแบบเดิม) */
+    private function applyTransition(array $ids, string $from, array $updates, string $okWord)
+    {
+        try {
+            $updated = DB::transaction(function () use ($ids, $from, $updates) {
+                return internal_poline::whereIn('id', $ids)
+                    ->where('status', $from)          // กันกดซ้ำ / กดข้ามด่าน
+                    ->update($updates);
+            });
+        } catch (\Exception $e) {
+            return response()->json(['ok' => false, 'message' => $okWord . 'ไม่สำเร็จ: ' . $e->getMessage()], 500);
+        }
+
+        if ($updated === 0) {
+            return response()->json(['ok' => false, 'message' => 'ไม่พบรายการที่พร้อมดำเนินการ'], 404);
+        }
+
+        return response()->json(['ok' => true, 'message' => $okWord . ' ' . $updated . ' รายการ']);
+    }
+
+    /* ==================== ด่าน 1: จัดเสร็จ ==================== */
+    public function pickDashboard(Request $request)
+    {
+        $creator = $request->input('create_by');
+        if (!$this->allowed($creator)) abort(403, 'ไม่มีสิทธิ์เข้าใช้งาน');
+
+        $lines = $this->loadLines($request, null, internal_poline::ST_PENDING); // ด่าน 1 โหลดทุกสถานะ
+        [$heads, $locations] = $this->decorate($lines);
 
         return view('internal_po.dashboard', compact('lines', 'heads', 'locations', 'creator'));
     }
 
-    public function markFinish(Request $request)
+    public function pickSubmit(Request $request)
     {
         $request->validate([
-            'ids'      => 'required|array|min:1',
-            'ids.*'    => 'integer',
-            'location' => 'required|string|max:100',
-            'user'     => 'required|string|max:100',
+            'ids' => 'required|array|min:1', 'ids.*' => 'integer',
+            'user' => 'required|string|max:100',
         ]);
-
         $user = $request->input('user');
-        if (!in_array($user, self::ALLOWED_USERS, true)) {
-            return response()->json(['ok' => false, 'message' => 'ไม่มีสิทธิ์'], 403);
-        }
+        if (!$this->allowed($user)) return response()->json(['ok' => false, 'message' => 'ไม่มีสิทธิ์'], 403);
 
-        try {
-            $updated = DB::transaction(function () use ($request, $user) {
-                return internal_poline::whereIn('id', $request->input('ids'))
-                    ->where('status', internal_poline::ST_PENDING)
-                    ->update([
-                        'item_location' => $request->input('location'),
-                        'status'        => internal_poline::ST_FINISH,
-                        'summit_by'     => $user,
-                        'timestamp'     => Carbon::now()->toDateTimeString(),
-                    ]);
-            });
-        } catch (\Exception $e) {
-            return response()->json(['ok' => false, 'message' => 'บันทึกไม่สำเร็จ: ' . $e->getMessage()], 500);
-        }
-
-        if ($updated === 0) {
-            return response()->json(['ok' => false, 'message' => 'ไม่พบรายการที่รอดำเนินการ'], 404);
-        }
-
-        return response()->json(['ok' => true, 'message' => 'จัดเสร็จ ' . $updated . ' รายการ']);
+        return $this->applyTransition(
+            $request->input('ids'),
+            internal_poline::ST_PENDING,
+            [
+                'status'    => internal_poline::ST_FINISH,
+                'summit_by' => $user,
+                'timestamp' => Carbon::now()->toDateTimeString(),
+            ],
+            'จัดเสร็จ'
+        );
     }
 
+    /* ==================== ด่าน 2: ระบุตำแหน่ง (ต้องผ่านด่าน 1) ==================== */
+    public function locationDashboard(Request $request)
+    {
+        $creator = $request->input('create_by');
+        if (!$this->allowed($creator)) abort(403, 'ไม่มีสิทธิ์เข้าใช้งาน');
+
+        $lines = $this->loadLines($request, [
+            internal_poline::ST_FINISH,
+            internal_poline::ST_STORED,
+            internal_poline::ST_CHECKOUT,
+        ], internal_poline::ST_FINISH);
+        [$heads, $locations] = $this->decorate($lines);
+
+        return view('store.store_location', compact('lines', 'heads', 'locations', 'creator'));
+    }
+
+    public function locationSubmit(Request $request)
+    {
+        $request->validate([
+            'ids' => 'required|array|min:1', 'ids.*' => 'integer',
+            'user' => 'required|string|max:100',
+            'location' => 'required|string|max:100',
+        ]);
+        $user = $request->input('user');
+        if (!$this->allowed($user)) return response()->json(['ok' => false, 'message' => 'ไม่มีสิทธิ์'], 403);
+
+        return $this->applyTransition(
+            $request->input('ids'),
+            internal_poline::ST_FINISH,
+            [
+                'status'        => internal_poline::ST_STORED,
+                'item_location' => $request->input('location'),
+                'location_by'   => $user,
+                'location_at'   => Carbon::now()->toDateTimeString(),
+            ],
+            'ระบุตำแหน่ง'
+        );
+    }
+
+    public function checkoutDashboard(Request $request)
+    {
+        $creator = $request->input('create_by');
+        if (!$this->allowed($creator)) abort(403, 'ไม่มีสิทธิ์เข้าใช้งาน');
+
+        $lines = $this->loadLines($request, [
+            internal_poline::ST_STORED,
+            internal_poline::ST_CHECKOUT,
+        ], internal_poline::ST_STORED);
+        [$heads, $locations] = $this->decorate($lines);
+
+        return view('store.store_checkout', compact('lines', 'heads', 'locations', 'creator'));
+    }
+
+    public function checkoutSubmit(Request $request)
+    {
+        $request->validate([
+            'ids' => 'required|array|min:1', 'ids.*' => 'integer',
+            'user' => 'required|string|max:100',
+        ]);
+        $user = $request->input('user');
+        if (!$this->allowed($user)) return response()->json(['ok' => false, 'message' => 'ไม่มีสิทธิ์'], 403);
+
+        return $this->applyTransition(
+            $request->input('ids'),
+            internal_poline::ST_STORED,
+            [
+                'status'      => internal_poline::ST_CHECKOUT,
+                'checkout_by' => $user,
+                'checkout_at' => Carbon::now()->toDateTimeString(),
+            ],
+            'ของออก'
+        );
+    }
+
+    /* ==================== ยกเลิก (เฉพาะด่าน 1) ==================== */
     public function markCancel(Request $request)
     {
         $request->validate([
-            'ids'   => 'required|array|min:1',
-            'ids.*' => 'integer',
-            'user'  => 'required|string|max:100',
+            'ids' => 'required|array|min:1', 'ids.*' => 'integer',
+            'user' => 'required|string|max:100',
         ]);
-
         $user = $request->input('user');
-        if (!in_array($user, self::ALLOWED_USERS, true)) {
-            return response()->json(['ok' => false, 'message' => 'ไม่มีสิทธิ์'], 403);
-        }
+        if (!$this->allowed($user)) return response()->json(['ok' => false, 'message' => 'ไม่มีสิทธิ์'], 403);
 
-        try {
-            $updated = DB::transaction(function () use ($request, $user) {
-                return internal_poline::whereIn('id', $request->input('ids'))
-                    ->where('status', internal_poline::ST_PENDING)
-                    ->update([
-                        'status'    => internal_poline::ST_CANCEL,
-                        'summit_by' => $user,
-                        'timestamp' => Carbon::now()->toDateTimeString(),
-                    ]);
-            });
-        } catch (\Exception $e) {
-            return response()->json(['ok' => false, 'message' => 'ยกเลิกไม่สำเร็จ: ' . $e->getMessage()], 500);
-        }
-
-        if ($updated === 0) {
-            return response()->json(['ok' => false, 'message' => 'ไม่พบรายการที่รอดำเนินการ'], 404);
-        }
-
-        return response()->json(['ok' => true, 'message' => 'ยกเลิก ' . $updated . ' รายการ']);
+        return $this->applyTransition(
+            $request->input('ids'),
+            internal_poline::ST_PENDING,
+            [
+                'status'    => internal_poline::ST_CANCEL,
+                'summit_by' => $user,
+                'timestamp' => Carbon::now()->toDateTimeString(),
+            ],
+            'ยกเลิก'
+        );
     }
 }

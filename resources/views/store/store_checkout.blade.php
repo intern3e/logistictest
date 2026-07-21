@@ -1,11 +1,11 @@
 <!DOCTYPE html>
-{{-- resources/views/internal_po/pick.blade.php  (ด่าน 1: จัดเสร็จ) --}}
+{{-- resources/views/internal_po/checkout.blade.php  (ด่าน 3: ของออก) --}}
 <html lang="th">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="csrf-token" content="{{ csrf_token() }}">
-    <title>จัดเสร็จ (ด่าน 1)</title>
+    <title>ของออก (ด่าน 3)</title>
     <style>
         * { box-sizing: border-box; }
         body { margin:0; padding:20px; font-family:"Segoe UI",Tahoma,sans-serif; font-size:14px; color:#212529; background:#f8f9fa; }
@@ -16,7 +16,6 @@
         button { padding:6px 14px; border:0; border-radius:4px; font:inherit; cursor:pointer; }
         .btn-primary { background:#1971c2; color:#fff; }
         .btn-success { background:#2f9e44; color:#fff; }
-        .btn-danger  { background:#e03131; color:#fff; }
         .btn-ghost   { background:#e9ecef; color:#495057; }
         button:disabled { opacity:.5; cursor:not-allowed; }
         table { width:100%; border-collapse:collapse; background:#fff; }
@@ -30,9 +29,6 @@
         .muted { font-size:12px; color:#868e96; }
         tr.done td { color:#adb5bd; font-weight:300; background:#fcfcfd; }
         tr.done:hover td { background:#f8f9fa; }
-        tr.cancelled td { color:#adb5bd; font-weight:300; background:#fff5f5; }
-        tr.cancelled td:nth-child(4) { text-decoration:line-through; }
-        tr.cancelled:hover td { background:#ffe3e3; }
         .actionbar { margin-top:14px; display:flex; gap:8px; }
         .chips { display:flex; gap:6px; flex-wrap:wrap; }
         .chip { padding:3px 9px; border:1px solid #ced4da; border-radius:12px; background:#f8f9fa; font-size:12px; cursor:pointer; }
@@ -44,12 +40,12 @@
 <body>
 @php $nav = $creator ? ['create_by' => $creator] : []; @endphp
 <main>
-    <h1>จัดเสร็จ (ด่าน 1)</h1>
+    <h1>เช็คเอาต์ / ของออก (ด่าน 3)</h1>
 
     <nav class="chips" style="margin-bottom:12px;">
-        <a class="chip active" href="{{ route('internal_po.pick', $nav) }}">1) จัดเสร็จ</a>
+        <a class="chip"        href="{{ route('internal_po.pick', $nav) }}">1) จัดเสร็จ</a>
         <a class="chip"        href="{{ route('internal_po.location', $nav) }}">2) ระบุตำแหน่ง</a>
-        <a class="chip"        href="{{ route('internal_po.checkout', $nav) }}">3) ของออก</a>
+        <a class="chip active" href="{{ route('internal_po.checkout', $nav) }}">3) ของออก</a>
     </nav>
 
     <form class="toolbar" method="GET" action="{{ url()->current() }}">
@@ -74,22 +70,21 @@
 
     <table>
         <caption>
-            รอจัด {{ $lines->where('status', \App\Models\internal_poline::ST_PENDING)->count() }} /
+            รอเอาออก {{ $lines->where('status', \App\Models\internal_poline::ST_STORED)->count() }} /
             แสดง {{ $lines->count() }} รายการ
         </caption>
         <thead>
             <tr>
                 <th class="center" style="width:44px;"><input type="checkbox" id="chkAll"></th>
                 <th>PO ภายใน</th><th>SO</th><th>ชื่อสินค้า</th><th class="num">จำนวน</th>
-                <th>ลูกค้า</th><th>สถานะ</th><th>ผู้ดำเนินการ</th><th>เวลาดำเนินการ</th>
+                <th>ลูกค้า</th><th>กล่อง</th><th>ระบุที่โดย</th><th>เวลาระบุ</th><th>สถานะ</th>
             </tr>
         </thead>
         <tbody>
         @forelse ($lines as $l)
             @php
-                $todo   = $l->status === \App\Models\internal_poline::ST_PENDING;
-                $cancel = $l->status === \App\Models\internal_poline::ST_CANCEL;
-                $cls    = $cancel ? 'cancelled' : (!$todo ? 'done' : '');
+                $todo = $l->status === \App\Models\internal_poline::ST_STORED;
+                $cls  = $todo ? '' : 'done';
             @endphp
             <tr class="{{ $cls }}" data-done="{{ $todo ? 0 : 1 }}">
                 <td class="center">
@@ -100,29 +95,26 @@
                 <td>{{ $l->item_name }}</td>
                 <td class="num">{{ number_format($l->item_quantity, 2) }}</td>
                 <td>{{ optional($heads->get($l->internal_id))->customer_name }}</td>
+                <td>{{ $l->item_location ?: '—' }}</td>
+                <td>{{ $l->location_by ?: '—' }}</td>
+                <td class="muted">{{ $l->location_at ? \Carbon\Carbon::parse($l->location_at)->format('d/m/Y H:i') : '—' }}</td>
                 <td style="color:{{ $todo ? 'inherit' : $l->status_color }};">{{ $l->status }}</td>
-                <td>{{ $l->summit_by ?: '—' }}</td>
-                <td class="muted">{{ $l->timestamp ? \Carbon\Carbon::parse($l->timestamp)->format('d/m/Y H:i') : '—' }}</td>
             </tr>
         @empty
-            <tr><td colspan="9" class="empty">ไม่มีรายการ</td></tr>
+            <tr><td colspan="10" class="empty">ไม่มีรายการ</td></tr>
         @endforelse
         </tbody>
     </table>
 
     <div class="actionbar">
-        <button type="button" class="btn-success" id="btnMain" hidden onclick="submitFinish()">
-            จัดเสร็จ (<span id="selCount">0</span>)
-        </button>
-        <button type="button" class="btn-danger" id="btnCancel" hidden onclick="submitCancel()">
-            ยกเลิก (<span id="selCount2">0</span>)
+        <button type="button" class="btn-success" id="btnMain" hidden onclick="submitCheckout()">
+            ของออก (<span id="selCount">0</span>)
         </button>
     </div>
 </main>
 
 <script>
-const FINISH_URL = "{{ route('internal_po.pick.submit') }}";
-const CANCEL_URL = "{{ route('internal_po.cancel') }}";
+const SUBMIT_URL = "{{ route('internal_po.checkout.submit') }}";
 const CSRF       = document.querySelector('meta[name="csrf-token"]').content;
 
 const selectedIds = () => Array.from(document.querySelectorAll('.chkLine:checked')).map(c => parseInt(c.value));
@@ -130,10 +122,8 @@ const currentUser = () => document.getElementById('inpUser').value.trim();
 
 function refreshBtn() {
     const n = selectedIds().length;
-    document.getElementById('selCount').textContent  = n;
-    document.getElementById('selCount2').textContent = n;
-    document.getElementById('btnMain').hidden   = (n === 0);
-    document.getElementById('btnCancel').hidden = (n === 0);
+    document.getElementById('selCount').textContent = n;
+    document.getElementById('btnMain').hidden = (n === 0);
 }
 document.getElementById('chkAll').addEventListener('change', function () {
     document.querySelectorAll('.chkLine').forEach(c => c.checked = this.checked);
@@ -146,38 +136,22 @@ const applyHide = () => document.querySelectorAll('tr[data-done="1"]').forEach(t
 chkHide.addEventListener('change', applyHide);
 applyHide();
 
-async function post(url, body) {
-    const res = await fetch(url, {
-        method: 'POST',
-        headers: { 'Content-Type':'application/json','Accept':'application/json','X-Requested-With':'XMLHttpRequest','X-CSRF-TOKEN':CSRF },
-        body: JSON.stringify(body)
-    });
-    return { res, data: await res.json() };
-}
-
-async function submitFinish() {
+async function submitCheckout() {
     if (!currentUser())        { alert('กรุณาระบุชื่อผู้ดำเนินการ'); document.getElementById('inpUser').focus(); return; }
-    if (!selectedIds().length) { alert('ยังไม่ได้เลือกรายการ'); return; }
+    const ids = selectedIds();
+    if (!ids.length)           { alert('ยังไม่ได้เลือกรายการ'); return; }
+    if (!confirm('ยืนยันของออก ' + ids.length + ' รายการ?')) return;
 
     const btn = document.getElementById('btnMain'); btn.disabled = true;
     try {
-        const { res, data } = await post(FINISH_URL, { ids: selectedIds(), user: currentUser() });
+        const res = await fetch(SUBMIT_URL, {
+            method: 'POST',
+            headers: { 'Content-Type':'application/json','Accept':'application/json','X-Requested-With':'XMLHttpRequest','X-CSRF-TOKEN':CSRF },
+            body: JSON.stringify({ ids: ids, user: currentUser() })
+        });
+        const data = await res.json();
         if (res.ok && data.ok) { alert(data.message); window.location.reload(); }
         else { alert(data.message || 'บันทึกไม่สำเร็จ'); btn.disabled = false; }
-    } catch (e) { console.error(e); alert('เกิดข้อผิดพลาด'); btn.disabled = false; }
-}
-
-async function submitCancel() {
-    if (!currentUser())        { alert('กรุณาระบุชื่อผู้ดำเนินการ'); return; }
-    const ids = selectedIds();
-    if (!ids.length)           { alert('ยังไม่ได้เลือกรายการ'); return; }
-    if (!confirm('ยกเลิก ' + ids.length + ' รายการ?')) return;
-
-    const btn = document.getElementById('btnCancel'); btn.disabled = true;
-    try {
-        const { res, data } = await post(CANCEL_URL, { ids: ids, user: currentUser() });
-        if (res.ok && data.ok) { alert(data.message); window.location.reload(); }
-        else { alert(data.message || 'ยกเลิกไม่สำเร็จ'); btn.disabled = false; }
     } catch (e) { console.error(e); alert('เกิดข้อผิดพลาด'); btn.disabled = false; }
 }
 </script>

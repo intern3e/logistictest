@@ -314,14 +314,10 @@ Route::get('/soitem/ocr/status/{jobName}',             [SoItemController::class,
 Route::get('/soitem/ocr/file/{type}/{filename}',       [SoItemController::class, 'ocrDownload']);
  
 // ── จับคู่ราคา / สินค้า ──
-Route::post('/soitem/batch-match',                     [SoItemController::class, 'batchMatch']);
-Route::post('/soitem/ai-fallback-match',               [SoItemController::class, 'aiFallbackMatch']);
-Route::post('/soitem/batch-quotation-history',         [SoItemController::class, 'batchQuotationHistory']);
- 
-// ── embed index (admin / maintenance) ──
-Route::post('/soitem/embed/build',                     [SoItemController::class, 'buildEmbedIndex']);
-Route::post('/soitem/ai-fallback-match',          [SoItemController::class, 'aiFallbackMatch']);
-Route::get('/soitem/ai-fallback-status/{jobId}', [SoItemController::class, 'aiFallbackStatus']);
+Route::post('/soitem/batch-match', [SoItemController::class, 'batchMatch']);
+Route::post('/soitem/batch-quotation-history', [SoItemController::class, 'batchQuotationHistory']);
+
+
 
 use App\Http\Controllers\QuotationsController;
 Route::get('/quotations',                              [QuotationsController::class, 'dashboard']);
@@ -383,9 +379,21 @@ Route::delete('/api/users/{id}', [InventoryController::class, 'deleteUser']);
  
 
 use App\Http\Controllers\InternalpoController;
-Route::get('/internalpo', [InternalpoController::class, 'dashboard'])->name('internal_po.dashboard');
-Route::post('/internalpo/finish', [InternalpoController::class, 'markFinish'])->name('internal_po.finish');
-Route::post('/internalpo/cancel', [InternalpoController::class, 'markCancel'])->name('internal_po.cancel');
+Route::prefix('internal-po')->name('internal_po.')->group(function () {
+    // ด่าน 1 — จัดเสร็จ
+    Route::get ('pick',     [InternalpoController::class, 'pickDashboard'])->name('pick');
+    Route::post('pick',     [InternalpoController::class, 'pickSubmit'])->name('pick.submit');
+    Route::post('cancel',   [InternalpoController::class, 'markCancel'])->name('cancel');
+ 
+    // ด่าน 2 — ระบุตำแหน่ง (ต้องผ่านด่าน 1 ก่อน)
+    Route::get ('location', [InternalpoController::class, 'locationDashboard'])->name('location');
+    Route::post('location', [InternalpoController::class, 'locationSubmit'])->name('location.submit');
+ 
+    // ด่าน 3 — ของออก (ต้องผ่านด่าน 1+2 ก่อน)
+    Route::get ('checkout', [InternalpoController::class, 'checkoutDashboard'])->name('checkout');
+    Route::post('checkout', [InternalpoController::class, 'checkoutSubmit'])->name('checkout.submit');
+});
+ 
 
 
 use App\Http\Controllers\MobilePoappController;

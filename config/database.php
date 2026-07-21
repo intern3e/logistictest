@@ -65,11 +65,11 @@ return [
 
             'pgsql' => [
                 'driver' => 'pgsql',
-                'host' => env('DB_PG_HOST', '192.168.1.149'),
+                'host' => env('DB_PG_HOST', '192.168.1.148'),
                 'port' => env('DB_PG_PORT', '5432'),
                 'database' => env('DB_PG_DATABASE', '3E'),
                 'username' => env('DB_PG_USERNAME', 'postgres'),
-                'password' => env('DB_PG_PASSWORD', '123456'),
+                'password' => env('DB_PG_PASSWORD', 'hikari2025'),
                 'charset' => 'utf8',
                 'prefix' => '',
                 'prefix_indexes' => true,
