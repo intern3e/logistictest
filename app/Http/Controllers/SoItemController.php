@@ -281,6 +281,28 @@ class SoItemController extends Controller
 // ══════════════════════════════════════════════════
     // ★ HELPER: DB search (pg_trgm)
     // ══════════════════════════════════════════════════
+    private function callAiExtractKeywords(array $keywords): array
+{
+    $pythonUrl = config('services.ocr.url', 'http://localhost:8010');
+    $ch = curl_init("{$pythonUrl}/api/extract-keywords");
+    curl_setopt_array($ch, [
+        CURLOPT_POST           => true,
+        CURLOPT_POSTFIELDS     => json_encode(['keywords' => $keywords]),
+        CURLOPT_HTTPHEADER     => ['Content-Type: application/json'],
+        CURLOPT_RETURNTRANSFER => true,
+        CURLOPT_TIMEOUT        => 60,
+        CURLOPT_CONNECTTIMEOUT => 5,
+    ]);
+    $raw = curl_exec($ch); $status = curl_getinfo($ch, CURLINFO_HTTP_CODE); $err = curl_error($ch);
+    curl_close($ch);
+
+    if ($err || $status !== 200 || !$raw) {
+        Log::warning("[AI-EXTRACT] failed: HTTP={$status} err={$err}");
+        return array_fill(0, count($keywords), []);
+    }
+    $resp = json_decode($raw, true);
+    return $resp['results'] ?? array_fill(0, count($keywords), []);
+}
     private function callDbSearch(array $queries, int $topK = 20, float $minScore = 30): array
     {
         $pythonUrl = config('services.ocr.url', 'http://localhost:8010');
@@ -328,7 +350,18 @@ class SoItemController extends Controller
  
     $pythonUrl = config('services.ocr.url', 'http://localhost:8010');
     $results   = array_fill(0, count($items), null);
- 
+
+    // ★ แตก keyword ด้วย AI ครั้งเดียวสำหรับทุกรายการ (ใช้ซ้ำได้ทั้ง Phase 1 + 2)
+    $keywordsRaw = array_map(fn($it) => trim((string) $it), $items);
+    $aiTermsPerItem = $this->callAiExtractKeywords($keywordsRaw);
+
+    // fallback: ถ้า AI คืนว่างสำหรับ item ไหน ใช้ regex แทน
+    foreach ($keywordsRaw as $i => $kw) {
+        if (empty($aiTermsPerItem[$i])) {
+            $aiTermsPerItem[$i] = $this->extractSearchTerms($kw);
+        }
+    }
+    
     // ═══ Phase 1: ค้นในกลุ่มลูกค้า ═══
     $unmatchedIndices = [];
  
@@ -347,7 +380,7 @@ class SoItemController extends Controller
  
         foreach ($items as $i => $itemName) {
             $keyword = trim((string) $itemName);
-            $terms   = $this->extractSearchTerms($keyword);
+            $terms   = $aiTermsPerItem[$i];
  
             if (mb_strlen($keyword) < 2 || empty($terms)) {
                 $batchPayload[]     = ['keyword' => $keyword, 'candidates' => []];
@@ -387,7 +420,7 @@ class SoItemController extends Controller
  
         foreach ($items as $i => $itemName) {
             $keyword     = trim((string) $itemName);
-            $coreTokens  = array_slice($this->extractSearchTerms($keyword), 0, 3);
+            $coreTokens  = array_slice($aiTermsPerItem[$i], 0, 3);
             $llm         = $llmResults[$i] ?? ['index' => -1];
             $matchedIdx  = (int) ($llm['index'] ?? -1);
             $ceScore     = (float) ($llm['ce_score'] ?? 0);
@@ -442,7 +475,7 @@ if (!empty($unmatchedIndices)) {
     $batchPayload2 = [];
     foreach ($unmatchedIndices as $i) {
     $keyword = trim((string) $items[$i]);
-    $terms   = array_slice($this->extractSearchTerms($keyword), 0, 5);
+    $terms   = array_slice($aiTermsPerItem[$i], 0, 5);
     $batchPayload2[] = ['keyword' => $keyword, 'candidates' => [], 'search_terms' => $terms];
     }
 
@@ -456,7 +489,7 @@ if (!empty($unmatchedIndices)) {
 
     foreach ($unmatchedIndices as $j => $i) {
         $keyword     = trim((string) $items[$i]);
-        $coreTokens  = array_slice($this->extractSearchTerms($keyword), 0, 3);
+        $coreTokens  = array_slice($aiTermsPerItem[$i], 0, 3);
         $llm         = $llmResults2[$j] ?? ['index' => -1];
         $ceScore     = (float) ($llm['ce_score'] ?? 0);
         $matchedName = $llm['matched_name'] ?? ($llm['matched']['product_name'] ?? '');
@@ -558,7 +591,7 @@ private function buildMatchResults($rows, string $matchedName, float $ceScore, s
     $candNamesPerItem = [];
     foreach ($items as $item) {
         $keyword = trim($item['name'] ?? '');
-        $terms   = mb_strlen($keyword) >= 2 ? $this->extractSearchTerms($keyword) : [];
+        $terms   = mb_strlen($keyword) >= 2 ? $aiTermsPerItem[$i] : [];
         if (empty($terms)) { $batchPayload[] = ['keyword'=>$keyword,'candidates'=>[]]; $candNamesPerItem[] = []; continue; }
 
         $candidates = $type === 'price'
@@ -683,7 +716,7 @@ private function mapAiResults(array $items, array $llmResults, array $candNamesP
     $output = [];
     foreach ($items as $j => $item) {
         $keyword    = trim($item['name'] ?? '');
-        $coreTokens = array_slice($this->extractSearchTerms($keyword), 0, 3);
+        $coreTokens = array_slice($aiTermsPerItem[$i], 0, 3);
         $llm        = $llmResults[$j] ?? ['index'=>-1];
         $matchedIdx = (int) ($llm['index'] ?? -1);
         $ceScore    = (float) ($llm['ce_score'] ?? 0);
@@ -763,7 +796,7 @@ public function batchQuotationHistory(Request $request)
                 continue;
             }
 
-            $terms = $this->extractSearchTerms($keyword);
+            $terms = $aiTermsPerItem[$i];
             if (empty($terms)) {
                 $ceItems[]  = ['query' => $keyword, 'candidates' => []];
                 $rowsMeta[] = ['hq' => collect(), 'qi' => collect()];
@@ -901,7 +934,7 @@ public function batchQuotationHistory(Request $request)
         $keyword = trim($keyword);
         if (mb_strlen($keyword) < 2) return [];
 
-        $terms = $this->extractSearchTerms($keyword);
+        $terms = $aiTermsPerItem[$i];
         if (empty($terms)) return [];
 
         $searchTerms = array_slice($terms, 0, 3);
