@@ -5,9 +5,10 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>แจ้งเตือนบิลที่ยังไม่มีในระบบ</title>
-    <link rel="stylesheet" href="{{ asset('css/dashboard.blade.css') }}">
+    <link rel="stylesheet" href="{{ asset('css/dashboard.blade.css') }}?v={{ time() }}">
     <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@400;500;600;700&family=JetBrains+Mono:wght@500;600&display=swap" rel="stylesheet">
     <style>
+        /* ✅ กล่อง/ตาราง/input เหลี่ยม — ปุ่มโค้ง 6px (override ด้านล่าง) */
         * { box-sizing: border-box; margin: 0; padding: 0; border-radius: 0 !important; }
 
         :root {
@@ -21,10 +22,17 @@
             --line: #e6e9ef;
             --line-soft: #eef1f5;
             --line-strong: #d4d9e2;
-            --green: #3a7355;
-            --green-2: #2d5a42;
-            --green-soft: #ecf5ef;
-            --green-tint: #d4e9dc;
+            /* ✅ brand = น้ำเงิน (เหมือนหน้า dashboard) */
+            --blue: #3E6AE1;
+            --blue-2: #2f56c4;
+            --blue-soft: #eef2fd;
+            --blue-tint: #dbe4fb;
+            /* ✅ success = เขียว (สำหรับ "ข้อมูลครบ") */
+            --green: #16a34a;
+            --green-2: #15803d;
+            --green-soft: #ecfdf5;
+            --green-tint: #bbf7d0;
+            /* alert / danger = แดง (คงเดิม) */
             --rose: #c0392b;
             --rose-soft: #fdecea;
             --shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
@@ -34,16 +42,16 @@
             font-family: 'Sarabun', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
             background: var(--bg);
             color: var(--ink);
-            font-size: 14px;
+            font-size: clamp(12px, 0.45vw + 7px, 16px);   /* ✅ fluid */
             line-height: 1.55;
         }
 
         .mono { font-family: 'JetBrains Mono', ui-monospace, monospace; }
 
-        /* ============ TOP BAR ============ */
+        /* ============ TOP BAR (น้ำเงิน) ============ */
         .topbar {
-            background: var(--green);
-            border-bottom: 3px solid var(--green-2);
+            background: var(--blue);
+            border-bottom: 3px solid var(--blue-2);
             padding: 0 24px;
             min-height: 56px;
             display: flex;
@@ -57,7 +65,11 @@
         }
 
         .brand-text { line-height: 1.2; }
-        .brand-text .name { display: block; font-weight: 600; font-size: 16px; color: #fff; }
+        .brand-text .name {
+            display: block; font-weight: 600;
+            font-size: clamp(15px, 1vw + 6px, 20px);   /* ✅ fluid */
+            color: #fff;
+        }
         .brand-text .sub { font-size: 11px; color: rgba(255, 255, 255, 0.75); letter-spacing: 0.04em; text-transform: uppercase; }
 
         .topbar-nav { display: flex; align-items: center; gap: 8px; }
@@ -65,7 +77,7 @@
         .user-info {
             display: flex; align-items: center; gap: 6px;
             color: rgba(255, 255, 255, 0.9);
-            font-size: 13px;
+            font-size: clamp(11px, 0.5vw + 6px, 13px);   /* ✅ fluid */
             padding-right: 4px;
         }
 
@@ -78,20 +90,21 @@
 
         .user-info b { color: #fff; font-weight: 500; }
 
+        /* ✅ ปุ่มนำทาง = น้ำเงิน + โค้ง 6px (เหมือนปุ่ม dashboard) */
         .nav-btn {
             display: inline-flex;
             align-items: center;
             text-decoration: none;
-            font-size: 13px;
+            font-size: clamp(11px, 0.55vw + 5px, 14px);   /* ✅ fluid */
             font-weight: 600;
             padding: 7px 14px;
             color: #fff;
-            background: var(--rose);
-            border: 1px solid var(--rose);
-            transition: background 0.15s;
+            background: var(--blue);
+            border: 1px solid var(--blue);
+            border-radius: 6px !important;               /* ✅ โค้ง */
+            transition: background 0.15s, border-color 0.15s;
         }
-
-        .nav-btn:hover { background: #a93226; border-color: #a93226; }
+        .nav-btn:hover { background: var(--blue-2); border-color: var(--blue-2); }
 
         /* ============ PAGE ============ */
         .page { max-width: 1280px; margin: 0 auto; padding: 20px 24px 64px; }
@@ -127,13 +140,16 @@
         }
 
         .field { display: flex; flex-direction: column; gap: 5px; flex: 1; min-width: 140px; }
-        .field label { font-size: 12px; font-weight: 500; color: var(--ink-3); }
+        .field label {
+            font-size: clamp(11px, 0.5vw + 6px, 13px);   /* ✅ fluid */
+            font-weight: 500; color: var(--ink-3);
+        }
 
         .field input[type="date"] {
             padding: 8px 12px;
             border: 1px solid var(--line-strong);
             font-family: inherit;
-            font-size: 13px;
+            font-size: clamp(11px, 0.55vw + 5px, 14px);   /* ✅ fluid */
             background: var(--surface);
             color: var(--ink);
             outline: none;
@@ -142,11 +158,11 @@
         }
 
         .field input[type="date"]:focus {
-            border-color: var(--green);
-            box-shadow: 0 0 0 3px rgba(58, 115, 85, 0.15);
+            border-color: var(--blue);
+            box-shadow: 0 0 0 3px rgba(62, 106, 225, 0.15);
         }
 
-        /* Buttons */
+        /* ✅ Buttons — โค้ง 6px + fluid (เหมือน dashboard) */
         .btn {
             display: inline-flex;
             align-items: center;
@@ -156,16 +172,17 @@
             padding: 0 14px;
             font-family: inherit;
             font-weight: 600;
-            font-size: 13px;
+            font-size: clamp(11px, 0.55vw + 5px, 14px);   /* ✅ fluid */
             cursor: pointer;
             border: 1px solid transparent;
+            border-radius: 6px !important;               /* ✅ โค้ง */
             transition: background 0.15s, border-color 0.15s;
             text-decoration: none;
             white-space: nowrap;
         }
 
-        .btn-primary { background: var(--green); color: #fff; border-color: var(--green-2); }
-        .btn-primary:hover { background: var(--green-2); }
+        .btn-primary { background: var(--blue); color: #fff; border-color: var(--blue-2); }
+        .btn-primary:hover { background: var(--blue-2); }
 
         .btn-ghost { background: var(--surface); color: var(--ink-2); border-color: var(--line-strong); }
         .btn-ghost:hover { background: #f3f5f8; color: var(--ink); }
@@ -176,11 +193,10 @@
             border-color: var(--rose);
             height: 30px;
             padding: 0 12px;
-            font-size: 12.5px;
+            font-size: clamp(11px, 0.5vw + 5px, 12.5px);   /* ✅ fluid */
+            border-radius: 6px !important;                 /* ✅ โค้ง */
         }
-
         .btn-remove:hover:not(:disabled) { background: #a93226; border-color: #a93226; }
-
         .btn-remove:disabled {
             background: #d5d8dc;
             border-color: #d5d8dc;
@@ -195,18 +211,25 @@
             font-weight: 700;
             min-width: 20px;
             text-align: center;
+            border-radius: 6px !important;
         }
 
         /* Stat cards */
-        .stat-card .label { font-size: 12px; font-weight: 500; color: var(--ink-3); margin-bottom: 6px; }
-        .stat-card .value { font-size: 22px; font-weight: 700; line-height: 1.15; font-variant-numeric: tabular-nums; }
+        .stat-card .label {
+            font-size: clamp(11px, 0.5vw + 6px, 12px);   /* ✅ fluid */
+            font-weight: 500; color: var(--ink-3); margin-bottom: 6px;
+        }
+        .stat-card .value {
+            font-size: clamp(18px, 1.2vw + 8px, 26px);   /* ✅ fluid */
+            font-weight: 700; line-height: 1.15; font-variant-numeric: tabular-nums;
+        }
         .stat-card .meta { font-size: 11.5px; color: var(--ink-3); margin-top: 2px; }
 
         /* ============ ALERT ============ */
         .alert {
             padding: 12px 16px;
             margin-bottom: 16px;
-            font-size: 13px;
+            font-size: clamp(12px, 0.55vw + 6px, 14px);   /* ✅ fluid */
             border: 1px solid #f5b7b1;
             background: var(--rose-soft);
             color: #922b21;
@@ -231,13 +254,16 @@
         }
 
         .toolbar-left { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
-        .toolbar-title { font-size: 14px; font-weight: 600; }
+        .toolbar-title {
+            font-size: clamp(13px, 0.6vw + 6px, 15px);   /* ✅ fluid */
+            font-weight: 600;
+        }
 
         .pill {
             display: inline-flex;
             align-items: center;
             padding: 3px 10px;
-            font-size: 12px;
+            font-size: clamp(10px, 0.5vw + 6px, 12px);   /* ✅ fluid */
             font-weight: 600;
             font-variant-numeric: tabular-nums;
             border: 1px solid;
@@ -250,13 +276,14 @@
         .table-wrap { overflow-x: auto; }
         table { width: 100%; border-collapse: collapse; }
 
+        /* ✅ หัวตาราง = น้ำเงิน */
         thead th {
-            background: var(--green);
+            background: var(--blue);
             color: #fff;
             font-weight: 600;
             padding: 10px 16px;
             text-align: left;
-            font-size: 12px;
+            font-size: clamp(10px, 0.62vw + 4px, 13px);   /* ✅ fluid */
             letter-spacing: 0.04em;
             white-space: nowrap;
             border-right: 1px solid rgba(255, 255, 255, 0.15);
@@ -272,7 +299,7 @@
             width: 16px;
             height: 16px;
             cursor: pointer;
-            accent-color: var(--green);
+            accent-color: var(--blue);   /* ✅ checkbox น้ำเงิน */
             vertical-align: middle;
         }
 
@@ -290,7 +317,7 @@
 
         tbody td {
             padding: 10px 16px;
-            font-size: 13.5px;
+            font-size: clamp(11px, 0.62vw + 4px, 14px);   /* ✅ fluid */
             border-right: 1px solid var(--line-soft);
         }
 
@@ -301,29 +328,29 @@
             color: var(--ink-4);
             font-weight: 500;
             font-variant-numeric: tabular-nums;
-            font-size: 12.5px;
+            font-size: clamp(10px, 0.55vw + 4px, 12.5px);   /* ✅ fluid */
         }
 
+        /* ✅ เลขที่บิล = น้ำเงิน */
         .doc-no {
             display: inline-flex;
             align-items: center;
             gap: 8px;
             font-family: 'JetBrains Mono', ui-monospace, monospace;
             font-weight: 600;
-            color: var(--green-2);
+            color: var(--blue-2);
         }
-
         .doc-no::before {
             content: "";
             display: inline-block;
             width: 3px;
             height: 16px;
-            background: var(--green);
+            background: var(--blue);
         }
 
         .so-no {
             font-family: 'JetBrains Mono', ui-monospace, monospace;
-            font-size: 12.5px;
+            font-size: clamp(10px, 0.55vw + 4px, 12.5px);   /* ✅ fluid */
             color: var(--ink-2);
             background: var(--surface-soft);
             padding: 3px 8px;
@@ -332,7 +359,7 @@
 
         .date-cell { font-variant-numeric: tabular-nums; color: var(--ink-2); font-weight: 500; }
 
-        /* Empty state */
+        /* Empty state (✓ ข้อมูลครบ = เขียว success) */
         .empty-row td { padding: 48px 20px !important; text-align: center; color: var(--ink-3); }
         .empty-row .icon { font-size: 32px; color: var(--green-2); margin-bottom: 8px; }
         .empty-row .t { font-size: 15px; font-weight: 600; color: var(--ink); margin-bottom: 4px; }
@@ -347,13 +374,13 @@
             flex-wrap: wrap;
             gap: 10px;
             background: var(--surface-soft);
-            font-size: 12.5px;
+            font-size: clamp(11px, 0.5vw + 6px, 12.5px);   /* ✅ fluid */
             color: var(--ink-3);
         }
 
         .table-footer strong { color: var(--ink); font-variant-numeric: tabular-nums; }
 
-        /* Pagination overrides */
+        /* Pagination overrides (น้ำเงิน) */
         nav[role="navigation"] > div > p,
         nav[role="navigation"] .sm\:hidden { display: none !important; }
 
@@ -382,20 +409,21 @@
             background: var(--surface) !important;
             border: 1px solid var(--line-strong) !important;
             padding: 0 10px !important;
+            border-radius: 6px !important;   /* ✅ โค้ง */
         }
 
         nav[role="navigation"] a:hover {
-            background: var(--green-soft) !important;
-            border-color: var(--green) !important;
-            color: var(--green-2) !important;
+            background: var(--blue-soft) !important;
+            border-color: var(--blue) !important;
+            color: var(--blue-2) !important;
         }
 
         nav[role="navigation"] svg { width: 13px !important; height: 13px !important; }
 
         nav[role="navigation"] span[aria-current="page"] {
             color: #fff !important;
-            background: var(--green) !important;
-            border-color: var(--green-2) !important;
+            background: var(--blue) !important;
+            border-color: var(--blue-2) !important;
         }
 
         /* Responsive */
@@ -414,7 +442,7 @@
             .filter-form { flex-direction: column; align-items: stretch; }
             .field { min-width: 0; }
             .btn { width: 100%; }
-            thead th, tbody td { padding: 8px 12px; font-size: 12.5px; }
+            thead th, tbody td { padding: 8px 12px; }   /* ✅ ปล่อย font-size ให้ fluid จัดการ */
             .table-footer { flex-direction: column; align-items: stretch; }
         }
     </style>
@@ -609,7 +637,6 @@
     // ===== Row check (delegate ทั้งคลิกและ change) =====
     tbody.addEventListener('click', function(e) {
         if (e.target && e.target.classList.contains('row-check')) {
-            // ปล่อยให้ browser toggle checkbox ก่อน แล้วค่อย sync
             setTimeout(function() {
                 highlightRow(e.target);
                 syncCheckAll();
@@ -689,7 +716,6 @@
         });
     }
 
-    // เผื่อเริ่มต้นมีบางอันถูก check ไว้แล้ว
     updateUI();
 })();
 </script>

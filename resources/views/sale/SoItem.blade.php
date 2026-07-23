@@ -1091,8 +1091,7 @@ async function startBatchMatch() {
     setAllBtnsLoading(true);
     bar.style.display = 'flex';
 
-    const CHUNK = 10;
-    const CONCURRENCY = 3; // ★ ยิงพร้อมกัน 3 chunk
+    const CHUNK = 10; // ★ ยิงทีละ 10 รายการ เรียงลำดับ ไม่ยิงซ้อนกัน
     let totalPrice = 0, totalDoc = 0, totalGroupMatch = 0, totalAllMatch = 0;
     let doneChunks = 0;
 
@@ -1102,83 +1101,77 @@ async function startBatchMatch() {
         chunkRanges.push([c * CHUNK, Math.min(c * CHUNK + CHUNK, allNames.length)]);
     }
 
+    async function submitAndPollBatchMatch(payload, headers) {
+        const r = await fetch('/soitem/batch-match-start', { method: 'POST', headers, body: JSON.stringify(payload) });
+        if (!r.ok) return [];
+        const data = await r.json();
+        if (data.status === 'done') return data.results || [];
+        if (data.status === 'processing' && data.job_id) {
+            const start = Date.now();
+            while (Date.now() - start < 600000) { // 10 นาที ต่อ chunk
+                await new Promise(res => setTimeout(res, 2000));
+                const sr = await fetch('/soitem/batch-match-status/' + encodeURIComponent(data.job_id));
+                if (!sr.ok) continue;
+                const sd = await sr.json();
+                if (sd.status === 'done') return sd.results || [];
+            }
+        }
+        return [];
+    }
+
     async function processChunk([start, end]) {
         const chunkNames = allNames.slice(start, end);
 
-        const [priceRes, docRes] = await Promise.allSettled([
-            fetch('/soitem/batch-match', {
-                method: 'POST', headers,
-                body: JSON.stringify({ customer_codes: allCodes, items: chunkNames }),
-            }),
-            fetch('/soitem/batch-quotation-history', {
-                method: 'POST', headers,
-                body: JSON.stringify({ items: chunkNames }),
-            }),
+        const [priceResults, docRes] = await Promise.all([
+            submitAndPollBatchMatch({ customer_codes: allCodes, items: chunkNames }, headers),
+            fetch('/soitem/batch-quotation-history', { method: 'POST', headers, body: JSON.stringify({ items: chunkNames }) }),
         ]);
 
-        if (priceRes.status === 'fulfilled' && priceRes.value.ok) {
-            const data = await priceRes.value.json();
+        priceResults.forEach((result, j) => {
+            const origIdx = start + j;
+            const tr = rows[origIdx];
+            if (!tr) return;
+            const itemId = tr.dataset.itemId || '';
+            const matches = result.matches || [];
+            const source = result.source || 'none';
+            if (!matches.length) return;
+
+            if (source === 'group') {
+                priceMatchData.set(itemId, matches);
+                updatePriceBadge(tr);
+                applyPriceToRow(tr, matches[0], true);
+                totalGroupMatch++;
+            } else if (source === 'all') {
+                aiMatchData.set(itemId, { matches, search_tokens: result.search_tokens || [], candidates: [], llm_picked: -1, llm_matched: result.matched_name || '' });
+                updateAiBadge(tr);
+                applyPriceToRow(tr, matches[0], false);
+                totalAllMatch++;
+            }
+            totalPrice++;
+        });
+
+        if (docRes.ok) {
+            const data = await docRes.json();
             data.forEach((result, j) => {
                 const origIdx = start + j;
                 const tr = rows[origIdx];
                 if (!tr) return;
                 const itemId = tr.dataset.itemId || '';
                 const matches = result.matches || [];
-                const source = result.source || 'none';
-                if (!matches.length) return;
-
-                if (source === 'group') {
-                    priceMatchData.set(itemId, matches);
-                    updatePriceBadge(tr);
-                    applyPriceToRow(tr, matches[0], true);
-                    totalGroupMatch++;
-                } else if (source === 'all') {
-                    aiMatchData.set(itemId, {
-                        matches, search_tokens: result.search_tokens || [],
-                        candidates: [], llm_picked: -1,
-                        llm_matched: result.matched_name || '',
-                    });
-                    updateAiBadge(tr);
-                    applyPriceToRow(tr, matches[0], false);
-                    totalAllMatch++;
-                }
-                totalPrice++;
-            });
-        }
-
-        if (docRes.status === 'fulfilled' && docRes.value.ok) {
-            const data = await docRes.value.json();
-            data.forEach((result, j) => {
-                const origIdx = start + j;
-                const tr = rows[origIdx];
-                if (!tr) return;
-                const itemId = tr.dataset.itemId || '';
-                const matches = result.matches || [];
-                if (matches.length) {
-                    docMatchData.set(itemId, matches);
-                    updateDocBadge(tr);
-                    totalDoc++;
-                }
+                if (matches.length) { docMatchData.set(itemId, matches); updateDocBadge(tr); totalDoc++; }
             });
         }
 
         doneChunks++;
-        $('#matchBarTxt').textContent =
-            `⏳ จับคู่ราคา ${doneChunks}/${totalChunks} chunk...`;
+        $('#matchBarTxt').textContent = `จับคู่ราคา ${start + chunkNames.length}/${rows.length} รายการ`;
+        render(); // ★ อัพเดทหน้าจอทันทีทีละ chunk ให้เห็นความคืบหน้าจริง
     }
 
     try {
-        // ★ ทำงานแบบ pool: ยิงพร้อมกัน CONCURRENCY ตัว ไม่รอทีละตัว
-        let idx = 0;
-        async function worker() {
-            while (idx < chunkRanges.length) {
-                const myIdx = idx++;
-                await processChunk(chunkRanges[myIdx]);
-            }
+        // ★ เรียงลำดับทีละ chunk (ไม่ Promise.all / ไม่ worker pool) — รอ chunk ก่อนหน้าเสร็จก่อนค่อยยิงถัดไป
+        for (const range of chunkRanges) {
+            await processChunk(range);
         }
-        await Promise.all(Array.from({ length: CONCURRENCY }, worker));
-
-        render();
 
         const parts = [];
         if (totalGroupMatch) parts.push(`💰 กลุ่มลูกค้า ${totalGroupMatch}`);
@@ -1196,42 +1189,39 @@ async function startBatchMatch() {
         setBtnLoading(btn, false);
     }
 }
-/**
- * ★ applyPriceToRow ใหม่ — รับ isGroup flag
- */
-function applyPriceToRow(tr, m, isGroup) {
-    const pe = tr.querySelector('.price');
-    const ue = tr.querySelector('.unit');
-    if (pe && m.unit_price > 0) pe.value = fmtComma(m.unit_price);
-    if (ue && m.unit) ue.value = m.unit;
+// function applyPriceToRow(tr, m, isGroup) {
+//     const pe = tr.querySelector('.price');
+//     const ue = tr.querySelector('.unit');
+//     if (pe && m.unit_price > 0) pe.value = fmtComma(m.unit_price);
+//     if (ue && m.unit) ue.value = m.unit;
  
-    // ลบ source เดิม
-    tr.querySelector('.price-src')?.remove();
-    if (!m.unit_price || m.unit_price <= 0) return;
+//     // ลบ source เดิม
+//     tr.querySelector('.price-src')?.remove();
+//     if (!m.unit_price || m.unit_price <= 0) return;
  
-    const src = document.createElement('div');
-    src.className = 'price-src';
-    src.style.cssText = 'font-size:10px;margin-top:1px;line-height:1.3;';
+//     const src = document.createElement('div');
+//     src.className = 'price-src';
+//     src.style.cssText = 'font-size:10px;margin-top:1px;line-height:1.3;';
  
-    const srcDate = esc2(m.doc_date || '');
-    const srcCust = esc2((m.customer_code || '') + (m.customer_name ? ' ' + m.customer_name : ''));
-    const srcSo = esc2(m.so_no || '');
-    const srcName = esc2((m.product_name || '').substring(0, 35));
-    const srcPrice = fmt(m.unit_price);
-    const srcUnit = esc2(m.unit || '');
+//     const srcDate = esc2(m.doc_date || '');
+//     const srcCust = esc2((m.customer_code || '') + (m.customer_name ? ' ' + m.customer_name : ''));
+//     const srcSo = esc2(m.so_no || '');
+//     const srcName = esc2((m.product_name || '').substring(0, 35));
+//     const srcPrice = fmt(m.unit_price);
+//     const srcUnit = esc2(m.unit || '');
  
-    if (isGroup) {
-        src.style.color = '#0e7490';
-        src.innerHTML = '✔ ' + srcDate + ' · ' + srcCust + ' · ' + srcSo + ' · ' + srcName +
-            ' · <b>' + srcPrice + '</b> ' + srcUnit;
-    } else {
-        src.style.color = '#7c3aed';
-        src.innerHTML = '🤖 ' + srcDate + ' · ' + srcCust + ' · ' + srcSo + ' · ' + srcName +
-            ' · <b>' + srcPrice + '</b> ' + srcUnit;
-    }
+//     if (isGroup) {
+//         src.style.color = '#0e7490';
+//         src.innerHTML = '✔ ' + srcDate + ' · ' + srcCust + ' · ' + srcSo + ' · ' + srcName +
+//             ' · <b>' + srcPrice + '</b> ' + srcUnit;
+//     } else {
+//         src.style.color = '#7c3aed';
+//         src.innerHTML = '🤖 ' + srcDate + ' · ' + srcCust + ' · ' + srcSo + ' · ' + srcName +
+//             ' · <b>' + srcPrice + '</b> ' + srcUnit;
+//     }
  
-    tr.querySelector('.td-desc').appendChild(src);
-}
+//     tr.querySelector('.td-desc').appendChild(src);
+// }
  
 // ── helper: ใส่ราคา+source ใน row ──
 function applyPriceToRow(tr,m){

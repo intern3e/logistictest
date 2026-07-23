@@ -165,6 +165,7 @@ Route::post('/pull-po-outside', [PooutsideController::class, 'pull'])->name('pul
 Route::get('/pooutside/invoice',         [PooutsideController::class, 'invoicePage']);
 Route::get('/pooutside/invoice-suggest', [PooutsideController::class, 'invoiceSuggest']);
 Route::get('/pooutside/invoice-search',  [PooutsideController::class, 'invoiceSearch']);
+Route::get('/pooutside/list', [PooutsideController::class, 'list'])->name('pooutside.list');
 
 
 use App\Http\Controllers\PooutsidereturnController;
@@ -314,8 +315,12 @@ Route::get('/soitem/ocr/status/{jobName}',             [SoItemController::class,
 Route::get('/soitem/ocr/file/{type}/{filename}',       [SoItemController::class, 'ocrDownload']);
  
 // ── จับคู่ราคา / สินค้า ──
-Route::post('/soitem/batch-match', [SoItemController::class, 'batchMatch']);
 Route::post('/soitem/batch-quotation-history', [SoItemController::class, 'batchQuotationHistory']);
+Route::post('/soitem/batch-match-start', [SoItemController::class, 'batchMatchStart']);
+Route::get('/soitem/batch-match-status/{jobId}', [SoItemController::class, 'batchMatchStatus']);
+Route::post('/soitem/ai-fallback-match',           [SoItemController::class, 'aiFallbackMatch']);
+Route::get('/soitem/ai-fallback-status/{jobId}',    [SoItemController::class, 'aiFallbackStatus']);
+
 
 
 

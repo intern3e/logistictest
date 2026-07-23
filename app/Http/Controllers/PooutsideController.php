@@ -15,7 +15,6 @@ class PooutsideController extends Controller
 
   public function dashboard(Request $request, $name = 'Guest')
 {
-    // urldecode ช่วยเปลี่ยน %20 ใน URL ให้เป็นช่องว่างปกติ
     $userName = urldecode($name);
 
     return view('pooutside.dashboard', [
@@ -25,10 +24,6 @@ class PooutsideController extends Controller
 
     // ─── API Endpoints ────────────────────────────────────────────────────────
 
-    /**
-     * GET /pooutside/search?ponum=XXXX-XXXXX
-     * รวม local DB + ERP API แล้วส่งข้อมูลสำเร็จรูปกลับ View
-     */
     public function search(Request $request): JsonResponse
     {
         $ponum = trim($request->input('ponum'));
@@ -47,10 +42,8 @@ class PooutsideController extends Controller
             return response()->json(['success' => false, 'message' => 'ไม่พบเลข PO'], 404);
         }
 
-        // Match ก่อน แล้วค่อยส่งต่อให้ทุก builder
         $matchedProducts = $this->matchProducts($localData, $erpData['ms_podt'] ?? []);
 
-        // ✅ เก็บเฉพาะ dbItems ที่ match จริง (score ≥ 20%) เพื่อคำนวณ timeline
         $validDbItems = collect($matchedProducts)
             ->filter(fn($m) => !$m['lowScore'])
             ->flatMap(fn($m) => $m['dbItems'])
@@ -59,14 +52,12 @@ class PooutsideController extends Controller
         return response()->json([
             'success'  => true,
             'vendor'   => $this->buildVendorInfo($erpData),
-            'timeline' => $this->buildTimeline($erpData, $validDbItems), // ✅ ใช้เฉพาะ valid
-            'notes'    => $this->collectUniqueNotes($localData),         // notes ยังดูทั้งหมดได้
+            'timeline' => $this->buildTimeline($erpData, $validDbItems),
+            'notes'    => $this->collectUniqueNotes($localData),
             'items'    => $this->buildItemsFromMatched($matchedProducts, $erpData),
         ]);
     }
-    /**
-     * GET /pooutside/check?ponum=XXXX-XXXXX  (ใช้งานเดิม — คงไว้เพื่อ backward compat)
-     */
+
     public function checkLocalPO(Request $request): JsonResponse
     {
         $ponum = $request->input('ponum');
@@ -169,9 +160,6 @@ class PooutsideController extends Controller
 
     // ─── Private: Matching ────────────────────────────────────────────────────
 
-    /**
-     * จับคู่ DB items กับ API items ด้วย longest-common-substring + threshold 20%
-     */
     private function matchProducts(array $dbItems, array $apiItems): array
     {
         $scores        = [];
@@ -208,7 +196,7 @@ class PooutsideController extends Controller
                     'score'      => $score,
                     'maxLen'     => $maxLen,
                     'dbNameLen'  => strlen($dbName),
-                    'apiNameLen' => strlen($apiName), // ✅ เพิ่ม
+                    'apiNameLen' => strlen($apiName),
                 ];
             }
         }
@@ -218,7 +206,6 @@ class PooutsideController extends Controller
         foreach ($scores as $row) {
             if (in_array($row['dbIdx'], $usedDbIndices, true)) continue;
 
-            // ✅ ใช้ชื่อที่สั้นกว่าเป็น base และ threshold 50%
             $shorterLen = min($row['dbNameLen'], $row['apiNameLen']);
             $threshold  = $shorterLen * 0.40;
             $isLowScore = $row['maxLen'] < $threshold;
@@ -266,9 +253,7 @@ class PooutsideController extends Controller
         usort($matched, fn($a, $b) => $a['apiIndex'] <=> $b['apiIndex']);
         return $matched;
     }
-    /**
-     * Merge invoices: เก็บ record ที่ date_invoice ล่าสุดต่อ name+qty
-     */
+
     private function mergeInvoices(array $items): array
     {
         $map = [];
@@ -354,25 +339,24 @@ class PooutsideController extends Controller
             'mismatch'     => $mismatch,
         ], $items);
     }
+
    public function pull()
 {
     ini_set('max_execution_time', 600);
     set_time_limit(600);
 
-    // ⭐ วันที่ปัจจุบัน (วันที่กดปุ่ม)
-    $today = Carbon::now()->format('Y/m/d'); // 2026/02/13
+    $today = Carbon::now()->format('Y/m/d');
 
     $url = "https://docs.google.com/spreadsheets/d/1wRmbT3ZkN1Td-EoLfwRBCm5LxxUvkNwPkEo5UZxVysE/export?format=csv&gid=0";
 
     $rows = array_map('str_getcsv', file($url));
-    unset($rows[0]); // ลบ header
+    unset($rows[0]);
 
     $inserted = 0;
     $errors = [];
 
     foreach ($rows as $index => $row) {
         try {
-            // เช็คว่ามี column ครบ
             if (!isset($row[0], $row[1], $row[2], $row[3], $row[4])) {
                 continue;
             }
@@ -383,12 +367,10 @@ class PooutsideController extends Controller
             $quantity     = trim($row[3]);
             $ponum        = trim($row[4]);
 
-            // ⭐ ข้ามถ้า ponum เป็น null หรือว่าง
             if (empty($ponum)) {
                 continue;
             }
 
-            // ⭐ ดึงเฉพาะวันที่วันนี้เท่านั้น
             if ($date_invoice !== $today) {
                 continue;
             }
@@ -418,6 +400,7 @@ class PooutsideController extends Controller
         'errors' => $errors
     ]);
 }
+
  public function download()
     {
         $token = 'eyJ0eXAiOiJKV1QiLCJhbGciOiJSUzI1NiJ9.eyJhdWQiOiIxIiwianRpIjoiMzU2NzczYTQ1MmI3MWI4NWNjNmEzMjYzNmZmMzlmZjYxMzc2OGUwMDU4ZGU5NWQ2MDAyYmEwOTU4ZjM1MGE1NjMzYmQ5ZjAxOTZkYmYzYjMiLCJpYXQiOjE3NzI0MjE5MzMuMDA5NDA4LCJuYmYiOjE3NzI0MjE5MzMuMDA5NDEsImV4cCI6MTgwMzk1NzkzMy4wMDQ2NjcsInN1YiI6IjExNTM2MyIsInNjb3BlcyI6WyIqIl19.ZzpHxzeyk7Yy6YGl4oCZhUVvdInpqUAX066dOpyYsK6giAVBO1AQAg_tbobVFDK7NZ9rZsLcAmTpQjx2RIwQoeIiMowZXgF74v22fL2hJzaiVfTFdX_g00HxO5J37P1zFFT0mARvLHynOhcxM9qO3isKqHx7TnXvXDHQvSBczGo6TLVZcj4lp9e-cppi_RIzP3eiPXxl3Ou8I2tjY71I2SclZAVkbOAqD_3pUpTqsbPbrvuQl7hN7p2iWvfDL9b7dvQ984T4JIQNp2EdvBr7P7KtHrs1RU1HLp_aVLcmtQ46RQBY5Ymrupw9J1qM0DjBJYQC37jUZrUgL3AR8OYKtFFQwLMJ6_jfzyPYrkbJzcnWp6k8WlMS2fc3m4Fxl9yta9zaQarte-dLypWlhaAv2YcU6qdZ0vJF7JkrlrIDi_NaPRmak-GnCj60jSv83SLy_A7p4gnaBprWO7rkR3ctKl-rT0WjTVbn1aPcWnhCjyfZbYsLebOtZTiovvzv_FR6P2dMIe8YEDHf2o8MQ0qjE0XqmwnOOKWmPJ6T3WOgR_ujIKFlvgpvhSWxCZ5eJ9L1AYSR2HDUib_D8FbF0OzP58asPY0IzpuSENjbvtjvy3lx5zAsiVnKz6MjxMtF4--xO7uEeUlvgZUoWIFCpdAls2D7K_qu4UwP1Oj8_rvO-aY';
@@ -465,23 +448,20 @@ class PooutsideController extends Controller
             'data' => $allData
         ]);
     }
+
         public function invoicePage(Request $request)
     {
         return view('pooutside.invoice_search');
     }
- 
-    /**
-     * GET /pooutside/invoice-suggest?q=INV
-     * Autocomplete: คืน invoice ที่ใกล้เคียง (ไม่เกิน 15 รายการ)
-     */
+
     public function invoiceSuggest(Request $request): JsonResponse
     {
         $q = trim($request->input('q', ''));
- 
+
         if (strlen($q) < 2) {
             return response()->json(['suggestions' => []]);
         }
- 
+
         $suggestions = Pooutside::where('invoice', 'LIKE', "%{$q}%")
             ->select('invoice', 'name', 'date_invoice')
             ->orderByRaw("CASE WHEN invoice LIKE ? THEN 0 ELSE 1 END", ["{$q}%"])
@@ -490,31 +470,85 @@ class PooutsideController extends Controller
             ->get()
             ->unique('invoice')
             ->values();
- 
+
         return response()->json(['suggestions' => $suggestions]);
     }
- 
-    /**
-     * GET /pooutside/invoice-search?invoice=INV001
-     * ดึงทุก row ที่ invoice ตรง
-     */
+
     public function invoiceSearch(Request $request): JsonResponse
     {
         $invoice = trim($request->input('invoice', ''));
- 
+
         if (empty($invoice)) {
             return response()->json(['success' => false, 'message' => 'กรุณากรอกหมายเลข Invoice'], 422);
         }
- 
+
         $rows = Pooutside::where('invoice', $invoice)
             ->orderBy('date_invoice', 'desc')
             ->get(['date_invoice', 'invoice', 'name', 'quantity', 'ponum', 'note'])
             ->toArray();
- 
+
         return response()->json([
             'success' => true,
             'count'   => count($rows),
             'rows'    => $rows,
+        ]);
+    }
+
+    /* =====================================================================
+       ✅ เพิ่มใหม่: ดึงลิสต์ PO นอก (distinct ponum) จากตาราง Pooutside
+       - Server-side pagination 30/หน้า + เรียงใหม่→เก่า + ค้นหา
+       - return: { success, data:[{ponum,_m_ponum,_m_date,date_created}], meta:{...} }
+       - frontend ใช้ meta → serverPaged=true → enrich จาก search() 30 ใบ/หน้า
+       ===================================================================== */
+    public function list(Request $request): JsonResponse
+    {
+        $page    = max(1, (int) $request->input('page', 1));
+        $perPage = 30;
+        $search  = trim((string) $request->input('search', ''));
+
+        $applySearch = function ($q) use ($search) {
+            if ($search !== '') {
+                $q->where('ponum', 'LIKE', "%{$search}%");
+            }
+            return $q;
+        };
+
+        // จำนวน PO ทั้งหมด (distinct ponum)
+        $total = $applySearch(Pooutside::query())->distinct()->count('ponum');
+
+        // 30 PO ของหน้านี้ + วันที่ invoice ล่าสุดของแต่ละ PO
+        $rows = $applySearch(Pooutside::query())
+            ->select('ponum')
+            ->selectRaw('MAX(date_invoice) as latest_date')
+            ->groupBy('ponum')
+            ->orderByDesc('latest_date')   // ✅ ใหม่ → เก่า
+            ->orderByDesc('ponum')
+            ->offset(($page - 1) * $perPage)
+            ->limit($perPage)
+            ->get();
+
+        $data = $rows->map(fn($r) => [
+            'ponum'        => $r->ponum,
+            '_m_ponum'     => $r->ponum,
+            '_m_date'      => $r->latest_date,
+            'date_created' => $r->latest_date,
+        ])->values();
+
+        $lastPage = max(1, (int) ceil($total / $perPage));
+        $from     = $total ? (($page - 1) * $perPage + 1) : 0;
+        $to       = min($page * $perPage, $total);
+
+        return response()->json([
+            'success' => true,
+            'data'    => $data,
+            'meta'    => [
+                'current_page' => $page,
+                'last_page'    => $lastPage,
+                'per_page'     => $perPage,
+                'total'        => $total,
+                'from'         => $from,
+                'to'           => $to,
+            ],
         ]);
     }
 }

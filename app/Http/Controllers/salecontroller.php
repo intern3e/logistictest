@@ -38,58 +38,72 @@ public function login(Request $request)
             'emp_name' => 'required|string',
             'password' => 'required|string',
         ]);
-    
+
         $credentials = $request->only('emp_name', 'password');
-    
+
         if ($credentials['emp_name'] === '1' && $credentials['password'] === '1') {
             session([
                 'logged_in' => true,
-                'emp_name' => $credentials['emp_name'], 
+                'emp_name' => $credentials['emp_name'],
             ]);
             return redirect()->route('sale.dashboard')->with('success', 'ล็อกอินสำเร็จ!');
         }
-    
+
         return back()->withErrors(['sale.loginsale' => 'SO หรือรหัสผ่านไม่ถูกต้อง']);
     }
 
 public function dashboard(Request $request)
 {
     $date      = $request->get('date');
-    $keyword   = $request->get('keyword');  
-    $soKeyword = $request->get('so_keyword'); 
-    $empName   = $request->get('emp_name');  
+    $keyword   = $request->get('keyword');
+    $soKeyword = $request->get('so_keyword');
+    $empName   = $request->get('emp_name');
     $message   = null;
+
+    // ✅ มีคำค้น = โหมดค้นหา → ข้ามการกรองวันที่ / ผู้บันทึกทั้งหมด
+    //    (เดิมเป็น if แยกกัน เลย AND กันหมด ต้องกดล้างวันที่ก่อนถึงจะค้นเจอ)
+    $isSearching = filled($keyword) || filled($soKeyword);
+
+    // 🔸 คอลัมน์ที่ใช้กรองวันที่
+    //    'time'         = วันที่บันทึกลงระบบ (ค่าเดิม)
+    //    'date_of_dali' = วันที่จัดส่ง  ← เปลี่ยนตรงนี้บรรทัดเดียวถ้าอยากกรองตามวันส่งของ
+    $dateColumn = 'time';
+
     $empListQuery = Bill::whereNotNull('emp_name')
         ->where('emp_name', '!=', '');
 
-    if ($date) {
-        $empListQuery->whereDate('time', $date);  
+    if ($date && !$isSearching) {
+        $empListQuery->whereDate($dateColumn, $date);
     }
 
     $empList = $empListQuery
         ->distinct()
         ->orderBy('emp_name')
         ->pluck('emp_name');
+
     $query = Bill::query();
 
-    if ($date) {
-        $query->whereDate('time', $date);
-    }
+    if ($isSearching) {
+        // 🔍 โหมดค้นหา: กรองเฉพาะคำค้น ค้นได้ทุกวัน
+        if ($keyword) {
+            $query->where('billid', 'like', "%{$keyword}%");
+        }
 
-    if ($keyword) {
-        $query->where('billid', 'like', "%{$keyword}%");
-    }
+        if ($soKeyword) {
+            $query->where(function ($q) use ($soKeyword) {
+                $q->where('so_id', 'like', "%{$soKeyword}%")
+                  ->orWhere('so_detail_id', 'like', "%{$soKeyword}%");
+            });
+        }
+    } else {
+        // 📅 โหมดปกติ: กรองตามวันที่ + ผู้บันทึก (เหมือนเดิม)
+        if ($date) {
+            $query->whereDate($dateColumn, $date);
+        }
 
-    if ($soKeyword) {
-        $query->where(function ($q) use ($soKeyword) {
-            $q->where('so_id', 'like', "%{$soKeyword}%")
-              ->orWhere('so_detail_id', 'like', "%{$soKeyword}%");
-        });
-    }
-
-    // 👇 เพิ่มเงื่อนไขกรอง emp_name
-    if ($empName) {
-        $query->where('emp_name', $empName);
+        if ($empName) {
+            $query->where('emp_name', $empName);
+        }
     }
 
     $bill = $query
@@ -98,7 +112,9 @@ public function dashboard(Request $request)
         ->appends($request->query());
 
     if ($bill->isEmpty()) {
-        $message = 'ไม่พบข้อมูลที่ค้นหา';
+        $message = $isSearching
+            ? 'ไม่พบข้อมูลที่ค้นหา (ค้นทุกวันแล้ว)'
+            : 'ไม่พบข้อมูลที่ค้นหา';
     }
 
     return view('sale.dashboard', compact('bill', 'message', 'empList'));
@@ -115,7 +131,8 @@ public function logout()
     session()->flush(); // ลบข้อมูลในเซสชัน
     return redirect()->route("sale.loginsale")->with('success', 'คุณได้ออกจากระบบเรียบร้อยแล้ว!');
         }
-public function fetchFormType(Request $request) 
+
+public function fetchFormType(Request $request)
 {
     $customer_id = $request->input('customer_id');
 
@@ -124,7 +141,7 @@ public function fetchFormType(Request $request)
                 ->first();
 
     $formtype = $cust->formtype ?? null;
-    $note    = $cust->note ?? ''; 
+    $note    = $cust->note ?? '';
 
     $bill = DB::table('tblbill')
                 ->where('customer_id', $customer_id)
@@ -139,7 +156,7 @@ public function fetchFormType(Request $request)
     return response()->json([
         'formtype' => $formtype,
         'customer_la_long' => $customer_la_long,
-        'note' => $note 
+        'note' => $note
     ]);
 }
 
@@ -238,7 +255,7 @@ public function fetchFormType(Request $request)
         $bill->billtype = $request->input('billtype') . ',' . $request->input('typeinbill');
         $bill->formtype = $request->input('formtype');
         $bill->billid = $request->input('billid');
-        $bill->deposit_bill_id = $request->input('deposit_bill_id'); 
+        $bill->deposit_bill_id = $request->input('deposit_bill_id');
 
         // 🔸 จัดการไฟล์เอกสาร
         if ($request->hasFile('POdocument')) {
@@ -285,56 +302,60 @@ public function fetchFormType(Request $request)
         Log::error($e->getMessage());
         return response()->json(['error' => 'เกิดข้อผิดพลาด: ' . $e->getMessage()], 500);
     }
-}public function updateBill(Request $request) {
+}
+
+public function updateBill(Request $request) {
         Log::info('📥 รับข้อมูลจาก JavaScript:', $request->all());
-    
+
         $so_detail_id = $request->so_detail_id;
         $items = $request->items;
-    
+
         foreach ($items as $item) {
             Log::info("🔄 อัปเดต item_id: {$item['item_id']} จำนวน: {$item['quantity']}");
-    
+
             DB::table('bill_detail')
                 ->where('so_detail_id', $so_detail_id)
                 ->where('item_id', $item['item_id'])
                 ->update(['quantity' => $item['quantity']]);
         }
-    
+
         Log::info('✅ อัปเดตเสร็จสิ้น');
         return response()->json(['success' => true, 'message' => 'อัปเดตข้อมูลสำเร็จ']);
     }
-    
+
 public function deleteBill($so_detail_id)
     {
         try {
             // หาบิลที่มี so_detail_id ตรงกัน
             $bill = Bill::where('so_detail_id', $so_detail_id)->first();
-            
+
             if (!$bill) {
                 return response()->json(['error' => 'ไม่พบบิล'], 404);
             }
-    
+
             // ลบรายการสินค้าจาก bill_detail ที่มี so_detail_id ตรงกับบิล
             bill_detail::where('so_detail_id', $so_detail_id)->delete();
-    
+
             // ลบบิลจาก tblbill โดยใช้ so_detail_id
             Bill::where('so_detail_id', $so_detail_id)->delete();
-    
+
             return response()->json(['success' => 'ลบบิลสำเร็จ']);
         } catch (\Exception $e) {
             return response()->json(['error' => 'เกิดข้อผิดพลาด: ' . $e->getMessage()], 500);
         }
     }
+
 public function fetchContactSo(Request $request)
 {
     $bill = Bill::where('customer_id', $request->customer_id)
-                ->orderBy('time', 'desc') 
+                ->orderBy('time', 'desc')
                 ->first();
 
     return response()->json([
         'contactso' => $bill?->contactso,
     ]);
 }
+
  public function checkBillId(Request $request)
     {
         $billid = $request->input('billid');
@@ -353,6 +374,7 @@ public function fetchContactSo(Request $request)
             'exists' => false,
         ]);
     }
+
 public function fetchDeposit(Request $request)
 {
     $so_id = $request->input('so_id');
@@ -424,5 +446,3 @@ public function fetchDeposit(Request $request)
     return response()->json(['deposits' => $deposits]);
 }
 }
-
-
