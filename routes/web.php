@@ -20,7 +20,8 @@ use App\Models\Bill_Detail;
     Route::get('/loginsale', [salecontroller::class, 'showLoginForm'])->name('sale.loginsale');
     Route::post('/loginsale', [salecontroller::class, 'login'])->name('sale.loginsale');
     Route::post('/logout', [salecontroller::class, 'logout'])->name('logout');
-    Route::get('/dashboard', [SaleController::class, 'dashboard'])->name('sale.dashboard');
+    Route::get('/SoItem', [SaleController::class, 'dashboard'])->name('sale.dashboard');
+    Route::get('/dashboard', [SaleController::class, 'dashboard']);
     Route::get('/insertdata', [salecontroller::class, 'insertdata'])->name('sale.insertdata'); // GET
     Route::post('/insertdata', [salecontroller::class, 'insertData'])->name('sale.insertdata.post'); // POST
     Route::post('/sodetail', [SaleController::class, 'findData'])->name('sodetail.post');
@@ -166,6 +167,10 @@ Route::get('/pooutside/invoice',         [PooutsideController::class, 'invoicePa
 Route::get('/pooutside/invoice-suggest', [PooutsideController::class, 'invoiceSuggest']);
 Route::get('/pooutside/invoice-search',  [PooutsideController::class, 'invoiceSearch']);
 Route::get('/pooutside/list', [PooutsideController::class, 'list'])->name('pooutside.list');
+
+// ✅ ค้นหาหลาย PO ในครั้งเดียว (ส่ง ponums เป็น array)
+Route::post('/pooutside/search-batch', [PooutsideController::class, 'searchBatch'])
+    ->name('pooutside.searchBatch');
 
 
 use App\Http\Controllers\PooutsidereturnController;

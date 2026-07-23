@@ -234,7 +234,13 @@
 
 <script>
     const PER_PAGE = 30;
-    const ENRICH_CONCURRENCY = 6;
+
+    // ✅ ส่งเป็น array: โหลดเฉพาะ 30 ใบของหน้านี้ เปลี่ยนหน้าค่อยโหลดใหม่
+    //    แบ่งยิงทีละ 10 ใบ → การ์ดทยอยขึ้นเรื่อย ๆ ไม่ต้องรอครบ 30 (รวม 3 request/หน้า)
+    const BATCH_URL  = '/pooutside/search-batch';
+    const BATCH_SIZE = 10;
+    const CSRF = document.querySelector('meta[name="csrf-token"]')?.content ?? '';
+
     let serverPaged = false;
     let allOriginal = [];
     let allFiltered = [];
@@ -245,11 +251,8 @@
     let clientPage = 1;
     let currentSearch = '';
     const detailCache = {};
-    let enrichObserver = null;
-    const enrichPending = new Set();
-    let enrichWait = [];
-    let enrichRunning = 0;
-    let enrichDoneCount = 0;
+    let enrichToken = 0;      // กันผลของหน้าเก่ามาทับหน้าใหม่
+    let batchSupported = true; // ถ้า endpoint ยังไม่มี → fallback ยิงทีละใบ
 
     const PONUM_KEYS = ['^ponum$','po_no','^po$','ponumber','docuno','doc_no'];
     const VNAME_KEYS = ['vendor_name','vendorname','^vendor$','supplier_name','supplier','^name$'];
@@ -261,6 +264,7 @@
     function getField(po, mKey, pats){ const v = po[mKey]; return !isPlace(v) ? v : pickRaw(po, pats); }
     function esc(s){ return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;'); }
     function attrSafe(s){ return String(s==null?'':s).replace(/\\/g,'\\\\').replace(/"/g,'\\"'); }
+    function chunk(arr, size){ const out = []; for (let i = 0; i < arr.length; i += size) out.push(arr.slice(i, i + size)); return out; }
 
     // ✅ จำนวน → ทศนิยม 2 ตำแหน่ง + คั่นหลักพัน
     function formatQty(v){
@@ -287,18 +291,19 @@
 
     function hasMismatch(data){ return Array.isArray(data && data.items) && data.items.some(it => it.is_low_score); }
 
+    // ✅ ป้ายสถานะบนการ์ด มีแค่ 3 แบบ
+    const ST_CANCEL = { label: 'ยกเลิก',         cls: 'status-no-data'  };
+    const ST_DOING  = { label: 'กำลังดำเนินการ', cls: 'status-pending'  };
+    const ST_DONE   = { label: 'เสร็จสิ้น',       cls: 'status-complete' };
+
     function cardStatus(data){
-        const tl = (data && data.timeline) || {};
-        const st = String(tl.status || '').toUpperCase();
-        const step = tl.step || 0;
-        if (hasMismatch(data))        return { label: 'ต้องตรวจสอบ', cls: 'status-no-data' };
-        if (st === 'CANCELLED')       return { label: 'ยกเลิก',       cls: 'status-no-data' };
-        if (st === 'COMPLETED')       return { label: 'จัดส่งสำเร็จ', cls: 'status-complete' };
-        if (st === 'PARTIAL')         return { label: 'บางส่วน',       cls: 'status-pending' };
-        if (st === 'ENTRY')           return { label: 'รอ',           cls: 'status-entry' };
-        if (step >= 5)                return { label: 'จัดส่งสำเร็จ', cls: 'status-complete' };
-        const byStep = { 1: 'สร้าง PO', 2: 'ยืนยันแล้ว', 3: 'ได้ Invoice', 4: 'รอรับสินค้า' };
-        return { label: byStep[step] || 'ดำเนินการ', cls: 'status-entry' };
+        const tl   = (data && data.timeline) || {};
+        const step = Number(tl.step) || 0;
+        const st   = String(tl.status || '').toUpperCase();
+
+        if (st === 'CANCELLED') return ST_CANCEL;   // ขั้น "ยืนยันคำสั่งซื้อ" ที่ถูกยกเลิก
+        if (step >= 5)          return ST_DONE;     // ขั้น "รับสินค้าครบ"
+        return ST_DOING;                            // ที่เหลือทั้งหมด
     }
 
     function cardInfo(po){
@@ -374,6 +379,7 @@
                 pagePOs = []; meta = null; updateCount(0); return;
             }
 
+            // ✅ ปกติจะเข้าทางนี้เสมอ: server ส่ง meta มา = โหลดทีละหน้า หน้าละ 30
             if (data.meta && data.meta.last_page) {
                 serverPaged = true;
                 pagePOs = Array.isArray(data.data) ? data.data : [];
@@ -470,68 +476,86 @@
         pager.innerHTML = html;
     }
 
-    async function enrichOne(ponum){
-        if (detailCache[ponum]) return detailCache[ponum];
+    /* ─── โหลดสถานะแบบ batch ──────────────────────────────────────────────── */
+
+    // ส่ง ponum เป็น array ครั้งเดียว → { "PO001": {...}, ... }
+    async function fetchBatch(ponums){
+        try {
+            const res = await fetch(BATCH_URL, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Accept': 'application/json',
+                    'X-CSRF-TOKEN': CSRF,
+                    'X-Requested-With': 'XMLHttpRequest'
+                },
+                body: JSON.stringify({ ponums: ponums })
+            });
+            if (res.status === 404 || res.status === 405) { batchSupported = false; return null; }
+            if (!res.ok) return {};
+            const json = await res.json();
+            return (json && json.success && json.data) ? json.data : {};
+        } catch (e) {
+            console.warn('batch error', e);
+            return {};
+        }
+    }
+
+    // สำรอง: ถ้ายังไม่ได้เพิ่ม route batch จะยิงทีละใบเหมือนเดิม
+    async function fetchOne(ponum){
         try {
             const res = await fetch(`/pooutside/search?ponum=${encodeURIComponent(ponum)}`);
             if (!res.ok) return null;
             const data = await res.json();
-            if (data && data.success) { detailCache[ponum] = data; return data; }
-        } catch (e) { /* ข้าม */ }
-        return null;
+            return (data && data.success) ? data : null;
+        } catch (e) { return null; }
     }
-    function enqueueEnrich(ponum){ enrichWait.push(ponum); drainEnrich(); }
-    function drainEnrich(){
-        while (enrichRunning < ENRICH_CONCURRENCY && enrichWait.length){
-            const ponum = enrichWait.shift();
-            enrichRunning++;
-            (async () => {
-                const d = await enrichOne(ponum);
-                patchCard(ponum, d);
-                enrichPending.delete(ponum);
-                enrichDoneCount++;
-                updateProgress();
-                enrichRunning--;
-                drainEnrich();
-            })();
+
+    async function enrichPage(){
+        const myToken = ++enrichToken;
+
+        const ponums = pagePOs
+            .map(po => String(getField(po, '_m_ponum', PONUM_KEYS) ?? ''))
+            .filter(p => p !== '');
+
+        const total   = ponums.length;
+        const todo    = ponums.filter(p => !detailCache[p]);
+        let   done    = total - todo.length;
+
+        if (!todo.length) { hideProgress(); return; }
+        showProgress(done, total);
+
+        for (const group of chunk(todo, BATCH_SIZE)) {
+            if (myToken !== enrichToken) return; // เปลี่ยนหน้าไปแล้ว → ทิ้งผลนี้
+
+            let map = batchSupported ? await fetchBatch(group) : null;
+
+            // batch ใช้ไม่ได้ → fallback ยิงทีละใบ (ยังทำงานได้แม้ยังไม่เพิ่ม route)
+            if (map === null) {
+                map = {};
+                for (const p of group) {
+                    const d = await fetchOne(p);
+                    if (d) map[p] = d;
+                }
+            }
+
+            if (myToken !== enrichToken) return;
+
+            group.forEach(p => {
+                const d = map[p] || null;
+                if (d) detailCache[p] = d;
+                patchCard(p, d);
+                done++;
+            });
+            showProgress(done, total);
         }
+
+        hideProgress();
     }
+
     function showProgress(done, total){ const w = document.getElementById('enrichProgress'); w.classList.add('show'); document.getElementById('enrichText').textContent = `⏳ โหลดสถานะ ${done}/${total}`; document.getElementById('enrichBar').style.width = (total ? (done / total * 100) : 0) + '%'; }
     function hideProgress(){ document.getElementById('enrichProgress').classList.remove('show'); }
-    function updateProgress(){
-        const total = pagePOs.length;
-        if (!total || enrichDoneCount >= total) { hideProgress(); return; }
-        showProgress(enrichDoneCount, total);
-    }
-    function enrichPage(){
-        if (enrichObserver) enrichObserver.disconnect();
-        enrichObserver = null;
-        enrichPending.clear();
-        enrichWait = [];
-        enrichRunning = 0;
-        enrichDoneCount = 0;
 
-        const obs = new IntersectionObserver((entries) => {
-            entries.forEach(e => {
-                if (!e.isIntersecting) return;
-                const card = e.target;
-                const ponum = card.dataset.ponum;
-                obs.unobserve(card);
-                if (ponum && !detailCache[ponum] && !enrichPending.has(ponum)) {
-                    enrichPending.add(ponum);
-                    enqueueEnrich(ponum);
-                }
-            });
-        }, { rootMargin: '400px 0px' });
-        enrichObserver = obs;
-
-        document.querySelectorAll('.po-card').forEach(card => {
-            const ponum = card.dataset.ponum;
-            if (detailCache[ponum]) { enrichDoneCount++; }
-            else if (ponum) { obs.observe(card); }
-        });
-        updateProgress();
-    }
     function patchCard(ponum, data){
         const card = document.querySelector(`.po-card[data-ponum="${attrSafe(ponum)}"]`);
         if (!card) return;
@@ -569,6 +593,7 @@
             if (data.notes) { document.getElementById('note_text').textContent = data.notes; nb.classList.remove('hidden'); } else { nb.classList.add('hidden'); }
             renderItems(data.items);
         };
+        // ✅ ส่วนใหญ่จะมีใน cache จาก batch แล้ว → เปิดทันทีไม่ต้องยิงซ้ำ
         if (detailCache[ponum]) { render(detailCache[ponum]); patchCard(ponum, detailCache[ponum]); return; }
         document.getElementById('items_table_body').innerHTML = `<tr><td colspan="4" style="text-align:center;color:#6b7280;padding:40px;">กำลังโหลดรายละเอียด...</td></tr>`;
         try {

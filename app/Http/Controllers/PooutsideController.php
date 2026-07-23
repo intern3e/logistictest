@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Http\Client\Pool;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
 use App\Models\Pooutside;
@@ -11,6 +12,15 @@ use Carbon\Carbon;
 
 class PooutsideController extends Controller
 {
+    /** จำนวน PO สูงสุดต่อ 1 batch request */
+    private const BATCH_MAX = 60;
+
+    /** ยิง ERP พร้อมกันครั้งละกี่ใบ (กัน ERP รับไม่ไหว) */
+    private const POOL_SIZE = 10;
+
+    /** URL ของ ERP */
+    private const ERP_URL = 'http://server_update:8000/api/getPODetail';
+
     // ─── Views ────────────────────────────────────────────────────────────────
 
   public function dashboard(Request $request, $name = 'Guest')
@@ -42,19 +52,70 @@ class PooutsideController extends Controller
             return response()->json(['success' => false, 'message' => 'ไม่พบเลข PO'], 404);
         }
 
-        $matchedProducts = $this->matchProducts($localData, $erpData['ms_podt'] ?? []);
+        return response()->json($this->buildPoPayload($localData, $erpData));
+    }
 
-        $validDbItems = collect($matchedProducts)
-            ->filter(fn($m) => !$m['lowScore'])
-            ->flatMap(fn($m) => $m['dbItems'])
-            ->toArray();
+    /* =====================================================================
+       ✅ ใหม่: ค้นหาหลาย PO ในครั้งเดียว
+       POST /pooutside/search-batch   body: { "ponums": ["PO001","PO002", ...] }
+
+       - DB query ครั้งเดียว (whereIn) แทนการวน query ทีละใบ
+       - ยิง ERP แบบขนานด้วย Http::pool ครั้งละ 10 ใบ
+       - ตอบกลับ: { success: true, data: { "PO001": {...}, "PO002": {...} } }
+         PO ที่ ERP ไม่มีข้อมูล จะไม่อยู่ใน data (frontend เช็คเองว่าไม่มี = แสดง —)
+       ===================================================================== */
+    public function searchBatch(Request $request): JsonResponse
+    {
+        $raw = $request->input('ponums', []);
+
+        if (is_string($raw)) {
+            $raw = array_map('trim', explode(',', $raw));
+        }
+
+        if (!is_array($raw)) {
+            return response()->json(['success' => false, 'message' => 'ponums ต้องเป็น array'], 422);
+        }
+
+        // ล้างค่าว่าง + ตัดซ้ำ + จำกัดจำนวน
+        $ponums = collect($raw)
+            ->map(fn($p) => trim((string) $p))
+            ->filter(fn($p) => $p !== '')
+            ->unique()
+            ->take(self::BATCH_MAX)
+            ->values()
+            ->all();
+
+        if (empty($ponums)) {
+            return response()->json(['success' => true, 'data' => (object) [], 'count' => 0]);
+        }
+
+        // 1) ดึงข้อมูล local ทีเดียวทั้งชุด แล้วค่อยจัดกลุ่มตาม ponum
+        $localGrouped = Pooutside::whereIn('ponum', $ponums)
+            ->orderBy('date_invoice', 'desc')
+            ->get()
+            ->groupBy('ponum')
+            ->map(fn($rows) => $rows->map(fn($r) => $r->toArray())->all());
+
+        // 2) ยิง ERP แบบขนานเป็นก้อน ๆ
+        $erpAll = $this->fetchErpPOBatch($ponums);
+
+        // 3) ประกอบผลลัพธ์
+        $data = [];
+        foreach ($ponums as $ponum) {
+            $erpData = $erpAll[$ponum] ?? null;
+            if (!$erpData) {
+                continue; // ไม่พบใน ERP → ข้าม
+            }
+
+            $localData = $localGrouped[$ponum] ?? [];
+            $data[$ponum] = $this->buildPoPayload($localData, $erpData);
+        }
 
         return response()->json([
-            'success'  => true,
-            'vendor'   => $this->buildVendorInfo($erpData),
-            'timeline' => $this->buildTimeline($erpData, $validDbItems),
-            'notes'    => $this->collectUniqueNotes($localData),
-            'items'    => $this->buildItemsFromMatched($matchedProducts, $erpData),
+            'success'   => true,
+            'data'      => (object) $data,
+            'count'     => count($data),
+            'requested' => count($ponums),
         ]);
     }
 
@@ -79,7 +140,7 @@ class PooutsideController extends Controller
     private function fetchErpPO(string $poNum): ?array
     {
         try {
-            $response = Http::get('http://server_update:8000/api/getPODetail', ['PONum' => $poNum]);
+            $response = Http::timeout(20)->get(self::ERP_URL, ['PONum' => $poNum]);
             return $response->successful() ? $response->json() : null;
         } catch (\Exception $e) {
             Log::error('Error fetching PO from ERP: ' . $e->getMessage());
@@ -87,7 +148,70 @@ class PooutsideController extends Controller
         }
     }
 
+    /**
+     * ยิง ERP หลายใบพร้อมกัน (ครั้งละ POOL_SIZE ใบ)
+     * @return array<string, array|null>  map: ponum => erp payload
+     */
+    private function fetchErpPOBatch(array $ponums): array
+    {
+        $result = [];
+
+        foreach (array_chunk($ponums, self::POOL_SIZE) as $chunk) {
+            try {
+                $responses = Http::pool(function (Pool $pool) use ($chunk) {
+                    $requests = [];
+                    foreach ($chunk as $i => $ponum) {
+                        $requests[] = $pool->as('po_' . $i)
+                            ->timeout(20)
+                            ->get(self::ERP_URL, ['PONum' => $ponum]);
+                    }
+                    return $requests;
+                });
+            } catch (\Exception $e) {
+                Log::error('ERP pool error: ' . $e->getMessage());
+                continue;
+            }
+
+            foreach ($chunk as $i => $ponum) {
+                $res = $responses['po_' . $i] ?? null;
+
+                if ($res instanceof \Illuminate\Http\Client\Response && $res->successful()) {
+                    $json = $res->json();
+                    $result[$ponum] = is_array($json) ? $json : null;
+                } else {
+                    if ($res instanceof \Throwable) {
+                        Log::warning("ERP fail [{$ponum}]: " . $res->getMessage());
+                    }
+                    $result[$ponum] = null;
+                }
+            }
+        }
+
+        return $result;
+    }
+
     // ─── Private: Builders ────────────────────────────────────────────────────
+
+    /**
+     * ประกอบ payload ของ PO 1 ใบ (ใช้ร่วมกันทั้ง search() และ searchBatch())
+     */
+    private function buildPoPayload(array $localData, array $erpData): array
+    {
+        $matchedProducts = $this->matchProducts($localData, $erpData['ms_podt'] ?? []);
+
+        $validDbItems = collect($matchedProducts)
+            ->filter(fn($m) => !$m['lowScore'])
+            ->flatMap(fn($m) => $m['dbItems'])
+            ->toArray();
+
+        return [
+            'success'  => true,
+            'vendor'   => $this->buildVendorInfo($erpData),
+            'timeline' => $this->buildTimeline($erpData, $validDbItems),
+            'notes'    => $this->collectUniqueNotes($localData),
+            'items'    => $this->buildItemsFromMatched($matchedProducts, $erpData),
+        ];
+    }
 
     private function buildVendorInfo(array $erp): array
     {
@@ -495,10 +619,9 @@ class PooutsideController extends Controller
     }
 
     /* =====================================================================
-       ✅ เพิ่มใหม่: ดึงลิสต์ PO นอก (distinct ponum) จากตาราง Pooutside
+       ✅ ดึงลิสต์ PO นอก (distinct ponum) จากตาราง Pooutside
        - Server-side pagination 30/หน้า + เรียงใหม่→เก่า + ค้นหา
        - return: { success, data:[{ponum,_m_ponum,_m_date,date_created}], meta:{...} }
-       - frontend ใช้ meta → serverPaged=true → enrich จาก search() 30 ใบ/หน้า
        ===================================================================== */
     public function list(Request $request): JsonResponse
     {
