@@ -134,29 +134,32 @@ class SoItemController extends Controller
     // ══════════════════════════════════════════════════
     // OCR
     // ══════════════════════════════════════════════════
-    public function ocrProcess(Request $request)
-    {
-        set_time_limit(0);
-        $request->validate(['files' => 'nullable|array|max:20', 'files.*' => 'file|max:51200', 'text' => 'nullable|string|max:100000']);
-        $textInput = trim($request->input('text', ''));
-        $files = $request->file('files', []);
-        if (empty($files) && empty($textInput)) return response()->json(['status' => 'error', 'message' => 'กรุณาอัพโหลดไฟล์หรือวางข้อความ'], 422);
-        $pythonUrl = config('services.ocr.url', 'http://localhost:8010');
-        $boundary = '----FormBoundary' . bin2hex(random_bytes(8));
-        $body = '';
-        foreach ($files as $file) {
-            $body .= "--{$boundary}\r\nContent-Disposition: form-data; name=\"files[]\"; filename=\"{$file->getClientOriginalName()}\"\r\nContent-Type: " . ($file->getMimeType() ?: 'application/octet-stream') . "\r\n\r\n" . file_get_contents($file->getRealPath()) . "\r\n";
-        }
-        $body .= "--{$boundary}\r\nContent-Disposition: form-data; name=\"text\"\r\n\r\n{$textInput}\r\n--{$boundary}--\r\n";
-        $ch = curl_init("{$pythonUrl}/api/ocr/process");
-        curl_setopt_array($ch, [CURLOPT_POST => true, CURLOPT_POSTFIELDS => $body, CURLOPT_HTTPHEADER => ["Content-Type: multipart/form-data; boundary={$boundary}"], CURLOPT_RETURNTRANSFER => true, CURLOPT_TIMEOUT => 60]);
-        $raw = curl_exec($ch); $status = curl_getinfo($ch, CURLINFO_HTTP_CODE); $curlErr = curl_error($ch); curl_close($ch);
-        if ($curlErr) return response()->json(['status' => 'error', 'message' => 'เชื่อมต่อ Python ไม่ได้: ' . $curlErr], 503);
-        $result = json_decode($raw, true);
-        if ($status !== 200 || empty($result['job_name'])) return response()->json(['status' => 'error', 'message' => 'Python ตอบกลับผิดพลาด: ' . substr($raw, 0, 200)], 502);
-        return response()->json(['status' => 'processing', 'job_name' => $result['job_name'], 'message' => 'กำลังประมวลผล...']);
-    }
+public function ocrProcess(Request $request)
+{
+    set_time_limit(0);
 
+    // ★ ปลดล็อก session file ทันที กัน tab อื่นค้างรอ
+    session()->save();
+
+    $request->validate(['files' => 'nullable|array|max:20', 'files.*' => 'file|max:51200', 'text' => 'nullable|string|max:100000']);
+    $textInput = trim($request->input('text', ''));
+    $files = $request->file('files', []);
+    if (empty($files) && empty($textInput)) return response()->json(['status' => 'error', 'message' => 'กรุณาอัพโหลดไฟล์หรือวางข้อความ'], 422);
+    $pythonUrl = config('services.ocr.url', 'http://localhost:8010');
+    $boundary = '----FormBoundary' . bin2hex(random_bytes(8));
+    $body = '';
+    foreach ($files as $file) {
+        $body .= "--{$boundary}\r\nContent-Disposition: form-data; name=\"files[]\"; filename=\"{$file->getClientOriginalName()}\"\r\nContent-Type: " . ($file->getMimeType() ?: 'application/octet-stream') . "\r\n\r\n" . file_get_contents($file->getRealPath()) . "\r\n";
+    }
+    $body .= "--{$boundary}\r\nContent-Disposition: form-data; name=\"text\"\r\n\r\n{$textInput}\r\n--{$boundary}--\r\n";
+    $ch = curl_init("{$pythonUrl}/api/ocr/process");
+    curl_setopt_array($ch, [CURLOPT_POST => true, CURLOPT_POSTFIELDS => $body, CURLOPT_HTTPHEADER => ["Content-Type: multipart/form-data; boundary={$boundary}"], CURLOPT_RETURNTRANSFER => true, CURLOPT_TIMEOUT => 60]);
+    $raw = curl_exec($ch); $status = curl_getinfo($ch, CURLINFO_HTTP_CODE); $curlErr = curl_error($ch); curl_close($ch);
+    if ($curlErr) return response()->json(['status' => 'error', 'message' => 'เชื่อมต่อ Python ไม่ได้: ' . $curlErr], 503);
+    $result = json_decode($raw, true);
+    if ($status !== 200 || empty($result['job_name'])) return response()->json(['status' => 'error', 'message' => 'Python ตอบกลับผิดพลาด: ' . substr($raw, 0, 200)], 502);
+    return response()->json(['status' => 'processing', 'job_name' => $result['job_name'], 'message' => 'กำลังประมวลผล...']);
+}
     public function ocrStatus(string $jobName)
     {
         $jobName = preg_replace('/[^a-zA-Z0-9_]/', '', $jobName);
@@ -267,7 +270,7 @@ class SoItemController extends Controller
             if (!mb_check_encoding($t, 'UTF-8')) continue;
             if (preg_match('/[\x80-\xff]/', $t) && !preg_match('//u', $t)) continue;
             if (mb_strlen($t) < 3) continue;
-            if (preg_match('/^\d+(\.\d+)?$/', $t)) continue;
+            if (preg_match('/^\d+(\.\d+)?$/', $t) && mb_strlen($t) < 4) continue;
             if (preg_match('/^(EA|PCS?|SET|BOX|ROL|KG|ชิ้น|อัน|เส้น|ม้วน|แผ่น|กล่อง|ชุด)\.?$/iu', $t)) continue;
             $terms[] = $t;
         }
@@ -281,27 +284,53 @@ class SoItemController extends Controller
 // ══════════════════════════════════════════════════
     // ★ HELPER: DB search (pg_trgm)
     // ══════════════════════════════════════════════════
-    private function callAiExtractKeywords(array $keywords): array
+private function callAiExtractKeywords(array $keywords): array
 {
-    $pythonUrl = config('services.ocr.url', 'http://localhost:8010');
-    $ch = curl_init("{$pythonUrl}/api/extract-keywords");
-    curl_setopt_array($ch, [
-        CURLOPT_POST           => true,
-        CURLOPT_POSTFIELDS     => json_encode(['keywords' => $keywords]),
-        CURLOPT_HTTPHEADER     => ['Content-Type: application/json'],
-        CURLOPT_RETURNTRANSFER => true,
-        CURLOPT_TIMEOUT        => 60,
-        CURLOPT_CONNECTTIMEOUT => 5,
-    ]);
-    $raw = curl_exec($ch); $status = curl_getinfo($ch, CURLINFO_HTTP_CODE); $err = curl_error($ch);
-    curl_close($ch);
+    $cacheKey = 'aiextract:' . md5(implode('|', $keywords));
+    $cached = Cache::get($cacheKey);
+    if ($cached !== null) return $cached;
 
-    if ($err || $status !== 200 || !$raw) {
-        Log::warning("[AI-EXTRACT] failed: HTTP={$status} err={$err}");
+    $pythonUrl = config('services.ocr.url', 'http://localhost:8010');
+
+    $start = $this->postJson("{$pythonUrl}/api/extract-keywords-start", ['keywords' => $keywords], 10);
+
+    if (isset($start['results'])) {
+        $result = $start['results'];
+        Cache::put($cacheKey, $result, 30);
+        return $result;
+    }
+
+    if (!isset($start['job_id'])) {
+        Log::warning("[AI-EXTRACT] start failed — no job_id, items=" . count($keywords));
         return array_fill(0, count($keywords), []);
     }
-    $resp = json_decode($raw, true);
-    return $resp['results'] ?? array_fill(0, count($keywords), []);
+
+    $jobId = $start['job_id'];
+    // ★ ลดจาก 600 → 90 วิ ให้สั้นกว่า set_time_limit ของฟังก์ชันที่เรียกเสมอ (กัน fatal timeout)
+    //   เกิน 90 วิ = ปล่อยให้ fallback ไปใช้ extractSearchTerms() (regex) แทน ดีกว่าทำให้ request ทั้งชุดตาย
+    $maxWaitSec      = 90;
+    $pollIntervalSec = 2;
+    $elapsed         = 0;
+
+    while ($elapsed < $maxWaitSec) {
+        usleep($pollIntervalSec * 1000000);
+        $elapsed += $pollIntervalSec;
+
+        $poll = $this->getJson("{$pythonUrl}/api/extract-keywords-status/" . urlencode($jobId), 10);
+
+        if (($poll['status'] ?? '') === 'done') {
+            $result = $poll['results'] ?? array_fill(0, count($keywords), []);
+            Cache::put($cacheKey, $result, 30);
+            return $result;
+        }
+        if (($poll['status'] ?? '') === 'not_found') {
+            Log::warning("[AI-EXTRACT] job not found job_id={$jobId}");
+            break;
+        }
+    }
+
+    Log::warning("[AI-EXTRACT] timeout after {$elapsed}s, items=" . count($keywords) . " job_id={$jobId} — fallback regex");
+    return array_fill(0, count($keywords), []);
 }
     private function callDbSearch(array $queries, int $topK = 20, float $minScore = 30): array
     {
@@ -339,189 +368,191 @@ class SoItemController extends Controller
     //   ★ ใช้ Qwen ตัดสินเหมือน Flow 2 (ไม่ใช่ CE อย่างเดียว)
     //   Python _match_one() จะ: CE score → Qwen เลือก (ดู CE + doc_date)
     // ══════════════════════════════════════════════════
-   public function batchMatch(Request $request)
+// ═══ START: ยิง job แล้วคืน job_id ทันที ไม่รอ ═══
+public function batchMatchStart(Request $request)
 {
-    set_time_limit(180);
- 
+    session()->save();
+
     $customerCodes = (array) $request->input('customer_codes', []);
     $items         = (array) $request->input('items', []);
- 
-    if (empty($items)) return response()->json([]);
- 
+    if (empty($items)) return response()->json(['status' => 'done', 'results' => []]);
+
     $pythonUrl = config('services.ocr.url', 'http://localhost:8010');
-    $results   = array_fill(0, count($items), null);
+    $batchPayload = array_map(fn($name) => ['keyword' => trim((string) $name)], $items);
 
-    // ★ แตก keyword ด้วย AI ครั้งเดียวสำหรับทุกรายการ (ใช้ซ้ำได้ทั้ง Phase 1 + 2)
-    $keywordsRaw = array_map(fn($it) => trim((string) $it), $items);
-    $aiTermsPerItem = $this->callAiExtractKeywords($keywordsRaw);
+    DB::disconnect('pgsql'); DB::disconnect();
 
-    // fallback: ถ้า AI คืนว่างสำหรับ item ไหน ใช้ regex แทน
-    foreach ($keywordsRaw as $i => $kw) {
-        if (empty($aiTermsPerItem[$i])) {
-            $aiTermsPerItem[$i] = $this->extractSearchTerms($kw);
-        }
-    }
-    
-    // ═══ Phase 1: ค้นในกลุ่มลูกค้า ═══
-    $unmatchedIndices = [];
- 
-    if (!empty($customerCodes)) {
-        $groupRows = fuzzy_so::whereIn('customer_code', $customerCodes)
-            ->whereNotNull('product_name')
-            ->where('product_name', '!=', '')
-            ->orderByDesc('doc_date')
-            ->get(['product_name','unit_price','unit','doc_date','customer_code','so_no','customer_name']);
- 
-        Log::info("[batchMatch] Phase1: codes=" . count($customerCodes)
-            . " items=" . count($items) . " db_rows=" . $groupRows->count());
- 
-        $batchPayload    = [];
-        $candNamesPerItem = [];
- 
-        foreach ($items as $i => $itemName) {
-            $keyword = trim((string) $itemName);
-            $terms   = $aiTermsPerItem[$i];
- 
-            if (mb_strlen($keyword) < 2 || empty($terms)) {
-                $batchPayload[]     = ['keyword' => $keyword, 'candidates' => []];
-                $candNamesPerItem[] = [];
-                continue;
-            }
- 
-            $filtered = $groupRows->filter(function ($row) use ($terms) {
-                $nameLower = mb_strtolower($row->product_name);
-                foreach ($terms as $tok) {
-                    if (mb_strpos($nameLower, mb_strtolower($tok)) !== false) return true;
-                }
-                return false;
-            });
- 
-            $uniq = $filtered->groupBy('product_name')->map(function ($group) {
-                $latest = $group->sortByDesc('doc_date')->first();
-                return [
-                    'product_name' => $latest->product_name,
-                    'doc_date'     => $latest->doc_date ? $latest->doc_date->format('Y-m-d') : '',
-                ];
-            })->values()->take(20)->toArray();
- 
-            $candNames = array_column($uniq, 'product_name');
-            $batchPayload[]     = ['keyword' => $keyword, 'candidates' => $uniq];
-            $candNamesPerItem[] = $candNames;
-        }
- 
-        DB::disconnect('pgsql');
-        DB::disconnect();
- 
-        // ★ ส่ง Python — ไม่มี threshold, LLM ตัดสินทุกอย่าง
-        $resp       = $this->postJson("{$pythonUrl}/api/match-product", ['items' => $batchPayload], 120);
-        $llmResults = isset($resp['job_id'])
-            ? $this->pollMatchJob($resp['job_id'])
-            : ($resp['results'] ?? []);
- 
-        foreach ($items as $i => $itemName) {
-            $keyword     = trim((string) $itemName);
-            $coreTokens  = array_slice($aiTermsPerItem[$i], 0, 3);
-            $llm         = $llmResults[$i] ?? ['index' => -1];
-            $matchedIdx  = (int) ($llm['index'] ?? -1);
-            $ceScore     = (float) ($llm['ce_score'] ?? 0);
-            $matchedName = $llm['matched_name'] ?? '';
-            $candNames   = $candNamesPerItem[$i] ?? [];
- 
-            if (!$matchedName && $matchedIdx >= 0 && isset($candNames[$matchedIdx])) {
-                $matchedName = $candNames[$matchedIdx];
-            }
- 
-            // ★ ไม่เช็ค CE score — ถ้า LLM บอกไม่ตรง ก็คือไม่ตรง
-            if (!$matchedName) {
-                $unmatchedIndices[] = $i;
-                $results[$i] = [
-                    'input'         => $itemName,
-                    'matches'       => [],
-                    'source'        => 'none',
-                    'search_tokens' => $coreTokens,
-                    'ce_score'      => $ceScore,
-                ];
-                continue;
-            }
- 
-            $priceRows = $groupRows->where('product_name', $matchedName)->sortByDesc('doc_date');
-            $matches   = $this->buildMatchResults($priceRows, $matchedName, $ceScore, 'group');
- 
-            $results[$i] = [
-                'input'         => $itemName,
-                'matches'       => $matches,
-                'source'        => 'group',
-                'search_tokens' => $coreTokens,
-                'ce_score'      => $ceScore,
-                'matched_name'  => $matchedName,
-            ];
-        }
-    } else {
-        $unmatchedIndices = range(0, count($items) - 1);
-        foreach ($items as $i => $itemName) {
-            $results[$i] = [
-                'input'         => $itemName,
-                'matches'       => [],
-                'source'        => 'none',
-                'search_tokens' => array_slice($this->extractSearchTerms(trim($itemName)), 0, 3),
-                'ce_score'      => 0,
-            ];
-        }
-    }
- 
-if (!empty($unmatchedIndices)) {
-    Log::info("[batchMatch] Phase2: " . count($unmatchedIndices) . " unmatched → self-search (Python)");
+    $resp = $this->postJson("{$pythonUrl}/api/match-product", [
+        'items'          => $batchPayload,
+        'customer_codes' => $customerCodes,
+    ], 300);
 
-    $batchPayload2 = [];
-    foreach ($unmatchedIndices as $i) {
-    $keyword = trim((string) $items[$i]);
-    $terms   = array_slice($aiTermsPerItem[$i], 0, 5);
-    $batchPayload2[] = ['keyword' => $keyword, 'candidates' => [], 'search_terms' => $terms];
+    if (isset($resp['results'])) {
+        return response()->json(['status' => 'done',
+            'results' => $this->buildAgentMatchOutput($items, $resp['results'])]);
     }
 
-    DB::disconnect('pgsql');
-    DB::disconnect();
+    if (isset($resp['job_id'])) {
+        Cache::put("batchmatch:{$resp['job_id']}", ['items' => $items], now()->addMinutes(10));
+        return response()->json(['status' => 'processing', 'job_id' => $resp['job_id']]);
+    }
 
-    $resp2       = $this->postJson("{$pythonUrl}/api/match-product", ['items' => $batchPayload2], 120);
-    $llmResults2 = isset($resp2['job_id'])
-        ? $this->pollMatchJob($resp2['job_id'])
-        : ($resp2['results'] ?? []);
+    return response()->json(['status' => 'done', 'results' => array_map(fn() => ['matches' => []], $items)]);
+}
 
-    foreach ($unmatchedIndices as $j => $i) {
-        $keyword     = trim((string) $items[$i]);
-        $coreTokens  = array_slice($aiTermsPerItem[$i], 0, 3);
-        $llm         = $llmResults2[$j] ?? ['index' => -1];
-        $ceScore     = (float) ($llm['ce_score'] ?? 0);
-        $matchedName = $llm['matched_name'] ?? ($llm['matched']['product_name'] ?? '');
+// ═══ STATUS: browser poll endpoint นี้ — เบา ไม่ block worker ═══
+public function batchMatchStatus(string $jobId)
+{
+    $jobId = preg_replace('/[^a-zA-Z0-9\-]/', '', $jobId);
+    $pythonUrl = config('services.ocr.url', 'http://localhost:8010');
+    $poll = $this->getJson("{$pythonUrl}/api/match-status/{$jobId}", 10);
 
-        if (!$matchedName) {
-            $results[$i]['source']   = 'none';
-            $results[$i]['ce_score'] = $ceScore;
+    if (($poll['status'] ?? '') !== 'done') return response()->json(['status' => 'processing']);
+
+    $cached = Cache::pull("batchmatch:{$jobId}");
+    if (!$cached) return response()->json(['status' => 'done', 'results' => []]);
+
+    return response()->json(['status' => 'done',
+        'results' => $this->buildAgentMatchOutput($cached['items'], $poll['results'] ?? [])]);
+}
+
+// ═══ HELPER: ประกอบผลลัพธ์จากคำตอบ agent (source: group|all|history|none) ═══
+private function buildAgentMatchOutput(array $items, array $agentResults): array
+{
+    $results = [];
+    foreach ($items as $i => $itemName) {
+        $r           = $agentResults[$i] ?? ['index' => -1];
+        $matchedName = $r['matched_name'] ?? ($r['matched']['product_name'] ?? '');
+        $source      = $r['source'] ?? 'none';
+        $ceScore     = (float) ($r['ce_score'] ?? 0);
+
+        if (!$matchedName || $source === 'none' || $source === 'history') {
+            $results[] = ['input' => $itemName, 'matches' => [], 'source' => 'none', 'ce_score' => $ceScore];
             continue;
         }
 
         try {
+            // ★ ดึงมาเผื่อ 10 แถว (กันเคสซ้ำ so_no/ราคา) แต่ orderByDesc('doc_date') เรียงใหม่สุดขึ้นก่อนเสมอ
             $priceRows = fuzzy_so::where('product_name', $matchedName)
                 ->whereNotNull('unit_price')->where('unit_price', '>', 0)
-                ->orderByDesc('doc_date')->limit(5)
+                ->orderByDesc('doc_date')
+                ->limit(10)
                 ->get(['product_name','unit_price','unit','doc_date','customer_code','so_no','customer_name']);
         } catch (\Exception $e) {
+            Log::error("[buildAgentMatchOutput] price query EXCEPTION for '{$matchedName}': " . $e->getMessage());
             $priceRows = collect();
         }
 
-        $matches = $this->buildMatchResults($priceRows, $matchedName, $ceScore, 'all');
+        $matches = $this->buildMatchResults($priceRows, $matchedName, $ceScore, $source);
 
-        $results[$i] = [
-            'input'         => $items[$i],
-            'matches'       => $matches,
-            'source'        => 'all',
-            'search_tokens' => $coreTokens,
-            'ce_score'      => $ceScore,
-            'matched_name'  => $matchedName,
-        ];
+        $results[] = ['input' => $itemName, 'matches' => $matches, 'source' => $source,
+                       'ce_score' => $ceScore, 'matched_name' => $matchedName];
+    }
+    return $results;
+}
+
+// ══════════════════════════════════════════════════
+// ★ FLOW 2 (🤖): เหมือน Flow 1 แต่บังคับไม่ให้กลุ่ม → agent ค้นทั้งระบบตั้งแต่แรก
+// ══════════════════════════════════════════════════
+public function aiFallbackMatch(Request $request)
+{
+    set_time_limit(300); // ★ เพิ่มจาก 120 — searchQuotationHistory วนทีละ item เสี่ยง timeout สะสม
+    session()->save();
+
+    $items = (array) $request->input('items', []);
+    $type  = $request->input('type', 'price');
+    if (empty($items)) return response()->json(['status' => 'done', 'results' => []]);
+
+    try {
+        if ($type !== 'price') {
+            $results = [];
+            foreach ($items as $item) {
+                $keyword   = trim($item['name'] ?? '');
+                $results[] = ['matches' => $this->searchQuotationHistory($keyword, 3)];
+            }
+            return response()->json(['status' => 'done', 'results' => $results]);
+        }
+
+        $pythonUrl    = config('services.ocr.url', 'http://localhost:8010');
+        $keywords     = array_map(fn($it) => trim((string) ($it['name'] ?? '')), $items);
+        $batchPayload = array_map(fn($k) => ['keyword' => $k], $keywords);
+
+        DB::disconnect('pgsql'); DB::disconnect();
+
+        $resp = $this->postJson("{$pythonUrl}/api/match-product", [
+            'items'          => $batchPayload,
+            'customer_codes' => [],
+        ], 120);
+
+        if (isset($resp['results'])) {
+            return response()->json(['status' => 'done',
+                'results' => $this->mapAgentAiResults($keywords, $resp['results'])]);
+        }
+        if (isset($resp['job_id'])) {
+            Cache::put("aimatch:{$resp['job_id']}", ['keywords' => $keywords], now()->addMinutes(10));
+            return response()->json(['status' => 'processing', 'job_id' => $resp['job_id']]);
+        }
+        return response()->json(['status' => 'done', 'results' => array_map(fn() => ['matches' => []], $items)]);
+
+    } catch (\Throwable $e) {
+        Log::error('[aiFallbackMatch] error: ' . $e->getMessage());
+        return response()->json(['status' => 'done', 'results' => array_map(fn() => ['matches' => []], $items)]);
     }
 }
-    return response()->json($results);
+
+public function aiFallbackStatus(string $jobId)
+{
+    $jobId = preg_replace('/[^a-zA-Z0-9\-]/', '', $jobId);
+    $pythonUrl = config('services.ocr.url', 'http://localhost:8010');
+    $poll = $this->getJson("{$pythonUrl}/api/match-status/{$jobId}", 10);
+    if (($poll['status'] ?? '') !== 'done') return response()->json(['status' => 'processing']);
+
+    $cached = Cache::pull("aimatch:{$jobId}");
+    if (!$cached) return response()->json(['status' => 'done', 'results' => []]);
+
+    return response()->json(['status' => 'done',
+        'results' => $this->mapAgentAiResults($cached['keywords'], $poll['results'] ?? [])]);
+}
+
+private function mapAgentAiResults(array $keywords, array $agentResults): array
+{
+    $output = [];
+    foreach ($keywords as $j => $keyword) {
+        $r           = $agentResults[$j] ?? ['index' => -1];
+        $matchedName = $r['matched_name'] ?? ($r['matched']['product_name'] ?? '');
+        $ceScore     = (float) ($r['ce_score'] ?? 0);
+        $source      = $r['source'] ?? 'none';
+
+        if (!$matchedName || $source === 'none' || $source === 'history') {
+            $output[] = ['matches' => [], 'llm_picked' => -1, 'ce_score' => $ceScore, 'source' => $source];
+            continue;
+        }
+
+        // ★ orderByDesc('doc_date') ให้แถวใหม่สุดมาก่อนเสมอ
+        $rows = fuzzy_so::where('product_name', $matchedName)
+            ->whereNotNull('unit_price')->where('unit_price', '>', 0)
+            ->orderByDesc('doc_date')
+            ->limit(10)
+            ->get(['product_name','unit_price','unit','doc_date','customer_code','so_no','customer_name']);
+
+        $label   = "🤖 {$ceScore}% ({$source})";
+        // ★ unique('so_no') คงลำดับเดิม (doc_date desc) ไว้ แล้ว take(3) = ใหม่สุด 3 แถว
+        $matches = $rows->unique('so_no')->take(3)->map(fn($row) => [
+            'product_name'  => $row->product_name,
+            'unit_price'    => (float) $row->unit_price,
+            'unit'          => $row->unit,
+            'doc_date'      => $row->doc_date ? $row->doc_date->format('d/m/Y') : '-',
+            'customer_code' => $row->customer_code,
+            'customer_name' => $row->customer_name,
+            'so_no'         => $row->so_no,
+            'similarity'    => $ceScore,
+            'matched_tokens'=> [$label],
+        ])->values()->toArray();
+
+        $output[] = ['matches' => $matches, 'llm_picked' => 0, 'llm_matched' => $matchedName,
+                     'ce_score' => $ceScore, 'source' => $source];
+    }
+    return $output;
 }
 private function pollMatchJob(string $jobId, int $timeoutSec = 150): array
 {
@@ -543,16 +574,15 @@ private function buildMatchResults($rows, string $matchedName, float $ceScore, s
 {
     $matches = [];
     $seen    = [];
- 
     foreach ($rows as $row) {
         $key = $row->product_name . '|' . ((float)$row->unit_price) . '|' . $row->so_no;
         if (isset($seen[$key])) continue;
         $seen[$key] = true;
- 
+
         $label = $source === 'all'
             ? "🤖 CE:{$ceScore}%"
             : "💰 CE:{$ceScore}%";
- 
+
         $matches[] = [
             'product_name'   => $row->product_name,
             'unit_price'     => $row->unit_price !== null ? (float) $row->unit_price : null,
@@ -564,285 +594,186 @@ private function buildMatchResults($rows, string $matchedName, float $ceScore, s
             'similarity'     => $ceScore,
             'matched_tokens' => [$label],
         ];
- 
-        if (count($matches) >= 3) break;
+
+        if (count($matches) >= 3) break;   // ★ หยุดที่ 3 แถวพอดี
     }
- 
+
     return $matches;
 }
- 
-    // ══════════════════════════════════════════════════
-    // ★ FLOW 2: AI FALLBACK MATCH (🤖)
-    //   Python _match_one() ค้น DB เองแล้ว
-    //   อาจคืน index=-1 + source="db_search" + matched.product_name
-    // ══════════════════════════════════════════════════
-   public function aiFallbackMatch(Request $request)
-{
-    set_time_limit(120);
-    $items         = (array) $request->input('items', []);
-    $customerCodes = (array) $request->input('customer_codes', []);
-    $type          = $request->input('type', 'price');
-    if (empty($items)) return response()->json(['status' => 'done', 'results' => []]);
-
-    $pythonUrl = config('services.ocr.url', 'http://localhost:8010');
-
-    // ── 1) build candidates (DB) ──
-    $batchPayload = [];
-    $candNamesPerItem = [];
-    foreach ($items as $item) {
-        $keyword = trim($item['name'] ?? '');
-        $terms   = mb_strlen($keyword) >= 2 ? $aiTermsPerItem[$i] : [];
-        if (empty($terms)) { $batchPayload[] = ['keyword'=>$keyword,'candidates'=>[]]; $candNamesPerItem[] = []; continue; }
-
-        $candidates = $type === 'price'
-            ? $this->buildAiPriceCandidates($keyword, $terms, $customerCodes)
-            : $this->buildAiDocCandidates($keyword, $terms);
-
-        $candNames = $candidates->map(fn($c) => $c->product_name)->values()->toArray();
-        $batchPayload[]     = ['keyword'=>$keyword, 'candidates'=>array_map(fn($n)=>['product_name'=>$n], $candNames)];
-        $candNamesPerItem[] = $candNames;
-    }
-
-    // ── ปล่อย DB ก่อนคุย Python ──
-    DB::disconnect('pgsql'); DB::disconnect();
-
-    // ★ ส่งทุก item ไป Python (แม้ candidates ว่าง — Python จะค้น DB เอง)
-    $resp = $this->postJson("{$pythonUrl}/api/match-product", ['items'=>$batchPayload], 120);
-
-    // Python คืน results ตรงๆ (≤5 รายการ) → map เลย
-    if (isset($resp['results'])) {
-        return response()->json(['status'=>'done',
-            'results'=>$this->mapAiResults($items, $resp['results'], $candNamesPerItem, $type)]);
-    }
-
-    // Python คืน job_id → เก็บ candidate ไว้ใน cache แล้วให้ browser มา poll
-    if (isset($resp['job_id'])) {
-        Cache::put("aimatch:{$resp['job_id']}", [
-            'items'=>$items, 'candNames'=>$candNamesPerItem, 'type'=>$type,
-        ], now()->addMinutes(10));
-        return response()->json(['status'=>'processing', 'job_id'=>$resp['job_id']]);
-    }
-
-    return response()->json(['status'=>'done', 'results'=>array_map(fn()=>['matches'=>[]], $items)]);
-}
-
-    // ── AI candidates helpers ──
-    private function buildAiPriceCandidates(string $keyword, array $terms, array $customerCodes): \Illuminate\Support\Collection
-    {
-        usort($terms, fn($a, $b) => mb_strlen($b) - mb_strlen($a));
-
-        $allFound = collect();
-
-        foreach ($terms as $term) {
-            if (mb_strlen($term) < 3) continue;
-            if (!mb_check_encoding($term, 'UTF-8') || !preg_match('//u', $term)) continue;
-            try {
-                $found = fuzzy_so::where('product_name', 'ILIKE', '%' . $term . '%')
-                    ->whereNotNull('unit_price')->where('unit_price', '>', 0)
-                    ->orderByDesc('doc_date')->limit(100)
-                    ->get(['product_name','unit_price','unit','doc_date','customer_code','so_no','customer_name']);
-
-                if ($found->isNotEmpty()) {
-                    $allFound = $allFound->merge($found);
-                }
-            } catch (\Exception $e) {
-                Log::warning('[aiPriceCand] error: ' . mb_substr($e->getMessage(), 0, 80));
-                continue;
-            }
-
-            if ($allFound->unique('product_name')->count() >= 20) break;
-        }
-
-        if ($allFound->isEmpty()) return collect();
-
-        return $allFound->unique('product_name')->take(15)->values();
-    }
-
-    private function buildAiDocCandidates(string $keyword, array $terms): \Illuminate\Support\Collection
-    {
-        usort($terms, fn($a, $b) => mb_strlen($b) - mb_strlen($a));
-
-        $allMerged = collect();
-
-        foreach ($terms as $term) {
-            if (mb_strlen($term) < 3) continue;
-            if (!mb_check_encoding($term, 'UTF-8') || !preg_match('//u', $term)) continue;
-            try {
-                $hq = historyquotation::where('product', 'ILIKE', '%' . $term . '%')
-                    ->orderByDesc('quotation_date')->limit(30)->get(['product', 'quotation_date']);
-                $qi = QuotationItem::join('quotations', 'quotation_items.quotation_no', '=', 'quotations.quotation_no')
-                    ->where('quotation_items.description', 'LIKE', '%' . $term . '%')
-                    ->orderByDesc('quotations.doc_date')->limit(30)
-                    ->select(['quotation_items.description as product', 'quotations.doc_date as quotation_date'])->get();
-
-                $allMerged = $allMerged->merge($hq)->merge($qi);
-            } catch (\Exception $e) {
-                Log::warning('[aiDocCand] error: ' . $e->getMessage());
-            }
-
-            if ($allMerged->unique('product')->count() >= 10) break;
-        }
-
-        if ($allMerged->isEmpty()) return collect();
-
-        return $allMerged->unique('product')->take(10)->map(fn($r) => (object) [
-            'product_name' => $r->product,
-            'doc_date'     => $r->quotation_date,
-        ])->values();
-    }
-public function aiFallbackStatus(string $jobId)
-{
-    $jobId = preg_replace('/[^a-zA-Z0-9\-]/', '', $jobId);
-    $pythonUrl = config('services.ocr.url', 'http://localhost:8010');
-    $poll = $this->getJson("{$pythonUrl}/api/match-status/{$jobId}", 10);
-
-    if (($poll['status'] ?? '') !== 'done') return response()->json(['status'=>'processing']);
-
-    $cached = Cache::pull("aimatch:{$jobId}");
-    if (!$cached) return response()->json(['status'=>'done', 'results'=>[]]);
-
-    return response()->json(['status'=>'done',
-        'results'=>$this->mapAiResults($cached['items'], $poll['results'] ?? [], $cached['candNames'], $cached['type'])]);
-}
-
 // ══════════════════════════════════════════════════
-// ★ mapAiResults — รองรับ db_search จาก Python
-//   Python อาจคืน:
-//     index >= 0  → match จาก PHP candidates (เหมือนเดิม)
-//     index = -1 + matched.product_name → match จาก DB search ของ Python
+// ★ HELPER: historyquotation batch search (PG) — UNION ALL แทนวนลูป
 // ══════════════════════════════════════════════════
-private function mapAiResults(array $items, array $llmResults, array $candNamesPerItem, string $type): array
+private function historyQuotationBatchSearch(array $termsPerItem): array
 {
-    $output = [];
-    foreach ($items as $j => $item) {
-        $keyword    = trim($item['name'] ?? '');
-        $coreTokens = array_slice($aiTermsPerItem[$i], 0, 3);
-        $llm        = $llmResults[$j] ?? ['index'=>-1];
-        $matchedIdx = (int) ($llm['index'] ?? -1);
-        $ceScore    = (float) ($llm['ce_score'] ?? 0);
-        $source     = $llm['source'] ?? 'unknown';
-        $candNames  = $candNamesPerItem[$j] ?? [];
+    $parts    = [];
+    $bindings = [];
 
-        // ★ หา matchedName: จาก PHP candidates หรือจาก Python DB search
-        $matchedName = null;
+    $model      = new historyquotation();
+    $connection = $model->getConnectionName() ?: config('database.default');
+    $table      = $model->getTable();
 
-        if ($matchedIdx >= 0 && isset($candNames[$matchedIdx])) {
-            // match จาก PHP candidates
-            $matchedName = $candNames[$matchedIdx];
-        } elseif (!empty($llm['matched']['product_name'])) {
-            // ★ match จาก Python DB search (index=-1 แต่มี matched.product_name)
-            $matchedName = $llm['matched']['product_name'];
-            Log::info("[mapAi] #{$j} '{$keyword}' → DB search match: '{$matchedName}' CE={$ceScore}%");
+    foreach ($termsPerItem as $idx => $terms) {
+        if (empty($terms)) continue;
+
+        $conds = [];
+        foreach ($terms as $t) {
+            if (mb_strlen($t) < 2) continue;
+            $conds[]    = 'product ILIKE ?';   // ★ column นี้ถูกต้องอยู่แล้ว
+            $bindings[] = '%' . $t . '%';
         }
+        if (empty($conds)) continue;
 
-        if (!$matchedName) {
-            $output[] = ['matches'=>[], 'search_tokens'=>$coreTokens, 'candidates'=>$candNames,
-                         'llm_picked'=>-1, 'ce_score'=>$ceScore, 'source'=>$source];
-            continue;
-        }
-
-        $label = "🤖 CE:{$ceScore}% ({$source})";
-
-        if ($type === 'price') {
-            // ★ ค้นจาก DB ด้วย matchedName (ไม่จำกัดแค่ candNames เดิม)
-            $searchNames = array_unique(array_merge($candNames, [$matchedName]));
-            $rows = fuzzy_so::whereIn('product_name', $searchNames)
-                ->whereNotNull('unit_price')->where('unit_price', '>', 0)
-                ->orderByDesc('doc_date')->limit(50)
-                ->get(['product_name','unit_price','unit','doc_date','customer_code','so_no','customer_name'])
-                ->sortBy(fn($r) => [$r->product_name === $matchedName ? 0 : 1, $r->doc_date ? -strtotime($r->doc_date) : 0]);
-            $matches = $rows->unique('so_no')->take(3)->map(fn($r) => [
-                'product_name'=>$r->product_name, 'unit_price'=>(float)$r->unit_price, 'unit'=>$r->unit,
-                'doc_date'=>$r->doc_date ? $r->doc_date->format('d/m/Y') : '-',
-                'customer_code'=>$r->customer_code, 'customer_name'=>$r->customer_name, 'so_no'=>$r->so_no,
-                'similarity'=>$ceScore, 'matched_tokens'=>[$label],
-            ])->values()->toArray();
-        } else {
-            $matches = $this->searchQuotationHistory($matchedName, 3);
-        }
-
-        $output[] = ['matches'=>$matches, 'search_tokens'=>$coreTokens, 'candidates'=>$candNames,
-                     'llm_picked'=>$matchedIdx, 'llm_matched'=>$matchedName, 'ce_score'=>$ceScore, 'source'=>$source];
+        $idxSafe = (int) $idx;
+        $where   = implode(' OR ', $conds);
+        $parts[] = "(SELECT {$idxSafe} AS item_idx,
+                quotation_no,
+                quotation_date,
+                cust_name AS customer_company,
+                product,
+                unit,
+                price_per_unit
+            FROM {$table}
+            WHERE {$where}
+            ORDER BY quotation_date DESC
+            LIMIT 50)";
     }
-    return $output;
+
+    if (empty($parts)) return [];
+
+    $sql = implode(' UNION ALL ', $parts);
+    try {
+        $rows = DB::connection($connection)->select($sql, $bindings);
+    } catch (\Exception $e) {
+        Log::warning('[historyQuotationBatchSearch] error: ' . $e->getMessage());
+        return [];
+    }
+
+    $grouped = [];
+    foreach ($rows as $r) {
+        $grouped[$r->item_idx][] = (object) [
+            'quotation_no'     => $r->quotation_no,
+            'quotation_date'   => $r->quotation_date ? \Carbon\Carbon::parse($r->quotation_date) : null,
+            'customer_company' => $r->customer_company,
+            'product'          => $r->product,
+            'unit'             => $r->unit,
+            'price_per_unit'   => $r->price_per_unit,
+        ];
+    }
+    return $grouped;
 }
-    // ══════════════════════════════════════════════════
-    // ★ FLOW 3: QUOTATION HISTORY (📁 เอกสาร)
-    // ══════════════════════════════════════════════════
-    public function quotationHistory(Request $request)
-    {
-        $keyword = trim($request->input('keyword', ''));
-        return response()->json($this->searchQuotationHistory($keyword));
+// ══════════════════════════════════════════════════
+// ★ HELPER: quotation_items batch search (MySQL) — UNION ALL แทนวนลูป
+// ══════════════════════════════════════════════════
+private function quotationItemBatchSearch(array $termsPerItem): array
+{
+    $parts    = [];
+    $bindings = [];
+
+    $itemModel  = new quotationItem();
+    $connection = $itemModel->getConnectionName() ?: config('database.default');
+    $itemTable  = $itemModel->getTable();
+    $qtTable    = (new quotation())->getTable();
+
+    foreach ($termsPerItem as $idx => $terms) {
+        if (empty($terms)) continue;
+
+        $conds = [];
+        foreach ($terms as $t) {
+            if (mb_strlen($t) < 2) continue;
+            $conds[]    = 'qi.description LIKE ?';
+            $bindings[] = '%' . $t . '%';
+        }
+        if (empty($conds)) continue;
+
+        $idxSafe = (int) $idx;
+        $where   = implode(' OR ', $conds);
+        $parts[] = "(SELECT {$idxSafe} AS item_idx,
+                q.quotation_no AS quotation_no,
+                q.doc_date AS raw_date,
+                q.customer_company AS customer_company,
+                qi.description AS product,
+                qi.unit AS unit,
+                qi.unit_price AS price_per_unit
+            FROM {$itemTable} qi
+            INNER JOIN {$qtTable} q ON qi.quotation_no = q.quotation_no
+            WHERE {$where}
+            ORDER BY q.doc_date DESC
+            LIMIT 50)";
     }
 
+    if (empty($parts)) return [];
+
+    $sql = implode(' UNION ALL ', $parts);
+    try {
+        $rows = DB::connection($connection)->select($sql, $bindings);
+    } catch (\Exception $e) {
+        Log::warning('[quotationItemBatchSearch] error: ' . $e->getMessage());
+        return [];
+    }
+
+    $grouped = [];
+    foreach ($rows as $r) {
+        $grouped[$r->item_idx][] = (object) [
+            'quotation_no'     => $r->quotation_no,
+            'raw_date'         => $r->raw_date,
+            'customer_company' => $r->customer_company,
+            'product'          => $r->product,
+            'unit'             => $r->unit,
+            'price_per_unit'   => $r->price_per_unit,
+        ];
+    }
+    return $grouped;
+}
 public function batchQuotationHistory(Request $request)
-    {
-        set_time_limit(120);
-        $items = (array) $request->input('items', []);
-        if (empty($items)) return response()->json([]);
+{
+    // ★ ให้พอกับ worst case: AI extract (~90s) + dbSearch (30s) + CE rerank (180s) + เผื่อ
+    set_time_limit(400);
+    session()->save();
 
-        // ★ DB search (pg_trgm)
+    $items = (array) $request->input('items', []);
+    if (empty($items)) return response()->json([]);
+
+    try {
+        $keywordsRaw = array_map(fn($it) => trim((string) $it), $items);
+        $aiTermsPerItem = $this->callAiExtractKeywords($keywordsRaw);
+        foreach ($keywordsRaw as $idx => $kw) {
+            if (empty($aiTermsPerItem[$idx])) {
+                $aiTermsPerItem[$idx] = $this->extractSearchTerms($kw);
+            }
+        }
+
+        $termsPerItem = [];
+        foreach ($items as $idx => $itemName) {
+            $keyword = trim((string) $itemName);
+            if (mb_strlen($keyword) < 2) { $termsPerItem[$idx] = []; continue; }
+            $terms = array_filter($aiTermsPerItem[$idx] ?? [], fn($t) =>
+                mb_check_encoding($t, 'UTF-8') && preg_match('//u', $t)
+            );
+            $termsPerItem[$idx] = array_values($terms);
+        }
+
         $dbSearchResults = $this->callDbSearch($items, 10, 30);
+        $hqGrouped = $this->historyQuotationBatchSearch($termsPerItem);
+        $qiGrouped = $this->quotationItemBatchSearch($termsPerItem);
 
-        // ── 1) ดึง candidates ทั้งหมดจาก DB ──
         $ceItems  = [];
         $rowsMeta = [];
 
         foreach ($items as $idx => $itemName) {
             $keyword = trim((string) $itemName);
-            if (mb_strlen($keyword) < 2) {
+            $hqRows  = collect($hqGrouped[$idx] ?? []);
+            $qiRows  = collect($qiGrouped[$idx] ?? []);
+
+            if (empty($termsPerItem[$idx])) {
                 $ceItems[]  = ['query' => $keyword, 'candidates' => []];
                 $rowsMeta[] = ['hq' => collect(), 'qi' => collect()];
                 continue;
             }
 
-            $terms = $aiTermsPerItem[$i];
-            if (empty($terms)) {
-                $ceItems[]  = ['query' => $keyword, 'candidates' => []];
-                $rowsMeta[] = ['hq' => collect(), 'qi' => collect()];
-                continue;
-            }
-
-            $searchTerms = array_filter($terms, fn($t) =>
-                mb_check_encoding($t, 'UTF-8') && preg_match('//u', $t)
-            );
-            if (empty($searchTerms)) {
-                $ceItems[]  = ['query' => $keyword, 'candidates' => []];
-                $rowsMeta[] = ['hq' => collect(), 'qi' => collect()];
-                continue;
-            }
-
-            // ── query history_quotation (PG) ──
-            $hqRows = collect();
-            try {
-                $hqQuery = historyquotation::query();
-                $hqQuery->where(function ($q) use ($searchTerms) {
-                    foreach ($searchTerms as $tok) $q->orWhere('product', 'ILIKE', '%' . $tok . '%');
-                });
-                $hqRows = $hqQuery->orderByDesc('quotation_date')->limit(50)->get();
-            } catch (\Exception $e) { /* skip */ }
-
-            // ── query quotation_items (MySQL) ──
-            $qiRows = collect();
-            try {
-                $qiQuery = QuotationItem::join('quotations', 'quotation_items.quotation_no', '=', 'quotations.quotation_no');
-                $qiQuery->where(function ($q) use ($searchTerms) {
-                    foreach ($searchTerms as $tok) $q->orWhere('quotation_items.description', 'LIKE', '%' . $tok . '%');
-                });
-                $qiRows = $qiQuery->orderByDesc('quotations.doc_date')->limit(50)
-                    ->select([
-                        'quotations.quotation_no', 'quotations.doc_date as raw_date',
-                        'quotations.customer_company', 'quotation_items.description as product',
-                        'quotation_items.unit', 'quotation_items.unit_price as price_per_unit',
-                    ])->get();
-            } catch (\Exception $e) { /* skip */ }
-
-            // ── merge + unique product names ──
             $allProducts = $hqRows->pluck('product')
                 ->merge($qiRows->pluck('product'))
                 ->filter()->unique()->values();
 
-            // merge DB search results
             $dbHits = $dbSearchResults[$idx] ?? [];
             foreach ($dbHits as $hit) {
                 $dbName = $hit['product_name'] ?? '';
@@ -854,13 +785,12 @@ public function batchQuotationHistory(Request $request)
             $ceItems[]  = ['query' => $keyword, 'candidates' => $allProducts->values()->toArray()];
             $rowsMeta[] = ['hq' => $hqRows, 'qi' => $qiRows];
         }
+
         DB::disconnect('pgsql');
         DB::disconnect();
 
-        // ── 2) CE rerank batch ──
         $ceResults = $this->callCeRerank($ceItems, 5);
 
-        // ── 3) Map CE results → full quotation data ──
         $results = [];
         foreach ($items as $i => $itemName) {
             $ranked = $ceResults[$i] ?? [];
@@ -927,17 +857,26 @@ public function batchQuotationHistory(Request $request)
         }
 
         return response()->json($results);
+
+    } catch (\Throwable $e) {
+        // ★ กัน exception (DB/curl) ทำให้ chunk นี้กลาย 500 แล้วหายไปเงียบๆ — คืน matches ว่างแทน
+        Log::error('[batchQuotationHistory] error: ' . $e->getMessage());
+        return response()->json(array_fill(0, count($items), ['matches' => []]));
     }
-    // ── searchQuotationHistory (single item) ──
-    private function searchQuotationHistory(string $keyword, int $limit = 10): array
-    {
-        $keyword = trim($keyword);
-        if (mb_strlen($keyword) < 2) return [];
+}
+private function searchQuotationHistory(string $keyword, int $limit = 10): array
+{
+    $keyword = trim($keyword);
+    if (mb_strlen($keyword) < 2) return [];
 
-        $terms = $aiTermsPerItem[$i];
-        if (empty($terms)) return [];
+    // ★ ใช้ AI แทน regex — เรียกทีละตัว เพราะฟังก์ชันนี้รับ keyword เดียว
+    $terms = $this->callAiExtractKeywords([$keyword])[0] ?? [];
+    if (empty($terms)) {
+        $terms = $this->extractSearchTerms($keyword);
+    }
+    if (empty($terms)) return [];
 
-        $searchTerms = array_slice($terms, 0, 3);
+    $searchTerms = array_slice($terms, 0, 3);
         $searchTerms = array_filter($searchTerms, fn($t) => mb_check_encoding($t, 'UTF-8') && preg_match('//u', $t));
         if (empty($searchTerms)) return [];
 
