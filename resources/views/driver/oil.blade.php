@@ -16,161 +16,166 @@
 
 <style>
 /* ═══════════════════════════════════════════════════════════════
-  DESIGN SYSTEM — ฟ้า (หลัก) + ส้ม (รอง)
+  DESIGN SYSTEM — TESLA (เหลี่ยมทั้งระบบ, น้ำเงิน #3E6AE1 + ขาว)
 ═══════════════════════════════════════════════════════════════ */
-*,*::before,*::after{box-sizing:border-box;-webkit-font-smoothing:antialiased;-moz-osx-font-smoothing:grayscale}
+*,*::before,*::after{box-sizing:border-box;-webkit-font-smoothing:antialiased;-moz-osx-font-smoothing:grayscale;border-radius:0 !important}
 html,body{margin:0;padding:0;overflow-x:hidden;max-width:100vw}
 
 :root{
-  --bg:#fafafa; --bg-card:#ffffff; --bg-subtle:#f4f4f5; --bg-subtle2:#fafafa;
-  --separator:rgba(0,0,0,.06); --separator-strong:rgba(0,0,0,.10);
-  --text:#18181b; --text2:#3f3f46; --text3:#71717a; --text4:#a1a1aa; --text5:#d4d4d8;
-  --blue:#f59e0b; --blue-hover:#d97706; --blue-light:#fef3c7;
-  --green:#3b82f6; --green-dark:#2563eb; --green-light:#dbeafe;
-  --orange:#f59e0b; --red:#ef4444; --red-light:#fee2e2;
-  --radius:12px; --radius-lg:18px; --radius-xl:22px;
-  --shadow-xs:0 1px 2px rgba(0,0,0,.04);
-  --shadow-sm:0 1px 3px rgba(0,0,0,.05),0 1px 2px rgba(0,0,0,.04);
-  --shadow:0 2px 8px rgba(0,0,0,.04),0 1px 3px rgba(0,0,0,.03);
-  --shadow-xl:0 20px 50px rgba(0,0,0,.10),0 4px 12px rgba(0,0,0,.05);
-  --font-thai:'IBM Plex Sans Thai','Inter',-apple-system,sans-serif;
+  --bg:#fafafa; --bg-card:#ffffff; --bg-subtle:#f5f6f8; --bg-subtle2:#fafbfc;
+  --separator:#ececec; --separator-strong:#dcdcdc;
+  --text:#171a20; --text2:#5c5e62; --text3:#9aa0a6; --text4:#c4c4c4; --text5:#e2e2e2;
+  --blue:#3E6AE1; --blue-hover:#2f56c4; --blue-light:rgba(62,106,225,.08);
+  --green:#3E6AE1; --green-dark:#2f56c4; --green-light:rgba(62,106,225,.08);
+  --orange:#b45309; --red:#e82127; --red-light:#fdecec;
+  --radius:0; --radius-lg:0; --radius-xl:0;
+  --shadow-xs:none;
+  --shadow-sm:0 1px 2px rgba(0,0,0,.03);
+  --shadow:0 1px 2px rgba(0,0,0,.03);
+  --shadow-xl:0 16px 48px rgba(0,0,0,.10);
+  --font-thai:'Inter','IBM Plex Sans Thai','Segoe UI','Helvetica Neue',Arial,sans-serif;
   --font-mono:ui-monospace,'SF Mono',Menlo,monospace;
   --ease:cubic-bezier(.4,0,.2,1); --ease-out:cubic-bezier(0,0,.2,1);
 }
 
-body{font-family:var(--font-thai);background:var(--bg);color:var(--text);min-height:100vh;font-size:14px;line-height:1.5;letter-spacing:-0.01em;}
+body{font-family:var(--font-thai);background:var(--bg);color:var(--text);min-height:100vh;font-size:14px;line-height:1.5;letter-spacing:0;font-weight:400;}
 
 /* ── Top nav ── */
-.topnav{position:sticky;top:0;z-index:50;background:rgba(245,245,247,.78);backdrop-filter:saturate(180%) blur(20px);-webkit-backdrop-filter:saturate(180%) blur(20px);border-bottom:0.5px solid var(--separator);}
+.topnav{position:sticky;top:0;z-index:50;background:#ffffff;border-bottom:1px solid var(--separator);}
 .topnav-main{display:flex;align-items:center;gap:24px;padding:0 28px;height:52px;max-width:1800px;margin:0 auto;}
 .topnav-brand{display:flex;align-items:center;gap:10px;flex-shrink:0}
-.topnav-brand .logo{width:28px;height:28px;display:flex;align-items:center;justify-content:center;font-size:16px;background:linear-gradient(135deg,#3b82f6,#2563eb);color:#fff;border-radius:8px;box-shadow:0 1px 3px rgba(59,130,246,.3);}
-.topnav-brand .title-text{font-size:14px;font-weight:600;letter-spacing:-0.02em;color:var(--text);}
+.topnav-brand .logo{width:28px;height:28px;display:flex;align-items:center;justify-content:center;font-size:16px;background:var(--blue);color:#fff;flex-shrink:0;}
+.topnav-brand .title-text{font-size:14px;font-weight:600;letter-spacing:-0.01em;color:var(--text);}
 .topnav-menu{display:flex;align-items:center;gap:2px;flex:1}
-.topnav-menu .nav-item{display:inline-flex;align-items:center;gap:6px;padding:6px 12px;border-radius:7px;background:transparent;border:none;color:var(--text2);font-family:inherit;font-size:14px;font-weight:500;cursor:pointer;text-decoration:none;white-space:nowrap;transition:all .15s var(--ease);}
-.topnav-menu .nav-item:hover{background:rgba(0,0,0,.04);color:var(--text)}
-.topnav-menu .nav-item.active{background:rgba(0,0,0,.06);color:var(--text);font-weight:600;}
+.topnav-menu .nav-item{display:inline-flex;align-items:center;gap:6px;padding:6px 12px;background:transparent;border:none;border-bottom:2px solid transparent;color:var(--text2);font-family:inherit;font-size:14px;font-weight:500;cursor:pointer;text-decoration:none;white-space:nowrap;transition:all .15s var(--ease);}
+.topnav-menu .nav-item:hover{background:var(--bg-subtle);color:var(--text)}
+.topnav-menu .nav-item.active{background:var(--blue-light);color:var(--blue);font-weight:600;border-bottom-color:var(--blue);}
 .topnav-menu .nav-item .ic{display:inline-flex;align-items:center;justify-content:center;width:18px;height:18px;opacity:.85;flex-shrink:0;}
 .topnav-menu .nav-item .ic svg{display:block}
 .topnav-right{display:flex;align-items:center;gap:10px;flex-shrink:0}
-.topnav-user{display:inline-flex;align-items:center;gap:7px;padding:4px 11px 4px 4px;background:rgba(0,0,0,.04);border:0.5px solid var(--separator);border-radius:100px;color:var(--text);font-size:14px;font-weight:600;letter-spacing:-0.01em;max-width:180px;}
-.topnav-user-avatar{width:22px;height:22px;border-radius:50%;background:linear-gradient(135deg,#3b82f6,#2563eb);color:#fff;display:inline-flex;align-items:center;justify-content:center;font-size:14px;font-weight:700;flex-shrink:0;text-transform:uppercase;}
+.topnav-user{display:inline-flex;align-items:center;gap:7px;padding:4px 11px 4px 4px;background:var(--bg-subtle);border:1px solid var(--separator);color:var(--text);font-size:14px;font-weight:600;letter-spacing:0;max-width:180px;}
+.topnav-user-avatar{width:22px;height:22px;background:var(--blue);color:#fff;display:inline-flex;align-items:center;justify-content:center;font-size:14px;font-weight:700;flex-shrink:0;text-transform:uppercase;}
 .topnav-user-name{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0;}
 .topnav-time{font-size:14px;color:var(--text3);font-family:var(--font-mono);font-weight:500;display:flex;align-items:center;gap:5px;}
-.topnav-time .pulse{width:6px;height:6px;border-radius:50%;background:var(--green);box-shadow:0 0 0 0 rgba(59,130,246,.4);animation:pulse 2s infinite;}
-@keyframes pulse{0%{box-shadow:0 0 0 0 rgba(59,130,246,.4)}70%{box-shadow:0 0 0 7px rgba(59,130,246,0)}100%{box-shadow:0 0 0 0 rgba(59,130,246,0)}}
-.topnav-toggle{display:none;background:transparent;border:none;width:32px;height:32px;font-size:17px;cursor:pointer;color:var(--text);border-radius:7px;}
-.topnav-toggle:hover{background:rgba(0,0,0,.04)}
+.topnav-time .pulse{width:6px;height:6px;background:var(--blue);box-shadow:0 0 0 0 rgba(62,106,225,.4);animation:pulse 2s infinite;}
+@keyframes pulse{0%{box-shadow:0 0 0 0 rgba(62,106,225,.4)}70%{box-shadow:0 0 0 7px rgba(62,106,225,0)}100%{box-shadow:0 0 0 0 rgba(62,106,225,0)}}
+.topnav-toggle{display:none;background:transparent;border:none;width:32px;height:32px;font-size:17px;cursor:pointer;color:var(--text);}
+.topnav-toggle:hover{background:var(--bg-subtle)}
 .topnav-toggle svg{display:block}
-.topnav-filters{display:flex;align-items:center;gap:16px;padding:0 28px;height:44px;max-width:1800px;margin:0 auto;border-top:0.5px solid var(--separator);overflow-x:auto;scrollbar-width:none;}
+.topnav-filters{display:flex;align-items:center;gap:16px;padding:0 28px;height:44px;max-width:1800px;margin:0 auto;border-top:1px solid var(--separator);overflow-x:auto;scrollbar-width:none;}
 .topnav-filters::-webkit-scrollbar{display:none}
 .filter-group{display:flex;align-items:center;gap:8px;flex-shrink:0}
 .filter-group-label{font-size:14px;font-weight:500;color:var(--text3);white-space:nowrap;}
-.segmented{display:inline-flex;background:rgba(120,120,128,.12);border-radius:7px;padding:2px;}
-.segmented .seg-btn{padding:4px 12px;border-radius:5px;background:transparent;border:none;color:var(--text2);font-family:inherit;font-size:14px;font-weight:500;cursor:pointer;white-space:nowrap;transition:all .15s var(--ease);}
+.segmented{display:inline-flex;background:var(--bg-subtle);border:1px solid var(--separator);padding:2px;}
+.segmented .seg-btn{padding:4px 12px;background:transparent;border:none;color:var(--text2);font-family:inherit;font-size:14px;font-weight:500;cursor:pointer;white-space:nowrap;transition:all .15s var(--ease);}
 .segmented .seg-btn:hover{color:var(--text)}
-.segmented .seg-btn.active{background:#fff;color:var(--text);font-weight:600;box-shadow:0 1px 3px rgba(0,0,0,.1),0 1px 1px rgba(0,0,0,.05);}
-.pill-select,.pill-date{padding:5px 12px;border:0.5px solid var(--separator-strong);border-radius:7px;font-family:inherit;font-size:14px;font-weight:500;background:#fff;color:var(--text);min-width:130px;cursor:pointer;transition:all .15s var(--ease);outline:none;}
-.pill-select:hover,.pill-date:hover{border-color:rgba(0,0,0,.2)}
-.pill-select:focus,.pill-date:focus{border-color:var(--green);box-shadow:0 0 0 3px rgba(59,130,246,.2)}
-.date-trigger-pill{display:inline-flex;align-items:center;gap:6px;padding:5px 10px;border:0.5px solid var(--separator-strong);border-radius:7px;background:#fff;color:var(--text);font-family:inherit;font-size:14px;font-weight:500;cursor:pointer;min-width:200px;transition:all .15s var(--ease);}
-.date-trigger-pill:hover{border-color:rgba(0,0,0,.2)}
-.date-trigger-pill.active{border-color:var(--green);box-shadow:0 0 0 3px rgba(59,130,246,.2)}
+.segmented .seg-btn.active{background:var(--blue);color:#fff;font-weight:600;}
+.pill-select,.pill-date{padding:5px 12px;border:1px solid var(--separator-strong);background:#fff;font-family:inherit;font-size:14px;font-weight:500;color:var(--text);min-width:130px;cursor:pointer;transition:all .15s var(--ease);outline:none;}
+.pill-select:hover,.pill-date:hover{border-color:var(--blue)}
+.pill-select:focus,.pill-date:focus{border-color:var(--blue);box-shadow:0 0 0 2px rgba(62,106,225,.15)}
+.date-trigger-pill{display:inline-flex;align-items:center;gap:6px;padding:5px 10px;border:1px solid var(--separator-strong);background:#fff;color:var(--text);font-family:inherit;font-size:14px;font-weight:500;cursor:pointer;min-width:200px;transition:all .15s var(--ease);}
+.date-trigger-pill:hover{border-color:var(--blue)}
+.date-trigger-pill.active{border-color:var(--blue);box-shadow:0 0 0 2px rgba(62,106,225,.15)}
 .date-trigger-pill .arrow{margin-left:auto;font-size:14px;color:var(--text4)}
 
 /* ── Entry card ── */
 .entry-layout{display:grid;grid-template-columns:minmax(0,70fr) minmax(0,30fr);gap:18px;margin-bottom:24px;align-items:start;}
-.entry-card{background:var(--bg-card);border-radius:var(--radius-xl);box-shadow:var(--shadow);border:1px solid rgba(0,0,0,.04);overflow:hidden;min-width:0;}
-.entry-card-head{padding:14px 20px;border-bottom:1px solid var(--separator);background:linear-gradient(180deg,#fafbfc,#fff);}
+.entry-card{background:var(--bg-card);box-shadow:var(--shadow);border:1px solid var(--separator);overflow:hidden;min-width:0;}
+.entry-card-head{padding:14px 20px;border-bottom:1px solid var(--separator);background:#fff;}
 .entry-card-head-left{display:flex;align-items:center;gap:14px;flex-wrap:wrap;}
-.entry-icon{width:38px;height:38px;display:flex;align-items:center;justify-content:center;background:linear-gradient(135deg,#3b82f6,#2563eb);color:#fff;border-radius:10px;font-size:19px;box-shadow:0 2px 8px rgba(59,130,246,.35),inset 0 1px 0 rgba(255,255,255,.2);flex-shrink:0;}
+.entry-icon{width:38px;height:38px;display:flex;align-items:center;justify-content:center;background:var(--blue);color:#fff;font-size:19px;flex-shrink:0;}
 .entry-titlewrap{display:flex;flex-direction:column;line-height:1.25;flex-shrink:0}
-.entry-title{font-size:16px;font-weight:600;color:var(--text);letter-spacing:-0.02em;}
+.entry-title{font-size:16px;font-weight:600;color:var(--text);letter-spacing:0;}
 .entry-sub{font-size:14px;font-weight:400;color:var(--text3);margin-top:2px;}
-.entry-oil-mini{display:inline-flex;align-items:center;gap:8px;padding:7px 12px;background:var(--green-light);border:1px solid #dbeafe;border-radius:100px;color:var(--green-dark);}
+.entry-oil-mini{display:inline-flex;align-items:center;gap:8px;padding:7px 12px;background:var(--blue-light);border:1px solid var(--blue-light);color:var(--blue);}
 .entry-oil-label{font-size:14px;font-weight:600}
 .entry-oil-num{font-family:var(--font-mono);font-size:15px;font-weight:700;color:var(--text);}
-.entry-oil-refresh{width:22px;height:22px;border-radius:50%;background:rgba(255,255,255,.7);border:none;cursor:pointer;font-size:14px;color:var(--green-dark);display:inline-flex;align-items:center;justify-content:center;transition:transform .3s var(--ease);}
+.entry-oil-refresh{width:22px;height:22px;background:rgba(255,255,255,.7);border:none;cursor:pointer;font-size:14px;color:var(--blue);display:inline-flex;align-items:center;justify-content:center;transition:transform .3s var(--ease);}
 .entry-oil-refresh:hover{transform:rotate(180deg)}
-.entry-export-btn{display:inline-flex;align-items:center;gap:6px;padding:7px 13px;background:var(--blue);color:#fff;border:none;border-radius:9px;font-family:inherit;font-size:14px;font-weight:600;cursor:pointer;letter-spacing:-0.01em;transition:all .15s var(--ease);white-space:nowrap;box-shadow:0 1px 3px rgba(245,158,11,.3);}
-.entry-export-btn:hover{background:var(--blue-hover);transform:translateY(-1px);box-shadow:0 4px 10px rgba(245,158,11,.35);}
-.entry-export-btn:active{transform:translateY(0)}
-.entry-export-btn:disabled{background:var(--text4);cursor:wait;transform:none;box-shadow:none;}
+.entry-export-btn{display:inline-flex;align-items:center;gap:6px;padding:7px 13px;background:var(--blue);color:#fff;border:1px solid var(--blue);font-family:inherit;font-size:14px;font-weight:600;cursor:pointer;letter-spacing:0;transition:all .15s var(--ease);white-space:nowrap;}
+.entry-export-btn:hover{background:var(--blue-hover);border-color:var(--blue-hover);}
+.entry-export-btn:active{transform:none}
+.entry-export-btn:disabled{background:var(--text4);border-color:var(--text4);cursor:wait;}
 .entry-export-btn svg{flex-shrink:0}
-.entry-oil-tabs{display:flex;align-items:center;gap:4px;flex-wrap:wrap;padding:10px 22px;background:var(--bg-subtle2);border-bottom:1px solid var(--separator);}
-.entry-oil-tab{padding:4px 11px;border-radius:100px;background:#fff;border:1px solid var(--separator-strong);color:var(--text2);font-family:inherit;font-size:14px;font-weight:500;cursor:pointer;transition:all .15s var(--ease);}
-.entry-oil-tab:hover{background:#fafafa;border-color:rgba(0,0,0,.2)}
-.entry-oil-tab.active{background:var(--green);color:#fff;border-color:var(--green);font-weight:600}
+.entry-oil-tabs{display:flex;align-items:center;gap:4px;flex-wrap:wrap;padding:10px 22px;background:var(--bg-subtle);border-bottom:1px solid var(--separator);}
+.entry-oil-tab{padding:4px 11px;background:#fff;border:1px solid var(--separator-strong);color:var(--text2);font-family:inherit;font-size:14px;font-weight:500;cursor:pointer;transition:all .15s var(--ease);}
+.entry-oil-tab:hover{background:var(--bg-subtle2);border-color:var(--blue)}
+.entry-oil-tab.active{background:var(--blue);color:#fff;border-color:var(--blue);font-weight:600}
 .entry-oil-status{font-size:14px;color:var(--text3);font-weight:500;margin-left:6px;}
-.entry-oil-live{margin-left:auto;display:inline-flex;align-items:center;gap:5px;padding:3px 9px;background:rgba(59,130,246,.12);color:var(--green-dark);border-radius:100px;font-size:14px;font-weight:600;}
-.entry-oil-live .dot{width:5px;height:5px;border-radius:50%;background:var(--green)}
-.entry-oil-live.loading{background:rgba(245,158,11,.12);color:var(--orange)}
+.entry-oil-live{margin-left:auto;display:inline-flex;align-items:center;gap:5px;padding:3px 9px;background:var(--blue-light);color:var(--blue);font-size:14px;font-weight:600;}
+.entry-oil-live .dot{width:5px;height:5px;background:var(--blue)}
+.entry-oil-live.loading{background:#fdf4e7;color:var(--orange)}
 .entry-oil-live.loading .dot{background:var(--orange);animation:pulse 1s infinite}
 .entry-loading-row{display:flex;align-items:center;justify-content:center;gap:8px;padding:30px;color:var(--orange);font-size:14px;font-weight:500;}
-.entry-loading-row .spinner{width:14px;height:14px;border:2px solid var(--orange);border-top-color:transparent;border-radius:50%;animation:spin 1s linear infinite;}
+.entry-loading-row .spinner{width:14px;height:14px;border:2px solid var(--orange);border-top-color:transparent;animation:spin 1s linear infinite;}
 @keyframes spin{to{transform:rotate(360deg)}}
 .entry-rows-wrap{overflow-x:hidden;}
 .entry-rows-header,.entry-row{display:grid;grid-template-columns:minmax(100px,0.8fr) minmax(95px,0.9fr) minmax(115px,1fr) minmax(80px,0.85fr) minmax(72px,0.7fr) minmax(78px,0.75fr) minmax(72px,auto);gap:8px;align-items:center;padding:10px 14px;min-width:0;}
-.entry-rows-header{background:var(--bg-subtle2);border-bottom:1px solid var(--separator);font-size:14px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:0.4px;}
+.entry-rows-header{background:var(--bg-subtle);border-bottom:1px solid var(--separator);font-size:14px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:0.4px;}
 .entry-rows-header > div:last-child{text-align:center;min-width:80px}
 .entry-row{border-bottom:1px solid var(--separator);transition:background .12s;position:relative;cursor:pointer;}
 .entry-row:hover{background:var(--bg-subtle2)}
-.entry-row.focused{background:linear-gradient(90deg,rgba(59,130,246,.18),rgba(59,130,246,.06) 60%);box-shadow:inset 0 0 0 1px rgba(59,130,246,.25);}
-.entry-row.focused::before{content:'';position:absolute;left:0;top:0;bottom:0;width:4px;background:var(--green);}
+.entry-row.focused{background:var(--blue-light);box-shadow:inset 0 0 0 1px var(--blue);}
+.entry-row.focused::before{content:'';position:absolute;left:0;top:0;bottom:0;width:4px;background:var(--blue);}
 .entry-row.saving{opacity:.6;pointer-events:none}
 .er-driver{display:flex;align-items:center;gap:10px;min-width:0;}
-.er-driver-avatar{width:32px;height:32px;border-radius:50%;background:linear-gradient(135deg,var(--blue-light),var(--green-light));color:var(--green-dark);display:inline-flex;align-items:center;justify-content:center;font-size:14px;font-weight:700;flex-shrink:0;}
+.er-driver-avatar{width:32px;height:32px;background:var(--blue-light);color:var(--blue);display:inline-flex;align-items:center;justify-content:center;font-size:14px;font-weight:700;flex-shrink:0;}
 .er-driver-info{min-width:0;flex:1}
-.er-driver-name{font-size:14px;font-weight:600;color:var(--text);letter-spacing:-0.01em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.er-driver-name{font-size:14px;font-weight:600;color:var(--text);letter-spacing:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
 .er-driver-jobs{font-size:14px;color:var(--text3);margin-top:1px;}
-.er-driver-jobs .er-ok{color:#059669;font-weight:600}
+.er-driver-jobs .er-ok{color:#1a7f37;font-weight:600}
 .er-driver-jobs .er-fail{color:var(--red);font-weight:600}
-.er-plate-select{width:100%;padding:7px 11px;border:1px solid var(--separator-strong);border-radius:8px;font-family:inherit;font-size:14px;font-weight:500;background:#fff;color:var(--text);outline:none;appearance:none;background-image:url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6' fill='none'%3E%3Cpath d='M1 1L5 5L9 1' stroke='%23a1a1aa' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 9px center;padding-right:26px;transition:all .15s var(--ease);}
-.er-plate-select:hover{border-color:rgba(0,0,0,.2)}
-.er-plate-select:focus{border-color:var(--green);box-shadow:0 0 0 3px rgba(59,130,246,.15)}
+.er-plate-select{width:100%;padding:7px 11px;border:1px solid var(--separator-strong);font-family:inherit;font-size:14px;font-weight:500;background:#fff;color:var(--text);outline:none;appearance:none;background-image:url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6' fill='none'%3E%3Cpath d='M1 1L5 5L9 1' stroke='%239aa0a6' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 9px center;padding-right:26px;transition:all .15s var(--ease);}
+.er-plate-select:hover{border-color:var(--blue)}
+.er-plate-select:focus{border-color:var(--blue);box-shadow:0 0 0 2px rgba(62,106,225,.15)}
 .er-time-pair{display:grid;grid-template-columns:1fr;gap:4px;align-items:center;}
 .er-time-arrow{display:none;}
-.er-dt-input{padding:7px 8px;border:1px solid var(--separator-strong);border-radius:8px;font-family:var(--font-mono);font-size:13px;font-weight:500;background:#fff;color:var(--text);cursor:pointer;width:100%;min-width:0;transition:all .15s var(--ease);}
-.er-dt-input:focus{outline:none;border-color:var(--green);box-shadow:0 0 0 3px rgba(59,130,246,.15);}
-.er-num-input{width:100%;padding:7px 10px;border:1px solid var(--separator-strong);border-radius:8px;font-family:var(--font-mono);font-size:14px;font-weight:600;background:#fff;color:var(--text);outline:none;transition:all .15s var(--ease);text-align:right;}
+.er-dt-input{padding:7px 8px;border:1px solid var(--separator-strong);font-family:var(--font-mono);font-size:13px;font-weight:500;background:#fff;color:var(--text);cursor:pointer;width:100%;min-width:0;transition:all .15s var(--ease);}
+.er-dt-input:focus{outline:none;border-color:var(--blue);box-shadow:0 0 0 2px rgba(62,106,225,.15);}
+.er-num-input{width:100%;padding:7px 10px;border:1px solid var(--separator-strong);font-family:var(--font-mono);font-size:14px;font-weight:600;background:#fff;color:var(--text);outline:none;transition:all .15s var(--ease);text-align:right;}
 .er-num-input::placeholder{color:var(--text4);font-weight:400}
-.er-num-input:hover{border-color:rgba(0,0,0,.2)}
-.er-num-input:focus{border-color:var(--green);box-shadow:0 0 0 3px rgba(59,130,246,.15)}
+.er-num-input:hover{border-color:var(--blue)}
+.er-num-input:focus{border-color:var(--blue);box-shadow:0 0 0 2px rgba(62,106,225,.15)}
 .er-num-input:disabled{background:var(--bg-subtle);color:var(--text4);cursor:not-allowed;}
 .er-nofuel-check{display:flex;align-items:center;gap:5px;font-size:13px;color:var(--text3);margin-bottom:5px;cursor:pointer;user-select:none;}
-.er-nofuel-check input{cursor:pointer;accent-color:var(--green);}
+.er-nofuel-check input{cursor:pointer;accent-color:var(--blue);}
 .er-summary{display:flex;flex-direction:column;gap:3px;font-size:14px;}
 .er-summary-row{display:flex;gap:6px;align-items:baseline;}
 .er-summary-label{color:var(--text4);font-weight:500;min-width:32px}
 .er-summary-val{font-family:var(--font-mono);font-weight:600;color:var(--text2)}
-.er-summary-val.green{color:var(--green-dark)}
+.er-summary-val.green{color:#1a7f37}
 .er-summary-val.red{color:var(--red)}
 .er-summary-val.empty{color:var(--text5);font-weight:400}
-.er-save-btn{padding:8px 16px;background:var(--green);color:#fff;border:none;border-radius:100px;font-family:inherit;font-size:14px;font-weight:600;cursor:pointer;letter-spacing:-0.01em;white-space:nowrap;transition:all .15s var(--ease);display:inline-flex;align-items:center;gap:5px;}
-.er-save-btn:hover{background:var(--green-dark);transform:scale(1.04)}
-.er-save-btn:active{transform:scale(.96)}
-.er-save-btn:disabled{background:var(--text5);cursor:not-allowed;transform:none;}
+.er-save-btn{padding:8px 16px;background:var(--blue);color:#fff;border:1px solid var(--blue);font-family:inherit;font-size:14px;font-weight:600;cursor:pointer;letter-spacing:0;white-space:nowrap;transition:all .15s var(--ease);display:inline-flex;align-items:center;gap:5px;}
+.er-save-btn:hover{background:var(--blue-hover);border-color:var(--blue-hover);}
+.er-save-btn:active{opacity:.9}
+.er-save-btn:disabled{background:var(--text5);border-color:var(--text5);cursor:not-allowed;}
 .er-save-btn .ic{font-size:14px}
+.er-row-status{font-size:13px;font-weight:600;white-space:nowrap;}
+.er-row-status.muted{color:var(--text4);font-weight:400;}
+.er-row-status.ready{color:#1a7f37;}
+.er-row-status.warn{color:var(--red);cursor:help;}
+.entry-saveall-hint{font-size:13px;color:var(--text3);white-space:nowrap;}
 .entry-empty{text-align:center;padding:40px 20px;color:var(--text4);font-size:14px;}
 
 /* ── Save toast ── */
-.save-toast{position:fixed;top:78px;right:28px;z-index:200;background:#fff;border-radius:14px;box-shadow:0 12px 32px rgba(0,0,0,.12),0 4px 12px rgba(0,0,0,.06);border:1px solid var(--separator);padding:12px 16px;display:flex;align-items:center;gap:12px;min-width:240px;border-left:3px solid var(--green);animation:toastSlideIn .25s var(--ease) forwards;}
+.save-toast{position:fixed;top:78px;right:28px;z-index:200;background:#fff;box-shadow:var(--shadow-xl);border:1px solid var(--separator);padding:12px 16px;display:flex;align-items:center;gap:12px;min-width:240px;border-left:3px solid var(--blue);animation:toastSlideIn .25s var(--ease) forwards;}
 .save-toast.hiding{animation:toastSlideOut .25s var(--ease) forwards}
-@keyframes toastSlideIn{from{opacity:0;transform:translateY(-10px) scale(.95)}to{opacity:1;transform:translateY(0) scale(1)}}
-@keyframes toastSlideOut{to{opacity:0;transform:translateY(-10px) scale(.95)}}
-.save-toast-icon{width:28px;height:28px;display:flex;align-items:center;justify-content:center;background:var(--green);color:#fff;border-radius:50%;font-size:14px;font-weight:700;flex-shrink:0;}
+@keyframes toastSlideIn{from{opacity:0;transform:translateY(-10px)}to{opacity:1;transform:translateY(0)}}
+@keyframes toastSlideOut{to{opacity:0;transform:translateY(-10px)}}
+.save-toast-icon{width:28px;height:28px;display:flex;align-items:center;justify-content:center;background:var(--blue);color:#fff;font-size:14px;font-weight:700;flex-shrink:0;}
 .save-toast-body{flex:1;min-width:0}
-.save-toast-title{font-size:14px;font-weight:600;color:var(--text);letter-spacing:-0.01em;}
+.save-toast-title{font-size:14px;font-weight:600;color:var(--text);letter-spacing:0;}
 .save-toast-msg{font-size:14px;color:var(--text3);margin-top:1px;}
 
 /* ── Jobs panel ── */
-.jobs-panel{background:var(--bg-card);border-radius:var(--radius-xl);box-shadow:var(--shadow);border:1px solid rgba(0,0,0,.04);overflow:hidden;display:flex;flex-direction:column;position:sticky;top:110px;max-height:calc(100vh - 130px);}
-.jobs-panel-head{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:12px 16px;border-bottom:1px solid var(--separator);background:linear-gradient(180deg,#fafbfc,#fff);flex-shrink:0;}
-.jobs-panel-title{font-size:14px;font-weight:600;color:var(--text);display:flex;align-items:center;gap:8px;letter-spacing:-0.01em;}
+.jobs-panel{background:var(--bg-card);box-shadow:var(--shadow);border:1px solid var(--separator);overflow:hidden;display:flex;flex-direction:column;position:sticky;top:110px;max-height:calc(100vh - 130px);}
+.jobs-panel-head{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:12px 16px;border-bottom:1px solid var(--separator);background:#fff;flex-shrink:0;}
+.jobs-panel-title{font-size:14px;font-weight:600;color:var(--text);display:flex;align-items:center;gap:8px;letter-spacing:0;}
 .jobs-panel-title .ico{font-size:15px}
 .jobs-panel-body{flex:1;min-height:0;overflow-y:auto;-webkit-overflow-scrolling:touch;}
 .jobs-panel-body::-webkit-scrollbar{width:8px}
-.jobs-panel-body::-webkit-scrollbar-thumb{background:rgba(0,0,0,.12);border-radius:100px;border:2px solid #fff;background-clip:padding-box;}
+.jobs-panel-body::-webkit-scrollbar-thumb{background:var(--separator-strong);border:2px solid #fff;background-clip:padding-box;}
 .dgj-row{padding:8px 12px;border-top:1px solid var(--separator);font-size:14px;}
 .dgj-row:first-child{border-top:none}
 .dgj-main{display:flex;flex-direction:column;gap:4px;}
@@ -181,83 +186,84 @@ body{font-family:var(--font-thai);background:var(--bg);color:var(--text);min-hei
 .dgj-meta-sep{color:var(--text5)}
 .dgj-meta-item.dgj-note{color:var(--red)}
 .dgj-meta-item.dgj-note .dgj-meta-label{color:var(--red)}
-.dgj-bill{font-family:var(--font-mono);font-size:14px;font-weight:600;color:var(--text2);padding:1px 6px;background:var(--bg-subtle);border-radius:5px;white-space:nowrap;user-select:text;}
+.dgj-bill{font-family:var(--font-mono);font-size:14px;font-weight:600;color:var(--text2);padding:1px 6px;background:var(--bg-subtle);white-space:nowrap;user-select:text;}
 .dgj-customer{color:var(--text2);font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0;}
-.dgj-status{display:inline-flex;align-items:center;padding:1px 8px;border-radius:100px;font-size:14px;font-weight:600;white-space:nowrap;}
-.dgj-status.ok{background:#d1fae5;color:#059669}
-.dgj-status.fail{background:var(--red-light);color:var(--red)}
+.dgj-status{display:inline-flex;align-items:center;padding:1px 8px;font-size:14px;font-weight:600;white-space:nowrap;border:1px solid transparent;}
+.dgj-status.ok{background:#eaf7ee;color:#1a7f37;border-color:#c8e9d1;}
+.dgj-status.fail{background:var(--red-light);color:var(--red);border-color:#f6c9cb;}
 .dgj-status.pending{background:var(--bg-subtle);color:var(--text3)}
-.jobs-summary-bar{display:flex;gap:6px;flex-wrap:wrap;padding:10px 12px;background:linear-gradient(180deg,#fafbfc,#fff);border-bottom:1px solid var(--separator);position:sticky;top:0;z-index:1;}
-.jsb-chip{display:inline-flex;align-items:center;gap:4px;padding:3px 9px;border-radius:100px;font-size:14px;font-weight:600;background:#fff;border:1px solid var(--separator);color:var(--text2);}
+.jobs-summary-bar{display:flex;gap:6px;flex-wrap:wrap;padding:10px 12px;background:#fff;border-bottom:1px solid var(--separator);position:sticky;top:0;z-index:1;}
+.jsb-chip{display:inline-flex;align-items:center;gap:4px;padding:3px 9px;font-size:14px;font-weight:600;background:#fff;border:1px solid var(--separator);color:var(--text2);}
 .jsb-chip strong{font-family:var(--font-mono);color:var(--text)}
-.jsb-chip.ok{background:#d1fae5;color:#059669;border-color:transparent}
-.jsb-chip.fail{background:var(--red-light);color:var(--red);border-color:transparent}
+.jsb-chip.ok{background:#eaf7ee;color:#1a7f37;border-color:#c8e9d1;}
+.jsb-chip.fail{background:var(--red-light);color:var(--red);border-color:#f6c9cb;}
 .job-loading{text-align:center;padding:22px;color:var(--text3);font-size:14px;}
-.job-date-chip{display:inline-block;padding:1px 8px;background:var(--blue);color:#fff;border-radius:100px;font-size:14px;font-weight:600;}
+.job-date-chip{display:inline-block;padding:1px 8px;background:var(--blue);color:#fff;font-size:14px;font-weight:600;}
 
 /* ── Dual grid / cards ── */
 .dual-grid{display:grid;grid-template-columns:1.6fr 1fr;gap:18px;margin-bottom:18px;align-items:stretch;}
 .dual-grid.single-col{grid-template-columns:1fr}
-.card{background:var(--bg-card);border-radius:var(--radius-xl);box-shadow:var(--shadow);border:1px solid rgba(0,0,0,.04);overflow:hidden;display:flex;flex-direction:column;min-height:540px;max-height:640px;}
-.card-head{display:flex;align-items:center;justify-content:space-between;padding:16px 22px;border-bottom:0.5px solid var(--separator);gap:12px;}
-.card-title{font-size:15px;font-weight:600;color:var(--text);letter-spacing:-0.02em;display:flex;align-items:center;gap:8px;}
-.card-count{display:inline-flex;align-items:center;justify-content:center;min-width:22px;height:20px;padding:0 7px;background:rgba(0,0,0,.06);color:var(--text2);border-radius:100px;font-size:14px;font-weight:600;font-family:var(--font-mono);}
+.card{background:var(--bg-card);box-shadow:var(--shadow);border:1px solid var(--separator);overflow:hidden;display:flex;flex-direction:column;min-height:540px;max-height:640px;}
+.card-head{display:flex;align-items:center;justify-content:space-between;padding:16px 22px;border-bottom:1px solid var(--separator);gap:12px;}
+.card-title{font-size:15px;font-weight:600;color:var(--text);letter-spacing:0;display:flex;align-items:center;gap:8px;}
+.card-count{display:inline-flex;align-items:center;justify-content:center;min-width:22px;height:20px;padding:0 7px;background:var(--bg-subtle);color:var(--text2);font-size:14px;font-weight:600;font-family:var(--font-mono);border:1px solid var(--separator);}
 .card-meta{font-size:14px;color:var(--text3);font-weight:400;margin-left:4px;}
 .sort-toggle{display:flex;align-items:center;gap:8px;flex-shrink:0;}
 .sort-label{font-size:14px;color:var(--text3);font-weight:500;white-space:nowrap;}
-.sort-segmented{display:inline-flex;background:rgba(0,0,0,.05);border-radius:7px;padding:2px;}
-.sort-btn{padding:4px 10px;border:none;background:transparent;color:var(--text3);font-family:inherit;font-size:14px;font-weight:500;cursor:pointer;border-radius:5px;white-space:nowrap;letter-spacing:-0.01em;transition:all .15s var(--ease);}
+.sort-segmented{display:inline-flex;background:var(--bg-subtle);border:1px solid var(--separator);padding:2px;}
+.sort-btn{padding:4px 10px;border:none;background:transparent;color:var(--text3);font-family:inherit;font-size:14px;font-weight:500;cursor:pointer;white-space:nowrap;letter-spacing:0;transition:all .15s var(--ease);}
 .sort-btn:hover{color:var(--text)}
-.sort-btn.active{background:#fff;color:var(--text);font-weight:600;box-shadow:0 1px 3px rgba(0,0,0,.08),0 1px 1px rgba(0,0,0,.04);}
+.sort-btn.active{background:var(--blue);color:#fff;font-weight:600;}
 .search-pill{position:relative;flex-shrink:0;}
 .search-pill .si{position:absolute;left:10px;top:50%;transform:translateY(-50%);color:var(--text4);pointer-events:none;display:inline-flex;align-items:center;width:13px;height:13px;}
 .search-pill .si svg{display:block}
-.search-pill input{padding:6px 11px 6px 28px;border:0.5px solid var(--separator-strong);border-radius:100px;font-family:inherit;font-size:14px;width:200px;background:var(--bg-subtle);color:var(--text);transition:all .15s var(--ease);}
-.search-pill input:focus{outline:none;background:#fff;border-color:var(--green);box-shadow:0 0 0 3px rgba(59,130,246,.15);}
+.search-pill input{padding:6px 11px 6px 28px;border:1px solid var(--separator-strong);font-family:inherit;font-size:14px;width:200px;background:var(--bg-subtle);color:var(--text);transition:all .15s var(--ease);}
+.search-pill input:focus{outline:none;background:#fff;border-color:var(--blue);box-shadow:0 0 0 2px rgba(62,106,225,.15);}
 .search-pill input::placeholder{color:var(--text4)}
 .fuel-table-scroll{overflow-x:hidden;overflow-y:auto;flex:1;min-height:0;-webkit-overflow-scrolling:touch;}
 .fuel-table-scroll::-webkit-scrollbar{width:8px;height:8px}
-.fuel-table-scroll::-webkit-scrollbar-thumb{background:rgba(0,0,0,.12);border-radius:100px;border:2px solid #fff;background-clip:padding-box;}
+.fuel-table-scroll::-webkit-scrollbar-thumb{background:var(--separator-strong);border:2px solid #fff;background-clip:padding-box;}
 .fuel-table{width:100%;min-width:0;border-collapse:collapse;font-size:14px;table-layout:auto;}
 .fuel-table thead{position:sticky;top:0;z-index:1;background:#fff;}
-.fuel-table thead th{padding:11px 10px;background:var(--bg-subtle2);font-size:14px;color:var(--text3);font-weight:600;text-align:left;border-bottom:0.5px solid var(--separator);letter-spacing:-0.01em;white-space:nowrap;text-overflow:ellipsis;overflow:hidden;}
+.fuel-table thead th{padding:11px 10px;background:var(--blue);font-size:14px;color:#fff;font-weight:500;text-align:left;border-bottom:1px solid var(--blue);letter-spacing:0;white-space:nowrap;text-overflow:ellipsis;overflow:hidden;}
 .fuel-table thead th:first-child{padding-left:16px}
 .fuel-table thead th:last-child{padding-right:16px}
 .fuel-table thead th.num{text-align:right}
-.fuel-table tbody td{padding:11px 10px;border-bottom:0.5px solid var(--separator);vertical-align:middle;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.fuel-table tbody td{padding:11px 10px;border-bottom:1px solid var(--separator);vertical-align:middle;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
 .fuel-table tbody td:first-child{padding-left:16px}
 .fuel-table tbody td:last-child{padding-right:16px}
 .fuel-table tbody tr{transition:background .12s}
-.fuel-table tbody tr:hover{background:var(--bg-subtle)}
+.fuel-table tbody tr:nth-child(even){background:var(--bg-subtle2)}
+.fuel-table tbody tr:hover{background:var(--blue-light)}
 .fuel-table tbody tr:last-child td{border-bottom:none}
 .fuel-table .num{text-align:right;font-variant-numeric:tabular-nums;font-family:var(--font-mono);font-size:14px;}
 .row-idx{color:var(--text4);font-weight:500;font-size:14px;font-family:var(--font-mono);}
 .driver-cell{min-width:0;overflow:hidden;}
-.driver-name{font-weight:600;font-size:14px;color:var(--text);letter-spacing:-0.01em;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.driver-name{font-weight:600;font-size:14px;color:var(--text);letter-spacing:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
 .driver-plate{font-size:14px;color:var(--text3);margin-top:1px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
-.time-pill{display:inline-block;padding:2px 8px;background:var(--bg-subtle);color:var(--text2);border-radius:100px;font-size:14px;font-weight:600;font-family:var(--font-mono);white-space:nowrap;}
-.hour-pill{display:inline-block;padding:2px 9px;background:rgba(245,158,11,.12);color:#b45309;border-radius:100px;font-size:14px;font-weight:600;font-family:var(--font-mono);white-space:nowrap;letter-spacing:-0.01em;}
+.time-pill{display:inline-block;padding:2px 8px;background:var(--bg-subtle);color:var(--text2);font-size:14px;font-weight:600;font-family:var(--font-mono);white-space:nowrap;border:1px solid var(--separator);}
+.hour-pill{display:inline-block;padding:2px 9px;background:#fdf4e7;color:var(--orange);font-size:14px;font-weight:600;font-family:var(--font-mono);white-space:nowrap;letter-spacing:0;}
 .carry-hint{font-size:14px;color:var(--orange);font-weight:500;margin-top:2px;white-space:nowrap;font-family:var(--font-mono);}
-.date-pill{display:inline-block;padding:2px 8px;background:rgba(59,130,246,.08);color:var(--green-dark);border-radius:100px;font-size:14px;font-weight:600;font-family:var(--font-mono);white-space:nowrap;letter-spacing:-0.01em;}
-.km-good{color:var(--green-dark);font-weight:600}
+.date-pill{display:inline-block;padding:2px 8px;background:var(--blue-light);color:var(--blue);font-size:14px;font-weight:600;font-family:var(--font-mono);white-space:nowrap;letter-spacing:0;}
+.km-good{color:#1a7f37;font-weight:600}
 .km-mid{color:var(--text);font-weight:500}
 .km-bad{color:var(--red);font-weight:700}
 .thb-km-val{color:var(--text2);font-weight:600;}
 .driver-list{padding:6px;overflow-y:auto;flex:1;min-height:0;-webkit-overflow-scrolling:touch;}
 .driver-list::-webkit-scrollbar{width:8px}
-.driver-list::-webkit-scrollbar-thumb{background:rgba(0,0,0,.12);border-radius:100px;border:2px solid #fff;background-clip:padding-box;}
-.driver-row{display:grid;grid-template-columns:auto 1fr auto;gap:12px;align-items:center;padding:10px 14px;border-radius:12px;transition:background .12s;}
+.driver-list::-webkit-scrollbar-thumb{background:var(--separator-strong);border:2px solid #fff;background-clip:padding-box;}
+.driver-row{display:grid;grid-template-columns:auto 1fr auto;gap:12px;align-items:center;padding:10px 14px;transition:background .12s;border-bottom:1px solid var(--separator);}
 .driver-row:hover{background:var(--bg-subtle)}
-.driver-rank{font-family:var(--font-mono);font-size:14px;font-weight:700;width:26px;height:26px;display:flex;align-items:center;justify-content:center;background:var(--bg-subtle);color:var(--text3);border-radius:8px;}
-.driver-row:nth-child(1) .driver-rank{background:linear-gradient(135deg,#fde047,#eab308);color:#713f12;box-shadow:0 2px 6px rgba(234,179,8,.3)}
-.driver-row:nth-child(2) .driver-rank{background:linear-gradient(135deg,#e5e7eb,#9ca3af);color:#1f2937;box-shadow:0 2px 6px rgba(156,163,175,.3)}
-.driver-row:nth-child(3) .driver-rank{background:linear-gradient(135deg,#fdba74,#c2410c);color:#fff;box-shadow:0 2px 6px rgba(194,65,12,.3)}
+.driver-rank{font-family:var(--font-mono);font-size:14px;font-weight:700;width:26px;height:26px;display:flex;align-items:center;justify-content:center;background:var(--bg-subtle);color:var(--text3);border:1px solid var(--separator);}
+.driver-row:nth-child(1) .driver-rank{background:var(--blue);color:#fff;border-color:var(--blue);}
+.driver-row:nth-child(2) .driver-rank{background:var(--text2);color:#fff;border-color:var(--text2);}
+.driver-row:nth-child(3) .driver-rank{background:var(--text3);color:#fff;border-color:var(--text3);}
 .driver-row .body{min-width:0}
-.driver-row .name{font-weight:600;font-size:14px;color:var(--text);letter-spacing:-0.01em;margin-bottom:2px;}
+.driver-row .name{font-weight:600;font-size:14px;color:var(--text);letter-spacing:0;margin-bottom:2px;}
 .driver-row .stats{display:flex;gap:10px;flex-wrap:wrap;font-size:14px;color:var(--text3);}
 .driver-row .right{text-align:right}
-.driver-row .price{font-size:14.5px;font-weight:700;color:var(--text);font-family:var(--font-mono);letter-spacing:-0.02em;}
-.driver-row .kml{font-size:14px;color:var(--green-dark);font-weight:600;margin-top:2px;font-family:var(--font-mono);}
+.driver-row .price{font-size:14.5px;font-weight:700;color:var(--text);font-family:var(--font-mono);letter-spacing:0;}
+.driver-row .kml{font-size:14px;color:var(--blue);font-weight:600;margin-top:2px;font-family:var(--font-mono);}
 .driver-row .kml.warn{color:var(--red)}
 .driver-row .thb-km{font-size:14px;color:var(--text3);font-weight:500;margin-top:1px;font-family:var(--font-mono);}
 .empty-state{text-align:center;padding:50px 20px;color:var(--text4);}
@@ -266,75 +272,72 @@ body{font-family:var(--font-thai);background:var(--bg);color:var(--text);min-hei
 
 /* ── Charts ── */
 .charts-grid{display:grid;grid-template-columns:1fr;gap:18px;}
-.chart-card{background:var(--bg-card);border-radius:var(--radius-xl);box-shadow:var(--shadow);border:1px solid rgba(0,0,0,.04);padding:clamp(12px,2vw,22px);min-width:0;overflow:hidden;}
+.chart-card{background:var(--bg-card);box-shadow:var(--shadow);border:1px solid var(--separator);padding:clamp(12px,2vw,22px);min-width:0;overflow:hidden;}
 .chart-head{display:flex;align-items:baseline;gap:10px;margin-bottom:14px;flex-wrap:wrap;}
-.vehicle-toggle{margin-left:auto;display:inline-flex;background:rgba(0,0,0,.05);border-radius:8px;padding:3px;flex-shrink:0;}
-.vt-btn{padding:5px 12px;border:none;background:transparent;color:var(--text2);font-family:inherit;font-size:14px;font-weight:500;cursor:pointer;border-radius:5px;white-space:nowrap;letter-spacing:-0.01em;transition:all .15s var(--ease);}
+.vehicle-toggle{margin-left:auto;display:inline-flex;background:var(--bg-subtle);border:1px solid var(--separator);padding:3px;flex-shrink:0;}
+.vt-btn{padding:5px 12px;border:none;background:transparent;color:var(--text2);font-family:inherit;font-size:14px;font-weight:500;cursor:pointer;white-space:nowrap;letter-spacing:0;transition:all .15s var(--ease);}
 .vt-btn:hover{color:var(--text)}
-.vt-btn.active{background:#fff;color:var(--text);font-weight:600;box-shadow:0 1px 3px rgba(0,0,0,.08),0 1px 1px rgba(0,0,0,.04);}
-.chart-title{font-size:clamp(14px,1.5vw,16px);font-weight:600;color:var(--text);letter-spacing:-0.02em;}
+.vt-btn.active{background:var(--blue);color:#fff;font-weight:600;}
+.chart-title{font-size:clamp(14px,1.5vw,16px);font-weight:600;color:var(--text);letter-spacing:0;}
 .chart-sub{font-size:14px;color:var(--text3);font-weight:400;}
 .chart-canvas{position:relative;width:100%;min-width:0;}
 .chart-inner{height:100%;width:100%;min-width:0;}
-.chart-legend{display:flex;gap:14px;flex-wrap:wrap;margin-top:12px;padding-top:12px;border-top:0.5px solid var(--separator);}
+.chart-legend{display:flex;gap:14px;flex-wrap:wrap;margin-top:12px;padding-top:12px;border-top:1px solid var(--separator);}
 .chart-legend-item{display:inline-flex;align-items:center;gap:6px;font-size:14px;color:var(--text2);font-weight:500;}
-.chart-legend-dot{width:9px;height:9px;border-radius:3px}
+.chart-legend-dot{width:9px;height:9px}
 
 /* ── Success toast ── */
-.toast{position:fixed;top:72px;right:28px;z-index:200;background:rgba(255,255,255,.95);backdrop-filter:blur(20px);border-radius:14px;box-shadow:var(--shadow-xl);padding:12px 16px;display:flex;align-items:center;gap:12px;min-width:280px;max-width:380px;border-left:3px solid var(--green);overflow:hidden;animation:toastSlideIn .35s var(--ease-out);cursor:pointer;}
+.toast{position:fixed;top:72px;right:28px;z-index:200;background:#fff;box-shadow:var(--shadow-xl);padding:12px 16px;display:flex;align-items:center;gap:12px;min-width:280px;max-width:380px;border-left:3px solid var(--blue);border:1px solid var(--separator);border-left-width:3px;overflow:hidden;animation:toastSlideIn .35s var(--ease-out);cursor:pointer;}
 .toast.hiding{animation:toastSlideOut .25s var(--ease) forwards}
 .toast-icon{font-size:22px}
 .toast-body{flex:1;min-width:0}
-.toast-title{font-size:14px;font-weight:600;color:var(--text);letter-spacing:-0.01em}
+.toast-title{font-size:14px;font-weight:600;color:var(--text);letter-spacing:0}
 .toast-msg{font-size:14px;color:var(--text3);margin-top:1px}
-.toast-progress{position:absolute;left:0;bottom:0;height:2px;background:var(--green);width:100%}
+.toast-progress{position:absolute;left:0;bottom:0;height:2px;background:var(--blue);width:100%}
 
 /* ── Date range picker ── */
-.drp-popup{position:fixed;z-index:100;width:340px;background:rgba(255,255,255,.98);backdrop-filter:blur(20px);border-radius:14px;border:0.5px solid var(--separator);box-shadow:var(--shadow-xl);padding:14px;display:none;}
+.drp-popup{position:fixed;z-index:100;width:340px;background:#fff;border:1px solid var(--separator);box-shadow:var(--shadow-xl);padding:14px;display:none;}
 .drp-popup.open{display:block}
 .drp-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px}
-.drp-nav-btn{width:28px;height:28px;border-radius:100px;border:none;background:rgba(0,0,0,.05);color:var(--text2);font-size:14px;cursor:pointer;transition:background .12s;}
-.drp-nav-btn:hover{background:rgba(0,0,0,.08);color:var(--blue)}
-.drp-title{font-size:14px;font-weight:600;color:var(--text);letter-spacing:-0.01em}
+.drp-nav-btn{width:28px;height:28px;border:1px solid var(--separator);background:var(--bg-subtle);color:var(--text2);font-size:14px;cursor:pointer;transition:background .12s;}
+.drp-nav-btn:hover{background:var(--separator);color:var(--blue)}
+.drp-title{font-size:14px;font-weight:600;color:var(--text);letter-spacing:0}
 .drp-weekdays{display:grid;grid-template-columns:repeat(7,1fr);gap:2px;margin-bottom:4px}
 .drp-weekday{text-align:center;padding:6px 0;font-size:14px;color:var(--text4);font-weight:600}
 .drp-days{display:grid;grid-template-columns:repeat(7,1fr);gap:2px}
-.drp-day{aspect-ratio:1;border:none;border-radius:100px;font-family:var(--font-mono);font-size:14px;background:transparent;color:var(--text);cursor:pointer;transition:background .12s;}
-.drp-day:hover{background:rgba(0,0,0,.05)}
+.drp-day{aspect-ratio:1;border:1px solid transparent;font-family:var(--font-mono);font-size:14px;background:transparent;color:var(--text);cursor:pointer;transition:background .12s;}
+.drp-day:hover{background:var(--bg-subtle)}
 .drp-day.muted{color:var(--text5)}
-.drp-day.today{font-weight:700;color:var(--blue)}
+.drp-day.today{font-weight:700;color:var(--blue);border-color:var(--blue)}
 .drp-day.selected,.drp-day.range-start,.drp-day.range-end{background:var(--blue);color:#fff;font-weight:600;}
-.drp-day.in-range{background:rgba(245,158,11,.15);color:var(--blue-hover);border-radius:0}
-.drp-day.range-start{border-top-right-radius:0;border-bottom-right-radius:0}
-.drp-day.range-end{border-top-left-radius:0;border-bottom-left-radius:0}
-.drp-hint{margin-top:10px;padding:7px;text-align:center;font-size:14px;color:var(--text3);background:var(--bg-subtle);border-radius:8px;}
+.drp-day.in-range{background:var(--blue-light);color:var(--blue-hover);}
+.drp-hint{margin-top:10px;padding:7px;text-align:center;font-size:14px;color:var(--text3);background:var(--bg-subtle);border:1px solid var(--separator);}
 .drp-footer{display:flex;justify-content:space-between;align-items:center;margin-top:10px;gap:8px}
 .drp-presets{display:flex;gap:4px}
-.drp-preset-btn{padding:5px 10px;border-radius:100px;border:0.5px solid var(--separator-strong);background:#fff;color:var(--text2);font-family:inherit;font-size:14px;cursor:pointer;transition:all .12s;}
+.drp-preset-btn{padding:5px 10px;border:1px solid var(--separator-strong);background:#fff;color:var(--text2);font-family:inherit;font-size:14px;cursor:pointer;transition:all .12s;}
 .drp-preset-btn:hover{background:var(--bg-subtle);border-color:var(--blue);color:var(--blue)}
-.drp-apply-btn{padding:6px 14px;border-radius:100px;border:none;background:var(--blue);color:#fff;font-family:inherit;font-size:14px;font-weight:600;cursor:pointer;}
+.drp-apply-btn{padding:6px 14px;border:1px solid var(--blue);background:var(--blue);color:#fff;font-family:inherit;font-size:14px;font-weight:600;cursor:pointer;}
 .drp-apply-btn:disabled{opacity:.4;cursor:not-allowed}
 
 /* ── PDF modal ── */
-.pdf-modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.45);display:none;align-items:center;justify-content:center;z-index:9999;backdrop-filter:blur(2px);}
+.pdf-modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.45);display:none;align-items:center;justify-content:center;z-index:9999;}
 .pdf-modal-overlay.open{display:flex}
-.pdf-modal{background:#fff;border-radius:18px;width:min(420px,92vw);box-shadow:0 20px 60px rgba(0,0,0,.3);overflow:hidden;animation:pdfPop .2s var(--ease);}
-@keyframes pdfPop{from{opacity:0;transform:scale(.95) translateY(10px)}to{opacity:1;transform:none}}
+.pdf-modal{background:#fff;width:min(420px,92vw);box-shadow:0 20px 60px rgba(0,0,0,.3);overflow:hidden;border:1px solid var(--separator);}
 .pdf-modal-head{display:flex;align-items:center;justify-content:space-between;padding:18px 20px;border-bottom:1px solid var(--separator);font-size:16px;font-weight:700;}
-.pdf-modal-x{border:none;background:var(--bg-subtle);width:30px;height:30px;border-radius:8px;cursor:pointer;font-size:14px;color:var(--text2);}
+.pdf-modal-x{border:1px solid var(--separator);background:var(--bg-subtle);width:30px;height:30px;cursor:pointer;font-size:14px;color:var(--text2);}
 .pdf-modal-x:hover{background:var(--separator)}
 .pdf-modal-body{padding:20px}
-.pdf-mode-tabs{display:flex;gap:6px;background:var(--bg-subtle);padding:4px;border-radius:10px;margin-bottom:18px;}
-.pdf-mode-btn{flex:1;padding:8px 4px;border:none;background:transparent;border-radius:7px;font-family:inherit;font-size:14px;font-weight:600;color:var(--text2);cursor:pointer;transition:all .15s var(--ease);}
-.pdf-mode-btn.active{background:#fff;color:var(--text);box-shadow:0 1px 3px rgba(0,0,0,.1);}
+.pdf-mode-tabs{display:flex;gap:6px;background:var(--bg-subtle);padding:4px;border:1px solid var(--separator);margin-bottom:18px;}
+.pdf-mode-btn{flex:1;padding:8px 4px;border:none;background:transparent;font-family:inherit;font-size:14px;font-weight:600;color:var(--text2);cursor:pointer;transition:all .15s var(--ease);}
+.pdf-mode-btn.active{background:var(--blue);color:#fff;}
 .pdf-field label{display:block;font-size:14px;font-weight:600;color:var(--text2);margin-bottom:8px;}
-.pdf-field input,.pdf-field select{width:100%;padding:11px 12px;border:1px solid var(--separator-strong);border-radius:10px;font-family:inherit;font-size:15px;color:var(--text);background:#fff;}
-.pdf-field input:focus,.pdf-field select:focus{outline:none;border-color:var(--green);box-shadow:0 0 0 3px rgba(59,130,246,.15);}
+.pdf-field input,.pdf-field select{width:100%;padding:11px 12px;border:1px solid var(--separator-strong);font-family:inherit;font-size:15px;color:var(--text);background:#fff;}
+.pdf-field input:focus,.pdf-field select:focus{outline:none;border-color:var(--blue);box-shadow:0 0 0 2px rgba(62,106,225,.15);}
 .pdf-modal-foot{display:flex;gap:10px;padding:16px 20px;border-top:1px solid var(--separator);}
-.pdf-btn-cancel{flex:1;padding:11px;border:1px solid var(--separator-strong);background:#fff;border-radius:10px;font-family:inherit;font-size:15px;font-weight:600;color:var(--text2);cursor:pointer;}
+.pdf-btn-cancel{flex:1;padding:11px;border:1px solid var(--separator-strong);background:#fff;font-family:inherit;font-size:15px;font-weight:600;color:var(--text2);cursor:pointer;}
 .pdf-btn-cancel:hover{background:var(--bg-subtle)}
-.pdf-btn-go{flex:2;padding:11px;border:none;background:var(--blue);color:#fff;border-radius:10px;font-family:inherit;font-size:15px;font-weight:700;cursor:pointer;transition:all .15s var(--ease);}
-.pdf-btn-go:hover{filter:brightness(1.05);transform:translateY(-1px);}
+.pdf-btn-go{flex:2;padding:11px;border:1px solid var(--blue);background:var(--blue);color:#fff;font-family:inherit;font-size:15px;font-weight:700;cursor:pointer;transition:all .15s var(--ease);}
+.pdf-btn-go:hover{background:var(--blue-hover);border-color:var(--blue-hover);}
 
 /* ════ RESPONSIVE ════ */
 .main{padding:clamp(14px,2.5vw,28px);max-width:1800px;margin:0 auto;}
@@ -362,7 +365,7 @@ body{font-family:var(--font-thai);background:var(--bg);color:var(--text);min-hei
 }
 @media (max-width:900px){
   .topnav-toggle{display:inline-flex}.topnav-main{padding:0 16px;gap:12px}
-  .topnav-menu{position:absolute;top:52px;left:0;right:0;background:rgba(255,255,255,.95);backdrop-filter:blur(20px);flex-direction:column;align-items:stretch;gap:0;padding:8px;border-bottom:0.5px solid var(--separator);box-shadow:0 8px 24px rgba(0,0,0,.08);display:none;}
+  .topnav-menu{position:absolute;top:52px;left:0;right:0;background:#ffffff;flex-direction:column;align-items:stretch;gap:0;padding:8px;border-bottom:1px solid var(--separator);box-shadow:0 8px 24px rgba(0,0,0,.08);display:none;}
   .topnav-menu.open{display:flex}.topnav-menu .nav-item{width:100%;justify-content:flex-start;padding:11px 14px;}
   .topnav-time{display:none}.topnav-filters{padding:0 16px;gap:10px}.filter-group-label{display:none}
   .main{padding:18px 16px}
@@ -385,7 +388,7 @@ body{font-family:var(--font-thai);background:var(--bg);color:var(--text);min-hei
   .fuel-table colgroup{display:none}.fuel-table thead{display:none}
   .fuel-table,.fuel-table tbody,.fuel-table tr,.fuel-table td{display:block;width:100%}
   .fuel-table tbody td:nth-child(n){display:flex !important}
-  .fuel-table tr{background:var(--bg-card);border:1px solid var(--separator);border-radius:14px;margin-bottom:10px;padding:12px 14px;box-shadow:var(--shadow-xs);}
+  .fuel-table tr{background:var(--bg-card);border:1px solid var(--separator);margin-bottom:10px;padding:12px 14px;}
   .fuel-table tr:hover{background:var(--bg-card)}
   .fuel-table td{display:flex !important;justify-content:space-between;align-items:center;padding:5px 0 !important;border:none !important;text-align:right;font-size:14px;}
   .fuel-table td::before{content:attr(data-label);font-weight:600;color:var(--text3);font-size:14px;margin-right:12px;text-align:left;font-family:var(--font-thai);}
@@ -605,6 +608,11 @@ body{font-family:var(--font-thai);background:var(--bg);color:var(--text);min-hei
             <span class="entry-oil-num">฿<span id="ilOilPriceShow">—</span></span>
             <button type="button" id="ilBtnRefresh" class="entry-oil-refresh" onclick="ilRefreshOilPrice()" title="รีเฟรช">↻</button>
           </div>
+          <button type="button" class="entry-export-btn" id="ilBtnSaveAll" onclick="erSaveAllRows()" disabled title="บันทึกทุกแถวที่กรอกครบแล้วในครั้งเดียว">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2Z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
+            <span>บันทึกทั้งหมด</span>
+          </button>
+          <span class="entry-saveall-hint" id="ilSaveAllHint"></span>
           <button type="button" class="entry-export-btn" onclick="openPdfRangeModal()" title="ดาวน์โหลดรายงาน PDF">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
             <span>Export PDF</span>
@@ -632,7 +640,7 @@ body{font-family:var(--font-thai);background:var(--bg);color:var(--text);min-hei
 
       <div class="entry-rows-wrap">
         <div class="entry-rows-header">
-          <div>คนขับ</div><div>ทะเบียนรถ</div><div>เวลา</div><div>ค่าน้ำมัน (฿)</div><div>ระยะ (km)</div><div>สรุป</div><div>บันทึก</div>
+          <div>คนขับ</div><div>ทะเบียนรถ</div><div>เวลา</div><div>ค่าน้ำมัน (฿)</div><div>ระยะ (km)</div><div>สรุป</div><div>สถานะ</div>
         </div>
         <div id="entryRowsBody">
           <div class="entry-empty">เลือกวันที่เพื่อแสดงรายชื่อคนขับ</div>
@@ -882,7 +890,7 @@ let dlvChart=null;
   foreach($logs as $log){$driver=$log['driver_name']??'ไม่ระบุ';if(!isset($deliveryByDriver[$driver]))$deliveryByDriver[$driver]=['success'=>0,'fail'=>0,'plate'=>$log['vehicle_id']??''];$deliveryByDriver[$driver]['success']+=(int)($log['delivery_success']??$log['success_count']??$log['ok_count']??0);$deliveryByDriver[$driver]['fail']+=(int)($log['delivery_fail']??$log['fail_count']??$log['ng_count']??0);}
 @endphp
 const DLV_BY_DRIVER=@json($deliveryByDriver);
-function renderDlv(){const drivers=Object.keys(DLV_BY_DRIVER).filter(d=>isAllowedDriver(d));if(drivers.length===0){if(dlvChart)dlvChart.destroy();document.getElementById('dlvLegend').innerHTML='<span style="color:var(--text4)">ไม่มีข้อมูล</span>';return;}const orderIdx=name=>{const i=ALLOWED_DRIVERS.map(_normalizeDriver).indexOf(_normalizeDriver(name));return i<0?999:i;};const sorted=drivers.map(d=>({name:d,s:DLV_BY_DRIVER[d].success,f:DLV_BY_DRIVER[d].fail})).sort((a,b)=>orderIdx(a.name)-orderIdx(b.name));const inner=document.getElementById('deliveryChartInner');if(inner){inner.style.width='100%';inner.style.height='100%';}if(dlvChart)dlvChart.destroy();dlvChart=new Chart(document.getElementById('deliveryChart'),{type:'bar',data:{labels:sorted.map(d=>d.name),datasets:[{label:'ส่งสำเร็จ',data:sorted.map(d=>d.s),backgroundColor:'#10b981',borderRadius:{topLeft:0,topRight:0,bottomLeft:6,bottomRight:6},borderSkipped:false,stack:'s',maxBarThickness:50},{label:'ส่งไม่สำเร็จ',data:sorted.map(d=>d.f),backgroundColor:'#ef4444',borderRadius:{topLeft:6,topRight:6,bottomLeft:0,bottomRight:0},borderSkipped:false,stack:'s',maxBarThickness:50}]},plugins:[ChartDataLabels],options:{responsive:true,maintainAspectRatio:false,layout:{padding:{top:20,left:10,right:10}},plugins:{legend:{display:false},tooltip:{callbacks:{label:ctx=>`${ctx.dataset.label}: ${ctx.raw} รายการ`,footer:items=>'รวม: '+items.reduce((s,i)=>s+i.raw,0)+' รายการ'}},datalabels:{color:'#fff',font:{weight:'700',size:13,family:'Inter'},formatter:v=>v>0?v:'',display:ctx=>ctx.dataset.data[ctx.dataIndex]>0,anchor:'center',align:'center'}},scales:{x:{stacked:true,ticks:{font:{size:14,weight:'600',family:'IBM Plex Sans Thai'},color:'#18181b',autoSkip:true,maxRotation:0},grid:{display:false}},y:{stacked:true,beginAtZero:true,ticks:{font:{size:14,family:'Inter'},color:'#71717a',stepSize:2},grid:{color:'rgba(0,0,0,.05)'}}}}});document.getElementById('dlvLegend').innerHTML='<div class="chart-legend-item"><span class="chart-legend-dot" style="background:#10b981"></span>ส่งสำเร็จ</div><div class="chart-legend-item"><span class="chart-legend-dot" style="background:#ef4444"></span>ส่งไม่สำเร็จ</div>';}
+function renderDlv(){const drivers=Object.keys(DLV_BY_DRIVER).filter(d=>isAllowedDriver(d));if(drivers.length===0){if(dlvChart)dlvChart.destroy();document.getElementById('dlvLegend').innerHTML='<span style="color:var(--text4)">ไม่มีข้อมูล</span>';return;}const orderIdx=name=>{const i=ALLOWED_DRIVERS.map(_normalizeDriver).indexOf(_normalizeDriver(name));return i<0?999:i;};const sorted=drivers.map(d=>({name:d,s:DLV_BY_DRIVER[d].success,f:DLV_BY_DRIVER[d].fail})).sort((a,b)=>orderIdx(a.name)-orderIdx(b.name));const inner=document.getElementById('deliveryChartInner');if(inner){inner.style.width='100%';inner.style.height='100%';}if(dlvChart)dlvChart.destroy();dlvChart=new Chart(document.getElementById('deliveryChart'),{type:'bar',data:{labels:sorted.map(d=>d.name),datasets:[{label:'ส่งสำเร็จ',data:sorted.map(d=>d.s),backgroundColor:'#3E6AE1',borderRadius:0,borderSkipped:false,stack:'s',maxBarThickness:50},{label:'ส่งไม่สำเร็จ',data:sorted.map(d=>d.f),backgroundColor:'#e82127',borderRadius:0,borderSkipped:false,stack:'s',maxBarThickness:50}]},plugins:[ChartDataLabels],options:{responsive:true,maintainAspectRatio:false,layout:{padding:{top:20,left:10,right:10}},plugins:{legend:{display:false},tooltip:{callbacks:{label:ctx=>`${ctx.dataset.label}: ${ctx.raw} รายการ`,footer:items=>'รวม: '+items.reduce((s,i)=>s+i.raw,0)+' รายการ'}},datalabels:{color:'#fff',font:{weight:'700',size:13,family:'Inter'},formatter:v=>v>0?v:'',display:ctx=>ctx.dataset.data[ctx.dataIndex]>0,anchor:'center',align:'center'}},scales:{x:{stacked:true,ticks:{font:{size:14,weight:'600',family:'Inter'},color:'#171a20',autoSkip:true,maxRotation:0},grid:{display:false}},y:{stacked:true,beginAtZero:true,ticks:{font:{size:14,family:'Inter'},color:'#9aa0a6',stepSize:2},grid:{color:'rgba(0,0,0,.05)'}}}}});document.getElementById('dlvLegend').innerHTML='<div class="chart-legend-item"><span class="chart-legend-dot" style="background:#3E6AE1"></span>ส่งสำเร็จ</div><div class="chart-legend-item"><span class="chart-legend-dot" style="background:#e82127"></span>ส่งไม่สำเร็จ</div>';}
 
 /* ── CHART: km/L + cost/km ── */
 @php
@@ -897,10 +905,10 @@ function isMoto(plate){const p=(plate||'').trim();return p.startsWith('มอเ
 function switchVehicleType(chart,type){VEHICLE_TYPE[chart]=type;document.querySelectorAll(`.vehicle-toggle[data-chart="${chart}"] .vt-btn`).forEach(b=>b.classList.toggle('active',b.dataset.type===type));if(chart==='kml')renderKmlChart();else if(chart==='cost')renderCostChart();}
 
 let kmlChart=null;
-function renderKmlChart(){const vType=VEHICLE_TYPE.kml||'car';const drivers=Object.keys(KML_BY_DRIVER).map(key=>({name:KML_BY_DRIVER[key].driver||'',plate:KML_BY_DRIVER[key].plate||key,avg:KML_BY_DRIVER[key].count>0?KML_BY_DRIVER[key].sum/KML_BY_DRIVER[key].count:0})).filter(d=>d.avg>0).filter(d=>vType==='moto'?isMoto(d.plate):!isMoto(d.plate)).sort((a,b)=>b.avg-a.avg);if(drivers.length===0){if(kmlChart)kmlChart.destroy();document.getElementById('kmlLegend').innerHTML=`<span style="color:var(--text4)">ไม่มีข้อมูล${vType==='moto'?'มอเตอร์ไซค์':'รถยนต์'}</span>`;return;}const inner=document.getElementById('chartKmlInner');if(inner){inner.style.width='100%';inner.style.height=Math.max(drivers.length*44+40,300)+'px';}const labels=drivers.map(d=>[d.plate||d.name,d.name&&d.plate?d.name:'']);const data=drivers.map(d=>d.avg);const overallAvg=data.reduce((a,b)=>a+b,0)/data.length;const lowBand=overallAvg*0.9;const barColors=data.map(v=>v<lowBand?'#ef4444':(v<overallAvg?'#f59e0b':'#10b981'));const xMax=Math.ceil((Math.max(...data,overallAvg)+1)/2)*2;if(kmlChart)kmlChart.destroy();kmlChart=new Chart(document.getElementById('chartKml'),{type:'bar',data:{labels,datasets:[{label:'เฉลี่ย km/L',data,backgroundColor:barColors,borderRadius:6,borderSkipped:false,maxBarThickness:28}]},plugins:[ChartDataLabels,{id:'kmlThreshold',afterDatasetsDraw(chart){const{ctx,chartArea:{top,bottom},scales:{x}}=chart;const xPos=x.getPixelForValue(overallAvg);ctx.save();ctx.strokeStyle='#ef4444';ctx.setLineDash([6,4]);ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(xPos,top);ctx.lineTo(xPos,bottom);ctx.stroke();ctx.setLineDash([]);ctx.fillStyle='#ef4444';ctx.font='600 11px Inter';ctx.textAlign='left';ctx.fillText('เกณฑ์เฉลี่ย '+fmtN(overallAvg),xPos+6,top+12);ctx.restore();}}],options:{indexAxis:'y',responsive:true,maintainAspectRatio:false,layout:{padding:{top:10,right:50,left:6,bottom:6}},plugins:{legend:{display:false},tooltip:{callbacks:{label:ctx=>`เฉลี่ย: ${fmtN(ctx.raw)} km/L`,afterLabel:ctx=>{const d=drivers[ctx.dataIndex];return d.name?`คนขับ: ${d.name}`:''}}},datalabels:{color:'#18181b',font:{weight:'700',size:11,family:'Inter'},anchor:'end',align:'right',offset:4,formatter:v=>fmtN(v)+' km/L'}},scales:{x:{beginAtZero:true,suggestedMax:xMax,ticks:{stepSize:2,font:{size:14,family:'Inter'},color:'#71717a'},grid:{color:'rgba(0,0,0,.05)'}},y:{grid:{display:false},ticks:{font:{size:14,weight:'600',family:'IBM Plex Sans Thai'},color:'#3f3f46',autoSkip:false,callback:function(value){const l=this.getLabelForValue(value);return Array.isArray(l)?l:[l];}}}}}});document.getElementById('kmlLegend').innerHTML=`<div class="chart-legend-item"><span class="chart-legend-dot" style="background:#10b981"></span>ดี (≥ เฉลี่ย)</div><div class="chart-legend-item"><span class="chart-legend-dot" style="background:#f59e0b"></span>ปกติ (ใกล้เฉลี่ย)</div><div class="chart-legend-item"><span class="chart-legend-dot" style="background:#ef4444"></span>ผิดปกติ (ต่ำกว่าเฉลี่ย 10%)</div><div class="chart-legend-item" style="margin-left:auto;color:var(--text4)">เฉลี่ย <strong style="color:var(--text);margin-left:4px">${fmtN(overallAvg)} km/L</strong></div>`;}
+function renderKmlChart(){const vType=VEHICLE_TYPE.kml||'car';const drivers=Object.keys(KML_BY_DRIVER).map(key=>({name:KML_BY_DRIVER[key].driver||'',plate:KML_BY_DRIVER[key].plate||key,avg:KML_BY_DRIVER[key].count>0?KML_BY_DRIVER[key].sum/KML_BY_DRIVER[key].count:0})).filter(d=>d.avg>0).filter(d=>vType==='moto'?isMoto(d.plate):!isMoto(d.plate)).sort((a,b)=>b.avg-a.avg);if(drivers.length===0){if(kmlChart)kmlChart.destroy();document.getElementById('kmlLegend').innerHTML=`<span style="color:var(--text4)">ไม่มีข้อมูล${vType==='moto'?'มอเตอร์ไซค์':'รถยนต์'}</span>`;return;}const inner=document.getElementById('chartKmlInner');if(inner){inner.style.width='100%';inner.style.height=Math.max(drivers.length*44+40,300)+'px';}const labels=drivers.map(d=>[d.plate||d.name,d.name&&d.plate?d.name:'']);const data=drivers.map(d=>d.avg);const overallAvg=data.reduce((a,b)=>a+b,0)/data.length;const lowBand=overallAvg*0.9;const barColors=data.map(v=>v<lowBand?'#e82127':(v<overallAvg?'#b45309':'#3E6AE1'));const xMax=Math.ceil((Math.max(...data,overallAvg)+1)/2)*2;if(kmlChart)kmlChart.destroy();kmlChart=new Chart(document.getElementById('chartKml'),{type:'bar',data:{labels,datasets:[{label:'เฉลี่ย km/L',data,backgroundColor:barColors,borderRadius:0,borderSkipped:false,maxBarThickness:28}]},plugins:[ChartDataLabels,{id:'kmlThreshold',afterDatasetsDraw(chart){const{ctx,chartArea:{top,bottom},scales:{x}}=chart;const xPos=x.getPixelForValue(overallAvg);ctx.save();ctx.strokeStyle='#e82127';ctx.setLineDash([6,4]);ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(xPos,top);ctx.lineTo(xPos,bottom);ctx.stroke();ctx.setLineDash([]);ctx.fillStyle='#e82127';ctx.font='600 11px Inter';ctx.textAlign='left';ctx.fillText('เกณฑ์เฉลี่ย '+fmtN(overallAvg),xPos+6,top+12);ctx.restore();}}],options:{indexAxis:'y',responsive:true,maintainAspectRatio:false,layout:{padding:{top:10,right:50,left:6,bottom:6}},plugins:{legend:{display:false},tooltip:{callbacks:{label:ctx=>`เฉลี่ย: ${fmtN(ctx.raw)} km/L`,afterLabel:ctx=>{const d=drivers[ctx.dataIndex];return d.name?`คนขับ: ${d.name}`:''}}},datalabels:{color:'#171a20',font:{weight:'700',size:11,family:'Inter'},anchor:'end',align:'right',offset:4,formatter:v=>fmtN(v)+' km/L'}},scales:{x:{beginAtZero:true,suggestedMax:xMax,ticks:{stepSize:2,font:{size:14,family:'Inter'},color:'#9aa0a6'},grid:{color:'rgba(0,0,0,.05)'}},y:{grid:{display:false},ticks:{font:{size:14,weight:'600',family:'Inter'},color:'#5c5e62',autoSkip:false,callback:function(value){const l=this.getLabelForValue(value);return Array.isArray(l)?l:[l];}}}}}});document.getElementById('kmlLegend').innerHTML=`<div class="chart-legend-item"><span class="chart-legend-dot" style="background:#3E6AE1"></span>ดี (≥ เฉลี่ย)</div><div class="chart-legend-item"><span class="chart-legend-dot" style="background:#b45309"></span>ปกติ (ใกล้เฉลี่ย)</div><div class="chart-legend-item"><span class="chart-legend-dot" style="background:#e82127"></span>ผิดปกติ (ต่ำกว่าเฉลี่ย 10%)</div><div class="chart-legend-item" style="margin-left:auto;color:var(--text4)">เฉลี่ย <strong style="color:var(--text);margin-left:4px">${fmtN(overallAvg)} km/L</strong></div>`;}
 
 let costChart=null;
-function renderCostChart(){const vType=VEHICLE_TYPE.cost||'car';const drivers=Object.keys(COST_BY_DRIVER).map(key=>({name:COST_BY_DRIVER[key].driver||'',plate:COST_BY_DRIVER[key].plate||key,cost:COST_BY_DRIVER[key].dist>0?COST_BY_DRIVER[key].price/COST_BY_DRIVER[key].dist:0,price:COST_BY_DRIVER[key].price,dist:COST_BY_DRIVER[key].dist})).filter(d=>d.cost>0).filter(d=>vType==='moto'?isMoto(d.plate):!isMoto(d.plate)).sort((a,b)=>a.cost-b.cost);if(drivers.length===0){if(costChart)costChart.destroy();document.getElementById('costLegend').innerHTML=`<span style="color:var(--text4)">ไม่มีข้อมูล${vType==='moto'?'มอเตอร์ไซค์':'รถยนต์'}</span>`;return;}const inner=document.getElementById('chartCostInner');if(inner){inner.style.width='100%';inner.style.height=Math.max(drivers.length*44+40,300)+'px';}const labels=drivers.map(d=>[d.plate||d.name,d.name&&d.plate?d.name:'']);const data=drivers.map(d=>d.cost);const avg=data.reduce((a,b)=>a+b,0)/data.length;const barColors=data.map(v=>v<=avg*0.85?'#10b981':(v<=avg*1.05?'#f59e0b':'#ef4444'));const xMax=Math.ceil(Math.max(...data)*1.15);if(costChart)costChart.destroy();costChart=new Chart(document.getElementById('chartCost'),{type:'bar',data:{labels,datasets:[{label:'฿/km',data,backgroundColor:barColors,borderRadius:6,borderSkipped:false,maxBarThickness:28}]},plugins:[ChartDataLabels,{id:'costAvgLine',afterDatasetsDraw(chart){const{ctx,chartArea:{top,bottom},scales:{x}}=chart;const xPos=x.getPixelForValue(avg);ctx.save();ctx.strokeStyle='#3b82f6';ctx.setLineDash([6,4]);ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(xPos,top);ctx.lineTo(xPos,bottom);ctx.stroke();ctx.setLineDash([]);ctx.fillStyle='#3b82f6';ctx.font='600 11px Inter';ctx.textAlign='left';ctx.fillText('เฉลี่ย ฿'+fmtN(avg),xPos+6,top+12);ctx.restore();}}],options:{indexAxis:'y',responsive:true,maintainAspectRatio:false,layout:{padding:{top:10,right:70,left:6,bottom:6}},plugins:{legend:{display:false},tooltip:{callbacks:{label:ctx=>`฿${fmtN(ctx.raw)} / km`,afterLabel:ctx=>{const d=drivers[ctx.dataIndex];const lines=[];if(d.name)lines.push(`คนขับ: ${d.name}`);lines.push(`รวม ฿${d.price.toLocaleString(undefined,{maximumFractionDigits:0})} / ${d.dist.toLocaleString()} km`);return lines;}}},datalabels:{color:'#18181b',font:{weight:'700',size:11,family:'Inter'},anchor:'end',align:'right',offset:4,formatter:v=>'฿'+fmtN(v)}},scales:{x:{beginAtZero:true,suggestedMax:xMax,ticks:{font:{size:14,family:'Inter'},color:'#71717a',callback:v=>'฿'+v},grid:{color:'rgba(0,0,0,.05)'}},y:{grid:{display:false},ticks:{font:{size:14,weight:'600',family:'IBM Plex Sans Thai'},color:'#3f3f46',autoSkip:false,callback:function(value){const l=this.getLabelForValue(value);return Array.isArray(l)?l:[l];}}}}}});document.getElementById('costLegend').innerHTML=`<div class="chart-legend-item"><span class="chart-legend-dot" style="background:#10b981"></span>ดี (ต่ำกว่าเฉลี่ย ≥15%)</div><div class="chart-legend-item"><span class="chart-legend-dot" style="background:#f59e0b"></span>ปกติ (±5–15%)</div><div class="chart-legend-item"><span class="chart-legend-dot" style="background:#ef4444"></span>สูง (สูงกว่าเฉลี่ย >5%)</div><div class="chart-legend-item" style="margin-left:auto;color:var(--text4)">เฉลี่ย <strong style="color:var(--text);margin-left:4px">฿${fmtN(avg)}/km</strong></div>`;}
+function renderCostChart(){const vType=VEHICLE_TYPE.cost||'car';const drivers=Object.keys(COST_BY_DRIVER).map(key=>({name:COST_BY_DRIVER[key].driver||'',plate:COST_BY_DRIVER[key].plate||key,cost:COST_BY_DRIVER[key].dist>0?COST_BY_DRIVER[key].price/COST_BY_DRIVER[key].dist:0,price:COST_BY_DRIVER[key].price,dist:COST_BY_DRIVER[key].dist})).filter(d=>d.cost>0).filter(d=>vType==='moto'?isMoto(d.plate):!isMoto(d.plate)).sort((a,b)=>a.cost-b.cost);if(drivers.length===0){if(costChart)costChart.destroy();document.getElementById('costLegend').innerHTML=`<span style="color:var(--text4)">ไม่มีข้อมูล${vType==='moto'?'มอเตอร์ไซค์':'รถยนต์'}</span>`;return;}const inner=document.getElementById('chartCostInner');if(inner){inner.style.width='100%';inner.style.height=Math.max(drivers.length*44+40,300)+'px';}const labels=drivers.map(d=>[d.plate||d.name,d.name&&d.plate?d.name:'']);const data=drivers.map(d=>d.cost);const avg=data.reduce((a,b)=>a+b,0)/data.length;const barColors=data.map(v=>v<=avg*0.85?'#3E6AE1':(v<=avg*1.05?'#b45309':'#e82127'));const xMax=Math.ceil(Math.max(...data)*1.15);if(costChart)costChart.destroy();costChart=new Chart(document.getElementById('chartCost'),{type:'bar',data:{labels,datasets:[{label:'฿/km',data,backgroundColor:barColors,borderRadius:0,borderSkipped:false,maxBarThickness:28}]},plugins:[ChartDataLabels,{id:'costAvgLine',afterDatasetsDraw(chart){const{ctx,chartArea:{top,bottom},scales:{x}}=chart;const xPos=x.getPixelForValue(avg);ctx.save();ctx.strokeStyle='#3E6AE1';ctx.setLineDash([6,4]);ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(xPos,top);ctx.lineTo(xPos,bottom);ctx.stroke();ctx.setLineDash([]);ctx.fillStyle='#3E6AE1';ctx.font='600 11px Inter';ctx.textAlign='left';ctx.fillText('เฉลี่ย ฿'+fmtN(avg),xPos+6,top+12);ctx.restore();}}],options:{indexAxis:'y',responsive:true,maintainAspectRatio:false,layout:{padding:{top:10,right:70,left:6,bottom:6}},plugins:{legend:{display:false},tooltip:{callbacks:{label:ctx=>`฿${fmtN(ctx.raw)} / km`,afterLabel:ctx=>{const d=drivers[ctx.dataIndex];const lines=[];if(d.name)lines.push(`คนขับ: ${d.name}`);lines.push(`รวม ฿${d.price.toLocaleString(undefined,{maximumFractionDigits:0})} / ${d.dist.toLocaleString()} km`);return lines;}}},datalabels:{color:'#171a20',font:{weight:'700',size:11,family:'Inter'},anchor:'end',align:'right',offset:4,formatter:v=>'฿'+fmtN(v)}},scales:{x:{beginAtZero:true,suggestedMax:xMax,ticks:{font:{size:14,family:'Inter'},color:'#9aa0a6',callback:v=>'฿'+v},grid:{color:'rgba(0,0,0,.05)'}},y:{grid:{display:false},ticks:{font:{size:14,weight:'600',family:'Inter'},color:'#5c5e62',autoSkip:false,callback:function(value){const l=this.getLabelForValue(value);return Array.isArray(l)?l:[l];}}}}}});document.getElementById('costLegend').innerHTML=`<div class="chart-legend-item"><span class="chart-legend-dot" style="background:#3E6AE1"></span>ดี (ต่ำกว่าเฉลี่ย ≥15%)</div><div class="chart-legend-item"><span class="chart-legend-dot" style="background:#b45309"></span>ปกติ (±5–15%)</div><div class="chart-legend-item"><span class="chart-legend-dot" style="background:#e82127"></span>สูง (สูงกว่าเฉลี่ย >5%)</div><div class="chart-legend-item" style="margin-left:auto;color:var(--text4)">เฉลี่ย <strong style="color:var(--text);margin-left:4px">฿${fmtN(avg)}/km</strong></div>`;}
 
 /* ── DATE RANGE PICKER ── */
 const TH_MONTHS_SHORT=['ม.ค.','ก.พ.','มี.ค.','เม.ย.','พ.ค.','มิ.ย.','ก.ค.','ส.ค.','ก.ย.','ต.ค.','พ.ย.','ธ.ค.'];
@@ -1040,7 +1048,8 @@ function _autoSelectPlates() {
     }
   });
 }
-function ilRenderDriverRows(date){const tbody=document.getElementById('entryRowsBody');if(!tbody)return;const proc=JOBS_PROCESSED[date]||{whitelist:{},auto:{}};const driversMap=proc.whitelist;const autoDriversMap=proc.auto;ilAutoStoreNonWhitelist(date,Object.values(autoDriversMap));let driverList=Object.values(driversMap).filter(d=>!isDriverSaved(date,d.name));const totalCount=Object.keys(driversMap).length;const savedCount=totalCount-driverList.length;driverList.sort((a,b)=>b.jobs.length-a.jobs.length);if(driverList.length===0){if(totalCount===0){tbody.innerHTML='<div class="entry-empty">ไม่พบคนขับสำหรับวันที่นี้</div>';document.getElementById('entrySub').textContent='ไม่พบคนขับของวันนี้';}else{tbody.innerHTML=`<div class="entry-empty" style="color:var(--green-dark)">✓ บันทึกครบทุกคนแล้ว (${savedCount} คน)</div>`;document.getElementById('entrySub').textContent=`บันทึกครบ ${savedCount} คน`;}return;}let subText=`${driverList.length} คนขับ · กรอกข้อมูลแล้วกดบันทึก`;if(savedCount>0)subText+=` · บันทึกแล้ว ${savedCount} คน`;document.getElementById('entrySub').textContent=subText;const plateOpts=(window.PLATE_LIST||[]).map(p=>`<option value="${p}">${p}</option>`).join('');const _wd=document.getElementById('il-work-date')?.value||todayStr();tbody.innerHTML=driverList.map((d,idx)=>{const key=`row_${idx}_${d.name.replace(/[^a-zA-Z0-9ก-๙]/g,'_')}`;let okC=0,failC=0;d.jobs.forEach(j=>{const k=_jobStatusKind(j);if(k==='ok')okC++;else if(k==='fail')failC++;});driverRowState[key]={driverName:d.name,jobs:d.jobs,okCount:okC,failCount:failC,sh:0,sm:0,eh:0,em:0,startDT:'',endDT:'',noFuel:false};const ini=(d.name||'?').trim().charAt(0).toUpperCase();return`<div class="entry-row" data-key="${key}" onclick="erFocusRow('${key}')"><div class="er-driver"><span class="er-driver-avatar">${ini}</span><div class="er-driver-info"><div class="er-driver-name" title="${d.name}">${d.name}</div><div class="er-driver-jobs">${d.jobs.length} งาน · <span class="er-ok">${okC} ✓</span>${failC>0?` · <span class="er-fail">${failC} ✕</span>`:''}</div></div></div><div><select class="er-plate-select" data-key="${key}" onchange="erUpdateRow('${key}')" onfocus="erFocusRow('${key}')"><option value="">— เลือกทะเบียน —</option>${plateOpts}</select></div><div class="er-time-pair"><input type="datetime-local" class="er-dt-input" id="${key}-start-dt" value="${_wd}T09:00" onchange="erUpdateDateTime('${key}')" onfocus="erFocusRow('${key}')"><span class="er-time-arrow">→</span><input type="datetime-local" class="er-dt-input" id="${key}-end-dt" value="${_wd}T18:00" onchange="erUpdateDateTime('${key}')" onfocus="erFocusRow('${key}')"></div><div><label class="er-nofuel-check"><input type="checkbox" onchange="erToggleNoFuel('${key}',this.checked)" onfocus="erFocusRow('${key}')"> ไม่เติมน้ำมัน</label><input type="text" inputmode="decimal" class="er-num-input" id="${key}-price" placeholder="ค่าน้ำมัน" oninput="erSanitizeNum(this);erUpdateRow('${key}')" onfocus="erFocusRow('${key}')"></div><div><input type="text" inputmode="decimal" class="er-num-input" id="${key}-dist" placeholder="250" oninput="erSanitizeNum(this);erUpdateRow('${key}')" onfocus="erFocusRow('${key}')"></div><div class="er-summary" id="${key}-summary"><div class="er-summary-row"><span class="er-summary-label">L:</span><span class="er-summary-val empty">—</span></div><div class="er-summary-row"><span class="er-summary-label">km/L:</span><span class="er-summary-val empty">—</span></div><div class="er-summary-row"><span class="er-summary-label">฿/km:</span><span class="er-summary-val empty">—</span></div></div><div style="text-align:center"><button type="button" class="er-save-btn" id="${key}-save" onclick="event.stopPropagation();erSaveRow('${key}')">บันทึก</button></div></div>`;}).join('');Object.keys(driverRowState).forEach(k=>{if(document.getElementById(`${k}-start-dt`))erUpdateDateTime(k);if(document.getElementById(`${k}-price`))erUpdateRow(k);});
+function ilRenderDriverRows(date){const tbody=document.getElementById('entryRowsBody');if(!tbody)return;const proc=JOBS_PROCESSED[date]||{whitelist:{},auto:{}};const driversMap=proc.whitelist;const autoDriversMap=proc.auto;ilAutoStoreNonWhitelist(date,Object.values(autoDriversMap));let driverList=Object.values(driversMap).filter(d=>!isDriverSaved(date,d.name));const totalCount=Object.keys(driversMap).length;const savedCount=totalCount-driverList.length;driverList.sort((a,b)=>b.jobs.length-a.jobs.length);if(driverList.length===0){if(totalCount===0){tbody.innerHTML='<div class="entry-empty">ไม่พบคนขับสำหรับวันที่นี้</div>';document.getElementById('entrySub').textContent='ไม่พบคนขับของวันนี้';}else{tbody.innerHTML=`<div class="entry-empty" style="color:var(--blue)">✓ บันทึกครบทุกคนแล้ว (${savedCount} คน)</div>`;document.getElementById('entrySub').textContent=`บันทึกครบ ${savedCount} คน`;}erRecomputeSaveAllStatus();return;}let subText=`${driverList.length} คนขับ · กรอกข้อมูลแล้วกดบันทึก`;if(savedCount>0)subText+=` · บันทึกแล้ว ${savedCount} คน`;document.getElementById('entrySub').textContent=subText;const plateOpts=(window.PLATE_LIST||[]).map(p=>`<option value="${p}">${p}</option>`).join('');const _wd=document.getElementById('il-work-date')?.value||todayStr();tbody.innerHTML=driverList.map((d,idx)=>{const key=`row_${idx}_${d.name.replace(/[^a-zA-Z0-9ก-๙]/g,'_')}`;let okC=0,failC=0;d.jobs.forEach(j=>{const k=_jobStatusKind(j);if(k==='ok')okC++;else if(k==='fail')failC++;});driverRowState[key]={driverName:d.name,jobs:d.jobs,okCount:okC,failCount:failC,sh:0,sm:0,eh:0,em:0,startDT:'',endDT:'',noFuel:false};const ini=(d.name||'?').trim().charAt(0).toUpperCase();return`<div class="entry-row" data-key="${key}" onclick="erFocusRow('${key}')"><div class="er-driver"><span class="er-driver-avatar">${ini}</span><div class="er-driver-info"><div class="er-driver-name" title="${d.name}">${d.name}</div><div class="er-driver-jobs">${d.jobs.length} งาน · <span class="er-ok">${okC} ✓</span>${failC>0?` · <span class="er-fail">${failC} ✕</span>`:''}</div></div></div><div><select class="er-plate-select" data-key="${key}" onchange="erUpdateRow('${key}')" onfocus="erFocusRow('${key}')"><option value="">— เลือกทะเบียน —</option>${plateOpts}</select></div><div class="er-time-pair"><input type="datetime-local" class="er-dt-input" id="${key}-start-dt" value="${_wd}T09:00" onchange="erUpdateDateTime('${key}')" onfocus="erFocusRow('${key}')"><span class="er-time-arrow">→</span><input type="datetime-local" class="er-dt-input" id="${key}-end-dt" value="${_wd}T18:00" onchange="erUpdateDateTime('${key}')" onfocus="erFocusRow('${key}')"></div><div><label class="er-nofuel-check"><input type="checkbox" onchange="erToggleNoFuel('${key}',this.checked)" onfocus="erFocusRow('${key}')"> ไม่เติมน้ำมัน</label><input type="text" inputmode="decimal" class="er-num-input" id="${key}-price" placeholder="ค่าน้ำมัน" oninput="erSanitizeNum(this);erUpdateRow('${key}')" onfocus="erFocusRow('${key}')"></div><div><input type="text" inputmode="decimal" class="er-num-input" id="${key}-dist" placeholder="250" oninput="erSanitizeNum(this);erUpdateRow('${key}')" onfocus="erFocusRow('${key}')"></div><div class="er-summary" id="${key}-summary"><div class="er-summary-row"><span class="er-summary-label">L:</span><span class="er-summary-val empty">—</span></div><div class="er-summary-row"><span class="er-summary-label">km/L:</span><span class="er-summary-val empty">—</span></div><div class="er-summary-row"><span class="er-summary-label">฿/km:</span><span class="er-summary-val empty">—</span></div></div><div><span class="er-row-status muted" id="${key}-status">รอกรอก</span></div></div>`;}).join('');Object.keys(driverRowState).forEach(k=>{if(document.getElementById(`${k}-start-dt`))erUpdateDateTime(k);if(document.getElementById(`${k}-price`))erUpdateRow(k);});
+  erRecomputeSaveAllStatus();
   // auto-select last used plates
   _fetchLastPlates().then(() => _autoSelectPlates());
 }
@@ -1048,18 +1057,136 @@ function ilRenderDriverRows(date){const tbody=document.getElementById('entryRows
 /* ── ENTRY INPUT HANDLERS ── */
 function erSanitizeNum(el){let v=el.value.replace(/[^0-9.]/g,'');const parts=v.split('.');if(parts.length>2)v=parts[0]+'.'+parts.slice(1).join('');el.value=v;}
 function erToggleNoFuel(key,checked){const s=driverRowState[key];if(!s)return;s.noFuel=checked;const priceEl=document.getElementById(`${key}-price`);if(priceEl){if(checked){priceEl.value='';priceEl.disabled=true;priceEl.placeholder='ไม่เติม';}else{priceEl.disabled=false;priceEl.placeholder='ค่าน้ำมัน';}}erUpdateRow(key);}
-function erUpdateRow(key){const s=driverRowState[key];if(!s)return;const priceEl=document.getElementById(`${key}-price`);const distEl=document.getElementById(`${key}-dist`);const price=s.noFuel?0:(parseFloat(priceEl?.value)||0);const dist=parseFloat(distEl?.value)||0;const ppl=parseFloat(document.getElementById('il-price-per-liter')?.value)||0;const liters=(price>0&&ppl>0)?(price/ppl):0;const kml=(dist>0&&liters>0)?(dist/liters):0;const thbKm=(price>0&&dist>0)?(price/dist):0;s.price=price;s.distance=dist;s.liters=liters;s.kml=kml;s.thbKm=thbKm;const sum=document.getElementById(`${key}-summary`);if(sum){const litersTxt=liters>0?fmtN(liters)+' L':'<span class="empty">—</span>';let kmlCls='empty',kmlTxt='—';if(kml>0){kmlTxt=fmtN(kml)+' km/L';kmlCls=kml>=12?'green':(kml<9?'red':'');}const thbKmTxt=thbKm>0?'฿'+fmtN(thbKm):'<span class="empty">—</span>';sum.innerHTML=`<div class="er-summary-row"><span class="er-summary-label">L:</span><span class="er-summary-val ${liters>0?'':'empty'}">${litersTxt}</span></div><div class="er-summary-row"><span class="er-summary-label">km/L:</span><span class="er-summary-val ${kmlCls}">${kmlTxt}</span></div><div class="er-summary-row"><span class="er-summary-label">฿/km:</span><span class="er-summary-val ${thbKm>0?'':'empty'}">${thbKmTxt}</span></div>`;}}
+function erUpdateRow(key){const s=driverRowState[key];if(!s)return;const priceEl=document.getElementById(`${key}-price`);const distEl=document.getElementById(`${key}-dist`);const price=s.noFuel?0:(parseFloat(priceEl?.value)||0);const dist=parseFloat(distEl?.value)||0;const ppl=parseFloat(document.getElementById('il-price-per-liter')?.value)||0;const liters=(price>0&&ppl>0)?(price/ppl):0;const kml=(dist>0&&liters>0)?(dist/liters):0;const thbKm=(price>0&&dist>0)?(price/dist):0;s.price=price;s.distance=dist;s.liters=liters;s.kml=kml;s.thbKm=thbKm;const sum=document.getElementById(`${key}-summary`);if(sum){const litersTxt=liters>0?fmtN(liters)+' L':'<span class="empty">—</span>';let kmlCls='empty',kmlTxt='—';if(kml>0){kmlTxt=fmtN(kml)+' km/L';kmlCls=kml>=12?'green':(kml<9?'red':'');}const thbKmTxt=thbKm>0?'฿'+fmtN(thbKm):'<span class="empty">—</span>';sum.innerHTML=`<div class="er-summary-row"><span class="er-summary-label">L:</span><span class="er-summary-val ${liters>0?'':'empty'}">${litersTxt}</span></div><div class="er-summary-row"><span class="er-summary-label">km/L:</span><span class="er-summary-val ${kmlCls}">${kmlTxt}</span></div><div class="er-summary-row"><span class="er-summary-label">฿/km:</span><span class="er-summary-val ${thbKm>0?'':'empty'}">${thbKmTxt}</span></div>`;}erUpdateRowStatusBadge(key);erRecomputeSaveAllStatus();}
 function erUpdateAllRows(){Object.keys(driverRowState).forEach(k=>erUpdateRow(k));}
-function erUpdateDateTime(key){const s=driverRowState[key];if(!s)return;s.startDT=document.getElementById(`${key}-start-dt`)?.value||'';s.endDT=document.getElementById(`${key}-end-dt`)?.value||'';if(s.startDT){const[h,m]=(s.startDT.split('T')[1]||'00:00').split(':').map(Number);s.sh=h||0;s.sm=m||0;}if(s.endDT){const[h,m]=(s.endDT.split('T')[1]||'00:00').split(':').map(Number);s.eh=h||0;s.em=m||0;}}
+function erUpdateDateTime(key){const s=driverRowState[key];if(!s)return;s.startDT=document.getElementById(`${key}-start-dt`)?.value||'';s.endDT=document.getElementById(`${key}-end-dt`)?.value||'';if(s.startDT){const[h,m]=(s.startDT.split('T')[1]||'00:00').split(':').map(Number);s.sh=h||0;s.sm=m||0;}if(s.endDT){const[h,m]=(s.endDT.split('T')[1]||'00:00').split(':').map(Number);s.eh=h||0;s.em=m||0;}erUpdateRowStatusBadge(key);erRecomputeSaveAllStatus();}
 let _focusedRowKey=null;
 function erFocusRow(key){if(_focusedRowKey===key)return;_focusedRowKey=key;document.querySelectorAll('.entry-row').forEach(r=>r.classList.toggle('focused',r.dataset.key===key));const s=driverRowState[key];if(!s)return;ilRenderJobsForDriver(s.driverName,s.jobs);}
 
-/* ── SAVE ROW ── */
-async function erSaveRow(key){const s=driverRowState[key];if(!s)return;const plate=document.querySelector(`.er-plate-select[data-key="${key}"]`)?.value||'';const btn=document.getElementById(`${key}-save`);const row=document.querySelector(`.entry-row[data-key="${key}"]`);const errors=[];if(!plate)errors.push('เลือกทะเบียนรถ');if(!s.noFuel){const priceRaw=document.getElementById(`${key}-price`)?.value??'';if(priceRaw===''||isNaN(parseFloat(priceRaw)))errors.push('ใส่ค่าน้ำมัน หรือติ๊ก "ไม่เติมน้ำมัน"');else if(parseFloat(priceRaw)<0)errors.push('ค่าน้ำมันติดลบไม่ได้');}if(!s.startDT||!s.endDT)errors.push('เลือกวันเวลาเริ่ม-สิ้นสุด');else if(new Date(s.endDT)<=new Date(s.startDT))errors.push('เวลาสิ้นสุดต้องหลังเวลาเริ่ม');if(errors.length){btn.textContent='⚠ '+errors[0];setTimeout(()=>{btn.innerHTML='บันทึก';},2200);return;}const date=s.startDT.split('T')[0];row?.classList.add('saving');btn.disabled=true;btn.innerHTML='<span class="ic">⏳</span> กำลังบันทึก...';const toBackendDT=v=>v?v.replace('T',' ')+':00':'';const fd=new FormData();fd.append('_token',CSRF_TOKEN);fd.append('work_date',date);fd.append('driver_name',s.driverName);fd.append('vehicle_id',plate);fd.append('start_time',toBackendDT(s.startDT));fd.append('end_time',toBackendDT(s.endDT));fd.append('total_price',s.price);if(s.distance>0)fd.append('total_distance',s.distance);const ppl=parseFloat(document.getElementById('il-price-per-liter')?.value)||0;if(ppl>0)fd.append('price_per_liter',ppl);if(s.liters>0)fd.append('liters',s.liters.toFixed(2));fd.append('ok',s.okCount);fd.append('ng',s.failCount);if(CURRENT_USER&&CURRENT_USER!=='Guest')fd.append('create_by',CURRENT_USER);try{const res=await fetch(ROUTE_STORE,{method:'POST',headers:{'X-CSRF-TOKEN':CSRF_TOKEN,'Accept':'application/json'},body:fd});if(!res.ok&&res.status!==302)throw new Error('HTTP '+res.status);markDriverSaved(date,s.driverName);ilAppendLogRow({date,driver_name:s.driverName,vehicle_id:plate,start_h:s.sh,start_m:s.sm,end_h:s.eh,end_m:s.em,start_dt:s.startDT,end_dt:s.endDT,total_price:s.price,total_distance:s.distance,liters:s.liters,km_per_liter:s.kml,ok_count:s.okCount,fail_count:s.failCount});if(s.jobs.length>0)_syncNgJobs(date,s.driverName,s.jobs);if(_focusedRowKey===key){_focusedRowKey=null;ilResetJobsPanel();}delete driverRowState[key];showSaveToast(s.driverName);ilRenderDriverRows(date);}catch(e){console.warn('save error',e);row?.classList.remove('saving');btn.disabled=false;btn.innerHTML='⚠ ลองอีกครั้ง';setTimeout(()=>{btn.innerHTML='บันทึก';},2200);}}
-function showSaveToast(driverName){document.getElementById('saveToast')?.remove();const toast=document.createElement('div');toast.id='saveToast';toast.className='save-toast';toast.innerHTML=`<span class="save-toast-icon">✓</span><div class="save-toast-body"><div class="save-toast-title">บันทึกสำเร็จ</div><div class="save-toast-msg">${driverName}</div></div>`;document.body.appendChild(toast);setTimeout(()=>{toast.classList.add('hiding');setTimeout(()=>toast.remove(),250);},2500);}
+/* ── SPREADSHEET-STYLE BATCH SAVE ──
+   กรอกได้ทุกแถวพร้อมกัน (พิมพ์ราคา/เลือกทะเบียนไปเรื่อย ๆ เหมือนกรอกชีท)
+   แล้วกด "บันทึกทั้งหมด" ครั้งเดียว ระบบจะบันทึกทุกแถวที่กรอกครบให้อัตโนมัติ ── */
+let ilSavingAll=false;
+
+function erValidateRow(key){
+  const s=driverRowState[key];if(!s)return['ไม่พบข้อมูลแถว'];
+  const plate=document.querySelector(`.er-plate-select[data-key="${key}"]`)?.value||'';
+  const errors=[];
+  if(!plate)errors.push('เลือกทะเบียนรถ');
+  if(!s.noFuel){
+    const priceRaw=document.getElementById(`${key}-price`)?.value??'';
+    if(priceRaw===''||isNaN(parseFloat(priceRaw)))errors.push('ใส่ค่าน้ำมัน หรือติ๊ก "ไม่เติมน้ำมัน"');
+    else if(parseFloat(priceRaw)<0)errors.push('ค่าน้ำมันติดลบไม่ได้');
+  }
+  if(!s.startDT||!s.endDT)errors.push('เลือกวันเวลาเริ่ม-สิ้นสุด');
+  else if(new Date(s.endDT)<=new Date(s.startDT))errors.push('เวลาสิ้นสุดต้องหลังเวลาเริ่ม');
+  return errors;
+}
+
+function erUpdateRowStatusBadge(key){
+  const el=document.getElementById(`${key}-status`);if(!el)return;
+  const plate=document.querySelector(`.er-plate-select[data-key="${key}"]`)?.value||'';
+  if(!plate){el.className='er-row-status muted';el.textContent='รอกรอก';el.title='';return;}
+  const errs=erValidateRow(key);
+  if(errs.length===0){el.className='er-row-status ready';el.textContent='✓ พร้อมบันทึก';el.title='';}
+  else{el.className='er-row-status warn';el.textContent='⚠ '+errs[0];el.title=errs.join(', ');}
+}
+
+function erRecomputeSaveAllStatus(){
+  if(ilSavingAll)return;
+  const keys=Object.keys(driverRowState);
+  let ready=0,filling=0;
+  keys.forEach(key=>{
+    const plate=document.querySelector(`.er-plate-select[data-key="${key}"]`)?.value||'';
+    if(!plate)return;
+    const errs=erValidateRow(key);
+    if(errs.length===0)ready++;else filling++;
+  });
+  const btn=document.getElementById('ilBtnSaveAll');
+  if(btn){
+    btn.disabled=ready===0;
+    btn.innerHTML=`<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2Z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg><span>บันทึกทั้งหมด${ready>0?' ('+ready+')':''}</span>`;
+  }
+  const hint=document.getElementById('ilSaveAllHint');
+  if(hint){
+    const parts=[];
+    if(ready>0)parts.push(`${ready} คนพร้อมบันทึก`);
+    if(filling>0)parts.push(`<span style="color:var(--red);font-weight:600">${filling} คนกรอกไม่ครบ</span>`);
+    hint.innerHTML=parts.join(' · ');
+  }
+}
+
+async function erSaveRowCore(key,plate){
+  const s=driverRowState[key];if(!s)return false;
+  const date=s.startDT.split('T')[0];
+  const toBackendDT=v=>v?v.replace('T',' ')+':00':'';
+  const fd=new FormData();
+  fd.append('_token',CSRF_TOKEN);fd.append('work_date',date);fd.append('driver_name',s.driverName);fd.append('vehicle_id',plate);
+  fd.append('start_time',toBackendDT(s.startDT));fd.append('end_time',toBackendDT(s.endDT));fd.append('total_price',s.price);
+  if(s.distance>0)fd.append('total_distance',s.distance);
+  const ppl=parseFloat(document.getElementById('il-price-per-liter')?.value)||0;
+  if(ppl>0)fd.append('price_per_liter',ppl);
+  if(s.liters>0)fd.append('liters',s.liters.toFixed(2));
+  fd.append('ok',s.okCount);fd.append('ng',s.failCount);
+  if(CURRENT_USER&&CURRENT_USER!=='Guest')fd.append('create_by',CURRENT_USER);
+  try{
+    const res=await fetch(ROUTE_STORE,{method:'POST',headers:{'X-CSRF-TOKEN':CSRF_TOKEN,'Accept':'application/json'},body:fd});
+    if(!res.ok&&res.status!==302)throw new Error('HTTP '+res.status);
+    markDriverSaved(date,s.driverName);
+    ilAppendLogRow({date,driver_name:s.driverName,vehicle_id:plate,start_h:s.sh,start_m:s.sm,end_h:s.eh,end_m:s.em,start_dt:s.startDT,end_dt:s.endDT,total_price:s.price,total_distance:s.distance,liters:s.liters,km_per_liter:s.kml,ok_count:s.okCount,fail_count:s.failCount});
+    if(s.jobs.length>0)_syncNgJobs(date,s.driverName,s.jobs);
+    if(_focusedRowKey===key){_focusedRowKey=null;ilResetJobsPanel();}
+    delete driverRowState[key];
+    return true;
+  }catch(e){
+    console.warn('save error',s.driverName,e);
+    return false;
+  }
+}
+
+async function erSaveAllRows(){
+  if(ilSavingAll)return;
+  const keys=Object.keys(driverRowState);
+  const toSave=[];let invalidCount=0;
+  keys.forEach(key=>{
+    const plate=document.querySelector(`.er-plate-select[data-key="${key}"]`)?.value||'';
+    if(!plate)return;
+    const errs=erValidateRow(key);
+    if(errs.length){invalidCount++;erUpdateRowStatusBadge(key);return;}
+    toSave.push({key,plate});
+  });
+  const hint=document.getElementById('ilSaveAllHint');
+  if(toSave.length===0){
+    if(hint)hint.innerHTML=invalidCount>0?`<span style="color:var(--red);font-weight:600">⚠ มี ${invalidCount} คนกรอกข้อมูลไม่ครบ กรุณาตรวจสอบ</span>`:'ยังไม่มีข้อมูลให้บันทึก — เลือกทะเบียนรถอย่างน้อย 1 คนก่อน';
+    return;
+  }
+  ilSavingAll=true;
+  const btn=document.getElementById('ilBtnSaveAll');
+  const origHTML=btn?btn.innerHTML:'';
+  if(btn)btn.disabled=true;
+  let okN=0,failN=0;
+  for(let i=0;i<toSave.length;i++){
+    if(btn)btn.innerHTML=`<span class="ic">⏳</span><span>กำลังบันทึก... (${i+1}/${toSave.length})</span>`;
+    const success=await erSaveRowCore(toSave[i].key,toSave[i].plate);
+    if(success)okN++;else failN++;
+  }
+  ilSavingAll=false;
+  if(btn){btn.disabled=false;btn.innerHTML=origHTML;}
+  if(okN>0)showSaveToast(`บันทึกสำเร็จ ${okN} คน`);
+  const date=document.getElementById('il-work-date')?.value;
+  ilRenderDriverRows(date);
+  if(hint){
+    const msgs=[];
+    if(failN>0)msgs.push(`<span style="color:var(--red);font-weight:600">⚠ บันทึกไม่สำเร็จ ${failN} คน ลองใหม่อีกครั้ง</span>`);
+    if(invalidCount>0)msgs.push(`มี ${invalidCount} คนกรอกไม่ครบ`);
+    hint.innerHTML=msgs.join(' · ');
+  }
+}
+
+function showSaveToast(message){document.getElementById('saveToast')?.remove();const toast=document.createElement('div');toast.id='saveToast';toast.className='save-toast';toast.innerHTML=`<span class="save-toast-icon">✓</span><div class="save-toast-body"><div class="save-toast-title">บันทึกสำเร็จ</div><div class="save-toast-msg">${message}</div></div>`;document.body.appendChild(toast);setTimeout(()=>{toast.classList.add('hiding');setTimeout(()=>toast.remove(),250);},2500);}
 
 /* ── APPEND SAVED ROW ── */
-function ilAppendLogRow(r){const tbody=document.getElementById('oilTbody');if(!tbody)return;const emptyRow=tbody.querySelector('tr:not([data-driver])');if(emptyRow)emptyRow.remove();let durText='',totalMin=0;if(r.start_dt&&r.end_dt){totalMin=Math.round((new Date(r.end_dt)-new Date(r.start_dt))/60000);}else{let sm=(r.start_h||0)*60+(r.start_m||0),em=(r.end_h||0)*60+(r.end_m||0);if(em<sm)em+=1440;totalMin=em-sm;}if(totalMin>0){const days=Math.floor(totalMin/1440),hh=Math.floor((totalMin%1440)/60),mm=totalMin%60;if(days>0){durText=days+' วัน';if(hh>0)durText+=' '+hh+' ชม.';if(mm>0)durText+=' '+mm+' น.';}else if(hh>0&&mm>0)durText=hh+' ชม. '+mm+' น.';else if(hh>0)durText=hh+' ชม.';else durText=mm+' น.';}const pad=n=>String(n).padStart(2,'0');const timeText=`${pad(r.start_h||0)}:${pad(r.start_m||0)}-${pad(r.end_h||0)}:${pad(r.end_m||0)}`;const kml=r.km_per_liter||0;let kmlCls='km-mid';if(kml>=13)kmlCls='km-good';else if(kml>0&&kml<9)kmlCls='km-bad';const thbPerKm=(r.total_distance>0&&r.total_price>0)?(r.total_price/r.total_distance):0;const dp=(r.date||'').split('-');const dateText=dp.length===3?`${dp[2]}/${dp[1]}`:'—';const dateFull=dp.length===3?`${dp[2]}/${dp[1]}/${dp[0]}`:'';const tr=document.createElement('tr');tr.setAttribute('data-driver',(r.driver_name||'').toLowerCase());tr.style.background='rgba(59,130,246,.08)';tr.innerHTML=`<td class="row-idx" data-label="#">•</td><td data-label="วันที่"><span class="date-pill" title="${dateFull}">${dateText}</span></td><td data-label="คนขับ"><div class="driver-cell"><div class="driver-name" title="${r.driver_name}">${r.driver_name}</div><div class="driver-plate">${r.vehicle_id||'—'}</div></div></td><td data-label="เวลา"><span class="time-pill">${timeText}</span></td><td class="num" data-label="ชม.">${durText?'<span class="hour-pill">'+durText+'</span>':'<span style="color:var(--text4)">—</span>'}</td><td class="num" data-label="ระยะ">${r.total_distance>0?Math.round(r.total_distance).toLocaleString()+' km':'—'}</td><td class="num" data-label="ลิตร">${r.liters>0?fmtN(r.liters):'—'}</td><td class="num" data-label="ค่าน้ำมัน">${r.total_price>0?'฿'+Math.round(r.total_price).toLocaleString():'—'}</td><td class="num" data-label="KM/L">${kml>0?'<span class="'+kmlCls+'">'+fmtN(kml)+'</span>':'<span style="color:var(--text4)">—</span>'}</td><td class="num" data-label="฿/km">${thbPerKm>0?'<span class="thb-km-val">฿'+thbPerKm.toFixed(2)+'</span>':'<span style="color:var(--text4)">—</span>'}</td>`;tbody.insertBefore(tr,tbody.firstChild);setTimeout(()=>{tr.style.transition='background 1s';tr.style.background='';},100);const c=document.getElementById('oilCount');if(c)c.textContent=document.querySelectorAll('#oilTbody tr[data-driver]').length;ilUpdateChartsAfterSave(r);}
+function ilAppendLogRow(r){const tbody=document.getElementById('oilTbody');if(!tbody)return;const emptyRow=tbody.querySelector('tr:not([data-driver])');if(emptyRow)emptyRow.remove();let durText='',totalMin=0;if(r.start_dt&&r.end_dt){totalMin=Math.round((new Date(r.end_dt)-new Date(r.start_dt))/60000);}else{let sm=(r.start_h||0)*60+(r.start_m||0),em=(r.end_h||0)*60+(r.end_m||0);if(em<sm)em+=1440;totalMin=em-sm;}if(totalMin>0){const days=Math.floor(totalMin/1440),hh=Math.floor((totalMin%1440)/60),mm=totalMin%60;if(days>0){durText=days+' วัน';if(hh>0)durText+=' '+hh+' ชม.';if(mm>0)durText+=' '+mm+' น.';}else if(hh>0&&mm>0)durText=hh+' ชม. '+mm+' น.';else if(hh>0)durText=hh+' ชม.';else durText=mm+' น.';}const pad=n=>String(n).padStart(2,'0');const timeText=`${pad(r.start_h||0)}:${pad(r.start_m||0)}-${pad(r.end_h||0)}:${pad(r.end_m||0)}`;const kml=r.km_per_liter||0;let kmlCls='km-mid';if(kml>=13)kmlCls='km-good';else if(kml>0&&kml<9)kmlCls='km-bad';const thbPerKm=(r.total_distance>0&&r.total_price>0)?(r.total_price/r.total_distance):0;const dp=(r.date||'').split('-');const dateText=dp.length===3?`${dp[2]}/${dp[1]}`:'—';const dateFull=dp.length===3?`${dp[2]}/${dp[1]}/${dp[0]}`:'';const tr=document.createElement('tr');tr.setAttribute('data-driver',(r.driver_name||'').toLowerCase());tr.style.background='rgba(62,106,225,.08)';tr.innerHTML=`<td class="row-idx" data-label="#">•</td><td data-label="วันที่"><span class="date-pill" title="${dateFull}">${dateText}</span></td><td data-label="คนขับ"><div class="driver-cell"><div class="driver-name" title="${r.driver_name}">${r.driver_name}</div><div class="driver-plate">${r.vehicle_id||'—'}</div></div></td><td data-label="เวลา"><span class="time-pill">${timeText}</span></td><td class="num" data-label="ชม.">${durText?'<span class="hour-pill">'+durText+'</span>':'<span style="color:var(--text4)">—</span>'}</td><td class="num" data-label="ระยะ">${r.total_distance>0?Math.round(r.total_distance).toLocaleString()+' km':'—'}</td><td class="num" data-label="ลิตร">${r.liters>0?fmtN(r.liters):'—'}</td><td class="num" data-label="ค่าน้ำมัน">${r.total_price>0?'฿'+Math.round(r.total_price).toLocaleString():'—'}</td><td class="num" data-label="KM/L">${kml>0?'<span class="'+kmlCls+'">'+fmtN(kml)+'</span>':'<span style="color:var(--text4)">—</span>'}</td><td class="num" data-label="฿/km">${thbPerKm>0?'<span class="thb-km-val">฿'+thbPerKm.toFixed(2)+'</span>':'<span style="color:var(--text4)">—</span>'}</td>`;tbody.insertBefore(tr,tbody.firstChild);setTimeout(()=>{tr.style.transition='background 1s';tr.style.background='';},100);const c=document.getElementById('oilCount');if(c)c.textContent=document.querySelectorAll('#oilTbody tr[data-driver]').length;ilUpdateChartsAfterSave(r);}
 
 function ilUpdateChartsAfterSave(r){const name=r.driver_name;if(!name)return;if(isAllowedDriver(name)){if(!DLV_BY_DRIVER[name])DLV_BY_DRIVER[name]={success:0,fail:0,plate:r.vehicle_id||''};DLV_BY_DRIVER[name].success+=(r.ok_count||0);DLV_BY_DRIVER[name].fail+=(r.fail_count||0);}const plate=r.vehicle_id||'ไม่ระบุ';const key=plate+'|'+name;if(r.km_per_liter>0){if(!KML_BY_DRIVER[key])KML_BY_DRIVER[key]={sum:0,count:0,plate,driver:name};KML_BY_DRIVER[key].sum+=r.km_per_liter;KML_BY_DRIVER[key].count++;}if(!COST_BY_DRIVER[key])COST_BY_DRIVER[key]={price:0,dist:0,plate,driver:name};COST_BY_DRIVER[key].price+=(r.total_price||0);COST_BY_DRIVER[key].dist+=(r.total_distance||0);try{renderDlv();renderKmlChart();renderCostChart();}catch(e){}}
 
@@ -1078,8 +1205,8 @@ function closePdfRangeModal(){document.getElementById('pdfModalOverlay')?.classL
 function setPdfMode(mode){pdfMode=mode;document.querySelectorAll('.pdf-mode-btn').forEach(b=>b.classList.toggle('active',b.dataset.mode===mode));document.getElementById('pdfRangeFields').style.display=mode==='range'?'':'none';document.getElementById('pdfSingleFields').style.display=mode==='single'?'':'none';}
 async function confirmPdfExport(){let from,to,title;if(pdfMode==='single'){const d=document.getElementById('pdfSingleDate').value;if(!d){alert('เลือกวันที่');return;}from=to=d;title='รายงานประจำวันที่ '+_thDate(d);}else{from=document.getElementById('pdfDateFrom').value;to=document.getElementById('pdfDateTo').value;if(!from||!to){alert('เลือกช่วงวันที่');return;}if(from>to){const tmp=from;from=to;to=tmp;}title=(from===to)?('รายงานประจำวันที่ '+_thDate(from)):('รายงานช่วงวันที่ '+_thDate(from)+' – '+_thDate(to));}closePdfRangeModal();await exportPDF(from,to,title);}
 function _thDate(d){const p=(d||'').split('-');if(p.length!==3)return d;return`${p[2]}/${p[1]}/${parseInt(p[0])+543}`;}
-async function exportPDF(fromDate,toDate,reportTitle){const btn=document.querySelector('.entry-export-btn');const orig=btn?btn.innerHTML:'';if(btn){btn.disabled=true;btn.innerHTML='<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10" stroke-opacity=".25"/><path d="M12 2a10 10 0 0 1 10 10"/></svg> กำลังสร้าง...';}try{const rows=PDF_LOGS.filter(l=>{const d=l.date||'';return d>=fromDate&&d<=toDate;});if(rows.length===0){alert('ไม่มีข้อมูลในช่วงวันที่นี้');if(btn){btn.disabled=false;btn.innerHTML=orig;}return;}const{jsPDF}=window.jspdf;const pdf=new jsPDF('l','mm','a4');const pageW=297,pageH=210,margin=10,usableW=pageW-margin*2,usableH=pageH-margin*2;const stage=document.createElement('div');stage.style.cssText='position:fixed;left:-99999px;top:0;background:#fff;font-family:"IBM Plex Sans Thai",sans-serif;padding:0;';document.body.appendChild(stage);const totPrice=rows.reduce((s,r)=>s+r.price,0);const totDist=rows.reduce((s,r)=>s+r.distance,0);const totLiters=rows.reduce((s,r)=>s+r.liters,0);const avgKml=totLiters>0?totDist/totLiters:0;const byDriver={};rows.forEach(r=>{const n=r.driver||'ไม่ระบุ';if(!byDriver[n])byDriver[n]={rows:[],price:0,dist:0,liters:0};byDriver[n].rows.push(r);byDriver[n].price+=r.price;byDriver[n].dist+=r.distance;byDriver[n].liters+=r.liters;});const driverNames=Object.keys(byDriver).filter(n=>byDriver[n].price>0||byDriver[n].dist>0).sort((a,b)=>{const ta=byDriver[a].dist>0?byDriver[a].price/byDriver[a].dist:0;const tb=byDriver[b].dist>0?byDriver[b].price/byDriver[b].dist:0;return tb-ta;});driverNames.forEach(n=>{byDriver[n].rows.sort((a,b)=>(a.date||'').localeCompare(b.date||''));});async function renderPage(el,isFirst){stage.appendChild(el);if(!isFirst)pdf.addPage();const canvas=await html2canvas(el,{scale:1.5,backgroundColor:'#fff',logging:false});const imgData=canvas.toDataURL('image/jpeg',0.80);const imgW=usableW,imgH=canvas.height*imgW/canvas.width;pdf.addImage(imgData,'JPEG',margin,margin,imgW,Math.min(imgH,usableH));stage.removeChild(el);}const p1=document.createElement('div');p1.style.cssText='width:1200px;background:#fff;padding:30px 34px;box-sizing:border-box;';const totHours=rows.reduce((s,r)=>s+(r.hours||0),0);let h1=`<div style="display:flex;justify-content:space-between;align-items:flex-start;border-bottom:3px solid #3b82f6;padding-bottom:10px;margin-bottom:14px;"><div><div style="font-size:20px;font-weight:700;color:#18181b;">${reportTitle}</div><div style="font-size:11px;color:#71717a;margin-top:2px;">ระบบติดตามน้ำมันรถ · ${CURRENT_USER}</div></div><div style="text-align:right;font-size:10px;color:#a1a1aa;">พิมพ์เมื่อ ${new Date().toLocaleString('th-TH',{timeZone:TZ})}</div></div>`;h1+=`<div style="display:grid;grid-template-columns:repeat(6,1fr);gap:7px;margin-bottom:14px;">${_pdfStat('ค่าน้ำมันรวม','฿'+Math.round(totPrice).toLocaleString())}${_pdfStat('ระยะทางรวม',Math.round(totDist).toLocaleString()+' km')}${_pdfStat('น้ำมันรวม',fmtN(totLiters)+' L')}${_pdfStat('เฉลี่ย km/L',fmtN(avgKml))}${_pdfStat('ชั่วโมงรวม',fmtN(totHours)+' ชม.')}${_pdfStat('จำนวน',rows.length+' รายการ · '+driverNames.length+' คน')}</div>`;const rankPrice=[...driverNames].sort((a,b)=>byDriver[b].price-byDriver[a].price);const rankDist=[...driverNames].sort((a,b)=>byDriver[b].dist-byDriver[a].dist);const rankHours=[...driverNames].sort((a,b)=>{const ha=byDriver[a].rows.reduce((s,r)=>s+(r.hours||0),0);const hb=byDriver[b].rows.reduce((s,r)=>s+(r.hours||0),0);return hb-ha;});const rankKml=[...driverNames].filter(n=>byDriver[n].liters>0).sort((a,b)=>(byDriver[b].dist/byDriver[b].liters)-(byDriver[a].dist/byDriver[a].liters));const medal=i=>i===0?'🥇':i===1?'🥈':i===2?'🥉':'';const _rankRow=(arr,valFn)=>arr.map((n,i)=>`<div style="display:flex;align-items:center;gap:6px;padding:4px 0;${i<arr.length-1?'border-bottom:1px solid #f4f4f5;':''}"><span style="font-size:13px;width:20px;text-align:center;">${medal(i)}</span><span style="font-size:11px;font-weight:600;color:#18181b;flex:1;">${n}</span><span style="font-size:11px;font-weight:700;color:#3f3f46;font-family:ui-monospace,monospace;">${valFn(n)}</span></div>`).join('');h1+=`<div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:10px;margin-bottom:14px;"><div style="background:#fefce8;border:1px solid #fde68a;border-radius:8px;padding:10px 12px;"><div style="font-size:10px;font-weight:700;color:#92400e;margin-bottom:6px;">⛽ เติมน้ำมันมากสุด</div>${_rankRow(rankPrice,n=>'฿'+Math.round(byDriver[n].price).toLocaleString())}</div><div style="background:#eff6ff;border:1px solid #bfdbfe;border-radius:8px;padding:10px 12px;"><div style="font-size:10px;font-weight:700;color:#1e40af;margin-bottom:6px;">🛣️ ขับรถไกลสุด</div>${_rankRow(rankDist,n=>Math.round(byDriver[n].dist).toLocaleString()+' km')}</div><div style="background:#f0fdf4;border:1px solid #bbf7d0;border-radius:8px;padding:10px 12px;"><div style="font-size:10px;font-weight:700;color:#166534;margin-bottom:6px;">⏱️ ใช้เวลามากสุด</div>${_rankRow(rankHours,n=>{const h=byDriver[n].rows.reduce((s,r)=>s+(r.hours||0),0);return fmtN(h)+' ชม.';})}</div><div style="background:#faf5ff;border:1px solid #e9d5ff;border-radius:8px;padding:10px 12px;"><div style="font-size:10px;font-weight:700;color:#6b21a8;margin-bottom:6px;">📊 ประหยัดสุด</div>${_rankRow(rankKml,n=>{const k=byDriver[n].dist/byDriver[n].liters;return fmtN(k)+' km/L';})}</div></div>`;p1.innerHTML=h1;await renderPage(p1,true);const pSum=document.createElement('div');pSum.style.cssText='width:1200px;background:#fff;padding:30px 34px;box-sizing:border-box;';let hSum=`<div style="font-size:16px;font-weight:700;color:#18181b;margin-bottom:14px;border-bottom:2px solid #3b82f6;padding-bottom:8px;">ค่าน้ำมันแยกตามคนขับ · ${reportTitle}</div><table style="width:100%;border-collapse:collapse;font-size:13px;"><thead><tr style="background:#f4f4f5;"><th style="padding:8px 10px;text-align:left;border-bottom:2px solid #e4e4e7;">คนขับ</th><th style="padding:8px 10px;text-align:right;border-bottom:2px solid #e4e4e7;">ค่าน้ำมัน</th><th style="padding:8px 10px;text-align:right;border-bottom:2px solid #e4e4e7;">ระยะ</th><th style="padding:8px 10px;text-align:right;border-bottom:2px solid #e4e4e7;">ลิตร</th><th style="padding:8px 10px;text-align:right;border-bottom:2px solid #e4e4e7;">km/L</th><th style="padding:8px 10px;text-align:right;border-bottom:2px solid #e4e4e7;">฿/km</th><th style="padding:8px 10px;text-align:right;border-bottom:2px solid #e4e4e7;">ชม.</th><th style="padding:8px 10px;text-align:right;border-bottom:2px solid #e4e4e7;">รายการ</th></tr></thead><tbody>`;driverNames.forEach((n,i)=>{const d=byDriver[n];const kml=d.liters>0?d.dist/d.liters:0;const thbKm=d.dist>0?d.price/d.dist:0;const hrs=d.rows.reduce((s,r)=>s+(r.hours||0),0);hSum+=`<tr style="background:${i%2?'#fafafa':'#fff'};"><td style="padding:7px 10px;border-bottom:1px solid #f4f4f5;font-weight:600;">${n}</td><td style="padding:7px 10px;border-bottom:1px solid #f4f4f5;text-align:right;">฿${Math.round(d.price).toLocaleString()}</td><td style="padding:7px 10px;border-bottom:1px solid #f4f4f5;text-align:right;">${Math.round(d.dist).toLocaleString()}</td><td style="padding:7px 10px;border-bottom:1px solid #f4f4f5;text-align:right;">${fmtN(d.liters)}</td><td style="padding:7px 10px;border-bottom:1px solid #f4f4f5;text-align:right;font-weight:600;">${kml>0?fmtN(kml):'—'}</td><td style="padding:7px 10px;border-bottom:1px solid #f4f4f5;text-align:right;">${thbKm>0?'฿'+fmtN(thbKm):'—'}</td><td style="padding:7px 10px;border-bottom:1px solid #f4f4f5;text-align:right;">${fmtN(hrs)}</td><td style="padding:7px 10px;border-bottom:1px solid #f4f4f5;text-align:right;">${d.rows.length}</td></tr>`;});hSum+=`</tbody></table>`;pSum.innerHTML=hSum;await renderPage(pSum,false);const ROWS_PER_PAGE=24;for(const drvName of driverNames){const drvRows=byDriver[drvName].rows;const drvPrice=byDriver[drvName].price;const drvDist=byDriver[drvName].dist;const drvLiters=byDriver[drvName].liters;const drvKml=drvLiters>0?drvDist/drvLiters:0;const drvThbKm=drvDist>0?drvPrice/drvDist:0;const chunks=[];for(let i=0;i<drvRows.length;i+=ROWS_PER_PAGE)chunks.push(drvRows.slice(i,i+ROWS_PER_PAGE));for(let ci=0;ci<chunks.length;ci++){const chunk=chunks[ci];const page=document.createElement('div');page.style.cssText='width:1200px;background:#fff;padding:28px 36px;box-sizing:border-box;';let html=`<div style="display:flex;align-items:center;justify-content:space-between;border-bottom:2px solid #3b82f6;padding-bottom:8px;margin-bottom:10px;"><div><div style="font-size:16px;font-weight:700;">${drvName}</div><div style="font-size:10px;color:#71717a;">${reportTitle}${chunks.length>1?' · ('+(ci+1)+'/'+chunks.length+')':''}</div></div><div style="display:flex;gap:14px;font-size:10px;"><span>฿<b style="font-size:13px">${Math.round(drvPrice).toLocaleString()}</b></span><span><b style="font-size:13px">${Math.round(drvDist).toLocaleString()}</b> km</span><span><b style="font-size:13px">${fmtN(drvLiters)}</b> L</span>${drvKml>0?`<span><b style="font-size:13px">${fmtN(drvKml)}</b> km/L</span>`:''}</div></div><table style="width:100%;border-collapse:collapse;font-size:11px;"><thead><tr style="background:#f4f4f5;"><th style="padding:6px;text-align:left;border-bottom:2px solid #e4e4e7;">วันที่</th><th style="padding:6px;text-align:left;border-bottom:2px solid #e4e4e7;">ทะเบียน</th><th style="padding:6px;text-align:left;border-bottom:2px solid #e4e4e7;">เวลา</th><th style="padding:6px;text-align:right;border-bottom:2px solid #e4e4e7;">฿</th><th style="padding:6px;text-align:right;border-bottom:2px solid #e4e4e7;">km</th><th style="padding:6px;text-align:right;border-bottom:2px solid #e4e4e7;">L</th><th style="padding:6px;text-align:right;border-bottom:2px solid #e4e4e7;">km/L</th><th style="padding:6px;text-align:right;border-bottom:2px solid #e4e4e7;">฿/km</th></tr></thead><tbody>`;chunk.forEach((r,i)=>{const dp=(r.date||'').split('-');const dateText=dp.length===3?`${dp[2]}/${dp[1]}/${dp[0]}`:'—';const thbKm=(r.distance>0&&r.price>0)?(r.price/r.distance):0;const startT=(r.start||'').substring(0,5);const endT=(r.end||'').substring(0,5);const timeT=(startT&&endT)?startT+'-'+endT:'—';html+=`<tr style="background:${i%2?'#fafafa':'#fff'};"><td style="padding:5px 6px;border-bottom:1px solid #f4f4f5;">${dateText}</td><td style="padding:5px 6px;border-bottom:1px solid #f4f4f5;">${r.plate||'—'}</td><td style="padding:5px 6px;border-bottom:1px solid #f4f4f5;font-size:10px;color:#71717a;">${timeT}</td><td style="padding:5px 6px;border-bottom:1px solid #f4f4f5;text-align:right;font-weight:600;">${r.price>0?'฿'+Math.round(r.price).toLocaleString():'—'}</td><td style="padding:5px 6px;border-bottom:1px solid #f4f4f5;text-align:right;">${r.distance>0?Math.round(r.distance).toLocaleString():'—'}</td><td style="padding:5px 6px;border-bottom:1px solid #f4f4f5;text-align:right;">${r.liters>0?fmtN(r.liters):'—'}</td><td style="padding:5px 6px;border-bottom:1px solid #f4f4f5;text-align:right;font-weight:600;">${r.kml>0?fmtN(r.kml):'—'}</td><td style="padding:5px 6px;border-bottom:1px solid #f4f4f5;text-align:right;">${thbKm>0?'฿'+fmtN(thbKm):'—'}</td></tr>`;});html+='</tbody>';if(ci===chunks.length-1){html+=`<tfoot><tr style="background:#f0f7ff;border-top:3px solid #3b82f6;"><td colspan="3" style="padding:10px;font-weight:700;font-size:14px;color:#1e40af;">รวม ${drvName}</td><td style="padding:10px;text-align:right;font-weight:700;font-size:14px;">฿${Math.round(drvPrice).toLocaleString()}</td><td style="padding:10px;text-align:right;font-weight:700;font-size:14px;">${Math.round(drvDist).toLocaleString()} km</td><td style="padding:10px;text-align:right;font-weight:700;font-size:14px;">${fmtN(drvLiters)} L</td><td style="padding:10px;text-align:right;font-weight:700;font-size:14px;">${drvKml>0?fmtN(drvKml)+' km/L':'—'}</td><td style="padding:10px;text-align:right;font-weight:700;font-size:14px;color:#1e40af;">${drvThbKm>0?'฿'+fmtN(drvThbKm)+'/km':'—'}</td></tr></tfoot>`;}html+='</table>';page.innerHTML=html;await renderPage(page,false);}}document.body.removeChild(stage);const fn=(fromDate===toDate)?`รายงานน้ำมัน_${fromDate}.pdf`:`รายงานน้ำมัน_${fromDate}_ถึง_${toDate}.pdf`;pdf.save(fn);}catch(e){console.error('PDF error',e);alert('สร้าง PDF ไม่สำเร็จ: '+e.message);}finally{if(btn){btn.disabled=false;btn.innerHTML=orig;}}}
-function _pdfStat(label,value){return`<div style="background:#f9fafb;border:1px solid #f0f0f0;border-radius:12px;padding:14px 16px;"><div style="font-size:12px;color:#71717a;margin-bottom:4px;">${label}</div><div style="font-size:19px;font-weight:700;color:#18181b;">${value}</div></div>`;}
+async function exportPDF(fromDate,toDate,reportTitle){const btn=document.querySelector('.entry-export-btn');const orig=btn?btn.innerHTML:'';if(btn){btn.disabled=true;btn.innerHTML='<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10" stroke-opacity=".25"/><path d="M12 2a10 10 0 0 1 10 10"/></svg> กำลังสร้าง...';}try{const rows=PDF_LOGS.filter(l=>{const d=l.date||'';return d>=fromDate&&d<=toDate;});if(rows.length===0){alert('ไม่มีข้อมูลในช่วงวันที่นี้');if(btn){btn.disabled=false;btn.innerHTML=orig;}return;}const{jsPDF}=window.jspdf;const pdf=new jsPDF('l','mm','a4');const pageW=297,pageH=210,margin=10,usableW=pageW-margin*2,usableH=pageH-margin*2;const stage=document.createElement('div');stage.style.cssText='position:fixed;left:-99999px;top:0;background:#fff;font-family:"Inter","IBM Plex Sans Thai",sans-serif;padding:0;';document.body.appendChild(stage);const totPrice=rows.reduce((s,r)=>s+r.price,0);const totDist=rows.reduce((s,r)=>s+r.distance,0);const totLiters=rows.reduce((s,r)=>s+r.liters,0);const avgKml=totLiters>0?totDist/totLiters:0;const byDriver={};rows.forEach(r=>{const n=r.driver||'ไม่ระบุ';if(!byDriver[n])byDriver[n]={rows:[],price:0,dist:0,liters:0};byDriver[n].rows.push(r);byDriver[n].price+=r.price;byDriver[n].dist+=r.distance;byDriver[n].liters+=r.liters;});const driverNames=Object.keys(byDriver).filter(n=>byDriver[n].price>0||byDriver[n].dist>0).sort((a,b)=>{const ta=byDriver[a].dist>0?byDriver[a].price/byDriver[a].dist:0;const tb=byDriver[b].dist>0?byDriver[b].price/byDriver[b].dist:0;return tb-ta;});driverNames.forEach(n=>{byDriver[n].rows.sort((a,b)=>(a.date||'').localeCompare(b.date||''));});async function renderPage(el,isFirst){stage.appendChild(el);if(!isFirst)pdf.addPage();const canvas=await html2canvas(el,{scale:1.5,backgroundColor:'#fff',logging:false});const imgData=canvas.toDataURL('image/jpeg',0.80);const imgW=usableW,imgH=canvas.height*imgW/canvas.width;pdf.addImage(imgData,'JPEG',margin,margin,imgW,Math.min(imgH,usableH));stage.removeChild(el);}const p1=document.createElement('div');p1.style.cssText='width:1200px;background:#fff;padding:30px 34px;box-sizing:border-box;';const totHours=rows.reduce((s,r)=>s+(r.hours||0),0);let h1=`<div style="display:flex;justify-content:space-between;align-items:flex-start;border-bottom:3px solid #3E6AE1;padding-bottom:10px;margin-bottom:14px;"><div><div style="font-size:20px;font-weight:700;color:#171a20;">${reportTitle}</div><div style="font-size:11px;color:#9aa0a6;margin-top:2px;">ระบบติดตามน้ำมันรถ · ${CURRENT_USER}</div></div><div style="text-align:right;font-size:10px;color:#c4c4c4;">พิมพ์เมื่อ ${new Date().toLocaleString('th-TH',{timeZone:TZ})}</div></div>`;h1+=`<div style="display:grid;grid-template-columns:repeat(6,1fr);gap:7px;margin-bottom:14px;">${_pdfStat('ค่าน้ำมันรวม','฿'+Math.round(totPrice).toLocaleString())}${_pdfStat('ระยะทางรวม',Math.round(totDist).toLocaleString()+' km')}${_pdfStat('น้ำมันรวม',fmtN(totLiters)+' L')}${_pdfStat('เฉลี่ย km/L',fmtN(avgKml))}${_pdfStat('ชั่วโมงรวม',fmtN(totHours)+' ชม.')}${_pdfStat('จำนวน',rows.length+' รายการ · '+driverNames.length+' คน')}</div>`;const rankPrice=[...driverNames].sort((a,b)=>byDriver[b].price-byDriver[a].price);const rankDist=[...driverNames].sort((a,b)=>byDriver[b].dist-byDriver[a].dist);const rankHours=[...driverNames].sort((a,b)=>{const ha=byDriver[a].rows.reduce((s,r)=>s+(r.hours||0),0);const hb=byDriver[b].rows.reduce((s,r)=>s+(r.hours||0),0);return hb-ha;});const rankKml=[...driverNames].filter(n=>byDriver[n].liters>0).sort((a,b)=>(byDriver[b].dist/byDriver[b].liters)-(byDriver[a].dist/byDriver[a].liters));const medal=i=>i===0?'🥇':i===1?'🥈':i===2?'🥉':'';const _rankRow=(arr,valFn)=>arr.map((n,i)=>`<div style="display:flex;align-items:center;gap:6px;padding:4px 0;${i<arr.length-1?'border-bottom:1px solid #ececec;':''}"><span style="font-size:13px;width:20px;text-align:center;">${medal(i)}</span><span style="font-size:11px;font-weight:600;color:#171a20;flex:1;">${n}</span><span style="font-size:11px;font-weight:700;color:#5c5e62;font-family:ui-monospace,monospace;">${valFn(n)}</span></div>`).join('');h1+=`<div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:10px;margin-bottom:14px;"><div style="background:#fafbfc;border:1px solid #ececec;padding:10px 12px;"><div style="font-size:10px;font-weight:700;color:#5c5e62;margin-bottom:6px;">⛽ เติมน้ำมันมากสุด</div>${_rankRow(rankPrice,n=>'฿'+Math.round(byDriver[n].price).toLocaleString())}</div><div style="background:#eef2fc;border:1px solid #c6d3f7;padding:10px 12px;"><div style="font-size:10px;font-weight:700;color:#2f56c4;margin-bottom:6px;">🛣️ ขับรถไกลสุด</div>${_rankRow(rankDist,n=>Math.round(byDriver[n].dist).toLocaleString()+' km')}</div><div style="background:#fafbfc;border:1px solid #ececec;padding:10px 12px;"><div style="font-size:10px;font-weight:700;color:#171a20;margin-bottom:6px;">⏱️ ใช้เวลามากสุด</div>${_rankRow(rankHours,n=>{const h=byDriver[n].rows.reduce((s,r)=>s+(r.hours||0),0);return fmtN(h)+' ชม.';})}</div><div style="background:#eef2fc;border:1px solid #c6d3f7;padding:10px 12px;"><div style="font-size:10px;font-weight:700;color:#2f56c4;margin-bottom:6px;">📊 ประหยัดสุด</div>${_rankRow(rankKml,n=>{const k=byDriver[n].dist/byDriver[n].liters;return fmtN(k)+' km/L';})}</div></div>`;p1.innerHTML=h1;await renderPage(p1,true);const pSum=document.createElement('div');pSum.style.cssText='width:1200px;background:#fff;padding:30px 34px;box-sizing:border-box;';let hSum=`<div style="font-size:16px;font-weight:700;color:#171a20;margin-bottom:14px;border-bottom:2px solid #3E6AE1;padding-bottom:8px;">ค่าน้ำมันแยกตามคนขับ · ${reportTitle}</div><table style="width:100%;border-collapse:collapse;font-size:13px;"><thead><tr style="background:#3E6AE1;"><th style="padding:8px 10px;text-align:left;color:#fff;">คนขับ</th><th style="padding:8px 10px;text-align:right;color:#fff;">ค่าน้ำมัน</th><th style="padding:8px 10px;text-align:right;color:#fff;">ระยะ</th><th style="padding:8px 10px;text-align:right;color:#fff;">ลิตร</th><th style="padding:8px 10px;text-align:right;color:#fff;">km/L</th><th style="padding:8px 10px;text-align:right;color:#fff;">฿/km</th><th style="padding:8px 10px;text-align:right;color:#fff;">ชม.</th><th style="padding:8px 10px;text-align:right;color:#fff;">รายการ</th></tr></thead><tbody>`;driverNames.forEach((n,i)=>{const d=byDriver[n];const kml=d.liters>0?d.dist/d.liters:0;const thbKm=d.dist>0?d.price/d.dist:0;const hrs=d.rows.reduce((s,r)=>s+(r.hours||0),0);hSum+=`<tr style="background:${i%2?'#fafbfc':'#fff'};"><td style="padding:7px 10px;border-bottom:1px solid #ececec;font-weight:600;">${n}</td><td style="padding:7px 10px;border-bottom:1px solid #ececec;text-align:right;">฿${Math.round(d.price).toLocaleString()}</td><td style="padding:7px 10px;border-bottom:1px solid #ececec;text-align:right;">${Math.round(d.dist).toLocaleString()}</td><td style="padding:7px 10px;border-bottom:1px solid #ececec;text-align:right;">${fmtN(d.liters)}</td><td style="padding:7px 10px;border-bottom:1px solid #ececec;text-align:right;font-weight:600;">${kml>0?fmtN(kml):'—'}</td><td style="padding:7px 10px;border-bottom:1px solid #ececec;text-align:right;">${thbKm>0?'฿'+fmtN(thbKm):'—'}</td><td style="padding:7px 10px;border-bottom:1px solid #ececec;text-align:right;">${fmtN(hrs)}</td><td style="padding:7px 10px;border-bottom:1px solid #ececec;text-align:right;">${d.rows.length}</td></tr>`;});hSum+=`</tbody></table>`;pSum.innerHTML=hSum;await renderPage(pSum,false);const ROWS_PER_PAGE=24;for(const drvName of driverNames){const drvRows=byDriver[drvName].rows;const drvPrice=byDriver[drvName].price;const drvDist=byDriver[drvName].dist;const drvLiters=byDriver[drvName].liters;const drvKml=drvLiters>0?drvDist/drvLiters:0;const drvThbKm=drvDist>0?drvPrice/drvDist:0;const chunks=[];for(let i=0;i<drvRows.length;i+=ROWS_PER_PAGE)chunks.push(drvRows.slice(i,i+ROWS_PER_PAGE));for(let ci=0;ci<chunks.length;ci++){const chunk=chunks[ci];const page=document.createElement('div');page.style.cssText='width:1200px;background:#fff;padding:28px 36px;box-sizing:border-box;';let html=`<div style="display:flex;align-items:center;justify-content:space-between;border-bottom:2px solid #3E6AE1;padding-bottom:8px;margin-bottom:10px;"><div><div style="font-size:16px;font-weight:700;">${drvName}</div><div style="font-size:10px;color:#9aa0a6;">${reportTitle}${chunks.length>1?' · ('+(ci+1)+'/'+chunks.length+')':''}</div></div><div style="display:flex;gap:14px;font-size:10px;"><span>฿<b style="font-size:13px">${Math.round(drvPrice).toLocaleString()}</b></span><span><b style="font-size:13px">${Math.round(drvDist).toLocaleString()}</b> km</span><span><b style="font-size:13px">${fmtN(drvLiters)}</b> L</span>${drvKml>0?`<span><b style="font-size:13px">${fmtN(drvKml)}</b> km/L</span>`:''}</div></div><table style="width:100%;border-collapse:collapse;font-size:11px;"><thead><tr style="background:#f5f6f8;"><th style="padding:6px;text-align:left;border-bottom:2px solid #ececec;">วันที่</th><th style="padding:6px;text-align:left;border-bottom:2px solid #ececec;">ทะเบียน</th><th style="padding:6px;text-align:left;border-bottom:2px solid #ececec;">เวลา</th><th style="padding:6px;text-align:right;border-bottom:2px solid #ececec;">฿</th><th style="padding:6px;text-align:right;border-bottom:2px solid #ececec;">km</th><th style="padding:6px;text-align:right;border-bottom:2px solid #ececec;">L</th><th style="padding:6px;text-align:right;border-bottom:2px solid #ececec;">km/L</th><th style="padding:6px;text-align:right;border-bottom:2px solid #ececec;">฿/km</th></tr></thead><tbody>`;chunk.forEach((r,i)=>{const dp=(r.date||'').split('-');const dateText=dp.length===3?`${dp[2]}/${dp[1]}/${dp[0]}`:'—';const thbKm=(r.distance>0&&r.price>0)?(r.price/r.distance):0;const startT=(r.start||'').substring(0,5);const endT=(r.end||'').substring(0,5);const timeT=(startT&&endT)?startT+'-'+endT:'—';html+=`<tr style="background:${i%2?'#fafbfc':'#fff'};"><td style="padding:5px 6px;border-bottom:1px solid #ececec;">${dateText}</td><td style="padding:5px 6px;border-bottom:1px solid #ececec;">${r.plate||'—'}</td><td style="padding:5px 6px;border-bottom:1px solid #ececec;font-size:10px;color:#9aa0a6;">${timeT}</td><td style="padding:5px 6px;border-bottom:1px solid #ececec;text-align:right;font-weight:600;">${r.price>0?'฿'+Math.round(r.price).toLocaleString():'—'}</td><td style="padding:5px 6px;border-bottom:1px solid #ececec;text-align:right;">${r.distance>0?Math.round(r.distance).toLocaleString():'—'}</td><td style="padding:5px 6px;border-bottom:1px solid #ececec;text-align:right;">${r.liters>0?fmtN(r.liters):'—'}</td><td style="padding:5px 6px;border-bottom:1px solid #ececec;text-align:right;font-weight:600;">${r.kml>0?fmtN(r.kml):'—'}</td><td style="padding:5px 6px;border-bottom:1px solid #ececec;text-align:right;">${thbKm>0?'฿'+fmtN(thbKm):'—'}</td></tr>`;});html+='</tbody>';if(ci===chunks.length-1){html+=`<tfoot><tr style="background:#eef2fc;border-top:3px solid #3E6AE1;"><td colspan="3" style="padding:10px;font-weight:700;font-size:14px;color:#2f56c4;">รวม ${drvName}</td><td style="padding:10px;text-align:right;font-weight:700;font-size:14px;">฿${Math.round(drvPrice).toLocaleString()}</td><td style="padding:10px;text-align:right;font-weight:700;font-size:14px;">${Math.round(drvDist).toLocaleString()} km</td><td style="padding:10px;text-align:right;font-weight:700;font-size:14px;">${fmtN(drvLiters)} L</td><td style="padding:10px;text-align:right;font-weight:700;font-size:14px;">${drvKml>0?fmtN(drvKml)+' km/L':'—'}</td><td style="padding:10px;text-align:right;font-weight:700;font-size:14px;color:#2f56c4;">${drvThbKm>0?'฿'+fmtN(drvThbKm)+'/km':'—'}</td></tr></tfoot>`;}html+='</table>';page.innerHTML=html;await renderPage(page,false);}}document.body.removeChild(stage);const fn=(fromDate===toDate)?`รายงานน้ำมัน_${fromDate}.pdf`:`รายงานน้ำมัน_${fromDate}_ถึง_${toDate}.pdf`;pdf.save(fn);}catch(e){console.error('PDF error',e);alert('สร้าง PDF ไม่สำเร็จ: '+e.message);}finally{if(btn){btn.disabled=false;btn.innerHTML=orig;}}}
+function _pdfStat(label,value){return`<div style="background:#fafbfc;border:1px solid #ececec;padding:14px 16px;"><div style="font-size:12px;color:#9aa0a6;margin-bottom:4px;">${label}</div><div style="font-size:19px;font-weight:700;color:#171a20;">${value}</div></div>`;}
 
 /* ── INIT ── */
 document.addEventListener('DOMContentLoaded',function(){

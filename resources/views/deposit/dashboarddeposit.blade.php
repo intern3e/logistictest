@@ -18,7 +18,7 @@
   --gray-500:#6b7280;--gray-400:#9ca3af;--gray-300:#d1d5db;--gray-200:#e5e7eb;
   --gray-100:#f3f4f6;--gray-50:#f9fafb;
   --white:#ffffff;--surface:#f5f7fa;
-  --red-700:#b91c1c;--red-600:#dc2626;--red-100:#fee2e2;--red-50:#fef2f2;
+  --red-900:#7f1717;--red-700:#b91c1c;--red-600:#dc2626;--red-100:#fee2e2;--red-50:#fef2f2;
   --r:6px;--rl:12px;
 }
 body{font-family:'Sarabun',sans-serif;font-size:clamp(12px, 0.45vw + 7px, 16px);background:var(--surface);color:var(--gray-900);line-height:1.5}
@@ -202,6 +202,8 @@ nav[role="navigation"] span[aria-current="page"]{background:var(--blue-700)!impo
   $fee = (float)($item->fee_amount ?? 0);
   $dpv = (float)($item->dep_price ?? 0) * 1.07;
 
+  // ★ ราคาเต็ม (VAT): ใช้ grand_total เป็นหลัก
+  // fallback ย้อนคำนวณจาก dep_per เฉพาะกรณี grand_total ผิดปกติ (≤ dep_price)
   $depPer = (float)($item->dep_per ?? 0);
   $gtRaw  = (float)($item->grand_total ?? 0);
   $gtv    = $gtRaw * 1.07;
@@ -266,6 +268,7 @@ nav[role="navigation"] span[aria-current="page"]{background:var(--blue-700)!impo
   <td class="cM">{{ number_format($fullVat,2) }}</td>
   <td class="cM">{{ number_format($dpv,2) }}</td>
 
+  {{-- ค่าธรรมเนียม --}}
   <td>
     @if($adm)
       <div class="ie">
@@ -304,6 +307,7 @@ nav[role="navigation"] span[aria-current="page"]{background:var(--blue-700)!impo
   @endif
 </td>
 
+  {{-- สถานะ --}}
   <td>
     @if($isCnl)<span class="bg bg-cancel">ยกเลิก</span>
     @elseif($isWht)<span class="bg bg-wht">มี WHT</span>
@@ -518,7 +522,7 @@ function openInfo(d){
   if(d.is_cancelled)sb='<span class="bg bg-cancel">ยกเลิก</span>';
   else if(d.is_wht)sb='<span class="bg bg-wht">มี WHT</span>';
   else if(d.is_confirmed)sb='<span class="bg bg-ok">'+d.status+'</span>';
-  else if(d.status==='รอยืนยัน')sb='<span class="bg bg-wait">รอยยืนยัน</span>';
+  else if(d.status==='รอยืนยัน')sb='<span class="bg bg-wait">รอยืนยัน</span>';
   else sb='<span class="bg bg-wip">'+d.status+'</span>';
   $('im-st').innerHTML=sb;
   $('im-tc').textContent=d.time_check||'—';
@@ -529,13 +533,13 @@ function openInfo(d){
   let f='';
   if(ADM&&!d.is_cancelled){
     if(d.is_confirmed||d.is_wht){
-      f+=`<button class="btn-st bk" onclick="askSt('${d.so_id}',${d.id},'${d.status}','รอยยืนยัน')">↩ กลับรอ</button>`;
-    } else if(d.status==='รอยยืนยัน'){
+      f+=`<button class="btn-st bk" onclick="askSt('${d.so_id}',${d.id},'${d.status}','รอยืนยัน')">↩ กลับรอ</button>`;
+    } else if(d.status==='รอยืนยัน'){
       if(d.has_slip){
         f+=`<button class="btn-st cfm" onclick="askSt('${d.so_id}',${d.id},'${d.status}','ยืนยัน')">✓ ยืนยัน</button>`;
       } else {
         f+=`<button class="btn-st cfm" disabled style="opacity:.45;cursor:not-allowed" title="ต้องแนบหลักฐานการชำระก่อนจึงจะยืนยันได้">✓ ยืนยัน</button>`;
-        f+=`<span style="font-size:10px;color:var(--red);font-weight:600;display:inline-flex;align-items:center;gap:3px">⚠ ต้องแนบหลักฐานการชำระก่อน</span>`;
+        f+=`<span style="font-size:10px;color:var(--red-700);font-weight:600;display:inline-flex;align-items:center;gap:3px">⚠ ต้องแนบหลักฐานการชำระก่อน</span>`;
       }
     }
     f+=`<button class="btn-del" onclick="askDel(${d.id},'${esc(d.so_id)}','${esc(d.customer_name)}')">🗑 ลบ</button>`;
@@ -556,8 +560,8 @@ function askSt(so,id,cur,nxt){
   }
   pA={t:'status',so,id,cur,nxt};
   const $=i=>document.getElementById(i);
-  if(nxt==='ยืนยัน'){$('cf-ico').className='cf-ico g';$('cf-ico').textContent='✓';$('cf-t').textContent='ยืนยัน?';$('cf-m').innerHTML='<b>รอยยืนยัน</b> → <b style="color:#047857">ยืนยัน</b>';$('cf-btn').className='cf-ok';$('cf-btn').textContent='ยืนยัน'}
-  else{$('cf-ico').className='cf-ico w';$('cf-ico').textContent='!';$('cf-t').textContent='เปลี่ยนกลับ?';$('cf-m').innerHTML='<b>'+cur+'</b> → <b style="color:#D97706">รอยยืนยัน</b>';$('cf-btn').className='cf-ok';$('cf-btn').style.background='#D97706';$('cf-btn').textContent='เปลี่ยนกลับ'}
+  if(nxt==='ยืนยัน'){$('cf-ico').className='cf-ico g';$('cf-ico').textContent='✓';$('cf-t').textContent='ยืนยัน?';$('cf-m').innerHTML='<b>รอยืนยัน</b> → <b style="color:#047857">ยืนยัน</b>';$('cf-btn').className='cf-ok';$('cf-btn').textContent='ยืนยัน'}
+  else{$('cf-ico').className='cf-ico w';$('cf-ico').textContent='!';$('cf-t').textContent='เปลี่ยนกลับ?';$('cf-m').innerHTML='<b>'+cur+'</b> → <b style="color:#D97706">รอยืนยัน</b>';$('cf-btn').className='cf-ok';$('cf-btn').style.background='#D97706';$('cf-btn').textContent='เปลี่ยนกลับ'}
   $('cf-btn').disabled=false;$('cfM').classList.add('open');
 }
 function askDel(id,so,cn){
