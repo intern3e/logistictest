@@ -6,6 +6,8 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Log;
 use App\Models\Technician;
 use App\Models\Schedule;
 use App\Models\project_cust;
@@ -96,10 +98,59 @@ class TechnicianController extends Controller
             ->orderBy('emp_name')
             ->get();
 
-        // ── Schedules ────────────────────────────────────────────
-        $schedQuery = Schedule::query();
-        if ($teamFilter) $schedQuery->where('team_name', $teamFilter);
-        $schedules = $schedQuery->orderBy('start_date', 'desc')->get();
+        // ── Schedules (ดึงจาก External API) ─────────────────────
+        $schedules = collect([]);
+        try {
+            $response = Http::withHeaders([
+                'x-api-key' => 'hikari20259f3c6e1b0f2d9c9c0e5e0b4d8b4e6e9c0c6c2f3e7b8a9f1d2e3c4b5a6f7d8e9',
+                'Accept'    => 'application/json',
+            ])->timeout(10)->get('https://app-mobile.hikaripower.com/api/schedules');
+
+            if ($response->successful()) {
+                $apiData = $response->json();
+                // รองรับทั้ง Array ตรงๆ หรือ Object { "data": [...] }
+                $rawSchedules = is_array($apiData) ? $apiData : ($apiData['data'] ?? []);
+
+                $schedules = collect($rawSchedules)->map(function ($item) {
+                    // ⚠️ สำคัญ: ปรับชื่อ $item['...'] ให้ตรงกับ JSON ที่ API จริงส่งกลับมา
+                    $note = $item['note'] ?? $item['remark'] ?? '';
+                    
+                    // พยายามหา job_type จาก note ถ้า API ไม่ได้ส่งมาตรงๆ (ตาม Logic เดิม)
+                    $jobType = $item['job_type'] ?? 'general';
+                    if (preg_match('/^\s*\[([a-zA-Z0-9_-]+)\]/', $note, $matches)) {
+                        $jobType = $matches[1];
+                    }
+
+                    return (object) [
+                        'id'            => $item['id'] ?? $item['schedule_id'] ?? uniqid(),
+                        'so_number'     => $item['so_number'] ?? $item['so'] ?? 'N/A',
+                        'job_type'      => $jobType,
+                        'team_name'     => $item['supervisor'] ?? $item['team_name'] ?? $item['team'] ?? 'ไม่ระบุทีม',
+                        'job_title'     => $item['work_detail'] ?? $item['job_title'] ?? $item['title'] ?? $item['job_name'] ?? '-',
+                        'customer_name' => $item['company'] ?? $item['customer_name'] ?? $item['customer'] ?? '-',
+                        'start_date'    => $item['start_date'] ?? $item['date_start'] ?? \Carbon\Carbon::today()->toDateString(),
+                        'end_date'      => $item['end_date'] ?? $item['date_end'] ?? $item['start_date'] ?? $item['date_start'] ?? \Carbon\Carbon::today()->toDateString(),
+                        'status'        => $item['status'] ?? 'upcoming',
+                        'job_location'  => $item['job_location'] ?? $item['location'] ?? '',
+                        'note'          => $note,
+                    ];
+                });
+
+                // กรองตามทีมถ้ามีการเลือก
+                if ($teamFilter) {
+                    $schedules = $schedules->where('team_name', $teamFilter);
+                }
+
+                $schedules = $schedules->sortByDesc('start_date')->values();
+            }
+        } catch (\Exception $e) {
+            Log::error('Error fetching schedules from external API: ' . $e->getMessage());
+            
+            // Fallback: ถ้า API ล้มเหลว ให้ใช้ข้อมูลจาก Database แทน (กันหน้าเว็บพัง)
+            $schedQuery = Schedule::query();
+            if ($teamFilter) $schedQuery->where('team_name', $teamFilter);
+            $schedules = $schedQuery->orderBy('start_date', 'desc')->get();
+        }
 
         // ── Teams ────────────────────────────────────────────────
         $teams = Technician::where('emp_position', 'หัวหน้าทีม')

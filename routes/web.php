@@ -341,9 +341,13 @@ Route::post('/po-search/search',  [PoitemController::class, 'search'])->name('po
 Route::post('/po-search/detail',  [PoitemController::class, 'detail'])->name('po.detail.api');
 
 
+
+
 use App\Http\Controllers\InventoryController;
+
 Route::get('/api/items/one/{id}', [InventoryController::class, 'getOneItem']);
 Route::post('/api/tx-cache/clear', [InventoryController::class, 'clearTransactionCache']);
+
 // Pages
 Route::get('/inventory/transaction',  [InventoryController::class, 'transactionDashboard'])->name('inventory.transaction');
 Route::get('/inventory/item',         [InventoryController::class, 'inventoryDashboard'])->name('inventory.item');
@@ -356,6 +360,7 @@ Route::get('/inventory',              [InventoryController::class, 'entry']);
  
 // API: Items
 Route::get('/api/items/pagedata',      [InventoryController::class, 'getPageData']);
+Route::get('/api/items/paged',         [InventoryController::class, 'getPagedItems']); // ✅ เพิ่มบรรทัดนี้ (Optimized Pagination)
 Route::post('/api/items',              [InventoryController::class, 'addProduct']);
 Route::post('/api/items/sub',          [InventoryController::class, 'addSubProduct']);
 Route::put('/api/items/{id}',          [InventoryController::class, 'updateProduct']);

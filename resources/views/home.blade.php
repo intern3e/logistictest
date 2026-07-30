@@ -241,7 +241,7 @@
         <i class="fa-solid fa-chevron-down arrow-icon"></i></button> <div id="myDropdown" class="compact-dropdown-content" bis_skin_checked="1"><a href="http://127.0.0.1:8000/dashboardtechnician?create_by=test101"><i class="fa-solid fa-screwdriver-wrench"></i> Projects
         </a> <a href="http://127.0.0.1:8000/oil?create_by=test101"><i class="fa-solid fa-screwdriver-wrench"></i>ระบบน้ำมัน
         </a> <a href="http://127.0.0.1:8000/adminOT?create_by=test101"><i class="fa-solid fa-business-time"></i> จัดการ OT
-        </a><a href="http://127.0.0.1:8001/inventory?create_by=test101"><i class="fa-solid fa-screwdriver-wrench"></i>inventory
+        </a><a href="http://127.0.0.1:8000/inventory?create_by=test101"><i class="fa-solid fa-screwdriver-wrench"></i>inventory
         </a></div></div></div></nav></div>
     <script>
     function toggleDropdown(event) {

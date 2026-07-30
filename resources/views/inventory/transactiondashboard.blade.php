@@ -10,102 +10,174 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
   <style>
     *{margin:0;padding:0;box-sizing:border-box}
-    body{font-family:'Sarabun',Arial,sans-serif;background:#ece9d8;min-height:100vh;padding-bottom:40px}
-    .ov{position:fixed;inset:0;background:rgba(0,0,0,.8);display:flex;justify-content:center;align-items:center;z-index:9999;opacity:0;visibility:hidden;transition:opacity .3s,visibility .3s}
+    body{font-family:'Sarabun',Arial,sans-serif;background:#f9fafb;min-height:100vh;padding-bottom:40px;color:#1f2937}
+    
+    /* Overlay & Block Loading */
+    .ov{position:fixed;inset:0;background:rgba(0,0,0,.85);display:flex;justify-content:center;align-items:center;z-index:9999;opacity:0;visibility:hidden;transition:opacity .3s,visibility .3s;backdrop-filter:blur(4px)}
     .ov.on{opacity:1;visibility:visible}
-    .sp{width:48px;height:48px;border:5px solid rgba(255,255,255,.3);border-top:5px solid #FCA50D;border-radius:50%;animation:sp 1s linear infinite;margin:0 auto 12px}
-    @keyframes sp{to{transform:rotate(360deg)}}
-    .ov p{color:#fff;font-size:16px}
-    .topbar{height:52px;background:#444;display:flex;align-items:center;gap:10px;padding:0 12px;position:fixed;top:0;left:0;right:0;z-index:2000;border-bottom:2px solid #1a3f7a;box-shadow:0 2px 8px rgba(0,0,0,.5)}
-    .topbar-logo{height:34px;border:1px solid rgba(255,255,255,.3)}
-    .topbar-title{font-size:17px;font-weight:700;color:#fff;text-shadow:1px 1px 2px rgba(0,0,0,.5);flex:1}
-    .topbar-right{display:flex;align-items:center;gap:10px}
-    .topbar-name{font-size:13px;color:rgba(255,255,255,.8)}
-    .topbar-badge{font-size:11px;padding:2px 8px;font-weight:700;color:#000;background:#FCA50D}
-    .hamburger{background:none;border:none;cursor:pointer;padding:5px;display:flex;flex-direction:column;gap:4px;flex-shrink:0}
-    .hamburger span{display:block;width:20px;height:2px;background:#fff}
-    .hamburger:hover span{background:#ffe8a0}
-    .sb-ov{position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:1500;opacity:0;pointer-events:none;transition:opacity .2s}
+    .progress-container{width: 320px; text-align: center;}
+    .ov-text{color:#fff;font-size:18px;font-weight:600;margin-bottom:20px;letter-spacing: 0.5px;}
+    .progress-track{
+      width: 100%; 
+      height: 32px; 
+      background: rgba(255,255,255,0.1); 
+      border: 2px solid rgba(255,255,255,0.3);
+      border-radius: 4px; 
+      overflow: hidden; 
+      margin-bottom: 12px;
+      box-shadow: inset 0 2px 4px rgba(0,0,0,0.3);
+    }
+    .progress-fill{
+      width: 0%; 
+      height: 100%; 
+      background-color: #5B65F3;
+      background-image: repeating-linear-gradient(
+        90deg,
+        #5B65F3 0px,
+        #5B65F3 18px,
+        rgba(255,255,255,0.15) 18px,
+        rgba(255,255,255,0.15) 20px
+      );
+      background-size: 20px 100%;
+      transition: width 0.15s ease-out;
+      box-shadow: 0 0 15px rgba(91,101,243,0.6);
+    }
+    .ov-percent{color:#fff;font-size:16px;font-weight:700;font-variant-numeric: tabular-nums; text-shadow: 0 2px 4px rgba(0,0,0,0.3);}
+
+    .topbar{height:64px;background:#fff;display:flex;align-items:center;gap:12px;padding:0 24px;position:fixed;top:0;left:0;right:0;z-index:2000;border-bottom:1px solid #e5e7eb;box-shadow:0 1px 3px rgba(0,0,0,.05)}
+    .topbar-logo{height:36px;border-radius:6px}
+    .topbar-title{font-size:18px;font-weight:700;color:#111827;flex:1;letter-spacing:-0.025em}
+    .topbar-right{display:flex;align-items:center;gap:12px}
+    .topbar-name{font-size:14px;color:#6b7280;font-weight:500}
+    .topbar-badge{font-size:12px;padding:4px 10px;font-weight:600;color:#5B65F3;background:#EEF2FF;border-radius:6px;border:1px solid #C7D2FE}
+    .hamburger{background:none;border:none;cursor:pointer;padding:8px;border-radius:8px;display:flex;flex-direction:column;gap:5px;flex-shrink:0;transition:background .2s}
+    .hamburger span{display:block;width:20px;height:2px;background:#374151;transition:background .2s}
+    .hamburger:hover{background:#f3f4f6}
+    .hamburger:hover span{background:#5B65F3}
+    
+    .sb-ov{position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:1500;opacity:0;pointer-events:none;transition:opacity .2s}
     .sb-ov.open{opacity:1;pointer-events:all}
-    .sidebar{position:fixed;top:0;left:-250px;width:230px;height:100vh;z-index:1600;transition:left .25s ease;display:flex;flex-direction:column;background:linear-gradient(180deg,#dce9fa,#c5d9f5);border-right:2px solid #7a9fc8;box-shadow:3px 0 12px rgba(0,0,0,.3)}
+    .sidebar{position:fixed;top:0;left:-280px;width:260px;height:100vh;z-index:1600;transition:left .3s ease;display:flex;flex-direction:column;background:#fff;border-right:1px solid #e5e7eb;box-shadow:4px 0 24px rgba(0,0,0,.08)}
     .sidebar.open{left:0}
-    .sb-head{display:flex;align-items:center;gap:8px;padding:10px 12px;background:linear-gradient(180deg,#4a7db5,#2358a4);border-bottom:2px solid #1a3f7a;min-height:52px}
-    .sb-head img{height:30px}
-    .sb-head span{font-size:16px;font-weight:700;color:#fff;flex:1}
-    .sb-close{background:none;border:none;color:rgba(255,255,255,.8);cursor:pointer;font-size:18px;font-weight:bold;padding:0 4px}
-    .sb-nav{flex:1;overflow-y:auto;padding:6px 0}
-    .sb-sec{padding:8px 12px 3px;font-size:11px;font-weight:700;color:#1e4d96;letter-spacing:.8px;text-transform:uppercase}
-    .sb-item{display:flex;align-items:center;gap:10px;padding:9px 14px;color:#1a1a6e;cursor:pointer;font-size:14px;font-weight:500;border-left:3px solid transparent;user-select:none;text-decoration:none}
-    .sb-item:hover{background:rgba(42,95,168,.15);border-left-color:#2a5fa8}
-    .sb-item.cur{background:rgba(42,95,168,.2);border-left-color:#FCA50D;font-weight:700}
-    #content{padding:62px 16px 16px}
-    .hdr{padding:12px 0 10px}
-    .hdr h2{color:#333;font-size:20px;font-weight:700;margin-bottom:12px}
-    .fbar{display:flex;gap:8px;flex-wrap:wrap;align-items:flex-end}
-    .fbox{display:flex;flex-direction:column;gap:4px}
-    .fbox label{font-weight:600;color:#333;font-size:13px;display:flex;align-items:center;gap:5px}
-    .fbox label::before{content:'';width:3px;height:12px;background:#F5AD27}
-    .finput{padding:6px 8px;border:2px inset #aaa;font-size:14px;background:#fff;font-family:'Sarabun',sans-serif;width:100%}
-    .finput:focus{outline:none;border-color:#2358a4}
-    .btn-clr{padding:7px 16px;border:1px solid #999;cursor:pointer;font-weight:600;font-size:14px;font-family:'Sarabun',sans-serif;background:linear-gradient(180deg,#f0f0f0,#d0d0d0);color:#555}
-    .btn-clr:hover{background:linear-gradient(180deg,#fff,#e0e0e0)}
-    .pdf-btn{padding:7px 18px;border:1px solid #8b0000;cursor:pointer;font-weight:600;font-size:14px;font-family:'Sarabun',sans-serif;color:#fff;background:linear-gradient(180deg,#e03030 0%,#b00000 50%,#8b0000 100%);box-shadow:inset 0 1px 0 rgba(255,255,255,.3),1px 1px 3px rgba(0,0,0,.3);display:flex;align-items:center;gap:6px;white-space:nowrap;align-self:flex-end}
-    .pdf-btn::before{content:'';display:inline-block;width:12px;height:15px;background:#fff;clip-path:polygon(0 0,65% 0,100% 30%,100% 100%,0 100%);opacity:.9;flex-shrink:0}
-    .pdf-btn:hover{background:linear-gradient(180deg,#ff4444 0%,#cc0000 50%,#a00000 100%)}
-    .pdf-btn:disabled{opacity:.5;cursor:not-allowed}
-    .tbl-wrap{background:#fff;overflow-x:auto}
-    table{width:100%;border-collapse:collapse;font-size:13px}
-    thead{background:linear-gradient(180deg,#555,#333)}
-    th{color:#fff;padding:9px 8px;text-align:left;font-weight:600;font-size:13px;white-space:nowrap;position:sticky;top:0;background:#444;z-index:5;border-right:1px solid #555}
+    .sb-head{display:flex;align-items:center;gap:12px;padding:16px 20px;background:#fff;border-bottom:1px solid #e5e7eb;min-height:64px}
+    .sb-head img{height:32px;border-radius:6px}
+    .sb-head span{font-size:18px;font-weight:700;color:#111827;flex:1;letter-spacing:-0.025em}
+    .sb-close{background:none;border:none;color:#6b7280;cursor:pointer;font-size:20px;font-weight:bold;padding:4px 8px;border-radius:6px;transition:all .2s}
+    .sb-close:hover{background:#f3f4f6;color:#111827}
+    .sb-nav{flex:1;overflow-y:auto;padding:12px 0}
+    .sb-sec{padding:12px 20px 6px;font-size:11px;font-weight:700;color:#6b7280;letter-spacing:.05em;text-transform:uppercase}
+    .sb-item{display:flex;align-items:center;gap:12px;padding:10px 20px;color:#374151;cursor:pointer;font-size:14px;font-weight:500;border-left:3px solid transparent;user-select:none;text-decoration:none;transition:all .2s;border-radius:0 8px 8px 0;margin-right:8px}
+    .sb-item:hover{background:#f9fafb;border-left-color:#5B65F3;color:#111827}
+    .sb-item.cur{background:#EEF2FF;border-left-color:#5B65F3;color:#5B65F3;font-weight:600}
+    
+    #content{padding:88px 0 24px;width:100%}
+    .hdr{padding:0 24px 24px}
+    .hdr h2{color:#111827;font-size:24px;font-weight:700;margin-bottom:20px;letter-spacing:-0.025em}
+    .fbar{display:flex;gap:12px;flex-wrap:wrap;align-items:flex-end;background:#fff;padding:20px;border-radius:12px;border:1px solid #e5e7eb;box-shadow:0 1px 3px rgba(0,0,0,.05)}
+    .fbox{display:flex;flex-direction:column;gap:6px}
+    .fbox label{font-weight:600;color:#374151;font-size:13px;display:flex;align-items:center;gap:6px}
+    .fbox label::before{content:'';width:3px;height:12px;background:#5B65F3;border-radius:2px}
+    .finput{padding:10px 12px;border:1px solid #d1d5db;border-radius:8px;font-size:14px;background:#fff;font-family:'Sarabun',sans-serif;width:100%;transition:all .2s;color:#111827}
+    .finput:focus{outline:none;border-color:#5B65F3;box-shadow:0 0 0 3px rgba(91,101,243,.1)}
+    .btn-clr{padding:10px 20px;border:1px solid #d1d5db;cursor:pointer;font-weight:600;font-size:14px;font-family:'Sarabun',sans-serif;background:#fff;color:#374151;border-radius:8px;transition:all .2s}
+    .btn-clr:hover{background:#f9fafb;border-color:#9ca3af;color:#111827}
+    .pdf-btn{padding:10px 24px;border:none;cursor:pointer;font-weight:600;font-size:14px;font-family:'Sarabun',sans-serif;color:#fff;background:#5B65F3;border-radius:8px;box-shadow:0 1px 3px rgba(91,101,243,.3);display:flex;align-items:center;gap:8px;white-space:nowrap;align-self:flex-end;transition:all .2s}
+    .pdf-btn::before{content:'';display:inline-block;width:14px;height:16px;background:#fff;clip-path:polygon(0 0,65% 0,100% 30%,100% 100%,0 100%);opacity:.9;flex-shrink:0}
+    .pdf-btn:hover{background:#4F46E5;box-shadow:0 4px 6px rgba(91,101,243,.2);transform:translateY(-1px)}
+    .pdf-btn:disabled{opacity:.5;cursor:not-allowed;transform:none}
+    
+    .tbl-wrap{background:#fff;overflow-x:auto;border:1px solid #e5e7eb;box-shadow:0 1px 3px rgba(0,0,0,.05)}
+    table{width:100%;border-collapse:collapse;font-size:14px}
+    thead{background:#f9fafb}
+    th{color:#374151;padding:14px 16px;text-align:left;font-weight:600;font-size:13px;white-space:nowrap;position:sticky;top:0;background:#f9fafb;z-index:5;border:1px solid #e5e7eb;border-top:none}
+    th:first-child{border-left:none}
     th:last-child{border-right:none}
-    td{padding:7px 8px;border-bottom:1px solid #f0f0f0;color:#333;font-size:13px;vertical-align:middle}
-    tbody tr:hover{background:#f0f5ff}
-    .edit-input{width:100%;padding:4px 6px;font-size:13px;border:2px inset #aaa;font-family:'Sarabun',sans-serif}
-    .edit-input:focus{outline:none;border-color:#2358a4}
-    td.tc{font-weight:600;color:#fff;text-align:center;padding:4px 8px;font-size:12px;white-space:nowrap}
-    td.t-in{background:#00D162}td.t-ret{background:#19CBFC;color:#222}td.t-sell{background:#FF1A1A}td.t-bor{background:#F8FF2E;color:#000}td.t-wit{background:#FF8538}
-    td a{color:#2749F5;text-decoration:none;font-weight:600;padding:3px 8px;background:rgba(39,73,245,.1);font-size:13px;display:inline-block}
-    td a:hover{background:#F5AD27;color:#fff}
-    .acts{display:flex;gap:5px;flex-wrap:wrap}
-    .acts button{padding:5px 11px;cursor:pointer;font-weight:600;font-size:13px;font-family:'Sarabun',sans-serif;white-space:nowrap;border:none;color:#fff}
-    .a-edit{background:linear-gradient(180deg,#6090f0,#2749F5);border:1px solid #1a35c7!important}
-    .a-save{background:linear-gradient(180deg,#44dd77,#00D162);border:1px solid #009940!important}
-    .a-del{background:linear-gradient(180deg,#ff4444,#FF1A1A);border:1px solid #cc0000!important}
-    .a-can{background:linear-gradient(180deg,#f0f0f0,#d8d8d8);color:#555!important;border:1px solid #999!important}
-    #paging{margin-top:6px;text-align:center;display:flex;justify-content:center;align-items:center;gap:12px;padding:14px}
-    .pg-btn{background:linear-gradient(180deg,#f0f0f0,#d0d0d0);color:#333;border:1px solid #999;padding:7px 20px;cursor:pointer;font-weight:600;font-size:14px}
-    .pg-btn:hover{background:linear-gradient(180deg,#fff,#e8e8e8)}
-    .pg-info{font-weight:600;font-size:14px;color:#333;padding:7px 14px;background:#f5f5f5;border:1px solid #ccc}
-    .toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:#333;color:#fff;padding:10px 24px;font-size:14px;font-weight:600;z-index:9999;display:none}
-    .toast.on{display:block}
-    @media(max-width:768px){.fbar{flex-direction:column} .fbox{width:100%!important}}
+    td{padding:12px 16px;border:1px solid #e5e7eb;color:#1f2937;font-size:14px;vertical-align:middle}
+    td:first-child{border-left:none}
+    td:last-child{border-right:none}
+    tbody tr:hover{background:#f9fafb}
+    .edit-input{width:100%;padding:8px 10px;font-size:13px;border:1px solid #d1d5db;border-radius:6px;font-family:'Sarabun',sans-serif;transition:all .2s}
+    .edit-input:focus{outline:none;border-color:#5B65F3;box-shadow:0 0 0 3px rgba(91,101,243,.1)}
+    td.tc{font-weight:600;color:#fff;text-align:center;padding:12px 16px;font-size:13px;white-space:nowrap}
+    td.t-in{background:#10b981}
+    td.t-ret{background:#06b6d4}
+    td.t-sell{background:#ef4444}
+    td.t-bor{background:#f59e0b}
+    td.t-wit{background:#f97316}
+    .view-img-btn{color:#5B65F3;text-decoration:none;font-weight:600;padding:6px 12px;background:#EEF2FF;border:none;border-radius:6px;font-size:13px;cursor:pointer;display:inline-block;transition:all .2s}
+    .view-img-btn:hover{background:#5B65F3;color:#fff}
+    .acts{display:flex;gap:6px;flex-wrap:wrap}
+    .acts button{padding:6px 12px;cursor:pointer;font-weight:600;font-size:13px;font-family:'Sarabun',sans-serif;white-space:nowrap;border:none;color:#fff;border-radius:6px;transition:all .2s}
+    .a-edit{background:#5B65F3}
+    .a-save{background:#10b981}
+    .a-del{background:#ef4444}
+    .a-can{background:#e5e7eb;color:#374151}
+    .a-edit:hover{background:#4F46E5}
+    .a-save:hover{background:#059669}
+    .a-del:hover{background:#dc2626}
+    .a-can:hover{background:#d1d5db}
+    
+    #paging{margin-top:16px;text-align:center;display:flex;justify-content:center;align-items:center;gap:12px;padding:16px}
+    .pg-btn{background:#fff;color:#374151;border:1px solid #d1d5db;padding:10px 20px;cursor:pointer;font-weight:600;font-size:14px;border-radius:8px;transition:all .2s}
+    .pg-btn:hover{background:#f9fafb;border-color:#9ca3af;color:#111827}
+    .pg-info{font-weight:600;font-size:14px;color:#374151;padding:10px 16px;background:#f9fafb;border:1px solid #e5e7eb;border-radius:8px}
+    
+    .toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:#111827;color:#fff;padding:12px 28px;font-size:14px;font-weight:600;z-index:9999;display:none;border-radius:8px;box-shadow:0 4px 12px rgba(0,0,0,.15)}
+    .toast.on{display:block;animation:slideUp .3s ease}
+    @keyframes slideUp{from{transform:translate(-50%,20px);opacity:0}to{transform:translate(-50%,0);opacity:1}}
+    
+    /* Image Modal/Popup — ใช้ img แทน iframe */
+    .modal-ov{position:fixed;inset:0;background:rgba(0,0,0,.95);display:flex;justify-content:center;align-items:center;z-index:10000;opacity:0;visibility:hidden;transition:opacity .3s,visibility .3s}
+    .modal-ov.on{opacity:1;visibility:visible}
+    .modal-content{position:relative;width:90%;max-width:900px;max-height:85vh;background:#1a1a1a;border-radius:12px;overflow:hidden;box-shadow:0 20px 60px rgba(0,0,0,.5);display:flex;align-items:center;justify-content:center;padding:20px}
+    .modal-img{max-width:100%;max-height:80vh;object-fit:contain;border-radius:4px;display:block}
+    .modal-img-loading{color:#fff;font-size:16px;font-weight:500;display:none}
+    .modal-img-error{color:#ef4444;font-size:15px;font-weight:500;display:none;text-align:center;line-height:1.6}
+    .modal-close{position:absolute;top:16px;right:16px;width:44px;height:44px;background:rgba(255,255,255,.95);border:none;border-radius:50%;cursor:pointer;font-size:24px;color:#374151;display:flex;align-items:center;justify-content:center;transition:all .2s;box-shadow:0 4px 12px rgba(0,0,0,.3);z-index:1}
+    .modal-close:hover{background:#fff;color:#ef4444;transform:rotate(90deg);box-shadow:0 6px 16px rgba(0,0,0,.4)}
+    .modal-open-link{position:absolute;bottom:16px;right:16px;padding:8px 16px;background:rgba(255,255,255,.95);border:none;border-radius:8px;cursor:pointer;font-size:13px;font-weight:600;color:#374151;text-decoration:none;transition:all .2s;box-shadow:0 4px 12px rgba(0,0,0,.3);z-index:1;font-family:'Sarabun',sans-serif}
+    .modal-open-link:hover{background:#fff;color:#5B65F3}
+    
+    @media(max-width:768px){.fbar{flex-direction:column} .fbox{width:100%!important} #content{padding:80px 0 16px} .hdr{padding:0 16px 16px}}
+    
     .btn-home{
-  display:inline-flex;
-  align-items:center;
-  gap:6px;
-  padding:7px 18px;
-  font-family:'Sarabun',sans-serif;
-  font-size:14px;
-  font-weight:600;
-  color:#fff;
-  text-decoration:none;
-  cursor:pointer;
-  white-space:nowrap;
-  border:1px solid #8b0000;
-  background:linear-gradient(180deg,#e03030 0%,#b00000 50%,#8b0000 100%);
-  box-shadow:inset 0 1px 0 rgba(255,255,255,.3),1px 1px 3px rgba(0,0,0,.3);
-}
-.btn-home:hover{
-  background:linear-gradient(180deg,#ff4444 0%,#cc0000 50%,#a00000 100%);
-}
-.btn-home:active{
-  box-shadow:inset 1px 1px 3px rgba(0,0,0,.4);
-  transform:translateY(1px);
-}
+      display:inline-flex;align-items:center;gap:8px;padding:10px 20px;font-family:'Sarabun',sans-serif;font-size:14px;font-weight:600;color:#fff;text-decoration:none;cursor:pointer;white-space:nowrap;background:#5B65F3;border-radius:8px;box-shadow:0 1px 3px rgba(91,101,243,.3);transition:all .2s;
+    }
+    .btn-home:hover{background:#4F46E5;box-shadow:0 4px 6px rgba(91,101,243,.2);transform:translateY(-1px);}
+    .btn-home:active{transform:translateY(0);}
   </style>
 </head>
 <body>
-<div class="ov" id="ov"><div><div class="sp"></div><p id="ovText">กำลังโหลดข้อมูล...</p></div></div>
+
+<!-- Overlay with Block Loading -->
+<div class="ov" id="ov">
+  <div class="progress-container">
+    <p class="ov-text" id="ovText">กำลังโหลดข้อมูล...</p>
+    <div class="progress-track">
+      <div class="progress-fill" id="progressBar"></div>
+    </div>
+    <p class="ov-percent" id="ovPercent">0%</p>
+  </div>
+</div>
+
+<!-- Image Modal Popup — ใช้ img แทน iframe เพื่อแก้ CSP -->
+<div class="modal-ov" id="modalOv">
+  <div class="modal-content">
+    <button class="modal-close" onclick="closeModal()">&#10005;</button>
+    <span class="modal-img-loading" id="modalLoading">กำลังโหลดรูปภาพ...</span>
+    <img class="modal-img" id="modalImg" src="" alt="รูปประกอบ" style="display:none;">
+    <div class="modal-img-error" id="modalError">
+      ไม่สามารถโหลดรูปภาพได้<br>
+      <small>รูปภาพอาจไม่ได้ตั้งค่าการแชร์เป็นสาธารณะ</small><br>
+      <a id="modalFallbackLink" href="#" target="_blank" 
+         style="color:#5B65F3;margin-top:8px;display:inline-block;font-size:14px;font-weight:600">
+        เปิดใน Google Drive →
+      </a>
+    </div>
+    <a class="modal-open-link" id="modalOpenLink" href="#" target="_blank">เปิดใน Google Drive ↗</a>
+  </div>
+</div>
+
 <div class="toast" id="toast"></div>
 
 @php $q = ['create_by' => $authUser['name'] ?? '']; @endphp
@@ -114,20 +186,20 @@
   <div class="sb-head"><img src="https://img2.pic.in.th/pic/article_aac164a0b0.png" alt="Logo"><span>3E TRADING</span><button class="sb-close" onclick="closeSB()">&#10005;</button></div>
   <div class="sb-nav">
     <div class="sb-sec">เมนูหลัก</div>
-    <a class="sb-item cur" href="{{ route('inventory.transaction', $q) }}"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>รายการสินค้า เข้า-ออก</a>
-    <a class="sb-item"target="_blank" href="{{ route('inventory.item', $q) }}"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 16V8a2 2 0 00-1-1.73l-7-4a2 2 0 00-2 0l-7 4A2 2 0 003 8v8a2 2 0 001 1.73l7 4a2 2 0 002 0l7-4A2 2 0 0021 16z"/></svg>ค้นหาสินค้า</a>
+    <a class="sb-item cur" href="{{ route('inventory.transaction', $q) }}"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>รายการสินค้า เข้า-ออก</a>
+    <a class="sb-item"target="_blank" href="{{ route('inventory.item', $q) }}"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 16V8a2 2 0 00-1-1.73l-7-4a2 2 0 00-2 0l-7 4A2 2 0 003 8v8a2 2 0 001 1.73l7 4a2 2 0 002 0l7-4A2 2 0 0021 16z"/></svg>ค้นหาสินค้า</a>
     @if(str_contains($authUser['page'] ?? '', 'pr'))
-      <a class="sb-item"target="_blank" href="{{ route('inventory.pr', $q) }}"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 16V8a2 2 0 00-1-1.73l-7-4a2 2 0 00-2 0l-7 4A2 2 0 003 8v8a2 2 0 001 1.73l7 4a2 2 0 002 0l7-4A2 2 0 0021 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/></svg>สร้างใบขอซื้อ</a>
+      <a class="sb-item"target="_blank" href="{{ route('inventory.pr', $q) }}"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 16V8a2 2 0 00-1-1.73l-7-4a2 2 0 00-2 0l-7 4A2 2 0 003 8v8a2 2 0 001 1.73l7 4a2 2 0 002 0l7-4A2 2 0 0021 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/></svg>สร้างใบขอซื้อ</a>
     @endif
     @if(in_array($authRole, ['admin','user']))
-      <div style="height:1px;background:#a8c3e0;margin:5px 12px"></div>
+      <div style="height:1px;background:#e5e7eb;margin:8px 20px"></div>
       <div class="sb-sec">ดำเนินการ</div>
-      <a class="sb-item"target="_blank" href="{{ route('inventory.stockout', $q) }}"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 002 1.61h9.72a2 2 0 002-1.61L23 6H6"/></svg>ขายสินค้าออก</a>
-      <a class="sb-item" target="_blank"href="{{ route('inventory.withdraw', $q) }}"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>เบิกของ</a>
+      <a class="sb-item"target="_blank" href="{{ route('inventory.stockout', $q) }}"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 002 1.61h9.72a2 2 0 002-1.61L23 6H6"/></svg>ขายสินค้าออก</a>
+      <a class="sb-item" target="_blank"href="{{ route('inventory.withdraw', $q) }}"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>เบิกของ</a>
     @endif
       @if(in_array($authRole,['admin']))
-      <a class="sb-item"target="_blank" href="{{ route('inventory.users', $q) }}"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 16V8a2 2 0 00-1-1.73l-7-4a2 2 0 00-2 0l-7 4A2 2 0 003 8v8a2 2 0 001 1.73l7 4a2 2 0 002 0l7-4A2 2 0 0021 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/></svg>จัดการผู้ใช้งาน</a>
-      <a class="sb-item"target="_blank" href="{{ route('inventory.pr.dashboard', $q) }}"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 16V8a2 2 0 00-1-1.73l-7-4a2 2 0 00-2 0l-7 4A2 2 0 003 8v8a2 2 0 001 1.73l7 4a2 2 0 002 0l7-4A2 2 0 0021 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/></svg>ขอซื้อ</a>
+      <a class="sb-item"target="_blank" href="{{ route('inventory.users', $q) }}"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 16V8a2 2 0 00-1-1.73l-7-4a2 2 0 00-2 0l-7 4A2 2 0 003 8v8a2 2 0 001 1.73l7 4a2 2 0 002 0l7-4A2 2 0 0021 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/></svg>จัดการผู้ใช้งาน</a>
+      <a class="sb-item"target="_blank" href="{{ route('inventory.pr.dashboard', $q) }}"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 16V8a2 2 0 00-1-1.73l-7-4a2 2 0 00-2 0l-7 4A2 2 0 003 8v8a2 2 0 001 1.73l7 4a2 2 0 002 0l7-4A2 2 0 0021 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/></svg>ขอซื้อ</a>
     @endif
   </div>
 </div>
@@ -137,9 +209,9 @@
   <img src="https://img2.pic.in.th/pic/article_aac164a0b0.png" alt="Logo" class="topbar-logo">
   <span class="topbar-title">3E TRADING</span>
   <div class="topbar-right">
-    <span class="topbar-name">{{ $authUser['name'] ?? '' }}</span>
+    <span class="topbar-name">ผู้ใช้: {{ $authUser['name'] ?? '' }}</span>
     <span class="topbar-badge">{{ strtoupper($authRole) }}</span>
-    <a href="http://server_update:8000/solist" button  type="submit" class="btn-home">🚪 หน้าหลัก</a>
+    <a href="http://server_update:8000/solist" button type="submit" class="btn-home"> หน้าหลัก</a>
   </div>
 </div>
 
@@ -147,17 +219,17 @@
   <div class="hdr">
     <h2>รายการสินค้า เข้า-ออก</h2>
     <div class="fbar">
-      <div class="fbox" style="width:150px"><label>เลือกวันที่</label><input type="date" id="fDate" class="finput" onchange="applyFilter()"></div>
-      <div class="fbox" style="width:180px"><label>ชื่อผู้ดำเนินงาน</label><input type="text" id="fOp" class="finput" placeholder="ค้นหา..." oninput="applyFilter()"></div>
-      <div class="fbox" style="width:250px"><label>หมายเลขเอกสาร</label><input type="text" id="fBill" class="finput" placeholder="ค้นหา..." oninput="applyFilter()"></div>
-      <div class="fbox" style="width:400px"><label>รายการสินค้า</label><input type="text" id="fItem" class="finput" placeholder="ค้นหา..." oninput="applyFilter()"></div>
-      <div class="fbox" style="width:170px"><label>ประเภทข้อมูล</label>
+      <div class="fbox" style="width:160px"><label>เลือกวันที่</label><input type="date" id="fDate" class="finput" onchange="applyFilter()"></div>
+      <div class="fbox" style="width:200px"><label>ชื่อผู้ดำเนินงาน</label><input type="text" id="fOp" class="finput" placeholder="ค้นหา..." oninput="applyFilter()"></div>
+      <div class="fbox" style="width:240px"><label>หมายเลขเอกสาร</label><input type="text" id="fBill" class="finput" placeholder="ค้นหา..." oninput="applyFilter()"></div>
+      <div class="fbox" style="flex:1;min-width:200px"><label>รายการสินค้า</label><input type="text" id="fItem" class="finput" placeholder="ค้นหา..." oninput="applyFilter()"></div>
+      <div class="fbox" style="width:180px"><label>ประเภทข้อมูล</label>
         <select id="fType" class="finput" onchange="applyFilter()">
           <option value="">ทั้งหมด</option><option value="รับเข้าสต็อก">รับเข้าสต็อก</option><option value="คืนเข้าสต็อก">คืนเข้าสต็อก</option>
           <option value="ขายสินค้าออก">ขายสินค้าออก</option><option value="ยืมสินค้า">ยืมสินค้า</option><option value="เบิกของ">เบิกของ</option>
         </select>
       </div>
-      <div class="fbox" style="width:130px"><label>ชั้นวาง</label><input type="text" id="fShelf" class="finput" placeholder="ค้นหา..." oninput="applyFilter()"></div>
+      <div class="fbox" style="width:140px"><label>ชั้นวาง</label><input type="text" id="fShelf" class="finput" placeholder="ค้นหา..." oninput="applyFilter()"></div>
       @if(in_array($authRole, ['admin','user']))
         <button class="pdf-btn" id="pdfBtn" onclick="generatePDF()">PDF</button>
       @endif
@@ -191,15 +263,172 @@ const API={
 
 let pageData=[], pg=1, lastPage=1, total=0;
 let _debounce=null;
+let progressInterval = null;
 
-function showOv(t){document.getElementById('ovText').textContent=t||'กำลังโหลดข้อมูล...';document.getElementById('ov').classList.add('on')}
-function hideOv(){document.getElementById('ov').classList.remove('on')}
+function showOv(t){
+  document.getElementById('ovText').textContent = t || 'กำลังโหลดข้อมูล...';
+  document.getElementById('ov').classList.add('on');
+  startProgressSimulation();
+}
+
+function hideOv(){
+  clearInterval(progressInterval);
+  document.getElementById('progressBar').style.width = '100%';
+  document.getElementById('ovPercent').textContent = '100%';
+  
+  setTimeout(() => {
+    document.getElementById('ov').classList.remove('on');
+    setTimeout(() => {
+      document.getElementById('progressBar').style.width = '0%';
+      document.getElementById('ovPercent').textContent = '0%';
+    }, 300);
+  }, 200);
+}
+
+function startProgressSimulation(){
+  let progress = 0;
+  const bar = document.getElementById('progressBar');
+  const text = document.getElementById('ovPercent');
+  
+  clearInterval(progressInterval);
+  
+  progressInterval = setInterval(() => {
+    if (progress < 30) {
+      progress += Math.random() * 15;
+    } else if (progress < 70) {
+      progress += Math.random() * 8;
+    } else if (progress < 90) {
+      progress += Math.random() * 3;
+    } else {
+      progress = 90; 
+    }
+    
+    if (progress > 90) progress = 90;
+    
+    bar.style.width = Math.floor(progress) + '%';
+    text.textContent = Math.floor(progress) + '%';
+  }, 150);
+}
+
 function openSB(){document.getElementById('sidebar').classList.add('open');document.getElementById('sbOv').classList.add('open')}
 function closeSB(){document.getElementById('sidebar').classList.remove('open');document.getElementById('sbOv').classList.remove('open')}
-function toast(m,e){const t=document.getElementById('toast');t.textContent=m;t.style.background=e?'#cc0000':'#007722';t.classList.add('on');setTimeout(()=>t.classList.remove('on'),3000)}
-function esc(s){return(s||'').replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;').replace(/>/g,'&gt;')}
+function toast(m,e){const t=document.getElementById('toast');t.textContent=m;t.style.background=e?'#ef4444':'#10b981';t.classList.add('on');setTimeout(()=>t.classList.remove('on'),3000)}
 
-/** สร้าง query string จาก filter + page */
+// ============================================================
+// ส่วนแสดงรูปภาพ — แก้ CSP: ใช้ img + lh3 thumbnail แทน iframe
+// ============================================================
+
+// ดึง file ID จาก Google Drive URL
+function extractGoogleDriveFileId(url){
+  if(!url) return null;
+  const patterns = [
+    /\/file\/d\/([a-zA-Z0-9_-]+)/,
+    /\?id=([a-zA-Z0-9_-]+)/,
+    /&id=([a-zA-Z0-9_-]+)/
+  ];
+  for(let pattern of patterns){
+    const match = url.match(pattern);
+    if(match && match[1]) return match[1];
+  }
+  return null;
+}
+
+// แปลงเป็น direct image URL (ไม่โดน CSP บล็อก)
+function convertToDirectImageUrl(url){
+  const fileId = extractGoogleDriveFileId(url);
+  if(fileId){
+    // ใช้ lh3.googleusercontent.com — โหลดเป็น img ได้โดยไม่ต้อง iframe
+    return `https://lh3.googleusercontent.com/d/${fileId}`;
+  }
+  return url; // ถ้าไม่ใช่ Google Drive ก็ใช้ URL เดิม
+}
+
+// สร้าง Google Drive view link (สำหรับปุ่ม "เปิดใน Google Drive")
+function getGoogleDriveViewUrl(url){
+  const fileId = extractGoogleDriveFileId(url);
+  if(fileId){
+    return `https://drive.google.com/file/d/${fileId}/view`;
+  }
+  return url;
+}
+
+// เก็บ URL เดิมไว้สำหรับ fallback
+let _currentOriginalUrl = '';
+
+// เปิดรูปภาพใน popup modal
+function openGoogleDriveImage(url){
+  if(!url){
+    toast('ไม่มีรูปภาพ', true);
+    return;
+  }
+  
+  _currentOriginalUrl = url;
+  
+  const imgEl = document.getElementById('modalImg');
+  const loadingEl = document.getElementById('modalLoading');
+  const errorEl = document.getElementById('modalError');
+  const openLink = document.getElementById('modalOpenLink');
+  const fallbackLink = document.getElementById('modalFallbackLink');
+  
+  // ตั้ง link เปิดใน Google Drive
+  const viewUrl = getGoogleDriveViewUrl(url);
+  openLink.href = viewUrl;
+  fallbackLink.href = viewUrl;
+  
+  // Reset state
+  imgEl.style.display = 'none';
+  errorEl.style.display = 'none';
+  loadingEl.style.display = 'block';
+  
+  // แปลง URL เป็น direct image
+  const directUrl = convertToDirectImageUrl(url);
+  
+  // ตั้ง event handlers ก่อน set src
+  imgEl.onload = function(){
+    loadingEl.style.display = 'none';
+    errorEl.style.display = 'none';
+    imgEl.style.display = 'block';
+  };
+  
+  imgEl.onerror = function(){
+    loadingEl.style.display = 'none';
+    imgEl.style.display = 'none';
+    errorEl.style.display = 'block';
+  };
+  
+  imgEl.src = directUrl;
+  
+  // เปิด modal
+  document.getElementById('modalOv').classList.add('on');
+  document.body.style.overflow = 'hidden';
+}
+
+function closeModal(){
+  document.getElementById('modalOv').classList.remove('on');
+  document.body.style.overflow = '';
+  _currentOriginalUrl = '';
+  
+  setTimeout(() => {
+    const imgEl = document.getElementById('modalImg');
+    imgEl.src = '';
+    imgEl.style.display = 'none';
+    document.getElementById('modalLoading').style.display = 'none';
+    document.getElementById('modalError').style.display = 'none';
+  }, 300);
+}
+
+// Close modal with Escape key
+document.addEventListener('keydown', function(e){
+  if(e.key === 'Escape') closeModal();
+});
+
+// Close modal when clicking outside
+document.getElementById('modalOv').addEventListener('click', function(e){
+  if(e.target === this) closeModal();
+});
+
+// ============================================================
+
 function buildQuery(page,limit){
   const fD=document.getElementById('fDate').value;
   const p=new URLSearchParams();
@@ -228,15 +457,40 @@ async function loadPage(page, showLoader){
 
 function render(){
   const tb=document.getElementById('tb');tb.innerHTML='';
-  if(!pageData.length){tb.innerHTML=`<tr><td colspan="${COLS}" style="text-align:center;padding:40px;color:#999">ไม่มีรายการ (${total} ทั้งหมด)</td></tr>`;renderPg();return}
+  if(!pageData.length){tb.innerHTML=`<tr><td colspan="${COLS}" style="text-align:center;padding:40px;color:#9ca3af">ไม่มีรายการ (${total} ทั้งหมด)</td></tr>`;renderPg();return}
+  
   pageData.forEach((row,i)=>{
     const type=row['ประเภทข้อมูล']||'',tc=typeMap[type]||'';
-    const pic=row['รูปประกอบ']?`<a href="${row['รูปประกอบ']}" target="_blank">ดูรูป</a>`:'-';
+    
     const tr=document.createElement('tr');
-    let h=`<td style="white-space:nowrap">${row['Timestamp']||'-'}</td><td>${row['ชื่อผู้ดำเนินงาน']||'-'}</td><td class="tc ${tc}">${type||'-'}</td><td>${row['หมายเลขเอกสาร']||'-'}</td><td>${row['รายการ']||'-'}</td><td>${row['จำนวน']!==''?row['จำนวน']:'-'}</td><td>${row['ราคาต่อหน่วย']!==''?row['ราคาต่อหน่วย']:'-'}</td><td>${row['ชั้นวาง']||'-'}</td><td>${row['หมายเหตุ']||'-'}</td><td>${pic}</td>`;
-    if(ROLE==='admin')h+=`<td class="acts"><button class="a-edit" onclick="editRow(${i})">แก้ไข</button></td>`;
-    tr.innerHTML=h;tb.appendChild(tr);
-  });renderPg();
+    tr.innerHTML=`<td style="white-space:nowrap">${row['Timestamp']||'-'}</td><td>${row['ชื่อผู้ดำเนินงาน']||'-'}</td><td class="tc ${tc}">${type||'-'}</td><td>${row['หมายเลขเอกสาร']||'-'}</td><td>${row['รายการ']||'-'}</td><td>${row['จำนวน']!==''?row['จำนวน']:'-'}</td><td>${row['ราคาต่อหน่วย']!==''?row['ราคาต่อหน่วย']:'-'}</td><td>${row['ชั้นวาง']||'-'}</td><td>${row['หมายเหตุ']||'-'}</td><td></td>`;
+    
+    if(row['รูปประกอบ']){
+      const btn = document.createElement('button');
+      btn.className = 'view-img-btn';
+      btn.textContent = 'ดูรูป';
+      btn.onclick = function(){
+        openGoogleDriveImage(row['รูปประกอบ']);
+      };
+      tr.cells[9].appendChild(btn);
+    } else {
+      tr.cells[9].textContent = '-';
+    }
+    
+    if(ROLE==='admin'){
+      const tdActs = document.createElement('td');
+      tdActs.className = 'acts';
+      const editBtn = document.createElement('button');
+      editBtn.className = 'a-edit';
+      editBtn.textContent = 'แก้ไข';
+      editBtn.onclick = function(){ editRow(i); };
+      tdActs.appendChild(editBtn);
+      tr.appendChild(tdActs);
+    }
+    
+    tb.appendChild(tr);
+  });
+  renderPg();
 }
 
 function renderPg(){
@@ -246,7 +500,6 @@ function renderPg(){
   if(pg<lastPage){const b=document.createElement('button');b.className='pg-btn';b.textContent='ถัดไป →';b.onclick=()=>{loadPage(pg+1,true);scrollTo(0,0)};el.appendChild(b)}
 }
 
-/** debounce 400ms สำหรับพิมพ์ filter */
 function applyFilter(){
   clearTimeout(_debounce);
   _debounce=setTimeout(()=>loadPage(1,false),400);
@@ -256,17 +509,17 @@ function clearFilter(){
   loadPage(1,true);
 }
 
-// ── Edit (admin only) ──
 function editRow(i){
   if(ROLE!=='admin')return;
-  const row=pageData[i],tr=document.getElementById('tb').children[i];if(!tr)return;tr.style.background='#e0f2fe';
+  const row=pageData[i],tr=document.getElementById('tb').children[i];if(!tr)return;tr.style.background='#EEF2FF';
   const types=['รับเข้าสต็อก','คืนเข้าสต็อก','ขายสินค้าออก','ยืมสินค้า','เบิกของ'];
-  tr.innerHTML=`<td style="white-space:nowrap;font-size:12px">${row['Timestamp']||'-'}</td><td><input class="edit-input" id="eOp" value="${esc(row['ชื่อผู้ดำเนินงาน']||'')}"></td><td><select id="eType" class="edit-input">${types.map(t=>`<option ${row['ประเภทข้อมูล']===t?'selected':''}>${t}</option>`).join('')}</select></td><td><input class="edit-input" id="eBill" value="${esc(row['หมายเลขเอกสาร']||'')}"></td><td style="color:#555;font-size:12px">${esc(row['รายการ']||'-')}</td><td><input class="edit-input" id="eQty" value="${row['จำนวน']||''}" type="number"></td><td><input class="edit-input" id="ePrice" value="${row['ราคาต่อหน่วย']!==''&&row['ราคาต่อหน่วย']!=null?row['ราคาต่อหน่วย']:''}" type="number" step="0.001"></td><td><input class="edit-input" id="eShelf" value="${esc(row['ชั้นวาง']||'')}"></td><td><input class="edit-input" id="eNote" value="${esc(row['หมายเหตุ']||'')}"></td><td><input type="hidden" id="eImg" value="${esc(row['รูปประกอบ']||'')}">-</td><td class="acts"><button class="a-save" onclick="saveRow(${i})">บันทึก</button><button class="a-del" onclick="delRow(${i})">ลบ</button><button class="a-can" onclick="loadPage(pg,false)">ยกเลิก</button></td>`;
+  tr.innerHTML=`<td style="white-space:nowrap;font-size:12px">${row['Timestamp']||'-'}</td><td><input class="edit-input" id="eOp" value="${(row['ชื่อผู้ดำเนินงาน']||'').replace(/"/g, '&quot;')}"></td><td><select id="eType" class="edit-input">${types.map(t=>`<option ${row['ประเภทข้อมูล']===t?'selected':''}>${t}</option>`).join('')}</select></td><td><input class="edit-input" id="eBill" value="${(row['หมายเลขเอกสาร']||'').replace(/"/g, '&quot;')}"></td><td style="color:#374151;font-size:13px">${(row['รายการ']||'-').replace(/"/g, '&quot;')}</td><td><input class="edit-input" id="eQty" value="${row['จำนวน']||''}" type="number"></td><td><input class="edit-input" id="ePrice" value="${row['ราคาต่อหน่วย']!==''&&row['ราคาต่อหน่วย']!=null?row['ราคาต่อหน่วย']:''}" type="number" step="0.001"></td><td><input class="edit-input" id="eShelf" value="${(row['ชั้นวาง']||'').replace(/"/g, '&quot;')}"></td><td><input class="edit-input" id="eNote" value="${(row['หมายเหตุ']||'').replace(/"/g, '&quot;')}"></td><td><input type="hidden" id="eImg" value="${(row['รูปประกอบ']||'').replace(/"/g, '&quot;')}">-</td><td class="acts"><button class="a-save" onclick="saveRow(${i})">บันทึก</button><button class="a-del" onclick="delRow(${i})">ลบ</button><button class="a-can" onclick="loadPage(pg,false)">ยกเลิก</button></td>`;
 }
+
 async function saveRow(i){const row=pageData[i];const op=document.getElementById('eOp').value.trim(),bill=document.getElementById('eBill').value.trim();if(!op||!bill){alert('กรุณากรอกข้อมูลให้ครบ');return}if(!confirm('ต้องการบันทึก?'))return;showOv();try{await API.put('/api/transaction/'+encodeURIComponent(row.transaction_id),{operator:op,type:document.getElementById('eType').value,bill,quantity:document.getElementById('eQty').value,price:document.getElementById('ePrice').value||'',shelf:document.getElementById('eShelf').value.trim(),note:document.getElementById('eNote').value.trim(),image:document.getElementById('eImg').value.trim(),oldQuantity:row['จำนวน'],oldType:row['ประเภทข้อมูล'],oldItemId:row['item_id']});toast('บันทึกสำเร็จ');await loadPage(pg,true)}catch(e){toast(e.message,true);hideOv()}}
+
 async function delRow(i){const row=pageData[i];if(!confirm(`ลบรายการ?\nเอกสาร: ${row['หมายเลขเอกสาร']}\nรายการ: ${row['รายการ']}`))return;showOv();try{await API.del('/api/transaction/'+encodeURIComponent(row.transaction_id));toast('ลบเรียบร้อย');await loadPage(pg,true)}catch(e){toast(e.message,true);hideOv()}}
 
-// ═══════════ PDF EXPORT (port จาก Apps Script) ═══════════
 let _fontN=null,_fontB=null;
 
 async function _fetchFontB64(url){
@@ -297,7 +550,6 @@ async function generatePDF(){
   const btn=document.getElementById('pdfBtn');btn.disabled=true;
   showOv('กำลังสร้าง PDF...');
   try{
-    // ดึงข้อมูลทั้งหมดตาม filter ปัจจุบัน (ไม่จำกัดหน้า)
     const res=await API.get(buildQuery(1,1000000));
     let dataToUse=res.data||[];
     if(!dataToUse.length){alert('ไม่มีข้อมูล');return}
@@ -364,7 +616,6 @@ async function generatePDF(){
   }
 }
 
-// ── Init ──
 loadPage(1,true);
 </script>
 </body>
