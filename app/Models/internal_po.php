@@ -13,9 +13,30 @@ class internal_po extends Model
     public    $timestamps   = false;
 
     protected $fillable = [
-        'internal_id', 'SO_id', 'customer_code',
+        'internal_id', 'SO_id', 'POref','customer_code',
         'customer_name', 'create_by', 'timestamp',
+        'status',
+        'pick_by',     'pick_at',      // ด่าน 1: จัดเสร็จ
+        'location_by', 'location_at',  // ด่าน 2: ระบุตำแหน่ง
+        'checkout_by', 'checkout_at',  // ด่าน 3: ของออก
     ];
+
+    const ST_PENDING  = 'รอดำเนินการ';
+    const ST_FINISH   = 'จัดเสร็จแล้ว';
+    const ST_STORED   = 'ระบุตำแหน่งแล้ว';
+    const ST_CHECKOUT = 'เอาของออกแล้ว';
+    const ST_CANCEL   = 'ยกเลิก';
+
+    public function getStatusColorAttribute()
+    {
+        return match ($this->status) {
+            self::ST_FINISH   => 'blue',
+            self::ST_STORED   => 'orange',
+            self::ST_CHECKOUT => 'green',
+            self::ST_CANCEL   => 'red',
+            default           => 'inherit',
+        };
+    }
 
     public function lines()
     {

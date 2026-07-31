@@ -393,22 +393,24 @@ Route::delete('/api/users/{id}', [InventoryController::class, 'deleteUser']);
  
  
 
-use App\Http\Controllers\InternalpoController;
+use App\Http\Controllers\InternalPoController;
+use App\Http\Controllers\StoreController;
+
+// ด่าน 1 — จัดเสร็จ (ฝ่ายจัดของ)
 Route::prefix('internal-po')->name('internal_po.')->group(function () {
-    // ด่าน 1 — จัดเสร็จ
-    Route::get ('pick',     [InternalpoController::class, 'pickDashboard'])->name('pick');
-    Route::post('pick',     [InternalpoController::class, 'pickSubmit'])->name('pick.submit');
-    Route::post('cancel',   [InternalpoController::class, 'markCancel'])->name('cancel');
- 
-    // ด่าน 2 — ระบุตำแหน่ง (ต้องผ่านด่าน 1 ก่อน)
-    Route::get ('location', [InternalpoController::class, 'locationDashboard'])->name('location');
-    Route::post('location', [InternalpoController::class, 'locationSubmit'])->name('location.submit');
- 
-    // ด่าน 3 — ของออก (ต้องผ่านด่าน 1+2 ก่อน)
-    Route::get ('checkout', [InternalpoController::class, 'checkoutDashboard'])->name('checkout');
-    Route::post('checkout', [InternalpoController::class, 'checkoutSubmit'])->name('checkout.submit');
+    Route::get ('pick',   [InternalPoController::class, 'pickDashboard'])->name('pick');
+    Route::post('pick',   [InternalPoController::class, 'pickSubmit'])->name('pick.submit');
+    Route::post('cancel', [InternalPoController::class, 'markCancel'])->name('cancel');
 });
- 
+
+// ด่าน 2-3 — สโตร์ (ฝ่ายสโตร์)
+Route::prefix('store')->name('store.')->group(function () {
+    Route::get ('location', [StoreController::class, 'locationDashboard'])->name('location');
+    Route::post('location', [StoreController::class, 'locationSubmit'])->name('location.submit');
+
+    Route::get ('checkout', [StoreController::class, 'checkoutDashboard'])->name('checkout');
+    Route::post('checkout', [StoreController::class, 'checkoutSubmit'])->name('checkout.submit');
+});
 
 
 use App\Http\Controllers\MobilePoappController;
@@ -416,3 +418,4 @@ Route::get('/mobile-app', [MobilePoappController::class, 'index'])->name('mobile
 Route::get('/api/getPODetail', [MobilePoappController::class, 'getPODetail'])->name('mobile.po.detail');
 Route::post('/api/receivePO', [MobilePoappController::class, 'receivePO'])->name('mobile.po.receive');
 Route::get('/api/receivePO/history', [MobilePoappController::class, 'history'])->name('mobile.po.receive.history');
+Route::post('/api/receivePO/cancel', [MobilePoappController::class, 'cancelReceive']);
