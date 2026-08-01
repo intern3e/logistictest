@@ -503,7 +503,7 @@ html{overflow-y:auto;}
 .entry-rows-header,
 .entry-row {
   display: grid;
-  grid-template-columns: 1.3fr 1.2fr 1.2fr 1.4fr 1.1fr 1.1fr 0.9fr;
+  grid-template-columns: 1.3fr 1.2fr 1.2fr 1.4fr 1.1fr 1.1fr 1.1fr 0.9fr;
   gap: 0;
   align-items: center;
 }
@@ -1025,9 +1025,9 @@ html{overflow-y:auto;}
     </div>
 
     @if($view==='day')
-      @php
-        $dateFrom = request('date_from', request('date', $filterDay));
-        $dateTo   = request('date_to',   request('date', $filterDay));
+      @php  
+        $dateFrom = request('date_from', request('date', $filterDay ?? date('Y-m-d')));
+        $dateTo   = request('date_to',   request('date', $filterDay ?? date('Y-m-d')));
       @endphp
       <div class="filter-group">
         <span class="filter-group-label">ช่วงวันที่</span>
@@ -1155,7 +1155,7 @@ html{overflow-y:auto;}
     <div class="entry-card">
       <div class="entry-card-head">
         <div class="entry-card-head-left">
-          <div class="entry-icon">⛽</div>
+          <div class="entry-icon"></div>
           <div class="entry-titlewrap">
             <span class="entry-title">บันทึกการเติมน้ำมัน</span>
             <span class="entry-sub" id="entrySub">เลือกวันที่เพื่อโหลดคนขับของวันนั้น</span>
@@ -1193,7 +1193,7 @@ html{overflow-y:auto;}
 
       <div class="entry-rows-wrap">
         <div class="entry-rows-header">
-          <div>คนขับ</div><div>ทะเบียนรถ</div><div>เวลา</div><div>ค่าน้ำมัน (฿)</div><div>ระยะ (KM)</div><div>สรุป</div><div>บันทึก</div>
+          <div>คนขับ</div><div>ทะเบียนรถ</div><div>เวลา</div><div>ค่าน้ำมัน (฿)</div><div>ระยะ (KM)</div><div>ค่าวิ่ง (฿)</div><div>สรุป</div><div>บันทึก</div>
         </div>
         <div id="entryRowsBody">
           <div class="entry-empty">เลือกวันที่เพื่อแสดงรายชื่อคนขับ</div>
@@ -1390,7 +1390,7 @@ html{overflow-y:auto;}
         <div id="pdfRangeFields"><div class="pdf-field" style="margin-bottom:14px"><label>ตั้งแต่วันที่</label><input type="date" id="pdfDateFrom"></div><div class="pdf-field"><label>ถึงวันที่</label><input type="date" id="pdfDateTo"></div></div>
         <div id="pdfSingleFields" style="display:none"><div class="pdf-field"><label>เลือกวันที่</label><input type="date" id="pdfSingleDate" value="{{ date('Y-m-d') }}"></div></div>
       </div>
-      <div class="pdf-modal-foot"><button type="button" class="pdf-btn-cancel" onclick="closePdfRangeModal()">ยกเลิก</button><button type="button" class="pdf-btn-go" onclick="confirmPdfExport()">📄 สร้าง PDF</button></div>
+      <div class="pdf-modal-foot"><button type="button" class="pdf-btn-cancel" onclick="closePdfRangeModal()">ยกเลิก</button><button type="button" class="pdf-btn-go" onclick="confirmPdfExport()"> สร้าง PDF</button></div>
     </div>
   </div>
 </main>
@@ -1484,6 +1484,9 @@ function drpInit(){
       if(!drpFrom || (drpFrom && drpTo)){
         drpFrom=ds;
         drpTo=ds;
+        drpRender();
+        // ✅ เลือกวันเดียว - Apply ทันที
+        setTimeout(()=>drpApply(), 200);
       }else if(drpFrom && !drpTo){
         if(ds < drpFrom){
           drpTo=drpFrom;
@@ -1491,8 +1494,10 @@ function drpInit(){
         }else{
           drpTo=ds;
         }
+        drpRender();
+        // ✅ เลือกช่วงวันที่เสร็จ - Apply ทันที
+        setTimeout(()=>drpApply(), 200);
       }
-      drpRender();
     });
   }
 }
@@ -1560,8 +1565,88 @@ async function ilOnDateChange(){if(ilIsLoadingDrivers)return-1;const date=docume
 
 function isLikelyDriverName(name){const n=(name||'').trim();if(!n||n.length>20)return false;const banned=['ลูกค้า','เซ็นบิล','เซ็น','บิล','สาขา','จำกัด','บริษัท','หจก','ร้าน','คุณ','ไป','ที่','กับ'];for(const w of banned){if(n.includes(w))return false;}if((n.match(/\d/g)||[]).length>=4)return false;return true;}
 const _autoStoreInFlight=new Set();
-async function ilAutoStoreNonWhitelist(date,driverList){if(!driverList||driverList.length===0||!IS_PRIVILEGED)return;for(const d of driverList){const name=d.name;if(!isLikelyDriverName(name))continue;if(!d.jobs||d.jobs.length===0)continue;if(isDriverSaved(date,name))continue;const fireKey=date+'|'+_normalizeName(name);if(_autoStoreInFlight.has(fireKey))continue;_autoStoreInFlight.add(fireKey);let okC=0,failC=0;d.jobs.forEach(j=>{const k=_jobStatusKind(j);if(k==='ok')okC++;else if(k==='fail')failC++;});const fd=new FormData();fd.append('_token',CSRF_TOKEN);fd.append('work_date',date);fd.append('driver_name',name);fd.append('vehicle_id','-');fd.append('start_time',date+' 09:00:00');fd.append('end_time',date+' 18:00:00');fd.append('total_price',0);fd.append('ok',okC);fd.append('ng',failC);if(CURRENT_USER&&CURRENT_USER!=='Guest')fd.append('create_by',CURRENT_USER);try{const res=await fetch(ROUTE_STORE,{method:'POST',headers:{'X-CSRF-TOKEN':CSRF_TOKEN,'Accept':'application/json'},body:fd});if(res.ok||res.status===302){markDriverSaved(date,name);ilAppendLogRow({date,driver_name:name,vehicle_id:'-',start_h:9,start_m:0,end_h:18,end_m:0,total_price:0,total_distance:0,liters:0,km_per_liter:0,ok_count:okC,fail_count:failC});if(d.jobs.length>0)_syncNgJobs(date,name,d.jobs);}}catch(e){console.warn('auto-store error',name,e);_autoStoreInFlight.delete(fireKey);}}}
-function _syncNgJobs(date,driverName,jobs){fetch(ROUTE_SYNC_NG,{method:'POST',headers:{'Content-Type':'application/json','Accept':'application/json','X-CSRF-TOKEN':CSRF_TOKEN},body:JSON.stringify({date,create_by:(CURRENT_USER&&CURRENT_USER!=='Guest')?CURRENT_USER:null,jobs:jobs.map(j=>({bill_no:j.bill_no,so_id:j.so_id||'',driver_name:driverName,bill_in_by:j.bill_in_by||'',customer_name:j.customer_name||'',status:(j.status||'').trim(),note:j.note||''}))})}).catch(()=>{});}
+async function ilAutoStoreNonWhitelist(date,driverList){
+  if(!driverList||driverList.length===0||!IS_PRIVILEGED)return;
+  for(const d of driverList){
+    const name=d.name;
+    if(!isLikelyDriverName(name))continue;
+    if(!d.jobs||d.jobs.length===0)continue;
+    if(isDriverSaved(date,name))continue;
+    const fireKey=date+'|'+_normalizeName(name);
+    if(_autoStoreInFlight.has(fireKey))continue;
+    _autoStoreInFlight.add(fireKey);
+    
+    let okC=0,failC=0;
+    d.jobs.forEach(j=>{const k=_jobStatusKind(j);if(k==='ok')okC++;else if(k==='fail')failC++;});
+    
+    const fd = new FormData();
+    fd.append('_token', CSRF_TOKEN);
+    fd.append('work_date', date);
+    fd.append('driver_name', name);
+    fd.append('vehicle_id', '-');
+    fd.append('start_time', date + ' 09:00:00');
+    fd.append('end_time', date + ' 18:00:00');
+    fd.append('total_price', 0);
+    fd.append('total_distance', 0);
+    fd.append('liters', 0);
+    fd.append('ok', okC);
+    fd.append('ng', failC);
+    fd.append('create_by', (CURRENT_USER && CURRENT_USER !== 'Guest') ? String(CURRENT_USER) : 'system');
+
+    try{
+      const res=await fetch(ROUTE_STORE,{method:'POST',headers:{'X-CSRF-TOKEN':CSRF_TOKEN,'Accept':'application/json'},body:fd});
+      if(res.ok||res.status===302){
+        markDriverSaved(date,name);
+        ilAppendLogRow({date,driver_name:name,vehicle_id:'-',start_h:9,start_m:0,end_h:18,end_m:0,total_price:0,total_distance:0,liters:0,km_per_liter:0,ok_count:okC,fail_count:failC});
+        if(d.jobs.length>0)_syncNgJobs(date,name,d.jobs);
+      }
+    }catch(e){
+      console.warn('auto-store error',name,e);
+      _autoStoreInFlight.delete(fireKey);
+    }
+  }
+}
+
+function _syncNgJobs(date, driverName, jobs) {
+  if (!date || !driverName || !Array.isArray(jobs) || jobs.length === 0) return;
+  
+  const payload = {
+    date: String(date),
+    create_by: (CURRENT_USER && CURRENT_USER !== 'Guest') ? String(CURRENT_USER) : 'system',
+    jobs: jobs.map(j => {
+      // ✅ แก้ไขตรงนี้: ถ้า status ว่าง ให้ใส่ค่า default เป็น 'รอ' เพื่อให้ผ่าน Laravel validation
+      let st = j.status ? String(j.status).trim() : '';
+      if (st === '') st = 'รอ'; 
+      
+      return {
+        bill_no: String(j.bill_no || ''),
+        so_id: String(j.so_id || ''),
+        driver_name: String(driverName),
+        bill_in_by: String(j.bill_in_by || ''),
+        customer_name: String(j.customer_name || ''),
+        status: st,
+        note: String(j.note || '')
+      };
+    })
+  };
+
+  fetch(ROUTE_SYNC_NG, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Accept': 'application/json',
+      'X-CSRF-TOKEN': CSRF_TOKEN
+    },
+    body: JSON.stringify(payload)
+  })
+  .then(async res => {
+    if (!res.ok) {
+      const errText = await res.text().catch(() => 'Unknown error');
+      console.warn('sync-ng failed:', res.status, errText);
+    }
+  })
+  .catch(err => console.warn('sync-ng network error:', err));
+}
 
 let _lastPlatesCache = null;
 async function _fetchLastPlates() {
@@ -1608,7 +1693,7 @@ function ilRenderDriverRows(date){
   tbody.innerHTML=driverList.map((d,idx)=>{
     const key=`row_${idx}_${d.name.replace(/[^a-zA-Z0-9ก-๙]/g,'_')}`;
     let okC=0,failC=0;d.jobs.forEach(j=>{const k=_jobStatusKind(j);if(k==='ok')okC++;else if(k==='fail')failC++;});
-    driverRowState[key]={driverName:d.name,jobs:d.jobs,okCount:okC,failCount:failC,sh:0,sm:0,eh:0,em:0,startDT:'',endDT:'',noFuel:false};
+    driverRowState[key]={driverName:d.name,jobs:d.jobs,okCount:okC,failCount:failC,sh:0,sm:0,eh:0,em:0,startDT:'',endDT:'',noFuel:false,runFee:0};
     const ini=(d.name||'?').trim().charAt(0).toUpperCase();
     return`<div class="entry-row" data-key="${key}" onclick="erFocusRow('${key}')">
       <div class="er-driver"><span class="er-driver-avatar">${ini}</span><div class="er-driver-info"><div class="er-driver-name" title="${d.name}">${d.name}</div><div class="er-driver-jobs">${d.jobs.length} งาน · <span class="er-ok">${okC} ✓</span>${failC>0?` · <span class="er-fail">${failC} ✕</span>`:''}</div></div></div>
@@ -1635,6 +1720,12 @@ function ilRenderDriverRows(date){
           <input type="text" inputmode="decimal" class="er-num-input" id="${key}-dist" placeholder="250" oninput="erSanitizeNum(this);erUpdateRow('${key}')" onfocus="erFocusRow('${key}')">
         </div>
       </div>
+      <div>
+        <div class="er-cell-center">
+          <div class="er-nofuel-spacer"></div>
+          <input type="text" inputmode="decimal" class="er-num-input" id="${key}-runfee" placeholder="ค่าวิ่ง" oninput="erSanitizeNum(this);erUpdateRow('${key}')" onfocus="erFocusRow('${key}')">
+        </div>
+      </div>
       <div class="er-summary" id="${key}-summary"><div class="er-summary-row"><span class="er-summary-label">L:</span><span class="er-summary-val empty">—</span></div><div class="er-summary-row"><span class="er-summary-label">km/L:</span><span class="er-summary-val empty">—</span></div><div class="er-summary-row"><span class="er-summary-label">฿/km:</span><span class="er-summary-val empty">—</span></div></div>
       <div style="text-align:center"><button type="button" class="er-save-btn" id="${key}-save" onclick="event.stopPropagation();erSaveRow('${key}')">บันทึก</button></div>
     </div>`;
@@ -1645,7 +1736,29 @@ function ilRenderDriverRows(date){
 
 function erSanitizeNum(el){let v=el.value.replace(/[^0-9.]/g,'');const parts=v.split('.');if(parts.length>2)v=parts[0]+'.'+parts.slice(1).join('');el.value=v;}
 function erToggleNoFuel(key,checked){const s=driverRowState[key];if(!s)return;s.noFuel=checked;const priceEl=document.getElementById(`${key}-price`);if(priceEl){if(checked){priceEl.value='';priceEl.disabled=true;priceEl.placeholder='ไม่เติม';}else{priceEl.disabled=false;priceEl.placeholder='ค่าน้ำมัน';}}erUpdateRow(key);}
-function erUpdateRow(key){const s=driverRowState[key];if(!s)return;const priceEl=document.getElementById(`${key}-price`);const distEl=document.getElementById(`${key}-dist`);const price=s.noFuel?0:(parseFloat(priceEl?.value)||0);const dist=parseFloat(distEl?.value)||0;const ppl=parseFloat(document.getElementById('il-price-per-liter')?.value)||0;const liters=(price>0&&ppl>0)?(price/ppl):0;const kml=(dist>0&&liters>0)?(dist/liters):0;const thbKm=(price>0&&dist>0)?(price/dist):0;s.price=price;s.distance=dist;s.liters=liters;s.kml=kml;s.thbKm=thbKm;const sum=document.getElementById(`${key}-summary`);if(sum){const litersTxt=liters>0?fmtN(liters)+' L':'<span class="empty">—</span>';let kmlCls='empty',kmlTxt='—';if(kml>0){kmlTxt=fmtN(kml)+' km/L';kmlCls=kml>=12?'green':(kml<9?'red':'');}const thbKmTxt=thbKm>0?'฿'+fmtN(thbKm):'<span class="empty">—</span>';sum.innerHTML=`<div class="er-summary-row"><span class="er-summary-label">L:</span><span class="er-summary-val ${liters>0?'':'empty'}">${litersTxt}</span></div><div class="er-summary-row"><span class="er-summary-label">km/L:</span><span class="er-summary-val ${kmlCls}">${kmlTxt}</span></div><div class="er-summary-row"><span class="er-summary-label">฿/km:</span><span class="er-summary-val ${thbKm>0?'':'empty'}">${thbKmTxt}</span></div>`;}}
+function erUpdateRow(key){
+  const s=driverRowState[key];if(!s)return;
+  const priceEl=document.getElementById(`${key}-price`);
+  const distEl=document.getElementById(`${key}-dist`);
+  const runFeeEl=document.getElementById(`${key}-runfee`);
+  const price=s.noFuel?0:(parseFloat(priceEl?.value)||0);
+  const dist=parseFloat(distEl?.value)||0;
+  const runFee=parseFloat(runFeeEl?.value)||0;
+  const ppl=parseFloat(document.getElementById('il-price-per-liter')?.value)||0;
+  const liters=(price>0&&ppl>0)?(price/ppl):0;
+  const kml=(dist>0&&liters>0)?(dist/liters):0;
+  const thbKm=(price>0&&dist>0)?(price/dist):0;
+  s.price=price;s.distance=dist;s.liters=liters;s.kml=kml;s.thbKm=thbKm;s.runFee=runFee;
+  const sum=document.getElementById(`${key}-summary`);
+  if(sum){
+    const litersTxt=liters>0?fmtN(liters)+' L':'<span class="empty">—</span>';
+    let kmlCls='empty',kmlTxt='—';
+    if(kml>0){kmlTxt=fmtN(kml)+' km/L';kmlCls=kml>=12?'green':(kml<9?'red':'');}
+    const thbKmTxt=thbKm>0?'฿'+fmtN(thbKm):'<span class="empty">—</span>';
+    const runFeeTxt=runFee>0?'฿'+fmtN(runFee):'<span class="empty">—</span>';
+    sum.innerHTML=`<div class="er-summary-row"><span class="er-summary-label">L:</span><span class="er-summary-val ${liters>0?'':'empty'}">${litersTxt}</span></div><div class="er-summary-row"><span class="er-summary-label">km/L:</span><span class="er-summary-val ${kmlCls}">${kmlTxt}</span></div><div class="er-summary-row"><span class="er-summary-label">฿/km:</span><span class="er-summary-val ${thbKm>0?'':'empty'}">${thbKmTxt}</span></div><div class="er-summary-row"><span class="er-summary-label">ค่าวิ่ง:</span><span class="er-summary-val ${runFee>0?'':'empty'}">${runFeeTxt}</span></div>`;
+  }
+}
 function erUpdateAllRows(){Object.keys(driverRowState).forEach(k=>erUpdateRow(k));}
 function erUpdateDateTime(key){const s=driverRowState[key];if(!s)return;s.startDT=document.getElementById(`${key}-start-dt`)?.value||'';s.endDT=document.getElementById(`${key}-end-dt`)?.value||'';if(s.startDT){const[h,m]=(s.startDT.split('T')[1]||'00:00').split(':').map(Number);s.sh=h||0;s.sm=m||0;}if(s.endDT){const[h,m]=(s.endDT.split('T')[1]||'00:00').split(':').map(Number);s.eh=h||0;s.em=m||0;}}
 let _focusedRowKey=null;
@@ -1656,19 +1769,36 @@ async function erSaveRow(key){
   const plate=document.querySelector(`.er-plate-select[data-key="${key}"]`)?.value||'';
   const btn=document.getElementById(`${key}-save`), row=document.querySelector(`.entry-row[data-key="${key}"]`);
   const errors=[];
-  if(!plate)errors.push('เลือกทะเบียนรถ');
+ if(!plate)errors.push('เลือกทะเบียนรถ');
   if(!s.noFuel){const priceRaw=document.getElementById(`${key}-price`)?.value??'';if(priceRaw===''||isNaN(parseFloat(priceRaw)))errors.push('ใส่ค่าน้ำมัน หรือติ๊ก "ไม่เติมน้ำมัน"');else if(parseFloat(priceRaw)<0)errors.push('ค่าน้ำมันติดลบไม่ได้');}
+  const runFeeRaw=document.getElementById(`${key}-runfee`)?.value??'';
+  if(runFeeRaw===''||isNaN(parseFloat(runFeeRaw)))errors.push('ใส่ค่าวิ่ง');
+  else if(parseFloat(runFeeRaw)<0)errors.push('ค่าวิ่งติดลบไม่ได้');
   if(!s.startDT||!s.endDT)errors.push('เลือกวันเวลาเริ่ม-สิ้นสุด');else if(new Date(s.endDT)<=new Date(s.startDT))errors.push('เวลาสิ้นสุดต้องหลังเวลาเริ่ม');
   if(errors.length){btn.textContent=' '+errors[0];setTimeout(()=>{btn.innerHTML='บันทึก';},2200);return;}
+  
   const date=s.startDT.split('T')[0];
   row?.classList.add('saving');btn.disabled=true;btn.innerHTML='<span class="ic">⏳</span> กำลังบันทึก...';
   const toBackendDT=v=>v?v.replace('T',' ')+':00':'';
-  const fd=new FormData();fd.append('_token',CSRF_TOKEN);fd.append('work_date',date);fd.append('driver_name',s.driverName);fd.append('vehicle_id',plate);fd.append('start_time',toBackendDT(s.startDT));fd.append('end_time',toBackendDT(s.endDT));fd.append('total_price',s.price);
-  if(s.distance>0)fd.append('total_distance',s.distance);
-  const ppl=parseFloat(document.getElementById('il-price-per-liter')?.value)||0;if(ppl>0)fd.append('price_per_liter',ppl);
-  if(s.liters>0)fd.append('liters',s.liters.toFixed(2));
-  fd.append('ok',s.okCount);fd.append('ng',s.failCount);
-  if(CURRENT_USER&&CURRENT_USER!=='Guest')fd.append('create_by',CURRENT_USER);
+  
+  const fd=new FormData();
+  fd.append('_token',CSRF_TOKEN);
+  fd.append('work_date',date);
+  fd.append('driver_name',s.driverName);
+  fd.append('vehicle_id',plate);
+  fd.append('start_time',toBackendDT(s.startDT));
+  fd.append('end_time',toBackendDT(s.endDT));
+  fd.append('total_price',s.price || 0);
+  fd.append('total_distance',s.distance || 0);
+  fd.append('run_fee', s.runFee || 0);
+  fd.append('ok',s.okCount || 0);
+  fd.append('ng',s.failCount || 0);
+  
+  const ppl=parseFloat(document.getElementById('il-price-per-liter')?.value)||0;
+  if(ppl>0)fd.append('price_per_liter',ppl);
+  fd.append('liters', s.liters > 0 ? s.liters.toFixed(2) : 0);
+  fd.append('create_by', (CURRENT_USER && CURRENT_USER !== 'Guest') ? String(CURRENT_USER) : 'system');
+
   try{
     const res=await fetch(ROUTE_STORE,{method:'POST',headers:{'X-CSRF-TOKEN':CSRF_TOKEN,'Accept':'application/json'},body:fd});
     if(!res.ok&&res.status!==302)throw new Error('HTTP '+res.status);
