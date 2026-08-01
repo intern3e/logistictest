@@ -107,12 +107,8 @@
         margin:8px 16px 0;background:var(--canvas);
         border-radius:var(--r);padding:16px;
     }
-    .po-head .docu-row{display:flex;align-items:center;justify-content:space-between;gap:8px}
+    .po-head .docu-row{display:flex;align-items:flex-start;justify-content:space-between;gap:8px}
     .po-head .docu{font-size:18px;font-weight:600;color:var(--carbon)}
-    .po-head .so-badge{
-        font-size:13px;font-weight:500;color:var(--blue);background:#EAF0FE;
-        padding:3px 10px;border-radius:12px;flex-shrink:0;white-space:nowrap;
-    }
     .po-head .vendor{font-size:15px;color:var(--graphite);margin-top:4px;line-height:1.45}
     .po-head .meta{
         display:flex;gap:16px;margin-top:12px;padding-top:12px;
@@ -120,12 +116,27 @@
     }
     .po-head .meta b{color:var(--carbon);font-weight:500}
     .po-head .meta .v-amnt b{color:var(--blue)}
-    .po-head .docu-row{display:flex;align-items:flex-start;justify-content:space-between;gap:8px}
     .po-head .so-wrap{display:flex;flex-direction:column;align-items:flex-end;gap:3px;flex-shrink:0}
     .po-head .so-sale{font-size:14px;color:var(--pewter);white-space:nowrap}
     .po-head .so-sale b{color:var(--carbon);font-weight:500}
 
-    /* ===== SO Info Card ===== */
+    /* ===== SO Badge (single, clickable) ===== */
+    .so-badge{
+        font-size:13px;font-weight:500;color:var(--blue);background:#EAF0FE;
+        padding:5px 10px 5px 12px;border-radius:14px;flex-shrink:0;white-space:nowrap;
+        display:inline-flex;align-items:center;gap:6px;cursor:pointer;
+        transition:background-color var(--t);
+    }
+    .so-badge:active{background:#D6E2FC}
+    .so-badge.active{background:#D6E2FC}
+    .so-badge .so-count{
+        background:var(--blue);color:#fff;font-size:11px;font-weight:600;
+        padding:1px 6px;border-radius:10px;line-height:1.5;
+    }
+    .so-badge .chev-so{display:inline-block;font-size:9px;transition:transform .25s ease}
+    .so-badge.active .chev-so{transform:rotate(180deg)}
+
+    /* ===== SO Info Card (panel) ===== */
     .so-card{
         margin:0 16px;background:var(--canvas);
         border-radius:0 0 var(--r) var(--r);padding:0 16px;
@@ -133,15 +144,22 @@
         max-height:0;overflow:hidden;opacity:0;
         transition:max-height .3s ease, padding .3s ease, opacity .25s ease;
     }
-    .so-card.open{max-height:120px;padding:12px 16px;opacity:1}
-    .so-badge.clickable{cursor:pointer}
-    .so-badge .chev-so{display:inline-block;font-size:10px;margin-left:3px;transition:transform .25s ease}
-    .so-badge.active{background:#D6E2FC}
-    .so-badge.active .chev-so{transform:rotate(180deg)}
-    .so-card .so-title{font-size:13px;font-weight:500;color:var(--blue);text-transform:uppercase;letter-spacing:.3px;margin-bottom:8px}
+    .so-card.open{max-height:400px;padding:14px 16px;opacity:1;overflow-y:auto}
+    .so-card .so-title{
+        font-size:13px;font-weight:500;color:var(--blue);
+        text-transform:uppercase;letter-spacing:.3px;margin-bottom:8px;
+    }
     .so-card .so-row{display:flex;justify-content:space-between;gap:8px;padding:3px 0;font-size:14px}
     .so-card .so-row .so-lbl{color:var(--pewter);flex-shrink:0}
     .so-card .so-row .so-val{color:var(--carbon);font-weight:500;text-align:right;word-break:break-word}
+
+    .so-card .so-others{margin-top:12px;padding-top:12px;border-top:1px dashed var(--cloud)}
+    .so-card .so-others-lbl{font-size:12.5px;color:var(--pewter);margin-bottom:8px}
+    .so-chip-list{display:flex;flex-wrap:wrap;gap:6px}
+    .so-chip{
+        font-size:12.5px;color:var(--graphite);background:var(--ash);
+        padding:4px 10px;border-radius:12px;white-space:nowrap;
+    }
 
     /* ===== Top Fields (Shelf / Photo / Printer) ===== */
     #topFields{
@@ -823,10 +841,11 @@ async function searchPO(){
         }
 
         let raw = await res.json();
-        let data, soInfo = {};
+        let data, soList = [], soInfo = {};
         if(raw && raw.poData !== undefined){
-            data = raw.poData; soInfo = raw.soInfo || {};
+            data = raw.poData; soList = raw.soList || []; soInfo = raw.soInfo || {};
         } else { data = raw; }
+        data._soList = soList;
 
         if(Array.isArray(data)) data = data[0];
         if(data && data.data) data = Array.isArray(data.data) ? data.data[0] : data.data;
@@ -834,7 +853,7 @@ async function searchPO(){
         if(!data || !data.ms_podt || data.ms_podt.length === 0){
             showNotFound(poNumber); return;
         }
-        if(!data.SONum){
+        if(!data._soList || data._soList.length === 0){
             clearResult();
             $('stateBox').innerHTML =
                 '<div class="icon">⚠️</div>' +
@@ -843,11 +862,10 @@ async function searchPO(){
             $('stateBox').style.display = 'block';
             return;
         }
-
-        // 2) ใช้ DocuNo จริง (มี PO นำหน้าครบ) ไปดึง history แทน poNumber ดิบจาก input
         const history = await getReceivedHistory(data.DocuNo);
 
         data._soInfo = {
+            SONum:      soInfo.SONum || '',
             CustPONo:   soInfo.CustPONo || '',
             CustName:   soInfo.CustName || '',
             ResponseBy: soInfo.ResponseBy || ''
@@ -886,52 +904,62 @@ async function searchPO(){
         $('btnSearch').disabled = false;
     }
 }
-
 function toggleSoCard(){
     const card = $('soCardInner');
     const badge = $('soBadge');
-    if(!card || !badge) return;
+    const chev = $('soChev');
+    if(!card) return;
     card.classList.toggle('open');
-    badge.classList.toggle('active');
+    if(badge) badge.classList.toggle('active');
+    if(chev) chev.style.transform = card.classList.contains('open') ? 'rotate(180deg)' : '';
 }
-
 /* ========== Render PO ========== */
-function renderPO(po){
-    $('stateBox').style.display = 'none';
-    const so = po._soInfo || {};
-    const hasSO = !!(po.SONum && (so.CustName || so.CustPONo || so.ResponseBy));
+    function renderPO(po){
+        $('stateBox').style.display = 'none';
+        const soList = po._soList || [];       // ทุก SO (badge)
+        const soInfo = po._soInfo || {};       // รายละเอียด SO ล่าสุด
+        const hasSO = soList.length > 0;
+        const extraCount = soList.length - 1;  // SO อื่นนอกจากตัวล่าสุด
 
-    $('poHead').innerHTML = `
-        <div class="po-head">
-            <div class="docu-row">
-                <div class="docu">${esc(po.DocuNo || '-')}</div>
-                <div class="so-wrap">
-                    ${po.SONum
-                        ? `<span class="so-badge${hasSO?' clickable':''}" id="soBadge"
-                                ${hasSO?'onclick="toggleSoCard()"':''}>
-                            SO ${esc(po.SONum)}${hasSO?'<span class="chev-so">▼</span>':''}
-                        </span>` : ''}
-                    ${so.ResponseBy ? `<div class="so-sale">SALE: <b>${esc(so.ResponseBy)}</b></div>` : ''}
+        $('poHead').innerHTML = `
+            <div class="po-head">
+                <div class="docu-row">
+                    <div class="docu">${esc(po.DocuNo || '-')}</div>
+                    ${hasSO ? `
+                        <div class="so-wrap">
+                            <span class="so-badge" id="soBadge" onclick="toggleSoCard()">
+                                SO ${esc(soInfo.SONum || soList[0].SONum)}
+                                ${extraCount > 0 ? `<span class="so-count">+${extraCount}</span>` : ''}
+                                <span class="chev-so" id="soChev">▼</span>
+                            </span>
+                        </div>` : ''}
                 </div>
-            </div>
-            <div class="vendor">${esc(po.VendorName || po.VendorNameEng || '-')}</div>
-            <div class="meta">
-                <span>กำหนดส่ง: <b>${fmtDate(po.ShipDate)}</b></span>
-                <span class="v-amnt">ยอดสุทธิ: <b>${fmtNum(po.NetAmnt)} ฿</b></span>
-            </div>
-        </div>`;
+                <div class="vendor">${esc(po.VendorName || po.VendorNameEng || '-')}</div>
+                <div class="meta">
+                    <span>กำหนดส่ง: <b>${fmtDate(po.ShipDate)}</b></span>
+                    <span class="v-amnt">ยอดสุทธิ: <b>${fmtNum(po.NetAmnt)} ฿</b></span>
+                </div>
+            </div>`;
 
         if(hasSO){
+            const others = soList.filter(s => s.SONum !== (soInfo.SONum || soList[0].SONum));
             $('soCard').innerHTML = `
                 <div class="so-card" id="soCardInner">
-                    <div class="so-title">ข้อมูลการขาย</div>
-                    ${so.CustName ? `<div class="so-row"><span class="so-lbl">ลูกค้า</span><span class="so-val">${esc(so.CustName)}</span></div>` : ''}
-                    ${so.CustPONo ? `<div class="so-row"><span class="so-lbl">PO ลูกค้า</span><span class="so-val">${esc(so.CustPONo)}</span></div>` : ''}
+                    <div class="so-title">SO ${esc(soInfo.SONum || '-')} (ล่าสุด)</div>
+                    ${soInfo.CustName   ? `<div class="so-row"><span class="so-lbl">ลูกค้า</span><span class="so-val">${esc(soInfo.CustName)}</span></div>` : ''}
+                    ${soInfo.CustPONo  ? `<div class="so-row"><span class="so-lbl">PO ลูกค้า</span><span class="so-val">${esc(soInfo.CustPONo)}</span></div>` : ''}
+                    ${soInfo.ResponseBy ? `<div class="so-row"><span class="so-lbl">SALE</span><span class="so-val">${esc(soInfo.ResponseBy)}</span></div>` : ''}
+                    ${others.length > 0 ? `
+                        <div class="so-others">
+                            <div class="so-others-lbl">SO อื่น (${others.length})</div>
+                            <div class="so-chip-list">
+                                ${others.map(s => `<span class="so-chip">${esc(s.SONum)}</span>`).join('')}
+                            </div>
+                        </div>` : ''}
                 </div>`;
         } else {
             $('soCard').innerHTML = '';
         }
-
     const items = po.ms_podt || [];
     $('itemCountLabel').textContent = `รายการสินค้า (${items.length})`;
     $('listTitle').style.display = 'flex';
@@ -1016,17 +1044,21 @@ function openConfirm(){
     const status = computeStatus(selected);
     const totalQty = selected.reduce((sum, s) => sum + s.RecvQty, 0);
     const so = currentPO._soInfo || {};
+    const soList = currentPO._soList || [];
+    const soNums = soList.map(s => s.SONum).join(',');
+    const custPONos = so.CustPONo || '';
+    const custNames = so.CustName || '';
 
     pendingPayload = {
         PONum: currentPO.DocuNo,
-        SONum: currentPO.SONum || null,
+        SONum: soNums || null,
         Status: status,
         Shelf: selectedShelf || null,
         Printer: printer,
         PrintSheets: printSheets,
         ReceivedBy: RECEIVED_BY || null,
-        CustPONo: so.CustPONo || '',
-        CustName: so.CustName || '',
+        CustPONo: custPONos,
+        CustName: custNames,
         items: selected,
         Photo: capturedPhoto
     };
@@ -1037,7 +1069,7 @@ function openConfirm(){
 
     $('confirmBody').innerHTML = `
         <div class="row"><span>เลขที่ PO</span><span><b>${esc(currentPO.DocuNo || '-')}</b></span></div>
-        ${so.CustName ? `<div class="row"><span>ลูกค้า</span><span><b>${esc(so.CustName)}</b></span></div>` : ''}
+        ${custNames ? `<div class="row"><span>ลูกค้า</span><span><b>${esc(custNames)}</b></span></div>` : ''}
         <div class="row"><span>จำนวนรายการ</span><span><b>${selected.length}</b> รายการ</span></div>
         <div class="row"><span>จำนวนรวม</span><span><b>${fmtQty(totalQty)}</b> ชิ้น</span></div>
         <div class="row"><span>ชั้นวาง</span><span><b>${esc(selectedShelf)}</b></span></div>

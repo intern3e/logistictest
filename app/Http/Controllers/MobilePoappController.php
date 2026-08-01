@@ -12,8 +12,8 @@ use Illuminate\Support\Facades\Storage;
 
 class MobilePoappController extends Controller
 {
-    private string $apiBase = 'http://server_update:8000';
-    // private string $apiBase = 'http://127.0.0.1:8000';
+    // private string $apiBase = 'http://server_update:8000';
+    private string $apiBase = 'http://127.0.0.1:8000';
 
     public function index()
     {
@@ -26,14 +26,10 @@ class MobilePoappController extends Controller
      */
     public function getPODetail(Request $request)
     {
-        $request->validate([
-            'PONum' => 'required|string|max:50',
-        ]);
-
+        $request->validate(['PONum' => 'required|string|max:50']);
         $poNum = $request->query('PONum');
 
         try {
-            // ── ขั้น 1: ดึง PO ก่อน ──
             $poResponse = Http::timeout(15)->get($this->apiBase . '/api/getPODetail', [
                 'PONum' => $poNum,
             ]);
@@ -46,7 +42,6 @@ class MobilePoappController extends Controller
 
             $poData = $poResponse->json();
 
-            // ── normalize เพื่อหา SONum ──
             $norm = $poData;
             if (is_array($norm) && isset($norm[0])) $norm = $norm[0];
             if (isset($norm['data'])) {
@@ -54,16 +49,22 @@ class MobilePoappController extends Controller
                     ? $norm['data'][0] : $norm['data'];
             }
 
-            $soNum  = $norm['SONum'] ?? null;
-            $soInfo = ['CustPONo' => '', 'CustName' => '', 'ResponseBy' => ''];
+            $soNums = $norm['SONumList'] ?? ($norm['SONum'] ? [$norm['SONum']] : []);
+            $soNums = array_values(array_unique(array_filter($soNums)));
 
-            // ── ขั้น 2: ดึง SO detail ──
-            if ($soNum) {
+            $latestSoNum = $norm['SONumLatest'] ?? ($soNums[0] ?? null);
+
+            // badge list: แสดงแค่เลข SO เฉย ๆ ครบทุกตัว
+            $soList = array_map(fn($s) => ['SONum' => $s], $soNums);
+
+            // รายละเอียด (ชื่อลูกค้า/PO อ้างอิง/Sale) เอาแค่ SO ล่าสุด
+            $soInfo = ['SONum' => $latestSoNum, 'CustPONo' => '', 'CustName' => '', 'ResponseBy' => ''];
+
+            if ($latestSoNum) {
                 try {
                     $soResponse = Http::timeout(8)->get($this->apiBase . '/api/getSODetail', [
-                        'SONum' => $soNum,
+                        'SONum' => $latestSoNum,
                     ]);
-
                     if ($soResponse->ok()) {
                         $so = $soResponse->json();
                         if (is_array($so) && isset($so[0])) $so = $so[0];
@@ -71,34 +72,22 @@ class MobilePoappController extends Controller
                             $so = is_array($so['data']) && isset($so['data'][0])
                                 ? $so['data'][0] : $so['data'];
                         }
-
-                        $soInfo['CustPONo'] = $so['CustPONo']
-                            ?? $so['SoStatus']['CustPONo']
-                            ?? '';
-                        $soInfo['CustName'] = $so['CustName']
-                            ?? $so['SoStatus']['CustName']
-                            ?? '';
-                        $soInfo['ResponseBy'] = $so['SoDetail']['ResponseBy']
-                            ?? $so['ResponseBy']
-                            ?? '';
+                        $soInfo['CustPONo']   = $so['CustPONo'] ?? $so['SoStatus']['CustPONo'] ?? '';
+                        $soInfo['CustName']   = $so['CustName'] ?? $so['SoStatus']['CustName'] ?? '';
+                        $soInfo['ResponseBy'] = $so['SoDetail']['ResponseBy'] ?? $so['ResponseBy'] ?? '';
                     }
                 } catch (\Exception $e) {
-                    Log::warning('getSODetail failed: ' . $e->getMessage());
+                    Log::warning('getSODetail failed for SO ' . $latestSoNum . ': ' . $e->getMessage());
                 }
             }
 
-            return response()->json([
-                'poData' => $poData,
-                'soInfo' => $soInfo,
-            ]);
-
+            return response()->json(['poData' => $poData, 'soList' => $soList, 'soInfo' => $soInfo]);
         } catch (\Exception $e) {
             return response()->json([
                 'message' => 'เชื่อมต่อ server_update ไม่ได้: ' . $e->getMessage(),
             ], 502);
         }
     }
-
     public function receivePO(Request $request)
     {
         $validated = $request->validate([

@@ -393,21 +393,17 @@ Route::delete('/api/users/{id}', [InventoryController::class, 'deleteUser']);
  
  
 
-use App\Http\Controllers\InternalPoController;
-use App\Http\Controllers\StoreController;
 
-// ด่าน 1 — จัดเสร็จ (ฝ่ายจัดของ)
+use App\Http\Controllers\InternalPoController;
 Route::prefix('internal-po')->name('internal_po.')->group(function () {
     Route::get ('pick',   [InternalPoController::class, 'pickDashboard'])->name('pick');
     Route::post('pick',   [InternalPoController::class, 'pickSubmit'])->name('pick.submit');
     Route::post('cancel', [InternalPoController::class, 'markCancel'])->name('cancel');
 });
-
-// ด่าน 2-3 — สโตร์ (ฝ่ายสโตร์)
+use App\Http\Controllers\StoreController;
 Route::prefix('store')->name('store.')->group(function () {
     Route::get ('location', [StoreController::class, 'locationDashboard'])->name('location');
     Route::post('location', [StoreController::class, 'locationSubmit'])->name('location.submit');
-
     Route::get ('checkout', [StoreController::class, 'checkoutDashboard'])->name('checkout');
     Route::post('checkout', [StoreController::class, 'checkoutSubmit'])->name('checkout.submit');
 });
@@ -419,3 +415,4 @@ Route::get('/api/getPODetail', [MobilePoappController::class, 'getPODetail'])->n
 Route::post('/api/receivePO', [MobilePoappController::class, 'receivePO'])->name('mobile.po.receive');
 Route::get('/api/receivePO/history', [MobilePoappController::class, 'history'])->name('mobile.po.receive.history');
 Route::post('/api/receivePO/cancel', [MobilePoappController::class, 'cancelReceive']);
+
