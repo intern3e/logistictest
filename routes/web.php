@@ -198,6 +198,7 @@ Route::delete('/oil/{id}',      [fuellogsController::class, 'destroy'])->name('o
 Route::post('/oil/sync-ng',     [fuellogsController::class, 'syncNg'])->name('oil.syncNg');
 Route::get('/oil/ng-list',      [fuellogsController::class, 'ngList'])->name('oil.ngList');
 Route::post('/oil/filter',      [fuellogsController::class, 'applyFilter'])->name('oil.filter');
+Route::get('/oil/Deliveryfee', [fuellogsController::class, 'Deliveryfee'])->name('oil.Deliveryfee');
 Route::get('/oil/saved-drivers', [fuellogsController::class, 'savedDrivers'])->name('oil.savedDrivers');
 Route::get('/oil/oil-price-proxy', function () {
     try {
@@ -401,13 +402,15 @@ Route::prefix('internal-po')->name('internal_po.')->group(function () {
     Route::post('cancel', [InternalPoController::class, 'markCancel'])->name('cancel');
 });
 use App\Http\Controllers\StoreController;
+
 Route::prefix('store')->name('store.')->group(function () {
     Route::get ('location', [StoreController::class, 'locationDashboard'])->name('location');
     Route::post('location', [StoreController::class, 'locationSubmit'])->name('location.submit');
     Route::get ('checkout', [StoreController::class, 'checkoutDashboard'])->name('checkout');
     Route::post('checkout', [StoreController::class, 'checkoutSubmit'])->name('checkout.submit');
 });
-
+Route::post('/apis/store/legacyPoItems', [StoreController::class, 'itemsDetailBatch'])
+    ->name('apis.store.legacyPoItemsBatch');
 
 use App\Http\Controllers\MobilePoappController;
 Route::get('/mobile-app', [MobilePoappController::class, 'index'])->name('mobile.app');

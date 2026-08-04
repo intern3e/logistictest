@@ -17,25 +17,85 @@ class InternalPoController extends Controller
         '\\\\ว้าล\\TSC TTP-247' => 'ภายนอก',
     ];
 
+    // สถานะที่แสดง/กรองในหน้า dashboard เอาไว้ 3 กลุ่มเท่านั้น
+    // "finish" เป็นกลุ่มรวม: สถานะอื่นๆ ที่ไม่ใช่ pending/cancel ทั้งหมดจะถูกนับ+แสดงเป็น "จัดเสร็จแล้ว"
+    const STATUS_FINISH_KEY = '__finish__';
+
+    const VISIBLE_STATUSES = [
+        internal_po::ST_PENDING  => 'รอดำเนินการ',
+        self::STATUS_FINISH_KEY  => 'จัดเสร็จแล้ว',
+        internal_po::ST_CANCEL   => 'ยกเลิก',
+    ];
+
+    const PER_PAGE = 100;
+
     private function allowed(?string $user): bool
     {
         return in_array($user, self::ALLOWED_USERS, true);
     }
 
-    private function loadHeads(Request $request, ?array $statuses, string $todoStatus)
+    private function baseQuery(Request $request, bool $withStatusFilter = true)
     {
+        // ไม่จำกัด status ในระดับ DB แล้ว เพราะสถานะอื่นๆ นอกจาก pending/cancel
+        // ทั้งหมดจะถูกจัดกลุ่ม+แสดงเป็น "จัดเสร็จแล้ว"
         $q = internal_po::with('lines');
 
-        if ($statuses !== null) {
-            $q->whereIn('status', $statuses);
-        }
         if ($request->filled('SONum')) {
             $q->where('SO_id', 'LIKE', '%' . $request->input('SONum') . '%');
         }
+        if ($request->filled('internal_id')) {
+            $q->where('internal_id', 'LIKE', '%' . $request->input('internal_id') . '%');
+        }
+        if ($request->filled('customer_name')) {
+            $q->where('customer_name', 'LIKE', '%' . $request->input('customer_name') . '%');
+        }
+        if ($withStatusFilter && $request->filled('status') && array_key_exists($request->input('status'), self::VISIBLE_STATUSES)) {
+            $status = $request->input('status');
+            if ($status === self::STATUS_FINISH_KEY) {
+                $q->whereNotIn('status', [internal_po::ST_PENDING, internal_po::ST_CANCEL]);
+            } else {
+                $q->where('status', $status);
+            }
+        }
 
-        return $q->orderByRaw('FIELD(status, ?) DESC', [$todoStatus])
+        return $q;
+    }
+
+    private function loadHeads(Request $request, string $todoStatus)
+    {
+        return $this->baseQuery($request)
+            ->orderByRaw('FIELD(status, ?) DESC', [$todoStatus])
             ->orderBy('internal_id')
-            ->get();
+            ->paginate(self::PER_PAGE)
+            ->appends($request->except('page'));
+    }
+
+    /**
+     * นับจำนวนต่อสถานะ (ยึดตามฟิลเตอร์คำค้นหาปัจจุบัน แต่ไม่ยึดตามฟิลเตอร์สถานะ)
+     * ใช้แสดง badge/caption เหนือตาราง
+     */
+    private function statusCounts(Request $request): array
+    {
+        $rows = $this->baseQuery($request, false)
+            ->selectRaw('status, COUNT(*) as c')
+            ->groupBy('status')
+            ->pluck('c', 'status');
+
+        $out = [
+            internal_po::ST_PENDING => (int) ($rows[internal_po::ST_PENDING] ?? 0),
+            internal_po::ST_CANCEL  => (int) ($rows[internal_po::ST_CANCEL] ?? 0),
+        ];
+
+        // รวมทุกสถานะที่ไม่ใช่ pending/cancel เข้ากลุ่ม "จัดเสร็จแล้ว"
+        $finishTotal = 0;
+        foreach ($rows as $statusKey => $count) {
+            if ($statusKey !== internal_po::ST_PENDING && $statusKey !== internal_po::ST_CANCEL) {
+                $finishTotal += (int) $count;
+            }
+        }
+        $out[self::STATUS_FINISH_KEY] = $finishTotal;
+
+        return $out;
     }
 
     private function recentLocations()
@@ -53,11 +113,13 @@ class InternalPoController extends Controller
         $creator = $request->input('create_by');
         if (!$this->allowed($creator)) abort(403, 'ไม่มีสิทธิ์เข้าใช้งาน');
 
-        $heads     = $this->loadHeads($request, null, internal_po::ST_PENDING);
-        $locations = $this->recentLocations();
-        $printers  = self::PRINTERS;
+        $heads        = $this->loadHeads($request, internal_po::ST_PENDING);
+        $locations    = $this->recentLocations();
+        $printers     = self::PRINTERS;
+        $statuses     = self::VISIBLE_STATUSES;
+        $statusCounts = $this->statusCounts($request);
 
-        return view('internal_po.dashboard', compact('heads', 'locations', 'creator', 'printers'));
+        return view('internal_po.dashboard', compact('heads', 'locations', 'creator', 'printers', 'statuses', 'statusCounts'));
     }
 
     public function pickSubmit(Request $request)

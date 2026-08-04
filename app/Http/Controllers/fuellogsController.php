@@ -59,7 +59,7 @@ class fuellogsController extends Controller
             'date_from'   => $filter['date_from']   ?? $request->input('date_from', date('Y-m-d')),
             'date_to'     => $filter['date_to']     ?? $request->input('date_to', date('Y-m-d')),
             'month'       => $filter['month']       ?? $request->input('month', date('Y-m')),
-            'year'        => $filter['year']         ?? $request->input('year', date('Y')),
+            'year'        => $filter['year']        ?? $request->input('year', date('Y')),
             'driver_name' => $filter['driver_name'] ?? $request->input('driver_name', 'all'),
             'vehicle_id'  => $filter['vehicle_id']  ?? $request->input('vehicle_id', 'all'),
         ];
@@ -114,47 +114,51 @@ class fuellogsController extends Controller
                 return $norm(((array) $row)['driver_name'] ?? '') === $driverTarget;
             })
             ->map(function ($row) {
-            $row = (array) $row;
+                $row = (array) $row;
 
-            $startTime = null;
-            $endTime   = null;
-            $workHours = 0;
+                $startTime = null;
+                $endTime   = null;
+                $workHours = 0;
 
-            if (!empty($row['start_time'])) {
-                $startTime = Carbon::parse($row['start_time'])->format('H:i');
-            }
-            if (!empty($row['end_time'])) {
-                $endTime = Carbon::parse($row['end_time'])->format('H:i');
-            }
-            if (!empty($row['start_time']) && !empty($row['end_time'])) {
-                $diff = Carbon::parse($row['start_time'])
-                              ->diffInMinutes(Carbon::parse($row['end_time']), false);
-                if ($diff > 0) $workHours = round($diff / 60, 2);
-            }
+                if (!empty($row['start_time'])) {
+                    $startTime = Carbon::parse($row['start_time'])->format('H:i');
+                }
+                if (!empty($row['end_time'])) {
+                    $endTime = Carbon::parse($row['end_time'])->format('H:i');
+                }
+                if (!empty($row['start_time']) && !empty($row['end_time'])) {
+                    $diff = Carbon::parse($row['start_time'])
+                                  ->diffInMinutes(Carbon::parse($row['end_time']), false);
+                    if ($diff > 0) $workHours = round($diff / 60, 2);
+                }
 
-            $liters   = (float) ($row['liters']         ?? 0);
-            $distance = (float) ($row['total_distance'] ?? 0);
-            $kml      = ($liters > 0 && $distance > 0) ? round($distance / $liters, 2) : 0;
+                $liters   = (float) ($row['liters']         ?? 0);
+                $distance = (float) ($row['total_distance'] ?? 0);
+                $kml      = ($liters > 0 && $distance > 0) ? round($distance / $liters, 2) : 0;
 
-            return [
-                'id'              => (int) $row['id'],
-                'driver_name'     => $row['driver_name']     ?? '',
-                'vehicle_id'      => $row['vehicle_id']      ?? '',
-                'work_date'       => $row['work_date']        ?? '',
-                'start_time'      => $startTime,
-                'end_time'        => $endTime,
-                'work_hours'      => $workHours,
-                'total_distance'  => $distance,
-                'liters'          => $liters ?: null,
-                'total_price'     => (float) ($row['total_price']     ?? 0),
-                'price_per_liter' => (float) ($row['price_per_liter'] ?? 0),
-                'km_per_liter'    => $kml,
-                'ok_count'        => (int) ($row['ok'] ?? 0),
-                'ng_count'        => (int) ($row['ng'] ?? 0),
-                'note'            => $row['note']       ?? '',
-                'created_at'      => $row['created_at'] ?? null,
-            ];
-        })->values();
+                return [
+                    'id'              => (int) $row['id'],
+                    'driver_name'     => $row['driver_name']     ?? '',
+                    'vehicle_id'      => $row['vehicle_id']      ?? '',
+                    'work_date'       => $row['work_date']       ?? '',
+                    'start_time'      => $startTime,
+                    'end_time'        => $endTime,
+                    'work_hours'      => $workHours,
+                    'total_distance'  => $distance,
+                    'liters'          => $liters ?: null,
+                    'total_price'     => (float) ($row['total_price']     ?? 0),
+                    'price_per_liter' => (float) ($row['price_per_liter'] ?? 0),
+                    'km_per_liter'    => $kml,
+                    'ok_count'        => (int) ($row['ok'] ?? 0),
+                    'ng_count'        => (int) ($row['ng'] ?? 0),
+                    'note'            => $row['note']            ?? '',
+                    'created_at'      => $row['created_at']      ?? null,
+                    // ✅ เพิ่มฟิลด์ใหม่สำหรับการแสดงผล
+                    'ot_cost'         => (float) ($row['ot_cost']       ?? 0),
+                    'handling_cost'   => (float) ($row['handling_cost'] ?? 0),
+                    'delivery_cost'   => (float) ($row['delivery_cost'] ?? 0),
+                ];
+            })->values();
     }
 
     private function parseTimes(?string $workDate, ?string $startStr, ?string $endStr): array
@@ -247,6 +251,10 @@ class fuellogsController extends Controller
                     'end_time'       => $row['end_time']   ?? null,
                     'ok'             => (int) ($row['ok'] ?? 0),
                     'ng'             => (int) ($row['ng'] ?? 0),
+                    // ✅ เพิ่มฟิลด์ใหม่สำหรับ allLogs
+                    'ot_cost'        => (float) ($row['ot_cost']       ?? 0),
+                    'handling_cost'  => (float) ($row['handling_cost'] ?? 0),
+                    'delivery_cost'  => (float) ($row['delivery_cost'] ?? 0),
                 ];
             });
 
@@ -307,7 +315,6 @@ class fuellogsController extends Controller
         return view('driver.report', $this->buildViewData($request));
     }
 
-
     public function store(Request $request)
     {
         $request->validate([
@@ -318,6 +325,10 @@ class fuellogsController extends Controller
             'total_distance'  => 'nullable|numeric|min:0',
             'liters'          => 'nullable|numeric|min:0',
             'price_per_liter' => 'nullable|numeric|min:0',
+            // ✅ เพิ่ม Validation ฟิลด์ใหม่
+            'ot_cost'         => 'nullable|numeric|min:0',
+            'handling_cost'   => 'nullable|numeric|min:0',
+            'delivery_cost'   => 'nullable|numeric|min:0',
         ]);
 
         [$startDt, $endDt] = $this->parseTimes(
@@ -328,7 +339,6 @@ class fuellogsController extends Controller
         );
 
         // กันลงซ้ำสำหรับรายการ auto-store (คนนอก whitelist, vehicle_id = '-')
-        // ถ้ามี driver+date เดียวกันอยู่แล้ว → ไม่ลงซ้ำ
         if (trim($request->vehicle_id) === '-') {
             $exists = DB::table('fuel_logs')
                 ->where('driver_name', trim($request->driver_name))
@@ -351,6 +361,10 @@ class fuellogsController extends Controller
             'liters'          => $liters ?? 0,            
             'total_price'     => (float) $request->total_price,
             'price_per_liter' => $ppl ?? 0,           
+            // ✅ เพิ่มฟิลด์ใหม่ตอน Insert
+            'ot_cost'         => (float) ($request->ot_cost ?? 0),
+            'handling_cost'   => (float) ($request->handling_cost ?? 0),
+            'delivery_cost'   => (float) ($request->delivery_cost ?? 0),
             'ok'              => (int) ($request->ok ?? 0),
             'ng'              => (int) ($request->ng ?? 0),
             'note'            => $request->note ? trim($request->note) : null,
@@ -360,7 +374,6 @@ class fuellogsController extends Controller
         return redirect()->route('oil', $this->urlParams($request))
                          ->with('success', 'บันทึกข้อมูลน้ำมันสำเร็จ ✅');
     }
-
 
     public function update(Request $request, $id)
     {
@@ -372,6 +385,10 @@ class fuellogsController extends Controller
             'total_distance'  => 'nullable|numeric|min:0',
             'liters'          => 'nullable|numeric|min:0',
             'price_per_liter' => 'nullable|numeric|min:0',
+            // ✅ เพิ่ม Validation ฟิลด์ใหม่
+            'ot_cost'         => 'nullable|numeric|min:0',
+            'handling_cost'   => 'nullable|numeric|min:0',
+            'delivery_cost'   => 'nullable|numeric|min:0',
         ]);
 
         abort_unless(DB::table('fuel_logs')->where('id', $id)->exists(), 404);
@@ -393,6 +410,10 @@ class fuellogsController extends Controller
             'liters'          => $liters ?? 0,
             'total_price'     => (float) $request->total_price,
             'price_per_liter' => $ppl ?? 0,
+            // ✅ เพิ่มฟิลด์ใหม่ตอน Update
+            'ot_cost'         => (float) ($request->ot_cost ?? 0),
+            'handling_cost'   => (float) ($request->handling_cost ?? 0),
+            'delivery_cost'   => (float) ($request->delivery_cost ?? 0),
             'ok'              => (int) ($request->ok ?? 0),
             'ng'              => (int) ($request->ng ?? 0),
             'note'            => $request->note ? trim($request->note) : null,
@@ -435,7 +456,6 @@ class fuellogsController extends Controller
         return redirect()->route('oil', $this->urlParams($request))
                          ->with('success', "ลบข้อมูลขยะ {$count} รายการ");
     }
-
 
     public function prevMileage(Request $request)
     {
@@ -544,6 +564,184 @@ class fuellogsController extends Controller
             ->values();
 
         return response()->json($drivers);
+    }
+
+/* ══════════════════════════════════════════════════════════════════
+       ตารางค่าวิ่ง / OT / ค่ายก — แบบปฏิทิน (คนขับ × วันที่)
+       รองรับ 2 โหมด: mode=month (รายเดือน) / mode=week (รายสัปดาห์)
+    ══════════════════════════════════════════════════════════════════ */
+
+    // 🔧 ใส่ vehicle_id ที่เป็นมอเตอร์ไซค์ตรงนี้ (จะไม่ถูกนับเข้าตาราง/ยอดรวมทั้งหมด)
+    private array $motorcycleVehicleIds = [
+        // ตัวอย่าง: 12, 45, 108
+    ];
+
+    public function Deliveryfee(Request $request)
+    {
+        $mode = $request->input('mode', 'month');
+        $mode = in_array($mode, ['month', 'week']) ? $mode : 'month';
+
+        // ---- คำนวณช่วงวันที่ตามโหมด ----
+        $selMonth = (int) $request->input('month', now()->month);
+        $selYear  = (int) $request->input('year', now()->year);
+
+        $weekStartInput = $request->input('week_start', now()->startOfWeek(Carbon::MONDAY)->format('Y-m-d'));
+        try {
+            $weekStart = Carbon::parse($weekStartInput)->startOfWeek(Carbon::MONDAY);
+        } catch (\Exception $e) {
+            $weekStart = now()->startOfWeek(Carbon::MONDAY);
+        }
+        // ✅ แก้บั๊ก: เดิมใช้ endOfWeek(Carbon::MONDAY) ซึ่งพอ $weekStart เป็นวันจันทร์อยู่แล้ว
+        // Carbon จะมองว่า "วันสิ้นสุดสัปดาห์ที่กำหนดให้ลงท้ายด้วยวันจันทร์" ตรงกับวันเดิมพอดี
+        // จึงไม่เลื่อนไปที่วันอาทิตย์ถัดไปเลย ผลคือ weekEnd = weekStart (แค่เปลี่ยนเวลาเป็น 23:59:59)
+        // ทำให้ query ด้านล่างดึงข้อมูลมาแค่วันจันทร์วันเดียวทั้งสัปดาห์
+        $weekEnd = $weekStart->copy()->addDays(6)->endOfDay();
+
+        if ($mode === 'week') {
+            $rangeStart = $weekStart->copy();
+            $rangeEnd   = $weekEnd->copy();
+        } else {
+            $rangeStart = Carbon::create($selYear, $selMonth, 1)->startOfMonth();
+            $rangeEnd   = $rangeStart->copy()->endOfMonth();
+        }
+
+        $days = [];
+        for ($d = $rangeStart->copy(); $d->lte($rangeEnd); $d->addDay()) {
+            $days[] = $d->format('Y-m-d');
+        }
+
+        // ---- roster คนขับ (ลำดับเดียวกับที่ใช้ในหน้า oil) ----
+        $roster = ['บังเดช','กอลฟ์','เก่ง','หรั่ง','เอ้','แซม','เอ','แฟงค์','yuth','แมน','กบ','joey','บอย','บอยBTS'];
+
+        $norm = function ($s) {
+            $s = preg_replace('/[\x{200B}-\x{200D}\x{FEFF}\x{0E4C}]/u', '', (string) $s);
+            return mb_strtolower(trim(preg_replace('/\s+/', ' ', $s)));
+        };
+
+        $allDriverNames = DB::table('fuel_logs')
+            ->distinct()
+            ->pluck('driver_name')
+            ->filter()
+            ->values()
+            ->all();
+
+        $activeRoster = [];
+        foreach ($roster as $label) {
+            $rn = $norm($label);
+            foreach ($allDriverNames as $dbName) {
+                if ($norm($dbName) === $rn) {
+                    $activeRoster[] = ['label' => $label, 'db_name' => $dbName];
+                    break;
+                }
+            }
+        }
+        // fallback: ถ้าไม่มีชื่อใน roster ตรงกับข้อมูลเลย ใช้รายชื่อทั้งหมดที่มีในระบบแทน
+        if (empty($activeRoster)) {
+            sort($allDriverNames);
+            foreach ($allDriverNames as $dbName) {
+                $activeRoster[] = ['label' => $dbName, 'db_name' => $dbName];
+            }
+        }
+
+        // ---- ดึงข้อมูลในช่วงวันที่ที่เลือก แล้ว sum ต่อ (คนขับ, วัน) ----
+        $rangeFrom = $rangeStart->format('Y-m-d');
+        $rangeTo   = $rangeEnd->format('Y-m-d');
+
+        $rawRows = DB::table('fuel_logs')
+            ->whereDate('work_date', '>=', $rangeFrom)
+            ->whereDate('work_date', '<=', $rangeTo)
+            ->when(!empty($this->motorcycleVehicleIds), function ($q) {
+                $q->whereNotIn('vehicle_id', $this->motorcycleVehicleIds);
+            })
+            ->get();
+
+        $matrix = []; // [driver_name][Y-m-d] = ['delivery'=>,'ot'=>,'handling'=>]
+        foreach ($rawRows as $row) {
+            $row = (array) $row;
+            $dn  = $row['driver_name'] ?? '';
+            $wd  = $row['work_date']   ?? '';
+            if ($dn === '' || $wd === '') continue;
+            if (!isset($matrix[$dn][$wd])) {
+                $matrix[$dn][$wd] = ['delivery' => 0.0, 'ot' => 0.0, 'handling' => 0.0];
+            }
+            $matrix[$dn][$wd]['delivery'] += (float) ($row['delivery_cost'] ?? 0);
+            $matrix[$dn][$wd]['ot']       += (float) ($row['ot_cost']       ?? 0);
+            $matrix[$dn][$wd]['handling'] += (float) ($row['handling_cost'] ?? 0);
+        }
+
+        // ---- ทะเบียนล่าสุดของแต่ละคนขับ (ไม่จำกัดช่วงวันที่ แต่ตัดมอเตอร์ไซค์ออกเช่นกัน) ----
+        $latestPlates = DB::table('fuel_logs')
+            ->select('driver_name', 'vehicle_id')
+            ->whereIn('driver_name', array_column($activeRoster, 'db_name'))
+            ->when(!empty($this->motorcycleVehicleIds), function ($q) {
+                $q->whereNotIn('vehicle_id', $this->motorcycleVehicleIds);
+            })
+            ->orderByDesc('work_date')
+            ->orderByDesc('id')
+            ->get()
+            ->groupBy('driver_name')
+            ->map(fn ($g) => $g->first()->vehicle_id ?? '-');
+
+        // ---- ประกอบ driverGrid ----
+        $driverGrid = [];
+        foreach ($activeRoster as $d) {
+            $dbName = $d['db_name'];
+            $dayVals = [];
+            $totDelivery = 0.0; $totOt = 0.0; $totHandling = 0.0;
+            foreach ($days as $day) {
+                $v = $matrix[$dbName][$day] ?? ['delivery' => 0.0, 'ot' => 0.0, 'handling' => 0.0];
+                $dayVals[$day] = $v;
+                $totDelivery += $v['delivery'];
+                $totOt       += $v['ot'];
+                $totHandling += $v['handling'];
+            }
+
+            // ถ้าคนขับคนนี้เหลือแต่ log ของมอเตอร์ไซค์ (ถูกตัดออกหมดจาก $matrix) และไม่มีทะเบียนรถอื่นเหลือเลย ให้ข้ามแถวนี้ไปเลย
+            if ($totDelivery == 0 && $totOt == 0 && $totHandling == 0 && ($latestPlates[$dbName] ?? '-') === '-') {
+                continue;
+            }
+
+            $driverGrid[] = [
+                'label'        => $d['label'],
+                'plate'        => $latestPlates[$dbName] ?? '-',
+                'days'         => $dayVals,
+                'totDelivery'  => $totDelivery,
+                'totOt'        => $totOt,
+                'totHandling'  => $totHandling,
+                'totAll'       => $totDelivery + $totOt + $totHandling,
+            ];
+        }
+
+        // ---- รวมทุกคนต่อวัน + รวมยอดใหญ่ ----
+        $dayTotals = [];
+        foreach ($days as $day) {
+            $sd = 0.0; $so = 0.0; $sh = 0.0;
+            foreach ($driverGrid as $dg) {
+                $sd += $dg['days'][$day]['delivery'];
+                $so += $dg['days'][$day]['ot'];
+                $sh += $dg['days'][$day]['handling'];
+            }
+            $dayTotals[$day] = ['delivery' => $sd, 'ot' => $so, 'handling' => $sh];
+        }
+        $grandDelivery = array_sum(array_column($dayTotals, 'delivery'));
+        $grandOt       = array_sum(array_column($dayTotals, 'ot'));
+        $grandHandling = array_sum(array_column($dayTotals, 'handling'));
+        $grandTotal    = $grandDelivery + $grandOt + $grandHandling;
+
+        return view('driver.deliveryfee', [
+            'mode'          => $mode,
+            'days'          => $days,
+            'driverGrid'    => $driverGrid,
+            'dayTotals'     => $dayTotals,
+            'grandDelivery' => $grandDelivery,
+            'grandOt'       => $grandOt,
+            'grandHandling' => $grandHandling,
+            'grandTotal'    => $grandTotal,
+            'selMonth'      => $selMonth,
+            'selYear'       => $selYear,
+            'weekStart'     => $weekStart->format('Y-m-d'),
+            'weekEnd'       => $weekEnd->format('Y-m-d'),
+        ]);
     }
 
     public function service(Request $request)
