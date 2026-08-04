@@ -17,6 +17,8 @@
 <style>
 /* ==========================================
    Tesla Topnav & Filters Unified CSS
+   v7 — เปลี่ยนตารางบันทึกน้ำมันเป็น <table> จริง (border-collapse)
+   เพื่อการันตีเส้นคอลัมน์หัวตาราง/แถวข้อมูลตรงกัน 100% โดยธรรมชาติ
    ========================================== */
 *,*::before,*::after{box-sizing:border-box;-webkit-font-smoothing:antialiased;-moz-osx-font-smoothing:grayscale}
 html{overflow-y:auto;}
@@ -498,55 +500,87 @@ html{overflow-y:auto;}
 }
 @keyframes spin { to { transform: rotate(360deg); } }
 
-/* Entry Rows Grid System */
-.entry-rows-wrap { padding: 24px 28px; }
-.entry-rows-header,
-.entry-row {
-  display: grid;
-  grid-template-columns: 1.3fr 1.2fr 1.2fr 1.4fr 1.1fr 1.1fr 1.1fr 0.9fr;
-  gap: 0;
-  align-items: center;
+/* ==========================================
+   ENTRY TABLE — native <table> (v7)
+   ใช้ table+colgroup จริง เส้นคอลัมน์หัว/แถวตรงกันโดยธรรมชาติ 100%
+   ========================================== */
+.entry-rows-wrap {
+  border: 1px solid #e5e7eb;
+  border-radius: 10px;
+  overflow: hidden;
+  overflow-x: auto;
 }
-.entry-rows-header {
+.entry-table {
+  width: 100%;
+  border-collapse: collapse;
+  table-layout: fixed;
+  min-width: 880px;
+}
+.entry-table col.col-driver  { width: 15%; }
+.entry-table col.col-plate   { width: 11%; }
+.entry-table col.col-time    { width: 11%; }
+.entry-table col.col-price   { width: 10%; }
+.entry-table col.col-dist    { width: 9%;  }
+.entry-table col.col-extra   { width: 23%; }
+.entry-table col.col-summary { width: 13%; }
+.entry-table col.col-save    { width: 8%;  }
+
+.entry-table thead th {
   font-size: 12px;
   font-weight: 700;
   color: #6b7280;
   text-transform: uppercase;
   letter-spacing: 0.05em;
-  padding: 0 0 16px 0;
+  background: #f9fafb;
+  padding: 14px 12px;
+  text-align: center;
+  border-right: 1px solid #e5e7eb;
   border-bottom: 2px solid #e5e7eb;
 }
-.entry-rows-header > div {
-  padding: 0 12px;
+.entry-table thead th:first-child { text-align: left; }
+.entry-table thead th:last-child { border-right: none; }
+
+.entry-table tbody td {
+  padding: 16px 12px;
   border-right: 1px solid #e5e7eb;
-  display: flex;
-  align-items: center;
-  justify-content: center;
+  border-bottom: 1px solid #e5e7eb;
+  vertical-align: middle;
   text-align: center;
 }
-.entry-rows-header > div:first-child { justify-content: flex-start; }
-.entry-rows-header > div:last-child { border-right: none; }
+.entry-table tbody td:first-child { text-align: left; }
+.entry-table tbody td:last-child { border-right: none; }
+.entry-table tbody tr:last-child td { border-bottom: none; }
+
+.entry-row:hover { background-color: #f9fafb; }
+.entry-row.focused { background-color: #eff6ff; box-shadow: inset 4px 0 0 #3e6ae1; }
+.entry-row.saving { opacity: 0.7; pointer-events: none; }
 
 .entry-empty { text-align: center; padding: 40px 20px; color: #9ca3af; font-size: 13px; }
 
-.entry-row {
-  padding: 16px 0;
-  border-bottom: 1px solid #e5e7eb;
-  transition: background-color 0.2s;
+.er-extra-costs {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 6px;
+  width: 100%;
 }
-
-/* จัดกึ่งกลางแนวดิ่งทุกคอลัมน์เหมือนช่องทะเบียนรถ */
-.entry-row > div {
-  padding: 0 12px;
-  border-right: 1px solid #e5e7eb;
-  height: 100%;
+.er-extra-item {
   display: flex;
-  align-items: center !important;
-  justify-content: center !important;
-  box-sizing: border-box;
+  flex-direction: column;
+  gap: 3px;
 }
-.entry-row > div:first-child { justify-content: flex-start !important; }
-.entry-row > div:last-child { border-right: none; }
+.er-extra-item label {
+  font-size: 10px;
+  color: #9ca3af;
+  font-weight: 600;
+  text-align: center;
+  white-space: nowrap;
+}
+.er-num-sm {
+  height: 34px;
+  padding: 0 6px;
+  font-size: 12px;
+  text-align: center;
+}
 
 .er-cell-center {
   display: flex;
@@ -560,10 +594,6 @@ html{overflow-y:auto;}
   display: block;
   width: 100%;
 }
-
-.entry-row:hover { background-color: #f9fafb; }
-.entry-row.focused { background-color: #eff6ff; border-left: 4px solid #3e6ae1; }
-.entry-row.saving { opacity: 0.7; pointer-events: none; }
 
 .er-driver { display: flex; align-items: center; gap: 12px; width: 100%; }
 .er-driver-avatar {
@@ -609,7 +639,7 @@ html{overflow-y:auto;}
   flex-direction: column !important;
   gap: 5px !important;
   width: 100% !important;
-  max-width: 180px !important;
+  max-width: 150px !important;
   margin: 0 auto !important;
 }
 .er-time-arrow { display: none !important; }
@@ -622,11 +652,11 @@ html{overflow-y:auto;}
 }
 .er-dt-input {
   width: 100%;
-  height: 38px;
-  padding: 0 34px 0 12px;
+  height: 34px;
+  padding: 0 28px 0 8px;
   border: 1px solid #d1d5db;
   border-radius: 8px;
-  font-size: 13px;
+  font-size: 12px;
   color: #1f2937;
   background: #ffffff;
   outline: none;
@@ -764,7 +794,7 @@ html{overflow-y:auto;}
 .fuel-table-scroll {
   overflow-x: auto;
   overflow-y: auto;
-  max-height: 650px; /* จำกัดความสูงให้เท่ากันทั้ง 2 ฝั่ง และเลื่อนดูด้านใน */
+  max-height: 650px;
   width: 100%;
 }
 .fuel-table-scroll::-webkit-scrollbar {
@@ -847,7 +877,6 @@ html{overflow-y:auto;}
 .sort-btn { background: transparent; border: none; padding: 5px 12px; font-size: 12px; font-weight: 500; color: #6b7280; border-radius: 4px; cursor: pointer; }
 .sort-btn.active { background: #fff; color: #111827; box-shadow: 0 1px 2px rgba(0,0,0,0.05); }
 
-/* แก้เป็น */
 .driver-list {
   display: flex;
   flex-direction: column;
@@ -973,6 +1002,167 @@ html{overflow-y:auto;}
 }
 .save-toast.hiding { opacity: 0; transform: translateY(-10px); transition: all 0.25s ease; }
 .save-toast-icon { background: #10b981; color: #fff; width: 22px; height: 22px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: bold; }
+
+/* ==========================================
+   RESPONSIVE — ปรับให้ใช้งานได้ทุกขนาดหน้าจอ
+   ========================================== */
+
+/* ----- Topnav & filter bar: บีบ/ห่อได้บนจอแคบ ----- */
+@media (max-width: 640px) {
+  .tesla-topnav-container { flex-wrap: wrap; height: auto; padding: 10px 14px; gap: 8px; }
+  .tesla-right { flex-wrap: wrap; gap: 8px; width: 100%; justify-content: space-between; }
+  .tesla-actions { flex-wrap: wrap; gap: 6px; width: 100%; }
+  .tesla-btn { flex: 1 1 auto; justify-content: center; }
+  .topnav-filters { padding: 10px 14px; gap: 10px; }
+  .filter-group { width: 100%; }
+  .filter-group-label { min-width: 56px; }
+  .date-trigger-pill, .tesla-select { flex: 1; min-width: 0; width: 100%; }
+  .segmented { width: 100%; }
+  .seg-btn { flex: 1; }
+  .search-pill input { width: 100%; }
+  .card-head .search-pill { width: 100%; }
+}
+
+/* ----- .main padding บีบลงบนจอเล็ก ----- */
+@media (max-width: 640px) {
+  .main { padding: 0 12px; margin: 14px auto; }
+  .entry-card-head { padding: 16px; }
+  .entry-oil-tabs { padding: 12px 16px; }
+  .card-head { padding: 16px; }
+  .chart-card { padding: 16px; }
+}
+
+/* ----- ต่ำกว่า 900px: ตาราง -> การ์ดสแต็กแนวตั้ง ----- */
+@media (max-width: 900px) {
+  .entry-rows-wrap { overflow-x: visible; border: none; border-radius: 0; padding: 12px; }
+  .entry-table, .entry-table tbody { display: block; width: 100%; min-width: 0; }
+  .entry-table thead { display: none; }
+  .entry-row {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    padding: 16px;
+    border: 1px solid #e5e7eb;
+    border-radius: 10px;
+    margin-bottom: 12px;
+    background: #fff;
+  }
+  .entry-row:last-child { margin-bottom: 0; }
+  .entry-row > td {
+    display: block;
+    width: 100% !important;
+    border: none !important;
+    text-align: left !important;
+    padding: 0;
+  }
+  .entry-row > td[data-label]::before {
+    content: attr(data-label);
+    display: block;
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    color: #9ca3af;
+    margin-bottom: 6px;
+  }
+  .er-time-stack { max-width: 100% !important; }
+  .er-extra-costs { max-width: 100%; }
+  .er-save-btn { height: 44px; } /* ปุ่มกดง่ายขึ้นบนจอสัมผัส */
+}
+
+/* ----- ตารางรายการเติมน้ำมัน (fuel-table) + ranking: ปรับ padding เล็กลงบนจอเล็ก ----- */
+@media (max-width: 640px) {
+  .fuel-table th, .fuel-table td { padding: 10px 8px; font-size: 12px; }
+  .driver-row { padding: 14px 16px; }
+  .driver-row .stats { flex-wrap: wrap; }
+}
+
+/* ----- Charts: ลด min-height ของกราฟแนวนอน (kml/cost) บนจอเล็กจะได้ไม่สูงเกิน ----- */
+@media (max-width: 640px) {
+  .chart-canvas[style*="height:300px"] { height: 240px !important; }
+}
+
+/* ----- PDF modal: เต็มความกว้างจอบนมือถือ ----- */
+@media (max-width: 480px) {
+  .pdf-modal { max-width: 92vw; }
+  .pdf-modal-body { padding: 18px; }
+}
+
+/* ----- จอเล็ก (<=900px): ย่อ "รายการงาน" ให้เล็กสุด (ตัวอักษร/padding/ความสูง)
+   เพื่อให้ส่วน "บันทึกการเติมน้ำมัน" เด่นและกรอกง่ายที่สุด ไม่ต้องเลื่อนผ่านของยาวๆ ----- */
+@media (max-width: 900px) {
+  .entry-layout { gap: 14px; }
+
+  .jobs-panel {
+    order: 2; /* ให้แน่ใจว่าอยู่หลังฟอร์มบันทึกน้ำมันเสมอ */
+  }
+  .jobs-panel-head {
+    padding: 8px 12px;
+  }
+  .jobs-panel-title {
+    font-size: 12px;
+    gap: 5px;
+  }
+  .jobs-panel-title .ico {
+    font-size: 12px;
+  }
+  .job-date-chip {
+    font-size: 10px;
+    padding: 2px 7px;
+  }
+  .jobs-panel-body {
+    padding: 8px 12px;
+    max-height: 180px;   /* จำกัดความสูง กันไม่ให้รายการงานยาวดันหน้าลงจนต้องเลื่อนเยอะ */
+    overflow-y: auto;
+  }
+  .job-loading {
+    font-size: 11px;
+    padding: 16px 0;
+    line-height: 1.4;
+  }
+  .jobs-summary-bar {
+    gap: 4px;
+    margin-bottom: 8px;
+  }
+  .jsb-chip {
+    font-size: 10px;
+    padding: 2px 8px;
+  }
+  .dgj-row {
+    padding: 8px;
+    margin-bottom: 6px;
+    border-radius: 6px;
+  }
+  .dgj-top {
+    gap: 6px;
+    margin-bottom: 4px;
+  }
+  .dgj-bill {
+    font-size: 10px;
+  }
+  .dgj-customer {
+    font-size: 10px;
+  }
+  .dgj-status {
+    font-size: 9px;
+    padding: 1px 6px;
+  }
+  .dgj-meta {
+    font-size: 9px;
+    gap: 2px 8px;
+  }
+
+  /* ให้ฟอร์มบันทึกการเติมน้ำมันเด่นและกรอกง่ายสุด */
+  .entry-card {
+    order: 1;
+  }
+  .entry-title { font-size: 16px; }
+  .entry-sub { font-size: 12px; }
+  .er-driver-name { font-size: 15px; }
+  .er-num-input, .er-plate-select { font-size: 14px; height: 42px; }
+  .er-save-btn { font-size: 14px; }
+}
+
 </style>
 </head>
 <body>
@@ -1001,6 +1191,10 @@ html{overflow-y:auto;}
         <a href="{{ url('/oil/report').$userQuery }}" class="tesla-btn tesla-btn-neutral">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/><line x1="3" y1="20" x2="21" y2="20"/></svg>
           รายงาน
+        </a>
+        <a href="{{ url('/oil/Deliveryfee').$userQuery }}" class="tesla-btn tesla-btn-neutral">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="M18.7 8.3l-6.2 6.2-3-3-3.5 3.5"/></svg>
+          ตารางค่าวิ่ง
         </a>
         <a href="{{ url('/service').$userQuery }}" class="tesla-btn tesla-btn-neutral">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 3h15v13H1z"/><path d="M16 8h4l3 3v5h-7V8z"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg>
@@ -1192,12 +1386,28 @@ html{overflow-y:auto;}
       </div>
 
       <div class="entry-rows-wrap">
-        <div class="entry-rows-header">
-          <div>คนขับ</div><div>ทะเบียนรถ</div><div>เวลา</div><div>ค่าน้ำมัน (฿)</div><div>ระยะ (KM)</div><div>ค่าวิ่ง (฿)</div><div>สรุป</div><div>บันทึก</div>
-        </div>
-        <div id="entryRowsBody">
-          <div class="entry-empty">เลือกวันที่เพื่อแสดงรายชื่อคนขับ</div>
-        </div>
+        <table class="entry-table">
+          <colgroup>
+            <col class="col-driver"><col class="col-plate"><col class="col-time">
+            <col class="col-price"><col class="col-dist"><col class="col-extra">
+            <col class="col-summary"><col class="col-save">
+          </colgroup>
+          <thead>
+            <tr>
+              <th>คนขับ</th>
+              <th>ทะเบียนรถ</th>
+              <th>เวลา</th>
+              <th>ค่าน้ำมัน (฿)</th>
+              <th>ระยะ (KM)</th>
+              <th>ค่าใช้จ่ายเพิ่มเติม (฿)</th>
+              <th>สรุป</th>
+              <th>บันทึก</th>
+            </tr>
+          </thead>
+          <tbody id="entryRowsBody">
+            <tr><td colspan="8" class="entry-empty">เลือกวันที่เพื่อแสดงรายชื่อคนขับ</td></tr>
+          </tbody>
+        </table>
       </div>
     </div>
 
@@ -1485,7 +1695,6 @@ function drpInit(){
         drpFrom=ds;
         drpTo=ds;
         drpRender();
-        // ✅ เลือกวันเดียว - Apply ทันที
         setTimeout(()=>drpApply(), 200);
       }else if(drpFrom && !drpTo){
         if(ds < drpFrom){
@@ -1495,14 +1704,13 @@ function drpInit(){
           drpTo=ds;
         }
         drpRender();
-        // ✅ เลือกช่วงวันที่เสร็จ - Apply ทันที
         setTimeout(()=>drpApply(), 200);
       }
     });
   }
 }
 
-// Oil Price Functions
+// Oil Price Functions (แก้บั๊ก self-reference promise แล้ว)
 let OIL_PRICE_CACHE = null;
 let _oilFetchPromise = null;
 async function _fetchOilOnce() {
@@ -1522,7 +1730,9 @@ async function _fetchOilOnce() {
     } catch (_) { OIL_PRICE_CACHE = null; }
     return OIL_PRICE_CACHE;
   })();
-  return _oilFetchPromise;
+  const result = await _oilFetchPromise;
+  _oilFetchPromise = null;
+  return result;
 }
 function _extractPrice(oils, cfg) {
   if (!oils || !Array.isArray(oils)) return null;
@@ -1561,7 +1771,7 @@ function _jobStatusKind(j){const raw=(j.status||'').trim();const noteText=(j.not
 
 // Entry Rows Functions
 const driverRowState={};let ilIsLoadingDrivers=false,ilLastLoadedDate=null;
-async function ilOnDateChange(){if(ilIsLoadingDrivers)return-1;const date=document.getElementById('il-work-date').value;if(!date)return-1;ilLastLoadedDate=date;ilIsLoadingDrivers=true;const hint=document.getElementById('entryLoadingHint');if(hint)hint.style.display='flex';document.getElementById('entryRowsBody').innerHTML='';document.getElementById('inlineJobTableWrap').innerHTML='<div class="job-loading">กำลังโหลด...</div>';let pendingCount=-1;try{delete SAVED_DRIVERS_CACHE[date];delete jobFetched[date];delete JOBS_PROCESSED[date];await Promise.all([fetchJobsByDate(date),fetchSavedDrivers(date)]);const proc=JOBS_PROCESSED[date]||{whitelist:{},auto:{}};const unsaved=Object.values(proc.whitelist).filter(d=>!isDriverSaved(date,d.name));pendingCount=unsaved.length;ilRenderDriverRows(date);ilResetJobsPanel();}catch(e){console.warn(e);document.getElementById('entryRowsBody').innerHTML='<div class="entry-empty" style="color:var(--red)">โหลดข้อมูลไม่สำเร็จ</div>';}finally{ilIsLoadingDrivers=false;if(hint)hint.style.display='none';}return pendingCount;}
+async function ilOnDateChange(){if(ilIsLoadingDrivers)return-1;const date=document.getElementById('il-work-date').value;if(!date)return-1;ilLastLoadedDate=date;ilIsLoadingDrivers=true;const hint=document.getElementById('entryLoadingHint');if(hint)hint.style.display='flex';document.getElementById('entryRowsBody').innerHTML='';document.getElementById('inlineJobTableWrap').innerHTML='<div class="job-loading">กำลังโหลด...</div>';let pendingCount=-1;try{delete SAVED_DRIVERS_CACHE[date];delete jobFetched[date];delete JOBS_PROCESSED[date];await Promise.all([fetchJobsByDate(date),fetchSavedDrivers(date)]);const proc=JOBS_PROCESSED[date]||{whitelist:{},auto:{}};const unsaved=Object.values(proc.whitelist).filter(d=>!isDriverSaved(date,d.name));pendingCount=unsaved.length;ilRenderDriverRows(date);ilResetJobsPanel();}catch(e){console.warn(e);document.getElementById('entryRowsBody').innerHTML='<tr><td colspan="8" class="entry-empty" style="color:var(--red)">โหลดข้อมูลไม่สำเร็จ</td></tr>';}finally{ilIsLoadingDrivers=false;if(hint)hint.style.display='none';}return pendingCount;}
 
 function isLikelyDriverName(name){const n=(name||'').trim();if(!n||n.length>20)return false;const banned=['ลูกค้า','เซ็นบิล','เซ็น','บิล','สาขา','จำกัด','บริษัท','หจก','ร้าน','คุณ','ไป','ที่','กับ'];for(const w of banned){if(n.includes(w))return false;}if((n.match(/\d/g)||[]).length>=4)return false;return true;}
 const _autoStoreInFlight=new Set();
@@ -1589,6 +1799,9 @@ async function ilAutoStoreNonWhitelist(date,driverList){
     fd.append('total_price', 0);
     fd.append('total_distance', 0);
     fd.append('liters', 0);
+    fd.append('delivery_cost', 0);
+    fd.append('ot_cost', 0);
+    fd.append('handling_cost', 0);
     fd.append('ok', okC);
     fd.append('ng', failC);
     fd.append('create_by', (CURRENT_USER && CURRENT_USER !== 'Guest') ? String(CURRENT_USER) : 'system');
@@ -1597,7 +1810,7 @@ async function ilAutoStoreNonWhitelist(date,driverList){
       const res=await fetch(ROUTE_STORE,{method:'POST',headers:{'X-CSRF-TOKEN':CSRF_TOKEN,'Accept':'application/json'},body:fd});
       if(res.ok||res.status===302){
         markDriverSaved(date,name);
-        ilAppendLogRow({date,driver_name:name,vehicle_id:'-',start_h:9,start_m:0,end_h:18,end_m:0,total_price:0,total_distance:0,liters:0,km_per_liter:0,ok_count:okC,fail_count:failC});
+        ilAppendLogRow({date,driver_name:name,vehicle_id:'-',start_h:9,start_m:0,end_h:18,end_m:0,total_price:0,total_distance:0,liters:0,km_per_liter:0,ok_count:okC,fail_count:failC,delivery_cost:0,ot_cost:0,handling_cost:0});
         if(d.jobs.length>0)_syncNgJobs(date,name,d.jobs);
       }
     }catch(e){
@@ -1614,7 +1827,6 @@ function _syncNgJobs(date, driverName, jobs) {
     date: String(date),
     create_by: (CURRENT_USER && CURRENT_USER !== 'Guest') ? String(CURRENT_USER) : 'system',
     jobs: jobs.map(j => {
-      // ✅ แก้ไขตรงนี้: ถ้า status ว่าง ให้ใส่ค่า default เป็น 'รอ' เพื่อให้ผ่าน Laravel validation
       let st = j.status ? String(j.status).trim() : '';
       if (st === '') st = 'รอ'; 
       
@@ -1681,8 +1893,8 @@ function ilRenderDriverRows(date){
   driverList.sort((a,b) => a.name.localeCompare(b.name, 'th'));
 
   if(driverList.length===0){
-    if(totalCount===0){tbody.innerHTML='<div class="entry-empty">ไม่พบคนขับสำหรับวันที่นี้</div>';document.getElementById('entrySub').textContent='ไม่พบคนขับของวันนี้';}
-    else{tbody.innerHTML=`<div class="entry-empty" style="color:var(--green-dark)">✓ บันทึกครบทุกคนแล้ว (${savedCount} คน)</div>`;document.getElementById('entrySub').textContent=`บันทึกครบ ${savedCount} คน`;}
+    if(totalCount===0){tbody.innerHTML='<tr><td colspan="8" class="entry-empty">ไม่พบคนขับสำหรับวันที่นี้</td></tr>';document.getElementById('entrySub').textContent='ไม่พบคนขับของวันนี้';}
+    else{tbody.innerHTML=`<tr><td colspan="8" class="entry-empty" style="color:var(--green-dark)">✓ บันทึกครบทุกคนแล้ว (${savedCount} คน)</td></tr>`;document.getElementById('entrySub').textContent=`บันทึกครบ ${savedCount} คน`;}
     return;
   }
   let subText=`${driverList.length} คนขับ · กรอกข้อมูลแล้วกดบันทึก`;
@@ -1693,12 +1905,16 @@ function ilRenderDriverRows(date){
   tbody.innerHTML=driverList.map((d,idx)=>{
     const key=`row_${idx}_${d.name.replace(/[^a-zA-Z0-9ก-๙]/g,'_')}`;
     let okC=0,failC=0;d.jobs.forEach(j=>{const k=_jobStatusKind(j);if(k==='ok')okC++;else if(k==='fail')failC++;});
-    driverRowState[key]={driverName:d.name,jobs:d.jobs,okCount:okC,failCount:failC,sh:0,sm:0,eh:0,em:0,startDT:'',endDT:'',noFuel:false,runFee:0};
+    driverRowState[key]={
+      driverName:d.name, jobs:d.jobs, okCount:okC, failCount:failC,
+      sh:0, sm:0, eh:0, em:0, startDT:'', endDT:'', noFuel:false,
+      deliveryCost:0, otCost:0, handlingCost:0
+    };
     const ini=(d.name||'?').trim().charAt(0).toUpperCase();
-    return`<div class="entry-row" data-key="${key}" onclick="erFocusRow('${key}')">
-      <div class="er-driver"><span class="er-driver-avatar">${ini}</span><div class="er-driver-info"><div class="er-driver-name" title="${d.name}">${d.name}</div><div class="er-driver-jobs">${d.jobs.length} งาน · <span class="er-ok">${okC} ✓</span>${failC>0?` · <span class="er-fail">${failC} ✕</span>`:''}</div></div></div>
-      <div><select class="er-plate-select" data-key="${key}" onchange="erUpdateRow('${key}')" onfocus="erFocusRow('${key}')"><option value="">— เลือกทะเบียน —</option>${plateOpts}</select></div>
-      <div>
+    return`<tr class="entry-row" data-key="${key}" onclick="erFocusRow('${key}')">
+      <td data-label="คนขับ"><div class="er-driver"><span class="er-driver-avatar">${ini}</span><div class="er-driver-info"><div class="er-driver-name" title="${d.name}">${d.name}</div><div class="er-driver-jobs">${d.jobs.length} งาน · <span class="er-ok">${okC} ✓</span>${failC>0?` · <span class="er-fail">${failC} ✕</span>`:''}</div></div></div></td>
+      <td data-label="ทะเบียนรถ"><select class="er-plate-select" data-key="${key}" onchange="erUpdateRow('${key}')" onfocus="erFocusRow('${key}')"><option value="">— เลือกทะเบียน —</option>${plateOpts}</select></td>
+      <td data-label="เวลา">
         <div class="er-time-stack">
           <div class="time-input-wrapper">
             <input type="datetime-local" class="er-dt-input" id="${key}-start-dt" value="${_wd}T09:00" onchange="erUpdateDateTime('${key}')" onfocus="erFocusRow('${key}')">
@@ -1707,28 +1923,42 @@ function ilRenderDriverRows(date){
             <input type="datetime-local" class="er-dt-input" id="${key}-end-dt" value="${_wd}T18:00" onchange="erUpdateDateTime('${key}')" onfocus="erFocusRow('${key}')">
           </div>
         </div>
-      </div>
-      <div>
+      </td>
+      <td data-label="ค่าน้ำมัน (฿)">
         <div class="er-cell-center">
           <label class="er-nofuel-check"><input type="checkbox" onchange="erToggleNoFuel('${key}',this.checked)" onfocus="erFocusRow('${key}')"> ไม่เติมน้ำมัน</label>
           <input type="text" inputmode="decimal" class="er-num-input" id="${key}-price" placeholder="ค่าน้ำมัน" oninput="erSanitizeNum(this);erUpdateRow('${key}')" onfocus="erFocusRow('${key}')">
         </div>
-      </div>
-      <div>
+      </td>
+      <td data-label="ระยะ (KM)">
         <div class="er-cell-center">
           <div class="er-nofuel-spacer"></div>
           <input type="text" inputmode="decimal" class="er-num-input" id="${key}-dist" placeholder="250" oninput="erSanitizeNum(this);erUpdateRow('${key}')" onfocus="erFocusRow('${key}')">
         </div>
-      </div>
-      <div>
-        <div class="er-cell-center">
-          <div class="er-nofuel-spacer"></div>
-          <input type="text" inputmode="decimal" class="er-num-input" id="${key}-runfee" placeholder="ค่าวิ่ง" oninput="erSanitizeNum(this);erUpdateRow('${key}')" onfocus="erFocusRow('${key}')">
+      </td>
+      <td data-label="ค่าใช้จ่ายเพิ่มเติม (฿)">
+        <div class="er-extra-costs">
+        <div class="er-extra-item">
+          <label>ค่าวิ่ง</label>
+          <input type="text" inputmode="decimal" class="er-num-input er-num-sm" id="${key}-delivery" placeholder="" oninput="erSanitizeNum(this);erUpdateRow('${key}')" onfocus="erFocusRow('${key}')">
         </div>
-      </div>
-      <div class="er-summary" id="${key}-summary"><div class="er-summary-row"><span class="er-summary-label">L:</span><span class="er-summary-val empty">—</span></div><div class="er-summary-row"><span class="er-summary-label">km/L:</span><span class="er-summary-val empty">—</span></div><div class="er-summary-row"><span class="er-summary-label">฿/km:</span><span class="er-summary-val empty">—</span></div></div>
-      <div style="text-align:center"><button type="button" class="er-save-btn" id="${key}-save" onclick="event.stopPropagation();erSaveRow('${key}')">บันทึก</button></div>
-    </div>`;
+        <div class="er-extra-item">
+          <label>OT</label>
+          <input type="text" inputmode="decimal" class="er-num-input er-num-sm" id="${key}-ot" placeholder="" oninput="erSanitizeNum(this);erUpdateRow('${key}')" onfocus="erFocusRow('${key}')">
+        </div>
+        <div class="er-extra-item">
+          <label>ค่ายก</label>
+          <input type="text" inputmode="decimal" class="er-num-input er-num-sm" id="${key}-handling" placeholder="" oninput="erSanitizeNum(this);erUpdateRow('${key}')" onfocus="erFocusRow('${key}')">
+        </div>
+        </div>
+      </td>
+      <td data-label="สรุป" class="er-summary" id="${key}-summary">
+        <div class="er-summary-row"><span class="er-summary-label">L:</span><span class="er-summary-val empty">—</span></div>
+        <div class="er-summary-row"><span class="er-summary-label">km/L:</span><span class="er-summary-val empty">—</span></div>
+        <div class="er-summary-row"><span class="er-summary-label">฿/km:</span><span class="er-summary-val empty">—</span></div>
+      </td>
+      <td data-label="บันทึก" style="text-align:center"><button type="button" class="er-save-btn" id="${key}-save" onclick="event.stopPropagation();erSaveRow('${key}')">บันทึก</button></td>
+    </tr>`;
   }).join('');
   Object.keys(driverRowState).forEach(k=>{if(document.getElementById(`${k}-start-dt`))erUpdateDateTime(k);if(document.getElementById(`${k}-price`))erUpdateRow(k);});
   _fetchLastPlates().then(() => _autoSelectPlates());
@@ -1740,23 +1970,43 @@ function erUpdateRow(key){
   const s=driverRowState[key];if(!s)return;
   const priceEl=document.getElementById(`${key}-price`);
   const distEl=document.getElementById(`${key}-dist`);
-  const runFeeEl=document.getElementById(`${key}-runfee`);
+  const deliveryEl=document.getElementById(`${key}-delivery`);
+  const otEl=document.getElementById(`${key}-ot`);
+  const handlingEl=document.getElementById(`${key}-handling`);
+  
   const price=s.noFuel?0:(parseFloat(priceEl?.value)||0);
   const dist=parseFloat(distEl?.value)||0;
-  const runFee=parseFloat(runFeeEl?.value)||0;
+  const deliveryCost=parseFloat(deliveryEl?.value)||0;
+  const otCost=parseFloat(otEl?.value)||0;
+  const handlingCost=parseFloat(handlingEl?.value)||0;
+  
   const ppl=parseFloat(document.getElementById('il-price-per-liter')?.value)||0;
   const liters=(price>0&&ppl>0)?(price/ppl):0;
   const kml=(dist>0&&liters>0)?(dist/liters):0;
   const thbKm=(price>0&&dist>0)?(price/dist):0;
-  s.price=price;s.distance=dist;s.liters=liters;s.kml=kml;s.thbKm=thbKm;s.runFee=runFee;
+  
+  s.price=price; s.distance=dist; s.liters=liters; s.kml=kml; s.thbKm=thbKm;
+  s.deliveryCost=deliveryCost; s.otCost=otCost; s.handlingCost=handlingCost;
+  
   const sum=document.getElementById(`${key}-summary`);
   if(sum){
     const litersTxt=liters>0?fmtN(liters)+' L':'<span class="empty">—</span>';
     let kmlCls='empty',kmlTxt='—';
     if(kml>0){kmlTxt=fmtN(kml)+' km/L';kmlCls=kml>=12?'green':(kml<9?'red':'');}
     const thbKmTxt=thbKm>0?'฿'+fmtN(thbKm):'<span class="empty">—</span>';
-    const runFeeTxt=runFee>0?'฿'+fmtN(runFee):'<span class="empty">—</span>';
-    sum.innerHTML=`<div class="er-summary-row"><span class="er-summary-label">L:</span><span class="er-summary-val ${liters>0?'':'empty'}">${litersTxt}</span></div><div class="er-summary-row"><span class="er-summary-label">km/L:</span><span class="er-summary-val ${kmlCls}">${kmlTxt}</span></div><div class="er-summary-row"><span class="er-summary-label">฿/km:</span><span class="er-summary-val ${thbKm>0?'':'empty'}">${thbKmTxt}</span></div><div class="er-summary-row"><span class="er-summary-label">ค่าวิ่ง:</span><span class="er-summary-val ${runFee>0?'':'empty'}">${runFeeTxt}</span></div>`;
+    
+    let extraCosts = [];
+    if(deliveryCost > 0) extraCosts.push(`วิ่ง: ฿${fmtN(deliveryCost)}`);
+    if(otCost > 0) extraCosts.push(`OT: ฿${fmtN(otCost)}`);
+    if(handlingCost > 0) extraCosts.push(`ยก: ฿${fmtN(handlingCost)}`);
+    const extraHtml = extraCosts.length > 0 ? `<div class="er-summary-row" style="margin-top:4px;border-top:1px dashed #e5e7eb;padding-top:4px;"><span class="er-summary-label" style="font-size:11px">อื่นๆ:</span><span class="er-summary-val" style="font-size:11px;color:#3e6ae1">${extraCosts.join(', ')}</span></div>` : '';
+
+    sum.innerHTML=`
+      <div class="er-summary-row"><span class="er-summary-label">L:</span><span class="er-summary-val ${liters>0?'':'empty'}">${litersTxt}</span></div>
+      <div class="er-summary-row"><span class="er-summary-label">km/L:</span><span class="er-summary-val ${kmlCls}">${kmlTxt}</span></div>
+      <div class="er-summary-row"><span class="er-summary-label">฿/km:</span><span class="er-summary-val ${thbKm>0?'':'empty'}">${thbKmTxt}</span></div>
+      ${extraHtml}
+    `;
   }
 }
 function erUpdateAllRows(){Object.keys(driverRowState).forEach(k=>erUpdateRow(k));}
@@ -1769,12 +2019,24 @@ async function erSaveRow(key){
   const plate=document.querySelector(`.er-plate-select[data-key="${key}"]`)?.value||'';
   const btn=document.getElementById(`${key}-save`), row=document.querySelector(`.entry-row[data-key="${key}"]`);
   const errors=[];
- if(!plate)errors.push('เลือกทะเบียนรถ');
-  if(!s.noFuel){const priceRaw=document.getElementById(`${key}-price`)?.value??'';if(priceRaw===''||isNaN(parseFloat(priceRaw)))errors.push('ใส่ค่าน้ำมัน หรือติ๊ก "ไม่เติมน้ำมัน"');else if(parseFloat(priceRaw)<0)errors.push('ค่าน้ำมันติดลบไม่ได้');}
-  const runFeeRaw=document.getElementById(`${key}-runfee`)?.value??'';
-  if(runFeeRaw===''||isNaN(parseFloat(runFeeRaw)))errors.push('ใส่ค่าวิ่ง');
-  else if(parseFloat(runFeeRaw)<0)errors.push('ค่าวิ่งติดลบไม่ได้');
-  if(!s.startDT||!s.endDT)errors.push('เลือกวันเวลาเริ่ม-สิ้นสุด');else if(new Date(s.endDT)<=new Date(s.startDT))errors.push('เวลาสิ้นสุดต้องหลังเวลาเริ่ม');
+  if(!plate)errors.push('เลือกทะเบียนรถ');
+  if(!s.noFuel){
+    const priceRaw=document.getElementById(`${key}-price`)?.value??'';
+    if(priceRaw===''||isNaN(parseFloat(priceRaw)))errors.push('ใส่ค่าน้ำมัน หรือติ๊ก "ไม่เติมน้ำมัน"');
+    else if(parseFloat(priceRaw)<0)errors.push('ค่าน้ำมันติดลบไม่ได้');
+  }
+  
+const delRaw = document.getElementById(`${key}-delivery`)?.value ?? '';
+const otRaw = document.getElementById(`${key}-ot`)?.value ?? '';
+const hanRaw = document.getElementById(`${key}-handling`)?.value ?? '';
+
+if(delRaw !== '' && isNaN(parseFloat(delRaw)))errors.push('ค่าวิ่งไม่ถูกต้อง');
+if(otRaw !== '' && isNaN(parseFloat(otRaw)))errors.push('ค่า OT ไม่ถูกต้อง');
+if(hanRaw !== '' && isNaN(parseFloat(hanRaw)))errors.push('ค่ายกไม่ถูกต้อง');
+  
+  if(!s.startDT||!s.endDT)errors.push('เลือกวันเวลาเริ่ม-สิ้นสุด');
+  else if(new Date(s.endDT)<=new Date(s.startDT))errors.push('เวลาสิ้นสุดต้องหลังเวลาเริ่ม');
+  
   if(errors.length){btn.textContent=' '+errors[0];setTimeout(()=>{btn.innerHTML='บันทึก';},2200);return;}
   
   const date=s.startDT.split('T')[0];
@@ -1790,7 +2052,9 @@ async function erSaveRow(key){
   fd.append('end_time',toBackendDT(s.endDT));
   fd.append('total_price',s.price || 0);
   fd.append('total_distance',s.distance || 0);
-  fd.append('run_fee', s.runFee || 0);
+  fd.append('delivery_cost', s.deliveryCost || 0);
+  fd.append('ot_cost', s.otCost || 0);
+  fd.append('handling_cost', s.handlingCost || 0);
   fd.append('ok',s.okCount || 0);
   fd.append('ng',s.failCount || 0);
   
@@ -1803,7 +2067,14 @@ async function erSaveRow(key){
     const res=await fetch(ROUTE_STORE,{method:'POST',headers:{'X-CSRF-TOKEN':CSRF_TOKEN,'Accept':'application/json'},body:fd});
     if(!res.ok&&res.status!==302)throw new Error('HTTP '+res.status);
     markDriverSaved(date,s.driverName);
-    ilAppendLogRow({date,driver_name:s.driverName,vehicle_id:plate,start_h:s.sh,start_m:s.sm,end_h:s.eh,end_m:s.em,start_dt:s.startDT,end_dt:s.endDT,total_price:s.price,total_distance:s.distance,liters:s.liters,km_per_liter:s.kml,ok_count:s.okCount,fail_count:s.failCount});
+    ilAppendLogRow({
+      date,driver_name:s.driverName,vehicle_id:plate,
+      start_h:s.sh,start_m:s.sm,end_h:s.eh,end_m:s.em,
+      start_dt:s.startDT,end_dt:s.endDT,
+      total_price:s.price,total_distance:s.distance,liters:s.liters,
+      km_per_liter:s.kml,ok_count:s.okCount,fail_count:s.failCount,
+      delivery_cost:s.deliveryCost,ot_cost:s.otCost,handling_cost:s.handlingCost
+    });
     if(s.jobs.length>0)_syncNgJobs(date,s.driverName,s.jobs);
     if(_focusedRowKey===key){_focusedRowKey=null;ilResetJobsPanel();}
     delete driverRowState[key];showSaveToast(s.driverName);ilRenderDriverRows(date);
@@ -1967,6 +2238,7 @@ document.addEventListener('DOMContentLoaded',function(){
     })();
   }
 });
+
 </script>
 
 </body>
