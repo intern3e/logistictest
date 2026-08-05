@@ -54,15 +54,12 @@ table.calgrid{border-collapse:collapse;table-layout:fixed;width:100%;height:1px;
 .calgrid th,.calgrid td{border:1px solid #d0d3d8;padding:6px 3px;text-align:center;white-space:normal;word-break:break-word;overflow:hidden}
 .calgrid thead{position:sticky;top:0;z-index:5}
 
-
-
 .calgrid thead th{background:#2b3a67;color:#fff;font-weight:700}
 .calgrid thead tr.wk-row th{background:#3e6ae1;font-size:9px;font-weight:600}
 .calgrid th.wkday{white-space:nowrap;padding:2px 1px;letter-spacing:0}
 .calgrid thead th.weekend{background:#c0392b}
 .calgrid thead tr.wk-row th.weekend{background:#e74c3c}
 
-/* ── หัวตารางรายสัปดาห์แบบใหม่ (ตามชีทต้นฉบับ) ── */
 .calgrid tr.title-row td{background:#2b3a67;color:#fff;font-weight:700;font-size:12px;text-align:left;padding:8px 10px}
 .calgrid tr.blank-row td{background:#fff;border-color:#e0e2e5;height:14px;padding:2px}
 .calgrid tr.info-row td{background:#fff;color:#111827;font-weight:700;font-size:10px;text-align:left;padding:6px 8px;border-color:#e0e2e5}
@@ -76,10 +73,10 @@ table.calgrid{border-collapse:collapse;table-layout:fixed;width:100%;height:1px;
 .calgrid td.name-cell{background:#fdf6e3;text-align:center;font-weight:700;color:#111827;font-size:14px;line-height:1.3}
 .calgrid td.name-cell .plate{display:block;font-weight:500;font-size:11px;color:#6b7280;font-family:monospace;white-space:normal}
 .calgrid td.item-cell{background:#fffdf0;text-align:center;color:#4b5563;font-size:11.5px}
-.calgrid td.num{background:#fffefa;text-align:center;font-variant-numeric:tabular-nums;color:#374151}
+.calgrid td.num{background:#fffefa;text-align:center;font-variant-numeric:tabular-nums;color:#111827}
 .calgrid td.num.empty{color:#d4d4d8}
-.calgrid td.tot-col{background:#d9e8fb;font-weight:700;color:#1d4ed8}
-.calgrid td.person-tot{background:#fce4cf;font-weight:700;color:#9a4a12;font-size:13.5px}
+.calgrid td.tot-col{background:#d9e8fb;font-weight:700;color:#1e3a8a}
+.calgrid td.person-tot{background:#fce4cf;font-weight:700;color:#7c2d12;font-size:13.5px}
 .calgrid td.person-tot.cyan-cell{font-size:13.5px}
 
 .calgrid tr.group-alt td.name-cell{background:#fbf1d6}
@@ -93,7 +90,6 @@ table.calgrid{border-collapse:collapse;table-layout:fixed;width:100%;height:1px;
 .calgrid tr.grand-row td{background:#111827;color:#fff;font-weight:700;font-size:11px;padding:6px 4px;border-color:#111827}
 .calgrid tr.grand-row td.grand-val{color:#93c5fd;font-size:12px}
 
-/* ── Custom Week Picker ── */
 .week-picker-wrap{position:relative;display:flex;flex-direction:column;gap:6px}
 .week-picker-input{height:36px;padding:0 12px;border:1px solid #d1d5db;border-radius:6px;font-size:13px;color:#374151;background:#fff;cursor:pointer;display:flex;align-items:center;justify-content:space-between;gap:10px;min-width:190px;user-select:none}
 .week-picker-input:hover{border-color:#3e6ae1}
@@ -124,7 +120,6 @@ table.calgrid{border-collapse:collapse;table-layout:fixed;width:100%;height:1px;
 .wp-footer button:hover{text-decoration:underline}
 .wp-range-hint{font-size:10.5px;color:#71717a;margin-top:6px;text-align:center}
 
-/* ── โหมดปริ้น: แสดงเฉพาะตารางที่กำลังแสดงอยู่ ── */
 @media print {
   @page { size: A4 landscape; margin: 8mm; }
   html, body { height: auto; overflow: visible; background: #fff; }
@@ -145,7 +140,7 @@ table.calgrid{border-collapse:collapse;table-layout:fixed;width:100%;height:1px;
   $userQuery = $currentUser !== 'Guest' ? '?create_by='.urlencode($currentUser) : '';
   $qs = fn($extra) => http_build_query(array_merge($currentUser !== 'Guest' ? ['create_by'=>$currentUser] : [], $extra));
 
-  $thWeekday = ['อา','จ','อ','พ','พฤ','ศ','ส']; // date('w'): 0=อา..6=ส
+  $thWeekday = ['อา','จ','อ','พ','พฤ','ศ','ส'];
   $thMonths = ['', 'มกราคม','กุมภาพันธ์','มีนาคม','เมษายน','พฤษภาคม','มิถุนายน','กรกฎาคม','สิงหาคม','กันยายน','ตุลาคม','พฤศจิกายน','ธันวาคม'];
 
   $prevMonth = $selMonth - 1; $prevYear = $selYear;
@@ -247,7 +242,6 @@ table.calgrid{border-collapse:collapse;table-layout:fixed;width:100%;height:1px;
     <div class="grid-scroll">
       @php
         if ($mode === 'week') {
-          // บังคับให้เป็นจันทร์–อาทิตย์เสมอ 7 วัน ไม่ว่า $days จาก controller จะส่งมาอย่างไร
           $wsForDays = \Carbon\Carbon::parse($weekStart)->startOfWeek(\Carbon\Carbon::MONDAY);
           $days = [];
           for ($i = 0; $i < 7; $i++) {
@@ -258,29 +252,62 @@ table.calgrid{border-collapse:collapse;table-layout:fixed;width:100%;height:1px;
         $nameW = 10; $itemW = 7; $totW = 6.5; $personW = 7.5;
         $dayW = $dayCount > 0 ? (100 - $nameW - $itemW - $totW - $personW) / $dayCount : 0;
 
-        // ── ตัดแถวที่ช่องทะเบียน (ใต้ชื่อคนขับ) มีคำว่า "มอเตอร์ไซค์"/"มอเตอร์ไซด์" ออก ──
-        $excludedDriverNames = ['หรั่ง', 'บอยBTS'];
-        $driverGrid = array_values(array_filter($driverGrid, function ($dg) use ($excludedDriverNames) {
+        // ── ลำดับคนขับที่ต้องการแสดง (ตรงกับหน้าน้ำมัน) ──
+        $allowedDrivers = ['กอลฟ์','เก่ง','เอ้','เอ','บังเดช','แฟงค์','yuth','แซม','บอย','บอยBTS','กบ','joey','แมน'];
+
+        // ── ตัดแถวที่ช่องทะเบียน มีคำว่า "มอเตอร์ไซค์"/"มอเตอร์ไซด์" ออก
+        //    ยกเว้นคนขับที่อยู่ใน $allowedDrivers (เช่น กบ) ให้แสดงเสมอไม่ว่าทะเบียนจะเป็นแบบไหน ──
+        $excludedDriverNames = [];
+        $driverGrid = array_values(array_filter($driverGrid, function ($dg) use ($excludedDriverNames, $allowedDrivers) {
+          $label = trim((string) ($dg['label'] ?? ''));
+          $isExcludedName = in_array($label, $excludedDriverNames, true);
+          if (in_array($label, $allowedDrivers, true)) {
+            return !$isExcludedName;
+          }
           $plateClean = preg_replace('/[\x{200B}-\x{200D}\x{FEFF}]/u', '', (string) ($dg['plate'] ?? ''));
           $isMotorcycle = mb_stripos($plateClean, 'มอเตอร์ไซค์') !== false
                        || mb_stripos($plateClean, 'มอเตอร์ไซด์') !== false;
-          $isExcludedName = in_array(trim((string) ($dg['label'] ?? '')), $excludedDriverNames, true);
           return !$isMotorcycle && !$isExcludedName;
         }));
 
-        // ── เรียงชื่อคนขับตามตัวอักษรแบบพจนานุกรมไทย (รองรับทั้งไทย/อังกฤษ) ──
-        if (class_exists('Collator')) {
-          $thCollator = new \Collator('th_TH');
-          usort($driverGrid, fn ($a, $b) => $thCollator->compare((string) ($a['label'] ?? ''), (string) ($b['label'] ?? '')));
-        } else {
-          // fallback: ย้ายสระนำหน้า เ แ โ ใ ไ ไปไว้หลังพยัญชนะที่ตามมา ก่อนเทียบตัวอักษร
-          $thaiSortKey = function ($s) {
-            return preg_replace_callback('/([เแโใไ])([ก-ฮ])/u', fn ($m) => $m[2] . $m[1], (string) $s);
-          };
-          usort($driverGrid, fn ($a, $b) => strcmp($thaiSortKey($a['label'] ?? ''), $thaiSortKey($b['label'] ?? '')));
+        // ── สร้างแถวว่างสำหรับคนขับที่ไม่มีข้อมูล ──
+        $existingLabels = array_map(function($dg) {
+            return trim((string) ($dg['label'] ?? ''));
+        }, $driverGrid);
+
+        foreach ($allowedDrivers as $driverName) {
+            if (!in_array($driverName, $existingLabels)) {
+                // สร้างแถวว่างสำหรับคนขับที่ไม่มีข้อมูล
+                $emptyDays = [];
+                foreach ($days as $day) {
+                    $emptyDays[$day] = ['delivery' => 0, 'ot' => 0, 'handling' => 0];
+                }
+                $driverGrid[] = [
+                    'label' => $driverName,
+                    'plate' => '',
+                    'days' => $emptyDays,
+                    'totDelivery' => 0,
+                    'totOt' => 0,
+                    'totHandling' => 0,
+                    'totAll' => 0,
+                ];
+            }
         }
 
-        // คำนวณผลรวมรายวัน/รวมทั้งหมดใหม่ จากเฉพาะรถที่เหลือหลังตัดมอเตอร์ไซค์ออก
+        usort($driverGrid, function($a, $b) use ($allowedDrivers) {
+            $labelA = trim((string) ($a['label'] ?? ''));
+            $labelB = trim((string) ($b['label'] ?? ''));
+
+            $indexA = array_search($labelA, $allowedDrivers);
+            $indexB = array_search($labelB, $allowedDrivers);
+
+            if ($indexA === false) $indexA = PHP_INT_MAX;
+            if ($indexB === false) $indexB = PHP_INT_MAX;
+
+            if ($indexA !== $indexB) return $indexA <=> $indexB;
+            return strcmp($labelA, $labelB);
+        });
+
         $dayTotals = [];
         foreach ($days as $day) { $dayTotals[$day] = ['delivery' => 0, 'ot' => 0, 'handling' => 0]; }
         $grandDelivery = 0; $grandOt = 0; $grandHandling = 0;
@@ -312,15 +339,12 @@ table.calgrid{border-collapse:collapse;table-layout:fixed;width:100%;height:1px;
               $wTitleStart = \Carbon\Carbon::parse($weekStart);
               $wTitleEnd   = $wTitleStart->copy()->addDays(6);
               if ($wTitleStart->year !== $wTitleEnd->year) {
-                // ข้ามปี เช่น 29 ธ.ค. 2568 – 4 ม.ค. 2569
                 $weekRangeLabel = $wTitleStart->format('d') . ' ' . $thMonths[$wTitleStart->month] . ' ' . ($wTitleStart->year + 543)
                   . ' – ' . $wTitleEnd->format('d') . ' ' . $thMonths[$wTitleEnd->month] . ' ' . ($wTitleEnd->year + 543);
               } elseif ($wTitleStart->month !== $wTitleEnd->month) {
-                // ข้ามเดือนแต่ปีเดียวกัน เช่น 26 ก.ค. – 1 ส.ค. 2569
                 $weekRangeLabel = $wTitleStart->format('d') . ' ' . $thMonths[$wTitleStart->month]
                   . ' – ' . $wTitleEnd->format('d') . ' ' . $thMonths[$wTitleEnd->month] . ' ' . ($wTitleEnd->year + 543);
               } else {
-                // อยู่เดือนเดียวกันทั้งสัปดาห์
                 $weekRangeLabel = $wTitleStart->format('d') . ' – ' . $wTitleEnd->format('d') . ' ' . $thMonths[$wTitleEnd->month] . ' ' . ($wTitleEnd->year + 543);
               }
             @endphp
@@ -489,8 +513,8 @@ table.calgrid{border-collapse:collapse;table-layout:fixed;width:100%;height:1px;
     return dd + '/' + mm + '/' + d.getFullYear();
   }
   function mondayOf(d) {
-    var day = d.getDay(); // 0=Sun..6=Sat
-    var diff = (day === 0) ? -6 : (1 - day); // move back to Monday
+    var day = d.getDay();
+    var diff = (day === 0) ? -6 : (1 - day);
     var m = new Date(d);
     m.setDate(d.getDate() + diff);
     m.setHours(0,0,0,0);
@@ -503,7 +527,7 @@ table.calgrid{border-collapse:collapse;table-layout:fixed;width:100%;height:1px;
   var initial = hidden.value ? parseISO(hidden.value) : new Date();
   var selectedMonday = mondayOf(initial);
   var viewYear = selectedMonday.getFullYear();
-  var viewMonth = selectedMonday.getMonth(); // 0-11
+  var viewMonth = selectedMonday.getMonth();
   var today = new Date(); today.setHours(0,0,0,0);
 
   function updateDisplay() {
@@ -519,7 +543,7 @@ table.calgrid{border-collapse:collapse;table-layout:fixed;width:100%;height:1px;
     daysGrid.innerHTML = '';
 
     var firstOfMonth = new Date(viewYear, viewMonth, 1);
-    var startOffset = (firstOfMonth.getDay() + 6) % 7; // Monday-first offset
+    var startOffset = (firstOfMonth.getDay() + 6) % 7;
     var gridStart = new Date(firstOfMonth);
     gridStart.setDate(firstOfMonth.getDate() - startOffset);
 
