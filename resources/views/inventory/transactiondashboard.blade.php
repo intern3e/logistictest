@@ -463,7 +463,7 @@ function render(){
     const type=row['ประเภทข้อมูล']||'',tc=typeMap[type]||'';
     
     const tr=document.createElement('tr');
-    tr.innerHTML=`<td style="white-space:nowrap">${row['Timestamp']||'-'}</td><td>${row['ชื่อผู้ดำเนินงาน']||'-'}</td><td class="tc ${tc}">${type||'-'}</td><td>${row['หมายเลขเอกสาร']||'-'}</td><td>${row['รายการ']||'-'}</td><td>${row['จำนวน']!==''?row['จำนวน']:'-'}</td><td>${row['ราคาต่อหน่วย']!==''?row['ราคาต่อหน่วย']:'-'}</td><td>${row['ชั้นวาง']||'-'}</td><td>${row['หมายเหตุ']||'-'}</td><td></td>`;
+    tr.innerHTML=`<td style="white-space:nowrap">${row['Timestamp']||'-'}</td><td>${row['ชื่อผู้ดำเนินงาน']||'-'}</td><td class="tc ${tc}">${type||'-'}</td><td>${row['หมายเลขเอกสาร']||'-'}</td><td>${row['รายการ']||'-'}</td><td>${row['จำนวน']!==''?row['จำนวน']:'-'}</td><td>${ROLE==='viewer'?'-':(row['ราคาต่อหน่วย']!==''?row['ราคาต่อหน่วย']:'-')}</td><td>${row['ชั้นวาง']||'-'}</td><td>${row['หมายเหตุ']||'-'}</td><td></td>`;
     
     if(row['รูปประกอบ']){
       const btn = document.createElement('button');

@@ -684,7 +684,7 @@ function renderTxModal(data){
   data.forEach(r=>{
     const tc=TM[r['ประเภทข้อมูล']||'']||'';
     const pic=r['รูปประกอบ']?`<a href="${r['รูปประกอบ']}" target="_blank" style="color:#5B65F3;font-size:12px;font-weight:600">ดูรูป</a>`:'-';
-    h+=`<tr><td style="white-space:nowrap">${r.Timestamp||'-'}</td><td>${r['ชื่อผู้ดำเนินงาน']||'-'}</td><td style="padding:0"><span class="tx-type ${tc}">${r['ประเภทข้อมูล']||'-'}</span></td><td>${r['หมายเลขเอกสาร']||'-'}</td><td>${r['รายการ']||'-'}</td><td>${r['จำนวน']!==''?r['จำนวน']:'-'}</td><td>${r['ราคาต่อหน่วย']!==''?r['ราคาต่อหน่วย']:'-'}</td><td>${r['ชั้นวาง']||'-'}</td><td>${r['หมายเหตุ']||'-'}</td><td>${pic}</td></tr>`;
+    h+=`<tr><td style="white-space:nowrap">${r.Timestamp||'-'}</td><td>${r['ชื่อผู้ดำเนินงาน']||'-'}</td><td style="padding:0"><span class="tx-type ${tc}">${r['ประเภทข้อมูล']||'-'}</span></td><td>${r['หมายเลขเอกสาร']||'-'}</td><td>${r['รายการ']||'-'}</td><td>${r['จำนวน']!==''?r['จำนวน']:'-'}</td><td>${ROLE==='viewer'?'-':(r['ราคาต่อหน่วย']!==''?r['ราคาต่อหน่วย']:'-')}</td><td>${r['ชั้นวาง']||'-'}</td><td>${r['หมายเหตุ']||'-'}</td><td>${pic}</td></tr>`;
   });
   h+='</tbody></table>';
   body.innerHTML=h;
