@@ -479,7 +479,7 @@ class InventoryController extends Controller
                 'page'     => $user->page ?? '',
             ]);
         }
-        if (!Session::has('user')) abort(403, 'กรุณาเข้าระบบผ่าน ?create_by=ชื่อ');
+        if (!Session::has('user')) abort(403, 'กรุณาเข้าระบบ ก่อนเข้าใช้งาน');
         return Session::get('user');
     }
     
