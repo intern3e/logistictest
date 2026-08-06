@@ -30,6 +30,21 @@ class DepositController extends Controller
         return Carbon::now('Asia/Bangkok');
     }
 
+    /**
+     * ✅ แปลงวันที่ที่รับมาจาก input ให้เป็น "ปี ค.ศ." เสมอ ก่อนเก็บลง DB
+     * กันเคส browser/ผู้ใช้ส่งปี พ.ศ. มา (เช่น 2569-07-27) หลุดเข้ามา
+     * ซึ่งถ้าไม่ normalize จะทำให้ตอนแสดงผล +543 ซ้ำ กลายเป็นปี 3112
+     */
+    private function normalizeToGregorian(?string $date): ?string
+    {
+        if (!$date) return null;
+        $c = Carbon::parse($date);
+        if ($c->year > 2400) { // เป็นปี พ.ศ. ที่หลุดเข้ามา
+            $c->subYears(543);
+        }
+        return $c->format('Y-m-d');
+    }
+
     public function insertdeposit()
     {
         return view('deposit.insertdeposit');
@@ -857,7 +872,8 @@ class DepositController extends Controller
             $updateData = [
                 'wht_doc_no' => $wht !== '' ? $wht : null,
                 'wht_time'   => $wht !== '' ? $now : null,
-                'date_wht'   => ($wht !== '' && $dateWht) ? Carbon::parse($dateWht)->format('Y-m-d') : null,
+                // ✅ normalize ก่อนเก็บ กันปี พ.ศ. หลุดเข้ามาเก็บใน DB โดยตรง
+                'date_wht'   => ($wht !== '' && $dateWht) ? $this->normalizeToGregorian($dateWht) : null,
             ];
 
             // ✅ เปลี่ยนสถานะเป็น "มี WHT" เพื่อให้ bot เห็นงานใหม่

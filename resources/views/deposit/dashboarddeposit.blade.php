@@ -218,7 +218,20 @@ nav[role="navigation"] span[aria-current="page"]{background:var(--blue-700)!impo
 
   $net = max(0, $dpv - $fee);
   $wht = $item->wht_doc_no ?? '';
-  $whtDate = $item->date_wht ? \Carbon\Carbon::parse($item->date_wht)->format('Y-m-d') : '';
+
+  // ✅ ปลอดภัยจากปี พ.ศ. ที่หลุดเข้ามาใน DB (date_wht เก็บผิดเป็น พ.ศ. เช่น 2569-xx-xx):
+  // ถ้าปีเกิน 2400 ให้ตีความว่าเป็น พ.ศ. อยู่แล้ว ไม่ต้องแปลงซ้ำ
+  $whtCarbon = $item->date_wht ? \Carbon\Carbon::parse($item->date_wht) : null;
+  $whtDate = $whtCarbon ? $whtCarbon->format('Y-m-d') : ''; // ใช้เป็นค่า input[type=date] (ต้องเป็น ค.ศ. เสมอ)
+  $whtDateBE = null;
+  if ($whtCarbon) {
+      $beYear = $whtCarbon->year > 2400 ? $whtCarbon->year : $whtCarbon->year + 543;
+      $whtDateBE = $whtCarbon->format('d/m/') . $beYear;
+      // ถ้าค่าที่ดึงมาดันเป็น พ.ศ. อยู่แล้ว (ปี > 2400) ให้แปลงกลับเป็น ค.ศ. สำหรับใส่ใน input date
+      if ($whtCarbon->year > 2400) {
+          $whtDate = $whtCarbon->copy()->subYears(543)->format('Y-m-d');
+      }
+  }
 
   $pdfRow = $bid ? \App\Models\deposit::where('deposit_bill_id',$bid)->select('deposit_bill','status_bill','deposit_slip','slip_time')->first() : null;
   $pdfF = $pdfRow->deposit_bill ?? null;
@@ -295,12 +308,15 @@ nav[role="navigation"] span[aria-current="page"]{background:var(--blue-700)!impo
         <button class="ie-cl" id="wht-cl-{{$item->id}}" {{ $wht?'':'disabled' }} onclick="clearWht({{$item->id}},'{{ $item->deposit_bill_id }}')" title="ลบ WHT">×</button>
       </div>
       <input type="date" id="whtd-{{$item->id}}" value="{{ $whtDate }}" data-o="{{ $whtDate }}" oninput="chgWht({{$item->id}})"
-        style="border:1px solid var(--gray-200);border-radius:3px;padding:3px 5px;font-size:10px;font-family:inherit;color:var(--gray-900);outline:none;width:118px" title="วันที่เอกสาร WHT">
+        style="border:1px solid var(--gray-200);border-radius:3px;padding:3px 5px;font-size:10px;font-family:inherit;color:var(--gray-900);outline:none;width:118px" title="วันที่เอกสาร WHT (พ.ศ.)">
+      @if($whtDateBE)
+        <span class="cS" style="font-size:9px">พ.ศ. {{ $whtDateBE }}</span>
+      @endif
     </div>
   @else
     @if($wht)
       <span style="font-size:11px;color:#6D28D9;font-weight:600">{{ $wht }}</span>
-      @if($whtDate)<br><span class="cS">{{ \Carbon\Carbon::parse($whtDate)->format('d/m/').(\Carbon\Carbon::parse($whtDate)->year+543) }}</span>@endif
+      @if($whtDateBE)<br><span class="cS">{{ $whtDateBE }}</span>@endif
     @else
       <span class="cS">—</span>
     @endif
