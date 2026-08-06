@@ -36,4 +36,8 @@ return [
         'channel_access_token' => env('LINE_CHANNEL_ACCESS_TOKEN'),
         'user_id'              => env('LINE_USER_ID'),
     ],
+    'nest' => [
+        'url' => env('NEST_PUBLIC_URL'),
+        'public_key' => env('NEST_PUBLIC_KEY'),
+    ],
 ];

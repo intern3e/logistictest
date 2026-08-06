@@ -3,6 +3,9 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+  <meta http-equiv="Pragma" content="no-cache">
+  <meta http-equiv="Expires" content="0">
   <meta name="csrf-token" content="{{ csrf_token() }}">
   <title>ค้นหาสินค้า - 3E TRADING</title>
   <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600;700&display=swap" rel="stylesheet">
@@ -184,6 +187,10 @@
     .btn-home:active{
       transform:translateY(0);
     }
+    /* สถานะ auto-refresh มุมขวาบน */
+    .live-badge{display:inline-flex;align-items:center;gap:6px;font-size:12px;font-weight:600;color:#059669;background:#d1fae5;border:1px solid #6ee7b7;padding:4px 10px;border-radius:999px}
+    .live-dot{width:8px;height:8px;border-radius:50%;background:#10b981;animation:pulse 1.5s infinite}
+    @keyframes pulse{0%,100%{opacity:1}50%{opacity:.35}}
   </style>
 </head>
 <body>
@@ -258,12 +265,47 @@
 <script>
 const CSRF=document.querySelector('meta[name="csrf-token"]').content;
 const ROLE=@json($authRole);
+const NEST_URL=@json($nestUrl);
+const NEST_KEY=@json($nestKey);
 const CAN_ADD=(ROLE==='admin'||ROLE==='user'),CAN_EDIT=(ROLE==='admin');
 const COLS=ROLE==='viewer'?6:7;
 const COMPANIES=[{code:'3E',label:'Triple E Trading'},{code:'3IN',label:'Triple E Innovation'},{code:'3EM',label:'Triple E Empire Group'},{code:'3EL',label:'Triple E Lighting'},{code:'HD',label:'Hikari Denki'},{code:'EP',label:'Eita & Paul'},{code:'3P',label:'Triple P Factory & Eng'},{code:'AE&T',label:'AE&T International'}];
 const PM={'3E':'b-3e','3IN':'b-3in','3EM':'b-3em','3EL':'b-3el','HD':'b-hd','EP':'b-ep','3P':'b-3p'};
 const TM={'รับเข้าสต็อก':'t-in','คืนเข้าสต็อก':'t-ret','ขายสินค้าออก':'t-sell','ยืมสินค้า':'t-bor','เบิกของ':'t-wit'};
-const API={async get(u){return(await fetch(u)).json()},async post(u,d){return(await fetch(u,{method:'POST',headers:{'Content-Type':'application/json','X-CSRF-TOKEN':CSRF},body:JSON.stringify(d)})).json()},async put(u,d){return(await fetch(u,{method:'PUT',headers:{'Content-Type':'application/json','X-CSRF-TOKEN':CSRF},body:JSON.stringify(d)})).json()},async del(u){return(await fetch(u,{method:'DELETE',headers:{'X-CSRF-TOKEN':CSRF}})).json()}};
+const API={
+  async get(u){
+    // เติม timestamp กัน browser/proxy cache ผลลัพธ์เดิม + no-store บังคับไม่เก็บ cache
+    const sep = u.includes('?') ? '&' : '?';
+    const noCacheUrl = u + sep + '_t=' + Date.now();
+    return (await fetch(noCacheUrl, {
+      cache: 'no-store',
+      headers: {'Cache-Control':'no-cache, no-store, must-revalidate','Pragma':'no-cache'}
+    })).json();
+  },
+  async post(u,d){
+    return (await fetch(u,{
+      method:'POST',
+      cache:'no-store',
+      headers:{'Content-Type':'application/json','X-CSRF-TOKEN':CSRF,'Cache-Control':'no-cache'},
+      body:JSON.stringify(d)
+    })).json();
+  },
+  async put(u,d){
+    return (await fetch(u,{
+      method:'PUT',
+      cache:'no-store',
+      headers:{'Content-Type':'application/json','X-CSRF-TOKEN':CSRF,'Cache-Control':'no-cache'},
+      body:JSON.stringify(d)
+    })).json();
+  },
+  async del(u){
+    return (await fetch(u,{
+      method:'DELETE',
+      cache:'no-store',
+      headers:{'X-CSRF-TOKEN':CSRF,'Cache-Control':'no-cache'}
+    })).json();
+  }
+};
 
 let uBrands=[],uLocs=[],products=[],subs={},filtered=[],pg=1,totalItems=0;
 const PG=50;
@@ -271,6 +313,7 @@ let exMap={},openSubKey=null;
 let filterTimeout=null;
 let currentFilters={name:'',brand:'',location:'',priv:'',type:''};
 let progressInterval = null;
+let isEditingRow = false; // true ขณะกำลังเพิ่ม/แก้ไขแถว เพื่อกัน auto-refresh ทับข้อมูลที่กำลังพิมพ์
 
 function showOv(t){
   document.getElementById('ovText').textContent = t || 'กำลังโหลดข้อมูล...';
@@ -486,143 +529,10 @@ function toggleSubForm(pid){
   if(openSubKey===pid){cancelSub(pid);return;}
   if(openSubKey) cancelSub(openSubKey);
   openSubKey=pid;
+  isEditingRow=true;
   document.querySelector(`tr[data-sf="${pid}"]`)?.classList.remove('hide');
 }
 
-function cancelSub(pid){
-  document.querySelector(`tr[data-sf="${pid}"]`)?.classList.add('hide');
-  if(openSubKey===pid) openSubKey=null;
-}
-
-function addRow(){
-  if(!CAN_ADD) return;
-  if(document.getElementById('nName')){
-    alert('มีแถวเพิ่มสินค้าอยู่แล้ว');
-    scrollTo(0,0);
-    return;
-  }
-  const tb=document.getElementById('tb'),tr=document.createElement('tr');
-  tr.style.background='#EEF2FF';
-  tr.innerHTML=`<td><em style="color:#6b7280;font-size:12px">auto</em></td><td><input type="text" id="nName" placeholder="ชื่อสินค้า" class="finput"></td><td><input type="number" id="nQty" value="0" readonly class="finput"></td><td><input type="text" id="nBrand" placeholder="ยี่ห้อ" class="finput" oninput="showAc(this,'brand')"></td><td><input type="text" id="nLoc" placeholder="สถานที่เก็บ" class="finput" oninput="showAc(this,'location')"></td><td style="overflow:visible;white-space:normal"><div style="display:flex;flex-direction:column;gap:8px">${bldType('คลัง','nType')}${bldPriv('','nPriv')}</div></td><td style="overflow:visible"><div class="act-btns"><button class="btn btn-save" onclick="saveNew()">บันทึก</button><button class="btn btn-can" onclick="loadPage(pg,false)">ยกเลิก</button></div></td>`;
-  tb.prepend(tr);
-  scrollTo(0,0);
-}
-
-async function saveNew(){
-  const nm=document.getElementById('nName').value.trim(),pr=document.getElementById('nPriv')?.value||'';
-  if(!pr){alert('กรุณาเลือกบริษัท');return;}
-  if(!nm){alert('กรุณากรอกชื่อ');return;}
-  showOv();
-  try{
-    await API.post('/api/items',{name:nm,typeitem:document.getElementById('nType').value,location:document.getElementById('nLoc').value.trim(),brand:document.getElementById('nBrand').value.trim(),quantity:'0',privilege:pr});
-    toast('เพิ่มสินค้าเรียบร้อย');
-    await loadPage(pg,false);
-  }catch(e){
-    toast(e.message,true);
-    hideOv();
-  }
-}
-
-async function saveSub(pid){
-  if(!CAN_ADD) return;
-  const cid=ci(pid),nm=(document.getElementById('sn_'+cid)?.value||'').trim();
-  if(!nm){alert('กรุณากรอกชื่อ');return;}
-  const par=products.find(p=>(p._pid||p.iditem)===pid);
-  if(!par) return;
-  showOv();
-  try{
-    await API.post('/api/items/sub',{parentId:pid,name:nm,brand:(document.getElementById('sb_'+cid)?.value||'').trim()||par.brand||'',location:(document.getElementById('sl_'+cid)?.value||'').trim()||par.location||'',typeitem:par.typeitem||'คลัง',quantity:'0',privilege:par.privilege||''});
-    toast('เพิ่มรายการย่อยเรียบร้อย');
-    openSubKey=null;
-    await loadPage(pg,false);
-  }catch(e){
-    toast(e.message,true);
-    hideOv();
-  }
-}
-
-function editRow(i){
-  if(!CAN_EDIT) return;
-  const item=products[i],key=item._pid||item.iditem,row=document.querySelector(`tr[data-pid="${key}"]`);
-  if(!row) return;
-  const uid=ci(item.iditem);
-  row.style.background='#EEF2FF';
-  row.innerHTML=`<td><strong>${item.iditem}</strong></td><td><input type="text" id="eN_${uid}" value="${eh(item.name)}" class="finput"></td><td><input type="number" id="eQ_${uid}" value="${item.quantity}" class="finput"></td><td><input type="text" id="eB_${uid}" value="${eh(item.brand||'')}" class="finput" oninput="showAc(this,'brand')"></td><td><input type="text" id="eL_${uid}" value="${eh(item.location||'')}" class="finput" oninput="showAc(this,'location')"></td><td style="overflow:visible;white-space:normal"><div style="display:flex;flex-direction:column;gap:8px">${bldType(item.typeitem,'eT_'+uid)}${bldPriv(item.privilege||'','eP_'+uid)}</div></td><td style="overflow:visible"><div class="act-btns"><button class="btn btn-save" onclick="saveEdit(${i})">บันทึก</button><button class="btn btn-can" onclick="render()">ยกเลิก</button></div></td>`;
-}
-
-async function saveEdit(i){
-  const item=products[i],uid=ci(item.iditem),nm=document.getElementById('eN_'+uid).value.trim(),pr=document.getElementById('eP_'+uid)?.value||'';
-  if(!pr){alert('กรุณาเลือกบริษัท');return;}
-  if(!nm){alert('กรุณากรอกชื่อ');return;}
-  showOv();
-  try{
-    await API.put('/api/items/'+encodeURIComponent(item.iditem),{name:nm,quantity:document.getElementById('eQ_'+uid).value,typeitem:document.getElementById('eT_'+uid).value,location:document.getElementById('eL_'+uid).value.trim(),brand:document.getElementById('eB_'+uid).value.trim(),privilege:pr});
-    toast('บันทึกสำเร็จ');
-    await loadPage(pg,false);
-  }catch(e){
-    toast(e.message,true);
-    hideOv();
-  }
-}
-
-async function delRow(i){
-  if(!CAN_EDIT) return;
-  const item=products[i];
-  let cnt=0;
-  try{cnt=(await API.get('/api/items/'+encodeURIComponent(item.iditem)+'/tx-count')).count||0}catch(e){}
-  if(!confirm(cnt>0?`⚠️ ${item.iditem}\nมี Transaction ${cnt} รายการ\nดำเนินการต่อ?`:`ต้องการลบ ${item.iditem}?`)) return;
-  showOv();
-  try{
-    await API.del('/api/items/'+encodeURIComponent(item.iditem));
-    toast('ลบเรียบร้อย');
-    await loadPage(pg,false);
-  }catch(e){
-    toast(e.message,true);
-    hideOv();
-  }
-}
-
-function editSub(pid,si){
-  if(!CAN_EDIT) return;
-  const sub=(subs[pid]||[])[si];
-  if(!sub) return;
-  const subTr=[...document.querySelectorAll(`tr[data-so="${pid}"]`)].find(r=>r.querySelector('td')?.textContent.trim()===sub.iditem);
-  if(!subTr) return;
-  const uid=ci(sub.iditem);
-  subTr.style.background='#EEF2FF';
-  subTr.innerHTML=`<td style="padding-left:48px"><strong>${sub.iditem}</strong></td><td><input type="text" id="seN_${uid}" value="${eh(sub.name)}" class="finput"></td><td><input type="number" id="seQ_${uid}" value="${sub.quantity}" class="finput"></td><td><input type="text" id="seB_${uid}" value="${eh(sub.brand||'')}" class="finput" oninput="showAc(this,'brand')"></td><td><input type="text" id="seL_${uid}" value="${eh(sub.location||'')}" class="finput" oninput="showAc(this,'location')"></td><td style="overflow:visible;white-space:normal"><div style="display:flex;flex-direction:column;gap:8px">${bldType(sub.typeitem,'seT_'+uid)}${bldPriv(sub.privilege||'','seP_'+uid)}</div></td><td style="overflow:visible"><div class="act-btns"><button class="btn btn-save" onclick="saveSubEdit('${ej(pid)}',${si})">บันทึก</button><button class="btn btn-can" onclick="render()">ยกเลิก</button></div></td>`;
-}
-
-async function saveSubEdit(pid,si){
-  const sub=(subs[pid]||[])[si];
-  if(!sub) return;
-  const uid=ci(sub.iditem),nm=document.getElementById('seN_'+uid).value.trim();
-  if(!nm){alert('กรุณากรอกชื่อ');return;}
-  showOv();
-  try{
-    await API.put('/api/items/'+encodeURIComponent(sub.iditem),{name:nm,quantity:document.getElementById('seQ_'+uid).value,brand:document.getElementById('seB_'+uid).value.trim(),location:document.getElementById('seL_'+uid).value.trim(),typeitem:document.getElementById('seT_'+uid).value,privilege:document.getElementById('seP_'+uid)?.value||''});
-    toast('บันทึกสำเร็จ');
-    await loadPage(pg,false);
-  }catch(e){
-    toast(e.message,true);
-    hideOv();
-  }
-}
-
-async function delSub(pid,si){
-  if(!CAN_EDIT) return;
-  const sub=(subs[pid]||[])[si];
-  if(!sub||!confirm(`ลบ ${sub.iditem}?`)) return;
-  showOv();
-  try{
-    await API.del('/api/items/'+encodeURIComponent(sub.iditem));
-    toast('ลบเรียบร้อย');
-    await loadPage(pg,false);
-  }catch(e){
-    toast(e.message,true);
-    hideOv();
-  }
-}
 
 function showAc(inp,type){
   document.querySelectorAll('ul.ac').forEach(u=>u.remove());
@@ -667,11 +577,6 @@ async function openTx(id,name){
     document.getElementById('txBody').innerHTML=`<div class="tx-empty">โหลดล้มเหลว</div>`;
   }
 }
-
-function closeTx(){
-  document.getElementById('txOv').classList.remove('on');
-}
-
 function renderTxModal(data){
   const body=document.getElementById('txBody'),foot=document.getElementById('txFoot');
   if(!data.length){
@@ -691,6 +596,181 @@ function renderTxModal(data){
 }
 
 loadPage(1,true);
+
+let itemsRefreshPending = false;
+let itemsRefreshDebounce = null;
+
+function isBusyEditingItems(){
+  const txOpen = document.getElementById('txOv').classList.contains('on');
+  return txOpen || isEditingRow || openSubKey !== null;
+}
+
+function requestItemsSilentRefresh(){
+  clearTimeout(itemsRefreshDebounce);
+  itemsRefreshDebounce = setTimeout(() => {
+    if (isBusyEditingItems()) { itemsRefreshPending = true; return; }
+    loadPage(pg, false);
+  }, 300);
+}
+
+function flushItemsPendingRefresh(){
+  if (!itemsRefreshPending || isBusyEditingItems()) return;
+  itemsRefreshPending = false;
+  loadPage(pg, false);
+}
+
+function connectItemsSSE(){
+  const url = `${NEST_URL}/items/events?key=${encodeURIComponent(NEST_KEY)}`;
+  const es = new EventSource(url);
+  es.onmessage = (e) => {
+    if (e.data === 'heartbeat') return;
+    if (e.data === 'items') requestItemsSilentRefresh();
+  };
+  es.onerror = () => console.warn('[SSE items] connection issue, browser will auto-retry');
+}
+connectItemsSSE();
+function cancelSub(pid){
+  document.querySelector(`tr[data-sf="${pid}"]`)?.classList.add('hide');
+  if(openSubKey===pid) openSubKey=null;
+  isEditingRow=false;
+  flushItemsPendingRefresh();
+}
+
+function addRow(){
+  if(!CAN_ADD) return;
+  if(document.getElementById('nName')){
+    alert('มีแถวเพิ่มสินค้าอยู่แล้ว');
+    scrollTo(0,0);
+    return;
+  }
+  isEditingRow=true;
+  const tb=document.getElementById('tb'),tr=document.createElement('tr');
+  tr.style.background='#EEF2FF';
+  tr.innerHTML=`<td><em style="color:#6b7280;font-size:12px">auto</em></td><td><input type="text" id="nName" placeholder="ชื่อสินค้า" class="finput"></td><td><input type="number" id="nQty" value="0" readonly class="finput"></td><td><input type="text" id="nBrand" placeholder="ยี่ห้อ" class="finput" oninput="showAc(this,'brand')"></td><td><input type="text" id="nLoc" placeholder="สถานที่เก็บ" class="finput" oninput="showAc(this,'location')"></td><td style="overflow:visible;white-space:normal"><div style="display:flex;flex-direction:column;gap:8px">${bldType('คลัง','nType')}${bldPriv('','nPriv')}</div></td><td style="overflow:visible"><div class="act-btns"><button class="btn btn-save" onclick="saveNew()">บันทึก</button><button class="btn btn-can" onclick="isEditingRow=false;loadPage(pg,false);flushItemsPendingRefresh()">ยกเลิก</button></div></td>`;
+  tb.prepend(tr);
+  scrollTo(0,0);
+}
+
+async function saveNew(){
+  const nm=document.getElementById('nName').value.trim(),pr=document.getElementById('nPriv')?.value||'';
+  if(!pr){alert('กรุณาเลือกบริษัท');return;}
+  if(!nm){alert('กรุณากรอกชื่อ');return;}
+  try{
+    await API.post('/api/items',{name:nm,typeitem:document.getElementById('nType').value,location:document.getElementById('nLoc').value.trim(),brand:document.getElementById('nBrand').value.trim(),quantity:'0',privilege:pr});
+    toast('เพิ่มสินค้าเรียบร้อย');
+    isEditingRow=false;
+    await loadPage(pg,false);
+    flushItemsPendingRefresh();
+  }catch(e){
+    toast(e.message,true);
+  }
+}
+
+async function saveSub(pid){
+  if(!CAN_ADD) return;
+  const cid=ci(pid),nm=(document.getElementById('sn_'+cid)?.value||'').trim();
+  if(!nm){alert('กรุณากรอกชื่อ');return;}
+  const par=products.find(p=>(p._pid||p.iditem)===pid);
+  if(!par) return;
+  try{
+    await API.post('/api/items/sub',{parentId:pid,name:nm,brand:(document.getElementById('sb_'+cid)?.value||'').trim()||par.brand||'',location:(document.getElementById('sl_'+cid)?.value||'').trim()||par.location||'',typeitem:par.typeitem||'คลัง',quantity:'0',privilege:par.privilege||''});
+    toast('เพิ่มรายการย่อยเรียบร้อย');
+    openSubKey=null;
+    isEditingRow=false;
+    await loadPage(pg,false);
+    flushItemsPendingRefresh();
+  }catch(e){
+    toast(e.message,true);
+  }
+}
+
+function editRow(i){
+  if(!CAN_EDIT) return;
+  isEditingRow=true;
+  const item=products[i],key=item._pid||item.iditem,row=document.querySelector(`tr[data-pid="${key}"]`);
+  if(!row) return;
+  const uid=ci(item.iditem);
+  row.style.background='#EEF2FF';
+  row.innerHTML=`<td><strong>${item.iditem}</strong></td><td><input type="text" id="eN_${uid}" value="${eh(item.name)}" class="finput"></td><td><input type="number" id="eQ_${uid}" value="${item.quantity}" class="finput"></td><td><input type="text" id="eB_${uid}" value="${eh(item.brand||'')}" class="finput" oninput="showAc(this,'brand')"></td><td><input type="text" id="eL_${uid}" value="${eh(item.location||'')}" class="finput" oninput="showAc(this,'location')"></td><td style="overflow:visible;white-space:normal"><div style="display:flex;flex-direction:column;gap:8px">${bldType(item.typeitem,'eT_'+uid)}${bldPriv(item.privilege||'','eP_'+uid)}</div></td><td style="overflow:visible"><div class="act-btns"><button class="btn btn-save" onclick="saveEdit(${i})">บันทึก</button><button class="btn btn-can" onclick="isEditingRow=false;render();flushItemsPendingRefresh()">ยกเลิก</button></div></td>`;
+}
+
+async function saveEdit(i){
+  const item=products[i],uid=ci(item.iditem),nm=document.getElementById('eN_'+uid).value.trim(),pr=document.getElementById('eP_'+uid)?.value||'';
+  if(!pr){alert('กรุณาเลือกบริษัท');return;}
+  if(!nm){alert('กรุณากรอกชื่อ');return;}
+  try{
+    await API.put('/api/items/'+encodeURIComponent(item.iditem),{name:nm,quantity:document.getElementById('eQ_'+uid).value,typeitem:document.getElementById('eT_'+uid).value,location:document.getElementById('eL_'+uid).value.trim(),brand:document.getElementById('eB_'+uid).value.trim(),privilege:pr});
+    toast('บันทึกสำเร็จ');
+    isEditingRow=false;
+    await loadPage(pg,false);
+    flushItemsPendingRefresh();
+  }catch(e){
+    toast(e.message,true);
+  }
+}
+
+async function delRow(i){
+  if(!CAN_EDIT) return;
+  const item=products[i];
+  let cnt=0;
+  try{cnt=(await API.get('/api/items/'+encodeURIComponent(item.iditem)+'/tx-count')).count||0}catch(e){}
+  if(!confirm(cnt>0?`⚠️ ${item.iditem}\nมี Transaction ${cnt} รายการ\nดำเนินการต่อ?`:`ต้องการลบ ${item.iditem}?`)) return;
+  try{
+    await API.del('/api/items/'+encodeURIComponent(item.iditem));
+    toast('ลบเรียบร้อย');
+    await loadPage(pg,false);
+    flushItemsPendingRefresh();
+  }catch(e){
+    toast(e.message,true);
+  }
+}
+
+function editSub(pid,si){
+  if(!CAN_EDIT) return;
+  isEditingRow=true;
+  const sub=(subs[pid]||[])[si];
+  if(!sub) return;
+  const subTr=[...document.querySelectorAll(`tr[data-so="${pid}"]`)].find(r=>r.querySelector('td')?.textContent.trim()===sub.iditem);
+  if(!subTr) return;
+  const uid=ci(sub.iditem);
+  subTr.style.background='#EEF2FF';
+  subTr.innerHTML=`<td style="padding-left:48px"><strong>${sub.iditem}</strong></td><td><input type="text" id="seN_${uid}" value="${eh(sub.name)}" class="finput"></td><td><input type="number" id="seQ_${uid}" value="${sub.quantity}" class="finput"></td><td><input type="text" id="seB_${uid}" value="${eh(sub.brand||'')}" class="finput" oninput="showAc(this,'brand')"></td><td><input type="text" id="seL_${uid}" value="${eh(sub.location||'')}" class="finput" oninput="showAc(this,'location')"></td><td style="overflow:visible;white-space:normal"><div style="display:flex;flex-direction:column;gap:8px">${bldType(sub.typeitem,'seT_'+uid)}${bldPriv(sub.privilege||'','seP_'+uid)}</div></td><td style="overflow:visible"><div class="act-btns"><button class="btn btn-save" onclick="saveSubEdit('${ej(pid)}',${si})">บันทึก</button><button class="btn btn-can" onclick="isEditingRow=false;render();flushItemsPendingRefresh()">ยกเลิก</button></div></td>`;
+}
+
+async function saveSubEdit(pid,si){
+  const sub=(subs[pid]||[])[si];
+  if(!sub) return;
+  const uid=ci(sub.iditem),nm=document.getElementById('seN_'+uid).value.trim();
+  if(!nm){alert('กรุณากรอกชื่อ');return;}
+  try{
+    await API.put('/api/items/'+encodeURIComponent(sub.iditem),{name:nm,quantity:document.getElementById('seQ_'+uid).value,brand:document.getElementById('seB_'+uid).value.trim(),location:document.getElementById('seL_'+uid).value.trim(),typeitem:document.getElementById('seT_'+uid).value,privilege:document.getElementById('seP_'+uid)?.value||''});
+    toast('บันทึกสำเร็จ');
+    isEditingRow=false;
+    await loadPage(pg,false);
+    flushItemsPendingRefresh();
+  }catch(e){
+    toast(e.message,true);
+  }
+}
+
+async function delSub(pid,si){
+  if(!CAN_EDIT) return;
+  const sub=(subs[pid]||[])[si];
+  if(!sub||!confirm(`ลบ ${sub.iditem}?`)) return;
+  try{
+    await API.del('/api/items/'+encodeURIComponent(sub.iditem));
+    toast('ลบเรียบร้อย');
+    await loadPage(pg,false);
+    flushItemsPendingRefresh();
+  }catch(e){
+    toast(e.message,true);
+  }
+}
+
+function closeTx(){
+  document.getElementById('txOv').classList.remove('on');
+  flushItemsPendingRefresh();
+}
 </script>
 </body>
 </html>

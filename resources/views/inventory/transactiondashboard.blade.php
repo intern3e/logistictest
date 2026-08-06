@@ -254,6 +254,9 @@ const ROLE=@json($authRole);
 const COLS=ROLE==='admin'?11:10;
 const PG=100;
 const typeMap={'รับเข้าสต็อก':'t-in','คืนเข้าสต็อก':'t-ret','ขายสินค้าออก':'t-sell','ยืมสินค้า':'t-bor','เบิกของ':'t-wit'};
+const NEST_URL=@json($nestUrl);
+const NEST_KEY=@json($nestKey);
+let isEditingTxRow = false;
 
 const API={
   async get(u){return(await fetch(u)).json()},
@@ -275,7 +278,7 @@ function hideOv(){
   clearInterval(progressInterval);
   document.getElementById('progressBar').style.width = '100%';
   document.getElementById('ovPercent').textContent = '100%';
-  
+
   setTimeout(() => {
     document.getElementById('ov').classList.remove('on');
     setTimeout(() => {
@@ -289,9 +292,9 @@ function startProgressSimulation(){
   let progress = 0;
   const bar = document.getElementById('progressBar');
   const text = document.getElementById('ovPercent');
-  
+
   clearInterval(progressInterval);
-  
+
   progressInterval = setInterval(() => {
     if (progress < 30) {
       progress += Math.random() * 15;
@@ -300,11 +303,11 @@ function startProgressSimulation(){
     } else if (progress < 90) {
       progress += Math.random() * 3;
     } else {
-      progress = 90; 
+      progress = 90;
     }
-    
+
     if (progress > 90) progress = 90;
-    
+
     bar.style.width = Math.floor(progress) + '%';
     text.textContent = Math.floor(progress) + '%';
   }, 150);
@@ -318,7 +321,6 @@ function toast(m,e){const t=document.getElementById('toast');t.textContent=m;t.s
 // ส่วนแสดงรูปภาพ — แก้ CSP: ใช้ img + lh3 thumbnail แทน iframe
 // ============================================================
 
-// ดึง file ID จาก Google Drive URL
 function extractGoogleDriveFileId(url){
   if(!url) return null;
   const patterns = [
@@ -333,17 +335,14 @@ function extractGoogleDriveFileId(url){
   return null;
 }
 
-// แปลงเป็น direct image URL (ไม่โดน CSP บล็อก)
 function convertToDirectImageUrl(url){
   const fileId = extractGoogleDriveFileId(url);
   if(fileId){
-    // ใช้ lh3.googleusercontent.com — โหลดเป็น img ได้โดยไม่ต้อง iframe
     return `https://lh3.googleusercontent.com/d/${fileId}`;
   }
-  return url; // ถ้าไม่ใช่ Google Drive ก็ใช้ URL เดิม
+  return url;
 }
 
-// สร้าง Google Drive view link (สำหรับปุ่ม "เปิดใน Google Drive")
 function getGoogleDriveViewUrl(url){
   const fileId = extractGoogleDriveFileId(url);
   if(fileId){
@@ -352,53 +351,46 @@ function getGoogleDriveViewUrl(url){
   return url;
 }
 
-// เก็บ URL เดิมไว้สำหรับ fallback
 let _currentOriginalUrl = '';
 
-// เปิดรูปภาพใน popup modal
 function openGoogleDriveImage(url){
   if(!url){
     toast('ไม่มีรูปภาพ', true);
     return;
   }
-  
+
   _currentOriginalUrl = url;
-  
+
   const imgEl = document.getElementById('modalImg');
   const loadingEl = document.getElementById('modalLoading');
   const errorEl = document.getElementById('modalError');
   const openLink = document.getElementById('modalOpenLink');
   const fallbackLink = document.getElementById('modalFallbackLink');
-  
-  // ตั้ง link เปิดใน Google Drive
+
   const viewUrl = getGoogleDriveViewUrl(url);
   openLink.href = viewUrl;
   fallbackLink.href = viewUrl;
-  
-  // Reset state
+
   imgEl.style.display = 'none';
   errorEl.style.display = 'none';
   loadingEl.style.display = 'block';
-  
-  // แปลง URL เป็น direct image
+
   const directUrl = convertToDirectImageUrl(url);
-  
-  // ตั้ง event handlers ก่อน set src
+
   imgEl.onload = function(){
     loadingEl.style.display = 'none';
     errorEl.style.display = 'none';
     imgEl.style.display = 'block';
   };
-  
+
   imgEl.onerror = function(){
     loadingEl.style.display = 'none';
     imgEl.style.display = 'none';
     errorEl.style.display = 'block';
   };
-  
+
   imgEl.src = directUrl;
-  
-  // เปิด modal
+
   document.getElementById('modalOv').classList.add('on');
   document.body.style.overflow = 'hidden';
 }
@@ -407,7 +399,7 @@ function closeModal(){
   document.getElementById('modalOv').classList.remove('on');
   document.body.style.overflow = '';
   _currentOriginalUrl = '';
-  
+
   setTimeout(() => {
     const imgEl = document.getElementById('modalImg');
     imgEl.src = '';
@@ -415,14 +407,13 @@ function closeModal(){
     document.getElementById('modalLoading').style.display = 'none';
     document.getElementById('modalError').style.display = 'none';
   }, 300);
+  flushTxPendingRefresh();
 }
 
-// Close modal with Escape key
 document.addEventListener('keydown', function(e){
   if(e.key === 'Escape') closeModal();
 });
 
-// Close modal when clicking outside
 document.getElementById('modalOv').addEventListener('click', function(e){
   if(e.target === this) closeModal();
 });
@@ -458,13 +449,13 @@ async function loadPage(page, showLoader){
 function render(){
   const tb=document.getElementById('tb');tb.innerHTML='';
   if(!pageData.length){tb.innerHTML=`<tr><td colspan="${COLS}" style="text-align:center;padding:40px;color:#9ca3af">ไม่มีรายการ (${total} ทั้งหมด)</td></tr>`;renderPg();return}
-  
+
   pageData.forEach((row,i)=>{
     const type=row['ประเภทข้อมูล']||'',tc=typeMap[type]||'';
-    
+
     const tr=document.createElement('tr');
     tr.innerHTML=`<td style="white-space:nowrap">${row['Timestamp']||'-'}</td><td>${row['ชื่อผู้ดำเนินงาน']||'-'}</td><td class="tc ${tc}">${type||'-'}</td><td>${row['หมายเลขเอกสาร']||'-'}</td><td>${row['รายการ']||'-'}</td><td>${row['จำนวน']!==''?row['จำนวน']:'-'}</td><td>${ROLE==='viewer'?'-':(row['ราคาต่อหน่วย']!==''?row['ราคาต่อหน่วย']:'-')}</td><td>${row['ชั้นวาง']||'-'}</td><td>${row['หมายเหตุ']||'-'}</td><td></td>`;
-    
+
     if(row['รูปประกอบ']){
       const btn = document.createElement('button');
       btn.className = 'view-img-btn';
@@ -476,7 +467,7 @@ function render(){
     } else {
       tr.cells[9].textContent = '-';
     }
-    
+
     if(ROLE==='admin'){
       const tdActs = document.createElement('td');
       tdActs.className = 'acts';
@@ -487,7 +478,7 @@ function render(){
       tdActs.appendChild(editBtn);
       tr.appendChild(tdActs);
     }
-    
+
     tb.appendChild(tr);
   });
   renderPg();
@@ -495,9 +486,9 @@ function render(){
 
 function renderPg(){
   const el=document.getElementById('paging');el.innerHTML='';
-  if(pg>1){const b=document.createElement('button');b.className='pg-btn';b.textContent='← ก่อนหน้า';b.onclick=()=>{loadPage(pg-1,true);scrollTo(0,0)};el.appendChild(b)}
+  if(pg>1){const b=document.createElement('button');b.className='pg-btn';b.textContent='← ก่อนหน้า';b.onclick=()=>{loadPage(pg-1,false);scrollTo(0,0)};el.appendChild(b)}
   const s=document.createElement('span');s.className='pg-info';s.textContent=`หน้า ${pg} / ${lastPage} (${total.toLocaleString()} รายการ)`;el.appendChild(s);
-  if(pg<lastPage){const b=document.createElement('button');b.className='pg-btn';b.textContent='ถัดไป →';b.onclick=()=>{loadPage(pg+1,true);scrollTo(0,0)};el.appendChild(b)}
+  if(pg<lastPage){const b=document.createElement('button');b.className='pg-btn';b.textContent='ถัดไป →';b.onclick=()=>{loadPage(pg+1,false);scrollTo(0,0)};el.appendChild(b)}
 }
 
 function applyFilter(){
@@ -506,19 +497,46 @@ function applyFilter(){
 }
 function clearFilter(){
   ['fBill','fItem','fDate','fType','fShelf','fOp'].forEach(id=>document.getElementById(id).value='');
-  loadPage(1,true);
+  loadPage(1,false);
 }
 
 function editRow(i){
   if(ROLE!=='admin')return;
+  isEditingTxRow = true;
   const row=pageData[i],tr=document.getElementById('tb').children[i];if(!tr)return;tr.style.background='#EEF2FF';
   const types=['รับเข้าสต็อก','คืนเข้าสต็อก','ขายสินค้าออก','ยืมสินค้า','เบิกของ'];
-  tr.innerHTML=`<td style="white-space:nowrap;font-size:12px">${row['Timestamp']||'-'}</td><td><input class="edit-input" id="eOp" value="${(row['ชื่อผู้ดำเนินงาน']||'').replace(/"/g, '&quot;')}"></td><td><select id="eType" class="edit-input">${types.map(t=>`<option ${row['ประเภทข้อมูล']===t?'selected':''}>${t}</option>`).join('')}</select></td><td><input class="edit-input" id="eBill" value="${(row['หมายเลขเอกสาร']||'').replace(/"/g, '&quot;')}"></td><td style="color:#374151;font-size:13px">${(row['รายการ']||'-').replace(/"/g, '&quot;')}</td><td><input class="edit-input" id="eQty" value="${row['จำนวน']||''}" type="number"></td><td><input class="edit-input" id="ePrice" value="${row['ราคาต่อหน่วย']!==''&&row['ราคาต่อหน่วย']!=null?row['ราคาต่อหน่วย']:''}" type="number" step="0.001"></td><td><input class="edit-input" id="eShelf" value="${(row['ชั้นวาง']||'').replace(/"/g, '&quot;')}"></td><td><input class="edit-input" id="eNote" value="${(row['หมายเหตุ']||'').replace(/"/g, '&quot;')}"></td><td><input type="hidden" id="eImg" value="${(row['รูปประกอบ']||'').replace(/"/g, '&quot;')}">-</td><td class="acts"><button class="a-save" onclick="saveRow(${i})">บันทึก</button><button class="a-del" onclick="delRow(${i})">ลบ</button><button class="a-can" onclick="loadPage(pg,false)">ยกเลิก</button></td>`;
+  tr.innerHTML=`<td style="white-space:nowrap;font-size:12px">${row['Timestamp']||'-'}</td><td><input class="edit-input" id="eOp" value="${(row['ชื่อผู้ดำเนินงาน']||'').replace(/"/g, '&quot;')}"></td><td><select id="eType" class="edit-input">${types.map(t=>`<option ${row['ประเภทข้อมูล']===t?'selected':''}>${t}</option>`).join('')}</select></td><td><input class="edit-input" id="eBill" value="${(row['หมายเลขเอกสาร']||'').replace(/"/g, '&quot;')}"></td><td style="color:#374151;font-size:13px">${(row['รายการ']||'-').replace(/"/g, '&quot;')}</td><td><input class="edit-input" id="eQty" value="${row['จำนวน']||''}" type="number"></td><td><input class="edit-input" id="ePrice" value="${row['ราคาต่อหน่วย']!==''&&row['ราคาต่อหน่วย']!=null?row['ราคาต่อหน่วย']:''}" type="number" step="0.001"></td><td><input class="edit-input" id="eShelf" value="${(row['ชั้นวาง']||'').replace(/"/g, '&quot;')}"></td><td><input class="edit-input" id="eNote" value="${(row['หมายเหตุ']||'').replace(/"/g, '&quot;')}"></td><td><input type="hidden" id="eImg" value="${(row['รูปประกอบ']||'').replace(/"/g, '&quot;')}">-</td><td class="acts"><button class="a-save" onclick="saveRow(${i})">บันทึก</button><button class="a-del" onclick="delRow(${i})">ลบ</button><button class="a-can" onclick="isEditingTxRow=false;loadPage(pg,false);flushTxPendingRefresh()">ยกเลิก</button></td>`;
 }
 
-async function saveRow(i){const row=pageData[i];const op=document.getElementById('eOp').value.trim(),bill=document.getElementById('eBill').value.trim();if(!op||!bill){alert('กรุณากรอกข้อมูลให้ครบ');return}if(!confirm('ต้องการบันทึก?'))return;showOv();try{await API.put('/api/transaction/'+encodeURIComponent(row.transaction_id),{operator:op,type:document.getElementById('eType').value,bill,quantity:document.getElementById('eQty').value,price:document.getElementById('ePrice').value||'',shelf:document.getElementById('eShelf').value.trim(),note:document.getElementById('eNote').value.trim(),image:document.getElementById('eImg').value.trim(),oldQuantity:row['จำนวน'],oldType:row['ประเภทข้อมูล'],oldItemId:row['item_id']});toast('บันทึกสำเร็จ');await loadPage(pg,true)}catch(e){toast(e.message,true);hideOv()}}
+async function saveRow(i){
+  const row=pageData[i];
+  const op=document.getElementById('eOp').value.trim(),bill=document.getElementById('eBill').value.trim();
+  if(!op||!bill){alert('กรุณากรอกข้อมูลให้ครบ');return}
+  if(!confirm('ต้องการบันทึก?'))return;
+  try{
+    await API.put('/api/transaction/'+encodeURIComponent(row.transaction_id),{operator:op,type:document.getElementById('eType').value,bill,quantity:document.getElementById('eQty').value,price:document.getElementById('ePrice').value||'',shelf:document.getElementById('eShelf').value.trim(),note:document.getElementById('eNote').value.trim(),image:document.getElementById('eImg').value.trim(),oldQuantity:row['จำนวน'],oldType:row['ประเภทข้อมูล'],oldItemId:row['item_id']});
+    toast('บันทึกสำเร็จ');
+    isEditingTxRow=false;
+    await loadPage(pg,false);
+    flushTxPendingRefresh();
+  }catch(e){
+    toast(e.message,true);
+  }
+}
 
-async function delRow(i){const row=pageData[i];if(!confirm(`ลบรายการ?\nเอกสาร: ${row['หมายเลขเอกสาร']}\nรายการ: ${row['รายการ']}`))return;showOv();try{await API.del('/api/transaction/'+encodeURIComponent(row.transaction_id));toast('ลบเรียบร้อย');await loadPage(pg,true)}catch(e){toast(e.message,true);hideOv()}}
+async function delRow(i){
+  const row=pageData[i];
+  if(!confirm(`ลบรายการ?\nเอกสาร: ${row['หมายเลขเอกสาร']}\nรายการ: ${row['รายการ']}`))return;
+  try{
+    await API.del('/api/transaction/'+encodeURIComponent(row.transaction_id));
+    toast('ลบเรียบร้อย');
+    isEditingTxRow=false;
+    await loadPage(pg,false);
+    flushTxPendingRefresh();
+  }catch(e){
+    toast(e.message,true);
+  }
+}
 
 let _fontN=null,_fontB=null;
 
@@ -547,8 +565,10 @@ async function generatePDF(){
   const dateEl=document.getElementById('fDate');
   if(!dateEl.value){alert('กรุณาเลือกวันที่');return}
   if(typeof window.jspdf==='undefined'){alert('กำลังโหลด library PDF กรุณารอสักครู่แล้วลองอีกครั้ง');return}
-  const btn=document.getElementById('pdfBtn');btn.disabled=true;
-  showOv('กำลังสร้าง PDF...');
+  const btn=document.getElementById('pdfBtn');
+  btn.disabled=true;
+  const originalLabel=btn.textContent;
+  btn.textContent='กำลังสร้าง...';
   try{
     const res=await API.get(buildQuery(1,1000000));
     let dataToUse=res.data||[];
@@ -612,11 +632,46 @@ async function generatePDF(){
     console.error(err);
     alert('Error: '+err.message);
   }finally{
-    btn.disabled=false;hideOv();
+    btn.disabled=false;
+    btn.textContent=originalLabel;
   }
 }
 
+// โหลดข้อมูลครั้งแรกตอนเข้าหน้า — จุดเดียวที่แสดง overlay progress bar
 loadPage(1,true);
+
+// ══════════════ REALTIME (SSE) ══════════════
+let txRefreshPending = false;
+let txRefreshDebounce = null;
+
+function isBusyEditingTx(){
+  return document.getElementById('modalOv').classList.contains('on') || isEditingTxRow;
+}
+
+function requestTxSilentRefresh(){
+  clearTimeout(txRefreshDebounce);
+  txRefreshDebounce = setTimeout(() => {
+    if (isBusyEditingTx()) { txRefreshPending = true; return; }
+    loadPage(pg, false);
+  }, 300);
+}
+
+function flushTxPendingRefresh(){
+  if (!txRefreshPending || isBusyEditingTx()) return;
+  txRefreshPending = false;
+  loadPage(pg, false);
+}
+
+function connectTransactionSSE(){
+  const url = `${NEST_URL}/transaction/events?key=${encodeURIComponent(NEST_KEY)}`;
+  const es = new EventSource(url);
+  es.onmessage = (e) => {
+    if (e.data === 'heartbeat') return;
+    if (e.data === 'transaction' || e.data === 'items') requestTxSilentRefresh();
+  };
+  es.onerror = () => console.warn('[SSE transaction] connection issue, browser will auto-retry');
+}
+connectTransactionSSE();
 </script>
 </body>
 </html>

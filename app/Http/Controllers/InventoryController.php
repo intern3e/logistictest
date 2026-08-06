@@ -54,6 +54,8 @@ class InventoryController extends Controller
         return view('inventory.transactiondashboard', [
             'authUser' => $authUser,
             'authRole' => $authUser['auth'] ?? 'viewer',
+            'nestUrl'  => config('services.nest.url'),
+            'nestKey'  => config('services.nest.public_key'),
         ]);
     }
 
@@ -63,6 +65,8 @@ class InventoryController extends Controller
         return view('inventory.inventorydashboard', [
             'authUser' => $authUser,
             'authRole' => $authUser['auth'] ?? 'viewer',
+            'nestUrl'  => config('services.nest.url'),
+            'nestKey'  => config('services.nest.public_key'),
         ]);
     }
 
@@ -92,11 +96,14 @@ class InventoryController extends Controller
         }
     }
 
-    // ═══════════════ OPTIMIZED PAGINATION (NEW) ═══════════════
-    
+    // ═══════════════ OPTIMIZED PAGINATION ═══════════════
+    // หมายเหตุ: ตัดการแคชรายการ items ออกแล้ว (เดิมแคช 300 วิ ทำให้ข้อมูลที่เพิ่ม/ลบ
+    // จากแหล่งอื่นไม่อัปเดตทันที) ตอนนี้ดึงข้อมูลสดจาก API ทุกครั้งที่เรียกหน้านี้
+    // ส่วน brands/locations (ใช้แค่ autocomplete) ยังคงแคชไว้เพื่อความเร็ว ไม่กระทบข้อมูลจริง
+
     private function clearItemsCache(): void 
     { 
-        Cache::forget('all_items_list'); 
+        Cache::forget('all_items_list'); // เก็บไว้เผื่อโค้ดเก่าที่อื่นอ้างถึง key นี้ (ปัจจุบันไม่ได้ใช้แคชนี้แล้ว)
         Cache::forget('predicted_brands'); 
         Cache::forget('predicted_locations'); 
     }
@@ -113,10 +120,9 @@ class InventoryController extends Controller
             $priv = $request->input('priv', '');
             $type = $request->input('type', '');
 
-            // 2. ดึงข้อมูลและ Cache ไว้ 5 นาที (300 วินาที) เพื่อลดการเรียก API ภายนอกซ้ำๆ
-            $rawItems = Cache::remember('all_items_list', 300, function () {
-                return $this->api('GET', '/items') ?? [];
-            });
+            // 2. ดึงข้อมูลสดจาก API ทุกครั้ง (ไม่แคช) เพื่อให้ข้อมูลตรงกับความจริงเสมอ
+            //    ไม่ว่าจะมีการเพิ่ม/แก้/ลบจากที่ไหนก็ตาม หน้านี้จะเห็นข้อมูลล่าสุดทันที
+            $rawItems = $this->api('GET', '/items') ?? [];
 
             $items = collect($rawItems)->map(fn($r) => [
                 'iditem'    => $r['iditem'] ?? $r['item_id'] ?? '',
@@ -183,7 +189,7 @@ class InventoryController extends Controller
             $offset = ($page - 1) * $limit;
             $paginatedProducts = array_slice($products, $offset, $limit);
 
-            // 7. ดึง Brands/Locations สำหรับ Autocomplete (พร้อม Cache)
+            // 7. ดึง Brands/Locations สำหรับ Autocomplete (ยังคงแคชไว้ได้ ไม่กระทบข้อมูลสินค้าจริง)
             $brands = Cache::remember('predicted_brands', 300, function () {
                 return collect($this->api('GET', '/predicted/brands') ?? [])
                     ->map(fn($r) => is_string($r) ? $r : ($r['brand'] ?? ''))->filter()->values()->all();
@@ -225,7 +231,7 @@ class InventoryController extends Controller
             'privilege' => $d['privilege'] ?? '',
         ]);
         
-        $this->clearItemsCache(); // เพิ่ม: ล้าง cache
+        $this->clearItemsCache();
         return response()->json(['success' => true, 'data' => $result]);
     }
 
@@ -246,7 +252,7 @@ class InventoryController extends Controller
             'privilege' => $d['privilege'] ?? '',
         ]);
         
-        $this->clearItemsCache(); // เพิ่ม: ล้าง cache
+        $this->clearItemsCache();
         return response()->json(['success' => true, 'data' => $result]);
     }
 
@@ -266,7 +272,7 @@ class InventoryController extends Controller
             'privilege' => $d['privilege'] ?? '',
         ]);
         
-        $this->clearItemsCache(); // เพิ่ม: ล้าง cache
+        $this->clearItemsCache();
         return response()->json(['success' => true]);
     }
 
@@ -283,7 +289,7 @@ class InventoryController extends Controller
         
         $this->api('DELETE', '/items/' . urlencode($id));
         $this->clearTxCache();
-        $this->clearItemsCache(); // เพิ่ม: ล้าง cache
+        $this->clearItemsCache();
         return response()->json(['success' => true]);
     }
 
@@ -296,49 +302,51 @@ class InventoryController extends Controller
         }
     }
 
+    // หมายเหตุ: ตัดการแคช 'all_transactions' ออกแล้ว (เดิมแคช 300 วิ ทำให้ transaction
+    // ที่เพิ่ง add/update/delete จากที่อื่นไม่ขึ้นทันที) ตอนนี้ดึงสดจาก API ทุกครั้ง
     private function fetchAllTransactions(): array
     {
-        return Cache::remember('all_transactions', 300, function () {
-            $limit = 5000;
-            $headers = ['Accept' => 'application/json', 'x-api-key' => $this->apiKey];
+        $limit = 5000;
+        $headers = ['Accept' => 'application/json', 'x-api-key' => $this->apiKey];
 
-            try {
-                $first = Http::withHeaders($headers)->timeout(60)
-                             ->get($this->baseUrl . "/transaction?page=1&limit={$limit}");
-            } catch (\Throwable $e) {
-                Log::error('fetchAllTransactions page1 failed: ' . $e->getMessage());
-                return [];
-            }
+        try {
+            $first = Http::withHeaders($headers)->timeout(60)
+                         ->get($this->baseUrl . "/transaction?page=1&limit={$limit}");
+        } catch (\Throwable $e) {
+            Log::error('fetchAllTransactions page1 failed: ' . $e->getMessage());
+            return [];
+        }
 
-            $all = $first->ok() ? ($first->json() ?? []) : [];
-            if (count($all) < $limit) return $all;
-
-            $responses = Http::pool(function ($pool) use ($headers, $limit) {
-                for ($p = 2; $p <= 50; $p++) {
-                    $pool->as("p{$p}")
-                         ->withHeaders($headers)->timeout(60)
-                         ->get($this->baseUrl . "/transaction?page={$p}&limit={$limit}");
-                }
-            });
-
-            foreach ($responses as $key => $res) {
-                if (!($res instanceof \Illuminate\Http\Client\Response)) {
-                    Log::warning("fetchAllTransactions {$key} connection failed: " . ($res->getMessage() ?? 'unknown'));
-                    continue;
-                }
-                if (!$res->ok()) continue;
-                $rows = $res->json() ?? [];
-                if (empty($rows)) break;
-                $all = array_merge($all, $rows);
-                if (count($rows) < $limit) break;
-            }
-
+        $all = $first->ok() ? ($first->json() ?? []) : [];
+        if (count($all) < $limit) {
             return collect($all)->map(fn($r) => $this->mapTx($r))->values()->all();
+        }
+
+        $responses = Http::pool(function ($pool) use ($headers, $limit) {
+            for ($p = 2; $p <= 50; $p++) {
+                $pool->as("p{$p}")
+                     ->withHeaders($headers)->timeout(60)
+                     ->get($this->baseUrl . "/transaction?page={$p}&limit={$limit}");
+            }
         });
+
+        foreach ($responses as $key => $res) {
+            if (!($res instanceof \Illuminate\Http\Client\Response)) {
+                Log::warning("fetchAllTransactions {$key} connection failed: " . ($res->getMessage() ?? 'unknown'));
+                continue;
+            }
+            if (!$res->ok()) continue;
+            $rows = $res->json() ?? [];
+            if (empty($rows)) break;
+            $all = array_merge($all, $rows);
+            if (count($rows) < $limit) break;
+        }
+
+        return collect($all)->map(fn($r) => $this->mapTx($r))->values()->all();
     }
     
     private function clearTxCache(): void { 
-        Cache::forget('all_transactions'); 
+        Cache::forget('all_transactions'); // เก็บไว้เผื่อโค้ดเก่าที่อื่นอ้างถึง key นี้ (ปัจจุบันไม่ได้ใช้แคชนี้แล้ว)
     }
 
     public function getTransactionPage(Request $request)
@@ -385,7 +393,7 @@ class InventoryController extends Controller
                 return response()->json(collect($d)->map(fn($r) => $this->mapTx($r))->values());
         } catch (\Throwable $e) {}
 
-        // fallback: ใช้ cache
+        // fallback: ดึงสดทุกรายการแล้วกรอง
         return response()->json(
             collect($this->fetchAllTransactions())->where('item_id', $itemId)->values()
         );
@@ -479,7 +487,7 @@ class InventoryController extends Controller
                 'page'     => $user->page ?? '',
             ]);
         }
-        if (!Session::has('user')) abort(403, 'กรุณาเข้าระบบ ก่อนเข้าใช้งาน');
+        if (!Session::has('user')) abort(403, 'กรุณาเข้าสู่ระบบ ก่อนใช้งาน');
         return Session::get('user');
     }
     
