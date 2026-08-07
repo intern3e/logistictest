@@ -361,7 +361,7 @@ Route::get('/inventory',              [InventoryController::class, 'entry']);
  
 // API: Items
 Route::get('/api/items/pagedata',      [InventoryController::class, 'getPageData']);
-Route::get('/api/items/paged',         [InventoryController::class, 'getPagedItems']); // ✅ เพิ่มบรรทัดนี้ (Optimized Pagination)
+Route::get('/api/items/paged',         [InventoryController::class, 'getPagedItems']); 
 Route::post('/api/items',              [InventoryController::class, 'addProduct']);
 Route::post('/api/items/sub',          [InventoryController::class, 'addSubProduct']);
 Route::put('/api/items/{id}',          [InventoryController::class, 'updateProduct']);

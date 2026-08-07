@@ -86,60 +86,95 @@
         }
         .table-summary { font-size:12px; color:var(--muted); }
 
-        /* ===== Action toolbar (มุมขวาบนของตาราง) ===== */
+        /* ===== Action toolbar (มุมขวาบนของตาราง) — ฟ้าเต็มกล่อง ===== */
         .action-toolbar {
-            display:flex; align-items:flex-end; gap:10px; flex-wrap:wrap;
-            border:1px solid var(--border); background:var(--primary-light);
-            padding:10px 14px; margin-left:auto;
+            display:flex;
+            align-items:center;
+            gap:10px;
+            flex-wrap:wrap;
+            background-color:var(--primary);
+            border:1px solid var(--primary-dark);
+            border-radius:8px;
+            padding:14px 16px;
+            margin-left:auto;
+        }
+        .action-toolbar .filter-field {
+            display:flex;
+            flex-direction:column;
+            gap:4px;
+            justify-content:center;
+        }
+        .action-toolbar .filter-field label {
+            color:#dbeafe;
+            font-size:11px; font-weight:700;
         }
         .action-toolbar .selcount {
-            font-size:13px; font-weight:700; color:var(--primary-dark);
-            padding:0 6px 8px 0;
+            font-size:13px; font-weight:700; color:#fff;
+            padding-right:6px;
+        }
+        .action-toolbar select,
+        .action-toolbar input[type="text"] {
+            background:#fff; color:var(--ink);
+            border:1px solid var(--primary-dark);
+            border-radius:4px;
+        }
+        .action-toolbar .divider {
+            width:1px; align-self:stretch;
+            background:rgba(255,255,255,.35);
+            margin:0 4px;
         }
         #inpSheets { width:70px; text-align:center; }
-        .action-toolbar .divider { width:1px; align-self:stretch; background:var(--border); margin:0 4px; }
 
         /* ===== Table ===== */
-        table { width:100%; min-width:820px; border-collapse:collapse; background:var(--canvas); border:1px solid var(--border); overflow:hidden; }
-        caption { text-align:left; padding:8px 2px; font-size:12px; color:var(--muted); }
-        th,td { border-bottom:1px solid var(--border); border-right:1px solid var(--border); padding:12px 14px; text-align:center; font-size:13px; }
+        table {
+            width:100%; min-width:820px; border-collapse:collapse;
+            background:var(--canvas); border:1px solid var(--border);
+        }
+        th,td {
+            border-bottom:1px solid var(--border);
+            border-right:1px solid #eef0f3;
+            padding:10px 14px; text-align:center; font-size:13px;
+            vertical-align:middle;
+        }
         th:last-child,td:last-child { border-right:none; }
+
         thead th {
             background:var(--primary); color:var(--on-primary);
-            font-weight:700; font-size:13px; letter-spacing:.2px;
-            border-bottom:2px solid var(--primary-dark);
+            font-weight:700; font-size:12.5px;
+            border-bottom:1px solid var(--primary-dark);
             border-right-color:rgba(255,255,255,.25);
         }
-        tbody tr:nth-child(even) { background:#fafbfd; }
-        tbody tr:hover { background:var(--row-hover); }
+        /* zebra ตามกลุ่ม PO ไม่ใช่ตามแถว */
+        tr.po-group-odd td { background:#fafafa; }
+        tr.po-group-even td { background:var(--canvas); }
+        tbody tr:hover td { background:#f4f7fb; }
+
         .num { font-variant-numeric:tabular-nums; }
         .cust-cell { text-align:left; }
         .center { text-align:center; }
         .empty { text-align:center; color:var(--muted); padding:32px; font-style:italic; }
         .muted { font-size:11px; color:var(--muted); }
-        tr.done td { color:#94a3b8; background:var(--row-done); }
-        tr.cancelled td { color:var(--danger-dark); background:#fef2f2; }
-        .items-cell { max-width:320px; text-align:left; }
-        .items-list { display:flex; flex-direction:column; gap:3px; }
-        .item-row {
-            font-size:13px; color:var(--ink); padding:1px 0; line-height:1.4;
-        }
-        .item-row .item-qty { font-variant-numeric:tabular-nums; color:var(--muted); font-weight:600; white-space:nowrap; margin-left:6px; }
-        .items-count { font-size:11px; color:var(--muted); font-weight:600; margin-bottom:3px; }
-        details.items-expand summary { cursor:pointer; color:var(--muted); font-size:11px; list-style:none; font-weight:600; }
-        details.items-expand summary::-webkit-details-marker { display:none; }
-        details.items-expand[open] summary { margin-bottom:4px; }
 
-        /* เน้น 4 คอลัมน์หลัก: PO ภายใน / SO / รายการสินค้า / จำนวนรวม */
-        th.col-key, td.col-key { font-weight:700; font-size:14.5px; color:var(--ink); }
-        tr.done td.col-key, tr.cancelled td.col-key { font-weight:700; }
-        th.col-minor { font-size:12px; font-weight:700; }
+        tr.done td { color:#9ca3af; }
+        tr.cancelled td { color:#b91c1c; background:#fff5f5 !important; }
+
+        .items-cell { max-width:320px; text-align:left; }
+
+        /* คอลัมน์หลักเน้นด้วยน้ำหนักตัวอักษร ไม่ใช้สี */
+        th.col-key, td.col-key { font-weight:600; font-size:13.5px; }
+        th.col-minor { font-size:12px; font-weight:600; }
         td.col-minor { font-size:12px; color:var(--muted); font-weight:400; }
 
-        .status-doing { color:var(--warning); font-weight:600; }
-        .status-done  { color:var(--success); font-weight:600; }
-        a.ref-link { color:var(--primary); font-weight:700; text-decoration:none; }
-        a.ref-link:hover { text-decoration:underline; }
+        a.ref-link { color:var(--ink); font-weight:600; text-decoration:none; border-bottom:1px dashed var(--border); }
+        a.ref-link:hover { border-bottom-color:var(--ink); }
+
+        /* เส้นคั่นระหว่างกลุ่ม PO ให้ชัดขึ้นเล็กน้อย โดยไม่ใช้สี */
+        tr.po-first td { border-top:1px solid var(--border); }
+
+        /* แถวที่เป็น item ตัวรองของ PO เดียวกัน (ไม่มีคอลัมน์ rowspan) ให้ดูจางลงนิดหน่อยกันงง */
+        tr.item-sub td.col-key,
+        tr.item-sub td.items-cell,
+        tr.item-sub td.num { background:#fbfcfe; }
 
         .pagination { margin-top:16px; display:flex; gap:6px; flex-wrap:wrap; }
     </style>
@@ -155,7 +190,7 @@
 <input type="hidden" id="inpUser" value="{{ $creator }}">
 <main>
     {{-- ===== Filter bar ===== --}}
-    <form class="filter-card" method="GET" action="{{ url()->current() }}">
+    <form class="filter-card" id="filterForm" method="GET" action="{{ url()->current() }}">
         @if ($creator)<input type="hidden" name="create_by" value="{{ $creator }}">@endif
         <div class="filter-row">
             <div class="filter-field">
@@ -173,9 +208,8 @@
             <div class="filter-field">
                 <label for="fStatus">สถานะ</label>
                 <select id="fStatus" name="status">
-                    <option value="">-- ทั้งหมด --</option>
                     @foreach ($statuses as $key => $label)
-                        <option value="{{ $key }}" @selected(request('status') === $key)>{{ $label }}</option>
+                        <option value="{{ $key }}" @selected($selectedStatus === $key)>{{ $label }}</option>
                     @endforeach
                 </select>
             </div>
@@ -183,7 +217,7 @@
                 <label>&nbsp;</label>
                 <div style="display:flex; gap:8px;">
                     <button type="submit" class="btn-primary">ค้นหา</button>
-                    @if (request('SONum') || request('internal_id') || request('customer_name') || request('status'))
+                    @if (request('SONum') || request('internal_id') || request('customer_name') || ($selectedStatus !== \App\Models\internal_po::ST_PENDING))
                         <a href="{{ url()->current() }}{{ $creator ? '?create_by='.urlencode($creator) : '' }}">
                             <button type="button" class="btn-ghost">ล้าง</button>
                         </a>
@@ -231,12 +265,11 @@
                 <th class="center" style="width:44px;"><input type="checkbox" id="chkAll"></th>
                 <th class="col-key">PO ภายใน</th>
                 <th class="col-key">SO</th>
+                <th class="col-minor">รหัสสินค้า</th>
                 <th class="col-key">รายการสินค้า</th>
-                <th class="col-key num">จำนวนรวม</th>
+                <th class="col-key num">จำนวน</th>
                 <th>ลูกค้า</th>
-                <th class="col-minor">สถานะ</th>
-                <th class="col-minor">ผู้ดำเนินการ</th>
-                <th class="col-minor">เวลาดำเนินการ</th>
+                <th class="col-minor">ผู้สร้าง PO</th>
             </tr>
         </thead>
         <tbody>
@@ -244,47 +277,49 @@
             @php
                 $todo   = $h->status === \App\Models\internal_po::ST_PENDING;
                 $cancel = $h->status === \App\Models\internal_po::ST_CANCEL;
-                // สถานะอื่นๆ ที่ไม่ใช่ pending/cancel ทั้งหมดแสดงเป็น "จัดเสร็จแล้ว"
-                $statusLabel = $todo ? $h->status : ($cancel ? $h->status : 'จัดเสร็จแล้ว');
-                $statusColor = $todo ? 'inherit' : ($cancel ? $h->status_color : 'var(--success)');
                 $cls    = $cancel ? 'cancelled' : (!$todo ? 'done' : '');
                 $items  = $h->lines;
-                $totalQty = $items->sum('item_quantity');
+                $rowspan = max($items->count(), 1);
+                $groupCls = $loop->index % 2 === 0 ? 'po-group-even' : 'po-group-odd';
+                $first = true;
             @endphp
-            <tr class="{{ $cls }}" data-done="{{ $todo ? 0 : 1 }}">
-                <td class="center">
-                    @if ($todo)<input type="checkbox" class="chkLine" value="{{ $h->internal_id }}">@endif
-                </td>
-                <td class="col-key"><span class="ref-link">{{ $h->internal_id }}</span></td>
-                <td class="col-key">{{ $h->SO_id }}</td>
-                <td class="col-key items-cell">
-                    @if ($items->count() === 1)
-                        {{ $items->first()->item_name }}
-                    @elseif ($items->count() <= 5)
-                        <div class="items-list">
-                            @foreach ($items as $it)
-                                <div class="item-row">{{ $it->item_name }}<span class="item-qty">× {{ number_format($it->item_quantity, 2) }}</span></div>
-                            @endforeach
-                        </div>
-                    @else
-                        <details class="items-expand">
-                            <summary>{{ $items->count() }} รายการ — แตะเพื่อดูทั้งหมด</summary>
-                            <div class="items-list">
-                                @foreach ($items as $it)
-                                    <div class="item-row">{{ $it->item_name }}<span class="item-qty">× {{ number_format($it->item_quantity, 2) }}</span></div>
-                                @endforeach
-                            </div>
-                        </details>
-                    @endif
-                </td>
-                <td class="col-key num">{{ number_format($totalQty, 2) }}</td>
-                <td class="cust-cell">{{ $h->customer_name }}</td>
-                <td class="col-minor" style="color:{{ $statusColor }};">{{ $statusLabel }}</td>
-                <td class="col-minor">{{ $h->pick_by ?: '—' }}</td>
-                <td class="col-minor muted">{{ $h->pick_at ? \Carbon\Carbon::parse($h->pick_at)->format('d/m/Y H:i') : '—' }}</td>
-            </tr>
+
+            @if ($items->count() > 0)
+                @foreach ($items as $it)
+                    <tr class="{{ $cls }} {{ $groupCls }} {{ $first ? 'po-first' : '' }}" data-done="{{ $todo ? 0 : 1 }}" data-internal-id="{{ $h->internal_id }}">
+                        @if ($first)
+                            <td class="center" rowspan="{{ $rowspan }}">
+                                @if ($todo)<input type="checkbox" class="chkLine" value="{{ $h->internal_id }}">@endif
+                            </td>
+                            <td class="col-key" rowspan="{{ $rowspan }}"><span class="ref-link">{{ $h->internal_id }}</span></td>
+                            <td class="col-key" rowspan="{{ $rowspan }}">{{ $h->SO_id }}</td>
+                        @endif
+                        <td class="col-key">{{ $it->item_id }}</td>
+                        <td class="col-key items-cell">{{ $it->item_name }}</td>
+                        <td class="col-key num">{{ number_format($it->item_quantity, 2) }}</td>
+                        @if ($first)
+                            <td class="cust-cell" rowspan="{{ $rowspan }}">{{ $h->customer_name }}</td>
+                            <td class="col-minor" rowspan="{{ $rowspan }}">{{ $h->create_by ?: '—' }}</td>
+                        @endif
+                    </tr>
+                    @php($first = false)
+                @endforeach
+            @else
+                <tr class="{{ $cls }} {{ $groupCls }} po-first" data-done="{{ $todo ? 0 : 1 }}" data-internal-id="{{ $h->internal_id }}">
+                    <td class="center">
+                        @if ($todo)<input type="checkbox" class="chkLine" value="{{ $h->internal_id }}">@endif
+                    </td>
+                    <td class="col-key"><span class="ref-link">{{ $h->internal_id }}</span></td>
+                    <td class="col-key">{{ $h->SO_id }}</td>
+                    <td class="col-minor">—</td>
+                    <td class="col-key items-cell">—</td>
+                    <td class="col-key num">—</td>
+                    <td class="cust-cell">{{ $h->customer_name }}</td>
+                    <td class="col-minor">{{ $h->create_by ?: '—' }}</td>
+                </tr>
+            @endif
         @empty
-            <tr><td colspan="9" class="empty">ไม่มีรายการ</td></tr>
+            <tr><td colspan="8" class="empty">ไม่มีรายการ</td></tr>
         @endforelse
         </tbody>
     </table>
@@ -323,6 +358,11 @@ async function post(url, body) {
         headers: { 'Content-Type':'application/json','Accept':'application/json','X-Requested-With':'XMLHttpRequest','X-CSRF-TOKEN':CSRF },
         body: JSON.stringify(body)
     });
+    if (res.status === 419) {
+        alert('เซสชันหมดอายุ กรุณารีเฟรชหน้าแล้วลองใหม่');
+        window.location.reload();
+        throw new Error('CSRF token expired (419)');
+    }
     return { res, data: await res.json() };
 }
 
@@ -362,6 +402,40 @@ async function submitCancel() {
         else { alert(data.message || 'ยกเลิกไม่สำเร็จ'); btn.disabled = false; }
     } catch (e) { console.error(e); alert('เกิดข้อผิดพลาด'); btn.disabled = false; }
 }
+</script>
+<script>
+(function () {
+    const form = document.getElementById('filterForm');
+    if (!form) return;
+
+    const DEBOUNCE_MS = 500;
+    let debounceTimer = null;
+
+    function submitNow() {
+        clearTimeout(debounceTimer);
+        form.submit();
+    }
+
+    function submitDebounced() {
+        clearTimeout(debounceTimer);
+        debounceTimer = setTimeout(submitNow, DEBOUNCE_MS);
+    }
+
+    // ช่อง text/search: debounce ตอนพิมพ์
+    form.querySelectorAll('input[type="search"], input[type="text"]').forEach(function (el) {
+        el.addEventListener('input', submitDebounced);
+    });
+
+    // dropdown สถานะ: submit ทันทีที่เปลี่ยน
+    form.querySelectorAll('select').forEach(function (el) {
+        el.addEventListener('change', submitNow);
+    });
+
+    // กัน Enter ในช่อง text ทำให้ฟอร์ม submit ซ้ำ/แปลกๆ ระหว่าง debounce ทำงานอยู่
+    form.addEventListener('submit', function () {
+        clearTimeout(debounceTimer);
+    });
+})();
 </script>
 </body>
 </html>

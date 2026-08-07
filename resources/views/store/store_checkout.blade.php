@@ -269,7 +269,6 @@
         <div class="search-prompt">
             <div class="icon">🔎</div>
             <div class="title">ระบุเงื่อนไขค้นหาก่อนแสดงรายการ</div>
-            <div class="desc">เลือก "วันที่เปิด SO" หรือกรอก "เลข SO" หรือ "เลข PO" แล้วกดค้นหา</div>
         </div>
     @else
     <div class="table-scroll">

@@ -276,12 +276,12 @@ class InventoryController extends Controller
         $this->clearItemsCache();
         return response()->json(['success' => true]);
     }
-
     public function deleteProduct(string $id)
     {
         $this->guardRole(['admin']);
         try {
-            foreach (($this->api('GET', '/transaction') ?? []) as $tx) {
+            $allTx = $this->fetchAllTransactions();
+            foreach ($allTx as $tx) {
                 if (($tx['item_id'] ?? '') === $id) {
                     try { $this->api('DELETE', '/transaction/' . urlencode($tx['transaction_id'])); } catch (\Throwable $e) {}
                 }
@@ -293,11 +293,10 @@ class InventoryController extends Controller
         $this->clearItemsCache();
         return response()->json(['success' => true]);
     }
-
     public function countTxByItem(string $id)
     {
         try { 
-            return response()->json(['count' => collect($this->api('GET', '/transaction') ?? [])->where('item_id', $id)->count()]); 
+            return response()->json(['count' => collect($this->fetchAllTransactions())->where('item_id', $id)->count()]); 
         } catch (\Throwable $e) { 
             return response()->json(['count' => 0]); 
         }
@@ -386,14 +385,6 @@ class InventoryController extends Controller
 
     public function getTransactionByItemId(string $itemId)
     {
-        // ลอง API filter ตรงก่อน
-        try {
-            $d = $this->api('GET', '/transaction?item_id=' . urlencode($itemId));
-            if (!empty($d) && is_array($d) && ($d[0]['item_id'] ?? '') === $itemId)
-                return response()->json(collect($d)->map(fn($r) => $this->mapTx($r))->values());
-        } catch (\Throwable $e) {}
-
-        // fallback: ดึงสดทุกรายการแล้วกรอง
         return response()->json(
             collect($this->fetchAllTransactions())->where('item_id', $itemId)->values()
         );
@@ -537,12 +528,13 @@ class InventoryController extends Controller
             ]);
             $this->updateItemQuantity($d['iditem'], -$qty);
             $this->clearTxCache();
+            $this->clearItemsCache();   // ← เพิ่ม: quantity เปลี่ยน ต้องล้าง items cache ด้วย
             return response()->json(['success' => true, 'transaction_id' => $txId]);
         } catch (\Throwable $e) {
             return response()->json(['success' => false, 'error' => $e->getMessage()], 500);
         }
     }
-    
+        
     public function saveWithdraw(Request $request)
     {
         $this->guardRole(['admin', 'user']);
@@ -566,12 +558,12 @@ class InventoryController extends Controller
             ]);
             $this->updateItemQuantity($d['iditem'], -$qty);
             $this->clearTxCache();
+            $this->clearItemsCache();   // ← เพิ่ม
             return response()->json(['success' => true, 'transaction_id' => $txId]);
         } catch (\Throwable $e) {
             return response()->json(['success' => false, 'error' => $e->getMessage()], 500);
         }
     }
-    
     // ═══════════════ HELPERS (port จาก GAS) ═══════════════
     
     private function generateTransactionId(string $itemId): string
@@ -736,64 +728,64 @@ class InventoryController extends Controller
  
     // ═══════════════ PR: APPROVE (admin) ═══════════════
  
-    public function approvePr(string $prId)
-    {
-        $this->guardRole(['admin']);
-        $adminName = Session::get('user.name', 'Admin');
-        try {
-            $pr = $this->api('GET', '/pr/' . urlencode($prId));
-            if (!$pr) return response()->json(['success' => false, 'error' => 'ไม่พบ PR ' . $prId], 404);
- 
-            $items = $pr['items'] ?? [];
-            if (is_string($items)) $items = json_decode($items, true) ?: [];
- 
-            foreach ($items as $item) {
-                $itemId = $item['item_id'] ?? '';
-                if (!$itemId && !empty($item['name'])) {
-                    try {
-                        $created = $this->api('POST', '/items', [
-                            'name' => $item['name'], 'quantity' => 0, 'typeitem' => 'ทรัพย์สินบริษัท',
-                            'location' => '', 'brand' => '', 'privilege' => $item['company'] ?? '',
-                        ]);
-                        $itemId = $this->extractItemId($created);
-                    } catch (\Throwable $e) { 
-                        Log::warning('approvePr addProduct: ' . $e->getMessage()); 
-                    }
+public function approvePr(string $prId)
+{
+    $this->guardRole(['admin']);
+    $adminName = Session::get('user.name', 'Admin');
+    try {
+        $pr = $this->api('GET', '/pr/' . urlencode($prId));
+        if (!$pr) return response()->json(['success' => false, 'error' => 'ไม่พบ PR ' . $prId], 404);
+
+        $items = $pr['items'] ?? [];
+        if (is_string($items)) $items = json_decode($items, true) ?: [];
+
+        foreach ($items as $item) {
+            $itemId = $item['item_id'] ?? '';
+            if (!$itemId && !empty($item['name'])) {
+                try {
+                    $created = $this->api('POST', '/items', [
+                        'name' => $item['name'], 'quantity' => 0, 'typeitem' => 'ทรัพย์สินบริษัท',
+                        'location' => '', 'brand' => '', 'privilege' => $item['company'] ?? '',
+                    ]);
+                    $itemId = $this->extractItemId($created);
+                } catch (\Throwable $e) { 
+                    Log::warning('approvePr addProduct: ' . $e->getMessage()); 
                 }
-                if (!$itemId) continue;
- 
-                $txnId = $this->generateTransactionId($itemId);
-                $qty   = intval($item['qty'] ?? 0);
- 
-                $this->api('POST', '/transaction/stockin', [
-                    'transaction_id'   => $txnId,
-                    'addby'            => $adminName,
-                    'transaction_type' => 'รับเข้าสต็อก',
-                    'document_id'      => $prId . (!empty($pr['po_number']) ? ' /' . $pr['po_number'] : ''),
-                    'item_id'          => $itemId,
-                    'item_quantity'    => $qty,
-                    'item_unit_price'  => floatval($item['price'] ?? 0),
-                    'currency_type'    => $item['currency'] ?? 'บาท',
-                    'currency_price'   => floatval($item['thb_price'] ?? 0),
-                    'pic'              => $item['image_url'] ?? '',
-                    'transaction_note' => 'อนุมัติจาก ' . $prId . ' | ชื่อทีมช่าง: ' . ($pr['buyer_name'] ?? ''),
-                ]);
- 
-                $this->updateItemQuantity($itemId, $qty);
             }
- 
-            $this->api('PATCH', '/pr/' . urlencode($prId) . '/status', [
-                'status'    => 'อนุมัติแล้ว',
-                'action_by' => $adminName,
+            if (!$itemId) continue;
+
+            $txnId = $this->generateTransactionId($itemId);
+            $qty   = intval($item['qty'] ?? 0);
+
+            $this->api('POST', '/transaction/stockin', [
+                'transaction_id'   => $txnId,
+                'addby'            => $adminName,
+                'transaction_type' => 'รับเข้าสต็อก',
+                'document_id'      => $prId . (!empty($pr['po_number']) ? ' /' . $pr['po_number'] : ''),
+                'item_id'          => $itemId,
+                'item_quantity'    => $qty,
+                'item_unit_price'  => floatval($item['price'] ?? 0),
+                'currency_type'    => $item['currency'] ?? 'บาท',
+                'currency_price'   => floatval($item['thb_price'] ?? 0),
+                'pic'              => $item['image_url'] ?? '',
+                'transaction_note' => 'อนุมัติจาก ' . $prId . ' | ชื่อทีมช่าง: ' . ($pr['buyer_name'] ?? ''),
             ]);
- 
-            $this->clearTxCache();
-            return response()->json(['success' => true]);
-        } catch (\Throwable $e) {
-            return response()->json(['success' => false, 'error' => $e->getMessage()], 500);
+
+            $this->updateItemQuantity($itemId, $qty);
         }
+
+        $this->api('PATCH', '/pr/' . urlencode($prId) . '/status', [
+            'status'    => 'อนุมัติแล้ว',
+            'action_by' => $adminName,
+        ]);
+
+        $this->clearTxCache();
+        $this->clearItemsCache();   // ← เพิ่ม: มีการสร้าง item ใหม่ + แก้ quantity หลายตัวในลูป
+        return response()->json(['success' => true]);
+    } catch (\Throwable $e) {
+        return response()->json(['success' => false, 'error' => $e->getMessage()], 500);
     }
- 
+}
     // ═══════════════ PR: REJECT (admin) ═══════════════
  
     public function rejectPr(Request $request, string $prId)

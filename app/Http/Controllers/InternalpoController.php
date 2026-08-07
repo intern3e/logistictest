@@ -19,12 +19,14 @@ class InternalPoController extends Controller
 
     // สถานะที่แสดง/กรองในหน้า dashboard เอาไว้ 3 กลุ่มเท่านั้น
     // "finish" เป็นกลุ่มรวม: สถานะอื่นๆ ที่ไม่ใช่ pending/cancel ทั้งหมดจะถูกนับ+แสดงเป็น "จัดเสร็จแล้ว"
-    const STATUS_FINISH_KEY = '__finish__';
+    const STATUS_ALL_KEY = '__all__';   // เพิ่มใหม่
+    const STATUS_FINISH_KEY = '__finish__'; 
 
     const VISIBLE_STATUSES = [
-        internal_po::ST_PENDING  => 'รอดำเนินการ',
-        self::STATUS_FINISH_KEY  => 'จัดเสร็จแล้ว',
-        internal_po::ST_CANCEL   => 'ยกเลิก',
+        self::STATUS_ALL_KEY      => 'ทั้งหมด',
+        internal_po::ST_PENDING   => 'รอดำเนินการ',
+        self::STATUS_FINISH_KEY   => 'จัดเสร็จแล้ว',
+        internal_po::ST_CANCEL    => 'ยกเลิก',
     ];
 
     const PER_PAGE = 100;
@@ -36,8 +38,6 @@ class InternalPoController extends Controller
 
     private function baseQuery(Request $request, bool $withStatusFilter = true)
     {
-        // ไม่จำกัด status ในระดับ DB แล้ว เพราะสถานะอื่นๆ นอกจาก pending/cancel
-        // ทั้งหมดจะถูกจัดกลุ่ม+แสดงเป็น "จัดเสร็จแล้ว"
         $q = internal_po::with('lines');
 
         if ($request->filled('SONum')) {
@@ -49,12 +49,20 @@ class InternalPoController extends Controller
         if ($request->filled('customer_name')) {
             $q->where('customer_name', 'LIKE', '%' . $request->input('customer_name') . '%');
         }
-        if ($withStatusFilter && $request->filled('status') && array_key_exists($request->input('status'), self::VISIBLE_STATUSES)) {
-            $status = $request->input('status');
-            if ($status === self::STATUS_FINISH_KEY) {
+
+        if ($withStatusFilter) {
+            // ไม่ได้ส่ง status มาเลย -> default ให้เห็นเฉพาะ "รอดำเนินการ"
+            $status = $request->filled('status') ? $request->input('status') : internal_po::ST_PENDING;
+
+            if ($status === self::STATUS_ALL_KEY) {
+                // เลือก "ทั้งหมด" เอง -> ไม่ใส่เงื่อนไข status
+            } elseif ($status === self::STATUS_FINISH_KEY) {
                 $q->whereNotIn('status', [internal_po::ST_PENDING, internal_po::ST_CANCEL]);
-            } else {
+            } elseif (array_key_exists($status, self::VISIBLE_STATUSES)) {
                 $q->where('status', $status);
+            } else {
+                // ค่าที่ไม่รู้จัก -> fallback เป็น pending กันพัง
+                $q->where('status', internal_po::ST_PENDING);
             }
         }
 
@@ -113,15 +121,17 @@ class InternalPoController extends Controller
         $creator = $request->input('create_by');
         if (!$this->allowed($creator)) abort(403, 'ไม่มีสิทธิ์เข้าใช้งาน');
 
-        $heads        = $this->loadHeads($request, internal_po::ST_PENDING);
-        $locations    = $this->recentLocations();
-        $printers     = self::PRINTERS;
-        $statuses     = self::VISIBLE_STATUSES;
-        $statusCounts = $this->statusCounts($request);
+        $heads          = $this->loadHeads($request, internal_po::ST_PENDING);
+        $locations      = $this->recentLocations();
+        $printers       = self::PRINTERS;
+        $statuses       = self::VISIBLE_STATUSES;
+        $statusCounts   = $this->statusCounts($request);
+        $selectedStatus = $request->filled('status') ? $request->input('status') : internal_po::ST_PENDING;
 
-        return view('internal_po.dashboard', compact('heads', 'locations', 'creator', 'printers', 'statuses', 'statusCounts'));
+        return view('internal_po.dashboard', compact(
+            'heads', 'locations', 'creator', 'printers', 'statuses', 'statusCounts', 'selectedStatus'
+        ));
     }
-
     public function pickSubmit(Request $request)
     {
         $request->validate([
