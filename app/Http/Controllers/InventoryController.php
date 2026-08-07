@@ -103,26 +103,28 @@ class InventoryController extends Controller
 
     private function clearItemsCache(): void 
     { 
-        Cache::forget('all_items_list'); // เก็บไว้เผื่อโค้ดเก่าที่อื่นอ้างถึง key นี้ (ปัจจุบันไม่ได้ใช้แคชนี้แล้ว)
+        Cache::forget('all_items_list');       // cache รายการสินค้าดิบทั้งหมด
         Cache::forget('predicted_brands'); 
         Cache::forget('predicted_locations'); 
     }
-
     public function getPagedItems(Request $request)
     {
         try {
             // 1. รับค่า Filter จาก Frontend
             $page = max(1, (int) $request->input('page', 1));
-            $limit = max(1, min(200, (int) $request->input('limit', 50))); // จำกัดสูงสุด 200 ต่อหน้า
+            $limit = max(1, min(200, (int) $request->input('limit', 50)));
             $name = mb_strtolower($request->input('name', ''));
             $brand = mb_strtolower($request->input('brand', ''));
             $location = mb_strtolower($request->input('location', ''));
             $priv = $request->input('priv', '');
             $type = $request->input('type', '');
 
-            // 2. ดึงข้อมูลสดจาก API ทุกครั้ง (ไม่แคช) เพื่อให้ข้อมูลตรงกับความจริงเสมอ
-            //    ไม่ว่าจะมีการเพิ่ม/แก้/ลบจากที่ไหนก็ตาม หน้านี้จะเห็นข้อมูลล่าสุดทันที
-            $rawItems = $this->api('GET', '/items') ?? [];
+            // 2. ดึงข้อมูลจาก Cache ก่อน — ถ้าไม่มีค่อยยิง API จริง
+            //    Cache นี้จะถูกล้างทันทีเมื่อมีการ add/update/delete สินค้า (ดู clearItemsCache())
+            //    ดังนั้นข้อมูลยังคงสดเสมอ แต่ไม่ต้องยิง API ทุกครั้งที่ filter/พลิกหน้า
+            $rawItems = Cache::remember('all_items_list', 3600, function () {
+                return $this->api('GET', '/items') ?? [];
+            });
 
             $items = collect($rawItems)->map(fn($r) => [
                 'iditem'    => $r['iditem'] ?? $r['item_id'] ?? '',
@@ -189,7 +191,7 @@ class InventoryController extends Controller
             $offset = ($page - 1) * $limit;
             $paginatedProducts = array_slice($products, $offset, $limit);
 
-            // 7. ดึง Brands/Locations สำหรับ Autocomplete (ยังคงแคชไว้ได้ ไม่กระทบข้อมูลสินค้าจริง)
+            // 7. ดึง Brands/Locations สำหรับ Autocomplete
             $brands = Cache::remember('predicted_brands', 300, function () {
                 return collect($this->api('GET', '/predicted/brands') ?? [])
                     ->map(fn($r) => is_string($r) ? $r : ($r['brand'] ?? ''))->filter()->values()->all();
@@ -214,7 +216,6 @@ class InventoryController extends Controller
             return response()->json(['data' => [], 'subs' => [], 'total' => 0, 'page' => 1, 'lastPage' => 1, 'brands' => [], 'locations' => []], 500);
         }
     }
-
     public function addProduct(Request $request)
     {
         $this->guardRole(['admin', 'user']);
@@ -302,51 +303,50 @@ class InventoryController extends Controller
         }
     }
 
-    // หมายเหตุ: ตัดการแคช 'all_transactions' ออกแล้ว (เดิมแคช 300 วิ ทำให้ transaction
-    // ที่เพิ่ง add/update/delete จากที่อื่นไม่ขึ้นทันที) ตอนนี้ดึงสดจาก API ทุกครั้ง
     private function fetchAllTransactions(): array
     {
-        $limit = 5000;
-        $headers = ['Accept' => 'application/json', 'x-api-key' => $this->apiKey];
+        return Cache::remember('all_transactions', 3600, function () {
+            $limit = 5000;
+            $headers = ['Accept' => 'application/json', 'x-api-key' => $this->apiKey];
 
-        try {
-            $first = Http::withHeaders($headers)->timeout(60)
-                         ->get($this->baseUrl . "/transaction?page=1&limit={$limit}");
-        } catch (\Throwable $e) {
-            Log::error('fetchAllTransactions page1 failed: ' . $e->getMessage());
-            return [];
-        }
+            try {
+                $first = Http::withHeaders($headers)->timeout(60)
+                            ->get($this->baseUrl . "/transaction?page=1&limit={$limit}");
+            } catch (\Throwable $e) {
+                Log::error('fetchAllTransactions page1 failed: ' . $e->getMessage());
+                return [];
+            }
 
-        $all = $first->ok() ? ($first->json() ?? []) : [];
-        if (count($all) < $limit) {
+            $all = $first->ok() ? ($first->json() ?? []) : [];
+            if (count($all) < $limit) {
+                return collect($all)->map(fn($r) => $this->mapTx($r))->values()->all();
+            }
+
+            $responses = Http::pool(function ($pool) use ($headers, $limit) {
+                for ($p = 2; $p <= 50; $p++) {
+                    $pool->as("p{$p}")
+                        ->withHeaders($headers)->timeout(60)
+                        ->get($this->baseUrl . "/transaction?page={$p}&limit={$limit}");
+                }
+            });
+
+            foreach ($responses as $key => $res) {
+                if (!($res instanceof \Illuminate\Http\Client\Response)) {
+                    Log::warning("fetchAllTransactions {$key} connection failed: " . ($res->getMessage() ?? 'unknown'));
+                    continue;
+                }
+                if (!$res->ok()) continue;
+                $rows = $res->json() ?? [];
+                if (empty($rows)) break;
+                $all = array_merge($all, $rows);
+                if (count($rows) < $limit) break;
+            }
+
             return collect($all)->map(fn($r) => $this->mapTx($r))->values()->all();
-        }
-
-        $responses = Http::pool(function ($pool) use ($headers, $limit) {
-            for ($p = 2; $p <= 50; $p++) {
-                $pool->as("p{$p}")
-                     ->withHeaders($headers)->timeout(60)
-                     ->get($this->baseUrl . "/transaction?page={$p}&limit={$limit}");
-            }
         });
-
-        foreach ($responses as $key => $res) {
-            if (!($res instanceof \Illuminate\Http\Client\Response)) {
-                Log::warning("fetchAllTransactions {$key} connection failed: " . ($res->getMessage() ?? 'unknown'));
-                continue;
-            }
-            if (!$res->ok()) continue;
-            $rows = $res->json() ?? [];
-            if (empty($rows)) break;
-            $all = array_merge($all, $rows);
-            if (count($rows) < $limit) break;
-        }
-
-        return collect($all)->map(fn($r) => $this->mapTx($r))->values()->all();
     }
-    
     private function clearTxCache(): void { 
-        Cache::forget('all_transactions'); // เก็บไว้เผื่อโค้ดเก่าที่อื่นอ้างถึง key นี้ (ปัจจุบันไม่ได้ใช้แคชนี้แล้ว)
+        Cache::forget('all_transactions');
     }
 
     public function getTransactionPage(Request $request)
