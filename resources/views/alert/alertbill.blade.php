@@ -357,6 +357,28 @@
             border: 1px solid var(--line);
         }
 
+        .cust-name {
+            color: var(--ink-2);
+            font-weight: 500;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            max-width: 260px;
+            display: inline-block;
+            vertical-align: middle;
+        }
+
+        .created-by {
+            display: inline-flex;
+            align-items: center;
+            padding: 3px 9px;
+            font-size: clamp(10px, 0.5vw + 5px, 12px);
+            font-weight: 600;
+            color: var(--blue-2);
+            background: var(--blue-soft);
+            border: 1px solid var(--blue-tint);
+        }
+
         .date-cell { font-variant-numeric: tabular-nums; color: var(--ink-2); font-weight: 500; }
 
         /* Empty state (✓ ข้อมูลครบ = เขียว success) */
@@ -444,6 +466,7 @@
             .btn { width: 100%; }
             thead th, tbody td { padding: 8px 12px; }   /* ✅ ปล่อย font-size ให้ fluid จัดการ */
             .table-footer { flex-direction: column; align-items: stretch; }
+            .cust-name { max-width: 160px; }
         }
     </style>
 </head>
@@ -535,6 +558,8 @@
                                 <th>ลำดับ</th>
                                 <th>เลขที่บิล</th>
                                 <th>อ้างอิงใบสั่งขาย</th>
+                                <th>ชื่อลูกค้า</th>
+                                <th>ผู้สร้างบิล</th>
                                 <th>วันที่เอกสาร</th>
                             </tr>
                         </thead>
@@ -549,11 +574,13 @@
                                     <td>{{ ($missingBills->firstItem() ?? 0) + $i }}</td>
                                     <td><span class="doc-no">{{ $item['DocuNo'] ?? '-' }}</span></td>
                                     <td><span class="so-no">{{ $item['SONo'] ?? '-' }}</span></td>
+                                    <td><span class="cust-name" title="{{ $item['CustName'] ?? '-' }}">{{ $item['CustName'] ?? '-' }}</span></td>
+                                    <td><span class="created-by">{{ $item['createdBy'] ?? '-' }}</span></td>
                                     <td><span class="date-cell">{{ isset($item['DocuDate']) ? \Carbon\Carbon::parse($item['DocuDate'])->format('d/m/Y') : '-' }}</span></td>
                                 </tr>
                             @empty
                                 <tr class="empty-row">
-                                    <td colspan="5">
+                                    <td colspan="7">
                                         <div class="icon">✓</div>
                                         <div class="t">ข้อมูลครบทุกใบ</div>
                                         <div>ไม่พบบิลที่ขาดในระบบสำหรับวันที่ที่ระบุ</div>
@@ -698,7 +725,7 @@
                 renumber();
 
                 if (!tbody.querySelectorAll('tr:not(.empty-row)').length) {
-                    tbody.innerHTML = '<tr class="empty-row"><td colspan="5">' +
+                    tbody.innerHTML = '<tr class="empty-row"><td colspan="7">' +
                         '<div class="icon">✓</div>' +
                         '<div class="t">ไม่มีรายการคงเหลือ</div>' +
                         '<div>รายการทั้งหมดถูกลบและบันทึกเรียบร้อย</div>' +

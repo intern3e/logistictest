@@ -62,7 +62,7 @@ return [
                 PDO::MYSQL_ATTR_SSL_CA => env('MYSQL_ATTR_SSL_CA'),
             ]) : [],
         ],
-                'mysql_3e' => [
+            'mysql_3e' => [
             'driver' => 'mysql',
             'url' => env('DATABASE_URL_3E'),
             'host' => env('DB_HOST_3E', '127.0.0.1'),
@@ -75,7 +75,7 @@ return [
             'collation' => 'utf8_general_ci',
             'prefix' => '',
             'prefix_indexes' => true,
-            'strict' => false, //
+            'strict' => false, 
             'engine' => null,
             'options' => extension_loaded('pdo_mysql') ? array_filter([
                 PDO::MYSQL_ATTR_SSL_CA => env('MYSQL_ATTR_SSL_CA'),

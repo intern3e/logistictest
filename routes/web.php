@@ -94,14 +94,14 @@ Route::post('/update-statuspo', [adminpocontroller::class, 'updateStatus']);
 Route::post('/update-statuspoback', [adminpocontroller::class, 'updateStatuspoback']);
 Route::post('/updatepo-delivery-date', [AdminPoController::class, 'updateDeliveryDate'])->name('updatepo.delivery.date');
 
-// Doc system
+
 use App\Http\Controllers\DocController;
 Route::get('/dashboarddoc', [DocController::class, 'dashboarddoc'])->name('document.dashboarddoc');
 Route::get('/insertdoc', [DocController::class, 'insertdoc'])->name('document.insertdoc');
 Route::post('/insertdocu', [DocController::class, 'insertDocu'])->name('insertdocu');
 Route::get('/get-docbill-detail/{doc_id}', [DocController::class, 'getdocBillDetail'])->name('getdocBillDetail');
-Route::post('/fetch-doclalong', [doccontroller::class, 'fetchFormType']);
-
+Route::post('/fetch-doclalong', [DocController::class, 'fetchlalong']);
+Route::post('/save-bill-pdf', [DocController::class, 'savePdfBill'])->name('savebillpdf');
 
 use App\Http\Controllers\admindoccontroller;
 Route::get('/admindoc', [admindoccontroller::class, 'dashboarddoc'])->name('document.admindoc');
@@ -273,7 +273,8 @@ Route::post('/deposit/update-fee', [DepositController::class, 'updateFee']);
 Route::post('/deposit/update-wht', [DepositController::class, 'updateWht']);
 Route::post('/deposit/delete', [DepositController::class, 'deleteDeposit']);
 Route::post('/deposit/upload-slip', [DepositController::class, 'uploadSlip']);
-
+Route::post('/pooutside/mark-cancelled-bulk', [DepositController::class, 'markPooutsideCancelledBulk'])
+     ->name('pooutside.markCancelledBulk');
 
 use App\Http\Controllers\TechnicianController;
 Route::get('/dashboardtechnician', [TechnicianController::class, 'index'])->name('technician.dashboard');
@@ -418,4 +419,8 @@ Route::get('/api/getPODetail', [MobilePoappController::class, 'getPODetail'])->n
 Route::post('/api/receivePO', [MobilePoappController::class, 'receivePO'])->name('mobile.po.receive');
 Route::get('/api/receivePO/history', [MobilePoappController::class, 'history'])->name('mobile.po.receive.history');
 Route::post('/api/receivePO/cancel', [MobilePoappController::class, 'cancelReceive']);
+
+use App\Http\Controllers\OtRequestController;
+
+Route::get('/adminOT', [OtRequestController::class, 'index']);
 

@@ -510,6 +510,83 @@ nav[role="navigation"] span[aria-current="page"]{background:var(--tbl)!important
 </tbody>
 </table>
 </div>
+{{-- ============================================================
+     ส่วนที่ 3: รายการรอยกเลิก PO นอก (pooutside_cancelled, status = null)
+     ============================================================ --}}
+<div class="sec-header" data-section="cancel" data-name="sec-header-cancel">
+  <div class="sec-title" data-name="sec-title-cancel">
+    🚫 รายการรอยกเลิก (PO นอก)
+    <span class="sec-count" id="count-cancel" name="count-cancel" data-count="cancel" data-name="count-cancel" style="background:var(--red)">{{ $pendingCancel->count() }}</span>
+  </div>
+  <span class="sec-desc" data-name="sec-desc-cancel">รายการที่ยังไม่ได้ยกเลิก — ติ๊กแล้วกดปุ่มเพื่อบันทึกการยกเลิก</span>
+</div>
+<div class="abar" data-name="abar-cancel">
+  <button class="btn-print" id="btn-cancel" name="btn-cancel" type="button" data-action="mark-cancelled" data-job="cancel" data-name="btn-cancel" style="background:var(--red)" onclick="markSelectedCancelled()">🚫 บันทึกการยกเลิก</button>
+  <label class="chk-all-label" for="chk-all-cancel" data-name="label-chk-all-cancel">
+    <input type="checkbox" class="chk" id="chk-all-cancel" name="chk-all-cancel" data-action="select-all" data-job="cancel" data-name="chk-all-cancel" onclick="toggleAll('cancel',this.checked)"> เลือกทั้งหมด
+  </label>
+</div>
+<div class="tw" data-name="tw-cancel">
+<table id="table-cancel" name="table-cancel" data-table="cancel" data-name="table-cancel">
+<thead>
+<tr data-name="thead-row-cancel">
+  <th style="width:36px" data-name="th-cancel-checkbox">☑</th>
+  <th data-name="th-cancel-po_id">PO</th>
+  <th data-name="th-cancel-so_id">ใบสั่งขาย</th>
+  <th data-name="th-cancel-note">หมายเหตุ</th>
+  <th data-name="th-cancel-status">สถานะ</th>
+</tr>
+</thead>
+<tbody id="tbody-cancel" data-tbody="cancel" data-name="tbody-cancel">
+@forelse($pendingCancel as $item)
+  @php $rid = $item->id; @endphp
+  <tr class="job-row"
+      data-job="cancel"
+      data-row-id="{{ $rid }}"
+      data-po="{{ $item->po_id }}"
+      data-so="{{ $item->so_id }}"
+      data-name="row-cancel-{{ $rid }}">
+
+    <td data-field="checkbox" data-name="td-cancel-checkbox-{{ $rid }}">
+      <input type="checkbox"
+             class="chk chk-cancel"
+             id="chk-cancel-{{ $rid }}"
+             name="markcancel[]"
+             data-action="select-row"
+             data-row-id="{{ $rid }}"
+             value="{{ $rid }}"
+             data-name="chk-cancel-{{ $rid }}">
+    </td>
+
+    <td data-field="po_id" data-value="{{ $item->po_id }}" data-name="td-cancel-po_id-{{ $rid }}">
+      <span class="c-code" id="txt-cancel-po_id-{{ $rid }}" data-name="txt-cancel-po_id-{{ $rid }}">{{ $item->po_id ?? '—' }}</span>
+    </td>
+
+    <td data-field="so_id" data-value="{{ $item->so_id }}" data-name="td-cancel-so_id-{{ $rid }}">
+      <span style="font-size:12px;color:var(--steel)" id="txt-cancel-so_id-{{ $rid }}" data-name="txt-cancel-so_id-{{ $rid }}">{{ $item->so_id ?? '—' }}</span>
+    </td>
+
+    <td class="c-sm" data-field="note" data-value="{{ $item->note }}" data-name="td-cancel-note-{{ $rid }}">
+      <span id="txt-cancel-note-{{ $rid }}" data-name="txt-cancel-note-{{ $rid }}">{{ $item->note ?? '—' }}</span>
+    </td>
+
+    <td data-field="status" data-value="{{ $item->status }}" data-name="td-cancel-status-{{ $rid }}">
+      <span class="badge b-default" id="txt-cancel-status-{{ $rid }}" data-name="txt-cancel-status-{{ $rid }}">{{ $item->status ?? 'รอยกเลิก' }}</span>
+    </td>
+  </tr>
+@empty
+  <tr data-empty="cancel" data-name="row-cancel-empty">
+    <td colspan="5" data-name="td-cancel-empty">
+      <div class="empty" data-name="empty-cancel">
+        <h4 data-name="empty-cancel-title">ไม่มีรายการรอยกเลิก</h4>
+        <p data-name="empty-cancel-desc">ไม่มีข้อมูลที่ต้องดำเนินการ</p>
+      </div>
+    </td>
+  </tr>
+@endforelse
+</tbody>
+</table>
+</div>
 
 @if($deposits->total()>0)
 <div style="margin:0 22px 22px">
@@ -523,6 +600,21 @@ nav[role="navigation"] span[aria-current="page"]{background:var(--tbl)!important
 <div class="toast" id="toast" data-toast><span id="toastMsg" data-toast-msg>—</span></div>
 
 <script>
+  async function markSelectedCancelled(){
+  const checked=Array.from(document.querySelectorAll('input[name="markcancel[]"]:checked'));
+  if(!checked.length){showToast('เลือกรายการก่อน',true);return}
+  const ids=checked.map(c=>c.value);
+  try{
+    const res=await fetch('/pooutside/mark-cancelled-bulk',{
+      method:'POST',
+      headers:{'Content-Type':'application/json','X-CSRF-TOKEN':CS,'X-Requested-With':'XMLHttpRequest','Accept':'application/json'},
+      body:JSON.stringify({ids:ids})
+    });
+    const d=await res.json().catch(()=>({success:true}));
+    if(!res.ok||d.success===false)throw new Error(d.message||'HTTP '+res.status);
+    showToast('บันทึกยกเลิก '+ids.length+' รายการสำเร็จ');setTimeout(()=>location.reload(),600);
+  }catch(e){showToast('ผิดพลาด: '+e.message,true)}
+}
 const CS=document.querySelector('meta[name="csrf-token"]')?.content||'',CU='{{ $cb }}';
 function showToast(m,e){const t=document.getElementById('toast');document.getElementById('toastMsg').textContent=m;t.classList.toggle('error',!!e);t.dataset.toastState=e?'error':'ok';t.classList.add('show');setTimeout(()=>t.classList.remove('show'),2800)}
 

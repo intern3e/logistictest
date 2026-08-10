@@ -258,7 +258,42 @@ class DepositController extends Controller
             ], 500);
         }
     }
+    public function markPooutsideCancelledBulk(Request $request)
+    {
+        $ids = $request->input('ids', []);
 
+        if (empty($ids) || !is_array($ids)) {
+            return response()->json([
+                'success' => false,
+                'message' => 'ไม่มีรายการที่จะบันทึก',
+            ], 422);
+        }
+
+        try {
+            $affected = \App\Models\PooutsideCancelled::whereIn('id', $ids)
+                ->update([
+                    'status' => 'ยกเลิก',
+                ]);
+
+            Log::info('Pooutside marked cancelled', [
+                'ids'   => $ids,
+                'count' => $affected,
+            ]);
+
+            return response()->json([
+                'success' => true,
+                'message' => "บันทึกยกเลิก {$affected} รายการสำเร็จ",
+                'count'   => $affected,
+            ]);
+
+        } catch (\Throwable $e) {
+            Log::error('Mark pooutside cancelled failed: ' . $e->getMessage());
+            return response()->json([
+                'success' => false,
+                'message' => 'เกิดข้อผิดพลาด: ' . $e->getMessage(),
+            ], 500);
+        }
+    }
     public function markPrintedBulk(Request $request)
     {
         $ids = $request->input('deposit_ids', []);
@@ -366,26 +401,22 @@ class DepositController extends Controller
         }
     }
 
-    // ✅ botdeposit — WHT ที่ bot ทำเสร็จ (print_time > wht_time) หายจากตาราง
     public function botdeposit(Request $request)
     {
         $soKeyword = trim($request->get('so_keyword', ''));
 
         $query = deposit::query()
             ->where(function ($q) {
-                // กลุ่ม 1: ยืนยัน + ยังไม่เคยผ่าน bot (status_bill ยังว่าง)
                 $q->where(function ($q2) {
                     $q2->where('status', 'ยืนยัน')
-                       ->whereNull('status_bill');
+                    ->whereNull('status_bill');
                 })
-                // กลุ่ม 2: มี WHT → bot ต้องกลับมาแก้ไข
-                // ✅ ยกเว้นถ้า print_time > wht_time (bot ทำ WHT เสร็จแล้ว → หายจากตาราง)
                 ->orWhere(function ($q3) {
                     $q3->where('status', 'มี WHT')
-                       ->where(function ($q4) {
-                           $q4->whereNull('print_time')
-                              ->orWhereColumn('print_time', '<=', 'wht_time');
-                       });
+                    ->where(function ($q4) {
+                        $q4->whereNull('print_time')
+                            ->orWhereColumn('print_time', '<=', 'wht_time');
+                    });
                 });
             });
 
@@ -399,9 +430,14 @@ class DepositController extends Controller
             ->paginate(100)
             ->appends($request->query());
 
-        return view('deposit.botdeposit', compact('deposits'));
-    }
+        // ✅ ดึงรายการ PO นอก ที่ยังไม่ถูกยกเลิก (status = null)
+        $pendingCancel = \App\Models\PooutsideCancelled::query()
+            ->whereNull('status')
+            ->orderByDesc('id')
+            ->get();
 
+        return view('deposit.botdeposit', compact('deposits', 'pendingCancel'));
+    }
     private function generateDepositBillId()
     {
         $now      = $this->nowBkk();

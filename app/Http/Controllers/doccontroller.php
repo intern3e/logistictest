@@ -8,6 +8,7 @@ use App\Models\docbillsdetail;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Validator;
+use Illuminate\Support\Facades\Storage; // <-- เพิ่มใหม่
 
 
 class DocController extends Controller
@@ -45,7 +46,7 @@ class DocController extends Controller
     {
         return view('document.insertdoc');
     }
-    public function insertDocu(Request $request)
+  public function insertDocu(Request $request)
     {
         DB::beginTransaction();
         try {
@@ -53,6 +54,7 @@ class DocController extends Controller
                 'emp_name' => 'required|string|max:255',
                 'doctype' => 'required|string|max:255',
                 'headcom' => 'required|string|max:255',
+                'so_id' => 'nullable|string|max:50',
                 'solve' => 'nullable|string|max:255',
                 'id_com' => 'nullable|string|max:255',
                 'com_name' => 'required|string|max:255',
@@ -60,7 +62,7 @@ class DocController extends Controller
                 'contact_tel' => 'nullable|string|max:255',
                 'com_address' => 'required|string|max:255',
                 'com_la_long' => 'required|string|max:255',
-                'datestamp' => 'required|date', 
+                'datestamp' => 'required|date',
                 'statusdeli' => 'nullable|array',
                 'notes' => 'nullable|string',
             ]);
@@ -93,28 +95,41 @@ class DocController extends Controller
                 } while ($exists);
             }
            
-            // **🔹 Insert into Bills**
+            $item_names = $request->input('item_name', []);
+            $item_quantities = $request->input('item_quantity', []);
+
+            $hasItems = collect($item_names)
+                ->filter(fn($name) => trim((string) $name) !== '')
+                ->isNotEmpty();
+
+            $notes = trim((string) $request->input('notes', ''));
+
+            if (!$hasItems && $notes === '') {
+                DB::rollBack();
+                return response()->json([
+                    'error' => 'กรุณาเพิ่มรายการสินค้า หรือกรอกหมายเหตุ อย่างใดอย่างหนึ่ง'
+                ], 422);
+            }
+
             $doc = new Docbills();
-            $doc->doc_id = $doc_id; // ใช้ so_detail_id ที่สร้างขึ้นใหม่
+            $doc->doc_id = $doc_id;
             $doc->status = 0;
             $doc->statuspdf = 0;
             $doc->statusdeli = 0;
             $doc->id_com = $request->input('id_com');
+            $doc->so_id = $request->input('so_id');
             $doc->emp_name = $request->input('emp_name');
             $doc->com_name = $request->input('com_name');
             $doc->contact_name = $request->input('contact_name');
             $doc->contact_tel = $request->input('contact_tel');
             $doc->com_address = $request->input('com_address');
             $doc->com_la_long = $request->input('com_la_long');
-            $doc->notes = $request->input('notes');
+            $doc->notes = $notes;
             $doc->datestamp = $request->input('datestamp');
             $doc->doctype = $request->input('doctype'); 
             $doc->headcom = $request->input('headcom'); 
 
             $doc->save();
-            $item_names = $request->input('item_name', []);
-            $item_quantities = $request->input('item_quantity', []);
-            $status_checked = $request->input('status', []);
 
             if (is_array($item_names) && count($item_names) > 0) {
                 foreach ($item_names as $index => $item_name) {
@@ -128,8 +143,11 @@ class DocController extends Controller
                 }
             }
             DB::commit();
-            return response()->json(['success' => 'สร้างเอกสารสำเร็จ เลขที่เอกสาร:' . $doc_id]);
-            Log::info('doc_id: ' . $doc_id);
+
+            return response()->json([
+                'success' => 'สร้างเอกสารสำเร็จ เลขที่เอกสาร:' . $doc_id,
+                'doc_id' => $doc_id,
+            ]);
     
         } catch (\Exception $e) {
             DB::rollBack();
@@ -137,7 +155,6 @@ class DocController extends Controller
             return response()->json(['error' => 'เกิดข้อผิดพลาด:ใส่ข้อมูลให้ครบถ้วน ' . $e->getMessage()], 500);
         }
     }
-
     public function getDocBillDetail($doc_id)
 {
     try {
@@ -152,21 +169,57 @@ class DocController extends Controller
     } catch (\Exception $e) {
         return response()->json(['error' => 'เกิดข้อผิดพลาด'], 500);
     }
-}public function fetchFormType(Request $request)
-{
-    $id_com= $request->input('id_com');
-    $docbills= DB::table('docbills')
-                ->where('id_com', $id_com)
-                ->orderBy('time', 'desc') // หรือจะใช้ 'so_detail_id' ก็ได้ ถ้าเพิ่มขึ้นเรื่อยๆ
-                ->first(); // ดึงแถวล่าสุด
-
-    if ($docbills) {
-        return response()->json([
-            'com_la_long' => $docbills ->com_la_long
-        ]);
-    } else {
-        return response()->json(['com_la_long' => null]); // ถ้าไม่พบข้อมูล
-    }
 }
 
+    public function fetchlalong(Request $request)
+    {
+        try {
+            $id_com = trim((string) $request->input('id_com'));
+
+            if ($id_com === '') {
+                return response()->json(['com_la_long' => null]);
+            }
+
+            $bill = DB::table('tblbill')
+                ->where('customer_id', $id_com)
+                ->whereNotNull('customer_la_long')
+                ->where('customer_la_long', '!=', '')
+                ->where('customer_la_long', 'REGEXP', '^-?[0-9]+([.][0-9]+)?[, ]+-?[0-9]+([.][0-9]+)?$')
+                ->orderBy('time', 'desc')
+                ->first();
+
+            return response()->json([
+                'com_la_long' => $bill->customer_la_long ?? null
+            ]);
+
+        } catch (\Exception $e) {
+            Log::error('fetchlalong error: ' . $e->getMessage());
+            return response()->json(['com_la_long' => null], 500);
+        }
+    }
+
+    /**
+     * รับไฟล์ PDF ที่สร้างจากฝั่ง client (jsPDF) แล้วบันทึกลง
+     * storage/app/public/temporary_bill/{doc_id}.pdf
+     */
+    public function savePdfBill(Request $request)
+    {
+        try {
+            $request->validate([
+                'doc_id' => 'required|string|max:255',
+                'pdf' => 'required|file|mimes:pdf',
+            ]);
+
+            $doc_id = $request->input('doc_id');
+            $file = $request->file('pdf');
+
+            // save ไปที่ storage/app/public/temporary_bill/{doc_id}.pdf
+            $path = $file->storeAs('temporary_bill', $doc_id . '.pdf', 'public');
+
+            return response()->json(['success' => true, 'path' => $path]);
+        } catch (\Exception $e) {
+            Log::error('savePdfBill error: ' . $e->getMessage());
+            return response()->json(['success' => false, 'error' => $e->getMessage()], 500);
+        }
+    }
 }
