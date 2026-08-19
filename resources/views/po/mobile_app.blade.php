@@ -551,7 +551,8 @@ const HISTORY_URL = '{{ url('/api/receivePO/history') }}';
 const CANCEL_URL = '{{ url('/api/receivePO/cancel') }}';
 const CSRF_TOKEN = '{{ csrf_token() }}';
 let lastFullyReceivedPO = null;
-const RECEIVED_BY = new URLSearchParams(window.location.search).get('create_by') || '';
+const RECEIVED_BY = @json(Auth::user()->name ?? '');
+const IS_ADMIN = @json(Auth::user() && Auth::user()->role === 'admin');
 
 if(!RECEIVED_BY){
     document.body.innerHTML = `
@@ -561,7 +562,7 @@ if(!RECEIVED_BY){
             <div style="font-size:44px;margin-bottom:16px;">🔒</div>
             <div style="font-size:17px;font-weight:500;margin-bottom:8px;">ไม่พบสิทธิ์เข้าใช้งาน</div>
         </div>`;
-    throw new Error('access_denied: missing create_by');
+    throw new Error('access_denied: not logged in');
 }
 document.getElementById('userName').textContent = RECEIVED_BY;
 
@@ -833,9 +834,17 @@ async function searchPO(){
     try{
         // 1) ดึง PO ก่อน เพื่อเอา DocuNo ที่ถูกต้อง (มี prefix PO ครบ)
         const res = await fetch(`${API_URL}?PONum=${encodeURIComponent(poNumber)}`);
-
         if(!res.ok){
             if(res.status === 404 || res.status === 500){ showNotFound(poNumber); return; }
+            if(res.status === 409){
+                const body = await res.json().catch(() => null);
+                if(body && body.checked_out){
+                    showCheckedOutPO(poNumber, body);
+                } else {
+                    showCancelledPO(poNumber, body);
+                }
+                return;
+            }
             const body = await res.json().catch(() => null);
             throw new Error((body && body.message) || ('HTTP ' + res.status));
         }
@@ -882,13 +891,15 @@ async function searchPO(){
         if(hasRemaining.length === 0){
             lastFullyReceivedPO = data.DocuNo;
             clearResult();
-            $('stateBox').innerHTML = `
-                สินค้าทั้งหมดของ PO นี้ถูกรับเข้าไปแล้ว
+            const cancelBtnHtml = IS_ADMIN ? `
                 <div style="margin-top:14px">
                     <button type="button" class="btn-cancel-receive" onclick="openCancelModal()">
                         ยกเลิกการรับเข้า
                     </button>
-                </div>`;
+                </div>` : '';
+            $('stateBox').innerHTML = `
+                สินค้าทั้งหมดของ PO นี้ถูกรับเข้าไปแล้ว หากต้องการยกเลิกติดต่อ ผู้ดูแล
+                ${cancelBtnHtml}`;
             $('stateBox').style.display = 'block';
             return;
         }
@@ -1205,8 +1216,12 @@ function fmtDateTime(d){
     if(!d) return '-';
     const dt = new Date(d.replace(' ','T'));
     if(isNaN(dt)) return d;
-    return dt.toLocaleDateString('th-TH',{day:'numeric',month:'short'})
-        + ' ' + dt.toLocaleTimeString('th-TH',{hour:'2-digit',minute:'2-digit'});
+    const day   = String(dt.getDate()).padStart(2,'0');
+    const month = String(dt.getMonth()+1).padStart(2,'0');
+    const year  = dt.getFullYear() + 543;
+    const hour  = String(dt.getHours()).padStart(2,'0');
+    const min   = String(dt.getMinutes()).padStart(2,'0');
+    return `${day}/${month}/${year} ${hour}:${min}`;
 }
 function esc(s){ return String(s).replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m])); }
 function escJs(s){ return String(s).replace(/\\/g,'\\\\').replace(/'/g,"\\'"); }
@@ -1228,8 +1243,8 @@ function toast(msg, type=''){
     toastTimer = setTimeout(()=> t.className='', type==='error' ? 8000 : 2600);
 }
 let cancelScrollY = 0;
-
 function openCancelModal(){
+    if(!IS_ADMIN){ toast('เฉพาะ admin เท่านั้นที่ยกเลิกการรับเข้าได้','error'); return; }
     if(!lastFullyReceivedPO){ toast('ไม่พบเลขที่ PO','error'); return; }
     $('cancelPONum').textContent = lastFullyReceivedPO;
 
@@ -1284,6 +1299,30 @@ async function doCancelReceive(){
         $('cancelOkBtn').disabled = false;
         $('cancelOkBtn').textContent = 'ยืนยันยกเลิก';
     }
+}
+function showCancelledPO(poNumber, body){
+    clearResult();
+    const by = body && body.cancelled_by ? esc(body.cancelled_by) : '';
+    const at = body && body.cancelled_at ? fmtDateTime(body.cancelled_at) : '';
+    $('stateBox').innerHTML =
+        '<div class="icon">🚫</div>' +
+        '<span class="err" style="font-size:16px;font-weight:500;color:var(--carbon)">PO นี้ถูกยกเลิกในระบบแล้ว</span><br>' +
+        esc(poNumber) +
+        (by ? '<br>ยกเลิกโดย <b>' + by + '</b>' : '') +
+        (at ? ' เมื่อ ' + esc(at) : '');
+    $('stateBox').style.display = 'block';
+}
+function showCheckedOutPO(poNumber, body){
+    clearResult();
+    const by = body && body.checkout_by ? esc(body.checkout_by) : '';
+    const at = body && body.checkout_at ? fmtDateTime(body.checkout_at) : '';
+    $('stateBox').innerHTML =
+        '<span class="err" style="font-size:16px;font-weight:500;color:var(--carbon)">PO นี้ถูกเช็คเอ้าของออกไปแล้ว</span><br>' +
+        esc(poNumber) +
+        (by ? '<br>เช็คของออกโดย <b>' + by + '</b>' : '') +
+        (at ? ' เมื่อ ' + esc(at) : '') +
+        '<br>ไม่สามารถรับเข้าเพิ่มได้';
+    $('stateBox').style.display = 'block';
 }
 </script>
 </body>

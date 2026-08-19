@@ -187,11 +187,10 @@
         <span class="sticker">Internal PO</span>
     </div>
 </div>
-<input type="hidden" id="inpUser" value="{{ $creator }}">
+<input type="hidden" id="inpUser" value="{{ $operatorName }}">
 <main>
     {{-- ===== Filter bar ===== --}}
     <form class="filter-card" id="filterForm" method="GET" action="{{ url()->current() }}">
-        @if ($creator)<input type="hidden" name="create_by" value="{{ $creator }}">@endif
         <div class="filter-row">
             <div class="filter-field">
                 <label for="fSONum">ค้นหา SO</label>
@@ -218,7 +217,7 @@
                 <div style="display:flex; gap:8px;">
                     <button type="submit" class="btn-primary">ค้นหา</button>
                     @if (request('SONum') || request('internal_id') || request('customer_name') || ($selectedStatus !== \App\Models\internal_po::ST_PENDING))
-                        <a href="{{ url()->current() }}{{ $creator ? '?create_by='.urlencode($creator) : '' }}">
+                        <a href="{{ url()->current() }}">
                             <button type="button" class="btn-ghost">ล้าง</button>
                         </a>
                     @endif
@@ -269,7 +268,6 @@
                 <th class="col-key">รายการสินค้า</th>
                 <th class="col-key num">จำนวน</th>
                 <th>ลูกค้า</th>
-                <th class="col-minor">ผู้สร้าง PO</th>
             </tr>
         </thead>
         <tbody>
@@ -299,7 +297,6 @@
                         <td class="col-key num">{{ number_format($it->item_quantity, 2) }}</td>
                         @if ($first)
                             <td class="cust-cell" rowspan="{{ $rowspan }}">{{ $h->customer_name }}</td>
-                            <td class="col-minor" rowspan="{{ $rowspan }}">{{ $h->create_by ?: '—' }}</td>
                         @endif
                     </tr>
                     @php($first = false)
@@ -315,11 +312,10 @@
                     <td class="col-key items-cell">—</td>
                     <td class="col-key num">—</td>
                     <td class="cust-cell">{{ $h->customer_name }}</td>
-                    <td class="col-minor">{{ $h->create_by ?: '—' }}</td>
                 </tr>
             @endif
         @empty
-            <tr><td colspan="8" class="empty">ไม่มีรายการ</td></tr>
+            <tr><td colspan="7" class="empty">ไม่มีรายการ</td></tr>
         @endforelse
         </tbody>
     </table>

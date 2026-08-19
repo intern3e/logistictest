@@ -3,14 +3,18 @@
 namespace App\Http\Controllers;
 
 use App\Models\internal_po;
+use App\Models\SsoTicket;
+use App\Models\UserAuth;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
-
+use Illuminate\Support\Str;
+use Illuminate\Support\Facades\Cache;
 class InternalPoController extends Controller
 {
-    const ALLOWED_USERS = ['test101'];
     const PRINTERS = [
         'TSC TTP-247 internal' => 'ภายใน',
         'TSC TTP-247 store'    => 'สโตร์',
@@ -19,8 +23,8 @@ class InternalPoController extends Controller
 
     // สถานะที่แสดง/กรองในหน้า dashboard เอาไว้ 3 กลุ่มเท่านั้น
     // "finish" เป็นกลุ่มรวม: สถานะอื่นๆ ที่ไม่ใช่ pending/cancel ทั้งหมดจะถูกนับ+แสดงเป็น "จัดเสร็จแล้ว"
-    const STATUS_ALL_KEY = '__all__';   // เพิ่มใหม่
-    const STATUS_FINISH_KEY = '__finish__'; 
+    const STATUS_ALL_KEY = '__all__';
+    const STATUS_FINISH_KEY = '__finish__';
 
     const VISIBLE_STATUSES = [
         self::STATUS_ALL_KEY      => 'ทั้งหมด',
@@ -31,9 +35,44 @@ class InternalPoController extends Controller
 
     const PER_PAGE = 100;
 
-    private function allowed(?string $user): bool
+    // ค่า config ของ hikaripower API (เว็บภายใน ฝังตรงนี้เลย ไม่ผ่าน config/.env)
+    const HIKARI_API_URL = 'https://api.hikaripower.com';
+    const HIKARI_API_KEY = 'hikari20259f3c6e1b0f2d9c9c0e5e0b4d8b4e6e9c0c6c2f3e7b8a9f1d2e3c4b5a6f7d8e9';
+
+    // ประเภท transaction ที่ยิงไป hikaripower ตอนจัดเสร็จ (ตัดสต็อกออกจากการขาย)
+    const HIKARI_TX_TYPE_STOCKOUT = 'ขายสินค้าออก';
+
+    /**
+     * ตรวจ ticket SSO (client_key '3e') แล้ว login ให้อัตโนมัติถ้ายังไม่มี session
+     * ไม่มี session เลย -> abort 403 (แบบเดียวกับ MobilePoappController::index)
+     */
+    private function resolveSsoUser(Request $request, string $logTag): UserAuth
     {
-        return in_array($user, self::ALLOWED_USERS, true);
+        $ticket = $request->input('ticket');
+
+        if ($ticket && !Auth::guard('web')->check()) {
+            $ticketRecord = SsoTicket::where('ticket', $ticket)
+                ->where('client_key', '3e')
+                ->first();
+
+            if ($ticketRecord && $ticketRecord->markAsUsed()) {
+                $user = UserAuth::find($ticketRecord->id_emp);
+                if ($user && $user->is_active) {
+                    Auth::guard('web')->login($user);
+                    Log::info("{$logTag}: SSO login success user={$user->id_emp}");
+                } else {
+                    Log::warning("{$logTag}: ticket valid but user not found/inactive id_emp={$ticketRecord->id_emp}");
+                }
+            } else {
+                Log::warning("{$logTag}: invalid or expired ticket={$ticket}");
+            }
+        }
+
+        if (!Auth::guard('web')->check()) {
+            abort(403, 'กรุณาเข้าใช้งานผ่านเมนูหลัก');
+        }
+
+        return Auth::guard('web')->user();
     }
 
     private function baseQuery(Request $request, bool $withStatusFilter = true)
@@ -118,8 +157,11 @@ class InternalPoController extends Controller
 
     public function pickDashboard(Request $request)
     {
-        $creator = $request->input('create_by');
-        if (!$this->allowed($creator)) abort(403, 'ไม่มีสิทธิ์เข้าใช้งาน');
+        $authUser     = $this->resolveSsoUser($request, 'internal_po.pick');
+        $operatorName = $authUser->name;
+        if ($operatorName === 'tuk') {
+            return redirect()->route('store.location');
+        }
 
         $heads          = $this->loadHeads($request, internal_po::ST_PENDING);
         $locations      = $this->recentLocations();
@@ -129,34 +171,77 @@ class InternalPoController extends Controller
         $selectedStatus = $request->filled('status') ? $request->input('status') : internal_po::ST_PENDING;
 
         return view('internal_po.dashboard', compact(
-            'heads', 'locations', 'creator', 'printers', 'statuses', 'statusCounts', 'selectedStatus'
+            'heads', 'locations', 'operatorName', 'printers', 'statuses', 'statusCounts', 'selectedStatus'
         ));
     }
+
     public function pickSubmit(Request $request)
     {
+        $authUser = Auth::guard('web')->user();
+        if (!$authUser) {
+            return response()->json(['ok' => false, 'message' => 'เซสชันหมดอายุ กรุณาเข้าสู่ระบบใหม่'], 401);
+        }
+
         $request->validate([
             'ids'          => 'required|array|min:1',
             'ids.*'        => 'string',
-            'user'         => 'required|string|max:100',
             'printer'      => 'required|string|in:' . implode(',', array_keys(self::PRINTERS)),
             'print_sheets' => 'nullable|integer|min:1|max:20',
         ]);
 
-        $user = $request->input('user');
-        if (!$this->allowed($user)) {
-            return response()->json(['ok' => false, 'message' => 'ไม่มีสิทธิ์'], 403);
+        $ids          = $request->input('ids');
+        $printer      = $request->input('printer');
+        $printSheets  = (int) $request->input('print_sheets', 1);
+        $operatorName = $authUser->name;
+
+        // โหลดหัว PO ที่ยัง pending พร้อมรายการสินค้า เพื่อคำนวณยอดที่ต้องตัดสต็อกล่วงหน้า
+        $candidateHeads = internal_po::whereIn('internal_id', $ids)
+            ->where('status', internal_po::ST_PENDING)
+            ->with('lines')
+            ->get();
+
+        if ($candidateHeads->isEmpty()) {
+            return response()->json(['ok' => false, 'message' => 'ไม่พบรายการที่พร้อมดำเนินการ'], 404);
         }
 
-        $ids         = $request->input('ids');
-        $printer     = $request->input('printer');
-        $printSheets = (int) $request->input('print_sheets', 1);
+        // รวมจำนวนที่ต้องตัดสต็อกต่อ item_id (กันกรณี item เดียวกันซ้ำหลายบรรทัด/หลายใบในการจัดครั้งเดียว)
+        $neededByItem = [];
+        foreach ($candidateHeads as $h) {
+            foreach ($h->lines as $it) {
+                if (!$it->item_id) continue;
+                $neededByItem[$it->item_id] = ($neededByItem[$it->item_id] ?? 0) + (float) $it->item_quantity;
+            }
+        }
+
+        // ตรวจสอบยอดคงเหลือใน hikaripower ก่อนตัดสต็อกจริง
+        $itemSnapshots = [];
+        $shortages     = [];
+        foreach ($neededByItem as $itemId => $needQty) {
+            $item = $this->hikariGetItem($itemId);
+            if (!$item) {
+                $shortages[] = "{$itemId} (ไม่พบสินค้าใน inventory)";
+                continue;
+            }
+            $itemSnapshots[$itemId] = $item;
+            if ((float) $item['quantity'] < $needQty) {
+                $shortages[] = "{$itemId} (คงเหลือ {$item['quantity']}, ต้องการ {$needQty})";
+            }
+        }
+
+        if (!empty($shortages)) {
+            return response()->json([
+                'ok'      => false,
+                'message' => 'ไม่สามารถจัดได้เนื่องจากของใน inventory ไม่เพียงพอ: ' . implode(', ', $shortages),
+            ], 422);
+        }
 
         try {
-            [$updated, $heads] = DB::transaction(function () use ($ids) {
+            [$updated, $heads] = DB::transaction(function () use ($ids, $authUser) {
                 $heads = internal_po::whereIn('internal_id', $ids)
                     ->where('status', internal_po::ST_PENDING)
+                    ->with('lines')
                     ->lockForUpdate()
-                    ->get(['internal_id', 'SO_id', 'POref', 'customer_name']);
+                    ->get();
 
                 if ($heads->isEmpty()) {
                     return [0, $heads];
@@ -165,7 +250,7 @@ class InternalPoController extends Controller
                 $n = internal_po::whereIn('internal_id', $heads->pluck('internal_id'))
                     ->update([
                         'status'  => internal_po::ST_FINISH,
-                        'pick_by' => request('user'),
+                        'pick_by' => $authUser->name,
                         'pick_at' => Carbon::now()->toDateTimeString(),
                     ]);
 
@@ -179,31 +264,38 @@ class InternalPoController extends Controller
             return response()->json(['ok' => false, 'message' => 'ไม่พบรายการที่พร้อมดำเนินการ'], 404);
         }
 
+        // ตัดสต็อก + เขียน transaction ที่ hikaripower ตามรายการที่ "จัดเสร็จจริง" (post-lock)
+        $hikariHadError = $this->syncHikariStockout($heads, $itemSnapshots, $operatorName);
+
         $this->insertPrintWarehouse($heads, $printer, $printSheets);
 
-        return response()->json([
-            'ok'      => true,
-            'message' => 'จัดเสร็จ ' . $updated . ' ใบ (สั่งพิมพ์ ' . $printSheets . ' แผ่น/ใบ ที่ ' . $printer . ')',
-        ]);
+        $message = 'จัดเสร็จ ' . $updated . ' ใบ (สั่งพิมพ์ ' . $printSheets . ' แผ่น/ใบ ที่ ' . $printer . ')';
+        if ($hikariHadError) {
+            $message .= ' (คำเตือน: ซิงก์ inventory บาง item ไม่สำเร็จ กรุณาตรวจสอบ log)';
+        }
+
+        return response()->json(['ok' => true, 'message' => $message]);
     }
 
     public function markCancel(Request $request)
     {
+        $authUser = Auth::guard('web')->user();
+        if (!$authUser) {
+            return response()->json(['ok' => false, 'message' => 'เซสชันหมดอายุ กรุณาเข้าสู่ระบบใหม่'], 401);
+        }
+
         $request->validate([
             'ids'   => 'required|array|min:1',
             'ids.*' => 'string',
-            'user'  => 'required|string|max:100',
         ]);
-        $user = $request->input('user');
-        if (!$this->allowed($user)) return response()->json(['ok' => false, 'message' => 'ไม่มีสิทธิ์'], 403);
 
         try {
-            $updated = DB::transaction(function () use ($request, $user) {
+            $updated = DB::transaction(function () use ($request, $authUser) {
                 return internal_po::whereIn('internal_id', $request->input('ids'))
                     ->where('status', internal_po::ST_PENDING)
                     ->update([
                         'status'  => internal_po::ST_CANCEL,
-                        'pick_by' => $user,
+                        'pick_by' => $authUser->name,
                         'pick_at' => Carbon::now()->toDateTimeString(),
                     ]);
             });
@@ -245,5 +337,129 @@ class InternalPoController extends Controller
         } catch (\Exception $e) {
             Log::error('insertPrintWarehouse failed: ' . $e->getMessage());
         }
+    }
+
+    /**
+     * ตัดสต็อก (update item_quantity) + เขียน transaction ขายสินค้าออกที่ hikaripower
+     * ต่อ 1 บรรทัดสินค้า = 1 transaction record ตาม detail ในหน้าเว็บ
+     *
+     * @return bool true ถ้ามีบาง item sync ไม่สำเร็จ (caller เอาไว้แจ้งเตือนแบบ non-blocking)
+     */
+    private function syncHikariStockout($heads, array $itemSnapshots, string $operatorName): bool
+    {
+        $hadError = false;
+
+        // 1) รวมยอดตัดสต็อกจริงจาก $heads ที่จัดเสร็จสำเร็จ (หลัง lock) แล้วสั่ง update item_quantity ทีละ item
+        $actualNeededByItem = [];
+        foreach ($heads as $h) {
+            foreach ($h->lines as $it) {
+                if (!$it->item_id) continue;
+                $actualNeededByItem[$it->item_id] = ($actualNeededByItem[$it->item_id] ?? 0) + (float) $it->item_quantity;
+            }
+        }
+
+        foreach ($actualNeededByItem as $itemId => $needQty) {
+            $snapshot = $itemSnapshots[$itemId] ?? $this->hikariGetItem($itemId);
+            if (!$snapshot) {
+                Log::error("syncHikariStockout: ไม่พบ snapshot ของ item_id={$itemId} ข้ามการตัดสต็อก");
+                $hadError = true;
+                continue;
+            }
+
+            $newQty = (float) $snapshot['quantity'] - $needQty;
+            $ok = $this->hikariUpdateItemQuantity($itemId, $snapshot, $newQty);
+            if (!$ok) $hadError = true;
+        }
+
+        // 2) เขียน transaction แยกทีละบรรทัดสินค้าของแต่ละใบ (ตาม detail ที่แสดงในหน้าเว็บ)
+        foreach ($heads as $h) {
+            foreach ($h->lines as $it) {
+                if (!$it->item_id) continue;
+                $ok = $this->hikariInsertStockoutTransaction(
+                    $it->item_id,
+                    (float) $it->item_quantity,
+                    $h->SO_id,
+                    $operatorName
+                );
+                if (!$ok) $hadError = true;
+            }
+        }
+        Cache::forget('all_items_list');
+        Cache::forget('all_transactions');
+
+        return $hadError;
+    }
+
+    /**
+     * GET รายละเอียดสินค้าปัจจุบันจาก hikaripower (เอาไว้เช็คยอดคงเหลือ + เอา field เดิมไปใช้ตอน update)
+     * ⚠️ สมมติ endpoint เป็น GET /items/{id} — โปรดตรวจสอบกับ ItemsController จริง
+     */
+    private function hikariGetItem(string $itemId): ?array
+    {
+        try {
+            $res = Http::withHeaders(['x-api-key' => self::HIKARI_API_KEY])
+                ->baseUrl(self::HIKARI_API_URL)
+                ->get('/items/' . urlencode($itemId));
+
+            if ($res->successful()) {
+                return $res->json();
+            }
+            Log::warning("hikariGetItem: failed itemId={$itemId} status=" . $res->status() . ' body=' . $res->body());
+        } catch (\Exception $e) {
+            Log::error("hikariGetItem: exception itemId={$itemId} " . $e->getMessage());
+        }
+        return null;
+    }
+
+    /**
+     * PUT อัปเดตยอดคงเหลือของ item (ตัดสต็อก) — ใช้ field เดิมจาก snapshot แค่เปลี่ยน quantity
+     * ⚠️ สมมติ endpoint เป็น PUT /items/{id} รับ payload เต็ม (name, quantity, typeitem, location, brand, privilege)
+     */
+    private function hikariUpdateItemQuantity(string $itemId, array $snapshot, float $newQuantity): bool
+    {
+        try {
+            $res = Http::withHeaders(['x-api-key' => self::HIKARI_API_KEY])
+                ->baseUrl(self::HIKARI_API_URL)
+                ->put('/items/' . urlencode($itemId), [
+                    'name'      => $snapshot['name']      ?? '',
+                    'quantity'  => $newQuantity,
+                    'typeitem'  => $snapshot['typeitem']  ?? '',
+                    'location'  => $snapshot['location']  ?? '',
+                    'brand'     => $snapshot['brand']     ?? '',
+                    'privilege' => $snapshot['privilege'] ?? '',
+                ]);
+
+            if ($res->successful()) return true;
+            Log::error("hikariUpdateItemQuantity: failed itemId={$itemId} status=" . $res->status() . ' body=' . $res->body());
+        } catch (\Exception $e) {
+            Log::error("hikariUpdateItemQuantity: exception itemId={$itemId} " . $e->getMessage());
+        }
+        return false;
+    }
+
+    /**
+     * POST insert transaction ขายสินค้าออกที่ hikaripower
+     * ⚠️ endpoint ตรงกับ TransactionController: POST /transaction/stockout
+     */
+    private function hikariInsertStockoutTransaction(string $itemId, float $qty, ?string $soId, string $operatorName): bool
+    {
+        try {
+            $res = Http::withHeaders(['x-api-key' => self::HIKARI_API_KEY])
+                ->baseUrl(self::HIKARI_API_URL)
+                ->post('/transaction/stockout', [
+                    'transaction_id'   => (string) Str::uuid(),
+                    'addby'            => $operatorName,
+                    'transaction_type' => self::HIKARI_TX_TYPE_STOCKOUT,
+                    'document_id'      => $soId,
+                    'item_id'          => $itemId,
+                    'item_quantity'    => $qty,
+                ]);
+
+            if ($res->successful()) return true;
+            Log::error("hikariInsertStockoutTransaction: failed itemId={$itemId} status=" . $res->status() . ' body=' . $res->body());
+        } catch (\Exception $e) {
+            Log::error("hikariInsertStockoutTransaction: exception itemId={$itemId} " . $e->getMessage());
+        }
+        return false;
     }
 }

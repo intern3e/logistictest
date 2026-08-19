@@ -447,6 +447,8 @@ html{overflow-y:auto;}
   transition: background 0.2s;
 }
 .entry-export-btn:hover { background: #1f2937; }
+#ilBtnSaveAll:hover { background: #059669 !important; }
+#ilBtnSaveAll:disabled { background: #9ca3af !important; cursor: not-allowed; }
 
 .entry-oil-tabs {
   display: flex;
@@ -643,6 +645,7 @@ html{overflow-y:auto;}
   margin: 0 auto !important;
 }
 .er-time-arrow { display: none !important; }
+.er-draft-badge { display:block; text-align:center; font-size:10px; font-weight:600; color:#059669; white-space:nowrap; margin-top:2px; }
 
 .time-input-wrapper {
   position: relative;
@@ -1361,6 +1364,10 @@ html{overflow-y:auto;}
             <span class="entry-oil-num">฿<span id="ilOilPriceShow">—</span></span>
             <button type="button" id="ilBtnRefresh" class="entry-oil-refresh" onclick="ilRefreshOilPrice()" title="รีเฟรช">↻</button>
           </div>
+          <button type="button" class="entry-export-btn" id="ilBtnSaveAll" onclick="erSaveAllRows()" style="background:#10b981" title="บันทึกทุกคนที่กรอกข้อมูลครบในหน้านี้">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>
+            <span class="sa-label">บันทึกทั้งหมด</span>
+          </button>
           <button type="button" class="entry-export-btn" onclick="openPdfRangeModal()" title="ดาวน์โหลดรายงาน PDF">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
             <span>Export PDF</span>
@@ -1613,8 +1620,37 @@ const ROUTE_FILTER='{{ route("oil.filter") }}';
 const ROUTE_SYNC_NG='{{ route("oil.syncNg") }}';
 const ROUTE_SAVED_DRIVERS='{{ url("/oil/saved-drivers") }}';
 const ROUTE_LAST_PLATES='{{ url("/oil/last-plates") }}';
-const CURRENT_USER=@json($currentUser);
+
+/* ===== FIX: create_by หายเวลาเปลี่ยนวันที่/มุมมอง =====
+   เดิม CURRENT_USER เป็น const มาจาก PHP ครั้งเดียวตอนโหลดหน้า
+   ถ้า redirect ฝั่ง backend (route oil.filter) ทำ query string
+   'create_by' หลุดไป ตัวแปรนี้จะกลายเป็น 'Guest' ถาวรทันที
+   และทุกฟังก์ชันเปลี่ยนวันที่/มุมมองที่เรียก submitFilterForm()
+   จะหยุดแนบ create_by ไปกับ request ต่อ ๆ ไปทั้งหมด
+   -> เปลี่ยนเป็น let + จำค่าไว้ใน sessionStorage เป็นตัวกันสำรอง
+      ถ้า backend ทำหาย ฝั่ง JS จะดึงค่าที่จำไว้กลับมาใช้เอง
+   หมายเหตุ: ควรแก้ต้นเหตุที่ controller ของ route('oil.filter')
+   ให้ redirect กลับไปพร้อม create_by เสมอด้วย (ดูคำอธิบายที่แชท) */
+let CURRENT_USER=@json($currentUser);
 const IS_PRIVILEGED=@json($isPrivileged);
+(function _persistCreateBy(){
+  try{
+    if(CURRENT_USER && CURRENT_USER!=='Guest'){
+      sessionStorage.setItem('oilCreateBy', CURRENT_USER);
+    }else{
+      const saved = sessionStorage.getItem('oilCreateBy');
+      if(saved){
+        CURRENT_USER = saved;
+        // sync กลับเข้า URL ปัจจุบันด้วย เผื่อมีการ reload หรือกด back
+        const url = new URL(window.location.href);
+        if(!url.searchParams.get('create_by')){
+          url.searchParams.set('create_by', saved);
+          window.history.replaceState({}, '', url.toString());
+        }
+      }
+    }
+  }catch(e){}
+})();
 const CSRF_TOKEN=document.querySelector('meta[name="csrf-token"]')?.content??'';
 const TZ='Asia/Bangkok';
 const MAIN_VIEW=@json($view);
@@ -1682,7 +1718,23 @@ function drpRender(){document.getElementById('drpMonthTitle').textContent=`${TH_
 function drpDayBtn(ds,d,muted,ts){const c=['drp-day'];if(muted)c.push('muted');if(ds===ts)c.push('today');if(drpFrom&&drpTo){if(ds===drpFrom&&ds===drpTo)c.push('selected');else if(ds===drpFrom)c.push('range-start');else if(ds===drpTo)c.push('range-end');else if(ds>drpFrom&&ds<drpTo)c.push('in-range');}else if(drpFrom&&ds===drpFrom)c.push('selected');return`<button type="button" class="${c.join(' ')}" data-date="${ds}">${d}</button>`;}
 
 function drpPreset(p){const n=new Date();let f,t;if(p==='today'){f=t=drpFmt(n);}else if(p==='7days'){t=drpFmt(n);const d=new Date(n);d.setDate(d.getDate()-6);f=drpFmt(d);}else if(p==='thismonth'){f=drpFmt(new Date(n.getFullYear(),n.getMonth(),1));t=drpFmt(n);}drpFrom=f;drpTo=t;const fd=drpParse(f);drpViewYear=fd.getFullYear();drpViewMonth=fd.getMonth();drpRender();}
-async function drpApply(){if(!drpFrom)return;const to=drpTo||drpFrom;const pop=document.getElementById('drpPopup'),trg=document.getElementById('drpTrigger');if(pop)pop.classList.remove('open','show');if(trg)trg.classList.remove('active');const wrap=document.querySelector('.drp-wrap[data-from]');const prevFrom=wrap?.dataset.from||'';const prevTo=wrap?.dataset.to||'';if(IS_PRIVILEGED&&MAIN_VIEW==='day'&&document.getElementById('entryRowsBody')){const workDateInput=document.getElementById('il-work-date');if(workDateInput)workDateInput.value=drpFrom;drpUpdateLabel();const pending=await ilOnDateChange();if(pending>0){if(wrap){wrap.dataset.from=drpFrom;wrap.dataset.to=to;}return;}if(workDateInput)workDateInput.value=prevFrom;drpFrom=prevFrom;drpTo=prevTo;drpUpdateLabel();if(prevFrom){workDateInput.value=prevFrom;await ilOnDateChange();}return;}drpUpdateLabel();if(drpFrom!==prevFrom||to!==prevTo){const params={view:'day',date_from:drpFrom,date_to:to};const ds=document.getElementById('driverPicker');if(ds&&ds.value)params.driver_name=ds.value;const ps=document.getElementById('platePicker');if(ps&&ps.value)params.vehicle_id=ps.value;submitFilterForm(params);}}
+async function drpApply(){
+  if(!drpFrom)return;
+  const to=drpTo||drpFrom;
+  const pop=document.getElementById('drpPopup'),trg=document.getElementById('drpTrigger');
+  if(pop)pop.classList.remove('open','show');
+  if(trg)trg.classList.remove('active');
+  const wrap=document.querySelector('.drp-wrap[data-from]');
+  const prevFrom=wrap?.dataset.from||'';
+  const prevTo=wrap?.dataset.to||'';
+  drpUpdateLabel();
+  if(drpFrom===prevFrom && to===prevTo)return; // วันที่ไม่เปลี่ยน ไม่ต้องทำอะไร
+  if(wrap){wrap.dataset.from=drpFrom;wrap.dataset.to=to;}
+  const params={view:'day',date_from:drpFrom,date_to:to};
+  const ds=document.getElementById('driverPicker');if(ds&&ds.value)params.driver_name=ds.value;
+  const ps=document.getElementById('platePicker');if(ps&&ps.value)params.vehicle_id=ps.value;
+  submitFilterForm(params);
+}
 document.addEventListener('click',(e)=>{const pop=document.getElementById('drpPopup'),trg=document.getElementById('drpTrigger');if(!pop||!(pop.classList.contains('open')||pop.classList.contains('show')))return;if(pop.contains(e.target)||trg.contains(e.target))return;pop.classList.remove('open','show');trg.classList.remove('active');});
 function drpInit(){
   const wrap=document.querySelector('.drp-wrap[data-from]');if(!wrap)return;
@@ -1765,7 +1817,7 @@ async function ilLoadOilPrice(type){const cfg=OIL_CONFIG[type]??OIL_CONFIG['dies
 // Jobs & Saved Drivers
 const JOB_API_BASE='http://server_update:8000/api/getDeliveryPersonByDate';
 const jobFetched={};const JOBS_PROCESSED={};
-async function fetchJobsByDate(dateStr){if(jobFetched[dateStr])return;jobFetched[dateStr]=true;let drivers=[];try{const res=await fetch(`${JOB_API_BASE}?date=${dateStr}`);if(!res.ok)throw new Error('HTTP '+res.status);const json=await res.json();drivers=(json.data||[]).map(b=>({driver_name:b.bill_out_by||'ไม่ระบุ',jobs:(b.jobs||[]).map(j=>({bill_no:j.bill_no||'',so_id:j.so_id||'',customer_name:j.customer_name||'',bill_in_by:j.bill_in_by||'',status:j.delivery_status||'',note:j.reason||''}))}));}catch(e){console.warn('fetchJobsByDate:',e);drivers=[];}const whitelist={},auto={};drivers.forEach(d=>{const n=d.driver_name||'';if(!n)return;const bucket=isAllowedDriver(n)?whitelist:auto;if(!bucket[n])bucket[n]={name:n,jobs:[]};(d.jobs||[]).forEach(j=>bucket[n].jobs.push(j));});JOBS_PROCESSED[dateStr]={whitelist,auto};}
+async function fetchJobsByDate(dateStr){if(jobFetched[dateStr])return;jobFetched[dateStr]=true;let drivers=[];try{const res=await fetch(`${JOB_API_BASE}?date=${dateStr}`);if(!res.ok)throw new Error('HTTP '+res.status);const json=await res.json();drivers=(json.data||[]).map(b=>({driver_name:b.bill_out_by||'ไม่ระบุ',jobs:(b.jobs||[]).map(j=>({bill_no:j.bill_no||'',so_id:j.so_id||'',customer_name:j.customer_name||'',bill_in_by:j.bill_in_by||'',status:j.delivery_status||'',note:j.reason||''}))}));}catch(e){console.warn('fetchJobsByDate:',e);drivers=[];}const whitelist={},auto={};drivers.forEach(d=>{const rawName=(d.driver_name||'').trim();if(!rawName)return;const allowed=isAllowedDriver(rawName);const bucket=allowed?whitelist:auto;/* รวมชื่อที่สะกด/เว้นวรรค/อักขระที่มองไม่เห็นต่างกันเล็กน้อยให้เป็นคนเดียวกัน กันไม่ให้ขึ้นซ้ำเป็นสองแถว */const dedupKey=allowed?_normalizeDriver(rawName):_normalizeName(rawName);if(!bucket[dedupKey]){let displayName=rawName;if(allowed){const canon=ALLOWED_DRIVERS.find(nm=>_normalizeDriver(nm)===dedupKey);if(canon)displayName=canon;}bucket[dedupKey]={name:displayName,jobs:[]};}(d.jobs||[]).forEach(j=>bucket[dedupKey].jobs.push(j));});JOBS_PROCESSED[dateStr]={whitelist,auto};}
 
 const SAVED_DRIVERS_CACHE={};const SESSION_SAVED={};
 function _readSavedDriversFromDOM(date){const set=new Set();if(!date)return set;const parts=date.split('-');if(parts.length!==3)return set;const target=`${parts[2]}/${parts[1]}/${parts[0]}`;document.querySelectorAll('#oilTbody tr[data-driver]').forEach(tr=>{const dateEl=tr.querySelector('.date-pill'),nameEl=tr.querySelector('.driver-name');if(!dateEl||!nameEl)return;if((dateEl.getAttribute('title')||'').trim()===target){const name=(nameEl.textContent||'').trim();if(name&&name!=='—')set.add(name);}});return set;}
@@ -1886,6 +1938,42 @@ function _autoSelectPlates() {
   });
 }
 
+// ===== ร่างข้อมูลทั้งแถว (Row Draft) — เก็บฝั่งเบราว์เซอร์ด้วย sessionStorage
+// ทุกช่อง (เวลา/ทะเบียน/ค่าน้ำมัน/ระยะ/ค่าใช้จ่ายเพิ่มเติม/ไม่เติมน้ำมัน) จะถูกเก็บอัตโนมัติทันทีที่พิมพ์หรือเปลี่ยนค่า
+// ไม่ต้องกดปุ่มอะไรเพิ่ม และไม่ยิง request ไป backend เลย — ต่อให้ "รีเฟรชหน้าเว็บ" ระหว่างกรอก ข้อมูลก็จะไม่หาย
+// เพราะตอน render แถวใหม่ ระบบจะดึงร่างนี้กลับมาเติมในช่องให้อัตโนมัติ
+// (ข้อมูลจริงจะถูกส่งไป backend พร้อมกันตอนกด "บันทึก" หรือ "บันทึกทั้งหมด" ตามปกติ แล้วร่างจะถูกล้างทิ้ง) =====
+function _rowDraftKey(date,driverName){return `oilRowDraft::${date}::${driverName}`;}
+function _getRowDraft(date,driverName){try{const raw=sessionStorage.getItem(_rowDraftKey(date,driverName));return raw?JSON.parse(raw):null;}catch(e){return null;}}
+function _setRowDraft(date,driverName,data){try{sessionStorage.setItem(_rowDraftKey(date,driverName),JSON.stringify(data));}catch(e){}}
+function _clearRowDraft(date,driverName){try{sessionStorage.removeItem(_rowDraftKey(date,driverName));}catch(e){}}
+
+function erPersistDraft(key, markTimeEdited){
+  const s=driverRowState[key];if(!s||!s.startDT||!s.endDT)return;
+  const date=s.startDT.split('T')[0];
+  const plate=document.querySelector(`.er-plate-select[data-key="${key}"]`)?.value||'';
+  const priceRaw=document.getElementById(`${key}-price`)?.value||'';
+  const distRaw=document.getElementById(`${key}-dist`)?.value||'';
+  const delRaw=document.getElementById(`${key}-delivery`)?.value||'';
+  const otRaw=document.getElementById(`${key}-ot`)?.value||'';
+  const hanRaw=document.getElementById(`${key}-handling`)?.value||'';
+  const existing=_getRowDraft(date,s.driverName);
+  const timeEdited = markTimeEdited===true ? true : !!(existing&&existing.timeEdited);
+  _setRowDraft(date,s.driverName,{
+    startDT:s.startDT, endDT:s.endDT, plate, noFuel:!!s.noFuel,
+    price:priceRaw, distance:distRaw, delivery:delRaw, ot:otRaw, handling:hanRaw,
+    timeEdited
+  });
+}
+// ซิงก์ state จาก DOM เฉยๆ ไม่แตะ badge/ไม่นับว่า "แก้เวลา" — ใช้ตอน render ครั้งแรกของแถว
+function erSyncDateTimeState(key){
+  const s=driverRowState[key];if(!s)return;
+  s.startDT=document.getElementById(`${key}-start-dt`)?.value||'';
+  s.endDT=document.getElementById(`${key}-end-dt`)?.value||'';
+  if(s.startDT){const[h,m]=(s.startDT.split('T')[1]||'00:00').split(':').map(Number);s.sh=h||0;s.sm=m||0;}
+  if(s.endDT){const[h,m]=(s.endDT.split('T')[1]||'00:00').split(':').map(Number);s.eh=h||0;s.em=m||0;}
+}
+
 function ilRenderDriverRows(date){
   const tbody=document.getElementById('entryRowsBody');if(!tbody)return;
   const proc=JOBS_PROCESSED[date]||{whitelist:{},auto:{}};
@@ -1907,6 +1995,7 @@ function ilRenderDriverRows(date){
   if(driverList.length===0){
     if(totalCount===0){tbody.innerHTML='<tr><td colspan="8" class="entry-empty">ไม่พบคนขับสำหรับวันที่นี้</td></tr>';document.getElementById('entrySub').textContent='ไม่พบคนขับของวันนี้';}
     else{tbody.innerHTML=`<tr><td colspan="8" class="entry-empty" style="color:var(--green-dark)">✓ บันทึกครบทุกคนแล้ว (${savedCount} คน)</td></tr>`;document.getElementById('entrySub').textContent=`บันทึกครบ ${savedCount} คน`;}
+    erRefreshSaveAllBadge();
     return;
   }
   let subText=`${driverList.length} คนขับ · กรอกข้อมูลแล้วกดบันทึก`;
@@ -1923,44 +2012,58 @@ function ilRenderDriverRows(date){
       deliveryCost:0, otCost:0, handlingCost:0
     };
     const ini=(d.name||'?').trim().charAt(0).toUpperCase();
+    // ดึงร่างที่เคยกรอกไว้ (ถ้ามี) กลับมาเติมทุกช่องอัตโนมัติ กันข้อมูลหายตอนรีเฟรชหน้าเว็บ
+    const _draft=_getRowDraft(_wd, d.name);
+    const _startVal=(_draft&&_draft.startDT)?_draft.startDT:`${_wd}T09:00`;
+    const _endVal=(_draft&&_draft.endDT)?_draft.endDT:`${_wd}T18:00`;
+    const _dPrice=(_draft&&_draft.price)?_draft.price:'';
+    const _dDist=(_draft&&_draft.distance)?_draft.distance:'';
+    const _dDelivery=(_draft&&_draft.delivery)?_draft.delivery:'';
+    const _dOt=(_draft&&_draft.ot)?_draft.ot:'';
+    const _dHandling=(_draft&&_draft.handling)?_draft.handling:'';
+    const _dNoFuel=!!(_draft&&_draft.noFuel);
+    if(_draft)driverRowState[key].noFuel=_dNoFuel;
+    const _dPlate=(_draft&&_draft.plate)?_draft.plate:'';
+    const _plateOptsRow=(window.PLATE_LIST||[]).map(p=>`<option value="${p}" ${p===_dPlate?'selected':''}>${p}</option>`).join('');
     return`<tr class="entry-row" data-key="${key}" onclick="erFocusRow('${key}')">
       <td data-label="คนขับ"><div class="er-driver"><span class="er-driver-avatar">${ini}</span><div class="er-driver-info"><div class="er-driver-name" title="${d.name}">${d.name}</div><div class="er-driver-jobs">${d.jobs.length} งาน · <span class="er-ok">${okC} ✓</span>${failC>0?` · <span class="er-fail">${failC} ✕</span>`:''}</div></div></div></td>
-      <td data-label="ทะเบียนรถ"><select class="er-plate-select" data-key="${key}" onchange="erUpdateRow('${key}')" onfocus="erFocusRow('${key}')"><option value="">— เลือกทะเบียน —</option>${plateOpts}</select></td>
+      <td data-label="ทะเบียนรถ"><select class="er-plate-select" data-key="${key}" onchange="erUpdateRow('${key}')" onfocus="erFocusRow('${key}')"><option value="">— เลือกทะเบียน —</option>${_plateOptsRow}</select></td>
       <td data-label="เวลา">
         <div class="er-time-stack">
           <div class="time-input-wrapper">
-            <input type="datetime-local" class="er-dt-input" id="${key}-start-dt" value="${_wd}T09:00" onchange="erUpdateDateTime('${key}')" onfocus="erFocusRow('${key}')">
+            <input type="datetime-local" class="er-dt-input" id="${key}-start-dt" value="${_startVal}" onchange="erUpdateDateTime('${key}')" onfocus="erFocusRow('${key}')">
           </div>
           <div class="time-input-wrapper">
-            <input type="datetime-local" class="er-dt-input" id="${key}-end-dt" value="${_wd}T18:00" onchange="erUpdateDateTime('${key}')" onfocus="erFocusRow('${key}')">
+            <input type="datetime-local" class="er-dt-input" id="${key}-end-dt" value="${_endVal}" onchange="erUpdateDateTime('${key}')" onfocus="erFocusRow('${key}')">
           </div>
+          <span class="er-draft-badge" id="${key}-draft-badge" style="display:${(_draft&&_draft.timeEdited)?'':'none'}">💾 จดจำเวลาไว้แล้ว</span>
         </div>
       </td>
       <td data-label="ค่าน้ำมัน (฿)">
         <div class="er-cell-center">
-          <label class="er-nofuel-check"><input type="checkbox" onchange="erToggleNoFuel('${key}',this.checked)" onfocus="erFocusRow('${key}')"> ไม่เติมน้ำมัน</label>
-          <input type="text" inputmode="decimal" class="er-num-input" id="${key}-price" placeholder="ค่าน้ำมัน" oninput="erSanitizeNum(this);erUpdateRow('${key}')" onfocus="erFocusRow('${key}')">
+          <label class="er-nofuel-check"><input type="checkbox" ${_dNoFuel?'checked':''} onchange="erToggleNoFuel('${key}',this.checked)" onfocus="erFocusRow('${key}')"> ไม่เติมน้ำมัน</label>
+          <input type="text" inputmode="decimal" class="er-num-input" id="${key}-price" placeholder="${_dNoFuel?'ไม่เติม':'ค่าน้ำมัน'}" value="${_dNoFuel?'':_dPrice}" ${_dNoFuel?'disabled':''} oninput="erSanitizeNum(this);erUpdateRow('${key}')" onfocus="erFocusRow('${key}')">
         </div>
       </td>
       <td data-label="ระยะ (KM)">
         <div class="er-cell-center">
           <div class="er-nofuel-spacer"></div>
-          <input type="text" inputmode="decimal" class="er-num-input" id="${key}-dist" placeholder="250" oninput="erSanitizeNum(this);erUpdateRow('${key}')" onfocus="erFocusRow('${key}')">
+          <input type="text" inputmode="decimal" class="er-num-input" id="${key}-dist" placeholder="250" value="${_dDist}" oninput="erSanitizeNum(this);erUpdateRow('${key}')" onfocus="erFocusRow('${key}')">
         </div>
       </td>
       <td data-label="ค่าใช้จ่ายเพิ่มเติม (฿)">
         <div class="er-extra-costs">
         <div class="er-extra-item">
           <label>ค่าวิ่ง</label>
-          <input type="text" inputmode="decimal" class="er-num-input er-num-sm" id="${key}-delivery" placeholder="" oninput="erSanitizeNum(this);erUpdateRow('${key}')" onfocus="erFocusRow('${key}')">
+          <input type="text" inputmode="decimal" class="er-num-input er-num-sm" id="${key}-delivery" placeholder="" value="${_dDelivery}" oninput="erSanitizeNum(this);erUpdateRow('${key}')" onfocus="erFocusRow('${key}')">
         </div>
         <div class="er-extra-item">
           <label>OT</label>
-          <input type="text" inputmode="decimal" class="er-num-input er-num-sm" id="${key}-ot" placeholder="" oninput="erSanitizeNum(this);erUpdateRow('${key}')" onfocus="erFocusRow('${key}')">
+          <input type="text" inputmode="decimal" class="er-num-input er-num-sm" id="${key}-ot" placeholder="" value="${_dOt}" oninput="erSanitizeNum(this);erUpdateRow('${key}')" onfocus="erFocusRow('${key}')">
         </div>
         <div class="er-extra-item">
           <label>ค่ายก</label>
-          <input type="text" inputmode="decimal" class="er-num-input er-num-sm" id="${key}-handling" placeholder="" oninput="erSanitizeNum(this);erUpdateRow('${key}')" onfocus="erFocusRow('${key}')">
+          <input type="text" inputmode="decimal" class="er-num-input er-num-sm" id="${key}-handling" placeholder="" value="${_dHandling}" oninput="erSanitizeNum(this);erUpdateRow('${key}')" onfocus="erFocusRow('${key}')">
         </div>
         </div>
       </td>
@@ -1972,8 +2075,9 @@ function ilRenderDriverRows(date){
       <td data-label="บันทึก" style="text-align:center"><button type="button" class="er-save-btn" id="${key}-save" onclick="event.stopPropagation();erSaveRow('${key}')">บันทึก</button></td>
     </tr>`;
   }).join('');
-  Object.keys(driverRowState).forEach(k=>{if(document.getElementById(`${k}-start-dt`))erUpdateDateTime(k);if(document.getElementById(`${k}-price`))erUpdateRow(k);});
+  Object.keys(driverRowState).forEach(k=>{if(document.getElementById(`${k}-start-dt`))erSyncDateTimeState(k);if(document.getElementById(`${k}-price`))erUpdateRow(k);});
   _fetchLastPlates().then(() => _autoSelectPlates());
+  erRefreshSaveAllBadge();
 }
 
 function erSanitizeNum(el){let v=el.value.replace(/[^0-9.]/g,'');const parts=v.split('.');if(parts.length>2)v=parts[0]+'.'+parts.slice(1).join('');el.value=v;}
@@ -2020,9 +2124,46 @@ function erUpdateRow(key){
       ${extraHtml}
     `;
   }
+  erPersistDraft(key);
+  erRefreshSaveAllBadge();
 }
 function erUpdateAllRows(){Object.keys(driverRowState).forEach(k=>erUpdateRow(k));}
-function erUpdateDateTime(key){const s=driverRowState[key];if(!s)return;s.startDT=document.getElementById(`${key}-start-dt`)?.value||'';s.endDT=document.getElementById(`${key}-end-dt`)?.value||'';if(s.startDT){const[h,m]=(s.startDT.split('T')[1]||'00:00').split(':').map(Number);s.sh=h||0;s.sm=m||0;}if(s.endDT){const[h,m]=(s.endDT.split('T')[1]||'00:00').split(':').map(Number);s.eh=h||0;s.em=m||0;}}
+
+// ---- ตรวจว่าแถวไหน "ข้อมูลครบพร้อมบันทึก" แล้ว (ใช้ทั้งตอนโชว์ตัวเลขบนปุ่ม และตอนบันทึกทั้งหมดจริง) ----
+function erValidateRow(key){
+  const s=driverRowState[key];
+  if(!s)return{valid:false,reason:'ไม่พบข้อมูล'};
+  const plate=document.querySelector(`.er-plate-select[data-key="${key}"]`)?.value||'';
+  if(!plate)return{valid:false,plate,reason:'ไม่ได้เลือกทะเบียน'};
+  if(!s.noFuel){
+    const priceRaw=document.getElementById(`${key}-price`)?.value??'';
+    if(priceRaw===''||isNaN(parseFloat(priceRaw)))return{valid:false,plate,reason:'ไม่ได้กรอกค่าน้ำมัน'};
+    if(parseFloat(priceRaw)<0)return{valid:false,plate,reason:'ค่าน้ำมันติดลบ'};
+  }
+  const delRaw=document.getElementById(`${key}-delivery`)?.value??'';
+  const otRaw=document.getElementById(`${key}-ot`)?.value??'';
+  const hanRaw=document.getElementById(`${key}-handling`)?.value??'';
+  if(delRaw!==''&&isNaN(parseFloat(delRaw)))return{valid:false,plate,reason:'ค่าวิ่งไม่ถูกต้อง'};
+  if(otRaw!==''&&isNaN(parseFloat(otRaw)))return{valid:false,plate,reason:'ค่า OT ไม่ถูกต้อง'};
+  if(hanRaw!==''&&isNaN(parseFloat(hanRaw)))return{valid:false,plate,reason:'ค่ายกไม่ถูกต้อง'};
+  if(!s.startDT||!s.endDT)return{valid:false,plate,reason:'ไม่ได้เลือกวันเวลา'};
+  if(new Date(s.endDT)<=new Date(s.startDT))return{valid:false,plate,reason:'เวลาสิ้นสุดต้องหลังเวลาเริ่ม'};
+  return{valid:true,plate};
+}
+function erCountReadyRows(){return Object.keys(driverRowState).filter(k=>erValidateRow(k).valid).length;}
+function erRefreshSaveAllBadge(){
+  const btn=document.getElementById('ilBtnSaveAll');if(!btn||btn.dataset.saving==='1')return;
+  const label=btn.querySelector('.sa-label');if(!label)return;
+  const n=erCountReadyRows();
+  label.textContent=n>0?`บันทึกทั้งหมด (${n})`:'บันทึกทั้งหมด';
+}
+function erUpdateDateTime(key){
+  erSyncDateTimeState(key);
+  erPersistDraft(key, true);
+  const badge=document.getElementById(`${key}-draft-badge`);
+  if(badge){badge.style.display='';badge.textContent='💾 จดจำเวลาไว้แล้ว';}
+  erRefreshSaveAllBadge();
+}
 let _focusedRowKey=null;
 function erFocusRow(key){if(_focusedRowKey===key)return;_focusedRowKey=key;document.querySelectorAll('.entry-row').forEach(r=>r.classList.toggle('focused',r.dataset.key===key));const s=driverRowState[key];if(!s)return;ilRenderJobsForDriver(s.driverName,s.jobs);}
 
@@ -2079,6 +2220,7 @@ if(hanRaw !== '' && isNaN(parseFloat(hanRaw)))errors.push('ค่ายกไม
     const res=await fetch(ROUTE_STORE,{method:'POST',headers:{'X-CSRF-TOKEN':CSRF_TOKEN,'Accept':'application/json'},body:fd});
     if(!res.ok&&res.status!==302)throw new Error('HTTP '+res.status);
     markDriverSaved(date,s.driverName);
+    _clearRowDraft(date,s.driverName);
     ilAppendLogRow({
       date,driver_name:s.driverName,vehicle_id:plate,
       start_h:s.sh,start_m:s.sm,end_h:s.eh,end_m:s.em,
@@ -2095,6 +2237,106 @@ if(hanRaw !== '' && isNaN(parseFloat(hanRaw)))errors.push('ค่ายกไม
   }
 }
 function showSaveToast(driverName){document.getElementById('saveToast')?.remove();const toast=document.createElement('div');toast.id='saveToast';toast.className='save-toast';toast.innerHTML=`<span class="save-toast-icon">✓</span><div class="save-toast-body"><div class="save-toast-title">บันทึกสำเร็จ</div><div class="save-toast-msg">${driverName}</div></div>`;document.body.appendChild(toast);setTimeout(()=>{toast.classList.add('hiding');setTimeout(()=>toast.remove(),250);},2500);}
+function showInfoToast(title,msg,warn){document.getElementById('saveToast')?.remove();const toast=document.createElement('div');toast.id='saveToast';toast.className='save-toast';toast.style.maxWidth='320px';toast.innerHTML=`<span class="save-toast-icon" style="background:${warn?'#f59e0b':'#10b981'}">${warn?'!':'✓'}</span><div class="save-toast-body"><div class="save-toast-title">${title}</div><div class="save-toast-msg" style="white-space:pre-line">${msg}</div></div>`;document.body.appendChild(toast);setTimeout(()=>{toast.classList.add('hiding');setTimeout(()=>toast.remove(),250);},4500);}
+
+// บันทึกทุกแถวที่กรอกครบในหน้าเดียว (ข้ามแถวที่ข้อมูลไม่ครบ พร้อมสรุปผลให้)
+async function erSaveAllRows(){
+  const keys=Object.keys(driverRowState);
+  if(keys.length===0){alert('ไม่มีรายการให้บันทึก');return;}
+
+  const readyKeys=keys.filter(k=>erValidateRow(k).valid);
+  const notReadyKeys=keys.filter(k=>!readyKeys.includes(k));
+
+  if(readyKeys.length===0){
+    alert('ยังไม่มีงานที่กรอกข้อมูลครบสำหรับบันทึก\nกรุณาเลือกทะเบียน กรอกค่าน้ำมัน (หรือติ๊ก "ไม่เติมน้ำมัน") และเวลาให้ครบก่อน');
+    return;
+  }
+
+  const confirmMsg=notReadyKeys.length>0
+    ? `พบข้อมูลครบพร้อมบันทึก ${readyKeys.length} งาน\nข้าม ${notReadyKeys.length} งานที่ข้อมูลยังไม่ครบ\n\nยืนยันบันทึก ${readyKeys.length} งานนี้หรือไม่?`
+    : `พบข้อมูลครบพร้อมบันทึกทั้งหมด ${readyKeys.length} งาน\n\nยืนยันบันทึกหรือไม่?`;
+  if(!confirm(confirmMsg))return;
+
+  const btn=document.getElementById('ilBtnSaveAll');const orig=btn?btn.innerHTML:'';
+  if(btn){btn.dataset.saving='1';btn.disabled=true;btn.innerHTML=`<span class="ic">⏳</span> กำลังบันทึก 0/${readyKeys.length}...`;}
+
+  let successCount=0,failCount=0;
+  const skippedNames=notReadyKeys.map(k=>{
+    const s=driverRowState[k];const v=erValidateRow(k);
+    const row=document.querySelector(`.entry-row[data-key="${k}"]`);
+    if(row)row.style.boxShadow='inset 4px 0 0 #ef4444';
+    return s?`${s.driverName} (${v.reason})`:`(${v.reason})`;
+  });
+
+  for(const key of readyKeys){
+    const s=driverRowState[key];if(!s)continue;
+    const{plate}=erValidateRow(key);
+    const row=document.querySelector(`.entry-row[data-key="${key}"]`);
+    const saveBtn=document.getElementById(`${key}-save`);
+
+    row?.classList.add('saving');
+    if(saveBtn){saveBtn.disabled=true;saveBtn.innerHTML='⏳';}
+
+    const date=s.startDT.split('T')[0];
+    const toBackendDT=v=>v?v.replace('T',' ')+':00':'';
+    const fd=new FormData();
+    fd.append('_token',CSRF_TOKEN);
+    fd.append('work_date',date);
+    fd.append('driver_name',s.driverName);
+    fd.append('vehicle_id',plate);
+    fd.append('start_time',toBackendDT(s.startDT));
+    fd.append('end_time',toBackendDT(s.endDT));
+    fd.append('total_price',s.price||0);
+    fd.append('total_distance',s.distance||0);
+    fd.append('delivery_cost',s.deliveryCost||0);
+    fd.append('ot_cost',s.otCost||0);
+    fd.append('handling_cost',s.handlingCost||0);
+    fd.append('ok',s.okCount||0);
+    fd.append('ng',s.failCount||0);
+    const ppl=parseFloat(document.getElementById('il-price-per-liter')?.value)||0;
+    if(ppl>0)fd.append('price_per_liter',ppl);
+    fd.append('liters',s.liters>0?s.liters.toFixed(2):0);
+    fd.append('create_by',(CURRENT_USER&&CURRENT_USER!=='Guest')?String(CURRENT_USER):'system');
+
+    try{
+      const res=await fetch(ROUTE_STORE,{method:'POST',headers:{'X-CSRF-TOKEN':CSRF_TOKEN,'Accept':'application/json'},body:fd});
+      if(!res.ok&&res.status!==302)throw new Error('HTTP '+res.status);
+      markDriverSaved(date,s.driverName);
+      _clearRowDraft(date,s.driverName);
+      ilAppendLogRow({
+        date,driver_name:s.driverName,vehicle_id:plate,
+        start_h:s.sh,start_m:s.sm,end_h:s.eh,end_m:s.em,
+        start_dt:s.startDT,end_dt:s.endDT,
+        total_price:s.price,total_distance:s.distance,liters:s.liters,
+        km_per_liter:s.kml,ok_count:s.okCount,fail_count:s.failCount,
+        delivery_cost:s.deliveryCost,ot_cost:s.otCost,handling_cost:s.handlingCost
+      });
+      if(s.jobs.length>0)_syncNgJobs(date,s.driverName,s.jobs);
+      successCount++;
+      delete driverRowState[key];
+    }catch(e){
+      console.warn('bulk save error',s.driverName,e);
+      failCount++;
+      if(saveBtn){saveBtn.disabled=false;saveBtn.innerHTML='บันทึก';}
+      row?.classList.remove('saving');
+    }
+    if(btn)btn.innerHTML=`<span class="ic">⏳</span> กำลังบันทึก ${successCount+failCount}/${readyKeys.length}...`;
+  }
+
+  if(_focusedRowKey&&!driverRowState[_focusedRowKey]){_focusedRowKey=null;ilResetJobsPanel();}
+
+  const date=document.getElementById('il-work-date')?.value;
+  if(btn)btn.dataset.saving='0';
+  if(date)ilRenderDriverRows(date);
+
+  if(btn){btn.disabled=false;btn.innerHTML=orig;erRefreshSaveAllBadge();}
+
+  let msg=`บันทึกสำเร็จ ${successCount} จาก ${readyKeys.length} งานที่ข้อมูลครบ`;
+  if(failCount>0)msg+=` · ผิดพลาด ${failCount} งาน`;
+  if(skippedNames.length>0)msg+=` · ข้าม ${skippedNames.length} งาน (ข้อมูลไม่ครบ)`;
+  const detail=skippedNames.length?('\n'+skippedNames.join('\n')):'';
+  showInfoToast('บันทึกทั้งหมดเสร็จสิ้น',msg+detail,(failCount>0||skippedNames.length>0));
+}
 
 function ilAppendLogRow(r){
   const tbody=document.getElementById('oilTbody');if(!tbody)return;

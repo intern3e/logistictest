@@ -9,7 +9,7 @@ class Bill extends Model
 {
     use HasFactory;
     protected $table = 'tblbill'; 
-    protected $fillable = ['so_id', 'status', 'customer_id','customer_tel','customer_address','customer_la_long' ,'notes', 'date_of_dali','emp_name','sale_name','so_detail_id','po_document_path','bill_issue_no','contactso','deposit_bill_id'];
+    protected $fillable = ['so_id', 'status', 'customer_id','customer_tel','customer_address','customer_la_long' ,'notes', 'date_of_dali','emp_name','sale_name','so_detail_id','po_document_path','bill_issue_no','contactso','deposit_bill_id','emp_picker','picker_time'];
     protected $primaryKey = 'so_detail_id';
     public $incrementing = false;
     public $timestamps = false; 
@@ -19,7 +19,6 @@ class Bill extends Model
     }
     public function billDetails()
     {
-        // ความสัมพันธ์ One-to-Many กับตาราง BillDetail
         return $this->hasMany(Bill_Detail::class, 'so_detail_id');
     }
 }

@@ -4,11 +4,11 @@ namespace App\Http\Controllers;
 
 use App\Models\UserAuth;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Facades\Session;
 
 class InventoryController extends Controller
 {
@@ -19,11 +19,10 @@ class InventoryController extends Controller
     {
         $authUser = $this->checkAuth($request);
         $role = $authUser['auth'] ?? 'viewer';
-        $q = ['create_by' => $authUser['name']]; 
 
         return $role === 'viewer'
-            ? redirect()->route('inventory.item', $q)
-            : redirect()->route('inventory.transaction', $q);
+            ? redirect()->route('inventory.item')
+            : redirect()->route('inventory.transaction');
     }
     
     private function api(string $method, string $path, array $data = null)
@@ -44,7 +43,16 @@ class InventoryController extends Controller
 
     private function guardRole(array $allowed): void
     {
-        if (!in_array(Session::get('user.auth', 'viewer'), $allowed)) abort(403, 'ไม่มีสิทธิ์');
+        $auth = Auth::guard('web')->check() ? (Auth::user()->auth ?? 'viewer') : 'viewer';
+        if (!in_array($auth, $allowed)) abort(403, 'ไม่มีสิทธิ์');
+    }
+
+    /**
+     * ชื่อผู้ใช้ปัจจุบันจาก Auth (แทนที่ Session::get('user.name', ...) แบบเดิม)
+     */
+    private function currentUserName(string $default = ''): string
+    {
+        return Auth::guard('web')->check() ? (Auth::user()->name ?? $default) : $default;
     }
     
     // ═══════════════ VIEWS ═══════════════
@@ -97,20 +105,15 @@ class InventoryController extends Controller
     }
 
     // ═══════════════ OPTIMIZED PAGINATION ═══════════════
-    // หมายเหตุ: ตัดการแคชรายการ items ออกแล้ว (เดิมแคช 300 วิ ทำให้ข้อมูลที่เพิ่ม/ลบ
-    // จากแหล่งอื่นไม่อัปเดตทันที) ตอนนี้ดึงข้อมูลสดจาก API ทุกครั้งที่เรียกหน้านี้
-    // ส่วน brands/locations (ใช้แค่ autocomplete) ยังคงแคชไว้เพื่อความเร็ว ไม่กระทบข้อมูลจริง
-
     private function clearItemsCache(): void 
     { 
-        Cache::forget('all_items_list');       // cache รายการสินค้าดิบทั้งหมด
+        Cache::forget('all_items_list');
         Cache::forget('predicted_brands'); 
         Cache::forget('predicted_locations'); 
     }
     public function getPagedItems(Request $request)
     {
         try {
-            // 1. รับค่า Filter จาก Frontend
             $page = max(1, (int) $request->input('page', 1));
             $limit = max(1, min(200, (int) $request->input('limit', 50)));
             $name = mb_strtolower($request->input('name', ''));
@@ -119,9 +122,6 @@ class InventoryController extends Controller
             $priv = $request->input('priv', '');
             $type = $request->input('type', '');
 
-            // 2. ดึงข้อมูลจาก Cache ก่อน — ถ้าไม่มีค่อยยิง API จริง
-            //    Cache นี้จะถูกล้างทันทีเมื่อมีการ add/update/delete สินค้า (ดู clearItemsCache())
-            //    ดังนั้นข้อมูลยังคงสดเสมอ แต่ไม่ต้องยิง API ทุกครั้งที่ filter/พลิกหน้า
             $rawItems = Cache::remember('all_items_list', 3600, function () {
                 return $this->api('GET', '/items') ?? [];
             });
@@ -136,14 +136,12 @@ class InventoryController extends Controller
                 'privilege' => $r['privilege'] ?? $r['item_privilege'] ?? '',
             ]);
 
-            // 3. กรองข้อมูลใน PHP (แทนที่จะส่งไปกรองที่ Browser)
             if ($name) $items = $items->filter(fn($i) => str_contains(mb_strtolower($i['name']), $name));
             if ($brand) $items = $items->filter(fn($i) => str_contains(mb_strtolower($i['brand']), $brand));
             if ($location) $items = $items->filter(fn($i) => str_contains(mb_strtolower($i['location']), $location));
             if ($priv) $items = $items->filter(fn($i) => $i['privilege'] === $priv);
             if ($type) $items = $items->filter(fn($i) => $i['typeitem'] === $type);
 
-            // 4. แยก Parent และ Sub Items
             $products = [];
             $subs = [];
             foreach ($items as $r) {
@@ -158,7 +156,6 @@ class InventoryController extends Controller
                 }
             }
 
-            // จัดการ Sub items และสร้าง Virtual Parent ถ้าจำเป็น
             foreach ($subs as $pid => $subItems) {
                 usort($subItems, function($a, $b) {
                     $numA = intval(last(explode('.', $a['iditem']))) ?: 0;
@@ -177,21 +174,18 @@ class InventoryController extends Controller
                 }
             }
 
-            // 5. จัดเรียงข้อมูล (Sort)
             $products = collect($products)->sortBy(fn($i) => 
                 (str_starts_with(strtoupper($i['iditem']), 'SKU-') ? '0' : '1')
                 . explode('-', $i['iditem'])[0]
                 . str_pad(intval(last(explode('-', explode('.', $i['iditem'])[0]))), 10, '0', STR_PAD_LEFT)
             )->values()->all();
 
-            // 6. ตัดแบ่งหน้า (Pagination)
             $total = count($products);
             $lastPage = max(1, (int) ceil($total / $limit));
             $page = min($page, $lastPage);
             $offset = ($page - 1) * $limit;
             $paginatedProducts = array_slice($products, $offset, $limit);
 
-            // 7. ดึง Brands/Locations สำหรับ Autocomplete
             $brands = Cache::remember('predicted_brands', 300, function () {
                 return collect($this->api('GET', '/predicted/brands') ?? [])
                     ->map(fn($r) => is_string($r) ? $r : ($r['brand'] ?? ''))->filter()->values()->all();
@@ -352,8 +346,7 @@ class InventoryController extends Controller
     {
         $all = collect($this->fetchAllTransactions());
 
-        // ── Filter ฝั่ง server ──
-        $fDate  = $request->input('fDate', '');   // dd/mm/yyyy
+        $fDate  = $request->input('fDate', '');
         $fOp    = mb_strtolower($request->input('fOp', ''));
         $fBill  = mb_strtolower($request->input('fBill', ''));
         $fItem  = mb_strtolower($request->input('fItem', ''));
@@ -372,7 +365,6 @@ class InventoryController extends Controller
             });
         }
 
-        // ── Paginate ฝั่ง server ──
         $total   = $all->count();
         $perPage = intval($request->input('limit', 100));
         $page    = max(1, intval($request->input('page', 1)));
@@ -467,19 +459,19 @@ class InventoryController extends Controller
     
     private function checkAuth(Request $request): array
     {
-        if ($request->has('create_by')) {
-            $user = UserAuth::where('name', $request->query('create_by'))->first();   
-            if (!$user) abort(403, 'ไม่พบผู้ใช้: ' . $request->query('create_by'));
-            Session::put('user', [
-                'id_emp'   => $user->id_emp, 
-                'name' => $user->name,
-                'username' => $user->username, 
-                'auth' => $user->auth,
-                'page'     => $user->page ?? '',
-            ]);
+        if (!Auth::guard('web')->check()) {
+            abort(403, 'กรุณาเข้าสู่ระบบ ก่อนใช้งาน');
         }
-        if (!Session::has('user')) abort(403, 'กรุณาเข้าสู่ระบบ ก่อนใช้งาน');
-        return Session::get('user');
+
+        $user = Auth::user();
+
+        return [
+            'id_emp'   => $user->id_emp,
+            'name'     => $user->name,
+            'username' => $user->username,
+            'auth'     => $user->auth,
+            'page'     => $user->page ?? '',
+        ];
     }
     
     // ═══════════════ VIEWS: STOCKOUT / WITHDRAW / PR ═══════════════
@@ -519,7 +511,7 @@ class InventoryController extends Controller
             $this->api('POST', '/transaction/stockout', [
                 'transaction_id'   => $txId,
                 'timestamp'        => now()->toISOString(),
-                'addby'            => $d['addedBy'] ?? Session::get('user.name', ''),
+                'addby'            => $d['addedBy'] ?? $this->currentUserName(),
                 'transaction_type' => 'ขายสินค้าออก',
                 'document_id'      => 'SO ' . ($d['soNumber'] ?? ''),
                 'item_id'          => $d['iditem'],
@@ -528,7 +520,7 @@ class InventoryController extends Controller
             ]);
             $this->updateItemQuantity($d['iditem'], -$qty);
             $this->clearTxCache();
-            $this->clearItemsCache();   // ← เพิ่ม: quantity เปลี่ยน ต้องล้าง items cache ด้วย
+            $this->clearItemsCache();
             return response()->json(['success' => true, 'transaction_id' => $txId]);
         } catch (\Throwable $e) {
             return response()->json(['success' => false, 'error' => $e->getMessage()], 500);
@@ -548,7 +540,7 @@ class InventoryController extends Controller
             $this->api('POST', '/transaction/withdraw', [
                 'transaction_id'   => $txId,
                 'timestamp'        => now()->toISOString(),
-                'addby'            => ($d['addedBy'] ?? Session::get('user.name', '')) . ',' . $d['namewith'] . ' ' . $d['telwith'],
+                'addby'            => ($d['addedBy'] ?? $this->currentUserName()) . ',' . $d['namewith'] . ' ' . $d['telwith'],
                 'transaction_type' => 'เบิกของ',
                 'document_id'      => null,
                 'item_id'          => $d['iditem'],
@@ -558,7 +550,7 @@ class InventoryController extends Controller
             ]);
             $this->updateItemQuantity($d['iditem'], -$qty);
             $this->clearTxCache();
-            $this->clearItemsCache();   // ← เพิ่ม
+            $this->clearItemsCache();
             return response()->json(['success' => true, 'transaction_id' => $txId]);
         } catch (\Throwable $e) {
             return response()->json(['success' => false, 'error' => $e->getMessage()], 500);
@@ -679,7 +671,7 @@ class InventoryController extends Controller
  
             $result = $this->api('POST', '/pr', [
                 'pr_id'      => '',
-                'requester'  => $d['requester'] ?? Session::get('user.name', ''),
+                'requester'  => $d['requester'] ?? $this->currentUserName(),
                 'buyer_name' => $d['buyerName'] ?? '',
                 'phone'      => $d['phone'] ?? '',
                 'po_number'  => $d['po_number'] ?? '',
@@ -728,64 +720,64 @@ class InventoryController extends Controller
  
     // ═══════════════ PR: APPROVE (admin) ═══════════════
  
-public function approvePr(string $prId)
-{
-    $this->guardRole(['admin']);
-    $adminName = Session::get('user.name', 'Admin');
-    try {
-        $pr = $this->api('GET', '/pr/' . urlencode($prId));
-        if (!$pr) return response()->json(['success' => false, 'error' => 'ไม่พบ PR ' . $prId], 404);
+    public function approvePr(string $prId)
+    {
+        $this->guardRole(['admin']);
+        $adminName = $this->currentUserName('Admin');
+        try {
+            $pr = $this->api('GET', '/pr/' . urlencode($prId));
+            if (!$pr) return response()->json(['success' => false, 'error' => 'ไม่พบ PR ' . $prId], 404);
 
-        $items = $pr['items'] ?? [];
-        if (is_string($items)) $items = json_decode($items, true) ?: [];
+            $items = $pr['items'] ?? [];
+            if (is_string($items)) $items = json_decode($items, true) ?: [];
 
-        foreach ($items as $item) {
-            $itemId = $item['item_id'] ?? '';
-            if (!$itemId && !empty($item['name'])) {
-                try {
-                    $created = $this->api('POST', '/items', [
-                        'name' => $item['name'], 'quantity' => 0, 'typeitem' => 'ทรัพย์สินบริษัท',
-                        'location' => '', 'brand' => '', 'privilege' => $item['company'] ?? '',
-                    ]);
-                    $itemId = $this->extractItemId($created);
-                } catch (\Throwable $e) { 
-                    Log::warning('approvePr addProduct: ' . $e->getMessage()); 
+            foreach ($items as $item) {
+                $itemId = $item['item_id'] ?? '';
+                if (!$itemId && !empty($item['name'])) {
+                    try {
+                        $created = $this->api('POST', '/items', [
+                            'name' => $item['name'], 'quantity' => 0, 'typeitem' => 'ทรัพย์สินบริษัท',
+                            'location' => '', 'brand' => '', 'privilege' => $item['company'] ?? '',
+                        ]);
+                        $itemId = $this->extractItemId($created);
+                    } catch (\Throwable $e) { 
+                        Log::warning('approvePr addProduct: ' . $e->getMessage()); 
+                    }
                 }
+                if (!$itemId) continue;
+
+                $txnId = $this->generateTransactionId($itemId);
+                $qty   = intval($item['qty'] ?? 0);
+
+                $this->api('POST', '/transaction/stockin', [
+                    'transaction_id'   => $txnId,
+                    'addby'            => $adminName,
+                    'transaction_type' => 'รับเข้าสต็อก',
+                    'document_id'      => $prId . (!empty($pr['po_number']) ? ' /' . $pr['po_number'] : ''),
+                    'item_id'          => $itemId,
+                    'item_quantity'    => $qty,
+                    'item_unit_price'  => floatval($item['price'] ?? 0),
+                    'currency_type'    => $item['currency'] ?? 'บาท',
+                    'currency_price'   => floatval($item['thb_price'] ?? 0),
+                    'pic'              => $item['image_url'] ?? '',
+                    'transaction_note' => 'อนุมัติจาก ' . $prId . ' | ชื่อทีมช่าง: ' . ($pr['buyer_name'] ?? ''),
+                ]);
+
+                $this->updateItemQuantity($itemId, $qty);
             }
-            if (!$itemId) continue;
 
-            $txnId = $this->generateTransactionId($itemId);
-            $qty   = intval($item['qty'] ?? 0);
-
-            $this->api('POST', '/transaction/stockin', [
-                'transaction_id'   => $txnId,
-                'addby'            => $adminName,
-                'transaction_type' => 'รับเข้าสต็อก',
-                'document_id'      => $prId . (!empty($pr['po_number']) ? ' /' . $pr['po_number'] : ''),
-                'item_id'          => $itemId,
-                'item_quantity'    => $qty,
-                'item_unit_price'  => floatval($item['price'] ?? 0),
-                'currency_type'    => $item['currency'] ?? 'บาท',
-                'currency_price'   => floatval($item['thb_price'] ?? 0),
-                'pic'              => $item['image_url'] ?? '',
-                'transaction_note' => 'อนุมัติจาก ' . $prId . ' | ชื่อทีมช่าง: ' . ($pr['buyer_name'] ?? ''),
+            $this->api('PATCH', '/pr/' . urlencode($prId) . '/status', [
+                'status'    => 'อนุมัติแล้ว',
+                'action_by' => $adminName,
             ]);
 
-            $this->updateItemQuantity($itemId, $qty);
+            $this->clearTxCache();
+            $this->clearItemsCache();
+            return response()->json(['success' => true]);
+        } catch (\Throwable $e) {
+            return response()->json(['success' => false, 'error' => $e->getMessage()], 500);
         }
-
-        $this->api('PATCH', '/pr/' . urlencode($prId) . '/status', [
-            'status'    => 'อนุมัติแล้ว',
-            'action_by' => $adminName,
-        ]);
-
-        $this->clearTxCache();
-        $this->clearItemsCache();   // ← เพิ่ม: มีการสร้าง item ใหม่ + แก้ quantity หลายตัวในลูป
-        return response()->json(['success' => true]);
-    } catch (\Throwable $e) {
-        return response()->json(['success' => false, 'error' => $e->getMessage()], 500);
     }
-}
     // ═══════════════ PR: REJECT (admin) ═══════════════
  
     public function rejectPr(Request $request, string $prId)
@@ -794,7 +786,7 @@ public function approvePr(string $prId)
         try {
             $this->api('PATCH', '/pr/' . urlencode($prId) . '/status', [
                 'status'        => 'ไม่อนุมัติ',
-                'action_by'     => Session::get('user.name', 'Admin'),
+                'action_by'     => $this->currentUserName('Admin'),
                 'reject_reason' => $request->input('reason', ''),
             ]);
             return response()->json(['success' => true]);
@@ -842,13 +834,38 @@ public function approvePr(string $prId)
             'authRole' => 'admin',
         ]);
     }
- 
+
+    // ═══════════════ ROLE CATALOG (แผนก/บทบาทงาน) ═══════════════
+    // หมายเหตุ: 'auth' คือระดับสิทธิ์ (admin/user/viewer) แยกจาก 'role' ซึ่งคือแผนกงาน
+    // ทั้งหมดเก็บใน DB local (user_auth) เท่านั้น ไม่เกี่ยวกับ API ภายนอก
+
+    private function roleCatalog(): array
+    {
+        return [
+            'admin'          => 'admin',
+            'sale'           => 'sale',
+            'sale_assistant' => 'sale_assistant',
+            'support'        => 'support',
+            'accounting'     => 'accounting',
+            'store'          => 'store',
+            'stock'          => 'stock',
+        ];
+    }
+
+    public function getRoleCatalog()
+    {
+        $this->guardRole(['admin']);
+        return response()->json(['roles' => $this->roleCatalog()]);
+    }
+
+    // ═══════════════ USERS (DB local เท่านั้น ไม่ยิง API ภายนอก) ═══════════════
+
     // ── GET /api/users : list จาก DB local ──
     public function getUsers()
     {
         $this->guardRole(['admin']);
         return response()->json(
-            UserAuth::orderBy('id_emp')->get(['id_emp', 'username', 'password', 'name', 'auth', 'page'])
+            UserAuth::orderBy('id_emp')->get(['id_emp', 'username', 'password', 'name', 'auth', 'role', 'permissions', 'page'])
         );
     }
  
@@ -864,12 +881,14 @@ public function approvePr(string $prId)
             return response()->json(['success' => false, 'error' => 'username นี้มีอยู่แล้ว'], 422);
         }
         UserAuth::create([
-            'id_emp'   => UserAuth::nextIdEmp(),
-            'name'     => $d['name'],
-            'username' => $d['username'],
-            'password' => $d['password'],
-            'auth'     => $d['auth'] ?? 'user',
-            'page'     => $d['page'] ?? null,
+            'id_emp'      => UserAuth::nextIdEmp(),
+            'name'        => $d['name'],
+            'username'    => $d['username'],
+            'password'    => $d['password'],
+            'auth'        => $d['auth'] ?? 'user',
+            'role'        => $d['role'] ?: null,
+            'permissions' => !empty($d['permissions']) ? $d['permissions'] : null,
+            'page'        => $d['page'] ?? null,
         ]);
         return response()->json(['success' => true]);
     }
@@ -880,11 +899,13 @@ public function approvePr(string $prId)
         $this->guardRole(['admin']);
         $d = $request->all();
         $u = UserAuth::findOrFail($id);
-        $u->username = $d['username'];
-        $u->name     = $d['name'];
-        $u->auth     = $d['auth'];
-        $u->password = $d['password'];
-        $u->page     = $d['page'] ?? null;
+        $u->username    = $d['username'];
+        $u->name        = $d['name'];
+        $u->auth        = $d['auth'];
+        $u->role        = $d['role'] ?: null;
+        $u->permissions = !empty($d['permissions']) ? $d['permissions'] : null;
+        $u->password    = $d['password'];
+        $u->page        = $d['page'] ?? null;
         $u->save();
         return response()->json(['success' => true]);
     }

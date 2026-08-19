@@ -9,10 +9,6 @@ use Carbon\Carbon;
 
 class fuellogsController extends Controller
 {
-    /* ══════════════════════════════════════════════════════════════════
-       Helper: คืน array params สำหรับ redirect — รวม create_by ถ้ามี
-       ใช้เป็น: return redirect()->route('oil', $this->urlParams($request))
-    ══════════════════════════════════════════════════════════════════ */
     private function urlParams(Request $request): array
     {
         $params = [];
@@ -22,9 +18,6 @@ class fuellogsController extends Controller
         return $params;
     }
 
-    /* ══════════════════════════════════════════════════════════════════
-       รับ filter จาก form POST → เก็บใน session → redirect /oil หรือ /oil/report
-    ══════════════════════════════════════════════════════════════════ */
     public function applyFilter(Request $request)
     {
         session([
@@ -39,17 +32,16 @@ class fuellogsController extends Controller
             ]
         ]);
 
-        // ★ ถ้ามาจากหน้ารายงาน → redirect กลับไปหน้ารายงาน
         if ($request->input('redirect_to') === 'report') {
             return redirect()->route('oil.report', $this->urlParams($request));
+        }
+        if ($request->input('redirect_to') === 'admin') {
+            return redirect()->route('oil.admin', $this->urlParams($request));
         }
 
         return redirect()->route('oil', $this->urlParams($request));
     }
 
-    /* ══════════════════════════════════════════════════════════════════
-       ดึง filter จาก session → ถ้าไม่มี fallback เป็น request
-    ══════════════════════════════════════════════════════════════════ */
     private function getFilter(Request $request): array
     {
         $filter = session('oil_filter', []);
@@ -100,7 +92,6 @@ class fuellogsController extends Controller
             $query->where('vehicle_id', $filterPlate);
         }
 
-        // helper normalize — ตัด zero-width + whitespace ส่วนเกิน + lowercase
         $norm = function ($s) {
             $s = preg_replace('/[\x{200B}-\x{200D}\x{FEFF}]/u', '', (string) $s);
             return mb_strtolower(trim(preg_replace('/\s+/', ' ', $s)));
@@ -109,7 +100,6 @@ class fuellogsController extends Controller
 
         return $query->get()
             ->filter(function ($row) use ($norm, $driverTarget) {
-                // กรองคนขับแบบ normalize (กันชื่อมี zero-width/ช่องว่างซ่อน)
                 if ($driverTarget === null) return true;
                 return $norm(((array) $row)['driver_name'] ?? '') === $driverTarget;
             })
@@ -153,7 +143,6 @@ class fuellogsController extends Controller
                     'ng_count'        => (int) ($row['ng'] ?? 0),
                     'note'            => $row['note']            ?? '',
                     'created_at'      => $row['created_at']      ?? null,
-                    // ✅ เพิ่มฟิลด์ใหม่สำหรับการแสดงผล
                     'ot_cost'         => (float) ($row['ot_cost']       ?? 0),
                     'handling_cost'   => (float) ($row['handling_cost'] ?? 0),
                     'delivery_cost'   => (float) ($row['delivery_cost'] ?? 0),
@@ -166,15 +155,12 @@ class fuellogsController extends Controller
         $startDt = null;
         $endDt   = null;
 
-        // helper: รับได้ทั้ง "HH:MM", "HH:MM:SS", และ datetime เต็ม "Y-m-d H:i(:s)"
         $parse = function (?string $str) use ($workDate) {
             if (!$str) return null;
             $str = trim($str);
-            // datetime เต็ม (มีทั้งวันที่+เวลา) → parse ตรงๆ
             if (preg_match('/^\d{4}-\d{2}-\d{2}[ T]\d{2}:\d{2}/', $str)) {
                 try { return Carbon::parse($str); } catch (\Exception $e) { return null; }
             }
-            // เวลาอย่างเดียว HH:MM หรือ HH:MM:SS → ต่อกับ workDate
             if (preg_match('/^\d{2}:\d{2}(:\d{2})?$/', $str) && $workDate) {
                 try { return Carbon::parse("{$workDate} {$str}"); } catch (\Exception $e) { return null; }
             }
@@ -183,7 +169,6 @@ class fuellogsController extends Controller
 
         $startDt = $parse($startStr);
         $endDt   = $parse($endStr);
-        // ถ้าจบก่อนเริ่ม (เวลาอย่างเดียว ข้ามคืน) → +1 วัน
         if ($startDt && $endDt && $endDt->lt($startDt)) $endDt->addDay();
 
         return [
@@ -204,9 +189,6 @@ class fuellogsController extends Controller
         return [$ltr > 0 ? round($ltr, 2) : null, $ppl > 0 ? round($ppl, 2) : null];
     }
 
-    /* ══════════════════════════════════════════════════════════════════
-       Helper: ดึง data กลางที่ใช้ร่วมทั้ง oil() และ report()
-    ══════════════════════════════════════════════════════════════════ */
     private function buildViewData(Request $request): array
     {
         $f = $this->getFilter($request);
@@ -251,7 +233,6 @@ class fuellogsController extends Controller
                     'end_time'       => $row['end_time']   ?? null,
                     'ok'             => (int) ($row['ok'] ?? 0),
                     'ng'             => (int) ($row['ng'] ?? 0),
-                    // ✅ เพิ่มฟิลด์ใหม่สำหรับ allLogs
                     'ot_cost'        => (float) ($row['ot_cost']       ?? 0),
                     'handling_cost'  => (float) ($row['handling_cost'] ?? 0),
                     'delivery_cost'  => (float) ($row['delivery_cost'] ?? 0),
@@ -299,20 +280,19 @@ class fuellogsController extends Controller
         );
     }
 
-    /* ══════════════════════════════════════════════════════════════════
-       หน้าหลัก — ติดตามน้ำมัน
-    ══════════════════════════════════════════════════════════════════ */
     public function oil(Request $request)
     {
         return view('driver.oil', $this->buildViewData($request));
     }
 
-    /* ══════════════════════════════════════════════════════════════════
-       ★ หน้าสรุปรายงาน — ใช้ data ชุดเดียวกัน, คนละ view
-    ══════════════════════════════════════════════════════════════════ */
     public function report(Request $request)
     {
         return view('driver.report', $this->buildViewData($request));
+    }
+
+    public function admin(Request $request)
+    {
+        return view('driver.admin', $this->buildViewData($request));
     }
 
     public function store(Request $request)
@@ -325,7 +305,6 @@ class fuellogsController extends Controller
             'total_distance'  => 'nullable|numeric|min:0',
             'liters'          => 'nullable|numeric|min:0',
             'price_per_liter' => 'nullable|numeric|min:0',
-            // ✅ เพิ่ม Validation ฟิลด์ใหม่
             'ot_cost'         => 'nullable|numeric|min:0',
             'handling_cost'   => 'nullable|numeric|min:0',
             'delivery_cost'   => 'nullable|numeric|min:0',
@@ -338,7 +317,6 @@ class fuellogsController extends Controller
             $request->total_price, $request->price_per_liter, $request->liters
         );
 
-        // กันลงซ้ำสำหรับรายการ auto-store (คนนอก whitelist, vehicle_id = '-')
         if (trim($request->vehicle_id) === '-') {
             $exists = DB::table('fuel_logs')
                 ->where('driver_name', trim($request->driver_name))
@@ -361,7 +339,6 @@ class fuellogsController extends Controller
             'liters'          => $liters ?? 0,            
             'total_price'     => (float) $request->total_price,
             'price_per_liter' => $ppl ?? 0,           
-            // ✅ เพิ่มฟิลด์ใหม่ตอน Insert
             'ot_cost'         => (float) ($request->ot_cost ?? 0),
             'handling_cost'   => (float) ($request->handling_cost ?? 0),
             'delivery_cost'   => (float) ($request->delivery_cost ?? 0),
@@ -385,7 +362,6 @@ class fuellogsController extends Controller
             'total_distance'  => 'nullable|numeric|min:0',
             'liters'          => 'nullable|numeric|min:0',
             'price_per_liter' => 'nullable|numeric|min:0',
-            // ✅ เพิ่ม Validation ฟิลด์ใหม่
             'ot_cost'         => 'nullable|numeric|min:0',
             'handling_cost'   => 'nullable|numeric|min:0',
             'delivery_cost'   => 'nullable|numeric|min:0',
@@ -410,7 +386,6 @@ class fuellogsController extends Controller
             'liters'          => $liters ?? 0,
             'total_price'     => (float) $request->total_price,
             'price_per_liter' => $ppl ?? 0,
-            // ✅ เพิ่มฟิลด์ใหม่ตอน Update
             'ot_cost'         => (float) ($request->ot_cost ?? 0),
             'handling_cost'   => (float) ($request->handling_cost ?? 0),
             'delivery_cost'   => (float) ($request->delivery_cost ?? 0),
@@ -434,8 +409,6 @@ class fuellogsController extends Controller
                          ->with('success', 'ลบข้อมูลเรียบร้อย');
     }
 
-    /* ลบ record ขยะ — ที่ vehicle_id = '-' และชื่อไม่ใช่คนขับ
-       (ชื่อยาวเกิน 20 ตัว หรือมีคำต้องห้าม) */
     public function cleanupGarbage(Request $request)
     {
         $banned = ['ลูกค้า','เซ็นบิล','เซ็น','บิล','สาขา','จำกัด','บริษัท','หจก','ร้าน','คุณ','ไป','ที่','กับ'];
@@ -566,22 +539,13 @@ class fuellogsController extends Controller
         return response()->json($drivers);
     }
 
-/* ══════════════════════════════════════════════════════════════════
-       ตารางค่าวิ่ง / OT / ค่ายก — แบบปฏิทิน (คนขับ × วันที่)
-       รองรับ 2 โหมด: mode=month (รายเดือน) / mode=week (รายสัปดาห์)
-    ══════════════════════════════════════════════════════════════════ */
-
-    // 🔧 ใส่ vehicle_id ที่เป็นมอเตอร์ไซค์ตรงนี้ (จะไม่ถูกนับเข้าตาราง/ยอดรวมทั้งหมด)
-    private array $motorcycleVehicleIds = [
-        // ตัวอย่าง: 12, 45, 108
-    ];
+    private array $motorcycleVehicleIds = [];
 
     public function Deliveryfee(Request $request)
     {
         $mode = $request->input('mode', 'month');
         $mode = in_array($mode, ['month', 'week']) ? $mode : 'month';
 
-        // ---- คำนวณช่วงวันที่ตามโหมด ----
         $selMonth = (int) $request->input('month', now()->month);
         $selYear  = (int) $request->input('year', now()->year);
 
@@ -591,10 +555,6 @@ class fuellogsController extends Controller
         } catch (\Exception $e) {
             $weekStart = now()->startOfWeek(Carbon::MONDAY);
         }
-        // ✅ แก้บั๊ก: เดิมใช้ endOfWeek(Carbon::MONDAY) ซึ่งพอ $weekStart เป็นวันจันทร์อยู่แล้ว
-        // Carbon จะมองว่า "วันสิ้นสุดสัปดาห์ที่กำหนดให้ลงท้ายด้วยวันจันทร์" ตรงกับวันเดิมพอดี
-        // จึงไม่เลื่อนไปที่วันอาทิตย์ถัดไปเลย ผลคือ weekEnd = weekStart (แค่เปลี่ยนเวลาเป็น 23:59:59)
-        // ทำให้ query ด้านล่างดึงข้อมูลมาแค่วันจันทร์วันเดียวทั้งสัปดาห์
         $weekEnd = $weekStart->copy()->addDays(6)->endOfDay();
 
         if ($mode === 'week') {
@@ -610,8 +570,7 @@ class fuellogsController extends Controller
             $days[] = $d->format('Y-m-d');
         }
 
-        // ---- roster คนขับ (ลำดับเดียวกับที่ใช้ในหน้า oil) ----
-        $roster = ['บังเดช','กอลฟ์','เก่ง','หรั่ง','เอ้','แซม','เอ','แฟงค์','yuth','แมน','กบ','joey','บอย','บอยBTS'];
+        $roster = ['บังเดช','กอลฟ์','เก่ง','เอ้','แซม','เอ','แฟงค์','yuth','แมน','กบ','joey','บอยBTS'];
 
         $norm = function ($s) {
             $s = preg_replace('/[\x{200B}-\x{200D}\x{FEFF}\x{0E4C}]/u', '', (string) $s);
@@ -635,7 +594,6 @@ class fuellogsController extends Controller
                 }
             }
         }
-        // fallback: ถ้าไม่มีชื่อใน roster ตรงกับข้อมูลเลย ใช้รายชื่อทั้งหมดที่มีในระบบแทน
         if (empty($activeRoster)) {
             sort($allDriverNames);
             foreach ($allDriverNames as $dbName) {
@@ -643,7 +601,6 @@ class fuellogsController extends Controller
             }
         }
 
-        // ---- ดึงข้อมูลในช่วงวันที่ที่เลือก แล้ว sum ต่อ (คนขับ, วัน) ----
         $rangeFrom = $rangeStart->format('Y-m-d');
         $rangeTo   = $rangeEnd->format('Y-m-d');
 
@@ -655,7 +612,7 @@ class fuellogsController extends Controller
             })
             ->get();
 
-        $matrix = []; // [driver_name][Y-m-d] = ['delivery'=>,'ot'=>,'handling'=>]
+        $matrix = [];
         foreach ($rawRows as $row) {
             $row = (array) $row;
             $dn  = $row['driver_name'] ?? '';
@@ -669,7 +626,6 @@ class fuellogsController extends Controller
             $matrix[$dn][$wd]['handling'] += (float) ($row['handling_cost'] ?? 0);
         }
 
-        // ---- ทะเบียนล่าสุดของแต่ละคนขับ (ไม่จำกัดช่วงวันที่ แต่ตัดมอเตอร์ไซค์ออกเช่นกัน) ----
         $latestPlates = DB::table('fuel_logs')
             ->select('driver_name', 'vehicle_id')
             ->whereIn('driver_name', array_column($activeRoster, 'db_name'))
@@ -682,27 +638,30 @@ class fuellogsController extends Controller
             ->groupBy('driver_name')
             ->map(fn ($g) => $g->first()->vehicle_id ?? '-');
 
-        // ---- ประกอบ driverGrid ----
         $driverGrid = [];
         foreach ($activeRoster as $d) {
             $dbName = $d['db_name'];
             $dayVals = [];
             $totDelivery = 0.0; $totOt = 0.0; $totHandling = 0.0;
             foreach ($days as $day) {
+                // has = true ก็ต่อเมื่อมี row จริงในตาราง fuel_logs สำหรับคนขับ+วันนี้
+                // (ไม่ว่าค่าจะเป็น 0 หรือไม่ก็ตาม) ใช้แยกกรณี "ยังไม่มีข้อมูลเลย" ออกจาก "มีข้อมูลแต่เป็น 0"
+                $has = isset($matrix[$dbName][$day]);
                 $v = $matrix[$dbName][$day] ?? ['delivery' => 0.0, 'ot' => 0.0, 'handling' => 0.0];
+                $v['has'] = $has;
                 $dayVals[$day] = $v;
                 $totDelivery += $v['delivery'];
                 $totOt       += $v['ot'];
                 $totHandling += $v['handling'];
             }
 
-            // ถ้าคนขับคนนี้เหลือแต่ log ของมอเตอร์ไซค์ (ถูกตัดออกหมดจาก $matrix) และไม่มีทะเบียนรถอื่นเหลือเลย ให้ข้ามแถวนี้ไปเลย
             if ($totDelivery == 0 && $totOt == 0 && $totHandling == 0 && ($latestPlates[$dbName] ?? '-') === '-') {
                 continue;
             }
 
             $driverGrid[] = [
                 'label'        => $d['label'],
+                'db_name'      => $dbName,  // ⭐ เพิ่มบรรทัดนี้สำหรับ Inline Edit
                 'plate'        => $latestPlates[$dbName] ?? '-',
                 'days'         => $dayVals,
                 'totDelivery'  => $totDelivery,
@@ -712,7 +671,6 @@ class fuellogsController extends Controller
             ];
         }
 
-        // ---- รวมทุกคนต่อวัน + รวมยอดใหญ่ ----
         $dayTotals = [];
         foreach ($days as $day) {
             $sd = 0.0; $so = 0.0; $sh = 0.0;
@@ -741,6 +699,87 @@ class fuellogsController extends Controller
             'selYear'       => $selYear,
             'weekStart'     => $weekStart->format('Y-m-d'),
             'weekEnd'       => $weekEnd->format('Y-m-d'),
+        ]);
+    }
+
+    // ⭐ เพิ่ม method นี้สำหรับ Inline Edit
+    public function updateCell(Request $request)
+    {
+        // เดิม 'value' => 'required|numeric|min:0|max:9999999' บล็อกไม่ให้บันทึกค่าติดลบ
+        // แก้เป็น min:-9999999 เพื่ออนุญาตให้บันทึกค่าติดลบได้ (เช่น รายการหักเงิน/ปรับยอด)
+        $request->validate([
+            'driver_name' => 'required|string|max:100',
+            'work_date'   => 'required|date',
+            'field'       => 'required|in:delivery,ot,handling',
+            'value'       => 'required|numeric|min:-9999999|max:9999999',
+        ]);
+
+        $driverName = $request->driver_name;
+        $workDate   = $request->work_date;
+        $field      = $request->field;
+        $value      = (float) $request->value;
+
+        $fieldMap = [
+            'delivery' => 'delivery_cost',
+            'ot'       => 'ot_cost',
+            'handling' => 'handling_cost',
+        ];
+        $dbField = $fieldMap[$field];
+
+        $logs = DB::table('fuel_logs')
+            ->where('driver_name', $driverName)
+            ->whereDate('work_date', $workDate)
+            ->orderByDesc('id')
+            ->get();
+
+        if ($logs->isNotEmpty()) {
+            $lastId = $logs->first()->id;
+            DB::table('fuel_logs')->where('id', $lastId)->update([$dbField => $value]);
+
+            $otherIds = $logs->where('id', '!=', $lastId)->pluck('id');
+            if ($otherIds->isNotEmpty()) {
+                DB::table('fuel_logs')->whereIn('id', $otherIds)->update([$dbField => 0]);
+            }
+        } else {
+            $lastVehicle = DB::table('fuel_logs')
+                ->where('driver_name', $driverName)
+                ->orderByDesc('work_date')
+                ->orderByDesc('id')
+                ->value('vehicle_id') ?? '-';
+
+            DB::table('fuel_logs')->insert([
+                'driver_name'    => $driverName,
+                'vehicle_id'     => $lastVehicle,
+                'work_date'      => $workDate,
+                'total_price'    => 0,
+                'total_distance' => 0,
+                'liters'         => 0,
+                'price_per_liter'=> 0,
+                'delivery_cost'  => $field === 'delivery' ? $value : 0,
+                'ot_cost'        => $field === 'ot' ? $value : 0,
+                'handling_cost'  => $field === 'handling' ? $value : 0,
+                'ok'             => 0,
+                'ng'             => 0,
+                'created_at'     => now(),
+            ]);
+        }
+
+        $sums = DB::table('fuel_logs')
+            ->where('driver_name', $driverName)
+            ->whereDate('work_date', $workDate)
+            ->selectRaw('
+                COALESCE(SUM(delivery_cost),0) as delivery,
+                COALESCE(SUM(ot_cost),0) as ot,
+                COALESCE(SUM(handling_cost),0) as handling
+            ')
+            ->first();
+
+        return response()->json([
+            'success'  => true,
+            'delivery' => (float) $sums->delivery,
+            'ot'       => (float) $sums->ot,
+            'handling' => (float) $sums->handling,
+            'total'    => (float) ($sums->delivery + $sums->ot + $sums->handling),
         ]);
     }
 

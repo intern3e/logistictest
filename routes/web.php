@@ -12,7 +12,16 @@ use Illuminate\Support\Facades\Route;
 | be assigned to the "web" middleware group. Make something great!
 |
 */
+use App\Http\Controllers\LoginController;
 
+Route::get('/login', [LoginController::class, 'showLoginForm'])->name('login');
+Route::post('/login', [LoginController::class, 'login'])->name('login.post');
+Route::get('/logout', [LoginController::class, 'logout'])->name('logout');
+
+Route::get('/sso/authorize', [LoginController::class, 'ssoAuthorize'])->name('sso.authorize');
+Route::post('/sso/verify', [LoginController::class, 'ssoVerify'])->name('sso.verify');
+Route::get('/sso/logout', [LoginController::class, 'ssoLogout'])->name('sso.logout');
+Route::post('/sso/issue-ticket', [LoginController::class, 'issueTicket']);
 // SO system
 use App\Models\Bill_Detail;
     use App\Http\Controllers\salecontroller;
@@ -242,6 +251,9 @@ Route::get('/oil/last-plates', function (\Illuminate\Http\Request $request) {
     }
     return response()->json($map);
 })->name('oil.lastPlates');
+
+// ⭐ เพิ่มบรรทัดนี้สำหรับ Inline Edit
+Route::post('/oil/Deliveryfee/update-cell', [fuellogsController::class, 'updateCell'])->name('deliveryfee.updateCell');
 use App\Http\Controllers\ServiceController;
 Route::get('/service',              [ServiceController::class, 'index'])->name('service');
 Route::get('/service/list',         [ServiceController::class, 'list'])->name('service.list');
@@ -392,35 +404,34 @@ Route::get('/api/users',         [InventoryController::class, 'getUsers']);
 Route::post('/api/users',        [InventoryController::class, 'addUser']);
 Route::put('/api/users/{id}',    [InventoryController::class, 'updateUser']);
 Route::delete('/api/users/{id}', [InventoryController::class, 'deleteUser']);
- 
+Route::get('/api/role-catalog',  [InventoryController::class, 'getRoleCatalog']);
  
 
 
 use App\Http\Controllers\InternalPoController;
 Route::prefix('internal-po')->name('internal_po.')->group(function () {
-    Route::get ('pick',   [InternalPoController::class, 'pickDashboard'])->name('pick');
-    Route::post('pick',   [InternalPoController::class, 'pickSubmit'])->name('pick.submit');
-    Route::post('cancel', [InternalPoController::class, 'markCancel'])->name('cancel');
+    Route::match(['get', 'post'], 'pick', [InternalPoController::class, 'pickDashboard'])->name('pick');
+    Route::post('pick/submit',    [InternalPoController::class, 'pickSubmit'])->name('pick.submit');
+    Route::post('cancel',         [InternalPoController::class, 'markCancel'])->name('cancel');
 });
-use App\Http\Controllers\StoreController;
 
+use App\Http\Controllers\StoreController;
 Route::prefix('store')->name('store.')->group(function () {
-    Route::get ('location', [StoreController::class, 'locationDashboard'])->name('location');
-    Route::post('location', [StoreController::class, 'locationSubmit'])->name('location.submit');
-    Route::get ('checkout', [StoreController::class, 'checkoutDashboard'])->name('checkout');
-    Route::post('checkout', [StoreController::class, 'checkoutSubmit'])->name('checkout.submit');
+    Route::match(['get', 'post'], 'location', [StoreController::class, 'locationDashboard'])->name('location');
+    Route::post('location/submit',            [StoreController::class, 'locationSubmit'])->name('location.submit');
+    Route::match(['get', 'post'], 'checkout',  [StoreController::class, 'checkoutDashboard'])->name('checkout');
+    Route::post('checkout/submit',             [StoreController::class, 'checkoutSubmit'])->name('checkout.submit');
 });
 Route::post('/apis/store/legacyPoItems', [StoreController::class, 'itemsDetailBatch'])
     ->name('apis.store.legacyPoItemsBatch');
 
 use App\Http\Controllers\MobilePoappController;
-Route::get('/mobile-app', [MobilePoappController::class, 'index'])->name('mobile.app');
+Route::match(['get', 'post'], '/mobile-app', [MobilePoappController::class, 'index'])->name('mobile.app');
 Route::get('/api/getPODetail', [MobilePoappController::class, 'getPODetail'])->name('mobile.po.detail');
 Route::post('/api/receivePO', [MobilePoappController::class, 'receivePO'])->name('mobile.po.receive');
 Route::get('/api/receivePO/history', [MobilePoappController::class, 'history'])->name('mobile.po.receive.history');
 Route::post('/api/receivePO/cancel', [MobilePoappController::class, 'cancelReceive']);
 
 use App\Http\Controllers\OtRequestController;
-
 Route::get('/adminOT', [OtRequestController::class, 'index']);
 
