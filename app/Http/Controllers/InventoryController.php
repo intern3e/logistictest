@@ -122,7 +122,7 @@ class InventoryController extends Controller
             $priv = $request->input('priv', '');
             $type = $request->input('type', '');
 
-            $rawItems = Cache::remember('all_items_list', 3600, function () {
+            $rawItems = Cache::remember('all_items_list', 60, function () {
                 return $this->api('GET', '/items') ?? [];
             });
 
@@ -298,7 +298,7 @@ class InventoryController extends Controller
 
     private function fetchAllTransactions(): array
     {
-        return Cache::remember('all_transactions', 3600, function () {
+        return Cache::remember('all_transactions', 60, function () {
             $limit = 5000;
             $headers = ['Accept' => 'application/json', 'x-api-key' => $this->apiKey];
 
