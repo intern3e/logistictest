@@ -287,7 +287,9 @@ Route::post('/deposit/delete', [DepositController::class, 'deleteDeposit']);
 Route::post('/deposit/upload-slip', [DepositController::class, 'uploadSlip']);
 Route::post('/pooutside/mark-cancelled-bulk', [DepositController::class, 'markPooutsideCancelledBulk'])
      ->name('pooutside.markCancelledBulk');
-
+Route::get('/vendor-filter-product', function () {
+    return view('pooutside.dashboardfilterproduct');
+});
 use App\Http\Controllers\TechnicianController;
 Route::get('/dashboardtechnician', [TechnicianController::class, 'index'])->name('technician.dashboard');
 Route::post('/technicians/store',          [TechnicianController::class, 'storeTechnician'])->name('tech.store');
@@ -316,8 +318,11 @@ Route::post('/technicians/{id}/move-team', [TechnicianController::class, 'moveTe
 
 
 use App\Http\Controllers\DeliverytrackController;
+Route::post('/deliverytrack/save', [DeliverytrackController::class, 'store'])->name('deliverytrack.store');
 Route::get('/deliverytrack', [DeliverytrackController::class, 'index'])->name('deliverytrack');
+Route::get('/deliverytrack/print-group', [DeliverytrackController::class, 'printGroup'])->name('deliverytrack.printGroup'); // <-- เพิ่มบรรทัดนี้
 Route::post('/return/{id}/new-bill', [DeliverytrackController::class, 'saveNewBill'])->name('deliverytrack.newbill');
+ 
 
 use App\Http\Controllers\SoItemController;
 Route::get('/soitem',                                  [SoItemController::class, 'index']);
@@ -370,6 +375,7 @@ Route::get('/inventory/withdraw',     [InventoryController::class, 'withdrawPage
 Route::get('/inventory/pr',           [InventoryController::class, 'prPage'])->name('inventory.pr');
 Route::get('/inventory/pr/dashboard', [InventoryController::class, 'prDashboardPage'])->name('inventory.pr.dashboard');
 Route::get('/inventory/users',        [InventoryController::class, 'manageUsersPage'])->name('inventory.users');
+Route::get('/inventory/vehicles',     [InventoryController::class, 'vehiclesPage'])->name('inventory.vehicles');
 Route::get('/inventory',              [InventoryController::class, 'entry']);
  
 // API: Items
@@ -380,6 +386,9 @@ Route::post('/api/items/sub',          [InventoryController::class, 'addSubProdu
 Route::put('/api/items/{id}',          [InventoryController::class, 'updateProduct']);
 Route::delete('/api/items/{id}',       [InventoryController::class, 'deleteProduct']);
 Route::get('/api/items/{id}/tx-count', [InventoryController::class, 'countTxByItem']);
+
+// API: Vehicles (read-only, ไม่ต้อง login)
+Route::get('/api/vehicles-items', [InventoryController::class, 'getVehiclesItems']);
  
 // API: Transactions
 Route::get('/api/transaction',                  [InventoryController::class, 'getTransactionPage']);
@@ -405,8 +414,6 @@ Route::post('/api/users',        [InventoryController::class, 'addUser']);
 Route::put('/api/users/{id}',    [InventoryController::class, 'updateUser']);
 Route::delete('/api/users/{id}', [InventoryController::class, 'deleteUser']);
 Route::get('/api/role-catalog',  [InventoryController::class, 'getRoleCatalog']);
- 
-
 
 use App\Http\Controllers\InternalPoController;
 Route::prefix('internal-po')->name('internal_po.')->group(function () {
@@ -419,6 +426,8 @@ use App\Http\Controllers\StoreController;
 Route::prefix('store')->name('store.')->group(function () {
     Route::match(['get', 'post'], 'location', [StoreController::class, 'locationDashboard'])->name('location');
     Route::post('location/submit',            [StoreController::class, 'locationSubmit'])->name('location.submit');
+    Route::post('location/claim',              [StoreController::class, 'locationClaim'])->name('location.claim');
+    Route::post('location/finish',             [StoreController::class, 'locationFinish'])->name('location.finish');
     Route::match(['get', 'post'], 'checkout',  [StoreController::class, 'checkoutDashboard'])->name('checkout');
     Route::post('checkout/submit',             [StoreController::class, 'checkoutSubmit'])->name('checkout.submit');
 });
@@ -434,4 +443,5 @@ Route::post('/api/receivePO/cancel', [MobilePoappController::class, 'cancelRecei
 
 use App\Http\Controllers\OtRequestController;
 Route::get('/adminOT', [OtRequestController::class, 'index']);
+
 

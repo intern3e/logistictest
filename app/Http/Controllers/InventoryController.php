@@ -835,6 +835,111 @@ class InventoryController extends Controller
         ]);
     }
 
+    // ═══════════════ VIEWS: VEHICLES (ไม่ต้อง login) ═══════════════
+
+    public function vehiclesPage(Request $request)
+    {
+        return view('inventory.vehicles', [
+            'authUser' => ['name' => '', 'auth' => 'viewer', 'page' => ''],
+            'authRole' => 'viewer',
+            'nestUrl'  => config('services.nest.url'),
+            'nestKey'  => config('services.nest.public_key'),
+        ]);
+    }
+
+    // ═══════════════ API: VEHICLES (แสดงเฉพาะ item ID ที่กำหนด) ═══════════════
+
+    public function getVehiclesItems(Request $request)
+    {
+        try {
+            // ⚠️ รายการ item ID ที่ต้องการให้แสดงในหน้ายานพาหนะ — แก้/เพิ่มได้ตรงนี้
+            $vehicleIds = ['3E-000002', '3E-000013'];
+
+            $page  = max(1, (int) $request->input('page', 1));
+            $limit = max(1, min(200, (int) $request->input('limit', 50)));
+            $name     = mb_strtolower($request->input('name', ''));
+            $brand    = mb_strtolower($request->input('brand', ''));
+            $location = mb_strtolower($request->input('location', ''));
+            $priv     = $request->input('priv', '');
+            $type     = $request->input('type', '');
+
+            $rawItems = Cache::remember('all_items_list', 60, function () {
+                return $this->api('GET', '/items') ?? [];
+            });
+
+            $items = collect($rawItems)->map(fn($r) => [
+                'iditem'    => $r['iditem'] ?? $r['item_id'] ?? '',
+                'name'      => $r['name'] ?? $r['item_name'] ?? '',
+                'quantity'  => $r['quantity'] ?? $r['item_quantity'] ?? 0,
+                'typeitem'  => $r['typeitem'] ?? $r['item_type'] ?? '',
+                'location'  => $r['location'] ?? $r['item_location'] ?? '',
+                'brand'     => $r['brand'] ?? $r['item_brand'] ?? '',
+                'privilege' => $r['privilege'] ?? $r['item_privilege'] ?? '',
+            ])->filter(function ($i) use ($vehicleIds) {
+                $base = explode('.', $i['iditem'])[0]; // รองรับ sub-item เช่น 3E-000002.1
+                return in_array($i['iditem'], $vehicleIds) || in_array($base, $vehicleIds);
+            });
+
+            if ($name)     $items = $items->filter(fn($i) => str_contains(mb_strtolower($i['name']), $name));
+            if ($brand)    $items = $items->filter(fn($i) => str_contains(mb_strtolower($i['brand']), $brand));
+            if ($location) $items = $items->filter(fn($i) => str_contains(mb_strtolower($i['location']), $location));
+            if ($priv)     $items = $items->filter(fn($i) => $i['privilege'] === $priv);
+            if ($type)     $items = $items->filter(fn($i) => $i['typeitem'] === $type);
+
+            $products = [];
+            $subs = [];
+            foreach ($items as $r) {
+                $id = $r['iditem'];
+                $dot = strrpos($id, '.');
+                if ($dot !== false) {
+                    $pid = substr($id, 0, $dot);
+                    if (!isset($subs[$pid])) $subs[$pid] = [];
+                    $subs[$pid][] = $r;
+                } else {
+                    $products[] = $r;
+                }
+            }
+
+            foreach ($subs as $pid => $subItems) {
+                usort($subItems, function ($a, $b) {
+                    $numA = intval(last(explode('.', $a['iditem']))) ?: 0;
+                    $numB = intval(last(explode('.', $b['iditem']))) ?: 0;
+                    return $numA <=> $numB;
+                });
+                $subs[$pid] = $subItems;
+
+                $hasParent = false;
+                foreach ($products as $p) {
+                    if ($p['iditem'] === $pid) { $hasParent = true; break; }
+                }
+                if (!$hasParent && !empty($subItems)) {
+                    $products[] = array_merge($subItems[0], ['_virt' => true, '_pid' => $pid]);
+                    $subs[$pid] = array_slice($subs[$pid], 1);
+                }
+            }
+
+            $products = collect($products)->values()->all();
+
+            $total = count($products);
+            $lastPage = max(1, (int) ceil($total / $limit));
+            $page = min($page, $lastPage);
+            $paginatedProducts = array_slice($products, ($page - 1) * $limit, $limit);
+
+            return response()->json([
+                'data'      => $paginatedProducts,
+                'subs'      => $subs,
+                'total'     => $total,
+                'page'      => $page,
+                'lastPage'  => $lastPage,
+                'brands'    => [],
+                'locations' => [],
+            ]);
+        } catch (\Throwable $e) {
+            Log::error('getVehiclesItems error: ' . $e->getMessage());
+            return response()->json(['data' => [], 'subs' => [], 'total' => 0, 'page' => 1, 'lastPage' => 1, 'brands' => [], 'locations' => []], 500);
+        }
+    }
+
     // ═══════════════ ROLE CATALOG (แผนก/บทบาทงาน) ═══════════════
     // หมายเหตุ: 'auth' คือระดับสิทธิ์ (admin/user/viewer) แยกจาก 'role' ซึ่งคือแผนกงาน
     // ทั้งหมดเก็บใน DB local (user_auth) เท่านั้น ไม่เกี่ยวกับ API ภายนอก

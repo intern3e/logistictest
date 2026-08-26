@@ -63,8 +63,9 @@
         display:flex;align-items:center;gap:10px;margin-bottom:14px;
     }
     .topbar h1 .badge{color:var(--pewter);font-size:13px;font-weight:400;}
+    .header-actions{margin-left:auto;display:flex;align-items:center;gap:8px;flex-shrink:0}
     .refresh-btn{
-        margin-left:auto;width:30px;height:30px;border-radius:50%;
+        width:30px;height:30px;border-radius:50%;
         border:none;background:var(--ash);color:var(--pewter);
         font-size:16px;cursor:pointer;display:flex;align-items:center;justify-content:center;
         transition:background-color var(--t);flex-shrink:0;
@@ -188,6 +189,12 @@
     .shelf-select #shelfSelectText{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
     .shelf-select #shelfSelectText.placeholder{color:var(--silver)}
     .shelf-select .chev{color:var(--silver);font-size:16px;flex-shrink:0}
+    .no-shelf-check{
+    display:flex;align-items:center;gap:6px;margin-top:6px;
+    font-size:12.5px;color:var(--pewter);cursor:pointer;user-select:none;
+    }
+    .no-shelf-check input{width:16px;height:16px;accent-color:var(--blue);flex-shrink:0}
+    .shelf-select.locked{ opacity:.55;pointer-events:none;background:var(--ash); }
     .sheet-overlay{
         position:fixed;left:0;right:0;top:0;
         height:100vh;height:100dvh;
@@ -421,6 +428,15 @@
     .confirm-cancel:active{background:var(--cloud)}
     .confirm-ok{background:var(--blue);color:#fff}
     .confirm-ok:active{background:var(--blue-dark)}
+    .filter-btn{
+        height:32px;padding:0 14px 0 11px;border:1px solid var(--carbon);border-radius:var(--r);
+        background:#EAF0FE;color:var(--blue);
+        font-size:13px;font-weight:500;font-family:inherit;cursor:pointer;
+        display:inline-flex;align-items:center;justify-content:center;gap:6px;
+        text-decoration:none;transition:background-color var(--t), transform .15s ease;
+    }
+    .filter-btn:active{background:#D6E2FC;transform:scale(0.96)}
+    .filter-btn svg{width:14px;height:14px;flex-shrink:0}
 </style>
 </head>
 <body>
@@ -428,7 +444,12 @@
 <!-- Header + Search -->
 <div class="topbar">
     <h1>รับสินค้าเข้า
-        <button type="button" class="refresh-btn" onclick="location.reload()" title="รีเฟรชหน้าจอ">⟳</button>
+        <div class="header-actions">
+            <a class="filter-btn" href="{{ url('/vendor-filter-product') }}" title="ไปหน้าตัวกรอง PO">
+               taobao
+            </a>
+            <button type="button" class="refresh-btn" onclick="location.reload()" title="รีเฟรชหน้าจอ">⟳</button>
+        </div>
     </h1>
     <div class="user-badge">เข้าใช้งานในชื่อ: <b id="userName">-</b></div>
     <div class="searchrow">
@@ -447,13 +468,17 @@
 <!-- Shelf + Photo + Printer -->
 <div id="topFields">
     <div class="field-row combo-row">
-        <div class="combo-item shelf-item">
-            <div class="lbl">ชั้นวาง</div>
-            <button type="button" class="shelf-select" id="shelfSelect" onclick="openShelfSheet()">
-                <span id="shelfSelectText" class="placeholder">เลือกชั้นวาง</span>
-                <span class="chev">›</span>
-            </button>
-        </div>
+    <div class="combo-item shelf-item">
+        <div class="lbl">ชั้นวาง</div>
+        <button type="button" class="shelf-select" id="shelfSelect" onclick="openShelfSheet()">
+            <span id="shelfSelectText" class="placeholder">เลือกชั้นวาง</span>
+            <span class="chev">›</span>
+        </button>
+        <label class="no-shelf-check">
+            <input type="checkbox" id="noShelfChk" onchange="onNoShelfToggle()">
+            <span>ไม่ระบุชั้นวาง (ไปกำหนดทีหลังที่หน้าระบุตำแหน่ง)</span>
+        </label>
+    </div>
         <div class="combo-item photo-item">
             <div class="lbl">รูปหน้างาน</div>
             <div class="photo-tap" id="photoTap" onclick="triggerPhoto()">
@@ -588,7 +613,15 @@ const SHELF_OPTIONS = [
 let currentPO = null;
 let capturedPhoto = null;
 let selectedShelf = '';
-let historyDetailMap = new Map(); // key=normName → [{received_by, received_at, recv_qty, shelf}]
+let noShelf = false;
+function onNoShelfToggle(){
+    noShelf = $('noShelfChk').checked;
+    const btn = $('shelfSelect');
+    btn.disabled = noShelf;             
+    if(noShelf){ resetShelf(); btn.classList.add('locked'); }
+    else{ btn.classList.remove('locked'); }
+}
+let historyDetailMap = new Map(); 
 
 const $ = id => document.getElementById(id);
 
@@ -1046,7 +1079,7 @@ function openConfirm(){
     const selected = getSelectedItems();
     if(selected.length === 0){ toast('กรุณาเลือกสินค้าอย่างน้อย 1 รายการ','error'); return; }
     if(selected.some(s => s.RecvQty <= 0)){ toast('จำนวนรับต้องมากกว่า 0','error'); return; }
-    if(!selectedShelf){ toast('กรุณาเลือกชั้นวางก่อนบันทึก','error'); return; }
+    if(!noShelf && !selectedShelf){ toast('กรุณาเลือกชั้นวาง หรือติ๊ก "ไม่ระบุชั้นวาง"','error'); return; }
     if(!$('printerSelect').value){ toast('กรุณาเลือกเครื่องพิมพ์หรือเลือกไม่พิมพ์','error'); return; }
 
     const printerVal = $('printerSelect').value;
@@ -1064,7 +1097,7 @@ function openConfirm(){
         PONum: currentPO.DocuNo,
         SONum: soNums || null,
         Status: status,
-        Shelf: selectedShelf || null,
+        Shelf: noShelf ? null : (selectedShelf || null),
         Printer: printer,
         PrintSheets: printSheets,
         ReceivedBy: RECEIVED_BY || null,
@@ -1083,7 +1116,7 @@ function openConfirm(){
         ${custNames ? `<div class="row"><span>ลูกค้า</span><span><b>${esc(custNames)}</b></span></div>` : ''}
         <div class="row"><span>จำนวนรายการ</span><span><b>${selected.length}</b> รายการ</span></div>
         <div class="row"><span>จำนวนรวม</span><span><b>${fmtQty(totalQty)}</b> ชิ้น</span></div>
-        <div class="row"><span>ชั้นวาง</span><span><b>${esc(selectedShelf)}</b></span></div>
+        <div class="row"><span>ชั้นวาง</span><span><b>${noShelf ? 'ยังไม่ระบุ' : esc(selectedShelf)}</b></span></div>
         <div class="row"><span>สถานะ PO</span><span>${statusBadge}</span></div>
         ${printer ? `<div class="row"><span>พิมพ์สติกเกอร์</span><span><b>${esc(printerLabel(printer))}</b> × ${printSheets}</span></div>` : ''}
     `;
@@ -1234,6 +1267,9 @@ function clearResult(){
     $('topFields').style.display = 'none';
     $('navBar').classList.remove('show');
     resetShelf(); resetPrinter(); removePhoto();
+    noShelf = false;
+    $('noShelfChk').checked = false;
+    $('shelfSelect').classList.remove('locked');
 }
 let toastTimer;
 function toast(msg, type=''){
@@ -1324,6 +1360,21 @@ function showCheckedOutPO(poNumber, body){
         '<br>ไม่สามารถรับเข้าเพิ่มได้';
     $('stateBox').style.display = 'block';
 }
+
+/* ========== Auto-search จาก query string (?PONum=...) ==========
+   เผื่อกรณีเปิดมาจากหน้าอื่น (เช่น หน้าตัวกรอง PO vendor) แล้วอยากให้ค้นหาเลข PO ที่กดมาให้อัตโนมัติ
+   รับได้ทั้งแบบมี/ไม่มี prefix "PO" นำหน้า (จะตัดออกให้เพื่อให้ตรงกับฟอร์แมตที่ API ต้องการ) */
+(function initFromQueryString(){
+    const qp = new URLSearchParams(window.location.search);
+    let poFromQuery = qp.get('PONum');
+    if(!poFromQuery) return;
+
+    poFromQuery = poFromQuery.trim().replace(/^PO/i, '');
+    if(!poFromQuery) return;
+
+    $('poInput').value = poFromQuery;
+    searchPO();
+})();
 </script>
 </body>
 </html>

@@ -69,12 +69,13 @@ class InternalPoController extends Controller
         }
 
         if (!Auth::guard('web')->check()) {
-            abort(403, 'กรุณาเข้าใช้งานผ่านเมนูหลัก');
+            throw new \Illuminate\Http\Exceptions\HttpResponseException(
+                redirect()->guest(route('login'))
+            );
         }
 
         return Auth::guard('web')->user();
     }
-
     private function baseQuery(Request $request, bool $withStatusFilter = true)
     {
         $q = internal_po::with('lines');
@@ -159,8 +160,9 @@ class InternalPoController extends Controller
     {
         $authUser     = $this->resolveSsoUser($request, 'internal_po.pick');
         $operatorName = $authUser->name;
-        if ($operatorName === 'tuk') {
-            return redirect()->route('store.location');
+
+        if (!in_array($authUser->role, ['admin', 'stock', 'store'], true)) {
+            abort(403, 'คุณไม่มีสิทธิ์เข้าใช้งานหน้านี้');
         }
 
         $heads          = $this->loadHeads($request, internal_po::ST_PENDING);
@@ -174,7 +176,6 @@ class InternalPoController extends Controller
             'heads', 'locations', 'operatorName', 'printers', 'statuses', 'statusCounts', 'selectedStatus'
         ));
     }
-
     public function pickSubmit(Request $request)
     {
         $authUser = Auth::guard('web')->user();

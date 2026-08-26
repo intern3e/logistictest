@@ -186,6 +186,7 @@
         <span class="h1">รอตรวจสอบการจัด</span>
         <span class="sticker">Internal PO</span>
     </div>
+    <div class="user-tag"><strong>{{ $operatorName }}</strong></div>
 </div>
 <input type="hidden" id="inpUser" value="{{ $operatorName }}">
 <main>

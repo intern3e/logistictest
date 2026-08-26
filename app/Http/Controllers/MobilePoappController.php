@@ -24,7 +24,6 @@ class MobilePoappController extends Controller
     const LEGACY_CONNECTION = 'mysql_3e';
     public function index(Request $request)
     {
-        // ★ verify ticket แบบเดียวกับ /solist ถ้ามี ticket ส่งมา
         $ticket = $request->input('ticket');
 
         if ($ticket && !Auth::guard('web')->check()) {
@@ -45,22 +44,18 @@ class MobilePoappController extends Controller
             }
         }
 
-        // ★ ถ้ายังไม่ login เลย (ไม่มี ticket และไม่มี session) → บล็อกการเข้าถึง
         if (!Auth::guard('web')->check()) {
-            abort(403, 'กรุณาเข้าใช้งานผ่านเมนูหลัก');
+            return redirect()->guest(route('login'));
+        }
+
+        $user = Auth::guard('web')->user();
+
+        if (!in_array($user->role, ['admin', 'stock', 'store'], true)) {
+            abort(403, 'คุณไม่มีสิทธิ์เข้าใช้งานหน้านี้');
         }
 
         return view('po.mobile_app');
     }
-
-    /**
-     * GET /api/getPODetail?PONum=xxx
-     * ดึง PO + SO พร้อมกัน ส่งกลับ { poData, soInfo }
-     */
-/**
-     * GET /api/getPODetail?PONum=xxx
-     * ดึง PO + SO พร้อมกัน ส่งกลับ { poData, soInfo }
-     */
     public function getPODetail(Request $request)
     {
         $request->validate(['PONum' => 'required|string|max:50']);

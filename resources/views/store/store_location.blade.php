@@ -7,6 +7,16 @@
     <meta name="csrf-token" content="{{ csrf_token() }}">
     <title>ระบุตำแหน่งจัดเก็บ</title>
     <style>
+        .top-banner .sticker {
+        background:var(--primary-light); color:var(--primary-dark); border:1px solid #bfdbfe;
+        font-weight:600; font-size:11px;
+        padding:4px 12px; text-transform:uppercase; letter-spacing:.3px;
+        }
+        .top-banner .user-badge {
+            margin-left:auto;
+            font-size:13px; font-weight:700; color:var(--ink);
+            display:flex; align-items:center; gap:6px;
+        }
         .table-topbar {
             display:flex; align-items:center; justify-content:space-between;
             gap:12px; margin-bottom:8px; flex-wrap:wrap;
@@ -42,15 +52,15 @@
             font-weight:600; font-size:11px;
             padding:4px 12px; text-transform:uppercase; letter-spacing:.3px;
         }
-        .hide-done-toggle {
-            display:inline-flex; align-items:center; gap:6px;
-            font-size:13px; font-weight:700; font-family:inherit;
-            padding:7px 16px; border:1px solid var(--border);
-            background:var(--canvas); color:var(--muted);
-            cursor:pointer; transition:.15s ease;
+        .btn-claim, .btn-finish-claim {
+            font-size:12px; font-weight:700; padding:6px 12px; border:1px solid transparent;
+            font-family:inherit; cursor:pointer; transition:.15s ease;
         }
-        .hide-done-toggle:hover { border-color:var(--primary); color:var(--primary); }
-        .hide-done-toggle.active { background:var(--primary); color:var(--on-primary); border-color:var(--primary); }
+        .btn-claim { background:var(--primary-light); color:var(--primary-dark); border-color:#bfdbfe; }
+        .btn-claim:hover { background:var(--primary); color:var(--on-primary); }
+        .btn-finish-claim { background:#fff7ed; color:var(--warning); border-color:#fed7aa; }
+        .btn-finish-claim:hover { background:var(--warning); color:var(--on-primary); }
+        .btn-claim:disabled, .btn-finish-claim:disabled { opacity:.5; cursor:not-allowed; }
 
         main {
             padding:20px; background:var(--canvas);
@@ -161,6 +171,7 @@
         <span class="h1">ระบุตำแหน่งจัดเก็บ</span>
         <span class="sticker">Store</span>
     </div>
+    <div class="user-badge">{{ $creator }}</div>
 </div>
 <input type="hidden" id="inpUser" value="{{ $creator }}">
 @php $nav = $creator ? ['create_by' => $creator] : []; @endphp
@@ -180,8 +191,6 @@
                 <button type="button" class="btn-ghost">ล้าง</button>
             </a>
         @endif
-
-        <button type="button" id="btnHideDone" class="hide-done-toggle active">ซ่อนที่ทำแล้ว</button>
     </form>
 
     <div class="table-scroll">
@@ -202,45 +211,62 @@
             <tr>
                 <th class="center" style="width:44px;"><input type="checkbox" id="chkAll"></th>
                 <th>PO ภายใน</th><th>SO</th><th>รายการสินค้า</th><th class="num">จำนวนรวม</th>
-                <th>ลูกค้า</th><th>ที่เก็บ</th><th>จัดโดย</th><th>เวลาจัด</th>
+                <th>ลูกค้า</th><th>ที่เก็บ</th><th>รับโดย</th><th>เวลารับ</th>
             </tr>
         </thead>
         <tbody>
-        @forelse ($heads as $h)
-            @php
-                $todo  = $h->status === \App\Models\internal_po::ST_FINISH;
-                $cls   = $todo ? '' : 'done';
-                $items = $h->lines;
-                $totalQty = $items->sum('item_quantity');
-                $location = $h->location;
-            @endphp
-            <tr class="{{ $cls }}" data-done="{{ $todo ? 0 : 1 }}">
-                <td class="center">
-                    @if ($todo)<input type="checkbox" class="chkLine" value="{{ $h->internal_id }}">@endif
-                </td>
-                <td><span class="ref-link">{{ $h->internal_id }}</span></td>
-                <td>{{ $h->SO_id }}</td>
-                <td class="items-cell">
-                    @if ($items->count() <= 2)
-                        {{ $items->pluck('item_name')->implode(', ') }}
-                    @else
-                        <details class="items-expand">
-                            <summary>{{ $items->first()->item_name }} <span class="more">และอีก {{ $items->count() - 1 }} รายการ</span></summary>
-                            @foreach ($items as $it)
-                                <div class="subline">• {{ $it->item_name }} ({{ number_format($it->item_quantity, 2) }})</div>
-                            @endforeach
-                        </details>
-                    @endif
-                </td>
-                <td class="num">{{ number_format($totalQty, 2) }}</td>
-                <td class="cust-cell">{{ $h->customer_name }}</td>
-                <td>{{ $location ?: '—' }}</td>
-                <td>{{ $h->pick_by ?: '—' }}</td>
-                <td class="muted">{{ $h->pick_at ? \Carbon\Carbon::parse($h->pick_at)->format('d/m/Y H:i') : '—' }}</td>
-            </tr>
-        @empty
-            <tr><td colspan="9" class="empty">ไม่มีรายการ</td></tr>
-        @endforelse
+            @forelse ($heads as $h)
+                @php
+                    $todo        = $h->todo;
+                    $cls         = $todo ? '' : 'done';
+                    $items       = $h->items;
+                    $totalQty    = $h->total_qty;
+                    $location    = $h->location;
+                    $checkboxVal = $h->type . ':' . $h->id;
+                    $isClaimed   = $h->type === 'external' && ($h->claimed ?? false);
+                @endphp
+                <tr class="{{ $cls }}" data-done="{{ $todo ? 0 : 1 }}">
+                    <td class="center">
+                        @if ($todo && !$isClaimed)<input type="checkbox" class="chkLine" value="{{ $checkboxVal }}">@endif
+                    </td>
+                    <td>
+                        <span class="ref-link">{{ $h->po_display }}</span>
+                        <div class="muted">{{ $h->type === 'external' ? 'ภายนอก' : 'ภายใน' }}</div>
+                    </td>
+                    <td>{{ $h->so_id }}</td>
+                    <td class="items-cell">
+                        @if ($items->count() <= 2)
+                            {{ $items->pluck('item_name')->implode(', ') }}
+                        @else
+                            <details class="items-expand">
+                                <summary>{{ $items->first()->item_name }} <span class="more">และอีก {{ $items->count() - 1 }} รายการ</span></summary>
+                                @foreach ($items as $it)
+                                    <div class="subline">• {{ $it->item_name }} ({{ number_format($it->item_quantity, 2) }})</div>
+                                @endforeach
+                            </details>
+                        @endif
+                    </td>
+                    <td class="num">{{ number_format($totalQty, 2) }}</td>
+                    <td class="cust-cell">{{ $h->customer_name }}</td>
+                    <td>
+                        @if ($h->type === 'external')
+                            @if ($isClaimed)
+                                <button type="button" class="btn-finish-claim" data-po="{{ $h->id }}">จัดการเสร็จสิ้น</button>
+                                <div class="muted">โดย {{ $h->claimed_by ?: '—' }}</div>
+                                <div class="muted">{{ $h->claimed_at ? \Carbon\Carbon::parse($h->claimed_at)->format('d/m/Y H:i') : '' }}</div>
+                            @else
+                                <button type="button" class="btn-claim" data-po="{{ $h->id }}">กำลังจัดการ</button>
+                            @endif
+                        @else
+                            {{ $location ?: '—' }}
+                        @endif
+                    </td>
+                    <td>{{ $h->packed_by ?: '—' }}</td>
+                    <td class="muted">{{ $h->packed_at ? \Carbon\Carbon::parse($h->packed_at)->format('d/m/Y H:i') : '—' }}</td>
+                </tr>
+            @empty
+                <tr><td colspan="9" class="empty">ไม่มีรายการ</td></tr>
+            @endforelse
         </tbody>
     </table>
     </div>
@@ -289,6 +315,8 @@
 
 <script>
 const SUBMIT_URL = "{{ route('store.location.submit') }}";
+const CLAIM_URL  = "{{ route('store.location.claim') }}";
+const FINISH_URL = "{{ route('store.location.finish') }}";
 const CSRF       = document.querySelector('meta[name="csrf-token"]').content;
 const modal      = document.getElementById('locModal');
 const SHELF_OPTIONS = [
@@ -382,12 +410,37 @@ document.getElementById('chkAll').addEventListener('change', function () {
 });
 document.querySelectorAll('.chkLine').forEach(c => c.addEventListener('change', refreshBtn));
 
-const btnHide = document.getElementById('btnHideDone');
-const applyHide = () => document.querySelectorAll('tr[data-done="1"]').forEach(tr => tr.hidden = btnHide.classList.contains('active'));
-btnHide.addEventListener('click', () => { btnHide.classList.toggle('active'); applyHide(); });
-applyHide();
-
 function pickLoc(el) { const i = document.getElementById('inpLocation'); i.value = el.textContent.trim(); i.focus(); }
+
+async function postClaimAction(url, poId, btn, confirmMsg) {
+    if (!confirm(confirmMsg)) return;
+    btn.disabled = true;
+    try {
+        const res = await fetch(url, {
+            method: 'POST',
+            headers: { 'Content-Type':'application/json','Accept':'application/json','X-Requested-With':'XMLHttpRequest','X-CSRF-TOKEN':CSRF },
+            body: JSON.stringify({ po_id: poId })
+        });
+        const data = await res.json();
+        if (res.ok && data.ok) {
+            window.location.reload();
+        } else {
+            alert(data.message || 'ดำเนินการไม่สำเร็จ');
+            btn.disabled = false;
+        }
+    } catch (e) {
+        console.error(e);
+        alert('เกิดข้อผิดพลาด');
+        btn.disabled = false;
+    }
+}
+
+document.querySelectorAll('.btn-claim').forEach(btn => {
+    btn.addEventListener('click', () => postClaimAction(CLAIM_URL, btn.dataset.po, btn, 'คุณกำลังจัดการงาน PO นี้ใช่หรือไม่'));
+});
+document.querySelectorAll('.btn-finish-claim').forEach(btn => {
+    btn.addEventListener('click', () => postClaimAction(FINISH_URL, btn.dataset.po, btn, 'คุณยืนยันที่จะจัดงานเสร็จสิ้นหรือไม่'));
+});
 
 function openModal() {
     if (!currentUser())        { alert('กรุณาระบุชื่อผู้ดำเนินการ'); return; }

@@ -50,7 +50,7 @@ public function login(Request $request)
     }
 
     Log::info("Login: No SSO intent → redirect to home");
-    return redirect()->route('home');
+    return redirect()->intended(route('home'));     
 }
 
 public function ssoAuthorize(Request $request)
@@ -126,22 +126,20 @@ public function ssoAuthorize(Request $request)
                 'name'         => $user->name,
                 'auth'         => $user->auth,
                 'role'         => $user->role,
-                'permissions'  => $user->permissions ?? [],
                 'auth_version' => $user->auth_version,
             ],
         ]);
     }
 
+// ssoLogout() — เอา bounce กลับ server_update ออก กัน loop
 public function ssoLogout(Request $request)
 {
     Auth::guard('web')->logout();
     $request->session()->invalidate();
     $request->session()->regenerateToken();
-    $finalRedirect = $request->query('redirect_url', '/');
-    $nextClientLogout = 'http://server_update:8000/logout?redirect_url='
-        . urlencode($finalRedirect);
 
-    return redirect($nextClientLogout)->withCookie(cookie()->forget('sso_intent'));
+    $finalRedirect = $request->query('redirect_url', '/');
+    return redirect($finalRedirect); // ไม่ redirect ไป server_update/logout ซ้ำ
 }
 private function issueTicketAndRedirect(UserAuth $user, string $clientKey, string $returnUrl)
 {

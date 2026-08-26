@@ -19,6 +19,10 @@ class PoReceiveLine extends Model
         'photo_path',
         'received_by',
         'received_at',
+        'do_it',
+        'do_it_time',
+        'sus',
+        'sus_time'
     ];
 
     protected $casts = [

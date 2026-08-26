@@ -90,12 +90,15 @@
     .so-card-header {
         display:flex; align-items:flex-start; gap:10px;
         padding:12px 14px; border-bottom:1px solid var(--border); background:#fafbfd;
+        cursor:pointer;
     }
+    .so-card-header:hover { background:#f2f4f8; }
+    .so-card-header:focus-visible { outline:2px solid var(--primary); outline-offset:-2px; }
     .so-toggle {
-        cursor:pointer; color:var(--faint); font-size:16px; margin-top:2px; flex-shrink:0;
+        color:var(--faint); font-size:16px; margin-top:2px; flex-shrink:0;
         display:inline-block; user-select:none; transition:transform .12s ease;
+        pointer-events:none;
     }
-    .so-toggle:focus-visible { outline:2px solid var(--primary); outline-offset:2px; border-radius:0; }
     .so-card:not(.collapsed) .so-toggle { transform:rotate(90deg); }
     .so-card.collapsed .so-body { display:none; }
     .so-head-main { flex:1; min-width:0; }
@@ -126,7 +129,11 @@
     .dn-no.is-cancelled { color:var(--danger); text-decoration:line-through; }
     .dn-time { font-size:14px; color:var(--muted); }
     .dn-hint { font-size:14px; color:var(--faint); margin-left:auto; }
-    .dnSelectAll { width:19px; height:19px; accent-color:var(--primary); flex-shrink:0; cursor:pointer; }
+    .dnSelectAll,
+    .chkPickOnly {
+        width:24px; height:24px; accent-color:var(--primary); flex-shrink:0; cursor:pointer;
+        border:2px solid #111827; border-radius:2px;
+    }
     .dn-cancelled-badge {
         font-size:14px; font-weight:700; color:var(--danger); margin-left:auto; white-space:nowrap;
     }
@@ -156,7 +163,10 @@
     }
 
     .po-row-head { display:flex; align-items:center; gap:8px; margin-bottom:2px; flex-wrap:wrap; }
-    .po-row-head input[type="checkbox"] { width:20px; height:20px; accent-color:var(--primary); flex-shrink:0; }
+    .po-row-head input[type="checkbox"] {
+        width:24px; height:24px; accent-color:var(--primary); flex-shrink:0;
+        border:2px solid #111827; border-radius:2px;
+    }
     .po-row.po-row-done .po-row-head { padding-left:22px; }
     .source-tag {
         font-size:13px; font-weight:700; color:var(--muted); border:1px solid var(--border);
@@ -269,11 +279,11 @@
             @endphp
             {{-- การ์ดเริ่มต้นแบบ "ปิด" เสมอ (class collapsed) ผู้ใช้ต้องกดที่หัวการ์ดเพื่อเปิดดูรายละเอียด --}}
             <div class="so-card collapsed" id="{{ $soIdSafe }}" data-done="{{ $bill->all_done ? 1 : 0 }}">
-                <div class="so-card-header">
-                    <span class="so-toggle" role="button" tabindex="0" aria-expanded="false"
-                          aria-label="เปิด/ปิดรายการ {{ $bill->so_id }}"
-                          onclick="toggleSoCard('{{ $soIdSafe }}')"
-                          onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();toggleSoCard('{{ $soIdSafe }}');}">▸</span>
+                <div class="so-card-header" role="button" tabindex="0" aria-expanded="false"
+                     aria-label="เปิด/ปิดรายการ {{ $bill->so_id }}"
+                     onclick="toggleSoCard('{{ $soIdSafe }}')"
+                     onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();toggleSoCard('{{ $soIdSafe }}');}">
+                    <span class="so-toggle" aria-hidden="true">▸</span>
                     <div class="so-head-main">
                         <div class="so-id {{ $bill->all_done ? 'is-done' : '' }}">{{ $bill->so_id }}</div>
                         <div class="so-sub">
@@ -292,104 +302,117 @@
                         <div class="no-dn-note">⚠️ ยังไม่พบข้อมูลบิลขนส่ง (tblbill) ของ SO นี้</div>
                     @endif
 
+                    @php
+                        // หา "บิลหลัก" ที่จะผูกกับรายการ PO/สินค้าร่วม — เลือกบิลที่ยังไม่ยกเลิกและยังไม่ถูกบันทึกผู้จัดก่อน
+                        // ถ้าทุกบิลถูกบันทึกผู้จัดหมดแล้ว ให้ fallback ไปบิลแรกที่ไม่ยกเลิก
+                        $itemHostDnIdx = collect($dnList)->search(fn ($d) => !($d->cancelled ?? false) && !($d->picked ?? false));
+                        if ($itemHostDnIdx === false) {
+                            $itemHostDnIdx = collect($dnList)->search(fn ($d) => !($d->cancelled ?? false));
+                        }
+                        if ($itemHostDnIdx === false) $itemHostDnIdx = 0;
+
+                        $itemsElId   = $soIdSafe . '_items';
+                        $selectAllId = $soIdSafe . '_selectall';
+                        $hostDn      = $dnList[$itemHostDnIdx] ?? null;
+                    @endphp
+
+                    {{-- ===== รายชื่อบิลขนส่งทั้งหมดของ SO นี้ เรียงต่อกัน (ไม่แทรกรายการสินค้าคั่นกลาง) ===== --}}
                     @foreach ($dnList as $dnIdx => $dn)
                         @php
-                            $dnElId = $soIdSafe . '_dn' . $dnIdx;
-                            $isCancelled = $dn->cancelled ?? false;
-                            $isPicked    = $dn->picked ?? false;
-                            // ไม่มีรายการ "ยังไม่จัด" ให้ติ๊กใต้บิลนี้เลย ไม่ว่าจะเพราะไม่มี PO เชื่อมตั้งแต่แรก
-                            // หรือ PO ที่เชื่อมอยู่ถูกเช็คของออกไปหมดแล้วก็ตาม — ถ้ายังไม่มีคนจัดบิล (picked=false)
-                            // ต้องมีทางให้ติ๊กบันทึกชื่อผู้จัดเสมอ ไม่งั้นบิลจะค้างสถานะ "ยังไม่เสร็จ" ตลอดไปโดยไม่มีปุ่มให้กด
-                            $noTodoLeft = $bill->todo_groups->isEmpty();
+                            $dnElId        = $soIdSafe . '_dn' . $dnIdx;
+                            $isCancelled   = $dn->cancelled ?? false;
+                            $isPicked      = $dn->picked ?? false;
+                            $isItemHost    = ($dnIdx === $itemHostDnIdx);
+                            $showSelectAll = $isItemHost && !$isCancelled && !$isPicked && !$bill->todo_groups->isEmpty();
+                            $showPickOnly  = !$isCancelled && !$isPicked && !$showSelectAll && $dn->dn_no;
                         @endphp
                         <div class="dn-section {{ $isCancelled ? 'dn-cancelled' : '' }}" id="{{ $dnElId }}" data-dnno="{{ $dn->dn_no }}">
-                        <div class="dn-section-header">
-                            @if (!$isCancelled && !$isPicked && !$noTodoLeft)
-                                <input type="checkbox" class="dnSelectAll" aria-label="เลือกทั้งหมดในบิลนี้"
-                                    onchange="toggleDnSelectAll(document.getElementById('{{ $dnElId }}'), this.checked)">
-                            @elseif (!$isCancelled && !$isPicked && $noTodoLeft && $dn->dn_no)
-                                <input type="checkbox" class="chkPickOnly"
-                                    aria-label="บันทึกชื่อผู้จัดบิลนี้"
-                                    onchange="updateFloatBar()">
-                            @endif
-                            <span class="dn-no {{ $isCancelled ? 'is-cancelled' : ($isPicked ? 'is-done' : '') }}">{{ $dn->dn_no ?: '— (ไม่มีเลขที่บิล)' }}</span>
-                            @if ($dn->time)
-                                <span class="dn-time">{{ \Carbon\Carbon::parse($dn->time)->addYears(543)->format('d/m/Y H:i') }}</span>
-                            @endif
-                            @if ($dn->opened_by)
-                                <span class="dn-time">ผู้เปิดบิล {{ $dn->opened_by }}</span>
-                            @endif
-                            @if ($isCancelled)
-                                <span class="dn-cancelled-badge">ยกเลิกแล้ว</span>
-                            @elseif ($isPicked)
-                                <span class="dn-picked-badge">
-                                    จัดของแล้ว{{ $dn->picked_by ? ' โดย ' . $dn->picked_by : '' }}{{ $dn->picked_at ? ' · ' . \Carbon\Carbon::parse($dn->picked_at)->format('d/m/Y H:i') . ' น.' : '' }}
-                                </span>
-                            @endif
-                        </div>
-
-                    <div class="dn-body">
+                            <div class="dn-section-header">
+                                @if ($showSelectAll)
+                                    <input type="checkbox" class="dnSelectAll" id="{{ $selectAllId }}" aria-label="เลือกทั้งหมดของ SO นี้"
+                                        onchange="toggleDnSelectAll(document.getElementById('{{ $itemsElId }}'), this.checked)">
+                                @elseif ($showPickOnly)
+                                    <input type="checkbox" class="chkPickOnly"
+                                        aria-label="บันทึกชื่อผู้จัดบิลนี้"
+                                        onchange="syncCardFromPickOnly(this)">
+                                @endif
+                                <span class="dn-no {{ $isCancelled ? 'is-cancelled' : ($isPicked ? 'is-done' : '') }}">{{ $dn->dn_no ?: '— (ไม่มีเลขที่บิล)' }}</span>
+                                @if ($dn->time)
+                                    <span class="dn-time">{{ \Carbon\Carbon::parse($dn->time)->addYears(543)->format('d/m/Y H:i') }}</span>
+                                @endif
+                                @if ($dn->opened_by)
+                                    <span class="dn-time">ผู้เปิดบิล {{ $dn->opened_by }}</span>
+                                @endif
                                 @if ($isCancelled)
-                                    <div class="dn-cancelled-note">บิลขนส่งใบนี้ถูกยกเลิกแล้ว ไม่สามารถเลือกรายการไปกับบิลนี้ได้</div>
-                                @else
-                                    @forelse ($bill->groups->sortByDesc('todo') as $g)
-                                        <div class="po-row {{ $g->todo ? '' : 'po-row-done' }}">
-                                            <div class="po-row-head">
-                                                @if ($g->todo)
-                                                    <input type="checkbox" class="chkGroup" value="{{ $g->type }}:{{ $g->id }}"
-                                                           onchange="updateDnButton(document.getElementById('{{ $dnElId }}'))">
-                                                @endif
-                                                @if ($sourceLabel($g->type))
-                                                    <span class="source-tag">{{ $sourceLabel($g->type) }}</span>
-                                                @endif
-                                                <span class="po-num">{{ $poClean($g->po_display) }}</span>
-                                            </div>
-
-                                            <div class="item-col-head"><span>ชื่อสินค้า</span><span>จำนวน</span></div>
-
-                                                @foreach ($g->items as $it)
-                                                    <div class="item-row">
-                                                        <div class="item-name">{{ $it->item_name }}</div>
-                                                        <div class="item-qty">{{ rtrim(rtrim(number_format($it->item_quantity, 2), '0'), '.') }}</div>
-                                                    </div>
-                                                @endforeach
-
-                                                @if ($g->type === 'external')
-                                                    @php
-                                                        $locLines = collect($g->items)
-                                                            ->filter(fn ($it) => ($it->shelf ?? null) || ($it->done_by ?? null))
-                                                            ->unique(fn ($it) => ($it->shelf ?? '') . '|' . ($it->done_by ?? '') . '|' . ($it->done_at ?? ''))
-                                                            ->values();
-                                                    @endphp
-                                                    @foreach ($locLines as $it)
-                                                        <div class="item-row-meta">
-                                                            ที่เก็บ {{ $it->shelf ?? '—' }} · ระบุสถานที่โดย {{ $it->done_by ?? '—' }}
-                                                            @if (!empty($it->done_at)) {{ \Carbon\Carbon::parse($it->done_at)->format('d/m/Y H:i') }} น. @endif
-                                                        </div>
-                                                    @endforeach
-                                                @endif
-
-                                            @if ($g->type !== 'external')
-                                                <div class="po-row-meta">
-                                                    ที่เก็บ {{ $g->location ?: '—' }} · ระบุสถานที่โดย {{ $g->done_by ?: '—' }}
-                                                    @if ($g->done_at) {{ \Carbon\Carbon::parse($g->done_at)->format('d/m/Y H:i') }} น. @endif
-                                                </div>
-                                            @endif
-                                            @if (!$g->todo)
-                                                <div class="po-row-meta checkout-meta">
-                                                    เช็คของออก{{ ($g->checkout_by ?? null) ? ' โดย ' . $g->checkout_by : '' }}
-                                                    @if ($g->checkout_at ?? null)
-                                                        {{ \Carbon\Carbon::parse($g->checkout_at)->format('d/m/Y H:i') }} น.
-                                                    @endif
-                                                </div>
-                                            @endif
-                                        </div>
-                                    @empty
-                                    @endforelse
+                                    <span class="dn-cancelled-badge">ยกเลิกแล้ว</span>
+                                @elseif ($isPicked)
+                                    <span class="dn-picked-badge">
+                                        จัดของแล้ว{{ $dn->picked_by ? ' โดย ' . $dn->picked_by : '' }}{{ $dn->picked_at ? ' · ' . \Carbon\Carbon::parse($dn->picked_at)->format('d/m/Y H:i') . ' น.' : '' }}
+                                    </span>
                                 @endif
                             </div>
                         </div>
                     @endforeach
+
+                    {{-- ===== รายการ PO/สินค้า ของ SO นี้ — แสดงครั้งเดียว ไม่ซ้ำใต้ทุกบิล ===== --}}
+                    <div class="dn-section" id="{{ $itemsElId }}" data-dnno="{{ $hostDn->dn_no ?? '' }}" data-selectall="{{ $selectAllId }}">
+                        <div class="dn-body">
+                            @forelse ($bill->groups->sortByDesc('todo') as $g)
+                                <div class="po-row {{ $g->todo ? '' : 'po-row-done' }}">
+                                    <div class="po-row-head">
+                                        @if ($g->todo)
+                                            <input type="checkbox" class="chkGroup" value="{{ $g->type }}:{{ $g->id }}"
+                                                   onchange="updateDnButton(document.getElementById('{{ $itemsElId }}'))">
+                                        @endif
+                                        @if ($sourceLabel($g->type))
+                                            <span class="source-tag">{{ $sourceLabel($g->type) }}</span>
+                                        @endif
+                                        <span class="po-num">{{ $poClean($g->po_display) }}</span>
+                                    </div>
+
+                                    <div class="item-col-head"><span>ชื่อสินค้า</span><span>จำนวน</span></div>
+
+                                    @foreach ($g->items as $it)
+                                        <div class="item-row">
+                                            <div class="item-name">{{ $it->item_name }}</div>
+                                            <div class="item-qty">{{ rtrim(rtrim(number_format($it->item_quantity, 2), '0'), '.') }}</div>
+                                        </div>
+                                    @endforeach
+
+                                    @if ($g->type === 'external')
+                                        @php
+                                            $locLines = collect($g->items)
+                                                ->filter(fn ($it) => ($it->shelf ?? null) || ($it->done_by ?? null))
+                                                ->unique(fn ($it) => ($it->shelf ?? '') . '|' . ($it->done_by ?? '') . '|' . ($it->done_at ?? ''))
+                                                ->values();
+                                        @endphp
+                                        @foreach ($locLines as $it)
+                                            <div class="item-row-meta">
+                                                ที่เก็บ {{ $it->shelf ?? '—' }} · ระบุสถานที่โดย {{ $it->done_by ?? '—' }}
+                                                @if (!empty($it->done_at)) {{ \Carbon\Carbon::parse($it->done_at)->format('d/m/Y H:i') }} น. @endif
+                                            </div>
+                                        @endforeach
+                                    @endif
+
+                                    @if ($g->type !== 'external')
+                                        <div class="po-row-meta">
+                                            ที่เก็บ {{ $g->location ?: '—' }} · ระบุสถานที่โดย {{ $g->done_by ?: '—' }}
+                                            @if ($g->done_at) {{ \Carbon\Carbon::parse($g->done_at)->format('d/m/Y H:i') }} น. @endif
+                                        </div>
+                                    @endif
+                                    @if (!$g->todo)
+                                        <div class="po-row-meta checkout-meta">
+                                            เช็คของออก{{ ($g->checkout_by ?? null) ? ' โดย ' . $g->checkout_by : '' }}
+                                            @if ($g->checkout_at ?? null)
+                                                {{ \Carbon\Carbon::parse($g->checkout_at)->format('d/m/Y H:i') }} น.
+                                            @endif
+                                        </div>
+                                    @endif
+                                </div>
+                            @empty
+                            @endforelse
+                        </div>
+                    </div>
                 </div>
             </div>
         @endforeach
@@ -445,25 +468,34 @@
 const SUBMIT_URL = "{{ route('store.checkout.submit') }}";
 const CSRF = document.querySelector('meta[name="csrf-token"]').content;
 
-// เปิด/ปิดการ์ด SO — เรียกจากการคลิก/กดปุ่มที่สามเหลี่ยม (.so-toggle) เท่านั้น
-// คลิกที่แถวหัวข้อ (ชื่อ SO / ลูกค้า / ป้ายสถานะ) จะไม่ toggle
+// เปิด/ปิดการ์ด SO — เรียกจากการคลิก/กดปุ่มที่ "แถบหัวการ์ด" (.so-card-header) ทั้งแถบได้เลย
+// ไม่จำเป็นต้องกดที่ขีด (▸) เท่านั้น — คลิกที่ชื่อ SO / ลูกค้า / ป้ายสถานะ ก็ toggle ได้เหมือนกัน
 // เปิดได้พร้อมกันหลายใบ ไม่กระทบกัน
 function toggleSoCard(id) {
     const card = document.getElementById(id);
     if (!card) return;
     const collapsed = card.classList.toggle('collapsed');
-    const icon = card.querySelector('.so-toggle');
-    if (icon) icon.setAttribute('aria-expanded', collapsed ? 'false' : 'true');
+    const header = card.querySelector('.so-card-header');
+    if (header) header.setAttribute('aria-expanded', collapsed ? 'false' : 'true');
 }
 
-// sync checkbox "เลือกทั้งหมด" ต่อบิล + อัปเดตแถบด้านล่างของทั้งหน้า
-function updateDnButton(dnEl) {
-    const allBoxes = dnEl.querySelectorAll('.chkGroup');
-    const checked  = dnEl.querySelectorAll('.chkGroup:checked').length;
-    const selectAll = dnEl.querySelector('.dnSelectAll');
+// sync checkbox "เลือกทั้งหมดของ SO นี้" + sync ช่อง "บันทึกผู้จัดบิลนี้" ของบิลอื่นๆ ในการ์ด SO
+// เดียวกันให้ "เท่ากัน" ไปด้วย (ติ๊กสินค้าครบทุกชิ้น = ติ๊กทุกบิลของ SO นี้ให้อัตโนมัติ, ไม่ครบ/ยกเลิก = ยกเลิกทุกบิลกลับ)
+// ผู้ใช้ยังติ๊กบิลอื่นเองแยกได้ตามปกติ ถ้าจะแก้เฉพาะบิลใดบิลหนึ่งภายหลัง
+function updateDnButton(itemsEl) {
+    const allBoxes = itemsEl.querySelectorAll('.chkGroup');
+    const checked  = itemsEl.querySelectorAll('.chkGroup:checked').length;
+    const selectAll = document.getElementById(itemsEl.dataset.selectall);
+    let allChecked = false;
     if (selectAll) {
-        selectAll.checked       = allBoxes.length > 0 && checked === allBoxes.length;
+        allChecked = allBoxes.length > 0 && checked === allBoxes.length;
+        selectAll.checked       = allChecked;
         selectAll.indeterminate = checked > 0 && checked < allBoxes.length;
+
+        const card = itemsEl.closest('.so-card');
+        if (card) {
+            card.querySelectorAll('.chkPickOnly').forEach(cb => { cb.checked = allChecked; });
+        }
     }
     updateFloatBar();
 }
@@ -471,6 +503,35 @@ function updateDnButton(dnEl) {
 function toggleDnSelectAll(dnEl, checked) {
     dnEl.querySelectorAll('.chkGroup').forEach(cb => { cb.checked = checked; });
     updateDnButton(dnEl);
+}
+
+// ทิศทางกลับ: ติ๊กช่อง "บันทึกผู้จัดบิลนี้" ของบิลที่ไม่มีรายการสินค้า (chkPickOnly)
+// - ติ๊ก (checked) = ตั้งใจเลือกทั้ง SO นี้ทั้งใบ → sync ไปเช็ครายการสินค้า (chkGroup) ของบิลหลัก +
+//   ปุ่มเลือกทั้งหมด + บิลอื่นๆ ในการ์ด SO เดียวกันให้ทั้งหมด
+// - ยกเลิกติ๊ก (unchecked) = ต้องการเอาแค่ "บิลนี้บิลเดียว" ออกจากรายการที่จะบันทึก จึงไม่ไล่ยกเลิก
+//   บิลอื่น/รายการสินค้าที่เลือกไว้แล้วตามไปด้วย (ไม่งั้นจะเอาบิลใดบิลหนึ่งออกจากชุดที่เลือกไว้ไม่ได้เลย)
+function syncCardFromPickOnly(cb) {
+    if (!cb.checked) {
+        updateFloatBar();
+        return;
+    }
+
+    const card = cb.closest('.so-card');
+    if (!card) { updateFloatBar(); return; }
+
+    card.querySelectorAll('.chkPickOnly').forEach(other => { other.checked = true; });
+
+    const itemsEl = card.querySelector('[data-selectall]');
+    if (itemsEl) {
+        itemsEl.querySelectorAll('.chkGroup').forEach(g => { g.checked = true; });
+        const selectAll = document.getElementById(itemsEl.dataset.selectall);
+        if (selectAll) {
+            selectAll.checked       = true;
+            selectAll.indeterminate = false;
+        }
+    }
+
+    updateFloatBar();
 }
 
 function updateFloatBar() {

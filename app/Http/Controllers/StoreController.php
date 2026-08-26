@@ -89,12 +89,14 @@ class StoreController extends Controller
         }
 
         if (!Auth::guard('web')->check()) {
-            abort(403, 'กรุณาเข้าใช้งานผ่านเมนูหลัก');
+            // ★ เดิม: abort(403, 'กรุณาเข้าใช้งานผ่านเมนูหลัก');
+            throw new \Illuminate\Http\Exceptions\HttpResponseException(
+                redirect()->guest(route('login'))
+            );
         }
 
         return Auth::guard('web')->user();
     }
-
     public function itemsDetailBatch(Request $request)
     {
         $request->validate([
@@ -223,6 +225,166 @@ class StoreController extends Controller
      *      ใช้เฉพาะตอนที่วิธีที่ 1 ใช้ไม่ได้ (เซิร์ฟเวอร์ไม่รองรับ array หรือตอบกลับไม่มีทางแยกว่า
      *      แต่ละบรรทัดเป็นของ PO ไหน) — กันไม่ให้ข้อมูลสินค้าสลับ PO กันโดยไม่รู้ตัว
      */
+        /**
+     * ปุ่ม "กำลังจัดการ" — ล็อค PO ภายนอกใบนี้ไม่ให้ถูกเลือกระบุตำแหน่งโดยคนอื่น
+     * อัปเดตทุกบรรทัดของ po_id ที่ shelf ยังว่าง (ขอบเขตเดียวกับตอนระบุตำแหน่งจริง)
+     */
+    /**
+     * ปุ่ม "กำลังจัดการ" — ล็อค PO ภายนอกใบนี้ไม่ให้ถูกเลือกระบุตำแหน่งโดยคนอื่น
+     * อัปเดตทุกบรรทัดของ po_id ที่ shelf ยังว่าง (ขอบเขตเดียวกับตอนระบุตำแหน่งจริง)
+     */
+    public function locationClaim(Request $request)
+    {
+        $authUser = Auth::guard('web')->user();
+        if (!$authUser) {
+            return response()->json(['ok' => false, 'message' => 'เซสชันหมดอายุ กรุณาเข้าสู่ระบบใหม่'], 401);
+        }
+        if (!in_array($authUser->role, ['admin', 'stock', 'store'], true)) {
+            return response()->json(['ok' => false, 'message' => 'คุณไม่มีสิทธิ์ดำเนินการ'], 403);
+        }
+
+        $request->validate(['po_id' => 'required|string']);
+        $poId = $request->input('po_id');
+
+        try {
+            $result = DB::transaction(function () use ($poId, $authUser) {
+                $lines = PoReceiveLine::where('po_id', $poId)
+                    ->whereNull('shelf')
+                    ->lockForUpdate()
+                    ->get();
+
+                if ($lines->isEmpty()) {
+                    return ['ok' => false, 'message' => 'ไม่พบรายการที่ต้องจัดการ'];
+                }
+
+                $claimedByLine = $lines->first(fn ($l) => $l->do_it_time);
+                if ($claimedByLine) {
+                    return ['ok' => false, 'message' => 'มีคนกำลังจัดการ PO นี้อยู่ (' . $claimedByLine->do_it . ')'];
+                }
+
+                PoReceiveLine::where('po_id', $poId)
+                    ->whereNull('shelf')
+                    ->update(['do_it' => $authUser->name, 'do_it_time' => Carbon::now()]);
+
+                return ['ok' => true, 'message' => 'เริ่มจัดการงานแล้ว'];
+            });
+        } catch (\Exception $e) {
+            return response()->json(['ok' => false, 'message' => 'เกิดข้อผิดพลาด: ' . $e->getMessage()], 500);
+        }
+
+        return response()->json($result, $result['ok'] ? 200 : 409);
+    }
+    /**
+     * ปุ่ม "จัดการเสร็จสิ้น" — ปลดล็อค PO ภายนอกใบนี้ ให้กลับมาเลือกระบุตำแหน่งได้ตามปกติ
+     */
+    /**
+     * ปุ่ม "จัดการเสร็จสิ้น" — ปลดล็อค PO ภายนอกใบนี้ ให้กลับมาเลือกระบุตำแหน่งได้ตามปกติ
+     */
+    public function locationFinish(Request $request)
+    {
+        $authUser = Auth::guard('web')->user();
+        if (!$authUser) {
+            return response()->json(['ok' => false, 'message' => 'เซสชันหมดอายุ กรุณาเข้าสู่ระบบใหม่'], 401);
+        }
+        if (!in_array($authUser->role, ['admin', 'stock', 'store'], true)) {
+            return response()->json(['ok' => false, 'message' => 'คุณไม่มีสิทธิ์ดำเนินการ'], 403);
+        }
+
+        $request->validate(['po_id' => 'required|string']);
+        $poId = $request->input('po_id');
+
+        try {
+            $result = DB::transaction(function () use ($poId, $authUser) {
+                $lines = PoReceiveLine::where('po_id', $poId)
+                    ->whereNull('shelf')
+                    ->lockForUpdate()
+                    ->get();
+
+                if ($lines->isEmpty()) {
+                    return ['ok' => false, 'message' => 'ไม่พบรายการที่ต้องจัดการ'];
+                }
+
+                $isClaimed = $lines->contains(fn ($l) => $l->do_it_time);
+                if (!$isClaimed) {
+                    return ['ok' => false, 'message' => 'PO นี้ยังไม่ได้อยู่ระหว่างจัดการ'];
+                }
+
+                PoReceiveLine::where('po_id', $poId)
+                    ->whereNull('shelf')
+                    ->update([
+                        'sus'        => $authUser->name,
+                        'sus_time'   => Carbon::now(),
+                        'do_it'      => null,   // ← เคลียร์ล็อคออกจริงๆ
+                        'do_it_time' => null,   // ← เคลียร์ล็อคออกจริงๆ
+                    ]);
+
+                return ['ok' => true, 'message' => 'จัดการเสร็จสิ้นแล้ว'];
+            });
+        } catch (\Exception $e) {
+            return response()->json(['ok' => false, 'message' => 'เกิดข้อผิดพลาด: ' . $e->getMessage()], 500);
+        }
+
+        return response()->json($result, $result['ok'] ? 200 : 409);
+    }
+    private function buildExternalPendingLocationRows(Request $request): \Illuminate\Support\Collection
+    {
+        if ($request->filled('location')) {
+            // แถวกลุ่มนี้ shelf เป็น null เสมอ จึงไม่มีทางตรงกับคำค้น "ที่เก็บ"
+            return collect();
+        }
+
+        $headers = PoReceive::with(['lines' => fn ($q) => $q->whereNull('shelf')])
+            ->whereNull('checkout_by')
+            ->whereHas('lines', fn ($q) => $q->whereNull('shelf'))
+            ->when($request->filled('PONum'), fn ($q) => $q->where('po_id', 'LIKE', '%' . $request->input('PONum') . '%'))
+            ->when($request->filled('SONum'), fn ($q) => $q->where('so_id', 'LIKE', '%' . $request->input('SONum') . '%'))
+            ->when($request->filled('customer'), fn ($q) => $q->where('cust_name', 'LIKE', '%' . $request->input('customer') . '%'))
+            ->when($request->filled('item'), fn ($q) => $q->whereHas('lines', fn ($q2) =>
+                $q2->whereNull('shelf')->where('good_name', 'LIKE', '%' . $request->input('item') . '%')
+            ))
+            ->get();
+
+        return $headers->map(function ($h) {
+            $lines = $h->lines;
+            $claim = $this->externalClaimStateFromLines($lines);
+
+            return (object) [
+                'type'          => 'external',
+                'id'            => $h->po_id,
+                'po_display'    => $h->po_id,
+                'so_id'         => $h->so_id,
+                'customer_name' => $h->cust_name,
+                'items'         => $lines->map(fn ($l) => (object) [
+                    'item_name'     => $l->good_name,
+                    'item_quantity' => $l->recv_qty,
+                ]),
+                'total_qty'  => $lines->sum('recv_qty'),
+                'location'   => null,
+                'packed_by'  => optional($lines->first())->received_by,
+                'packed_at'  => $lines->max('received_at'),
+                'todo'       => true,
+                'claimed'    => $claim['claimed'],
+                'claimed_by' => $claim['by'],
+                'claimed_at' => $claim['at'],
+            ];
+        })->values();
+    }
+
+    /**
+     * ตรวจสถานะ "กำลังจัดการ" ของ PO ภายนอกใบหนึ่ง จากบรรทัดสินค้า (PoReceiveLine, shelf ยังว่าง)
+     * ที่ preload มาแล้ว — ใช้บรรทัดที่มี do_it_time ล่าสุดเป็นตัวแทนของทั้งใบ
+     * ถือว่า "กำลังจัดการอยู่" เมื่อมี do_it_time และ (ยังไม่มี sus_time หรือ sus_time เก่ากว่า do_it_time)
+     */
+    private function externalClaimStateFromLines(\Illuminate\Support\Collection $lines): array
+    {
+        $latest = $lines->filter(fn ($l) => $l->do_it_time)->sortByDesc('do_it_time')->first();
+
+        if (!$latest) {
+            return ['claimed' => false, 'by' => null, 'at' => null];
+        }
+
+        return ['claimed' => true, 'by' => $latest->do_it, 'at' => $latest->do_it_time];
+    }
     private function fetchLegacyPoItemsBatch(array $poNums): \Illuminate\Support\Collection
     {
         $poNums = collect($poNums)->filter()->unique()->values();
@@ -568,32 +730,61 @@ class StoreController extends Controller
     /* ==================== ด่าน 2: ระบุตำแหน่ง (เฉพาะภายใน — ภายนอกระบุชั้นวางตอนรับเข้าแล้ว) ==================== */
     public function locationDashboard(Request $request)
     {
-        $authUser = $this->resolveSsoUser($request, 'store.location');
-        $creator  = $authUser->name;
+    $authUser = $this->resolveSsoUser($request, 'store.location');
 
-        $todoStatus = internal_po::ST_FINISH;
-        $statuses   = [
-            internal_po::ST_FINISH,
-            internal_po::ST_STORED,
-            internal_po::ST_CHECKOUT,
-        ];
-
-        $query = $this->buildLocationQuery($request, $statuses);
-
-        // นับจำนวน "ยังไม่ได้จัดตำแหน่ง" จากผลลัพธ์ทั้งหมดที่ตรงกับ filter (ก่อนตัดหน้า)
-        $totalTodo = (clone $query)->where('status', $todoStatus)->count();
-
-        $heads = $query
-            ->orderByRaw('FIELD(status, ?) DESC', [$todoStatus])
-            ->orderBy('internal_id')
-            ->paginate(self::LOCATION_PER_PAGE)
-            ->withQueryString();
-
-        $locations = $this->recentLocations();
-
-        return view('store.store_location', compact('heads', 'locations', 'creator', 'totalTodo'));
+    if (!in_array($authUser->role, ['admin', 'stock', 'store'], true)) {
+        abort(403, 'คุณไม่มีสิทธิ์เข้าใช้งานหน้านี้');
     }
+    $creator    = $authUser->name;
+    $todoStatus = internal_po::ST_FINISH;
+    $statuses   = [internal_po::ST_FINISH, internal_po::ST_STORED, internal_po::ST_CHECKOUT];
 
+    $query = $this->buildLocationQuery($request, $statuses);
+    $totalTodoInternal = (clone $query)->where('status', $todoStatus)->count();
+
+    $internalHeads = $query
+        ->orderByRaw('FIELD(status, ?) DESC', [$todoStatus])
+        ->orderBy('internal_id')
+        ->get()
+        ->map(fn ($h) => (object) [
+            'type'          => 'internal',
+            'id'            => $h->internal_id,
+            'po_display'    => $h->internal_id,
+            'so_id'         => $h->SO_id,
+            'customer_name' => $h->customer_name,
+            'items'         => $h->lines->map(fn ($it) => (object) [
+                'item_name'     => $it->item_name,
+                'item_quantity' => $it->item_quantity,
+            ]),
+            'total_qty' => $h->lines->sum('item_quantity'),
+            'location'  => $h->location,
+            'packed_by' => $h->pick_by,
+            'packed_at' => $h->pick_at,
+            'todo'      => $h->status === $todoStatus,
+        ]);
+
+    $externalHeads = $this->buildExternalPendingLocationRows($request);
+    $totalTodo     = $totalTodoInternal + $externalHeads->count();
+
+    $allHeads = $internalHeads->concat($externalHeads)->sort(function ($a, $b) {
+        if ($a->todo !== $b->todo) return $a->todo ? -1 : 1;
+        return strcmp((string) $a->po_display, (string) $b->po_display);
+    })->values();
+
+    $perPage = self::LOCATION_PER_PAGE;
+    $page    = max(1, (int) $request->input('page', 1));
+    $heads   = new LengthAwarePaginator(
+        $allHeads->forPage($page, $perPage)->values(),
+        $allHeads->count(),
+        $perPage,
+        $page,
+        ['path' => $request->url(), 'query' => $request->query()]
+    );
+
+    $locations = $this->recentLocations();
+
+    return view('store.store_location', compact('heads', 'locations', 'creator', 'totalTodo'));
+}
     public function locationSubmit(Request $request)
     {
         $authUser = Auth::guard('web')->user();
@@ -610,16 +801,42 @@ class StoreController extends Controller
         $ids      = $request->input('ids');
         $location = $request->input('location');
 
+        $internalIds   = [];
+        $externalPoIds = [];
+        foreach ($ids as $raw) {
+            [$type, $id] = array_pad(explode(':', $raw, 2), 2, null);
+            if ($id === null) { $internalIds[] = $raw; continue; } // backward-compat ค่าเดิมไม่มี prefix
+            if ($type === 'internal') $internalIds[] = $id;
+            if ($type === 'external') $externalPoIds[] = $id;
+        }
+
         try {
-            $updated = DB::transaction(function () use ($ids, $authUser, $location) {
-                return internal_po::whereIn('internal_id', $ids)
-                    ->where('status', internal_po::ST_FINISH)
-                    ->update([
-                        'status'      => internal_po::ST_STORED,
-                        'location_by' => $authUser->name,
-                        'location'    => $location,
-                        'location_at' => Carbon::now()->toDateTimeString(),
-                    ]);
+            $updated = DB::transaction(function () use ($internalIds, $externalPoIds, $authUser, $location) {
+                $count = 0;
+
+                if ($internalIds) {
+                    $count += internal_po::whereIn('internal_id', $internalIds)
+                        ->where('status', internal_po::ST_FINISH)
+                        ->update([
+                            'status'      => internal_po::ST_STORED,
+                            'location_by' => $authUser->name,
+                            'location'    => $location,
+                            'location_at' => Carbon::now()->toDateTimeString(),
+                        ]);
+                }
+                if ($externalPoIds) {
+                    // ⚠️ กันรายการที่ "กำลังจัดการ" อยู่ (do_it_time ไม่ null) ไม่ให้ถูกระบุตำแหน่งทับ
+                    //    แม้ UI จะซ่อน checkbox ไว้แล้ว แต่กันไว้อีกชั้นฝั่ง backend เผื่อยิง request ตรงๆ
+                    $externalUpdatedLines = PoReceiveLine::whereIn('po_id', $externalPoIds)
+                        ->whereNull('shelf')
+                        ->whereNull('do_it_time')
+                        ->update(['shelf' => $location]);
+
+                    if ($externalUpdatedLines > 0) {
+                        $count += count($externalPoIds);
+                    }
+                }
+                return $count;
             });
         } catch (\Exception $e) {
             return response()->json(['ok' => false, 'message' => 'ระบุตำแหน่งไม่สำเร็จ: ' . $e->getMessage()], 500);
@@ -629,9 +846,8 @@ class StoreController extends Controller
             return response()->json(['ok' => false, 'message' => 'ไม่พบรายการที่พร้อมดำเนินการ'], 404);
         }
 
-        return response()->json(['ok' => true, 'message' => 'ระบุตำแหน่ง ' . $updated . ' ใบ']);
+        return response()->json(['ok' => true, 'message' => 'ระบุตำแหน่ง ' . $updated . ' รายการ']);
     }
-
     /* ==================== ระบบเก่า: ตาราง store (database "3e") ==================== */
     /**
      * ดึงรายการที่ "มีตำแหน่งแล้ว แต่ยังไม่ได้ checkout"
@@ -691,6 +907,11 @@ class StoreController extends Controller
     public function checkoutDashboard(Request $request)
     {
         $authUser = $this->resolveSsoUser($request, 'store.checkout');
+
+        if (!in_array($authUser->role, ['admin', 'stock', 'store'], true)) {
+            abort(403, 'คุณไม่มีสิทธิ์เข้าใช้งานหน้านี้');
+        }
+
         $creator  = $authUser->name;
 
         $hasSoOrPoSearch = $request->filled('SONum') || $request->filled('PONum');
@@ -1028,31 +1249,39 @@ private function buildDaySummary(\Illuminate\Support\Collection $soSummaries): a
                 }
             });
         }
+    $groupedBySo = $internalHeads->concat($externalHeads)->concat($legacyHeads)->groupBy('so_id');
 
-        $groupedBySo = $internalHeads->concat($externalHeads)->concat($legacyHeads)->groupBy('so_id');
+    // ── ประกอบกลับเป็น "การ์ดระดับ SO" ตามลำดับเดิมที่ Phase A จัดมาแล้ว (คงลำดับหน้าไว้) ──
+    return $pagedSummaries->map(function ($summary) use ($groupedBySo, $billsBySo) {
+        $soId   = $summary->so_id;
+        $groups = $groupedBySo->get($soId, collect());
 
-        // ── ประกอบกลับเป็น "การ์ดระดับ SO" ตามลำดับเดิมที่ Phase A จัดมาแล้ว (คงลำดับหน้าไว้) ──
-        return $pagedSummaries->map(function ($summary) use ($groupedBySo, $billsBySo) {
-            $soId      = $summary->so_id;
-            $groups    = $groupedBySo->get($soId, collect());
-            $billRows  = $billsBySo->get($soId, collect());
-            $todoCount = $groups->where('todo', true)->count();
+        // ── PO ซ้ำกัน (เช่น รับเข้าซ้ำหลายรอบผ่านมือถือ) → เหลือแสดงแค่รายการล่าสุด (done_at มากสุด)
+        //    เท่านั้น กันไม่ให้การ์ดโชว์รายการสินค้าเดิมซ้ำหลายก้อน ระบบ checkout ยังทำงานถูกต้องเหมือนเดิม
+        //    เพราะฝั่ง backend อัปเดตด้วย po_id ซึ่งครอบคลุมทุกแถวที่ซ้ำกันอยู่แล้ว
+        $groups = $groups
+            ->groupBy(fn ($g) => $g->type . '|' . $g->po_display)
+            ->map(fn ($dupes) => $dupes->sortByDesc(fn ($g) => (string) $g->done_at)->first())
+            ->values();
 
-            return (object) [
-                'so_id'         => $soId,
-                'bills'         => $billRows,
-                'latest_time'   => $summary->latest_time,
-                'customer_name' => $summary->customer_name,
-                'customer_id'   => $summary->customer_id,
-                'groups'        => $groups->values(),
-                'todo_groups'   => $groups->where('todo', true)->values(),
-                'done_groups'   => $groups->where('todo', false)->values(),
-                'todo_count'    => $todoCount,
-                'total_count'   => $groups->count(),
-                'all_done'      => $summary->all_done,
-                'not_received'  => $summary->not_received,
-            ];
-        })->values();
+        $billRows  = $billsBySo->get($soId, collect());
+        $todoCount = $groups->where('todo', true)->count();
+
+        return (object) [
+            'so_id'         => $soId,
+            'bills'         => $billRows,
+            'latest_time'   => $summary->latest_time,
+            'customer_name' => $summary->customer_name,
+            'customer_id'   => $summary->customer_id,
+            'groups'        => $groups->values(),
+            'todo_groups'   => $groups->where('todo', true)->values(),
+            'done_groups'   => $groups->where('todo', false)->values(),
+            'todo_count'    => $todoCount,
+            'total_count'   => $groups->count(),
+            'all_done'      => $summary->all_done,
+            'not_received'  => $summary->not_received,
+        ];
+    })->values();
     }
 
 public function checkoutSubmit(Request $request)
