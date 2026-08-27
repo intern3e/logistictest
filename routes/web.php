@@ -18,6 +18,7 @@ Route::get('/login', [LoginController::class, 'showLoginForm'])->name('login');
 Route::post('/login', [LoginController::class, 'login'])->name('login.post');
 Route::get('/logout', [LoginController::class, 'logout'])->name('logout');
 
+
 Route::get('/sso/authorize', [LoginController::class, 'ssoAuthorize'])->name('sso.authorize');
 Route::post('/sso/verify', [LoginController::class, 'ssoVerify'])->name('sso.verify');
 Route::get('/sso/logout', [LoginController::class, 'ssoLogout'])->name('sso.logout');
@@ -28,7 +29,6 @@ use App\Models\Bill_Detail;
     Route::get('/', [salecontroller::class, 'home'])->name('home');
     Route::get('/loginsale', [salecontroller::class, 'showLoginForm'])->name('sale.loginsale');
     Route::post('/loginsale', [salecontroller::class, 'login'])->name('sale.loginsale');
-    Route::post('/logout', [salecontroller::class, 'logout'])->name('logout');
     Route::get('/SoItem', [SaleController::class, 'dashboard'])->name('sale.dashboard');
     Route::get('/dashboard', [SaleController::class, 'dashboard']);
     Route::get('/insertdata', [salecontroller::class, 'insertdata'])->name('sale.insertdata'); // GET
@@ -209,6 +209,8 @@ Route::get('/oil/ng-list',      [fuellogsController::class, 'ngList'])->name('oi
 Route::post('/oil/filter',      [fuellogsController::class, 'applyFilter'])->name('oil.filter');
 Route::get('/oil/Deliveryfee', [fuellogsController::class, 'Deliveryfee'])->name('oil.Deliveryfee');
 Route::get('/oil/saved-drivers', [fuellogsController::class, 'savedDrivers'])->name('oil.savedDrivers');
+Route::get('/oil/jobs-fallback',      [fuellogsController::class, 'jobsFallback'])->name('oil.jobsFallback');
+Route::post('/oil/confirm-delivery',  [fuellogsController::class, 'confirmDelivery'])->name('oil.confirmDelivery');
 Route::get('/oil/oil-price-proxy', function () {
     try {
         $response = \Illuminate\Support\Facades\Http::timeout(8)
@@ -320,7 +322,7 @@ Route::post('/technicians/{id}/move-team', [TechnicianController::class, 'moveTe
 use App\Http\Controllers\DeliverytrackController;
 Route::post('/deliverytrack/save', [DeliverytrackController::class, 'store'])->name('deliverytrack.store');
 Route::get('/deliverytrack', [DeliverytrackController::class, 'index'])->name('deliverytrack');
-Route::get('/deliverytrack/print-group', [DeliverytrackController::class, 'printGroup'])->name('deliverytrack.printGroup'); // <-- เพิ่มบรรทัดนี้
+Route::get('/deliverytrack/print-group', [DeliverytrackController::class, 'printGroup'])->name('deliverytrack.printGroup');
 Route::post('/return/{id}/new-bill', [DeliverytrackController::class, 'saveNewBill'])->name('deliverytrack.newbill');
  
 

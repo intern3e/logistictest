@@ -77,7 +77,14 @@ html{overflow-y:auto;}
   color: #4b5563;
   font-weight: 400;
   white-space: nowrap;
+  gap: 8px;
 }
+.tesla-logout-link {
+  color: #9ca3af;
+  font-size: 12px;
+  text-decoration: underline;
+}
+.tesla-logout-link:hover { color: #ef4444; }
 .tesla-actions {
   display: flex;
   align-items: center;
@@ -954,6 +961,19 @@ html{overflow-y:auto;}
 .dgj-meta-label { color: #9ca3af; font-weight: 500; }
 .dgj-note { color: #f59e0b; }
 
+/* ปุ่มรับบิล / ยืนยันผลส่งของ (เฉพาะงานที่มาจาก DB fallback) */
+.dgj-confirm{margin-top:8px;padding-top:8px;border-top:1px dashed #e5e7eb;}
+.dgj-confirm-btns{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:6px;}
+.dgj-status-btn{background:#fff;border:1px solid #d1d5db;border-radius:6px;padding:5px 10px;font-size:11px;font-weight:600;color:#4b5563;cursor:pointer;}
+.dgj-status-btn:hover{border-color:#3e6ae1;}
+.dgj-status-btn.active{background:#3e6ae1;border-color:#3e6ae1;color:#fff;}
+.dgj-status-btn.warn.active{background:#f59e0b;border-color:#f59e0b;}
+.dgj-status-btn.redo.active{background:#8b5cf6;border-color:#8b5cf6;}
+.dgj-ng-input{width:100%;min-height:50px;font-size:11px;padding:6px 8px;border:1px solid #d1d5db;border-radius:6px;margin-bottom:6px;box-sizing:border-box;font-family:inherit;resize:vertical;}
+.dgj-confirm-save{width:100%;background:#10b981;color:#fff;border:none;border-radius:6px;padding:7px;font-size:12px;font-weight:600;cursor:pointer;}
+.dgj-confirm-save:disabled{background:#9ca3af;cursor:not-allowed;}
+.dgj-confirmed{margin-top:8px;font-size:11px;font-weight:600;color:#059669;background:#d1fae5;padding:6px 8px;border-radius:6px;}
+
 /* PDF Modal */
 .pdf-modal-overlay {
   position: fixed;
@@ -1171,10 +1191,11 @@ html{overflow-y:auto;}
 <body>
 
 @php
-  $currentUser = request()->filled('create_by') ? request('create_by') : 'Guest';
-  $userQuery = $currentUser !== 'Guest' ? '?create_by='.urlencode($currentUser) : '';
-  $privilegedUsers = ['จัน','kanitin2','test101','jun'];
-  $isPrivileged = in_array(trim($currentUser), $privilegedUsers, true);
+  // ผู้ใช้ปัจจุบันมาจากระบบ login จริง (Auth) — ส่งมาจาก fuellogsController@oil แล้ว
+  // (ผ่านการตรวจ role admin/store/accounting มาแล้วเสมอ ถ้าเข้าถึงหน้านี้ได้)
+  $currentUser  = $currentUser ?? 'ผู้ใช้งาน';
+  $isPrivileged = $isPrivileged ?? true;
+  $userQuery    = ''; // ไม่ต้องพก create_by ผ่าน query string อีกต่อไป (คงตัวแปรไว้เผื่อโค้ดอื่นอ้างอิง)
   $allowedDrivers = ['กอลฟ์','เก่ง','เอ้','แฟงค์','เอ','บังเดช','yuth','แซม','บอย','หรั่ง','บอยBTS','กบ','joey','แมน'];
   $driverOrderList = ['กอลฟ์','เก่ง','เอ้','เอ','บังเดช','แฟงค์','yuth','แซม','บอย','บอยBTS','กบ','joey','แมน'];
 @endphp
@@ -1189,22 +1210,23 @@ html{overflow-y:auto;}
     <div class="tesla-right">
       <div class="tesla-user-badge" title="ผู้ใช้ปัจจุบัน">
         👤 ผู้ใช้: {{ $currentUser }}
+        {{-- <a href="{{ route('logout') }}" class="tesla-logout-link">ออกจากระบบ</a> --}}
       </div>
-      
+
       <div class="tesla-actions">
-        <a href="{{ url('/oil/report').$userQuery }}" class="tesla-btn tesla-btn-neutral">
+        <a href="{{ url('/oil/report') }}" class="tesla-btn tesla-btn-neutral">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/><line x1="3" y1="20" x2="21" y2="20"/></svg>
           รายงาน
         </a>
-        <a href="{{ url('/oil/Deliveryfee').$userQuery }}" class="tesla-btn tesla-btn-neutral">
+        <a href="{{ url('/oil/Deliveryfee') }}" class="tesla-btn tesla-btn-neutral">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="M18.7 8.3l-6.2 6.2-3-3-3.5 3.5"/></svg>
           ตารางค่าวิ่ง
         </a>
-        <a href="{{ url('/service').$userQuery }}" class="tesla-btn tesla-btn-neutral">
+        <a href="{{ url('/service') }}" class="tesla-btn tesla-btn-neutral">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 3h15v13H1z"/><path d="M16 8h4l3 3v5h-7V8z"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg>
           Service
         </a>
-        <a href="http://server_update:8000/solist{{ $userQuery }}" class="tesla-btn tesla-btn-neutral">
+        <a href="http://server_update:8000/solist" class="tesla-btn tesla-btn-neutral">
           หน้าหลัก
         </a>
       </div>
@@ -1615,42 +1637,17 @@ html{overflow-y:auto;}
 </main>
 
 <script>
-const ROUTE_STORE='{{ route("oil") }}';
+const ROUTE_STORE='{{ route("oil.store") }}';
 const ROUTE_FILTER='{{ route("oil.filter") }}';
 const ROUTE_SYNC_NG='{{ route("oil.syncNg") }}';
 const ROUTE_SAVED_DRIVERS='{{ url("/oil/saved-drivers") }}';
 const ROUTE_LAST_PLATES='{{ url("/oil/last-plates") }}';
+const ROUTE_JOBS_FALLBACK='{{ url("/oil/jobs-fallback") }}';
+const ROUTE_CONFIRM_DELIVERY='{{ url("/oil/confirm-delivery") }}';
 
-/* ===== FIX: create_by หายเวลาเปลี่ยนวันที่/มุมมอง =====
-   เดิม CURRENT_USER เป็น const มาจาก PHP ครั้งเดียวตอนโหลดหน้า
-   ถ้า redirect ฝั่ง backend (route oil.filter) ทำ query string
-   'create_by' หลุดไป ตัวแปรนี้จะกลายเป็น 'Guest' ถาวรทันที
-   และทุกฟังก์ชันเปลี่ยนวันที่/มุมมองที่เรียก submitFilterForm()
-   จะหยุดแนบ create_by ไปกับ request ต่อ ๆ ไปทั้งหมด
-   -> เปลี่ยนเป็น let + จำค่าไว้ใน sessionStorage เป็นตัวกันสำรอง
-      ถ้า backend ทำหาย ฝั่ง JS จะดึงค่าที่จำไว้กลับมาใช้เอง
-   หมายเหตุ: ควรแก้ต้นเหตุที่ controller ของ route('oil.filter')
-   ให้ redirect กลับไปพร้อม create_by เสมอด้วย (ดูคำอธิบายที่แชท) */
-let CURRENT_USER=@json($currentUser);
+// ผู้ใช้ปัจจุบันมาจากระบบ login จริง (Auth) เสมอ — ไม่ต้องพัก/กู้คืนผ่าน sessionStorage หรือ query string อีกต่อไป
+const CURRENT_USER=@json($currentUser);
 const IS_PRIVILEGED=@json($isPrivileged);
-(function _persistCreateBy(){
-  try{
-    if(CURRENT_USER && CURRENT_USER!=='Guest'){
-      sessionStorage.setItem('oilCreateBy', CURRENT_USER);
-    }else{
-      const saved = sessionStorage.getItem('oilCreateBy');
-      if(saved){
-        CURRENT_USER = saved;
-        // sync กลับเข้า URL ปัจจุบันด้วย เผื่อมีการ reload หรือกด back
-        const url = new URL(window.location.href);
-        if(!url.searchParams.get('create_by')){
-          url.searchParams.set('create_by', saved);
-          window.history.replaceState({}, '', url.toString());
-        }
-      }
-    }
-  }catch(e){}
-})();
 const CSRF_TOKEN=document.querySelector('meta[name="csrf-token"]')?.content??'';
 const TZ='Asia/Bangkok';
 const MAIN_VIEW=@json($view);
@@ -1664,7 +1661,7 @@ function closeMobileMenu(){if(window.innerWidth>900)return;document.getElementBy
 function nowThai(){return new Date(new Date().toLocaleString('en-US',{timeZone:TZ}));}
 function todayStr(){const d=nowThai();return`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;}
 
-function submitFilterForm(params){const form=document.createElement('form');form.method='POST';form.action=ROUTE_FILTER;form.style.display='none';const add=(n,v)=>{if(v==null||v==='')return;const i=document.createElement('input');i.type='hidden';i.name=n;i.value=v;form.appendChild(i);};add('_token',CSRF_TOKEN);if(CURRENT_USER&&CURRENT_USER!=='Guest')add('create_by',CURRENT_USER);Object.keys(params).forEach(k=>add(k,params[k]));document.body.appendChild(form);form.submit();}
+function submitFilterForm(params){const form=document.createElement('form');form.method='POST';form.action=ROUTE_FILTER;form.style.display='none';const add=(n,v)=>{if(v==null||v==='')return;const i=document.createElement('input');i.type='hidden';i.name=n;i.value=v;form.appendChild(i);};add('_token',CSRF_TOKEN);Object.keys(params).forEach(k=>add(k,params[k]));document.body.appendChild(form);form.submit();}
 function switchView(v){const params={view:v};const ds=document.getElementById('driverPicker');if(ds&&ds.value)params.driver_name=ds.value;const ps=document.getElementById('platePicker');if(ps&&ps.value)params.vehicle_id=ps.value;if(v==='month'){const el=document.getElementById('monthPicker');if(el&&el.value)params.month=el.value;}else if(v==='year'){const el=document.getElementById('yearPicker');if(el&&el.value)params.year=el.value;}submitFilterForm(params);}
 function submitFilter(){const params={view:MAIN_VIEW};const ds=document.getElementById('driverPicker');if(ds&&ds.value)params.driver_name=ds.value;const ps=document.getElementById('platePicker');if(ps&&ps.value)params.vehicle_id=ps.value;const me=document.getElementById('monthPicker');if(me&&me.value)params.month=me.value;const ye=document.getElementById('yearPicker');if(ye&&ye.value)params.year=ye.value;if(MAIN_VIEW==='day'){const wrap=document.querySelector('.drp-wrap');const from=drpFrom||wrap?.dataset.from;const to=drpTo||wrap?.dataset.to;if(from)params.date_from=from;if(to)params.date_to=to;}submitFilterForm(params);}
 function onYearChange(){const ye=document.getElementById('yearPicker');if(ye&&ye.value){try{sessionStorage.setItem('oilPickedYear',ye.value);}catch(e){}}submitFilter();}
@@ -1817,14 +1814,90 @@ async function ilLoadOilPrice(type){const cfg=OIL_CONFIG[type]??OIL_CONFIG['dies
 // Jobs & Saved Drivers
 const JOB_API_BASE='http://server_update:8000/api/getDeliveryPersonByDate';
 const jobFetched={};const JOBS_PROCESSED={};
-async function fetchJobsByDate(dateStr){if(jobFetched[dateStr])return;jobFetched[dateStr]=true;let drivers=[];try{const res=await fetch(`${JOB_API_BASE}?date=${dateStr}`);if(!res.ok)throw new Error('HTTP '+res.status);const json=await res.json();drivers=(json.data||[]).map(b=>({driver_name:b.bill_out_by||'ไม่ระบุ',jobs:(b.jobs||[]).map(j=>({bill_no:j.bill_no||'',so_id:j.so_id||'',customer_name:j.customer_name||'',bill_in_by:j.bill_in_by||'',status:j.delivery_status||'',note:j.reason||''}))}));}catch(e){console.warn('fetchJobsByDate:',e);drivers=[];}const whitelist={},auto={};drivers.forEach(d=>{const rawName=(d.driver_name||'').trim();if(!rawName)return;const allowed=isAllowedDriver(rawName);const bucket=allowed?whitelist:auto;/* รวมชื่อที่สะกด/เว้นวรรค/อักขระที่มองไม่เห็นต่างกันเล็กน้อยให้เป็นคนเดียวกัน กันไม่ให้ขึ้นซ้ำเป็นสองแถว */const dedupKey=allowed?_normalizeDriver(rawName):_normalizeName(rawName);if(!bucket[dedupKey]){let displayName=rawName;if(allowed){const canon=ALLOWED_DRIVERS.find(nm=>_normalizeDriver(nm)===dedupKey);if(canon)displayName=canon;}bucket[dedupKey]={name:displayName,jobs:[]};}(d.jobs||[]).forEach(j=>bucket[dedupKey].jobs.push(j));});JOBS_PROCESSED[dateStr]={whitelist,auto};}
+
+async function _fetchJobsRaw(url){
+  const res=await fetch(url,{headers:{'Accept':'application/json'}});
+  if(!res.ok)throw new Error('HTTP '+res.status);
+  const json=await res.json();
+  return {data:Array.isArray(json?.data)?json.data:[], source:json?.source||'api'};
+}
+
+async function fetchJobsByDate(dateStr){
+  if(jobFetched[dateStr])return;
+  jobFetched[dateStr]=true;
+
+  let rawData=[],source='api';
+  try{
+    const r=await _fetchJobsRaw(`${JOB_API_BASE}?date=${dateStr}`);
+    rawData=r.data;source=r.source;
+  }catch(e){
+    console.warn('fetchJobsByDate: primary API failed →',e);
+    rawData=[];
+  }
+
+  // API ล่ม หรือไม่มีข้อมูล → fallback ไปดึงจาก DB (transaction_transport) ทันที
+  if(!rawData||rawData.length===0){
+    try{
+      const r=await _fetchJobsRaw(`${ROUTE_JOBS_FALLBACK}?date=${dateStr}`);
+      rawData=r.data;source='db';
+      if(rawData.length>0)console.info(`fetchJobsByDate: ใช้ fallback DB สำหรับวันที่ ${dateStr}`);
+    }catch(e){
+      console.warn('fetchJobsByDate: fallback DB failed →',e);
+      rawData=[];
+    }
+  }
+
+  const drivers=rawData.map(b=>({
+    driver_name:b.bill_out_by||'ไม่ระบุ',
+    jobs:(b.jobs||[]).map(j=>({
+      job_key:j.job_key||null,
+      bill_no:j.bill_no||'',
+      so_id:j.so_id||'',
+      customer_name:j.customer_name||'',
+      bill_in_by:j.bill_in_by||'',
+      status:j.delivery_status||'',
+      note:j.reason||'',
+      check_name:j.check_name||null,
+      check_time:j.check_time||null,
+      confirmed:!!j.confirmed,
+      source
+    }))
+  }));
+
+  const whitelist={},auto={};
+  drivers.forEach(d=>{
+    const rawName=(d.driver_name||'').trim();if(!rawName)return;
+    const allowed=isAllowedDriver(rawName);
+    const bucket=allowed?whitelist:auto;
+    /* รวมชื่อที่สะกด/เว้นวรรค/อักขระที่มองไม่เห็นต่างกันเล็กน้อยให้เป็นคนเดียวกัน กันไม่ให้ขึ้นซ้ำเป็นสองแถว */
+    const dedupKey=allowed?_normalizeDriver(rawName):_normalizeName(rawName);
+    if(!bucket[dedupKey]){
+      let displayName=rawName;
+      if(allowed){const canon=ALLOWED_DRIVERS.find(nm=>_normalizeDriver(nm)===dedupKey);if(canon)displayName=canon;}
+      bucket[dedupKey]={name:displayName,jobs:[]};
+    }
+    (d.jobs||[]).forEach(j=>bucket[dedupKey].jobs.push(j));
+  });
+  JOBS_PROCESSED[dateStr]={whitelist,auto};
+}
 
 const SAVED_DRIVERS_CACHE={};const SESSION_SAVED={};
 function _readSavedDriversFromDOM(date){const set=new Set();if(!date)return set;const parts=date.split('-');if(parts.length!==3)return set;const target=`${parts[2]}/${parts[1]}/${parts[0]}`;document.querySelectorAll('#oilTbody tr[data-driver]').forEach(tr=>{const dateEl=tr.querySelector('.date-pill'),nameEl=tr.querySelector('.driver-name');if(!dateEl||!nameEl)return;if((dateEl.getAttribute('title')||'').trim()===target){const name=(nameEl.textContent||'').trim();if(name&&name!=='—')set.add(name);}});return set;}
 async function fetchSavedDrivers(date){if(!date)return new Set();if(SAVED_DRIVERS_CACHE[date])return SAVED_DRIVERS_CACHE[date];const fromDOM=_readSavedDriversFromDOM(date);try{const res=await fetch(`${ROUTE_SAVED_DRIVERS}?date=${encodeURIComponent(date)}`,{headers:{'Accept':'application/json','X-Requested-With':'XMLHttpRequest'}}).catch(()=>null);if(res&&res.ok){const data=await res.json();let raw=[];if(Array.isArray(data))raw=data;else if(Array.isArray(data.drivers))raw=data.drivers;else if(Array.isArray(data.data))raw=data.data;else if(Array.isArray(data.saved))raw=data.saved;else if(Array.isArray(data.result))raw=data.result;raw.forEach(item=>{let n='';if(typeof item==='string')n=item.trim();else if(item&&typeof item==='object')n=(item.driver_name||item.name||item.driver||'').toString().trim();if(n)fromDOM.add(n);});}}catch(e){}SAVED_DRIVERS_CACHE[date]=fromDOM;return fromDOM;}
 function isDriverSaved(date,driverName){const n=_normalizeName(driverName);if(!n||!date)return false;for(const set of[SAVED_DRIVERS_CACHE[date],SESSION_SAVED[date]]){if(set){for(const saved of set){if(_normalizeName(saved)===n)return true;}}}return false;}
 function markDriverSaved(date,driverName){const n=(driverName||'').trim();if(!n||!date)return;if(!SESSION_SAVED[date])SESSION_SAVED[date]=new Set();SESSION_SAVED[date].add(n);if(!SAVED_DRIVERS_CACHE[date])SAVED_DRIVERS_CACHE[date]=new Set();SAVED_DRIVERS_CACHE[date].add(n);}
-function _jobStatusKind(j){const raw=(j.status||'').trim();const noteText=(j.note||'').trim();const eff=(noteText==='ส่งสำเร็จ'||noteText==='สำเร็จ')?'ส่งสำเร็จ':raw;if(eff.includes('สำเร็จ')&&!eff.includes('ไม่'))return'ok';if(eff.includes('ไม่สำเร็จ')||eff.toLowerCase()==='ng'||eff.toLowerCase()==='fail')return'fail';return'pending';}
+
+// _jobStatusKind: รองรับสถานะใหม่ 'สินค้าผิด' (wrong) และ 'ส่งใหม่วันพรุ่งนี้' (redo)
+function _jobStatusKind(j){
+  const raw=(j.status||'').trim();
+  const noteText=(j.note||'').trim();
+  const eff=(noteText==='ส่งสำเร็จ'||noteText==='สำเร็จ')?'ส่งสำเร็จ':raw;
+  if(eff.includes('สินค้าผิด'))return'wrong';
+  if(eff.includes('ส่งใหม่'))return'redo';
+  if(eff.includes('สำเร็จ')&&!eff.includes('ไม่'))return'ok';
+  if(eff.includes('ไม่สำเร็จ')||eff.toLowerCase()==='ng'||eff.toLowerCase()==='fail')return'fail';
+  return'pending';
+}
 
 // Entry Rows Functions
 const driverRowState={};let ilIsLoadingDrivers=false,ilLastLoadedDate=null;
@@ -1842,10 +1915,10 @@ async function ilAutoStoreNonWhitelist(date,driverList){
     const fireKey=date+'|'+_normalizeName(name);
     if(_autoStoreInFlight.has(fireKey))continue;
     _autoStoreInFlight.add(fireKey);
-    
+
     let okC=0,failC=0;
-    d.jobs.forEach(j=>{const k=_jobStatusKind(j);if(k==='ok')okC++;else if(k==='fail')failC++;});
-    
+    d.jobs.forEach(j=>{const k=_jobStatusKind(j);if(k==='ok')okC++;else if(k==='fail'||k==='wrong')failC++;});
+
     const fd = new FormData();
     fd.append('_token', CSRF_TOKEN);
     fd.append('work_date', date);
@@ -1861,7 +1934,6 @@ async function ilAutoStoreNonWhitelist(date,driverList){
     fd.append('handling_cost', 0);
     fd.append('ok', okC);
     fd.append('ng', failC);
-    fd.append('create_by', (CURRENT_USER && CURRENT_USER !== 'Guest') ? String(CURRENT_USER) : 'system');
 
     try{
       const res=await fetch(ROUTE_STORE,{method:'POST',headers:{'X-CSRF-TOKEN':CSRF_TOKEN,'Accept':'application/json'},body:fd});
@@ -1879,14 +1951,14 @@ async function ilAutoStoreNonWhitelist(date,driverList){
 
 function _syncNgJobs(date, driverName, jobs) {
   if (!date || !driverName || !Array.isArray(jobs) || jobs.length === 0) return;
-  
+
   const payload = {
     date: String(date),
-    create_by: (CURRENT_USER && CURRENT_USER !== 'Guest') ? String(CURRENT_USER) : 'system',
+    create_by: String(CURRENT_USER),
     jobs: jobs.map(j => {
       let st = j.status ? String(j.status).trim() : '';
       if (st === '') st = 'รอ'; 
-      
+
       return {
         bill_no: String(j.bill_no || ''),
         so_id: String(j.so_id || ''),
@@ -2005,7 +2077,7 @@ function ilRenderDriverRows(date){
   const _wd=document.getElementById('il-work-date')?.value||todayStr();
   tbody.innerHTML=driverList.map((d,idx)=>{
     const key=`row_${idx}_${d.name.replace(/[^a-zA-Z0-9ก-๙]/g,'_')}`;
-    let okC=0,failC=0;d.jobs.forEach(j=>{const k=_jobStatusKind(j);if(k==='ok')okC++;else if(k==='fail')failC++;});
+    let okC=0,failC=0;d.jobs.forEach(j=>{const k=_jobStatusKind(j);if(k==='ok')okC++;else if(k==='fail'||k==='wrong')failC++;});
     driverRowState[key]={
       driverName:d.name, jobs:d.jobs, okCount:okC, failCount:failC,
       sh:0, sm:0, eh:0, em:0, startDT:'', endDT:'', noFuel:false,
@@ -2089,28 +2161,28 @@ function erUpdateRow(key){
   const deliveryEl=document.getElementById(`${key}-delivery`);
   const otEl=document.getElementById(`${key}-ot`);
   const handlingEl=document.getElementById(`${key}-handling`);
-  
+
   const price=s.noFuel?0:(parseFloat(priceEl?.value)||0);
   const dist=parseFloat(distEl?.value)||0;
   const deliveryCost=parseFloat(deliveryEl?.value)||0;
   const otCost=parseFloat(otEl?.value)||0;
   const handlingCost=parseFloat(handlingEl?.value)||0;
-  
+
   const ppl=parseFloat(document.getElementById('il-price-per-liter')?.value)||0;
   const liters=(price>0&&ppl>0)?(price/ppl):0;
   const kml=(dist>0&&liters>0)?(dist/liters):0;
   const thbKm=(price>0&&dist>0)?(price/dist):0;
-  
+
   s.price=price; s.distance=dist; s.liters=liters; s.kml=kml; s.thbKm=thbKm;
   s.deliveryCost=deliveryCost; s.otCost=otCost; s.handlingCost=handlingCost;
-  
+
   const sum=document.getElementById(`${key}-summary`);
   if(sum){
     const litersTxt=liters>0?fmtN(liters)+' L':'<span class="empty">—</span>';
     let kmlCls='empty',kmlTxt='—';
     if(kml>0){kmlTxt=fmtN(kml)+' km/L';kmlCls=kml>=12?'green':(kml<9?'red':'');}
     const thbKmTxt=thbKm>0?'฿'+fmtN(thbKm):'<span class="empty">—</span>';
-    
+
     let extraCosts = [];
     if(deliveryCost > 0) extraCosts.push(`วิ่ง: ฿${fmtN(deliveryCost)}`);
     if(otCost > 0) extraCosts.push(`OT: ฿${fmtN(otCost)}`);
@@ -2178,7 +2250,7 @@ async function erSaveRow(key){
     if(priceRaw===''||isNaN(parseFloat(priceRaw)))errors.push('ใส่ค่าน้ำมัน หรือติ๊ก "ไม่เติมน้ำมัน"');
     else if(parseFloat(priceRaw)<0)errors.push('ค่าน้ำมันติดลบไม่ได้');
   }
-  
+
 const delRaw = document.getElementById(`${key}-delivery`)?.value ?? '';
 const otRaw = document.getElementById(`${key}-ot`)?.value ?? '';
 const hanRaw = document.getElementById(`${key}-handling`)?.value ?? '';
@@ -2186,16 +2258,16 @@ const hanRaw = document.getElementById(`${key}-handling`)?.value ?? '';
 if(delRaw !== '' && isNaN(parseFloat(delRaw)))errors.push('ค่าวิ่งไม่ถูกต้อง');
 if(otRaw !== '' && isNaN(parseFloat(otRaw)))errors.push('ค่า OT ไม่ถูกต้อง');
 if(hanRaw !== '' && isNaN(parseFloat(hanRaw)))errors.push('ค่ายกไม่ถูกต้อง');
-  
+
   if(!s.startDT||!s.endDT)errors.push('เลือกวันเวลาเริ่ม-สิ้นสุด');
   else if(new Date(s.endDT)<=new Date(s.startDT))errors.push('เวลาสิ้นสุดต้องหลังเวลาเริ่ม');
-  
+
   if(errors.length){btn.textContent=' '+errors[0];setTimeout(()=>{btn.innerHTML='บันทึก';},2200);return;}
-  
+
   const date=s.startDT.split('T')[0];
   row?.classList.add('saving');btn.disabled=true;btn.innerHTML='<span class="ic">⏳</span> กำลังบันทึก...';
   const toBackendDT=v=>v?v.replace('T',' ')+':00':'';
-  
+
   const fd=new FormData();
   fd.append('_token',CSRF_TOKEN);
   fd.append('work_date',date);
@@ -2210,11 +2282,10 @@ if(hanRaw !== '' && isNaN(parseFloat(hanRaw)))errors.push('ค่ายกไม
   fd.append('handling_cost', s.handlingCost || 0);
   fd.append('ok',s.okCount || 0);
   fd.append('ng',s.failCount || 0);
-  
+
   const ppl=parseFloat(document.getElementById('il-price-per-liter')?.value)||0;
   if(ppl>0)fd.append('price_per_liter',ppl);
   fd.append('liters', s.liters > 0 ? s.liters.toFixed(2) : 0);
-  fd.append('create_by', (CURRENT_USER && CURRENT_USER !== 'Guest') ? String(CURRENT_USER) : 'system');
 
   try{
     const res=await fetch(ROUTE_STORE,{method:'POST',headers:{'X-CSRF-TOKEN':CSRF_TOKEN,'Accept':'application/json'},body:fd});
@@ -2296,7 +2367,6 @@ async function erSaveAllRows(){
     const ppl=parseFloat(document.getElementById('il-price-per-liter')?.value)||0;
     if(ppl>0)fd.append('price_per_liter',ppl);
     fd.append('liters',s.liters>0?s.liters.toFixed(2):0);
-    fd.append('create_by',(CURRENT_USER&&CURRENT_USER!=='Guest')?String(CURRENT_USER):'system');
 
     try{
       const res=await fetch(ROUTE_STORE,{method:'POST',headers:{'X-CSRF-TOKEN':CSRF_TOKEN,'Accept':'application/json'},body:fd});
@@ -2368,23 +2438,99 @@ function ilUpdateChartsAfterSave(r){
 }
 
 function ilResetJobsPanel(){const wrap=document.getElementById('inlineJobTableWrap');if(wrap)wrap.innerHTML='<div class="job-loading">คลิกที่แถวคนขับ<br>เพื่อดูรายการงานของคนนั้น</div>';const title=document.getElementById('jobsPanelTitleText');if(title)title.textContent='รายการงาน';const chip=document.getElementById('ilJobDateChip');if(chip)chip.style.display='none';}
+
+// ilRenderJobsForDriver: แสดงรายการงานของคนขับที่คลิก พร้อมปุ่ม "รับบิล" (เฉพาะงานที่มาจาก DB fallback)
 function ilRenderJobsForDriver(driverName,jobs){
   const wrap=document.getElementById('inlineJobTableWrap');if(!wrap)return;
   const title=document.getElementById('jobsPanelTitleText');if(title)title.textContent=driverName;
   const date=document.getElementById('il-work-date')?.value||'';const chip=document.getElementById('ilJobDateChip');
   if(chip&&date){const dp=date.split('-');chip.textContent=dp.length===3?`${dp[2]}/${dp[1]}`:date;chip.style.display='';}
   if(!jobs||jobs.length===0){wrap.innerHTML='<div class="job-loading">ไม่มีรายการงาน</div>';return;}
-  let okC=0,failC=0;jobs.forEach(j=>{const k=_jobStatusKind(j);if(k==='ok')okC++;else if(k==='fail')failC++;});
-  let html=`<div class="jobs-summary-bar"><span class="jsb-chip"><strong>${jobs.length}</strong> งาน</span><span class="jsb-chip ok"><strong>${okC}</strong> สำเร็จ</span>${failC>0?`<span class="jsb-chip fail"><strong>${failC}</strong> ไม่สำเร็จ</span>`:''}</div>`;
-  jobs.forEach(j=>{
-    const kind=_jobStatusKind(j);const stTxt=kind==='ok'?'สำเร็จ':(kind==='fail'?'ไม่สำเร็จ':'รอ');
+
+  let okC=0,probC=0;jobs.forEach(j=>{const k=_jobStatusKind(j);if(k==='ok')okC++;else if(k==='fail'||k==='wrong')probC++;});
+  let html=`<div class="jobs-summary-bar"><span class="jsb-chip"><strong>${jobs.length}</strong> งาน</span><span class="jsb-chip ok"><strong>${okC}</strong> สำเร็จ</span>${probC>0?`<span class="jsb-chip fail"><strong>${probC}</strong> มีปัญหา</span>`:''}</div>`;
+
+  jobs.forEach((j,idx)=>{
+    const kind=_jobStatusKind(j);
+    const stTxt=kind==='ok'?'สำเร็จ':(kind==='wrong'?'สินค้าผิด':(kind==='redo'?'ส่งใหม่พรุ่งนี้':(kind==='fail'?'ไม่สำเร็จ':'รอ')));
+    const badgeCls=kind==='ok'?'ok':((kind==='wrong'||kind==='fail')?'fail':'pending');
+
     const meta=[];
     if(j.so_id)meta.push(`<span class="dgj-meta-item"><span class="dgj-meta-label">SO</span> ${j.so_id}</span>`);
     if(j.bill_in_by)meta.push(`<span class="dgj-meta-item"><span class="dgj-meta-label">รับ</span> ${j.bill_in_by}</span>`);
     if(j.note)meta.push(`<span class="dgj-meta-item dgj-note"><span class="dgj-meta-label">หมายเหตุ</span> ${j.note}</span>`);
-    html+=`<div class="dgj-row"><div class="dgj-main"><div class="dgj-top"><span class="dgj-bill">${j.bill_no||'—'}</span><span class="dgj-customer" title="${j.customer_name||''}">${j.customer_name||'—'}</span><span class="dgj-status ${kind}">${stTxt}</span></div>${meta.length?`<div class="dgj-meta">${meta.join('<span class="dgj-meta-sep">·</span>')}</div>`:''}</div></div>`;
+
+    let confirmHtml='';
+    // ปุ่ม "รับบิล" ใช้ได้เฉพาะงานที่มาจาก DB fallback และมี job_key จริง (ไม่ใช่ unknown:)
+    if(j.source==='db' && j.job_key && j.job_key.indexOf('unknown:')!==0){
+      if(j.confirmed){
+        confirmHtml=`<div class="dgj-confirmed">✓ บันทึกแล้วโดย ${j.check_name||'-'} · ${j.check_time||''}</div>`;
+      }else{
+        const rowId=`jc_${idx}_${(j.job_key||'').replace(/[^a-zA-Z0-9]/g,'_')}`;
+        confirmHtml=`
+          <div class="dgj-confirm" id="${rowId}" data-job="${j.job_key}">
+            <div class="dgj-confirm-btns">
+              <button type="button" class="dgj-status-btn" data-status="จัดส่งสำเร็จ" onclick="jobPickStatus('${rowId}','จัดส่งสำเร็จ')">✓ สำเร็จ</button>
+              <button type="button" class="dgj-status-btn warn" data-status="สินค้าผิด" onclick="jobPickStatus('${rowId}','สินค้าผิด')">⚠ สินค้าผิด</button>
+              <button type="button" class="dgj-status-btn redo" data-status="ส่งใหม่วันพรุ่งนี้" onclick="jobPickStatus('${rowId}','ส่งใหม่วันพรุ่งนี้')">↻ ส่งพรุ่งนี้</button>
+            </div>
+            <textarea class="dgj-ng-input" id="${rowId}-ng" placeholder="ระบุรายละเอียดสินค้าที่ผิด..." style="display:none"></textarea>
+            <button type="button" class="dgj-confirm-save" id="${rowId}-save" style="display:none" onclick="jobSubmitConfirm('${rowId}')">บันทึกผลส่ง</button>
+          </div>`;
+      }
+    }
+
+    html+=`<div class="dgj-row"><div class="dgj-main"><div class="dgj-top"><span class="dgj-bill">${j.bill_no||'—'}</span><span class="dgj-customer" title="${j.customer_name||''}">${j.customer_name||'—'}</span><span class="dgj-status ${badgeCls}">${stTxt}</span></div>${meta.length?`<div class="dgj-meta">${meta.join('<span class="dgj-meta-sep">·</span>')}</div>`:''}${confirmHtml}</div></div>`;
   });
+
   wrap.innerHTML=html;
+}
+
+let _jobPendingStatus={};
+
+function jobPickStatus(rowId,status){
+  _jobPendingStatus[rowId]=status;
+  const row=document.getElementById(rowId);if(!row)return;
+  row.querySelectorAll('.dgj-status-btn').forEach(b=>b.classList.toggle('active',b.dataset.status===status));
+  const ng=document.getElementById(`${rowId}-ng`);
+  const saveBtn=document.getElementById(`${rowId}-save`);
+  if(ng)ng.style.display=(status==='สินค้าผิด')?'':'none';
+  if(saveBtn)saveBtn.style.display='';
+}
+
+async function jobSubmitConfirm(rowId){
+  const row=document.getElementById(rowId);if(!row)return;
+  const jobKey=row.dataset.job;
+  const status=_jobPendingStatus[rowId];
+  if(!status){alert('กรุณาเลือกสถานะก่อน');return;}
+
+  const ngEl=document.getElementById(`${rowId}-ng`);
+  const ngDetail=ngEl?ngEl.value.trim():'';
+  if(status==='สินค้าผิด' && !ngDetail){alert('กรุณากรอกรายละเอียดสินค้าที่ผิด');ngEl?.focus();return;}
+
+  const saveBtn=document.getElementById(`${rowId}-save`);
+  if(saveBtn){saveBtn.disabled=true;saveBtn.textContent='กำลังบันทึก...';}
+
+  try{
+    const fd=new FormData();
+    fd.append('_token',CSRF_TOKEN);
+    fd.append('job_key',jobKey);
+    fd.append('status',status);
+    if(ngDetail)fd.append('ng_detail',ngDetail);
+    fd.append('work_date',document.getElementById('il-work-date')?.value||'');
+
+    const res=await fetch(ROUTE_CONFIRM_DELIVERY,{method:'POST',headers:{'X-CSRF-TOKEN':CSRF_TOKEN,'Accept':'application/json'},body:fd});
+    const json=await res.json().catch(()=>null);
+    if(!res.ok||!json||json.success===false){throw new Error(json&&json.message?json.message:'บันทึกไม่สำเร็จ');}
+
+    row.outerHTML=`<div class="dgj-confirmed">✓ บันทึกแล้วโดย ${json.check_name} · ${json.check_time}</div>`;
+    delete _jobPendingStatus[rowId];
+    showInfoToast('บันทึกผลส่งสำเร็จ',`สถานะ: ${status}`,false);
+  }catch(e){
+    console.warn('jobSubmitConfirm error',e);
+    if(saveBtn){saveBtn.disabled=false;saveBtn.textContent='บันทึกผลส่ง';}
+    alert('บันทึกไม่สำเร็จ: '+e.message);
+  }
 }
 
 // Charts Functions

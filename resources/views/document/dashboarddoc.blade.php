@@ -236,7 +236,7 @@
     <div class="header">
         <h2>เอกสารชั่วคราว</h2>
         <div class="buttons">
-            <span>👤 ผู้ใช้: {{ session('emp_name', 'Guest') }}</span>
+            <span>👤 ผู้ใช้: {{ $creator }}</span>
 
             <a href="{{ route('document.insertdoc') }}" class="btn btn-solid">สร้างเอกสารชั่วคราว</a>
 

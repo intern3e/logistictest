@@ -92,54 +92,64 @@ public function ssoAuthorize(Request $request)
         return redirect()->route('login');
     }
 
-    public function ssoVerify(Request $request): JsonResponse
-    {
-        $request->validate([
-            'ticket'        => 'required|string|max:64',
-            'client_key'    => 'required|string|max:20',
-            'client_secret' => 'required|string|max:64',
-        ]);
+public function ssoVerify(Request $request): JsonResponse
+{
+    $request->validate([
+        'ticket'        => 'required|string|max:64',
+        'client_key'    => 'required|string|max:20',
+        'client_secret' => 'required|string|max:64',
+    ]);
 
-        $client = SsoClient::find($request->client_key);
-        if (!$client || !hash_equals($client->client_secret, $request->client_secret)) {
-            return response()->json(['success' => false, 'error' => 'Invalid credentials'], 401);
-        }
-
-        $ticketRecord = SsoTicket::where('ticket', $request->ticket)
-            ->where('client_key', $request->client_key)
-            ->first();
-
-        if (!$ticketRecord || !$ticketRecord->markAsUsed()) {
-            return response()->json(['success' => false, 'error' => 'Invalid or expired ticket'], 400);
-        }
-
-        $user = UserAuth::find($ticketRecord->id_emp);
-        if (!$user || !$user->is_active) {
-            return response()->json(['success' => false, 'error' => 'User inactive'], 403);
-        }
-
-        return response()->json([
-            'success' => true,
-            'user' => [
-                'id_emp'       => $user->id_emp,
-                'username'     => $user->username,
-                'name'         => $user->name,
-                'auth'         => $user->auth,
-                'role'         => $user->role,
-                'auth_version' => $user->auth_version,
-            ],
-        ]);
+    $client = SsoClient::find($request->client_key);
+    if (!$client || !hash_equals($client->client_secret, $request->client_secret)) {
+        return response()->json(['success' => false, 'error' => 'Invalid credentials'], 401);
     }
 
-// ssoLogout() — เอา bounce กลับ server_update ออก กัน loop
+    $ticketRecord = SsoTicket::where('ticket', $request->ticket)
+        ->where('client_key', $request->client_key)
+        ->first();
+
+    if (!$ticketRecord || !$ticketRecord->markAsUsed()) {
+        return response()->json(['success' => false, 'error' => 'Invalid or expired ticket'], 400);
+    }
+
+    $user = UserAuth::find($ticketRecord->id_emp);
+    if (!$user || !$user->is_active) {
+        return response()->json(['success' => false, 'error' => 'User inactive'], 403);
+    }
+
+    return response()->json([
+        'success' => true,
+        'user' => [
+            'id_emp'       => $user->id_emp,
+            'username'     => $user->username,
+            'name'         => $user->name,
+            'auth'         => $user->auth,
+            'role'         => $user->role,
+            'auth_version' => $user->auth_version,
+            'permissions'  => $user->permissions ?? [], // ★ เพิ่มบรรทัดนี้บรรทัดเดียว
+        ],
+    ]);
+}
 public function ssoLogout(Request $request)
 {
+    Log::info('SSO Logout: before', [
+        'session_id' => $request->session()->getId(),
+        'user'       => Auth::guard('web')->user(),
+    ]);
+
     Auth::guard('web')->logout();
     $request->session()->invalidate();
     $request->session()->regenerateToken();
 
+    Log::info('SSO Logout: after', [
+        'session_id' => $request->session()->getId(),
+        'user'       => Auth::guard('web')->user(),
+    ]);
+
     $finalRedirect = $request->query('redirect_url', '/');
-    return redirect($finalRedirect); // ไม่ redirect ไป server_update/logout ซ้ำ
+    return redirect($finalRedirect)
+        ->withCookie(cookie()->forget(config('session.cookie')));
 }
 private function issueTicketAndRedirect(UserAuth $user, string $clientKey, string $returnUrl)
 {

@@ -794,7 +794,7 @@
                     </div>
                 </div>
             </div>
-            <input type="hidden" id="emp_name" name="emp_name" value="{{ session('emp_name', 'Guest') }}">
+            <input type="hidden" id="inpUser" value="{{ $creator }}">
             <input type="hidden" id="id_com" name="id_com">
         </div>
     </div>

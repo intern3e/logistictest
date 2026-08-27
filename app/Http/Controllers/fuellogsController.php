@@ -3,19 +3,96 @@
 namespace App\Http\Controllers;
 
 use App\Models\ng_shipment;
+use App\Models\Bill;
+use App\Models\Docbills;
+use App\Models\transaction_delivery;
+use App\Models\UserAuth;
+use App\Models\SsoTicket;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Carbon\Carbon;
 
 class fuellogsController extends Controller
 {
+    const DELI_STATUS_OK    = 'จัดส่งสำเร็จ';
+    const DELI_STATUS_WRONG = 'สินค้าผิด';
+    const DELI_STATUS_REDO  = 'ส่งใหม่วันพรุ่งนี้';
+
+    /* ==================== AUTH ====================
+     * สองระดับสิทธิ์:
+     *   - resolveOilUser()   : แค่ต้อง login (role ใดก็ได้) — ใช้กับหน้า/endpoint ที่ "ดูได้"
+     *   - resolveOilEditor() : login + ต้องเป็น role admin/store/accounting เท่านั้น —
+     *                          ใช้กับ endpoint ที่ "บันทึก/แก้ไข/ลบ/ยืนยันข้อมูล"
+     */
+
+    /**
+     * ตรวจ login เท่านั้น (รองรับ SSO ticket แบบเดียวกับ StoreController::resolveSsoUser)
+     * ไม่ login เลย -> redirect ไปหน้า login. role ใดก็เข้าดูหน้าได้ ไม่มีการเช็ค role ที่นี่
+     */
+    private function resolveOilUser(Request $request): UserAuth
+    {
+        $ticket = $request->input('ticket');
+
+        if ($ticket && !Auth::guard('web')->check()) {
+            $ticketRecord = SsoTicket::where('ticket', $ticket)
+                ->where('client_key', '3e')
+                ->first();
+
+            if ($ticketRecord && $ticketRecord->markAsUsed()) {
+                $user = UserAuth::find($ticketRecord->id_emp);
+                if ($user && $user->is_active) {
+                    Auth::guard('web')->login($user);
+                }
+            }
+        }
+
+        if (!Auth::guard('web')->check()) {
+            throw new \Illuminate\Http\Exceptions\HttpResponseException(
+                redirect()->guest(route('login'))
+            );
+        }
+
+        return Auth::guard('web')->user();
+    }
+
+    /** role ที่มีสิทธิ์บันทึก/แก้ไข/ลบ/ยืนยันข้อมูลในระบบน้ำมัน */
+    private function oilEditableRoles(): array
+    {
+        return ['admin', 'store', 'accounting'];
+    }
+
+    private function isOilEditor($user): bool
+    {
+        return $user && in_array($user->role, $this->oilEditableRoles(), true);
+    }
+
+    /**
+     * ตรวจ login + ต้องเป็น role admin/store/accounting เท่านั้น
+     * login แล้วแต่ role ไม่ผ่าน -> abort 403
+     * ใช้กับ action ที่มีผลเปลี่ยนแปลงข้อมูล (store/update/destroy/confirmDelivery/updateCell/cleanupGarbage)
+     */
+    private function resolveOilEditor(Request $request): UserAuth
+    {
+        $user = $this->resolveOilUser($request);
+
+        if (!$this->isOilEditor($user)) {
+            abort(403, 'คุณไม่มีสิทธิ์บันทึก/แก้ไขข้อมูล (ต้องเป็น admin, store หรือ accounting)');
+        }
+
+        return $user;
+    }
+
+    private function oilUserName($user): string
+    {
+        return $user->name ?? $user->emp_name ?? $user->username ?? ($user->id_emp ?? 'ผู้ใช้งาน');
+    }
+
     private function urlParams(Request $request): array
     {
-        $params = [];
-        if ($request->filled('create_by')) {
-            $params['create_by'] = $request->input('create_by');
-        }
-        return $params;
+        // เดิมพก create_by ผ่าน query string — ตอนนี้ผู้ใช้มาจาก Auth::guard('web') จริง
+        // ไม่จำเป็นต้องพก create_by ใน URL อีกต่อไป คงฟังก์ชันนี้ไว้เผื่อโค้ดอื่นเรียกใช้อยู่
+        return [];
     }
 
     public function applyFilter(Request $request)
@@ -33,13 +110,13 @@ class fuellogsController extends Controller
         ]);
 
         if ($request->input('redirect_to') === 'report') {
-            return redirect()->route('oil.report', $this->urlParams($request));
+            return redirect()->route('oil.report');
         }
         if ($request->input('redirect_to') === 'admin') {
-            return redirect()->route('oil.admin', $this->urlParams($request));
+            return redirect()->route('oil.admin');
         }
 
-        return redirect()->route('oil', $this->urlParams($request));
+        return redirect()->route('oil');
     }
 
     private function getFilter(Request $request): array
@@ -280,23 +357,39 @@ class fuellogsController extends Controller
         );
     }
 
+    /* ==================== หน้าเว็บหลัก ==================== */
+
     public function oil(Request $request)
     {
-        return view('driver.oil', $this->buildViewData($request));
+        // ดูหน้านี้ได้ทุก role ที่ login แล้ว — isPrivileged เท่านั้นที่กำหนดว่าแก้ไข/บันทึกได้หรือไม่
+        $authUser = $this->resolveOilUser($request);
+
+        $data = $this->buildViewData($request);
+        $data['authUser']     = $authUser;
+        $data['currentUser']  = $this->oilUserName($authUser);
+        $data['isPrivileged'] = $this->isOilEditor($authUser);
+
+        return view('driver.oil', $data);
     }
 
     public function report(Request $request)
     {
+        $this->resolveOilUser($request);
         return view('driver.report', $this->buildViewData($request));
     }
 
     public function admin(Request $request)
     {
+        $this->resolveOilUser($request);
         return view('driver.admin', $this->buildViewData($request));
     }
 
+    /* ==================== บันทึกน้ำมัน ==================== */
+
     public function store(Request $request)
     {
+        $authUser = $this->resolveOilEditor($request);
+
         $request->validate([
             'work_date'       => 'required|date',
             'driver_name'     => 'required|string|max:100',
@@ -324,8 +417,7 @@ class fuellogsController extends Controller
                 ->where('vehicle_id', '-')
                 ->exists();
             if ($exists) {
-                return redirect()->route('oil', $this->urlParams($request))
-                                 ->with('success', 'มีข้อมูลอยู่แล้ว');
+                return redirect()->route('oil')->with('success', 'มีข้อมูลอยู่แล้ว');
             }
         }
 
@@ -336,24 +428,27 @@ class fuellogsController extends Controller
             'start_time'      => $startDt,
             'end_time'        => $endDt,
             'total_distance'  => (float) ($request->total_distance ?? 0),
-            'liters'          => $liters ?? 0,            
+            'liters'          => $liters ?? 0,
             'total_price'     => (float) $request->total_price,
-            'price_per_liter' => $ppl ?? 0,           
+            'price_per_liter' => $ppl ?? 0,
             'ot_cost'         => (float) ($request->ot_cost ?? 0),
             'handling_cost'   => (float) ($request->handling_cost ?? 0),
             'delivery_cost'   => (float) ($request->delivery_cost ?? 0),
             'ok'              => (int) ($request->ok ?? 0),
             'ng'              => (int) ($request->ng ?? 0),
             'note'            => $request->note ? trim($request->note) : null,
+            // create_by มาจากผู้ใช้ที่ login จริงเสมอ (ไม่รับจาก request/query string อีกต่อไป)
+            'create_by'       => $this->oilUserName($authUser),
             'created_at'      => now(),
         ]);
 
-        return redirect()->route('oil', $this->urlParams($request))
-                         ->with('success', 'บันทึกข้อมูลน้ำมันสำเร็จ ✅');
+        return redirect()->route('oil')->with('success', 'บันทึกข้อมูลน้ำมันสำเร็จ ✅');
     }
 
     public function update(Request $request, $id)
     {
+        $this->resolveOilEditor($request);
+
         $request->validate([
             'work_date'       => 'required|date',
             'driver_name'     => 'required|string|max:100',
@@ -394,23 +489,24 @@ class fuellogsController extends Controller
             'note'            => $request->note ? trim($request->note) : null,
         ]);
 
-        return redirect()->route('oil', $this->urlParams($request))
-                         ->with('success', 'อัปเดตข้อมูลสำเร็จ ✅');
+        return redirect()->route('oil')->with('success', 'อัปเดตข้อมูลสำเร็จ ✅');
     }
 
     public function destroy(Request $request, $id)
     {
+        $this->resolveOilEditor($request);
+
         $deleted = DB::table('fuel_logs')->where('id', $id)->delete();
         if (!$deleted) {
-            return redirect()->route('oil', $this->urlParams($request))
-                             ->with('error', 'ไม่พบรายการที่ต้องการลบ');
+            return redirect()->route('oil')->with('error', 'ไม่พบรายการที่ต้องการลบ');
         }
-        return redirect()->route('oil', $this->urlParams($request))
-                         ->with('success', 'ลบข้อมูลเรียบร้อย');
+        return redirect()->route('oil')->with('success', 'ลบข้อมูลเรียบร้อย');
     }
 
     public function cleanupGarbage(Request $request)
     {
+        $this->resolveOilEditor($request);
+
         $banned = ['ลูกค้า','เซ็นบิล','เซ็น','บิล','สาขา','จำกัด','บริษัท','หจก','ร้าน','คุณ','ไป','ที่','กับ'];
         $rows = DB::table('fuel_logs')->where('vehicle_id', '-')->get();
         $deleteIds = [];
@@ -426,8 +522,7 @@ class fuellogsController extends Controller
         if (!empty($deleteIds)) {
             $count = DB::table('fuel_logs')->whereIn('id', $deleteIds)->delete();
         }
-        return redirect()->route('oil', $this->urlParams($request))
-                         ->with('success', "ลบข้อมูลขยะ {$count} รายการ");
+        return redirect()->route('oil')->with('success', "ลบข้อมูลขยะ {$count} รายการ");
     }
 
     public function prevMileage(Request $request)
@@ -524,6 +619,8 @@ class fuellogsController extends Controller
 
     public function savedDrivers(Request $request)
     {
+        $this->resolveOilUser($request);
+
         $date = $request->get('date');
         if (!$date) {
             return response()->json([]);
@@ -539,10 +636,241 @@ class fuellogsController extends Controller
         return response()->json($drivers);
     }
 
+    /* ==================== Fallback: งานที่ถูกจ่ายจาก DB (transaction_transport) ==================== */
+
+    /**
+     * ดึงงานที่ถูกจ่ายไว้แล้วจากตาราง transaction_transport (ผ่าน model transaction_delivery)
+     * สำหรับวันที่ระบุ ใช้เป็น fallback เมื่อ API ภายนอก (getDeliveryPersonByDate) ไม่มีข้อมูล/ล่ม
+     *
+     * รวมรายการฝั่ง "บิล" ตาม billid (ไม่ใช่ so_detail_id ที่เป็น PK) เพราะ billid สามารถซ้ำได้
+     * (บิลเดียวกันมีได้หลายแถวใน tblbill) — ถ้าไม่รวม จะเห็นบิลเดียวกันโผล่ซ้ำหลายการ์ดในหน้า UI
+     * ฝั่ง "เอกสาร" ใช้ doc_id ตรงๆ เพราะเป็นทั้ง PK และเลขบิลในตัวเอง ไม่มีปัญหาซ้ำ
+     */
+    public function jobsFallback(Request $request)
+    {
+        // ดูรายการงานได้ทุก role ที่ login แล้ว (ปุ่ม "รับบิล" ฝั่ง UI จะโชว์เฉพาะ role ที่แก้ไขได้อยู่แล้ว
+        // เพราะแผงงานทั้งหมดถูกซ่อนไว้ใต้ $isPrivileged ในหน้า blade)
+        $this->resolveOilUser($request);
+
+        $date = $request->get('date');
+        if (!$date) {
+            return response()->json(['data' => []]);
+        }
+
+        $deliveries = transaction_delivery::whereDate('time_pick', $date)->get();
+        if ($deliveries->isEmpty()) {
+            return response()->json(['data' => [], 'source' => 'db']);
+        }
+
+        $ids = $deliveries->pluck('bill_id')->unique()->values();
+
+        // billid ไม่ใช่ PK ของ tblbill (so_detail_id ถึงเป็น PK) — บิลเดียวกัน (billid ซ้ำ)
+        // อาจมีได้หลายแถว/หลาย so_detail_id
+        $billsBySoDetailId = Bill::whereIn('so_detail_id', $ids)
+            ->get(['so_detail_id', 'billid', 'so_id', 'customer_id', 'customer_name', 'statusdeli'])
+            ->keyBy('so_detail_id');
+
+        // docbills: doc_id เป็นทั้ง PK และเลขบิลในตัวเอง ไม่มีปัญหาซ้ำแบบ billid
+        $docs = Docbills::whereIn('doc_id', $ids)
+            ->get(['doc_id', 'id_com', 'com_name', 'contact_name', 'statusdeli'])
+            ->keyBy('doc_id');
+
+        $grouped = $deliveries->groupBy(function ($d) {
+            $name = trim((string) $d->driver_name);
+            return $name !== '' ? $name : 'ไม่ระบุ';
+        });
+
+        $data = $grouped->map(function ($driverDeliveries, $driverName) use ($billsBySoDetailId, $docs) {
+            $jobs = collect();
+
+            $billDeliveries    = $driverDeliveries->filter(fn ($d) => $billsBySoDetailId->has($d->bill_id));
+            $docDeliveries     = $driverDeliveries->filter(fn ($d) => $docs->has($d->bill_id));
+            $unknownDeliveries = $driverDeliveries->reject(
+                fn ($d) => $billsBySoDetailId->has($d->bill_id) || $docs->has($d->bill_id)
+            );
+
+            // ── ฝั่งบิล: รวมตาม billid (ไม่ใช่ so_detail_id) — บิลเดียวกันแม้มีหลายแถว (หลาย
+            //    so_detail_id) ก็รวมเป็นการ์ดงานเดียว กันไม่ให้ user เห็นบิลเดียวกันโผล่ซ้ำหลายใบ ──
+            $billDeliveries
+                ->groupBy(fn ($d) => $billsBySoDetailId->get($d->bill_id)->billid)
+                ->each(function ($rows, $billid) use ($billsBySoDetailId, $jobs) {
+                    $first = $rows->sortByDesc('time_pick')->first();
+                    $b     = $billsBySoDetailId->get($first->bill_id);
+                    $jobs->push([
+                        'job_key'         => 'bill:' . $billid,
+                        'bill_no'         => (string) $billid,
+                        'so_id'           => (string) ($b->so_id ?? ''),
+                        'customer_name'   => (string) ($b->customer_name ?? ''),
+                        'bill_in_by'      => '',
+                        'delivery_status' => (string) ($first->status ?? ''),
+                        'reason'          => (string) ($first->note ?? ''),
+                        'check_name'      => $first->check_name,
+                        'check_time'      => optional($first->check_time)->format('Y-m-d H:i'),
+                        'confirmed'       => !empty($first->check_time),
+                    ]);
+                });
+
+            // ── ฝั่งเอกสาร: doc_id ไม่ซ้ำ ใช้ตรงๆ ได้เลย ──
+            $docDeliveries->each(function ($d) use ($docs, $jobs) {
+                $doc = $docs->get($d->bill_id);
+                $jobs->push([
+                    'job_key'         => 'doc:' . $d->bill_id,
+                    'bill_no'         => (string) $d->bill_id,
+                    'so_id'           => '',
+                    'customer_name'   => (string) ($doc->com_name ?? ''),
+                    'bill_in_by'      => (string) ($doc->contact_name ?? ''),
+                    'delivery_status' => (string) ($d->status ?? ''),
+                    'reason'          => (string) ($d->note ?? ''),
+                    'check_name'      => $d->check_name,
+                    'check_time'      => optional($d->check_time)->format('Y-m-d H:i'),
+                    'confirmed'       => !empty($d->check_time),
+                ]);
+            });
+
+            // งานกำพร้า (ไม่พบทั้งสองตาราง) — แสดงไว้แต่กดรับบิลไม่ได้ (job_key = unknown:)
+            $unknownDeliveries->each(function ($d) use ($jobs) {
+                $jobs->push([
+                    'job_key'         => 'unknown:' . $d->bill_id,
+                    'bill_no'         => (string) $d->bill_id,
+                    'so_id'           => '',
+                    'customer_name'   => '',
+                    'bill_in_by'      => '',
+                    'delivery_status' => (string) ($d->status ?? ''),
+                    'reason'          => (string) ($d->note ?? ''),
+                    'check_name'      => $d->check_name,
+                    'check_time'      => optional($d->check_time)->format('Y-m-d H:i'),
+                    'confirmed'       => !empty($d->check_time),
+                ]);
+            });
+
+            return ['bill_out_by' => $driverName, 'jobs' => $jobs->values()];
+        })->values();
+
+        return response()->json(['data' => $data, 'source' => 'db']);
+    }
+
+    /**
+     * บันทึกผลการส่งของ ("รับบิล") จากหน้าน้ำมัน — ใช้ได้เฉพาะงานที่มาจาก fallback DB
+     * (มี job_key จริง ไม่ใช่ unknown:) เพราะ API ภายนอกไม่มี PK ให้อ้างอิง
+     *
+     * status = จัดส่งสำเร็จ      → tblbill/docbills.statusdeli = 'จัดส่งสำเร็จ'
+     * status = สินค้าผิด          → statusdeli = 'สินค้าผิด' + NG = รายละเอียดที่กรอก
+     * status = ส่งใหม่วันพรุ่งนี้  → statusdeli = 'ส่งใหม่วันพรุ่งนี้' และสร้าง transaction_delivery
+     *                                 แถวใหม่โดยอัตโนมัติ (ผู้รับผิดชอบ/วิธีขนส่งเดิม, time_pick =
+     *                                 พรุ่งนี้นับจาก work_date ที่หน้าน้ำมันกำลังดูอยู่) เพื่อให้ไป
+     *                                 โผล่เป็นงานค้างของวันถัดไป — ผู้จ่ายงานรอบใหม่ = ผู้ที่บันทึก
+     *                                 ว่า "ส่งใหม่พรุ่งนี้" (name_pick = ชื่อผู้บันทึก)
+     *
+     * billid ไม่ใช่ PK ของ tblbill (บิลเดียวกันอาจมีหลายแถว) → อัปเดตด้วย WHERE billid (bulk)
+     * doc_id เป็น PK ของ docbills อยู่แล้ว → อัปเดตแถวเดียวตรงๆ
+     */
+    public function confirmDelivery(Request $request)
+    {
+        $authUser = $this->resolveOilEditor($request);
+
+        $request->validate([
+            'job_key'   => 'required|string',
+            'status'    => 'required|string|in:จัดส่งสำเร็จ,สินค้าผิด,ส่งใหม่วันพรุ่งนี้',
+            'ng_detail' => 'nullable|string|max:1000',
+            'work_date' => 'nullable|date',
+        ]);
+
+        if ($request->status === self::DELI_STATUS_WRONG && !$request->filled('ng_detail')) {
+            return response()->json(['success' => false, 'message' => 'กรุณากรอกรายละเอียดสินค้าที่ผิด'], 422);
+        }
+
+        [$type, $rawId] = array_pad(explode(':', $request->job_key, 2), 2, null);
+        if (!$rawId || !in_array($type, ['bill', 'doc'], true)) {
+            return response()->json(['success' => false, 'message' => 'ไม่พบรายการนี้ (ไม่รองรับงานจาก API ภายนอก)'], 404);
+        }
+
+        $billid = null;
+
+        if ($type === 'bill') {
+            // $rawId คือ billid (ไม่ใช่ so_detail_id) — บิลเดียวกันอาจมีหลาย so_detail_id
+            $billid = $rawId;
+            $soIds  = Bill::where('billid', $billid)->pluck('so_detail_id');
+            if ($soIds->isEmpty()) {
+                return response()->json(['success' => false, 'message' => 'ไม่พบเลขบิลนี้'], 404);
+            }
+            $deliveries = transaction_delivery::whereIn('bill_id', $soIds)->get();
+        } else {
+            // docbills: doc_id เป็น PK และเลขบิลในตัวเอง ไม่ต้องแปลง
+            $deliveries = transaction_delivery::where('bill_id', $rawId)->get();
+        }
+
+        if ($deliveries->isEmpty()) {
+            return response()->json(['success' => false, 'message' => 'ไม่พบรายการจ่ายงานนี้'], 404);
+        }
+
+        $userName = $this->oilUserName($authUser);
+        $now      = Carbon::now();
+
+        DB::transaction(function () use ($request, $type, $billid, $rawId, $deliveries, $userName, $now) {
+            // ── อัปเดตสถานะทุกแถว transaction_delivery ที่เกี่ยวข้อง (ทุก so_detail_id ในบิลเดียวกัน) ──
+            foreach ($deliveries as $delivery) {
+                $delivery->status     = $request->status;
+                $delivery->check_name = $userName;
+                $delivery->check_time = $now;
+                if ($request->filled('ng_detail')) {
+                    $delivery->note = $request->ng_detail;
+                }
+                $delivery->save();
+            }
+
+            $update = ['statusdeli' => $request->status];
+            if ($request->status === self::DELI_STATUS_WRONG) {
+                $update['NG'] = $request->ng_detail;
+            }
+
+            if ($type === 'bill') {
+                // billid ไม่ใช่ pk ของ tblbill → update ทุกแถวที่ billid ตรงกันในคำสั่งเดียว
+                DB::table('tblbill')->where('billid', $billid)->update($update);
+            } else {
+                // doc_id เป็น pk อยู่แล้ว update แถวเดียวตรงๆ
+                DB::table('docbills')->where('doc_id', $rawId)->update($update);
+            }
+
+            // ── ส่งใหม่พรุ่งนี้: สร้าง transaction_delivery ใหม่ 1 แถวต่อ so_detail_id เดิม
+            //    (ระดับความละเอียดเดียวกับที่ DeliverytrackController ใช้จ่ายงานอยู่แล้ว)
+            //    ผู้รับผิดชอบ/วิธีขนส่งใช้ของเดิม ผู้จ่ายงานรอบใหม่ = คนที่กดบันทึกว่า
+            //    "ส่งใหม่พรุ่งนี้" (name_pick) เพื่อให้สอดคล้องกับหน้าจ่ายงาน (/deliverytrack) ──
+            if ($request->status === self::DELI_STATUS_REDO) {
+                $baseDate = $request->filled('work_date') ? Carbon::parse($request->work_date) : Carbon::now();
+                $redoTime = $baseDate->copy()->addDay()->setTime(9, 0, 0);
+
+                foreach ($deliveries as $delivery) {
+                    transaction_delivery::create([
+                        'bill_id'        => $delivery->bill_id,
+                        'name_pick'      => $userName,
+                        'time_pick'      => $redoTime,
+                        'transport_name' => $delivery->transport_name,
+                        'driver_name'    => $delivery->driver_name,
+                        'check_name'     => null,
+                        'check_time'     => null,
+                        'status'         => '0',
+                        'note'           => 'ส่งใหม่อัตโนมัติจากรายการเดิม (id ' . $delivery->id . ')',
+                    ]);
+                }
+            }
+        });
+
+        return response()->json([
+            'success'    => true,
+            'status'     => $request->status,
+            'check_name' => $userName,
+            'check_time' => $now->format('Y-m-d H:i'),
+        ]);
+    }
+
+    /* ==================== ค่าวิ่ง/OT/ค่ายก (ตารางแยกรายวัน) ==================== */
+
     private array $motorcycleVehicleIds = [];
 
     public function Deliveryfee(Request $request)
     {
+        $this->resolveOilUser($request);
+
         $mode = $request->input('mode', 'month');
         $mode = in_array($mode, ['month', 'week']) ? $mode : 'month';
 
@@ -644,8 +972,6 @@ class fuellogsController extends Controller
             $dayVals = [];
             $totDelivery = 0.0; $totOt = 0.0; $totHandling = 0.0;
             foreach ($days as $day) {
-                // has = true ก็ต่อเมื่อมี row จริงในตาราง fuel_logs สำหรับคนขับ+วันนี้
-                // (ไม่ว่าค่าจะเป็น 0 หรือไม่ก็ตาม) ใช้แยกกรณี "ยังไม่มีข้อมูลเลย" ออกจาก "มีข้อมูลแต่เป็น 0"
                 $has = isset($matrix[$dbName][$day]);
                 $v = $matrix[$dbName][$day] ?? ['delivery' => 0.0, 'ot' => 0.0, 'handling' => 0.0];
                 $v['has'] = $has;
@@ -661,7 +987,7 @@ class fuellogsController extends Controller
 
             $driverGrid[] = [
                 'label'        => $d['label'],
-                'db_name'      => $dbName,  // ⭐ เพิ่มบรรทัดนี้สำหรับ Inline Edit
+                'db_name'      => $dbName,
                 'plate'        => $latestPlates[$dbName] ?? '-',
                 'days'         => $dayVals,
                 'totDelivery'  => $totDelivery,
@@ -702,11 +1028,10 @@ class fuellogsController extends Controller
         ]);
     }
 
-    // ⭐ เพิ่ม method นี้สำหรับ Inline Edit
     public function updateCell(Request $request)
     {
-        // เดิม 'value' => 'required|numeric|min:0|max:9999999' บล็อกไม่ให้บันทึกค่าติดลบ
-        // แก้เป็น min:-9999999 เพื่ออนุญาตให้บันทึกค่าติดลบได้ (เช่น รายการหักเงิน/ปรับยอด)
+        $this->resolveOilEditor($request);
+
         $request->validate([
             'driver_name' => 'required|string|max:100',
             'work_date'   => 'required|date',
