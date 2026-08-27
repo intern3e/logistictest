@@ -7,29 +7,28 @@
     @page { size: A4; margin: 8mm; }
     body { font-family: 'Sarabun', 'Segoe UI', Tahoma, Arial, sans-serif; font-size: 20px; color: #1e293b; margin: 0; padding: 0; width: 100%; }
 
-    .print-header-wrap { border-bottom: 2px solid #1e293b; padding-bottom: 10px; margin-bottom: 14px; }
-    .print-header-table { width: 100%; border-collapse: collapse; }
-    .print-header-table td { border: none; padding: 0; vertical-align: top; }
-    .print-header-table h1 { font-size: 20px; margin: 0; }
-    .print-header-table .sub { font-size: 20px; color: #4b5563; margin-top: 4px; }
-    .print-header-table .meta-cell { text-align: right; font-size: 20px; color: #4b5563; white-space: nowrap; }
+.print-header-wrap { border-bottom: 2px solid #1e293b; padding-bottom: 6px; margin-bottom: 8px; }
+.print-header-table td { border: none; padding: 0; vertical-align: top; }
+.print-header-table h1 { font-size: 20px; margin: 0; }
+.print-header-table .sub { font-size: 20px; color: #4b5563; margin-top: 2px; }
+.print-header-table .meta-cell { text-align: right; font-size: 20px; color: #4b5563; white-space: nowrap; }
 
-    .cust-block { margin-bottom: 14px; border: 1px solid #dcdcdc; page-break-inside: avoid; width: 100%; }
-    .cust-block-header { background: #f3f4f6; padding: 10px; border-bottom: 1px solid #dcdcdc; }
-    .cust-header-table { width: 100%; border-collapse: collapse; }
-    .cust-header-table td { border: none; padding: 0; vertical-align: middle; }
-    .stop-no-cell { width: 44px; font-size: 30px; font-weight: 800; color: #1e293b; text-align: center; }
-    .cust-info-cell { vertical-align: top; }
-    .cust-info-cell .cust-title { font-weight: 700; font-size: 20px; }
-    .cust-info-cell .cust-address { display: block; margin-top: 4px; font-weight: 400; color: #374151; font-size: 20px; }
-    .cust-qr-cell { width: 60px; text-align: center; vertical-align: top; }
-    .cust-qr-cell img { display: block; }
-    .cust-qr-cell .qr-label { font-size: 20px; color: #6b7280; margin-top: 2px; }
+.cust-block { margin-bottom: 6px; border: 1px solid #dcdcdc; page-break-inside: avoid; width: 100%; }
+.cust-block-header { background: #f3f4f6; padding: 5px 10px; border-bottom: 1px solid #dcdcdc; }
+.cust-header-table { width: 100%; border-collapse: collapse; }
+.cust-header-table td { border: none; padding: 0; vertical-align: middle; }
+.stop-no-cell { width: 44px; font-size: 24px; font-weight: 800; color: #1e293b; text-align: center; }
+.cust-info-cell { vertical-align: top; }
+.cust-info-cell .cust-title { font-weight: 700; font-size: 20px; }
+.cust-info-cell .cust-address { display: block; margin-top: 2px; font-weight: 400; color: #374151; font-size: 20px; }
+.cust-qr-cell { width: 60px; text-align: center; vertical-align: top; }
+.cust-qr-cell img { display: block; }
+.cust-qr-cell .qr-label { font-size: 20px; color: #6b7280; margin-top: 1px; }
 
-    table.job-table { width: 100%; border-collapse: collapse; table-layout: fixed; }
-    th, td { border-bottom: 1px solid #eeeeea; padding: 6px 10px; text-align: left; font-size: 20px; word-wrap: break-word; page-break-inside: avoid; }
-    th { background: #fafbfd; font-weight: 700; }
-    tr { page-break-inside: avoid; }
+table.job-table { width: 100%; border-collapse: collapse; table-layout: fixed; }
+th, td { border-bottom: 1px solid #eeeeea; padding: 3px 10px; text-align: left; font-size: 20px; word-wrap: break-word; page-break-inside: avoid; }
+th { background: #fafbfd; font-weight: 700; }
+tr { page-break-inside: avoid; }
 </style>
 </head>
 <body>
@@ -236,7 +235,7 @@
         <h3 class="mb-0">จัดรถขนส่งสินค้า</h3>
         <div class="text-end">
             <div class="text-muted">ผู้ใช้งาน: {{ $loggedInName }}</div>
-            <a href="{{ route('logout') }}" class="small">ออกจากระบบ</a>
+            {{-- <a href="{{ route('logout') }}" class="small">ออกจากระบบ</a> --}}
         </div>
     </div>
 

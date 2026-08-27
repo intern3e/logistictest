@@ -90,6 +90,22 @@ table.calgrid{border-collapse:collapse;table-layout:fixed;width:100%;height:1px;
 .calgrid tr.grand-row td{background:#111827;color:#fff;font-weight:700;font-size:11px;padding:6px 4px;border-color:#111827}
 .calgrid tr.grand-row td.grand-val{color:#93c5fd;font-size:12px}
 
+/* ── Inline Edit ── */
+.calgrid td.num.editable{cursor:pointer;position:relative;transition:background .15s}
+.calgrid td.num.editable:hover{background:#e8f0fe!important;box-shadow:inset 0 0 0 1.5px #3e6ae1}
+.calgrid td.num.editable.editing{padding:0!important}
+.calgrid td.num .inline-input{width:100%;height:100%;border:2px solid #3e6ae1;border-radius:4px;
+  text-align:center;font-size:11px;font-family:inherit;padding:2px 4px;
+  font-variant-numeric:tabular-nums;background:#fffdf0;outline:none;box-sizing:border-box}
+.calgrid td.num .inline-input:focus{border-color:#1e40af;box-shadow:0 0 0 3px rgba(62,106,225,.2)}
+.calgrid td.num.saving{opacity:.5;pointer-events:none}
+.calgrid td.num.save-success{animation:flashGreen .6s}
+.calgrid td.num.save-error{animation:flashRed .6s}
+@keyframes flashGreen{0%{background:#86efac}100%{background:inherit}}
+@keyframes flashRed{0%{background:#fca5a5}100%{background:inherit}}
+.calgrid td.num.tot-col,.calgrid td.num.person-tot,.calgrid td.num.cyan-cell{cursor:default!important}
+.calgrid td.num.tot-col:hover,.calgrid td.num.person-tot:hover,.calgrid td.num.cyan-cell:hover{box-shadow:none!important;background:inherit!important}
+
 .week-picker-wrap{position:relative;display:flex;flex-direction:column;gap:6px}
 .week-picker-input{height:36px;padding:0 12px;border:1px solid #d1d5db;border-radius:6px;font-size:13px;color:#374151;background:#fff;cursor:pointer;display:flex;align-items:center;justify-content:space-between;gap:10px;min-width:190px;user-select:none}
 .week-picker-input:hover{border-color:#3e6ae1}
@@ -130,15 +146,18 @@ table.calgrid{border-collapse:collapse;table-layout:fixed;width:100%;height:1px;
   table.calgrid { width: 100%; height: auto; font-size: 9.5px; }
   .calgrid thead { position: static; }
   .calgrid tr, .calgrid td, .calgrid th { break-inside: avoid; }
+  .calgrid td.num.editable{cursor:default}
+  .calgrid td.num.editable:hover{background:transparent!important;box-shadow:none}
 }
 </style>
 </head>
 <body>
 
 @php
-  $currentUser = request()->filled('create_by') ? request('create_by') : 'Guest';
-  $userQuery = $currentUser !== 'Guest' ? '?create_by='.urlencode($currentUser) : '';
-  $qs = fn($extra) => http_build_query(array_merge($currentUser !== 'Guest' ? ['create_by'=>$currentUser] : [], $extra));
+  $currentUser  = $creator ?? 'Guest';
+  $isPrivileged = $isPrivileged ?? false;
+  $userQuery = '';
+  $qs = fn($extra) => http_build_query($extra);
 
   $thWeekday = ['อา','จ','อ','พ','พฤ','ศ','ส'];
   $thMonths = ['', 'มกราคม','กุมภาพันธ์','มีนาคม','เมษายน','พฤษภาคม','มิถุนายน','กรกฎาคม','สิงหาคม','กันยายน','ตุลาคม','พฤศจิกายน','ธันวาคม'];
@@ -159,7 +178,12 @@ table.calgrid{border-collapse:collapse;table-layout:fixed;width:100%;height:1px;
       <span class="tesla-title">ตารางค่าวิ่ง / OT / ค่ายก</span>
     </div>
     <div class="tesla-right">
-      <div class="tesla-user-badge">👤 ผู้ใช้: {{ $currentUser }}</div>
+      <div class="tesla-user-badge">
+        👤 ผู้ใช้: {{ $currentUser }}
+        @unless($isPrivileged)
+          <span style="color:#f59e0b;font-weight:600;margin-left:6px">(ดูอย่างเดียว)</span>
+        @endunless
+      </div>
       <button type="button" id="printReportBtn" class="tesla-btn tesla-btn-print">
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>
         ปริ้น / บันทึก PDF
@@ -181,7 +205,7 @@ table.calgrid{border-collapse:collapse;table-layout:fixed;width:100%;height:1px;
   @if($mode === 'month')
     <form class="filters-bar" style="padding:0;gap:14px" method="GET" action="{{ url('/oil/Deliveryfee') }}">
       <input type="hidden" name="mode" value="month">
-      @if($currentUser !== 'Guest')<input type="hidden" name="create_by" value="{{ $currentUser }}">@endif
+
       <div class="filter-group">
         <label>เดือน</label>
         <select name="month">
@@ -203,7 +227,6 @@ table.calgrid{border-collapse:collapse;table-layout:fixed;width:100%;height:1px;
   @else
     <form class="filters-bar" style="padding:0;gap:14px" method="GET" action="{{ url('/oil/Deliveryfee') }}" id="weekForm">
       <input type="hidden" name="mode" value="week">
-      @if($currentUser !== 'Guest')<input type="hidden" name="create_by" value="{{ $currentUser }}">@endif
       <div class="filter-group">
         <label>เลือกวันในสัปดาห์</label>
         <div class="week-picker-wrap" id="weekPickerWrap">
@@ -283,9 +306,10 @@ table.calgrid{border-collapse:collapse;table-layout:fixed;width:100%;height:1px;
                     $emptyDays[$day] = ['delivery' => 0, 'ot' => 0, 'handling' => 0];
                 }
                 $driverGrid[] = [
-                    'label' => $driverName,
-                    'plate' => '',
-                    'days' => $emptyDays,
+                    'label'   => $driverName,
+                    'db_name' => $driverName,  // ⭐ จำเป็นสำหรับ Inline Edit (ตัวระบุคนขับตอนยิง update-cell)
+                    'plate'   => '',
+                    'days'    => $emptyDays,
                     'totDelivery' => 0,
                     'totOt' => 0,
                     'totHandling' => 0,
@@ -406,7 +430,11 @@ table.calgrid{border-collapse:collapse;table-layout:fixed;width:100%;height:1px;
             <td class="item-cell">ค่าวิ่ง</td>
             @foreach($days as $day)
               @php $v = $dg['days'][$day]['delivery'] ?? 0; @endphp
-              <td class="num {{ $v<=0?'empty':'' }}">{{ $v > 0 ? number_format($v) : '' }}</td>
+              <td class="num {{ $isPrivileged ? 'editable' : '' }} {{ $v<=0?'empty':'' }}"
+                  data-driver="{{ $dg['db_name'] ?? $dg['label'] }}"
+                  data-date="{{ $day }}"
+                  data-field="delivery"
+                  data-value="{{ $v }}">{{ $v != 0 ? number_format($v) : '-' }}</td>
             @endforeach
             <td class="num tot-col">{{ number_format($dg['totDelivery']) }}</td>
             <td class="person-tot {{ $mode==='week' ? 'cyan-cell' : '' }}" rowspan="3">฿{{ number_format($dg['totAll']) }}</td>
@@ -415,7 +443,11 @@ table.calgrid{border-collapse:collapse;table-layout:fixed;width:100%;height:1px;
             <td class="item-cell">ค่า OT</td>
             @foreach($days as $day)
               @php $v = $dg['days'][$day]['ot'] ?? 0; @endphp
-              <td class="num {{ $v<=0?'empty':'' }}">{{ $v > 0 ? number_format($v) : '' }}</td>
+              <td class="num {{ $isPrivileged ? 'editable' : '' }} {{ $v<=0?'empty':'' }}"
+                  data-driver="{{ $dg['db_name'] ?? $dg['label'] }}"
+                  data-date="{{ $day }}"
+                  data-field="ot"
+                  data-value="{{ $v }}">{{ $v != 0 ? number_format($v) : '-' }}</td>
             @endforeach
             <td class="num tot-col">{{ number_format($dg['totOt']) }}</td>
           </tr>
@@ -423,7 +455,11 @@ table.calgrid{border-collapse:collapse;table-layout:fixed;width:100%;height:1px;
             <td class="item-cell">ค่ายก</td>
             @foreach($days as $day)
               @php $v = $dg['days'][$day]['handling'] ?? 0; @endphp
-              <td class="num {{ $v<=0?'empty':'' }}">{{ $v > 0 ? number_format($v) : '' }}</td>
+              <td class="num {{ $isPrivileged ? 'editable' : '' }} {{ $v<=0?'empty':'' }}"
+                  data-driver="{{ $dg['db_name'] ?? $dg['label'] }}"
+                  data-date="{{ $day }}"
+                  data-field="handling"
+                  data-value="{{ $v }}">{{ $v != 0 ? number_format($v) : '-' }}</td>
             @endforeach
             <td class="num tot-col">{{ number_format($dg['totHandling']) }}</td>
           </tr>
@@ -639,6 +675,115 @@ table.calgrid{border-collapse:collapse;table-layout:fixed;width:100%;height:1px;
 })();
 </script>
 @endif
+
+<!-- ⭐ Inline Edit JavaScript — ทำงานได้เฉพาะเซลล์ที่มี class "editable"
+     (server จะใส่ให้เฉพาะ $isPrivileged เป็น true คือ role admin/store/accounting เท่านั้น
+     ถ้า user role อื่นมาแก้ URL/DOM เอง backend ฝั่ง updateCell() ก็ยังบล็อกด้วย resolveOilEditor() อยู่ดี) -->
+<script>
+(function () {
+  function parseNum(s) {
+    if (!s && s !== 0) return 0;
+    // เก็บเครื่องหมายลบ (-) ไว้ เพื่อรองรับค่าติดลบ (เช่น รายการหักเงิน/ปรับยอด)
+    return parseFloat(String(s).replace(/,/g, '').replace(/\s/g, '')) || 0;
+  }
+  function fmtNum(n) {
+    return n !== 0 ? n.toLocaleString('en-US') : '-';
+  }
+
+  document.addEventListener('click', function (e) {
+    var td = e.target.closest('td.num.editable');
+    if (!td || td.querySelector('.inline-input')) return;
+    if (document.querySelector('td.num.editable .inline-input')) return;
+
+    var oldVal = parseNum(td.getAttribute('data-value'));
+    var driverName = td.getAttribute('data-driver');
+    var date = td.getAttribute('data-date');
+    var field = td.getAttribute('data-field');
+
+    td.classList.add('editing');
+    td.classList.remove('empty');
+
+    var input = document.createElement('input');
+    // type="text" + inputmode="numeric" แทน type="number" เพราะบางเบราว์เซอร์
+    // จะพิมพ์ "-" (ค่าติดลบ) ไม่ได้ถ้า input เป็น type=number
+    input.type = 'text';
+    input.className = 'inline-input';
+    input.value = oldVal || '';
+    input.inputMode = 'numeric';
+    input.pattern = '-?[0-9]*\\.?[0-9]*';
+    input.autocomplete = 'off';
+
+    td.textContent = '';
+    td.appendChild(input);
+    input.focus();
+    input.select();
+
+    var finished = false;
+    function finish(save) {
+      if (finished) return;
+      finished = true;
+
+      var newVal = parseNum(input.value);
+      td.classList.remove('editing');
+      if (input.parentElement === td) td.removeChild(input);
+
+      if (save && newVal !== oldVal) {
+        td.classList.add('saving');
+        var csrfMeta = document.querySelector('meta[name="csrf-token"]');
+        var csrfToken = csrfMeta ? csrfMeta.content : '';
+
+        var formData = new FormData();
+        formData.append('_token', csrfToken);
+        formData.append('driver_name', driverName);
+        formData.append('work_date', date);
+        formData.append('field', field);
+        formData.append('value', newVal);
+
+        fetch('/oil/Deliveryfee/update-cell', {
+          method: 'POST',
+          body: formData
+        })
+        .then(function (r) {
+          if (r.status === 403) throw new Error('ไม่มีสิทธิ์แก้ไข (เฉพาะ admin/store/accounting)');
+          return r.json();
+        })
+        .then(function (data) {
+          td.classList.remove('saving');
+          if (data.success) {
+            td.setAttribute('data-value', newVal);
+            td.textContent = fmtNum(newVal);
+            if (newVal === 0) td.classList.add('empty');
+            td.classList.add('save-success');
+            setTimeout(function () { td.classList.remove('save-success'); }, 700);
+          } else {
+            throw new Error('Save failed');
+          }
+        })
+        .catch(function (err) {
+          td.classList.remove('saving');
+          td.textContent = fmtNum(oldVal);
+          if (oldVal === 0) td.classList.add('empty');
+          td.classList.add('save-error');
+          setTimeout(function () { td.classList.remove('save-error'); }, 700);
+          console.error('Inline edit error:', err);
+          if (err && err.message) alert(err.message);
+        });
+      } else {
+        td.textContent = fmtNum(oldVal);
+        if (oldVal === 0) td.classList.add('empty');
+      }
+    }
+
+    input.addEventListener('keydown', function (ev) {
+      if (ev.key === 'Enter') { ev.preventDefault(); finish(true); }
+      if (ev.key === 'Escape') { ev.preventDefault(); finish(false); }
+    });
+    input.addEventListener('blur', function () {
+      setTimeout(function () { finish(true); }, 150);
+    });
+  });
+})();
+</script>
 
 </body>
 </html>

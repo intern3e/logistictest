@@ -374,8 +374,13 @@ class fuellogsController extends Controller
 
     public function report(Request $request)
     {
-        $this->resolveOilUser($request);
-        return view('driver.report', $this->buildViewData($request));
+        $authUser = $this->resolveOilUser($request);
+
+        $data = $this->buildViewData($request);
+        $data['creator']      = $this->oilUserName($authUser);
+        $data['isPrivileged'] = $this->isOilEditor($authUser);
+
+        return view('driver.report', $data);
     }
 
     public function admin(Request $request)
@@ -386,112 +391,111 @@ class fuellogsController extends Controller
 
     /* ==================== บันทึกน้ำมัน ==================== */
 
-    public function store(Request $request)
-    {
-        $authUser = $this->resolveOilEditor($request);
+public function store(Request $request)
+{
+    $authUser = $this->resolveOilEditor($request); // บังคับ role admin/store/accounting
 
-        $request->validate([
-            'work_date'       => 'required|date',
-            'driver_name'     => 'required|string|max:100',
-            'vehicle_id'      => 'required|string|max:50',
-            'total_price'     => 'required|numeric|min:0',
-            'total_distance'  => 'nullable|numeric|min:0',
-            'liters'          => 'nullable|numeric|min:0',
-            'price_per_liter' => 'nullable|numeric|min:0',
-            'ot_cost'         => 'nullable|numeric|min:0',
-            'handling_cost'   => 'nullable|numeric|min:0',
-            'delivery_cost'   => 'nullable|numeric|min:0',
-        ]);
+    $request->validate([
+        'work_date'       => 'required|date',
+        'driver_name'     => 'required|string|max:100',
+        'vehicle_id'      => 'required|string|max:50',
+        'total_price'     => 'required|numeric|min:0',
+        'total_distance'  => 'nullable|numeric|min:0',
+        'liters'          => 'nullable|numeric|min:0',
+        'price_per_liter' => 'nullable|numeric|min:0',
+        'ot_cost'         => 'nullable|numeric|min:0',
+        'handling_cost'   => 'nullable|numeric|min:0',
+        'delivery_cost'   => 'nullable|numeric|min:0',
+    ]);
 
-        [$startDt, $endDt] = $this->parseTimes(
-            $request->work_date, $request->start_time, $request->end_time
-        );
-        [$liters, $ppl] = $this->calcLitersPpl(
-            $request->total_price, $request->price_per_liter, $request->liters
-        );
+    [$startDt, $endDt] = $this->parseTimes(
+        $request->work_date, $request->start_time, $request->end_time
+    );
+    [$liters, $ppl] = $this->calcLitersPpl(
+        $request->total_price, $request->price_per_liter, $request->liters
+    );
 
-        if (trim($request->vehicle_id) === '-') {
-            $exists = DB::table('fuel_logs')
-                ->where('driver_name', trim($request->driver_name))
-                ->where('work_date', $request->work_date)
-                ->where('vehicle_id', '-')
-                ->exists();
-            if ($exists) {
-                return redirect()->route('oil')->with('success', 'มีข้อมูลอยู่แล้ว');
-            }
+    if (trim($request->vehicle_id) === '-') {
+        $exists = DB::table('fuel_logs')
+            ->where('driver_name', trim($request->driver_name))
+            ->where('work_date', $request->work_date)
+            ->where('vehicle_id', '-')
+            ->exists();
+        if ($exists) {
+            return redirect()->route('oil')->with('success', 'มีข้อมูลอยู่แล้ว');
         }
-
-        DB::table('fuel_logs')->insert([
-            'driver_name'     => trim($request->driver_name),
-            'vehicle_id'      => trim($request->vehicle_id),
-            'work_date'       => $request->work_date,
-            'start_time'      => $startDt,
-            'end_time'        => $endDt,
-            'total_distance'  => (float) ($request->total_distance ?? 0),
-            'liters'          => $liters ?? 0,
-            'total_price'     => (float) $request->total_price,
-            'price_per_liter' => $ppl ?? 0,
-            'ot_cost'         => (float) ($request->ot_cost ?? 0),
-            'handling_cost'   => (float) ($request->handling_cost ?? 0),
-            'delivery_cost'   => (float) ($request->delivery_cost ?? 0),
-            'ok'              => (int) ($request->ok ?? 0),
-            'ng'              => (int) ($request->ng ?? 0),
-            'note'            => $request->note ? trim($request->note) : null,
-            // create_by มาจากผู้ใช้ที่ login จริงเสมอ (ไม่รับจาก request/query string อีกต่อไป)
-            'create_by'       => $this->oilUserName($authUser),
-            'created_at'      => now(),
-        ]);
-
-        return redirect()->route('oil')->with('success', 'บันทึกข้อมูลน้ำมันสำเร็จ ✅');
     }
 
-    public function update(Request $request, $id)
-    {
-        $this->resolveOilEditor($request);
+    DB::table('fuel_logs')->insert([
+        'driver_name'     => trim($request->driver_name),
+        'vehicle_id'      => trim($request->vehicle_id),
+        'work_date'       => $request->work_date,
+        'start_time'      => $startDt,
+        'end_time'        => $endDt,
+        'total_distance'  => (float) ($request->total_distance ?? 0),
+        'liters'          => $liters ?? 0,
+        'total_price'     => (float) $request->total_price,
+        'price_per_liter' => $ppl ?? 0,
+        'ot_cost'         => (float) ($request->ot_cost ?? 0),
+        'handling_cost'   => (float) ($request->handling_cost ?? 0),
+        'delivery_cost'   => (float) ($request->delivery_cost ?? 0),
+        'ok'              => (int) ($request->ok ?? 0),
+        'ng'              => (int) ($request->ng ?? 0),
+        'note'            => $request->note ? trim($request->note) : null,
+        // ⭐ ชื่อผู้บันทึกข้อมูล มาจาก user ที่ login จริงเสมอ ไม่รับจาก client
+        'emp_name'        => $this->oilUserName($authUser),
+        'created_at'      => now(),
+    ]);
 
-        $request->validate([
-            'work_date'       => 'required|date',
-            'driver_name'     => 'required|string|max:100',
-            'vehicle_id'      => 'required|string|max:50',
-            'total_price'     => 'required|numeric|min:0',
-            'total_distance'  => 'nullable|numeric|min:0',
-            'liters'          => 'nullable|numeric|min:0',
-            'price_per_liter' => 'nullable|numeric|min:0',
-            'ot_cost'         => 'nullable|numeric|min:0',
-            'handling_cost'   => 'nullable|numeric|min:0',
-            'delivery_cost'   => 'nullable|numeric|min:0',
-        ]);
+    return redirect()->route('oil')->with('success', 'บันทึกข้อมูลน้ำมันสำเร็จ ✅');
+}
+public function update(Request $request, $id)
+{
+    $authUser = $this->resolveOilEditor($request); // ⭐ ต้อง capture ผู้ใช้ไว้
 
-        abort_unless(DB::table('fuel_logs')->where('id', $id)->exists(), 404);
+    $request->validate([
+        'work_date'       => 'required|date',
+        'driver_name'     => 'required|string|max:100',
+        'vehicle_id'      => 'required|string|max:50',
+        'total_price'     => 'required|numeric|min:0',
+        'total_distance'  => 'nullable|numeric|min:0',
+        'liters'          => 'nullable|numeric|min:0',
+        'price_per_liter' => 'nullable|numeric|min:0',
+        'ot_cost'         => 'nullable|numeric|min:0',
+        'handling_cost'   => 'nullable|numeric|min:0',
+        'delivery_cost'   => 'nullable|numeric|min:0',
+    ]);
 
-        [$startDt, $endDt] = $this->parseTimes(
-            $request->work_date, $request->start_time, $request->end_time
-        );
-        [$liters, $ppl] = $this->calcLitersPpl(
-            $request->total_price, $request->price_per_liter, $request->liters
-        );
+    abort_unless(DB::table('fuel_logs')->where('id', $id)->exists(), 404);
 
-        DB::table('fuel_logs')->where('id', $id)->update([
-            'driver_name'     => trim($request->driver_name),
-            'vehicle_id'      => trim($request->vehicle_id),
-            'work_date'       => $request->work_date,
-            'start_time'      => $startDt,
-            'end_time'        => $endDt,
-            'total_distance'  => (float) ($request->total_distance ?? 0),
-            'liters'          => $liters ?? 0,
-            'total_price'     => (float) $request->total_price,
-            'price_per_liter' => $ppl ?? 0,
-            'ot_cost'         => (float) ($request->ot_cost ?? 0),
-            'handling_cost'   => (float) ($request->handling_cost ?? 0),
-            'delivery_cost'   => (float) ($request->delivery_cost ?? 0),
-            'ok'              => (int) ($request->ok ?? 0),
-            'ng'              => (int) ($request->ng ?? 0),
-            'note'            => $request->note ? trim($request->note) : null,
-        ]);
+    [$startDt, $endDt] = $this->parseTimes(
+        $request->work_date, $request->start_time, $request->end_time
+    );
+    [$liters, $ppl] = $this->calcLitersPpl(
+        $request->total_price, $request->price_per_liter, $request->liters
+    );
 
-        return redirect()->route('oil')->with('success', 'อัปเดตข้อมูลสำเร็จ ✅');
-    }
+    DB::table('fuel_logs')->where('id', $id)->update([
+        'driver_name'     => trim($request->driver_name),
+        'vehicle_id'      => trim($request->vehicle_id),
+        'work_date'       => $request->work_date,
+        'start_time'      => $startDt,
+        'end_time'        => $endDt,
+        'total_distance'  => (float) ($request->total_distance ?? 0),
+        'liters'          => $liters ?? 0,
+        'total_price'     => (float) $request->total_price,
+        'price_per_liter' => $ppl ?? 0,
+        'ot_cost'         => (float) ($request->ot_cost ?? 0),
+        'handling_cost'   => (float) ($request->handling_cost ?? 0),
+        'delivery_cost'   => (float) ($request->delivery_cost ?? 0),
+        'ok'              => (int) ($request->ok ?? 0),
+        'ng'              => (int) ($request->ng ?? 0),
+        'note'            => $request->note ? trim($request->note) : null,
+        'emp_name'        => $this->oilUserName($authUser), // ⭐ จดชื่อผู้แก้ไขล่าสุด
+    ]);
 
+    return redirect()->route('oil')->with('success', 'อัปเดตข้อมูลสำเร็จ ✅');
+}
     public function destroy(Request $request, $id)
     {
         $this->resolveOilEditor($request);
@@ -869,7 +873,8 @@ class fuellogsController extends Controller
 
     public function Deliveryfee(Request $request)
     {
-        $this->resolveOilUser($request);
+        $authUser = $this->resolveOilUser($request);
+        
 
         $mode = $request->input('mode', 'month');
         $mode = in_array($mode, ['month', 'week']) ? $mode : 'month';
@@ -1011,7 +1016,6 @@ class fuellogsController extends Controller
         $grandOt       = array_sum(array_column($dayTotals, 'ot'));
         $grandHandling = array_sum(array_column($dayTotals, 'handling'));
         $grandTotal    = $grandDelivery + $grandOt + $grandHandling;
-
         return view('driver.deliveryfee', [
             'mode'          => $mode,
             'days'          => $days,
@@ -1025,91 +1029,102 @@ class fuellogsController extends Controller
             'selYear'       => $selYear,
             'weekStart'     => $weekStart->format('Y-m-d'),
             'weekEnd'       => $weekEnd->format('Y-m-d'),
+            'creator'       => $this->oilUserName($authUser),
+            'isPrivileged'  => $this->isOilEditor($authUser), // ⭐ เพิ่มบรรทัดนี้
         ]);
     }
 
-    public function updateCell(Request $request)
-    {
-        $this->resolveOilEditor($request);
+public function updateCell(Request $request)
+{
+    $authUser = $this->resolveOilEditor($request); // ⭐ บังคับ role + capture ผู้ใช้
 
-        $request->validate([
-            'driver_name' => 'required|string|max:100',
-            'work_date'   => 'required|date',
-            'field'       => 'required|in:delivery,ot,handling',
-            'value'       => 'required|numeric|min:-9999999|max:9999999',
+    $request->validate([
+        'driver_name' => 'required|string|max:100',
+        'work_date'   => 'required|date',
+        'field'       => 'required|in:delivery,ot,handling',
+        'value'       => 'required|numeric|min:-9999999|max:9999999',
+    ]);
+
+    $driverName = $request->driver_name;
+    $workDate   = $request->work_date;
+    $field      = $request->field;
+    $value      = (float) $request->value;
+    $empName    = $this->oilUserName($authUser); // ⭐
+
+    $fieldMap = [
+        'delivery' => 'delivery_cost',
+        'ot'       => 'ot_cost',
+        'handling' => 'handling_cost',
+    ];
+    $dbField = $fieldMap[$field];
+
+    $logs = DB::table('fuel_logs')
+        ->where('driver_name', $driverName)
+        ->whereDate('work_date', $workDate)
+        ->orderByDesc('id')
+        ->get();
+
+    if ($logs->isNotEmpty()) {
+        $lastId = $logs->first()->id;
+        DB::table('fuel_logs')->where('id', $lastId)->update([
+            $dbField   => $value,
+            'emp_name' => $empName, // ⭐
         ]);
 
-        $driverName = $request->driver_name;
-        $workDate   = $request->work_date;
-        $field      = $request->field;
-        $value      = (float) $request->value;
-
-        $fieldMap = [
-            'delivery' => 'delivery_cost',
-            'ot'       => 'ot_cost',
-            'handling' => 'handling_cost',
-        ];
-        $dbField = $fieldMap[$field];
-
-        $logs = DB::table('fuel_logs')
-            ->where('driver_name', $driverName)
-            ->whereDate('work_date', $workDate)
-            ->orderByDesc('id')
-            ->get();
-
-        if ($logs->isNotEmpty()) {
-            $lastId = $logs->first()->id;
-            DB::table('fuel_logs')->where('id', $lastId)->update([$dbField => $value]);
-
-            $otherIds = $logs->where('id', '!=', $lastId)->pluck('id');
-            if ($otherIds->isNotEmpty()) {
-                DB::table('fuel_logs')->whereIn('id', $otherIds)->update([$dbField => 0]);
-            }
-        } else {
-            $lastVehicle = DB::table('fuel_logs')
-                ->where('driver_name', $driverName)
-                ->orderByDesc('work_date')
-                ->orderByDesc('id')
-                ->value('vehicle_id') ?? '-';
-
-            DB::table('fuel_logs')->insert([
-                'driver_name'    => $driverName,
-                'vehicle_id'     => $lastVehicle,
-                'work_date'      => $workDate,
-                'total_price'    => 0,
-                'total_distance' => 0,
-                'liters'         => 0,
-                'price_per_liter'=> 0,
-                'delivery_cost'  => $field === 'delivery' ? $value : 0,
-                'ot_cost'        => $field === 'ot' ? $value : 0,
-                'handling_cost'  => $field === 'handling' ? $value : 0,
-                'ok'             => 0,
-                'ng'             => 0,
-                'created_at'     => now(),
-            ]);
+        $otherIds = $logs->where('id', '!=', $lastId)->pluck('id');
+        if ($otherIds->isNotEmpty()) {
+            DB::table('fuel_logs')->whereIn('id', $otherIds)->update([$dbField => 0]);
         }
-
-        $sums = DB::table('fuel_logs')
+    } else {
+        $lastVehicle = DB::table('fuel_logs')
             ->where('driver_name', $driverName)
-            ->whereDate('work_date', $workDate)
-            ->selectRaw('
-                COALESCE(SUM(delivery_cost),0) as delivery,
-                COALESCE(SUM(ot_cost),0) as ot,
-                COALESCE(SUM(handling_cost),0) as handling
-            ')
-            ->first();
+            ->orderByDesc('work_date')
+            ->orderByDesc('id')
+            ->value('vehicle_id') ?? '-';
 
-        return response()->json([
-            'success'  => true,
-            'delivery' => (float) $sums->delivery,
-            'ot'       => (float) $sums->ot,
-            'handling' => (float) $sums->handling,
-            'total'    => (float) ($sums->delivery + $sums->ot + $sums->handling),
+        DB::table('fuel_logs')->insert([
+            'driver_name'     => $driverName,
+            'vehicle_id'      => $lastVehicle,
+            'work_date'       => $workDate,
+            'total_price'     => 0,
+            'total_distance'  => 0,
+            'liters'          => 0,
+            'price_per_liter' => 0,
+            'delivery_cost'   => $field === 'delivery' ? $value : 0,
+            'ot_cost'         => $field === 'ot' ? $value : 0,
+            'handling_cost'   => $field === 'handling' ? $value : 0,
+            'ok'              => 0,
+            'ng'              => 0,
+            'emp_name'        => $empName, // ⭐
+            'created_at'      => now(),
         ]);
     }
 
+    $sums = DB::table('fuel_logs')
+        ->where('driver_name', $driverName)
+        ->whereDate('work_date', $workDate)
+        ->selectRaw('
+            COALESCE(SUM(delivery_cost),0) as delivery,
+            COALESCE(SUM(ot_cost),0) as ot,
+            COALESCE(SUM(handling_cost),0) as handling
+        ')
+        ->first();
+
+    return response()->json([
+        'success'  => true,
+        'delivery' => (float) $sums->delivery,
+        'ot'       => (float) $sums->ot,
+        'handling' => (float) $sums->handling,
+        'total'    => (float) ($sums->delivery + $sums->ot + $sums->handling),
+    ]);
+}
     public function service(Request $request)
     {
-        return view('driver.service');
+        $authUser = $this->resolveOilUser($request);
+
+        return view('driver.service', [
+            'creator'      => $this->oilUserName($authUser),
+            'isPrivileged' => $this->isOilEditor($authUser),
+        ]);
     }
 }

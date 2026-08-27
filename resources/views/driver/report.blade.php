@@ -222,8 +222,8 @@ html{overflow-y:auto;}
 <body>
 
 @php
-  $currentUser = request()->filled('create_by') ? request('create_by') : 'Guest';
-  $userQuery = $currentUser !== 'Guest' ? '?create_by='.urlencode($currentUser) : '';
+  $currentUser = $creator ?? 'Guest';
+  $userQuery = '';
   $allowedDrivers = ['บังเดช','กอลฟ์','เก่ง','หรั่ง','เอ้','แซม','เอ','แฟงค์','yuth','แมน','กบ','joey'];
 
   $logsCollection = collect($logs ?? []);
@@ -721,7 +721,6 @@ function submitFilterForm(params){
   const add=(n,v)=>{ if(v==null||v==='')return; const i=document.createElement('input'); i.type='hidden'; i.name=n; i.value=v; form.appendChild(i); };
   add('_token',CSRF_TOKEN);
   add('redirect_to','report');
-  if(CURRENT_USER && CURRENT_USER !== 'Guest') add('create_by', CURRENT_USER);
   Object.keys(params).forEach(k=>add(k,params[k]));
   document.body.appendChild(form); form.submit();
 }

@@ -24,6 +24,7 @@ class fuel_Logs extends Model
         'ok',
         'ng',
         'note',
+        'emp_name'
     ];
     protected $casts = [
         'work_date'       => 'date:Y-m-d',

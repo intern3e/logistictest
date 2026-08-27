@@ -1033,8 +1033,9 @@ select.form-control {
 <body>
 
 @php
-  $currentUser = request()->filled('create_by') ? request('create_by') : 'Guest';
-  $userQuery = $currentUser !== 'Guest' ? '?create_by='.urlencode($currentUser) : '';
+  $currentUser = $creator ?? 'Guest';
+  $userQuery = '';
+  $isPrivileged = $isPrivileged ?? false;
   
   if(!isset($records) || $records->isEmpty()){
     $records = collect([
@@ -1163,12 +1164,14 @@ select.form-control {
       </svg>
       รีเฟรช
     </button>
+    @if($isPrivileged)
     <button class="btn btn-primary" onclick="openSvcModal()">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
         <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
       </svg>
       เพิ่มข้อมูลเซอร์วิส
     </button>
+    @endif
   </div>
 
   <div class="metrics">
@@ -1344,6 +1347,7 @@ select.form-control {
 
 <script>
 const CSRF = document.querySelector('meta[name="csrf-token"]').content;
+const IS_PRIVILEGED = @json($isPrivileged);
 const LIST_URL    = "{{ url('/service/list') }}";
 const STORE_URL   = "{{ url('/service') }}";
 const UPDATE_BASE = "{{ url('/service') }}";
@@ -1459,8 +1463,12 @@ async function loadRecords(){
   params.append('view', currentView);
   if(fsDate && currentView !== 'all') params.append('date', fsDate);
 
-  try {
-    const res  = await fetch(`${LIST_URL}?${params}`);
+try {
+    const res = await fetch(`${LIST_URL}?${params}`);
+    if (res.status === 401) {
+        window.location.href = "{{ route('login') }}";
+        return;
+    }
     const data = await res.json();
 
     let filtered = data.records || allRecords;
@@ -1561,7 +1569,7 @@ function renderTable(records){
       <td>${detailHtml}</td>
       <td class="cell-cost">${costDisplay}</td>
       <td>${thumbHtml}</td>
-      <td><div class="actions">
+      <td>${IS_PRIVILEGED ? `<div class="actions">
         <button class="act-btn edit" onclick="openSvcModalById(${r.id})" title="แก้ไข">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
             <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
@@ -1575,7 +1583,7 @@ function renderTable(records){
             <path d="M10 11v6"/><path d="M14 11v6"/>
           </svg>
         </button>
-      </div></td>
+      </div>` : ''}</td>
     </tr>`;
   }).join('');
 }
@@ -1690,8 +1698,8 @@ async function saveSvc(){
   }
 
   try {
-    const res = await fetch(url, { method, headers:{'X-CSRF-TOKEN': CSRF, 'Accept':'application/json'}, body: fd });
-    const responseText = await res.text();
+    if (res.status === 401) { window.location.href = "{{ route('login') }}"; return; }
+    if (res.status === 403) { alert('คุณไม่มีสิทธิ์บันทึกข้อมูล'); return; }
     let data;
     try { data = JSON.parse(responseText); }
     catch(parseErr){
@@ -1721,11 +1729,13 @@ async function saveSvc(){
 async function deleteSvc(id){
   if(!confirm('ยืนยันการลบรายการนี้?')) return;
   try {
-    const res = await fetch(`${UPDATE_BASE}/${id}`, {
+  const res = await fetch(`${UPDATE_BASE}/${id}`, {
       method: 'DELETE',
       headers: { 'X-CSRF-TOKEN': CSRF, 'Content-Type':'application/json' }
-    });
-    const data = await res.json();
+  });
+  if (res.status === 401) { window.location.href = "{{ route('login') }}"; return; }
+  if (res.status === 403) { alert('คุณไม่มีสิทธิ์ลบข้อมูล'); return; }
+  const data = await res.json();
     if(data.success){ showToast('ลบสำเร็จ'); loadRecords(); }
   } catch(e){ alert('ลบไม่สำเร็จ'); }
 }

@@ -34,7 +34,19 @@ html{overflow-y:auto;}
   --font-thai:'IBM Plex Sans Thai','Inter',-apple-system,sans-serif;
   --font-mono:ui-monospace,'SF Mono',Menlo,monospace;
 }
-
+.dgj-bulkbar{display:flex;align-items:center;gap:10px;flex-wrap:wrap;background:#f9fafb;border:1px solid #e5e7eb;border-radius:8px;padding:10px 12px;margin-bottom:12px;}
+.dgj-bulkbar-selectall{display:flex;align-items:center;gap:6px;font-size:12px;font-weight:600;color:#374151;cursor:pointer;white-space:nowrap;}
+.dgj-bulkbar-selectall input{accent-color:#3e6ae1;}
+.dgj-bulkbar-count{font-size:11px;color:#6b7280;white-space:nowrap;}
+.dgj-bulkbar-actions{display:flex;gap:6px;margin-left:auto;flex-wrap:wrap;}
+.dgj-bulk-btn{border:1px solid #d1d5db;background:#fff;border-radius:6px;padding:6px 12px;font-size:12px;font-weight:600;cursor:pointer;color:#4b5563;}
+.dgj-bulk-btn:disabled{opacity:.5;cursor:not-allowed;}
+.dgj-bulk-btn.ok{border-color:#10b981;color:#059669;}
+.dgj-bulk-btn.ok:hover:not(:disabled){background:#d1fae5;}
+.dgj-bulk-btn.redo{border-color:#8b5cf6;color:#7c3aed;}
+.dgj-bulk-btn.redo:hover:not(:disabled){background:#ede9fe;}
+.dgj-select-wrap{display:flex;align-items:center;margin-right:2px;}
+.dgj-select-wrap input{accent-color:#3e6ae1;width:15px;height:15px;cursor:pointer;}
 .tesla-topnav {
   background-color: #ffffff;
   border-bottom: 1px solid #eaeaea;
@@ -1194,7 +1206,7 @@ html{overflow-y:auto;}
   // ผู้ใช้ปัจจุบันมาจากระบบ login จริง (Auth) — ส่งมาจาก fuellogsController@oil แล้ว
   // (ผ่านการตรวจ role admin/store/accounting มาแล้วเสมอ ถ้าเข้าถึงหน้านี้ได้)
   $currentUser  = $currentUser ?? 'ผู้ใช้งาน';
-  $isPrivileged = $isPrivileged ?? true;
+  $isPrivileged = $isPrivileged ??false;
   $userQuery    = ''; // ไม่ต้องพก create_by ผ่าน query string อีกต่อไป (คงตัวแปรไว้เผื่อโค้ดอื่นอ้างอิง)
   $allowedDrivers = ['กอลฟ์','เก่ง','เอ้','แฟงค์','เอ','บังเดช','yuth','แซม','บอย','หรั่ง','บอยBTS','กบ','joey','แมน'];
   $driverOrderList = ['กอลฟ์','เก่ง','เอ้','เอ','บังเดช','แฟงค์','yuth','แซม','บอย','บอยBTS','กบ','joey','แมน'];
@@ -1821,28 +1833,28 @@ async function _fetchJobsRaw(url){
   const json=await res.json();
   return {data:Array.isArray(json?.data)?json.data:[], source:json?.source||'api'};
 }
-
 async function fetchJobsByDate(dateStr){
   if(jobFetched[dateStr])return;
   jobFetched[dateStr]=true;
 
-  let rawData=[],source='api';
+  let rawData=[],source='db';
+  // ⭐ ลองดึงจาก DB (transaction_transport) ก่อนเสมอ เพราะเป็นข้อมูลของเราเองที่เชื่อถือได้/เร็วกว่า
   try{
-    const r=await _fetchJobsRaw(`${JOB_API_BASE}?date=${dateStr}`);
-    rawData=r.data;source=r.source;
+    const r=await _fetchJobsRaw(`${ROUTE_JOBS_FALLBACK}?date=${dateStr}`);
+    rawData=r.data;source='db';
   }catch(e){
-    console.warn('fetchJobsByDate: primary API failed →',e);
+    console.warn('fetchJobsByDate: DB fetch failed →',e);
     rawData=[];
   }
 
-  // API ล่ม หรือไม่มีข้อมูล → fallback ไปดึงจาก DB (transaction_transport) ทันที
+  // DB ไม่มีข้อมูล (หรือดึงไม่ได้) → ค่อย fallback ไปเรียก API ภายนอก
   if(!rawData||rawData.length===0){
     try{
-      const r=await _fetchJobsRaw(`${ROUTE_JOBS_FALLBACK}?date=${dateStr}`);
-      rawData=r.data;source='db';
-      if(rawData.length>0)console.info(`fetchJobsByDate: ใช้ fallback DB สำหรับวันที่ ${dateStr}`);
+      const r=await _fetchJobsRaw(`${JOB_API_BASE}?date=${dateStr}`);
+      rawData=r.data;source=r.source||'api';
+      if(rawData.length>0)console.info(`fetchJobsByDate: ใช้ fallback API ภายนอกสำหรับวันที่ ${dateStr}`);
     }catch(e){
-      console.warn('fetchJobsByDate: fallback DB failed →',e);
+      console.warn('fetchJobsByDate: fallback API failed →',e);
       rawData=[];
     }
   }
@@ -1869,7 +1881,6 @@ async function fetchJobsByDate(dateStr){
     const rawName=(d.driver_name||'').trim();if(!rawName)return;
     const allowed=isAllowedDriver(rawName);
     const bucket=allowed?whitelist:auto;
-    /* รวมชื่อที่สะกด/เว้นวรรค/อักขระที่มองไม่เห็นต่างกันเล็กน้อยให้เป็นคนเดียวกัน กันไม่ให้ขึ้นซ้ำเป็นสองแถว */
     const dedupKey=allowed?_normalizeDriver(rawName):_normalizeName(rawName);
     if(!bucket[dedupKey]){
       let displayName=rawName;
@@ -1880,7 +1891,6 @@ async function fetchJobsByDate(dateStr){
   });
   JOBS_PROCESSED[dateStr]={whitelist,auto};
 }
-
 const SAVED_DRIVERS_CACHE={};const SESSION_SAVED={};
 function _readSavedDriversFromDOM(date){const set=new Set();if(!date)return set;const parts=date.split('-');if(parts.length!==3)return set;const target=`${parts[2]}/${parts[1]}/${parts[0]}`;document.querySelectorAll('#oilTbody tr[data-driver]').forEach(tr=>{const dateEl=tr.querySelector('.date-pill'),nameEl=tr.querySelector('.driver-name');if(!dateEl||!nameEl)return;if((dateEl.getAttribute('title')||'').trim()===target){const name=(nameEl.textContent||'').trim();if(name&&name!=='—')set.add(name);}});return set;}
 async function fetchSavedDrivers(date){if(!date)return new Set();if(SAVED_DRIVERS_CACHE[date])return SAVED_DRIVERS_CACHE[date];const fromDOM=_readSavedDriversFromDOM(date);try{const res=await fetch(`${ROUTE_SAVED_DRIVERS}?date=${encodeURIComponent(date)}`,{headers:{'Accept':'application/json','X-Requested-With':'XMLHttpRequest'}}).catch(()=>null);if(res&&res.ok){const data=await res.json();let raw=[];if(Array.isArray(data))raw=data;else if(Array.isArray(data.drivers))raw=data.drivers;else if(Array.isArray(data.data))raw=data.data;else if(Array.isArray(data.saved))raw=data.saved;else if(Array.isArray(data.result))raw=data.result;raw.forEach(item=>{let n='';if(typeof item==='string')n=item.trim();else if(item&&typeof item==='object')n=(item.driver_name||item.name||item.driver||'').toString().trim();if(n)fromDOM.add(n);});}}catch(e){}SAVED_DRIVERS_CACHE[date]=fromDOM;return fromDOM;}
@@ -2438,10 +2448,11 @@ function ilUpdateChartsAfterSave(r){
 }
 
 function ilResetJobsPanel(){const wrap=document.getElementById('inlineJobTableWrap');if(wrap)wrap.innerHTML='<div class="job-loading">คลิกที่แถวคนขับ<br>เพื่อดูรายการงานของคนนั้น</div>';const title=document.getElementById('jobsPanelTitleText');if(title)title.textContent='รายการงาน';const chip=document.getElementById('ilJobDateChip');if(chip)chip.style.display='none';}
+let _currentJobsPanel={driverName:null,jobs:null};
 
-// ilRenderJobsForDriver: แสดงรายการงานของคนขับที่คลิก พร้อมปุ่ม "รับบิล" (เฉพาะงานที่มาจาก DB fallback)
 function ilRenderJobsForDriver(driverName,jobs){
   const wrap=document.getElementById('inlineJobTableWrap');if(!wrap)return;
+  _currentJobsPanel={driverName,jobs};
   const title=document.getElementById('jobsPanelTitleText');if(title)title.textContent=driverName;
   const date=document.getElementById('il-work-date')?.value||'';const chip=document.getElementById('ilJobDateChip');
   if(chip&&date){const dp=date.split('-');chip.textContent=dp.length===3?`${dp[2]}/${dp[1]}`:date;chip.style.display='';}
@@ -2449,6 +2460,18 @@ function ilRenderJobsForDriver(driverName,jobs){
 
   let okC=0,probC=0;jobs.forEach(j=>{const k=_jobStatusKind(j);if(k==='ok')okC++;else if(k==='fail'||k==='wrong')probC++;});
   let html=`<div class="jobs-summary-bar"><span class="jsb-chip"><strong>${jobs.length}</strong> งาน</span><span class="jsb-chip ok"><strong>${okC}</strong> สำเร็จ</span>${probC>0?`<span class="jsb-chip fail"><strong>${probC}</strong> มีปัญหา</span>`:''}</div>`;
+
+  const eligibleCount=jobs.filter(j=>j.source==='db'&&j.job_key&&j.job_key.indexOf('unknown:')!==0&&!j.confirmed).length;
+  if(eligibleCount>0){
+    html+=`<div class="dgj-bulkbar">
+      <label class="dgj-bulkbar-selectall"><input type="checkbox" id="jobsSelectAll" onchange="jobToggleSelectAll(this.checked)"> เลือกทั้งหมด</label>
+      <span class="dgj-bulkbar-count" id="jobsSelectedCount">เลือก 0 รายการ</span>
+      <div class="dgj-bulkbar-actions">
+        <button type="button" class="dgj-bulk-btn ok" id="jobsBulkOk" disabled onclick="jobBulkConfirm('จัดส่งสำเร็จ')">✓ สำเร็จ</button>
+        <button type="button" class="dgj-bulk-btn redo" id="jobsBulkRedo" disabled onclick="jobBulkConfirm('ส่งใหม่วันพรุ่งนี้')">↻ ส่งพรุ่งนี้</button>
+      </div>
+    </div>`;
+  }
 
   jobs.forEach((j,idx)=>{
     const kind=_jobStatusKind(j);
@@ -2460,79 +2483,107 @@ function ilRenderJobsForDriver(driverName,jobs){
     if(j.bill_in_by)meta.push(`<span class="dgj-meta-item"><span class="dgj-meta-label">รับ</span> ${j.bill_in_by}</span>`);
     if(j.note)meta.push(`<span class="dgj-meta-item dgj-note"><span class="dgj-meta-label">หมายเหตุ</span> ${j.note}</span>`);
 
-    let confirmHtml='';
-    // ปุ่ม "รับบิล" ใช้ได้เฉพาะงานที่มาจาก DB fallback และมี job_key จริง (ไม่ใช่ unknown:)
-    if(j.source==='db' && j.job_key && j.job_key.indexOf('unknown:')!==0){
+    let confirmHtml='',selectHtml='';
+    const canConfirm=(j.source==='db'&&j.job_key&&j.job_key.indexOf('unknown:')!==0);
+    if(canConfirm){
       if(j.confirmed){
         confirmHtml=`<div class="dgj-confirmed">✓ บันทึกแล้วโดย ${j.check_name||'-'} · ${j.check_time||''}</div>`;
       }else{
         const rowId=`jc_${idx}_${(j.job_key||'').replace(/[^a-zA-Z0-9]/g,'_')}`;
+        selectHtml=`<span class="dgj-select-wrap"><input type="checkbox" class="dgj-select" id="${rowId}-chk" data-job="${j.job_key}" onchange="jobUpdateSelectionCount()"></span>`;
         confirmHtml=`
           <div class="dgj-confirm" id="${rowId}" data-job="${j.job_key}">
             <div class="dgj-confirm-btns">
-              <button type="button" class="dgj-status-btn" data-status="จัดส่งสำเร็จ" onclick="jobPickStatus('${rowId}','จัดส่งสำเร็จ')">✓ สำเร็จ</button>
-              <button type="button" class="dgj-status-btn warn" data-status="สินค้าผิด" onclick="jobPickStatus('${rowId}','สินค้าผิด')">⚠ สินค้าผิด</button>
-              <button type="button" class="dgj-status-btn redo" data-status="ส่งใหม่วันพรุ่งนี้" onclick="jobPickStatus('${rowId}','ส่งใหม่วันพรุ่งนี้')">↻ ส่งพรุ่งนี้</button>
+              <button type="button" class="dgj-status-btn warn" onclick="jobWrongItemStart('${rowId}')">⚠ สินค้าผิด</button>
             </div>
             <textarea class="dgj-ng-input" id="${rowId}-ng" placeholder="ระบุรายละเอียดสินค้าที่ผิด..." style="display:none"></textarea>
-            <button type="button" class="dgj-confirm-save" id="${rowId}-save" style="display:none" onclick="jobSubmitConfirm('${rowId}')">บันทึกผลส่ง</button>
+            <button type="button" class="dgj-confirm-save" id="${rowId}-save" style="display:none" onclick="jobWrongItemSubmit('${rowId}')">บันทึกผลส่ง</button>
           </div>`;
       }
     }
 
-    html+=`<div class="dgj-row"><div class="dgj-main"><div class="dgj-top"><span class="dgj-bill">${j.bill_no||'—'}</span><span class="dgj-customer" title="${j.customer_name||''}">${j.customer_name||'—'}</span><span class="dgj-status ${badgeCls}">${stTxt}</span></div>${meta.length?`<div class="dgj-meta">${meta.join('<span class="dgj-meta-sep">·</span>')}</div>`:''}${confirmHtml}</div></div>`;
+    html+=`<div class="dgj-row"><div class="dgj-main"><div class="dgj-top">${selectHtml}<span class="dgj-bill">${j.bill_no||'—'}</span><span class="dgj-customer" title="${j.customer_name||''}">${j.customer_name||'—'}</span><span class="dgj-status ${badgeCls}">${stTxt}</span></div>${meta.length?`<div class="dgj-meta">${meta.join('<span class="dgj-meta-sep">·</span>')}</div>`:''}${confirmHtml}</div></div>`;
   });
 
   wrap.innerHTML=html;
 }
 
-let _jobPendingStatus={};
-
-function jobPickStatus(rowId,status){
-  _jobPendingStatus[rowId]=status;
-  const row=document.getElementById(rowId);if(!row)return;
-  row.querySelectorAll('.dgj-status-btn').forEach(b=>b.classList.toggle('active',b.dataset.status===status));
-  const ng=document.getElementById(`${rowId}-ng`);
-  const saveBtn=document.getElementById(`${rowId}-save`);
-  if(ng)ng.style.display=(status==='สินค้าผิด')?'':'none';
-  if(saveBtn)saveBtn.style.display='';
+function jobToggleSelectAll(checked){document.querySelectorAll('.dgj-select').forEach(cb=>cb.checked=checked);jobUpdateSelectionCount();}
+function jobUpdateSelectionCount(){
+  const all=Array.from(document.querySelectorAll('.dgj-select'));
+  const checked=all.filter(cb=>cb.checked);
+  const countEl=document.getElementById('jobsSelectedCount');if(countEl)countEl.textContent=`เลือก ${checked.length} รายการ`;
+  const selectAll=document.getElementById('jobsSelectAll');if(selectAll)selectAll.checked=all.length>0&&checked.length===all.length;
+  const okBtn=document.getElementById('jobsBulkOk'),redoBtn=document.getElementById('jobsBulkRedo');
+  if(okBtn)okBtn.disabled=checked.length===0;
+  if(redoBtn)redoBtn.disabled=checked.length===0;
 }
 
-async function jobSubmitConfirm(rowId){
+async function submitJobStatus(jobKey,status,ngDetail){
+  const fd=new FormData();
+  fd.append('_token',CSRF_TOKEN);
+  fd.append('job_key',jobKey);
+  fd.append('status',status);
+  if(ngDetail)fd.append('ng_detail',ngDetail);
+  fd.append('work_date',document.getElementById('il-work-date')?.value||'');
+  const res=await fetch(ROUTE_CONFIRM_DELIVERY,{method:'POST',headers:{'X-CSRF-TOKEN':CSRF_TOKEN,'Accept':'application/json'},body:fd});
+  const json=await res.json().catch(()=>null);
+  if(!res.ok||!json||json.success===false)throw new Error(json&&json.message?json.message:'บันทึกไม่สำเร็จ');
+  return json;
+}
+
+async function jobBulkConfirm(status){
+  const checked=Array.from(document.querySelectorAll('.dgj-select:checked'));
+  if(checked.length===0){alert('กรุณาเลือกอย่างน้อย 1 รายการ');return;}
+  const statusLabel=status==='จัดส่งสำเร็จ'?'สำเร็จ':'ส่งใหม่วันพรุ่งนี้';
+  if(!confirm(`ยืนยันบันทึกสถานะ "${statusLabel}" จำนวน ${checked.length} รายการ?`))return;
+
+  const okBtn=document.getElementById('jobsBulkOk'),redoBtn=document.getElementById('jobsBulkRedo');
+  if(okBtn)okBtn.disabled=true;if(redoBtn)redoBtn.disabled=true;
+
+  let successCount=0,failCount=0;
+  for(const cb of checked){
+    const jobKey=cb.dataset.job;
+    try{
+      const json=await submitJobStatus(jobKey,status,'');
+      const j=(_currentJobsPanel.jobs||[]).find(x=>x.job_key===jobKey);
+      if(j){j.confirmed=true;j.status=status;j.check_name=json.check_name;j.check_time=json.check_time;}
+      successCount++;
+    }catch(e){console.warn('jobBulkConfirm error',jobKey,e);failCount++;}
+  }
+  if(_currentJobsPanel.driverName)ilRenderJobsForDriver(_currentJobsPanel.driverName,_currentJobsPanel.jobs);
+  showInfoToast('บันทึกสถานะเสร็จสิ้น',`สำเร็จ ${successCount} รายการ${failCount>0?` · ผิดพลาด ${failCount} รายการ`:''}`,failCount>0);
+}
+
+function jobWrongItemStart(rowId){
+  document.getElementById(`${rowId}-ng`)?.style.setProperty('display','');
+  const saveBtn=document.getElementById(`${rowId}-save`);if(saveBtn)saveBtn.style.display='';
+  document.getElementById(`${rowId}-ng`)?.focus();
+}
+
+async function jobWrongItemSubmit(rowId){
   const row=document.getElementById(rowId);if(!row)return;
   const jobKey=row.dataset.job;
-  const status=_jobPendingStatus[rowId];
-  if(!status){alert('กรุณาเลือกสถานะก่อน');return;}
-
   const ngEl=document.getElementById(`${rowId}-ng`);
   const ngDetail=ngEl?ngEl.value.trim():'';
-  if(status==='สินค้าผิด' && !ngDetail){alert('กรุณากรอกรายละเอียดสินค้าที่ผิด');ngEl?.focus();return;}
+  if(!ngDetail){alert('กรุณากรอกรายละเอียดสินค้าที่ผิด');ngEl?.focus();return;}
+  if(!confirm('ยืนยันบันทึกสถานะ "สินค้าผิด" สำหรับรายการนี้?'))return;
 
   const saveBtn=document.getElementById(`${rowId}-save`);
   if(saveBtn){saveBtn.disabled=true;saveBtn.textContent='กำลังบันทึก...';}
 
   try{
-    const fd=new FormData();
-    fd.append('_token',CSRF_TOKEN);
-    fd.append('job_key',jobKey);
-    fd.append('status',status);
-    if(ngDetail)fd.append('ng_detail',ngDetail);
-    fd.append('work_date',document.getElementById('il-work-date')?.value||'');
-
-    const res=await fetch(ROUTE_CONFIRM_DELIVERY,{method:'POST',headers:{'X-CSRF-TOKEN':CSRF_TOKEN,'Accept':'application/json'},body:fd});
-    const json=await res.json().catch(()=>null);
-    if(!res.ok||!json||json.success===false){throw new Error(json&&json.message?json.message:'บันทึกไม่สำเร็จ');}
-
-    row.outerHTML=`<div class="dgj-confirmed">✓ บันทึกแล้วโดย ${json.check_name} · ${json.check_time}</div>`;
-    delete _jobPendingStatus[rowId];
-    showInfoToast('บันทึกผลส่งสำเร็จ',`สถานะ: ${status}`,false);
+    const json=await submitJobStatus(jobKey,'สินค้าผิด',ngDetail);
+    const j=(_currentJobsPanel.jobs||[]).find(x=>x.job_key===jobKey);
+    if(j){j.confirmed=true;j.status='สินค้าผิด';j.note=ngDetail;j.check_name=json.check_name;j.check_time=json.check_time;}
+    if(_currentJobsPanel.driverName)ilRenderJobsForDriver(_currentJobsPanel.driverName,_currentJobsPanel.jobs);
+    showInfoToast('บันทึกผลส่งสำเร็จ','สถานะ: สินค้าผิด',false);
   }catch(e){
-    console.warn('jobSubmitConfirm error',e);
+    console.warn('jobWrongItemSubmit error',e);
     if(saveBtn){saveBtn.disabled=false;saveBtn.textContent='บันทึกผลส่ง';}
     alert('บันทึกไม่สำเร็จ: '+e.message);
   }
 }
-
 // Charts Functions
 @php
   $deliveryByDriver=[];

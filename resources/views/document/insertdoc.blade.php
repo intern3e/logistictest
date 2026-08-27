@@ -794,7 +794,7 @@
                     </div>
                 </div>
             </div>
-            <input type="hidden" id="inpUser" value="{{ $creator }}">
+            <input type="hidden" id="emp_name" name="emp_name" value="{{ session('emp_name', 'Guest') }}">
             <input type="hidden" id="id_com" name="id_com">
         </div>
     </div>
@@ -1625,12 +1625,47 @@ document.addEventListener('DOMContentLoaded', function () {
         });
     }
 
+async function ensureFontsLoaded() {
+        // Waiting for the Sarabun webfont to actually finish loading (and be
+        // registered with the browser's font-matching engine) before we run
+        // html2canvas is what prevents the info-box lines from collapsing on
+        // top of each other in the generated PDF: if html2canvas captures
+        // while the browser is still laying text out with a fallback font,
+        // the fallback's line-height metrics are used instead of Sarabun's,
+        // and Thai vowel/tone marks from adjacent lines end up overlapping.
+        if (!document.fonts) return;
+        const specs = [
+            '400 18px Sarabun',
+            '700 18px Sarabun',
+            '400 13px Sarabun',
+            '700 13px Sarabun',
+            '800 36px Sarabun',
+            '700 28px Sarabun',
+            '600 16px Sarabun',
+            '700 14px Sarabun',
+        ];
+        try {
+            await Promise.all(specs.map(spec => document.fonts.load(spec)));
+        } catch (e) {
+            console.warn('ensureFontsLoaded: some font specs failed to preload', e);
+        }
+        try {
+            await document.fonts.ready;
+        } catch (e) {
+            console.warn('ensureFontsLoaded: document.fonts.ready rejected', e);
+        }
+    }
+
 async function generateAndUploadBillPdf(doc_id, items) {
         const { jsPDF } = window.jspdf;
         if (!jsPDF || !window.html2canvas) {
             console.error("ไม่พบ library jsPDF หรือ html2canvas");
             return;
         }
+
+        // Make sure Sarabun is fully loaded before any html2canvas capture runs,
+        // otherwise the info-box text lines can render on top of each other.
+        await ensureFontsLoaded();
 
         const name = document.getElementById('com_name').value;
         const address = document.getElementById('com_address').value;
@@ -1639,6 +1674,7 @@ async function generateAndUploadBillPdf(doc_id, items) {
         const revdate = formatDateTH(document.getElementById('datestamp').value);
         const headcom = document.getElementById('headcom').value;
         const notes = document.getElementById('notes').value;
+        const soNum = (document.getElementById('so_id').value || '').trim();
 
         let doctypeSelect = document.getElementById('doctype');
         let type = doctypeSelect.value === 'อื่นๆ'
@@ -1650,16 +1686,16 @@ async function generateAndUploadBillPdf(doc_id, items) {
             items.forEach((item, index) => {
                 tableRowsHtml += `
                     <tr>
-                        <td style="border:1px solid #ccc; padding:8px; text-align:center; font-size:18px;">${index + 1}</td>
-                        <td style="border:1px solid #ccc; padding:8px; text-align:left; font-size:18px;">${escapeHtmlSo(item.item_name)}</td>
-                        <td style="border:1px solid #ccc; padding:8px; text-align:center; font-size:18px;">${escapeHtmlSo(item.quantity)}</td>
+                        <td style="border:1px solid #94a3b8; padding:8px; text-align:center; font-size:18px;">${index + 1}</td>
+                        <td style="border:1px solid #94a3b8; padding:8px 12px; text-align:left; font-size:18px;">${escapeHtmlSo(item.item_name)}</td>
+                        <td style="border:1px solid #94a3b8; padding:8px; text-align:center; font-size:18px;">${escapeHtmlSo(item.quantity)}</td>
                     </tr>
                 `;
             });
         } else {
             tableRowsHtml = `
                 <tr>
-                    <td colspan="3" style="border:1px solid #ccc; padding:12px; text-align:center; color:#888; font-size:18px;">
+                    <td colspan="3" style="border:1px solid #94a3b8; padding:12px; text-align:center; color:#888; font-size:18px;">
                         ไม่มีข้อมูลสินค้า
                     </td>
                 </tr>
@@ -1832,62 +1868,110 @@ async function generateAndUploadBillPdf(doc_id, items) {
             }
             return boundaries;
         }
-
-        const headerHtml = `
-            <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:10px; padding-bottom:10px; border-bottom:3px solid #1e293b;">
+const headerHtml = `
+            <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:10px; padding-bottom:10px;">
                 <div>
-                    <h1 style="margin:0; font-size:36px; font-weight:800; color:#1e293b; letter-spacing:.01em;">ใบส่งของชั่วคราว</h1>
-                    <p style="margin:4px 0 0; font-size:16px; color:#64748b;">ประเภทบิล: <span style="font-weight:600;color:#334155;">${escapeHtmlSo(type)}</span></p>
+                    <h1 style="margin:0; font-size:36px; font-weight:800; color:#1e293b; letter-spacing:.01em;">${escapeHtmlSo(headcom)}</h1>
+                    <p style="margin:4px 0 0; font-size:18px; color:#64748b;">ประเภทบิล: <span style="font-weight:600;color:#334155;">${escapeHtmlSo(type)}</span>${soNum ? ` &nbsp;&nbsp; เลข SO: <span style="font-weight:600;color:#334155;">${escapeHtmlSo(soNum)}</span>` : ''}</p>
                 </div>
-                <div style="border:1.5px solid #1e293b; border-radius:6px; padding:6px 14px; min-width:120px; text-align:center; background:#f8fafc;">
-                    <p style="margin:0; font-size:9px; font-weight:700; letter-spacing:.05em; color:#64748b; text-transform:uppercase;">เลขที่บิล</p>
-                    <p style="margin:2px 0 6px; font-size:14px; font-weight:800; color:#1e293b;">${escapeHtmlSo(doc_id)}</p>
-                    <p style="margin:0; font-size:9px; font-weight:700; letter-spacing:.05em; color:#64748b; text-transform:uppercase;">วันที่</p>
-                    <p style="margin:2px 0 0; font-size:12px; font-weight:600; color:#1e293b;">${escapeHtmlSo(revdate)}</p>
+                
+                <div style="border:1.5px solid #1e293b; border-radius:6px; min-width:160px; text-align:left; background:#f8fafc; font-size:14px; color:#1e293b; overflow:hidden;">
+                    <div style="padding:8px 12px; border-bottom:1px solid #cbd5e1; display:flex; align-items:center;">
+                        <span style="font-weight:700; color:#64748b; width:40px; display:inline-block;">SP</span> 
+                        <span style="font-weight:700; color:#64748b; padding-right:4px;">:</span> 
+                        <span style="font-weight:800;">${escapeHtmlSo(doc_id)}</span>
+                    </div>
+                    <div style="padding:8px 12px; display:flex; align-items:center;">
+                        <span style="font-weight:700; color:#64748b; width:40px; display:inline-block;">DATE</span> 
+                        <span style="font-weight:700; color:#64748b; padding-right:4px;">:</span> 
+                        <span style="font-weight:600;">${escapeHtmlSo(revdate)}</span>
+                    </div>
                 </div>
             </div>
 
-            <div style="background:#6b7280; border-radius:6px; padding:8px 14px; text-align:center; margin:0 0 10px;">
-                <h2 style="margin:0; font-size:14px; font-weight:700; color:#fff; letter-spacing:.01em;">${escapeHtmlSo(headcom)}</h2>
+            <div style="background:#fff; border:1.5px solid #1e293b; border-radius:6px; padding:8px 14px; text-align:center; margin:0 0 10px;">
+                <h2 style="margin:0; font-size:28px; font-weight:700; color:#1e293b; letter-spacing:.01em;">ใบส่งของชั่วคราว</h2>
             </div>
 
-            <div style="background:#f8fafc; border:1px solid #e2e8f0; border-radius:6px; padding:14px 18px; margin-bottom:0; display:flex; align-items:center; justify-content:space-between; gap:16px;">
-                <div style="font-size:15px; line-height:1.9; color:#1e293b; flex:1; min-width:0;">
-                    <p style="margin:0;"><span style="font-weight:700;color:#475569; display:inline-block; min-width:82px;">บริษัท :</span> ${escapeHtmlSo(name) || '-'}</p>
-                    <p style="margin:0;"><span style="font-weight:700;color:#475569; display:inline-block; min-width:82px;">ที่อยู่ :</span> ${escapeHtmlSo(address) || '-'}</p>
-                    <p style="margin:0;"><span style="font-weight:700;color:#475569; display:inline-block; min-width:82px;">ผู้ติดต่อ :</span> ${escapeHtmlSo(contact_name) || '-'} &nbsp;&nbsp;<span style="font-weight:700;color:#475569;">โทร :</span> ${escapeHtmlSo(contact_tel) || '-'}</p>
-                    <p style="margin:0;"><span style="font-weight:700;color:#475569; display:inline-block; min-width:82px;">หมายเหตุ :</span> ${escapeHtmlSo(notes) || '-'}</p>
+            <div style="background:#f8fafc; border:1px solid #e2e8f0; border-radius:6px; padding:12px 18px; margin-bottom:0; display:flex; align-items:center; justify-content:space-between; gap:16px;">
+                <div style="font-size:20px; line-height:1.8; color:#1e293b; flex:1; min-width:0;">
+                    <div style="display:flex; align-items:center;">
+                        <span style="font-weight:700; color:#475569; width:95px; flex-shrink:0; text-align:left;">บริษัท</span>
+                        <span style="font-weight:700; color:#475569; padding-right:8px;">:</span>
+                        <span style="flex:1;">${escapeHtmlSo(name) || '-'}</span>
+                    </div>
+                    <div style="display:flex; align-items:center;">
+                        <span style="font-weight:700; color:#475569; width:95px; flex-shrink:0; text-align:left;">ที่อยู่</span>
+                        <span style="font-weight:700; color:#475569; padding-right:8px;">:</span>
+                        <span style="flex:1;">${escapeHtmlSo(address) || '-'}</span>
+                    </div>
+                    <div style="display:flex; align-items:center;">
+                        <span style="font-weight:700; color:#475569; width:95px; flex-shrink:0; text-align:left;">ผู้ติดต่อ</span>
+                        <span style="font-weight:700; color:#475569; padding-right:8px;">:</span>
+                        <span style="flex:1;">${escapeHtmlSo(contact_name) || '-'} <span style="display:inline-block; margin-left:80px;"><span style="font-weight:700; color:#475569;">โทร :</span> ${escapeHtmlSo(contact_tel) || '-'}</span></span>
+                    </div>
+                    <div style="display:flex; align-items:center;">
+                        <span style="font-weight:700; color:#475569; width:95px; flex-shrink:0; text-align:left;">หมายเหตุ</span>
+                        <span style="font-weight:700; color:#475569; padding-right:8px;">:</span>
+                        <span style="flex:1;">${escapeHtmlSo(notes) || '-'}</span>
+                    </div>
                 </div>
-                ${qrBlockHtml}
+                
+                <div style="text-align:center; flex-shrink:0;">
+                    <div style="display:inline-block; text-align:center;">
+                        ${qrBlockHtml}
+                        <div style="margin-top:4px; font-size:14px; font-weight:700; color:#64748b; letter-spacing:.05em; text-align:center;">MAP</div>
+                    </div>
+                </div>
             </div>
         `;
+// ตัวอย่างการตัดทศนิยม .00 หรือตัวเลขทศนิยมออกด้วย .replace()
+const cleanTableRowsHtml = tableRowsHtml.replace(/\.00/g, '');
 
-        const tableHtml = `
-            <table id="billTable" style="width:100%; border-collapse:collapse; font-size:13px; margin-top:14px; margin-bottom:20px;">
-                <thead id="billTableHead">
-                    <tr>
-                        <th style="border:1px solid #6b7280; padding:8px; width:10%; background:#6b7280; color:#fff; font-weight:700;">ลำดับ</th>
-                        <th style="border:1px solid #6b7280; padding:8px; width:60%; background:#6b7280; color:#fff; font-weight:700; text-align:left;">รายการ</th>
-                        <th style="border:1px solid #6b7280; padding:8px; width:30%; background:#6b7280; color:#fff; font-weight:700;">จำนวน</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    ${tableRowsHtml}
-                </tbody>
-            </table>
-        `;
+const tableHtml = `
+    <table id="billTable" style="width:100%; border-collapse:collapse; font-size:13px; margin-top:14px; margin-bottom:20px;">
+        <thead id="billTableHead">
+            <tr>
+                <th style="border:1px solid #94a3b8; padding:8px; width:8%; background:#fff; color:#1e293b; font-weight:700; font-size:19px;">ลำดับ</th>
+                <th style="border:1px solid #94a3b8; padding:8px; width:74%; background:#fff; color:#1e293b; font-weight:700; text-align:center; font-size:19px;">รายการ</th>
+                <th style="border:1px solid #94a3b8; padding:8px; width:18%; background:#fff; color:#1e293b; font-weight:700; font-size:19px;">จำนวน</th>
+            </tr>
+        </thead>
+        <tbody>
+            ${cleanTableRowsHtml}
+        </tbody>
+    </table>
+`;
 
         const signatureHtml = `
-            <div style="display:flex; justify-content:space-between; margin-top:36px; padding-top:8px;">
-                <div style="width:42%; text-align:center;">
-                    <div style="border-bottom:1px solid #1e293b; height:44px;"></div>
+            <div style="display:flex; justify-content:center; align-items:flex-start; width:100%; gap:300px; margin-top:36px; padding-top:8px;">
+                <div style="text-align:center;">
+                    <div style="border-bottom:1px solid #1e293b; height:44px; width:280px; margin:0 auto;"></div>
                     <p style="margin:8px 0 0; font-size:13px; font-weight:700; color:#334155;">ผู้รับสินค้า</p>
-                    <p style="margin:2px 0 0; font-size:11px; color:#94a3b8;">วันที่ ....../....../..........</p>
+                    <div style="display:flex; align-items:baseline; justify-content:center; gap:4px; margin-top:6px;">
+                        <span style="font-size:11px; color:#475569;">วันที่</span>
+                        <span style="display:inline-flex; align-items:baseline; justify-content:center; gap:4px; width:280px;">
+                            <span style="display:inline-block; border-bottom:1px solid #94a3b8; width:72px; height:12px;"></span>
+                            <span style="font-size:11px; color:#94a3b8;">/</span>
+                            <span style="display:inline-block; border-bottom:1px solid #94a3b8; width:72px; height:12px;"></span>
+                            <span style="font-size:11px; color:#94a3b8;">/</span>
+                            <span style="display:inline-block; border-bottom:1px solid #94a3b8; width:72px; height:12px;"></span>
+                        </span>
+                    </div>
                 </div>
-                <div style="width:42%; text-align:center;">
-                    <div style="border-bottom:1px solid #1e293b; height:44px;"></div>
+                <div style="text-align:center;">
+                    <div style="border-bottom:1px solid #1e293b; height:44px; width:280px; margin:0 auto;"></div>
                     <p style="margin:8px 0 0; font-size:13px; font-weight:700; color:#334155;">ผู้ส่งสินค้า</p>
-                    <p style="margin:2px 0 0; font-size:11px; color:#94a3b8;">วันที่ ....../....../..........</p>
+                    <div style="display:flex; align-items:baseline; justify-content:center; gap:4px; margin-top:6px;">
+                        <span style="font-size:11px; color:#475569;">วันที่</span>
+                        <span style="display:inline-flex; align-items:baseline; justify-content:center; gap:4px; width:280px;">
+                            <span style="display:inline-block; border-bottom:1px solid #94a3b8; width:72px; height:12px;"></span>
+                            <span style="font-size:11px; color:#94a3b8;">/</span>
+                            <span style="display:inline-block; border-bottom:1px solid #94a3b8; width:72px; height:12px;"></span>
+                            <span style="font-size:11px; color:#94a3b8;">/</span>
+                            <span style="display:inline-block; border-bottom:1px solid #94a3b8; width:72px; height:12px;"></span>
+                        </span>
+                    </div>
                 </div>
             </div>
         `;
@@ -1911,6 +1995,14 @@ async function generateAndUploadBillPdf(doc_id, items) {
         // table move up right after the header instead of floating 30% down.
         const HEADER_GAP_PX = Math.round(14 * pxPerPt);
         const SIG_GAP_PX = Math.round(18 * pxPerPt);
+
+        // Many printers can't print all the way to the physical edge of the
+        // page. This margin is used ONLY to nudge where the signature block
+        // and the page-number text are drawn within their already-allocated
+        // space — it must NOT shrink the items zone, otherwise the table
+        // pagination changes and an extra (mostly blank) page gets created
+        // just to hold the signature.
+        const PRINT_SAFE_BOTTOM_PX = Math.round(20 * pxPerPt);
 
         const headerZoneHeightPx = Math.min(
             headerCanvas.height + HEADER_GAP_PX,
@@ -1972,17 +2064,15 @@ async function generateAndUploadBillPdf(doc_id, items) {
             const headerOffsetX = (pageCanvasWidth - headerDrawW) / 2;
             ctx.drawImage(headerCanvas, 0, 0, headerCanvas.width, headerCanvas.height, headerOffsetX, 0, headerDrawW, headerDrawH);
 
-            // --- เลขแผ่น : เขียนไว้ใต้ QR code ทุกหน้า ---
-            if (hasCoords && qrBlockRect) {
-                const qrCenterX = headerOffsetX + (qrBlockRect.left + qrBlockRect.width / 2) * headerScale;
-                const qrBottomY = (qrBlockRect.top + qrBlockRect.height) * headerScale;
-                const pageLabelGapPx = Math.round(6 * pxPerPt);
-                const pageLabelFontPx = Math.round(8 * pxPerPt);
+            // --- เลขแผ่น : หน้าอื่น ๆ แสดงกึ่งกลางล่างสุด (ในระยะขอบปลอดภัยสำหรับพิมพ์) ---
+            // หน้าสุดท้ายแสดงไว้ตรงกลางช่องว่างระหว่างลายเซ็นทั้งสองฝั่งแทน (ดูด้านล่าง)
+            if (!isLastPage) {
+                const pageLabelFontPx = Math.round(9 * pxPerPt);
                 ctx.font = `700 ${pageLabelFontPx}px 'Sarabun','Arial',sans-serif`;
-                ctx.fillStyle = '#1e293b';
+                ctx.fillStyle = '#94a3b8';
                 ctx.textAlign = 'center';
-                ctx.textBaseline = 'top';
-                ctx.fillText(`แผ่นที่ ${i + 1}/${pages.length}`, qrCenterX, qrBottomY + pageLabelGapPx);
+                ctx.textBaseline = 'bottom';
+                ctx.fillText(`แผ่นที่ ${i + 1}/${pages.length}`, pageCanvasWidth / 2, pageHeightPx - PRINT_SAFE_BOTTOM_PX);
             }
 
             // --- ส่วนรายการสินค้า : หัวตารางซ้ำทุกหน้า แถวแบ่งหน้าแบบไม่ตัดกลางแถว ---
@@ -1998,8 +2088,23 @@ async function generateAndUploadBillPdf(doc_id, items) {
                 const sigDrawW = sigCanvas.width * sigScale;
                 const sigDrawH = sigCanvas.height * sigScale;
                 const sigOffsetX = (pageCanvasWidth - sigDrawW) / 2;
-                const sigOffsetY = sigZoneStartY + Math.max(0, (sigZoneHeightPx - sigDrawH) / 2);
+                let sigOffsetY = sigZoneStartY + Math.max(0, (sigZoneHeightPx - sigDrawH) / 2);
+                // Pull the block up (never down) so its bottom edge clears the
+                // print-safe margin. This only redistributes the slack that's
+                // already inside the signature zone — it never asks for more
+                // vertical space, so table pagination is untouched.
+                const maxOffsetY = pageHeightPx - PRINT_SAFE_BOTTOM_PX - sigDrawH;
+                sigOffsetY = Math.min(sigOffsetY, Math.max(sigZoneStartY, maxOffsetY));
                 ctx.drawImage(sigCanvas, 0, 0, sigCanvas.width, sigCanvas.height, sigOffsetX, sigOffsetY, sigDrawW, sigDrawH);
+
+                // เลขแผ่น : วางไว้กึ่งกลางหน้ากระดาษ ตรงช่องว่างระหว่างลายเซ็นทั้งสองฝั่ง
+                // แนวตั้งอยู่ระดับเดียวกับเส้นลายเซ็น (ขยับลงจากกึ่งกลางบล็อกเล็กน้อย) สีจางลง ไม่เด่นเกินไป
+                const pageLabelFontPx = Math.round(7 * pxPerPt);
+                ctx.font = `700 ${pageLabelFontPx}px 'Sarabun','Arial',sans-serif`;
+                ctx.fillStyle = '#94a3b8';
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                ctx.fillText(`แผ่นที่ ${i + 1}/${pages.length}`, pageCanvasWidth / 2, sigOffsetY + sigDrawH * 0.85);
             }
 
             const pageDataUrl = compressPage(pageCanvas);
@@ -2010,15 +2115,6 @@ async function generateAndUploadBillPdf(doc_id, items) {
         });
 
         const pdfBlob = pdf.output("blob");
-
-        const downloadUrl = URL.createObjectURL(pdfBlob);
-        const downloadLink = document.createElement('a');
-        downloadLink.href = downloadUrl;
-        downloadLink.download = `${doc_id}.pdf`;
-        document.body.appendChild(downloadLink);
-        downloadLink.click();
-        downloadLink.remove();
-        URL.revokeObjectURL(downloadUrl);
 
         const uploadForm = new FormData();
         uploadForm.append('doc_id', doc_id);
