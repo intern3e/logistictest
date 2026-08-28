@@ -18,6 +18,7 @@ class fuellogsController extends Controller
     const DELI_STATUS_OK    = 'จัดส่งสำเร็จ';
     const DELI_STATUS_WRONG = 'สินค้าผิด';
     const DELI_STATUS_REDO  = 'ส่งใหม่วันพรุ่งนี้';
+    const DELI_STATUS_HOLD  = 'ค้างบิล';
 
     /* ==================== AUTH ====================
      * สองระดับสิทธิ์:
@@ -752,29 +753,13 @@ public function update(Request $request, $id)
 
         return response()->json(['data' => $data, 'source' => 'db']);
     }
-
-    /**
-     * บันทึกผลการส่งของ ("รับบิล") จากหน้าน้ำมัน — ใช้ได้เฉพาะงานที่มาจาก fallback DB
-     * (มี job_key จริง ไม่ใช่ unknown:) เพราะ API ภายนอกไม่มี PK ให้อ้างอิง
-     *
-     * status = จัดส่งสำเร็จ      → tblbill/docbills.statusdeli = 'จัดส่งสำเร็จ'
-     * status = สินค้าผิด          → statusdeli = 'สินค้าผิด' + NG = รายละเอียดที่กรอก
-     * status = ส่งใหม่วันพรุ่งนี้  → statusdeli = 'ส่งใหม่วันพรุ่งนี้' และสร้าง transaction_delivery
-     *                                 แถวใหม่โดยอัตโนมัติ (ผู้รับผิดชอบ/วิธีขนส่งเดิม, time_pick =
-     *                                 พรุ่งนี้นับจาก work_date ที่หน้าน้ำมันกำลังดูอยู่) เพื่อให้ไป
-     *                                 โผล่เป็นงานค้างของวันถัดไป — ผู้จ่ายงานรอบใหม่ = ผู้ที่บันทึก
-     *                                 ว่า "ส่งใหม่พรุ่งนี้" (name_pick = ชื่อผู้บันทึก)
-     *
-     * billid ไม่ใช่ PK ของ tblbill (บิลเดียวกันอาจมีหลายแถว) → อัปเดตด้วย WHERE billid (bulk)
-     * doc_id เป็น PK ของ docbills อยู่แล้ว → อัปเดตแถวเดียวตรงๆ
-     */
     public function confirmDelivery(Request $request)
     {
         $authUser = $this->resolveOilEditor($request);
 
         $request->validate([
             'job_key'   => 'required|string',
-            'status'    => 'required|string|in:จัดส่งสำเร็จ,สินค้าผิด,ส่งใหม่วันพรุ่งนี้',
+            'status'    => 'required|string|in:จัดส่งสำเร็จ,สินค้าผิด,ส่งใหม่วันพรุ่งนี้,ค้างบิล',
             'ng_detail' => 'nullable|string|max:1000',
             'work_date' => 'nullable|date',
         ]);

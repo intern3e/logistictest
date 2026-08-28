@@ -61,6 +61,10 @@
         .btn-finish-claim { background:#fff7ed; color:var(--warning); border-color:#fed7aa; }
         .btn-finish-claim:hover { background:var(--warning); color:var(--on-primary); }
         .btn-claim:disabled, .btn-finish-claim:disabled { opacity:.5; cursor:not-allowed; }
+        .finished-tag {
+            display:inline-block; font-size:11px; font-weight:700; padding:4px 10px;
+            background:#f0fdf4; color:var(--success-dark); border:1px solid #bbf7d0;
+        }
 
         main {
             padding:20px; background:var(--canvas);
@@ -224,9 +228,13 @@
                     $location    = $h->location;
                     $checkboxVal = $h->type . ':' . $h->id;
                     $isClaimed   = $h->type === 'external' && ($h->claimed ?? false);
+                    {{-- ★ เพิ่ม: สถานะ "จัดการเสร็จสิ้นแล้ว" (ถาวร) แยกจาก claimed --}}
+                    $isFinished  = $h->type === 'external' && ($h->finished ?? false);
                 @endphp
                 <tr class="{{ $cls }}" data-done="{{ $todo ? 0 : 1 }}">
                     <td class="center">
+                        {{-- ★ ห้ามติ๊กเลือกถ้ากำลังจัดการอยู่ (isClaimed) — แต่ถ้าจัดการเสร็จสิ้นแล้ว (isFinished)
+                             ให้กลับมาเลือกระบุตำแหน่งได้ตามปกติ --}}
                         @if ($todo && !$isClaimed)<input type="checkbox" class="chkLine" value="{{ $checkboxVal }}">@endif
                     </td>
                     <td>
@@ -254,6 +262,11 @@
                                 <button type="button" class="btn-finish-claim" data-po="{{ $h->id }}">จัดการเสร็จสิ้น</button>
                                 <div class="muted">โดย {{ $h->claimed_by ?: '—' }}</div>
                                 <div class="muted">{{ $h->claimed_at ? \Carbon\Carbon::parse($h->claimed_at)->format('d/m/Y H:i') : '' }}</div>
+                            @elseif ($isFinished)
+                                {{-- ★ เสร็จสิ้นแบบถาวรแล้ว — ไม่แสดงปุ่ม "กำลังจัดการ" อีก กันกดซ้ำ --}}
+                                <span class="finished-tag">จัดการเสร็จสิ้นแล้ว</span>
+                                <div class="muted">โดย {{ $h->finished_by ?: ($h->claimed_by ?: '—') }}</div>
+                                <div class="muted">{{ $h->finished_at ? \Carbon\Carbon::parse($h->finished_at)->format('d/m/Y H:i') : '' }}</div>
                             @else
                                 <button type="button" class="btn-claim" data-po="{{ $h->id }}">กำลังจัดการ</button>
                             @endif

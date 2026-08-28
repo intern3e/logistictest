@@ -225,13 +225,11 @@ class StoreController extends Controller
      *      ใช้เฉพาะตอนที่วิธีที่ 1 ใช้ไม่ได้ (เซิร์ฟเวอร์ไม่รองรับ array หรือตอบกลับไม่มีทางแยกว่า
      *      แต่ละบรรทัดเป็นของ PO ไหน) — กันไม่ให้ข้อมูลสินค้าสลับ PO กันโดยไม่รู้ตัว
      */
-        /**
-     * ปุ่ม "กำลังจัดการ" — ล็อค PO ภายนอกใบนี้ไม่ให้ถูกเลือกระบุตำแหน่งโดยคนอื่น
-     * อัปเดตทุกบรรทัดของ po_id ที่ shelf ยังว่าง (ขอบเขตเดียวกับตอนระบุตำแหน่งจริง)
-     */
     /**
      * ปุ่ม "กำลังจัดการ" — ล็อค PO ภายนอกใบนี้ไม่ให้ถูกเลือกระบุตำแหน่งโดยคนอื่น
      * อัปเดตทุกบรรทัดของ po_id ที่ shelf ยังว่าง (ขอบเขตเดียวกับตอนระบุตำแหน่งจริง)
+     *
+     * ★ เพิ่ม: ถ้า PO นี้เคยถูกกด "จัดการเสร็จสิ้น" ไปแล้ว (sus_time มีค่า) ห้ามกดจัดการซ้ำอีก
      */
     public function locationClaim(Request $request)
     {
@@ -257,6 +255,12 @@ class StoreController extends Controller
                     return ['ok' => false, 'message' => 'ไม่พบรายการที่ต้องจัดการ'];
                 }
 
+                // ★ เคยกด "จัดการเสร็จสิ้น" ไปแล้ว (sus_time มีค่า) → ห้ามกลับมากดจัดการซ้ำ
+                $finishedLine = $lines->first(fn ($l) => $l->sus_time);
+                if ($finishedLine) {
+                    return ['ok' => false, 'message' => 'PO นี้จัดการเสร็จสิ้นไปแล้ว ไม่สามารถกดจัดการซ้ำได้'];
+                }
+
                 $claimedByLine = $lines->first(fn ($l) => $l->do_it_time);
                 if ($claimedByLine) {
                     return ['ok' => false, 'message' => 'มีคนกำลังจัดการ PO นี้อยู่ (' . $claimedByLine->do_it . ')'];
@@ -276,9 +280,11 @@ class StoreController extends Controller
     }
     /**
      * ปุ่ม "จัดการเสร็จสิ้น" — ปลดล็อค PO ภายนอกใบนี้ ให้กลับมาเลือกระบุตำแหน่งได้ตามปกติ
-     */
-    /**
-     * ปุ่ม "จัดการเสร็จสิ้น" — ปลดล็อค PO ภายนอกใบนี้ ให้กลับมาเลือกระบุตำแหน่งได้ตามปกติ
+     *
+     * ★ แก้ไข: ไม่ล้าง do_it / do_it_time อีกต่อไป — เก็บไว้เป็นประวัติว่าใครเป็นคน "กำลังจัดการ"
+     *   ก่อนหน้านี้ (เดิมโค้ดเซ็ตเป็น null ทำให้ประวัติหาย และทำให้สถานะ "claimed" ที่ดูจาก
+     *   do_it_time กลับไปว่างเปล่า ปุ่ม "กำลังจัดการ" เลยโผล่กลับมาให้กดซ้ำได้ทั้งที่เสร็จแล้ว)
+     *   ใช้ sus_time เป็นตัวบอกสถานะ "เสร็จสิ้นแบบถาวร" แทน และกันไม่ให้กดเสร็จสิ้นซ้ำ
      */
     public function locationFinish(Request $request)
     {
@@ -304,6 +310,12 @@ class StoreController extends Controller
                     return ['ok' => false, 'message' => 'ไม่พบรายการที่ต้องจัดการ'];
                 }
 
+                // ★ กันกด "จัดการเสร็จสิ้น" ซ้ำ ถ้าเคยกดไปแล้ว
+                $alreadyFinished = $lines->contains(fn ($l) => $l->sus_time);
+                if ($alreadyFinished) {
+                    return ['ok' => false, 'message' => 'PO นี้จัดการเสร็จสิ้นไปแล้ว'];
+                }
+
                 $isClaimed = $lines->contains(fn ($l) => $l->do_it_time);
                 if (!$isClaimed) {
                     return ['ok' => false, 'message' => 'PO นี้ยังไม่ได้อยู่ระหว่างจัดการ'];
@@ -314,8 +326,7 @@ class StoreController extends Controller
                     ->update([
                         'sus'        => $authUser->name,
                         'sus_time'   => Carbon::now(),
-                        'do_it'      => null,   // ← เคลียร์ล็อคออกจริงๆ
-                        'do_it_time' => null,   // ← เคลียร์ล็อคออกจริงๆ
+                        // ★ ไม่ล้าง do_it / do_it_time อีกต่อไป — เก็บไว้เป็นประวัติผู้จัดการ
                     ]);
 
                 return ['ok' => true, 'message' => 'จัดการเสร็จสิ้นแล้ว'];
@@ -358,32 +369,57 @@ class StoreController extends Controller
                     'item_name'     => $l->good_name,
                     'item_quantity' => $l->recv_qty,
                 ]),
-                'total_qty'  => $lines->sum('recv_qty'),
-                'location'   => null,
-                'packed_by'  => optional($lines->first())->received_by,
-                'packed_at'  => $lines->max('received_at'),
-                'todo'       => true,
-                'claimed'    => $claim['claimed'],
-                'claimed_by' => $claim['by'],
-                'claimed_at' => $claim['at'],
+                'total_qty'   => $lines->sum('recv_qty'),
+                'location'    => null,
+                'packed_by'   => optional($lines->first())->received_by,
+                'packed_at'   => $lines->max('received_at'),
+                'todo'        => true,
+                'claimed'     => $claim['claimed'],
+                'claimed_by'  => $claim['by'],
+                'claimed_at'  => $claim['at'],
+                // ★ สถานะ "จัดการเสร็จสิ้นแล้ว" (ถาวร) แยกจาก claimed
+                'finished'    => $claim['finished'],
+                'finished_by' => $claim['finished_by'],
+                'finished_at' => $claim['finished_at'],
             ];
         })->values();
     }
 
     /**
-     * ตรวจสถานะ "กำลังจัดการ" ของ PO ภายนอกใบหนึ่ง จากบรรทัดสินค้า (PoReceiveLine, shelf ยังว่าง)
-     * ที่ preload มาแล้ว — ใช้บรรทัดที่มี do_it_time ล่าสุดเป็นตัวแทนของทั้งใบ
-     * ถือว่า "กำลังจัดการอยู่" เมื่อมี do_it_time และ (ยังไม่มี sus_time หรือ sus_time เก่ากว่า do_it_time)
+     * ตรวจสถานะ "กำลังจัดการ" / "จัดการเสร็จสิ้นแล้ว" ของ PO ภายนอกใบหนึ่ง จากบรรทัดสินค้า
+     * (PoReceiveLine, shelf ยังว่าง) ที่ preload มาแล้ว
+     *
+     * ★ แก้ไข: เดิมดูแค่ do_it_time อย่างเดียว (claimed / not claimed) — ตอนนี้ do_it_time จะไม่ถูกล้าง
+     *   อีกต่อไปหลังกด "จัดการเสร็จสิ้น" (ดู locationFinish) จึงต้องเช็ค sus_time ก่อนเป็นอันดับแรก
+     *   เพื่อแยกสถานะ "เสร็จสิ้นแบบถาวร" ออกจาก "กำลังจัดการอยู่ตอนนี้" ให้ถูกต้อง
+     *
+     * ลำดับการตัดสิน:
+     *   1) มี sus_time (บรรทัดล่าสุด) → ถือว่า "เสร็จสิ้นแล้ว" (finished) ไม่ใช่ claimed อีกต่อไป
+     *   2) ไม่มี sus_time แต่มี do_it_time → ถือว่า "กำลังจัดการอยู่" (claimed)
+     *   3) ไม่มีทั้งคู่ → ยังไม่มีใครแตะ
      */
     private function externalClaimStateFromLines(\Illuminate\Support\Collection $lines): array
     {
+        $finishedLine = $lines->filter(fn ($l) => $l->sus_time)->sortByDesc('sus_time')->first();
+
+        if ($finishedLine) {
+            return [
+                'claimed'     => false,
+                'by'          => $finishedLine->do_it,
+                'at'          => $finishedLine->do_it_time,
+                'finished'    => true,
+                'finished_by' => $finishedLine->sus,
+                'finished_at' => $finishedLine->sus_time,
+            ];
+        }
+
         $latest = $lines->filter(fn ($l) => $l->do_it_time)->sortByDesc('do_it_time')->first();
 
         if (!$latest) {
-            return ['claimed' => false, 'by' => null, 'at' => null];
+            return ['claimed' => false, 'by' => null, 'at' => null, 'finished' => false, 'finished_by' => null, 'finished_at' => null];
         }
 
-        return ['claimed' => true, 'by' => $latest->do_it, 'at' => $latest->do_it_time];
+        return ['claimed' => true, 'by' => $latest->do_it, 'at' => $latest->do_it_time, 'finished' => false, 'finished_by' => null, 'finished_at' => null];
     }
     private function fetchLegacyPoItemsBatch(array $poNums): \Illuminate\Support\Collection
     {
@@ -825,11 +861,19 @@ class StoreController extends Controller
                         ]);
                 }
                 if ($externalPoIds) {
-                    // ⚠️ กันรายการที่ "กำลังจัดการ" อยู่ (do_it_time ไม่ null) ไม่ให้ถูกระบุตำแหน่งทับ
-                    //    แม้ UI จะซ่อน checkbox ไว้แล้ว แต่กันไว้อีกชั้นฝั่ง backend เผื่อยิง request ตรงๆ
+                    // ⚠️ กันรายการที่ "กำลังจัดการอยู่จริง" (do_it_time มีค่า แต่ยังไม่กดเสร็จสิ้น)
+                    //    ไม่ให้ถูกระบุตำแหน่งทับ แม้ UI จะซ่อน checkbox ไว้แล้ว แต่กันไว้อีกชั้นฝั่ง backend
+                    //    เผื่อยิง request ตรงๆ
+                    //
+                    //    ★ แก้ไข: เดิมใช้ whereNull('do_it_time') อย่างเดียว — แต่ตอนนี้ do_it_time จะไม่ถูก
+                    //    ล้างอีกต่อไปหลังกด "จัดการเสร็จสิ้น" (เก็บไว้เป็นประวัติ) ถ้ายังใช้เงื่อนไขเดิมจะ
+                    //    บล็อกรายการที่จัดการเสร็จแล้วไปด้วย จึงต้องอนุญาตกรณี sus_time มีค่า (เสร็จสิ้นแล้ว)
+                    //    ควบคู่ไปกับกรณี do_it_time ยังไม่มีค่า (ไม่เคยถูกจัดการเลย)
                     $externalUpdatedLines = PoReceiveLine::whereIn('po_id', $externalPoIds)
                         ->whereNull('shelf')
-                        ->whereNull('do_it_time')
+                        ->where(function ($q) {
+                            $q->whereNull('do_it_time')->orWhereNotNull('sus_time');
+                        })
                         ->update(['shelf' => $location]);
 
                     if ($externalUpdatedLines > 0) {

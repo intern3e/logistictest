@@ -45,6 +45,9 @@ html{overflow-y:auto;}
 .dgj-bulk-btn.ok:hover:not(:disabled){background:#d1fae5;}
 .dgj-bulk-btn.redo{border-color:#8b5cf6;color:#7c3aed;}
 .dgj-bulk-btn.redo:hover:not(:disabled){background:#ede9fe;}
+.dgj-bulk-btn.hold{border-color:#0ea5e9;color:#0369a1;}
+.dgj-status.hold{background:#e0f2fe;color:#0369a1;}
+.dgj-bulk-btn.hold:hover:not(:disabled){background:#e0f2fe;}
 .dgj-select-wrap{display:flex;align-items:center;margin-right:2px;}
 .dgj-select-wrap input{accent-color:#3e6ae1;width:15px;height:15px;cursor:pointer;}
 .tesla-topnav {
@@ -1903,6 +1906,7 @@ function _jobStatusKind(j){
   const noteText=(j.note||'').trim();
   const eff=(noteText==='ส่งสำเร็จ'||noteText==='สำเร็จ')?'ส่งสำเร็จ':raw;
   if(eff.includes('สินค้าผิด'))return'wrong';
+  if(eff.includes('ค้างบิล'))return'hold';     
   if(eff.includes('ส่งใหม่'))return'redo';
   if(eff.includes('สำเร็จ')&&!eff.includes('ไม่'))return'ok';
   if(eff.includes('ไม่สำเร็จ')||eff.toLowerCase()==='ng'||eff.toLowerCase()==='fail')return'fail';
@@ -2469,14 +2473,21 @@ function ilRenderJobsForDriver(driverName,jobs){
       <div class="dgj-bulkbar-actions">
         <button type="button" class="dgj-bulk-btn ok" id="jobsBulkOk" disabled onclick="jobBulkConfirm('จัดส่งสำเร็จ')">✓ สำเร็จ</button>
         <button type="button" class="dgj-bulk-btn redo" id="jobsBulkRedo" disabled onclick="jobBulkConfirm('ส่งใหม่วันพรุ่งนี้')">↻ ส่งพรุ่งนี้</button>
+        <button type="button" class="dgj-bulk-btn hold" id="jobsBulkHold" disabled onclick="jobBulkConfirm('ค้างบิล')">🔖 ค้างบิล</button>
       </div>
     </div>`;
   }
 
   jobs.forEach((j,idx)=>{
     const kind=_jobStatusKind(j);
-    const stTxt=kind==='ok'?'สำเร็จ':(kind==='wrong'?'สินค้าผิด':(kind==='redo'?'ส่งใหม่พรุ่งนี้':(kind==='fail'?'ไม่สำเร็จ':'รอ')));
-    const badgeCls=kind==='ok'?'ok':((kind==='wrong'||kind==='fail')?'fail':'pending');
+    const stTxt=kind==='ok'?'สำเร็จ'
+      :(kind==='wrong'?'สินค้าผิด'
+      :(kind==='hold'?'ค้างบิล'                       // ⭐ ใหม่
+      :(kind==='redo'?'ส่งใหม่พรุ่งนี้'
+      :(kind==='fail'?'ไม่สำเร็จ':'รอ'))));
+    const badgeCls=kind==='ok'?'ok'
+      :((kind==='wrong'||kind==='fail')?'fail'
+      :(kind==='hold'?'hold':'pending'));              // ⭐ ใหม่
 
     const meta=[];
     if(j.so_id)meta.push(`<span class="dgj-meta-item"><span class="dgj-meta-label">SO</span> ${j.so_id}</span>`);
@@ -2514,9 +2525,10 @@ function jobUpdateSelectionCount(){
   const checked=all.filter(cb=>cb.checked);
   const countEl=document.getElementById('jobsSelectedCount');if(countEl)countEl.textContent=`เลือก ${checked.length} รายการ`;
   const selectAll=document.getElementById('jobsSelectAll');if(selectAll)selectAll.checked=all.length>0&&checked.length===all.length;
-  const okBtn=document.getElementById('jobsBulkOk'),redoBtn=document.getElementById('jobsBulkRedo');
+  const okBtn=document.getElementById('jobsBulkOk'),redoBtn=document.getElementById('jobsBulkRedo'),holdBtn=document.getElementById('jobsBulkHold');
   if(okBtn)okBtn.disabled=checked.length===0;
   if(redoBtn)redoBtn.disabled=checked.length===0;
+  if(holdBtn)holdBtn.disabled=checked.length===0;   // ⭐ ใหม่
 }
 
 async function submitJobStatus(jobKey,status,ngDetail){
@@ -2535,11 +2547,13 @@ async function submitJobStatus(jobKey,status,ngDetail){
 async function jobBulkConfirm(status){
   const checked=Array.from(document.querySelectorAll('.dgj-select:checked'));
   if(checked.length===0){alert('กรุณาเลือกอย่างน้อย 1 รายการ');return;}
-  const statusLabel=status==='จัดส่งสำเร็จ'?'สำเร็จ':'ส่งใหม่วันพรุ่งนี้';
+  const statusLabel=status==='จัดส่งสำเร็จ'?'สำเร็จ'
+    :(status==='ค้างบิล'?'ค้างบิล'                 // ⭐ ใหม่
+    :'ส่งใหม่วันพรุ่งนี้');
   if(!confirm(`ยืนยันบันทึกสถานะ "${statusLabel}" จำนวน ${checked.length} รายการ?`))return;
 
-  const okBtn=document.getElementById('jobsBulkOk'),redoBtn=document.getElementById('jobsBulkRedo');
-  if(okBtn)okBtn.disabled=true;if(redoBtn)redoBtn.disabled=true;
+  const okBtn=document.getElementById('jobsBulkOk'),redoBtn=document.getElementById('jobsBulkRedo'),holdBtn=document.getElementById('jobsBulkHold');
+  if(okBtn)okBtn.disabled=true;if(redoBtn)redoBtn.disabled=true;if(holdBtn)holdBtn.disabled=true;
 
   let successCount=0,failCount=0;
   for(const cb of checked){
