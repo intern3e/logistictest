@@ -324,6 +324,7 @@ Route::post('/deliverytrack/save', [DeliverytrackController::class, 'store'])->n
 Route::get('/deliverytrack', [DeliverytrackController::class, 'index'])->name('deliverytrack');
 Route::get('/deliverytrack/print-group', [DeliverytrackController::class, 'printGroup'])->name('deliverytrack.printGroup');
 Route::post('/return/{id}/new-bill', [DeliverytrackController::class, 'saveNewBill'])->name('deliverytrack.newbill');
+Route::get('/deliverytrack/summary', [DeliverytrackController::class, 'summary'])->name('deliverytrack.summary');
  
 
 use App\Http\Controllers\SoItemController;

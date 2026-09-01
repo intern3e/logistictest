@@ -19,10 +19,12 @@ class transaction_delivery extends Model
         'check_time',
         'status',
         'note',
+        'delivery_date'
     ];
 
     protected $casts = [
         'time_pick'  => 'datetime',
         'check_time' => 'datetime',
+        'delivery_date' => 'date',
     ];
 }

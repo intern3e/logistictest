@@ -5,6 +5,8 @@ namespace App\Http\Controllers;
 use App\Models\Bill;
 use App\Models\Docbills;
 use App\Models\transaction_delivery;
+use App\Models\PoReceive;
+use App\Models\PooutsideCancelled;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
@@ -12,6 +14,35 @@ use Carbon\Carbon;
 
 class DeliverytrackController extends Controller
 {
+    /**
+     * connection ของฐานข้อมูล ERP หลัก (ตาราง polist, SOHD, POHD ฯลฯ)
+     * ยืนยันแล้วว่าคือ database "3e" ตาม config/database.php ที่มีอยู่แล้ว
+     */
+    protected string $erpConnection = 'mysql_3e';
+
+    /**
+     * connection SQL Server (POHD/PODT/EMVendor/EMTransp) — read-only บังคับ
+     * (driver = sqlsrv_readonly ใน config/database.php)
+     */
+    protected string $account03Connection = 'mssql_account03';
+
+    /**
+     * วิธีจัดส่ง/รับของ ที่ถือว่าเป็น "รับเอง" (ต้องออกเส้นทางให้คนขับไปรับกลับมา)
+     * ยืนยันค่าจริงแล้วผ่าน tinker (2026-08) จาก:
+     *   \App\PoList::whereNotNull('DeliveryMethod')->select('DeliveryMethod')->distinct()->get();
+     * ⚠️ สะกด "มอเตอร์ไซด์" (ด) ไม่ใช่ "มอเตอร์ไซค์" (ค) ตามที่เก็บจริงในระบบ
+     */
+    protected array $selfPickupMethods = [
+        'รับเองรถใหญ่',
+        'รับเองมอเตอร์ไซด์',
+    ];
+
+    /**
+     * เริ่มดึงข้อมูล PO รับเองตั้งแต่วันที่นี้เป็นต้นไป (กรองจาก DeliveryDate)
+     * ตัดข้อมูลเก่าก่อนหน้านี้ทิ้งไปเลย ไม่ต้องดึงมาประมวลผล ลดโหลด query ลงได้มาก
+     */
+    protected string $selfPickupStartDate = '2026-01-01';
+
     protected array $deliveryMethods = [
         'มอเตอร์ไซต์กบ',
         'มอเตอร์ไซด์ในเมือง',
@@ -83,9 +114,6 @@ class DeliverytrackController extends Controller
 
     /**
      * เช็ค login + สิทธิ์การเข้าใช้งาน (เฉพาะ role admin, store เท่านั้น)
-     * แบบเดียวกับตัวอย่าง MobilePoappController@index
-     * คืนค่า RedirectResponse ถ้ายังไม่ login (ให้ caller return ค่านี้ต่อ)
-     * ถ้า login แล้วแต่ role ไม่ผ่าน จะ abort(403) หยุดการทำงานทันที
      */
     private function checkAccess()
     {
@@ -102,63 +130,287 @@ class DeliverytrackController extends Controller
         return null;
     }
 
+    private function loggedInName()
+    {
+        $user = Auth::guard('web')->user();
+        return $user->name ?? $user->emp_name ?? $user->username ?? ($user->id_emp ?? '-');
+    }
+
+    /**
+     * หน้าจ่ายงาน — แสดง "งานทั้งหมดที่ยังไม่ได้จ่ายให้คนขับ"
+     * แบ่งเป็น 2 กลุ่มใหญ่ในหน้าเว็บ (view เป็นคนจัด layout):
+     *   1) รับของเอง  -> งาน PO รับเอง (คนขับต้องออกไปรับของกลับมา)
+     *   2) ส่งของ     -> งานบิลขาย + งานบิลชั่วคราว (คนขับเอาของไปส่งลูกค้า)
+     *
+     * ไม่มีการกรองตามวันที่แล้ว — แสดงงานค้างทั้งหมดทุกวัน
+     */
     public function index(Request $request)
     {
         if ($resp = $this->checkAccess()) {
             return $resp;
         }
 
-        $user = Auth::guard('web')->user();
-        $loggedInName = $user->name ?? $user->emp_name ?? $user->username ?? ($user->id_emp ?? '-');
+        // ---- บิลขาย ----
+        $bills = Bill::whereNotNull('emp_picker')
+            ->where('emp_picker', '!=', '')
+            ->orderBy('time')
+            ->get();
 
-        $date    = $request->input('date');
-        $hasDate = filled($date);
+        // ---- บิลชั่วคราว ----
+        $docbills = Docbills::where('status', '0')
+            ->orderBy('time')
+            ->get();
 
-        $bills         = collect();
-        $docbills      = collect();
-        $billGroups    = [];
-        $docGroups     = [];
-        $dispatchBoxes = [];
+        // ---- PO รับเอง ----
+        $poJobs = $this->getPendingSelfPickupPOs();
 
-        if ($hasDate) {
-            $bills = Bill::whereNotNull('emp_picker')
-                ->where('emp_picker', '!=', '')
-                ->whereDate('time', $date)
-                ->orderBy('time')
-                ->get();
+        // เช็คว่างานไหนถูกจ่ายให้คนขับไปแล้ว (ไม่สนวันที่ — เอาทุก record, รวมทั้ง 3 ประเภท)
+        $relevantIds = $bills->pluck('so_detail_id')
+            ->merge($docbills->pluck('doc_id'))
+            ->merge($poJobs->pluck('PONum'));
 
-            $docbills = Docbills::where('status', '0')
-                ->whereDate('time', $date)
-                ->orderBy('time')
-                ->get();
+        // ⚠️ orderBy('id') สำคัญ — ป้องกัน keyBy() สุ่มเลือกแถวเก่า/ใหม่ไม่แน่นอน
+        // เมื่อมีหลายแถว bill_id เดียวกัน (เช่น แถวเดิม + แถวที่เกิดจาก "ส่งใหม่พรุ่งนี้")
+        // ให้ยึดแถว id ล่าสุดเสมอเป็นตัวตัดสินว่างานนี้ "ถูกจ่ายอยู่ปัจจุบัน" หรือไม่
+        $dispatched = $this->chunkedWhereInGet(
+            fn () => transaction_delivery::query()->orderBy('id'),
+            'bill_id',
+            $relevantIds
+        )->keyBy('bill_id');
 
-            // งานที่ถูกจ่ายไปแล้วของวันนี้: จับคู่ด้วย bill_id ที่อยู่ในรายการของวันนี้
-            // (time_pick คือ "เวลาที่คนจ่ายงานกด" ไม่ใช่วันที่ของงาน จึงจับคู่ด้วย bill_id แทน)
-            $relevantIds = $bills->pluck('so_detail_id')->merge($docbills->pluck('doc_id'));
-            $deliveries  = transaction_delivery::whereIn('bill_id', $relevantIds)->get();
-            $dispatched  = $deliveries->keyBy('bill_id');
+        // เอาเฉพาะงานที่ "ยังไม่ได้จ่าย" เท่านั้น
+        $bills    = $bills->reject(fn ($b) => $dispatched->has($b->so_detail_id))->values();
+        $docbills = $docbills->reject(fn ($d) => $dispatched->has($d->doc_id))->values();
+        $poJobs   = $poJobs->reject(fn ($p) => $dispatched->has($p->PONum))->values();
 
-            $billGroups = $this->groupBillsByCustomer($bills, $dispatched);
-            $docGroups  = $this->groupDocsByCustomer($docbills, $dispatched);
-
-            $dispatchBoxes = $this->buildDispatchBoxes($deliveries);
-        }
+        $billGroups = $this->groupBillsByCustomer($bills);
+        $docGroups  = $this->groupDocsByCustomer($docbills);
+        $poGroups   = $this->groupPoByVendor($poJobs);
 
         return view('driver.delivery', [
-            'bills'              => $bills,
-            'docbills'           => $docbills,
             'billGroups'         => $billGroups,
             'docGroups'          => $docGroups,
-            'date'               => $date,
-            'hasDate'            => $hasDate,
+            'poGroups'           => $poGroups,
             'responsiblePersons' => $this->responsiblePersons,
             'deliveryMethods'    => $this->deliveryMethods,
-            'dispatchBoxes'      => $dispatchBoxes,
-            'loggedInName'       => $loggedInName,
+            'loggedInName'       => $this->loggedInName(),
         ]);
     }
 
-    private function groupBillsByCustomer($bills, $dispatched): array
+    /**
+     * ดึงรายการ PO ที่วิธีรับของเป็น "รับเอง" และยังไม่เสร็จงาน
+     * (ไม่ใช่ ครบ(green) และไม่ใช่ ยกเลิก(red) — ดู resolvePOStatus() ด้านล่าง)
+     *
+     * ดึงเป็นก้อนเดียว (whereIn) ทั้งหมด ไม่ loop query ทีละ PO
+     */
+    private function getPendingSelfPickupPOs()
+    {
+        $poLists = DB::connection($this->erpConnection)->table('polist')
+            ->whereIn('DeliveryMethod', $this->selfPickupMethods)
+            ->where('DeliveryDate', '>=', $this->selfPickupStartDate)
+            // ตัด PO ที่ระบบเก่าบันทึกว่า "COMPLETED" แล้วออกตั้งแต่ต้นทาง
+            // (COALESCE+TRIM+UPPER กันเคส NULL/เว้นวรรค/ตัวพิมพ์เล็ก-ใหญ่ ให้ไม่หลุดจากการกรองไปโดยไม่ตั้งใจ)
+            ->whereRaw("UPPER(TRIM(COALESCE(POstatus, ''))) != 'COMPLETED'")
+            ->orderBy('SONum')
+            ->orderBy('PONum')
+            ->get();
+
+        if ($poLists->isEmpty()) {
+            return collect();
+        }
+
+        $poIdsWithPrefix = $poLists->pluck('PONum')->map(fn ($p) => 'PO' . $p)->unique()->values();
+
+        // ใช้ whereIn('po_id', ...) อย่างเดียวก็พอ (ไม่ต้อง whereIn('so_id', ...) ซ้ำ)
+        // เพราะ key ที่ผูกกับแต่ละแถวใช้ so_id ที่ได้จากผลลัพธ์เองอยู่แล้ว
+        // และช่วยลดจำนวน placeholder ในคำสั่ง SQL ลงครึ่งหนึ่งด้วย
+        $poReceives = $this->chunkedWhereInGet(
+            fn () => PoReceive::query(),
+            'po_id',
+            $poIdsWithPrefix
+        )->keyBy(fn ($r) => $r->so_id . '|' . preg_replace('/^PO/', '', $r->po_id));
+
+        $cancelled = $this->chunkedWhereInGet(
+            fn () => PooutsideCancelled::query(),
+            'po_id',
+            $poIdsWithPrefix
+        )->keyBy(fn ($r) => $r->so_id . '|' . preg_replace('/^PO/', '', $r->po_id));
+
+        $result = collect();
+
+        foreach ($poLists as $po) {
+            $key = $po->SONum . '|' . $po->PONum;
+
+            $status = $this->resolvePOStatus(
+                $po,
+                $poReceives->get($key),
+                $cancelled->has($key)
+            );
+
+            if (!$this->isPoPending($status)) {
+                continue; // ครบ หรือ ยกเลิกแล้ว ไม่ต้องเอาเข้ามาเป็นงาน
+            }
+
+            // stdClass จาก query builder — เพิ่ม property ใหม่ได้ตรงๆ เหมือน Eloquent
+            $po->status_color = $status['color'];
+            $po->status_label = $status['label'];
+            $result->push($po);
+        }
+
+        // ⚠️ ต้อง return ผ่านตัวนี้เสมอ — จุดนี้เองที่ทำให้ vendor_address / items
+        // ถูกแนบเข้าไปในแต่ละ $po ก่อนส่งกลับ ถ้า return $result; เฉยๆ จะไม่มี
+        // ที่อยู่/รายการสินค้าเลย เพราะ attachVendorAddressAndItems() ไม่เคยถูกเรียก
+        return $this->attachVendorAddressAndItems($result);
+    }
+
+    /**
+     * bulk-fetch "ที่อยู่ vendor" + "รายการสินค้า/จำนวน" ของแต่ละ PO
+     * จาก mssql_account03 (POHD + EMVendor + PODT) แล้ว attach เข้า object PO เดิม
+     *
+     * ⚠️ ยืนยันจาก tinker (2026-08):
+     *   - EMVendor ไม่มีคอลัมน์ "VendorAddress" เดียว — ไม่มีคอลัมน์นี้อยู่จริงในตาราง
+     *     ต้องต่อเองจาก VendorAddr1, VendorAddr2, District, Amphur, Province, PostCode
+     *   - PODT ไม่มีคอลัมน์ DocuNo — เชื่อมกับ POHD ผ่าน POID เท่านั้น
+     *     (POHD.POID = PODT.POID)
+     *   - PODT มี CancelFlag ('N' = ปกติ) — กรองไม่เอาแถวที่ถูกยกเลิก
+     */
+    private function attachVendorAddressAndItems($poJobs)
+    {
+        if ($poJobs->isEmpty()) {
+            return $poJobs;
+        }
+
+        $docuNos = $poJobs->pluck('PONum')->map(fn ($p) => 'PO' . $p)->unique()->values();
+
+        // ---- หัว PO + ที่อยู่ vendor (POHD -> EMVendor) ----
+        // ดึง POID มาด้วย เพราะต้องใช้เป็น key เชื่อมไป PODT ต่อ
+        $headers = $this->chunkedWhereInGet(
+            fn () => DB::connection($this->account03Connection)->table('POHD')
+                ->leftJoin('EMVendor', 'POHD.VendorID', '=', 'EMVendor.VendorID')
+                ->select(
+                    'POHD.POID',
+                    'POHD.DocuNo',
+                    'EMVendor.VendorAddr1',
+                    'EMVendor.VendorAddr2',
+                    'EMVendor.District',
+                    'EMVendor.Amphur',
+                    'EMVendor.Province',
+                    'EMVendor.PostCode'
+                ),
+            'POHD.DocuNo',
+            $docuNos
+        )->keyBy('DocuNo');
+
+        // ---- รายการสินค้า/จำนวน (PODT) — เชื่อมด้วย POID ไม่ใช่ DocuNo ----
+        $poIds = $headers->pluck('POID')->filter()->unique()->values();
+
+        $items = $poIds->isEmpty()
+            ? collect()
+            : $this->chunkedWhereInGet(
+                fn () => DB::connection($this->account03Connection)->table('PODT')
+                    ->where('CancelFlag', '!=', 'Y') // กันแถวที่ถูกยกเลิก
+                    ->select('POID', 'GoodName', 'GoodQty2'),
+                'POID',
+                $poIds
+            )->groupBy('POID');
+
+        foreach ($poJobs as $po) {
+            $docuNo = 'PO' . $po->PONum;
+            $header = $headers->get($docuNo);
+
+            // ต่อที่อยู่จากหลายคอลัมน์ ข้ามส่วนที่ว่าง
+            $po->vendor_address = $header
+                ? collect([
+                    $header->VendorAddr1,
+                    $header->VendorAddr2,
+                    $header->District,
+                    $header->Amphur,
+                    $header->Province,
+                    $header->PostCode,
+                ])->filter(fn ($v) => filled($v))->implode(' ')
+                : null;
+
+            $po->items = $header
+                ? ($items->get($header->POID) ?? collect())
+                    ->map(fn ($i) => [
+                        'name' => $i->GoodName,
+                        'qty'  => rtrim(rtrim($i->GoodQty2, '0'), '.'), // ตัด .0000 ท้ายทิ้ง
+                    ])
+                    ->values()
+                : collect();
+        }
+
+        return $poJobs;
+    }
+
+    /**
+     * ดึงข้อมูลด้วย whereIn($column, $values) แบบแบ่งเป็นก้อนๆ (chunk ทีละ 1000 ตัว)
+     * แทนการยัด array ยาวๆ ลงไปใน whereIn เดียว — ป้องกัน MySQL/SQL Server error
+     * "too many placeholders" ตอนข้อมูลมีเยอะมาก
+     *
+     * $queryFactory ต้องเป็น closure ที่คืน query builder (หรือ Eloquent query()) ใหม่
+     * ทุกครั้งที่ถูกเรียก ห้าม share instance เดิมข้ามรอบ
+     */
+    private function chunkedWhereInGet(\Closure $queryFactory, string $column, $values, int $chunkSize = 1000)
+    {
+        $values  = $values instanceof \Illuminate\Support\Collection ? $values->all() : $values;
+        $results = collect();
+
+        foreach (array_chunk(array_values($values), $chunkSize) as $chunk) {
+            if (empty($chunk)) {
+                continue;
+            }
+            $results = $results->merge($queryFactory()->whereIn($column, $chunk)->get());
+        }
+
+        return $results;
+    }
+
+    /**
+     * ตัดสินสถานะ PO 1 ใบ — เอาไว้แค่บอกว่า "คนขับเอาของมาแล้วหรือยัง"
+     * ไม่สนใจรายละเอียดหลังบ้านของคลัง (เช่น รับแล้วแต่ยังไม่ระบุชั้นวาง)
+     * เพราะไม่เกี่ยวกับหน้าที่ของหน้านี้ — จ่ายงานให้คนขับเท่านั้น
+     *
+     * @return array{color:string,label:string}
+     */
+    private function resolvePOStatus($poList, $receiveEntry, bool $isCancelled): array
+    {
+        if ($isCancelled) {
+            return ['color' => 'red', 'label' => 'ยกเลิก'];
+        }
+
+        $newStatus = $receiveEntry->status ?? null;
+
+        // "รับเข้าผิด" ถือว่าไม่มีข้อมูลจากระบบใหม่ -> fallback ไปสถานะเก่า
+        if ($newStatus !== null && $newStatus !== 'รับเข้าผิด') {
+            $map = [
+                'ครบ'     => ['color' => 'green',  'label' => 'ครบ'],
+                'บางส่วน' => ['color' => 'yellow', 'label' => 'รับบางส่วน'],
+                'ยกเลิก'  => ['color' => 'red',    'label' => 'ยกเลิก'],
+            ];
+
+            return $map[$newStatus] ?? ['color' => 'inherit', 'label' => $newStatus];
+        }
+
+        // fallback: สถานะเก่าจาก polist.POstatus
+        $old = strtoupper(trim($poList->POstatus ?? ''));
+        $map = [
+            'ENTRY'     => ['color' => 'inherit', 'label' => 'รอเข้า'],
+            'COMPLETED' => ['color' => 'green',   'label' => 'ครบ'],
+            'PARTIAL'   => ['color' => 'orange',  'label' => 'เลยกำหนด'],
+            'CANCELLED' => ['color' => 'red',     'label' => 'ยกเลิก'],
+        ];
+
+        return $map[$old] ?? ['color' => 'inherit', 'label' => 'ไม่ทราบสถานะ'];
+    }
+
+    /** true = ยังไม่เสร็จงาน (ไม่ใช่ ครบ(green) และไม่ใช่ ยกเลิก(red)) */
+    private function isPoPending(array $status): bool
+    {
+        return !in_array($status['color'], ['green', 'red'], true);
+    }
+
+    private function groupBillsByCustomer($bills): array
     {
         $groups = [];
 
@@ -173,28 +425,13 @@ class DeliverytrackController extends Controller
                 ];
             }
 
-            $groups[$custId]['rows'][] = [
-                'bill'     => $bill,
-                'assigned' => $dispatched->get($bill->so_detail_id),
-            ];
+            $groups[$custId]['rows'][] = ['bill' => $bill];
         }
-
-        foreach ($groups as &$g) {
-            usort($g['rows'], fn ($a, $b) => ($a['assigned'] ? 1 : 0) <=> ($b['assigned'] ? 1 : 0));
-        }
-        unset($g);
-
-        // ลูกค้าที่จ่ายงานครบทุกบิลแล้ว (ไม่มีบิลค้างเลย) ให้ไปอยู่ท้ายสุดของกริด
-        uasort($groups, function ($a, $b) {
-            $aDone = collect($a['rows'])->every(fn ($r) => $r['assigned']) ? 1 : 0;
-            $bDone = collect($b['rows'])->every(fn ($r) => $r['assigned']) ? 1 : 0;
-            return $aDone <=> $bDone;
-        });
 
         return $groups;
     }
 
-    private function groupDocsByCustomer($docbills, $dispatched): array
+    private function groupDocsByCustomer($docbills): array
     {
         $groups = [];
 
@@ -209,27 +446,44 @@ class DeliverytrackController extends Controller
                 ];
             }
 
-            $groups[$custId]['rows'][] = [
-                'doc'      => $doc,
-                'assigned' => $dispatched->get($doc->doc_id),
-            ];
+            $groups[$custId]['rows'][] = ['doc' => $doc];
         }
-
-        foreach ($groups as &$g) {
-            usort($g['rows'], fn ($a, $b) => ($a['assigned'] ? 1 : 0) <=> ($b['assigned'] ? 1 : 0));
-        }
-        unset($g);
-
-        // ลูกค้าที่จ่ายงานครบทุกเอกสารแล้ว ให้ไปอยู่ท้ายสุดของกริด
-        uasort($groups, function ($a, $b) {
-            $aDone = collect($a['rows'])->every(fn ($r) => $r['assigned']) ? 1 : 0;
-            $bDone = collect($b['rows'])->every(fn ($r) => $r['assigned']) ? 1 : 0;
-            return $aDone <=> $bDone;
-        });
 
         return $groups;
     }
 
+    /**
+     * จัดกลุ่ม PO ตาม "ร้าน" (vendor) ที่ต้องไปรับของ — ใช้ VendorID/VendorName
+     * ที่ denormalize ไว้อยู่แล้วบน polist ไม่ต้อง query เพิ่ม
+     * ที่อยู่ vendor (vendor_address) มาจาก attachVendorAddressAndItems() ที่ผูกไว้
+     * กับ $po ก่อนหน้านี้แล้ว — เก็บที่ระดับกลุ่มครั้งเดียว (vendor เดียวกันที่อยู่เดียวกัน)
+     */
+    private function groupPoByVendor($poJobs): array
+    {
+        $groups = [];
+
+        foreach ($poJobs as $po) {
+            $vendorId = $po->VendorID ?: '-';
+
+            if (!isset($groups[$vendorId])) {
+                $groups[$vendorId] = [
+                    'customer_id'    => $po->VendorID,
+                    'customer_name'  => $po->VendorName,
+                    'vendor_address' => $po->vendor_address ?? null,
+                    'rows'           => [],
+                ];
+            }
+
+            $groups[$vendorId]['rows'][] = ['po' => $po];
+        }
+
+        return $groups;
+    }
+
+    /**
+     * บันทึกการจ่ายงานให้คนขับ — ต้องระบุ "วันที่จัดส่ง" (delivery_date) ด้วยเสมอ
+     * เพื่อให้หน้าสรุปงานคนขับ (summary) เอาไปแยกวันได้
+     */
     public function store(Request $request)
     {
         if ($resp = $this->checkAccess()) {
@@ -241,14 +495,13 @@ class DeliverytrackController extends Controller
             'jobs.*'         => 'required|string',
             'driver_name'    => 'nullable|string|max:255',
             'transport_name' => 'required|string|max:255',
+            'delivery_date'  => 'required|date',
         ]);
 
-        // ถ้าเลือกวิธีการจัดส่งเป็น "เซลล์ไปส่งเอง" บังคับต้องระบุชื่อเซลล์ (เก็บลง driver_name/ผู้รับผิดชอบ)
         if ($validated['transport_name'] === 'เซลล์ไปส่งเอง' && blank($validated['driver_name'] ?? null)) {
             return redirect()->back()->with('error', 'เลือก "เซลล์ไปส่งเอง" กรุณาระบุชื่อเซลล์ที่ไปส่งเองด้วย');
         }
 
-        // ถ้าไม่ใช่ "เซลล์ไปส่งเอง" ผู้รับผิดชอบต้องอยู่ในรายการ $responsiblePersons เท่านั้น (พิมพ์ชื่ออิสระไม่ได้)
         if ($validated['transport_name'] !== 'เซลล์ไปส่งเอง'
             && filled($validated['driver_name'] ?? null)
             && !in_array($validated['driver_name'], $this->responsiblePersons, true)
@@ -256,8 +509,7 @@ class DeliverytrackController extends Controller
             return redirect()->back()->with('error', 'กรุณาเลือกชื่อผู้รับผิดชอบจากรายการที่มีให้เท่านั้น');
         }
 
-        $user = Auth::guard('web')->user();
-        $assignedBy = $user->name ?? $user->emp_name ?? $user->username ?? ($user->id_emp ?? null);
+        $assignedBy = $this->loggedInName();
 
         DB::beginTransaction();
         try {
@@ -278,11 +530,17 @@ class DeliverytrackController extends Controller
                     if (!$job) {
                         continue;
                     }
+                } elseif ($type === 'po') {
+                    // job สำหรับ "ไปรับของ" — เช็คว่า PO นี้มีจริงในระบบ
+                    $job = DB::connection($this->erpConnection)->table('polist')
+                        ->where('PONum', $id)->first();
+                    if (!$job) {
+                        continue;
+                    }
                 } else {
                     continue;
                 }
 
-                // กันซ้ำ: ถ้างานนี้ (bill_id นี้) ถูกมอบให้ผู้รับผิดชอบไปแล้วไม่ว่าวันไหนก็ตาม ไม่ต้องสร้างซ้ำ
                 $alreadyDispatched = transaction_delivery::where('bill_id', $id)->exists();
                 if ($alreadyDispatched) {
                     continue;
@@ -290,9 +548,9 @@ class DeliverytrackController extends Controller
 
                 transaction_delivery::create([
                     'bill_id'        => $id,
-                    // name_pick / time_pick = ชื่อคนที่กดจ่ายงาน และเวลาที่กด (ไม่ใช่ดึงจาก tblbill/docbills แล้ว)
                     'name_pick'      => $assignedBy,
                     'time_pick'      => now(),
+                    'delivery_date'  => $validated['delivery_date'],
                     'transport_name' => $validated['transport_name'],
                     'driver_name'    => $validated['driver_name'] ?: null,
                     'assigned_by'    => $assignedBy,
@@ -309,8 +567,41 @@ class DeliverytrackController extends Controller
         }
 
         return redirect()
-            ->route('deliverytrack', ['date' => $request->input('date')])
+            ->route('deliverytrack')
             ->with('success', 'บันทึกข้อมูลการจัดส่งเรียบร้อยแล้ว');
+    }
+
+    /**
+     * หน้าสรุปงานคนขับ / งานที่จัดส่งแล้ว — แยกเป็นอีกหน้าต่างหาก
+     * รับ ?date=YYYY-MM-DD (ไม่บังคับ) เพื่อกรองตาม "วันที่จัดส่ง" (delivery_date)
+     */
+    public function summary(Request $request)
+    {
+        if ($resp = $this->checkAccess()) {
+            return $resp;
+        }
+
+        $date = $request->input('date');
+
+        $query = transaction_delivery::query()->orderBy('delivery_date');
+        if (filled($date)) {
+            $query->whereDate('delivery_date', $date);
+        }
+        $deliveries = $query->get();
+
+        $boxesByDate = [];
+        foreach ($deliveries->groupBy(function ($d) {
+            return $d->delivery_date ? Carbon::parse($d->delivery_date)->format('Y-m-d') : 'ไม่ระบุวันที่';
+        }) as $dateKey => $group) {
+            $boxesByDate[$dateKey] = $this->buildDispatchBoxes($group);
+        }
+        ksort($boxesByDate);
+
+        return view('driver.delivery-summary', [
+            'date'         => $date,
+            'boxesByDate'  => $boxesByDate,
+            'loggedInName' => $this->loggedInName(),
+        ]);
     }
 
     private function buildDispatchBoxes($deliveries): array
@@ -322,6 +613,8 @@ class DeliverytrackController extends Controller
 
             $bill = Bill::where('so_detail_id', $id)->first();
             $doc  = $bill ? null : Docbills::where('doc_id', $id)->first();
+            $po   = ($bill || $doc) ? null : DB::connection($this->erpConnection)->table('polist')
+                ->where('PONum', $id)->first();
 
             if ($bill) {
                 $customerCode = $bill->customer_id;
@@ -337,6 +630,14 @@ class DeliverytrackController extends Controller
                 $address      = $doc->com_address;
                 $lalong       = $doc->com_la_long;
                 $notes        = $doc->notes;
+            } elseif ($po) {
+                // งาน "ไปรับของ" — ไม่มีที่อยู่ลูกค้า ใช้ชื่อร้าน(vendor)แทน
+                $customerCode = $po->VendorID;
+                $customerName = $po->VendorName;
+                $billNo       = $po->PONum;
+                $address      = null;
+                $lalong       = null;
+                $notes        = 'ไปรับของที่ร้าน (SO ' . $po->SONum . ')';
             } else {
                 continue;
             }
@@ -351,6 +652,7 @@ class DeliverytrackController extends Controller
                     'transport_name' => $transport,
                     'driver_name'    => $driver,
                     'assigned_by'    => $delivery->assigned_by ?: null,
+                    'delivery_date'  => $delivery->delivery_date,
                     'total_items'    => 0,
                     'customers'      => [],
                 ];
@@ -362,7 +664,6 @@ class DeliverytrackController extends Controller
                 $boxes[$boxKey]['customers'][$customerCode] = [
                     'customer_code' => $customerCode,
                     'customer_name' => $customerName,
-                    // ที่อยู่ + lalong เป็นข้อมูลระดับลูกค้า เขียน/ทำ QR แค่ครั้งเดียวต่อกลุ่ม
                     'address'       => $address,
                     'lalong'        => $lalong,
                     'items'         => [],
@@ -381,7 +682,6 @@ class DeliverytrackController extends Controller
         foreach ($boxes as &$box) {
             ksort($box['customers']);
 
-            // ลำดับงาน = "จุดที่.ลำดับย่อยในจุดนั้น" เช่น 1.1 / 2.1 / 3.1 / 3.2
             $stopNo = 1;
             foreach ($box['customers'] as &$cust) {
                 $cust['stop_no'] = $stopNo;
@@ -410,20 +710,11 @@ class DeliverytrackController extends Controller
         $transport = $request->input('transport');
         $driver    = $request->input('driver');
 
-        // หา bill_id ของงานที่อยู่ในวันนั้นก่อน (time_pick ไม่ใช่วันที่ของงานแล้ว จึงกรองผ่าน bill_id แทน)
-        $billIds = Bill::whereNotNull('emp_picker')
-            ->where('emp_picker', '!=', '')
-            ->whereDate('time', $date)
-            ->pluck('so_detail_id');
+        $query = transaction_delivery::where('transport_name', $transport);
 
-        $docIds = Docbills::where('status', '0')
-            ->whereDate('time', $date)
-            ->pluck('doc_id');
-
-        $relevantIds = $billIds->merge($docIds);
-
-        $query = transaction_delivery::whereIn('bill_id', $relevantIds)
-            ->where('transport_name', $transport);
+        if (filled($date)) {
+            $query->whereDate('delivery_date', $date);
+        }
 
         if (filled($driver)) {
             $query->where('driver_name', $driver);
@@ -441,8 +732,7 @@ class DeliverytrackController extends Controller
             'customers'      => [],
         ];
 
-        $user = Auth::guard('web')->user();
-        $printedBy = $user->name ?? $user->emp_name ?? $user->username ?? ($user->id_emp ?? '-');
+        $printedBy = $this->loggedInName();
         $printedAt = Carbon::now();
 
         $pdf = \Barryvdh\DomPDF\Facade\Pdf::setOptions(['isRemoteEnabled' => true])
@@ -454,7 +744,7 @@ class DeliverytrackController extends Controller
                 'printedAt' => $printedAt,
             ])->setPaper('a4', 'portrait');
 
-        $fileName = 'ใบงานขนส่ง_' . $transport . '_' . $date . '.pdf';
+        $fileName = 'ใบงานขนส่ง_' . $transport . '_' . ($date ?: 'all') . '.pdf';
 
         return $pdf->stream($fileName);
     }
