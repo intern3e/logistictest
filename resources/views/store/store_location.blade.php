@@ -72,11 +72,12 @@
         .toolbar { display:flex; gap:8px; margin-bottom:16px; flex-wrap:wrap; align-items:center; }
         .toolbar .filter-group { display:flex; gap:8px; flex-wrap:wrap; align-items:center; }
         .toolbar .field-label { font-size:12px; color:var(--muted); font-weight:600; margin-right:-4px; }
-        input[type="text"],input[type="search"] {
+        select {
             padding:8px 12px; border:1px solid var(--border);
             font-family:inherit; font-size:14px; background:var(--canvas); color:var(--ink);
+            cursor:pointer;
         }
-        input:focus { outline:none; border-color:var(--primary); box-shadow:0 0 0 3px var(--primary-light); }
+        select:focus { outline:none; border-color:var(--primary); box-shadow:0 0 0 3px var(--primary-light); }
         button {
             padding:8px 20px; border:1px solid transparent; border-radius:6px;
             font-family:inherit; font-weight:600; font-size:15px;
@@ -121,6 +122,11 @@
         dialog label { display:block; margin-bottom:8px; font-weight:600; font-size:14px; text-transform:uppercase; color:var(--muted); }
         dialog input { width:100%; font-size:18px; padding:14px 16px; }
         .dialog-actions { display:flex; gap:8px; justify-content:flex-end; margin-top:24px; }
+        #itemsModal { width:480px; }
+        #itemsModal table { width:100%; min-width:0; margin-top:8px; }
+        #itemsModal th, #itemsModal td { padding:8px 10px; font-size:13px; }
+        #itemsModal .items-modal-empty { text-align:center; color:var(--muted); padding:20px; font-style:italic; }
+        #itemsModal .items-modal-loading { text-align:center; color:var(--muted); padding:20px; }
         .dialog-actions button { font-size:16px; padding:10px 26px; }
         .hint { font-size:13px; color:var(--muted); margin-top:10px; min-height:18px; }
         .autocomplete-wrap { position:relative; }
@@ -186,11 +192,15 @@
             <input type="search" name="SONum" value="{{ request('SONum') }}" placeholder="ค้นหา SO..." autocomplete="off">
             <input type="search" name="PONum" value="{{ request('PONum') }}" placeholder="ค้นหา PO ภายใน..." autocomplete="off">
             <input type="search" name="customer" value="{{ request('customer') }}" placeholder="ค้นหาลูกค้า..." autocomplete="off">
-            <input type="search" name="location" value="{{ request('location') }}" placeholder="ค้นหาที่เก็บ..." autocomplete="off">
-            <input type="search" name="item" value="{{ request('item') }}" placeholder="ค้นหาสินค้า..." autocomplete="off">
+            {{-- ★ เพิ่ม: กรองดู PO ภายใน (มี "A") หรือ PO ภายนอก (ไม่มี "A") --}}
+            <select name="po_type">
+                <option value="">PO ทั้งหมด</option>
+                <option value="internal" {{ request('po_type') === 'internal' ? 'selected' : '' }}>PO ภายใน</option>
+                <option value="external" {{ request('po_type') === 'external' ? 'selected' : '' }}>PO ภายนอก</option>
+            </select>
         </div>
         <button type="submit" class="btn-primary">ค้นหา</button>
-        @if (request('SONum') || request('PONum') || request('customer') || request('location') || request('item'))
+        @if (request('SONum') || request('PONum') || request('customer') || request('location') || request('item') || request('po_type'))
             <a href="{{ url()->current() }}{{ $creator ? '?create_by='.urlencode($creator) : '' }}">
                 <button type="button" class="btn-ghost">ล้าง</button>
             </a>
@@ -214,8 +224,8 @@
     <thead>
             <tr>
                 <th class="center" style="width:44px;"><input type="checkbox" id="chkAll"></th>
-                <th>PO ภายใน</th><th>SO</th><th>รายการสินค้า</th><th class="num">จำนวนรวม</th>
-                <th>ลูกค้า</th><th>ที่เก็บ</th><th>รับโดย</th><th>เวลารับ</th>
+                <th>PO</th><th>SO</th><th>รายการสินค้า</th>
+                <th>ลูกค้า</th><th>จัดการ</th><th>รับโดย</th><th>เวลารับ</th>
             </tr>
         </thead>
         <tbody>
@@ -228,7 +238,7 @@
                     $location    = $h->location;
                     $checkboxVal = $h->type . ':' . $h->id;
                     $isClaimed   = $h->type === 'external' && ($h->claimed ?? false);
-                    {{-- ★ เพิ่ม: สถานะ "จัดการเสร็จสิ้นแล้ว" (ถาวร) แยกจาก claimed --}}
+                    // ★ เพิ่ม: สถานะ "จัดการเสร็จสิ้นแล้ว" (ถาวร) แยกจาก claimed
                     $isFinished  = $h->type === 'external' && ($h->finished ?? false);
                 @endphp
                 <tr class="{{ $cls }}" data-done="{{ $todo ? 0 : 1 }}">
@@ -239,11 +249,17 @@
                     </td>
                     <td>
                         <span class="ref-link">{{ $h->po_display }}</span>
-                        <div class="muted">{{ $h->type === 'external' ? 'ภายนอก' : 'ภายใน' }}</div>
+                        <div class="muted">
+                            @if (str_contains((string) $h->po_display, 'A')) ภายใน
+                            @else ภายนอก
+                            @endif
+                        </div>
                     </td>
                     <td>{{ $h->so_id }}</td>
                     <td class="items-cell">
-                        @if ($items->count() <= 2)
+                        @if (is_null($items))
+                            <button type="button" class="btn-ghost btn-view-items" data-po="{{ $h->po_display }}" style="font-size:12px;padding:4px 10px;">ดูสินค้า</button>
+                        @elseif ($items->count() <= 2)
                             {{ $items->pluck('item_name')->implode(', ') }}
                         @else
                             <details class="items-expand">
@@ -254,10 +270,9 @@
                             </details>
                         @endif
                     </td>
-                    <td class="num">{{ number_format($totalQty, 2) }}</td>
                     <td class="cust-cell">{{ $h->customer_name }}</td>
                     <td>
-                        @if ($h->type === 'external')
+                        @if ($h->type === 'external' || $h->type === 'legacy')
                             @if ($isClaimed)
                                 <button type="button" class="btn-finish-claim" data-po="{{ $h->id }}">จัดการเสร็จสิ้น</button>
                                 <div class="muted">โดย {{ $h->claimed_by ?: '—' }}</div>
@@ -268,7 +283,8 @@
                                 <div class="muted">โดย {{ $h->finished_by ?: ($h->claimed_by ?: '—') }}</div>
                                 <div class="muted">{{ $h->finished_at ? \Carbon\Carbon::parse($h->finished_at)->format('d/m/Y H:i') : '' }}</div>
                             @else
-                                <button type="button" class="btn-claim" data-po="{{ $h->id }}">กำลังจัดการ</button>
+                                {{-- ★ เพิ่ม data-type: legacy กับ external เรียก endpoint คนละตัว (ดู JS) --}}
+                                <button type="button" class="btn-claim" data-po="{{ $h->id }}" data-type="{{ $h->type }}">กำลังจัดการ</button>
                             @endif
                         @else
                             {{ $location ?: '—' }}
@@ -323,13 +339,23 @@
     <div class="dialog-actions">
         <button type="button" class="btn-ghost" onclick="document.getElementById('locModal').close()">ยกเลิก</button>
         <button type="button" class="btn-primary" onclick="confirmLoc()">OK</button>
-    </div>
-</dialog>
+        </div>
+    </dialog>
+
+    <dialog id="itemsModal">
+        <h2 id="itemsModalTitle">รายการสินค้า</h2>
+        <div id="itemsModalBody"></div>
+        <div class="dialog-actions">
+            <button type="button" class="btn-ghost" onclick="document.getElementById('itemsModal').close()">ปิด</button>
+        </div>
+    </dialog>
 
 <script>
 const SUBMIT_URL = "{{ route('store.location.submit') }}";
 const CLAIM_URL  = "{{ route('store.location.claim') }}";
 const FINISH_URL = "{{ route('store.location.finish') }}";
+const LEGACY_ITEMS_URL = "{{ route('store.location.legacyItems') }}";
+const LEGACY_CLAIM_URL = "{{ route('store.location.legacyClaim') }}";
 const CSRF       = document.querySelector('meta[name="csrf-token"]').content;
 const modal      = document.getElementById('locModal');
 const SHELF_OPTIONS = [
@@ -425,14 +451,14 @@ document.querySelectorAll('.chkLine').forEach(c => c.addEventListener('change', 
 
 function pickLoc(el) { const i = document.getElementById('inpLocation'); i.value = el.textContent.trim(); i.focus(); }
 
-async function postClaimAction(url, poId, btn, confirmMsg) {
+async function postClaimAction(url, poId, btn, confirmMsg, fieldName = 'po_id') { // ★ แก้: เพิ่ม fieldName parameter
     if (!confirm(confirmMsg)) return;
     btn.disabled = true;
     try {
         const res = await fetch(url, {
             method: 'POST',
             headers: { 'Content-Type':'application/json','Accept':'application/json','X-Requested-With':'XMLHttpRequest','X-CSRF-TOKEN':CSRF },
-            body: JSON.stringify({ po_id: poId })
+            body: JSON.stringify({ [fieldName]: poId }) // ★ แก้: ใช้ fieldName แทน hardcode po_id
         });
         const data = await res.json();
         if (res.ok && data.ok) {
@@ -447,14 +473,63 @@ async function postClaimAction(url, poId, btn, confirmMsg) {
         btn.disabled = false;
     }
 }
-
 document.querySelectorAll('.btn-claim').forEach(btn => {
-    btn.addEventListener('click', () => postClaimAction(CLAIM_URL, btn.dataset.po, btn, 'คุณกำลังจัดการงาน PO นี้ใช่หรือไม่'));
+    btn.addEventListener('click', () => {
+        if (btn.dataset.type === 'legacy') {
+            postClaimAction(LEGACY_CLAIM_URL, btn.dataset.po, btn, 'คุณกำลังจัดการงาน PO นี้ใช่หรือไม่', 'store_id');
+        } else {
+            postClaimAction(CLAIM_URL, btn.dataset.po, btn, 'คุณกำลังจัดการงาน PO นี้ใช่หรือไม่');
+        }
+    });
 });
 document.querySelectorAll('.btn-finish-claim').forEach(btn => {
     btn.addEventListener('click', () => postClaimAction(FINISH_URL, btn.dataset.po, btn, 'คุณยืนยันที่จะจัดงานเสร็จสิ้นหรือไม่'));
 });
+// ★ เปลี่ยน: กด "ดูสินค้า" แล้วเด้งเป็น popup ตาราง (ชื่อ / จำนวน) แทนการโชว์ inline ใต้แถว
+const itemsModal     = document.getElementById('itemsModal');
+const itemsModalTitle = document.getElementById('itemsModalTitle');
+const itemsModalBody  = document.getElementById('itemsModalBody');
 
+document.querySelectorAll('.btn-view-items').forEach(btn => {
+    btn.addEventListener('click', async () => {
+        const po = btn.dataset.po;
+
+        itemsModalTitle.textContent = 'รายการสินค้า — PO ' + po;
+        itemsModalBody.innerHTML = '<div class="items-modal-loading">กำลังโหลด...</div>';
+        itemsModal.showModal();
+
+        try {
+            const res = await fetch(LEGACY_ITEMS_URL + '?po=' + encodeURIComponent(po), {
+                headers: { 'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest' }
+            });
+            const data = await res.json();
+
+            if (res.ok && data.ok) {
+                if (!data.items.length) {
+                    itemsModalBody.innerHTML = '<div class="items-modal-empty">ไม่พบรายการสินค้า</div>';
+                    return;
+                }
+                const rows = data.items.map(it => `
+                    <tr>
+                        <td style="text-align:left;">${it.item_name}</td>
+                        <td class="num">${Number(it.item_quantity).toFixed(2)}</td>
+                    </tr>
+                `).join('');
+                itemsModalBody.innerHTML = `
+                    <table>
+                        <thead><tr><th style="text-align:left;">ชื่อ</th><th>จำนวน</th></tr></thead>
+                        <tbody>${rows}</tbody>
+                    </table>
+                `;
+            } else {
+                itemsModalBody.innerHTML = '<div class="items-modal-empty">โหลดไม่สำเร็จ</div>';
+            }
+        } catch (e) {
+            console.error(e);
+            itemsModalBody.innerHTML = '<div class="items-modal-empty">เกิดข้อผิดพลาด</div>';
+        }
+    });
+});
 function openModal() {
     if (!currentUser())        { alert('กรุณาระบุชื่อผู้ดำเนินการ'); return; }
     if (!selectedIds().length) { alert('ยังไม่ได้เลือกรายการ'); return; }

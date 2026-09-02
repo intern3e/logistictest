@@ -433,9 +433,13 @@ Route::prefix('store')->name('store.')->group(function () {
     Route::post('location/finish',             [StoreController::class, 'locationFinish'])->name('location.finish');
     Route::match(['get', 'post'], 'checkout',  [StoreController::class, 'checkoutDashboard'])->name('checkout');
     Route::post('checkout/submit',             [StoreController::class, 'checkoutSubmit'])->name('checkout.submit');
+    Route::post('location/legacy-claim', [StoreController::class, 'legacyClaim'])->name('location.legacyClaim');
 });
+Route::get('/store/location/legacy-items', [StoreController::class, 'legacyItemsForPo'])
+    ->name('store.location.legacyItems');
 Route::post('/apis/store/legacyPoItems', [StoreController::class, 'itemsDetailBatch'])
     ->name('apis.store.legacyPoItemsBatch');
+
 
 use App\Http\Controllers\MobilePoappController;
 Route::match(['get', 'post'], '/mobile-app', [MobilePoappController::class, 'index'])->name('mobile.app');

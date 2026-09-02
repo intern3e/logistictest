@@ -421,23 +421,57 @@ class StoreController extends Controller
 
         return ['claimed' => true, 'by' => $latest->do_it, 'at' => $latest->do_it_time, 'finished' => false, 'finished_by' => null, 'finished_at' => null];
     }
-    private function fetchLegacyPoItemsBatch(array $poNums): \Illuminate\Support\Collection
-    {
-        $poNums = collect($poNums)->filter()->unique()->values();
-        if ($poNums->isEmpty()) return collect();
+    /**
+ * ดึงรายการสินค้าโดยตรงจากตาราง internal_poline (DB 3e) ด้วยเลข PONum ตรงๆ — ใช้กับ PO ที่มีรหัส
+ * "A" ในเลข (เช่น 6907-A0115) ซึ่งเป็นรูปแบบ PO ภายใน ไม่ได้อยู่ในระบบเก่าที่ getPODetail รู้จัก
+ * จึงไม่ต้องยิง HTTP เลย ดึงตรงจากตารางนี้แทน
+ */
+private function fetchInternalPoLineItems(array $poNums): \Illuminate\Support\Collection
+{
+    $poNums = array_values(array_filter($poNums));
+    if (!$poNums) return collect();
 
+    return DB::connection(self::LEGACY_CONNECTION)
+        ->table('internal_poline')
+        ->whereIn('PONum', $poNums)
+        ->orderBy('POLineSeq')
+        ->get()
+        ->groupBy('PONum')
+        ->map(fn ($lines) => $lines->map(fn ($l) => (object) [
+            'item_name'     => $l->Description ?: '—',
+            'item_quantity' => (float) $l->Quantity,
+        ]));
+}
+private function fetchLegacyPoItemsBatch(array $poNums): \Illuminate\Support\Collection
+{
+    $poNums = collect($poNums)->filter()->unique()->values();
+    if ($poNums->isEmpty()) return collect();
+
+    // ★ เพิ่ม: แยก PO ที่มีรหัส "A" ในเลข (รูปแบบ PO ภายใน เช่น 6907-A0115) ออกจาก PO ปกติ (ไม่มี A)
+    //   ตั้งแต่ต้นทาง — PO กลุ่มนี้เป็น PO ภายในที่สร้างเอง ไม่ได้อยู่ในระบบเก่าที่ getPODetail รู้จัก
+    //   จึงข้าม HTTP ไปเลย ดึงตรงจาก internal_poline (DB 3e) แทน (เดิมต้องรอ HTTP ตอบว่าง/error ก่อน
+    //   ถึงจะ fallback ไป internal_poline — ตอนนี้รู้ล่วงหน้าแล้วว่าไม่มีทางเจอใน getPODetail เลย)
+    $internalStyleNums = $poNums->filter(fn ($num) => str_contains($num, 'A'))->values();
+    $normalNums         = $poNums->diff($internalStyleNums)->values();
+
+    $data = collect();
+
+    if ($internalStyleNums->isNotEmpty()) {
+        $data = $data->merge($this->fetchInternalPoLineItems($internalStyleNums->all()));
+    }
+
+    if ($normalNums->isNotEmpty()) {
         // ⚡ perf: cache ผลต่อ PO สั้นๆ — ลดปัญหา "บันทึกข้อมูล" ช้า เพราะเดิมยิง HTTP ไปเซิร์ฟเวอร์เก่า
         // ซ้ำสองรอบสำหรับ PO ชุดเดียวกัน: รอบแรกตอนโหลดหน้าของออก (โชว์รายการสินค้า), รอบสองตอนกด
         // "บันทึกข้อมูล" (checkoutLegacyAndMigrate) รายการสินค้าใน PO ที่ปิดแล้วแทบไม่เปลี่ยน จึง cache ได้
         $cacheKey = fn ($num) => 'legacy_po_items:' . $num;
 
-        $data = collect();
-        $poNums->each(function ($num) use (&$data, $cacheKey) {
+        $normalNums->each(function ($num) use (&$data, $cacheKey) {
             $hit = Cache::get($cacheKey($num));
             if ($hit !== null) $data->put($num, collect($hit));
         });
 
-        $remaining = $poNums->diff($data->keys())->values();
+        $remaining = $normalNums->diff($data->keys())->values();
 
         if ($remaining->isNotEmpty()) {
             // ═══ รอบที่ 1: ยิงรวมเป็นชุด (array) ต่อคำขอ ═══
@@ -467,42 +501,21 @@ class StoreController extends Controller
             });
         }
 
-        $poNums->each(function ($num) use ($data) {
-            if (!$data->has($num)) $data->put($num, collect());
-        });
-
-        // ── fallback: เลข PO ที่ getPODetail ไม่มีข้อมูล (เช่น PO ภายใน รูปแบบ 6907-A0104)
-        //     ลองหาใน internal_poline (DB 3e) โดยตรงแทน ── (โค้ดเดิม ไม่เปลี่ยน)
-        $emptyNums = $poNums->filter(fn ($num) => $data->get($num)->isEmpty())->values();
-
-        if ($emptyNums->isNotEmpty()) {
-            $rows = DB::connection(self::LEGACY_CONNECTION)
-                ->table('internal_poline')
-                ->whereIn('PONum', $emptyNums->all())
-                ->orderBy('POLineSeq')
-                ->get()
-                ->groupBy('PONum');
-
-            $rows->each(function ($lines, $num) use ($data) {
-                $data->put($num, $lines->map(fn ($l) => (object) [
-                    'item_name'     => $l->Description ?: '—',
-                    'item_quantity' => (float) $l->Quantity,
-                ]));
-            });
+        // ── fallback: เลข PO (ไม่มี "A") ที่ getPODetail ไม่มีข้อมูลเลย (edge case) —
+        //     ลองหาใน internal_poline (DB 3e) ด้วยเผื่อไว้ ──
+        $emptyNormalNums = $normalNums->filter(fn ($num) => !$data->has($num) || $data->get($num)->isEmpty())->values();
+        if ($emptyNormalNums->isNotEmpty()) {
+            $data = $data->merge($this->fetchInternalPoLineItems($emptyNormalNums->all()));
         }
-
-        return $data;
     }
-    /**
-     * ยิงคำขอ "เดียว" ไปยัง getPODetail โดยส่ง PONum เป็น array (หลายเลข PO ในคำขอเดียว)
-     * เพื่อลดจำนวน round-trip แทนการยิงทีละ PO
-     *
-     * คืนค่า null เมื่อไม่สามารถเชื่อถือผลลัพธ์ได้ (เซิร์ฟเวอร์ error / ไม่มีข้อมูล / ตอบกลับมาแบบ
-     * แยกไม่ออกว่าแต่ละบรรทัดเป็นของ PO ไหน) — กรณีนี้ผู้เรียกจะ fallback ไปยิงทีละใบแทนโดยอัตโนมัติ
-     * เพื่อไม่ให้สินค้าสลับ PO กัน ถ้าเจอ warning นี้บ่อยๆ ใน log แปลว่าเซิร์ฟเวอร์เก่าไม่รองรับคำขอแบบ
-     * array จริงๆ (หรือใช้ชื่อคอลัมน์ระบุ PO ต่อบรรทัดไม่ตรงกับที่ลองเดาไว้ด้านล่าง) ให้เช็ค field จริง
-     * จากฝั่งเซิร์ฟเวอร์เก่าแล้วเพิ่มชื่อ key เข้าไปใน $ponumKeys
-     */
+
+    // ── กันไม่มี key เลยสำหรับ PO ที่ยิงยังไงก็ไม่เจอข้อมูล (ทั้งสองทาง) ──
+    $poNums->each(function ($num) use ($data) {
+        if (!$data->has($num)) $data->put($num, collect());
+    });
+
+    return $data;
+}
     private function fetchLegacyPoItemsArrayRequest(array $poNums): ?\Illuminate\Support\Collection
     {
         try {
@@ -763,9 +776,8 @@ class StoreController extends Controller
             })
             ->groupBy('so_id');
     }
-    /* ==================== ด่าน 2: ระบุตำแหน่ง (เฉพาะภายใน — ภายนอกระบุชั้นวางตอนรับเข้าแล้ว) ==================== */
-    public function locationDashboard(Request $request)
-    {
+public function locationDashboard(Request $request)
+{
     $authUser = $this->resolveSsoUser($request, 'store.location');
 
     if (!in_array($authUser->role, ['admin', 'stock', 'store'], true)) {
@@ -776,7 +788,6 @@ class StoreController extends Controller
     $statuses   = [internal_po::ST_FINISH, internal_po::ST_STORED, internal_po::ST_CHECKOUT];
 
     $query = $this->buildLocationQuery($request, $statuses);
-    $totalTodoInternal = (clone $query)->where('status', $todoStatus)->count();
 
     $internalHeads = $query
         ->orderByRaw('FIELD(status, ?) DESC', [$todoStatus])
@@ -800,12 +811,21 @@ class StoreController extends Controller
         ]);
 
     $externalHeads = $this->buildExternalPendingLocationRows($request);
-    $totalTodo     = $totalTodoInternal + $externalHeads->count();
+    $legacyHeads   = $this->buildLegacyPendingLocationRows($request); 
 
-    $allHeads = $internalHeads->concat($externalHeads)->sort(function ($a, $b) {
+    $allHeads = $internalHeads->concat($externalHeads)->concat($legacyHeads);
+    if ($poType = $request->input('po_type')) {
+        $allHeads = $allHeads->filter(function ($h) use ($poType) {
+            $hasA = str_contains((string) $h->po_display, 'A');
+            return $poType === 'internal' ? $hasA : !$hasA;
+        });
+    }
+
+    $allHeads = $allHeads->sort(function ($a, $b) {
         if ($a->todo !== $b->todo) return $a->todo ? -1 : 1;
-        return strcmp((string) $a->po_display, (string) $b->po_display);
+        return strcmp((string) $b->po_display, (string) $a->po_display);
     })->values();
+    $totalTodo = $allHeads->where('todo', true)->count();
 
     $perPage = self::LOCATION_PER_PAGE;
     $page    = max(1, (int) $request->input('page', 1));
@@ -821,91 +841,102 @@ class StoreController extends Controller
 
     return view('store.store_location', compact('heads', 'locations', 'creator', 'totalTodo'));
 }
-    public function locationSubmit(Request $request)
-    {
-        $authUser = Auth::guard('web')->user();
-        if (!$authUser) {
-            return response()->json(['ok' => false, 'message' => 'เซสชันหมดอายุ กรุณาเข้าสู่ระบบใหม่'], 401);
-        }
 
-        $request->validate([
-            'ids'      => 'required|array|min:1',
-            'ids.*'    => 'string',
-            'location' => 'required|string|max:100',
-        ]);
-
-        $ids      = $request->input('ids');
-        $location = $request->input('location');
-
-        $internalIds   = [];
-        $externalPoIds = [];
-        foreach ($ids as $raw) {
-            [$type, $id] = array_pad(explode(':', $raw, 2), 2, null);
-            if ($id === null) { $internalIds[] = $raw; continue; } // backward-compat ค่าเดิมไม่มี prefix
-            if ($type === 'internal') $internalIds[] = $id;
-            if ($type === 'external') $externalPoIds[] = $id;
-        }
-
-        try {
-            $updated = DB::transaction(function () use ($internalIds, $externalPoIds, $authUser, $location) {
-                $count = 0;
-
-                if ($internalIds) {
-                    $count += internal_po::whereIn('internal_id', $internalIds)
-                        ->where('status', internal_po::ST_FINISH)
-                        ->update([
-                            'status'      => internal_po::ST_STORED,
-                            'location_by' => $authUser->name,
-                            'location'    => $location,
-                            'location_at' => Carbon::now()->toDateTimeString(),
-                        ]);
-                }
-                if ($externalPoIds) {
-                    // ⚠️ กันรายการที่ "กำลังจัดการอยู่จริง" (do_it_time มีค่า แต่ยังไม่กดเสร็จสิ้น)
-                    //    ไม่ให้ถูกระบุตำแหน่งทับ แม้ UI จะซ่อน checkbox ไว้แล้ว แต่กันไว้อีกชั้นฝั่ง backend
-                    //    เผื่อยิง request ตรงๆ
-                    //
-                    //    ★ แก้ไข: เดิมใช้ whereNull('do_it_time') อย่างเดียว — แต่ตอนนี้ do_it_time จะไม่ถูก
-                    //    ล้างอีกต่อไปหลังกด "จัดการเสร็จสิ้น" (เก็บไว้เป็นประวัติ) ถ้ายังใช้เงื่อนไขเดิมจะ
-                    //    บล็อกรายการที่จัดการเสร็จแล้วไปด้วย จึงต้องอนุญาตกรณี sus_time มีค่า (เสร็จสิ้นแล้ว)
-                    //    ควบคู่ไปกับกรณี do_it_time ยังไม่มีค่า (ไม่เคยถูกจัดการเลย)
-                    $externalUpdatedLines = PoReceiveLine::whereIn('po_id', $externalPoIds)
-                        ->whereNull('shelf')
-                        ->where(function ($q) {
-                            $q->whereNull('do_it_time')->orWhereNotNull('sus_time');
-                        })
-                        ->update(['shelf' => $location]);
-
-                    if ($externalUpdatedLines > 0) {
-                        $count += count($externalPoIds);
-                    }
-                }
-                return $count;
-            });
-        } catch (\Exception $e) {
-            return response()->json(['ok' => false, 'message' => 'ระบุตำแหน่งไม่สำเร็จ: ' . $e->getMessage()], 500);
-        }
-
-        if ($updated === 0) {
-            return response()->json(['ok' => false, 'message' => 'ไม่พบรายการที่พร้อมดำเนินการ'], 404);
-        }
-
-        return response()->json(['ok' => true, 'message' => 'ระบุตำแหน่ง ' . $updated . ' รายการ']);
+public function legacyItemsForPo(Request $request)
+{
+    $authUser = Auth::guard('web')->user();
+    if (!$authUser) {
+        return response()->json(['ok' => false, 'message' => 'เซสชันหมดอายุ กรุณาเข้าสู่ระบบใหม่'], 401);
     }
-    /* ==================== ระบบเก่า: ตาราง store (database "3e") ==================== */
-    /**
-     * ดึงรายการที่ "มีตำแหน่งแล้ว แต่ยังไม่ได้ checkout"
-     * เงื่อนไข: statusArea = '1' (ยังอยู่ในสต็อก) และ Area ถูกระบุแล้ว (ไม่ว่าง)
-     *
-     * $soNum          : คำค้น SO (LIKE) จากช่องค้นหา — ส่งมาตรงๆ ไม่ใช้ Request อีกต่อไป
-     *                    เพื่อให้เรียกจาก Phase B (buildBillCards) ได้โดยไม่ต้องพก Request object
-     * $soIds          : null = ไม่กรองตามวันที่เปิดบิล, array = จำกัดเฉพาะ SO ที่มีบิลเปิดในวันที่เลือก
-     * $poNum          : คำค้น PO (LIKE)
-     * $restrictSoIds  : ใช้ตอนเรียกจาก Phase B (buildBillCards) เพื่อจำกัดเฉพาะ SO ของ "หน้าปัจจุบัน" เท่านั้น
-     *                    (ตัดหน้าไปแล้วจาก buildSoSummaries) ป้องกันไม่ให้ query ทั้งวันซ้ำทุกครั้งที่เปลี่ยนหน้า
-     */
+    if (!in_array($authUser->role, ['admin', 'stock', 'store'], true)) {
+        return response()->json(['ok' => false, 'message' => 'คุณไม่มีสิทธิ์ดำเนินการ'], 403);
+    }
+
+    $request->validate(['po' => 'required|string']);
+    $po = $request->input('po');
+
+    $items = $this->fetchLegacyPoItemsBatch([$po])->get($po, collect());
+
+    return response()->json([
+        'ok'    => true,
+        'items' => $items->map(fn ($it) => [
+            'item_name'     => $it->item_name,
+            'item_quantity' => $it->item_quantity,
+        ])->values(),
+    ]);
+}
+public function locationSubmit(Request $request)
+{
+    $authUser = Auth::guard('web')->user();
+    if (!$authUser) {
+        return response()->json(['ok' => false, 'message' => 'เซสชันหมดอายุ กรุณาเข้าสู่ระบบใหม่'], 401);
+    }
+
+    $request->validate([
+        'ids'      => 'required|array|min:1',
+        'ids.*'    => 'string',
+        'location' => 'required|string|max:100',
+    ]);
+
+    $ids      = $request->input('ids');
+    $location = $request->input('location');
+
+    $internalIds    = [];
+    $externalPoIds  = [];
+    $legacyStoreIds = []; // ★ เพิ่ม
+    foreach ($ids as $raw) {
+        [$type, $id] = array_pad(explode(':', $raw, 2), 2, null);
+        if ($id === null) { $internalIds[] = $raw; continue; } // backward-compat ค่าเดิมไม่มี prefix
+        if ($type === 'internal') $internalIds[] = $id;
+        if ($type === 'external') $externalPoIds[] = $id;
+        if ($type === 'legacy')   $legacyStoreIds[] = $id; // ★ เพิ่ม
+    }
+
+    try {
+        $updated = DB::transaction(function () use ($internalIds, $externalPoIds, $legacyStoreIds, $authUser, $location) { // ★ แก้
+            $count = 0;
+
+            if ($internalIds) {
+                $count += internal_po::whereIn('internal_id', $internalIds)
+                    ->where('status', internal_po::ST_FINISH)
+                    ->update([
+                        'status'      => internal_po::ST_STORED,
+                        'location_by' => $authUser->name,
+                        'location'    => $location,
+                        'location_at' => Carbon::now()->toDateTimeString(),
+                    ]);
+            }
+            if ($externalPoIds) {
+                $externalUpdatedLines = PoReceiveLine::whereIn('po_id', $externalPoIds)
+                    ->whereNull('shelf')
+                    ->where(function ($q) {
+                        $q->whereNull('do_it_time')->orWhereNotNull('sus_time');
+                    })
+                    ->update(['shelf' => $location]);
+
+                if ($externalUpdatedLines > 0) {
+                    $count += count($externalPoIds);
+                }
+            }
+            if ($legacyStoreIds) { // ★ เพิ่ม
+                $count += $this->migrateLegacyStoreToReceive($legacyStoreIds, $location, $authUser->name);
+            }
+            return $count;
+        });
+    } catch (\Exception $e) {
+        return response()->json(['ok' => false, 'message' => 'ระบุตำแหน่งไม่สำเร็จ: ' . $e->getMessage()], 500);
+    }
+
+    if ($updated === 0) {
+        return response()->json(['ok' => false, 'message' => 'ไม่พบรายการที่พร้อมดำเนินการ'], 404);
+    }
+
+    return response()->json(['ok' => true, 'message' => 'ระบุตำแหน่ง ' . $updated . ' รายการ']);
+}
     private function loadLegacyStoreHeads(?string $soNum, ?array $soIds, ?string $poNum, ?array $restrictSoIds = null)
     {
+        $migratedPoNums = $this->migratedLegacyPoNums();
+
         $q = DB::connection(self::LEGACY_CONNECTION)->table('store')
             ->leftJoin('area', 'area.ID', '=', 'store.Area')
             ->leftJoin('box',  'box.ID',  '=', 'store.BOX')
@@ -913,7 +944,8 @@ class StoreController extends Controller
             ->whereIn('store.statusArea', ['0', '1'])
             ->whereNotNull('store.Area')
             ->where('store.Area', '<>', '')
-            ->where('store.DATEAREA', '>=', self::LEGACY_STORE_MIN_DATE);   // ← เพิ่มบรรทัดนี้
+            ->where('store.DATEAREA', '>=', self::LEGACY_STORE_MIN_DATE)
+            ->when($migratedPoNums, fn ($q2) => $q2->whereNotIn('store.PO', $migratedPoNums)); // ★ เพิ่ม
 
         if ($soNum) {
             $q->where('store.SO', 'LIKE', '%' . $soNum . '%');
@@ -931,23 +963,6 @@ class StoreController extends Controller
 
         return $q->orderBy('store.DATEAREA', 'asc')->get();
     }
-
-    /* ==================== ด่าน 3: ของออก (รวม internal_po + PoReceive + store (ระบบเก่า)) ====================
-     * แสดงผลเป็น "การ์ดต่อ SO" แต่ละการ์ดย่อยแยกแสดงเป็น "บิลขนส่ง" (จาก tblbill) ที่เปิดไว้ — 1 SO
-     * อาจมีบิลขนส่งได้หลายใบ (ของไม่ได้ส่งครบในเที่ยวเดียวก็ได้) ในแต่ละบิลย่อยจะมี checklist ของ PO
-     * ที่ยังไม่จัดออกให้เลือกกด "ของออก" — เนื่องจากข้อมูลรับเข้าไม่มีคอลัมน์เชื่อมกับ billid โดยตรง
-     * รายการ PO เดียวกันจะแสดงซ้ำใต้ทุกบิลขนส่งของ SO นั้น ให้ผู้จัดของเลือกเองว่ารายการไหนไปกับบิลไหน
-     *
-     * ค่าเริ่มต้น: ถ้าไม่ได้ระบุเงื่อนไขค้นหาใดๆ เลย จะโชว์ "งานของวันนี้" ทันที (กรองผ่าน tblbill.time)
-     * เพราะ tblbill จะแสดงข้อมูลแยกตามวันที่เปิดบิลอยู่แล้ว — ไม่ต้องกดค้นหาก่อน
-     * ผู้ใช้ยังสามารถพิมพ์เลข SO / เลข PO / เปลี่ยนวันที่ เพื่อค้นย้อนหลังได้ตามปกติ
-     *
-     * ⚡ perf: แยกเป็น Phase A (เบา) + Phase B (หนัก) เพื่อไม่ให้ทุกครั้งที่เปลี่ยนหน้า (page=2, page=3, ...)
-     * ต้องแบกงาน join รายการสินค้า + ยิง HTTP ไปเซิร์ฟเวอร์เก่า (fetchLegacyPoItemsBatch) ของ "ทั้งวัน" ซ้ำ
-     * ทุกครั้ง — เดิมโค้ด paginate หลังโหลด/ประมวลผลทุกอย่างเสร็จแล้ว (->forPage() ในหน่วยความจำ) ทำให้ทุกหน้า
-     * ช้าเท่ากันหมด ตอนนี้ตัดหน้าตั้งแต่ Phase A (เบา ไม่ join, ไม่ยิง HTTP) แล้วค่อยไปทำงานหนักเฉพาะ SO ที่
-     * อยู่ในหน้าปัจจุบันเท่านั้นใน Phase B
-     */
     public function checkoutDashboard(Request $request)
     {
         $authUser = $this->resolveSsoUser($request, 'store.checkout');
@@ -1032,10 +1047,14 @@ private function buildSoSummaries(?array $soIds, ?string $soNum, ?string $poNum,
         ->get(['so_id', 'checkout_by'])
         ->map(fn ($h) => (object) ['so_id' => $h->so_id, 'todo' => is_null($h->checkout_by)]);
 
+    // ★ เพิ่ม: กัน PO ที่ถูกย้ายเข้าระบบใหม่แล้วไม่ให้โผล่ซ้ำจาก store อีก (ดู migratedLegacyPoNums)
+    $migratedPoNums = $this->migratedLegacyPoNums();
+
     $legacyLight = DB::connection(self::LEGACY_CONNECTION)->table('store')
         ->whereIn('statusArea', ['0', '1'])
         ->whereNotNull('Area')->where('Area', '<>', '')
-        ->where('DATEAREA', '>=', self::LEGACY_STORE_MIN_DATE)  
+        ->where('DATEAREA', '>=', self::LEGACY_STORE_MIN_DATE)
+        ->when($migratedPoNums, fn ($q) => $q->whereNotIn('PO', $migratedPoNums)) // ★ เพิ่ม
         ->when($soNum, fn ($q) => $q->where('SO', 'LIKE', '%' . $soNum . '%'))
         ->when($poNum, fn ($q) => $q->where('PO', 'LIKE', '%' . $poNum . '%'))
         ->when($soIds !== null, fn ($q) => $q->whereIn('SO', $soIds))
@@ -1052,9 +1071,6 @@ private function buildSoSummaries(?array $soIds, ?string $soNum, ?string $poNum,
         : $soIdsFromHeads;
     $billRowsBySo = $this->billRowsBySo($soIdsForBills, $billDate);
 
-    // "จัดของแล้ว" ของ SO นี้ ยึดตามบิลขนส่ง (tblbill) เป็นหลัก: ถ้า SO มีบิลขนส่งอยู่ (ไม่นับใบยกเลิก)
-    // ต้อง "จัดครบทุกใบ" (มีผู้จัด/pick แล้วทุกบิล) ถึงจะถือว่าเสร็จ — ไม่ใช่ดูจาก PO ครบ/ไม่ครบอีกต่อไป
-    // ถ้า SO ยังไม่มีบิลขนส่งเลย fallback ไปดูสถานะ PO เดิมไปพลางก่อน
     $calcAllDone = function ($billRows, $rows = null) {
         $activeBills = $billRows->where('cancelled', false);
         if ($activeBills->isNotEmpty()) {
@@ -1082,7 +1098,6 @@ private function buildSoSummaries(?array $soIds, ?string $soNum, ?string $poNum,
         $missingSoIds = array_values(array_diff($soIds, $presentSoIds));
 
         if ($missingSoIds) {
-            // SO กลุ่มนี้มักไม่มี PO เชื่อมเลย — ยังบันทึก "ผู้จัดบิล" เองได้ผ่านช่องติ๊กเฉพาะในหน้าเว็บ
             $phantoms = collect($missingSoIds)->map(function ($soId) use ($billRowsBySo, $calcAllDone) {
                 $billRows  = $billRowsBySo->get($soId, collect());
                 $firstBill = $billRows->first();
@@ -1099,12 +1114,13 @@ private function buildSoSummaries(?array $soIds, ?string $soNum, ?string $poNum,
             $summaries = $summaries->concat($phantoms)->values();
         }
     }
-        return $summaries->sort(function ($a, $b) {
-            if ($a->all_done !== $b->all_done) {
-                return $a->all_done ? 1 : -1;
-            }
-            return strcmp((string) $a->latest_time, (string) $b->latest_time);
-        })->values();
+
+    return $summaries->sort(function ($a, $b) {
+        if ($a->all_done !== $b->all_done) {
+            return $a->all_done ? 1 : -1;
+        }
+        return strcmp((string) $a->latest_time, (string) $b->latest_time);
+    })->values();
 }
 private function buildDaySummary(\Illuminate\Support\Collection $soSummaries): array
 {
@@ -1546,5 +1562,276 @@ private function checkoutLegacyAndMigrate(array $legacyIds, string $user, array 
     Log::info("checkoutLegacyAndMigrate: user={$user} updated={$updated} ids=" . implode(',', $legacyRows->pluck('ID')->all()));
 
     return $updated;
+}
+/**
+ * รายชื่อ "เลข PO ดิบ" (ไม่มี prefix "PO") ของ store (ระบบเก่า) ที่ถูกย้ายเข้าระบบใหม่ (PoReceive)
+ * ไปแล้ว ไม่ว่าจะย้ายตอนกด "ของออก" (checkoutLegacyAndMigrate) หรือตอนระบุตำแหน่งแบบ areaS-fallback
+ * (migrateLegacyStoreToReceive) ก็ตาม — ใช้กันไม่ให้ PO เดียวกันโผล่ซ้ำสองที่ (จาก store โดยตรง กับ
+ * จาก PoReceive) ในทุกหน้าที่อ่านตาราง store (ระบบเก่า)
+ */
+private function migratedLegacyPoNums(): array
+{
+    return PoReceive::pluck('po_id')
+        ->filter(fn ($id) => str_starts_with($id, 'PO'))
+        ->map(fn ($id) => substr($id, 2))
+        ->unique()->values()->all();
+}
+/**
+ * ด่าน 2 (areaS-fallback): แถวจากตาราง store (ระบบเก่า) ที่ "ยังไม่มีที่เก็บ" (areaS ว่าง),
+ * "มีคนแพ็คแล้ว" (boxS ไม่ว่าง — ถ้า boxS ว่างด้วย แปลว่ายังไม่ถูกแพ็ค ไม่เอามาแสดงในนี้)
+ * และยังไม่เคยถูกย้ายเข้าระบบใหม่ — ตามนโยบาย "ไม่ไปยุ่งของเก่า": อ่านได้อย่างเดียว ไม่ UPDATE
+ * ตาราง store ใดๆ ทั้งสิ้น เวลากดระบุตำแหน่งจะสร้างข้อมูลใหม่ใน PoReceive/PoReceiveLine แทน
+ * (ดู locationSubmit + migrateLegacyStoreToReceive) เมื่อย้ายแล้วรายการนี้จะไม่ถูกดึงจาก store อีก
+ * (เพราะมี PoReceive ของ PO นี้แล้ว) ระบบจะไปแสดง/จัดการต่อผ่านเส้นทาง "external" แทนโดยอัตโนมัติ
+ *
+ * ★ ไม่ดึงรายการสินค้า (items) ณ จุดนี้เลย — items เป็น null เสมอ ให้ผู้ใช้กดปุ่ม "ดูสินค้า" ใน
+ * หน้าเว็บเพื่อดึงแบบ on-demand ทีละ PO แทน (ดู legacyItemsForPo) กันหน้าโหลดช้า/timeout จากการดึง
+ * รายละเอียดสินค้าของ PO จำนวนมากพร้อมกันตอนโหลดหน้า
+ *
+ * หมายเหตุ: store (ระบบเก่า) ไม่มีคอลัมน์ชื่อลูกค้า/ผู้จัดเก็บที่เป็น "คน" จริงๆ — customer ดึงจาก
+ * tblbill ผ่าน so_id (ตามแบบที่ billRowsBySo ใช้), packed_by ใช้ boxName (ชื่อกล่อง ไม่ใช่ชื่อคน —
+ * ตามแบบที่ buildBillCards ใช้กับ legacy อยู่แล้ว)
+ */
+private function buildLegacyPendingLocationRows(Request $request): \Illuminate\Support\Collection
+{
+    if ($request->filled('location') || $request->filled('item')) {
+        // areaS ว่างเสมอ (ตามนิยาม) จึงไม่มีทางตรงกับคำค้น "ที่เก็บ"
+        // ส่วนคำค้น "สินค้า" ค้นไม่ได้ เพราะไม่ได้ดึงรายการสินค้ามาล่วงหน้าอีกต่อไป (ดึงผ่านปุ่มแทน)
+        return collect();
+    }
+
+    $rows = DB::connection(self::LEGACY_CONNECTION)->table('store')
+        // ★ แก้: ไม่ต้อง join ตาราง box อีกต่อไป — ไม่ได้ใช้ box.boxName แล้ว
+        ->select('store.ID', 'store.PO', 'store.SO', 'store.DATEBOX', 'store.boxS') // ★ แก้: select store.boxS แทน box.boxName
+        ->where('store.statusArea', '1')
+        ->where(function ($q) {
+            $q->whereNull('store.areaS')->orWhere('store.areaS', '');
+        })
+        ->whereNotNull('store.boxS')->where('store.boxS', '<>', '') // boxS ต้องไม่ว่าง (แพ็คแล้ว) ถ้าว่างไม่เอามาแสดง
+        ->whereNotNull('store.PO')->where('store.PO', '<>', '')
+        ->whereNotNull('store.SO')->where('store.SO', '<>', '')
+        ->when($request->filled('PONum'), fn ($q) => $q->where('store.PO', 'LIKE', '%' . $request->input('PONum') . '%'))
+        ->when($request->filled('SONum'), fn ($q) => $q->where('store.SO', 'LIKE', '%' . $request->input('SONum') . '%'))
+        ->get();
+
+    if ($rows->isEmpty()) return collect();
+
+    // ★ กันซ้ำ: ตัด PO ที่ถูกย้ายเข้าระบบใหม่ไปแล้ว (เช่นจากการกดหน้านี้ไปก่อนหน้า หรือย้ายตอนของออก)
+    $poIdsCandidate  = $rows->map(fn ($r) => 'PO' . $r->PO)->unique()->values()->all();
+    $alreadyMigrated = PoReceive::whereIn('po_id', $poIdsCandidate)->pluck('po_id')->flip();
+
+    $rows = $rows->reject(fn ($r) => $alreadyMigrated->has('PO' . $r->PO))->values();
+    if ($rows->isEmpty()) return collect();
+
+    $soIdsAll = $rows->pluck('SO')->unique()->values()->all();
+
+    // ── ชื่อลูกค้า: ดึงจากตาราง so ก่อนเป็นหลัก (so.SONum = store.SO) ──
+    $custBySoId = DB::connection(self::LEGACY_CONNECTION)->table('so')
+        ->whereIn('SONum', $soIdsAll)
+        ->get(['SONum', 'CustName'])
+        ->keyBy('SONum');
+
+    // ── fallback: SO ที่ไม่เจอในตาราง so (หรือ CustName ว่าง) ลองหาจาก tblbill แทน ──
+    $missingSoIds = collect($soIdsAll)
+        ->reject(fn ($soId) => filled(optional($custBySoId->get($soId))->CustName))
+        ->values()->all();
+
+    $custBySoIdFallback = $missingSoIds
+        ? DB::table('tblbill')
+            ->whereIn('so_id', $missingSoIds)
+            ->get(['so_id', self::TBLBILL_CUSTOMER_COLUMN])
+            ->keyBy('so_id')
+        : collect();
+
+    $resolveCustomerName = function ($soId) use ($custBySoId, $custBySoIdFallback) {
+        $name = optional($custBySoId->get($soId))->CustName;
+        if (filled($name)) return $name;
+        return optional($custBySoIdFallback->get($soId))->{self::TBLBILL_CUSTOMER_COLUMN};
+    };
+
+    if ($request->filled('customer')) {
+        $needle = mb_strtolower($request->input('customer'));
+        $rows = $rows->filter(function ($r) use ($resolveCustomerName, $needle) {
+            $name = $resolveCustomerName($r->SO);
+            return $name && str_contains(mb_strtolower($name), $needle);
+        })->values();
+        if ($rows->isEmpty()) return collect();
+    }
+
+    return $rows->map(function ($r) use ($resolveCustomerName) {
+        return (object) [
+            'type'          => 'legacy',
+            'id'            => $r->ID, // store.ID (ระบบเก่า) — ใช้ตอน submit เพื่ออ้างอิงกลับ
+            'po_display'    => $r->PO,
+            'so_id'         => $r->SO,
+            'customer_name' => $resolveCustomerName($r->SO),
+            'items'         => null,   // ★ ดึงแบบ on-demand ผ่านปุ่ม "ดูสินค้า" (legacyItemsForPo)
+            'total_qty'     => null,   // ★ เช่นกัน — ไม่รู้จนกว่าจะกดดูสินค้า
+            'location'      => null,
+            'packed_by'     => $r->boxS ?: null, // ★ แก้: ดึงจาก store.boxS ตรงๆ แทน box.boxName
+            'packed_at'     => $r->DATEBOX,
+            'todo'          => true,
+            'claimed'       => false,
+            'claimed_by'    => null,
+            'claimed_at'    => null,
+            'finished'      => false,
+            'finished_by'   => null,
+            'finished_at'   => null,
+        ];
+    })->values();
+}
+private function migrateLegacyStoreToReceive(array $legacyStoreIds, string $location, string $user): int
+{
+    if (!$legacyStoreIds) return 0;
+
+    $legacyRows = DB::connection(self::LEGACY_CONNECTION)->table('store')
+        ->whereIn('ID', $legacyStoreIds)
+        ->where('statusArea', '1')
+        ->get(['ID', 'PO', 'SO']);
+
+    if ($legacyRows->isEmpty()) return 0;
+
+    $poNums    = $legacyRows->pluck('PO')->filter()->unique()->values()->all();
+    $itemsByPo = $this->fetchLegacyPoItemsBatch($poNums);
+
+    $soIds = $legacyRows->pluck('SO')->unique()->values()->all();
+    $billMetaBySoId = DB::table('tblbill')
+        ->whereIn('so_id', $soIds)
+        ->orderBy('time')
+        ->get(['so_id', self::TBLBILL_POREF_COLUMN, self::TBLBILL_CUSTOMER_COLUMN])
+        ->groupBy('so_id')
+        ->map(fn ($rows) => $rows->last()); // เอาบิลล่าสุดของ SO นั้น
+
+    $now     = Carbon::now();
+    $updated = 0;
+
+    DB::transaction(function () use ($legacyRows, $itemsByPo, $billMetaBySoId, $location, $user, $now, &$updated) {
+        foreach ($legacyRows as $row) {
+            $poId = 'PO' . $row->PO;
+
+            // ★ กันซ้ำ: เผื่อ race (มีคนอื่นย้าย PO เดียวกันไปพร้อมกัน) ข้ามไปเลย ไม่สร้างซ้ำ
+            if (PoReceive::where('po_id', $poId)->exists()) continue;
+
+            $meta = $billMetaBySoId->get($row->SO);
+
+            $receive = PoReceive::create([
+                'po_id'     => $poId,
+                'so_id'     => $row->SO,
+                'status'    => 'ครบ',
+                'POref'     => $meta->{self::TBLBILL_POREF_COLUMN} ?? null,
+                'cust_name' => $meta->{self::TBLBILL_CUSTOMER_COLUMN} ?? null,
+            ]);
+
+            $lines = $itemsByPo->get($row->PO, collect());
+            if ($lines->isEmpty()) {
+                $lines = collect([(object) ['item_name' => '—', 'item_quantity' => 1]]);
+            }
+
+            foreach ($lines as $line) {
+                PoReceiveLine::create([
+                    'po_id'       => $poId,
+                    'good_name'   => $line->item_name,
+                    'recv_qty'    => $line->item_quantity,
+                    'unit_price'  => null,
+                    'shelf'       => $location,
+                    'photo_path'  => null,
+                    'received_by' => $user,
+                    'received_at' => $now,
+                ]);
+            }
+
+            $updated++;
+        }
+    });
+
+    return $updated;
+}
+public function legacyClaim(Request $request)
+{
+    $authUser = Auth::guard('web')->user();
+    if (!$authUser) {
+        return response()->json(['ok' => false, 'message' => 'เซสชันหมดอายุ กรุณาเข้าสู่ระบบใหม่'], 401);
+    }
+    if (!in_array($authUser->role, ['admin', 'stock', 'store'], true)) {
+        return response()->json(['ok' => false, 'message' => 'คุณไม่มีสิทธิ์ดำเนินการ'], 403);
+    }
+
+    $request->validate(['store_id' => 'required']);
+    $storeId = $request->input('store_id');
+
+    try {
+        $result = DB::transaction(function () use ($storeId, $authUser) {
+            // ★ lockForUpdate บนแถว store เอง (กันสองคนกดพร้อมกันบน store.ID เดียวกัน)
+            $row = DB::connection(self::LEGACY_CONNECTION)->table('store')
+                ->where('ID', $storeId)
+                ->where('statusArea', '1')
+                ->lockForUpdate()
+                ->first(['ID', 'PO', 'SO']);
+
+            if (!$row) {
+                return ['ok' => false, 'message' => 'ไม่พบรายการนี้ หรือถูกเปลี่ยนสถานะไปแล้ว'];
+            }
+
+            $poId = 'PO' . $row->PO;
+
+            // ★ กันซ้ำ: ถ้าถูกย้าย/claim ไปแล้ว (โดยคนอื่นกดไปพร้อมกัน หรือกดซ้ำ)
+            if (PoReceive::where('po_id', $poId)->exists()) {
+                return ['ok' => false, 'message' => 'PO นี้มีคนกำลังจัดการอยู่แล้ว หรือถูกย้ายไปแล้ว'];
+            }
+
+            $itemsByPo = $this->fetchLegacyPoItemsBatch([$row->PO]);
+            $lines     = $itemsByPo->get($row->PO, collect());
+            if ($lines->isEmpty()) {
+                $lines = collect([(object) ['item_name' => '—', 'item_quantity' => 1]]);
+            }
+
+            // ── ชื่อลูกค้า: so.CustName ก่อน ไม่มีค่อย fallback tblbill (เหมือน buildLegacyPendingLocationRows) ──
+            $soRow    = DB::connection(self::LEGACY_CONNECTION)->table('so')
+                ->where('SONum', $row->SO)->first(['CustName']);
+            $custName = filled(optional($soRow)->CustName) ? $soRow->CustName : null;
+
+            $billMeta = DB::table('tblbill')
+                ->where('so_id', $row->SO)
+                ->orderBy('time', 'desc')
+                ->first(['so_id', self::TBLBILL_POREF_COLUMN, self::TBLBILL_CUSTOMER_COLUMN]);
+
+            if (!$custName && $billMeta) {
+                $custName = $billMeta->{self::TBLBILL_CUSTOMER_COLUMN};
+            }
+
+            PoReceive::create([
+                'po_id'     => $poId,
+                'so_id'     => $row->SO,
+                'status'    => 'ครบ',
+                'POref'     => $billMeta->{self::TBLBILL_POREF_COLUMN} ?? null,
+                'cust_name' => $custName,
+            ]);
+
+            $now = Carbon::now();
+            foreach ($lines as $line) {
+                PoReceiveLine::create([
+                    'po_id'       => $poId,
+                    'good_name'   => $line->item_name,
+                    'recv_qty'    => $line->item_quantity,
+                    'unit_price'  => null,
+                    'shelf'       => null, // ★ ยังไม่ระบุตำแหน่ง — แค่เริ่ม "กำลังจัดการ" เท่านั้น
+                    'photo_path'  => null,
+                    'received_by' => $authUser->name,
+                    'received_at' => $now,
+                ]);
+            }
+
+            // ★ ตั้ง do_it/do_it_time ให้ทันที (เหมือนที่ locationClaim ทำกับ external) — ใช้ query
+            //   builder update() แยกจาก create() ด้านบน กันปัญหา fillable ไม่ครอบคลุมฟิลด์นี้
+            PoReceiveLine::where('po_id', $poId)
+                ->update(['do_it' => $authUser->name, 'do_it_time' => $now]);
+
+            return ['ok' => true, 'message' => 'เริ่มจัดการงานแล้ว'];
+        });
+    } catch (\Exception $e) {
+        return response()->json(['ok' => false, 'message' => 'เกิดข้อผิดพลาด: ' . $e->getMessage()], 500);
+    }
+
+    return response()->json($result, $result['ok'] ? 200 : 409);
 }
 }

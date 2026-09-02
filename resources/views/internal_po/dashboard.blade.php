@@ -1,5 +1,4 @@
 <!DOCTYPE html>
-{{-- resources/views/internal_po/dashboard.blade.php  (ด่าน 1: จัดเสร็จ) --}}
 <html lang="th">
 <head>
     <meta charset="UTF-8">
@@ -23,7 +22,6 @@
         .page-frame { background:var(--canvas); max-width:100%; }
         .table-scroll { overflow-x:auto; -webkit-overflow-scrolling:touch; }
 
-        /* ===== Header bar ===== */
         .top-banner {
             background:var(--canvas); color:var(--ink);
             margin:0 -16px; padding:16px 12px 0;
@@ -51,7 +49,6 @@
 
         main { padding:20px; background:var(--canvas); }
 
-        /* ===== Filter bar ===== */
         .filter-card {
             border:1px solid var(--border); background:#fafbfd;
             padding:14px 16px; margin-bottom:14px;
@@ -79,14 +76,12 @@
         .btn-ghost:hover { background:#f3f4f6; color:var(--ink); }
         button:disabled { opacity:.4; cursor:not-allowed; }
 
-        /* ===== Table toolbar: summary left, action toolbar right ===== */
         .table-toolbar-row {
             display:flex; justify-content:space-between; align-items:center;
             flex-wrap:wrap; gap:12px; margin-bottom:10px;
         }
         .table-summary { font-size:12px; color:var(--muted); }
 
-        /* ===== Action toolbar (มุมขวาบนของตาราง) — ฟ้าเต็มกล่อง ===== */
         .action-toolbar {
             display:flex;
             align-items:center;
@@ -125,9 +120,8 @@
         }
         #inpSheets { width:70px; text-align:center; }
 
-        /* ===== Table ===== */
         table {
-            width:100%; min-width:820px; border-collapse:collapse;
+            width:100%; min-width:720px; border-collapse:collapse;
             background:var(--canvas); border:1px solid var(--border);
         }
         th,td {
@@ -144,7 +138,6 @@
             border-bottom:1px solid var(--primary-dark);
             border-right-color:rgba(255,255,255,.25);
         }
-        /* zebra ตามกลุ่ม PO ไม่ใช่ตามแถว */
         tr.po-group-odd td { background:#fafafa; }
         tr.po-group-even td { background:var(--canvas); }
         tbody tr:hover td { background:#f4f7fb; }
@@ -158,9 +151,6 @@
         tr.done td { color:#9ca3af; }
         tr.cancelled td { color:#b91c1c; background:#fff5f5 !important; }
 
-        .items-cell { max-width:320px; text-align:left; }
-
-        /* คอลัมน์หลักเน้นด้วยน้ำหนักตัวอักษร ไม่ใช้สี */
         th.col-key, td.col-key { font-weight:600; font-size:13.5px; }
         th.col-minor { font-size:12px; font-weight:600; }
         td.col-minor { font-size:12px; color:var(--muted); font-weight:400; }
@@ -168,15 +158,69 @@
         a.ref-link { color:var(--ink); font-weight:600; text-decoration:none; border-bottom:1px dashed var(--border); }
         a.ref-link:hover { border-bottom-color:var(--ink); }
 
-        /* เส้นคั่นระหว่างกลุ่ม PO ให้ชัดขึ้นเล็กน้อย โดยไม่ใช้สี */
-        tr.po-first td { border-top:1px solid var(--border); }
+        .btn-view-items {
+            padding:6px 14px; font-size:12.5px; font-weight:600;
+            background:var(--primary-light); color:var(--primary-dark);
+            border:1px solid #bfdbfe; border-radius:6px;
+        }
+        .btn-view-items:hover { background:#dbeafe; }
 
-        /* แถวที่เป็น item ตัวรองของ PO เดียวกัน (ไม่มีคอลัมน์ rowspan) ให้ดูจางลงนิดหน่อยกันงง */
-        tr.item-sub td.col-key,
-        tr.item-sub td.items-cell,
-        tr.item-sub td.num { background:#fbfcfe; }
+        .pagination {
+            margin-top:16px; display:flex; align-items:center; justify-content:center;
+            gap:6px; flex-wrap:wrap;
+        }
+        .pagination .page-btn {
+            min-width:36px; height:36px; padding:0 10px;
+            display:inline-flex; align-items:center; justify-content:center;
+            border:1px solid var(--border); background:var(--canvas);
+            color:var(--primary); font-weight:600; font-size:13px;
+            text-decoration:none; border-radius:6px; transition:.15s ease;
+        }
+        .pagination .page-btn:hover { border-color:var(--primary); background:var(--primary-light); }
+        .pagination .page-btn.active {
+            background:var(--primary); color:var(--on-primary);
+            border-color:var(--primary); cursor:default;
+        }
+        .pagination .page-btn.disabled { color:#c3c9d1; cursor:not-allowed; pointer-events:none; }
+        .pagination .page-dots { color:var(--muted); padding:0 4px; font-size:13px; user-select:none; }
+        .pagination .page-info { width:100%; text-align:center; font-size:12px; color:var(--muted); margin-top:6px; }
 
-        .pagination { margin-top:16px; display:flex; gap:6px; flex-wrap:wrap; }
+        .modal-overlay {
+            position:fixed; inset:0; background:rgba(15,23,42,.5);
+            display:flex; align-items:center; justify-content:center;
+            z-index:1000; padding:16px;
+        }
+        .modal-overlay[hidden] { display:none; }
+        .modal-box {
+            background:var(--canvas); width:100%; max-width:480px;
+            max-height:80vh; overflow-y:auto; overflow-x:hidden;
+            border-radius:8px; box-shadow:0 10px 40px rgba(0,0,0,.25);
+            display:flex; flex-direction:column;
+        }
+        .modal-header {
+            display:flex; align-items:center; justify-content:space-between; gap:12px;
+            padding:14px 18px; background:var(--primary); color:var(--on-primary);
+            position:sticky; top:0; flex:0 0 auto;
+        }
+        .modal-header .modal-title { font-weight:700; font-size:14px; }
+        .modal-close {
+            background:transparent; border:none; color:var(--on-primary);
+            font-size:22px; line-height:1; padding:0 4px; cursor:pointer;
+        }
+        .modal-close:hover { opacity:.8; }
+        .modal-row {
+            display:grid; grid-template-columns:1fr 90px; align-items:center;
+            gap:12px; padding:10px 18px; border-bottom:1px solid var(--border);
+        }
+        .modal-row > span { font-size:13px; word-break:break-word; overflow-wrap:anywhere; }
+        .modal-row .num { text-align:right; font-variant-numeric:tabular-nums; white-space:nowrap; }
+        .modal-row-head {
+            background:#f8fafc; color:var(--muted); font-weight:700;
+            font-size:11px; text-transform:uppercase; letter-spacing:.3px;
+        }
+        .modal-row-head > span { font-size:11px; }
+        #modalBody .modal-row:last-child { border-bottom:none; }
+        .modal-empty { text-align:center; color:var(--muted); padding:24px; font-style:italic; }
     </style>
 </head>
 <body>
@@ -190,7 +234,6 @@
 </div>
 <input type="hidden" id="inpUser" value="{{ $operatorName }}">
 <main>
-    {{-- ===== Filter bar ===== --}}
     <form class="filter-card" id="filterForm" method="GET" action="{{ url()->current() }}">
         <div class="filter-row">
             <div class="filter-field">
@@ -200,10 +243,6 @@
             <div class="filter-field">
                 <label for="fInternal">ค้นหา PO ภายใน</label>
                 <input type="search" id="fInternal" name="internal_id" value="{{ request('internal_id') }}" placeholder="PO ภายใน..." autocomplete="off">
-            </div>
-            <div class="filter-field">
-                <label for="fCust">ค้นหาลูกค้า</label>
-                <input type="search" id="fCust" name="customer_name" value="{{ request('customer_name') }}" placeholder="ชื่อลูกค้า..." autocomplete="off">
             </div>
             <div class="filter-field">
                 <label for="fStatus">สถานะ</label>
@@ -227,7 +266,6 @@
         </div>
     </form>
 
-    {{-- ===== Table toolbar: สรุปด้านซ้าย + action toolbar ชิดขวา ===== --}}
     <div class="table-toolbar-row">
         <div class="table-summary">
             รอจัด {{ $statusCounts[\App\Models\internal_po::ST_PENDING] ?? 0 }} /
@@ -265,73 +303,111 @@
                 <th class="center" style="width:44px;"><input type="checkbox" id="chkAll"></th>
                 <th class="col-key">PO ภายใน</th>
                 <th class="col-key">SO</th>
-                <th class="col-minor">รหัสสินค้า</th>
-                <th class="col-key">รายการสินค้า</th>
-                <th class="col-key num">จำนวน</th>
+                <th class="col-key">สินค้า</th>
                 <th>ลูกค้า</th>
             </tr>
         </thead>
         <tbody>
         @forelse ($heads as $h)
             @php
-                $todo   = $h->status === \App\Models\internal_po::ST_PENDING;
-                $cancel = $h->status === \App\Models\internal_po::ST_CANCEL;
-                $cls    = $cancel ? 'cancelled' : (!$todo ? 'done' : '');
-                $items  = $h->lines;
-                $rowspan = max($items->count(), 1);
-                $groupCls = $loop->index % 2 === 0 ? 'po-group-even' : 'po-group-odd';
-                $first = true;
+                $todo      = $h->status === \App\Models\internal_po::ST_PENDING;
+                $cancel    = $h->status === \App\Models\internal_po::ST_CANCEL;
+                $cls       = $cancel ? 'cancelled' : (!$todo ? 'done' : '');
+                $itemCount = $h->lines->count();
+                $groupCls  = $loop->index % 2 === 0 ? 'po-group-even' : 'po-group-odd';
             @endphp
-
-            @if ($items->count() > 0)
-                @foreach ($items as $it)
-                    <tr class="{{ $cls }} {{ $groupCls }} {{ $first ? 'po-first' : '' }}" data-done="{{ $todo ? 0 : 1 }}" data-internal-id="{{ $h->internal_id }}">
-                        @if ($first)
-                            <td class="center" rowspan="{{ $rowspan }}">
-                                @if ($todo)<input type="checkbox" class="chkLine" value="{{ $h->internal_id }}">@endif
-                            </td>
-                            <td class="col-key" rowspan="{{ $rowspan }}"><span class="ref-link">{{ $h->internal_id }}</span></td>
-                            <td class="col-key" rowspan="{{ $rowspan }}">{{ $h->SO_id }}</td>
-                        @endif
-                        <td class="col-key">{{ $it->item_id }}</td>
-                        <td class="col-key items-cell">{{ $it->item_name }}</td>
-                        <td class="col-key num">{{ number_format($it->item_quantity, 2) }}</td>
-                        @if ($first)
-                            <td class="cust-cell" rowspan="{{ $rowspan }}">{{ $h->customer_name }}</td>
-                        @endif
-                    </tr>
-                    @php($first = false)
-                @endforeach
-            @else
-                <tr class="{{ $cls }} {{ $groupCls }} po-first" data-done="{{ $todo ? 0 : 1 }}" data-internal-id="{{ $h->internal_id }}">
-                    <td class="center">
-                        @if ($todo)<input type="checkbox" class="chkLine" value="{{ $h->internal_id }}">@endif
-                    </td>
-                    <td class="col-key"><span class="ref-link">{{ $h->internal_id }}</span></td>
-                    <td class="col-key">{{ $h->SO_id }}</td>
-                    <td class="col-minor">—</td>
-                    <td class="col-key items-cell">—</td>
-                    <td class="col-key num">—</td>
-                    <td class="cust-cell">{{ $h->customer_name }}</td>
-                </tr>
-            @endif
+            <tr class="{{ $cls }} {{ $groupCls }}" data-done="{{ $todo ? 0 : 1 }}" data-internal-id="{{ $h->internal_id }}">
+                <td class="center">
+                    @if ($todo)<input type="checkbox" class="chkLine" value="{{ $h->internal_id }}">@endif
+                </td>
+                <td class="col-key"><span class="ref-link">{{ $h->internal_id }}</span></td>
+                <td class="col-key">{{ $h->SO_id }}</td>
+                <td class="center">
+                    <button type="button" class="btn-view-items" onclick="openItemsModal('{{ $h->internal_id }}')">
+                        ดูสินค้า ({{ $itemCount }})
+                    </button>
+                </td>
+                <td class="cust-cell">{{ $h->customer_name }}</td>
+            </tr>
         @empty
-            <tr><td colspan="7" class="empty">ไม่มีรายการ</td></tr>
+            <tr><td colspan="5" class="empty">ไม่มีรายการ</td></tr>
         @endforelse
         </tbody>
     </table>
     </div>
 
     <div class="pagination">
-        {{ $heads->onEachSide(1)->links() }}
+        @if ($heads->hasPages())
+            @if ($heads->onFirstPage())
+                <span class="page-btn disabled">« ก่อนหน้า</span>
+            @else
+                <a class="page-btn" href="{{ $heads->previousPageUrl() }}">« ก่อนหน้า</a>
+            @endif
+
+            @php
+                $current = $heads->currentPage();
+                $last    = $heads->lastPage();
+                $window  = 1;
+            @endphp
+
+            @if ($current - $window > 1)
+                <a class="page-btn" href="{{ $heads->url(1) }}">1</a>
+                @if ($current - $window > 2)
+                    <span class="page-dots">…</span>
+                @endif
+            @endif
+
+            @for ($p = max(1, $current - $window); $p <= min($last, $current + $window); $p++)
+                @if ($p === $current)
+                    <span class="page-btn active">{{ $p }}</span>
+                @else
+                    <a class="page-btn" href="{{ $heads->url($p) }}">{{ $p }}</a>
+                @endif
+            @endfor
+
+            @if ($current + $window < $last)
+                @if ($current + $window < $last - 1)
+                    <span class="page-dots">…</span>
+                @endif
+                <a class="page-btn" href="{{ $heads->url($last) }}">{{ $last }}</a>
+            @endif
+
+            @if ($heads->hasMorePages())
+                <a class="page-btn" href="{{ $heads->nextPageUrl() }}">ถัดไป »</a>
+            @else
+                <span class="page-btn disabled">ถัดไป »</span>
+            @endif
+
+            <div class="page-info">หน้า {{ $heads->currentPage() }} / {{ $heads->lastPage() }} (ทั้งหมด {{ $heads->total() }} ใบ)</div>
+        @endif
     </div>
 </main>
+</div>
+
+<div class="modal-overlay" id="itemsModal" hidden>
+    <div class="modal-box">
+        <div class="modal-header">
+            <span class="modal-title" id="modalTitle">รายการสินค้า</span>
+            <button type="button" class="modal-close" onclick="closeItemsModal()" aria-label="ปิด">&times;</button>
+        </div>
+        <div class="modal-row modal-row-head">
+            <span>ชื่อสินค้า</span>
+            <span class="num">จำนวน</span>
+        </div>
+        <div id="modalBody"></div>
+    </div>
 </div>
 
 <script>
 const FINISH_URL = "{{ route('internal_po.pick.submit') }}";
 const CANCEL_URL = "{{ route('internal_po.cancel') }}";
 const CSRF       = document.querySelector('meta[name="csrf-token"]').content;
+
+const PO_ITEMS = {
+    @foreach ($heads as $h)
+        "{{ $h->internal_id }}": @json($h->lines->map(fn ($it) => ['name' => $it->item_name, 'qty' => (float) $it->item_quantity])),
+    @endforeach
+};
 
 const selectedIds = () => Array.from(document.querySelectorAll('.chkLine:checked')).map(c => c.value);
 const currentUser = () => document.getElementById('inpUser').value.trim();
@@ -399,6 +475,48 @@ async function submitCancel() {
         else { alert(data.message || 'ยกเลิกไม่สำเร็จ'); btn.disabled = false; }
     } catch (e) { console.error(e); alert('เกิดข้อผิดพลาด'); btn.disabled = false; }
 }
+
+function openItemsModal(internalId) {
+    const items = PO_ITEMS[internalId] || [];
+    document.getElementById('modalTitle').textContent = 'รายการสินค้า - PO ' + internalId;
+
+    const body = document.getElementById('modalBody');
+    body.innerHTML = '';
+
+    if (items.length === 0) {
+        const empty = document.createElement('div');
+        empty.className = 'modal-empty';
+        empty.textContent = 'ไม่มีรายการ';
+        body.appendChild(empty);
+    } else {
+        items.forEach(function (it) {
+            const row = document.createElement('div');
+            row.className = 'modal-row';
+
+            const name = document.createElement('span');
+            name.textContent = it.name;
+
+            const qty = document.createElement('span');
+            qty.className = 'num';
+            qty.textContent = Number(it.qty).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+
+            row.appendChild(name);
+            row.appendChild(qty);
+            body.appendChild(row);
+        });
+    }
+
+    document.getElementById('itemsModal').hidden = false;
+}
+function closeItemsModal() {
+    document.getElementById('itemsModal').hidden = true;
+}
+document.getElementById('itemsModal').addEventListener('click', function (e) {
+    if (e.target === this) closeItemsModal();
+});
+document.addEventListener('keydown', function (e) {
+    if (e.key === 'Escape') closeItemsModal();
+});
 </script>
 <script>
 (function () {
@@ -418,17 +536,14 @@ async function submitCancel() {
         debounceTimer = setTimeout(submitNow, DEBOUNCE_MS);
     }
 
-    // ช่อง text/search: debounce ตอนพิมพ์
     form.querySelectorAll('input[type="search"], input[type="text"]').forEach(function (el) {
         el.addEventListener('input', submitDebounced);
     });
 
-    // dropdown สถานะ: submit ทันทีที่เปลี่ยน
     form.querySelectorAll('select').forEach(function (el) {
         el.addEventListener('change', submitNow);
     });
 
-    // กัน Enter ในช่อง text ทำให้ฟอร์ม submit ซ้ำ/แปลกๆ ระหว่าง debounce ทำงานอยู่
     form.addEventListener('submit', function () {
         clearTimeout(debounceTimer);
     });
