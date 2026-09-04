@@ -1,34 +1,128 @@
+@php
+// ฟังก์ชันช่วยตัดบรรทัดที่อยู่ไม่ให้เกิน 150 ตัวอักษรต่อบรรทัด (รองรับภาษาไทยและ UTF-8)
+$wrapAddress = function($text, $limit = 150) {
+    if (empty($text)) return '';
+    $text = (string)$text;
+
+    // ตัดคำตามช่องว่างก่อน เพื่อไม่ให้ตัดกลางคำ/กลางสระ-วรรณยุกต์
+    $words = preg_split('/\s+/u', trim($text));
+    $lines = [];
+    $current = '';
+
+    foreach ($words as $word) {
+        $candidate = $current === '' ? $word : $current . ' ' . $word;
+
+        if (mb_strlen($candidate, 'UTF-8') > $limit && $current !== '') {
+            $lines[] = $current;
+            $current = $word;
+        } else {
+            $current = $candidate;
+        }
+
+        // เผื่อกรณีคำเดียวยาวเกิน limit (ไม่มีช่องว่างให้ตัด) ค่อยตัดตรงๆ
+        while (mb_strlen($current, 'UTF-8') > $limit) {
+            $lines[] = mb_substr($current, 0, $limit, 'UTF-8');
+            $current = mb_substr($current, $limit, null, 'UTF-8');
+        }
+    }
+
+    if ($current !== '') {
+        $lines[] = $current;
+    }
+
+    return implode("<br>", $lines);
+};
+@endphp
+
 @if (!empty($printMode))
 <!DOCTYPE html>
 <html lang="th">
 <head>
 <meta charset="UTF-8">
 <style>
-    @page { size: A4; margin: 8mm; }
-    body { font-family: 'Sarabun', 'Segoe UI', Tahoma, Arial, sans-serif; font-size: 20px; color: #1e293b; margin: 0; padding: 0; width: 100%; }
+    /*
+      สำคัญ: ตัวอักษรไทยขึ้นเป็น "?????" ในไฟล์ PDF เพราะ dompdf ไม่มีชุดตัวอักษรไทยในตัวเอง
+      และฟอนต์ Sarabun เวอร์ชันใหม่ของ Google Fonts (ที่ใช้ตอนแรก) มีโครงสร้างตารางฟอนต์แบบใหม่
+      ที่ dompdf อ่าน glyph ภาษาไทยไม่ถูกต้อง (ตัวเลข/อังกฤษขึ้นปกติ แต่ภาษาไทยเป็น "?????" ทั้งหมด)
+      เปลี่ยนมาใช้ THSarabunNew ซึ่งเป็นฟอนต์ไทยรุ่นคลาสสิก โครงสร้างไฟล์เรียบง่ายกว่า และเป็นฟอนต์
+      ที่ใช้กันแพร่หลายที่สุดสำหรับ dompdf ภาษาไทยโดยเฉพาะ ทดสอบแล้วทำงานได้เสถียรกว่ามาก
 
-.print-header-wrap { border-bottom: 2px solid #1e293b; padding-bottom: 6px; margin-bottom: 8px; }
-.print-header-table td { border: none; padding: 0; vertical-align: top; }
-.print-header-table h1 { font-size: 20px; margin: 0; }
-.print-header-table .sub { font-size: 20px; color: #4b5563; margin-top: 2px; }
-.print-header-table .meta-cell { text-align: right; font-size: 20px; color: #4b5563; white-space: nowrap; }
+      วิธีติดตั้ง (สำหรับ dompdf / laravel-dompdf):
+      1) เอาไฟล์ THSarabunNew.ttf และ THSarabunNew-Bold.ttf ไปวางที่ public/fonts/ ในโปรเจกต์
+      2) ให้แน่ใจว่าใช้ path จริงในเครื่อง (ไม่ใช่ URL ภายนอก) เพราะ dompdf อ่านไฟล์ในเครื่องได้เสถียรกว่า
+      3) ถ้าใช้ตัวสร้าง PDF อื่น (wkhtmltopdf/snappy, mpdf ฯลฯ) วิธีตั้งค่าฟอนต์จะต่างออกไปเล็กน้อย บอกได้เลยจะปรับให้ตรงเอนจิน
+    */
+    @font-face {
+        font-family: 'THSarabunNew';
+        font-style: normal;
+        font-weight: 400;
+        src: url("{{ public_path('fonts/THSarabunNew.ttf') }}") format('truetype');
+    }
+    @font-face {
+        font-family: 'THSarabunNew';
+        font-style: normal;
+        font-weight: 700;
+        src: url("{{ public_path('fonts/THSarabunNew-Bold.ttf') }}") format('truetype');
+    }
+    @font-face {
+        font-family: 'THSarabunNew';
+        font-style: normal;
+        font-weight: 800;
+        src: url("{{ public_path('fonts/THSarabunNew-Bold.ttf') }}") format('truetype');
+    }
+    @font-face {
+        font-family: 'Sarabun';
+        font-style: normal;
+        font-weight: 400;
+        src: url("{{ public_path('fonts/Sarabun-Regular.ttf') }}") format('truetype');
+    }
+    @font-face {
+        font-family: 'Sarabun';
+        font-style: normal;
+        font-weight: 700;
+        src: url("{{ public_path('fonts/Sarabun-Bold.ttf') }}") format('truetype');
+    }
+    @font-face {
+        font-family: 'Sarabun';
+        font-style: normal;
+        font-weight: 800;
+        src: url("{{ public_path('fonts/Sarabun-ExtraBold.ttf') }}") format('truetype');
+    }
 
-.cust-block { margin-bottom: 6px; border: 1px solid #dcdcdc; page-break-inside: avoid; width: 100%; }
-.cust-block-header { background: #f3f4f6; padding: 5px 10px; border-bottom: 1px solid #dcdcdc; }
+    @page { size: A4; margin: 10mm 8mm; }
+    body { font-family: 'THSarabunNew', 'Sarabun', 'Segoe UI', Tahoma, Arial, sans-serif; font-size: 15px; color: #1e293b; margin: 0; padding: 0; width: 100%; }
+
+.print-header-wrap { border-bottom: 3px solid #001137; padding-bottom: 8px; margin-bottom: 12px; }
+.print-header-table { width: 100%; border-collapse: collapse; }
+.print-header-table td { border: none; padding: 0; vertical-align: bottom; }
+.print-header-table h1 { font-size: 26px; font-weight: 800; color: #001137; margin: 0; }
+.print-header-table .sub { font-size: 14px; color: #4b5563; margin-top: 4px; }
+.print-header-table .sub strong { color: #1e293b; font-weight: 700; }
+.print-header-table .meta-cell { text-align: right; font-size: 15px; font-weight: 700; color: #001137; white-space: nowrap; }
+.print-header-table .meta-cell-small { text-align: right; font-size: 12px; color: #6b7280; white-space: nowrap; line-height: 1.5; }
+
+.cust-block { margin-bottom: 9px; border: 1px solid #dcdcdc; border-left: 4px solid #001137; page-break-inside: avoid; width: 100%; }
+.cust-block-header { background: #fafbfd; padding: 8px 10px; border-bottom: 1px solid #dcdcdc; }
 .cust-header-table { width: 100%; border-collapse: collapse; }
 .cust-header-table td { border: none; padding: 0; vertical-align: middle; }
-.stop-no-cell { width: 44px; font-size: 24px; font-weight: 800; color: #1e293b; text-align: center; }
+.stop-no-cell { width: 34px; padding-right: 10px; }
+.stop-no-badge {
+    display: inline-block; width: 30px; height: 30px; line-height: 30px;
+    background: #001137; color: #ffffff; font-size: 15px; font-weight: 800;
+    text-align: center; border-radius: 6px;
+}
 .cust-info-cell { vertical-align: top; }
-.cust-info-cell .cust-title { font-weight: 700; font-size: 20px; }
-.cust-info-cell .cust-address { display: block; margin-top: 2px; font-weight: 400; color: #374151; font-size: 20px; }
-.cust-qr-cell { width: 60px; text-align: center; vertical-align: top; }
-.cust-qr-cell img { display: block; }
-.cust-qr-cell .qr-label { font-size: 20px; color: #6b7280; margin-top: 1px; }
+.cust-info-cell .cust-title { font-weight: 800; font-size: 16.5px; color: #1e293b; }
+.cust-info-cell .cust-address { display: block; margin-top: 3px; font-weight: 400; color: #5c6b7a; font-size: 13px; line-height: 1.45; }
+.cust-qr-cell { width: 62px; text-align: center; vertical-align: top; }
+.cust-qr-cell img { display: block; border: 1px solid #dcdcdc; }
+.cust-qr-cell .qr-label { font-size: 10.5px; color: #6b7280; margin-top: 3px; }
 
 table.job-table { width: 100%; border-collapse: collapse; table-layout: fixed; }
-th, td { border-bottom: 1px solid #eeeeea; padding: 3px 10px; text-align: left; font-size: 20px; word-wrap: break-word; page-break-inside: avoid; }
-th { background: #fafbfd; font-weight: 700; }
-tr { page-break-inside: avoid; }
+table.job-table th { background: #eef1f6; color: #001137; font-weight: 700; font-size: 12.5px; padding: 6px 10px; border-bottom: 1px solid #dcdcdc; text-align: left; }
+table.job-table td { border-bottom: 1px solid #eeeeea; padding: 6px 10px; text-align: left; font-size: 14.5px; word-wrap: break-word; }
+table.job-table tr { page-break-inside: avoid; }
+table.job-table tbody tr:last-child td { border-bottom: none; }
 </style>
 </head>
 <body>
@@ -40,14 +134,14 @@ tr { page-break-inside: avoid; }
             </tr>
             <tr>
                 <td class="sub">
-                    วิธีการจัดส่ง: {{ $box['transport_name'] }}
+                    วิธีการจัดส่ง: <strong>{{ $box['transport_name'] }}</strong>
                     @if (!empty($box['driver_name']))
-                        &nbsp;x&nbsp;ผู้รับผิดชอบ: {{ $box['driver_name'] }}
+                        &nbsp;x&nbsp;ผู้รับผิดชอบ: <strong>{{ $box['driver_name'] }}</strong>
                     @else
                         &nbsp;(ไม่ระบุผู้รับผิดชอบ)
                     @endif
                 </td>
-                <td class="meta-cell">
+                <td class="meta-cell-small">
                     พิมพ์โดย: {{ $printedBy }}<br>
                     เวลาพิมพ์: {{ $printedAt->format('d/m/Y H:i') }} น.
                 </td>
@@ -60,13 +154,13 @@ tr { page-break-inside: avoid; }
             <div class="cust-block-header">
                 <table class="cust-header-table">
                     <tr>
-                        <td class="stop-no-cell">{{ $cust['stop_no'] }}</td>
+                        <td class="stop-no-cell"><span class="stop-no-badge">{{ $cust['stop_no'] }}</span></td>
                         <td class="cust-info-cell">
                             <span class="cust-title">
                                 {{ $cust['customer_code'] }}
                                 @if (!empty($cust['customer_name'])) - {{ $cust['customer_name'] }} @endif
                             </span>
-                            <span class="cust-address">{{ $cust['address'] }}</span>
+                            <span class="cust-address">{!! $wrapAddress($cust['address'] ?? '', 70) !!}</span>
                         </td>
                         @if (!empty($cust['lalong']))
                             <td class="cust-qr-cell">
@@ -81,8 +175,8 @@ tr { page-break-inside: avoid; }
             <table class="job-table">
                 <thead>
                     <tr>
-                        <th style="width:15%">ลำดับงาน</th>
-                        <th style="width:30%">เลขที่บิล</th>
+                        <th style="width:12%">ลำดับงาน</th>
+                        <th style="width:26%">เลขที่บิล</th>
                         <th>หมายเหตุ</th>
                     </tr>
                 </thead>
@@ -116,120 +210,701 @@ tr { page-break-inside: avoid; }
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>จ่ายงานขนส่งสินค้า</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;600;700&display=swap" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
-<style>
-    :root{
-        --ink:#1e293b; --canvas:#ffffff; --muted:#6b7280; --faint:#9ca3af; --border:#dcdcdc;
-        --primary:#2563eb; --primary-dark:#1d4ed8; --primary-light:#eff6ff;
-        --on-primary:#ffffff; --success:#16a34a; --success-dark:#15803d; --success-light:#dcfce7;
-        --danger:#dc2626; --danger-dark:#b91c1c; --danger-light:#fee2e2;
+    <style>
+        :root{
+            --ink:#1a2634;
+            --ink-soft:#5c6b7a;
+            --ink-faint:#8592a0;
+            --paper:#f5f6f8;
+            --surface:#ffffff;
+            --line:#e3e7ec;
+            --line-strong:#d2d8e0;
 
-        /* งานรับของเอง (PO) = เขียว ตามที่กำหนด */
-        --pickup:#2b8a3e; --pickup-dark:#1f6e30; --pickup-light:#d3f9d8;
-    }
-    body { background:#f6f7f9; padding-bottom:96px; }
+            --delivery:#001137;
+            --delivery-rgb:0,17,55;
+            --delivery-soft:#eaeffa;
 
-    /* ---- แท็บสลับ รับของเอง / ส่งของ ---- */
-    .tab-switch { display:flex; gap:10px; margin-bottom:22px; }
-    .tab-btn {
-        flex:1; display:flex; align-items:center; justify-content:center; gap:8px;
-        padding:14px 16px; border:2px solid var(--border); background:#fff;
-        font-size:16px; font-weight:800; color:var(--muted); cursor:pointer;
-        border-radius:8px; transition:.12s ease;
-    }
-    .tab-btn .tab-count {
-        font-size:12.5px; font-weight:700; padding:2px 9px; border-radius:20px; background:#eee; color:#555;
-    }
-    .tab-btn.pickup.active { border-color:var(--pickup); background:var(--pickup-light); color:var(--pickup-dark); }
-    .tab-btn.pickup.active .tab-count { background:var(--pickup); color:#fff; }
-    .tab-btn.delivery.active { border-color:var(--primary); background:var(--primary-light); color:var(--primary-dark); }
-    .tab-btn.delivery.active .tab-count { background:var(--primary); color:#fff; }
+            --pickup:#001137;
+            --pickup-rgb:0,17,55;
+            --pickup-soft:#eaeffa;
 
-    .tab-panel { display:none; }
-    .tab-panel.active { display:block; }
+            --bill:#001137;
+            --bill-rgb:0,17,55;
 
-    .section-heading { display:flex; justify-content:space-between; align-items:center; margin-bottom:10px; margin-top:20px; }
-    .section-heading:first-child { margin-top:0; }
-    .section-heading h5 { margin:0; }
-    .section-heading .section-count { font-size:13px; color:var(--muted); margin-left:6px; }
+            --doc:#f18300;
+            --doc-rgb:241,131,0;
 
-    /* ---- ตารางรายการงาน — fix ความกว้าง ไม่ไหลแนวนอน ---- */
-    .job-list-table-wrap { background:#fff; border:1px solid var(--border); margin-bottom:28px; }
-    table.job-list-table { width:100%; border-collapse:collapse; table-layout:fixed; }
-    table.job-list-table th, table.job-list-table td {
-        border-bottom:1px solid #eeeeea; padding:8px 12px; font-size:14px; text-align:left;
-        vertical-align:top; word-wrap:break-word; overflow-wrap:break-word; white-space:normal;
-    }
-    table.job-list-table thead th {
-        background:#fafbfd; font-weight:700; color:var(--ink); border-bottom:2px solid var(--border);
-    }
-    table.job-list-table tbody tr:hover { background:#f8f9fb; }
-    table.job-list-table tr.group-row td {
-        background:#f3f4f6; font-weight:800; font-size:14.5px; color:var(--ink);
-        border-top:1px solid var(--border); border-bottom:1px solid var(--border); padding:8px 12px;
-    }
-    table.job-list-table tr.group-row.pickup-row td { background:var(--pickup-light); color:var(--pickup-dark); }
-    table.job-list-table tr.group-row.delivery-row td { background:var(--primary-light); color:var(--primary-dark); }
-    table.job-list-table .col-check { width:36px; text-align:center; }
-    table.job-list-table .col-check input[type="checkbox"] { width:18px; height:18px; accent-color:var(--primary); }
-    table.job-list-table .col-check input.pickup-checkbox { accent-color:var(--pickup); }
-    table.job-list-table .job-no { font-weight:700; color:var(--ink); }
-    table.job-list-table .job-address { font-size:13px; color:var(--ink); }
-    table.job-list-table .job-address a { display:inline-block; margin-top:4px; }
-    table.job-list-table .job-meta { font-size:12.5px; color:var(--muted); }
-    table.job-list-table .job-notes { font-size:12.5px; color:var(--faint); }
-    table.job-list-table .group-vendor-address { font-weight:400; font-size:13px; color:var(--muted); display:block; margin-top:2px; }
+            --success:#2f7d4f;
+            --danger:#c0392b;
 
-    .status-pill {
-        display:inline-block; font-size:11.5px; font-weight:700; padding:2px 9px;
-        border-radius:20px; margin-left:4px; white-space:nowrap;
-    }
-    .status-pill.status-green  { background:#d3f9d8; color:#2b8a3e; }
-    .status-pill.status-yellow { background:#fff3bf; color:#e67700; }
-    .status-pill.status-orange { background:#fff3e0; color:#e8590c; }
-    .status-pill.status-inherit,
-    .status-pill.status-red    { background:#eee; color:#555; }
+            --row-alt:#f6f8fa;
+            --row-hover:#eef2f6;
+        }
 
-    .empty-note { font-size:14px; color:var(--muted); padding:14px; border:1px dashed var(--border); background:#fff; margin-bottom:28px; }
+        *{ box-sizing:border-box; }
 
-    .save-floatbar {
-        position:fixed; right:20px; bottom:20px; z-index:1050;
-        display:flex; align-items:center; gap:10px;
-    }
-    .save-floatbar .floatbar-count {
-        font-size:14.5px; font-weight:700; color:var(--ink);
-        background:var(--canvas); border:1px solid var(--border);
-        padding:9px 14px; box-shadow:0 2px 10px rgba(0,0,0,.12); white-space:nowrap;
-    }
-    .save-floatbar .floatbar-count strong { color:var(--success-dark); }
-    .save-floatbar button { box-shadow:0 2px 10px rgba(0,0,0,.15); }
+        html, body{ background:var(--paper); }
 
-    .required-mark { color:var(--danger); }
-    .optional-hint { color:var(--muted); font-weight:400; font-size:13px; }
+        body{
+            font-family:'Sarabun','Segoe UI',Tahoma,Arial,sans-serif;
+            color:var(--ink);
+            font-size:16px;
+            line-height:1.5;
+            -webkit-font-smoothing:antialiased;
+        }
 
-    .autocomplete-list {
-        position:absolute; top:100%; left:0; right:0; z-index:3000;
-        max-height:220px; overflow-y:auto; background:var(--canvas);
-        border:1px solid var(--border); border-top:none;
-        box-shadow:0 6px 14px rgba(0,0,0,.1); display:none;
-    }
-    .autocomplete-item { padding:8px 12px; font-size:14px; cursor:pointer; }
-    .autocomplete-item:hover { background:var(--primary-light); }
-    .autocomplete-empty { padding:8px 12px; font-size:13px; color:var(--faint); }
+        .container-fluid{
+            width:100%;
+            max-width:1600px;
+            margin-left:auto;
+            margin-right:auto;
+        }
 
-    /* ---- ตาราง items ใน popup — fix ความกว้าง ไม่ไหลแนวนอน ---- */
-    #itemsModalBody { word-wrap:break-word; overflow-wrap:break-word; }
-    #itemsModal table.table { table-layout:fixed; width:100%; }
-    #itemsModal table.table td, #itemsModal table.table th { word-wrap:break-word; overflow-wrap:break-word; white-space:normal; }
-</style>
+        /* ---------- Header ---------- */
+        .page-header{
+            display:flex;
+            justify-content:space-between;
+            align-items:flex-end;
+            flex-wrap:wrap;
+            gap:16px;
+            padding-bottom:22px;
+            margin-bottom:30px;
+            border-bottom:2px solid var(--ink);
+        }
+        .page-title{
+            margin:0;
+            font-size:1.7rem;
+            font-weight:800;
+            letter-spacing:-0.01em;
+            color:var(--ink);
+        }
+        .page-subtitle{
+            margin-top:5px;
+            font-size:1rem;
+            color:var(--ink-soft);
+        }
+        .page-header-user{
+            display:flex;
+            flex-direction:column;
+            align-items:flex-end;
+            gap:10px;
+        }
+        .user-line{
+            font-size:.95rem;
+            color:var(--ink-soft);
+        }
+        .user-line strong{
+            color:var(--ink);
+            font-weight:700;
+        }
+
+        /* ---------- Buttons ---------- */
+        .btn-manifest{
+            display:inline-flex;
+            align-items:center;
+            gap:7px;
+            padding:10px 18px;
+            border-radius:8px;
+            border:1px solid transparent;
+            font-size:.95rem;
+            font-weight:600;
+            cursor:pointer;
+            text-decoration:none;
+            transition:background-color .15s ease, border-color .15s ease, color .15s ease, transform .1s ease;
+            white-space:nowrap;
+        }
+        .btn-manifest:hover{ text-decoration:none; }
+        .btn-manifest:active{ transform:translateY(1px); }
+
+        .btn-manifest-ghost-ink{
+            background:var(--surface);
+            border-color:var(--line-strong);
+            color:var(--ink);
+        }
+        .btn-manifest-ghost-ink:hover{
+            background:var(--paper);
+            border-color:var(--ink-faint);
+            color:var(--ink);
+        }
+
+        .btn-manifest-ghost-pickup{
+            background:var(--pickup-soft);
+            border-color:rgba(var(--pickup-rgb),.35);
+            color:var(--pickup);
+            padding:7px 14px;
+            font-size:.88rem;
+        }
+        .btn-manifest-ghost-pickup:hover{
+            background:rgba(var(--pickup-rgb),.18);
+            color:var(--pickup);
+        }
+
+        .btn-manifest-cta{
+            background:var(--ink);
+            border-color:var(--ink);
+            color:#fff;
+            font-size:1rem;
+            padding:12px 22px;
+        }
+        .btn-manifest-cta:hover:not(:disabled){
+            background:#0f1c28;
+            color:#fff;
+        }
+        .btn-manifest-cta:disabled{
+            opacity:.4;
+            cursor:not-allowed;
+        }
+
+        .btn-manifest-cancel{
+            background:transparent;
+            border-color:var(--line-strong);
+            color:var(--ink-soft);
+        }
+        .btn-manifest-cancel:hover{
+            background:var(--paper);
+            color:var(--ink);
+        }
+
+        /* ---------- Alerts ---------- */
+        .alert{
+            border-radius:10px;
+            border:1px solid transparent;
+            border-left:4px solid transparent;
+            padding:14px 18px;
+            font-size:1rem;
+            margin-bottom:22px;
+        }
+        .alert-success{
+            background:#eafaf0;
+            border-left-color:var(--success);
+            color:#1f5f39;
+        }
+        .alert-danger{
+            background:#fdecea;
+            border-left-color:var(--danger);
+            color:#8a2a20;
+        }
+
+        /* ---------- Tab switch ---------- */
+        .tab-switch{
+            display:inline-flex;
+            gap:4px;
+            padding:5px;
+            background:var(--surface);
+            border:1px solid var(--line-strong);
+            border-radius:999px;
+            margin-bottom:26px;
+        }
+        .tab-btn{
+            display:inline-flex;
+            align-items:center;
+            gap:8px;
+            border:none;
+            background:transparent;
+            color:var(--ink-soft);
+            font-family:inherit;
+            font-size:1rem;
+            font-weight:600;
+            padding:10px 22px;
+            border-radius:999px;
+            cursor:pointer;
+            transition:background-color .15s ease, color .15s ease;
+        }
+        .tab-btn:hover{ color:var(--ink); }
+        .tab-btn.delivery.active{
+            background:var(--delivery);
+            color:#fff;
+        }
+        .tab-btn.pickup.active{
+            background:var(--pickup);
+            color:#fff;
+        }
+        .tab-count{
+            display:inline-flex;
+            align-items:center;
+            justify-content:center;
+            min-width:22px;
+            padding:2px 8px;
+            border-radius:999px;
+            font-size:.8rem;
+            font-weight:700;
+            background:rgba(26,38,52,.08);
+            color:var(--ink-soft);
+        }
+        .tab-btn.active .tab-count{
+            background:rgba(255,255,255,.22);
+            color:#fff;
+        }
+
+        @media (max-width:768px){
+            .tab-switch{ width:100%; }
+            .tab-btn{ flex:1; justify-content:center; }
+        }
+
+        /* ---------- Tab panels ---------- */
+        .tab-panel{ display:none; }
+        .tab-panel.active{ display:block; }
+
+        /* ---------- Section heading ---------- */
+        .section-heading{
+            display:flex;
+            justify-content:space-between;
+            align-items:center;
+            flex-wrap:wrap;
+            gap:10px;
+            border-left:5px solid transparent;
+            padding:8px 0 8px 14px;
+            margin:38px 0 14px;
+        }
+        .tab-panel > .section-heading:first-child{ margin-top:4px; }
+        .section-heading.accent-delivery{ border-left-color:var(--delivery); }
+        .section-heading.accent-pickup{ border-left-color:var(--pickup); }
+        .section-heading h5{
+            margin:0;
+            font-size:1.15rem;
+            font-weight:800;
+            color:var(--ink);
+        }
+        .section-count{
+            font-weight:500;
+            color:var(--ink-soft);
+            font-size:1rem;
+        }
+        .section-heading .form-check{
+            display:flex;
+            align-items:center;
+            gap:7px;
+            margin:0;
+        }
+        .section-heading .form-check-label{
+            font-size:.95rem;
+            color:var(--ink-soft);
+        }
+
+        .form-check-input{
+            width:18px;
+            height:18px;
+            accent-color:var(--delivery);
+            cursor:pointer;
+        }
+        .form-check-input.accent-pickup{
+            accent-color:var(--pickup);
+        }
+
+        /* ---------- Tables ---------- */
+        .job-list-table-wrap{
+            background:var(--surface);
+            border:1px solid var(--line-strong);
+            border-radius:10px;
+            overflow:hidden;
+            margin-bottom:30px;
+        }
+        .job-list-table{
+            width:100%;
+            table-layout:fixed;
+            border-collapse:collapse;
+            font-size:1rem;
+        }
+        .job-list-table thead th{
+            background:var(--paper);
+            color:var(--ink-soft);
+            font-weight:700;
+            font-size:.85rem;
+            text-align:left;
+            padding:14px 16px;
+            border-bottom:2px solid var(--line-strong);
+            border-right:1px solid var(--line);
+        }
+        .job-list-table thead th:last-child{ border-right:none; }
+        .job-list-table tbody td{
+            padding:16px;
+            border-bottom:1px solid var(--line);
+            border-right:1px solid var(--line);
+            vertical-align:top;
+            color:var(--ink);
+            line-height:1.55;
+        }
+        .job-list-table tbody td:last-child{ border-right:none; }
+        .job-list-table tbody tr:last-child td{
+            border-bottom:none;
+        }
+        .job-list-table tbody tr.row-alt td{
+            background:var(--row-alt);
+        }
+        .job-list-table tbody tr:not(.group-row):hover td{
+            background:var(--row-hover);
+        }
+        .job-list-table tbody tr.row-clickable{
+            cursor:pointer;
+        }
+        .col-check{ text-align:center; }
+        .job-list-table tbody td.col-check,
+        .job-list-table tbody td.job-no,
+        .job-list-table tbody td.job-meta,
+        .job-list-table tbody td.job-address{ vertical-align:middle; }
+
+        .group-row td{
+            padding:14px 16px;
+            font-size:1rem;
+            line-height:1.6;
+            background:var(--paper);
+            border-top:2px solid var(--line-strong);
+            border-right:none;
+            overflow:hidden; /* contains the floated count */
+            cursor:pointer;
+        }
+        .job-list-table tbody tr.group-row:first-child td{ border-top:none; }
+        .group-row.delivery-row td{ border-left:4px solid var(--delivery); background:var(--delivery); color:#fff; }
+        .group-row.pickup-row td{ border-left:4px solid var(--pickup); background:var(--pickup); color:#fff; }
+        .group-row.bill-row td{ border-left:4px solid var(--bill); background:var(--bill); color:#fff; }
+        .group-row.doc-row td{ border-left:4px solid var(--doc); background:var(--doc); color:#fff; }
+
+        .group-select-checkbox{
+            width:18px;
+            height:18px;
+            margin-right:12px;
+            vertical-align:middle;
+            cursor:pointer;
+            accent-color:#fff;
+        }
+
+        .group-customer-id{
+            font-family:'JetBrains Mono',monospace;
+            font-weight:800;
+            font-size:1rem;
+            color:var(--ink);
+        }
+        .group-customer-name{
+            color:var(--ink-soft);
+            font-weight:500;
+            margin-left:6px;
+        }
+        .group-count-chip{
+            float:right;
+            color:var(--ink-soft);
+            font-size:.9rem;
+            font-weight:600;
+        }
+        .group-address{
+            margin-left:8px;
+            font-size:.9rem;
+            color:var(--ink-soft);
+        }
+        .group-address::before{
+            content:"·";
+            margin-right:8px;
+            color:var(--line-strong);
+        }
+        .group-row.delivery-row .group-customer-id,
+        .group-row.delivery-row .group-customer-name,
+        .group-row.delivery-row .group-count-chip,
+        .group-row.delivery-row .group-address,
+        .group-row.delivery-row .location-tag,
+        .group-row.pickup-row .group-customer-id,
+        .group-row.pickup-row .group-customer-name,
+        .group-row.pickup-row .group-count-chip,
+        .group-row.pickup-row .group-address,
+        .group-row.pickup-row .location-tag,
+        .group-row.bill-row .group-customer-id,
+        .group-row.bill-row .group-customer-name,
+        .group-row.bill-row .group-count-chip,
+        .group-row.bill-row .group-address,
+        .group-row.bill-row .location-tag,
+        .group-row.doc-row .group-customer-id,
+        .group-row.doc-row .group-customer-name,
+        .group-row.doc-row .group-count-chip,
+        .group-row.doc-row .group-address,
+        .group-row.doc-row .location-tag{
+            color:#fff;
+        }
+        .group-row.delivery-row .group-address::before,
+        .group-row.pickup-row .group-address::before,
+        .group-row.bill-row .group-address::before,
+        .group-row.doc-row .group-address::before{
+            color:rgba(255,255,255,.55);
+        }
+
+        .job-id-primary{
+            display:block;
+            font-family:'JetBrains Mono',monospace;
+            font-weight:800;
+            font-size:1.05rem;
+            color:var(--ink);
+            white-space:nowrap;
+        }
+        .job-id-secondary{
+            display:block;
+            margin-top:3px;
+            font-family:'JetBrains Mono',monospace;
+            font-size:.85rem;
+            color:#5b8a80;
+            white-space:nowrap;
+        }
+
+        .job-address{
+            line-height:1.55;
+            color:var(--ink);
+        }
+        .location-row{ margin-top:6px; }
+        .location-tag{
+            font-size:.88rem;
+            color:var(--ink-soft);
+        }
+
+        .job-meta{ color:var(--ink); }
+        .meta-name-chip{
+            display:block;
+            font-weight:700;
+            font-size:1rem;
+            color:var(--ink);
+            margin-bottom:4px;
+            white-space:nowrap;
+        }
+        .meta-time{
+            display:block;
+            font-size:.85rem;
+            color:var(--ink-soft);
+            white-space:nowrap;
+        }
+
+        .job-notes{
+            color:var(--ink-soft);
+            line-height:1.55;
+        }
+
+        .job-items-cell{
+            color:var(--pickup);
+            font-weight:600;
+            cursor:pointer;
+            text-align:center !important;
+            vertical-align:middle !important;
+        }
+        .job-items-cell:hover{
+            text-decoration:underline;
+        }
+
+        .status-pill{
+            display:inline-block;
+            margin-top:8px;
+            padding:4px 12px;
+            border-radius:999px;
+            font-size:.82rem;
+            font-weight:600;
+            border:1px solid transparent;
+        }
+        .job-id-primary .status-pill{
+            margin-top:0;
+            margin-left:8px;
+            vertical-align:middle;
+            font-family:'Sarabun','Segoe UI',Tahoma,Arial,sans-serif;
+        }
+        .status-green,.status-success{ background:#e6f6ea; color:#1d7a3c; border-color:#bfe8cb; }
+        .status-yellow,.status-warning,.status-orange{ background:#fff3e0; color:#a85d00; border-color:#ffdca8; }
+        .status-red,.status-danger{
+            background:#fdeaea;
+            color:#b3261e;
+            border-color:#f7c8c5;
+            animation:statusBlink 1s ease-in-out infinite;
+        }
+        @keyframes statusBlink{
+            0%,100%{ background:#fdeaea; color:#b3261e; border-color:#f7c8c5; }
+            50%{ background:#e02424; color:#fff; border-color:#e02424; }
+        }
+        .status-blue,.status-info,.status-primary{ background:#e8eefc; color:#2a4494; border-color:#c6d4f5; }
+        .status-gray,.status-grey,.status-secondary,.status-default,.status-light{ background:#eef0f3; color:#57626f; border-color:#dde1e6; }
+        .status-purple{ background:#f2eafb; color:#6b3fa0; border-color:#ddc7f0; }
+        .status-pill.status-overdue{
+            background:#fdeaea;
+            color:#b3261e;
+            border-color:#f7c8c5;
+            animation:statusBlink 1s ease-in-out infinite;
+        }
+        .status-pill.status-waiting{
+            background:#e6f6ea;
+            color:#1d7a3c;
+            border-color:#bfe8cb;
+        }
+
+        .empty-note{
+            border:1px dashed var(--line-strong);
+            border-radius:10px;
+            padding:32px;
+            text-align:center;
+            color:var(--ink-soft);
+            font-size:1rem;
+            background:var(--surface);
+            margin-bottom:26px;
+        }
+
+        @media (max-width:900px){
+            .job-list-table-wrap{ overflow-x:auto; }
+            .job-list-table{ min-width:760px; }
+        }
+
+        /* ---------- Floating save bar ---------- */
+        .save-floatbar{
+            position:fixed;
+            right:24px;
+            bottom:24px;
+            z-index:1055;
+            display:flex;
+            align-items:center;
+            gap:8px;
+            background:var(--ink);
+            color:#fff;
+            padding:12px 12px 12px 18px;
+            border-radius:999px;
+            box-shadow:0 10px 28px rgba(15,25,35,.28);
+        }
+        .floatbar-count{
+            font-size:.78rem;
+            color:rgba(255,255,255,.8);
+            white-space:nowrap;
+        }
+        .floatbar-count strong{
+            color:#fff;
+            font-weight:700;
+        }
+        .save-floatbar .btn-manifest-cta{
+            background:#fff;
+            color:var(--ink);
+            border-color:#fff;
+            padding:6px 12px;
+            font-size:.78rem;
+        }
+        .save-floatbar .btn-manifest-cta:hover:not(:disabled){
+            background:#e7ebf1;
+            color:var(--ink);
+        }
+
+        @media (max-width:640px){
+            .save-floatbar{
+                left:16px;
+                right:16px;
+                bottom:16px;
+                justify-content:space-between;
+            }
+        }
+
+        /* ---------- Modals ---------- */
+        .modal-content{
+            border:none;
+            border-radius:14px;
+            box-shadow:0 24px 60px rgba(15,25,35,.25);
+        }
+        .modal-header{
+            border-bottom:1px solid var(--line);
+            padding:18px 22px;
+        }
+        .modal-title{
+            font-weight:700;
+            font-size:1.1rem;
+            color:var(--ink);
+        }
+        .modal-body{ padding:22px; }
+        .modal-footer{
+            border-top:1px solid var(--line);
+            padding:16px 22px;
+        }
+        .form-label{
+            font-weight:600;
+            font-size:.95rem;
+            color:var(--ink);
+            margin-bottom:7px;
+        }
+        .required-mark{ color:var(--danger); }
+        .optional-hint{
+            font-weight:400;
+            font-size:.85rem;
+            color:var(--ink-faint);
+        }
+        .form-control{
+            border:1px solid var(--line-strong);
+            border-radius:8px;
+            padding:10px 14px;
+            font-size:1rem;
+            color:var(--ink);
+        }
+        .form-control:focus{
+            border-color:var(--delivery);
+            box-shadow:0 0 0 3px rgba(var(--delivery-rgb),.15);
+        }
+
+        .autocomplete-list{
+            position:absolute;
+            left:0;
+            right:0;
+            z-index:20;
+            margin-top:4px;
+            max-height:240px;
+            overflow-y:auto;
+            background:var(--surface);
+            border:1px solid var(--line-strong);
+            border-radius:8px;
+            box-shadow:0 14px 30px rgba(15,25,35,.14);
+            display:none;
+        }
+        .autocomplete-item{
+            padding:10px 14px;
+            font-size:1rem;
+            color:var(--ink);
+            cursor:pointer;
+        }
+        .autocomplete-item:hover{ background:var(--paper); }
+        .autocomplete-empty{
+            padding:10px 14px;
+            font-size:.95rem;
+            color:var(--ink-faint);
+        }
+
+        #itemsModal .table{ font-size:1rem; margin-bottom:0; }
+        #itemsModal .table th{
+            color:var(--ink-soft);
+            font-weight:700;
+            font-size:.85rem;
+            border-color:var(--line);
+        }
+        #itemsModal .table td{
+            border-color:var(--line);
+            color:var(--ink);
+            vertical-align:middle;
+        }
+
+        /* ---------- Accessibility & motion ---------- */
+        *:focus-visible{
+            outline:2px solid var(--delivery);
+            outline-offset:2px;
+        }
+        @media (prefers-reduced-motion: reduce){
+            *{ transition:none !important; animation:none !important; }
+        }
+
+        @media (max-width:768px){
+            .page-header{
+                flex-direction:column;
+                align-items:flex-start;
+            }
+            .page-header-user{
+                align-items:flex-start;
+                width:100%;
+            }
+        }
+    </style>
 </head>
 <body class="bg-light">
 <div class="container-fluid py-4">
-    <div class="d-flex justify-content-between align-items-start mb-4">
-        <h3 class="mb-0">จ่ายงานขนส่งสินค้า</h3>
-        <div class="text-end">
-            <div class="text-muted mb-1">ผู้ใช้งาน: {{ $loggedInName }}</div>
-            <a href="{{ route('deliverytrack.summary') }}" class="btn btn-sm btn-outline-secondary">
+    <div class="page-header">
+        <div>
+            <h3 class="page-title">จ่ายงานขนส่งสินค้า</h3>
+            <div class="page-subtitle">แผงควบคุมการจ่ายงานขนส่ง</div>
+        </div>
+        <div class="page-header-user">
+            <div class="user-line">ผู้ใช้งาน: <strong>{{ $loggedInName }}</strong></div>
+            <a href="{{ route('deliverytrack.summary') }}" class="btn btn-manifest btn-manifest-ghost-ink">
                 📋 สรุปงานคนขับ / งานที่จัดส่งแล้ว
             </a>
         </div>
@@ -250,11 +925,11 @@ tr { page-break-inside: avoid; }
 
     {{-- ================= แท็บสลับ ================= --}}
     <div class="tab-switch">
-        <button type="button" class="tab-btn pickup active" id="tabBtnPickup" onclick="switchTab('pickup')">
-            🛵 รับของเอง <span class="tab-count">{{ $poCount }}</span>
-        </button>
-        <button type="button" class="tab-btn delivery" id="tabBtnDelivery" onclick="switchTab('delivery')">
+        <button type="button" class="tab-btn delivery active" id="tabBtnDelivery" onclick="switchTab('delivery')">
             🚚 ส่งของ <span class="tab-count">{{ $billCount + $docCount }}</span>
+        </button>
+        <button type="button" class="tab-btn pickup" id="tabBtnPickup" onclick="switchTab('pickup')">
+            📦 รับของเอง <span class="tab-count">{{ $poCount }}</span>
         </button>
     </div>
 
@@ -262,12 +937,188 @@ tr { page-break-inside: avoid; }
         @csrf
         <div id="jobInputs"></div>
 
-        {{-- ================= แท็บ 1: รับของเอง (PO) ================= --}}
-        <div class="tab-panel active" id="panelPickup">
-            <div class="section-heading">
+        {{-- ================= แท็บ 1: ส่งของ (บิลขาย + บิลชั่วคราว) ================= --}}
+        <div class="tab-panel active" id="panelDelivery">
+            <div class="section-heading accent-delivery">
+                <h5>งานบิลขาย <span class="section-count">— {{ $billCount }} รายการ</span></h5>
+                <div class="form-check">
+                    <input type="checkbox" class="form-check-input" id="checkAllBills">
+                    <label class="form-check-label" for="checkAllBills">เลือกทั้งหมด (บิลขาย)</label>
+                </div>
+            </div>
+
+            @if (count($billGroups) > 0)
+                <div class="job-list-table-wrap">
+                    <table class="job-list-table">
+                        <colgroup>
+                            <col style="width:56px">
+                            <col style="width:220px">
+                            <col style="width:190px">
+                            <col style="width:auto">
+                        </colgroup>
+                        <thead>
+                            <tr>
+                                <th class="col-check"></th>
+                                <th>SO / บิล</th>
+                                <th>ผู้หยิบสินค้า</th>
+                                <th>หมายเหตุ</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach ($billGroups as $group)
+                                @php
+                                    $firstBill = $group['rows'][0]['bill'] ?? null;
+                                    $groupAddressRaw = $firstBill->customer_address ?? '';
+                                    $groupLocationTag = null;
+                                    if (str_contains($groupAddressRaw, 'สถานที่ส่ง:')) {
+                                        [$groupAddressRaw, $groupLocationTag] = array_map('trim', explode('สถานที่ส่ง:', $groupAddressRaw, 2));
+                                        $groupAddressRaw = rtrim($groupAddressRaw, ', ');
+                                    }
+                                    $groupAddress = $wrapAddress($groupAddressRaw, 90);
+                                    $groupKey = 'bill-' . $loop->index;
+                                @endphp
+                                <tr class="group-row bill-row" data-group="{{ $groupKey }}" onclick="toggleGroup(this)">
+                                    <td colspan="4">
+                                        <input type="checkbox" class="group-select-checkbox" data-group="{{ $groupKey }}"
+                                               onclick="event.stopPropagation()" onchange="onGroupCheckboxChange(this)">
+                                        <span class="group-customer-id">{{ $group['customer_id'] }}</span>
+                                        @if (!empty($group['customer_name']))
+                                            <span class="group-customer-name">- {{ $group['customer_name'] }}</span>
+                                        @endif
+                                        <span class="group-count-chip">{{ count($group['rows']) }} บิล</span>
+                                        @if ($groupAddress)
+                                            <span class="group-address">
+                                                {!! $groupAddress !!}
+                                                @if ($groupLocationTag)
+                                                    <span class="location-tag"> · สถานที่ส่ง: {{ $groupLocationTag }}</span>
+                                                @endif
+                                            </span>
+                                        @endif
+                                    </td>
+                                </tr>
+                                @foreach ($group['rows'] as $row)
+                                    @php
+                                        $bill = $row['bill'];
+                                    @endphp
+                                    <tr class="{{ $loop->iteration % 2 === 0 ? 'row-alt' : '' }}">
+                                        <td class="col-check">
+                                            <input type="checkbox" class="job-checkbox bill-checkbox"
+                                                   value="bill:{{ $bill->so_detail_id }}"
+                                                   data-group="{{ $groupKey }}"
+                                                   onchange="updateSelectedCount(); syncGroupCheckboxState(this.dataset.group)">
+                                        </td>
+                                        <td class="job-no">
+                                            <span class="job-id-primary">SO {{ $bill->so_id }}</span>
+                                            <span class="job-id-secondary">บิล {{ $bill->billid }}</span>
+                                        </td>
+                                        <td class="job-meta">
+                                            <span class="meta-name-chip">{{ $bill->emp_picker ?: '-' }}</span>
+                                            <span class="meta-time">{{ $bill->time }}</span>
+                                        </td>
+                                        <td class="job-notes">{{ $bill->notes ?: '-' }}</td>
+                                    </tr>
+                                @endforeach
+                            @endforeach
+                        </tbody>
+                    </table>
+                </div>
+            @else
+                <div class="empty-note">ไม่มีงานบิลขายค้างจ่าย</div>
+            @endif
+
+            <div class="section-heading accent-delivery">
+                <h5>งานบิลชั่วคราว <span class="section-count">— {{ $docCount }} รายการ</span></h5>
+                <div class="form-check">
+                    <input type="checkbox" class="form-check-input" id="checkAllDocs">
+                    <label class="form-check-label" for="checkAllDocs">เลือกทั้งหมด (บิลชั่วคราว)</label>
+                </div>
+            </div>
+
+            @if (count($docGroups) > 0)
+                <div class="job-list-table-wrap">
+                    <table class="job-list-table">
+                        <colgroup>
+                            <col style="width:56px">
+                            <col style="width:220px">
+                            <col style="width:190px">
+                            <col style="width:auto">
+                        </colgroup>
+                        <thead>
+                            <tr>
+                                <th class="col-check"></th>
+                                <th>เอกสาร</th>
+                                <th>ผู้บันทึก</th>
+                                <th>หมายเหตุ</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach ($docGroups as $group)
+                                @php
+                                    $firstDoc = $group['rows'][0]['doc'] ?? null;
+                                    $groupAddressRaw = $firstDoc->com_address ?? '';
+                                    $groupLocationTag = null;
+                                    if (str_contains($groupAddressRaw, 'สถานที่ส่ง:')) {
+                                        [$groupAddressRaw, $groupLocationTag] = array_map('trim', explode('สถานที่ส่ง:', $groupAddressRaw, 2));
+                                        $groupAddressRaw = rtrim($groupAddressRaw, ', ');
+                                    }
+                                    $groupAddress = $wrapAddress($groupAddressRaw, 90);
+                                    $groupKey = 'doc-' . $loop->index;
+                                @endphp
+                                <tr class="group-row doc-row" data-group="{{ $groupKey }}" onclick="toggleGroup(this)">
+                                    <td colspan="4">
+                                        <input type="checkbox" class="group-select-checkbox" data-group="{{ $groupKey }}"
+                                               onclick="event.stopPropagation()" onchange="onGroupCheckboxChange(this)">
+                                        <span class="group-customer-id">{{ $group['customer_id'] }}</span>
+                                        @if (!empty($group['customer_name']))
+                                            <span class="group-customer-name">- {{ $group['customer_name'] }}</span>
+                                        @endif
+                                        <span class="group-count-chip">{{ count($group['rows']) }} เอกสาร</span>
+                                        @if ($groupAddress)
+                                            <span class="group-address">
+                                                {!! $groupAddress !!}
+                                                @if ($groupLocationTag)
+                                                    <span class="location-tag"> · สถานที่ส่ง: {{ $groupLocationTag }}</span>
+                                                @endif
+                                            </span>
+                                        @endif
+                                    </td>
+                                </tr>
+                                @foreach ($group['rows'] as $row)
+                                    @php
+                                        $doc = $row['doc'];
+                                    @endphp
+                                    <tr class="{{ $loop->iteration % 2 === 0 ? 'row-alt' : '' }}">
+                                        <td class="col-check">
+                                            <input type="checkbox" class="job-checkbox doc-checkbox"
+                                                   value="doc:{{ $doc->doc_id }}"
+                                                   data-group="{{ $groupKey }}"
+                                                   onchange="updateSelectedCount(); syncGroupCheckboxState(this.dataset.group)">
+                                        </td>
+                                        <td class="job-no">
+                                            <span class="job-id-primary">เอกสาร {{ $doc->doc_id }}</span>
+                                            <span class="job-id-secondary">{{ $doc->contact_name }}</span>
+                                        </td>
+                                        <td class="job-meta">
+                                            <span class="meta-name-chip">{{ $doc->emp_name ?: '-' }}</span>
+                                            <span class="meta-time">{{ $doc->time }}</span>
+                                        </td>
+                                        <td class="job-notes">{{ $doc->notes ?: '-' }}</td>
+                                    </tr>
+                                @endforeach
+                            @endforeach
+                        </tbody>
+                    </table>
+                </div>
+            @else
+                <div class="empty-note">ไม่มีงานบิลชั่วคราวค้างจ่าย</div>
+            @endif
+        </div>
+        {{-- ================= แท็บ 2: รับของเอง (PO) ================= --}}
+        <div class="tab-panel" id="panelPickup">
+            <div class="section-heading accent-pickup">
                 <h5>งาน PO รับเอง <span class="section-count">— {{ $poCount }} รายการ</span></h5>
                 <div class="form-check">
-                    <input type="checkbox" class="form-check-input" id="checkAllPo">
+                    <input type="checkbox" class="form-check-input accent-pickup" id="checkAllPo">
                     <label class="form-check-label" for="checkAllPo">เลือกทั้งหมด (รับของเอง)</label>
                 </div>
             </div>
@@ -278,16 +1129,14 @@ tr { page-break-inside: avoid; }
                         <colgroup>
                             <col style="width:5%">
                             <col style="width:20%">
-                            <col style="width:14%">
-                            <col style="width:16%">
-                            <col style="width:12%">
-                            <col style="width:33%">
+                            <col style="width:35%">
+                            <col style="width:18%">
+                            <col style="width:22%">
                         </colgroup>
                         <thead>
                             <tr>
                                 <th class="col-check"></th>
                                 <th>PO / SO</th>
-                                <th>สถานะ</th>
                                 <th>วิธีรับของ</th>
                                 <th>วันที่นัด</th>
                                 <th>สินค้า</th>
@@ -295,35 +1144,42 @@ tr { page-break-inside: avoid; }
                         </thead>
                         <tbody>
                             @foreach ($poGroups as $group)
-                                <tr class="group-row pickup-row">
-                                    <td colspan="6">
-                                        {{ $group['customer_id'] }}
+                                @php $groupKey = 'po-' . $loop->index; @endphp
+                                <tr class="group-row pickup-row" data-group="{{ $groupKey }}" onclick="toggleGroup(this)">
+                                    <td colspan="5">
+                                        <input type="checkbox" class="group-select-checkbox" data-group="{{ $groupKey }}"
+                                               onclick="event.stopPropagation()" onchange="onGroupCheckboxChange(this)">
+                                        <span class="group-customer-id">{{ $group['customer_id'] }}</span>
                                         @if (!empty($group['customer_name']))
-                                            - {{ $group['customer_name'] }}
+                                            <span class="group-customer-name">- {{ $group['customer_name'] }}</span>
                                         @endif
-                                        <span class="text-muted fw-normal">({{ count($group['rows']) }} PO)</span>
+                                        <span class="group-count-chip">{{ count($group['rows']) }} PO</span>
                                         @if (!empty($group['vendor_address']))
-                                            <span class="group-vendor-address">{{ $group['vendor_address'] }}</span>
+                                            <span class="group-address">{!! $wrapAddress($group['vendor_address'], 70) !!}</span>
                                         @endif
                                     </td>
                                 </tr>
                                 @foreach ($group['rows'] as $row)
                                     @php $po = $row['po']; @endphp
-                                    <tr>
+                                    <tr class="{{ $loop->iteration % 2 === 0 ? 'row-alt' : '' }}">
                                         <td class="col-check">
                                             <input type="checkbox" class="job-checkbox po-checkbox pickup-checkbox"
                                                    value="po:{{ $po->PONum }}"
-                                                   onchange="updateSelectedCount()">
+                                                   data-po="{{ $po->PONum }}"
+                                                   data-group="{{ $groupKey }}"
+                                                   onchange="syncSamePO(this); updateSelectedCount(); syncGroupCheckboxState(this.dataset.group)">
                                         </td>
-                                        <td class="job-no">PO {{ $po->PONum }} · SO {{ $po->SONum }}</td>
-                                        <td><span class="status-pill status-{{ $po->status_color }}">{{ $po->status_label }}</span></td>
-                                        <td class="job-meta">{{ $po->DeliveryMethod }}</td>
+                                        <td class="job-no">
+                                            <span class="job-id-primary">PO {{ $po->PONum }} @php $statusLabel = trim($po->status_label ?? ''); $statusExtraClass = $statusLabel === 'เลยกำหนด' ? ' status-overdue' : ($statusLabel === 'รอเข้า' ? ' status-waiting' : ''); @endphp<span class="status-pill status-{{ $po->status_color }}{{ $statusExtraClass }}">{{ $po->status_label }}</span></span>
+                                            <span class="job-id-secondary">SO {{ $po->SONum }}</span>
+                                        </td>
+                                        <td class="job-address">
+                                            {{ $po->DeliveryMethod }}
+                                        </td>
                                         <td class="job-meta">{{ $po->DeliveryDate ?: '-' }}</td>
-                                        <td class="job-notes">
-                                            <button type="button" class="btn btn-sm btn-outline-secondary"
-                                                    onclick='showItemsModal("PO {{ $po->PONum }}", @json($po->items))'>
-                                                🔎 ดูรายการ ({{ count($po->items) }})
-                                            </button>
+                                        <td class="job-notes job-items-cell"
+                                            onclick='event.stopPropagation(); showItemsModal("PO {{ $po->PONum }}", @json($po->items))'>
+                                            🔎 ดูรายการ ({{ count($po->items) }})
                                         </td>
                                     </tr>
                                 @endforeach
@@ -336,160 +1192,20 @@ tr { page-break-inside: avoid; }
             @endif
         </div>
 
-        {{-- ================= แท็บ 2: ส่งของ (บิลขาย + บิลชั่วคราว) ================= --}}
-        <div class="tab-panel" id="panelDelivery">
-            <div class="section-heading">
-                <h5>งานบิลขาย <span class="section-count">— {{ $billCount }} รายการ</span></h5>
-                <div class="form-check">
-                    <input type="checkbox" class="form-check-input" id="checkAllBills">
-                    <label class="form-check-label" for="checkAllBills">เลือกทั้งหมด (บิลขาย)</label>
-                </div>
-            </div>
-
-            @if (count($billGroups) > 0)
-                <div class="job-list-table-wrap">
-                    <table class="job-list-table">
-                        <colgroup>
-                            <col style="width:5%">
-                            <col style="width:20%">
-                            <col style="width:35%">
-                            <col style="width:18%">
-                            <col style="width:22%">
-                        </colgroup>
-                        <thead>
-                            <tr>
-                                <th class="col-check"></th>
-                                <th>SO / บิล</th>
-                                <th>ที่อยู่จัดส่ง</th>
-                                <th>ผู้หยิบสินค้า</th>
-                                <th>หมายเหตุ</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            @foreach ($billGroups as $group)
-                                <tr class="group-row delivery-row">
-                                    <td colspan="5">
-                                        {{ $group['customer_id'] }}
-                                        @if (!empty($group['customer_name']))
-                                            - {{ $group['customer_name'] }}
-                                        @endif
-                                        <span class="text-muted fw-normal">({{ count($group['rows']) }} บิล)</span>
-                                    </td>
-                                </tr>
-                                @foreach ($group['rows'] as $row)
-                                    @php $bill = $row['bill']; @endphp
-                                    <tr>
-                                        <td class="col-check">
-                                            <input type="checkbox" class="job-checkbox bill-checkbox"
-                                                   value="bill:{{ $bill->so_detail_id }}"
-                                                   onchange="updateSelectedCount()">
-                                        </td>
-                                        <td class="job-no">SO {{ $bill->so_id }} · บิล {{ $bill->billid }}</td>
-                                        <td class="job-address">
-                                            {{ $bill->customer_address }}
-                                            @if (!empty($bill->customer_la_long))
-                                                <br>
-                                                <a href="https://www.google.com/maps/search/?api=1&query={{ urlencode($bill->customer_la_long) }}"
-                                                   target="_blank" class="btn btn-sm btn-outline-primary">
-                                                    เปิดแผนที่
-                                                </a>
-                                            @endif
-                                        </td>
-                                        <td class="job-meta">{{ $bill->emp_picker ?: '-' }} · {{ $bill->time }}</td>
-                                        <td class="job-notes">{{ $bill->notes ?: '-' }}</td>
-                                    </tr>
-                                @endforeach
-                            @endforeach
-                        </tbody>
-                    </table>
-                </div>
-            @else
-                <div class="empty-note">ไม่มีงานบิลขายค้างจ่าย</div>
-            @endif
-
-            <div class="section-heading">
-                <h5>งานบิลชั่วคราว <span class="section-count">— {{ $docCount }} รายการ</span></h5>
-                <div class="form-check">
-                    <input type="checkbox" class="form-check-input" id="checkAllDocs">
-                    <label class="form-check-label" for="checkAllDocs">เลือกทั้งหมด (บิลชั่วคราว)</label>
-                </div>
-            </div>
-
-            @if (count($docGroups) > 0)
-                <div class="job-list-table-wrap">
-                    <table class="job-list-table">
-                        <colgroup>
-                            <col style="width:5%">
-                            <col style="width:20%">
-                            <col style="width:35%">
-                            <col style="width:18%">
-                            <col style="width:22%">
-                        </colgroup>
-                        <thead>
-                            <tr>
-                                <th class="col-check"></th>
-                                <th>เอกสาร</th>
-                                <th>ที่อยู่จัดส่ง</th>
-                                <th>ผู้บันทึก</th>
-                                <th>หมายเหตุ</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            @foreach ($docGroups as $group)
-                                <tr class="group-row delivery-row">
-                                    <td colspan="5">
-                                        {{ $group['customer_id'] }}
-                                        @if (!empty($group['customer_name']))
-                                            - {{ $group['customer_name'] }}
-                                        @endif
-                                        <span class="text-muted fw-normal">({{ count($group['rows']) }} เอกสาร)</span>
-                                    </td>
-                                </tr>
-                                @foreach ($group['rows'] as $row)
-                                    @php $doc = $row['doc']; @endphp
-                                    <tr>
-                                        <td class="col-check">
-                                            <input type="checkbox" class="job-checkbox doc-checkbox"
-                                                   value="doc:{{ $doc->doc_id }}"
-                                                   onchange="updateSelectedCount()">
-                                        </td>
-                                        <td class="job-no">เอกสาร {{ $doc->doc_id }} · {{ $doc->contact_name }}</td>
-                                        <td class="job-address">
-                                            {{ $doc->com_address }}
-                                            @if (!empty($doc->com_la_long))
-                                                <br>
-                                                <a href="https://www.google.com/maps/search/?api=1&query={{ urlencode($doc->com_la_long) }}"
-                                                   target="_blank" class="btn btn-sm btn-outline-primary">
-                                                    เปิดแผนที่
-                                                </a>
-                                            @endif
-                                        </td>
-                                        <td class="job-meta">{{ $doc->emp_name ?: '-' }} · {{ $doc->time }}</td>
-                                        <td class="job-notes">{{ $doc->notes ?: '-' }}</td>
-                                    </tr>
-                                @endforeach
-                            @endforeach
-                        </tbody>
-                    </table>
-                </div>
-            @else
-                <div class="empty-note">ไม่มีงานบิลชั่วคราวค้างจ่าย</div>
-            @endif
-        </div>
     </form>
 </div>
 
 {{-- ===== ปุ่มบันทึก ลอยติดมุมขวาล่างของจอเสมอ ===== --}}
 <div class="save-floatbar">
     <span class="floatbar-count">เลือกไว้ <strong id="selectedCount">0</strong> รายการ</span>
-    <button type="button" id="openModalBtn" class="btn btn-success" disabled>
+    <button type="button" id="openModalBtn" class="btn btn-manifest-cta" disabled>
         บันทึกข้อมูลขนส่ง
     </button>
 </div>
 
 {{-- Modal เลือกวันที่จัดส่ง + วิธีการจัดส่ง + ผู้รับผิดชอบ --}}
 <div class="modal fade" id="driverModal" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog">
+    <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content">
             <div class="modal-header">
                 <h5 class="modal-title">ระบุวันที่จัดส่ง วิธีการจัดส่ง และผู้รับผิดชอบ</h5>
@@ -519,8 +1235,8 @@ tr { page-break-inside: avoid; }
                 </div>
             </div>
             <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">ยกเลิก</button>
-                <button type="button" id="confirmSaveBtn" class="btn btn-primary">ยืนยันบันทึก</button>
+                <button type="button" class="btn btn-manifest btn-manifest-cancel" data-bs-dismiss="modal">ยกเลิก</button>
+                <button type="button" id="confirmSaveBtn" class="btn btn-manifest-cta">ยืนยันบันทึก</button>
             </div>
         </div>
     </div>
@@ -528,7 +1244,7 @@ tr { page-break-inside: avoid; }
 
 {{-- Modal รายการสินค้า/จำนวน (PO) --}}
 <div class="modal fade" id="itemsModal" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
         <div class="modal-content">
             <div class="modal-header">
                 <h5 class="modal-title" id="itemsModalTitle">รายการสินค้า</h5>
@@ -561,6 +1277,67 @@ function switchTab(tab) {
     panelDelivery.classList.toggle('active', !showPickup);
     btnPickup.classList.toggle('active', showPickup);
     btnDelivery.classList.toggle('active', !showPickup);
+}
+
+// PO เดียวกัน (ที่แตกเป็นหลาย SO/หลายแถว) ให้ถือเป็นงานเดียวกัน — ติ๊กแถวใดแถวหนึ่งแล้ว ติ๊กให้ครบทุกแถวที่เป็น PO เดียวกันอัตโนมัติ
+function syncSamePO(checkbox) {
+    const poNum = checkbox.dataset.po;
+    if (!poNum) return;
+    const affectedGroups = new Set();
+    document.querySelectorAll('.po-checkbox[data-po="' + CSS.escape(poNum) + '"]').forEach(cb => {
+        cb.checked = checkbox.checked;
+        if (cb.dataset.group) affectedGroups.add(cb.dataset.group);
+    });
+    affectedGroups.forEach(groupId => syncGroupCheckboxState(groupId));
+}
+
+// ตั้งค่าติ๊ก/ไม่ติ๊กให้ครบทุกแถวของหัวข้อลูกค้ากลุ่มนั้น แล้วอัปเดตสถานะ checkbox หัวข้อให้ตรงกัน
+function setGroupChecked(groupId, checked) {
+    const checkboxes = document.querySelectorAll('.job-checkbox[data-group="' + CSS.escape(groupId) + '"]');
+    checkboxes.forEach(cb => {
+        cb.checked = checked;
+        if (cb.classList.contains('po-checkbox')) {
+            syncSamePO(cb);
+        }
+    });
+    updateSelectedCount();
+    syncGroupCheckboxState(groupId);
+}
+
+// คลิกที่หัวข้อลูกค้า (group-row) แล้วติ๊ก/เอาติ๊กออกให้ครบทุกแถวของหัวข้อนั้น
+function toggleGroup(groupRow) {
+    const groupId = groupRow.dataset.group;
+    if (!groupId) return;
+    const checkboxes = document.querySelectorAll('.job-checkbox[data-group="' + CSS.escape(groupId) + '"]');
+    if (checkboxes.length === 0) return;
+
+    const allChecked = Array.from(checkboxes).every(cb => cb.checked);
+    setGroupChecked(groupId, !allChecked);
+}
+
+// คลิกที่ checkbox เล็กๆ ในหัวข้อโดยตรง (ไม่ต้องคลิกทั้งแถว)
+function onGroupCheckboxChange(checkbox) {
+    const groupId = checkbox.dataset.group;
+    if (!groupId) return;
+    setGroupChecked(groupId, checkbox.checked);
+}
+
+// ปรับสถานะ checkbox ที่หัวข้อให้ตรงกับแถวลูกทั้งหมด: ติ๊กครบ = ติ๊ก, ติ๊กบางส่วน = indeterminate, ไม่ติ๊กเลย = ไม่ติ๊ก
+function syncGroupCheckboxState(groupId) {
+    if (!groupId) return;
+    const groupCb = document.querySelector('.group-select-checkbox[data-group="' + CSS.escape(groupId) + '"]');
+    if (!groupCb) return;
+    const checkboxes = document.querySelectorAll('.job-checkbox[data-group="' + CSS.escape(groupId) + '"]');
+    const total = checkboxes.length;
+    const checkedCount = Array.from(checkboxes).filter(cb => cb.checked).length;
+    groupCb.checked = total > 0 && checkedCount === total;
+    groupCb.indeterminate = checkedCount > 0 && checkedCount < total;
+}
+
+function syncAllGroupCheckboxStates() {
+    document.querySelectorAll('.group-select-checkbox').forEach(cb => {
+        syncGroupCheckboxState(cb.dataset.group);
+    });
 }
 
 function updateSelectedCount() {
@@ -620,16 +1397,35 @@ document.addEventListener('DOMContentLoaded', function () {
     checkAllBills?.addEventListener('change', function () {
         document.querySelectorAll('.bill-checkbox').forEach(cb => cb.checked = this.checked);
         updateSelectedCount();
+        syncAllGroupCheckboxStates();
     });
 
     checkAllDocs?.addEventListener('change', function () {
         document.querySelectorAll('.doc-checkbox').forEach(cb => cb.checked = this.checked);
         updateSelectedCount();
+        syncAllGroupCheckboxStates();
     });
 
     checkAllPo?.addEventListener('change', function () {
         document.querySelectorAll('.po-checkbox').forEach(cb => cb.checked = this.checked);
         updateSelectedCount();
+        syncAllGroupCheckboxStates();
+    });
+
+    syncAllGroupCheckboxStates();
+
+    // คลิกที่ไหนก็ได้ในแถวข้อมูล (ยกเว้นตัวเช็กบ็อกซ์เอง หรือปุ่ม/ลิงก์ในแถว) ให้ติ๊กเช็กบ็อกซ์ของแถวนั้นแทน
+    document.querySelectorAll('.job-list-table tbody tr').forEach(function (row) {
+        const checkbox = row.querySelector('.job-checkbox');
+        if (!checkbox) return; // แถวหัวลูกค้า (group-row) ไม่มีเช็กบ็อกซ์ ข้ามไป
+
+        row.classList.add('row-clickable');
+
+        row.addEventListener('click', function (e) {
+            if (e.target.closest('input, button, a, label')) return;
+            checkbox.checked = !checkbox.checked;
+            checkbox.dispatchEvent(new Event('change'));
+        });
     });
 
     openModalBtn?.addEventListener('click', function () {
