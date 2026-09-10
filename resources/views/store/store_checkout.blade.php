@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-{{-- resources/views/store/store_checkout.blade.php  (ด่าน 3: ของออก - SO -> บิลขนส่ง -> PO เช็คของออก) --}}
+{{-- resources/views/store/store_checkout.blade.php --}}
 <html lang="th">
 <head>
     <meta charset="UTF-8">
@@ -7,267 +7,348 @@
     <meta name="csrf-token" content="{{ csrf_token() }}">
     <title>จัดบิลส่งของ</title>
 <style>
-    /* ===== จำกัดสีแค่ ขาว / เทา / เขียว / แดง / น้ำเงิน ===== */
     :root{
-        --ink:#1e293b; --canvas:#ffffff; --muted:#6b7280; --faint:#9ca3af; --border:#dcdcdc;
-        --primary:#2563eb; --primary-dark:#1d4ed8; --primary-light:#eff6ff;
-        --on-primary:#ffffff; --success:#16a34a; --success-dark:#15803d; --success-light:#dcfce7;
-        --danger:#dc2626; --danger-dark:#b91c1c; --danger-light:#fee2e2;
+        --ink: #1e293b; 
+        --canvas: #f1f5f9; 
+        --card-bg: #ffffff;
+        --muted: #64748b; 
+        --faint: #94a3b8; 
+        --border: #e2e8f0;
+        --primary: #2563eb; 
+        --primary-dark: #1d4ed8; 
+        --primary-light: #eff6ff;
+        --on-primary: #ffffff; 
+        --success: #22c55e; 
+        --success-dark: #16a34a; 
+        --success-light: #f0fdf4;
+        --danger: #ef4444; 
+        --danger-dark: #dc2626; 
+        --danger-light: #fef2f2;
+        --radius: 10px;
+        --shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+        --shadow-sm: 0 1px 3px 0 rgb(0 0 0 / 0.1);
     }
-    * { box-sizing:border-box; margin:0; padding:0; }
-    html,body { background:var(--canvas); overflow-x:hidden; max-width:100%; }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    html, body { background: var(--canvas); overflow-x: hidden; max-width: 100%; }
     body {
-        font-family:'Segoe UI', Tahoma, Arial, sans-serif; font-size:18px;
-        color:var(--ink); padding-bottom:40px;
+        font-family: 'Segoe UI', Tahoma, Arial, sans-serif; 
+        font-size: 16px;
+        color: var(--ink); 
+        padding-bottom: 50px;
+        line-height: 1.5;
     }
-    main { max-width:none; margin:0; padding:20px 28px; }
+    main { max-width: 1600px; margin: 0 auto; padding: 24px; }
 
-    /* ===== Header ===== */
+    /* ===== Top Banner ===== */
     .top-banner {
-        background:var(--canvas); padding:16px; border-bottom:1px solid var(--border);
-        display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:10px;
+        background: #ffffff; 
+        padding: 16px 28px; 
+        border-bottom: 1px solid var(--border);
+        display: flex; 
+        align-items: center; 
+        justify-content: space-between; 
+        flex-wrap: nowrap; 
+        gap: 16px;
+        box-shadow: var(--shadow-sm);
     }
-    .top-banner .title-group { display:flex; align-items:center; gap:10px; }
-    .top-banner .h1 { font-weight:700; font-size:24px; }
-    .top-banner .sticker {
-        background:var(--primary-light); color:var(--primary-dark); border:1px solid #bfdbfe;
-        font-weight:600; font-size:15px; padding:4px 12px; text-transform:uppercase; letter-spacing:.3px; border-radius:0;
+    .top-banner .title-group { display: flex; flex-direction: column; flex-shrink: 0; }
+    .top-banner .h1 { font-weight: 700; font-size: 20px; color: var(--ink); white-space: nowrap; }
+    
+    .top-banner .user-info { 
+        font-size: 14px; 
+        color: var(--on-primary); 
+        font-weight: 600; 
+        background: var(--primary); 
+        padding: 6px 16px; 
+        border-radius: 20px; 
+        white-space: nowrap; 
+        flex-shrink: 0; 
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        box-shadow: var(--shadow-sm);
     }
-    .top-banner .user-info { font-size:17px; color:var(--muted); font-weight:600; }
-    .top-banner .user-info span { color:var(--ink); font-weight:700; }
+    .top-banner .user-info span { background: rgba(255,255,255,0.2); padding: 2px 8px; border-radius: 10px; }
 
-    /* ===== toolbar / filters — SO/PO กดค้นหา/Enter, วันที่เปลี่ยนแล้วค้นหาทันที ===== */
-    .toolbar-row {
-        display:flex; align-items:baseline; justify-content:space-between; flex-wrap:wrap; gap:12px;
-        margin-bottom:14px;
+    /* ===== Toolbar / Filters ===== */
+    .toolbar-container {
+        display: flex;
+        align-items: center;
+        gap: 16px;
+        background: transparent;
+        padding: 0;
+        border: none;
+        box-shadow: none;
+        flex-grow: 1;
+        justify-content: flex-start;
+        min-width: 0;
+        overflow-x: auto;
     }
-    .toolbar { display:flex; gap:8px; flex-wrap:wrap; align-items:center; }
-    .toolbar .field-label { font-size:16px; color:var(--muted); font-weight:600; display:flex; align-items:center; gap:6px; }
-    input[type="text"],input[type="search"],input[type="date"] {
-        padding:9px 12px; border:1px solid var(--border); border-radius:0;
-        font-family:inherit; font-size:18px; background:var(--canvas); color:var(--ink);
+    .toolbar { 
+        display: flex; 
+        gap: 10px; 
+        flex-wrap: nowrap; 
+        align-items: center; 
+        flex-shrink: 0; 
     }
-    input:focus { outline:none; border-color:var(--primary); box-shadow:0 0 0 3px var(--primary-light); }
+    .toolbar .field-label { font-size: 15px; color: var(--muted); font-weight: 600; display: flex; align-items: center; gap: 8px; white-space: nowrap; }
+    
+    input[type="text"], input[type="search"], input[type="date"] {
+        padding: 8px 12px; 
+        border: 1px solid var(--border); 
+        border-radius: 6px;
+        font-family: inherit; 
+        font-size: 15px; 
+        background: var(--card-bg); 
+        color: var(--ink);
+        transition: all 0.2s;
+    }
+    .toolbar input[type="search"] { width: 150px; }
+    
+    /* บังคับช่องวันที่ให้แสดงรูปแบบ วัน/เดือน/ปี (วว/ดด/ปป) บนเบราว์เซอร์ที่รองรับ */
+    input[type="date"] {
+        appearance: none;
+        -webkit-appearance: none;
+        min-width: 155px;
+    }
+    input[type="date"]::-webkit-datetime-edit-fields-wrapper { display: flex; }
+    input[type="date"]::-webkit-datetime-edit-text { padding: 0 2px; color: var(--muted); }
+    input[type="date"]::-webkit-datetime-edit-month-field { content: "เดือน"; }
+    input[type="date"]::-webkit-datetime-edit-day-field { content: "วัน"; }
+    input[type="date"]::-webkit-datetime-edit-year-field { content: "ปี"; }
+
+    input:focus { outline: none; border-color: var(--primary); box-shadow: 0 0 0 3px var(--primary-light); }
+    
     button {
-        padding:9px 18px; border:1px solid transparent; border-radius:0;
-        font-family:inherit; font-weight:600; font-size:18px; cursor:pointer; transition:.15s ease;
+        padding: 8px 16px; 
+        border: 1px solid transparent; 
+        border-radius: 6px;
+        font-family: inherit; 
+        font-weight: 600; 
+        font-size: 15px; 
+        cursor: pointer; 
+        transition: all 0.2s ease;
+        white-space: nowrap;
     }
-    .btn-primary { background:var(--primary); color:var(--on-primary); }
-    .btn-primary:hover { background:var(--primary-dark); }
-    .btn-success { background:var(--success); color:var(--on-primary); }
-    .btn-success:hover { background:var(--success-dark); }
-    .btn-ghost   { background:var(--canvas); color:var(--muted); border-color:var(--border); }
-    .btn-ghost:hover { background:#f3f4f6; color:var(--ink); }
-    button:disabled { opacity:.4; cursor:not-allowed; }
+    .btn-success { background: var(--success); color: var(--on-primary); box-shadow: var(--shadow-sm); }
+    .btn-success:hover { background: var(--success-dark); }
+    .btn-ghost { background: var(--card-bg); color: var(--muted); border-color: var(--border); }
+    .btn-ghost:hover { background: #f1f5f9; color: var(--ink); }
+    button:disabled { opacity: .4; cursor: not-allowed; }
 
     .empty-state {
-        text-align:center; padding:48px 20px; color:var(--muted);
-        border:1px dashed var(--border); background:var(--canvas);
+        text-align: center; padding: 60px 20px; color: var(--muted);
+        border: 2px dashed var(--border); background: var(--card-bg);
+        border-radius: var(--radius); font-size: 16px; font-weight: 500;
     }
 
-    .list-meta {
-        flex-shrink:0; white-space:nowrap;
-        font-size:16px; color:var(--muted);
+    /* ===== List Meta & Quick Filter Links ===== */
+    .list-meta { font-size: 15px; color: var(--muted); white-space: nowrap; flex-shrink: 0; border-left: 1px solid var(--border); padding-left: 16px; display: flex; align-items: center; gap: 12px; }
+    .filter-pills { display: inline-flex; gap: 4px; background: #f1f5f9; padding: 3px; border-radius: 6px; border: 1px solid var(--border); }
+    .filter-pill {
+        font-size: 13px; font-weight: 600; padding: 4px 10px; border-radius: 4px; text-decoration: none; color: var(--muted);
+        transition: all 0.2s;
     }
-    .list-meta .meta-date { font-weight:600; color:var(--ink); }
-    .list-meta .meta-stats strong { color:var(--ink); font-weight:800; }
-    .list-meta .meta-stats .stat-pending { color:var(--danger-dark); }
+    .filter-pill:hover { color: var(--ink); }
+    .filter-pill.active { background: var(--card-bg); color: var(--primary-dark); box-shadow: var(--shadow-sm); }
 
-    /* ===== การ์ด SO แบบกริด แถวละ 3 ทุกขนาดจอ ===== */
+    /* ===== SO Grid Cards ===== */
     .so-grid {
-        display:grid;
+        display: grid;
         grid-template-columns: repeat(3, minmax(0, 1fr));
-        gap:12px;
-        margin-top:6px;
-        align-items:start;
+        gap: 16px;
+        align-items: start;
+        margin-top: 24px;
     }
 
     .so-card {
-        background:var(--canvas); border:1px solid var(--border); border-left:4px solid var(--border);
-        overflow:hidden; display:flex; flex-direction:column; min-width:0;
+        background: var(--card-bg); 
+        border: 1px solid var(--border); 
+        border-left: 5px solid var(--border);
+        border-radius: var(--radius);
+        overflow: hidden; 
+        display: flex; 
+        flex-direction: column; 
+        min-width: 0;
+        box-shadow: var(--shadow-sm);
+        transition: box-shadow 0.2s;
     }
-    .so-card[data-done="1"] { border-left-color:var(--success); }
+    .so-card:hover { box-shadow: var(--shadow); }
+    .so-card[data-done="1"] { border-left-color: var(--success); }
+    
     .so-card-header {
-        display:flex; align-items:flex-start; gap:10px;
-        padding:12px 14px; border-bottom:1px solid var(--border); background:#fafbfd;
-        cursor:pointer;
+        display: flex; align-items: flex-start; gap: 12px;
+        padding: 16px; border-bottom: 1px solid var(--border); background: #fafbfc;
+        cursor: pointer;
+        transition: background 0.15s;
     }
-    .so-card-header:hover { background:#f2f4f8; }
-    .so-card-header:focus-visible { outline:2px solid var(--primary); outline-offset:-2px; }
+    .so-card-header:hover { background: #f1f5f9; }
+    
     .so-toggle {
-        color:var(--faint); font-size:16px; margin-top:2px; flex-shrink:0;
-        display:inline-block; user-select:none; transition:transform .12s ease;
-        pointer-events:none;
+        color: var(--faint); font-size: 14px; margin-top: 4px; flex-shrink: 0;
+        display: inline-block; user-select: none; transition: transform 0.2s ease;
+        pointer-events: none;
     }
-    .so-card:not(.collapsed) .so-toggle { transform:rotate(90deg); }
-    .so-card.collapsed .so-body { display:none; }
-    .so-head-main { flex:1; min-width:0; }
-    .so-id { font-weight:800; font-size:18px; word-break:break-all; }
-    .so-id.is-done { color:var(--success-dark); }
+    .so-card:not(.collapsed) .so-toggle { transform: rotate(90deg); color: var(--primary); }
+    .so-card.collapsed .so-body { display: none; }
+    
+    .so-head-main { flex: 1; min-width: 0; }
+    .so-id { font-weight: 700; font-size: 17px; word-break: break-all; color: var(--ink); }
+    .so-id.is-done { color: var(--success-dark); }
     .so-sub {
-        font-size:14.5px; color:var(--muted); margin-top:2px;
-        white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+        font-size: 14px; color: var(--muted); margin-top: 4px;
+        white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
     }
     .so-status {
-        flex-shrink:0; font-size:13px; font-weight:700; padding:5px 10px; border-radius:0; white-space:nowrap;
+        flex-shrink: 0; font-size: 12px; font-weight: 600; padding: 4px 10px; border-radius: 20px; white-space: nowrap;
     }
-    .so-status.pending { background:var(--danger-light); color:var(--danger-dark); }
-    .so-status.done { background:var(--success-light); color:var(--success-dark); }
+    .so-status.pending { background: var(--danger-light); color: var(--danger-dark); }
+    .so-status.done { background: var(--success-light); color: var(--success-dark); }
 
-    .so-body { padding:0; overflow-x:auto; }
+    .so-body { padding: 0; }
 
-    /* ===== ระดับ 2: บิลขนส่ง (dn / billid) — คั่นด้วยเส้นบาง ไม่ทำกล่องซ้อนกล่อง =====
-       ไม่มีสามเหลี่ยม/เปิดปิดในระดับนี้แล้ว แสดงตลอด (static header) */
-    .dn-section { border-top:1px solid var(--border); }
-    .dn-section:first-child { border-top:none; }
+    /* ===== DN Section ===== */
+    .dn-section { border-top: 1px solid var(--border); }
+    .dn-section:first-child { border-top: none; }
     .dn-section-header {
-        display:flex; align-items:baseline; gap:8px; flex-wrap:wrap;
-        padding:9px 14px; background:#fcfcfd;
+        display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
+        padding: 12px 16px; background: #f8fafc;
     }
-    .dn-no { font-weight:700; font-size:16px; }
-    .dn-no.is-done { color:var(--success-dark); }
-    .dn-no.is-cancelled { color:var(--danger); text-decoration:line-through; }
-    .dn-time { font-size:14px; color:var(--muted); }
-    .dn-hint { font-size:14px; color:var(--faint); margin-left:auto; }
-    .dnSelectAll,
-    .chkPickOnly {
-        width:24px; height:24px; accent-color:var(--primary); flex-shrink:0; cursor:pointer;
-        border:2px solid #111827; border-radius:2px;
+    .dn-no { font-weight: 600; font-size: 15px; }
+    .dn-no.is-done { color: var(--success-dark); }
+    .dn-no.is-cancelled { color: var(--danger); text-decoration: line-through; }
+    .dn-time { font-size: 13px; color: var(--muted); }
+    
+    .dnSelectAll, .chkPickOnly {
+        width: 20px; height: 20px; accent-color: var(--primary); flex-shrink: 0; cursor: pointer;
+        border: 2px solid var(--border); border-radius: 4px;
     }
     .dn-cancelled-badge {
-        font-size:14px; font-weight:700; color:var(--danger); margin-left:auto; white-space:nowrap;
+        font-size: 13px; font-weight: 600; color: var(--danger); margin-left: auto; white-space: nowrap;
+        background: var(--danger-light); padding: 2px 8px; border-radius: 4px;
     }
-    .dn-section.dn-cancelled > .dn-section-header { background:var(--danger-light); }
-    .dn-cancelled-note { font-size:14px; color:var(--danger); padding:8px 0 8px 20px; }
+    .dn-picked-badge {
+        font-size: 13px; font-weight: 600; color: var(--success-dark); margin-left: auto; white-space: nowrap;
+        background: var(--success-light); padding: 2px 8px; border-radius: 4px;
+    }
+    .dn-section.dn-cancelled > .dn-section-header { background: var(--danger-light); }
+    .dn-body { padding: 8px 16px 16px; }
 
-    .dn-body { padding:4px 14px 12px; }
-
-    /* ===== หัวคอลัมน์รายการสินค้า ===== */
+    /* ===== Item Table Head & PO Rows ===== */
     .item-col-head {
-        display:flex; justify-content:space-between; gap:10px;
-        padding:6px 0 6px 20px; font-size:13px; color:var(--ink);
-        font-weight:800; text-transform:uppercase; letter-spacing:.3px;
-        margin-bottom:2px;
+        display: flex; justify-content: space-between; gap: 10px;
+        padding: 8px 12px; font-size: 12px; color: var(--muted);
+        font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px;
+        background: #f1f5f9; border-radius: 6px; margin-bottom: 8px;
     }
 
-    /* ===== ระดับ 3: รายการ PO ในแต่ละบิลขนส่ง ===== */
-    .po-row { padding:8px 0; border-bottom:1px solid #eeeeea; border-radius:0; }
-    .po-row:last-of-type { border-bottom:none; }
+    .po-row { padding: 12px; border: 1px solid var(--border); border-radius: 8px; margin-bottom: 10px; background: #ffffff; }
+    .po-row:last-of-type { margin-bottom: 0; }
+    .po-row.po-row-done { background: var(--success-light); border-color: #bbf7d0; }
 
-    /* รายการที่จัดแล้ว (checkout แล้ว) → ทำเป็น "กล่อง" พื้นเขียวอ่อนทั้งใบ แทนตัวหนังสือสีเขียว */
-    .po-row.po-row-done {
-        background:var(--success-light);
-        padding:10px 10px;
-        margin:4px 0;
-        border-bottom:none;
-    }
-
-    .po-row-head { display:flex; align-items:center; gap:8px; margin-bottom:2px; flex-wrap:wrap; }
+    .po-row-head { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; flex-wrap: wrap; }
     .po-row-head input[type="checkbox"] {
-        width:24px; height:24px; accent-color:var(--primary); flex-shrink:0;
-        border:2px solid #111827; border-radius:2px;
+        width: 20px; height: 20px; accent-color: var(--primary); flex-shrink: 0;
+        border: 2px solid var(--border); border-radius: 4px; cursor: pointer;
     }
-    .po-row.po-row-done .po-row-head { padding-left:22px; }
+    
     .source-tag {
-        font-size:13px; font-weight:700; color:var(--muted); border:1px solid var(--border);
-        padding:2px 7px; border-radius:0; text-transform:uppercase; letter-spacing:.2px; flex-shrink:0;
-        background:var(--canvas); /* กันไม่ให้ tag จมไปกับพื้นเขียวอ่อนของกล่อง po-row-done */
+        font-size: 11px; font-weight: 700; color: var(--muted); border: 1px solid var(--border);
+        padding: 2px 8px; border-radius: 4px; text-transform: uppercase; background: var(--card-bg);
     }
-    .po-num { font-weight:700; font-size:15.5px; }
+    .po-num { font-weight: 700; font-size: 15px; color: var(--ink); }
 
     .item-row {
-        display:flex; justify-content:space-between; align-items:baseline; gap:10px;
-        padding:4px 0 4px 20px;
+        display: flex; justify-content: space-between; align-items: baseline; gap: 10px;
+        padding: 6px 12px; border-bottom: 1px dashed var(--border);
     }
-    .item-row .item-name { font-size:15px; color:#000000; font-weight:700; }
-    .item-row .item-qty { font-size:15px; font-weight:700; color:#000000; white-space:nowrap; }
-    .item-meta { font-size:13px; color:var(--faint); padding-left:20px; margin-top:-2px; margin-bottom:4px; }
+    .item-row:last-child { border-bottom: none; }
+    .item-row .item-name { font-size: 14px; color: var(--ink); font-weight: 500; }
+    .item-row .item-qty { font-size: 14px; font-weight: 700; color: var(--ink); white-space: nowrap; }
 
-    .po-row-meta,
-    .item-row-meta {
-        display:block; font-size:14px; color:var(--ink); font-weight:700;
-        margin:2px 0 6px 20px;
+    .po-row-meta, .item-row-meta {
+        display: block; font-size: 13px; color: var(--muted); font-weight: 500;
+        margin-top: 8px; padding-left: 12px;
     }
-    .po-row-meta.checkout-meta { color:var(--success-dark); font-weight:700; }
+    .po-row-meta.checkout-meta { color: var(--success-dark); font-weight: 600; }
+    .no-dn-note { font-size: 14px; color: var(--muted); padding: 12px; text-align: center; }
 
-    .dn-foot { display:flex; justify-content:flex-end; padding-top:10px; }
-    .btn-checkout-dn {
-        background:var(--success); color:#fff; border-radius:0; padding:9px 18px; font-weight:700; font-size:17px;
-    }
-    .btn-checkout-dn:hover { background:var(--success-dark); }
-
-    .no-dn-note { font-size:14px; color:var(--muted); padding:6px 0 8px 20px; }
-
-    /* ===== แถบเลือกรายการลอยมุมขวาล่าง — ไม่ใช่บล็อกขาวเต็มจอ ไม่บัง pagination ===== */
+    /* ===== Float Bar ===== */
     .checkout-floatbar {
-        position:fixed; right:20px; bottom:20px; left:auto; z-index:50;
-        display:flex; align-items:center; gap:10px;
-        padding:0; background:transparent; border:none; box-shadow:none;
-        justify-content:flex-end;
+        position: fixed; right: 24px; bottom: 24px; z-index: 50;
+        display: flex; align-items: center; gap: 12px;
+        padding: 12px 20px; background: #0f172a; 
+        border: 1px solid rgba(255,255,255,0.1); border-radius: 30px;
+        box-shadow: 0 10px 25px -5px rgb(0 0 0 / 0.3);
+        color: #ffffff;
     }
-    .checkout-floatbar .floatbar-count {
-        font-size:15px; font-weight:700; color:var(--ink);
-        background:var(--canvas); border:1px solid var(--border);
-        padding:9px 16px; border-radius:0;
-        box-shadow:0 2px 10px rgba(0,0,0,.12);
-        white-space:nowrap;
-    }
-    .checkout-floatbar .floatbar-count strong { color:var(--success-dark); }
-    .checkout-floatbar .btn-ghost,
-    .checkout-floatbar .btn-success {
-        box-shadow:0 2px 10px rgba(0,0,0,.12);
-        border-radius:0;
-    }
-    body.has-floatbar { padding-bottom:24px; }
+    .checkout-floatbar .floatbar-count { font-size: 14px; font-weight: 500; color: #94a3b8; }
+    .checkout-floatbar .floatbar-count strong { color: #38bdf8; font-size: 15px; }
+    .checkout-floatbar .btn-ghost { background: rgba(255,255,255,0.1); color: #ffffff; border: none; }
+    .checkout-floatbar .btn-ghost:hover { background: rgba(255,255,255,0.2); }
+    body.has-floatbar { padding-bottom: 90px; }
 
-    /* ===== pagination ===== */
-    .pager { display:flex; gap:4px; align-items:center; flex-wrap:wrap; justify-content:center; margin-top:18px; }
+    /* ===== Pagination ===== */
+    .pager { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; justify-content: center; margin-top: 30px; }
     .pager a, .pager span {
-        display:inline-block; min-width:36px; text-align:center; padding:7px 9px;
-        border:1px solid var(--border); border-radius:0; font-size:16px; font-weight:600;
-        text-decoration:none; color:var(--ink); background:var(--canvas);
+        display: inline-block; min-width: 40px; text-align: center; padding: 8px 12px;
+        border: 1px solid var(--border); border-radius: 6px; font-size: 14px; font-weight: 600;
+        text-decoration: none; color: var(--ink); background: var(--card-bg);
+        box-shadow: var(--shadow-sm); transition: all 0.2s;
     }
-    .pager a:hover { border-color:var(--primary); color:var(--primary); }
-    .pager span.current { background:var(--primary); color:var(--on-primary); border-color:var(--primary); }
-    .pager span.disabled { color:#c1c7d0; }
+    .pager a:hover { border-color: var(--primary); color: var(--primary); background: var(--primary-light); }
+    .pager span.current { background: var(--primary); color: var(--on-primary); border-color: var(--primary); }
+    .pager span.disabled { color: var(--faint); background: #f8fafc; cursor: not-allowed; }
 
-    /* มือถือ/จอแคบ: กลับเป็นแถวละ 1 ใบตามปกติ ไม่บังคับ 3 คอลัมน์ (3 คอลัมน์ใช้เฉพาะจอคอมพิวเตอร์) */
-    @media (max-width:900px){
-        .so-grid { grid-template-columns:1fr; }
-    }
+    @media (max-width: 1400px){ .top-banner { flex-wrap: wrap; } }
+    @media (max-width: 1200px){ .so-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+    @media (max-width: 768px){ .so-grid { grid-template-columns: 1fr; } main { padding: 12px; } .top-banner { padding: 12px; } }
 </style>
 </head>
-<body>
+<body lang="th">
+
 <div class="top-banner">
     <div class="title-group">
-        <span class="h1">จัดบิลส่งของ</span>
+        <span class="h1">📦 จัดบิลส่งของ</span>
     </div>
-    <div class="user-info">ผู้ใช้: <span>{{ $creator }}</span></div>
-</div>
-<input type="hidden" id="inpUser" value="{{ $creator }}">
 
-<main>
-    {{-- ===== ตัวกรอง (SO/PO ต้องกดค้นหาหรือ Enter, เปลี่ยนวันที่แล้วค้นหาให้ทันที) + สรุปงานประจำวันอยู่ขวา ===== --}}
-    <div class="toolbar-row">
+    <div class="toolbar-container">
         <form class="toolbar" id="filterForm" method="GET" action="{{ url()->current() }}">
-            <input type="search" name="SONum" value="{{ request('SONum') }}" placeholder="ค้นหาเลข SO..." autocomplete="off">
-            <input type="search" name="PONum" value="{{ request('PONum') }}" placeholder="ค้นหาเลข PO..." autocomplete="off">
+            <input type="hidden" name="filter_status" value="{{ request('filter_status', 'pending') }}">
+            
+            <input type="search" name="SONum" id="searchSO" value="{{ request('SONum') }}" placeholder=" ค้นหาเลข SO..." autocomplete="off">
+            <input type="search" name="PONum" id="searchPO" value="{{ request('PONum') }}" placeholder=" ค้นหาเลข PO..." autocomplete="off">
+            
             <label class="field-label">
                 วันที่เปิดบิล
-                <input type="date" name="bill_date" value="{{ $billDate }}">
+                <input type="date" name="bill_date" id="searchDate" value="{{ $billDate }}">
             </label>
-            <button type="submit" class="btn-primary">ค้นหา</button>
+
+            <button type="button" class="btn-ghost" onclick="clearAllFilters()">🗑️ ล้างข้อมูลทั้งหมด</button>
         </form>
 
+        @php
+            $currentFilter = request('filter_status', 'pending');
+            $qsWithoutFilter = request()->except(['filter_status', 'page']);
+            
+            $urlPending = url()->current() . '?' . http_build_query(array_merge($qsWithoutFilter, ['filter_status' => 'pending']));
+            $urlAll     = url()->current() . '?' . http_build_query(array_merge($qsWithoutFilter, ['filter_status' => 'all']));
+        @endphp
+
         <div class="list-meta">
-            <div class="meta-stats">
-                <strong>{{ $daySummary['total_bills'] }}</strong> บิลขนส่งทั้งหมด
-                &nbsp;·&nbsp;
-                <strong class="stat-pending">{{ $daySummary['pending_bills'] }}</strong> บิลยังค้างอยู่
+            <div class="filter-pills">
+                <a href="{{ $urlPending }}" class="filter-pill {{ $currentFilter === 'pending' ? 'active' : '' }}">บิลยังค้างอยู่</a>
+                <a href="{{ $urlAll }}" class="filter-pill {{ $currentFilter === 'all' ? 'active' : '' }}">ดูทั้งหมด</a>
             </div>
         </div>
     </div>
 
+    <div class="user-info">ผู้ใช้งาน: <span>{{ $creator }}</span></div>
+</div>
+
+<input type="hidden" id="inpUser" value="{{ $creator }}">
+
+<main>
     @if ($bills->count() > 0)
     <div class="so-grid">
         @foreach ($bills as $bill)
@@ -277,13 +358,10 @@
                 $sourceLabel = fn ($type) => $type === 'internal' ? 'ภายใน' : ($type === 'external' ? 'ระบบใหม่' : '');
                 $poClean = fn ($raw) => preg_replace('/^\s*PO\s*/i', '', (string) $raw);
             @endphp
-            {{-- การ์ดเริ่มต้นแบบ "ปิด" เสมอ (class collapsed) ผู้ใช้ต้องกดที่หัวการ์ดเพื่อเปิดดูรายละเอียด --}}
             <div class="so-card collapsed" id="{{ $soIdSafe }}" data-done="{{ $bill->all_done ? 1 : 0 }}">
                 <div class="so-card-header" role="button" tabindex="0" aria-expanded="false"
-                     aria-label="เปิด/ปิดรายการ {{ $bill->so_id }}"
-                     onclick="toggleSoCard('{{ $soIdSafe }}')"
-                     onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();toggleSoCard('{{ $soIdSafe }}');}">
-                    <span class="so-toggle" aria-hidden="true">▸</span>
+                     onclick="toggleSoCard('{{ $soIdSafe }}')">
+                    <span class="so-toggle" aria-hidden="true">▶</span>
                     <div class="so-head-main">
                         <div class="so-id {{ $bill->all_done ? 'is-done' : '' }}">{{ $bill->so_id }}</div>
                         <div class="so-sub">
@@ -293,7 +371,9 @@
                         </div>
                     </div>
                     @if ($bill->all_done)
-                        <span class="so-status done">จัดของแล้ว</span>
+                        <span class="so-status done">✓ จัดของแล้ว</span>
+                    @else
+                        <span class="so-status pending">⏳ รอดำเนินการ</span>
                     @endif
                 </div>
 
@@ -303,8 +383,6 @@
                     @endif
 
                     @php
-                        // หา "บิลหลัก" ที่จะผูกกับรายการ PO/สินค้าร่วม — เลือกบิลที่ยังไม่ยกเลิกและยังไม่ถูกบันทึกผู้จัดก่อน
-                        // ถ้าทุกบิลถูกบันทึกผู้จัดหมดแล้ว ให้ fallback ไปบิลแรกที่ไม่ยกเลิก
                         $itemHostDnIdx = collect($dnList)->search(fn ($d) => !($d->cancelled ?? false) && !($d->picked ?? false));
                         if ($itemHostDnIdx === false) {
                             $itemHostDnIdx = collect($dnList)->search(fn ($d) => !($d->cancelled ?? false));
@@ -316,7 +394,6 @@
                         $hostDn      = $dnList[$itemHostDnIdx] ?? null;
                     @endphp
 
-                    {{-- ===== รายชื่อบิลขนส่งทั้งหมดของ SO นี้ เรียงต่อกัน (ไม่แทรกรายการสินค้าคั่นกลาง) ===== --}}
                     @foreach ($dnList as $dnIdx => $dn)
                         @php
                             $dnElId        = $soIdSafe . '_dn' . $dnIdx;
@@ -324,37 +401,36 @@
                             $isPicked      = $dn->picked ?? false;
                             $isItemHost    = ($dnIdx === $itemHostDnIdx);
                             $showSelectAll = $isItemHost && !$isCancelled && !$isPicked && !$bill->todo_groups->isEmpty();
-                            $showPickOnly  = !$isCancelled && !$isPicked && !$showSelectAll && $dn->dn_no;
+                            $showPickOnly  = !$isCancelled && !$isPicked && !$showSelectAll && ($dn->dn_no ?? null);
                         @endphp
-                        <div class="dn-section {{ $isCancelled ? 'dn-cancelled' : '' }}" id="{{ $dnElId }}" data-dnno="{{ $dn->dn_no }}">
+                        <div class="dn-section {{ $isCancelled ? 'dn-cancelled' : '' }}" id="{{ $dnElId }}" data-dnno="{{ $dn->dn_no ?? '' }}">
                             <div class="dn-section-header">
                                 @if ($showSelectAll)
-                                    <input type="checkbox" class="dnSelectAll" id="{{ $selectAllId }}" aria-label="เลือกทั้งหมดของ SO นี้"
+                                    <input type="checkbox" class="dnSelectAll" id="{{ $selectAllId }}"
                                         onchange="toggleDnSelectAll(document.getElementById('{{ $itemsElId }}'), this.checked)">
                                 @elseif ($showPickOnly)
-                                    <input type="checkbox" class="chkPickOnly"
-                                        aria-label="บันทึกชื่อผู้จัดบิลนี้"
-                                        onchange="syncCardFromPickOnly(this)">
+                                    <input type="checkbox" class="chkPickOnly" onchange="syncCardFromPickOnly(this)">
                                 @endif
-                                <span class="dn-no {{ $isCancelled ? 'is-cancelled' : ($isPicked ? 'is-done' : '') }}">{{ $dn->dn_no ?: '— (ไม่มีเลขที่บิล)' }}</span>
-                                @if ($dn->time)
+                                <span class="dn-no {{ $isCancelled ? 'is-cancelled' : ($isPicked ? 'is-done' : '') }}">{{ ($dn->dn_no ?? null) ? $dn->dn_no : '— (ไม่มีเลขที่บิล)' }}</span>
+                                
+                                @if (!empty($dn->time))
                                     <span class="dn-time">{{ \Carbon\Carbon::parse($dn->time)->addYears(543)->format('d/m/Y H:i') }}</span>
                                 @endif
-                                @if ($dn->opened_by)
-                                    <span class="dn-time">ผู้เปิดบิล {{ $dn->opened_by }}</span>
+                                
+                                @if (!empty($dn->opened_by))
+                                    <span class="dn-time">ผู้เปิดบิล: {{ $dn->opened_by }}</span>
                                 @endif
                                 @if ($isCancelled)
                                     <span class="dn-cancelled-badge">ยกเลิกแล้ว</span>
                                 @elseif ($isPicked)
                                     <span class="dn-picked-badge">
-                                        จัดของแล้ว{{ $dn->picked_by ? ' โดย ' . $dn->picked_by : '' }}{{ $dn->picked_at ? ' · ' . \Carbon\Carbon::parse($dn->picked_at)->format('d/m/Y H:i') . ' น.' : '' }}
+                                        จัดของแล้ว{{ !empty($dn->picked_by) ? ' โดย ' . $dn->picked_by : '' }}
                                     </span>
                                 @endif
                             </div>
                         </div>
                     @endforeach
 
-                    {{-- ===== รายการ PO/สินค้า ของ SO นี้ — แสดงครั้งเดียว ไม่ซ้ำใต้ทุกบิล ===== --}}
                     <div class="dn-section" id="{{ $itemsElId }}" data-dnno="{{ $hostDn->dn_no ?? '' }}" data-selectall="{{ $selectAllId }}">
                         <div class="dn-body">
                             @forelse ($bill->groups->sortByDesc('todo') as $g)
@@ -367,7 +443,7 @@
                                         @if ($sourceLabel($g->type))
                                             <span class="source-tag">{{ $sourceLabel($g->type) }}</span>
                                         @endif
-                                        <span class="po-num">{{ $poClean($g->po_display) }}</span>
+                                        <span class="po-num">PO: {{ $poClean($g->po_display) }}</span>
                                     </div>
 
                                     <div class="item-col-head"><span>ชื่อสินค้า</span><span>จำนวน</span></div>
@@ -388,23 +464,23 @@
                                         @endphp
                                         @foreach ($locLines as $it)
                                             <div class="item-row-meta">
-                                                ที่เก็บ {{ $it->shelf ?? '—' }} · ระบุสถานที่โดย {{ $it->done_by ?? '—' }}
-                                                @if (!empty($it->done_at)) {{ \Carbon\Carbon::parse($it->done_at)->format('d/m/Y H:i') }} น. @endif
+                                                📍 ที่เก็บ: {{ $it->shelf ?? '—' }} · จัดโดย: {{ $it->done_by ?? '—' }}
+                                                @if (!empty($it->done_at)) ({{ \Carbon\Carbon::parse($it->done_at)->addYears(543)->format('d/m/Y H:i') }}) @endif
                                             </div>
                                         @endforeach
                                     @endif
 
                                     @if ($g->type !== 'external')
                                         <div class="po-row-meta">
-                                            ที่เก็บ {{ $g->location ?: '—' }} · ระบุสถานที่โดย {{ $g->done_by ?: '—' }}
-                                            @if ($g->done_at) {{ \Carbon\Carbon::parse($g->done_at)->format('d/m/Y H:i') }} น. @endif
+                                            📍 ที่เก็บ: {{ $g->location ?: '—' }} · จัดโดย: {{ $g->done_by ?: '—' }}
+                                            @if ($g->done_at) ({{ \Carbon\Carbon::parse($g->done_at)->addYears(543)->format('d/m/Y H:i') }}) @endif
                                         </div>
                                     @endif
                                     @if (!$g->todo)
                                         <div class="po-row-meta checkout-meta">
-                                            เช็คของออก{{ ($g->checkout_by ?? null) ? ' โดย ' . $g->checkout_by : '' }}
+                                            ✓ เช็คของออก{{ ($g->checkout_by ?? null) ? ' โดย ' . $g->checkout_by : '' }}
                                             @if ($g->checkout_at ?? null)
-                                                {{ \Carbon\Carbon::parse($g->checkout_at)->format('d/m/Y H:i') }} น.
+                                                ({{ \Carbon\Carbon::parse($g->checkout_at)->addYears(543)->format('d/m/Y H:i') }})
                                             @endif
                                         </div>
                                     @endif
@@ -419,7 +495,7 @@
     </div>
     @else
         <div class="empty-state">
-            ไม่มีบิลที่ตรงกับเงื่อนไขที่ค้นหา
+            📭 ไม่พบบิลที่ตรงกับเงื่อนไขการค้นหา
         </div>
     @endif
 
@@ -459,18 +535,53 @@
         </div>
     @endif
 </main>
+
 <div class="checkout-floatbar" id="floatBar" hidden>
     <span class="floatbar-count">เลือกไว้ <strong id="floatCount">0</strong> รายการ</span>
-    <button type="button" class="btn-ghost" onclick="clearAllChecks()">ล้างที่เลือก</button>
-    <button type="button" class="btn-success" id="floatSubmitBtn" onclick="submitAllCheckout()">บันทึกข้อมูล</button>
+    <button type="button" class="btn-ghost" onclick="clearAllChecks()">ล้างค่า</button>
+    <button type="button" class="btn-success" id="floatSubmitBtn" onclick="submitAllCheckout()">💾 บันทึก</button>
 </div>
+
 <script>
 const SUBMIT_URL = "{{ route('store.checkout.submit') }}";
 const CSRF = document.querySelector('meta[name="csrf-token"]').content;
 
-// เปิด/ปิดการ์ด SO — เรียกจากการคลิก/กดปุ่มที่ "แถบหัวการ์ด" (.so-card-header) ทั้งแถบได้เลย
-// ไม่จำเป็นต้องกดที่ขีด (▸) เท่านั้น — คลิกที่ชื่อ SO / ลูกค้า / ป้ายสถานะ ก็ toggle ได้เหมือนกัน
-// เปิดได้พร้อมกันหลายใบ ไม่กระทบกัน
+let searchTimer;
+function triggerAutoSearch() {
+    clearTimeout(searchTimer);
+    searchTimer = setTimeout(() => {
+        const soVal = document.getElementById('searchSO').value.trim();
+        const poVal = document.getElementById('searchPO').value.trim();
+        
+        if (soVal === '' && poVal === '') {
+            const currentFilter = "{{ request('filter_status', 'pending') }}";
+            const url = new URL(window.location.href);
+            url.searchParams.delete('SONum');
+            url.searchParams.delete('PONum');
+            url.searchParams.set('filter_status', currentFilter);
+            window.location.href = url.toString();
+            return;
+        }
+        document.getElementById('filterForm').submit();
+    }, 500);
+}
+
+function triggerDateSearch() {
+    document.getElementById('filterForm').submit();
+}
+
+function clearAllFilters() {
+    const currentFilter = "{{ request('filter_status', 'pending') }}";
+    const url = new URL(window.location.href);
+    url.search = '';
+    url.searchParams.set('filter_status', currentFilter);
+    window.location.href = url.toString();
+}
+
+document.getElementById('searchSO').addEventListener('input', triggerAutoSearch);
+document.getElementById('searchPO').addEventListener('input', triggerAutoSearch);
+document.getElementById('searchDate').addEventListener('change', triggerDateSearch);
+
 function toggleSoCard(id) {
     const card = document.getElementById(id);
     if (!card) return;
@@ -479,9 +590,6 @@ function toggleSoCard(id) {
     if (header) header.setAttribute('aria-expanded', collapsed ? 'false' : 'true');
 }
 
-// sync checkbox "เลือกทั้งหมดของ SO นี้" + sync ช่อง "บันทึกผู้จัดบิลนี้" ของบิลอื่นๆ ในการ์ด SO
-// เดียวกันให้ "เท่ากัน" ไปด้วย (ติ๊กสินค้าครบทุกชิ้น = ติ๊กทุกบิลของ SO นี้ให้อัตโนมัติ, ไม่ครบ/ยกเลิก = ยกเลิกทุกบิลกลับ)
-// ผู้ใช้ยังติ๊กบิลอื่นเองแยกได้ตามปกติ ถ้าจะแก้เฉพาะบิลใดบิลหนึ่งภายหลัง
 function updateDnButton(itemsEl) {
     const allBoxes = itemsEl.querySelectorAll('.chkGroup');
     const checked  = itemsEl.querySelectorAll('.chkGroup:checked').length;
@@ -505,17 +613,11 @@ function toggleDnSelectAll(dnEl, checked) {
     updateDnButton(dnEl);
 }
 
-// ทิศทางกลับ: ติ๊กช่อง "บันทึกผู้จัดบิลนี้" ของบิลที่ไม่มีรายการสินค้า (chkPickOnly)
-// - ติ๊ก (checked) = ตั้งใจเลือกทั้ง SO นี้ทั้งใบ → sync ไปเช็ครายการสินค้า (chkGroup) ของบิลหลัก +
-//   ปุ่มเลือกทั้งหมด + บิลอื่นๆ ในการ์ด SO เดียวกันให้ทั้งหมด
-// - ยกเลิกติ๊ก (unchecked) = ต้องการเอาแค่ "บิลนี้บิลเดียว" ออกจากรายการที่จะบันทึก จึงไม่ไล่ยกเลิก
-//   บิลอื่น/รายการสินค้าที่เลือกไว้แล้วตามไปด้วย (ไม่งั้นจะเอาบิลใดบิลหนึ่งออกจากชุดที่เลือกไว้ไม่ได้เลย)
 function syncCardFromPickOnly(cb) {
     if (!cb.checked) {
         updateFloatBar();
         return;
     }
-
     const card = cb.closest('.so-card');
     if (!card) { updateFloatBar(); return; }
 
@@ -530,7 +632,6 @@ function syncCardFromPickOnly(cb) {
             selectAll.indeterminate = false;
         }
     }
-
     updateFloatBar();
 }
 
@@ -558,7 +659,6 @@ async function submitAllCheckout() {
     if (!checkedBoxes.length && !pickOnlyBoxes.length) return;
 
     const ids = Array.from(new Set(checkedBoxes.map(c => c.value)));
-
     const dnNos = Array.from(new Set(
         checkedBoxes.map(c => c.closest('.dn-section')?.dataset.dnno)
             .concat(pickOnlyBoxes.map(c => c.closest('.dn-section')?.dataset.dnno))
@@ -566,7 +666,7 @@ async function submitAllCheckout() {
     ));
 
     const totalCount = ids.length + pickOnlyBoxes.length;
-    if (!confirm('ยืนยันบันทึกข้อมูล ' + totalCount + ' รายการ')) return;
+    if (!confirm('ยืนยันบันทึกข้อมูล ' + totalCount + ' รายการใช่หรือไม่?')) return;
 
     const btn = document.getElementById('floatSubmitBtn');
     btn.disabled = true;
@@ -590,7 +690,7 @@ async function submitAllCheckout() {
         }
     } catch (e) {
         console.error(e);
-        alert('เกิดข้อผิดพลาด');
+        alert('เกิดข้อผิดพลาดในการเชื่อมต่อ');
         btn.disabled = false;
     }
 }

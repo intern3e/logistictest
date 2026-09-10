@@ -323,6 +323,7 @@ use App\Http\Controllers\DeliverytrackController;
 Route::post('/deliverytrack/save', [DeliverytrackController::class, 'store'])->name('deliverytrack.store');
 Route::get('/deliverytrack', [DeliverytrackController::class, 'index'])->name('deliverytrack');
 Route::get('/deliverytrack/print-group', [DeliverytrackController::class, 'printGroup'])->name('deliverytrack.printGroup');
+Route::get('/deliverytrack/print-all-group', [DeliverytrackController::class, 'printAllGroups'])->name('deliverytrack.printAllGroups');
 Route::post('/return/{id}/new-bill', [DeliverytrackController::class, 'saveNewBill'])->name('deliverytrack.newbill');
 Route::get('/deliverytrack/summary', [DeliverytrackController::class, 'summary'])->name('deliverytrack.summary');
  
@@ -450,5 +451,3 @@ Route::post('/api/receivePO/cancel', [MobilePoappController::class, 'cancelRecei
 
 use App\Http\Controllers\OtRequestController;
 Route::get('/adminOT', [OtRequestController::class, 'index']);
-
-

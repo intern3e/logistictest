@@ -1,10 +1,9 @@
 @php
-// ฟังก์ชันช่วยตัดบรรทัดที่อยู่ไม่ให้เกิน 150 ตัวอักษรต่อบรรทัด (รองรับภาษาไทยและ UTF-8)
-$wrapAddress = function($text, $limit = 150) {
+// ฟังก์ชันช่วยตัดบรรทัดที่อยู่ไม่ให้เกิน 200 ตัวอักษรต่อบรรทัด (รองรับภาษาไทยและ UTF-8)
+$wrapAddress = function($text, $limit = 200) {
     if (empty($text)) return '';
     $text = (string)$text;
 
-    // ตัดคำตามช่องว่างก่อน เพื่อไม่ให้ตัดกลางคำ/กลางสระ-วรรณยุกต์
     $words = preg_split('/\s+/u', trim($text));
     $lines = [];
     $current = '';
@@ -19,7 +18,6 @@ $wrapAddress = function($text, $limit = 150) {
             $current = $candidate;
         }
 
-        // เผื่อกรณีคำเดียวยาวเกิน limit (ไม่มีช่องว่างให้ตัด) ค่อยตัดตรงๆ
         while (mb_strlen($current, 'UTF-8') > $limit) {
             $lines[] = mb_substr($current, 0, $limit, 'UTF-8');
             $current = mb_substr($current, $limit, null, 'UTF-8');
@@ -39,170 +37,294 @@ $wrapAddress = function($text, $limit = 150) {
 <html lang="th">
 <head>
 <meta charset="UTF-8">
+
 <style>
-    /*
-      สำคัญ: ตัวอักษรไทยขึ้นเป็น "?????" ในไฟล์ PDF เพราะ dompdf ไม่มีชุดตัวอักษรไทยในตัวเอง
-      และฟอนต์ Sarabun เวอร์ชันใหม่ของ Google Fonts (ที่ใช้ตอนแรก) มีโครงสร้างตารางฟอนต์แบบใหม่
-      ที่ dompdf อ่าน glyph ภาษาไทยไม่ถูกต้อง (ตัวเลข/อังกฤษขึ้นปกติ แต่ภาษาไทยเป็น "?????" ทั้งหมด)
-      เปลี่ยนมาใช้ THSarabunNew ซึ่งเป็นฟอนต์ไทยรุ่นคลาสสิก โครงสร้างไฟล์เรียบง่ายกว่า และเป็นฟอนต์
-      ที่ใช้กันแพร่หลายที่สุดสำหรับ dompdf ภาษาไทยโดยเฉพาะ ทดสอบแล้วทำงานได้เสถียรกว่ามาก
-
-      วิธีติดตั้ง (สำหรับ dompdf / laravel-dompdf):
-      1) เอาไฟล์ THSarabunNew.ttf และ THSarabunNew-Bold.ttf ไปวางที่ public/fonts/ ในโปรเจกต์
-      2) ให้แน่ใจว่าใช้ path จริงในเครื่อง (ไม่ใช่ URL ภายนอก) เพราะ dompdf อ่านไฟล์ในเครื่องได้เสถียรกว่า
-      3) ถ้าใช้ตัวสร้าง PDF อื่น (wkhtmltopdf/snappy, mpdf ฯลฯ) วิธีตั้งค่าฟอนต์จะต่างออกไปเล็กน้อย บอกได้เลยจะปรับให้ตรงเอนจิน
-    */
-    @font-face {
-        font-family: 'THSarabunNew';
-        font-style: normal;
-        font-weight: 400;
-        src: url("{{ public_path('fonts/THSarabunNew.ttf') }}") format('truetype');
-    }
-    @font-face {
-        font-family: 'THSarabunNew';
-        font-style: normal;
-        font-weight: 700;
-        src: url("{{ public_path('fonts/THSarabunNew-Bold.ttf') }}") format('truetype');
-    }
-    @font-face {
-        font-family: 'THSarabunNew';
-        font-style: normal;
-        font-weight: 800;
-        src: url("{{ public_path('fonts/THSarabunNew-Bold.ttf') }}") format('truetype');
-    }
+    /* ใช้ไฟล์ TTF ตรงๆ จาก GitHub แทน woff2 ของ Google Fonts เพราะ dompdf (php-font-lib)
+       ไม่รองรับการถอดรหัส woff2 (บีบอัดด้วย Brotli) ทำให้ฟอนต์ไทยหายหรือเพี้ยน */
     @font-face {
         font-family: 'Sarabun';
         font-style: normal;
         font-weight: 400;
-        src: url("{{ public_path('fonts/Sarabun-Regular.ttf') }}") format('truetype');
+        src: url('https://raw.githubusercontent.com/google/fonts/main/ofl/sarabun/Sarabun-Regular.ttf') format('truetype');
     }
     @font-face {
         font-family: 'Sarabun';
         font-style: normal;
         font-weight: 700;
-        src: url("{{ public_path('fonts/Sarabun-Bold.ttf') }}") format('truetype');
-    }
-    @font-face {
-        font-family: 'Sarabun';
-        font-style: normal;
-        font-weight: 800;
-        src: url("{{ public_path('fonts/Sarabun-ExtraBold.ttf') }}") format('truetype');
+        src: url('https://raw.githubusercontent.com/google/fonts/main/ofl/sarabun/Sarabun-Bold.ttf') format('truetype');
     }
 
-    @page { size: A4; margin: 10mm 8mm; }
-    body { font-family: 'THSarabunNew', 'Sarabun', 'Segoe UI', Tahoma, Arial, sans-serif; font-size: 15px; color: #1e293b; margin: 0; padding: 0; width: 100%; }
+    @page {
+        size: A4;
+        margin: 8mm 3mm 3mm 3mm;
+    }
 
-.print-header-wrap { border-bottom: 3px solid #001137; padding-bottom: 8px; margin-bottom: 12px; }
-.print-header-table { width: 100%; border-collapse: collapse; }
-.print-header-table td { border: none; padding: 0; vertical-align: bottom; }
-.print-header-table h1 { font-size: 26px; font-weight: 800; color: #001137; margin: 0; }
-.print-header-table .sub { font-size: 14px; color: #4b5563; margin-top: 4px; }
-.print-header-table .sub strong { color: #1e293b; font-weight: 700; }
-.print-header-table .meta-cell { text-align: right; font-size: 15px; font-weight: 700; color: #001137; white-space: nowrap; }
-.print-header-table .meta-cell-small { text-align: right; font-size: 12px; color: #6b7280; white-space: nowrap; line-height: 1.5; }
+    * { box-sizing: border-box; }
 
-.cust-block { margin-bottom: 9px; border: 1px solid #dcdcdc; border-left: 4px solid #001137; page-break-inside: avoid; width: 100%; }
-.cust-block-header { background: #fafbfd; padding: 8px 10px; border-bottom: 1px solid #dcdcdc; }
-.cust-header-table { width: 100%; border-collapse: collapse; }
-.cust-header-table td { border: none; padding: 0; vertical-align: middle; }
-.stop-no-cell { width: 34px; padding-right: 10px; }
-.stop-no-badge {
-    display: inline-block; width: 30px; height: 30px; line-height: 30px;
-    background: #001137; color: #ffffff; font-size: 15px; font-weight: 800;
-    text-align: center; border-radius: 6px;
+    body {
+        font-family: 'Sarabun', 'THSarabunNew', 'Segoe UI', Tahoma, Arial, sans-serif;
+        font-size: 11px;
+        color: #111827;
+        margin: 0;
+        padding: 0;
+        width: 100%;
+    }
+
+    table.info-table {
+        width: 100%;
+        border-collapse: collapse;
+        border-spacing: 0;
+        margin-bottom: 4px;
+    }
+
+    table.info-table td {
+        border: none;
+        padding: 2px 6px;
+        white-space: nowrap;
+        vertical-align: middle;
+    }
+
+    table.bill-table {
+        width: 100%;
+        border-collapse: collapse;
+        border-spacing: 0;
+        table-layout: fixed;
+    }
+
+    table.bill-table col.col-customer { width: 10%; }
+    table.bill-table col.col-company  { width: 46%; }
+    table.bill-table col.col-billno   { width: 10%; }
+    table.bill-table col.col-notes    { width: 34%; }
+
+    table.bill-table td.col-customer { width: 10%; }
+    table.bill-table td.col-company  { width: 46%; }
+    table.bill-table td.col-billno   { width: 10%; }
+    table.bill-table td.col-notes    { width: 34%; }
+
+.field-label {
+    display: inline-block;
+    width: 70px;
+    text-align: right;
+    font-weight: 700;
+    font-size: 14px;
+    vertical-align: middle;
 }
-.cust-info-cell { vertical-align: top; }
-.cust-info-cell .cust-title { font-weight: 800; font-size: 16.5px; color: #1e293b; }
-.cust-info-cell .cust-address { display: block; margin-top: 3px; font-weight: 400; color: #5c6b7a; font-size: 13px; line-height: 1.45; }
-.cust-qr-cell { width: 62px; text-align: center; vertical-align: top; }
-.cust-qr-cell img { display: block; border: 1px solid #dcdcdc; }
-.cust-qr-cell .qr-label { font-size: 10.5px; color: #6b7280; margin-top: 3px; }
 
-table.job-table { width: 100%; border-collapse: collapse; table-layout: fixed; }
-table.job-table th { background: #eef1f6; color: #001137; font-weight: 700; font-size: 12.5px; padding: 6px 10px; border-bottom: 1px solid #dcdcdc; text-align: left; }
-table.job-table td { border-bottom: 1px solid #eeeeea; padding: 6px 10px; text-align: left; font-size: 14.5px; word-wrap: break-word; }
-table.job-table tr { page-break-inside: avoid; }
-table.job-table tbody tr:last-child td { border-bottom: none; }
+.field-colon {
+    display: inline-block;
+    width: 10px;
+    text-align: center;
+    font-weight: 700;
+    font-size: 14px;
+    vertical-align: middle;
+}
+
+.field-box {
+    display: inline-block;
+    border-radius: 2px;
+    font-size: 14px;  
+    padding: 0 4px;
+    line-height: 1.2;
+    background: #fff;
+    vertical-align: middle;
+    position: relative;
+    top: 1px;
+}
+
+    table.bill-table thead tr.col-header-row th {
+        background: #e9ebef;
+        border: 1px solid #000;
+        font-weight: 700;
+        font-size: 11.5px;
+        text-align: center;
+        vertical-align: middle;
+        padding: 4px 6px;
+    }
+
+    table.bill-table td {
+        border: 1px solid #000;
+        padding: 4px 6px;
+        vertical-align: top;
+        font-size: 10.5px;
+        line-height: 1.35;
+        word-wrap: break-word;
+        overflow-wrap: break-word;
+    }
+
+    table.bill-table tr { page-break-inside: avoid; }
+
+    table.bill-table tr.group-header-row td {
+        background: #f3f4f6;
+        font-weight: 700;
+        font-size: 10.5px;
+        text-align: center;
+        padding: 4px 6px;
+        border: 1px solid #000;
+    }
+
+    .company-name {
+        font-weight: 700;
+        font-size: 11px;
+        margin-bottom: 1px;
+    }
+    .company-address {
+        font-weight: 400;
+        font-size: 10px;
+        color: #374151;
+    }
 </style>
 </head>
 <body>
-    <div class="print-header-wrap">
-        <table class="print-header-table">
-            <tr>
-                <td><h1>ใบงานขนส่ง</h1></td>
-                <td class="meta-cell">วันที่จัดส่ง: {{ $date ?: 'ไม่ระบุ' }}</td>
-            </tr>
-            <tr>
-                <td class="sub">
-                    วิธีการจัดส่ง: <strong>{{ $box['transport_name'] }}</strong>
-                    @if (!empty($box['driver_name']))
-                        &nbsp;x&nbsp;ผู้รับผิดชอบ: <strong>{{ $box['driver_name'] }}</strong>
-                    @else
-                        &nbsp;(ไม่ระบุผู้รับผิดชอบ)
-                    @endif
-                </td>
-                <td class="meta-cell-small">
-                    พิมพ์โดย: {{ $printedBy }}<br>
-                    เวลาพิมพ์: {{ $printedAt->format('d/m/Y H:i') }} น.
-                </td>
-            </tr>
-        </table>
-    </div>
 
-    @forelse ($box['customers'] as $cust)
-        <div class="cust-block">
-            <div class="cust-block-header">
-                <table class="cust-header-table">
-                    <tr>
-                        <td class="stop-no-cell"><span class="stop-no-badge">{{ $cust['stop_no'] }}</span></td>
-                        <td class="cust-info-cell">
-                            <span class="cust-title">
-                                {{ $cust['customer_code'] }}
-                                @if (!empty($cust['customer_name'])) - {{ $cust['customer_name'] }} @endif
-                            </span>
-                            <span class="cust-address">{!! $wrapAddress($cust['address'] ?? '', 70) !!}</span>
-                        </td>
-                        @if (!empty($cust['lalong']))
-                            <td class="cust-qr-cell">
-                                <img src="https://api.qrserver.com/v1/create-qr-code/?size=60x60&data={{ urlencode('https://www.google.com/maps/search/?api=1&query=' . $cust['lalong']) }}"
-                                     width="60" height="60">
-                                <div class="qr-label">สถานที่ส่ง</div>
-                            </td>
-                        @endif
-                    </tr>
-                </table>
-            </div>
-            <table class="job-table">
-                <thead>
-                    <tr>
-                        <th style="width:12%">ลำดับงาน</th>
-                        <th style="width:26%">เลขที่บิล</th>
-                        <th>หมายเหตุ</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    @foreach ($cust['items'] as $item)
-                        <tr>
-                            <td>{{ $item['seq'] }}</td>
-                            <td>{{ $item['bill_no'] }}</td>
-                            <td>{{ $item['notes'] }}</td>
+    @php
+        // รองรับทั้งกรณีปริ้นทีละกล่อง (ส่ง $box เดี่ยว) และปริ้นรวมทุกกล่อง (ส่ง $boxes เป็น array)
+        // ให้ view นี้ใช้ร่วมกันได้ ไม่ต้องแยกไฟล์
+        $printBoxes = isset($boxes) ? $boxes : [$box];
+        $lastBoxIndex = array_key_last($printBoxes);
+    @endphp
+
+    @foreach ($printBoxes as $boxIndex => $printBox)
+        @php
+            $rows = [];
+            foreach ($printBox['customers'] as $custIndex => $cust) {
+                $rawAddress = $cust['address'] ?? '';
+                $rawAddress = preg_replace('/[\r\n]+\s*(สถานที่ส่ง)/u', ' $1', $rawAddress);
+                $rawAddress = preg_replace('/<br\s*\/?>\s*(สถานที่ส่ง)/iu', ' $1', $rawAddress);
+
+                $addressHtml = $wrapAddress($rawAddress, 200);
+                $addressHtml = preg_replace('/(<br\s*\/?>\s*)+(?=สถานที่ส่ง)/iu', ' ', $addressHtml);
+
+                $lastItemIndex = array_key_last($cust['items']);
+
+                foreach ($cust['items'] as $itemIndex => $item) {
+                    $rows[] = [
+                        'cust_index'    => $custIndex,
+                        'is_last_item'  => $itemIndex === $lastItemIndex,
+                        'customer_code' => $cust['customer_code'],
+                        'customer_name' => $cust['customer_name'] ?? null,
+                        'address_html'  => $addressHtml,
+                        'bill_no'       => $item['bill_no'],
+                        'notes'         => $item['notes'] ?? null,
+                    ];
+                }
+            }
+
+            $rowChunks = array_chunk($rows, 19);
+            $lastChunkIndex = array_key_last($rowChunks);
+        @endphp
+
+        @foreach ($rowChunks as $chunkIndex => $chunkRows)
+<table class="info-table" cellpadding="0" cellspacing="0" style="width:100%;">
+    <tr>
+        <td>
+            <span class="field-label">วันที่เอกสาร</span><span class="field-colon">:</span>
+            <span class="field-box">{{ $date ? \Carbon\Carbon::parse($date)->locale('th')->translatedFormat('j M Y') : 'ไม่ระบุ' }}</span>
+        </td>
+        <td></td>
+    </tr>
+    <tr>
+        <td colspan="2">
+            <span class="field-label">ผู้รับผิดชอบ</span><span class="field-colon">:</span>
+            <span class="field-box">{{ $printBox['driver_name'] ?: '-' }}</span>
+        </td>
+    </tr>
+    <tr>
+        <td colspan="2">
+            <span class="field-label">วิธีการจัดส่ง</span><span class="field-colon">:</span>
+            <span class="field-box">{{ $printBox['transport_name'] }}</span>
+        </td>
+        <td style="text-align:right;">
+            <span>พิมพ์โดย: {{ $printedBy }}</span>
+            <span style="margin-left:12px;">เวลาพิมพ์: {{ $printedAt->format('d/m/Y H:i') }} น.</span>
+        </td>
+    </tr>
+</table>
+
+        <table class="bill-table">
+            <colgroup>
+                <col class="col-customer">
+                <col class="col-company">
+                <col class="col-billno">
+                <col class="col-notes">
+            </colgroup>
+            <thead>
+                <tr class="col-header-row">
+                    <th>Customer</th>
+                    <th>บริษัท</th>
+                    <th>Bill No</th>
+                    <th>หมายเหตุ</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach ($chunkRows as $rowIndex => $row)
+                    @php
+                        $prevRow = $rowIndex > 0 ? $chunkRows[$rowIndex - 1] : null;
+                        $nextRow = isset($chunkRows[$rowIndex + 1]) ? $chunkRows[$rowIndex + 1] : null;
+
+                        $hasSameCustomerPrev = $prevRow && $prevRow['customer_code'] === $row['customer_code'];
+                        $hasSameCustomerNext = $nextRow && $nextRow['customer_code'] === $row['customer_code'];
+
+                        $borderTop = $hasSameCustomerPrev ? 'border-top: 0px solid transparent;' : '';
+                        $borderBottom = $hasSameCustomerNext ? 'border-bottom: 0px solid transparent;' : '';
+                        $borderStyle = $borderTop . ' ' . $borderBottom;
+
+                        $isSelfPickupCustomer = str_starts_with((string) $row['customer_code'], 'VEN-11047');
+                        $isFirstOfCustomerGroup = !$hasSameCustomerPrev;
+
+                        // ตัดหมายเหตุให้เหลือไม่เกิน 130 ตัวอักษร
+                        $noteText = $row['notes'] ?? '';
+                        $displayNote = $noteText === '' 
+                            ? '-' 
+                            : (mb_strlen($noteText, 'UTF-8') > 100 ? mb_substr($noteText, 0, 100, 'UTF-8') . '...' : $noteText);
+
+                        // ซ่อนชื่อและที่อยู่ถ้าไม่ใช่แถวแรกของกลุ่มลูกค้าเดียวกัน
+                        $showCustomerInfo = $isFirstOfCustomerGroup;
+                    @endphp
+
+                    @if ($isSelfPickupCustomer && $isFirstOfCustomerGroup)
+                        <tr class="group-header-row">
+                            <td colspan="4">รับของเอง</td>
                         </tr>
-                    @endforeach
-                </tbody>
-            </table>
-        </div>
-    @empty
-        <p>ไม่พบรายการ</p>
-    @endforelse
+                    @endif
+
+                    <tr>
+                        <td class="col-customer" style="{{ $borderStyle }}">
+                            @if ($showCustomerInfo)
+                                {{ $row['customer_code'] }}
+                            @endif
+                        </td>
+                        <td class="col-company" style="{{ $borderStyle }}">
+                            @if ($showCustomerInfo)
+                                @if (!empty($row['customer_name']))
+                                    <div class="company-name">{{ $row['customer_name'] }}</div>
+                                @endif
+                                <div class="company-address">
+                                    {!! $row['address_html'] !!}
+                                </div>
+                            @endif
+                        </td>
+                        <td class="col-billno" style="{{ $borderStyle }}">
+                            {{ $row['bill_no'] }}
+                        </td>
+                        <td class="col-notes" style="{{ $borderStyle }}">
+                            {{ $displayNote }}
+                        </td>
+                    </tr>
+                @endforeach
+            </tbody>
+        </table>
+
+        @if (!($boxIndex === $lastBoxIndex && $chunkIndex === $lastChunkIndex))
+            <div style="page-break-after: always;"></div>
+        @endif
+        @endforeach
+    @endforeach
+
 </body>
 </html>
 @else
 {{-- ============================================================
-     โหมดหน้าเว็บปกติ — จ่ายงานขนส่ง (แสดงเฉพาะงานที่ยังไม่ได้จ่ายให้คนขับ)
-     แบ่งเป็น 2 แท็บ: รับของเอง (เขียว) / ส่งของ (น้ำเงิน)
-     รหัส/ชื่อ/ที่อยู่ vendor รวมอยู่บรรทัดเดียวกันใน group header
-     สินค้า/จำนวน ย้ายไปโชว์ใน popup (ตาราง) แทนการแสดงในแถวตาราง
-     ตารางทั้งหมด fix ความกว้าง ข้อความยาวจะขึ้นบรรทัดใหม่ ไม่ไหลแนวนอน
+     โหมดหน้าเว็บปกติ — จ่ายงานขนส่งสินค้า (ปรับให้ดูง่ายขึ้น)
      ============================================================ --}}
 <!DOCTYPE html>
 <html lang="th">
@@ -212,998 +334,741 @@ table.job-table tbody tr:last-child td { border-bottom: none; }
     <title>จ่ายงานขนส่งสินค้า</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@400;500;600;700&family=JetBrains+Mono:wght@500;600&display=swap" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <style>
         :root{
-            --ink:#1a2634;
-            --ink-soft:#5c6b7a;
-            --ink-faint:#8592a0;
-            --paper:#f5f6f8;
-            --surface:#ffffff;
-            --line:#e3e7ec;
-            --line-strong:#d2d8e0;
-
-            --delivery:#001137;
-            --delivery-rgb:0,17,55;
-            --delivery-soft:#eaeffa;
-
-            --pickup:#001137;
-            --pickup-rgb:0,17,55;
-            --pickup-soft:#eaeffa;
-
-            --bill:#001137;
-            --bill-rgb:0,17,55;
-
-            --doc:#f18300;
-            --doc-rgb:241,131,0;
-
-            --success:#2f7d4f;
-            --danger:#c0392b;
-
-            --row-alt:#f6f8fa;
-            --row-hover:#eef2f6;
+            --ink:#1a2634; --ink-soft:#5c6b7a; --ink-faint:#8592a0;
+            --paper:#f8f9fa; --surface:#ffffff; --line:#e9ecef; --line-strong:#dee2e6;
+            --delivery:#002a67; --delivery-rgb:0,42,103;
+            --pickup:#002a67; --pickup-rgb:0,42,103;
+            --doc:#002a67; --doc-rgb:0,42,103;
+            --success:#2e7d32; --danger:#c62828;
         }
-
         *{ box-sizing:border-box; }
-
-        html, body{ background:var(--paper); }
-
-        body{
-            font-family:'Sarabun','Segoe UI',Tahoma,Arial,sans-serif;
-            color:var(--ink);
-            font-size:16px;
-            line-height:1.5;
-            -webkit-font-smoothing:antialiased;
-        }
-
-        .container-fluid{
-            width:100%;
-            max-width:1600px;
-            margin-left:auto;
-            margin-right:auto;
-        }
-
-        /* ---------- Header ---------- */
-        .page-header{
-            display:flex;
-            justify-content:space-between;
-            align-items:flex-end;
+        html, body{ background:#f0f2f5; }
+        body{ font-family:'Sarabun',sans-serif; color:var(--ink); font-size:15px; line-height:1.6; }
+        .container-fluid{ width:100%; max-width:1800px; margin:0 auto; padding:20px; }
+        
+        .page-header{ 
+            padding:20px 0; 
+            margin-bottom:25px; 
+            display:flex; 
             flex-wrap:wrap;
             gap:16px;
-            padding-bottom:22px;
-            margin-bottom:30px;
-            border-bottom:2px solid var(--ink);
+            justify-content:space-between; 
+            align-items:center; 
         }
-        .page-title{
-            margin:0;
-            font-size:1.7rem;
-            font-weight:800;
-            letter-spacing:-0.01em;
-            color:var(--ink);
-        }
-        .page-subtitle{
-            margin-top:5px;
-            font-size:1rem;
-            color:var(--ink-soft);
-        }
-        .page-header-user{
+        .page-header-left{
             display:flex;
-            flex-direction:column;
-            align-items:flex-end;
+            align-items:center;
+            gap:28px;
+            flex-wrap:wrap;
+        }
+        .page-title{ margin:0; font-size:1.5rem; font-weight:700; color:var(--ink); }
+        .page-subtitle{ font-size:0.9rem; color:var(--ink-soft); margin-top:4px; }
+        
+        .btn-manifest{ 
+            padding:8px 16px; 
+            border-radius:8px; 
+            border:1px solid var(--line-strong); 
+            font-size:0.9rem; 
+            font-weight:600; 
+            cursor:pointer; 
+            background:#fff;
+            transition:all 0.2s;
+        }
+        .btn-manifest:hover{ background:var(--paper); }
+        .btn-manifest-cta{ 
+            background:var(--delivery); 
+            color:#fff; 
+            border:none; 
+            padding:10px 24px;
+            font-size:0.95rem;
+        }
+        .btn-manifest-cta:hover{ background:#001a40; }
+        .btn-manifest-cta:disabled{ opacity:0.4; cursor:not-allowed; }
+
+        .alert{ border-radius:8px; padding:12px 18px; font-size:0.95rem; margin-bottom:20px; border:none; }
+        .alert-success{ background:#e8f5e9; color:#1b5e20; }
+        .alert-danger{ background:#ffebee; color:#c62828; }
+
+        .user-badge{
+            display:flex;
+            align-items:center;
             gap:10px;
+            padding:6px 16px 6px 6px;
+            background:#fff;
+            border-radius:50px;
+            box-shadow:0 2px 8px rgba(0,0,0,0.08);
+            border:1px solid var(--line);
         }
-        .user-line{
-            font-size:.95rem;
-            color:var(--ink-soft);
-        }
-        .user-line strong{
-            color:var(--ink);
-            font-weight:700;
-        }
-
-        /* ---------- Buttons ---------- */
-        .btn-manifest{
-            display:inline-flex;
-            align-items:center;
-            gap:7px;
-            padding:10px 18px;
-            border-radius:8px;
-            border:1px solid transparent;
-            font-size:.95rem;
-            font-weight:600;
-            cursor:pointer;
-            text-decoration:none;
-            transition:background-color .15s ease, border-color .15s ease, color .15s ease, transform .1s ease;
-            white-space:nowrap;
-        }
-        .btn-manifest:hover{ text-decoration:none; }
-        .btn-manifest:active{ transform:translateY(1px); }
-
-        .btn-manifest-ghost-ink{
-            background:var(--surface);
-            border-color:var(--line-strong);
-            color:var(--ink);
-        }
-        .btn-manifest-ghost-ink:hover{
-            background:var(--paper);
-            border-color:var(--ink-faint);
-            color:var(--ink);
-        }
-
-        .btn-manifest-ghost-pickup{
-            background:var(--pickup-soft);
-            border-color:rgba(var(--pickup-rgb),.35);
-            color:var(--pickup);
-            padding:7px 14px;
-            font-size:.88rem;
-        }
-        .btn-manifest-ghost-pickup:hover{
-            background:rgba(var(--pickup-rgb),.18);
-            color:var(--pickup);
-        }
-
-        .btn-manifest-cta{
-            background:var(--ink);
-            border-color:var(--ink);
-            color:#fff;
-            font-size:1rem;
-            padding:12px 22px;
-        }
-        .btn-manifest-cta:hover:not(:disabled){
-            background:#0f1c28;
-            color:#fff;
-        }
-        .btn-manifest-cta:disabled{
-            opacity:.4;
-            cursor:not-allowed;
-        }
-
-        .btn-manifest-cancel{
-            background:transparent;
-            border-color:var(--line-strong);
-            color:var(--ink-soft);
-        }
-        .btn-manifest-cancel:hover{
-            background:var(--paper);
-            color:var(--ink);
-        }
-
-        /* ---------- Alerts ---------- */
-        .alert{
-            border-radius:10px;
-            border:1px solid transparent;
-            border-left:4px solid transparent;
-            padding:14px 18px;
-            font-size:1rem;
-            margin-bottom:22px;
-        }
-        .alert-success{
-            background:#eafaf0;
-            border-left-color:var(--success);
-            color:#1f5f39;
-        }
-        .alert-danger{
-            background:#fdecea;
-            border-left-color:var(--danger);
-            color:#8a2a20;
-        }
-
-        /* ---------- Tab switch ---------- */
-        .tab-switch{
-            display:inline-flex;
-            gap:4px;
-            padding:5px;
-            background:var(--surface);
-            border:1px solid var(--line-strong);
-            border-radius:999px;
-            margin-bottom:26px;
-        }
-        .tab-btn{
-            display:inline-flex;
-            align-items:center;
-            gap:8px;
-            border:none;
-            background:transparent;
-            color:var(--ink-soft);
-            font-family:inherit;
-            font-size:1rem;
-            font-weight:600;
-            padding:10px 22px;
-            border-radius:999px;
-            cursor:pointer;
-            transition:background-color .15s ease, color .15s ease;
-        }
-        .tab-btn:hover{ color:var(--ink); }
-        .tab-btn.delivery.active{
+        .user-badge-avatar{
+            width:32px;
+            height:32px;
+            border-radius:50%;
             background:var(--delivery);
             color:#fff;
-        }
-        .tab-btn.pickup.active{
-            background:var(--pickup);
-            color:#fff;
-        }
-        .tab-count{
-            display:inline-flex;
+            display:flex;
             align-items:center;
             justify-content:center;
-            min-width:22px;
-            padding:2px 8px;
-            border-radius:999px;
-            font-size:.8rem;
             font-weight:700;
-            background:rgba(26,38,52,.08);
-            color:var(--ink-soft);
+            font-size:0.9rem;
+            flex-shrink:0;
         }
-        .tab-btn.active .tab-count{
-            background:rgba(255,255,255,.22);
-            color:#fff;
-        }
-
-        @media (max-width:768px){
-            .tab-switch{ width:100%; }
-            .tab-btn{ flex:1; justify-content:center; }
+        .user-badge-name{
+            font-weight:600;
+            color:var(--ink);
+            font-size:0.95rem;
         }
 
-        /* ---------- Tab panels ---------- */
-        .tab-panel{ display:none; }
-        .tab-panel.active{ display:block; }
-
-        /* ---------- Section heading ---------- */
-        .section-heading{
-            display:flex;
-            justify-content:space-between;
-            align-items:center;
+        .view-controls{ 
+            display:flex; 
+            gap:10px; 
             flex-wrap:wrap;
-            gap:10px;
-            border-left:5px solid transparent;
-            padding:8px 0 8px 14px;
-            margin:38px 0 14px;
         }
-        .tab-panel > .section-heading:first-child{ margin-top:4px; }
-        .section-heading.accent-delivery{ border-left-color:var(--delivery); }
-        .section-heading.accent-pickup{ border-left-color:var(--pickup); }
-        .section-heading h5{
-            margin:0;
-            font-size:1.15rem;
-            font-weight:800;
-            color:var(--ink);
-        }
-        .section-count{
-            font-weight:500;
-            color:var(--ink-soft);
-            font-size:1rem;
-        }
-        .section-heading .form-check{
-            display:flex;
-            align-items:center;
-            gap:7px;
-            margin:0;
-        }
-        .section-heading .form-check-label{
-            font-size:.95rem;
-            color:var(--ink-soft);
-        }
-
-        .form-check-input{
-            width:18px;
-            height:18px;
-            accent-color:var(--delivery);
+        .view-btn{ 
+            padding:10px 20px; 
+            border:2px solid var(--line-strong); 
+            background:#fff; 
+            border-radius:10px; 
+            font-weight:600; 
             cursor:pointer;
+            transition:all 0.2s;
+            font-size:0.95rem;
         }
-        .form-check-input.accent-pickup{
-            accent-color:var(--pickup);
-        }
-
-        /* ---------- Tables ---------- */
-        .job-list-table-wrap{
-            background:var(--surface);
-            border:1px solid var(--line-strong);
-            border-radius:10px;
-            overflow:hidden;
-            margin-bottom:30px;
-        }
-        .job-list-table{
-            width:100%;
-            table-layout:fixed;
-            border-collapse:collapse;
-            font-size:1rem;
-        }
-        .job-list-table thead th{
-            background:var(--paper);
-            color:var(--ink-soft);
-            font-weight:700;
-            font-size:.85rem;
-            text-align:left;
-            padding:14px 16px;
-            border-bottom:2px solid var(--line-strong);
-            border-right:1px solid var(--line);
-        }
-        .job-list-table thead th:last-child{ border-right:none; }
-        .job-list-table tbody td{
-            padding:16px;
-            border-bottom:1px solid var(--line);
-            border-right:1px solid var(--line);
-            vertical-align:top;
-            color:var(--ink);
-            line-height:1.55;
-        }
-        .job-list-table tbody td:last-child{ border-right:none; }
-        .job-list-table tbody tr:last-child td{
-            border-bottom:none;
-        }
-        .job-list-table tbody tr.row-alt td{
-            background:var(--row-alt);
-        }
-        .job-list-table tbody tr:not(.group-row):hover td{
-            background:var(--row-hover);
-        }
-        .job-list-table tbody tr.row-clickable{
-            cursor:pointer;
-        }
-        .col-check{ text-align:center; }
-        .job-list-table tbody td.col-check,
-        .job-list-table tbody td.job-no,
-        .job-list-table tbody td.job-meta,
-        .job-list-table tbody td.job-address{ vertical-align:middle; }
-
-        .group-row td{
-            padding:14px 16px;
-            font-size:1rem;
-            line-height:1.6;
-            background:var(--paper);
-            border-top:2px solid var(--line-strong);
-            border-right:none;
-            overflow:hidden; /* contains the floated count */
-            cursor:pointer;
-        }
-        .job-list-table tbody tr.group-row:first-child td{ border-top:none; }
-        .group-row.delivery-row td{ border-left:4px solid var(--delivery); background:var(--delivery); color:#fff; }
-        .group-row.pickup-row td{ border-left:4px solid var(--pickup); background:var(--pickup); color:#fff; }
-        .group-row.bill-row td{ border-left:4px solid var(--bill); background:var(--bill); color:#fff; }
-        .group-row.doc-row td{ border-left:4px solid var(--doc); background:var(--doc); color:#fff; }
-
-        .group-select-checkbox{
-            width:18px;
-            height:18px;
-            margin-right:12px;
-            vertical-align:middle;
-            cursor:pointer;
-            accent-color:#fff;
-        }
-
-        .group-customer-id{
-            font-family:'JetBrains Mono',monospace;
-            font-weight:800;
-            font-size:1rem;
-            color:var(--ink);
-        }
-        .group-customer-name{
-            color:var(--ink-soft);
-            font-weight:500;
+        .view-btn:hover{ border-color:var(--ink-soft); transform:translateY(-1px); }
+        .view-btn.active{ color:#fff; border-color:transparent; }
+        .view-btn.active.delivery{ background:var(--delivery); }
+        .view-btn.active.doc{ background:var(--doc); }
+        .view-btn.active.pickup{ background:var(--pickup); }
+        .view-btn.active:not(.delivery):not(.doc):not(.pickup){ background:#2853d5; }
+        
+        .view-count{ 
+            display:inline-block; 
+            padding:2px 10px; 
+            border-radius:20px; 
+            font-size:0.85rem; 
+            font-weight:700; 
             margin-left:6px;
+            background:rgba(0,0,0,0.1);
         }
-        .group-count-chip{
-            float:right;
-            color:var(--ink-soft);
-            font-size:.9rem;
-            font-weight:600;
+        .view-btn.active .view-count{ background:rgba(255,255,255,0.25); color:#fff; }
+
+        .dashboard-grid{ 
+            display:grid; 
+            grid-template-columns:repeat(3, 1fr); 
+            gap:20px;
         }
-        .group-address{
-            margin-left:8px;
-            font-size:.9rem;
-            color:var(--ink-soft);
-        }
-        .group-address::before{
-            content:"·";
-            margin-right:8px;
-            color:var(--line-strong);
-        }
-        .group-row.delivery-row .group-customer-id,
-        .group-row.delivery-row .group-customer-name,
-        .group-row.delivery-row .group-count-chip,
-        .group-row.delivery-row .group-address,
-        .group-row.delivery-row .location-tag,
-        .group-row.pickup-row .group-customer-id,
-        .group-row.pickup-row .group-customer-name,
-        .group-row.pickup-row .group-count-chip,
-        .group-row.pickup-row .group-address,
-        .group-row.pickup-row .location-tag,
-        .group-row.bill-row .group-customer-id,
-        .group-row.bill-row .group-customer-name,
-        .group-row.bill-row .group-count-chip,
-        .group-row.bill-row .group-address,
-        .group-row.bill-row .location-tag,
-        .group-row.doc-row .group-customer-id,
-        .group-row.doc-row .group-customer-name,
-        .group-row.doc-row .group-count-chip,
-        .group-row.doc-row .group-address,
-        .group-row.doc-row .location-tag{
-            color:#fff;
-        }
-        .group-row.delivery-row .group-address::before,
-        .group-row.pickup-row .group-address::before,
-        .group-row.bill-row .group-address::before,
-        .group-row.doc-row .group-address::before{
-            color:rgba(255,255,255,.55);
+        @media (max-width:1200px){ 
+            .dashboard-grid{ grid-template-columns:1fr; } 
         }
 
-        .job-id-primary{
-            display:block;
-            font-family:'JetBrains Mono',monospace;
-            font-weight:800;
-            font-size:1.05rem;
-            color:var(--ink);
-            white-space:nowrap;
-        }
-        .job-id-secondary{
-            display:block;
-            margin-top:3px;
-            font-family:'JetBrains Mono',monospace;
-            font-size:.85rem;
-            color:#5b8a80;
-            white-space:nowrap;
+        .grid-panel{ 
+            background:#fff; 
+            border-radius:0; 
+            overflow:hidden;
+            box-shadow:0 2px 12px rgba(0,0,0,0.08);
+            display:flex;
+            flex-direction:column;
+            min-height:650px;
         }
 
-        .job-address{
-            line-height:1.55;
-            color:var(--ink);
+        .dashboard-grid.is-filtered .grid-panel{ display:none; }
+        .dashboard-grid.is-filtered .grid-panel.is-expanded{ 
+            display:flex; 
+            grid-column:1/-1; 
+            animation:fadeIn 0.3s;
         }
-        .location-row{ margin-top:6px; }
-        .location-tag{
-            font-size:.88rem;
-            color:var(--ink-soft);
-        }
+        @keyframes fadeIn{ from{opacity:0;transform:translateY(10px)} to{opacity:1;transform:translateY(0)} }
 
-        .job-meta{ color:var(--ink); }
-        .meta-name-chip{
-            display:block;
-            font-weight:700;
-            font-size:1rem;
-            color:var(--ink);
-            margin-bottom:4px;
-            white-space:nowrap;
-        }
-        .meta-time{
-            display:block;
-            font-size:.85rem;
-            color:var(--ink-soft);
-            white-space:nowrap;
-        }
-
-        .job-notes{
-            color:var(--ink-soft);
-            line-height:1.55;
-        }
-
-        .job-items-cell{
-            color:var(--pickup);
-            font-weight:600;
+        .section-heading{ 
+            padding:16px 20px; 
+            display:flex; 
+            justify-content:space-between; 
+            align-items:center;
             cursor:pointer;
-            text-align:center !important;
-            vertical-align:middle !important;
+            border-bottom:2px solid var(--line);
+            border-radius: 0;
+            transition: box-shadow 0.2s ease, transform 0.15s ease;
+            position: relative;
+            overflow: hidden;
         }
-        .job-items-cell:hover{
-            text-decoration:underline;
+        .section-heading:hover{ 
+            box-shadow: inset 0 0 0 2px rgba(255,255,255,0.3);
+            transform: translateY(-1px);
         }
-
-        .status-pill{
-            display:inline-block;
-            margin-top:8px;
-            padding:4px 12px;
-            border-radius:999px;
-            font-size:.82rem;
-            font-weight:600;
-            border:1px solid transparent;
+        .section-heading:active{
+            transform: translateY(0);
+            box-shadow: inset 0 0 0 2px rgba(255,255,255,0.1);
         }
-        .job-id-primary .status-pill{
-            margin-top:0;
-            margin-left:8px;
-            vertical-align:middle;
-            font-family:'Sarabun','Segoe UI',Tahoma,Arial,sans-serif;
-        }
-        .status-green,.status-success{ background:#e6f6ea; color:#1d7a3c; border-color:#bfe8cb; }
-        .status-yellow,.status-warning,.status-orange{ background:#fff3e0; color:#a85d00; border-color:#ffdca8; }
-        .status-red,.status-danger{
-            background:#fdeaea;
-            color:#b3261e;
-            border-color:#f7c8c5;
-            animation:statusBlink 1s ease-in-out infinite;
-        }
-        @keyframes statusBlink{
-            0%,100%{ background:#fdeaea; color:#b3261e; border-color:#f7c8c5; }
-            50%{ background:#e02424; color:#fff; border-color:#e02424; }
-        }
-        .status-blue,.status-info,.status-primary{ background:#e8eefc; color:#2a4494; border-color:#c6d4f5; }
-        .status-gray,.status-grey,.status-secondary,.status-default,.status-light{ background:#eef0f3; color:#57626f; border-color:#dde1e6; }
-        .status-purple{ background:#f2eafb; color:#6b3fa0; border-color:#ddc7f0; }
-        .status-pill.status-overdue{
-            background:#fdeaea;
-            color:#b3261e;
-            border-color:#f7c8c5;
-            animation:statusBlink 1s ease-in-out infinite;
-        }
-        .status-pill.status-waiting{
-            background:#e6f6ea;
-            color:#1d7a3c;
-            border-color:#bfe8cb;
-        }
-
-        .empty-note{
-            border:1px dashed var(--line-strong);
-            border-radius:10px;
-            padding:32px;
-            text-align:center;
-            color:var(--ink-soft);
-            font-size:1rem;
-            background:var(--surface);
-            margin-bottom:26px;
-        }
-
-        @media (max-width:900px){
-            .job-list-table-wrap{ overflow-x:auto; }
-            .job-list-table{ min-width:760px; }
-        }
-
-        /* ---------- Floating save bar ---------- */
-        .save-floatbar{
-            position:fixed;
-            right:24px;
-            bottom:24px;
-            z-index:1055;
+        .section-heading.accent-delivery{ background:#2853d5; color:#fff; }
+        .section-heading.accent-doc{ background:#2853d5; color:#fff; }
+        .section-heading.accent-pickup{ background:#2853d5; color:#fff; }
+        
+        .section-heading h5{ 
+            margin:0; 
+            font-size:1.1rem; 
+            font-weight:700;
             display:flex;
             align-items:center;
             gap:8px;
-            background:var(--ink);
-            color:#fff;
-            padding:12px 12px 12px 18px;
-            border-radius:999px;
-            box-shadow:0 10px 28px rgba(15,25,35,.28);
         }
-        .floatbar-count{
-            font-size:.78rem;
-            color:rgba(255,255,255,.8);
+        .section-count{ 
+            background:rgba(255,255,255,0.2); 
+            padding:2px 10px; 
+            border-radius:20px; 
+            font-size:0.85rem;
+            font-weight:600;
+        }
+        .form-check-input{ width:18px; height:18px; cursor:pointer; }
+        .form-check-label{ cursor:pointer; font-weight:500; }
+
+        .expand-hint{ 
+            font-size:0.8rem; 
+            opacity:0.8;
+            display:flex;
+            align-items:center;
+            gap:4px;
+        }
+
+        .job-list-table-wrap{ flex:1; overflow:auto; max-height:calc(100vh - 220px); }
+        .job-list-table{ width:100%; border-collapse:collapse; font-size:0.8rem; table-layout:fixed; }
+        .job-list-table th:nth-child(1), .job-list-table td:nth-child(1){ width:8%; }
+        .job-list-table th:nth-child(2), .job-list-table td:nth-child(2){ width:27%; }
+        .job-list-table th:nth-child(3), .job-list-table td:nth-child(3){ width:27%; }
+        .job-list-table th:nth-child(4), .job-list-table td:nth-child(4){ width:38%; }
+        .job-list-table thead th{ 
+            background:var(--paper); 
+            padding:12px 15px; 
+            font-weight:600; 
+            text-align:left;
+            border-bottom:2px solid var(--line-strong);
             white-space:nowrap;
         }
-        .floatbar-count strong{
-            color:#fff;
-            font-weight:700;
+        .job-list-table tbody td{ 
+            padding:14px 15px; 
+            border-bottom:1px solid var(--line);
+            vertical-align:top;
+            word-wrap:break-word;
+            overflow-wrap:break-word;
         }
-        .save-floatbar .btn-manifest-cta{
+        .job-list-table tbody tr.row-alt td{ background:#f8f9fa; }
+        .col-check{ text-align:center; }
+
+        tr.job-detail-row{ display:none; }
+        tr.job-detail-row.is-visible{ display:table-row; }
+
+        .group-row td{ 
+            padding:14px 18px; 
+            font-weight:600;
+            cursor:pointer;
             background:#fff;
             color:var(--ink);
-            border-color:#fff;
-            padding:6px 12px;
-            font-size:.78rem;
+            border-bottom:2px solid var(--line-strong);
         }
-        .save-floatbar .btn-manifest-cta:hover:not(:disabled){
-            background:#e7ebf1;
-            color:var(--ink);
-        }
+        .group-row.delivery-row td{ background:#fff; color:var(--ink); }
+        .group-row.doc-row td{ background:#fff; color:var(--ink); }
+        .group-row.pickup-row td{ background:#fff; color:var(--ink); }
 
-        @media (max-width:640px){
-            .save-floatbar{
-                left:16px;
-                right:16px;
-                bottom:16px;
-                justify-content:space-between;
-            }
-        }
+        .group-select-checkbox{ width:18px; height:18px; margin-right:10px; cursor:pointer; }
+        .group-customer-id{ font-family:'JetBrains Mono',monospace; font-weight:700; font-size:0.95rem; color:var(--ink); }
+        .group-count-chip{ background:#2853d5; color:#fff; padding:2px 10px; border-radius:15px; font-size:0.85rem; }
+        .group-address{ display:block; margin-top:6px; font-size:0.85rem; opacity:0.9; font-weight:400; }
 
-        /* ---------- Modals ---------- */
-        .modal-content{
-            border:none;
-            border-radius:14px;
-            box-shadow:0 24px 60px rgba(15,25,35,.25);
-        }
-        .modal-header{
-            border-bottom:1px solid var(--line);
-            padding:18px 22px;
-        }
-        .modal-title{
-            font-weight:700;
-            font-size:1.1rem;
-            color:var(--ink);
-        }
-        .modal-body{ padding:22px; }
-        .modal-footer{
-            border-top:1px solid var(--line);
-            padding:16px 22px;
-        }
-        .form-label{
-            font-weight:600;
-            font-size:.95rem;
-            color:var(--ink);
-            margin-bottom:7px;
-        }
-        .required-mark{ color:var(--danger); }
-        .optional-hint{
-            font-weight:400;
-            font-size:.85rem;
-            color:var(--ink-faint);
-        }
-        .form-control{
+        .group-row-inner{ display:flex; align-items:center; justify-content:space-between; gap:10px; flex-wrap:wrap; }
+        .group-row-left{ display:flex; align-items:center; }
+        .group-row-right{ display:flex; align-items:center; gap:10px; }
+
+        .group-toggle-btn{
+            display:flex;
+            align-items:center;
+            gap:4px;
+            background:#fff;
             border:1px solid var(--line-strong);
             border-radius:8px;
-            padding:10px 14px;
-            font-size:1rem;
+            padding:4px 10px;
+            font-size:0.8rem;
+            font-weight:600;
             color:var(--ink);
+            cursor:pointer;
+            transition:all 0.2s;
         }
-        .form-control:focus{
-            border-color:var(--delivery);
-            box-shadow:0 0 0 3px rgba(var(--delivery-rgb),.15);
+        .group-toggle-btn:hover{ background:var(--paper); border-color:var(--ink-soft); }
+        .group-toggle-icon{ display:inline-block; transition:transform 0.2s; }
+        .group-toggle-btn.is-open .group-toggle-icon{ transform:rotate(180deg); }
+
+        .job-id-primary{ font-family:'JetBrains Mono',monospace; font-weight:700; font-size:0.8rem; color:var(--ink); }
+        .job-id-secondary{ font-size:0.7rem; color:var(--ink-soft); margin-top:3px; }
+        .job-meta{ font-size:0.75rem; }
+        .meta-name-chip{ font-weight:600; margin-bottom:2px; }
+        .meta-time{ font-size:0.7rem; color:var(--ink-soft); }
+        .job-notes{
+            font-size:0.7rem;
+            color:var(--ink-soft);
+            white-space:nowrap;
+            overflow:hidden;
+            text-overflow:ellipsis;
+        }
+        
+        .status-pill{ 
+            display:inline-block; 
+            padding:3px 10px; 
+            border-radius:15px; 
+            font-size:0.8rem; 
+            font-weight:600;
+            margin-left:6px;
+        }
+        .status-overdue{ background:#ffebee; color:#c62828; }
+        .status-waiting{ background:#e8f5e9; color:#2e7d32; }
+        .status-default{ background:#e3f2fd; color:#1565c0; }
+
+        .job-items-cell{ 
+            color:var(--pickup); 
+            font-weight:600; 
+            cursor:pointer; 
+            text-align:center;
+            padding:8px 12px;
+            border-radius:6px;
+            transition:background 0.2s;
+        }
+        .job-items-cell:hover{ background:#e8f5e9; }
+
+        .empty-note{ 
+            padding:40px 20px; 
+            text-align:center; 
+            color:var(--ink-soft); 
+            background:var(--paper);
+            margin:10px;
+            border-radius:8px;
         }
 
+        .save-floatbar{ 
+            position:fixed; 
+            right:30px; 
+            bottom:30px; 
+            background:var(--ink); 
+            color:#fff; 
+            padding:14px 20px; 
+            border-radius:50px; 
+            box-shadow:0 8px 24px rgba(0,0,0,0.2);
+            display:flex;
+            align-items:center;
+            gap:15px;
+            z-index:1000;
+        }
+        .floatbar-count{ font-size:0.95rem; }
+        .floatbar-count strong{ font-size:1.3rem; font-weight:700; }
+
+        .modal-content{ border:none; border-radius:16px; }
+        .modal-header{ border-bottom:1px solid var(--line); padding:18px 24px; }
+        .modal-body{ padding:24px; }
+        .modal-footer{ border-top:1px solid var(--line); padding:16px 24px; }
+        .form-label{ font-weight:600; margin-bottom:8px; }
+        .form-control{ padding:10px 14px; border-radius:8px; border:1px solid var(--line-strong); }
+        .form-control:focus{ border-color:var(--delivery); box-shadow:0 0 0 3px rgba(13,71,161,0.1); }
+
+        .required-mark{ color:#c62828; }
+        .optional-hint{ font-weight:400; font-size:0.85rem; color:var(--ink-faint); }
         .autocomplete-list{
+            display:none;
             position:absolute;
             left:0;
             right:0;
-            z-index:20;
+            z-index:2000;
             margin-top:4px;
             max-height:240px;
             overflow-y:auto;
-            background:var(--surface);
+            background:#fff;
             border:1px solid var(--line-strong);
             border-radius:8px;
-            box-shadow:0 14px 30px rgba(15,25,35,.14);
-            display:none;
+            box-shadow:0 14px 30px rgba(0,0,0,0.14);
         }
         .autocomplete-item{
             padding:10px 14px;
-            font-size:1rem;
+            font-size:0.95rem;
             color:var(--ink);
             cursor:pointer;
         }
         .autocomplete-item:hover{ background:var(--paper); }
         .autocomplete-empty{
             padding:10px 14px;
-            font-size:.95rem;
+            font-size:0.9rem;
             color:var(--ink-faint);
         }
 
-        #itemsModal .table{ font-size:1rem; margin-bottom:0; }
-        #itemsModal .table th{
-            color:var(--ink-soft);
-            font-weight:700;
-            font-size:.85rem;
-            border-color:var(--line);
+        /* Toast Notification Styles */
+        .toast-container {
+            pointer-events: none;
         }
-        #itemsModal .table td{
-            border-color:var(--line);
-            color:var(--ink);
-            vertical-align:middle;
+        
+        .toast-container > * {
+            pointer-events: auto;
         }
-
-        /* ---------- Accessibility & motion ---------- */
-        *:focus-visible{
-            outline:2px solid var(--delivery);
-            outline-offset:2px;
+        
+        .custom-toast {
+            min-width: 300px;
+            max-width: 400px;
+            border-radius: 12px;
+            box-shadow: 0 8px 24px rgba(0,0,0,0.15);
+            border: none;
+            overflow: hidden;
+            animation: slideInRight 0.3s ease-out;
+            margin-bottom: 12px;
         }
-        @media (prefers-reduced-motion: reduce){
-            *{ transition:none !important; animation:none !important; }
+        
+        .custom-toast.toast-success {
+            border-left: 4px solid #2e7d32;
+        }
+        
+        .custom-toast.toast-error {
+            border-left: 4px solid #c62828;
+        }
+        
+        .custom-toast.toast-warning {
+            border-left: 4px solid #ed6c02;
+        }
+        
+        .custom-toast.toast-info {
+            border-left: 4px solid #0288d1;
+        }
+        
+        .toast-header {
+            padding: 12px 16px;
+            border-bottom: 1px solid rgba(0,0,0,0.05);
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .toast-success .toast-header {
+            background: #e8f5e9;
+            color: #1b5e20;
+        }
+        
+        .toast-error .toast-header {
+            background: #ffebee;
+            color: #c62828;
+        }
+        
+        .toast-warning .toast-header {
+            background: #fff3e0;
+            color: #e65100;
+        }
+        
+        .toast-info .toast-header {
+            background: #e3f2fd;
+            color: #01579b;
+        }
+        
+        .toast-body {
+            padding: 12px 16px;
+            font-size: 0.95rem;
+            color: #1a2634;
+        }
+        
+        .toast-icon {
+            font-size: 1.2rem;
+        }
+        
+        @keyframes slideInRight {
+            from {
+                transform: translateX(100%);
+                opacity: 0;
+            }
+            to {
+                transform: translateX(0);
+                opacity: 1;
+            }
+        }
+        
+        @keyframes slideOutRight {
+            from {
+                transform: translateX(0);
+                opacity: 1;
+            }
+            to {
+                transform: translateX(100%);
+                opacity: 0;
+            }
+        }
+        
+        .toast.hiding {
+            animation: slideOutRight 0.3s ease-out;
+        }
+        
+        .toast-close {
+            background: none;
+            border: none;
+            font-size: 1.2rem;
+            cursor: pointer;
+            opacity: 0.6;
+            transition: opacity 0.2s;
+            padding: 0;
+            line-height: 1;
+            margin-left: auto;
+        }
+        
+        .toast-close:hover {
+            opacity: 1;
         }
 
         @media (max-width:768px){
-            .page-header{
-                flex-direction:column;
-                align-items:flex-start;
-            }
-            .page-header-user{
-                align-items:flex-start;
-                width:100%;
-            }
+            .view-controls{ flex-direction:column; }
+            .view-btn{ width:100%; text-align:center; }
+            .save-floatbar{ left:20px; right:20px; justify-content:space-between; }
         }
     </style>
 </head>
-<body class="bg-light">
-<div class="container-fluid py-4">
-    <div class="page-header">
-        <div>
-            <h3 class="page-title">จ่ายงานขนส่งสินค้า</h3>
-            <div class="page-subtitle">แผงควบคุมการจ่ายงานขนส่ง</div>
-        </div>
-        <div class="page-header-user">
-            <div class="user-line">ผู้ใช้งาน: <strong>{{ $loggedInName }}</strong></div>
-            <a href="{{ route('deliverytrack.summary') }}" class="btn btn-manifest btn-manifest-ghost-ink">
-                📋 สรุปงานคนขับ / งานที่จัดส่งแล้ว
-            </a>
-        </div>
-    </div>
+<body>
 
-    @if (session('success'))
-        <div class="alert alert-success">{{ session('success') }}</div>
-    @endif
-    @if (session('error'))
-        <div class="alert alert-danger">{{ session('error') }}</div>
-    @endif
+<!-- Toast Notification Container -->
+<div id="toastContainer" class="toast-container position-fixed top-0 end-0 p-3" style="z-index: 9999;">
+</div>
 
+<div class="container-fluid">
     @php
-        $poCount   = collect($poGroups)->sum(fn($g) => count($g['rows']));
+        $poCount = collect($poGroups)->sum(fn($g) => count($g['rows']));
         $billCount = collect($billGroups)->sum(fn($g) => count($g['rows']));
-        $docCount  = collect($docGroups)->sum(fn($g) => count($g['rows']));
+        $docCount = collect($docGroups)->sum(fn($g) => count($g['rows']));
     @endphp
 
-    {{-- ================= แท็บสลับ ================= --}}
-    <div class="tab-switch">
-        <button type="button" class="tab-btn delivery active" id="tabBtnDelivery" onclick="switchTab('delivery')">
-            🚚 ส่งของ <span class="tab-count">{{ $billCount + $docCount }}</span>
-        </button>
-        <button type="button" class="tab-btn pickup" id="tabBtnPickup" onclick="switchTab('pickup')">
-            📦 รับของเอง <span class="tab-count">{{ $poCount }}</span>
-        </button>
+    <div class="page-header">
+        <div class="page-header-left">
+            <div>
+                <h1 class="page-title">จ่ายงานขนส่งสินค้า</h1>
+                <div class="page-subtitle">ระบบจัดการงานขนส่งแบบเรียลไทม์</div>
+            </div>
+
+            <div class="view-controls">
+                <button class="view-btn active" onclick="setView('all')">📊 แสดงทั้งหมด</button>
+                <button class="view-btn delivery" onclick="setView('delivery')">🚚 ส่งของ <span class="view-count">{{ $billCount }}</span></button>
+                <button class="view-btn doc" onclick="setView('doc')">📄 บิลชั่วคราว <span class="view-count">{{ $docCount }}</span></button>
+                <button class="view-btn pickup" onclick="setView('pickup')">📦 รับของเอง <span class="view-count">{{ $poCount }}</span></button>
+            </div>
+        </div>
+
+        <div style="display:flex; align-items:center; gap:14px;">
+            <div class="user-badge">
+                <div class="user-badge-avatar">{{ mb_strtoupper(mb_substr($loggedInName, 0, 1)) }}</div>
+                <span class="user-badge-name">{{ $loggedInName }}</span>
+            </div>
+            <a href="{{ route('deliverytrack.summary') }}" class="btn btn-manifest">📋 สรุปงานคนขับ / งานที่จัดส่งแล้ว</a>
+        </div>
     </div>
+
+    @if (session('success')) <div class="alert alert-success">✅ {{ session('success') }}</div> @endif
+    @if (session('error')) <div class="alert alert-danger">⚠️ {{ session('error') }}</div> @endif
 
     <form id="dispatchForm" method="POST" action="{{ route('deliverytrack.store') }}">
         @csrf
         <div id="jobInputs"></div>
 
-        {{-- ================= แท็บ 1: ส่งของ (บิลขาย + บิลชั่วคราว) ================= --}}
-        <div class="tab-panel active" id="panelDelivery">
-            <div class="section-heading accent-delivery">
-                <h5>งานบิลขาย <span class="section-count">— {{ $billCount }} รายการ</span></h5>
-                <div class="form-check">
-                    <input type="checkbox" class="form-check-input" id="checkAllBills">
-                    <label class="form-check-label" for="checkAllBills">เลือกทั้งหมด (บิลขาย)</label>
+        <div class="dashboard-grid" id="dashboardGrid">
+            
+            {{-- Panel 1: ส่งของ --}}
+            <div class="grid-panel" id="panelDelivery" data-type="delivery">
+                <div class="section-heading accent-delivery" onclick="setView('delivery')">
+                    <h5>🚚 ส่งของ <span class="section-count">{{ $billCount }} รายการ</span></h5>
+                    <div style="display:flex;align-items:center;gap:15px;">
+                        <div class="form-check" onclick="event.stopPropagation()">
+                            <input type="checkbox" class="form-check-input" id="checkAllBills">
+                            <label class="form-check-label" for="checkAllBills">เลือกทั้งหมด</label>
+                        </div>
+                        <span class="expand-hint">⛶ ขยาย</span>
+                    </div>
                 </div>
-            </div>
-
-            @if (count($billGroups) > 0)
                 <div class="job-list-table-wrap">
+                    @if(count($billGroups) > 0)
                     <table class="job-list-table">
                         <colgroup>
-                            <col style="width:56px">
-                            <col style="width:220px">
-                            <col style="width:190px">
-                            <col style="width:auto">
+                            <col style="width:8%"><col style="width:27%"><col style="width:27%"><col style="width:38%">
                         </colgroup>
-                        <thead>
-                            <tr>
-                                <th class="col-check"></th>
-                                <th>SO / บิล</th>
-                                <th>ผู้หยิบสินค้า</th>
-                                <th>หมายเหตุ</th>
-                            </tr>
-                        </thead>
                         <tbody>
-                            @foreach ($billGroups as $group)
+                            @foreach($billGroups as $group)
                                 @php
-                                    $firstBill = $group['rows'][0]['bill'] ?? null;
-                                    $groupAddressRaw = $firstBill->customer_address ?? '';
-                                    $groupLocationTag = null;
-                                    if (str_contains($groupAddressRaw, 'สถานที่ส่ง:')) {
-                                        [$groupAddressRaw, $groupLocationTag] = array_map('trim', explode('สถานที่ส่ง:', $groupAddressRaw, 2));
-                                        $groupAddressRaw = rtrim($groupAddressRaw, ', ');
-                                    }
-                                    $groupAddress = $wrapAddress($groupAddressRaw, 90);
-                                    $groupKey = 'bill-' . $loop->index;
+                                    $groupKey = 'bill-'.$loop->index;
                                 @endphp
-                                <tr class="group-row bill-row" data-group="{{ $groupKey }}" onclick="toggleGroup(this)">
-                                    <td colspan="4">
-                                        <input type="checkbox" class="group-select-checkbox" data-group="{{ $groupKey }}"
-                                               onclick="event.stopPropagation()" onchange="onGroupCheckboxChange(this)">
-                                        <span class="group-customer-id">{{ $group['customer_id'] }}</span>
-                                        @if (!empty($group['customer_name']))
-                                            <span class="group-customer-name">- {{ $group['customer_name'] }}</span>
-                                        @endif
-                                        <span class="group-count-chip">{{ count($group['rows']) }} บิล</span>
-                                        @if ($groupAddress)
-                                            <span class="group-address">
-                                                {!! $groupAddress !!}
-                                                @if ($groupLocationTag)
-                                                    <span class="location-tag"> · สถานที่ส่ง: {{ $groupLocationTag }}</span>
-                                                @endif
-                                            </span>
-                                        @endif
+                                <tr class="group-row delivery-row" data-group="{{ $groupKey }}">
+                                    <td colspan="4" style="background:#fff;color:#1a2634;">
+                                        <div class="group-row-inner">
+                                            <div class="group-row-left">
+                                                <input type="checkbox" class="group-select-checkbox" data-group="{{ $groupKey }}" onchange="onGroupCheckboxChange(this)">
+                                                <span class="group-customer-id">{{ $group['customer_id'] }}</span>
+                                            </div>
+                                            <div class="group-row-right">
+                                                <span class="group-count-chip">{{ count($group['rows']) }} บิล</span>
+                                                <button type="button" class="group-toggle-btn" data-group="{{ $groupKey }}" onclick="event.stopPropagation(); toggleGroupDrawer(this.closest('tr'))">
+                                                    <span class="group-toggle-icon">▾</span> รายละเอียด
+                                                </button>
+                                            </div>
+                                        </div>
                                     </td>
                                 </tr>
-                                @foreach ($group['rows'] as $row)
-                                    @php
-                                        $bill = $row['bill'];
-                                    @endphp
-                                    <tr class="{{ $loop->iteration % 2 === 0 ? 'row-alt' : '' }}">
+                                @foreach($group['rows'] as $row)
+                                    @php $bill = $row['bill']; @endphp
+                                    <tr class="job-detail-row {{ $loop->iteration % 2 == 0 ? 'row-alt' : '' }}" data-group="{{ $groupKey }}">
                                         <td class="col-check">
-                                            <input type="checkbox" class="job-checkbox bill-checkbox"
-                                                   value="bill:{{ $bill->so_detail_id }}"
-                                                   data-group="{{ $groupKey }}"
-                                                   onchange="updateSelectedCount(); syncGroupCheckboxState(this.dataset.group)">
+                                            <input type="checkbox" class="job-checkbox bill-checkbox" value="bill:{{ $bill->so_detail_id }}" data-group="{{ $groupKey }}" onchange="updateSelectedCount()">
                                         </td>
-                                        <td class="job-no">
-                                            <span class="job-id-primary">SO {{ $bill->so_id }}</span>
-                                            <span class="job-id-secondary">บิล {{ $bill->billid }}</span>
+                                        <td>
+                                            <div class="job-id-primary">SO {{ $bill->so_id }}</div>
+                                            <div class="job-id-secondary">บิล {{ $bill->billid }}</div>
                                         </td>
                                         <td class="job-meta">
-                                            <span class="meta-name-chip">{{ $bill->emp_picker ?: '-' }}</span>
-                                            <span class="meta-time">{{ $bill->time }}</span>
+                                            <div class="meta-name-chip">{{ $bill->emp_picker ?: '-' }}</div>
+                                            <div class="meta-time">{{ $bill->time }}</div>
                                         </td>
-                                        <td class="job-notes">{{ $bill->notes ?: '-' }}</td>
+                                        <td class="job-notes" title="{{ $bill->notes }}">{{ $bill->notes ? mb_strimwidth($bill->notes, 0, 25, '...') : '-' }}</td>
                                     </tr>
                                 @endforeach
                             @endforeach
                         </tbody>
                     </table>
-                </div>
-            @else
-                <div class="empty-note">ไม่มีงานบิลขายค้างจ่าย</div>
-            @endif
-
-            <div class="section-heading accent-delivery">
-                <h5>งานบิลชั่วคราว <span class="section-count">— {{ $docCount }} รายการ</span></h5>
-                <div class="form-check">
-                    <input type="checkbox" class="form-check-input" id="checkAllDocs">
-                    <label class="form-check-label" for="checkAllDocs">เลือกทั้งหมด (บิลชั่วคราว)</label>
+                    @else
+                    <div class="empty-note">ไม่มีงานค้างจ่าย</div>
+                    @endif
                 </div>
             </div>
 
-            @if (count($docGroups) > 0)
+            {{-- Panel 2: บิลชั่วคราว --}}
+            <div class="grid-panel" id="panelDoc" data-type="doc">
+                <div class="section-heading accent-doc" onclick="setView('doc')">
+                    <h5>📄 บิลชั่วคราว <span class="section-count">{{ $docCount }} รายการ</span></h5>
+                    <div style="display:flex;align-items:center;gap:15px;">
+                        <div class="form-check" onclick="event.stopPropagation()">
+                            <input type="checkbox" class="form-check-input" id="checkAllDocs">
+                            <label class="form-check-label" for="checkAllDocs">เลือกทั้งหมด</label>
+                        </div>
+                        <span class="expand-hint">⛶ ขยาย</span>
+                    </div>
+                </div>
                 <div class="job-list-table-wrap">
+                    @if(count($docGroups) > 0)
                     <table class="job-list-table">
                         <colgroup>
-                            <col style="width:56px">
-                            <col style="width:220px">
-                            <col style="width:190px">
-                            <col style="width:auto">
+                            <col style="width:8%"><col style="width:27%"><col style="width:27%"><col style="width:38%">
                         </colgroup>
-                        <thead>
-                            <tr>
-                                <th class="col-check"></th>
-                                <th>เอกสาร</th>
-                                <th>ผู้บันทึก</th>
-                                <th>หมายเหตุ</th>
-                            </tr>
-                        </thead>
                         <tbody>
-                            @foreach ($docGroups as $group)
+                            @foreach($docGroups as $group)
                                 @php
-                                    $firstDoc = $group['rows'][0]['doc'] ?? null;
-                                    $groupAddressRaw = $firstDoc->com_address ?? '';
-                                    $groupLocationTag = null;
-                                    if (str_contains($groupAddressRaw, 'สถานที่ส่ง:')) {
-                                        [$groupAddressRaw, $groupLocationTag] = array_map('trim', explode('สถานที่ส่ง:', $groupAddressRaw, 2));
-                                        $groupAddressRaw = rtrim($groupAddressRaw, ', ');
-                                    }
-                                    $groupAddress = $wrapAddress($groupAddressRaw, 90);
-                                    $groupKey = 'doc-' . $loop->index;
+                                    $groupKey = 'doc-'.$loop->index;
                                 @endphp
-                                <tr class="group-row doc-row" data-group="{{ $groupKey }}" onclick="toggleGroup(this)">
-                                    <td colspan="4">
-                                        <input type="checkbox" class="group-select-checkbox" data-group="{{ $groupKey }}"
-                                               onclick="event.stopPropagation()" onchange="onGroupCheckboxChange(this)">
-                                        <span class="group-customer-id">{{ $group['customer_id'] }}</span>
-                                        @if (!empty($group['customer_name']))
-                                            <span class="group-customer-name">- {{ $group['customer_name'] }}</span>
-                                        @endif
-                                        <span class="group-count-chip">{{ count($group['rows']) }} เอกสาร</span>
-                                        @if ($groupAddress)
-                                            <span class="group-address">
-                                                {!! $groupAddress !!}
-                                                @if ($groupLocationTag)
-                                                    <span class="location-tag"> · สถานที่ส่ง: {{ $groupLocationTag }}</span>
-                                                @endif
-                                            </span>
-                                        @endif
+                                <tr class="group-row doc-row" data-group="{{ $groupKey }}">
+                                    <td colspan="4" style="background:#fff;color:#1a2634;">
+                                        <div class="group-row-inner">
+                                            <div class="group-row-left">
+                                                <input type="checkbox" class="group-select-checkbox" data-group="{{ $groupKey }}" onchange="onGroupCheckboxChange(this)">
+                                                <span class="group-customer-id">{{ $group['customer_id'] }}</span>
+                                            </div>
+                                            <div class="group-row-right">
+                                                <span class="group-count-chip">{{ count($group['rows']) }} เอกสาร</span>
+                                                <button type="button" class="group-toggle-btn" data-group="{{ $groupKey }}" onclick="event.stopPropagation(); toggleGroupDrawer(this.closest('tr'))">
+                                                    <span class="group-toggle-icon"></span> รายละเอียด
+                                                </button>
+                                            </div>
+                                        </div>
                                     </td>
                                 </tr>
-                                @foreach ($group['rows'] as $row)
-                                    @php
-                                        $doc = $row['doc'];
-                                    @endphp
-                                    <tr class="{{ $loop->iteration % 2 === 0 ? 'row-alt' : '' }}">
+                                @foreach($group['rows'] as $row)
+                                    @php $doc = $row['doc']; @endphp
+                                    <tr class="job-detail-row {{ $loop->iteration % 2 == 0 ? 'row-alt' : '' }}" data-group="{{ $groupKey }}">
                                         <td class="col-check">
-                                            <input type="checkbox" class="job-checkbox doc-checkbox"
-                                                   value="doc:{{ $doc->doc_id }}"
-                                                   data-group="{{ $groupKey }}"
-                                                   onchange="updateSelectedCount(); syncGroupCheckboxState(this.dataset.group)">
+                                            <input type="checkbox" class="job-checkbox doc-checkbox" value="doc:{{ $doc->doc_id }}" data-group="{{ $groupKey }}" onchange="updateSelectedCount()">
                                         </td>
-                                        <td class="job-no">
-                                            <span class="job-id-primary">เอกสาร {{ $doc->doc_id }}</span>
-                                            <span class="job-id-secondary">{{ $doc->contact_name }}</span>
+                                        <td>
+                                            <div class="job-id-primary">{{ $doc->doc_id }}</div>
+                                            <div class="job-id-secondary">{{ $doc->contact_name }}</div>
                                         </td>
                                         <td class="job-meta">
-                                            <span class="meta-name-chip">{{ $doc->emp_name ?: '-' }}</span>
-                                            <span class="meta-time">{{ $doc->time }}</span>
+                                            <div class="meta-name-chip">{{ $doc->emp_name ?: '-' }}</div>
+                                            <div class="meta-time">{{ $doc->time }}</div>
                                         </td>
-                                        <td class="job-notes">{{ $doc->notes ?: '-' }}</td>
+                                        <td class="job-notes" title="{{ $doc->notes }}">{{ $doc->notes ? mb_strimwidth($doc->notes, 0, 25, '...') : '-' }}</td>
                                     </tr>
                                 @endforeach
                             @endforeach
                         </tbody>
                     </table>
-                </div>
-            @else
-                <div class="empty-note">ไม่มีงานบิลชั่วคราวค้างจ่าย</div>
-            @endif
-        </div>
-        {{-- ================= แท็บ 2: รับของเอง (PO) ================= --}}
-        <div class="tab-panel" id="panelPickup">
-            <div class="section-heading accent-pickup">
-                <h5>งาน PO รับเอง <span class="section-count">— {{ $poCount }} รายการ</span></h5>
-                <div class="form-check">
-                    <input type="checkbox" class="form-check-input accent-pickup" id="checkAllPo">
-                    <label class="form-check-label" for="checkAllPo">เลือกทั้งหมด (รับของเอง)</label>
+                    @else
+                    <div class="empty-note">ไม่มีงานค้างจ่าย</div>
+                    @endif
                 </div>
             </div>
 
-            @if (count($poGroups) > 0)
+            {{-- Panel 3: รับของเอง --}}
+            <div class="grid-panel" id="panelPickup" data-type="pickup">
+                <div class="section-heading accent-pickup" onclick="setView('pickup')">
+                    <h5>📦 รับของเอง <span class="section-count">{{ $poCount }} รายการ</span></h5>
+                    <div style="display:flex;align-items:center;gap:15px;">
+                        <div class="form-check" onclick="event.stopPropagation()">
+                            <input type="checkbox" class="form-check-input" id="checkAllPo">
+                            <label class="form-check-label" for="checkAllPo">เลือกทั้งหมด</label>
+                        </div>
+                        <span class="expand-hint">⛶ ขยาย</span>
+                    </div>
+                </div>
                 <div class="job-list-table-wrap">
+                    @if(count($poGroups) > 0)
                     <table class="job-list-table">
                         <colgroup>
-                            <col style="width:5%">
-                            <col style="width:20%">
-                            <col style="width:35%">
-                            <col style="width:18%">
-                            <col style="width:22%">
+                            <col style="width:8%"><col style="width:27%"><col style="width:27%"><col style="width:38%">
                         </colgroup>
-                        <thead>
-                            <tr>
-                                <th class="col-check"></th>
-                                <th>PO / SO</th>
-                                <th>วิธีรับของ</th>
-                                <th>วันที่นัด</th>
-                                <th>สินค้า</th>
-                            </tr>
-                        </thead>
                         <tbody>
-                            @foreach ($poGroups as $group)
-                                @php $groupKey = 'po-' . $loop->index; @endphp
-                                <tr class="group-row pickup-row" data-group="{{ $groupKey }}" onclick="toggleGroup(this)">
-                                    <td colspan="5">
-                                        <input type="checkbox" class="group-select-checkbox" data-group="{{ $groupKey }}"
-                                               onclick="event.stopPropagation()" onchange="onGroupCheckboxChange(this)">
-                                        <span class="group-customer-id">{{ $group['customer_id'] }}</span>
-                                        @if (!empty($group['customer_name']))
-                                            <span class="group-customer-name">- {{ $group['customer_name'] }}</span>
-                                        @endif
-                                        <span class="group-count-chip">{{ count($group['rows']) }} PO</span>
-                                        @if (!empty($group['vendor_address']))
-                                            <span class="group-address">{!! $wrapAddress($group['vendor_address'], 70) !!}</span>
-                                        @endif
+                            @foreach($poGroups as $group)
+                                @php $groupKey = 'po-'.$loop->index; @endphp
+                                <tr class="group-row pickup-row" data-group="{{ $groupKey }}">
+                                    <td colspan="4" style="background:#fff;color:#1a2634;">
+                                        <div class="group-row-inner">
+                                            <div class="group-row-left">
+                                                <input type="checkbox" class="group-select-checkbox" data-group="{{ $groupKey }}" onchange="onGroupCheckboxChange(this)">
+                                                <span class="group-customer-id">{{ $group['customer_id'] }}</span>
+                                            </div>
+                                            <div class="group-row-right">
+                                                <span class="group-count-chip">{{ count($group['rows']) }} PO</span>
+                                                <button type="button" class="group-toggle-btn" data-group="{{ $groupKey }}" onclick="event.stopPropagation(); toggleGroupDrawer(this.closest('tr'))">
+                                                    <span class="group-toggle-icon">▾</span> รายละเอียด
+                                                </button>
+                                            </div>
+                                        </div>
                                     </td>
                                 </tr>
-                                @foreach ($group['rows'] as $row)
+                                @foreach($group['rows'] as $row)
                                     @php $po = $row['po']; @endphp
-                                    <tr class="{{ $loop->iteration % 2 === 0 ? 'row-alt' : '' }}">
+                                    <tr class="job-detail-row {{ $loop->iteration % 2 == 0 ? 'row-alt' : '' }}" data-group="{{ $groupKey }}">
                                         <td class="col-check">
-                                            <input type="checkbox" class="job-checkbox po-checkbox pickup-checkbox"
-                                                   value="po:{{ $po->PONum }}"
-                                                   data-po="{{ $po->PONum }}"
-                                                   data-group="{{ $groupKey }}"
-                                                   onchange="syncSamePO(this); updateSelectedCount(); syncGroupCheckboxState(this.dataset.group)">
+                                            <input type="checkbox" class="job-checkbox po-checkbox" value="po:{{ $po->PONum }}" data-po="{{ $po->PONum }}" data-group="{{ $groupKey }}" onchange="updateSelectedCount()">
                                         </td>
-                                        <td class="job-no">
-                                            <span class="job-id-primary">PO {{ $po->PONum }} @php $statusLabel = trim($po->status_label ?? ''); $statusExtraClass = $statusLabel === 'เลยกำหนด' ? ' status-overdue' : ($statusLabel === 'รอเข้า' ? ' status-waiting' : ''); @endphp<span class="status-pill status-{{ $po->status_color }}{{ $statusExtraClass }}">{{ $po->status_label }}</span></span>
-                                            <span class="job-id-secondary">SO {{ $po->SONum }}</span>
+                                        <td>
+                                            <div class="job-id-primary">{{ $po->PONum }}</div>
+                                            <div class="job-id-secondary">SO {{ $po->SONum }}</div>
                                         </td>
-                                        <td class="job-address">
-                                            {{ $po->DeliveryMethod }}
-                                        </td>
-                                        <td class="job-meta">{{ $po->DeliveryDate ?: '-' }}</td>
-                                        <td class="job-notes job-items-cell"
-                                            onclick='event.stopPropagation(); showItemsModal("PO {{ $po->PONum }}", @json($po->items))'>
-                                            🔎 ดูรายการ ({{ count($po->items) }})
+                                        <td>{{ $po->DeliveryDate ?: '-' }}</td>
+                                        <td class="job-items-cell" data-po-title="PO {{ $po->PONum }}" data-po-items="{{ json_encode($po->items) }}">
+                                            {{ count($po->items) }} รายการ
                                         </td>
                                     </tr>
                                 @endforeach
                             @endforeach
                         </tbody>
                     </table>
+                    @else
+                    <div class="empty-note">ไม่มีงานค้างจ่าย</div>
+                    @endif
                 </div>
-            @else
-                <div class="empty-note">ไม่มีงาน PO รับเองค้างจ่าย</div>
-            @endif
-        </div>
+            </div>
 
+        </div>
     </form>
 </div>
 
-{{-- ===== ปุ่มบันทึก ลอยติดมุมขวาล่างของจอเสมอ ===== --}}
 <div class="save-floatbar">
-    <span class="floatbar-count">เลือกไว้ <strong id="selectedCount">0</strong> รายการ</span>
-    <button type="button" id="openModalBtn" class="btn btn-manifest-cta" disabled>
-        บันทึกข้อมูลขนส่ง
-    </button>
+    <span class="floatbar-count">เลือก <strong id="selectedCount">0</strong> รายการ</span>
+    <button id="openModalBtn" class="btn btn-manifest btn-manifest-cta" disabled> บันทึก</button>
 </div>
 
-{{-- Modal เลือกวันที่จัดส่ง + วิธีการจัดส่ง + ผู้รับผิดชอบ --}}
+<!-- Modals -->
 <div class="modal fade" id="driverModal" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content">
@@ -1224,7 +1089,7 @@ table.job-table tbody tr:last-child td { border-bottom: none; }
                 </div>
                 <div class="mb-3 position-relative">
                     <label class="form-label" id="driverLabel">
-                        ชื่อผู้รับผิดชอบ <span class="optional-hint" id="driverOptionalHint">(ไม่บังคับ)</span>
+                        ผู้รับผิดชอบ <span class="optional-hint" id="driverOptionalHint">(ไม่บังคับ)</span>
                     </label>
                     <input type="text" id="driverSelect" class="form-control"
                            placeholder="พิมพ์เพื่อค้นหา หรือเลือกจากรายการ" autocomplete="off">
@@ -1235,15 +1100,14 @@ table.job-table tbody tr:last-child td { border-bottom: none; }
                 </div>
             </div>
             <div class="modal-footer">
-                <button type="button" class="btn btn-manifest btn-manifest-cancel" data-bs-dismiss="modal">ยกเลิก</button>
-                <button type="button" id="confirmSaveBtn" class="btn btn-manifest-cta">ยืนยันบันทึก</button>
+                <button type="button" class="btn btn-manifest" data-bs-dismiss="modal">ยกเลิก</button>
+                <button type="button" id="confirmSaveBtn" class="btn btn-manifest btn-manifest-cta">บันทึก</button>
             </div>
         </div>
     </div>
 </div>
 
-{{-- Modal รายการสินค้า/จำนวน (PO) --}}
-<div class="modal fade" id="itemsModal" tabindex="-1" aria-hidden="true">
+<div class="modal fade" id="itemsModal" tabindex="-1">
     <div class="modal-dialog modal-dialog-centered modal-lg">
         <div class="modal-content">
             <div class="modal-header">
@@ -1251,11 +1115,7 @@ table.job-table tbody tr:last-child td { border-bottom: none; }
                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
             <div class="modal-body">
-                <table class="table table-sm mb-0">
-                    <colgroup>
-                        <col style="width:70%">
-                        <col style="width:30%">
-                    </colgroup>
+                <table class="table">
                     <thead><tr><th>สินค้า</th><th class="text-end">จำนวน</th></tr></thead>
                     <tbody id="itemsModalBody"></tbody>
                 </table>
@@ -1264,173 +1124,219 @@ table.job-table tbody tr:last-child td { border-bottom: none; }
     </div>
 </div>
 
+@php
+    $transportOptions = $deliveryMethods ?? [];
+    $driverOptions = $responsiblePersons ?? [];
+@endphp
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 <script>
-function switchTab(tab) {
-    const panelPickup = document.getElementById('panelPickup');
-    const panelDelivery = document.getElementById('panelDelivery');
-    const btnPickup = document.getElementById('tabBtnPickup');
-    const btnDelivery = document.getElementById('tabBtnDelivery');
-
-    const showPickup = tab === 'pickup';
-    panelPickup.classList.toggle('active', showPickup);
-    panelDelivery.classList.toggle('active', !showPickup);
-    btnPickup.classList.toggle('active', showPickup);
-    btnDelivery.classList.toggle('active', !showPickup);
-}
-
-// PO เดียวกัน (ที่แตกเป็นหลาย SO/หลายแถว) ให้ถือเป็นงานเดียวกัน — ติ๊กแถวใดแถวหนึ่งแล้ว ติ๊กให้ครบทุกแถวที่เป็น PO เดียวกันอัตโนมัติ
-function syncSamePO(checkbox) {
-    const poNum = checkbox.dataset.po;
-    if (!poNum) return;
-    const affectedGroups = new Set();
-    document.querySelectorAll('.po-checkbox[data-po="' + CSS.escape(poNum) + '"]').forEach(cb => {
-        cb.checked = checkbox.checked;
-        if (cb.dataset.group) affectedGroups.add(cb.dataset.group);
+// Toast Notification Functions
+function showToast(message, type = 'info', duration = 4000) {
+    const container = document.getElementById('toastContainer');
+    const toastId = 'toast-' + Date.now();
+    
+    const icons = {
+        success: '✓',
+        error: '✕',
+        warning: '',
+        info: ''
+    };
+    
+    const titles = {
+        success: 'สำเร็จ',
+        error: 'เกิดข้อผิดพลาด',
+        warning: 'คำเตือน',
+        info: 'ข้อมูล'
+    };
+    
+    const toastHTML = `
+        <div id="${toastId}" class="toast custom-toast toast-${type}" role="alert" aria-live="assertive" aria-atomic="true">
+            <div class="toast-header">
+                <span class="toast-icon">${icons[type]}</span>
+                <strong class="me-auto">${titles[type]}</strong>
+                <button type="button" class="toast-close" onclick="hideToast('${toastId}')" aria-label="Close">&times;</button>
+            </div>
+            <div class="toast-body">
+                ${message}
+            </div>
+        </div>
+    `;
+    
+    container.insertAdjacentHTML('beforeend', toastHTML);
+    
+    const toastElement = document.getElementById(toastId);
+    
+    // Auto hide after duration
+    if (duration > 0) {
+        setTimeout(() => {
+            hideToast(toastId);
+        }, duration);
+    }
+    
+    // Show toast using Bootstrap
+    const bsToast = new bootstrap.Toast(toastElement, {
+        delay: duration,
+        autohide: true
     });
-    affectedGroups.forEach(groupId => syncGroupCheckboxState(groupId));
+    bsToast.show();
 }
 
-// ตั้งค่าติ๊ก/ไม่ติ๊กให้ครบทุกแถวของหัวข้อลูกค้ากลุ่มนั้น แล้วอัปเดตสถานะ checkbox หัวข้อให้ตรงกัน
-function setGroupChecked(groupId, checked) {
-    const checkboxes = document.querySelectorAll('.job-checkbox[data-group="' + CSS.escape(groupId) + '"]');
-    checkboxes.forEach(cb => {
-        cb.checked = checked;
-        if (cb.classList.contains('po-checkbox')) {
-            syncSamePO(cb);
-        }
-    });
-    updateSelectedCount();
-    syncGroupCheckboxState(groupId);
+function hideToast(toastId) {
+    const toastElement = document.getElementById(toastId);
+    if (toastElement) {
+        toastElement.classList.add('hiding');
+        setTimeout(() => {
+            toastElement.remove();
+        }, 300);
+    }
 }
 
-// คลิกที่หัวข้อลูกค้า (group-row) แล้วติ๊ก/เอาติ๊กออกให้ครบทุกแถวของหัวข้อนั้น
-function toggleGroup(groupRow) {
-    const groupId = groupRow.dataset.group;
-    if (!groupId) return;
-    const checkboxes = document.querySelectorAll('.job-checkbox[data-group="' + CSS.escape(groupId) + '"]');
+function setView(mode) {
+    const grid = document.getElementById('dashboardGrid');
+    const panels = document.querySelectorAll('.grid-panel');
+    const btns = document.querySelectorAll('.view-btn');
+    
+    btns.forEach(btn => btn.classList.remove('active'));
+
+    if (mode === 'all') {
+        grid.classList.remove('is-filtered');
+        panels.forEach(p => p.classList.remove('is-expanded'));
+        btns[0].classList.add('active');
+    } else {
+        grid.classList.add('is-filtered');
+        panels.forEach(p => {
+            p.classList.toggle('is-expanded', p.dataset.type === mode);
+        });
+        const activeBtn = document.querySelector(`.view-btn.${mode}`);
+        if(activeBtn) activeBtn.classList.add('active');
+    }
+}
+
+function toggleGroupSelection(row) {
+    const groupId = row.dataset.group;
+    const checkboxes = document.querySelectorAll(`.job-checkbox[data-group="${groupId}"]`);
     if (checkboxes.length === 0) return;
-
     const allChecked = Array.from(checkboxes).every(cb => cb.checked);
-    setGroupChecked(groupId, !allChecked);
+    checkboxes.forEach(cb => cb.checked = !allChecked);
+    updateSelectedCount();
 }
 
-// คลิกที่ checkbox เล็กๆ ในหัวข้อโดยตรง (ไม่ต้องคลิกทั้งแถว)
+function toggleGroupDrawer(row) {
+    const groupId = row.dataset.group;
+    const isOpen = row.classList.toggle('is-open');
+    document.querySelectorAll(`tr.job-detail-row[data-group="${groupId}"]`).forEach(r => {
+        r.classList.toggle('is-visible', isOpen);
+    });
+    const toggleBtn = row.querySelector('.group-toggle-btn');
+    if (toggleBtn) toggleBtn.classList.toggle('is-open', isOpen);
+}
+
+document.querySelectorAll('.job-list-table-wrap').forEach(wrap => {
+    wrap.addEventListener('click', function (e) {
+        const itemsCell = e.target.closest('.job-items-cell');
+        if (itemsCell) {
+            let items = [];
+            try { items = JSON.parse(itemsCell.dataset.poItems || '[]'); } catch (err) { items = []; }
+            showItemsModal(itemsCell.dataset.poTitle || '', items);
+            return;
+        }
+
+        if (e.target.closest('.group-select-checkbox')) return;
+        if (e.target.closest('.group-toggle-btn')) return;
+        const row = e.target.closest('tr.group-row');
+        if (row) toggleGroupSelection(row);
+    });
+});
+
 function onGroupCheckboxChange(checkbox) {
     const groupId = checkbox.dataset.group;
-    if (!groupId) return;
-    setGroupChecked(groupId, checkbox.checked);
+    const checkboxes = document.querySelectorAll(`.job-checkbox[data-group="${groupId}"]`);
+    checkboxes.forEach(cb => cb.checked = checkbox.checked);
+    updateSelectedCount();
 }
 
-// ปรับสถานะ checkbox ที่หัวข้อให้ตรงกับแถวลูกทั้งหมด: ติ๊กครบ = ติ๊ก, ติ๊กบางส่วน = indeterminate, ไม่ติ๊กเลย = ไม่ติ๊ก
-function syncGroupCheckboxState(groupId) {
-    if (!groupId) return;
-    const groupCb = document.querySelector('.group-select-checkbox[data-group="' + CSS.escape(groupId) + '"]');
-    if (!groupCb) return;
-    const checkboxes = document.querySelectorAll('.job-checkbox[data-group="' + CSS.escape(groupId) + '"]');
-    const total = checkboxes.length;
-    const checkedCount = Array.from(checkboxes).filter(cb => cb.checked).length;
-    groupCb.checked = total > 0 && checkedCount === total;
-    groupCb.indeterminate = checkedCount > 0 && checkedCount < total;
-}
+function syncGroupCheckboxes() {
+    document.querySelectorAll('.group-select-checkbox').forEach(groupCb => {
+        const groupId = groupCb.dataset.group;
+        const children = document.querySelectorAll(`.job-checkbox[data-group="${groupId}"]`);
+        if (children.length === 0) return;
 
-function syncAllGroupCheckboxStates() {
-    document.querySelectorAll('.group-select-checkbox').forEach(cb => {
-        syncGroupCheckboxState(cb.dataset.group);
+        const checkedCount = Array.from(children).filter(cb => cb.checked).length;
+        groupCb.checked = checkedCount === children.length;
+        groupCb.indeterminate = checkedCount > 0 && checkedCount < children.length;
     });
 }
 
 function updateSelectedCount() {
-    const checked = document.querySelectorAll('.job-checkbox:checked').length;
-    const countEl = document.getElementById('selectedCount');
-    const btn = document.getElementById('openModalBtn');
-    if (countEl) countEl.textContent = checked;
-    if (btn) btn.disabled = checked === 0;
-}
-
-let itemsModalInstance = null;
-
-function escapeHtml(str) {
-    const div = document.createElement('div');
-    div.textContent = str;
-    return div.innerHTML;
+    const count = document.querySelectorAll('.job-checkbox:checked').length;
+    document.getElementById('selectedCount').textContent = count;
+    document.getElementById('openModalBtn').disabled = count === 0;
+    syncGroupCheckboxes();
 }
 
 function showItemsModal(title, items) {
     document.getElementById('itemsModalTitle').textContent = title;
-
     const tbody = document.getElementById('itemsModalBody');
-    tbody.innerHTML = '';
-
-    if (!items || items.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="2" class="text-muted">ไม่พบรายการสินค้า</td></tr>';
-    } else {
-        items.forEach(item => {
-            const tr = document.createElement('tr');
-            tr.innerHTML = `<td>${escapeHtml(item.name ?? '-')}</td><td class="text-end">${escapeHtml(String(item.qty ?? '-'))}</td>`;
-            tbody.appendChild(tr);
-        });
-    }
-
-    if (!itemsModalInstance) {
-        itemsModalInstance = new bootstrap.Modal(document.getElementById('itemsModal'));
-    }
-    itemsModalInstance.show();
+    tbody.innerHTML = items.map(item => 
+        `<tr><td>${item.name || '-'}</td><td class="text-end">${item.qty || '-'}</td></tr>`
+    ).join('');
+    new bootstrap.Modal(document.getElementById('itemsModal')).show();
 }
 
-document.addEventListener('DOMContentLoaded', function () {
-    const checkAllBills = document.getElementById('checkAllBills');
-    const checkAllDocs = document.getElementById('checkAllDocs');
-    const checkAllPo = document.getElementById('checkAllPo');
-    const openModalBtn = document.getElementById('openModalBtn');
-    const deliveryDateInput = document.getElementById('deliveryDateInput');
+function setupAutocomplete(inputEl, listEl, options) {
+    if (!inputEl || !listEl) return;
 
-    // ค่าเริ่มต้น = วันนี้ แก้ไขได้
-    if (deliveryDateInput && !deliveryDateInput.value) {
-        const today = new Date();
-        const yyyy = today.getFullYear();
-        const mm = String(today.getMonth() + 1).padStart(2, '0');
-        const dd = String(today.getDate()).padStart(2, '0');
-        deliveryDateInput.value = `${yyyy}-${mm}-${dd}`;
+    function render() {
+        const q = inputEl.value.trim().toLowerCase();
+        const matches = q === '' ? options : options.filter(opt => opt.toLowerCase().includes(q));
+
+        if (matches.length === 0) {
+            listEl.innerHTML = '<div class="autocomplete-empty">ไม่พบรายการ</div>';
+        } else {
+            listEl.innerHTML = matches.slice(0, 50).map(opt => `<div class="autocomplete-item">${opt}</div>`).join('');
+        }
+        listEl.style.display = 'block';
     }
 
-    checkAllBills?.addEventListener('change', function () {
+    inputEl.addEventListener('focus', render);
+    inputEl.addEventListener('input', function () {
+        render();
+        inputEl.dispatchEvent(new Event('vehicleOrDriverInput'));
+    });
+
+    listEl.addEventListener('mousedown', function (e) {
+        const item = e.target.closest('.autocomplete-item');
+        if (!item) return;
+        inputEl.value = item.textContent;
+        listEl.style.display = 'none';
+        inputEl.dispatchEvent(new Event('input'));
+    });
+
+    inputEl.addEventListener('blur', function () {
+        setTimeout(() => { listEl.style.display = 'none'; }, 150);
+    });
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+    document.getElementById('deliveryDateInput').value = new Date().toISOString().split('T')[0];
+    
+    document.getElementById('checkAllBills')?.addEventListener('change', function() {
         document.querySelectorAll('.bill-checkbox').forEach(cb => cb.checked = this.checked);
         updateSelectedCount();
-        syncAllGroupCheckboxStates();
     });
-
-    checkAllDocs?.addEventListener('change', function () {
+    
+    document.getElementById('checkAllDocs')?.addEventListener('change', function() {
         document.querySelectorAll('.doc-checkbox').forEach(cb => cb.checked = this.checked);
         updateSelectedCount();
-        syncAllGroupCheckboxStates();
     });
-
-    checkAllPo?.addEventListener('change', function () {
+    
+    document.getElementById('checkAllPo')?.addEventListener('change', function() {
         document.querySelectorAll('.po-checkbox').forEach(cb => cb.checked = this.checked);
         updateSelectedCount();
-        syncAllGroupCheckboxStates();
     });
 
-    syncAllGroupCheckboxStates();
-
-    // คลิกที่ไหนก็ได้ในแถวข้อมูล (ยกเว้นตัวเช็กบ็อกซ์เอง หรือปุ่ม/ลิงก์ในแถว) ให้ติ๊กเช็กบ็อกซ์ของแถวนั้นแทน
-    document.querySelectorAll('.job-list-table tbody tr').forEach(function (row) {
-        const checkbox = row.querySelector('.job-checkbox');
-        if (!checkbox) return; // แถวหัวลูกค้า (group-row) ไม่มีเช็กบ็อกซ์ ข้ามไป
-
-        row.classList.add('row-clickable');
-
-        row.addEventListener('click', function (e) {
-            if (e.target.closest('input, button, a, label')) return;
-            checkbox.checked = !checkbox.checked;
-            checkbox.dispatchEvent(new Event('change'));
-        });
-    });
-
-    openModalBtn?.addEventListener('click', function () {
-        const modal = new bootstrap.Modal(document.getElementById('driverModal'));
-        modal.show();
+    document.getElementById('openModalBtn').addEventListener('click', function() {
+        new bootstrap.Modal(document.getElementById('driverModal')).show();
     });
 
     const vehicleInput = document.getElementById('vehicleSelect');
@@ -1438,40 +1344,8 @@ document.addEventListener('DOMContentLoaded', function () {
     const salesHint = document.getElementById('salesHint');
     const driverOptionalHint = document.getElementById('driverOptionalHint');
 
-    const deliveryMethodsData = @json($deliveryMethods);
-    const responsiblePersonsData = @json($responsiblePersons);
-
-    function setupAutocomplete(input, listEl, data) {
-        function render() {
-            const q = input.value.trim().toLowerCase();
-            const matches = q === '' ? data : data.filter(item => item.toLowerCase().includes(q));
-            listEl.innerHTML = '';
-
-            if (matches.length === 0) {
-                listEl.innerHTML = '<div class="autocomplete-empty">ไม่พบรายการ</div>';
-            } else {
-                matches.slice(0, 50).forEach(item => {
-                    const row = document.createElement('div');
-                    row.className = 'autocomplete-item';
-                    row.textContent = item;
-                    row.addEventListener('mousedown', function (e) {
-                        e.preventDefault();
-                        input.value = item;
-                        listEl.style.display = 'none';
-                        input.dispatchEvent(new Event('input'));
-                    });
-                    listEl.appendChild(row);
-                });
-            }
-            listEl.style.display = 'block';
-        }
-
-        input.addEventListener('focus', render);
-        input.addEventListener('input', render);
-        input.addEventListener('blur', function () {
-            setTimeout(() => { listEl.style.display = 'none'; }, 150);
-        });
-    }
+    const deliveryMethodsData = @json($transportOptions);
+    const responsiblePersonsData = @json($driverOptions);
 
     setupAutocomplete(vehicleInput, document.getElementById('vehicleSuggest'), deliveryMethodsData);
     setupAutocomplete(driverInput, document.getElementById('driverSuggest'), responsiblePersonsData);
@@ -1480,7 +1354,7 @@ document.addEventListener('DOMContentLoaded', function () {
         return vehicleInput.value.trim() === 'เซลล์ไปส่งเอง';
     }
 
-    vehicleInput?.addEventListener('input', function () {
+    vehicleInput?.addEventListener('vehicleOrDriverInput', function () {
         const isSales = isSelfDeliverySales();
         salesHint.style.display = isSales ? 'block' : 'none';
         driverOptionalHint.style.display = isSales ? 'none' : 'inline';
@@ -1489,55 +1363,49 @@ document.addEventListener('DOMContentLoaded', function () {
             : 'พิมพ์เพื่อค้นหา หรือเลือกจากรายการ';
     });
 
-    document.getElementById('confirmSaveBtn')?.addEventListener('click', function () {
-        const deliveryDate = deliveryDateInput.value.trim();
-        const driver = driverInput.value.trim();
+    document.getElementById('confirmSaveBtn').addEventListener('click', function() {
+        const date = document.getElementById('deliveryDateInput').value;
         const vehicle = vehicleInput.value.trim();
+        const driver = driverInput.value.trim();
 
-        if (!deliveryDate) {
-            alert('กรุณาระบุวันที่จัดส่ง');
+        if (!date) {
+            showToast('กรุณาระบุวันที่จัดส่ง', 'error');
             return;
         }
-
         if (!vehicle) {
-            alert('กรุณาเลือกวิธีการจัดส่ง');
+            showToast('กรุณาเลือกวิธีการจัดส่ง', 'error');
             return;
         }
-
         if (isSelfDeliverySales() && !driver) {
-            alert('เลือก "เซลล์ไปส่งเอง" กรุณาพิมพ์ชื่อเซลล์ที่ไปส่งเองในช่องผู้รับผิดชอบด้วย');
+            showToast('เลือก "เซลล์ไปส่งเอง" กรุณาพิมพ์ชื่อเซลล์ที่ไปส่งเองในช่องผู้รับผิดชอบด้วย', 'warning');
             return;
         }
-
         if (!isSelfDeliverySales() && driver && !responsiblePersonsData.includes(driver)) {
-            alert('กรุณาเลือกชื่อผู้รับผิดชอบจากรายการที่มีให้เท่านั้น (พิมพ์ชื่ออิสระไม่ได้ ยกเว้นเลือกวิธีจัดส่งเป็น "เซลล์ไปส่งเอง")');
+            showToast('กรุณาเลือกชื่อผู้รับผิดชอบจากรายการที่มีให้เท่านั้น (พิมพ์ชื่ออิสระไม่ได้ ยกเว้นเลือกวิธีจัดส่งเป็น "เซลล์ไปส่งเอง")', 'error');
             return;
         }
 
         const form = document.getElementById('dispatchForm');
-        const jobInputsDiv = document.getElementById('jobInputs');
-        jobInputsDiv.innerHTML = '';
-
+        const div = document.getElementById('jobInputs');
+        div.innerHTML = '';
+        
         document.querySelectorAll('.job-checkbox:checked').forEach(cb => {
             const input = document.createElement('input');
             input.type = 'hidden';
             input.name = 'jobs[]';
             input.value = cb.value;
-            jobInputsDiv.appendChild(input);
+            div.appendChild(input);
         });
-
-        function addHidden(name, value) {
+        
+        ['delivery_date','transport_name','driver_name'].forEach((name, i) => {
             const input = document.createElement('input');
             input.type = 'hidden';
             input.name = name;
-            input.value = value;
-            jobInputsDiv.appendChild(input);
-        }
-
-        addHidden('delivery_date', deliveryDate);
-        addHidden('driver_name', driver);
-        addHidden('transport_name', vehicle);
-
+            input.value = [date, vehicle, driver][i];
+            div.appendChild(input);
+        });
+        
+        showToast('กำลังบันทึกข้อมูล...', 'info', 2000);
         form.submit();
     });
 });

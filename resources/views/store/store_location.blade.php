@@ -6,349 +6,1084 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="csrf-token" content="{{ csrf_token() }}">
     <title>ระบุตำแหน่งจัดเก็บ</title>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Thai:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <style>
-        .top-banner .sticker {
-        background:var(--primary-light); color:var(--primary-dark); border:1px solid #bfdbfe;
-        font-weight:600; font-size:11px;
-        padding:4px 12px; text-transform:uppercase; letter-spacing:.3px;
+        :root {
+            --ink: #1e293b;
+            --canvas: #ffffff;
+            --muted: #6b7280;
+            --border: #dcdcdc;
+            --primary: #2853d5;
+            --primary-dark: #1d4ed8;
+            --primary-light: #eff6ff;
+            --on-primary: #ffffff;
+            --success: #16a34a;
+            --success-dark: #15803d;
+            --danger: #dc2626;
+            --danger-dark: #b91c1c;
+            --warning: #ea580c;
+            --row-hover: #f0f7ff;
+            --row-done: #f8fafc;
+            --page-bg: #eef2f7;
+            --shadow-sm: 0 1px 2px rgba(0,0,0,0.04);
+            --shadow: 0 1px 3px rgba(0,0,0,0.06), 0 1px 2px rgba(0,0,0,0.04);
+            --shadow-md: 0 4px 6px -1px rgba(0,0,0,0.07), 0 2px 4px -2px rgba(0,0,0,0.05);
+            --radius: 10px;
+            --radius-sm: 6px;
         }
-        .top-banner .user-badge {
-            margin-left:auto;
-            font-size:13px; font-weight:700; color:var(--ink);
-            display:flex; align-items:center; gap:6px;
-        }
-        .table-topbar {
-            display:flex; align-items:center; justify-content:space-between;
-            gap:12px; margin-bottom:8px; flex-wrap:wrap;
-        }
-        .table-topbar .table-info { font-size:12px; color:var(--muted); }
-        .table-topbar #btnMain { margin:0; }
-        :root{
-            --ink:#1e293b; --canvas:#ffffff; --muted:#6b7280; --border:#dcdcdc;
-            --primary:#2563eb; --primary-dark:#1d4ed8; --primary-light:#eff6ff;
-            --on-primary:#ffffff; --success:#16a34a; --success-dark:#15803d;
-            --danger:#dc2626; --danger-dark:#b91c1c; --warning:#ea580c;
-            --row-hover:#f0f7ff; --row-done:#f8fafc; --page-bg:#eef2f7;
-        }
-        * { box-sizing: border-box; margin:0; padding:0; }
-        html,body { background:var(--canvas); overflow-x:hidden; max-width:100%; }
-        body {
-            font-family:'Segoe UI', Tahoma, Arial, sans-serif; font-size:14px;
-            color:var(--ink); padding:16px;
-        }
-        .page-frame { background:var(--canvas); max-width:100%; }
-        .table-scroll { overflow-x:auto; -webkit-overflow-scrolling:touch; }
 
-        /* ===== Header bar: plain white, title left ===== */
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+
+        html, body {
+            background: var(--page-bg);
+            font-family: 'Noto Sans Thai', 'Segoe UI', Tahoma, Arial, sans-serif;
+            font-size: 14px;
+            color: var(--ink);
+            line-height: 1.5;
+            width: 100%;
+            min-height: 100vh;
+            -webkit-font-smoothing: antialiased;
+            overflow-x: hidden;
+        }
+
+        .page-frame {
+            width: 100%;
+            max-width: 100%;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
         .top-banner {
-            background:var(--canvas); color:var(--ink);
-            margin:0 -16px; padding:16px 12px 0;
-            display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:10px;
+            background: var(--canvas);
+            border-bottom: 1px solid var(--border);
+            padding: 12px 24px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            flex-wrap: nowrap;
+            gap: 12px;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            box-shadow: var(--shadow-sm);
+            width: 100%;
         }
-        .top-banner .title-group { display:flex; align-items:center; gap:10px; margin-left:24px; }
-        .top-banner .title-group .h1 { font-weight:700; font-size:22px; color:var(--ink); }
-        .top-banner .sticker {
-            background:var(--primary-light); color:var(--primary-dark); border:1px solid #bfdbfe;
-            font-weight:600; font-size:11px;
-            padding:4px 12px; text-transform:uppercase; letter-spacing:.3px;
+
+        .title-group {
+            display: flex;
+            align-items: center;
+            gap: 8px;
         }
-        .btn-claim, .btn-finish-claim {
-            font-size:12px; font-weight:700; padding:6px 12px; border:1px solid transparent;
-            font-family:inherit; cursor:pointer; transition:.15s ease;
+
+        .title-group .h1 {
+            font-weight: 700;
+            font-size: 18px;
+            color: var(--ink);
+            display: flex;
+            align-items: center;
+            gap: 8px;
         }
-        .btn-claim { background:var(--primary-light); color:var(--primary-dark); border-color:#bfdbfe; }
-        .btn-claim:hover { background:var(--primary); color:var(--on-primary); }
-        .btn-finish-claim { background:#fff7ed; color:var(--warning); border-color:#fed7aa; }
-        .btn-finish-claim:hover { background:var(--warning); color:var(--on-primary); }
-        .btn-claim:disabled, .btn-finish-claim:disabled { opacity:.5; cursor:not-allowed; }
-        .finished-tag {
-            display:inline-block; font-size:11px; font-weight:700; padding:4px 10px;
-            background:#f0fdf4; color:var(--success-dark); border:1px solid #bbf7d0;
+
+        .title-group .h1::before {
+            content: '';
+            display: inline-block;
+            width: 3px;
+            height: 18px;
+            background: var(--primary);
+            border-radius: 2px;
+        }
+
+        .sticker {
+            background: var(--primary-light);
+            color: var(--primary-dark);
+            border: 1px solid #bfdbfe;
+            font-weight: 600;
+            font-size: 10px;
+            padding: 3px 10px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            border-radius: 12px;
+        }
+
+        .user-badge {
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--on-primary);
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            background: var(--primary);
+            padding: 6px 14px;
+            border-radius: 16px;
+            white-space: nowrap;
+        }
+
+        .user-badge::before {
+            content: '';
+            width: 7px;
+            height: 7px;
+            background: var(--success);
+            border-radius: 50%;
+            box-shadow: 0 0 0 2px rgba(255,255,255,0.3);
         }
 
         main {
-            padding:20px; background:var(--canvas);
+            padding: 16px 24px 40px;
+            width: 100%;
+            flex: 1;
         }
-        .toolbar { display:flex; gap:8px; margin-bottom:16px; flex-wrap:wrap; align-items:center; }
-        .toolbar .filter-group { display:flex; gap:8px; flex-wrap:wrap; align-items:center; }
-        .toolbar .field-label { font-size:12px; color:var(--muted); font-weight:600; margin-right:-4px; }
-        select {
-            padding:8px 12px; border:1px solid var(--border);
-            font-family:inherit; font-size:14px; background:var(--canvas); color:var(--ink);
-            cursor:pointer;
+
+        .toolbar {
+            background: var(--canvas);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 10px 16px;
+            margin-bottom: 16px;
+            display: flex;
+            gap: 8px;
+            flex-wrap: nowrap;
+            align-items: center;
+            box-shadow: var(--shadow-sm);
+            width: 100%;
         }
-        select:focus { outline:none; border-color:var(--primary); box-shadow:0 0 0 3px var(--primary-light); }
+
+        .toolbar .filter-group {
+            display: flex;
+            gap: 8px;
+            flex-wrap: nowrap;
+            align-items: center;
+            flex: 1;
+        }
+
+        .toolbar input[type="search"],
+        .toolbar select {
+            padding: 7px 10px;
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            font-family: inherit;
+            font-size: 13px;
+            background: var(--canvas);
+            color: var(--ink);
+            transition: all 0.2s;
+            min-width: 110px;
+            white-space: nowrap;
+        }
+
+        .toolbar input[type="search"]:focus,
+        .toolbar select:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 2px var(--primary-light);
+        }
+
+        .toolbar input[type="search"]::placeholder {
+            color: #9ca3af;
+        }
+
         button {
-            padding:8px 20px; border:1px solid transparent; border-radius:6px;
-            font-family:inherit; font-weight:600; font-size:15px;
-            cursor:pointer; transition:.15s ease;
+            padding: 7px 16px;
+            border: 1px solid transparent;
+            border-radius: 6px;
+            font-family: inherit;
+            font-weight: 600;
+            font-size: 13px;
+            cursor: pointer;
+            transition: all 0.15s ease;
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            white-space: nowrap;
         }
-        .btn-primary { background:var(--primary); color:var(--on-primary); }
-        .btn-primary:hover { background:var(--primary-dark); }
-        .btn-success { background:var(--success); color:var(--on-primary); }
-        .btn-success:hover { background:var(--success-dark); }
-        .btn-ghost   { background:var(--canvas); color:var(--muted); border-color:var(--border); }
-        .btn-ghost:hover { background:#f3f4f6; color:var(--ink); }
-        button:disabled { opacity:.4; cursor:not-allowed; }
 
-        /* ===== Table: solid blue header, full grid lines ===== */
-        table { width:100%; min-width:900px; border-collapse:collapse; background:var(--canvas); border:1px solid var(--border); overflow:hidden; }
-        caption { text-align:left; padding:8px 2px; font-size:12px; color:var(--muted); }
-        th,td { border-bottom:1px solid var(--border); border-right:1px solid var(--border); padding:12px 14px; text-align:center; font-size:13px; }
-        th:last-child,td:last-child { border-right:none; }
+        .btn-primary {
+            background: var(--primary);
+            color: var(--on-primary);
+        }
+
+        .btn-primary:hover {
+            background: var(--primary-dark);
+            box-shadow: var(--shadow-md);
+            transform: translateY(-1px);
+        }
+
+        .btn-success {
+            background: var(--success);
+            color: var(--on-primary);
+        }
+
+        .btn-success:hover {
+            background: var(--success-dark);
+            box-shadow: var(--shadow-md);
+            transform: translateY(-1px);
+        }
+
+        .btn-ghost {
+            background: var(--canvas);
+            color: var(--muted);
+            border-color: var(--border);
+        }
+
+        .btn-ghost:hover {
+            background: #f3f4f6;
+            color: var(--ink);
+        }
+
+        button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none !important;
+        }
+
+        .table-topbar {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+            margin-bottom: 12px;
+            flex-wrap: wrap;
+            width: 100%;
+        }
+
+        .table-info {
+            font-size: 13px;
+            color: var(--muted);
+            font-weight: 500;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .table-info::before {
+            content: '';
+            width: 7px;
+            height: 7px;
+            background: var(--warning);
+            border-radius: 50%;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.4; }
+        }
+
+        #btnMain {
+            font-size: 13px;
+            padding: 7px 16px;
+            border-radius: 6px;
+            font-weight: 600;
+        }
+
+        .table-scroll {
+            background: var(--canvas);
+            border-radius: 8px;
+            border: 1px solid var(--border);
+            overflow: hidden;
+            box-shadow: var(--shadow);
+            width: 100%;
+        }
+
+        .table-inner {
+            overflow-x: auto;
+            -webkit-overflow-scrolling: touch;
+            width: 100%;
+        }
+
+        table {
+            width: 100%;
+            min-width: 1000px;
+            border-collapse: collapse;
+            background: var(--canvas);
+        }
+
+        th, td {
+            border-bottom: 1px solid var(--border);
+            border-right: 1px solid var(--border);
+            padding: 10px 12px;
+            text-align: center;
+            font-size: 13px;
+            vertical-align: middle;
+        }
+
+        th:last-child, td:last-child {
+            border-right: none;
+        }
+
         thead th {
-            background:var(--primary); color:var(--on-primary);
-            font-weight:700; font-size:13px; letter-spacing:.2px;
-            border-bottom:2px solid var(--primary-dark);
-            border-right-color:rgba(255,255,255,.25);
+            background: var(--primary);
+            color: var(--on-primary);
+            font-weight: 700;
+            font-size: 12px;
+            letter-spacing: 0.3px;
+            border-bottom: 2px solid var(--primary-dark);
+            border-right-color: rgba(255,255,255,0.2);
+            position: sticky;
+            top: 0;
+            z-index: 10;
         }
-        tbody tr:nth-child(even) { background:#fafbfd; }
-        tbody tr:hover { background:var(--row-hover); }
-        .num { font-variant-numeric:tabular-nums; }
-        .cust-cell { text-align:left; }
-        .center { text-align:center; }
-        .empty { text-align:center; color:var(--muted); padding:32px; font-style:italic; }
-        .muted { font-size:11px; color:var(--muted); }
-        tr.done td { color:#94a3b8; background:var(--row-done); }
-        .actionbar { margin-top:16px; display:flex; gap:8px; }
-        dialog {
-            border:none; padding:32px; width:520px; max-width:90vw;
-            box-shadow:0 20px 60px rgba(0,0,0,.25);
-            position:fixed; top:50%; left:50%; transform:translate(-50%,-50%); margin:0;
-            overflow:visible;
-        }
-        dialog::backdrop { background:rgba(15,23,42,.5); }
-        dialog h2 { font-size:22px; font-weight:700; margin:0 0 18px; color:var(--primary-dark); }
-        dialog label { display:block; margin-bottom:8px; font-weight:600; font-size:14px; text-transform:uppercase; color:var(--muted); }
-        dialog input { width:100%; font-size:18px; padding:14px 16px; }
-        .dialog-actions { display:flex; gap:8px; justify-content:flex-end; margin-top:24px; }
-        #itemsModal { width:480px; }
-        #itemsModal table { width:100%; min-width:0; margin-top:8px; }
-        #itemsModal th, #itemsModal td { padding:8px 10px; font-size:13px; }
-        #itemsModal .items-modal-empty { text-align:center; color:var(--muted); padding:20px; font-style:italic; }
-        #itemsModal .items-modal-loading { text-align:center; color:var(--muted); padding:20px; }
-        .dialog-actions button { font-size:16px; padding:10px 26px; }
-        .hint { font-size:13px; color:var(--muted); margin-top:10px; min-height:18px; }
-        .autocomplete-wrap { position:relative; }
-        .suggest-panel {
-            display:none; position:absolute; left:0; right:0; top:calc(100% + 4px);
-            background:var(--canvas); border:1px solid var(--border);
-            box-shadow:0 8px 24px rgba(0,0,0,.12);
-            max-height:min(320px, 45vh); overflow-y:auto; z-index:9999;
-        }
-        .suggest-panel.open { display:block; }
-        .suggest-item {
-            padding:10px 16px; font-size:15px; color:var(--ink);
-            cursor:pointer; border-bottom:1px solid #f1f5f9;
-        }
-        .suggest-item:last-child { border-bottom:none; }
-        .suggest-item:hover, .suggest-item.hl { background:var(--row-hover); color:var(--primary-dark); }
-        .suggest-empty { padding:12px 16px; font-size:13px; color:var(--muted); font-style:italic; }
-        .chips { display:flex; gap:6px; flex-wrap:wrap; margin-top:8px; }
-        .chip {
-            padding:6px 14px; border:1px solid var(--border); background:var(--canvas); color:var(--muted);
-            font-weight:600; font-size:12px;
-            cursor:pointer; text-decoration:none; display:inline-block; transition:.15s ease;
-        }
-        a.chip { text-decoration:none; }
-        .chip:hover { border-color:var(--primary); color:var(--primary); }
-        .chip.active { background:var(--primary); color:var(--on-primary); border-color:var(--primary); }
-        .items-cell { max-width:280px; }
-        .items-cell .more { color:var(--muted); }
-        details.items-expand summary { cursor:pointer; color:var(--primary); font-size:12px; list-style:none; font-weight:600; }
-        details.items-expand summary::-webkit-details-marker { display:none; }
-        details.items-expand[open] summary { margin-bottom:4px; }
-        .subline { font-size:12px; color:#475569; padding:2px 0; }
-        a.ref-link { color:var(--primary); font-weight:700; text-decoration:none; }
-        a.ref-link:hover { text-decoration:underline; }
 
-        /* ===== Pagination ===== */
-        .pagination { display:flex; align-items:center; justify-content:center; gap:12px; margin-top:18px; }
-        .page-btn {
-            padding:7px 16px; border:1px solid var(--border); background:var(--canvas);
-            color:var(--primary); font-weight:600; font-size:13px; text-decoration:none;
-            transition:.15s ease;
+        tbody tr {
+            transition: background 0.15s ease;
         }
-        .page-btn:hover { border-color:var(--primary); background:var(--primary-light); }
-        .page-btn.disabled { color:#c3c9d1; cursor:not-allowed; pointer-events:none; }
-        .page-info { font-size:13px; color:var(--muted); font-weight:600; }
+
+        tbody tr:nth-child(even) {
+            background: #fafbfd;
+        }
+
+        tbody tr:hover {
+            background: var(--row-hover);
+        }
+
+        tbody tr:last-child td {
+            border-bottom: none;
+        }
+
+        tr.done td {
+            color: #94a3b8;
+            background: var(--row-done);
+        }
+
+        tr.done:hover {
+            background: var(--row-done);
+        }
+
+        tr.hidden-row {
+            display: none;
+        }
+
+        .num {
+            font-variant-numeric: tabular-nums;
+            font-weight: 500;
+        }
+
+        .cust-cell {
+            text-align: left;
+            font-weight: 500;
+        }
+
+        .center {
+            text-align: center;
+        }
+
+        .empty {
+            text-align: center;
+            color: var(--muted);
+            padding: 60px 32px !important;
+            font-size: 15px;
+            font-style: italic;
+        }
+
+        .muted {
+            font-size: 11px;
+            color: var(--muted);
+            margin-top: 2px;
+        }
+
+        input[type="checkbox"] {
+            width: 16px;
+            height: 16px;
+            border-radius: 4px;
+            border: 1.5px solid #9ca3af;
+            cursor: pointer;
+            accent-color: var(--primary);
+            transition: all 0.15s;
+        }
+
+        input[type="checkbox"]:hover {
+            border-color: var(--primary);
+        }
+
+        .ref-link {
+            font-weight: 700;
+            color: var(--primary-dark);
+            text-decoration: none;
+            font-size: 13px;
+        }
+
+        .ref-link:hover {
+            text-decoration: underline;
+        }
+
+        .po-type-badge {
+            display: inline-block;
+            font-size: 10px;
+            font-weight: 700;
+            padding: 2px 8px;
+            border-radius: 10px;
+            margin-top: 4px;
+            letter-spacing: 0.3px;
+        }
+
+        .po-internal {
+            background: var(--primary-light);
+            color: var(--primary-dark);
+            border: 1px solid #bfdbfe;
+        }
+
+        .po-external {
+            background: #fff7ed;
+            color: var(--warning);
+            border: 1px solid #fed7aa;
+        }
+
+        .items-cell {
+            max-width: 320px;
+            text-align: left;
+            min-height: 40px;
+        }
+
+        .items-cell .more {
+            color: var(--muted);
+            font-weight: 500;
+        }
+
+        details.items-expand summary {
+            cursor: pointer;
+            color: var(--primary);
+            font-size: 12px;
+            list-style: none;
+            font-weight: 600;
+            transition: color 0.15s;
+        }
+
+        details.items-expand summary::-webkit-details-marker {
+            display: none;
+        }
+
+        details.items-expand summary::after {
+            content: ' ▾';
+            font-size: 10px;
+        }
+
+        details.items-expand[open] summary::after {
+            content: ' ▴';
+        }
+
+        details.items-expand[open] summary {
+            margin-bottom: 6px;
+        }
+
+        details.items-expand summary:hover {
+            color: var(--primary-dark);
+        }
+
+        .subline {
+            font-size: 12px;
+            color: #475569;
+            padding: 2px 0 2px 12px;
+            border-left: 2px solid var(--border);
+            margin: 2px 0;
+        }
+
+        .btn-claim {
+            font-size: 11px;
+            font-weight: 700;
+            padding: 5px 12px;
+            border-radius: 16px;
+            background: var(--primary-light);
+            color: var(--primary-dark);
+            border: 1px solid #bfdbfe;
+        }
+
+        .btn-claim:hover {
+            background: var(--primary);
+            color: var(--on-primary);
+            border-color: var(--primary);
+            transform: translateY(-1px);
+        }
+
+        .btn-finish-claim {
+            font-size: 11px;
+            font-weight: 700;
+            padding: 5px 12px;
+            border-radius: 16px;
+            background: #fff7ed;
+            color: var(--warning);
+            border: 1px solid #fed7aa;
+        }
+
+        .btn-finish-claim:hover {
+            background: var(--warning);
+            color: var(--on-primary);
+            border-color: var(--warning);
+            transform: translateY(-1px);
+        }
+
+        .finished-tag {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            font-size: 11px;
+            font-weight: 700;
+            padding: 4px 10px;
+            background: #f0fdf4;
+            color: var(--success-dark);
+            border: 1px solid #bbf7d0;
+            border-radius: 16px;
+        }
+
+        .finished-tag::before {
+            content: '✓';
+            font-size: 10px;
+            font-weight: 800;
+        }
+
+        .btn-view-items {
+            font-size: 12px;
+            padding: 6px 14px;
+            border-radius: 6px;
+            background: var(--canvas);
+            color: var(--primary);
+            border: 1px solid var(--primary);
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.15s;
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .btn-view-items:hover {
+            background: var(--primary);
+            color: var(--on-primary);
+            transform: translateY(-1px);
+            box-shadow: var(--shadow-sm);
+        }
+
+        .btn-view-items::before {
+            content: '📦';
+            font-size: 11px;
+        }
+
+        .no-items {
+            color: var(--muted);
+            font-size: 12px;
+            font-style: italic;
+        }
+
+        .pagination {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            margin-top: 20px;
+            width: 100%;
+        }
+
+        .page-btn {
+            padding: 7px 14px;
+            border: 1px solid var(--border);
+            background: var(--canvas);
+            color: var(--primary);
+            font-weight: 600;
+            font-size: 13px;
+            text-decoration: none;
+            transition: all 0.15s ease;
+            border-radius: 6px;
+        }
+
+        .page-btn:hover:not(.disabled) {
+            border-color: var(--primary);
+            background: var(--primary-light);
+        }
+
+        .page-btn.disabled {
+            color: #cbd5e1;
+            cursor: not-allowed;
+            pointer-events: none;
+        }
+
+        .page-info {
+            font-size: 13px;
+            color: var(--muted);
+            font-weight: 600;
+            padding: 0 12px;
+        }
+
+        dialog {
+            border: none;
+            padding: 0;
+            width: 520px;
+            max-width: 92vw;
+            border-radius: var(--radius);
+            box-shadow: 0 20px 60px rgba(0,0,0,0.15);
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            margin: 0;
+            overflow: hidden;
+            animation: dialog-enter 0.25s ease;
+        }
+
+        @keyframes dialog-enter {
+            from { opacity: 0; transform: translate(-50%, -48%) scale(0.96); }
+            to { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+        }
+
+        dialog::backdrop {
+            background: rgba(15, 23, 42, 0.5);
+            backdrop-filter: blur(2px);
+        }
+
+        .dialog-header {
+            padding: 20px 24px 0;
+        }
+
+        dialog h2 {
+            font-size: 18px;
+            font-weight: 700;
+            margin: 0 0 16px;
+            color: var(--primary-dark);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .dialog-body {
+            padding: 0 24px 24px;
+        }
+
+        dialog label {
+            display: block;
+            margin-bottom: 6px;
+            font-weight: 600;
+            font-size: 12px;
+            text-transform: uppercase;
+            color: var(--muted);
+            letter-spacing: 0.5px;
+        }
+
+        dialog input[type="text"] {
+            width: 100%;
+            font-size: 15px;
+            padding: 10px 12px;
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            font-family: inherit;
+            transition: all 0.2s;
+            background: var(--canvas);
+        }
+
+        dialog input[type="text"]:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 2px var(--primary-light);
+        }
+
+        .dialog-actions {
+            display: flex;
+            gap: 8px;
+            justify-content: flex-end;
+            padding: 14px 24px 20px;
+            background: #fafbfd;
+            border-top: 1px solid var(--border);
+        }
+
+        .dialog-actions button {
+            font-size: 13px;
+            padding: 8px 18px;
+        }
+
+        .hint {
+            font-size: 13px;
+            color: var(--muted);
+            margin-top: 10px;
+            min-height: 20px;
+            padding: 8px 12px;
+            background: var(--page-bg);
+            border-radius: 6px;
+            border-left: 3px solid var(--border);
+            transition: all 0.2s;
+        }
+
+        .autocomplete-wrap {
+            position: relative;
+        }
+
+        .suggest-panel {
+            display: none;
+            position: absolute;
+            left: 0;
+            right: 0;
+            top: calc(100% + 4px);
+            background: var(--canvas);
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            box-shadow: var(--shadow-md);
+            max-height: min(320px, 45vh);
+            overflow-y: auto;
+            z-index: 9999;
+        }
+
+        .suggest-panel.open {
+            display: block;
+            animation: suggest-enter 0.15s ease;
+        }
+
+        @keyframes suggest-enter {
+            from { opacity: 0; transform: translateY(-4px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .suggest-item {
+            padding: 9px 14px;
+            font-size: 13px;
+            color: var(--ink);
+            cursor: pointer;
+            border-bottom: 1px solid #f1f5f9;
+            transition: all 0.1s;
+        }
+
+        .suggest-item:last-child {
+            border-bottom: none;
+        }
+
+        .suggest-item:hover,
+        .suggest-item.hl {
+            background: var(--row-hover);
+            color: var(--primary-dark);
+            padding-left: 18px;
+        }
+
+        .suggest-empty {
+            padding: 12px 14px;
+            font-size: 13px;
+            color: var(--muted);
+            text-align: center;
+            font-style: italic;
+        }
+
+        .chips-section {
+            margin-top: 14px;
+            padding-top: 14px;
+            border-top: 1px solid var(--border);
+        }
+
+        .chips-label {
+            font-size: 11px;
+            font-weight: 700;
+            color: var(--muted);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 6px;
+        }
+
+        .chips {
+            display: flex;
+            gap: 6px;
+            flex-wrap: wrap;
+        }
+
+        .chip {
+            padding: 5px 12px;
+            border: 1px solid var(--border);
+            background: var(--canvas);
+            color: var(--muted);
+            font-weight: 600;
+            font-size: 11px;
+            cursor: pointer;
+            text-decoration: none;
+            display: inline-block;
+            transition: all 0.15s ease;
+            border-radius: 16px;
+        }
+
+        a.chip {
+            text-decoration: none;
+        }
+
+        .chip:hover {
+            border-color: var(--primary);
+            color: var(--primary);
+            background: var(--primary-light);
+        }
+
+        .chip.active {
+            background: var(--primary);
+            color: var(--on-primary);
+            border-color: var(--primary);
+        }
+
+        #itemsModal {
+            width: 560px;
+        }
+
+        #itemsModal table {
+            width: 100%;
+            min-width: 0;
+            margin-top: 12px;
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            overflow: hidden;
+        }
+
+        #itemsModal th {
+            background: var(--page-bg);
+            padding: 9px 12px;
+            font-size: 11px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            color: var(--muted);
+            font-weight: 700;
+        }
+
+        #itemsModal td {
+            padding: 9px 12px;
+            font-size: 13px;
+            border-bottom: 1px solid #f1f5f9;
+        }
+
+        #itemsModal tr:last-child td {
+            border-bottom: none;
+        }
+
+        .items-modal-empty,
+        .items-modal-loading {
+            text-align: center;
+            color: var(--muted);
+            padding: 28px;
+            font-size: 14px;
+        }
+
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: transparent;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: #cbd5e1;
+            border-radius: 4px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: #94a3b8;
+        }
+
+        @media (max-width: 1024px) {
+            .toolbar {
+                flex-wrap: wrap;
+            }
+            .toolbar .filter-group {
+                flex-wrap: wrap;
+                width: 100%;
+            }
+            .toolbar input[type="search"],
+            .toolbar select {
+                flex: 1;
+                min-width: calc(50% - 8px);
+            }
+        }
+
+        @media (max-width: 768px) {
+            .top-banner { padding: 10px 16px; }
+            main { padding: 12px 16px; }
+            .toolbar { padding: 10px 12px; }
+            .toolbar input[type="search"],
+            .toolbar select { 
+                min-width: 100%; 
+                width: 100%;
+            }
+            .toolbar .filter-group { 
+                flex-direction: column; 
+                align-items: stretch; 
+            }
+            th, td { padding: 10px 12px; font-size: 12px; }
+            .title-group .h1 { font-size: 16px; }
+        }
     </style>
 </head>
 <body>
 <div class="page-frame">
-<div class="top-banner">
-    <div class="title-group">
-        <span class="h1">ระบุตำแหน่งจัดเก็บ</span>
-        <span class="sticker">Store</span>
-    </div>
-    <div class="user-badge">{{ $creator }}</div>
-</div>
-<input type="hidden" id="inpUser" value="{{ $creator }}">
-@php $nav = $creator ? ['create_by' => $creator] : []; @endphp
-<main>
-    <form class="toolbar" method="GET" action="{{ url()->current() }}">
-        @if ($creator)<input type="hidden" name="create_by" value="{{ $creator }}">@endif
-        <div class="filter-group">
-            <input type="search" name="SONum" value="{{ request('SONum') }}" placeholder="ค้นหา SO..." autocomplete="off">
-            <input type="search" name="PONum" value="{{ request('PONum') }}" placeholder="ค้นหา PO ภายใน..." autocomplete="off">
-            <input type="search" name="customer" value="{{ request('customer') }}" placeholder="ค้นหาลูกค้า..." autocomplete="off">
-            {{-- ★ เพิ่ม: กรองดู PO ภายใน (มี "A") หรือ PO ภายนอก (ไม่มี "A") --}}
-            <select name="po_type">
-                <option value="">PO ทั้งหมด</option>
-                <option value="internal" {{ request('po_type') === 'internal' ? 'selected' : '' }}>PO ภายใน</option>
-                <option value="external" {{ request('po_type') === 'external' ? 'selected' : '' }}>PO ภายนอก</option>
-            </select>
+    <div class="top-banner">
+        <div class="title-group">
+            <span class="h1">จัดบิลส่งออก</span>
+            <span class="sticker">STORE</span>
         </div>
-        <button type="submit" class="btn-primary">ค้นหา</button>
-        @if (request('SONum') || request('PONum') || request('customer') || request('location') || request('item') || request('po_type'))
-            <a href="{{ url()->current() }}{{ $creator ? '?create_by='.urlencode($creator) : '' }}">
-                <button type="button" class="btn-ghost">ล้าง</button>
-            </a>
+        <div class="user-badge">ผู้ใช้งาน: {{ $creator }}</div>
+    </div>
+    <input type="hidden" id="inpUser" value="{{ $creator }}">
+    @php $nav = $creator ? ['create_by' => $creator] : []; @endphp
+    <main>
+        <div class="toolbar">
+            <div class="filter-group">
+                <input type="search" id="searchSO" value="{{ request('SONum') }}" placeholder="🔍 ค้นหาเลข SO..." autocomplete="off">
+                <input type="search" id="searchPO" value="{{ request('PONum') }}" placeholder="🔍 ค้นหาเลข PO..." autocomplete="off">
+                <input type="search" id="searchCustomer" value="{{ request('customer') }}" placeholder="🔍 ค้นหาลูกค้า..." autocomplete="off">
+                <select id="filterPoType">
+                    <option value="">PO ทั้งหมด</option>
+                    <option value="internal" {{ request('po_type') === 'internal' ? 'selected' : '' }}>ภายใน</option>
+                    <option value="external" {{ request('po_type') === 'external' ? 'selected' : '' }}>ภายนอก</option>
+                </select>
+                <button type="button" class="btn-ghost" id="btnClear">ล้าง</button>
+            </div>
+            
+            <button type="button" class="btn-success" id="btnMain" hidden onclick="openModal()">
+                 ระบุตำแหน่ง (<span id="selCount">0</span>)
+            </button>
+        </div>
+
+        <div class="table-topbar">
+            <div class="table-info">
+                รอระบุตำแหน่ง <span id="todoCount">{{ $totalTodo }}</span> / แสดง <span id="showCount">{{ $heads->total() }}</span> ใบ (หน้า {{ $heads->currentPage() }}/{{ $heads->lastPage() ?: 1 }})
+            </div>
+        </div>
+
+        <div class="table-scroll">
+            <div class="table-inner">
+                <table>
+                    <thead>
+                        <tr>
+                            <th class="center" style="width:50px;"><input type="checkbox" id="chkAll"></th>
+                            <th>PO</th>
+                            <th>SO</th>
+                            <th style="text-align:left;">รายการสินค้า</th>
+                            <th style="text-align:left;">ลูกค้า</th>
+                            <th>จัดการ</th>
+                            <th>รับโดย</th>
+                            <th>เวลารับ</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tableBody">
+                        @forelse ($heads as $h)
+                            @php
+                                $todo        = $h->todo;
+                                $cls         = $todo ? '' : 'done';
+                                $items       = $h->items;
+                                $totalQty    = $h->total_qty;
+                                $location    = $h->location;
+                                $checkboxVal = $h->type . ':' . $h->id;
+                                $isClaimed   = $h->type === 'external' && ($h->claimed ?? false);
+                                $isFinished  = $h->type === 'external' && ($h->finished ?? false);
+                                $poType      = str_contains((string) $h->po_display, 'A') ? 'internal' : 'external';
+                            @endphp
+                            <tr class="{{ $cls }}" data-done="{{ $todo ? 0 : 1 }}"
+                                data-so="{{ $h->so_id }}"
+                                data-po="{{ $h->po_display }}"
+                                data-customer="{{ $h->customer_name }}"
+                                data-po-type="{{ $poType }}">
+                                <td class="center">
+                                    @if ($todo && !$isClaimed)<input type="checkbox" class="chkLine" value="{{ $checkboxVal }}">@endif
+                                </td>
+                                <td>
+                                    <span class="ref-link">{{ $h->po_display }}</span>
+                                    <div>
+                                        @if ($poType === 'internal')
+                                            <span class="po-type-badge po-internal">ภายใน</span>
+                                        @else
+                                            <span class="po-type-badge po-external">ภายนอก</span>
+                                        @endif
+                                    </div>
+                                </td>
+                                <td><span style="font-weight:600;">{{ $h->so_id }}</span></td>
+                                <td class="items-cell">
+                                    @if (is_null($items))
+                                        <button type="button" class="btn-view-items" data-po="{{ $h->po_display }}">ดูสินค้า</button>
+                                    @elseif ($items->count() <= 2)
+                                        <span style="font-weight:500;">{{ $items->pluck('item_name')->implode(', ') }}</span>
+                                    @else
+                                        <details class="items-expand">
+                                            <summary>{{ $items->first()->item_name }} <span class="more">+{{ $items->count() - 1 }} รายการ</span></summary>
+                                            @foreach ($items as $it)
+                                                <div class="subline">{{ $it->item_name }} ({{ number_format($it->item_quantity, 2) }})</div>
+                                            @endforeach
+                                        </details>
+                                    @endif
+                                </td>
+                                <td class="cust-cell">{{ $h->customer_name }}</td>
+                                <td>
+                                    @if ($h->type === 'external' || $h->type === 'legacy')
+                                        @if ($isClaimed)
+                                            <button type="button" class="btn-finish-claim" data-po="{{ $h->id }}">จัดการเสร็จสิ้น</button>
+                                            <div class="muted">โดย {{ $h->claimed_by ?: '—' }}</div>
+                                            <div class="muted">{{ $h->claimed_at ? \Carbon\Carbon::parse($h->claimed_at)->format('d/m/Y H:i') : '' }}</div>
+                                        @elseif ($isFinished)
+                                            <span class="finished-tag">เสร็จสิ้น</span>
+                                            <div class="muted">โดย {{ $h->finished_by ?: ($h->claimed_by ?: '—') }}</div>
+                                            <div class="muted">{{ $h->finished_at ? \Carbon\Carbon::parse($h->finished_at)->format('d/m/Y H:i') : '' }}</div>
+                                        @else
+                                            <button type="button" class="btn-claim" data-po="{{ $h->id }}" data-type="{{ $h->type }}">กำลังจัดการ</button>
+                                        @endif
+                                    @else
+                                        <span style="font-weight:600; color: var(--ink);">{{ $location ?: '—' }}</span>
+                                    @endif
+                                </td>
+                                <td><span style="font-size:12px;">{{ $h->packed_by ?: '—' }}</span></td>
+                                <td class="muted">{{ $h->packed_at ? \Carbon\Carbon::parse($h->packed_at)->format('d/m/Y H:i') : '—' }}</td>
+                            </tr>
+                        @empty
+                            <tr><td colspan="9" class="empty">📭 ไม่มีรายการที่รอระบุตำแหน่ง</td></tr>
+                        @endforelse
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        @if ($heads->hasPages())
+            <div class="pagination">
+                @if ($heads->onFirstPage())
+                    <span class="page-btn disabled">‹ ก่อนหน้า</span>
+                @else
+                    <a class="page-btn" href="{{ $heads->previousPageUrl() }}">‹ ก่อนหน้า</a>
+                @endif
+
+                <span class="page-info">หน้า {{ $heads->currentPage() }} / {{ $heads->lastPage() }} (ทั้งหมด {{ $heads->total() }} ใบ)</span>
+
+                @if ($heads->hasMorePages())
+                    <a class="page-btn" href="{{ $heads->nextPageUrl() }}">ถัดไป ›</a>
+                @else
+                    <span class="page-btn disabled">ถัดไป ›</span>
+                @endif
+            </div>
         @endif
-    </form>
-
-    <div class="table-scroll">
-<div class="table-topbar">
-    <div class="table-info">
-        รอระบุตำแหน่ง {{ $totalTodo }} /
-        แสดง {{ $heads->total() }} ใบ
-        (หน้า {{ $heads->currentPage() }}/{{ $heads->lastPage() ?: 1 }})
-    </div>
-    <button type="button" class="btn-success" id="btnMain" hidden onclick="openModal()">
-        ระบุตำแหน่ง (<span id="selCount">0</span>)
-    </button>
-</div>
-
-<div class="table-scroll">
-<table>
-    <thead>
-            <tr>
-                <th class="center" style="width:44px;"><input type="checkbox" id="chkAll"></th>
-                <th>PO</th><th>SO</th><th>รายการสินค้า</th>
-                <th>ลูกค้า</th><th>จัดการ</th><th>รับโดย</th><th>เวลารับ</th>
-            </tr>
-        </thead>
-        <tbody>
-            @forelse ($heads as $h)
-                @php
-                    $todo        = $h->todo;
-                    $cls         = $todo ? '' : 'done';
-                    $items       = $h->items;
-                    $totalQty    = $h->total_qty;
-                    $location    = $h->location;
-                    $checkboxVal = $h->type . ':' . $h->id;
-                    $isClaimed   = $h->type === 'external' && ($h->claimed ?? false);
-                    // ★ เพิ่ม: สถานะ "จัดการเสร็จสิ้นแล้ว" (ถาวร) แยกจาก claimed
-                    $isFinished  = $h->type === 'external' && ($h->finished ?? false);
-                @endphp
-                <tr class="{{ $cls }}" data-done="{{ $todo ? 0 : 1 }}">
-                    <td class="center">
-                        {{-- ★ ห้ามติ๊กเลือกถ้ากำลังจัดการอยู่ (isClaimed) — แต่ถ้าจัดการเสร็จสิ้นแล้ว (isFinished)
-                             ให้กลับมาเลือกระบุตำแหน่งได้ตามปกติ --}}
-                        @if ($todo && !$isClaimed)<input type="checkbox" class="chkLine" value="{{ $checkboxVal }}">@endif
-                    </td>
-                    <td>
-                        <span class="ref-link">{{ $h->po_display }}</span>
-                        <div class="muted">
-                            @if (str_contains((string) $h->po_display, 'A')) ภายใน
-                            @else ภายนอก
-                            @endif
-                        </div>
-                    </td>
-                    <td>{{ $h->so_id }}</td>
-                    <td class="items-cell">
-                        @if (is_null($items))
-                            <button type="button" class="btn-ghost btn-view-items" data-po="{{ $h->po_display }}" style="font-size:12px;padding:4px 10px;">ดูสินค้า</button>
-                        @elseif ($items->count() <= 2)
-                            {{ $items->pluck('item_name')->implode(', ') }}
-                        @else
-                            <details class="items-expand">
-                                <summary>{{ $items->first()->item_name }} <span class="more">และอีก {{ $items->count() - 1 }} รายการ</span></summary>
-                                @foreach ($items as $it)
-                                    <div class="subline">• {{ $it->item_name }} ({{ number_format($it->item_quantity, 2) }})</div>
-                                @endforeach
-                            </details>
-                        @endif
-                    </td>
-                    <td class="cust-cell">{{ $h->customer_name }}</td>
-                    <td>
-                        @if ($h->type === 'external' || $h->type === 'legacy')
-                            @if ($isClaimed)
-                                <button type="button" class="btn-finish-claim" data-po="{{ $h->id }}">จัดการเสร็จสิ้น</button>
-                                <div class="muted">โดย {{ $h->claimed_by ?: '—' }}</div>
-                                <div class="muted">{{ $h->claimed_at ? \Carbon\Carbon::parse($h->claimed_at)->format('d/m/Y H:i') : '' }}</div>
-                            @elseif ($isFinished)
-                                {{-- ★ เสร็จสิ้นแบบถาวรแล้ว — ไม่แสดงปุ่ม "กำลังจัดการ" อีก กันกดซ้ำ --}}
-                                <span class="finished-tag">จัดการเสร็จสิ้นแล้ว</span>
-                                <div class="muted">โดย {{ $h->finished_by ?: ($h->claimed_by ?: '—') }}</div>
-                                <div class="muted">{{ $h->finished_at ? \Carbon\Carbon::parse($h->finished_at)->format('d/m/Y H:i') : '' }}</div>
-                            @else
-                                {{-- ★ เพิ่ม data-type: legacy กับ external เรียก endpoint คนละตัว (ดู JS) --}}
-                                <button type="button" class="btn-claim" data-po="{{ $h->id }}" data-type="{{ $h->type }}">กำลังจัดการ</button>
-                            @endif
-                        @else
-                            {{ $location ?: '—' }}
-                        @endif
-                    </td>
-                    <td>{{ $h->packed_by ?: '—' }}</td>
-                    <td class="muted">{{ $h->packed_at ? \Carbon\Carbon::parse($h->packed_at)->format('d/m/Y H:i') : '—' }}</td>
-                </tr>
-            @empty
-                <tr><td colspan="9" class="empty">ไม่มีรายการ</td></tr>
-            @endforelse
-        </tbody>
-    </table>
-    </div>
-
-    @if ($heads->hasPages())
-        <div class="pagination">
-            @if ($heads->onFirstPage())
-                <span class="page-btn disabled">« ก่อนหน้า</span>
-            @else
-                <a class="page-btn" href="{{ $heads->previousPageUrl() }}">« ก่อนหน้า</a>
-            @endif
-
-            <span class="page-info">หน้า {{ $heads->currentPage() }} / {{ $heads->lastPage() }} (ทั้งหมด {{ $heads->total() }} ใบ)</span>
-
-            @if ($heads->hasMorePages())
-                <a class="page-btn" href="{{ $heads->nextPageUrl() }}">ถัดไป »</a>
-            @else
-                <span class="page-btn disabled">ถัดไป »</span>
-            @endif
-        </div>
-    @endif
-</main>
+    </main>
 </div>
 
 <dialog id="locModal">
-    <h2>ระบุตำแหน่งจัดเก็บ (ชั้นวาง)</h2>
-    <label for="inpLocation">ชั้นวาง</label>
-    <div class="autocomplete-wrap">
-        <input type="text" id="inpLocation" placeholder="พิมพ์ค้นหาชั้นวาง เช่น A11" autocomplete="off" maxlength="100">
-        <div id="locSuggest" class="suggest-panel"></div>
+    <div class="dialog-header">
+        <h2>📦 ระบุตำแหน่งจัดเก็บ</h2>
     </div>
-    <p class="hint" id="dlgHint"></p>
-
-    @if (($locations ?? collect())->count())
-        <div class="muted">ใช้ล่าสุด</div>
-        <div class="chips">
-            @foreach ($locations->take(6) as $loc)<span class="chip" onclick="pickLoc(this)">{{ $loc }}</span>@endforeach
+    <div class="dialog-body">
+        <label for="inpLocation">ชั้นวาง</label>
+        <div class="autocomplete-wrap">
+            <input type="text" id="inpLocation" placeholder="พิมพ์ค้นหาชั้นวาง เช่น A11" autocomplete="off" maxlength="100">
+            <div id="locSuggest" class="suggest-panel"></div>
         </div>
-    @endif
+        <p class="hint" id="dlgHint">เลือกรายการที่ต้องการแล้วระบุชั้นวาง</p>
 
+        @if (($locations ?? collect())->count())
+            <div class="chips-section">
+                <div class="chips-label">⚡ ใช้ล่าสุด</div>
+                <div class="chips">
+                    @foreach ($locations->take(6) as $loc)
+                        <span class="chip" onclick="pickLoc(this)">{{ $loc }}</span>
+                    @endforeach
+                </div>
+            </div>
+        @endif
+    </div>
     <div class="dialog-actions">
         <button type="button" class="btn-ghost" onclick="document.getElementById('locModal').close()">ยกเลิก</button>
-        <button type="button" class="btn-primary" onclick="confirmLoc()">OK</button>
-        </div>
-    </dialog>
+        <button type="button" class="btn-primary" onclick="confirmLoc()">บันทึกตำแหน่ง</button>
+    </div>
+</dialog>
 
-    <dialog id="itemsModal">
-        <h2 id="itemsModalTitle">รายการสินค้า</h2>
+<dialog id="itemsModal">
+    <div class="dialog-header">
+        <h2 id="itemsModalTitle">📋 รายการสินค้า</h2>
+    </div>
+    <div class="dialog-body">
         <div id="itemsModalBody"></div>
-        <div class="dialog-actions">
-            <button type="button" class="btn-ghost" onclick="document.getElementById('itemsModal').close()">ปิด</button>
-        </div>
-    </dialog>
+    </div>
+    <div class="dialog-actions">
+        <button type="button" class="btn-ghost" onclick="document.getElementById('itemsModal').close()">ปิด</button>
+    </div>
+</dialog>
 
 <script>
 const SUBMIT_URL = "{{ route('store.location.submit') }}";
@@ -374,7 +1109,7 @@ const SHELF_OPTIONS = [
   "ขมจ่ายแล้ว","ของเกิน","คืนstock","ช.เดช","ช.โอ","ชัย-เดช","ชัย1","ชัย2",
   "ด.1","ด.10","ด.11","ด.12","ด.2","ด.3","ด.4","ด.5","ด.6","ด.7","ด.8","ด.9",
   "ทำคืน","ท๊อปบน","ปอ-ฮิคาริ","ปิดรับบิล","ปี69","พู่",
-  "ว๊าล","ว๊าลแก้ไข","หน้าออฟฟิศ","หยกรอบิล","หยกรอเคลีย","หลังออฟฟิศ"
+  "ว๊าล","ว๊าลแก้ไข","หน้าออฟฟิศ","หยรอบิล","หยกรอเคลีย","หลังออฟฟิศ"
 ];
 
 const inpLocation = document.getElementById('inpLocation');
@@ -444,21 +1179,21 @@ function refreshBtn() {
     document.getElementById('btnMain').hidden = (n === 0);
 }
 document.getElementById('chkAll').addEventListener('change', function () {
-    document.querySelectorAll('.chkLine').forEach(c => c.checked = this.checked);
+    document.querySelectorAll('.chkLine:not([disabled])').forEach(c => c.checked = this.checked);
     refreshBtn();
 });
 document.querySelectorAll('.chkLine').forEach(c => c.addEventListener('change', refreshBtn));
 
 function pickLoc(el) { const i = document.getElementById('inpLocation'); i.value = el.textContent.trim(); i.focus(); }
 
-async function postClaimAction(url, poId, btn, confirmMsg, fieldName = 'po_id') { // ★ แก้: เพิ่ม fieldName parameter
+async function postClaimAction(url, poId, btn, confirmMsg, fieldName = 'po_id') {
     if (!confirm(confirmMsg)) return;
     btn.disabled = true;
     try {
         const res = await fetch(url, {
             method: 'POST',
             headers: { 'Content-Type':'application/json','Accept':'application/json','X-Requested-With':'XMLHttpRequest','X-CSRF-TOKEN':CSRF },
-            body: JSON.stringify({ [fieldName]: poId }) // ★ แก้: ใช้ fieldName แทน hardcode po_id
+            body: JSON.stringify({ [fieldName]: poId })
         });
         const data = await res.json();
         if (res.ok && data.ok) {
@@ -485,7 +1220,7 @@ document.querySelectorAll('.btn-claim').forEach(btn => {
 document.querySelectorAll('.btn-finish-claim').forEach(btn => {
     btn.addEventListener('click', () => postClaimAction(FINISH_URL, btn.dataset.po, btn, 'คุณยืนยันที่จะจัดงานเสร็จสิ้นหรือไม่'));
 });
-// ★ เปลี่ยน: กด "ดูสินค้า" แล้วเด้งเป็น popup ตาราง (ชื่อ / จำนวน) แทนการโชว์ inline ใต้แถว
+
 const itemsModal     = document.getElementById('itemsModal');
 const itemsModalTitle = document.getElementById('itemsModalTitle');
 const itemsModalBody  = document.getElementById('itemsModalBody');
@@ -493,9 +1228,8 @@ const itemsModalBody  = document.getElementById('itemsModalBody');
 document.querySelectorAll('.btn-view-items').forEach(btn => {
     btn.addEventListener('click', async () => {
         const po = btn.dataset.po;
-
-        itemsModalTitle.textContent = 'รายการสินค้า — PO ' + po;
-        itemsModalBody.innerHTML = '<div class="items-modal-loading">กำลังโหลด...</div>';
+        itemsModalTitle.textContent = '📋 รายการสินค้า — PO ' + po;
+        itemsModalBody.innerHTML = '<div class="items-modal-loading">⏳ กำลังโหลด...</div>';
         itemsModal.showModal();
 
         try {
@@ -511,13 +1245,13 @@ document.querySelectorAll('.btn-view-items').forEach(btn => {
                 }
                 const rows = data.items.map(it => `
                     <tr>
-                        <td style="text-align:left;">${it.item_name}</td>
-                        <td class="num">${Number(it.item_quantity).toFixed(2)}</td>
+                        <td style="text-align:left; font-weight:500;">${it.item_name}</td>
+                        <td class="num" style="text-align:right;">${Number(it.item_quantity).toFixed(2)}</td>
                     </tr>
                 `).join('');
                 itemsModalBody.innerHTML = `
                     <table>
-                        <thead><tr><th style="text-align:left;">ชื่อ</th><th>จำนวน</th></tr></thead>
+                        <thead><tr><th style="text-align:left;">ชื่อสินค้า</th><th style="text-align:right;">จำนวน</th></tr></thead>
                         <tbody>${rows}</tbody>
                     </table>
                 `;
@@ -530,29 +1264,42 @@ document.querySelectorAll('.btn-view-items').forEach(btn => {
         }
     });
 });
+
 function openModal() {
     if (!currentUser())        { alert('กรุณาระบุชื่อผู้ดำเนินการ'); return; }
     if (!selectedIds().length) { alert('ยังไม่ได้เลือกรายการ'); return; }
     document.getElementById('inpLocation').value = '';
     const h = document.getElementById('dlgHint');
-    h.textContent = 'จะบันทึก ' + selectedIds().length + ' ใบ (ทุกใบที่เลือกจะใช้ตำแหน่งเดียวกัน)'; h.style.color = '#6b7280';
-    modal.showModal(); document.getElementById('inpLocation').focus();
+    h.textContent = '📌 จะบันทึก ' + selectedIds().length + ' ใบ (ทุกใบที่เลือกจะใช้ตำแหน่งเดียวกัน)';
+    h.style.color = '#1e293b';
+    h.style.borderLeftColor = 'var(--primary)';
+    modal.showModal();
+    document.getElementById('inpLocation').focus();
 }
 
 async function confirmLoc() {
     const box = document.getElementById('inpLocation').value.trim();
     const h   = document.getElementById('dlgHint');
-    if (!box) { h.textContent = 'กรุณาระบุชั้นวาง'; h.style.color = '#dc2626'; document.getElementById('inpLocation').focus(); return; }
+    if (!box) {
+        h.textContent = '⚠️ กรุณาระบุชั้นวาง';
+        h.style.color = 'var(--danger)';
+        h.style.borderLeftColor = 'var(--danger)';
+        document.getElementById('inpLocation').focus();
+        return;
+    }
     if (!SHELF_OPTIONS.includes(box)) {
-        h.textContent = 'ไม่พบชั้นวางนี้ในระบบ กรุณาเลือกจากรายการ';
-        h.style.color = '#dc2626';
+        h.textContent = '❌ ไม่พบชั้นวางนี้ในระบบ กรุณาเลือกจากรายการ';
+        h.style.color = 'var(--danger)';
+        h.style.borderLeftColor = 'var(--danger)';
         document.getElementById('inpLocation').focus();
         return;
     }
 
-    if (!confirm('ยืนยันระบุตำแหน่ง' )) return;
+    if (!confirm('ยืนยันระบุตำแหน่ง ' + box + ' ให้ ' + selectedIds().length + ' ใบ?')) return;
 
-    const btn = document.querySelector('#locModal .btn-primary'); btn.disabled = true; btn.textContent = 'กำลังบันทึก...';
+    const btn = document.querySelector('#locModal .btn-primary');
+    btn.disabled = true;
+    btn.textContent = 'กำลังบันทึก...';
     try {
         const res = await fetch(SUBMIT_URL, {
             method: 'POST',
@@ -560,10 +1307,75 @@ async function confirmLoc() {
             body: JSON.stringify({ ids: selectedIds(), user: currentUser(), location: box })
         });
         const data = await res.json();
-        if (res.ok && data.ok) { alert(data.message); window.location.reload(); }
-        else { alert(data.message || 'บันทึกไม่สำเร็จ'); btn.disabled = false; btn.textContent = 'OK'; }
-    } catch (e) { console.error(e); alert('เกิดข้อผิดพลาด'); btn.disabled = false; btn.textContent = 'OK'; }
+        if (res.ok && data.ok) { alert('✅ ' + data.message); window.location.reload(); }
+        else { alert(data.message || 'บันทึกไม่สำเร็จ'); btn.disabled = false; btn.textContent = 'บันทึกตำแหน่ง'; }
+    } catch (e) { console.error(e); alert('เกิดข้อผิดพลาด'); btn.disabled = false; btn.textContent = 'บันทึกตำแหน่ง'; }
 }
+
+// ===== Live Search =====
+const searchSO = document.getElementById('searchSO');
+const searchPO = document.getElementById('searchPO');
+const searchCustomer = document.getElementById('searchCustomer');
+const filterPoType = document.getElementById('filterPoType');
+const btnClear = document.getElementById('btnClear');
+
+function liveFilter() {
+    const soQ = searchSO.value.trim().toLowerCase();
+    const poQ = searchPO.value.trim().toLowerCase();
+    const custQ = searchCustomer.value.trim().toLowerCase();
+    const typeQ = filterPoType.value;
+
+    const rows = document.querySelectorAll('#tableBody tr[data-done]');
+    let visibleCount = 0;
+    let todoCount = 0;
+
+    rows.forEach(row => {
+        const so = (row.dataset.so || '').toLowerCase();
+        const po = (row.dataset.po || '').toLowerCase();
+        const cust = (row.dataset.customer || '').toLowerCase();
+        const type = row.dataset.poType || '';
+
+        const matchSO = !soQ || so.includes(soQ);
+        const matchPO = !poQ || po.includes(poQ);
+        const matchCust = !custQ || cust.includes(custQ);
+        const matchType = !typeQ || type === typeQ;
+
+        if (matchSO && matchPO && matchCust && matchType) {
+            row.classList.remove('hidden-row');
+            const chk = row.querySelector('.chkLine');
+            if (chk) chk.disabled = (row.dataset.done === '1');
+            visibleCount++;
+            if (row.dataset.done === '0') todoCount++;
+        } else {
+            row.classList.add('hidden-row');
+            const chk = row.querySelector('.chkLine');
+            if (chk) {
+                chk.checked = false;
+                chk.disabled = true;
+            }
+        }
+    });
+
+    document.getElementById('showCount').textContent = visibleCount;
+    document.getElementById('todoCount').textContent = todoCount;
+    document.getElementById('chkAll').checked = false;
+    refreshBtn();
+}
+
+searchSO.addEventListener('input', liveFilter);
+searchPO.addEventListener('input', liveFilter);
+searchCustomer.addEventListener('input', liveFilter);
+filterPoType.addEventListener('change', liveFilter);
+
+btnClear.addEventListener('click', () => {
+    searchSO.value = '';
+    searchPO.value = '';
+    searchCustomer.value = '';
+    filterPoType.value = '';
+    liveFilter();
+});
+
+liveFilter();
 </script>
 </body>
 </html>
