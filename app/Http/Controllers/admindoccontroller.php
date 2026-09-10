@@ -11,12 +11,14 @@ class AdmindocController extends Controller
 {
     public function dashboard(Request $request)
         {
+        $this->requireLogin($request);
             $docbill = docbills::all();  // Fetch the data
             return view('document.dashboarddoc', compact('docbill'));  // Pass data to the view
         }
 
     public function dashboarddoc(Request $request)
     {
+        $this->requireLogin($request);
         $docbill = Docbills::orderBy('doc_id', 'desc')->get();
         $message = null;
 
@@ -25,6 +27,7 @@ class AdmindocController extends Controller
 
     public function dashboarddocroute(Request $request)
         {
+        $this->requireLogin($request);
             $date = $request->get('date');
             $message = null;  // กำหนดค่าเริ่มต้นให้กับตัวแปร $message
             
@@ -48,6 +51,7 @@ class AdmindocController extends Controller
         }
     public function historydoc(Request $request)
         {
+        $this->requireLogin($request);
             $date = $request->get('date');
             $message = null;  // กำหนดค่าเริ่มต้นให้กับตัวแปร $message
             

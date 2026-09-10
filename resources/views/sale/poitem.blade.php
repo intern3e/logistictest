@@ -97,6 +97,7 @@
 </style>
 </head>
 <body>
+@include('partials.user_badge')
 <div class="topbar">ค้นหาราคาต้นทุน</div>
 <div class="wrap">
 

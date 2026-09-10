@@ -964,9 +964,11 @@ html{overflow-y:auto;}
 .jsb-chip.fail { background: #fee2e2; color: #991b1b; }
 
 .dgj-row { background: #f9fafb; border: 1px solid #e5e7eb; border-radius: 8px; padding: 14px; margin-bottom: 12px; }
-.dgj-top { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; flex-wrap: wrap; }
+.dgj-top { display: flex; align-items: center; gap: 10px; margin-bottom: 4px; flex-wrap: wrap; }
 .dgj-bill { font-weight: 700; font-size: 13px; color: #111827; font-family: monospace; }
-.dgj-customer { font-size: 13px; color: #4b5563; flex: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.dgj-code { font-size: 11px; font-weight: 600; color: #1d4ed8; background: #eff6ff; border: 1px solid #bfdbfe; padding: 1px 6px; border-radius: 8px; white-space: nowrap; }
+.dgj-line2 { margin-bottom: 8px; }
+.dgj-customer { font-size: 13px; color: #4b5563; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; display: block; }
 .dgj-status { font-size: 11px; padding: 3px 8px; border-radius: 4px; font-weight: 600; }
 .dgj-status.ok { background: #d1fae5; color: #065f46; }
 .dgj-status.fail { background: #fee2e2; color: #991b1b; }
@@ -1868,6 +1870,7 @@ async function fetchJobsByDate(dateStr){
       job_key:j.job_key||null,
       bill_no:j.bill_no||'',
       so_id:j.so_id||'',
+      customer_code:j.customer_code||'',
       customer_name:j.customer_name||'',
       bill_in_by:j.bill_in_by||'',
       status:j.delivery_status||'',
@@ -2465,7 +2468,7 @@ function ilRenderJobsForDriver(driverName,jobs){
   let okC=0,probC=0;jobs.forEach(j=>{const k=_jobStatusKind(j);if(k==='ok')okC++;else if(k==='fail'||k==='wrong')probC++;});
   let html=`<div class="jobs-summary-bar"><span class="jsb-chip"><strong>${jobs.length}</strong> งาน</span><span class="jsb-chip ok"><strong>${okC}</strong> สำเร็จ</span>${probC>0?`<span class="jsb-chip fail"><strong>${probC}</strong> มีปัญหา</span>`:''}</div>`;
 
-  const eligibleCount=jobs.filter(j=>j.source==='db'&&j.job_key&&j.job_key.indexOf('unknown:')!==0&&!j.confirmed).length;
+  const eligibleCount=jobs.filter(j=>j.source==='db'&&j.job_key&&!j.confirmed).length;
   if(eligibleCount>0){
     html+=`<div class="dgj-bulkbar">
       <label class="dgj-bulkbar-selectall"><input type="checkbox" id="jobsSelectAll" onchange="jobToggleSelectAll(this.checked)"> เลือกทั้งหมด</label>
@@ -2495,7 +2498,7 @@ function ilRenderJobsForDriver(driverName,jobs){
     if(j.note)meta.push(`<span class="dgj-meta-item dgj-note"><span class="dgj-meta-label">หมายเหตุ</span> ${j.note}</span>`);
 
     let confirmHtml='',selectHtml='';
-    const canConfirm=(j.source==='db'&&j.job_key&&j.job_key.indexOf('unknown:')!==0);
+    const canConfirm=(j.source==='db'&&j.job_key);
     if(canConfirm){
       if(j.confirmed){
         confirmHtml=`<div class="dgj-confirmed">✓ บันทึกแล้วโดย ${j.check_name||'-'} · ${j.check_time||''}</div>`;
@@ -2513,7 +2516,7 @@ function ilRenderJobsForDriver(driverName,jobs){
       }
     }
 
-    html+=`<div class="dgj-row"><div class="dgj-main"><div class="dgj-top">${selectHtml}<span class="dgj-bill">${j.bill_no||'—'}</span><span class="dgj-customer" title="${j.customer_name||''}">${j.customer_name||'—'}</span><span class="dgj-status ${badgeCls}">${stTxt}</span></div>${meta.length?`<div class="dgj-meta">${meta.join('<span class="dgj-meta-sep">·</span>')}</div>`:''}${confirmHtml}</div></div>`;
+    html+=`<div class="dgj-row"><div class="dgj-main"><div class="dgj-top">${selectHtml}<span class="dgj-bill">${j.bill_no||'—'}</span>${j.customer_code?`<span class="dgj-code">${j.customer_code}</span>`:''}<span class="dgj-status ${badgeCls}">${stTxt}</span></div><div class="dgj-line2"><span class="dgj-customer" title="${j.customer_name||''}">${j.customer_name||'—'}</span></div>${meta.length?`<div class="dgj-meta">${meta.join('<span class="dgj-meta-sep">·</span>')}</div>`:''}${confirmHtml}</div></div>`;
   });
 
   wrap.innerHTML=html;

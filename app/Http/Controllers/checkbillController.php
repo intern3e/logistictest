@@ -10,6 +10,7 @@ class checkbillController extends Controller
 {
     public function dashboardsolve(Request $request)
 {
+        $this->requireLogin($request);
     $bills = Bill::orderBy('so_detail_id', 'desc')->get();
     $poBills = pobills::orderBy('po_detail_id', 'desc')->get();
     $docBills = docBills::orderBy('doc_id', 'desc')->get();
@@ -20,6 +21,7 @@ class checkbillController extends Controller
 }
 public function dashboard(Request $request)
 {
+    $this->requireLogin($request);
     $bills = Bill::orderBy('so_detail_id', 'desc')->get();
     $poBills = pobills::orderBy('po_detail_id', 'desc')->get();
     $docBills = docBills::orderBy('doc_id', 'desc')->get();

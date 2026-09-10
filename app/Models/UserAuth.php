@@ -14,7 +14,7 @@ class UserAuth extends Authenticatable
 
     protected $fillable = [
         'id_emp', 'name', 'username', 'password',
-        'auth', 'role', 'permissions', 'page',
+        'auth', 'role', 'permissions', 'page', 'group',
         'auth_version', 'is_active'
     ];
 

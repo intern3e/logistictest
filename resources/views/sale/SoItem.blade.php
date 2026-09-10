@@ -192,6 +192,7 @@ table.itbl{width:100%;border-collapse:collapse;font-size:13px;}
 </style>
 </head>
 <body>
+@include('partials.user_badge')
 <div class="topbar">
   <span class="dot">📄</span> ระบบสร้างใบเสนอราคา · Quotation Generator
   <a href="/quotations" style="margin-left:auto;background:#fff2;border:1px solid #fff4;color:#fff;padding:7px 16px;border-radius:8px;font-size:13px;font-weight:600;text-decoration:none;display:inline-flex;align-items:center;gap:6px;transition:.15s;" onmouseover="this.style.background='#fff3'" onmouseout="this.style.background='#fff2'">รายการใบเสนอราคา</a>

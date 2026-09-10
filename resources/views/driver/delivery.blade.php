@@ -571,14 +571,17 @@ $wrapAddress = function($text, $limit = 200) {
         .group-row.doc-row td{ background:#fff; color:var(--ink); }
         .group-row.pickup-row td{ background:#fff; color:var(--ink); }
 
-        .group-select-checkbox{ width:18px; height:18px; margin-right:10px; cursor:pointer; }
+        .group-select-checkbox{ width:18px; height:18px; cursor:pointer; margin-top:2px; }
+        .group-customer-info{ display:flex; flex-direction:column; line-height:1.3; min-width:0; }
         .group-customer-id{ font-family:'JetBrains Mono',monospace; font-weight:700; font-size:0.95rem; color:var(--ink); }
+        .group-customer-name{ font-weight:700; font-size:0.7rem; color:var(--ink-soft); margin-top:2px; line-height:1.45; word-break:keep-all; overflow-wrap:normal; }
+        .group-customer-address-row{ font-weight:400; font-size:0.7rem; color:var(--ink-faint); margin-top:6px; padding-left:28px; line-height:1.45; white-space:normal; word-break:keep-all; overflow-wrap:normal; }
         .group-count-chip{ background:#2853d5; color:#fff; padding:2px 10px; border-radius:15px; font-size:0.85rem; }
         .group-address{ display:block; margin-top:6px; font-size:0.85rem; opacity:0.9; font-weight:400; }
 
-        .group-row-inner{ display:flex; align-items:center; justify-content:space-between; gap:10px; flex-wrap:wrap; }
-        .group-row-left{ display:flex; align-items:center; }
-        .group-row-right{ display:flex; align-items:center; gap:10px; }
+        .group-row-inner{ display:flex; align-items:flex-start; justify-content:space-between; gap:10px; }
+        .group-row-left{ display:flex; align-items:flex-start; gap:10px; flex:1 1 auto; min-width:0; }
+        .group-row-right{ display:flex; align-items:center; gap:10px; flex-shrink:0; white-space:nowrap; }
 
         .group-toggle-btn{
             display:flex;
@@ -889,13 +892,21 @@ $wrapAddress = function($text, $limit = 200) {
                             @foreach($billGroups as $group)
                                 @php
                                     $groupKey = 'bill-'.$loop->index;
+                                    $firstBillRow = $group['rows'][0]['bill'] ?? null;
+                                    $groupCustomerName = $group['customer_name'] ?? null;
+                                    $groupAddress = $firstBillRow->customer_address ?? null;
                                 @endphp
                                 <tr class="group-row delivery-row" data-group="{{ $groupKey }}">
                                     <td colspan="4" style="background:#fff;color:#1a2634;">
                                         <div class="group-row-inner">
                                             <div class="group-row-left">
                                                 <input type="checkbox" class="group-select-checkbox" data-group="{{ $groupKey }}" onchange="onGroupCheckboxChange(this)">
-                                                <span class="group-customer-id">{{ $group['customer_id'] }}</span>
+                                                <div class="group-customer-info">
+                                                    <span class="group-customer-id">{{ $group['customer_id'] ?: ($groupCustomerName ?: 'ไม่ระบุรหัส') }}</span>
+                                                    @if(!empty($group['customer_id']) && !empty($groupCustomerName))
+                                                        <span class="group-customer-name">{{ $groupCustomerName }}</span>
+                                                    @endif
+                                                </div>
                                             </div>
                                             <div class="group-row-right">
                                                 <span class="group-count-chip">{{ count($group['rows']) }} บิล</span>
@@ -904,6 +915,9 @@ $wrapAddress = function($text, $limit = 200) {
                                                 </button>
                                             </div>
                                         </div>
+                                        @if(!empty($groupAddress))
+                                            <div class="group-customer-address-row">{{ $groupAddress }}</div>
+                                        @endif
                                     </td>
                                 </tr>
                                 @foreach($group['rows'] as $row)
@@ -954,13 +968,21 @@ $wrapAddress = function($text, $limit = 200) {
                             @foreach($docGroups as $group)
                                 @php
                                     $groupKey = 'doc-'.$loop->index;
+                                    $firstDocRow = $group['rows'][0]['doc'] ?? null;
+                                    $groupCustomerName = $group['customer_name'] ?? null;
+                                    $groupAddress = $firstDocRow->com_address ?? null;
                                 @endphp
                                 <tr class="group-row doc-row" data-group="{{ $groupKey }}">
                                     <td colspan="4" style="background:#fff;color:#1a2634;">
                                         <div class="group-row-inner">
                                             <div class="group-row-left">
                                                 <input type="checkbox" class="group-select-checkbox" data-group="{{ $groupKey }}" onchange="onGroupCheckboxChange(this)">
-                                                <span class="group-customer-id">{{ $group['customer_id'] }}</span>
+                                                <div class="group-customer-info">
+                                                    <span class="group-customer-id">{{ $group['customer_id'] ?: ($groupCustomerName ?: 'ไม่ระบุรหัส') }}</span>
+                                                    @if(!empty($group['customer_id']) && !empty($groupCustomerName))
+                                                        <span class="group-customer-name">{{ $groupCustomerName }}</span>
+                                                    @endif
+                                                </div>
                                             </div>
                                             <div class="group-row-right">
                                                 <span class="group-count-chip">{{ count($group['rows']) }} เอกสาร</span>
@@ -969,6 +991,9 @@ $wrapAddress = function($text, $limit = 200) {
                                                 </button>
                                             </div>
                                         </div>
+                                        @if(!empty($groupAddress))
+                                            <div class="group-customer-address-row">{{ $groupAddress }}</div>
+                                        @endif
                                     </td>
                                 </tr>
                                 @foreach($group['rows'] as $row)
@@ -1017,13 +1042,23 @@ $wrapAddress = function($text, $limit = 200) {
                         </colgroup>
                         <tbody>
                             @foreach($poGroups as $group)
-                                @php $groupKey = 'po-'.$loop->index; @endphp
+                                @php
+                                    $groupKey = 'po-'.$loop->index;
+                                    $firstPoRow = $group['rows'][0]['po'] ?? null;
+                                    $groupCustomerName = $group['customer_name'] ?? null;
+                                    $groupAddress = $group['vendor_address'] ?? ($firstPoRow->vendor_address ?? null);
+                                @endphp
                                 <tr class="group-row pickup-row" data-group="{{ $groupKey }}">
                                     <td colspan="4" style="background:#fff;color:#1a2634;">
                                         <div class="group-row-inner">
                                             <div class="group-row-left">
                                                 <input type="checkbox" class="group-select-checkbox" data-group="{{ $groupKey }}" onchange="onGroupCheckboxChange(this)">
-                                                <span class="group-customer-id">{{ $group['customer_id'] }}</span>
+                                                <div class="group-customer-info">
+                                                    <span class="group-customer-id">{{ $group['customer_id'] ?: ($groupCustomerName ?: 'ไม่ระบุรหัส') }}</span>
+                                                    @if(!empty($group['customer_id']) && !empty($groupCustomerName))
+                                                        <span class="group-customer-name">{{ $groupCustomerName }}</span>
+                                                    @endif
+                                                </div>
                                             </div>
                                             <div class="group-row-right">
                                                 <span class="group-count-chip">{{ count($group['rows']) }} PO</span>
@@ -1032,6 +1067,9 @@ $wrapAddress = function($text, $limit = 200) {
                                                 </button>
                                             </div>
                                         </div>
+                                        @if(!empty($groupAddress))
+                                            <div class="group-customer-address-row">{{ $groupAddress }}</div>
+                                        @endif
                                     </td>
                                 </tr>
                                 @foreach($group['rows'] as $row)

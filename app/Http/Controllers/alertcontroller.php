@@ -14,6 +14,7 @@ class AlertController extends Controller
 {
   public function dashboard(Request $request)
     {
+      $this->requireLogin($request);
         $date = $request->input('date');
         $missingBills = [];
         $error = null;
@@ -211,6 +212,7 @@ public function removeBills(Request $request)
 
  public function dashboardaccount(Request $request)
     {
+     $this->requireLogin($request);
 
         $bill = Bill::orderBy('so_detail_id', 'desc')
                         ->get();

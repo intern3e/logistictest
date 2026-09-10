@@ -289,6 +289,7 @@
 
 </head>
 <body>
+@include('partials.user_badge')
     <div class="header">
         <h2>ระบบตรวจเช็คเอกสาร</h2>
         <div class="header-buttons">

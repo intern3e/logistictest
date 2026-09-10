@@ -8,11 +8,13 @@ class StockController extends Controller
 {
     public function dashboard(Request $request)
     {
+        $this->requireLogin($request);
 
         return view('stock.dashboardstock');
     }
     public function dashboardInventory(Request $request)
         {
+        $this->requireLogin($request);
             $items = Inventory::query()
                 ->when($request->filled('q'), function ($q) use ($request) {
                     $s = trim($request->q);

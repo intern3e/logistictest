@@ -54,6 +54,7 @@ class SolarSystemController extends Controller
      |========================================================= */
     public function index()
     {
+        $this->requireLogin();
         $customers = SolarCustomer::orderBy('id')->get();
         $accounts  = SolarAccount::orderBy('id')->get();
 

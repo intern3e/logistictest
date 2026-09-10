@@ -8,10 +8,10 @@
     <style>
         :root{
             --ink:#1e293b; --canvas:#ffffff; --muted:#6b7280; --border:#dcdcdc;
-            --primary:#2563eb; --primary-dark:#1d4ed8; --primary-light:#eff6ff;
+            --primary:#2853d5; --primary-dark:#1e3fa8; --primary-light:#eef2fd;
             --on-primary:#ffffff; --success:#16a34a; --success-dark:#15803d;
             --danger:#dc2626; --danger-dark:#b91c1c; --warning:#ea580c;
-            --row-hover:#f0f7ff; --row-done:#f8fafc; --page-bg:#eef2f7;
+            --row-hover:#f0f4ff; --row-done:#f8fafc; --page-bg:#eef2f7;
         }
         * { box-sizing: border-box; margin:0; padding:0; }
         html,body { background:var(--canvas); overflow-x:hidden; max-width:100%; }
@@ -30,7 +30,7 @@
         .top-banner .title-group { display:flex; align-items:center; gap:10px; margin-left:24px; }
         .top-banner .title-group .h1 { font-weight:700; font-size:22px; color:var(--ink); }
         .top-banner .sticker {
-            background:var(--primary-light); color:var(--primary-dark); border:1px solid #bfdbfe;
+            background:var(--primary-light); color:var(--primary); border:1px solid #c7d5fd;
             font-weight:600; font-size:11px;
             padding:4px 12px; text-transform:uppercase; letter-spacing:.3px;
         }
@@ -41,33 +41,42 @@
             font-size:13px; font-weight:400;
             padding:0;
         }
-        .top-banner .user-tag input {
-            border:0; background:transparent; padding:0; margin:0;
-            font-family:inherit; font-size:13px; font-weight:700;
-            color:var(--ink); width:80px;
-        }
 
         main { padding:20px; background:var(--canvas); }
 
+        .header-toolbar-container {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            margin-bottom: 14px;
+        }
+
         .filter-card {
-            border:1px solid var(--border); background:#fafbfd;
-            padding:14px 16px; margin-bottom:14px;
+            border: 1px solid var(--border); 
+            background: #fafbfd;
+            padding: 12px 16px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            gap: 16px;
         }
         .filter-row { display:flex; gap:8px; flex-wrap:wrap; align-items:center; }
         .filter-field { display:flex; flex-direction:column; gap:4px; }
         .filter-field label { font-size:11px; font-weight:700; color:var(--muted); text-transform:uppercase; letter-spacing:.3px; }
+        
         input[type="text"],input[type="search"],input[type="date"],select {
             padding:8px 12px; border:1px solid var(--border);
             font-family:inherit; font-size:14px; background:var(--canvas); color:var(--ink);
+            border-radius: 4px;
         }
         input:focus,select:focus { outline:none; border-color:var(--primary); box-shadow:0 0 0 3px var(--primary-light); }
+        
         button {
             padding:8px 20px; border:1px solid transparent; border-radius:6px;
             font-family:inherit; font-weight:600; font-size:15px;
             cursor:pointer; transition:.15s ease;
         }
-        .btn-primary { background:var(--primary); color:var(--on-primary); }
-        .btn-primary:hover { background:var(--primary-dark); }
         .btn-success { background:var(--success); color:var(--on-primary); }
         .btn-success:hover { background:var(--success-dark); }
         .btn-danger  { background:var(--danger); color:var(--on-primary); }
@@ -83,42 +92,24 @@
         .table-summary { font-size:12px; color:var(--muted); }
 
         .action-toolbar {
-            display:flex;
-            align-items:center;
-            gap:10px;
-            flex-wrap:wrap;
-            background-color:var(--primary);
-            border:1px solid var(--primary-dark);
-            border-radius:8px;
-            padding:14px 16px;
-            margin-left:auto;
-        }
-        .action-toolbar .filter-field {
-            display:flex;
-            flex-direction:column;
-            gap:4px;
-            justify-content:center;
-        }
-        .action-toolbar .filter-field label {
-            color:#dbeafe;
-            font-size:11px; font-weight:700;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            flex-wrap: wrap;
         }
         .action-toolbar .selcount {
-            font-size:13px; font-weight:700; color:#fff;
-            padding-right:6px;
-        }
-        .action-toolbar select,
-        .action-toolbar input[type="text"] {
-            background:#fff; color:var(--ink);
-            border:1px solid var(--primary-dark);
-            border-radius:4px;
+            font-size: 13px;
+            font-weight: 700;
+            color: var(--ink);
+            padding-right: 6px;
         }
         .action-toolbar .divider {
-            width:1px; align-self:stretch;
-            background:rgba(255,255,255,.35);
-            margin:0 4px;
+            width: 1px;
+            align-self: stretch;
+            background: var(--border);
+            margin: 0 4px;
         }
-        #inpSheets { width:70px; text-align:center; }
+        #inpSheets { width: 70px; text-align: center; }
 
         table {
             width:100%; min-width:720px; border-collapse:collapse;
@@ -146,24 +137,35 @@
         .cust-cell { text-align:left; }
         .center { text-align:center; }
         .empty { text-align:center; color:var(--muted); padding:32px; font-style:italic; }
-        .muted { font-size:11px; color:var(--muted); }
 
         tr.done td { color:#9ca3af; }
         tr.cancelled td { color:#b91c1c; background:#fff5f5 !important; }
 
         th.col-key, td.col-key { font-weight:600; font-size:13.5px; }
-        th.col-minor { font-size:12px; font-weight:600; }
-        td.col-minor { font-size:12px; color:var(--muted); font-weight:400; }
-
         a.ref-link { color:var(--ink); font-weight:600; text-decoration:none; border-bottom:1px dashed var(--border); }
         a.ref-link:hover { border-bottom-color:var(--ink); }
 
         .btn-view-items {
-            padding:6px 14px; font-size:12.5px; font-weight:600;
-            background:var(--primary-light); color:var(--primary-dark);
-            border:1px solid #bfdbfe; border-radius:6px;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 6px 14px; 
+            font-size: 13px; 
+            font-weight: 600;
+            background: var(--canvas); 
+            color: var(--primary);
+            border: 1px solid var(--primary); 
+            border-radius: 8px;
+            cursor: pointer;
+            box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+            transition: background 0.15s ease;
         }
-        .btn-view-items:hover { background:#dbeafe; }
+        .btn-view-items:hover { background: var(--primary-light); }
+        .btn-view-items svg {
+            width: 18px;
+            height: 18px;
+            flex-shrink: 0;
+        }
 
         .pagination {
             margin-top:16px; display:flex; align-items:center; justify-content:center;
@@ -202,12 +204,11 @@
             padding:14px 18px; background:var(--primary); color:var(--on-primary);
             position:sticky; top:0; flex:0 0 auto;
         }
-        .modal-header .modal-title { font-weight:700; font-size:14px; }
+        .modal-title { font-weight:700; font-size:14px; }
         .modal-close {
             background:transparent; border:none; color:var(--on-primary);
             font-size:22px; line-height:1; padding:0 4px; cursor:pointer;
         }
-        .modal-close:hover { opacity:.8; }
         .modal-row {
             display:grid; grid-template-columns:1fr 90px; align-items:center;
             gap:12px; padding:10px 18px; border-bottom:1px solid var(--border);
@@ -218,8 +219,6 @@
             background:#f8fafc; color:var(--muted); font-weight:700;
             font-size:11px; text-transform:uppercase; letter-spacing:.3px;
         }
-        .modal-row-head > span { font-size:11px; }
-        #modalBody .modal-row:last-child { border-bottom:none; }
         .modal-empty { text-align:center; color:var(--muted); padding:24px; font-style:italic; }
     </style>
 </head>
@@ -234,65 +233,60 @@
 </div>
 <input type="hidden" id="inpUser" value="{{ $operatorName }}">
 <main>
-    <form class="filter-card" id="filterForm" method="GET" action="{{ url()->current() }}">
-        <div class="filter-row">
-            <div class="filter-field">
-                <label for="fSONum">ค้นหา SO</label>
-                <input type="search" id="fSONum" name="SONum" value="{{ request('SONum') }}" placeholder="เลข SO..." autocomplete="off">
-            </div>
-            <div class="filter-field">
-                <label for="fInternal">ค้นหา PO ภายใน</label>
-                <input type="search" id="fInternal" name="internal_id" value="{{ request('internal_id') }}" placeholder="PO ภายใน..." autocomplete="off">
-            </div>
-            <div class="filter-field">
-                <label for="fStatus">สถานะ</label>
-                <select id="fStatus" name="status">
-                    @foreach ($statuses as $key => $label)
-                        <option value="{{ $key }}" @selected($selectedStatus === $key)>{{ $label }}</option>
-                    @endforeach
-                </select>
-            </div>
-            <div class="filter-field">
-                <label>&nbsp;</label>
-                <div style="display:flex; gap:8px;">
-                    <button type="submit" class="btn-primary">ค้นหา</button>
-                    @if (request('SONum') || request('internal_id') || request('customer_name') || ($selectedStatus !== \App\Models\internal_po::ST_PENDING))
-                        <a href="{{ url()->current() }}">
-                            <button type="button" class="btn-ghost">ล้าง</button>
-                        </a>
-                    @endif
+    <div class="header-toolbar-container">
+        <form class="filter-card" id="filterForm" method="GET" action="{{ url()->current() }}">
+            <div class="filter-row">
+                <div class="filter-field">
+                    <input type="search" id="fSONum" name="SONum" value="{{ request('SONum') }}" placeholder="เลข SO..." autocomplete="off">
                 </div>
+                <div class="filter-field">
+                    <input type="search" id="fInternal" name="internal_id" value="{{ request('internal_id') }}" placeholder="PO ภายใน..." autocomplete="off">
+                </div>
+                <div class="filter-field">
+                    <select id="fStatus" name="status">
+                        @foreach ($statuses as $key => $label)
+                            <option value="{{ $key }}" @selected($selectedStatus === $key)>{{ $label }}</option>
+                        @endforeach
+                    </select>
+                </div>
+                @if (request('SONum') || request('internal_id') || request('customer_name') || ($selectedStatus !== \App\Models\internal_po::ST_PENDING))
+                    <div class="filter-field">
+                        <label>&nbsp;</label>
+                        <a href="{{ url()->current() }}">
+                            <button type="button" class="btn-ghost">ล้างค่า</button>
+                        </a>
+                    </div>
+                @endif
             </div>
-        </div>
-    </form>
+
+            <div class="action-toolbar" id="actionToolbar" hidden>
+                <span class="selcount">เลือกแล้ว <span id="selCount">0</span> ใบ</span>
+                <div class="divider"></div>
+                <div class="filter-field">
+                    <select id="selPrinter">
+                        <option value="">-- เลือกเครื่องปริ้น --</option>
+                        @foreach ($printers as $value => $label)
+                            <option value="{{ $value }}">{{ $label }}</option>
+                        @endforeach
+                    </select>
+                </div>
+                <div class="filter-field">
+                    <input type="text" id="inpSheets" value="1">
+                </div>
+                <button type="button" class="btn-success" id="btnMain" onclick="submitFinish()">
+                    จัดเสร็จ + พิมพ์ (<span id="selCountA">0</span>)
+                </button>
+                <button type="button" class="btn-danger" id="btnCancel" onclick="submitCancel()">
+                    ยกเลิก (<span id="selCountB">0</span>)
+                </button>
+            </div>
+        </form>
+    </div>
 
     <div class="table-toolbar-row">
         <div class="table-summary">
             รอจัด {{ $statusCounts[\App\Models\internal_po::ST_PENDING] ?? 0 }} /
             แสดง {{ $heads->count() }} จาก {{ $heads->total() }} ใบ (หน้า {{ $heads->currentPage() }}/{{ $heads->lastPage() }})
-        </div>
-        <div class="action-toolbar" id="actionToolbar" hidden>
-            <span class="selcount">เลือกแล้ว <span id="selCount">0</span> ใบ</span>
-            <div class="divider"></div>
-            <div class="filter-field">
-                <label>เครื่องปริ้น</label>
-                <select id="selPrinter">
-                    <option value="">-- เลือกเครื่องปริ้น --</option>
-                    @foreach ($printers as $value => $label)
-                        <option value="{{ $value }}">{{ $label }}</option>
-                    @endforeach
-                </select>
-            </div>
-            <div class="filter-field">
-                <label>จำนวนสติกเกอร์/ใบ</label>
-                <input type="text" id="inpSheets" value="1">
-            </div>
-            <button type="button" class="btn-success" id="btnMain" onclick="submitFinish()">
-                จัดเสร็จ + พิมพ์ (<span id="selCountA">0</span>)
-            </button>
-            <button type="button" class="btn-danger" id="btnCancel" onclick="submitCancel()">
-                ยกเลิก (<span id="selCountB">0</span>)
-            </button>
         </div>
     </div>
 
@@ -313,7 +307,6 @@
                 $todo      = $h->status === \App\Models\internal_po::ST_PENDING;
                 $cancel    = $h->status === \App\Models\internal_po::ST_CANCEL;
                 $cls       = $cancel ? 'cancelled' : (!$todo ? 'done' : '');
-                $itemCount = $h->lines->count();
                 $groupCls  = $loop->index % 2 === 0 ? 'po-group-even' : 'po-group-odd';
             @endphp
             <tr class="{{ $cls }} {{ $groupCls }}" data-done="{{ $todo ? 0 : 1 }}" data-internal-id="{{ $h->internal_id }}">
@@ -324,7 +317,20 @@
                 <td class="col-key">{{ $h->SO_id }}</td>
                 <td class="center">
                     <button type="button" class="btn-view-items" onclick="openItemsModal('{{ $h->internal_id }}')">
-                        ดูสินค้า ({{ $itemCount }})
+                        <svg viewBox="0 0 64 64" width="18" height="18">
+                            <!-- ตัวกล่องด้านบน (ฝาเปิด) -->
+                            <polygon points="32,6 54,16 32,26 10,16" fill="#D7B188" stroke="#5A3E25" stroke-width="2" stroke-linejoin="round"/>
+                            <polygon points="32,6 32,26 54,16" fill="#C59E75" opacity="0.6"/>
+                            <!-- ด้านข้างซ้าย -->
+                            <polygon points="10,18 32,28 32,54 10,44" fill="#B0865B" stroke="#5A3E25" stroke-width="2" stroke-linejoin="round"/>
+                            <!-- ด้านข้างขวา -->
+                            <polygon points="32,28 54,18 54,44 32,54" fill="#8F6943" stroke="#5A3E25" stroke-width="2" stroke-linejoin="round"/>
+                            <!-- เทปปิดกล่องตรงกลาง -->
+                            <polygon points="30,5 34,5 34,27 30,27" fill="#EAE6DF" stroke="#5A3E25" stroke-width="1.5"/>
+                            <!-- จุดสีแดงบนกล่อง -->
+                            <circle cx="16" cy="36" r="3.5" fill="#E11D48"/>
+                        </svg>
+                        ดูสินค้า
                     </button>
                 </td>
                 <td class="cust-cell">{{ $h->customer_name }}</td>
@@ -523,7 +529,7 @@ document.addEventListener('keydown', function (e) {
     const form = document.getElementById('filterForm');
     if (!form) return;
 
-    const DEBOUNCE_MS = 500;
+    const DEBOUNCE_MS = 400;
     let debounceTimer = null;
 
     function submitNow() {

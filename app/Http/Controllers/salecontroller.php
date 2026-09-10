@@ -22,38 +22,13 @@ class SaleController extends Controller
 
 public function home()
     {
+    $this->requireLogin();
         return view('home');
-    }
-
-
-public function showLoginForm()
-    {
-        return view('sale.loginsale');
-    }
-
-
-public function login(Request $request)
-    {
-        $request->validate([
-            'emp_name' => 'required|string',
-            'password' => 'required|string',
-        ]);
-
-        $credentials = $request->only('emp_name', 'password');
-
-        if ($credentials['emp_name'] === '1' && $credentials['password'] === '1') {
-            session([
-                'logged_in' => true,
-                'emp_name' => $credentials['emp_name'],
-            ]);
-            return redirect()->route('sale.dashboard')->with('success', 'ล็อกอินสำเร็จ!');
-        }
-
-        return back()->withErrors(['sale.loginsale' => 'SO หรือรหัสผ่านไม่ถูกต้อง']);
     }
 
 public function dashboard(Request $request)
 {
+    $this->requireLogin($request);
     $date      = $request->get('date');
     $keyword   = $request->get('keyword');
     $soKeyword = $request->get('so_keyword');
@@ -123,14 +98,9 @@ public function dashboard(Request $request)
 
 public function insertdata()
     {
+    $this->requireLogin();
         return view('sale.insertdata');
     }
-
-public function logout()
-        {
-    session()->flush(); // ลบข้อมูลในเซสชัน
-    return redirect()->route("sale.loginsale")->with('success', 'คุณได้ออกจากระบบเรียบร้อยแล้ว!');
-        }
 
 public function fetchFormType(Request $request)
 {

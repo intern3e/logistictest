@@ -43,7 +43,9 @@ class InventoryController extends Controller
 
     private function guardRole(array $allowed): void
     {
-        $auth = Auth::guard('web')->check() ? (Auth::user()->auth ?? 'viewer') : 'viewer';
+        // ยังไม่ login → เด้งไปหน้า login (ไม่ใช่ 403)
+        $user = $this->requireLogin(null, 'inventory');
+        $auth = $user->auth ?? 'viewer';
         if (!in_array($auth, $allowed)) abort(403, 'ไม่มีสิทธิ์');
     }
 
@@ -459,11 +461,7 @@ class InventoryController extends Controller
     
     private function checkAuth(Request $request): array
     {
-        if (!Auth::guard('web')->check()) {
-            abort(403, 'กรุณาเข้าสู่ระบบ ก่อนใช้งาน');
-        }
-
-        $user = Auth::user();
+        $user = $this->requireLogin($request, 'inventory');
 
         return [
             'id_emp'   => $user->id_emp,
@@ -835,13 +833,14 @@ class InventoryController extends Controller
         ]);
     }
 
-    // ═══════════════ VIEWS: VEHICLES (ไม่ต้อง login) ═══════════════
+    // ═══════════════ VIEWS: VEHICLES ═══════════════
 
     public function vehiclesPage(Request $request)
     {
+        $authUser = $this->checkAuth($request);
         return view('inventory.vehicles', [
-            'authUser' => ['name' => '', 'auth' => 'viewer', 'page' => ''],
-            'authRole' => 'viewer',
+            'authUser' => $authUser,
+            'authRole' => $authUser['auth'] ?? 'viewer',
             'nestUrl'  => config('services.nest.url'),
             'nestKey'  => config('services.nest.public_key'),
         ]);
@@ -970,7 +969,7 @@ class InventoryController extends Controller
     {
         $this->guardRole(['admin']);
         return response()->json(
-            UserAuth::orderBy('id_emp')->get(['id_emp', 'username', 'password', 'name', 'auth', 'role', 'permissions', 'page'])
+            UserAuth::orderBy('id_emp')->get(['id_emp', 'username', 'password', 'name', 'auth', 'role', 'permissions', 'page', 'group'])
         );
     }
  
@@ -994,6 +993,7 @@ class InventoryController extends Controller
             'role'        => $d['role'] ?: null,
             'permissions' => !empty($d['permissions']) ? $d['permissions'] : null,
             'page'        => $d['page'] ?? null,
+            'group'       => !empty($d['group']) ? $d['group'] : null,
         ]);
         return response()->json(['success' => true]);
     }
@@ -1011,6 +1011,7 @@ class InventoryController extends Controller
         $u->permissions = !empty($d['permissions']) ? $d['permissions'] : null;
         $u->password    = $d['password'];
         $u->page        = $d['page'] ?? null;
+        $u->group       = !empty($d['group']) ? $d['group'] : null;
         $u->save();
         return response()->json(['success' => true]);
     }

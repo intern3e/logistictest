@@ -9,6 +9,7 @@ class PoitemController extends Controller
 {
     public function index()
     {
+        $this->requireLogin();
         return view('sale.poitem');
     }
 

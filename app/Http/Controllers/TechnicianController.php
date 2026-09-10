@@ -70,6 +70,7 @@ class TechnicianController extends Controller
 
     public function index(Request $request)
     {
+        $this->requireLogin($request);
         // Auto-sync: ถ้ามี solar_wash schedule ผ่านวันแล้ว → ผูกเข้า wash_logs
         try {
             project_cust::syncAllWashSchedules();

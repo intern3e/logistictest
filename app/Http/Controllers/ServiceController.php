@@ -17,28 +17,7 @@ class ServiceController extends Controller
      */
     private function resolveServiceUser(Request $request): UserAuth
     {
-        $ticket = $request->input('ticket');
-
-        if ($ticket && !Auth::guard('web')->check()) {
-            $ticketRecord = SsoTicket::where('ticket', $ticket)
-                ->where('client_key', '3e')
-                ->first();
-
-            if ($ticketRecord && $ticketRecord->markAsUsed()) {
-                $user = UserAuth::find($ticketRecord->id_emp);
-                if ($user && $user->is_active) {
-                    Auth::guard('web')->login($user);
-                }
-            }
-        }
-
-        if (!Auth::guard('web')->check()) {
-            throw new \Illuminate\Http\Exceptions\HttpResponseException(
-                redirect()->guest(route('login'))
-            );
-        }
-
-        return Auth::guard('web')->user();
+        return $this->requireLogin($request, 'service');
     }
 
     private function serviceEditableRoles(): array

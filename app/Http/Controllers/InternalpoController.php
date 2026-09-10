@@ -46,33 +46,7 @@ class InternalPoController extends Controller
 
     private function resolveSsoUser(Request $request, string $logTag): UserAuth
     {
-        $ticket = $request->input('ticket');
-
-        if ($ticket && !Auth::guard('web')->check()) {
-            $ticketRecord = SsoTicket::where('ticket', $ticket)
-                ->where('client_key', '3e')
-                ->first();
-
-            if ($ticketRecord && $ticketRecord->markAsUsed()) {
-                $user = UserAuth::find($ticketRecord->id_emp);
-                if ($user && $user->is_active) {
-                    Auth::guard('web')->login($user);
-                    Log::info("{$logTag}: SSO login success user={$user->id_emp}");
-                } else {
-                    Log::warning("{$logTag}: ticket valid but user not found/inactive id_emp={$ticketRecord->id_emp}");
-                }
-            } else {
-                Log::warning("{$logTag}: invalid or expired ticket={$ticket}");
-            }
-        }
-
-        if (!Auth::guard('web')->check()) {
-            throw new \Illuminate\Http\Exceptions\HttpResponseException(
-                redirect()->guest(route('login'))
-            );
-        }
-
-        return Auth::guard('web')->user();
+        return $this->requireLogin($request, $logTag);
     }
 
     private function ensureLegacyInternalPoMigrated(array $ids): void

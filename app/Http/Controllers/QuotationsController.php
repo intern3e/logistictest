@@ -26,6 +26,7 @@ class QuotationsController extends Controller
     // ══════════════════════════════════════════════════
     public function dashboard(Request $request)
     {
+        $this->requireLogin($request);
         $search = trim($request->input('search', ''));
         $status = trim($request->input('status', ''));
         $month  = trim($request->input('month', ''));

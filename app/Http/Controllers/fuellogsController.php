@@ -33,28 +33,7 @@ class fuellogsController extends Controller
      */
     private function resolveOilUser(Request $request): UserAuth
     {
-        $ticket = $request->input('ticket');
-
-        if ($ticket && !Auth::guard('web')->check()) {
-            $ticketRecord = SsoTicket::where('ticket', $ticket)
-                ->where('client_key', '3e')
-                ->first();
-
-            if ($ticketRecord && $ticketRecord->markAsUsed()) {
-                $user = UserAuth::find($ticketRecord->id_emp);
-                if ($user && $user->is_active) {
-                    Auth::guard('web')->login($user);
-                }
-            }
-        }
-
-        if (!Auth::guard('web')->check()) {
-            throw new \Illuminate\Http\Exceptions\HttpResponseException(
-                redirect()->guest(route('login'))
-            );
-        }
-
-        return Auth::guard('web')->user();
+        return $this->requireLogin($request, 'oil');
     }
 
     /** role ที่มีสิทธิ์บันทึก/แก้ไข/ลบ/ยืนยันข้อมูลในระบบน้ำมัน */
@@ -662,7 +641,9 @@ public function update(Request $request, $id)
             return response()->json(['data' => []]);
         }
 
-        $deliveries = transaction_delivery::whereDate('time_pick', $date)->get();
+        // อิงจาก delivery_date (วันที่คนขับไปส่งจริง) ไม่ใช่ time_pick (วันที่กดจ่ายงาน)
+        // เช่น กดจ่ายงานวันนี้ให้ไปส่งพรุ่งนี้ → ต้องขึ้นในวันพรุ่งนี้ ตามวันส่งจริง
+        $deliveries = transaction_delivery::whereDate('delivery_date', $date)->get();
         if ($deliveries->isEmpty()) {
             return response()->json(['data' => [], 'source' => 'db']);
         }
@@ -680,12 +661,19 @@ public function update(Request $request, $id)
             ->get(['doc_id', 'id_com', 'com_name', 'contact_name', 'statusdeli'])
             ->keyBy('doc_id');
 
+        // งาน "ไปรับเอง" (PO): bill_id = PONum -> ดึงชื่อร้าน (VendorName) จาก DB เก่า 3e
+        // อ่านอย่างเดียว (SELECT) ไม่มีการเขียน DB เก่า
+        $vendorByPo = DB::connection('mysql_3e')->table('polist')
+            ->whereIn('PONum', $ids->all())
+            ->get(['PONum', 'VendorID', 'VendorName'])
+            ->keyBy('PONum');
+
         $grouped = $deliveries->groupBy(function ($d) {
             $name = trim((string) $d->driver_name);
             return $name !== '' ? $name : 'ไม่ระบุ';
         });
 
-        $data = $grouped->map(function ($driverDeliveries, $driverName) use ($billsBySoDetailId, $docs) {
+        $data = $grouped->map(function ($driverDeliveries, $driverName) use ($billsBySoDetailId, $docs, $vendorByPo) {
             $jobs = collect();
 
             $billDeliveries    = $driverDeliveries->filter(fn ($d) => $billsBySoDetailId->has($d->bill_id));
@@ -705,6 +693,7 @@ public function update(Request $request, $id)
                         'job_key'         => 'bill:' . $billid,
                         'bill_no'         => (string) $billid,
                         'so_id'           => (string) ($b->so_id ?? ''),
+                        'customer_code'   => (string) ($b->customer_id ?? ''),
                         'customer_name'   => (string) ($b->customer_name ?? ''),
                         'bill_in_by'      => '',
                         'delivery_status' => (string) ($first->status ?? ''),
@@ -718,12 +707,14 @@ public function update(Request $request, $id)
             // ── ฝั่งเอกสาร: doc_id ไม่ซ้ำ ใช้ตรงๆ ได้เลย ──
             $docDeliveries->each(function ($d) use ($docs, $jobs) {
                 $doc = $docs->get($d->bill_id);
+                // บิลชั่วคราว: ขึ้นแค่ billid + com_name (+ รหัสลูกค้า id_com ถ้ามี, ไม่มีให้ว่าง)
                 $jobs->push([
                     'job_key'         => 'doc:' . $d->bill_id,
                     'bill_no'         => (string) $d->bill_id,
                     'so_id'           => '',
+                    'customer_code'   => (string) ($doc->id_com ?? ''),
                     'customer_name'   => (string) ($doc->com_name ?? ''),
-                    'bill_in_by'      => (string) ($doc->contact_name ?? ''),
+                    'bill_in_by'      => '',
                     'delivery_status' => (string) ($d->status ?? ''),
                     'reason'          => (string) ($d->note ?? ''),
                     'check_name'      => $d->check_name,
@@ -732,13 +723,18 @@ public function update(Request $request, $id)
                 ]);
             });
 
-            // งานกำพร้า (ไม่พบทั้งสองตาราง) — แสดงไว้แต่กดรับบิลไม่ได้ (job_key = unknown:)
-            $unknownDeliveries->each(function ($d) use ($jobs) {
+            // งานกำพร้า/ไปรับเอง (ไม่พบใน tblbill/docbills) — bill_id = PONum
+            // ถ้าเจอใน polist (3e) = งานไปรับของเอง -> โชว์ชื่อร้าน (VendorName)
+            $unknownDeliveries->each(function ($d) use ($jobs, $vendorByPo) {
+                $vendor     = $vendorByPo->get($d->bill_id);
+                $vendorName = (string) optional($vendor)->VendorName;
+                $vendorId   = (string) optional($vendor)->VendorID;
                 $jobs->push([
                     'job_key'         => 'unknown:' . $d->bill_id,
                     'bill_no'         => (string) $d->bill_id,
                     'so_id'           => '',
-                    'customer_name'   => '',
+                    'customer_code'   => $vendorId,
+                    'customer_name'   => $vendorName,
                     'bill_in_by'      => '',
                     'delivery_status' => (string) ($d->status ?? ''),
                     'reason'          => (string) ($d->note ?? ''),
@@ -769,7 +765,8 @@ public function update(Request $request, $id)
         }
 
         [$type, $rawId] = array_pad(explode(':', $request->job_key, 2), 2, null);
-        if (!$rawId || !in_array($type, ['bill', 'doc'], true)) {
+        // รองรับ unknown = งานไปรับเอง (PO) — บันทึกลง transaction_transport เหมือนกัน แต่ไม่มีไส้ใน (tblbill/docbills)
+        if (!$rawId || !in_array($type, ['bill', 'doc', 'unknown'], true)) {
             return response()->json(['success' => false, 'message' => 'ไม่พบรายการนี้ (ไม่รองรับงานจาก API ภายนอก)'], 404);
         }
 
@@ -807,15 +804,19 @@ public function update(Request $request, $id)
                 $delivery->save();
             }
 
-            $update = ['statusdeli' => $request->status];
-            if ($request->status === self::DELI_STATUS_WRONG) {
-                $update['NG'] = $request->ng_detail;
-            }
-
+            // อัปเดต "ไส้ใน" เฉพาะบิล/เอกสาร — งานไปรับเอง (unknown) ไม่มีไส้ใน ข้ามไป
             if ($type === 'bill') {
+                $update = ['statusdeli' => $request->status];
+                if ($request->status === self::DELI_STATUS_WRONG) {
+                    $update['NG'] = $request->ng_detail;
+                }
                 // billid ไม่ใช่ pk ของ tblbill → update ทุกแถวที่ billid ตรงกันในคำสั่งเดียว
                 DB::table('tblbill')->where('billid', $billid)->update($update);
-            } else {
+            } elseif ($type === 'doc') {
+                $update = ['statusdeli' => $request->status];
+                if ($request->status === self::DELI_STATUS_WRONG) {
+                    $update['NG'] = $request->ng_detail;
+                }
                 // doc_id เป็น pk อยู่แล้ว update แถวเดียวตรงๆ
                 DB::table('docbills')->where('doc_id', $rawId)->update($update);
             }

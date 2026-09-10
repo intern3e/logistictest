@@ -171,54 +171,74 @@ class DeliverytrackController extends Controller
 
     private function isPoPending(array $status): bool { return !in_array($status['color'], ['green', 'red'], true); }
 
+    /**
+     * จัดกลุ่มบิลตาม customer_id
+     * ถ้าบิลใดไม่มี customer_id (รหัสลูกค้า) จะไม่ถูกโยนไปรวมกันเป็นกลุ่มเดียวกันหมดอีกต่อไป
+     * แต่จะใช้ "ชื่อลูกค้า" เป็น key แทน ทำให้ลูกค้าคนละคนที่ไม่มีรหัส ยังคงแยกกลุ่มกันอยู่
+     */
     private function groupBillsByCustomer($bills): array
     {
         $groups = [];
         foreach ($bills as $bill) {
             $custId = $bill->customer_id;
-            if (!isset($groups[$custId])) {
-                $groups[$custId] = [
+            $groupKey = filled($custId) ? $custId : ('name:' . ($bill->customer_name ?: 'ไม่ระบุชื่อลูกค้า'));
+
+            if (!isset($groups[$groupKey])) {
+                $groups[$groupKey] = [
                     'customer_id'   => $custId,
                     'customer_name' => $bill->customer_name,
                     'rows'          => [],
                 ];
             }
-            $groups[$custId]['rows'][] = ['bill' => $bill];
+            $groups[$groupKey]['rows'][] = ['bill' => $bill];
         }
         return $groups;
     }
 
+    /**
+     * จัดกลุ่มบิลชั่วคราวตาม id_com
+     * ถ้าไม่มี id_com จะใช้ "ชื่อบริษัท" (com_name) เป็น key แทน ไม่ให้ไปรวมกับลูกค้ารายอื่นที่ไม่มีรหัสเหมือนกัน
+     */
     private function groupDocsByCustomer($docbills): array
     {
         $groups = [];
         foreach ($docbills as $doc) {
             $custId = $doc->id_com;
-            if (!isset($groups[$custId])) {
-                $groups[$custId] = [
+            $groupKey = filled($custId) ? $custId : ('name:' . ($doc->com_name ?: 'ไม่ระบุชื่อลูกค้า'));
+
+            if (!isset($groups[$groupKey])) {
+                $groups[$groupKey] = [
                     'customer_id'   => $custId,
                     'customer_name' => $doc->com_name,
                     'rows'          => [],
                 ];
             }
-            $groups[$custId]['rows'][] = ['doc' => $doc];
+            $groups[$groupKey]['rows'][] = ['doc' => $doc];
         }
         return $groups;
     }
 
+    /**
+     * จัดกลุ่ม PO ตาม VendorID
+     * เดิมถ้าไม่มี VendorID จะ fallback เป็น '-' คงที่ ทำให้ผู้ขายทุกรายที่ไม่มีรหัสถูกรวมเป็นกลุ่มเดียวกันหมด (บั๊ก)
+     * ตอนนี้ใช้ "ชื่อผู้ขาย" (VendorName) เป็น key แทนเมื่อไม่มีรหัส เพื่อแยกแต่ละรายออกจากกัน
+     */
     private function groupPoByVendor($poJobs): array
     {
         $groups = [];
         foreach ($poJobs as $po) {
-            $vendorId = $po->VendorID ?: '-';
-            if (!isset($groups[$vendorId])) {
-                $groups[$vendorId] = [
-                    'customer_id'    => $po->VendorID,
+            $vendorId = $po->VendorID;
+            $groupKey = filled($vendorId) ? $vendorId : ('name:' . ($po->VendorName ?: 'ไม่ระบุชื่อผู้ขาย'));
+
+            if (!isset($groups[$groupKey])) {
+                $groups[$groupKey] = [
+                    'customer_id'    => $vendorId,
                     'customer_name'  => $po->VendorName,
                     'vendor_address' => $po->vendor_address ?? null,
                     'rows'           => [],
                 ];
             }
-            $groups[$vendorId]['rows'][] = ['po' => $po];
+            $groups[$groupKey]['rows'][] = ['po' => $po];
         }
         return $groups;
     }

@@ -148,6 +148,7 @@
 </style>
 </head>
 <body>
+@include('partials.user_badge')
 
 <div class="topbar">
   <span class="dot">📊</span> ประวัติใบเสนอราคา

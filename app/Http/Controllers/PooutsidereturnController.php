@@ -60,6 +60,7 @@ class PooutsidereturnController extends Controller
 
     public function dashboardreturn()
     {
+        $this->requireLogin();
         return view('pooutside.dashboardreturn');
     }
 

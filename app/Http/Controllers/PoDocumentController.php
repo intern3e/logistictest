@@ -938,6 +938,7 @@ if ($isSpecialCustomer) {
     }
     public function printNotes($so_detail_id)
     {
+        $this->requireLogin();
         $item = Bill::findOrFail($so_detail_id);
 
         $fontNormal     = base64_encode(file_get_contents(storage_path('fonts/THSarabun.ttf')));

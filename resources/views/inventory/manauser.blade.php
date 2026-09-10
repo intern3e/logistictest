@@ -188,6 +188,7 @@
                         <th>Role</th>
                         <th>Permissions</th>
                         <th>Page</th>
+                        <th>กลุ่ม</th>
                         <th>การจัดการ</th>
                     </tr>
                 </thead>
@@ -362,7 +363,7 @@
         tbody.innerHTML = '';
 
         if (!users.length) {
-            tbody.innerHTML = `<tr><td colspan="9" style="text-align:center;padding:40px;color:#9ca3af">ไม่มีข้อมูลผู้ใช้งาน</td></tr>`;
+            tbody.innerHTML = `<tr><td colspan="10" style="text-align:center;padding:40px;color:#9ca3af">ไม่มีข้อมูลผู้ใช้งาน</td></tr>`;
             return;
         }
 
@@ -382,6 +383,7 @@
                 <td>${user.role ? `<span class="badge b-role">${esc(user.role)}</span>` : '-'}</td>
                 <td>${permHtml}</td>
                 <td>${user.page ? `<span class="badge b-page">${esc(user.page)}</span>` : '-'}</td>
+                <td>${user.group ? `<span class="badge b-role">${esc(user.group)}</span>` : '-'}</td>
                 <td class="act-btns">
                     <button class="btn btn-edit" onclick="editRow(${index})">แก้ไข</button>
                     <button class="btn btn-del" onclick="deleteUser(${index})">ลบ</button>
@@ -409,6 +411,7 @@
             <td>${roleSelect('e-role-' + index, user.role)}</td>
             <td>${permissionCheckboxes('e-perm-' + index, permArray(user.permissions))}</td>
             <td><input class="finput" id="e-page-${index}" value="${esc(user.page)}" placeholder="เช่น pr"></td>
+            <td><input class="finput" id="e-group-${index}" value="${esc(user.group)}" placeholder="ชื่อ Sale หัวหน้ากลุ่ม"></td>
             <td class="act-btns">
                 <button class="btn btn-save" onclick="saveEdit(${index})">บันทึก</button>
                 <button class="btn btn-can" onclick="renderTable()">ยกเลิก</button>
@@ -426,6 +429,7 @@
             role: document.getElementById(`e-role-${index}`).value,
             permissions: readCheckedPermissions('e-perm-' + index),
             page: document.getElementById(`e-page-${index}`).value.trim(),
+            group: document.getElementById(`e-group-${index}`).value.trim(),
         };
 
         if (!d.username || !d.password || !d.name) {
@@ -502,6 +506,7 @@
             <td>${roleSelect('new-role', '')}</td>
             <td>${permissionCheckboxes('new-perm', [])}</td>
             <td><input class="finput" id="new-page" placeholder="เช่น pr (เว้นว่างได้)"></td>
+            <td><input class="finput" id="new-group" placeholder="ชื่อ Sale หัวหน้ากลุ่ม (เว้นว่างได้)"></td>
             <td class="act-btns">
                 <button class="btn btn-save" onclick="saveNewUser()">บันทึก</button>
                 <button class="btn btn-can" onclick="renderTable()">ยกเลิก</button>
@@ -519,6 +524,7 @@
             role: document.getElementById('new-role').value,
             permissions: readCheckedPermissions('new-perm'),
             page: document.getElementById('new-page').value.trim(),
+            group: document.getElementById('new-group').value.trim(),
         };
 
         if (!d.username || !d.password || !d.name) {

@@ -10,6 +10,7 @@ class AdminpoController extends Controller
 {
     public function dashboard(Request $request)
 {
+        $this->requireLogin($request);
     $date = $request->get('date');
     $message = null;
 
@@ -30,11 +31,13 @@ class AdminpoController extends Controller
 
     public function dashboardpo()
     {
+        $this->requireLogin();
         $pobill = Pobills::all();  // Fetch the data
         return view('po.adminpo', compact('pobill'));  // Pass data to the view
     }
     public function historypo(Request $request)
     {
+        $this->requireLogin($request);
         $date = $request->get('date');
         $message = null;  // กำหนดค่าเริ่มต้นให้กับตัวแปร $message
         

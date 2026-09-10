@@ -8,6 +8,7 @@ class OtRequestController extends Controller
 {
     public function index()
     {
+        $this->requireLogin();
         // ส่งข้อมูลไปแสดงผลที่หน้า resources/views/ot/dashboardot.blade.php
         return view('ot.adminOT');
     }

@@ -47,11 +47,13 @@ class DepositController extends Controller
 
     public function insertdeposit()
     {
+        $this->requireLogin();
         return view('deposit.insertdeposit');
     }
 
     public function dashboarddeposit(Request $request)
     {
+        $this->requireLogin($request);
         $soKeyword = trim($request->get('so_keyword', ''));
         $keyword   = trim($request->get('keyword', ''));
 
@@ -95,6 +97,7 @@ class DepositController extends Controller
 
     public function showBill($deposit_bill_id)
     {
+        $this->requireLogin();
         $items = deposit::where('deposit_bill_id', $deposit_bill_id)
             ->orderBy('id')
             ->get();
@@ -403,6 +406,7 @@ class DepositController extends Controller
 
     public function botdeposit(Request $request)
     {
+        $this->requireLogin($request);
         $soKeyword = trim($request->get('so_keyword', ''));
 
         $query = deposit::query()

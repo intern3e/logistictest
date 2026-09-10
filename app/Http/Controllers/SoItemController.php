@@ -33,7 +33,11 @@ class SoItemController extends Controller
         $raw = curl_exec($ch); $status = curl_getinfo($ch, CURLINFO_HTTP_CODE); curl_close($ch);
         return ($status === 200 && $raw) ? (json_decode($raw, true) ?: []) : [];
     }
-    public function index(Request $request) { return view('sale.SoItem'); }
+    public function index(Request $request)
+    {
+        $this->requireLogin($request);
+        return view('sale.SoItem');
+    }
 
     public function store(Request $request)
     {

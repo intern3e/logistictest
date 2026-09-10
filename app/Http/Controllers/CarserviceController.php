@@ -8,6 +8,7 @@ class CarserviceController extends Controller
 {
         public function dashboardcarsevice(Request $request)
 {
+            $this->requireLogin($request);
     return view('sale.dashboardcarservice');
 }
 }

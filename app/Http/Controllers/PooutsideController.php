@@ -25,6 +25,7 @@ class PooutsideController extends Controller
 
   public function dashboard(Request $request, $name = 'Guest')
 {
+      $this->requireLogin($request);
     $userName = urldecode($name);
 
     return view('pooutside.dashboard', [
@@ -575,6 +576,7 @@ class PooutsideController extends Controller
 
         public function invoicePage(Request $request)
     {
+            $this->requireLogin($request);
         return view('pooutside.invoice_search');
     }
 

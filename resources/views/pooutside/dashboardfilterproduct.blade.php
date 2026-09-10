@@ -175,6 +175,7 @@
 </style>
 </head>
 <body>
+@include('partials.user_badge')
 
 <div class="topbar">
     <h1>

@@ -27,8 +27,6 @@ Route::post('/sso/issue-ticket', [LoginController::class, 'issueTicket']);
 use App\Models\Bill_Detail;
     use App\Http\Controllers\salecontroller;
     Route::get('/', [salecontroller::class, 'home'])->name('home');
-    Route::get('/loginsale', [salecontroller::class, 'showLoginForm'])->name('sale.loginsale');
-    Route::post('/loginsale', [salecontroller::class, 'login'])->name('sale.loginsale');
     Route::get('/SoItem', [SaleController::class, 'dashboard'])->name('sale.dashboard');
     Route::get('/dashboard', [SaleController::class, 'dashboard']);
     Route::get('/insertdata', [salecontroller::class, 'insertdata'])->name('sale.insertdata'); // GET
@@ -80,7 +78,7 @@ Route::post('/update-statuspdfcan', [admincontroller::class, 'updateStatuspdfcan
 Route::post('/update-delivery-date', [admincontroller::class, 'updateDeliveryDate'])->name('update.delivery.date');
 Route::get('/upload', function () {
     return view('upload');
-});
+})->middleware('auth');
 
 Route::post('/upload-pdf', [admincontroller::class, 'upload'])->name('upload.pdf');
 Route::post('/upload/billissue', [admincontroller::class, 'uploadBillIssue'])->name('upload.billissue');
@@ -291,7 +289,7 @@ Route::post('/pooutside/mark-cancelled-bulk', [DepositController::class, 'markPo
      ->name('pooutside.markCancelledBulk');
 Route::get('/vendor-filter-product', function () {
     return view('pooutside.dashboardfilterproduct');
-});
+})->middleware('auth');
 use App\Http\Controllers\TechnicianController;
 Route::get('/dashboardtechnician', [TechnicianController::class, 'index'])->name('technician.dashboard');
 Route::post('/technicians/store',          [TechnicianController::class, 'storeTechnician'])->name('tech.store');
@@ -451,3 +449,6 @@ Route::post('/api/receivePO/cancel', [MobilePoappController::class, 'cancelRecei
 
 use App\Http\Controllers\OtRequestController;
 Route::get('/adminOT', [OtRequestController::class, 'index']);
+
+use App\Http\Controllers\ShelfsaleController;
+Route::get('/shelfsale', [ShelfsaleController::class, 'index']);

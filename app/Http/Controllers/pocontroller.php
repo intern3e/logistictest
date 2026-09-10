@@ -10,11 +10,13 @@ class PoController extends Controller
 {
     public function dashboard(Request $request)
     {
+        $this->requireLogin($request);
         return view('po.dashboardpo');
     }
 
     public function dashboardpo(Request $request)
     {
+        $this->requireLogin($request);
         $date = $request->get('date');
         $message = null;  // กำหนดค่าเริ่มต้นให้กับตัวแปร $message
         
@@ -38,6 +40,7 @@ class PoController extends Controller
     }
     public function insertpo()
     {
+        $this->requireLogin();
         return view('po.insertpo');
     }
 

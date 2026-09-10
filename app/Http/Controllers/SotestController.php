@@ -12,6 +12,7 @@ class SotestController extends Controller
 {
     public function dashboard(Request $request)
     {
+        $this->requireLogin($request);
         $date = $request->get('date');
         $message = null;
 

@@ -24,31 +24,7 @@ class MobilePoappController extends Controller
     const LEGACY_CONNECTION = 'mysql_3e';
     public function index(Request $request)
     {
-        $ticket = $request->input('ticket');
-
-        if ($ticket && !Auth::guard('web')->check()) {
-            $ticketRecord = SsoTicket::where('ticket', $ticket)
-                ->where('client_key', '3e')
-                ->first();
-
-            if ($ticketRecord && $ticketRecord->markAsUsed()) {
-                $user = UserAuth::find($ticketRecord->id_emp);
-                if ($user && $user->is_active) {
-                    Auth::guard('web')->login($user);
-                    Log::info("mobile-app: SSO login success user={$user->id_emp}");
-                } else {
-                    Log::warning("mobile-app: ticket valid but user not found/inactive id_emp={$ticketRecord->id_emp}");
-                }
-            } else {
-                Log::warning("mobile-app: invalid or expired ticket={$ticket}");
-            }
-        }
-
-        if (!Auth::guard('web')->check()) {
-            return redirect()->guest(route('login'));
-        }
-
-        $user = Auth::guard('web')->user();
+        $user = $this->requireLogin($request, 'mobile-app');
 
         if (!in_array($user->role, ['admin', 'stock', 'store'], true)) {
             abort(403, 'คุณไม่มีสิทธิ์เข้าใช้งานหน้านี้');

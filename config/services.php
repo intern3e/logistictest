@@ -40,4 +40,15 @@ return [
         'url' => env('NEST_PUBLIC_URL'),
         'public_key' => env('NEST_PUBLIC_KEY'),
     ],
+
+    /*
+    | SSO client: server_update
+    | local: http://192.168.1.169:8000  |  prod: http://server_update:8000
+    | เวลาขึ้น prod แก้แค่ SSO_CLIENT_UPDATE_URL ใน .env แล้วรัน:
+    |   php artisan db:seed --class=SsoClientUpdateSeeder
+    */
+    'sso' => [
+        'client_update_url'    => env('SSO_CLIENT_UPDATE_URL', 'http://192.168.1.169:8000'),
+        'client_update_secret' => env('SSO_CLIENT_UPDATE_SECRET', 'server_update'),
+    ],
 ];
