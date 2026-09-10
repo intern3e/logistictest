@@ -40,7 +40,7 @@ class AdminController extends Controller
     }
     public function dashboardpdf(Request $request)
     {
-        $this->requireLogin($request);
+        // หน้านี้ไม่ต้อง login
         $date = $request->get('date');
         $message = null;  // กำหนดค่าเริ่มต้นให้กับตัวแปร $message
         

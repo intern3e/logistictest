@@ -406,7 +406,7 @@ class DepositController extends Controller
 
     public function botdeposit(Request $request)
     {
-        $this->requireLogin($request);
+        // หน้า bot — ไม่ต้อง login (ให้ระบบ/บอทเรียกดูได้)
         $soKeyword = trim($request->get('so_keyword', ''));
 
         $query = deposit::query()
