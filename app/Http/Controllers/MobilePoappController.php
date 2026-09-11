@@ -32,6 +32,86 @@ class MobilePoappController extends Controller
 
         return view('po.mobile_app');
     }
+    /**
+     * ค้นหา PO ตามชื่อซัพพลายเออร์ จาก polist (DB เก่า 3e) โดยตรง — ไม่พึ่ง API
+     * ใช้ในหน้า mobile-app: พิมพ์ชื่อซัพ -> เด้งรายการ PO ที่สั่งกับซัพนั้น
+     */
+    public function poBySupplier(Request $request)
+    {
+        $request->validate(['sup' => 'required|string|max:100']);
+        $sup = trim($request->query('sup'));
+
+        $rows = DB::connection(self::LEGACY_CONNECTION)->table('polist')
+            ->where('VendorName', 'LIKE', '%' . $sup . '%')
+            ->whereRaw("UPPER(TRIM(COALESCE(POstatus, ''))) NOT IN ('COMPLETED', 'CANCELLED')")
+            ->whereNotNull('PONum')->where('PONum', '<>', '')
+            ->orderByDesc('PONum')
+            ->limit(500)
+            ->get(['PONum', 'VendorName', 'SONum', 'POstatus']);
+
+        // ตัด PO ที่ "รับเข้า + เช็คเอาท์" ในระบบใหม่แล้วออก (polist ระบบเก่าไม่ sync สถานะนี้)
+        // เหลือเฉพาะงานที่ยังไม่ได้รับจริง ๆ
+        $candidates = $rows->pluck('PONum')
+            ->flatMap(fn ($p) => [$p, 'PO' . $p])->unique()->values()->all();
+        $checkedOut = PoReceive::whereIn('po_id', $candidates)
+            ->whereNotNull('checkout_by')
+            ->pluck('po_id')
+            ->map(fn ($id) => preg_replace('/^PO/i', '', (string) $id))
+            ->flip();
+        $rows = $rows->reject(fn ($r) => $checkedOut->has($r->PONum))
+            ->take(300)->values();
+
+        // ดึงชื่อสินค้าของแต่ละ PO จาก MSSQL (POHD -> PODT) ตรง ไม่พึ่ง API
+        $itemsByPo = $this->fetchPoItemsFromMssql($rows->pluck('PONum')->all());
+
+        return response()->json([
+            'ok'    => true,
+            'items' => $rows->map(fn ($r) => [
+                'po_num'      => $r->PONum,
+                'vendor_name' => $r->VendorName,
+                'so_num'      => $r->SONum,
+                'status'      => $r->POstatus,
+                'products'    => $itemsByPo->get($r->PONum, collect())->values(),
+            ])->values(),
+        ]);
+    }
+
+    /**
+     * ดึงชื่อสินค้าของ PO จาก MSSQL (POHD -> PODT) ตรง (แทนการยิง HTTP getPODetail)
+     * คืน keyed by เลข PO -> collection ของ {name, qty}
+     */
+    private function fetchPoItemsFromMssql(array $poNums): \Illuminate\Support\Collection
+    {
+        $poNums = array_values(array_filter(array_unique($poNums)));
+        if (!$poNums) return collect();
+
+        try {
+            $docuToPo = collect($poNums)->mapWithKeys(fn ($p) => ['PO' . $p => $p]);
+
+            $headers = DB::connection('mssql_account03')->table('POHD')
+                ->whereIn('DocuNo', $docuToPo->keys()->all())
+                ->get(['POID', 'DocuNo']);
+            if ($headers->isEmpty()) return collect();
+
+            $poidToPo = $headers->mapWithKeys(fn ($h) => [$h->POID => $docuToPo->get($h->DocuNo)]);
+
+            $items = DB::connection('mssql_account03')->table('PODT')
+                ->whereIn('POID', $poidToPo->keys()->all())
+                ->where('CancelFlag', '<>', 'Y')
+                ->get(['POID', 'GoodName', 'GoodQty2']);
+
+            return $items->groupBy('POID')->mapWithKeys(fn ($lines, $poid) => [
+                $poidToPo->get($poid) => $lines->map(fn ($l) => [
+                    'name' => $l->GoodName ?: '—',
+                    'qty'  => (float) $l->GoodQty2,
+                ])->values(),
+            ]);
+        } catch (\Throwable $e) {
+            Log::warning('fetchPoItemsFromMssql failed: ' . $e->getMessage());
+            return collect();
+        }
+    }
+
     public function getPODetail(Request $request)
     {
         $request->validate(['PONum' => 'required|string|max:50']);

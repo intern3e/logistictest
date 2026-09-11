@@ -92,6 +92,19 @@
     }
     .searchrow button:active{background:var(--blue-dark)}
     .searchrow button:disabled{background:var(--pale);color:#fff}
+    .searchrow{margin-top:8px}
+    .sup-result{display:flex;flex-direction:column;gap:6px;margin-top:8px}
+    .sup-po-item{display:flex;flex-direction:column;gap:6px;width:100%;
+        text-align:left;background:#fff;border:1px solid #e2e8f0;border-left:4px solid var(--blue);
+        border-radius:8px;padding:10px 12px;cursor:pointer}
+    .sup-po-item:active{background:#f0f7ff}
+    .sup-po-top{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+    .sup-po-num{font-weight:700;color:var(--blue-dark);font-size:15px}
+    .sup-po-vendor{color:#475569;font-size:13px;flex:1}
+    .sup-po-so{color:#94a3b8;font-size:12px}
+    .sup-po-prods{display:flex;flex-direction:column;gap:2px;border-top:1px dashed #e2e8f0;padding-top:6px}
+    .sup-po-prod{display:flex;justify-content:space-between;gap:8px;color:#334155;font-size:13px}
+    .sup-po-prod span{color:#64748b;font-variant-numeric:tabular-nums}
 
     /* ===== Desktop: two-column layout ===== */
     @media(min-width:768px){
@@ -458,6 +471,12 @@
                oninput="formatPOInput(this)" onkeydown="if(event.key==='Enter')searchPO()">
         <button id="btnSearch" onclick="searchPO()">ค้นหา</button>
     </div>
+    <div class="searchrow">
+        <input type="text" id="supInput" placeholder="ชื่อซัพพลายเออร์" autocomplete="off"
+               onkeydown="if(event.key==='Enter')searchSupplier()">
+        <button id="btnSup" onclick="searchSupplier()">ค้นหาซัพ</button>
+    </div>
+    <div id="supResult" class="sup-result"></div>
 </div>
 
 <!-- PO Header -->
@@ -590,6 +609,18 @@ if(!RECEIVED_BY){
     throw new Error('access_denied: not logged in');
 }
 document.getElementById('userName').textContent = RECEIVED_BY;
+
+// ตั้งเครื่องพิมพ์เริ่มต้นเป็น "สโตร์" ให้ผู้ใช้ชื่อ บาส / tuk
+(function(){
+    const n = (RECEIVED_BY || '').trim().toLowerCase();
+    if (n.includes('บาส') || n.includes('tuk')) {
+        const sel = document.getElementById('printerSelect');
+        if (sel) {
+            sel.value = 'TSC TTP-247 store'; // สโตร์
+            if (typeof onPrinterChange === 'function') onPrinterChange();
+        }
+    }
+})();
 
 const SHELF_OPTIONS = [
   "1A01","1Kโบว์","1กวาง","1กี้","1ตี๋/พลอย","1ต่าย","1ท๊อป","1นภา",
@@ -855,6 +886,36 @@ function showNotFound(poNumber){
 }
 
 /* ========== Search PO ========== */
+async function searchSupplier(){
+    const sup = $('supInput').value.trim();
+    const box = $('supResult');
+    if(!sup){ toast('กรุณาพิมพ์ชื่อซัพก่อน','error'); return; }
+    box.innerHTML = '<div style="padding:10px;color:#888;">กำลังค้นหา PO ของ ' + esc(sup) + ' ...</div>';
+    try{
+        const res = await fetch(`/api/poBySupplier?sup=${encodeURIComponent(sup)}`, {headers:{'Accept':'application/json'}});
+        const j = await res.json().catch(()=>null);
+        const items = (j && j.items) || [];
+        if(!items.length){ box.innerHTML = '<div style="padding:10px;color:#c0392b;">ไม่พบ PO ของซัพนี้</div>'; return; }
+        box.innerHTML = items.map(it => {
+            const prods = (it.products||[]).map(p =>
+                `<div class="sup-po-prod">• ${esc(p.name)}<span>x${p.qty}</span></div>`).join('');
+            return `<button type="button" class="sup-po-item" onclick="pickPO('${esc(it.po_num)}')">`
+              + `<div class="sup-po-top">`
+              +   `<span class="sup-po-num">${esc(it.po_num)}</span>`
+              +   `<span class="sup-po-vendor">${esc(it.vendor_name||'')}</span>`
+              +   (it.so_num ? `<span class="sup-po-so">SO ${esc(it.so_num)}</span>` : '')
+              + `</div>`
+              + (prods ? `<div class="sup-po-prods">${prods}</div>` : '')
+              + `</button>`;
+        }).join('');
+    }catch(e){ box.innerHTML = '<div style="padding:10px;color:#c0392b;">ค้นหาไม่สำเร็จ</div>'; }
+}
+function pickPO(po){
+    $('poInput').value = po;
+    $('supResult').innerHTML = '';
+    searchPO(); // ไปหน้ารับเข้าเหมือนค้นหาด้วยเลข PO นั้น
+}
+
 async function searchPO(){
     const poNumber = $('poInput').value.trim();
     if(!poNumber){ toast('กรุณาพิมพ์เลขที่ PO ก่อน','error'); return; }

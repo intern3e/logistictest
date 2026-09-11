@@ -20,6 +20,7 @@ use Illuminate\Support\Facades\Cache;
 class StoreController extends Controller
 {
     const LEGACY_CONNECTION = 'mysql_3e';
+    const MSSQL_CONNECTION  = 'mssql_account03';
     const LEGACY_PO_DETAIL_URL = 'http://server_update:8000/api/getPODetail';
 
     /** จำนวนใบต่อหน้าของหน้าของออก (ด่าน 3) */
@@ -211,21 +212,9 @@ class StoreController extends Controller
             $remaining = $normalNums->diff($data->keys())->values();
 
             if ($remaining->isNotEmpty()) {
-                $needFallback = collect();
-                foreach ($remaining->chunk(self::LEGACY_PO_ARRAY_BATCH_SIZE) as $chunk) {
-                    $chunkNums   = $chunk->values()->all();
-                    $batchResult = $this->fetchLegacyPoItemsArrayRequest($chunkNums);
-
-                    if ($batchResult === null) {
-                        $needFallback = $needFallback->merge($chunkNums);
-                    } else {
-                        $data = $data->merge($batchResult);
-                    }
-                }
-
-                if ($needFallback->isNotEmpty()) {
-                    $data = $data->merge($this->fetchLegacyPoItemsPooled($needFallback->values()->all()));
-                }
+                // ดึงชื่อสินค้าจาก MSSQL (POHD/PODT) โดยตรง — วิธีเดียวกับหน้า store_location
+                // ไม่ต้องยิง HTTP getPODetail ไป server เก่าอีกต่อไป (เร็วกว่ามาก)
+                $data = $data->merge($this->fetchMssqlPoItems($remaining->all()));
 
                 $remaining->each(function ($num) use ($data, $cacheKey) {
                     $items = $data->get($num);
@@ -246,6 +235,43 @@ class StoreController extends Controller
         });
 
         return $data;
+    }
+
+    /**
+     * ดึงชื่อสินค้าของ PO จาก MSSQL (POHD -> PODT) โดยตรง แทนการยิง HTTP getPODetail
+     * คืนค่า keyed by เลข PO -> collection ของ {item_name, item_quantity}
+     */
+    private function fetchMssqlPoItems(array $poNums): \Illuminate\Support\Collection
+    {
+        $poNums = array_values(array_filter($poNums));
+        if (!$poNums) return collect();
+
+        try {
+            // DocuNo ใน POHD = 'PO' + เลข PO
+            $docuToPo = collect($poNums)->mapWithKeys(fn ($p) => ['PO' . $p => $p]);
+
+            $headers = DB::connection(self::MSSQL_CONNECTION)->table('POHD')
+                ->whereIn('DocuNo', $docuToPo->keys()->all())
+                ->get(['POID', 'DocuNo']);
+            if ($headers->isEmpty()) return collect();
+
+            $poidToPo = $headers->mapWithKeys(fn ($h) => [$h->POID => $docuToPo->get($h->DocuNo)]);
+
+            $items = DB::connection(self::MSSQL_CONNECTION)->table('PODT')
+                ->whereIn('POID', $poidToPo->keys()->all())
+                ->where('CancelFlag', '<>', 'Y')
+                ->get(['POID', 'GoodName', 'GoodQty2']);
+
+            return $items->groupBy('POID')->mapWithKeys(fn ($lines, $poid) => [
+                $poidToPo->get($poid) => $lines->map(fn ($l) => (object) [
+                    'item_name'     => $l->GoodName ?: '—',
+                    'item_quantity' => (float) $l->GoodQty2,
+                ])->values(),
+            ]);
+        } catch (\Throwable $e) {
+            Log::warning('fetchMssqlPoItems failed: ' . $e->getMessage());
+            return collect();
+        }
     }
 
     private function fetchInternalPoLineItems(array $poNums): \Illuminate\Support\Collection
@@ -610,12 +636,19 @@ class StoreController extends Controller
             ->values()
             ->all();
 
+        // ระบบเก่า (fallback เมื่อระบบใหม่ไม่มี emp_picker): ถือว่า "จัดสำเร็จ"
+        // ถ้าเลขบิลอยู่ใน BILL_STATUS_HISTORY ที่ DeliveryStatus >= '20' (ผ่านขั้น "ของครบ" แล้ว)
+        // status: 10=รอรับของ(ยังไม่นับ), 20=ของครบ, 21=ตีกลับ, 30=บิลออก, 80=ส่งไม่สำเร็จ, 90=ส่งสำเร็จ
+        // ชื่อผู้จัดใช้ bills.recNameBill (join มา) ไม่ใช่ ChangedBy (ที่เป็น SYSTEM)
         $legacyPickers = $needFallback
             ? DB::connection(self::LEGACY_CONNECTION)
-                ->table('bills')
-                ->whereIn('billNo', $needFallback)
-                ->get(['billNo', 'recNameBill', 'dateRecBill'])
-                ->keyBy('billNo')
+                ->table('BILL_STATUS_HISTORY as h')
+                ->leftJoin('bills as b', 'b.BillNo', '=', 'h.BillNo')
+                ->whereIn('h.BillNo', $needFallback)
+                ->where('h.DeliveryStatus', '>=', '20')
+                ->orderBy('h.ChangedDate')
+                ->get(['h.BillNo', 'b.recNameBill', 'b.dateRecBill'])
+                ->keyBy('BillNo')
             : collect();
 
         return $rows
@@ -624,10 +657,14 @@ class StoreController extends Controller
 
                 $pickedBy = $row->{self::TBLBILL_PICKER_COLUMN} ?? null;
                 $pickedAt = $row->{self::TBLBILL_PICKER_TIME_COLUMN} ?? null;
+                $isPicked = !empty($pickedBy); // ระบบใหม่: จัดสำเร็จเมื่อมี emp_picker
 
-                if (empty($pickedBy) && $dnNo && $legacyPickers->has($dnNo)) {
+                // ระบบเก่า (fallback): จัดสำเร็จเมื่อเลขบิลอยู่ใน BILL_STATUS_HISTORY (DeliveryStatus>=20)
+                // ชื่อผู้จัดใช้ bills.recNameBill (ไม่ใช่ UpdatedBy/ChangedBy)
+                if (!$isPicked && $dnNo && $legacyPickers->has($dnNo)) {
                     $legacy   = $legacyPickers->get($dnNo);
-                    $pickedBy = $legacy->recNameBill ?: null;
+                    $isPicked = true;
+                    $pickedBy = $legacy->recNameBill ?: null; // ชื่อผู้จัดจากระบบเก่า
                     $pickedAt = $legacy->dateRecBill ?: null;
                 }
                 return (object) [
@@ -638,7 +675,7 @@ class StoreController extends Controller
                     'customer_id'   => $row->{self::TBLBILL_CUSTOMER_ID_COLUMN} ?? null,
                     'opened_by'     => $row->{self::TBLBILL_OPENED_BY_COLUMN} ?? null,
                     'cancelled'     => (int) ($row->status ?? 0) === self::TBLBILL_STATUS_CANCELLED,
-                    'picked'        => !empty($pickedBy),
+                    'picked'        => $isPicked,
                     'picked_by'     => $pickedBy,
                     'picked_at'     => $pickedAt,
                 ];

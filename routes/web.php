@@ -443,6 +443,7 @@ Route::post('/apis/store/legacyPoItems', [StoreController::class, 'itemsDetailBa
 use App\Http\Controllers\MobilePoappController;
 Route::match(['get', 'post'], '/mobile-app', [MobilePoappController::class, 'index'])->name('mobile.app');
 Route::get('/api/getPODetail', [MobilePoappController::class, 'getPODetail'])->name('mobile.po.detail');
+Route::get('/api/poBySupplier', [MobilePoappController::class, 'poBySupplier'])->name('mobile.po.bySupplier');
 Route::post('/api/receivePO', [MobilePoappController::class, 'receivePO'])->name('mobile.po.receive');
 Route::get('/api/receivePO/history', [MobilePoappController::class, 'history'])->name('mobile.po.receive.history');
 Route::post('/api/receivePO/cancel', [MobilePoappController::class, 'cancelReceive']);
