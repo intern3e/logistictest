@@ -596,6 +596,12 @@ const CANCEL_URL = '{{ url('/api/receivePO/cancel') }}';
 const CSRF_TOKEN = '{{ csrf_token() }}';
 let lastFullyReceivedPO = null;
 const RECEIVED_BY = @json(Auth::user()->name ?? '');
+
+// เครื่องพิมพ์ default ตามชื่อผู้ใช้ (บาส/tuk = สโตร์) — เป็นแค่ค่าเริ่มต้นที่ถูกเลือกให้ ผู้ใช้เปลี่ยนเองได้
+const DEFAULT_PRINTER = (function(){
+    const n = (RECEIVED_BY || '').trim().toLowerCase();
+    return (n.includes('บาส') || n.includes('tuk')) ? 'TSC TTP-247 store' : '';
+})();
 const IS_ADMIN = @json(Auth::user() && Auth::user()->role === 'admin');
 
 if(!RECEIVED_BY){
@@ -610,20 +616,17 @@ if(!RECEIVED_BY){
 }
 document.getElementById('userName').textContent = RECEIVED_BY;
 
-// ตั้งเครื่องพิมพ์เริ่มต้นเป็น "สโตร์" ให้ผู้ใช้ชื่อ บาส / tuk
+// ตั้งค่าเริ่มต้นเครื่องพิมพ์ให้ (บาส/tuk = สโตร์) ตอนโหลดหน้า
 // NOTE: ใช้ document.getElementById ตรง ๆ ห้ามเรียก onPrinterChange/$ ตรงนี้
 // เพราะ const $ ถูกประกาศทีหลัง (จะเจอ TDZ error ทำให้ทั้ง script ล่ม)
-(function(){
-    const n = (RECEIVED_BY || '').trim().toLowerCase();
-    if (n.includes('บาส') || n.includes('tuk')) {
-        const sel = document.getElementById('printerSelect');
-        if (sel) {
-            sel.value = 'TSC TTP-247 store'; // สโตร์
-            const sc = document.getElementById('sheetCtrl');
-            if (sc) sc.style.display = 'flex'; // โชว์ช่องจำนวนแผ่น (เหมือน onPrinterChange)
-        }
+if (DEFAULT_PRINTER) {
+    const sel = document.getElementById('printerSelect');
+    if (sel) {
+        sel.value = DEFAULT_PRINTER;
+        const sc = document.getElementById('sheetCtrl');
+        if (sc) sc.style.display = 'flex';
     }
-})();
+}
 
 const SHELF_OPTIONS = [
   "1A01","1Kโบว์","1กวาง","1กี้","1ตี๋/พลอย","1ต่าย","1ท๊อป","1นภา",
@@ -871,7 +874,7 @@ function clampSheet(){
     input.value = val;
 }
 function resetPrinter(){
-    $('printerSelect').value = '';
+    $('printerSelect').value = DEFAULT_PRINTER; // คืนค่าเป็น default ของผู้ใช้ (บาส/tuk = สโตร์)
     $('sheetQty').value = 1;
     onPrinterChange();
 }
