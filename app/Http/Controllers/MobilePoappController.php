@@ -61,26 +61,30 @@ class MobilePoappController extends Controller
         $rows = $rows->reject(fn ($r) => $checkedOut->has($r->PONum))
             ->take(300)->values();
 
-        // ดึงชื่อสินค้าของแต่ละ PO จาก MSSQL (POHD -> PODT) ตรง
-        $itemsByPo = $this->fetchPoItemsFromMssql($rows->pluck('PONum')->all());
+        // ดึงชื่อสินค้า + ยอดรวมของแต่ละ PO จาก MSSQL (POHD -> PODT) ตรง
+        $detailByPo = $this->fetchPoItemsFromMssql($rows->pluck('PONum')->all());
 
         // fallback: PO ที่ MSSQL ดึงไม่ได้ (เช่น prod ต่อ account03 ไม่ได้) -> ยิง HTTP getPODetail
         $missing = $rows->pluck('PONum')
-            ->filter(fn ($p) => !$itemsByPo->has($p) || $itemsByPo->get($p)->isEmpty())
+            ->filter(fn ($p) => !$detailByPo->has($p) || empty($detailByPo->get($p)['items']))
             ->values()->all();
         if (!empty($missing)) {
-            $itemsByPo = $itemsByPo->merge($this->fetchPoItemsFromHttp($missing));
+            $detailByPo = $detailByPo->merge($this->fetchPoItemsFromHttp($missing));
         }
 
         return response()->json([
             'ok'    => true,
-            'items' => $rows->map(fn ($r) => [
-                'po_num'      => $r->PONum,
-                'vendor_name' => $r->VendorName,
-                'so_num'      => $r->SONum,
-                'status'      => $r->POstatus,
-                'products'    => $itemsByPo->get($r->PONum, collect())->values(),
-            ])->values(),
+            'items' => $rows->map(function ($r) use ($detailByPo) {
+                $d = $detailByPo->get($r->PONum, []);
+                return [
+                    'po_num'      => $r->PONum,
+                    'vendor_name' => $r->VendorName,
+                    'so_num'      => $r->SONum,
+                    'status'      => $r->POstatus,
+                    'products'    => $d['items'] ?? [],
+                    'amount'      => (float) ($d['amount'] ?? 0),
+                ];
+            })->values(),
         ]);
     }
 
@@ -96,9 +100,10 @@ class MobilePoappController extends Controller
         try {
             $docuToPo = collect($poNums)->mapWithKeys(fn ($p) => ['PO' . $p => $p]);
 
+            // POHD: POID + ยอดรวมของ PO (SumGoodAmnt) เหมือนที่ so/index ใช้
             $headers = DB::connection('mssql_account03')->table('POHD')
                 ->whereIn('DocuNo', $docuToPo->keys()->all())
-                ->get(['POID', 'DocuNo']);
+                ->get(['POID', 'DocuNo', 'SumGoodAmnt']);
             if ($headers->isEmpty()) return collect();
 
             $poidToPo = $headers->mapWithKeys(fn ($h) => [$h->POID => $docuToPo->get($h->DocuNo)]);
@@ -108,11 +113,19 @@ class MobilePoappController extends Controller
                 ->where('CancelFlag', '<>', 'Y')
                 ->get(['POID', 'GoodName', 'GoodQty2']);
 
-            return $items->groupBy('POID')->mapWithKeys(fn ($lines, $poid) => [
+            $itemsByPo = $items->groupBy('POID')->mapWithKeys(fn ($lines, $poid) => [
                 $poidToPo->get($poid) => $lines->map(fn ($l) => [
                     'name' => $l->GoodName ?: '—',
                     'qty'  => (float) $l->GoodQty2,
-                ])->values(),
+                ])->values()->all(),
+            ]);
+
+            // คืน keyed by เลข PO -> {items, amount}
+            return $headers->mapWithKeys(fn ($h) => [
+                $docuToPo->get($h->DocuNo) => [
+                    'items'  => $itemsByPo->get($docuToPo->get($h->DocuNo), []),
+                    'amount' => (float) $h->SumGoodAmnt,
+                ],
             ]);
         } catch (\Throwable $e) {
             Log::warning('fetchPoItemsFromMssql failed: ' . $e->getMessage());
@@ -148,13 +161,17 @@ class MobilePoappController extends Controller
                         $data = is_array($data['data']) && isset($data['data'][0]) ? $data['data'][0] : $data['data'];
                     }
 
-                    $lines = $data['ms_podt'] ?? [];
-                    if (!is_array($lines) || empty($lines)) continue;
+                    $lines  = $data['ms_podt'] ?? [];
+                    $amount = (float) ($data['SumGoodAmnt'] ?? 0);
+                    if ((!is_array($lines) || empty($lines)) && $amount == 0) continue;
 
-                    $result->put($po, collect($lines)->map(fn ($l) => [
-                        'name' => $l['GoodName'] ?? '—',
-                        'qty'  => (float) ($l['GoodQty2'] ?? 0),
-                    ])->values());
+                    $result->put($po, [
+                        'items'  => is_array($lines) ? collect($lines)->map(fn ($l) => [
+                            'name' => $l['GoodName'] ?? '—',
+                            'qty'  => (float) ($l['GoodQty2'] ?? 0),
+                        ])->values()->all() : [],
+                        'amount' => $amount,
+                    ]);
                 }
             }
         } catch (\Throwable $e) {

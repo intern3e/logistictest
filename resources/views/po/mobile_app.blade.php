@@ -102,9 +102,12 @@
     .sup-po-num{font-weight:700;color:var(--blue-dark);font-size:15px}
     .sup-po-vendor{color:#475569;font-size:13px;flex:1}
     .sup-po-so{color:#94a3b8;font-size:12px}
-    .sup-po-prods{display:flex;flex-direction:column;gap:2px;border-top:1px dashed #e2e8f0;padding-top:6px}
-    .sup-po-prod{display:flex;justify-content:space-between;gap:8px;color:#334155;font-size:13px}
-    .sup-po-prod span{color:#64748b;font-variant-numeric:tabular-nums}
+    .sup-po-table{width:100%;border-collapse:collapse;margin-top:6px;font-size:13px}
+    .sup-po-table th,.sup-po-table td{border:1px solid #e2e8f0;padding:4px 8px;text-align:left;color:#334155}
+    .sup-po-table th{background:#f1f5f9;font-weight:600}
+    .sup-po-table .sup-qty{text-align:right;white-space:nowrap;font-variant-numeric:tabular-nums;width:70px}
+    .sup-po-amount{margin-top:6px;text-align:right;font-size:13px;color:#0f5132}
+    .sup-po-amount b{color:#0f5132;font-variant-numeric:tabular-nums}
 
     /* ===== Desktop: two-column layout ===== */
     @media(min-width:768px){
@@ -902,16 +905,21 @@ async function searchSupplier(){
         const j = await res.json().catch(()=>null);
         const items = (j && j.items) || [];
         if(!items.length){ box.innerHTML = '<div style="padding:10px;color:#c0392b;">ไม่พบ PO ของซัพนี้</div>'; return; }
+        const fmt = n => (Number(n)||0).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});
         box.innerHTML = items.map(it => {
-            const prods = (it.products||[]).map(p =>
-                `<div class="sup-po-prod">• ${esc(p.name)}<span>x${p.qty}</span></div>`).join('');
+            const rows = (it.products||[]).map(p =>
+                `<tr><td>${esc(p.name)}</td><td class="sup-qty">${p.qty}</td></tr>`).join('');
+            const table = rows
+                ? `<table class="sup-po-table"><thead><tr><th>ชื่อสินค้า</th><th class="sup-qty">จำนวน</th></tr></thead><tbody>${rows}</tbody></table>`
+                : '';
             return `<button type="button" class="sup-po-item" onclick="pickPO('${esc(it.po_num)}')">`
               + `<div class="sup-po-top">`
               +   `<span class="sup-po-num">${esc(it.po_num)}</span>`
               +   `<span class="sup-po-vendor">${esc(it.vendor_name||'')}</span>`
               +   (it.so_num ? `<span class="sup-po-so">SO ${esc(it.so_num)}</span>` : '')
               + `</div>`
-              + (prods ? `<div class="sup-po-prods">${prods}</div>` : '')
+              + table
+              + `<div class="sup-po-amount">ยอด: <b>${fmt(it.amount)}</b> ฿</div>`
               + `</button>`;
         }).join('');
     }catch(e){ box.innerHTML = '<div style="padding:10px;color:#c0392b;">ค้นหาไม่สำเร็จ</div>'; }
