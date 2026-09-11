@@ -611,13 +611,16 @@ if(!RECEIVED_BY){
 document.getElementById('userName').textContent = RECEIVED_BY;
 
 // ตั้งเครื่องพิมพ์เริ่มต้นเป็น "สโตร์" ให้ผู้ใช้ชื่อ บาส / tuk
+// NOTE: ใช้ document.getElementById ตรง ๆ ห้ามเรียก onPrinterChange/$ ตรงนี้
+// เพราะ const $ ถูกประกาศทีหลัง (จะเจอ TDZ error ทำให้ทั้ง script ล่ม)
 (function(){
     const n = (RECEIVED_BY || '').trim().toLowerCase();
     if (n.includes('บาส') || n.includes('tuk')) {
         const sel = document.getElementById('printerSelect');
         if (sel) {
             sel.value = 'TSC TTP-247 store'; // สโตร์
-            if (typeof onPrinterChange === 'function') onPrinterChange();
+            const sc = document.getElementById('sheetCtrl');
+            if (sc) sc.style.display = 'flex'; // โชว์ช่องจำนวนแผ่น (เหมือน onPrinterChange)
         }
     }
 })();

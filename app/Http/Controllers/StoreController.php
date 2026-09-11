@@ -212,9 +212,26 @@ class StoreController extends Controller
             $remaining = $normalNums->diff($data->keys())->values();
 
             if ($remaining->isNotEmpty()) {
-                // ดึงชื่อสินค้าจาก MSSQL (POHD/PODT) โดยตรง — วิธีเดียวกับหน้า store_location
-                // ไม่ต้องยิง HTTP getPODetail ไป server เก่าอีกต่อไป (เร็วกว่ามาก)
+                // 1) ดึงจาก MSSQL (POHD/PODT) โดยตรง — เร็ว วิธีเดียวกับหน้า store_location
                 $data = $data->merge($this->fetchMssqlPoItems($remaining->all()));
+
+                // 2) PO ที่ MSSQL ดึงไม่ได้ (เช่น prod เชื่อม account03 ไม่ได้/ไม่เสถียร)
+                //    -> fallback ยิง HTTP getPODetail เพื่อให้ชื่อสินค้าขึ้นครบเสมอ (กัน "ขึ้นบ้างไม่ขึ้นบ้าง")
+                $stillEmpty = $remaining->filter(fn ($num) => !$data->has($num) || $data->get($num)->isEmpty())->values();
+                if ($stillEmpty->isNotEmpty()) {
+                    $needPooled = collect();
+                    foreach ($stillEmpty->chunk(self::LEGACY_PO_ARRAY_BATCH_SIZE) as $chunk) {
+                        $batchResult = $this->fetchLegacyPoItemsArrayRequest($chunk->values()->all());
+                        if ($batchResult === null) {
+                            $needPooled = $needPooled->merge($chunk->values()->all());
+                        } else {
+                            $data = $data->merge($batchResult);
+                        }
+                    }
+                    if ($needPooled->isNotEmpty()) {
+                        $data = $data->merge($this->fetchLegacyPoItemsPooled($needPooled->values()->all()));
+                    }
+                }
 
                 $remaining->each(function ($num) use ($data, $cacheKey) {
                     $items = $data->get($num);
