@@ -43,7 +43,7 @@ class DeliverytrackController extends Controller
     {
         if (!Auth::guard('web')->check()) return redirect()->guest(route('login'));
         $user = Auth::guard('web')->user();
-        if (!in_array($user->role, ['admin', 'store'], true)) abort(403, 'คุณไม่มีสิทธิ์เข้าใช้งานหน้านี้');
+        if (!in_array($user->role, ['admin', 'store', 'sale'], true)) abort(403, 'คุณไม่มีสิทธิ์เข้าใช้งานหน้านี้');
         return null;
     }
 
