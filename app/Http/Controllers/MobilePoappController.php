@@ -61,8 +61,16 @@ class MobilePoappController extends Controller
         $rows = $rows->reject(fn ($r) => $checkedOut->has($r->PONum))
             ->take(300)->values();
 
-        // ดึงชื่อสินค้าของแต่ละ PO จาก MSSQL (POHD -> PODT) ตรง ไม่พึ่ง API
+        // ดึงชื่อสินค้าของแต่ละ PO จาก MSSQL (POHD -> PODT) ตรง
         $itemsByPo = $this->fetchPoItemsFromMssql($rows->pluck('PONum')->all());
+
+        // fallback: PO ที่ MSSQL ดึงไม่ได้ (เช่น prod ต่อ account03 ไม่ได้) -> ยิง HTTP getPODetail
+        $missing = $rows->pluck('PONum')
+            ->filter(fn ($p) => !$itemsByPo->has($p) || $itemsByPo->get($p)->isEmpty())
+            ->values()->all();
+        if (!empty($missing)) {
+            $itemsByPo = $itemsByPo->merge($this->fetchPoItemsFromHttp($missing));
+        }
 
         return response()->json([
             'ok'    => true,
@@ -110,6 +118,49 @@ class MobilePoappController extends Controller
             Log::warning('fetchPoItemsFromMssql failed: ' . $e->getMessage());
             return collect();
         }
+    }
+
+    /**
+     * fallback ดึงชื่อสินค้าจาก HTTP getPODetail (server_update) — ใช้เมื่อ MSSQL ดึงไม่ได้
+     * ยิงแบบ pool (ขนาน) ทีละ 20 PO
+     */
+    private function fetchPoItemsFromHttp(array $poNums): \Illuminate\Support\Collection
+    {
+        $poNums = array_values(array_filter(array_unique($poNums)));
+        if (!$poNums) return collect();
+
+        $result = collect();
+        try {
+            foreach (array_chunk($poNums, 20) as $chunk) {
+                $responses = Http::pool(fn ($pool) => collect($chunk)->mapWithKeys(fn ($po) => [
+                    (string) $po => $pool->as((string) $po)->timeout(15)
+                        ->get($this->apiBase . '/api/getPODetail', ['PONum' => $po]),
+                ])->all());
+
+                foreach ($chunk as $po) {
+                    $resp = $responses[(string) $po] ?? null;
+                    if (!($resp instanceof \Illuminate\Http\Client\Response) || $resp->failed()) continue;
+
+                    $data = $resp->json();
+                    if (is_array($data) && isset($data['poData'])) $data = $data['poData'];
+                    if (is_array($data) && isset($data[0])) $data = $data[0];
+                    if (isset($data['data'])) {
+                        $data = is_array($data['data']) && isset($data['data'][0]) ? $data['data'][0] : $data['data'];
+                    }
+
+                    $lines = $data['ms_podt'] ?? [];
+                    if (!is_array($lines) || empty($lines)) continue;
+
+                    $result->put($po, collect($lines)->map(fn ($l) => [
+                        'name' => $l['GoodName'] ?? '—',
+                        'qty'  => (float) ($l['GoodQty2'] ?? 0),
+                    ])->values());
+                }
+            }
+        } catch (\Throwable $e) {
+            Log::warning('fetchPoItemsFromHttp failed: ' . $e->getMessage());
+        }
+        return $result;
     }
 
     public function getPODetail(Request $request)
