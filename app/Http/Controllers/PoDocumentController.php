@@ -938,7 +938,7 @@ if ($isSpecialCustomer) {
     }
     public function printNotes($so_detail_id)
     {
-        $this->requireLogin();
+        // หน้า print note ไม่ต้อง login
         $item = Bill::findOrFail($so_detail_id);
 
         $fontNormal     = base64_encode(file_get_contents(storage_path('fonts/THSarabun.ttf')));
