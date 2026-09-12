@@ -1872,7 +1872,7 @@ const headerHtml = `
             <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:10px; padding-bottom:10px;">
                 <div>
                     <h1 style="margin:0; font-size:36px; font-weight:800; color:#1e293b; letter-spacing:.01em;">${escapeHtmlSo(headcom)}</h1>
-                    <p style="margin:4px 0 0; font-size:26px; color:#64748b;">ประเภทบิล: <span style="font-weight:600;color:#334155;">${escapeHtmlSo(type)}</span>${soNum ?  &nbsp;&nbsp; เลข SO: <span style="font-weight:600;color:#334155;">${escapeHtmlSo(soNum.replace(/^so/i, ''))}</span> : ''}</p>
+                    <p style="margin:4px 0 0; font-size:26px; color:#64748b;">ประเภทบิล: <span style="font-weight:600;color:#334155;">${escapeHtmlSo(type)}</span>${soNum ? `&nbsp;&nbsp; เลข SO: <span style="font-weight:600;color:#334155;">${escapeHtmlSo(soNum.replace(/^so/i, ''))}</span>` : ''}</p>
                 </div>
                 
                 <div style="border:1.5px solid #1e293b; border-radius:6px; min-width:160px; text-align:left; background:#f8fafc; font-size:18px; color:#1e293b; overflow:hidden;">
