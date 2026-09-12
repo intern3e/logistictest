@@ -761,6 +761,20 @@ class StoreController extends Controller
             ['path' => $request->url(), 'query' => $request->query()]
         );
 
+        // เพิ่มชื่อ Sale (so.createdBy จาก DB เก่า 3e) — ดึงเฉพาะรายการในหน้านี้
+        $soIds = collect($heads->items())->pluck('so_id')->filter()->unique()->values()->all();
+        $saleBySo = collect();
+        if (!empty($soIds)) {
+            $saleBySo = DB::connection(self::LEGACY_CONNECTION)->table('so')
+                ->whereIn('SONum', $soIds)
+                ->get(['SONum', 'createdBy'])
+                ->keyBy('SONum');
+        }
+        $heads->getCollection()->transform(function ($h) use ($saleBySo) {
+            $h->sale = optional($saleBySo->get($h->so_id))->createdBy;
+            return $h;
+        });
+
         $locations = $this->recentLocations();
 
         return view('store.store_location', compact('heads', 'locations', 'creator', 'totalTodo'));

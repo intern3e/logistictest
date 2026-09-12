@@ -1872,17 +1872,17 @@ const headerHtml = `
             <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:10px; padding-bottom:10px;">
                 <div>
                     <h1 style="margin:0; font-size:36px; font-weight:800; color:#1e293b; letter-spacing:.01em;">${escapeHtmlSo(headcom)}</h1>
-                    <p style="margin:4px 0 0; font-size:18px; color:#64748b;">ประเภทบิล: <span style="font-weight:600;color:#334155;">${escapeHtmlSo(type)}</span>${soNum ? ` &nbsp;&nbsp; เลข SO: <span style="font-weight:600;color:#334155;">${escapeHtmlSo(soNum)}</span>` : ''}</p>
+                    <p style="margin:4px 0 0; font-size:26px; color:#64748b;">ประเภทบิล: <span style="font-weight:600;color:#334155;">${escapeHtmlSo(type)}</span>${soNum ?  &nbsp;&nbsp; เลข SO: <span style="font-weight:600;color:#334155;">${escapeHtmlSo(soNum.replace(/^so/i, ''))}</span> : ''}</p>
                 </div>
                 
-                <div style="border:1.5px solid #1e293b; border-radius:6px; min-width:160px; text-align:left; background:#f8fafc; font-size:14px; color:#1e293b; overflow:hidden;">
+                <div style="border:1.5px solid #1e293b; border-radius:6px; min-width:160px; text-align:left; background:#f8fafc; font-size:18px; color:#1e293b; overflow:hidden;">
                     <div style="padding:8px 12px; border-bottom:1px solid #cbd5e1; display:flex; align-items:center;">
-                        <span style="font-weight:700; color:#64748b; width:40px; display:inline-block;">SP</span> 
+                        <span style="font-weight:700; color:#64748b; width:55px; display:inline-block;">SP</span> 
                         <span style="font-weight:700; color:#64748b; padding-right:4px;">:</span> 
                         <span style="font-weight:800;">${escapeHtmlSo(doc_id)}</span>
                     </div>
                     <div style="padding:8px 12px; display:flex; align-items:center;">
-                        <span style="font-weight:700; color:#64748b; width:40px; display:inline-block;">DATE</span> 
+                        <span style="font-weight:700; color:#64748b; width:55px; display:inline-block;">DATE</span> 
                         <span style="font-weight:700; color:#64748b; padding-right:4px;">:</span> 
                         <span style="font-weight:600;">${escapeHtmlSo(revdate)}</span>
                     </div>

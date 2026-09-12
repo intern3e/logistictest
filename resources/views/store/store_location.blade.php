@@ -902,7 +902,7 @@
 <div class="page-frame">
     <div class="top-banner">
         <div class="title-group">
-            <span class="h1">จัดบิลส่งออก</span>
+            <span class="h1">จัดบิลขึ้นชั้น</span>
             <span class="sticker">STORE</span>
         </div>
         <div class="user-badge">ผู้ใช้งาน: {{ $creator }}</div>
@@ -944,6 +944,7 @@
                             <th>SO</th>
                             <th style="text-align:left;">รายการสินค้า</th>
                             <th style="text-align:left;">ลูกค้า</th>
+                            <th style="text-align:left;">Sale</th>
                             <th>จัดการ</th>
                             <th>รับโดย</th>
                             <th>เวลารับ</th>
@@ -996,6 +997,7 @@
                                     @endif
                                 </td>
                                 <td class="cust-cell">{{ $h->customer_name }}</td>
+                                <td>{{ $h->sale ?: '—' }}</td>
                                 <td>
                                     @if ($h->type === 'external' || $h->type === 'legacy')
                                         @if ($isClaimed)
@@ -1017,7 +1019,7 @@
                                 <td class="muted">{{ $h->packed_at ? \Carbon\Carbon::parse($h->packed_at)->format('d/m/Y H:i') : '—' }}</td>
                             </tr>
                         @empty
-                            <tr><td colspan="9" class="empty">📭 ไม่มีรายการที่รอระบุตำแหน่ง</td></tr>
+                            <tr><td colspan="10" class="empty">📭 ไม่มีรายการที่รอระบุตำแหน่ง</td></tr>
                         @endforelse
                     </tbody>
                 </table>
