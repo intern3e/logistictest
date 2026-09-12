@@ -1562,7 +1562,16 @@ class StoreController extends Controller
 
         $legacyRows = DB::connection(self::LEGACY_CONNECTION)->table('store')
             ->whereIn('ID', $legacyStoreIds)
-            ->where('statusArea', '1')
+            // ใช้เงื่อนไขเดียวกับ buildLegacyPendingLocationRows() คือ "ยังไม่เข้าชั้น sale
+            // (areaS ว่าง) + ยังไม่เช็คเอาท์ (DATECHECKOUT ว่าง)" แทนการเช็ค statusArea='1'
+            // เพราะพบว่าข้อมูลจริงบางแถว statusArea เป็น NULL/ว่าง ทำให้เงื่อนไขเดิมหาไม่เจอ
+            // และคืน 0 แถว จนหน้าบ้านขึ้น "ไม่พบรายการที่พร้อมดำเนินการ" ทั้งที่ยังเลือกได้ในตาราง
+            ->where(function ($q) {
+                $q->whereNull('areaS')->orWhere('areaS', '');
+            })
+            ->where(function ($q) {
+                $q->whereNull('DATECHECKOUT')->orWhere('DATECHECKOUT', '');
+            })
             ->get(['ID', 'PO', 'SO']);
 
         if ($legacyRows->isEmpty()) return 0;
@@ -1639,7 +1648,15 @@ class StoreController extends Controller
             $result = DB::transaction(function () use ($storeId, $authUser) {
                 $row = DB::connection(self::LEGACY_CONNECTION)->table('store')
                     ->where('ID', $storeId)
-                    ->where('statusArea', '1')
+                    // เดิมเช็ค statusArea='1' อย่างเดียว ซึ่งพลาดแถวที่ statusArea เป็น NULL/ว่าง
+                    // เปลี่ยนให้ตรงกับเงื่อนไข "งานที่ยังไม่เข้าชั้น sale + ยังไม่เช็คเอาท์"
+                    // เหมือนกับที่ใช้ตอนดึงรายการมาแสดง (buildLegacyPendingLocationRows)
+                    ->where(function ($q) {
+                        $q->whereNull('areaS')->orWhere('areaS', '');
+                    })
+                    ->where(function ($q) {
+                        $q->whereNull('DATECHECKOUT')->orWhere('DATECHECKOUT', '');
+                    })
                     ->lockForUpdate()
                     ->first(['ID', 'PO', 'SO']);
 
