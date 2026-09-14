@@ -109,7 +109,27 @@ public function ssoVerify(Request $request): JsonResponse
         ->where('client_key', $request->client_key)
         ->first();
 
-    if (!$ticketRecord || !$ticketRecord->markAsUsed()) {
+    // แยกสาเหตุให้ชัดใน log เพื่อ debug prod: ไม่เจอ ticket / ใช้ไปแล้ว / หมดอายุ
+    if (!$ticketRecord) {
+        Log::warning('SSO verify: ticket NOT FOUND (คนละ DB/instance? หรือ ticket ผิด)', [
+            'client_key'    => $request->client_key,
+            'ticket_prefix' => substr((string) $request->ticket, 0, 8),
+        ]);
+        return response()->json(['success' => false, 'error' => 'Invalid or expired ticket'], 400);
+    }
+    if ($ticketRecord->used) {
+        Log::warning('SSO verify: ticket ALREADY USED (วน loop / submit ซ้ำ)', [
+            'id' => $ticketRecord->id, 'id_emp' => $ticketRecord->id_emp,
+        ]);
+        return response()->json(['success' => false, 'error' => 'Invalid or expired ticket'], 400);
+    }
+    if (!$ticketRecord->markAsUsed()) {
+        // มาถึงตรงนี้ = used=false ตอน select แต่ update ไม่โดน 1 แถว → หมดอายุ (clock skew?) หรือ race
+        Log::warning('SSO verify: ticket EXPIRED/RACE (เวลาเครื่องเหลื่อม? TTL สั้นไป?)', [
+            'id'         => $ticketRecord->id,
+            'expires_at' => (string) $ticketRecord->expires_at,
+            'now'        => (string) now(),
+        ]);
         return response()->json(['success' => false, 'error' => 'Invalid or expired ticket'], 400);
     }
 
@@ -162,7 +182,7 @@ private function issueTicketAndRedirect(UserAuth $user, string $clientKey, strin
         'ticket'     => Str::random(64),
         'id_emp'     => $user->id_emp,
         'client_key' => $clientKey,
-        'expires_at' => now()->addSeconds(60),
+        'expires_at' => now()->addSeconds(300),
         'used'       => false,
     ]);
 
@@ -207,7 +227,7 @@ HTML;
             'ticket'     => Str::random(64),
             'id_emp'     => $user->id_emp,
             'client_key' => $request->client_key,
-            'expires_at' => now()->addSeconds(60),
+            'expires_at' => now()->addSeconds(300),
             'used'       => false,
         ]);
 
