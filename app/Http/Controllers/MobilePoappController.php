@@ -401,6 +401,8 @@ class MobilePoappController extends Controller
                 'po_receives.so_id as so_num',
                 'po_receives.status as po_status'
             )
+            // ไม่เอา line ที่ถูกยกเลิกไปแล้ว (cancelled) — จะได้ไม่ถูกนับเป็นของที่รับแล้ว
+            ->whereNull('po_receives_line.cancelled_at')
             ->orderByDesc('po_receives_line.received_at');
 
         if ($request->filled('PONum')) {
@@ -502,20 +504,18 @@ class MobilePoappController extends Controller
                     abort(404, 'ไม่พบข้อมูลการรับเข้าของ PO นี้');
                 }
 
+                // ไม่ลบ row / รูปทิ้ง — เก็บไว้เป็นประวัติ (กันข้อมูลหาย)
+                // mark ยกเลิกเฉพาะ line ที่ยัง active อยู่ เพื่อไม่ให้นับเป็นของที่รับแล้ว (รับเข้าใหม่ได้)
                 PoReceiveLine::where('po_id', $validated['PONum'])
-                    ->whereNotNull('photo_path')
-                    ->pluck('photo_path')
-                    ->unique()
-                    ->each(function ($path) {
-                        Storage::disk('public')->delete($path);
-                    });
+                    ->whereNull('cancelled_at')
+                    ->update([
+                        'cancelled_at' => now(),
+                        'cancelled_by' => $cancelBy,
+                    ]);
 
-                PoReceiveLine::where('po_id', $validated['PONum'])->delete();
-
+                // อัปเดตแค่สถานะ ไม่แตะ checkout_by / checkout_time
                 $header->update([
-                    'status'        => $validated['Status'],
-                    'checkout_by'   => $cancelBy,
-                    'checkout_time' => now(),
+                    'status' => $validated['Status'],
                 ]);
             });
         } catch (\Illuminate\Http\Exceptions\HttpResponseException $e) {
@@ -529,6 +529,247 @@ class MobilePoappController extends Controller
         return response()->json([
             'success' => true,
             'message' => 'ยกเลิกการรับเข้าเรียบร้อยแล้ว',
+        ]);
+    }
+
+    /**
+     * แก้ไข/ย้ายชั้นวางของสินค้าที่รับเข้าแล้ว
+     * เงื่อนไข: PO นั้นต้องยังไม่ถูกเช็คของออก (po_receives.checkout_by ต้องว่าง)
+     * แก้เฉพาะ line ที่ยัง active (ยังไม่ถูกยกเลิก)
+     */
+    public function updateShelf(Request $request)
+    {
+        if (!Auth::guard('web')->check()) {
+            return response()->json(['message' => 'กรุณาเข้าสู่ระบบก่อน'], 401);
+        }
+
+        $validated = $request->validate([
+            'PONum'         => 'required|string|max:50',
+            'Lines'         => 'required|array|min:1',
+            'Lines.*.id'    => 'required|integer',
+            'Lines.*.shelf' => 'nullable|string|max:100',
+        ]);
+
+        $updatedBy = optional($request->user())->name;
+
+        try {
+            $result = DB::transaction(function () use ($validated) {
+                $header = PoReceive::where('po_id', $validated['PONum'])
+                    ->lockForUpdate()
+                    ->first();
+
+                if (!$header) {
+                    abort(404, 'ไม่พบข้อมูลการรับเข้าของ PO นี้');
+                }
+
+                // ★ PO ที่ถูกเช็คของออกแล้ว ห้ามย้ายชั้นวาง
+                if (!empty($header->checkout_by)) {
+                    abort(409, 'PO นี้ถูกเช็คของออกไปแล้ว ไม่สามารถย้ายชั้นวางได้');
+                }
+
+                $ids = array_column($validated['Lines'], 'id');
+
+                // ดึงเฉพาะ line ที่เป็นของ PO นี้ และยังไม่ถูกยกเลิก
+                $lines = PoReceiveLine::where('po_id', $validated['PONum'])
+                    ->whereNull('cancelled_at')
+                    ->whereIn('id', $ids)
+                    ->get()
+                    ->keyBy('id');
+
+                $count = 0;
+                foreach ($validated['Lines'] as $l) {
+                    $line = $lines->get($l['id']);
+                    if (!$line) {
+                        continue; // ข้าม line ที่ไม่ใช่ของ PO นี้ / ถูกยกเลิกไปแล้ว
+                    }
+                    $line->shelf = $l['shelf'] ?? null;
+                    $line->save();
+                    $count++;
+                }
+
+                return $count;
+            });
+        } catch (\Illuminate\Http\Exceptions\HttpResponseException $e) {
+            throw $e;
+        } catch (\Symfony\Component\HttpKernel\Exception\HttpException $e) {
+            return response()->json(['message' => $e->getMessage()], $e->getStatusCode());
+        } catch (\Exception $e) {
+            return response()->json([
+                'message' => 'ย้ายชั้นวางไม่สำเร็จ: ' . $e->getMessage(),
+            ], 500);
+        }
+
+        return response()->json([
+            'success' => true,
+            'updated' => $result,
+            'message' => "ย้ายชั้นวางเรียบร้อย {$result} รายการ",
+        ]);
+    }
+
+    /**
+     * ดึงประวัติการรับเข้า "ระบบเก่า" (3e table store) ของ PO
+     * store เก็บระดับกล่อง/ชั้นวาง (ไม่มี qty รายสินค้า) — ใช้แสดงว่า PO นี้เคยรับเข้า/วางไว้ที่ไหน
+     * read-only ทั้งหมด (select เท่านั้น)
+     */
+    public function legacyStore(Request $request)
+    {
+        $poNum = (string) $request->query('PONum', '');
+        if ($poNum === '') {
+            return response()->json(['rows' => [], 'received' => false, 'active' => false]);
+        }
+
+        // store.PO เก็บแบบไม่มี prefix "PO" — ตัดออกก่อนเทียบ
+        $poClean = preg_replace('/^PO/i', '', $poNum);
+
+        try {
+            $rows = DB::connection(self::LEGACY_CONNECTION)->table('store')
+                ->where('PO', $poClean)
+                ->orderBy('DATEBOX')
+                ->get([
+                    'ID', 'BOX', 'PO', 'SO', 'Area', 'areaS', 'boxS',
+                    'statusBox', 'statusArea', 'DATEBOX', 'DATEAREA', 'DATECHECKOUT',
+                ]);
+
+            // แปลรหัสชั้นวาง (Area = area.ID) → area.areaName
+            $areaIds = $rows->pluck('Area')->filter(fn ($v) => $v !== null && $v !== '')->unique()->values()->all();
+            $areaNames = collect();
+            if (!empty($areaIds)) {
+                $areaNames = DB::connection(self::LEGACY_CONNECTION)->table('area')
+                    ->whereIn('ID', $areaIds)
+                    ->pluck('areaName', 'ID');
+            }
+
+            $out = $rows->map(function ($r) use ($areaNames) {
+                // สถานที่เก็บ (Area = area.ID → area.areaName)
+                $shelf = (!empty($r->Area) && isset($areaNames[$r->Area])) ? $areaNames[$r->Area] : '';
+                $checkedOut = !empty($r->DATECHECKOUT);
+
+                return [
+                    'box'            => $r->BOX,
+                    'so'             => $r->SO,
+                    'shelf'          => $shelf,             // สถานที่เก็บ (Area → areaName)
+                    'by'             => $r->boxS,           // ชื่อคนรับ/คนทำ
+                    'date'           => $r->DATEAREA ?: $r->DATEBOX,   // เวลารับเข้า (DATEAREA)
+                    'checked_out'    => $checkedOut,
+                    'checkout_date'  => $r->DATECHECKOUT,   // เช็คเอาท์เมื่อไหร่
+                    'checkout_place' => $r->areaS,          // เช็คเอาท์ที่ไหน (บันทึกล่าสุด)
+                ];
+            })->values();
+
+            // นับเฉพาะ row ที่มีคนรับจริง (boxS ไม่ว่าง) — boxS ว่าง = ยังไม่เคยรับเข้า (เป็นแค่กล่องเปล่า)
+            $out = $out->filter(fn ($x) => trim((string) ($x['by'] ?? '')) !== '')->values();
+
+            // active = ยังมีของอยู่ในคลัง (ยังไม่เช็คของออก)
+            $active = $out->contains(fn ($x) => !$x['checked_out']);
+
+            // มี row ที่ถูกเช็คของออกแล้วไหม + เอา row เช็คเอาท์ล่าสุดไว้แสดง
+            $checkedRows   = $out->filter(fn ($x) => $x['checked_out'])->values();
+            $anyCheckedOut = $checkedRows->isNotEmpty();
+            $checkout      = $anyCheckedOut ? $checkedRows->sortByDesc('checkout_date')->first() : null;
+
+            return response()->json([
+                'rows'        => $out,
+                'received'    => $out->isNotEmpty(),
+                'active'      => $active,
+                'checked_out' => $anyCheckedOut,
+                'checkout'    => $checkout,
+            ]);
+        } catch (\Exception $e) {
+            Log::warning('legacyStore failed for ' . $poNum . ': ' . $e->getMessage());
+            return response()->json(['rows' => [], 'received' => false, 'active' => false]);
+        }
+    }
+
+    /**
+     * ดึงข้อมูลรับเข้า "ระบบเก่า" (store) มาสร้างเป็นข้อมูลรับเข้า "ระบบใหม่" (po_receives_line)
+     * เพื่อให้แก้ไข/ย้ายสถานที่ในระบบใหม่ต่อได้ — เขียนเฉพาะ DB logistic (ระบบเก่ายัง read-only)
+     * รายการสินค้า/ราคา ส่งมาจากหน้า (ดึงจาก PO ต้นทาง MSSQL) ส่วนสถานที่/ผู้รับ/วันที่ มาจาก store
+     */
+    public function migrateLegacy(Request $request)
+    {
+        if (!Auth::guard('web')->check()) {
+            return response()->json(['message' => 'กรุณาเข้าสู่ระบบก่อน'], 401);
+        }
+
+        $validated = $request->validate([
+            'PONum'             => 'required|string|max:50',
+            'SONum'             => 'nullable|string|max:50',
+            'CustName'          => 'nullable|string|max:500',
+            'CustPONo'          => 'nullable|string|max:100',
+            'ReceivedBy'        => 'nullable|string|max:100',
+            'ReceivedAt'        => 'nullable|string|max:40',
+            'Shelf'             => 'nullable|string|max:100',
+            'items'             => 'required|array|min:1',
+            'items.*.GoodName'  => 'nullable|string|max:500',
+            'items.*.UnitPrice' => 'nullable|numeric',
+            'items.*.RecvQty'   => 'required|numeric|gt:0',
+        ]);
+
+        // กันซ้ำ: ถ้ามีข้อมูลระบบใหม่ (active) อยู่แล้ว ไม่ต้องดึงซ้ำ
+        if (PoReceiveLine::where('po_id', $validated['PONum'])->exists()) {
+            return response()->json([
+                'message' => 'PO นี้มีข้อมูลในระบบใหม่อยู่แล้ว',
+            ], 409);
+        }
+
+        // แปลงวันที่รับเข้าจากระบบเก่า (ถ้า parse ไม่ได้ใช้เวลาปัจจุบัน)
+        $receivedAt = now();
+        if (!empty($validated['ReceivedAt'])) {
+            $ts = strtotime($validated['ReceivedAt']);
+            if ($ts) {
+                $receivedAt = date('Y-m-d H:i:s', $ts);
+            }
+        }
+        $receivedBy = $validated['ReceivedBy'] ?? optional($request->user())->name;
+        $shelf      = $validated['Shelf'] ?? null;
+
+        try {
+            $count = DB::transaction(function () use ($validated, $receivedAt, $receivedBy, $shelf) {
+                $header = PoReceive::where('po_id', $validated['PONum'])->lockForUpdate()->first();
+
+                $attrs = [
+                    'so_id'     => $validated['SONum'] ?? ($header->so_id ?? null),
+                    'status'    => 'ครบ',
+                    'cust_name' => $validated['CustName'] ?? ($header->cust_name ?? null),
+                    'POref'     => $validated['CustPONo'] ?? ($header->POref ?? null),
+                ];
+
+                if ($header) {
+                    $header->update($attrs);
+                } else {
+                    PoReceive::create(array_merge($attrs, [
+                        'po_id'         => $validated['PONum'],
+                        'checkout_by'   => null,
+                        'checkout_time' => null,
+                    ]));
+                }
+
+                $n = 0;
+                foreach ($validated['items'] as $it) {
+                    PoReceiveLine::create([
+                        'po_id'       => $validated['PONum'],
+                        'good_name'   => $it['GoodName'] ?? null,
+                        'recv_qty'    => $it['RecvQty'],
+                        'unit_price'  => $it['UnitPrice'] ?? null,
+                        'shelf'       => $shelf,
+                        'photo_path'  => null,
+                        'received_by' => $receivedBy,
+                        'received_at' => $receivedAt,
+                    ]);
+                    $n++;
+                }
+                return $n;
+            });
+        } catch (\Exception $e) {
+            return response()->json([
+                'message' => 'ดึงข้อมูลเข้าระบบใหม่ไม่สำเร็จ: ' . $e->getMessage(),
+            ], 500);
+        }
+
+        return response()->json([
+            'success'  => true,
+            'migrated' => $count,
+            'message'  => "ดึงข้อมูลเข้าระบบใหม่แล้ว {$count} รายการ",
         ]);
     }
 }

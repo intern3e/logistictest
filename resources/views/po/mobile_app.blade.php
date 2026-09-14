@@ -14,6 +14,67 @@
         transition:background-color var(--t), border-color var(--t);
     }
     .btn-cancel-receive:active{background:#F6D5D5;border-color:#E8A9A9}
+    /* ===== PO รับครบแล้ว: หัวข้อ + ประวัติการรับ ===== */
+    .recv-done-title{font-size:15.5px;font-weight:600;color:#171A20;margin-bottom:2px}
+    .recv-done-sub{font-size:13px;color:#5C5E62;margin-bottom:12px}
+    .recv-done-hint{font-size:12px;color:#8A6D1E;margin-top:6px;line-height:1.4}
+    .recv-summary{
+        text-align:left;background:#F7F8FA;border:1px solid #E7E9ED;border-radius:12px;
+        padding:10px 12px;margin:0 auto 4px;max-width:520px;
+    }
+    .recv-summary-head{font-size:13px;font-weight:600;color:#393C41;margin-bottom:8px}
+    .rs-row{padding:7px 0;border-bottom:1px solid #ECEEF1}
+    .rs-row:last-child{border-bottom:none}
+    .rs-name{font-size:13.5px;font-weight:500;color:#171A20;margin-bottom:3px;word-break:break-word}
+    .rs-meta{display:flex;flex-wrap:wrap;gap:4px 12px;font-size:12.5px;color:#5C5E62}
+    .rs-meta b{color:#171A20;font-weight:600}
+    .rs-shelf b{color:#3E6AE1}
+    .recv-summary.legacy{background:#FBF7EE;border-color:#EBDFC5}
+    .recv-summary.legacy .recv-summary-head{color:#8A6D1E}
+    .ls-in{color:#1E7A3D;font-weight:600}
+    .ls-out{color:#B4232C;font-weight:500}
+    .btn-edit-shelf{
+        height:42px;padding:0 20px;border:1px solid #C7D6F7;border-radius:var(--r);
+        background:#EDF3FF;color:#2B4F9E;
+        font-size:14px;font-weight:600;font-family:inherit;cursor:pointer;
+        transition:background-color var(--t),border-color var(--t);
+    }
+    .btn-edit-shelf:active{background:#DDE8FE;border-color:#A9C2F0}
+    /* ===== แก้ไขชั้นวาง ===== */
+    .es-wrap{text-align:left;max-width:520px;margin:0 auto}
+    .es-head{font-size:15.5px;font-weight:600;color:#171A20;margin-bottom:4px}
+    .es-note{font-size:12.5px;color:#5C5E62;margin-bottom:12px;line-height:1.4}
+    .es-row{padding:10px 0;border-bottom:1px solid #ECEEF1}
+    .es-row:last-of-type{border-bottom:none}
+    .es-name{font-size:14px;font-weight:500;color:#171A20;margin-bottom:2px;word-break:break-word}
+    .es-sub{font-size:12px;color:#8E8E8E;margin-bottom:6px}
+    .es-shelf-line{display:flex;gap:8px;align-items:center}
+    .es-shelf-btn{
+        flex:1;display:flex;align-items:center;justify-content:space-between;gap:8px;
+        height:42px;padding:0 14px;border:1px solid #D6DBE3;border-radius:10px;
+        background:#fff;font-size:14px;font-family:inherit;color:#171A20;cursor:pointer;
+    }
+    .es-shelf-btn:active{border-color:#3E6AE1}
+    .es-shelf-txt{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+    .es-shelf-txt.placeholder{color:#8E8E8E}
+    .es-shelf-btn .chev{color:#8E8E8E;font-size:16px;flex-shrink:0}
+    .es-clear{
+        height:42px;padding:0 14px;border:1px solid #E7E9ED;border-radius:10px;
+        background:#F4F4F4;color:#5C5E62;font-size:13px;font-family:inherit;cursor:pointer;flex-shrink:0;
+    }
+    .es-clear:active{background:#E9E9E9}
+    .es-actions{display:flex;gap:10px;margin-top:16px}
+    .es-back{
+        flex:0 0 auto;height:46px;padding:0 20px;border:1px solid #D6DBE3;border-radius:12px;
+        background:#fff;color:#393C41;font-size:14px;font-weight:500;font-family:inherit;cursor:pointer;
+    }
+    .es-back:active{background:#F4F4F4}
+    .es-save{
+        flex:1;height:46px;border:none;border-radius:12px;
+        background:#3E6AE1;color:#fff;font-size:15px;font-weight:600;font-family:inherit;cursor:pointer;
+    }
+    .es-save:active{background:#3457B1}
+    .es-save:disabled{background:#9DB4EC;cursor:default}
     :root{
         --blue:#3E6AE1;
         --blue-dark:#3457B1;
@@ -596,6 +657,9 @@ const API_URL = '{{ url('/api/getPODetail') }}';
 const RECEIVE_URL = '{{ url('/api/receivePO') }}';
 const HISTORY_URL = '{{ url('/api/receivePO/history') }}';
 const CANCEL_URL = '{{ url('/api/receivePO/cancel') }}';
+const UPDATE_SHELF_URL = '{{ url('/api/receivePO/updateShelf') }}';
+const LEGACY_STORE_URL = '{{ url('/api/receivePO/legacyStore') }}';
+const MIGRATE_URL = '{{ url('/api/receivePO/migrateLegacy') }}';
 const CSRF_TOKEN = '{{ csrf_token() }}';
 let lastFullyReceivedPO = null;
 const RECEIVED_BY = @json(Auth::user()->name ?? '');
@@ -661,7 +725,12 @@ function onNoShelfToggle(){
     if(noShelf){ resetShelf(); btn.classList.add('locked'); }
     else{ btn.classList.remove('locked'); }
 }
-let historyDetailMap = new Map(); 
+let historyDetailMap = new Map();
+let historyRows = [];          // raw ประวัติการรับ (มี id, shelf) ของ PO ล่าสุด — ใช้แสดง/แก้ไขชั้นวาง
+let shelfSheetTarget = null;   // null = โหมดรับเข้าปกติ, 'edit:<id>' = กำลังเลือกชั้นวางให้ line ที่แก้ไข
+let editPONum = null;          // เลข PO ที่กำลังแก้ไขชั้นวาง
+let legacyMigratePayload = null;   // payload สำหรับดึงข้อมูลระบบเก่าเข้าระบบใหม่
+let autoOpenEditAfterLoad = false; // หลัง reload ให้เปิดหน้าแก้ไขชั้นวางอัตโนมัติ (ใช้ตอนดึงจากระบบเก่า)
 
 const $ = id => document.getElementById(id);
 
@@ -679,10 +748,12 @@ function normName(s){
 async function getReceivedHistory(ponum){
     const qtyMap = new Map();    // normName → total received qty
     const detailMap = new Map(); // normName → [{received_by, received_at, recv_qty, shelf}]
+    let rawRows = [];            // raw rows (มี id, shelf) สำหรับแสดง/แก้ไขชั้นวาง
     try{
         const res = await fetch(`${HISTORY_URL}?PONum=${encodeURIComponent(ponum)}`);
-        if(!res.ok) return { qtyMap, detailMap };
+        if(!res.ok) return { qtyMap, detailMap, rows: rawRows };
         const rows = await res.json();
+        rawRows = rows || [];
         (rows || []).forEach(r => {
             if(!r.good_name) return;
             const key = normName(r.good_name);
@@ -697,7 +768,7 @@ async function getReceivedHistory(ponum){
             });
         });
     }catch(e){ /* silent */ }
-    return { qtyMap, detailMap };
+    return { qtyMap, detailMap, rows: rawRows };
 }
 
 /* ค้นหา qty จาก map ด้วย flexible matching */
@@ -771,7 +842,8 @@ if(window.visualViewport){
     window.visualViewport.addEventListener('resize', syncSheetViewport);
     window.visualViewport.addEventListener('scroll', syncSheetViewport);
 }
-function openShelfSheet(){
+function openShelfSheet(target){
+    shelfSheetTarget = target || null;   // null = โหมดรับเข้าปกติ, 'edit:<id>' = แก้ไขชั้นวางราย line
     shelfScrollY = window.scrollY || window.pageYOffset || 0;
     document.documentElement.style.overflow = 'hidden';
     document.body.style.position = 'fixed';
@@ -785,6 +857,7 @@ function openShelfSheet(){
     setTimeout(() => $('shelfSearch').focus({preventScroll:true}), 50);
 }
 function closeShelfSheet(){
+    shelfSheetTarget = null;
     $('shelfOverlay').classList.remove('show');
     $('shelfOverlay').style.top = '';
     $('shelfOverlay').style.height = '';
@@ -803,6 +876,15 @@ function renderShelfList(){
     $('shelfList').innerHTML = html;
 }
 function selectShelf(val){
+    // โหมดแก้ไขชั้นวาง (ราย line)
+    if(shelfSheetTarget && shelfSheetTarget.indexOf('edit:') === 0){
+        const id = shelfSheetTarget.slice(5);
+        editShelfState[id] = val;
+        closeShelfSheet();
+        renderEditShelf();
+        return;
+    }
+    // โหมดรับเข้าปกติ
     selectedShelf = val;
     const el = $('shelfSelectText');
     el.textContent = val; el.classList.remove('placeholder');
@@ -970,16 +1052,9 @@ async function searchPO(){
         if(!data || !data.ms_podt || data.ms_podt.length === 0){
             showNotFound(poNumber); return;
         }
-        if(!data._soList || data._soList.length === 0){
-            clearResult();
-            $('stateBox').innerHTML =
-                '<div class="icon">⚠️</div>' +
-                '<span class="err" style="font-size:16px;font-weight:500;color:var(--carbon)">ไม่สามารถรับเข้าได้</span><br>' +
-                'เลข PO <b>' + esc(poNumber) + '</b><br>ยังไม่ได้เชื่อมกับ SO';
-            $('stateBox').style.display = 'block';
-            return;
-        }
+        // ประวัติรับเข้า: ระบบใหม่ (po_receives_line) + ระบบเก่า (3e store) พร้อมกัน
         const history = await getReceivedHistory(data.DocuNo);
+        const legacy  = await fetchLegacyStore(data.DocuNo);
 
         data._soInfo = {
             SONum:      soInfo.SONum || '',
@@ -988,6 +1063,8 @@ async function searchPO(){
             ResponseBy: soInfo.ResponseBy || ''
         };
         historyDetailMap = history.detailMap;
+        historyRows = history.rows || [];
+        editPONum = data.DocuNo;
 
         data.ms_podt = data.ms_podt.map(it => {
             const ordered  = parseFloat(it.AppvQty2 || it.GoodQty2 || 0);
@@ -996,18 +1073,117 @@ async function searchPO(){
         });
 
         const hasRemaining = data.ms_podt.filter(it => it._remainingQty > 0);
-        if(hasRemaining.length === 0){
+        const legacyRows   = (legacy && legacy.rows) ? legacy.rows : [];
+        const legacyActive = !!(legacy && legacy.active);        // ยังมีของอยู่ในคลังจากระบบเก่า
+        const legacyCheckedOut = !!(legacy && legacy.checked_out); // ถูกเช็คของออกในระบบเก่าแล้ว
+
+        // แสดงหน้า "รับเข้าแล้ว" เมื่อ (A) รับครบในระบบใหม่ หรือ (B) มีของค้างคลังจากระบบเก่า
+        if(hasRemaining.length === 0 || legacyActive){
             lastFullyReceivedPO = data.DocuNo;
+            const docuNo    = data.DocuNo;
+            const fromNew   = hasRemaining.length === 0;          // รับครบจากระบบใหม่
+            const savedRows = (history.rows || []).slice();       // ประวัติระบบใหม่ (เก็บก่อน clearResult)
+            const savedLeg  = legacyRows.slice();                 // ประวัติระบบเก่า
+
+            // เตรียม payload ดึงระบบเก่า→ระบบใหม่ (เฉพาะกรณีระบบเก่า และยังไม่มีข้อมูลระบบใหม่)
+            let migratePayload = null;
+            if(!fromNew && savedLeg.length && !savedRows.length){
+                const migItems = (data.ms_podt || []).map(it => ({
+                    GoodName:  it.GoodName,
+                    UnitPrice: parseFloat(it.GoodPrice2 || 0),
+                    RecvQty:   (it._orderedQty || parseFloat(it.AppvQty2 || it.GoodQty2 || 0))
+                })).filter(x => x.RecvQty > 0);
+                const primary = savedLeg.find(x => x.shelf) || savedLeg[0] || {};
+                const so = data._soInfo || {};
+                migratePayload = {
+                    PONum:      docuNo,
+                    SONum:      (data._soList && data._soList[0] && data._soList[0].SONum) || primary.so || null,
+                    CustName:   so.CustName || null,
+                    CustPONo:   so.CustPONo || null,
+                    ReceivedBy: primary.by || null,
+                    ReceivedAt: primary.date || null,
+                    Shelf:      primary.shelf || null,
+                    items:      migItems
+                };
+            }
+
             clearResult();
-            const cancelBtnHtml = IS_ADMIN ? `
-                <div style="margin-top:14px">
+            historyRows = savedRows;
+            editPONum   = docuNo;
+            legacyMigratePayload = migratePayload;
+
+            const summaryHtml = renderReceivedSummary(savedRows);
+            // ถ้ามีข้อมูลระบบใหม่แล้ว ไม่ต้องแสดงประวัติระบบเก่า (แสดงเฉพาะตอนไม่มีของใหม่)
+            const legacyHtml  = savedRows.length ? '' : renderLegacySummary(savedLeg);
+            // ปุ่มแก้ไข/ยกเลิก = ฟีเจอร์ระบบใหม่ → แสดงเฉพาะกรณีมีข้อมูลระบบใหม่เท่านั้น
+            const editBtnHtml = (fromNew && savedRows.length) ? `
+                <div style="margin-top:12px">
+                    <button type="button" class="btn-edit-shelf" onclick="openEditShelf()">
+                        แก้ไขชั้นวาง
+                    </button>
+                </div>` : '';
+            const cancelBtnHtml = (fromNew && IS_ADMIN) ? `
+                <div style="margin-top:10px">
                     <button type="button" class="btn-cancel-receive" onclick="openCancelModal()">
                         ยกเลิกการรับเข้า
                     </button>
                 </div>` : '';
+            // ปุ่มแก้ไข (ระบบเก่า): ดึงข้อมูลเข้าระบบใหม่ก่อน แล้วค่อยแก้สถานที่
+            const migrateBtnHtml = (!fromNew && legacyMigratePayload && legacyMigratePayload.items.length) ? `
+                <div style="margin-top:12px">
+                    <button type="button" class="btn-edit-shelf" onclick="migrateLegacyThenEdit()">
+                        แก้ไข (ดึงเข้าระบบใหม่)
+                    </button>
+                </div>
+                <div class="recv-done-hint">กด "แก้ไข" เพื่อดึงข้อมูลจากระบบเก่าเข้าระบบใหม่ แล้วจึงย้ายสถานที่ได้</div>` : '';
+            const titleTxt = fromNew
+                ? 'สินค้าทั้งหมดของ PO นี้ถูกรับเข้าไปแล้ว'
+                : 'PO นี้มีของรับเข้าอยู่แล้ว (ระบบเก่า)';
             $('stateBox').innerHTML = `
-                สินค้าทั้งหมดของ PO นี้ถูกรับเข้าไปแล้ว หากต้องการยกเลิกติดต่อ ผู้ดูแล
+                <div class="recv-done-title">${titleTxt}</div>
+                <div class="recv-done-sub">${esc(docuNo)}</div>
+                ${summaryHtml}
+                ${legacyHtml}
+                ${editBtnHtml}
+                ${migrateBtnHtml}
                 ${cancelBtnHtml}`;
+            $('stateBox').style.display = 'block';
+            // หลังดึงระบบเก่าเข้าระบบใหม่แล้ว reload กลับมา → เปิดหน้าแก้ไขชั้นวางให้เลย
+            if(fromNew && autoOpenEditAfterLoad){
+                autoOpenEditAfterLoad = false;
+                if(savedRows.length) setTimeout(openEditShelf, 0);
+            }
+            return;
+        }
+
+        // ถูกเช็คของออกในระบบเก่าแล้ว (มี DATECHECKOUT) → ห้ามรับเข้า
+        if(legacyCheckedOut){
+            clearResult();
+            const c = (legacy && legacy.checkout) || {};
+            const recv  = c.date ? fmtDateTime(c.date) : '';           // เวลารับเข้า (DATEAREA)
+            const at    = c.checkout_date ? fmtDateTime(c.checkout_date) : ''; // เวลาเช็คเอาท์
+            const place = c.checkout_place ? esc(c.checkout_place) : '';
+            const by    = c.by ? esc(c.by) : '';
+            $('stateBox').innerHTML =
+                '<div class="icon">🚫</div>' +
+                '<span class="err" style="font-size:16px;font-weight:500;color:var(--carbon)">PO นี้ถูกเช็คของออกไปแล้ว (ระบบเก่า)</span><br>' +
+                esc(data.DocuNo || poNumber) +
+                (by ? '<br>ผู้รับเข้า <b>' + by + '</b>' : '') +
+                (recv ? '<br>รับเข้าเมื่อ ' + esc(recv) : '') +
+                (at ? '<br>เอาออกเมื่อ ' + esc(at) : '') +
+                (place ? ' · ที่ ' + place : '') +
+                '<br>ไม่สามารถรับเข้าได้';
+            $('stateBox').style.display = 'block';
+            return;
+        }
+
+        // ยังรับไม่ครบ + ไม่มีของค้างคลังระบบเก่า → ต้องมี SO ก่อนถึงจะรับเข้าได้
+        if(!data._soList || data._soList.length === 0){
+            clearResult();
+            $('stateBox').innerHTML =
+                '<div class="icon">⚠️</div>' +
+                '<span class="err" style="font-size:16px;font-weight:500;color:var(--carbon)">ไม่สามารถรับเข้าได้</span><br>' +
+                'เลข PO <b>' + esc(poNumber) + '</b><br>ยังไม่ได้เชื่อมกับ SO';
             $('stateBox').style.display = 'block';
             return;
         }
@@ -1144,6 +1320,172 @@ function toggleHist(i){
     if(!btn || !detail) return;
     const open = detail.classList.toggle('open');
     btn.classList.toggle('open', open);
+}
+
+/* ========== ประวัติการรับเข้า (ใคร/เมื่อไหร่/ชั้นไหน) — แสดงตอน PO รับครบแล้ว ========== */
+function renderReceivedSummary(rows){
+    if(!rows || !rows.length) return '';
+    const list = rows.map(r => {
+        const {name} = splitGoodName(r.good_name || '');
+        const who   = r.received_by || '-';
+        const when  = r.received_at ? fmtDateTime(r.received_at) : '-';
+        const qty   = fmtQty(r.recv_qty);
+        const shelf = r.shelf ? esc(r.shelf) : 'ยังไม่ระบุ';
+        return `
+            <div class="rs-row">
+                <div class="rs-name">${esc(name || '-')}</div>
+                <div class="rs-meta">
+                    <span class="rs-who">ผู้รับ: <b>${esc(who)}</b></span>
+                    <span class="rs-when">${esc(when)}</span>
+                    <span class="rs-qty">×${qty}</span>
+                    <span class="rs-shelf">ชั้น: <b>${shelf}</b></span>
+                </div>
+            </div>`;
+    }).join('');
+    return `
+        <div class="recv-summary">
+            <div class="recv-summary-head">ประวัติการรับเข้า (${rows.length} รายการ)</div>
+            ${list}
+        </div>`;
+}
+
+/* ========== ประวัติรับเข้า "ระบบเก่า" (3e store) ========== */
+async function fetchLegacyStore(ponum){
+    try{
+        const res = await fetch(`${LEGACY_STORE_URL}?PONum=${encodeURIComponent(ponum)}`, {headers:{'Accept':'application/json'}});
+        if(!res.ok) return { rows:[], received:false, active:false };
+        return await res.json();
+    }catch(e){ return { rows:[], received:false, active:false }; }
+}
+
+function renderLegacySummary(rows){
+    if(!rows || !rows.length) return '';
+    const list = rows.map(r => {
+        const by    = r.by ? esc(r.by) : '-';
+        const when  = r.date ? fmtDateTime(r.date) : '-';
+        const shelf = r.shelf ? esc(r.shelf) : 'ยังไม่ระบุ';
+        // สถานะ: เช็คเอาท์แล้ว = เอาออกเมื่อไหร่ + ที่ไหน (areaS) / ยังไม่เช็ค = อยู่ในคลัง
+        const out = r.checked_out
+            ? `<span class="ls-out">เอาออกเมื่อ ${r.checkout_date ? esc(fmtDateTime(r.checkout_date)) : '-'}${r.checkout_place ? ' · ที่ '+esc(r.checkout_place) : ''}</span>`
+            : `<span class="ls-in">อยู่ในคลัง</span>`;
+        return `
+            <div class="rs-row">
+                <div class="rs-name">สถานที่เก็บ: <b>${shelf}</b></div>
+                <div class="rs-meta">
+                    <span class="rs-who">ผู้รับ/ผู้ทำ: <b>${by}</b></span>
+                    <span class="rs-when">รับเข้า: ${esc(when)}</span>
+                    ${out}
+                </div>
+            </div>`;
+    }).join('');
+    return `
+        <div class="recv-summary legacy">
+            <div class="recv-summary-head">ประวัติระบบเก่า — store (${rows.length} รายการ)</div>
+            ${list}
+        </div>`;
+}
+
+/* ดึงข้อมูลระบบเก่า → สร้างในระบบใหม่ แล้วเปิดหน้าแก้ไขชั้นวางให้เลย */
+async function migrateLegacyThenEdit(){
+    if(!legacyMigratePayload || !legacyMigratePayload.items || !legacyMigratePayload.items.length){
+        toast('ไม่มีข้อมูลให้ดึงเข้าระบบใหม่','error'); return;
+    }
+    const btn = event && event.target ? event.target : null;
+    if(btn){ btn.disabled = true; btn.textContent = 'กำลังดึงข้อมูล...'; }
+    try{
+        const res = await fetch(MIGRATE_URL, {
+            method: 'POST',
+            headers: {'Content-Type':'application/json','X-CSRF-TOKEN':CSRF_TOKEN,'Accept':'application/json'},
+            body: JSON.stringify(legacyMigratePayload)
+        });
+        const result = await res.json().catch(()=>null);
+        if(!res.ok) throw new Error((result && result.message) || ('HTTP '+res.status));
+        toast((result && result.message) || 'ดึงข้อมูลเข้าระบบใหม่แล้ว','ok');
+        autoOpenEditAfterLoad = true;   // reload เสร็จให้เปิดหน้าแก้ไขชั้นวางเลย
+        reloadCurrentPO();
+    }catch(err){
+        toast('ดึงข้อมูลไม่สำเร็จ : '+err.message,'error');
+        if(btn){ btn.disabled = false; btn.textContent = 'แก้ไข (ดึงเข้าระบบใหม่)'; }
+    }
+}
+
+/* ========== แก้ไข/ย้ายชั้นวาง ========== */
+let editShelfState = {};   // { lineId: shelf }
+
+function openEditShelf(){
+    if(!historyRows.length){ toast('ไม่มีรายการให้แก้ไข','error'); return; }
+    editShelfState = {};
+    historyRows.forEach(r => { editShelfState[r.id] = r.shelf || ''; });
+    renderEditShelf();
+}
+
+function renderEditShelf(){
+    const rows = historyRows.map(r => {
+        const {name} = splitGoodName(r.good_name || '');
+        const cur = editShelfState[r.id] || '';
+        const shelfTxt = cur ? esc(cur) : 'เลือกชั้นวาง';
+        const cls = cur ? '' : ' placeholder';
+        return `
+            <div class="es-row">
+                <div class="es-name">${esc(name || '-')}</div>
+                <div class="es-sub">ผู้รับ: ${esc(r.received_by || '-')} · ×${fmtQty(r.recv_qty)}</div>
+                <div class="es-shelf-line">
+                    <button type="button" class="es-shelf-btn" onclick="openShelfSheet('edit:${esc(String(r.id))}')">
+                        <span class="es-shelf-txt${cls}">${shelfTxt}</span>
+                        <span class="chev">▾</span>
+                    </button>
+                    ${cur ? `<button type="button" class="es-clear" onclick="clearEditShelf('${esc(String(r.id))}')">ล้าง</button>` : ''}
+                </div>
+            </div>`;
+    }).join('');
+
+    $('stateBox').innerHTML = `
+        <div class="es-wrap">
+            <div class="es-head">แก้ไขชั้นวาง — ${esc(editPONum || '')}</div>
+            <div class="es-note">ย้ายตำแหน่งชั้นวางของสินค้าที่รับเข้าแล้ว (แก้ได้เฉพาะ PO ที่ยังไม่ถูกเช็คของออก)</div>
+            ${rows}
+            <div class="es-actions">
+                <button type="button" class="es-back" onclick="reloadCurrentPO()">กลับ</button>
+                <button type="button" class="es-save" id="esSaveBtn" onclick="saveEditShelf()">บันทึกการย้าย</button>
+            </div>
+        </div>`;
+    $('stateBox').style.display = 'block';
+}
+
+function clearEditShelf(id){
+    editShelfState[id] = '';
+    renderEditShelf();
+}
+
+async function saveEditShelf(){
+    if(!editPONum){ toast('ไม่พบเลขที่ PO','error'); return; }
+    const Lines = historyRows.map(r => ({ id: r.id, shelf: editShelfState[r.id] || null }));
+
+    $('esSaveBtn').disabled = true;
+    $('esSaveBtn').textContent = 'กำลังบันทึก...';
+    try{
+        const res = await fetch(UPDATE_SHELF_URL, {
+            method: 'POST',
+            headers: {'Content-Type':'application/json','X-CSRF-TOKEN':CSRF_TOKEN,'Accept':'application/json'},
+            body: JSON.stringify({ PONum: editPONum, Lines })
+        });
+        const result = await res.json().catch(()=>null);
+        if(!res.ok) throw new Error((result && result.message) || ('HTTP '+res.status));
+        toast((result && result.message) || 'ย้ายชั้นวางเรียบร้อย','ok');
+        reloadCurrentPO();
+    }catch(err){
+        toast('บันทึกไม่สำเร็จ : '+err.message,'error');
+        $('esSaveBtn').disabled = false;
+        $('esSaveBtn').textContent = 'บันทึกการย้าย';
+    }
+}
+
+/* ค้นหา PO เดิมอีกครั้ง (ใช้ตอนกลับ/หลังบันทึกย้ายชั้นวาง) */
+function reloadCurrentPO(){
+    const po = editPONum;
+    if(!po){ clearResult(); return; }
+    $('poInput').value = String(po).replace(/^PO/i,'');
+    searchPO();
 }
 
 /* ========== Confirm Modal ========== */
@@ -1335,6 +1677,8 @@ function esc(s){ return String(s).replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&l
 function escJs(s){ return String(s).replace(/\\/g,'\\\\').replace(/'/g,"\\'"); }
 function clearResult(){
     currentPO = null; historyDetailMap = new Map();
+    historyRows = []; editPONum = null; shelfSheetTarget = null; editShelfState = {};
+    legacyMigratePayload = null;   // หมายเหตุ: ไม่ reset autoOpenEditAfterLoad ที่นี่ เพราะต้องคงค่าข้ามการ reload
     $('poInput').value = '';
     $('poHead').innerHTML = ''; $('soCard').innerHTML = '';
     $('itemList').innerHTML = '';
