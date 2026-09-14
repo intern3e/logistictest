@@ -239,32 +239,8 @@ class MobilePoappController extends Controller
                 ], 409);
             }
 
-            // ★ เช็คระบบเก่า: store.statusArea = '0' แปลว่าเช็คของออก (DATECHECKOUT) ไปแล้ว
-            // PONum ที่ค้นหา / DocuNo ที่ตอบกลับมา อาจมี prefix "PO" ปนมา ตัดออกก่อนเทียบกับ store.PO (เก็บแบบดิบ ไม่มี prefix)
-            $poNumClean  = preg_replace('/^PO/i', '', (string) $poNum);
-            $docuNoClean = $docuNo ? preg_replace('/^PO/i', '', (string) $docuNo) : null;
-
-            $checkedOutLegacy = DB::connection(self::LEGACY_CONNECTION)->table('store')
-                ->where('statusArea', '0')
-                ->where(function ($q) use ($poNumClean, $docuNoClean) {
-                    $q->where('PO', $poNumClean);
-                    if ($docuNoClean && $docuNoClean !== $poNumClean) {
-                        $q->orWhere('PO', $docuNoClean);
-                    }
-                })
-                ->orderByDesc('DATECHECKOUT')
-                ->first();
-
-            if ($checkedOutLegacy) {
-                return response()->json([
-                    'checked_out' => true,
-                    'message'     => 'PO นี้ถูกเช็คของออก (ระบบเก่า) ไปแล้ว ไม่สามารถรับเข้าเพิ่มได้',
-                    'po_id'       => $checkedOutLegacy->PO,
-                    'so_id'       => $checkedOutLegacy->SO,
-                    'checkout_by' => null, // ระบบเก่าไม่มีชื่อคนเช็คของออกเก็บไว้จริง (boxS คือชื่อกล่อง)
-                    'checkout_at' => $checkedOutLegacy->DATECHECKOUT,
-                ], 409);
-            }
+            // หมายเหตุ: ยกเลิกการเช็คสถานะเช็คของออกจาก "ระบบเก่า" (store.statusArea='0' / DATECHECKOUT) แล้ว
+            // ตามที่กำหนด ให้รับเข้าได้โดยไม่ต้องดูสถานะ checkout ของระบบเก่า (คงเช็คเฉพาะระบบใหม่ข้างบน)
 
             $soNums = $norm['SONumList'] ?? ($norm['SONum'] ? [$norm['SONum']] : []);
             $soNums = array_values(array_unique(array_filter($soNums)));
