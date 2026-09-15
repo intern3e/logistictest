@@ -20,11 +20,11 @@
             color:var(--ink); padding:16px;
         }
         .page-frame { background:var(--canvas); max-width:100%; }
-        .table-scroll { overflow-x:auto; -webkit-overflow-scrolling:touch; }
+        .table-scroll { overflow-x:auto; -webkit-overflow-scrolling:touch; border:1px solid var(--border); border-radius: 8px; }
 
         .top-banner {
             background:var(--canvas); color:var(--ink);
-            margin:0 -16px; padding:16px 12px 0;
+            margin:0 -16px; padding:16px 16px 0;
             display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:10px;
         }
         .top-banner .title-group { display:flex; align-items:center; gap:10px; margin-left:24px; }
@@ -34,12 +34,28 @@
             font-weight:600; font-size:11px;
             padding:4px 12px; text-transform:uppercase; letter-spacing:.3px;
         }
+        
         .top-banner .user-tag {
-            display:flex; align-items:center; gap:4px;
-            background:transparent; color:var(--ink);
-            border:0; margin-left:auto;
-            font-size:13px; font-weight:400;
-            padding:0;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            background: var(--primary);
+            color: var(--on-primary);
+            padding: 6px 16px;
+            border-radius: 50px;
+            margin-left: auto;
+            margin-right: 28px;
+            font-size: 13.5px;
+            font-weight: 600;
+            box-shadow: 0 2px 4px rgba(40, 83, 213, 0.2);
+        }
+        .top-banner .user-tag .status-dot {
+            width: 10px;
+            height: 10px;
+            background-color: #22c55e;
+            border-radius: 50%;
+            display: inline-block;
+            box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.3);
         }
 
         main { padding:20px; background:var(--canvas); }
@@ -54,21 +70,22 @@
         .filter-card {
             border: 1px solid var(--border); 
             background: #fafbfd;
-            padding: 12px 16px;
+            padding: 14px 18px;
+            border-radius: 10px;
             display: flex;
             align-items: center;
             justify-content: space-between;
             flex-wrap: wrap;
             gap: 16px;
         }
-        .filter-row { display:flex; gap:8px; flex-wrap:wrap; align-items:center; }
+        .filter-row { display:flex; gap:10px; flex-wrap:wrap; align-items:flex-end; }
         .filter-field { display:flex; flex-direction:column; gap:4px; }
         .filter-field label { font-size:11px; font-weight:700; color:var(--muted); text-transform:uppercase; letter-spacing:.3px; }
         
         input[type="text"],input[type="search"],input[type="date"],select {
             padding:8px 12px; border:1px solid var(--border);
             font-family:inherit; font-size:14px; background:var(--canvas); color:var(--ink);
-            border-radius: 4px;
+            border-radius: 6px;
         }
         input:focus,select:focus { outline:none; border-color:var(--primary); box-shadow:0 0 0 3px var(--primary-light); }
         
@@ -81,7 +98,7 @@
         .btn-success:hover { background:var(--success-dark); }
         .btn-danger  { background:var(--danger); color:var(--on-primary); }
         .btn-danger:hover { background:var(--danger-dark); }
-        .btn-ghost   { background:var(--canvas); color:var(--muted); border-color:var(--border); }
+        .btn-ghost   { background:var(--canvas); color:var(--muted); border-color:var(--border); padding: 8px 16px; font-size: 14px; border-radius: 6px; }
         .btn-ghost:hover { background:#f3f4f6; color:var(--ink); }
         button:disabled { opacity:.4; cursor:not-allowed; }
 
@@ -113,7 +130,7 @@
 
         table {
             width:100%; min-width:720px; border-collapse:collapse;
-            background:var(--canvas); border:1px solid var(--border);
+            background:var(--canvas); border:none;
         }
         th,td {
             border-bottom:1px solid var(--border);
@@ -129,8 +146,8 @@
             border-bottom:1px solid var(--primary-dark);
             border-right-color:rgba(255,255,255,.25);
         }
-        tr.po-group-odd td { background:#fafafa; }
-        tr.po-group-even td { background:var(--canvas); }
+        
+        tbody tr td { background: var(--canvas); }
         tbody tr:hover td { background:#f4f7fb; }
 
         .num { font-variant-numeric:tabular-nums; }
@@ -194,30 +211,30 @@
         }
         .modal-overlay[hidden] { display:none; }
         .modal-box {
-            background:var(--canvas); width:100%; max-width:480px;
-            max-height:80vh; overflow-y:auto; overflow-x:hidden;
-            border-radius:8px; box-shadow:0 10px 40px rgba(0,0,0,.25);
+            background:var(--canvas); width:100%; max-width:680px;
+            max-height:85vh; overflow-y:auto; overflow-x:hidden;
+            border-radius:12px; box-shadow:0 10px 40px rgba(0,0,0,.25);
             display:flex; flex-direction:column;
         }
         .modal-header {
             display:flex; align-items:center; justify-content:space-between; gap:12px;
-            padding:14px 18px; background:var(--primary); color:var(--on-primary);
+            padding:16px 22px; background:var(--primary); color:var(--on-primary);
             position:sticky; top:0; flex:0 0 auto;
         }
-        .modal-title { font-weight:700; font-size:14px; }
+        .modal-title { font-weight:700; font-size:15px; }
         .modal-close {
             background:transparent; border:none; color:var(--on-primary);
             font-size:22px; line-height:1; padding:0 4px; cursor:pointer;
         }
         .modal-row {
-            display:grid; grid-template-columns:1fr 90px; align-items:center;
-            gap:12px; padding:10px 18px; border-bottom:1px solid var(--border);
+            display:grid; grid-template-columns:1fr 110px; align-items:center;
+            gap:12px; padding:12px 22px; border-bottom:1px solid var(--border);
         }
-        .modal-row > span { font-size:13px; word-break:break-word; overflow-wrap:anywhere; }
-        .modal-row .num { text-align:right; font-variant-numeric:tabular-nums; white-space:nowrap; }
+        .modal-row > span { font-size:14px; word-break:break-word; overflow-wrap:anywhere; }
+        .modal-row .num { text-align:right; font-variant-numeric:tabular-nums; white-space:nowrap; font-weight:600; }
         .modal-row-head {
             background:#f8fafc; color:var(--muted); font-weight:700;
-            font-size:11px; text-transform:uppercase; letter-spacing:.3px;
+            font-size:12px; text-transform:uppercase; letter-spacing:.3px;
         }
         .modal-empty { text-align:center; color:var(--muted); padding:24px; font-style:italic; }
     </style>
@@ -229,7 +246,10 @@
         <span class="h1">รอตรวจสอบการจัด</span>
         <span class="sticker">Internal PO</span>
     </div>
-    <div class="user-tag"><strong>{{ $operatorName }}</strong></div>
+    <div class="user-tag">
+        <span class="status-dot"></span>
+        <span>ผู้ใช้งาน: {{ $operatorName }}</span>
+    </div>
 </div>
 <input type="hidden" id="inpUser" value="{{ $operatorName }}">
 <main>
@@ -251,7 +271,6 @@
                 </div>
                 @if (request('SONum') || request('internal_id') || request('customer_name') || ($selectedStatus !== \App\Models\internal_po::ST_PENDING))
                     <div class="filter-field">
-                        <label>&nbsp;</label>
                         <a href="{{ url()->current() }}">
                             <button type="button" class="btn-ghost">ล้างค่า</button>
                         </a>
@@ -304,12 +323,11 @@
         <tbody>
         @forelse ($heads as $h)
             @php
-                $todo      = $h->status === \App\Models\internal_po::ST_PENDING;
-                $cancel    = $h->status === \App\Models\internal_po::ST_CANCEL;
-                $cls       = $cancel ? 'cancelled' : (!$todo ? 'done' : '');
-                $groupCls  = $loop->index % 2 === 0 ? 'po-group-even' : 'po-group-odd';
+                $todo     = $h->status === \App\Models\internal_po::ST_PENDING;
+                $cancel   = $h->status === \App\Models\internal_po::ST_CANCEL;
+                $cls      = $cancel ? 'cancelled' : (!$todo ? 'done' : '');
             @endphp
-            <tr class="{{ $cls }} {{ $groupCls }}" data-done="{{ $todo ? 0 : 1 }}" data-internal-id="{{ $h->internal_id }}">
+            <tr class="{{ $cls }}" data-done="{{ $todo ? 0 : 1 }}" data-internal-id="{{ $h->internal_id }}">
                 <td class="center">
                     @if ($todo)<input type="checkbox" class="chkLine" value="{{ $h->internal_id }}">@endif
                 </td>
@@ -318,16 +336,11 @@
                 <td class="center">
                     <button type="button" class="btn-view-items" onclick="openItemsModal('{{ $h->internal_id }}')">
                         <svg viewBox="0 0 64 64" width="18" height="18">
-                            <!-- ตัวกล่องด้านบน (ฝาเปิด) -->
                             <polygon points="32,6 54,16 32,26 10,16" fill="#D7B188" stroke="#5A3E25" stroke-width="2" stroke-linejoin="round"/>
                             <polygon points="32,6 32,26 54,16" fill="#C59E75" opacity="0.6"/>
-                            <!-- ด้านข้างซ้าย -->
                             <polygon points="10,18 32,28 32,54 10,44" fill="#B0865B" stroke="#5A3E25" stroke-width="2" stroke-linejoin="round"/>
-                            <!-- ด้านข้างขวา -->
                             <polygon points="32,28 54,18 54,44 32,54" fill="#8F6943" stroke="#5A3E25" stroke-width="2" stroke-linejoin="round"/>
-                            <!-- เทปปิดกล่องตรงกลาง -->
                             <polygon points="30,5 34,5 34,27 30,27" fill="#EAE6DF" stroke="#5A3E25" stroke-width="1.5"/>
-                            <!-- จุดสีแดงบนกล่อง -->
                             <circle cx="16" cy="36" r="3.5" fill="#E11D48"/>
                         </svg>
                         ดูสินค้า

@@ -36,10 +36,10 @@ class fuellogsController extends Controller
         return $this->requireLogin($request, 'oil');
     }
 
-    /** role ที่มีสิทธิ์บันทึก/แก้ไข/ลบ/ยืนยันข้อมูลในระบบน้ำมัน */
+    /** role ที่มีสิทธิ์บันทึก/แก้ไข/ลบ/ยืนยันข้อมูลในระบบน้ำมัน (role อื่นดูได้อย่างเดียว) */
     private function oilEditableRoles(): array
     {
-        return ['admin', 'store', 'accounting'];
+        return ['admin', 'accounting'];
     }
 
     private function isOilEditor($user): bool
@@ -57,7 +57,7 @@ class fuellogsController extends Controller
         $user = $this->resolveOilUser($request);
 
         if (!$this->isOilEditor($user)) {
-            abort(403, 'คุณไม่มีสิทธิ์บันทึก/แก้ไขข้อมูล (ต้องเป็น admin, store หรือ accounting)');
+            abort(403, 'คุณไม่มีสิทธิ์บันทึก/แก้ไขข้อมูล (เฉพาะ admin หรือ accounting เท่านั้น)');
         }
 
         return $user;

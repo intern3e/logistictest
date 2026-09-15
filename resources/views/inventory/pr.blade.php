@@ -115,7 +115,7 @@
 @php $q = ['create_by' => $authUser['name'] ?? '']; @endphp
 <div class="sb-ov" id="sbOv" onclick="closeSB()"></div>
 <div class="sidebar" id="sidebar">
-  <div class="sb-head"><img src="https://img2.pic.in.th/pic/article_aac164a0b0.png" alt="Logo"><span>3E TRADING</span><button class="sb-close" onclick="closeSB()">&#10005;</button></div>
+<div class="sb-head"><img src="https://lh3.googleusercontent.com/d/1qruaZSyb6gXrJ1Bc_l-p50LdZ6mszbE0" alt="Logo"><span>3E TRADING</span><button class="sb-close" onclick="closeSB()">&#10005;</button></div>
   <div class="sb-nav">
     <div class="sb-sec">เมนูหลัก</div>
     <a class="sb-item" target="_blank" href="{{ route('inventory.transaction', $q) }}"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>รายการสินค้า เข้า-ออก</a>
@@ -129,10 +129,13 @@
 
 <div class="topbar">
   <button class="hamburger" onclick="openSB()"><span></span><span></span><span></span></button>
-  <img src="https://img2.pic.in.th/pic/article_aac164a0b0.png" alt="Logo" class="topbar-logo">
+  <img src="https://lh3.googleusercontent.com/d/1qruaZSyb6gXrJ1Bc_l-p50LdZ6mszbE0" alt="Logo" class="topbar-logo">
   <span class="topbar-title">3E TRADING</span>
-  <div class="topbar-right"><span class="topbar-name">{{ $authUser['name'] ?? '' }}</span><span class="topbar-badge">{{ strtoupper($authRole) }}</span></div>
-  <a href="http://server_update:8000/solist" button  type="submit" class="btn-home">🚪 หน้าหลัก</a>
+  <div class="topbar-right">
+    <span class="topbar-name"> ผู้ใช้: {{ $authUser['name'] ?? '' }}</span>
+    <span class="topbar-badge">{{ strtoupper($authRole) }}</span>
+    <a href="http://server_update:8000/solist" class="btn-home">หน้าหลัก</a>
+  </div>
 </div>
 
 <div id="acDropdown"></div>

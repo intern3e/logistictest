@@ -87,6 +87,34 @@ class StoreController extends Controller
         $externalRows = $rows->where('type', 'external')->values();
         $legacyRows   = $rows->where('type', 'legacy')->values();
 
+        // แก้บั๊ก "ดูสินค้า" ไม่ขึ้นข้อมูลสำหรับรายการ legacy ที่ยัง "ไม่ถูก claim"
+        // -----------------------------------------------------------------------------
+        // จุดที่มา: buildLegacyPendingLocationRows() ส่ง field 'id' ของการ์อดประเภท legacy
+        // เป็น store.ID (primary key ตาราง store) ไม่ใช่เลข PO จริง เพราะ id นี้ต้องใช้คู่กับ
+        // locationClaim()/legacyClaim() ที่ query จาก store.ID ตรงๆ
+        //
+        // แต่ที่นี่ (itemsDetailBatch) โค้ดเดิมเอา id นั้นไปใช้เป็น "เลข PO" ตรงๆ เพื่อค้นหา
+        // รายละเอียดสินค้าใน fetchLegacyPoItemsBatch() (เทียบกับ POHD.DocuNo / internal_poline.PONum
+        // ฯลฯ) ทำให้หาไม่เจอเลย เพราะ store.ID กับเลข PO เป็นคนละค่ากัน -> รายการสินค้าว่างเปล่าเสมอ
+        // สำหรับ legacy ที่ยัง "ไม่ถูก claim" (ต่างจากที่ claim แล้ว ซึ่งถูกย้ายไปเป็น PoReceive
+        // ประเภท external ที่ id = po_id ที่ถูกต้องอยู่แล้ว จึงไม่มีปัญหานี้)
+        //
+        // วิธีแก้: resolve store.ID -> เลข PO จริงก่อน ให้ขั้นตอนถัดไปได้ค่าเลข PO ที่ถูกต้อง
+        // (ถ้า id ที่ส่งมาบังเอิญเป็นเลข PO จริงอยู่แล้ว ไม่ตรงกับ store.ID ใดเลย โค้ดนี้จะไม่แก้ไขอะไร)
+        if ($legacyRows->isNotEmpty()) {
+            $legacyIdToPoNum = DB::connection(self::LEGACY_CONNECTION)->table('store')
+                ->whereIn('ID', $legacyRows->pluck('id')->unique()->values()->all())
+                ->pluck('PO', 'ID');
+
+            $legacyRows = $legacyRows->map(function ($row) use ($legacyIdToPoNum) {
+                if ($legacyIdToPoNum->has($row['id'])) {
+                    $row['id'] = $legacyIdToPoNum->get($row['id']);
+                }
+                return $row;
+            });
+        }
+        // -----------------------------------------------------------------------------
+
         $externalPoNumOf = fn ($poId) => preg_replace('/^PO/', '', $poId);
 
         $allPoNums = collect()
@@ -791,7 +819,18 @@ class StoreController extends Controller
         }
 
         $request->validate(['po' => 'required|string']);
-        $po = $request->input('po');
+
+        // แก้บั๊ก "ดูสินค้า" หาสินค้าไม่เจอสำหรับรายการ type=external (ทั้งสถานะ "กำลังจัดการ" และ
+        // "จัดการเสร็จสิ้น") — ปุ่ม "ดูสินค้า" ส่ง po_display มาตรงๆ ซึ่งสำหรับรายการ external จะเป็น
+        // PoReceive.po_id ที่ถูกสร้างด้วย 'PO' . เลขPOดิบ เสมอ (ดู legacyClaim()/checkoutLegacyAndMigrate()/
+        // migrateLegacyStoreToReceive()) เช่น "PO12345" แต่ fetchLegacyPoItemsBatch()->fetchMssqlPoItems()
+        // คาดหวัง "เลข PO ดิบ" (ไม่มี prefix) เพื่อเอาไปต่อเป็น DocuNo = 'PO' + เลขPO เอง ถ้าส่ง "PO12345"
+        // เข้าไปตรงๆ จะกลายเป็น 'PO' . 'PO12345' = "POPO12345" หาใน MSSQL ไม่เจอ แล้วก็หาไม่เจอต่อใน
+        // fallback อื่นๆ ด้วย (เพราะยังส่ง PONum แบบมี prefix ผิดต่อไป)
+        //
+        // endpoint พี่น้องกัน itemsDetailBatch() จัดการเรื่องนี้ถูกต้องอยู่แล้วด้วย
+        // $externalPoNumOf = fn ($poId) => preg_replace('/^PO/', '', $poId); — เพิ่ม logic เดียวกันที่นี่
+        $po = preg_replace('/^PO/', '', $request->input('po'));
 
         $items = $this->fetchLegacyPoItemsBatch([$po])->get($po, collect());
 
@@ -1490,12 +1529,12 @@ class StoreController extends Controller
             return collect();
         }
 
-        // งานที่ "ยังไม่เข้าชั้น sale" = areaS ว่าง (ชั้น sale ยังไม่ระบุ) + ยังไม่เช็คเอาท์ (DATECHECKOUT ว่าง)
-        // ครอบคลุมทั้งของที่ยังอยู่ในกล่อง (statusBox=1) และที่จัดกล่องแล้ว (statusArea=1) โดยไม่ต้องแยกสถานะ
+        // งานที่ "ยังไม่ขึ้นชั้น" = Area ว่าง (ยังไม่ระบุสถานที่เก็บ) + ยังไม่เช็คเอาท์ (DATECHECKOUT ว่าง)
+        // ถ้า Area มีค่า = ของขึ้นชั้นแล้ว (แปลชื่อชั้นได้จาก table area) → ไม่ดึงมาแสดงในงานค้าง
         $rows = DB::connection(self::LEGACY_CONNECTION)->table('store')
             ->select('store.ID', 'store.PO', 'store.SO', 'store.DATEBOX', 'store.boxS')
             ->where(function ($q) {
-                $q->whereNull('store.areaS')->orWhere('store.areaS', '');
+                $q->whereNull('store.Area')->orWhere('store.Area', '');
             })
             ->where(function ($q) {
                 $q->whereNull('store.DATECHECKOUT')->orWhere('store.DATECHECKOUT', '');
@@ -1510,9 +1549,9 @@ class StoreController extends Controller
 
         $poIdsCandidate  = $rows->map(fn ($r) => 'PO' . $r->PO)->unique()->values()->all();
         $alreadyMigrated = PoReceive::whereIn('po_id', $poIdsCandidate)->pluck('po_id')->flip();
-
         $rows = $rows->reject(fn ($r) => $alreadyMigrated->has('PO' . $r->PO))->values();
         if ($rows->isEmpty()) return collect();
+        $rows = $rows->unique('PO')->values();
 
         $soIdsAll = $rows->pluck('SO')->unique()->values()->all();
 
@@ -1576,12 +1615,10 @@ class StoreController extends Controller
 
         $legacyRows = DB::connection(self::LEGACY_CONNECTION)->table('store')
             ->whereIn('ID', $legacyStoreIds)
-            // ใช้เงื่อนไขเดียวกับ buildLegacyPendingLocationRows() คือ "ยังไม่เข้าชั้น sale
-            // (areaS ว่าง) + ยังไม่เช็คเอาท์ (DATECHECKOUT ว่าง)" แทนการเช็ค statusArea='1'
-            // เพราะพบว่าข้อมูลจริงบางแถว statusArea เป็น NULL/ว่าง ทำให้เงื่อนไขเดิมหาไม่เจอ
-            // และคืน 0 แถว จนหน้าบ้านขึ้น "ไม่พบรายการที่พร้อมดำเนินการ" ทั้งที่ยังเลือกได้ในตาราง
+            // ใช้เงื่อนไขเดียวกับ buildLegacyPendingLocationRows() คือ "ยังไม่ขึ้นชั้น
+            // (Area ว่าง) + ยังไม่เช็คเอาท์ (DATECHECKOUT ว่าง)" — Area มีค่า = ขึ้นชั้นแล้ว
             ->where(function ($q) {
-                $q->whereNull('areaS')->orWhere('areaS', '');
+                $q->whereNull('Area')->orWhere('Area', '');
             })
             ->where(function ($q) {
                 $q->whereNull('DATECHECKOUT')->orWhere('DATECHECKOUT', '');
@@ -1662,11 +1699,10 @@ class StoreController extends Controller
             $result = DB::transaction(function () use ($storeId, $authUser) {
                 $row = DB::connection(self::LEGACY_CONNECTION)->table('store')
                     ->where('ID', $storeId)
-                    // เดิมเช็ค statusArea='1' อย่างเดียว ซึ่งพลาดแถวที่ statusArea เป็น NULL/ว่าง
-                    // เปลี่ยนให้ตรงกับเงื่อนไข "งานที่ยังไม่เข้าชั้น sale + ยังไม่เช็คเอาท์"
+                    // ตรงกับเงื่อนไข "งานที่ยังไม่ขึ้นชั้น (Area ว่าง) + ยังไม่เช็คเอาท์"
                     // เหมือนกับที่ใช้ตอนดึงรายการมาแสดง (buildLegacyPendingLocationRows)
                     ->where(function ($q) {
-                        $q->whereNull('areaS')->orWhere('areaS', '');
+                        $q->whereNull('Area')->orWhere('Area', '');
                     })
                     ->where(function ($q) {
                         $q->whereNull('DATECHECKOUT')->orWhere('DATECHECKOUT', '');

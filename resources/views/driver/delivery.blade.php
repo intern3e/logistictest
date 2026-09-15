@@ -30,6 +30,9 @@ $wrapAddress = function($text, $limit = 200) {
 
     return implode("<br>", $lines);
 };
+
+// กำหนดค่าวิธีการจัดส่งรับของเองไว้ตรงนี้ (ไม่ต้องแก้ Controller)
+$selfPickupMethods = ['รับเองรถใหญ่', 'รับเองมอเตอร์ไซด์'];
 @endphp
 
 @if (!empty($printMode))
@@ -39,8 +42,6 @@ $wrapAddress = function($text, $limit = 200) {
 <meta charset="UTF-8">
 
 <style>
-    /* ใช้ไฟล์ TTF ตรงๆ จาก GitHub แทน woff2 ของ Google Fonts เพราะ dompdf (php-font-lib)
-       ไม่รองรับการถอดรหัส woff2 (บีบอัดด้วย Brotli) ทำให้ฟอนต์ไทยหายหรือเพี้ยน */
     @font-face {
         font-family: 'Sarabun';
         font-style: normal;
@@ -177,8 +178,6 @@ $wrapAddress = function($text, $limit = 200) {
 <body>
 
     @php
-        // รองรับทั้งกรณีปริ้นทีละกล่อง (ส่ง $box เดี่ยว) และปริ้นรวมทุกกล่อง (ส่ง $boxes เป็น array)
-        // ให้ view นี้ใช้ร่วมกันได้ ไม่ต้องแยกไฟล์
         $printBoxes = isset($boxes) ? $boxes : [$box];
         $lastBoxIndex = array_key_last($printBoxes);
     @endphp
@@ -271,13 +270,11 @@ $wrapAddress = function($text, $limit = 200) {
                         $isSelfPickupCustomer = str_starts_with((string) $row['customer_code'], 'VEN-11047');
                         $isFirstOfCustomerGroup = !$hasSameCustomerPrev;
 
-                        // ตัดหมายเหตุให้เหลือไม่เกิน 130 ตัวอักษร
                         $noteText = $row['notes'] ?? '';
                         $displayNote = $noteText === '' 
                             ? '-' 
                             : (mb_strlen($noteText, 'UTF-8') > 100 ? mb_substr($noteText, 0, 100, 'UTF-8') . '...' : $noteText);
 
-                        // ซ่อนชื่อและที่อยู่ถ้าไม่ใช่แถวแรกของกลุ่มลูกค้าเดียวกัน
                         $showCustomerInfo = $isFirstOfCustomerGroup;
                     @endphp
 
@@ -323,9 +320,6 @@ $wrapAddress = function($text, $limit = 200) {
 </body>
 </html>
 @else
-{{-- ============================================================
-     โหมดหน้าเว็บปกติ — จ่ายงานขนส่งสินค้า (ปรับให้ดูง่ายขึ้น)
-     ============================================================ --}}
 <!DOCTYPE html>
 <html lang="th">
 <head>
@@ -455,6 +449,83 @@ $wrapAddress = function($text, $limit = 200) {
         }
         .view-btn.active .view-count{ background:rgba(255,255,255,0.25); color:#fff; }
 
+        .search-container {
+            margin-bottom: 20px;
+            padding: 0 5px;
+        }
+        .search-wrapper {
+            display: none;
+            animation: slideDown 0.3s ease-out;
+        }
+        .search-wrapper.active {
+            display: block;
+        }
+        @keyframes slideDown {
+            from {
+                opacity: 0;
+                transform: translateY(-10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .search-bar {
+            display: flex;
+            gap: 10px;
+            padding: 16px 20px;
+            background: #fff;
+            border-radius: 12px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+            flex-wrap: wrap;
+            align-items: center;
+            border: 1px solid var(--line);
+        }
+        .search-bar label {
+            font-size: 0.85rem;
+            font-weight: 600;
+            color: var(--ink-soft);
+            margin-bottom: 0;
+            white-space: nowrap;
+        }
+        .search-bar input[type="text"] {
+            padding: 8px 14px;
+            border: 1px solid var(--line-strong);
+            border-radius: 8px;
+            font-size: 0.9rem;
+            font-family: 'Sarabun', sans-serif;
+            min-width: 180px;
+            transition: all 0.2s;
+            background: #fff;
+        }
+        .search-bar input[type="text"]:focus {
+            outline: none;
+            border-color: var(--delivery);
+            box-shadow: 0 0 0 3px rgba(0,42,103,0.1);
+        }
+        .search-bar .search-group {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .search-clear-btn {
+            background: #fff;
+            border: 1px solid var(--line-strong);
+            border-radius: 8px;
+            padding: 8px 16px;
+            font-size: 0.85rem;
+            cursor: pointer;
+            color: var(--ink-soft);
+            transition: all 0.2s;
+            font-weight: 500;
+        }
+        .search-clear-btn:hover {
+            background: #fff;
+            color: var(--danger);
+            border-color: var(--danger);
+        }
+
         .dashboard-grid{ 
             display:grid; 
             grid-template-columns:repeat(3, 1fr); 
@@ -534,44 +605,43 @@ $wrapAddress = function($text, $limit = 200) {
 
         .job-list-table-wrap{ flex:1; overflow:auto; max-height:calc(100vh - 220px); }
         .job-list-table{ width:100%; border-collapse:collapse; font-size:0.8rem; table-layout:fixed; }
-        .job-list-table th:nth-child(1), .job-list-table td:nth-child(1){ width:8%; }
-        .job-list-table th:nth-child(2), .job-list-table td:nth-child(2){ width:27%; }
-        .job-list-table th:nth-child(3), .job-list-table td:nth-child(3){ width:27%; }
-        .job-list-table th:nth-child(4), .job-list-table td:nth-child(4){ width:38%; }
+        
         .job-list-table thead th{ 
             background:var(--paper); 
             padding:12px 15px; 
             font-weight:600; 
-            text-align:left;
+            text-align: center;
+            vertical-align: middle;
             border-bottom:2px solid var(--line-strong);
+            border-right:1px solid var(--line-strong);
             white-space:nowrap;
+            position:sticky;
+            top:0;
+            z-index:1;
         }
+        .job-list-table thead th:last-child{ border-right:none; }
+        
         .job-list-table tbody td{ 
             padding:14px 15px; 
-            border-bottom:1px solid var(--line);
             vertical-align:top;
             word-wrap:break-word;
             overflow-wrap:break-word;
+            border-right:1px solid var(--line);
         }
-        .job-list-table tbody tr.row-alt td{ background:#f8f9fa; }
+        .job-list-table tbody td:last-child{ border-right:none; }
         .col-check{ text-align:center; }
 
-        tr.job-detail-row{ display:none; }
-        tr.job-detail-row.is-visible{ display:table-row; }
+        tr.job-detail-row{ display:table-row; }
 
-        .group-row td{ 
-            padding:14px 18px; 
-            font-weight:600;
+        .col-customer{
             cursor:pointer;
-            background:#fff;
+            border-right:1px solid var(--line-strong);
+            font-weight:600;
             color:var(--ink);
-            border-bottom:2px solid var(--line-strong);
         }
-        .group-row.delivery-row td{ background:#fff; color:var(--ink); }
-        .group-row.doc-row td{ background:#fff; color:var(--ink); }
-        .group-row.pickup-row td{ background:#fff; color:var(--ink); }
 
-        .group-select-checkbox{ width:18px; height:18px; cursor:pointer; margin-top:2px; }
+        .job-list-table input[type="checkbox"]{ width:22px; height:22px; cursor:pointer; }
+        .group-select-checkbox{ width:22px; height:22px; cursor:pointer; margin-top:2px; }
         .group-customer-info{ display:flex; flex-direction:column; line-height:1.3; min-width:0; }
         .group-customer-id{ font-family:'JetBrains Mono',monospace; font-weight:700; font-size:0.95rem; color:var(--ink); }
         .group-customer-name{ font-weight:700; font-size:0.7rem; color:var(--ink-soft); margin-top:2px; line-height:1.45; word-break:keep-all; overflow-wrap:normal; }
@@ -583,24 +653,6 @@ $wrapAddress = function($text, $limit = 200) {
         .group-row-left{ display:flex; align-items:flex-start; gap:10px; flex:1 1 auto; min-width:0; }
         .group-row-right{ display:flex; align-items:center; gap:10px; flex-shrink:0; white-space:nowrap; }
 
-        .group-toggle-btn{
-            display:flex;
-            align-items:center;
-            gap:4px;
-            background:#fff;
-            border:1px solid var(--line-strong);
-            border-radius:8px;
-            padding:4px 10px;
-            font-size:0.8rem;
-            font-weight:600;
-            color:var(--ink);
-            cursor:pointer;
-            transition:all 0.2s;
-        }
-        .group-toggle-btn:hover{ background:var(--paper); border-color:var(--ink-soft); }
-        .group-toggle-icon{ display:inline-block; transition:transform 0.2s; }
-        .group-toggle-btn.is-open .group-toggle-icon{ transform:rotate(180deg); }
-
         .job-id-primary{ font-family:'JetBrains Mono',monospace; font-weight:700; font-size:0.8rem; color:var(--ink); }
         .job-id-secondary{ font-size:0.7rem; color:var(--ink-soft); margin-top:3px; }
         .job-meta{ font-size:0.75rem; }
@@ -609,9 +661,12 @@ $wrapAddress = function($text, $limit = 200) {
         .job-notes{
             font-size:0.7rem;
             color:var(--ink-soft);
-            white-space:nowrap;
+            white-space:normal;
             overflow:hidden;
-            text-overflow:ellipsis;
+            display:-webkit-box;
+            -webkit-line-clamp:2;
+            -webkit-box-orient:vertical;
+            line-height:1.4;
         }
         
         .status-pill{ 
@@ -626,16 +681,22 @@ $wrapAddress = function($text, $limit = 200) {
         .status-waiting{ background:#e8f5e9; color:#2e7d32; }
         .status-default{ background:#e3f2fd; color:#1565c0; }
 
-        .job-items-cell{ 
-            color:var(--pickup); 
-            font-weight:600; 
-            cursor:pointer; 
-            text-align:center;
-            padding:8px 12px;
-            border-radius:6px;
-            transition:background 0.2s;
+        .job-items-list{
+            font-size:0.75rem;
+            color:var(--ink-soft);
         }
-        .job-items-cell:hover{ background:#e8f5e9; }
+        .po-item-row{
+            display:flex;
+            justify-content:space-between;
+            align-items:baseline;
+            gap:10px;
+            padding:3px 0;
+        }
+        .po-item-row + .po-item-row{ border-top:1px dashed var(--line); }
+        .po-item-name{ min-width:0; word-break:break-word; }
+        .po-item-qty{ color:var(--ink); font-weight:600; white-space:nowrap; }
+        .po-item-empty{ color:var(--ink-faint); }
+        .po-item-same{ color:var(--ink-faint); font-style:italic; }
 
         .empty-note{ 
             padding:40px 20px; 
@@ -700,7 +761,6 @@ $wrapAddress = function($text, $limit = 200) {
             color:var(--ink-faint);
         }
 
-        /* Toast Notification Styles */
         .toast-container {
             pointer-events: none;
         }
@@ -817,16 +877,23 @@ $wrapAddress = function($text, $limit = 200) {
             opacity: 1;
         }
 
+        .text-center-cell {
+            text-align: center !important;
+            vertical-align: middle !important;
+        }
+
         @media (max-width:768px){
             .view-controls{ flex-direction:column; }
             .view-btn{ width:100%; text-align:center; }
             .save-floatbar{ left:20px; right:20px; justify-content:space-between; }
+            .search-bar{ flex-direction: column; align-items: stretch; }
+            .search-bar .search-group{ width: 100%; }
+            .search-bar input[type="text"]{ width: 100%; }
         }
     </style>
 </head>
 <body>
 
-<!-- Toast Notification Container -->
 <div id="toastContainer" class="toast-container position-fixed top-0 end-0 p-3" style="z-index: 9999;">
 </div>
 
@@ -845,10 +912,9 @@ $wrapAddress = function($text, $limit = 200) {
             </div>
 
             <div class="view-controls">
-                <button class="view-btn active" onclick="setView('all')">📊 แสดงทั้งหมด</button>
-                <button class="view-btn delivery" onclick="setView('delivery')">🚚 ส่งของ <span class="view-count">{{ $billCount }}</span></button>
+                <button class="view-btn delivery active" onclick="setView('delivery')">🚚 ส่งของ <span class="view-count">{{ $billCount }}</span></button>
                 <button class="view-btn doc" onclick="setView('doc')">📄 บิลชั่วคราว <span class="view-count">{{ $docCount }}</span></button>
-                <button class="view-btn pickup" onclick="setView('pickup')">📦 รับของเอง <span class="view-count">{{ $poCount }}</span></button>
+                <button class="view-btn pickup" onclick="setView('pickup')"> รับของเอง <span class="view-count">{{ $poCount }}</span></button>
             </div>
         </div>
 
@@ -857,12 +923,56 @@ $wrapAddress = function($text, $limit = 200) {
                 <div class="user-badge-avatar">{{ mb_strtoupper(mb_substr($loggedInName, 0, 1)) }}</div>
                 <span class="user-badge-name">{{ $loggedInName }}</span>
             </div>
-            <a href="{{ route('deliverytrack.summary') }}" class="btn btn-manifest">📋 สรุปงานคนขับ / งานที่จัดส่งแล้ว</a>
+            <a href="{{ route('deliverytrack.summary') }}" class="btn btn-manifest"> สรุปงานคนขับ / งานที่จัดส่งแล้ว</a>
         </div>
     </div>
 
     @if (session('success')) <div class="alert alert-success">✅ {{ session('success') }}</div> @endif
     @if (session('error')) <div class="alert alert-danger">⚠️ {{ session('error') }}</div> @endif
+
+    <div class="search-container">
+        <div id="searchDelivery" class="search-wrapper active">
+            <div class="search-bar">
+                <div class="search-group">
+                    <label for="searchBillCustomer"> รหัสลูกค้า:</label>
+                    <input type="text" id="searchBillCustomer" placeholder="เช่น CUS-16026" oninput="filterBillTable()">
+                </div>
+                <div class="search-group">
+                    <label for="searchBillSO">🔍 รหัส SO:</label>
+                    <input type="text" id="searchBillSO" placeholder="เช่น 69/013216" oninput="filterBillTable()">
+                </div>
+                <button type="button" class="search-clear-btn" onclick="clearBillSearch()">✕ ล้าง</button>
+            </div>
+        </div>
+
+        <div id="searchDoc" class="search-wrapper">
+            <div class="search-bar">
+                <div class="search-group">
+                    <label for="searchDocCustomer">🔍 รหัสลูกค้า:</label>
+                    <input type="text" id="searchDocCustomer" placeholder="เช่น CUS-16026" oninput="filterDocTable()">
+                </div>
+                <div class="search-group">
+                    <label for="searchDocNo">🔍 เลขที่เอกสาร:</label>
+                    <input type="text" id="searchDocNo" placeholder="เช่น DOC-001" oninput="filterDocTable()">
+                </div>
+                <button type="button" class="search-clear-btn" onclick="clearDocSearch()">✕ ล้าง</button>
+            </div>
+        </div>
+
+        <div id="searchPickup" class="search-wrapper">
+            <div class="search-bar">
+                <div class="search-group">
+                    <label for="searchPoCustomer">🔍 ลูกค้า / ผู้ขาย:</label>
+                    <input type="text" id="searchPoCustomer" placeholder="เช่น CUS-16026" oninput="filterPoTable()">
+                </div>
+                <div class="search-group">
+                    <label for="searchPoSo">🔍 PO / SO:</label>
+                    <input type="text" id="searchPoSo" placeholder="เช่น 69/013216" oninput="filterPoTable()">
+                </div>
+                <button type="button" class="search-clear-btn" onclick="clearPoSearch()">✕ ล้าง</button>
+            </div>
+        </div>
+    </div>
 
     <form id="dispatchForm" method="POST" action="{{ route('deliverytrack.store') }}">
         @csrf
@@ -882,12 +992,22 @@ $wrapAddress = function($text, $limit = 200) {
                         <span class="expand-hint">⛶ ขยาย</span>
                     </div>
                 </div>
+
                 <div class="job-list-table-wrap">
                     @if(count($billGroups) > 0)
-                    <table class="job-list-table">
+                    <table class="job-list-table" id="billTable">
                         <colgroup>
-                            <col style="width:8%"><col style="width:27%"><col style="width:27%"><col style="width:38%">
+                            <col style="width:6%"><col style="width:26%"><col style="width:20%"><col style="width:20%"><col style="width:28%">
                         </colgroup>
+                        <thead>
+                            <tr>
+                                <th></th>
+                                <th>ลูกค้า</th>
+                                <th>SO / บิล</th>
+                                <th>ผู้เบิก / เวลา</th>
+                                <th>หมายเหตุ</th>
+                            </tr>
+                        </thead>
                         <tbody>
                             @foreach($billGroups as $group)
                                 @php
@@ -895,46 +1015,48 @@ $wrapAddress = function($text, $limit = 200) {
                                     $firstBillRow = $group['rows'][0]['bill'] ?? null;
                                     $groupCustomerName = $group['customer_name'] ?? null;
                                     $groupAddress = $firstBillRow->customer_address ?? null;
+                                    $groupRowCount = count($group['rows']);
                                 @endphp
-                                <tr class="group-row delivery-row" data-group="{{ $groupKey }}">
-                                    <td colspan="4" style="background:#fff;color:#1a2634;">
-                                        <div class="group-row-inner">
-                                            <div class="group-row-left">
-                                                <input type="checkbox" class="group-select-checkbox" data-group="{{ $groupKey }}" onchange="onGroupCheckboxChange(this)">
-                                                <div class="group-customer-info">
-                                                    <span class="group-customer-id">{{ $group['customer_id'] ?: ($groupCustomerName ?: 'ไม่ระบุรหัส') }}</span>
-                                                    @if(!empty($group['customer_id']) && !empty($groupCustomerName))
-                                                        <span class="group-customer-name">{{ $groupCustomerName }}</span>
-                                                    @endif
-                                                </div>
-                                            </div>
-                                            <div class="group-row-right">
-                                                <span class="group-count-chip">{{ count($group['rows']) }} บิล</span>
-                                                <button type="button" class="group-toggle-btn" data-group="{{ $groupKey }}" onclick="event.stopPropagation(); toggleGroupDrawer(this.closest('tr'))">
-                                                    <span class="group-toggle-icon">▾</span> รายละเอียด
-                                                </button>
-                                            </div>
-                                        </div>
-                                        @if(!empty($groupAddress))
-                                            <div class="group-customer-address-row">{{ $groupAddress }}</div>
-                                        @endif
-                                    </td>
-                                </tr>
                                 @foreach($group['rows'] as $row)
                                     @php $bill = $row['bill']; @endphp
-                                    <tr class="job-detail-row {{ $loop->iteration % 2 == 0 ? 'row-alt' : '' }}" data-group="{{ $groupKey }}">
+                                    <tr class="job-detail-row"
+                                        data-group="{{ $groupKey }}"
+                                        data-customer-id="{{ $group['customer_id'] }}"
+                                        data-customer-name="{{ $groupCustomerName }}"
+                                        data-so-id="{{ $bill->so_id }}">
                                         <td class="col-check">
                                             <input type="checkbox" class="job-checkbox bill-checkbox" value="bill:{{ $bill->so_detail_id }}" data-group="{{ $groupKey }}" onchange="updateSelectedCount()">
                                         </td>
-                                        <td>
+                                        @if($loop->first)
+                                        <td class="col-customer" data-group="{{ $groupKey }}" rowspan="{{ $groupRowCount }}">
+                                            <div class="group-row-inner">
+                                                <div class="group-row-left">
+                                                    <input type="checkbox" class="group-select-checkbox" data-group="{{ $groupKey }}" onchange="onGroupCheckboxChange(this)">
+                                                    <div class="group-customer-info">
+                                                        <span class="group-customer-id">{{ $group['customer_id'] ?: ($groupCustomerName ?: 'ไม่ระบุรหัส') }}</span>
+                                                        @if(!empty($group['customer_id']) && !empty($groupCustomerName))
+                                                            <span class="group-customer-name">{{ $groupCustomerName }}</span>
+                                                        @endif
+                                                    </div>
+                                                </div>
+                                                <div class="group-row-right">
+                                                    <span class="group-count-chip">{{ $groupRowCount }} บิล</span>
+                                                </div>
+                                            </div>
+                                            @if(!empty($groupAddress))
+                                                <div class="group-customer-address-row">{{ $groupAddress }}</div>
+                                            @endif
+                                        </td>
+                                        @endif
+                                        <td class="text-center-cell">
                                             <div class="job-id-primary">SO {{ $bill->so_id }}</div>
                                             <div class="job-id-secondary">บิล {{ $bill->billid }}</div>
                                         </td>
-                                        <td class="job-meta">
+                                        <td class="job-meta text-center-cell">
                                             <div class="meta-name-chip">{{ $bill->emp_picker ?: '-' }}</div>
                                             <div class="meta-time">{{ $bill->time }}</div>
                                         </td>
-                                        <td class="job-notes" title="{{ $bill->notes }}">{{ $bill->notes ? mb_strimwidth($bill->notes, 0, 25, '...') : '-' }}</td>
+                                        <td class="job-notes" title="{{ $bill->notes }}">{{ $bill->notes ? mb_strimwidth($bill->notes, 0, 100, '...') : '-' }}</td>
                                     </tr>
                                 @endforeach
                             @endforeach
@@ -958,12 +1080,22 @@ $wrapAddress = function($text, $limit = 200) {
                         <span class="expand-hint">⛶ ขยาย</span>
                     </div>
                 </div>
+
                 <div class="job-list-table-wrap">
                     @if(count($docGroups) > 0)
-                    <table class="job-list-table">
+                    <table class="job-list-table" id="docTable">
                         <colgroup>
-                            <col style="width:8%"><col style="width:27%"><col style="width:27%"><col style="width:38%">
+                            <col style="width:6%"><col style="width:26%"><col style="width:20%"><col style="width:20%"><col style="width:28%">
                         </colgroup>
+                        <thead>
+                            <tr>
+                                <th></th>
+                                <th>ลูกค้า</th>
+                                <th>เลขที่เอกสาร</th>
+                                <th>ผู้ดูแล / เวลา</th>
+                                <th>หมายเหตุ</th>
+                            </tr>
+                        </thead>
                         <tbody>
                             @foreach($docGroups as $group)
                                 @php
@@ -971,46 +1103,48 @@ $wrapAddress = function($text, $limit = 200) {
                                     $firstDocRow = $group['rows'][0]['doc'] ?? null;
                                     $groupCustomerName = $group['customer_name'] ?? null;
                                     $groupAddress = $firstDocRow->com_address ?? null;
+                                    $groupRowCount = count($group['rows']);
                                 @endphp
-                                <tr class="group-row doc-row" data-group="{{ $groupKey }}">
-                                    <td colspan="4" style="background:#fff;color:#1a2634;">
-                                        <div class="group-row-inner">
-                                            <div class="group-row-left">
-                                                <input type="checkbox" class="group-select-checkbox" data-group="{{ $groupKey }}" onchange="onGroupCheckboxChange(this)">
-                                                <div class="group-customer-info">
-                                                    <span class="group-customer-id">{{ $group['customer_id'] ?: ($groupCustomerName ?: 'ไม่ระบุรหัส') }}</span>
-                                                    @if(!empty($group['customer_id']) && !empty($groupCustomerName))
-                                                        <span class="group-customer-name">{{ $groupCustomerName }}</span>
-                                                    @endif
-                                                </div>
-                                            </div>
-                                            <div class="group-row-right">
-                                                <span class="group-count-chip">{{ count($group['rows']) }} เอกสาร</span>
-                                                <button type="button" class="group-toggle-btn" data-group="{{ $groupKey }}" onclick="event.stopPropagation(); toggleGroupDrawer(this.closest('tr'))">
-                                                    <span class="group-toggle-icon"></span> รายละเอียด
-                                                </button>
-                                            </div>
-                                        </div>
-                                        @if(!empty($groupAddress))
-                                            <div class="group-customer-address-row">{{ $groupAddress }}</div>
-                                        @endif
-                                    </td>
-                                </tr>
                                 @foreach($group['rows'] as $row)
                                     @php $doc = $row['doc']; @endphp
-                                    <tr class="job-detail-row {{ $loop->iteration % 2 == 0 ? 'row-alt' : '' }}" data-group="{{ $groupKey }}">
+                                    <tr class="job-detail-row"
+                                        data-group="{{ $groupKey }}"
+                                        data-customer-id="{{ $group['customer_id'] }}"
+                                        data-customer-name="{{ $groupCustomerName }}"
+                                        data-doc-id="{{ $doc->doc_id }}">
                                         <td class="col-check">
                                             <input type="checkbox" class="job-checkbox doc-checkbox" value="doc:{{ $doc->doc_id }}" data-group="{{ $groupKey }}" onchange="updateSelectedCount()">
                                         </td>
-                                        <td>
+                                        @if($loop->first)
+                                        <td class="col-customer" data-group="{{ $groupKey }}" rowspan="{{ $groupRowCount }}">
+                                            <div class="group-row-inner">
+                                                <div class="group-row-left">
+                                                    <input type="checkbox" class="group-select-checkbox" data-group="{{ $groupKey }}" onchange="onGroupCheckboxChange(this)">
+                                                    <div class="group-customer-info">
+                                                        <span class="group-customer-id">{{ $group['customer_id'] ?: ($groupCustomerName ?: 'ไม่ระบุรหัส') }}</span>
+                                                        @if(!empty($group['customer_id']) && !empty($groupCustomerName))
+                                                            <span class="group-customer-name">{{ $groupCustomerName }}</span>
+                                                        @endif
+                                                    </div>
+                                                </div>
+                                                <div class="group-row-right">
+                                                    <span class="group-count-chip">{{ $groupRowCount }} เอกสาร</span>
+                                                </div>
+                                            </div>
+                                            @if(!empty($groupAddress))
+                                                <div class="group-customer-address-row">{{ $groupAddress }}</div>
+                                            @endif
+                                        </td>
+                                        @endif
+                                        <td class="text-center-cell">
                                             <div class="job-id-primary">{{ $doc->doc_id }}</div>
                                             <div class="job-id-secondary">{{ $doc->contact_name }}</div>
                                         </td>
-                                        <td class="job-meta">
+                                        <td class="job-meta text-center-cell">
                                             <div class="meta-name-chip">{{ $doc->emp_name ?: '-' }}</div>
                                             <div class="meta-time">{{ $doc->time }}</div>
                                         </td>
-                                        <td class="job-notes" title="{{ $doc->notes }}">{{ $doc->notes ? mb_strimwidth($doc->notes, 0, 25, '...') : '-' }}</td>
+                                        <td class="job-notes" title="{{ $doc->notes }}">{{ $doc->notes ? mb_strimwidth($doc->notes, 0, 100, '...') : '-' }}</td>
                                     </tr>
                                 @endforeach
                             @endforeach
@@ -1025,21 +1159,44 @@ $wrapAddress = function($text, $limit = 200) {
             {{-- Panel 3: รับของเอง --}}
             <div class="grid-panel" id="panelPickup" data-type="pickup">
                 <div class="section-heading accent-pickup" onclick="setView('pickup')">
-                    <h5>📦 รับของเอง <span class="section-count">{{ $poCount }} รายการ</span></h5>
+                    <div style="display: flex; flex-direction: column; gap: 4px;">
+                        <h5 style="margin: 0; display: flex; align-items: center; gap: 8px;">
+                            📦 รับของเอง <span class="section-count">{{ $poCount }} รายการ</span>
+                        </h5>
+                        <div style="font-size: 0.75rem; opacity: 0.85; font-weight: 400; line-height: 1.2;">
+                            (ครอบคลุมวิธีการจัดส่ง: {{ implode(', ', $selfPickupMethods) }})
+                        </div>
+                    </div>
                     <div style="display:flex;align-items:center;gap:15px;">
                         <div class="form-check" onclick="event.stopPropagation()">
                             <input type="checkbox" class="form-check-input" id="checkAllPo">
                             <label class="form-check-label" for="checkAllPo">เลือกทั้งหมด</label>
                         </div>
-                        <span class="expand-hint">⛶ ขยาย</span>
+                        <span class="expand-hint"> ขยาย</span>
                     </div>
                 </div>
+
                 <div class="job-list-table-wrap">
                     @if(count($poGroups) > 0)
-                    <table class="job-list-table">
+                    <table class="job-list-table" id="poTable">
                         <colgroup>
-                            <col style="width:8%"><col style="width:27%"><col style="width:27%"><col style="width:38%">
+                        <col style="width:5%">
+                        <col style="width:30%">
+                        <col style="width:12%">
+                        <col style="width:12%">
+                        <col style="width:12%">
+                        <col style="width:29%">
                         </colgroup>
+                        <thead>
+                            <tr>
+                                <th></th>
+                                <th>ลูกค้า / ผู้ขาย</th>
+                                <th>PO / SO</th>
+                                <th>วิธีรับของ</th>
+                                <th>วันที่ส่งมอบ</th>
+                                <th>รายการสินค้า</th>
+                            </tr>
+                        </thead>
                         <tbody>
                             @foreach($poGroups as $group)
                                 @php
@@ -1047,44 +1204,92 @@ $wrapAddress = function($text, $limit = 200) {
                                     $firstPoRow = $group['rows'][0]['po'] ?? null;
                                     $groupCustomerName = $group['customer_name'] ?? null;
                                     $groupAddress = $group['vendor_address'] ?? ($firstPoRow->vendor_address ?? null);
+                                    
+                                    // ✅ คำนวณจำนวน PO ที่ไม่ซ้ำกันในกลุ่มนี้
+                                    $uniquePoNums = array_unique(array_map(function($r) {
+                                        return $r['po']->PONum ?? '';
+                                    }, $group['rows']));
+                                    $actualRowCount = count($uniquePoNums);
+                                    
+                                    $prevItemsKey = null;
+                                    $seenPoNums = [];
                                 @endphp
-                                <tr class="group-row pickup-row" data-group="{{ $groupKey }}">
-                                    <td colspan="4" style="background:#fff;color:#1a2634;">
-                                        <div class="group-row-inner">
-                                            <div class="group-row-left">
-                                                <input type="checkbox" class="group-select-checkbox" data-group="{{ $groupKey }}" onchange="onGroupCheckboxChange(this)">
-                                                <div class="group-customer-info">
-                                                    <span class="group-customer-id">{{ $group['customer_id'] ?: ($groupCustomerName ?: 'ไม่ระบุรหัส') }}</span>
-                                                    @if(!empty($group['customer_id']) && !empty($groupCustomerName))
-                                                        <span class="group-customer-name">{{ $groupCustomerName }}</span>
-                                                    @endif
+                                @foreach($group['rows'] as $row)
+                                    @php
+                                        $po = $row['po'];
+                                        $poNum = $po->PONum ?? '';
+                                        
+                                        // ✅ เช็คว่า PO นี้เคยเห็นแล้วหรือยัง
+                                        $isDuplicatePo = in_array($poNum, $seenPoNums);
+                                        
+                                        // ✅ ถ้า PO ซ้ำ ข้ามการสร้างแถวนี้ไปเลย
+                                        if ($isDuplicatePo) {
+                                            continue;
+                                        }
+                                        
+                                        $seenPoNums[] = $poNum;
+                                        
+                                        $uniqueItems = collect($po->items)
+                                            ->map(fn($item) => is_array($item) ? $item : (array) $item)
+                                            ->unique(fn($item) => ($item['name'] ?? '') . '|' . ($item['qty'] ?? ''))
+                                            ->values();
+                                        $itemsKey = $uniqueItems->map(fn($i) => ($i['name'] ?? '') . '|' . ($i['qty'] ?? ''))->implode(',');
+                                        $showItems = $itemsKey !== $prevItemsKey;
+                                        $prevItemsKey = $itemsKey;
+                                    @endphp
+                                    <tr class="job-detail-row"
+                                        data-group="{{ $groupKey }}"
+                                        data-customer-id="{{ $group['customer_id'] }}"
+                                        data-customer-name="{{ $groupCustomerName }}"
+                                        data-po-num="{{ $poNum }}"
+                                        data-so-num="{{ $po->SONum }}">
+                                        <td class="col-check" style="vertical-align: middle;">
+                                            <input type="checkbox" class="job-checkbox po-checkbox" value="po:{{ $poNum }}" data-po="{{ $poNum }}" data-group="{{ $groupKey }}" onchange="updateSelectedCount()">
+                                        </td>
+                                        @if($loop->first)
+                                        <td class="col-customer" data-group="{{ $groupKey }}" rowspan="{{ $actualRowCount }}" style="vertical-align: middle;">
+                                            <div class="group-row-inner">
+                                                <div class="group-row-left">
+                                                    <input type="checkbox" class="group-select-checkbox" data-group="{{ $groupKey }}" onchange="onGroupCheckboxChange(this)">
+                                                    <div class="group-customer-info">
+                                                        <span class="group-customer-id">{{ $group['customer_id'] ?: ($groupCustomerName ?: 'ไม่ระบุรหัส') }}</span>
+                                                        @if(!empty($group['customer_id']) && !empty($groupCustomerName))
+                                                            <span class="group-customer-name">{{ $groupCustomerName }}</span>
+                                                        @endif
+                                                    </div>
+                                                </div>
+                                                <div class="group-row-right">
+                                                    <span class="group-count-chip">{{ $actualRowCount }} PO</span>
                                                 </div>
                                             </div>
-                                            <div class="group-row-right">
-                                                <span class="group-count-chip">{{ count($group['rows']) }} PO</span>
-                                                <button type="button" class="group-toggle-btn" data-group="{{ $groupKey }}" onclick="event.stopPropagation(); toggleGroupDrawer(this.closest('tr'))">
-                                                    <span class="group-toggle-icon">▾</span> รายละเอียด
-                                                </button>
-                                            </div>
-                                        </div>
-                                        @if(!empty($groupAddress))
-                                            <div class="group-customer-address-row">{{ $groupAddress }}</div>
-                                        @endif
-                                    </td>
-                                </tr>
-                                @foreach($group['rows'] as $row)
-                                    @php $po = $row['po']; @endphp
-                                    <tr class="job-detail-row {{ $loop->iteration % 2 == 0 ? 'row-alt' : '' }}" data-group="{{ $groupKey }}">
-                                        <td class="col-check">
-                                            <input type="checkbox" class="job-checkbox po-checkbox" value="po:{{ $po->PONum }}" data-po="{{ $po->PONum }}" data-group="{{ $groupKey }}" onchange="updateSelectedCount()">
+                                            @if(!empty($groupAddress))
+                                                <div class="group-customer-address-row">{{ $groupAddress }}</div>
+                                            @endif
                                         </td>
-                                        <td>
-                                            <div class="job-id-primary">{{ $po->PONum }}</div>
+                                        @endif
+                                        <td class="text-center-cell" style="vertical-align: middle;">
+                                            <div class="job-id-primary">{{ $poNum }}</div>
                                             <div class="job-id-secondary">SO {{ $po->SONum }}</div>
                                         </td>
-                                        <td>{{ $po->DeliveryDate ?: '-' }}</td>
-                                        <td class="job-items-cell" data-po-title="PO {{ $po->PONum }}" data-po-items="{{ json_encode($po->items) }}">
-                                            {{ count($po->items) }} รายการ
+                                        <td class="text-center-cell" style="vertical-align: middle;">
+                                            {{ $po->DeliveryMethod }}
+                                        </td>
+                                        <td class="text-center-cell" style="vertical-align: middle;">
+                                            {{ $po->DeliveryDate ?: '-' }}
+                                        </td>
+                                        <td class="job-items-list" style="vertical-align: middle;">
+                                            @if($showItems)
+                                                @forelse($uniqueItems as $itemArr)
+                                                    <div class="po-item-row">
+                                                        <span class="po-item-name">{{ $itemArr['name'] ?? '-' }}</span>
+                                                        <span class="po-item-qty">x{{ $itemArr['qty'] ?? '-' }}</span>
+                                                    </div>
+                                                @empty
+                                                    <span class="po-item-empty">-</span>
+                                                @endforelse
+                                            @else
+                                                <span class="po-item-same">รายการเดียวกับด้านบน</span>
+                                            @endif
                                         </td>
                                     </tr>
                                 @endforeach
@@ -1103,10 +1308,9 @@ $wrapAddress = function($text, $limit = 200) {
 
 <div class="save-floatbar">
     <span class="floatbar-count">เลือก <strong id="selectedCount">0</strong> รายการ</span>
-    <button id="openModalBtn" class="btn btn-manifest btn-manifest-cta" disabled> บันทึก</button>
+    <button id="openModalBtn" class="btn btn-manifest btn-manifest-cta" disabled>💾 บันทึก</button>
 </div>
 
-<!-- Modals -->
 <div class="modal fade" id="driverModal" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content">
@@ -1145,30 +1349,12 @@ $wrapAddress = function($text, $limit = 200) {
     </div>
 </div>
 
-<div class="modal fade" id="itemsModal" tabindex="-1">
-    <div class="modal-dialog modal-dialog-centered modal-lg">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title" id="itemsModalTitle">รายการสินค้า</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-            </div>
-            <div class="modal-body">
-                <table class="table">
-                    <thead><tr><th>สินค้า</th><th class="text-end">จำนวน</th></tr></thead>
-                    <tbody id="itemsModalBody"></tbody>
-                </table>
-            </div>
-        </div>
-    </div>
-</div>
-
 @php
     $transportOptions = $deliveryMethods ?? [];
     $driverOptions = $responsiblePersons ?? [];
 @endphp
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 <script>
-// Toast Notification Functions
 function showToast(message, type = 'info', duration = 4000) {
     const container = document.getElementById('toastContainer');
     const toastId = 'toast-' + Date.now();
@@ -1176,8 +1362,8 @@ function showToast(message, type = 'info', duration = 4000) {
     const icons = {
         success: '✓',
         error: '✕',
-        warning: '',
-        info: ''
+        warning: '⚠',
+        info: 'ℹ'
     };
     
     const titles = {
@@ -1204,14 +1390,12 @@ function showToast(message, type = 'info', duration = 4000) {
     
     const toastElement = document.getElementById(toastId);
     
-    // Auto hide after duration
     if (duration > 0) {
         setTimeout(() => {
             hideToast(toastId);
         }, duration);
     }
     
-    // Show toast using Bootstrap
     const bsToast = new bootstrap.Toast(toastElement, {
         delay: duration,
         autohide: true
@@ -1234,24 +1418,31 @@ function setView(mode) {
     const panels = document.querySelectorAll('.grid-panel');
     const btns = document.querySelectorAll('.view-btn');
     
+    const searchWrappers = document.querySelectorAll('.search-wrapper');
+    searchWrappers.forEach(wrapper => wrapper.classList.remove('active'));
+    
+    const searchMap = {
+        'delivery': 'searchDelivery',
+        'doc': 'searchDoc',
+        'pickup': 'searchPickup'
+    };
+    
+    const activeSearch = document.getElementById(searchMap[mode]);
+    if (activeSearch) {
+        activeSearch.classList.add('active');
+    }
+
     btns.forEach(btn => btn.classList.remove('active'));
 
-    if (mode === 'all') {
-        grid.classList.remove('is-filtered');
-        panels.forEach(p => p.classList.remove('is-expanded'));
-        btns[0].classList.add('active');
-    } else {
-        grid.classList.add('is-filtered');
-        panels.forEach(p => {
-            p.classList.toggle('is-expanded', p.dataset.type === mode);
-        });
-        const activeBtn = document.querySelector(`.view-btn.${mode}`);
-        if(activeBtn) activeBtn.classList.add('active');
-    }
+    grid.classList.add('is-filtered');
+    panels.forEach(p => {
+        p.classList.toggle('is-expanded', p.dataset.type === mode);
+    });
+    const activeBtn = document.querySelector(`.view-btn.${mode}`);
+    if (activeBtn) activeBtn.classList.add('active');
 }
 
-function toggleGroupSelection(row) {
-    const groupId = row.dataset.group;
+function toggleGroupSelection(groupId) {
     const checkboxes = document.querySelectorAll(`.job-checkbox[data-group="${groupId}"]`);
     if (checkboxes.length === 0) return;
     const allChecked = Array.from(checkboxes).every(cb => cb.checked);
@@ -1259,30 +1450,11 @@ function toggleGroupSelection(row) {
     updateSelectedCount();
 }
 
-function toggleGroupDrawer(row) {
-    const groupId = row.dataset.group;
-    const isOpen = row.classList.toggle('is-open');
-    document.querySelectorAll(`tr.job-detail-row[data-group="${groupId}"]`).forEach(r => {
-        r.classList.toggle('is-visible', isOpen);
-    });
-    const toggleBtn = row.querySelector('.group-toggle-btn');
-    if (toggleBtn) toggleBtn.classList.toggle('is-open', isOpen);
-}
-
 document.querySelectorAll('.job-list-table-wrap').forEach(wrap => {
     wrap.addEventListener('click', function (e) {
-        const itemsCell = e.target.closest('.job-items-cell');
-        if (itemsCell) {
-            let items = [];
-            try { items = JSON.parse(itemsCell.dataset.poItems || '[]'); } catch (err) { items = []; }
-            showItemsModal(itemsCell.dataset.poTitle || '', items);
-            return;
-        }
-
         if (e.target.closest('.group-select-checkbox')) return;
-        if (e.target.closest('.group-toggle-btn')) return;
-        const row = e.target.closest('tr.group-row');
-        if (row) toggleGroupSelection(row);
+        const custCell = e.target.closest('.col-customer');
+        if (custCell) toggleGroupSelection(custCell.dataset.group);
     });
 });
 
@@ -1310,15 +1482,6 @@ function updateSelectedCount() {
     document.getElementById('selectedCount').textContent = count;
     document.getElementById('openModalBtn').disabled = count === 0;
     syncGroupCheckboxes();
-}
-
-function showItemsModal(title, items) {
-    document.getElementById('itemsModalTitle').textContent = title;
-    const tbody = document.getElementById('itemsModalBody');
-    tbody.innerHTML = items.map(item => 
-        `<tr><td>${item.name || '-'}</td><td class="text-end">${item.qty || '-'}</td></tr>`
-    ).join('');
-    new bootstrap.Modal(document.getElementById('itemsModal')).show();
 }
 
 function setupAutocomplete(inputEl, listEl, options) {
@@ -1355,9 +1518,154 @@ function setupAutocomplete(inputEl, listEl, options) {
     });
 }
 
+function normalizeText(text) {
+    return (text || '').toString().toLowerCase().replace(/\s+/g, ' ').trim();
+}
+
+function containsText(haystack, needle) {
+    if (!needle) return true;
+    return normalizeText(haystack).includes(normalizeText(needle));
+}
+
+function filterBillTable() {
+    const custQuery = document.getElementById('searchBillCustomer').value;
+    const soQuery = document.getElementById('searchBillSO').value;
+    const table = document.getElementById('billTable');
+    if (!table) return;
+
+    const rows = table.querySelectorAll('tbody tr.job-detail-row');
+    const groupVisibility = {};
+
+    rows.forEach(row => {
+        const customerId = row.dataset.customerId || '';
+        const customerName = row.dataset.customerName || '';
+        const soId = row.dataset.soId || '';
+
+        const matchCustomer = containsText(customerId, custQuery) || containsText(customerName, custQuery);
+        const matchSO = containsText(soId, soQuery);
+        const show = matchCustomer && matchSO;
+
+        row.style.display = show ? '' : 'none';
+
+        const group = row.dataset.group;
+        if (!groupVisibility[group]) groupVisibility[group] = false;
+        if (show) groupVisibility[group] = true;
+    });
+
+    rows.forEach(row => {
+        const custCell = row.querySelector('.col-customer');
+        if (custCell) {
+            custCell.style.display = groupVisibility[row.dataset.group] ? '' : 'none';
+        }
+    });
+
+    updateSectionCount('panelDelivery', rows);
+}
+
+function clearBillSearch() {
+    document.getElementById('searchBillCustomer').value = '';
+    document.getElementById('searchBillSO').value = '';
+    filterBillTable();
+}
+
+function filterDocTable() {
+    const custQuery = document.getElementById('searchDocCustomer').value;
+    const docQuery = document.getElementById('searchDocNo').value;
+    const table = document.getElementById('docTable');
+    if (!table) return;
+
+    const rows = table.querySelectorAll('tbody tr.job-detail-row');
+    const groupVisibility = {};
+
+    rows.forEach(row => {
+        const customerId = row.dataset.customerId || '';
+        const customerName = row.dataset.customerName || '';
+        const docId = row.dataset.docId || '';
+
+        const matchCustomer = containsText(customerId, custQuery) || containsText(customerName, custQuery);
+        const matchDoc = containsText(docId, docQuery);
+        const show = matchCustomer && matchDoc;
+
+        row.style.display = show ? '' : 'none';
+
+        const group = row.dataset.group;
+        if (!groupVisibility[group]) groupVisibility[group] = false;
+        if (show) groupVisibility[group] = true;
+    });
+
+    rows.forEach(row => {
+        const custCell = row.querySelector('.col-customer');
+        if (custCell) {
+            custCell.style.display = groupVisibility[row.dataset.group] ? '' : 'none';
+        }
+    });
+
+    updateSectionCount('panelDoc', rows);
+}
+
+function clearDocSearch() {
+    document.getElementById('searchDocCustomer').value = '';
+    document.getElementById('searchDocNo').value = '';
+    filterDocTable();
+}
+
+function filterPoTable() {
+    const custQuery = document.getElementById('searchPoCustomer').value;
+    const poSoQuery = document.getElementById('searchPoSo').value;
+    const table = document.getElementById('poTable');
+    if (!table) return;
+
+    const rows = table.querySelectorAll('tbody tr.job-detail-row');
+    const groupVisibility = {};
+
+    rows.forEach(row => {
+        const customerId = row.dataset.customerId || '';
+        const customerName = row.dataset.customerName || '';
+        const poNum = row.dataset.poNum || '';
+        const soNum = row.dataset.soNum || '';
+
+        const matchCustomer = containsText(customerId, custQuery) || containsText(customerName, custQuery);
+        const matchPoSo = containsText(poNum, poSoQuery) || containsText(soNum, poSoQuery);
+        const show = matchCustomer && matchPoSo;
+
+        row.style.display = show ? '' : 'none';
+
+        const group = row.dataset.group;
+        if (!groupVisibility[group]) groupVisibility[group] = false;
+        if (show) groupVisibility[group] = true;
+    });
+
+    rows.forEach(row => {
+        const custCell = row.querySelector('.col-customer');
+        if (custCell) {
+            custCell.style.display = groupVisibility[row.dataset.group] ? '' : 'none';
+        }
+    });
+
+    updateSectionCount('panelPickup', rows);
+}
+
+function clearPoSearch() {
+    document.getElementById('searchPoCustomer').value = '';
+    document.getElementById('searchPoSo').value = '';
+    filterPoTable();
+}
+
+function updateSectionCount(panelId, rows) {
+    const panel = document.getElementById(panelId);
+    if (!panel) return;
+    const visibleRows = Array.from(rows).filter(r => r.style.display !== 'none').length;
+    const countEl = panel.querySelector('.section-count');
+    if (countEl) {
+        countEl.textContent = visibleRows + ' รายการ';
+    }
+}
+
 document.addEventListener('DOMContentLoaded', function() {
     document.getElementById('deliveryDateInput').value = new Date().toISOString().split('T')[0];
-    
+
+    setView('delivery');
+
     document.getElementById('checkAllBills')?.addEventListener('change', function() {
         document.querySelectorAll('.bill-checkbox').forEach(cb => cb.checked = this.checked);
         updateSelectedCount();
@@ -1419,7 +1727,7 @@ document.addEventListener('DOMContentLoaded', function() {
             return;
         }
         if (!isSelfDeliverySales() && driver && !responsiblePersonsData.includes(driver)) {
-            showToast('กรุณาเลือกชื่อผู้รับผิดชอบจากรายการที่มีให้เท่านั้น (พิมพ์ชื่ออิสระไม่ได้ ยกเว้นเลือกวิธีจัดส่งเป็น "เซลล์ไปส่งเอง")', 'error');
+            showToast('กรุณาเลือกชื่อผู้รับผิดชอบจากรายการที่มีให้เท่านั้น', 'error');
             return;
         }
 
