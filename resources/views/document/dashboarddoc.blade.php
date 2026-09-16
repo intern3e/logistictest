@@ -6,9 +6,6 @@
     <title>เอกสารชั่วคราว</title>
 
     <style>
-        /* =========================================================
-           TOKENS — โทนขาวดำล้วน (grayscale)
-           ========================================================= */
         :root {
             --ink-900: #111111;
             --ink-700: #333333;
@@ -66,7 +63,6 @@
         }
 
         .buttons { display: flex; gap: 12px; align-items: center; }
-
         .buttons span { font-size: clamp(11px, 0.55vw + 5px, 14px); color: var(--ink-150); }
 
         .btn {
@@ -91,6 +87,27 @@
             border: 1px solid #fff;
         }
         .btn-solid:hover { background-color: var(--ink-150); }
+
+        /* ปุ่มแก้ไข */
+        .btn-edit {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            padding: 5px 10px;
+            border-radius: var(--radius);
+            background-color: var(--paper);
+            color: var(--ink-900);
+            font-size: clamp(10px, 0.5vw + 4px, 12px);
+            font-weight: 600;
+            text-decoration: none;
+            transition: 0.2s;
+            border: 1px solid var(--ink-150);
+        }
+        .btn-edit:hover {
+            background-color: var(--ink-900);
+            color: #fff;
+            border-color: var(--ink-900);
+        }
 
         /* FILTER */
         .filter-container {
@@ -141,7 +158,7 @@
             font-size: clamp(10px, 0.62vw + 4px, 14px);
             border-radius: 10px;
             overflow: hidden;
-            min-width: 1000px;
+            min-width: 1180px;
             border: 1px solid var(--line);
         }
 
@@ -165,8 +182,34 @@
 
         .wrap-text { text-align: left; white-space: normal; word-wrap: break-word; padding: 10px; }
 
-        /* แถวที่ statusdeli == 1 — เดิมใช้เขียว ตอนนี้ใช้เทาเข้มขึ้นแทน */
+        /* แถวที่ statusdeli == 1 */
         td.row-flagged { background-color: var(--ink-150) !important; font-weight: 600; }
+
+        /* ✅ CSS สำหรับกำหนดความกว้างคอลัมน์ (ปรับใหม่ตามข้อมูลจริง) */
+        .col-no { width: 45px; }
+        .col-docid { width: 100px; }
+        .col-so { width: 95px; }
+        .col-headcom { width: 180px; }
+        .col-comname { width: 180px; }
+        .col-contact { width: 110px; }
+        .col-tel { width: 55px; }
+        .col-doctype { width: 80px; }
+        .col-emp { width: 70px; }
+        .col-date { width: 85px; }
+        .col-pdf { width: 45px; }
+        .col-detail { width: 160px; }
+        .col-edit { width: 60px; }
+
+        /* ทำให้ข้อความในคอลัมน์เบอร์โทรไม่ขึ้นบรรทัดใหม่ */
+        td.col-tel, th.col-tel {
+            white-space: nowrap;
+            text-align: center;
+        }
+
+        /* เพิ่มความกว้างให้คอลัมน์ข้อมูลรายละเอียด */
+        td.col-detail, th.col-detail {
+            min-width: 160px;
+        }
 
         /* ปุ่มไอคอนเอกสาร PDF */
         .pdf-btn {
@@ -273,25 +316,44 @@
 
     <div class="table-container">
         <table>
+            <!-- colgroup สำหรับกำหนดความกว้างแต่ละคอลัมน์ -->
+            <colgroup>
+                <col class="col-no">
+                <col class="col-docid">
+                <col class="col-so">
+                <col class="col-headcom">
+                <col class="col-comname">
+                <col class="col-contact">
+                <col class="col-tel">
+                <col class="col-doctype">
+                <col class="col-emp">
+                <col class="col-date">
+                <col class="col-pdf">
+                <col class="col-detail">
+                <col class="col-edit">
+            </colgroup>
             <thead>
                 <tr>
                     <th>ลำดับ</th>
                     <th>เลขที่บิล</th>
+                    <th>เลข SO</th>
                     <th>บริษัทผู้ส่ง</th>
                     <th>บริษัท</th>
                     <th>ผู้ติดต่อ</th>
-                    <th>เบอร์โทร</th>
+                    <th class="col-tel">เบอร์โทร</th>
                     <th>ประเภทงาน</th>
                     <th>ผู้เปิดบิล</th>
                     <th>วันที่</th>
                     <th>เอกสาร PDF</th>
-                    <th>ข้อมูลรายละเอียด</th>
+                    <th class="col-detail">ข้อมูลรายละเอียด</th>
+                    <th>แก้ไข</th>
                 </tr>
             </thead>
             <tbody id="table-body">
                 @foreach($docbill as $item)
                 @php
                     $pdfPath = "temporary_bill/{$item->doc_id}.pdf";
+                    $hasPdf = \Storage::exists('public/' . $pdfPath) || $item->statuspdf == 1;
                 @endphp
                 <tr>
                     <td>{{ $loop->iteration }}</td>
@@ -304,40 +366,57 @@
                             {{ $item->doc_id }}
                         @endif
                     </td>
+                    <td>{{ $item->so_id ?? '-' }}</td>
                     <td>{{ $item->headcom }}</td>
                     <td>{{ $item->com_name }}</td>
                     <td>{{ $item->contact_name }}</td>
-                    <td>{{ $item->contact_tel }}</td>
+                    <td class="col-tel">{{ $item->contact_tel }}</td>
                     <td>{{ $item->doctype }}</td>
                     <td>{{ $item->emp_name }}</td>
                     <td>{{ \Carbon\Carbon::parse($item->time)->format('d/m/Y') }}</td>
 
-                    {{-- เอกสาร PDF: กดเปิดไฟล์จาก storage/temporary_bill ตรงๆ --}}
+                    {{-- เอกสาร PDF --}}
                     <td>
-                        <a href="{{ asset('storage/' . $pdfPath) }}" target="_blank" class="pdf-btn" style="border-bottom:none;" title="เปิดเอกสาร PDF">
-                            <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
-                                <path d="M14 2v6h6"/>
-                                <path d="M9 15h6"/>
-                                <path d="M9 11h6"/>
-                            </svg>
-                        </a>
+                        @if($hasPdf)
+                            <a href="{{ asset('storage/' . $pdfPath) }}" target="_blank" class="pdf-btn" style="border-bottom:none;" title="เปิดเอกสาร PDF">
+                                <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                                    <path d="M14 2v6h6"/>
+                                    <path d="M9 15h6"/>
+                                    <path d="M9 11h6"/>
+                                </svg>
+                            </a>
+                        @else
+                            <span class="pdf-btn-disabled" title="ยังไม่มีไฟล์ PDF">
+                                <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                                    <path d="M14 2v6h6"/>
+                                </svg>
+                            </span>
+                        @endif
                     </td>
 
-                    <td>
+                    <td class="col-detail">
                         <a href="javascript:void(0);" onclick="openPopup(
                             '{{ $item->doc_id }}',
                             '{{ $item->com_name }}',
                             '{{ $item->com_address }}',
                             '{{ $item->contact_name }}',
                             '{{ $item->contact_tel }}',
-                            '{{ $item->notes }}',
+                            '{{ $item->notes }}'
                         )">
                             เพิ่มเติม
                         </a>
                         <br>
                         <a href="javascript:void(0);" style="color:#1971c2;" onclick="openDeliveryStatus('{{ $item->doc_id }}')">
                             สถานะจ่ายงาน
+                        </a>
+                    </td>
+
+                    {{-- ปุ่มแก้ไขข้อมูล --}}
+                    <td>
+                        <a href="{{ route('document.editdoc', $item->doc_id) }}" class="btn-edit" style="border-bottom:none;" title="แก้ไขเอกสาร">
+                           แก้ไข
                         </a>
                     </td>
                 </tr>
@@ -400,7 +479,7 @@
             let rows = table.getElementsByTagName("tr");
 
             for (let i = 0; i < rows.length; i++) {
-                let typeCell = rows[i].getElementsByTagName("td")[2];
+                let typeCell = rows[i].getElementsByTagName("td")[3];
                 if (typeCell) {
                     let typeText = typeCell.textContent.trim();
                     rows[i].style.display = (selectedType === "" || typeText === selectedType) ? "" : "none";
@@ -436,7 +515,7 @@
             document.getElementById("popup-body-3").value = notes;
 
             let secondPopupBody = document.getElementById("popup-body");
-            secondPopupBody.innerHTML = "<tr><td colspan='4'>กำลังโหลดข้อมูล...</td></tr>";
+            secondPopupBody.innerHTML = "<tr><td colspan='2'>กำลังโหลดข้อมูล...</td></tr>";
 
             fetch(`/get-docbill-detail/${doc_id}`)
                 .then(response => response.json())
@@ -452,12 +531,12 @@
                             `);
                         });
                     } else {
-                        secondPopupBody.innerHTML = "<tr><td colspan='4'>ไม่มีข้อมูล</td></tr>";
+                        secondPopupBody.innerHTML = "<tr><td colspan='2'>ไม่มีข้อมูล</td></tr>";
                     }
                 })
                 .catch(error => {
                     console.error("Error fetching data:", error);
-                    secondPopupBody.innerHTML = "<tr><td colspan='4'>เกิดข้อผิดพลาดในการโหลดข้อมูล</td></tr>";
+                    secondPopupBody.innerHTML = "<tr><td colspan='2'>เกิดข้อผิดพลาดในการโหลดข้อมูล</td></tr>";
                 });
         }
 

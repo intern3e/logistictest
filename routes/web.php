@@ -108,9 +108,16 @@ use App\Http\Controllers\DocController;
 Route::get('/dashboarddoc', [DocController::class, 'dashboarddoc'])->name('document.dashboarddoc');
 Route::get('/insertdoc', [DocController::class, 'insertdoc'])->name('document.insertdoc');
 Route::post('/insertdocu', [DocController::class, 'insertDocu'])->name('insertdocu');
-Route::get('/get-docbill-detail/{doc_id}', [DocController::class, 'getdocBillDetail'])->name('getdocBillDetail');
+Route::get('/get-docbill-detail/{doc_id}', [DocController::class, 'getDocBillDetail'])->name('getdocBillDetail'); // แก้ชื่อฟังก์ชันให้ตรงกับ Controller (getDocBillDetail)
 Route::post('/fetch-doclalong', [DocController::class, 'fetchlalong']);
 Route::post('/save-bill-pdf', [DocController::class, 'savePdfBill'])->name('savebillpdf');
+
+// 👉 Route สำหรับแก้ไขเอกสาร
+Route::get('/editdoc/{doc_id}', [DocController::class, 'editdoc'])->name('document.editdoc');
+Route::put('/updatedoc/{doc_id}', [DocController::class, 'updateDoc'])->name('document.updatedoc');
+
+// 👉 ✅ เพิ่มบรรทัดนี้สำหรับเช็คสถานะจ่ายงาน
+Route::get('/delivery-status', [DocController::class, 'deliveryStatus'])->name('document.deliveryStatus');
 
 use App\Http\Controllers\admindoccontroller;
 Route::get('/admindoc', [admindoccontroller::class, 'dashboarddoc'])->name('document.admindoc');
