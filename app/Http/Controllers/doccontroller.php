@@ -56,6 +56,43 @@ class DocController extends Controller
         return view('document.dashboarddoc', compact('docbill', 'message', 'creator'));
     }
 
+    /**
+     * สถานะจ่ายงานให้คนขับของบิลนี้ (จาก transaction_transport)
+     * จ่ายงาน: name_pick/time_pick/driver_name/transport_name
+     * รับงาน/สถานะ: check_name/check_time/status
+     */
+    public function deliveryStatus(Request $request)
+    {
+        $billId = trim((string) $request->query('bill_id', ''));
+        if ($billId === '') {
+            return response()->json(['found' => false, 'rows' => []]);
+        }
+
+        $rows = DB::table('transaction_transport')
+            ->where('bill_id', $billId)
+            ->orderByDesc('id')
+            ->get();
+
+        return response()->json([
+            'found'   => $rows->isNotEmpty(),
+            'bill_id' => $billId,
+            'rows'    => $rows->map(function ($r) {
+                $received = !empty($r->check_name) || (string) $r->status === '1';
+                return [
+                    'name_pick'      => $r->name_pick,
+                    'time_pick'      => $r->time_pick,
+                    'driver_name'    => $r->driver_name,
+                    'transport_name' => $r->transport_name,
+                    'check_name'     => $r->check_name,
+                    'check_time'     => $r->check_time,
+                    'status'         => $r->status,
+                    'received'       => $received,
+                    'delivery_date'  => $r->delivery_date,
+                ];
+            })->values(),
+        ]);
+    }
+
     public function insertdoc(Request $request)
     {
         $authUser = $this->resolveSsoUser($request, 'document.insertdoc');

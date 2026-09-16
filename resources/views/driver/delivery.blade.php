@@ -204,6 +204,7 @@ $selfPickupMethods = ['รับเองรถใหญ่', 'รับเอ�
                         'address_html'  => $addressHtml,
                         'bill_no'       => $item['bill_no'],
                         'notes'         => $item['notes'] ?? null,
+                        'type'          => $item['type'] ?? null,
                     ];
                 }
             }
@@ -1319,7 +1320,7 @@ $selfPickupMethods = ['รับเองรถใหญ่', 'รับเอ�
                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
             <div class="modal-body">
-                <div class="mb-3">
+                <div class="mb-3" id="deliveryDateGroup">
                     <label class="form-label">วันที่จัดส่ง <span class="required-mark">*</span></label>
                     <input type="date" id="deliveryDateInput" class="form-control">
                 </div>
@@ -1682,6 +1683,11 @@ document.addEventListener('DOMContentLoaded', function() {
     });
 
     document.getElementById('openModalBtn').addEventListener('click', function() {
+        // งานรับเข้าเอง (po:) ล้วน → ไม่ต้องให้เลือกวันกำหนดส่ง ซ่อนช่องวันที่ไปเลย
+        const checkedJobs = Array.from(document.querySelectorAll('.job-checkbox:checked'));
+        const allSelfPickup = checkedJobs.length > 0 && checkedJobs.every(cb => cb.value.startsWith('po:'));
+        const dateGroup = document.getElementById('deliveryDateGroup');
+        if (dateGroup) dateGroup.style.display = allSelfPickup ? 'none' : '';
         new bootstrap.Modal(document.getElementById('driverModal')).show();
     });
 
@@ -1714,7 +1720,11 @@ document.addEventListener('DOMContentLoaded', function() {
         const vehicle = vehicleInput.value.trim();
         const driver = driverInput.value.trim();
 
-        if (!date) {
+        // งานรับเข้าเอง (po:) ไม่ต้องกำหนดวันที่รับ — บังคับวันที่เฉพาะเมื่อมีงานจัดส่ง/เอกสารปนอยู่
+        const checkedJobs = Array.from(document.querySelectorAll('.job-checkbox:checked'));
+        const allSelfPickup = checkedJobs.length > 0 && checkedJobs.every(cb => cb.value.startsWith('po:'));
+
+        if (!allSelfPickup && !date) {
             showToast('กรุณาระบุวันที่จัดส่ง', 'error');
             return;
         }

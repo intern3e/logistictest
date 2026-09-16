@@ -11,13 +11,15 @@ class internal_poline extends Model
 
     protected $fillable = [
         'internal_id', 'SO_id', 'item_id', 'item_name',
-        'item_quantity', 'item_average', 'item_total'
+        'item_quantity', 'item_average', 'item_total',
+        'picked_at', 'picked_by',
     ];
 
     protected $casts = [
         'item_quantity' => 'float',
         'item_average'  => 'float',
         'item_total'    => 'float',
+        'picked_at'     => 'datetime',
     ];
 
     public function head()

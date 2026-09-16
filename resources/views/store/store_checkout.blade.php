@@ -223,6 +223,10 @@
         width: 20px; height: 20px; accent-color: var(--primary); flex-shrink: 0; cursor: pointer;
         border: 2px solid var(--border); border-radius: 4px;
     }
+    .dn-check-label {
+        display: inline-flex; align-items: center; gap: 5px; margin: 0 10px 0 0;
+        font-size: 13px; font-weight: 600; color: var(--muted); cursor: pointer; white-space: nowrap;
+    }
     .dn-cancelled-badge {
         font-size: 13px; font-weight: 600; color: var(--danger); margin-left: auto; white-space: nowrap;
         background: var(--danger-light); padding: 2px 8px; border-radius: 4px;
@@ -401,15 +405,17 @@
                             $isPicked      = $dn->picked ?? false;
                             $isItemHost    = ($dnIdx === $itemHostDnIdx);
                             $showSelectAll = $isItemHost && !$isCancelled && !$isPicked && !$bill->todo_groups->isEmpty();
-                            $showPickOnly  = !$isCancelled && !$isPicked && !$showSelectAll && ($dn->dn_no ?? null);
+                            // ทุก DN ที่มีเลขบิล (ยังไม่ยกเลิก/ยังไม่จัด) ให้มี "จัดบิลอย่างเดียว" อิสระจากการเช็ค PO
+                            $showPickOnly  = !$isCancelled && !$isPicked && ($dn->dn_no ?? null);
                         @endphp
                         <div class="dn-section {{ $isCancelled ? 'dn-cancelled' : '' }}" id="{{ $dnElId }}" data-dnno="{{ $dn->dn_no ?? '' }}">
                             <div class="dn-section-header">
                                 @if ($showSelectAll)
-                                    <input type="checkbox" class="dnSelectAll" id="{{ $selectAllId }}"
-                                        onchange="toggleDnSelectAll(document.getElementById('{{ $itemsElId }}'), this.checked)">
-                                @elseif ($showPickOnly)
-                                    <input type="checkbox" class="chkPickOnly" onchange="syncCardFromPickOnly(this)">
+                                    <label class="dn-check-label"><input type="checkbox" class="dnSelectAll" id="{{ $selectAllId }}"
+                                        onchange="toggleDnSelectAll(document.getElementById('{{ $itemsElId }}'), this.checked)"> เลือก PO ทั้งหมด</label>
+                                @endif
+                                @if ($showPickOnly)
+                                    <label class="dn-check-label"><input type="checkbox" class="chkPickOnly" onchange="syncCardFromPickOnly(this)"> จัดบิลอย่างเดียว</label>
                                 @endif
                                 <span class="dn-no {{ $isCancelled ? 'is-cancelled' : ($isPicked ? 'is-done' : '') }}">{{ ($dn->dn_no ?? null) ? $dn->dn_no : '— (ไม่มีเลขที่บิล)' }}</span>
                                 
@@ -600,11 +606,8 @@ function updateDnButton(itemsEl) {
         selectAll.checked       = allChecked;
         selectAll.indeterminate = checked > 0 && checked < allBoxes.length;
 
-        const card = itemsEl.closest('.so-card');
-        if (card) {
-            card.querySelectorAll('.chkPickOnly').forEach(cb => { cb.checked = allChecked; });
-        }
     }
+    // ไม่ผูก chkPickOnly กับการเช็ค PO อีกต่อไป — "จัดบิลอย่างเดียว" กับ "เช็คของออก" แยกกันอิสระ
     updateFloatBar();
 }
 
@@ -614,24 +617,8 @@ function toggleDnSelectAll(dnEl, checked) {
 }
 
 function syncCardFromPickOnly(cb) {
-    if (!cb.checked) {
-        updateFloatBar();
-        return;
-    }
-    const card = cb.closest('.so-card');
-    if (!card) { updateFloatBar(); return; }
-
-    card.querySelectorAll('.chkPickOnly').forEach(other => { other.checked = true; });
-
-    const itemsEl = card.querySelector('[data-selectall]');
-    if (itemsEl) {
-        itemsEl.querySelectorAll('.chkGroup').forEach(g => { g.checked = true; });
-        const selectAll = document.getElementById(itemsEl.dataset.selectall);
-        if (selectAll) {
-            selectAll.checked       = true;
-            selectAll.indeterminate = false;
-        }
-    }
+    // "จัดบิลอย่างเดียว" = ทำบิลอย่างเดียว ไม่ต้องเช็คของ (PO) ออก
+    // แยกอิสระจาก chkGroup (เช็คของออก) — ไม่บังคับติ๊ก PO ให้อีกต่อไป
     updateFloatBar();
 }
 

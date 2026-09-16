@@ -49,153 +49,173 @@ class InternalPoController extends Controller
         return $this->requireLogin($request, $logTag);
     }
 
-    private function ensureLegacyInternalPoMigrated(array $ids): void
-    {
-        $existing   = internal_po::whereIn('internal_id', $ids)->pluck('internal_id')->flip();
-        $missingIds = collect($ids)->reject(fn ($id) => $existing->has($id))->values();
-        if ($missingIds->isEmpty()) return;
+private function ensureLegacyInternalPoMigrated(array $ids): void
+{
+    $existing   = internal_po::whereIn('internal_id', $ids)->pluck('internal_id')->flip();
+    $missingIds = collect($ids)->reject(fn ($id) => $existing->has($id))->values();
+    if ($missingIds->isEmpty()) return;
 
-        $rows = DB::connection(self::LEGACY_CONNECTION)->table('store')
-            ->select('ID', 'PO', 'SO')
-            ->whereIn('PO', $missingIds->all())
-            ->where(function ($q) {
-                $q->whereNull('boxS')->orWhere('boxS', '');
-            })
-            ->get();
+    $rows = DB::connection(self::LEGACY_CONNECTION)->table('internal_po')
+        ->select('PONum as PO', 'SONum as SO')
+        ->whereIn('PONum', $missingIds->all())
+        ->get();
 
-        if ($rows->isEmpty()) return;
+    if ($rows->isEmpty()) return;
 
-        $soIdsAll   = $rows->pluck('SO')->unique()->values()->all();
-        $custBySoId = DB::connection(self::LEGACY_CONNECTION)->table('so')
-            ->whereIn('SONum', $soIdsAll)
-            ->get(['SONum', 'CustName'])
-            ->keyBy('SONum');
+    $soIdsAll   = $rows->pluck('SO')->unique()->values()->all();
+    $custBySoId = DB::connection(self::LEGACY_CONNECTION)->table('so')
+        ->whereIn('SONum', $soIdsAll)
+        ->get(['SONum', 'CustName'])
+        ->keyBy('SONum');
 
-        $poNumsAll = $rows->pluck('PO')->unique()->values()->all();
-        $linesByPo = DB::connection(self::LEGACY_CONNECTION)->table('internal_poline')
-            ->whereIn('PONum', $poNumsAll)
-            ->orderBy('POLineSeq')
-            ->get()
-            ->groupBy('PONum');
+    $poNumsAll = $rows->pluck('PO')->unique()->values()->all();
+    $linesByPo = DB::connection(self::LEGACY_CONNECTION)->table('internal_poline')
+        ->whereIn('PONum', $poNumsAll)
+        ->where('POLineStatus', '1')
+        ->orderBy('POLineSeq')
+        ->get()
+        ->groupBy('PONum');
 
-        DB::transaction(function () use ($rows, $custBySoId, $linesByPo) {
-            foreach ($rows as $row) {
-                if (internal_po::where('internal_id', $row->PO)->exists()) continue;
+    DB::transaction(function () use ($rows, $custBySoId, $linesByPo) {
+        foreach ($rows as $row) {
+            if (internal_po::where('internal_id', $row->PO)->exists()) continue;
 
-                internal_po::create([
+            internal_po::create([
+                'internal_id'   => $row->PO,
+                'SO_id'         => $row->SO,
+                'customer_name' => optional($custBySoId->get($row->SO))->CustName,
+                'status'        => internal_po::ST_PENDING,
+            ]);
+
+            foreach ($linesByPo->get($row->PO, collect()) as $line) {
+                internal_poline::create([
                     'internal_id'   => $row->PO,
                     'SO_id'         => $row->SO,
-                    'customer_name' => optional($custBySoId->get($row->SO))->CustName,
-                    'status'        => internal_po::ST_PENDING,
+                    'item_id'       => null,
+                    'item_name'     => $line->Description ?: '—',
+                    'item_quantity' => (float) $line->Quantity,
                 ]);
-
-                foreach ($linesByPo->get($row->PO, collect()) as $line) {
-                    internal_poline::create([
-                        'internal_id'   => $row->PO,
-                        'SO_id'         => $row->SO,
-                        'item_id'       => null,
-                        'item_name'     => $line->Description ?: '—',
-                        'item_quantity' => (float) $line->Quantity,
-                    ]);
-                }
             }
-        });
+        }
+    });
+}
+private function legacyPoQuery(Request $request, string $statusFilter)
+{
+    // statusFilter: 'pending' = ต้องมีไส้ในสถานะ '1' เหลืออยู่ / 'finished' = มีไส้ในแต่ไม่มี '1' เหลือแล้ว
+    $query = DB::connection(self::LEGACY_CONNECTION)->table('internal_po as ip')
+        ->select('ip.PONum as PO', 'ip.SONum as SO')
+        ->where('ip.PONum', 'LIKE', '____-A____')
+        ->whereNotNull('ip.SONum')->where('ip.SONum', '<>', '')
+        ->when($statusFilter === 'pending', function ($q) {
+            $q->whereExists(function ($sub) {
+                $sub->select(DB::raw(1))
+                    ->from('internal_poline as ipl')
+                    ->whereColumn('ipl.PONum', 'ip.PONum')
+                    ->where('ipl.POLineStatus', '1');
+            });
+        })
+        ->when($statusFilter === 'finished', function ($q) {
+            $q->whereExists(function ($sub) {
+                    // ต้องมีไส้ในอย่างน้อย 1 บรรทัด (ไม่ใช่ PO ที่ไม่มีไส้ในเลยตั้งแต่แรก)
+                    $sub->select(DB::raw(1))
+                        ->from('internal_poline as ipl')
+                        ->whereColumn('ipl.PONum', 'ip.PONum');
+                })
+                ->whereNotExists(function ($sub) {
+                    // และไม่มีบรรทัดไหนเหลือสถานะ '1' (รอจัด) แล้ว
+                    $sub->select(DB::raw(1))
+                        ->from('internal_poline as ipl')
+                        ->whereColumn('ipl.PONum', 'ip.PONum')
+                        ->where('ipl.POLineStatus', '1');
+                });
+        })
+        ->when($request->filled('SONum'), fn ($q) => $q->where('ip.SONum', 'LIKE', '%' . $request->input('SONum') . '%'))
+        ->when($request->filled('internal_id'), fn ($q) => $q->where('ip.PONum', 'LIKE', '%' . $request->input('internal_id') . '%'))
+        ->orderByDesc('ip.PONum');
+
+    if ($request->filled('customer_name')) {
+        $matchedSoIds = DB::connection(self::LEGACY_CONNECTION)->table('so')
+            ->where('CustName', 'LIKE', '%' . $request->input('customer_name') . '%')
+            ->pluck('SONum');
+        $query->whereIn('ip.SONum', $matchedSoIds->all());
     }
 
-    private function legacyPoQuery(Request $request, \Closure $boxSFilter)
-    {
-        $query = DB::connection(self::LEGACY_CONNECTION)->table('store')
-            ->select('ID', 'PO', 'SO')
-            ->where('PO', 'LIKE', '____-A____')
-            ->where($boxSFilter)
-            ->whereNotNull('PO')->where('PO', '<>', '')
-            ->whereNotNull('SO')->where('SO', '<>', '')
-            ->when($request->filled('SONum'), fn ($q) => $q->where('SO', 'LIKE', '%' . $request->input('SONum') . '%'))
-            ->when($request->filled('internal_id'), fn ($q) => $q->where('PO', 'LIKE', '%' . $request->input('internal_id') . '%'))
-            ->orderByDesc('PO');
+    return $query;
+}
 
-        if ($request->filled('customer_name')) {
-            $matchedSoIds = DB::connection(self::LEGACY_CONNECTION)->table('so')
-                ->where('CustName', 'LIKE', '%' . $request->input('customer_name') . '%')
-                ->pluck('SONum');
-            $query->whereIn('SO', $matchedSoIds->all());
-        }
+   private function fetchLegacyRows(Request $request, string $statusFilter, string $status, int $need): \Illuminate\Support\Collection
+{
+    $result = collect();
+    $offset = 0;
+    $batch  = max($need * 2, 200);
 
-        return $query;
+    for ($i = 0; $i < 8; $i++) {
+        $chunk = (clone $this->legacyPoQuery($request, $statusFilter))
+            ->offset($offset)
+            ->limit($batch)
+            ->get();
+
+        if ($chunk->isEmpty()) break;
+
+        $migrated = internal_po::whereIn('internal_id', $chunk->pluck('PO'))->pluck('internal_id')->flip();
+        $result = $result->concat($chunk->reject(fn ($r) => $migrated->has($r->PO)));
+
+        $offset += $chunk->count();
+
+        if ($result->count() >= $need) break;
+        if ($chunk->count() < $batch) break;
     }
 
-    private function fetchLegacyRows(Request $request, \Closure $boxSFilter, string $status, int $need): \Illuminate\Support\Collection
-    {
-        $result = collect();
-        $offset = 0;
-        $batch  = max($need * 2, 200);
+    return $result->unique('PO')->take($need)->values()->map(fn ($r) => (object) [
+        'internal_id' => $r->PO,
+        'SO_id'       => $r->SO,
+        'status'      => $status,
+    ]);
+}
 
-        for ($i = 0; $i < 8; $i++) {
-            $chunk = (clone $this->legacyPoQuery($request, $boxSFilter))
-                ->offset($offset)
-                ->limit($batch)
-                ->get();
+private function countLegacyRows(Request $request, string $statusFilter): int
+{
+    $ids = (clone $this->legacyPoQuery($request, $statusFilter))->pluck('PO');
+    if ($ids->isEmpty()) return 0;
 
-            if ($chunk->isEmpty()) break;
+    $migratedCount = 0;
+    foreach ($ids->chunk(1000) as $chunk) {
+        $migratedCount += internal_po::whereIn('internal_id', $chunk->all())->count();
+    }
 
-            $migrated = internal_po::whereIn('internal_id', $chunk->pluck('PO'))->pluck('internal_id')->flip();
-            $result = $result->concat($chunk->reject(fn ($r) => $migrated->has($r->PO)));
+    return $ids->count() - $migratedCount;
+}
+private function hydrateLegacyPageItems(\Illuminate\Support\Collection $lightItems): \Illuminate\Support\Collection
+{
+    if ($lightItems->isEmpty()) return $lightItems;
 
-            $offset += $chunk->count();
+    $poNums = $lightItems->pluck('internal_id')->unique()->values()->all();
+    $soIds  = $lightItems->pluck('SO_id')->unique()->values()->all();
 
-            if ($result->count() >= $need) break;
-            if ($chunk->count() < $batch) break;
-        }
+    $custBySoId = DB::connection(self::LEGACY_CONNECTION)->table('so')
+        ->whereIn('SONum', $soIds)
+        ->get(['SONum', 'CustName'])
+        ->keyBy('SONum');
 
-        return $result->unique('PO')->take($need)->values()->map(fn ($r) => (object) [
-            'internal_id' => $r->PO,
-            'SO_id'       => $r->SO,
-            'status'      => $status,
+    $linesByPo = DB::connection(self::LEGACY_CONNECTION)->table('internal_poline')
+        ->whereIn('PONum', $poNums)
+        ->where('POLineStatus', '1')   // '1' = รอจัด เท่านั้น (2=จัดแล้ว, 3=ยกเลิก ไม่เอา)
+        ->orderBy('POLineSeq')
+        ->get()
+        ->groupBy('PONum');
+
+    return $lightItems->map(function ($r) use ($custBySoId, $linesByPo) {
+        $r->customer_name = optional($custBySoId->get($r->SO_id))->CustName;
+        $r->lines = $linesByPo->get($r->internal_id, collect())->map(fn ($l) => (object) [
+            'id'            => null,   // legacy ยังไม่ migrate → ไม่มี id ราย line (จัดทั้ง PO)
+            'item_id'       => null,   // ระบบเก่าไม่มี item_id
+            'item_name'     => $l->Description ?: '—',
+            'item_quantity' => (float) $l->Quantity,
+            'picked_at'     => null,
         ]);
-    }
-
-    private function countLegacyRows(Request $request, \Closure $boxSFilter): int
-    {
-        $ids = (clone $this->legacyPoQuery($request, $boxSFilter))->pluck('PO');
-        if ($ids->isEmpty()) return 0;
-
-        $migratedCount = 0;
-        foreach ($ids->chunk(1000) as $chunk) {
-            $migratedCount += internal_po::whereIn('internal_id', $chunk->all())->count();
-        }
-
-        return $ids->count() - $migratedCount;
-    }
-
-    private function hydrateLegacyPageItems(\Illuminate\Support\Collection $lightItems): \Illuminate\Support\Collection
-    {
-        if ($lightItems->isEmpty()) return $lightItems;
-
-        $poNums = $lightItems->pluck('internal_id')->unique()->values()->all();
-        $soIds  = $lightItems->pluck('SO_id')->unique()->values()->all();
-
-        $custBySoId = DB::connection(self::LEGACY_CONNECTION)->table('so')
-            ->whereIn('SONum', $soIds)
-            ->get(['SONum', 'CustName'])
-            ->keyBy('SONum');
-
-        $linesByPo = DB::connection(self::LEGACY_CONNECTION)->table('internal_poline')
-            ->whereIn('PONum', $poNums)
-            ->orderBy('POLineSeq')
-            ->get()
-            ->groupBy('PONum');
-
-        return $lightItems->map(function ($r) use ($custBySoId, $linesByPo) {
-            $r->customer_name = optional($custBySoId->get($r->SO_id))->CustName;
-            $r->lines = $linesByPo->get($r->internal_id, collect())->map(fn ($l) => (object) [
-                'item_id'       => null,
-                'item_name'     => $l->Description ?: '—',
-                'item_quantity' => (float) $l->Quantity,
-            ]);
-            return $r;
-        });
-    }
-
+        return $r;
+    });
+}
     private function baseQuery(Request $request, bool $withStatusFilter = true, bool $withLines = true)
     {
         $q = $withLines ? internal_po::with('lines') : internal_po::query();
@@ -227,85 +247,81 @@ class InternalPoController extends Controller
         return $q;
     }
 
-    private function loadHeads(Request $request, string $todoStatus)
-    {
-        $effectiveStatus = $request->filled('status') ? $request->input('status') : internal_po::ST_PENDING;
-        $perPage = self::PER_PAGE;
-        $page    = max(1, (int) $request->input('page', 1));
-        $need    = $page * $perPage;
+  private function loadHeads(Request $request, string $todoStatus)
+{
+    $effectiveStatus = $request->filled('status') ? $request->input('status') : internal_po::ST_PENDING;
+    $perPage = self::PER_PAGE;
+    $page    = max(1, (int) $request->input('page', 1));
+    $need    = $page * $perPage;
 
-        $pendingBoxS  = function ($q) { $q->whereNull('boxS')->orWhere('boxS', ''); };
-        $finishedBoxS = function ($q) { $q->whereNotNull('boxS')->where('boxS', '<>', ''); };
+    $internalTotal = $this->baseQuery($request, true, false)->count();
 
-        $internalTotal = $this->baseQuery($request, true, false)->count();
+    $internalRows = $this->baseQuery($request, true, false)
+        ->orderByRaw('FIELD(status, ?) DESC', [$todoStatus])
+        ->orderByDesc('internal_id')
+        ->limit($need)
+        ->get();
 
-        $internalRows = $this->baseQuery($request, true, false)
-            ->orderByRaw('FIELD(status, ?) DESC', [$todoStatus])
-            ->orderByDesc('internal_id')
-            ->limit($need)
-            ->get();
+    $allHeads = $internalRows;
+    $legacyPendingTotal  = 0;
+    $legacyFinishedTotal = 0;
 
-        $allHeads = $internalRows;
-        $legacyPendingTotal  = 0;
-        $legacyFinishedTotal = 0;
-
-        if (in_array($effectiveStatus, [internal_po::ST_PENDING, self::STATUS_ALL_KEY], true)) {
-            $allHeads = $allHeads->concat($this->fetchLegacyRows($request, $pendingBoxS, internal_po::ST_PENDING, $need));
-            $legacyPendingTotal = $this->countLegacyRows($request, $pendingBoxS);
-        }
-
-        if (in_array($effectiveStatus, [self::STATUS_FINISH_KEY, self::STATUS_ALL_KEY], true)) {
-            $allHeads = $allHeads->concat($this->fetchLegacyRows($request, $finishedBoxS, internal_po::ST_FINISH, $need));
-            $legacyFinishedTotal = $this->countLegacyRows($request, $finishedBoxS);
-        }
-
-        $allHeads = $allHeads->sort(function ($a, $b) use ($todoStatus) {
-            $aPending = $a->status === $todoStatus;
-            $bPending = $b->status === $todoStatus;
-            if ($aPending !== $bPending) return $aPending ? -1 : 1;
-            return strcmp((string) $b->internal_id, (string) $a->internal_id);
-        })->values();
-
-        $pageItems = $allHeads->slice(($page - 1) * $perPage, $perPage)->values();
-
-        $newIds = $pageItems->filter(fn ($r) => $r instanceof internal_po)->pluck('internal_id')->values();
-        if ($newIds->isNotEmpty()) {
-            $linesByInternalId = internal_po::with('lines')
-                ->whereIn('internal_id', $newIds)
-                ->get()
-                ->keyBy('internal_id');
-
-            $pageItems = $pageItems->map(function ($r) use ($linesByInternalId) {
-                if ($r instanceof internal_po) {
-                    $fresh = $linesByInternalId->get($r->internal_id);
-                    if ($fresh) $r->setRelation('lines', $fresh->lines);
-                }
-                return $r;
-            });
-        }
-
-        $legacyItemsOnPage = $pageItems->reject(fn ($r) => $r instanceof internal_po)->values();
-        if ($legacyItemsOnPage->isNotEmpty()) {
-            $hydrated = $this->hydrateLegacyPageItems($legacyItemsOnPage)->keyBy('internal_id');
-            $pageItems = $pageItems->map(function ($r) use ($hydrated) {
-                if (!($r instanceof internal_po) && $hydrated->has($r->internal_id)) {
-                    return $hydrated->get($r->internal_id);
-                }
-                return $r;
-            });
-        }
-
-        $this->lastLegacyPendingTotal = $legacyPendingTotal;
-
-        return new \Illuminate\Pagination\LengthAwarePaginator(
-            $pageItems,
-            $internalTotal + $legacyPendingTotal + $legacyFinishedTotal,
-            $perPage,
-            $page,
-            ['path' => $request->url(), 'query' => $request->except('page')]
-        );
+    if (in_array($effectiveStatus, [internal_po::ST_PENDING, self::STATUS_ALL_KEY], true)) {
+        $allHeads = $allHeads->concat($this->fetchLegacyRows($request, 'pending', internal_po::ST_PENDING, $need));
+        $legacyPendingTotal = $this->countLegacyRows($request, 'pending');
     }
 
+    if (in_array($effectiveStatus, [self::STATUS_FINISH_KEY, self::STATUS_ALL_KEY], true)) {
+        $allHeads = $allHeads->concat($this->fetchLegacyRows($request, 'finished', internal_po::ST_FINISH, $need));
+        $legacyFinishedTotal = $this->countLegacyRows($request, 'finished');
+    }
+
+    $allHeads = $allHeads->sort(function ($a, $b) use ($todoStatus) {
+        $aPending = $a->status === $todoStatus;
+        $bPending = $b->status === $todoStatus;
+        if ($aPending !== $bPending) return $aPending ? -1 : 1;
+        return strcmp((string) $b->internal_id, (string) $a->internal_id);
+    })->values();
+
+    $pageItems = $allHeads->slice(($page - 1) * $perPage, $perPage)->values();
+
+    $newIds = $pageItems->filter(fn ($r) => $r instanceof internal_po)->pluck('internal_id')->values();
+    if ($newIds->isNotEmpty()) {
+        $linesByInternalId = internal_po::with('lines')
+            ->whereIn('internal_id', $newIds)
+            ->get()
+            ->keyBy('internal_id');
+
+        $pageItems = $pageItems->map(function ($r) use ($linesByInternalId) {
+            if ($r instanceof internal_po) {
+                $fresh = $linesByInternalId->get($r->internal_id);
+                if ($fresh) $r->setRelation('lines', $fresh->lines);
+            }
+            return $r;
+        });
+    }
+
+    $legacyItemsOnPage = $pageItems->reject(fn ($r) => $r instanceof internal_po)->values();
+    if ($legacyItemsOnPage->isNotEmpty()) {
+        $hydrated = $this->hydrateLegacyPageItems($legacyItemsOnPage)->keyBy('internal_id');
+        $pageItems = $pageItems->map(function ($r) use ($hydrated) {
+            if (!($r instanceof internal_po) && $hydrated->has($r->internal_id)) {
+                return $hydrated->get($r->internal_id);
+            }
+            return $r;
+        });
+    }
+
+    $this->lastLegacyPendingTotal = $legacyPendingTotal;
+
+    return new \Illuminate\Pagination\LengthAwarePaginator(
+        $pageItems,
+        $internalTotal + $legacyPendingTotal + $legacyFinishedTotal,
+        $perPage,
+        $page,
+        ['path' => $request->url(), 'query' => $request->except('page')]
+    );
+}
     private function statusCounts(Request $request): array
     {
         $rows = $this->baseQuery($request, false, false)
@@ -325,10 +341,8 @@ class InternalPoController extends Controller
             }
         }
         $out[self::STATUS_FINISH_KEY] = $finishTotal;
-
         $out[internal_po::ST_PENDING] += $this->lastLegacyPendingTotal
-            ?? $this->countLegacyRows($request, function ($q) { $q->whereNull('boxS')->orWhere('boxS', ''); });
-
+            ?? $this->countLegacyRows($request, 'pending');
         return $out;
     }
 
@@ -378,87 +392,94 @@ class InternalPoController extends Controller
             'print_sheets' => 'nullable|integer|min:1|max:20',
         ]);
 
-        $ids          = $request->input('ids');
+        $rawIds       = $request->input('ids');
         $printer      = $request->input('printer');
         $printSheets  = (int) $request->input('print_sheets', 1);
         $operatorName = $authUser->name;
 
-        $this->ensureLegacyInternalPoMigrated($ids);
+        // แยกประเภท id: line:<lineId> = จัดไส้ในทีละรายการ (ระบบใหม่) / po:<internalId> = จัดทั้ง PO (ของเก่า ยังไม่ migrate)
+        $lineIds = [];
+        $poIds   = [];
+        foreach ($rawIds as $raw) {
+            if (strpos($raw, 'line:') === 0)   $lineIds[] = substr($raw, 5);
+            elseif (strpos($raw, 'po:') === 0) $poIds[]   = substr($raw, 3);
+            else                               $poIds[]   = $raw; // เผื่อรูปแบบเดิม (internal_id ตรง ๆ)
+        }
 
-        $candidateHeads = internal_po::whereIn('internal_id', $ids)
-            ->where('status', internal_po::ST_PENDING)
-            ->with('lines')
-            ->get();
+        // ของเก่า → migrate เข้าระบบใหม่ก่อน แล้วรวม line id ของทุก PO นั้นเข้ามาด้วย
+        if (!empty($poIds)) {
+            $this->ensureLegacyInternalPoMigrated($poIds);
+            $lineIds = array_merge(
+                $lineIds,
+                internal_poline::whereIn('internal_id', $poIds)->pluck('id')->map(fn ($v) => (string) $v)->all()
+            );
+        }
 
-        if ($candidateHeads->isEmpty()) {
+        $lineIds = array_values(array_unique(array_filter($lineIds)));
+        if (empty($lineIds)) {
             return response()->json(['ok' => false, 'message' => 'ไม่พบรายการที่พร้อมดำเนินการ'], 404);
         }
 
-        $neededByItem = [];
-        foreach ($candidateHeads as $h) {
-            foreach ($h->lines as $it) {
-                if (!$it->item_id) continue;
-                $neededByItem[$it->item_id] = ($neededByItem[$it->item_id] ?? 0) + (float) $it->item_quantity;
-            }
-        }
-
-        $itemSnapshots = $this->hikariGetItemsBulk(array_keys($neededByItem));
-
-        $shortages = [];
-        foreach ($neededByItem as $itemId => $needQty) {
-            $item = $itemSnapshots[$itemId] ?? null;
-            if (!$item) {
-                $shortages[] = "{$itemId} (ไม่พบสินค้าใน inventory)";
-                continue;
-            }
-            if ((float) $item['quantity'] < $needQty) {
-                $shortages[] = "{$itemId} (คงเหลือ {$item['quantity']}, ต้องการ {$needQty})";
-            }
-        }
-
-        if (!empty($shortages)) {
-            return response()->json([
-                'ok'      => false,
-                'message' => 'ไม่สามารถจัดได้เนื่องจากของใน inventory ไม่เพียงพอ: ' . implode(', ', $shortages),
-            ], 422);
-        }
-
         try {
-            [$updated, $heads] = DB::transaction(function () use ($ids, $authUser) {
-                $heads = internal_po::whereIn('internal_id', $ids)
-                    ->where('status', internal_po::ST_PENDING)
-                    ->with('lines')
-                    ->lockForUpdate()
-                    ->get();
-
-                if ($heads->isEmpty()) {
-                    return [0, $heads];
-                }
-
-                $n = internal_po::whereIn('internal_id', $heads->pluck('internal_id'))
+            $finishedPoIds = DB::transaction(function () use ($lineIds, $operatorName) {
+                // มาร์คไส้ในที่เลือกว่า "จัดแล้ว"
+                internal_poline::whereIn('id', $lineIds)
+                    ->whereNull('picked_at')
                     ->update([
-                        'status'  => internal_po::ST_FINISH,
-                        'pick_by' => $authUser->name,
-                        'pick_at' => Carbon::now()->toDateTimeString(),
+                        'picked_at' => Carbon::now()->toDateTimeString(),
+                        'picked_by' => $operatorName,
                     ]);
 
-                return [$n, $heads];
+                // PO ที่ไส้ในถูกจัดครบทุกอันแล้ว → ปิดงาน (FINISH)
+                $affectedPoIds = internal_poline::whereIn('id', $lineIds)
+                    ->pluck('internal_id')->unique()->values()->all();
+
+                $finished = [];
+                foreach ($affectedPoIds as $poId) {
+                    $total   = internal_poline::where('internal_id', $poId)->count();
+                    $pickedN = internal_poline::where('internal_id', $poId)->whereNotNull('picked_at')->count();
+                    if ($total > 0 && $pickedN === $total) {
+                        $head = internal_po::where('internal_id', $poId)
+                            ->where('status', internal_po::ST_PENDING)
+                            ->lockForUpdate()->first();
+                        if ($head) {
+                            $head->update([
+                                'status'  => internal_po::ST_FINISH,
+                                'pick_by' => $operatorName,
+                                'pick_at' => Carbon::now()->toDateTimeString(),
+                            ]);
+                            $finished[] = $poId;
+                        }
+                    }
+                }
+                return $finished;
             });
         } catch (\Exception $e) {
             return response()->json(['ok' => false, 'message' => 'จัดเสร็จไม่สำเร็จ: ' . $e->getMessage()], 500);
         }
 
-        if ($updated === 0) {
-            return response()->json(['ok' => false, 'message' => 'ไม่พบรายการที่พร้อมดำเนินการ'], 404);
+        // พิมพ์สติ๊กเกอร์ + ซิงก์ inventory เฉพาะ PO ที่จัดครบแล้วในรอบนี้
+        $printOk = true;
+        $hikariHadError = false;
+        if (!empty($finishedPoIds)) {
+            $finishedHeads = internal_po::whereIn('internal_id', $finishedPoIds)->with('lines')->get();
+
+            $needItemIds = $finishedHeads->flatMap(fn ($h) => $h->lines->pluck('item_id'))->filter()->unique()->values()->all();
+            $itemSnapshots = !empty($needItemIds) ? $this->hikariGetItemsBulk($needItemIds) : [];
+            $hikariHadError = $this->syncHikariStockout($finishedHeads, $itemSnapshots, $operatorName);
+
+            $printOk = $this->insertPrintWarehouse($finishedHeads, $printer, $printSheets);
         }
 
-        $hikariHadError = $this->syncHikariStockout($heads, $itemSnapshots, $operatorName);
-
-        $this->insertPrintWarehouse($heads, $printer, $printSheets);
-
-        $message = 'จัดเสร็จ ' . $updated . ' ใบ (สั่งพิมพ์ ' . $printSheets . ' แผ่น/ใบ ที่ ' . $printer . ')';
+        $message = 'จัดไส้ในแล้ว ' . count($lineIds) . ' รายการ';
+        if (!empty($finishedPoIds)) {
+            $message .= ' · ปิดงานครบ ' . count($finishedPoIds) . ' PO (พิมพ์สติ๊กเกอร์ ' . $printSheets . ' แผ่น/ใบ ที่ ' . $printer . ')';
+        }
+        if (!$printOk) {
+            $message .= ' ⚠️ แต่สั่งพิมพ์สติ๊กเกอร์ไม่สำเร็จ (เขียน printwarehouse ไม่ได้ — ตรวจสิทธิ์ DB 3e)';
+        }
         if ($hikariHadError) {
-            $message .= ' (คำเตือน: ซิงก์ inventory บาง item ไม่สำเร็จ กรุณาตรวจสอบ log)';
+            $message .= ' (คำเตือน: ซิงก์ inventory บาง item ไม่สำเร็จ)';
         }
 
         return response()->json(['ok' => true, 'message' => $message]);
@@ -499,14 +520,18 @@ class InternalPoController extends Controller
         return response()->json(['ok' => true, 'message' => 'ยกเลิก ' . $updated . ' ใบ']);
     }
 
-    private function insertPrintWarehouse($heads, string $printerName, int $printQty): void
+    /**
+     * คิวพิมพ์สติ๊กเกอร์ลง printwarehouse (3e)
+     * คืน true = สั่งพิมพ์สำเร็จ, false = ล้มเหลว (เช่น user ไม่มีสิทธิ์ INSERT บน 3e) เพื่อให้แจ้งเตือนผู้ใช้ได้
+     */
+    private function insertPrintWarehouse($heads, string $printerName, int $printQty): bool
     {
         $rows = [];
         foreach ($heads as $h) {
             for ($i = 0; $i < $printQty; $i++) {
                 $rows[] = [
                     'SONum'        => $h->SO_id,
-                    'PORef'        => $h->POref,
+                    'PORef'        => $h->POref ?? null,
                     'CustName'     => $h->customer_name,
                     'Print_Qty'    => 1,
                     'Printed_Flag' => 'N',
@@ -515,12 +540,14 @@ class InternalPoController extends Controller
             }
         }
 
-        if (!$rows) return;
+        if (!$rows) return true;
 
         try {
             DB::connection('mysql_3e')->table('printwarehouse')->insert($rows);
+            return true;
         } catch (\Exception $e) {
             Log::error('insertPrintWarehouse failed: ' . $e->getMessage());
+            return false;
         }
     }
 

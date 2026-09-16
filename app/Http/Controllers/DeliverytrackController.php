@@ -323,11 +323,20 @@ class DeliverytrackController extends Controller
         
         $unmatchedForPo = collect($unmatchedForDoc)->diff($docs->keys())->toArray();
         $pos = [];
+        $poReceiveByPo = collect();
+        $poCancelledByPo = collect();
         if (!empty($unmatchedForPo)) {
             $pos = DB::connection($this->erpConnection)->table('polist')
                 ->whereIn('PONum', $unmatchedForPo)
                 ->get()
                 ->keyBy('PONum');
+
+            // สถานะ PO (ครบ/ยกเลิก) — ไว้ "ตัด PO ที่ครบแล้ว" ออกจากเอกสารงานไปรับเอง
+            $poIdsWithPrefix = collect($unmatchedForPo)->map(fn ($p) => 'PO' . $p)->unique()->values();
+            $poReceiveByPo = $this->chunkedWhereInGet(fn () => PoReceive::query(), 'po_id', $poIdsWithPrefix)
+                ->keyBy(fn ($r) => preg_replace('/^PO/', '', $r->po_id));
+            $poCancelledByPo = $this->chunkedWhereInGet(fn () => PooutsideCancelled::query(), 'po_id', $poIdsWithPrefix)
+                ->keyBy(fn ($r) => preg_replace('/^PO/', '', $r->po_id));
         }
 
         $boxes = [];
@@ -344,6 +353,7 @@ class DeliverytrackController extends Controller
                 $address      = $bill->customer_address;
                 $lalong       = $bill->customer_la_long;
                 $notes        = $bill->notes;
+                $itemType     = 'bill';
             } elseif ($docs->has($id)) {
                 $doc = $docs[$id];
                 $customerCode = $doc->id_com ?: $doc->com_name;
@@ -352,17 +362,23 @@ class DeliverytrackController extends Controller
                 $address      = $doc->com_address;
                 $lalong       = $doc->com_la_long;
                 $notes        = $doc->notes;
+                $itemType     = 'doc';
             } elseif (isset($pos[$id])) {
                 $po = $pos[$id];
+                // งานไปรับเอง: แสดงทุก PO แต่ mark ว่า "ครบแล้ว" (รับเข้าครบ/COMPLETED) เพื่อให้เลือกไม่ได้
+                $status       = $this->resolvePOStatus($po, $poReceiveByPo->get($id), $poCancelledByPo->has($id));
+                $poComplete   = ($status['color'] ?? '') === 'green';
                 $customerCode = $po->VendorID;
                 $customerName = $po->VendorName;
                 $billNo       = $po->PONum;
                 $address      = null;
                 $lalong       = null;
                 $notes        = 'ไปรับของที่ร้าน (SO ' . $po->SONum . ')';
+                $itemType     = 'po';
             } else {
                 continue;
             }
+            $isComplete = $itemType === 'po' ? ($poComplete ?? false) : false;
 
             $transport = $delivery->transport_name ?: 'ไม่ระบุวิธีการจัดส่ง';
             $driver    = $delivery->driver_name ?: null;
@@ -393,9 +409,11 @@ class DeliverytrackController extends Controller
             }
 
             $boxes[$boxKey]['customers'][$customerCode]['items'][] = [
-                'id'      => $id,
-                'bill_no' => $billNo,
-                'notes'   => $notes,
+                'id'          => $id,
+                'bill_no'     => $billNo,
+                'notes'       => $notes,
+                'type'        => $itemType,     // bill | doc | po (po = งานไปรับเอง)
+                'is_complete' => $isComplete,   // true = PO รับเข้าครบแล้ว → เลือกไม่ได้/ไม่พิมพ์
             ];
 
             $boxes[$boxKey]['total_items']++;
@@ -420,6 +438,43 @@ class DeliverytrackController extends Controller
         unset($box);
 
         return $boxes;
+    }
+
+    /**
+     * ปริ้นใบงาน "รับของ (ไปรับเอง)" เฉพาะ PO ที่ติ๊กเลือก จากหน้าสรุป
+     */
+    public function printSelectedPickup(Request $request)
+    {
+        if ($resp = $this->checkAccess()) return $resp;
+        $ids  = array_values(array_filter((array) $request->input('ids', [])));
+        $date = $request->input('date');
+
+        if (empty($ids)) {
+            return redirect()->back()->with('error', 'ไม่ได้เลือกงานรับของ');
+        }
+
+        $poRows = DB::connection($this->erpConnection)->table('polist')
+            ->whereIn('PONum', $ids)
+            ->get()
+            ->keyBy('PONum');
+
+        // เรียงตามลำดับที่เลือก + เอาเฉพาะที่เป็น PO จริง
+        $jobs = collect($ids)->map(fn ($id) => $poRows->get($id))->filter()->values();
+        if ($jobs->isEmpty()) {
+            return redirect()->back()->with('error', 'ไม่พบข้อมูล PO ที่เลือก');
+        }
+
+        $jobs = $this->attachVendorAddressAndItems($jobs);
+
+        $pdf = \Barryvdh\DomPDF\Facade\Pdf::setOptions(['isRemoteEnabled' => true])
+            ->loadView('driver.pickup-print', [
+                'jobs'      => $jobs,
+                'date'      => $date,
+                'printedBy' => $this->loggedInName(),
+                'printedAt' => Carbon::now(),
+            ])->setPaper('a4', 'portrait');
+
+        return $pdf->stream('ใบงานรับของ_' . ($date ?: 'all') . '.pdf');
     }
 
     public function printGroup(Request $request)

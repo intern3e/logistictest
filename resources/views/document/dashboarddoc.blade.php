@@ -335,6 +335,10 @@
                         )">
                             เพิ่มเติม
                         </a>
+                        <br>
+                        <a href="javascript:void(0);" style="color:#1971c2;" onclick="openDeliveryStatus('{{ $item->doc_id }}')">
+                            สถานะจ่ายงาน
+                        </a>
                     </td>
                 </tr>
                 @endforeach
@@ -377,6 +381,15 @@
                 <br>
                 <textarea id="popup-body-3" readonly></textarea>
             </div>
+        </div>
+    </div>
+
+    <!-- Popup: สถานะจ่ายงานให้คนขับ -->
+    <div class="popup-overlay" id="deliveryPopup" style="display:none;">
+        <div class="popup-content" style="max-width:560px;">
+            <span class="close-btn" onclick="closeDeliveryStatus()">&times;</span>
+            <h3 style="margin-top:0;">สถานะจ่ายงานให้คนขับ — <span id="dlvBillId"></span></h3>
+            <div id="dlvBody" style="line-height:1.7;"></div>
         </div>
     </div>
 
@@ -456,6 +469,50 @@
             let popup = document.getElementById("popup");
             if (event.target === popup) { closePopup(); }
         }
+
+        const DELIVERY_STATUS_URL = "{{ route('document.deliveryStatus') }}";
+        function escHtml(s){ return String(s == null ? '' : s).replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m])); }
+        function fmtDT(s){
+            if(!s) return '-';
+            const d = new Date(String(s).replace(' ','T'));
+            if(isNaN(d)) return s;
+            const p = n => String(n).padStart(2,'0');
+            return p(d.getDate())+'/'+p(d.getMonth()+1)+'/'+(d.getFullYear()+543)+' '+p(d.getHours())+':'+p(d.getMinutes());
+        }
+        async function openDeliveryStatus(billId){
+            const pop = document.getElementById('deliveryPopup');
+            document.getElementById('dlvBillId').textContent = billId;
+            document.getElementById('dlvBody').innerHTML = 'กำลังโหลด...';
+            pop.style.display = 'flex';
+            try{
+                const res = await fetch(DELIVERY_STATUS_URL + '?bill_id=' + encodeURIComponent(billId), {headers:{'Accept':'application/json'}});
+                const j = await res.json();
+                if(!j.found || !j.rows.length){
+                    document.getElementById('dlvBody').innerHTML = '<div style="color:#c0392b;">บิลนี้ยังไม่มีการจ่ายงานให้คนขับ</div>';
+                    return;
+                }
+                document.getElementById('dlvBody').innerHTML = j.rows.map(r => {
+                    const recv = r.received
+                        ? '<span style="color:#1e7a3d;font-weight:600;">รับงานแล้ว</span>'
+                        : '<span style="color:#c0392b;font-weight:600;">ยังไม่รับงาน</span>';
+                    return `
+                        <div style="border:1px solid #e0e0e0;border-radius:8px;padding:12px 14px;margin-bottom:10px;">
+                            <div style="font-weight:600;color:#1971c2;margin-bottom:6px;">จ่ายงาน</div>
+                            <div>ผู้จ่ายงาน: <b>${escHtml(r.name_pick || '-')}</b></div>
+                            <div>เมื่อ: ${fmtDT(r.time_pick)}</div>
+                            <div>คนขับ: <b>${escHtml(r.driver_name || '-')}</b> &nbsp; รถ/ขนส่ง: ${escHtml(r.transport_name || '-')}</div>
+                            <div style="font-weight:600;color:#1971c2;margin:8px 0 6px;">การรับงาน / สถานะ</div>
+                            <div>สถานะ: ${recv}</div>
+                            <div>ผู้รับงาน: <b>${escHtml(r.check_name || '-')}</b></div>
+                            <div>เมื่อ: ${fmtDT(r.check_time)}</div>
+                            ${r.delivery_date ? `<div style="color:#666;margin-top:4px;">กำหนดส่ง: ${escHtml(r.delivery_date)}</div>` : ''}
+                        </div>`;
+                }).join('');
+            }catch(e){
+                document.getElementById('dlvBody').innerHTML = '<div style="color:#c0392b;">โหลดข้อมูลไม่สำเร็จ</div>';
+            }
+        }
+        function closeDeliveryStatus(){ document.getElementById('deliveryPopup').style.display = 'none'; }
 
         function searchTable() {
             let searchInput = document.getElementById("search-input").value.toLowerCase();

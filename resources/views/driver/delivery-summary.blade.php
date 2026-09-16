@@ -624,6 +624,33 @@
         .toast-container { left: 16px; right: 16px; top: 16px; }
         .custom-toast { min-width: auto; max-width: 100%; }
     }
+/* ── แท็บ ส่งของ / รับของ ── */
+.summary-tabs{ display:flex; gap:8px; margin:0 0 16px; }
+.summary-tab{
+    padding:9px 20px; border:1px solid #d0d5dd; border-radius:8px; background:#fff;
+    font-weight:600; font-size:14px; color:#475467; cursor:pointer; transition:all .15s;
+}
+.summary-tab.active{ background:#2853d5; border-color:#2853d5; color:#fff; }
+/* กรองรายการตามโหมด */
+.summary-mode-delivery .stop-row[data-type="po"]{ display:none !important; }
+.summary-mode-pickup .stop-row:not([data-type="po"]){ display:none !important; }
+.summary-mode-pickup .box-print-all{ display:none !important; }  /* ปุ่มปริ้นใบงานส่งของ ซ่อนในโหมดรับของ */
+.summary-mode-delivery .pickup-select{ display:none; }
+/* งานรับของที่ครบแล้ว */
+.pickup-done{ text-decoration:line-through; color:#98a2b3; }
+.pickup-done-badge{
+    display:inline-block; margin-left:6px; padding:1px 8px; border-radius:10px;
+    background:#d1fadf; color:#0f7a3d; font-size:11px; font-weight:600;
+}
+.pickup-select{ margin-right:6px; cursor:pointer; }
+.pickup-select:disabled{ cursor:not-allowed; }
+/* แถบปริ้นที่เลือก (ลอยล่าง) */
+.pickup-print-bar{
+    position:fixed; left:50%; bottom:20px; transform:translateX(-50%);
+    display:flex; gap:14px; align-items:center; z-index:900;
+    background:#fff; border:1px solid #e0e0e0; box-shadow:0 6px 24px rgba(0,0,0,.14);
+    padding:10px 18px; border-radius:12px; font-size:14px;
+}
 </style>
 </head>
 <body>
@@ -700,6 +727,12 @@
         </div>
     </div>
 
+    <div class="summary-tabs">
+        <button type="button" class="summary-tab active" data-mode="delivery" onclick="switchSummaryMode('delivery')">ส่งของ</button>
+        <button type="button" class="summary-tab" data-mode="pickup" onclick="switchSummaryMode('pickup')">รับของ (ไปรับเอง)</button>
+    </div>
+
+    <div id="summaryContent" class="summary-mode-delivery">
     @forelse ($boxesByDate as $dateKey => $boxes)
         @php
             $dateKeyId = 'date_' . preg_replace('/[^A-Za-z0-9_-]/', '_', $dateKey);
@@ -786,9 +819,19 @@
                                                             </div>
                                                             <div class="stops-list">
                                                                 @foreach ($cust['items'] as $item)
-                                                                    <div class="stop-row">
+                                                                    @php $isPo = ($item['type'] ?? '') === 'po'; $isDone = !empty($item['is_complete']); @endphp
+                                                                    <div class="stop-row" data-type="{{ $item['type'] ?? '' }}" data-complete="{{ $isDone ? 1 : 0 }}">
+                                                                        @if ($isPo)
+                                                                            <input type="checkbox" class="pickup-select" value="{{ $item['id'] }}"
+                                                                                   {{ $isDone ? 'disabled' : '' }} onchange="updatePickupCount()">
+                                                                        @endif
                                                                         <span class="job-seq-marker">{{ $item['seq'] }}</span>
-                                                                        <span class="job-bill-no">บิล {{ $item['bill_no'] }}</span>
+                                                                        @if ($isPo)
+                                                                            <span class="job-bill-no {{ $isDone ? 'pickup-done' : '' }}">ไปรับเอง PO {{ $item['bill_no'] }}</span>
+                                                                            @if ($isDone)<span class="pickup-done-badge">ครบแล้ว</span>@endif
+                                                                        @else
+                                                                            <span class="job-bill-no">บิล {{ $item['bill_no'] }}</span>
+                                                                        @endif
                                                                     </div>
                                                                 @endforeach
                                                             </div>
@@ -821,10 +864,62 @@
             <span>ลองเลือกวันที่อื่นจากตัวกรองด้านบน หรือกลับไปหน้าจ่ายงานเพื่อดูสถานะปัจจุบัน</span>
         </div>
     @endforelse
+    </div>{{-- /#summaryContent --}}
+
+    <div class="pickup-print-bar" id="pickupPrintBar" style="display:none;">
+        <span>เลือกงานรับของ <strong id="pickupCount">0</strong> รายการ</span>
+        <button type="button" class="btn-filter" onclick="printSelectedPickup()">🖨️ ปริ้นที่เลือก</button>
+    </div>
 
 </div>
 
+<form id="pickupPrintForm" method="POST" action="{{ route('deliverytrack.printSelectedPickup') }}" target="_blank" style="display:none;">
+    @csrf
+    <input type="hidden" name="date" value="{{ $date }}">
+    <div id="pickupPrintInputs"></div>
+</form>
+
 <script>
+function switchSummaryMode(mode){
+    const el = document.getElementById('summaryContent');
+    if(el){ el.className = 'summary-mode-' + mode; }
+    document.querySelectorAll('.summary-tab').forEach(t => t.classList.toggle('active', t.dataset.mode === mode));
+    document.getElementById('pickupPrintBar').style.display = (mode === 'pickup') ? 'flex' : 'none';
+    // ซ่อน block/box/date-group ที่ไม่มีรายการในโหมดนั้น
+    document.querySelectorAll('.job-block').forEach(bl => {
+        const rows = bl.querySelectorAll(mode === 'pickup' ? '.stop-row[data-type="po"]' : '.stop-row:not([data-type="po"])');
+        bl.style.display = rows.length ? '' : 'none';
+    });
+    document.querySelectorAll('.box-card').forEach(bc => {
+        const visBlocks = Array.from(bc.querySelectorAll('.job-block')).filter(b => b.style.display !== 'none');
+        bc.style.display = visBlocks.length ? '' : 'none';
+    });
+    document.querySelectorAll('.date-group').forEach(dg => {
+        const visBoxes = Array.from(dg.querySelectorAll('.box-card')).filter(b => b.style.display !== 'none');
+        dg.style.display = visBoxes.length ? '' : 'none';
+    });
+    if(mode === 'pickup') updatePickupCount();
+}
+function updatePickupCount(){
+    const n = document.querySelectorAll('.pickup-select:checked').length;
+    const c = document.getElementById('pickupCount');
+    if(c) c.textContent = n;
+}
+function printSelectedPickup(){
+    const checked = Array.from(document.querySelectorAll('.pickup-select:checked'));
+    if(!checked.length){ alert('กรุณาเลือกงานรับของอย่างน้อย 1 รายการ'); return; }
+    const wrap = document.getElementById('pickupPrintInputs');
+    wrap.innerHTML = '';
+    checked.forEach(cb => {
+        const i = document.createElement('input');
+        i.type = 'hidden'; i.name = 'ids[]'; i.value = cb.value;
+        wrap.appendChild(i);
+    });
+    document.getElementById('pickupPrintForm').submit();
+}
+// ตั้งค่าเริ่มต้น: โหมดส่งของ (ซ่อนงานรับเองออกจาก block/box ที่ไม่มีรายการส่ง)
+document.addEventListener('DOMContentLoaded', function(){ switchSummaryMode('delivery'); });
+
 function toggleBoxCard(id) {
     const card = document.getElementById(id);
     if (!card) return;

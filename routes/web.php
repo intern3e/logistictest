@@ -104,6 +104,7 @@ Route::post('/updatepo-delivery-date', [AdminPoController::class, 'updateDeliver
 
 use App\Http\Controllers\DocController;
 Route::get('/dashboarddoc', [DocController::class, 'dashboarddoc'])->name('document.dashboarddoc');
+Route::get('/document/delivery-status', [DocController::class, 'deliveryStatus'])->name('document.deliveryStatus');
 Route::get('/insertdoc', [DocController::class, 'insertdoc'])->name('document.insertdoc');
 Route::post('/insertdocu', [DocController::class, 'insertDocu'])->name('insertdocu');
 Route::get('/get-docbill-detail/{doc_id}', [DocController::class, 'getdocBillDetail'])->name('getdocBillDetail');
@@ -324,6 +325,7 @@ Route::get('/deliverytrack/print-group', [DeliverytrackController::class, 'print
 Route::get('/deliverytrack/print-all-group', [DeliverytrackController::class, 'printAllGroups'])->name('deliverytrack.printAllGroups');
 Route::post('/return/{id}/new-bill', [DeliverytrackController::class, 'saveNewBill'])->name('deliverytrack.newbill');
 Route::get('/deliverytrack/summary', [DeliverytrackController::class, 'summary'])->name('deliverytrack.summary');
+Route::post('/deliverytrack/print-selected-pickup', [DeliverytrackController::class, 'printSelectedPickup'])->name('deliverytrack.printSelectedPickup');
  
 
 use App\Http\Controllers\SoItemController;

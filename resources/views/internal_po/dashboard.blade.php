@@ -316,7 +316,9 @@
                 <th class="center" style="width:44px;"><input type="checkbox" id="chkAll"></th>
                 <th class="col-key">PO ภายใน</th>
                 <th class="col-key">SO</th>
-                <th class="col-key">สินค้า</th>
+                <th class="col-key">รหัสสินค้า</th>
+                <th>ชื่อสินค้า</th>
+                <th class="center" style="width:80px;">จำนวน</th>
                 <th>ลูกค้า</th>
             </tr>
         </thead>
@@ -326,30 +328,41 @@
                 $todo     = $h->status === \App\Models\internal_po::ST_PENDING;
                 $cancel   = $h->status === \App\Models\internal_po::ST_CANCEL;
                 $cls      = $cancel ? 'cancelled' : (!$todo ? 'done' : '');
+                $lines    = $h->lines ?? collect();
             @endphp
-            <tr class="{{ $cls }}" data-done="{{ $todo ? 0 : 1 }}" data-internal-id="{{ $h->internal_id }}">
-                <td class="center">
-                    @if ($todo)<input type="checkbox" class="chkLine" value="{{ $h->internal_id }}">@endif
-                </td>
-                <td class="col-key"><span class="ref-link">{{ $h->internal_id }}</span></td>
-                <td class="col-key">{{ $h->SO_id }}</td>
-                <td class="center">
-                    <button type="button" class="btn-view-items" onclick="openItemsModal('{{ $h->internal_id }}')">
-                        <svg viewBox="0 0 64 64" width="18" height="18">
-                            <polygon points="32,6 54,16 32,26 10,16" fill="#D7B188" stroke="#5A3E25" stroke-width="2" stroke-linejoin="round"/>
-                            <polygon points="32,6 32,26 54,16" fill="#C59E75" opacity="0.6"/>
-                            <polygon points="10,18 32,28 32,54 10,44" fill="#B0865B" stroke="#5A3E25" stroke-width="2" stroke-linejoin="round"/>
-                            <polygon points="32,28 54,18 54,44 32,54" fill="#8F6943" stroke="#5A3E25" stroke-width="2" stroke-linejoin="round"/>
-                            <polygon points="30,5 34,5 34,27 30,27" fill="#EAE6DF" stroke="#5A3E25" stroke-width="1.5"/>
-                            <circle cx="16" cy="36" r="3.5" fill="#E11D48"/>
-                        </svg>
-                        ดูสินค้า
-                    </button>
-                </td>
-                <td class="cust-cell">{{ $h->customer_name }}</td>
-            </tr>
+            @forelse ($lines as $line)
+                @php
+                    $lineId   = $line->id ?? null;                 // ระบบใหม่มี id ราย line / ของเก่า = null
+                    $picked   = !empty($line->picked_at);
+                    $chkVal   = $lineId ? ('line:' . $lineId) : ('po:' . $h->internal_id);  // ของเก่าจัดทั้ง PO
+                    $lineCls  = $cancel ? 'cancelled' : (($picked || !$todo) ? 'done' : '');
+                @endphp
+                <tr class="{{ $lineCls }}" data-internal-id="{{ $h->internal_id }}">
+                    <td class="center">
+                        @if ($todo && !$picked)
+                            <input type="checkbox" class="chkLine" value="{{ $chkVal }}">
+                        @elseif ($picked)
+                            <input type="checkbox" checked disabled title="จัดแล้ว">
+                        @endif
+                    </td>
+                    <td class="col-key">@if ($loop->first)<span class="ref-link">{{ $h->internal_id }}</span>@endif</td>
+                    <td class="col-key">@if ($loop->first){{ $h->SO_id }}@endif</td>
+                    <td class="col-key">{{ $line->item_id ?: '—' }}</td>
+                    <td>{{ $line->item_name }}</td>
+                    <td class="center">{{ rtrim(rtrim(number_format((float) $line->item_quantity, 2), '0'), '.') }}</td>
+                    <td class="cust-cell">@if ($loop->first){{ $h->customer_name }}@endif</td>
+                </tr>
+            @empty
+                <tr class="{{ $cls }}" data-internal-id="{{ $h->internal_id }}">
+                    <td class="center"></td>
+                    <td class="col-key"><span class="ref-link">{{ $h->internal_id }}</span></td>
+                    <td class="col-key">{{ $h->SO_id }}</td>
+                    <td class="col-key" colspan="3" style="color:#999;">— ไม่มีไส้ใน —</td>
+                    <td class="cust-cell">{{ $h->customer_name }}</td>
+                </tr>
+            @endforelse
         @empty
-            <tr><td colspan="5" class="empty">ไม่มีรายการ</td></tr>
+            <tr><td colspan="7" class="empty">ไม่มีรายการ</td></tr>
         @endforelse
         </tbody>
     </table>
@@ -428,7 +441,8 @@ const PO_ITEMS = {
     @endforeach
 };
 
-const selectedIds = () => Array.from(document.querySelectorAll('.chkLine:checked')).map(c => c.value);
+// dedupe: ของเก่าหลายไส้ในใช้ค่าเดียวกัน (po:<id>) — นับ/ส่งครั้งเดียว
+const selectedIds = () => Array.from(new Set(Array.from(document.querySelectorAll('.chkLine:checked')).map(c => c.value)));
 const currentUser = () => document.getElementById('inpUser').value.trim();
 
 function refreshBtn() {
@@ -555,11 +569,13 @@ document.addEventListener('keydown', function (e) {
         debounceTimer = setTimeout(submitNow, DEBOUNCE_MS);
     }
 
-    form.querySelectorAll('input[type="search"], input[type="text"]').forEach(function (el) {
+    // เจาะจงเฉพาะ .filter-row เท่านั้น ไม่ให้ไปจับ #selPrinter / #inpSheets
+    // ที่อยู่ใน .action-toolbar (คนละหน้าที่กัน ไม่ควร auto-submit ฟอร์ม)
+    form.querySelectorAll('.filter-row input[type="search"], .filter-row input[type="text"]').forEach(function (el) {
         el.addEventListener('input', submitDebounced);
     });
 
-    form.querySelectorAll('select').forEach(function (el) {
+    form.querySelectorAll('.filter-row select').forEach(function (el) {
         el.addEventListener('change', submitNow);
     });
 

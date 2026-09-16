@@ -1866,7 +1866,8 @@ async function fetchJobsByDate(dateStr){
 
   const drivers=rawData.map(b=>({
     driver_name:b.bill_out_by||'ไม่ระบุ',
-    jobs:(b.jobs||[]).map(j=>({
+    // ไม่แสดง "งานรับเอง" (job_key ขึ้นต้น unknown:) บนหน้า oil
+    jobs:(b.jobs||[]).filter(j=>!String(j.job_key||'').startsWith('unknown:')).map(j=>({
       job_key:j.job_key||null,
       bill_no:j.bill_no||'',
       so_id:j.so_id||'',
