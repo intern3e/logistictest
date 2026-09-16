@@ -429,7 +429,7 @@
 
         .items-cell {
             max-width: 320px;
-            text-align: center;
+            text-align: left;
             min-height: 40px;
         }
 
@@ -912,9 +912,9 @@
     <main>
         <div class="toolbar">
             <div class="filter-group">
-                <input type="search" id="searchSO" value="{{ request('SONum') }}" placeholder="🔍 ค้นหาเลข SO..." autocomplete="off">
-                <input type="search" id="searchPO" value="{{ request('PONum') }}" placeholder="🔍 ค้นหาเลข PO..." autocomplete="off">
-                <input type="search" id="searchCustomer" value="{{ request('customer') }}" placeholder="🔍 ค้นหาลูกค้า..." autocomplete="off">
+                <input type="search" id="searchSO" value="{{ request('SONum') }}" placeholder=" ค้นหาเลข SO..." autocomplete="off">
+                <input type="search" id="searchPO" value="{{ request('PONum') }}" placeholder=" ค้นหาเลข PO..." autocomplete="off">
+                <input type="search" id="searchCustomer" value="{{ request('customer') }}" placeholder=" ค้นหาลูกค้า..." autocomplete="off">
                 <select id="filterPoType">
                     <option value="">PO ทั้งหมด</option>
                     <option value="internal" {{ request('po_type') === 'internal' ? 'selected' : '' }}>ภายใน</option>
@@ -942,7 +942,7 @@
                             <th class="center" style="width:50px;"><input type="checkbox" id="chkAll"></th>
                             <th>PO</th>
                             <th>SO</th>
-                            <th>รายการสินค้า</th>
+                            <th style="text-align:left;">รายการสินค้า</th>
                             <th style="text-align:left;">ลูกค้า</th>
                             <th style="text-align:left;">Sale</th>
                             <th>จัดการ</th>
@@ -955,6 +955,8 @@
                             @php
                                 $todo        = $h->todo;
                                 $cls         = $todo ? '' : 'done';
+                                $items       = $h->items;
+                                $totalQty    = $h->total_qty;
                                 $location    = $h->location;
                                 $checkboxVal = $h->type . ':' . $h->id;
                                 $isClaimed   = $h->type === 'external' && ($h->claimed ?? false);
@@ -981,7 +983,18 @@
                                 </td>
                                 <td><span style="font-weight:600;">{{ $h->so_id }}</span></td>
                                 <td class="items-cell">
-                                    <button type="button" class="btn-view-items" data-po="{{ $h->po_display }}">ดูสินค้า</button>
+                                    @if (is_null($items))
+                                        <button type="button" class="btn-view-items" data-po="{{ $h->po_display }}">ดูสินค้า</button>
+                                    @elseif ($items->count() <= 2)
+                                        <span style="font-weight:500;">{{ $items->pluck('item_name')->implode(', ') }}</span>
+                                    @else
+                                        <details class="items-expand">
+                                            <summary>{{ $items->first()->item_name }} <span class="more">+{{ $items->count() - 1 }} รายการ</span></summary>
+                                            @foreach ($items as $it)
+                                                <div class="subline">{{ $it->item_name }} ({{ number_format($it->item_quantity, 2) }})</div>
+                                            @endforeach
+                                        </details>
+                                    @endif
                                 </td>
                                 <td class="cust-cell">{{ $h->customer_name }}</td>
                                 <td>{{ $h->sale ?: '—' }}</td>
@@ -1367,4 +1380,4 @@ btnClear.addEventListener('click', () => {
 liveFilter();
 </script>
 </body>
-</html> 
+</html>

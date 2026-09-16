@@ -102,9 +102,10 @@ Route::post('/update-statuspoback', [adminpocontroller::class, 'updateStatuspoba
 Route::post('/updatepo-delivery-date', [AdminPoController::class, 'updateDeliveryDate'])->name('updatepo.delivery.date');
 
 
+
 use App\Http\Controllers\DocController;
+
 Route::get('/dashboarddoc', [DocController::class, 'dashboarddoc'])->name('document.dashboarddoc');
-Route::get('/document/delivery-status', [DocController::class, 'deliveryStatus'])->name('document.deliveryStatus');
 Route::get('/insertdoc', [DocController::class, 'insertdoc'])->name('document.insertdoc');
 Route::post('/insertdocu', [DocController::class, 'insertDocu'])->name('insertdocu');
 Route::get('/get-docbill-detail/{doc_id}', [DocController::class, 'getdocBillDetail'])->name('getdocBillDetail');

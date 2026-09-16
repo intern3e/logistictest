@@ -558,7 +558,7 @@ class StoreController extends Controller
 
             return (object) [
                 'type'          => 'external',
-                'id'            => $h->po_id,
+                'id'            => $h->po_id . '|' . $h->so_id,
                 'po_display'    => $h->po_id,
                 'so_id'         => $h->so_id,
                 'customer_name' => $h->cust_name,
@@ -866,7 +866,8 @@ class StoreController extends Controller
             [$type, $id] = array_pad(explode(':', $raw, 2), 2, null);
             if ($id === null) { $internalIds[] = $raw; continue; }
             if ($type === 'internal') $internalIds[] = $id;
-            if ($type === 'external') $externalPoIds[] = $id;
+            // external id = "po_id|so_id" → ระบุตำแหน่ง (ชั้นวาง) ใช้ po_id (ชั้นเดียวกันทุก SO ของ PO นั้น)
+            if ($type === 'external') $externalPoIds[] = explode('|', (string) $id, 2)[0];
             if ($type === 'legacy')   $legacyStoreIds[] = $id;
         }
 
@@ -1190,7 +1191,7 @@ class StoreController extends Controller
                 $first = $items->first();
                 return (object) [
                     'type'          => 'external',
-                    'id'            => $h->po_id,
+                    'id'            => $h->po_id . '|' . $h->so_id,
                     'po_display'    => $h->po_id,
                     'so_id'         => $h->so_id,
                     'customer_name' => null,
@@ -1351,12 +1352,18 @@ class StoreController extends Controller
                         ]);
                 }
                 if ($externalIds) {
-                    $updated += PoReceive::whereIn('po_id', $externalIds)
-                        ->whereNull('checkout_by')
-                        ->update([
+                    // external id = "po_id|so_id" → เช็คเอาท์แยกต่อ SO
+                    foreach ($externalIds as $raw) {
+                        [$poId, $soId] = array_pad(explode('|', (string) $raw, 2), 2, null);
+                        $q = PoReceive::where('po_id', $poId)->whereNull('checkout_by');
+                        if ($soId !== null && $soId !== '') {
+                            $q->where('so_id', $soId);
+                        }
+                        $updated += $q->update([
                             'checkout_by'   => $user,
                             'checkout_time' => Carbon::now(),
                         ]);
+                    }
                 }
             });
 

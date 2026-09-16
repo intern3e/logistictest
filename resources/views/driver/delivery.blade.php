@@ -204,7 +204,6 @@ $selfPickupMethods = ['รับเองรถใหญ่', 'รับเอ�
                         'address_html'  => $addressHtml,
                         'bill_no'       => $item['bill_no'],
                         'notes'         => $item['notes'] ?? null,
-                        'type'          => $item['type'] ?? null,
                     ];
                 }
             }
@@ -630,7 +629,6 @@ $selfPickupMethods = ['รับเองรถใหญ่', 'รับเอ�
             border-right:1px solid var(--line);
         }
         .job-list-table tbody td:last-child{ border-right:none; }
-        .col-check{ text-align:center; }
 
         tr.job-detail-row{ display:table-row; }
 
@@ -642,7 +640,14 @@ $selfPickupMethods = ['รับเองรถใหญ่', 'รับเอ�
         }
 
         .job-list-table input[type="checkbox"]{ width:22px; height:22px; cursor:pointer; }
-        .group-select-checkbox{ width:22px; height:22px; cursor:pointer; margin-top:2px; }
+
+        .group-select-checkbox{
+            width:22px;
+            height:22px;
+            cursor:pointer;
+            margin-top:0;
+            flex-shrink:0;
+        }
         .group-customer-info{ display:flex; flex-direction:column; line-height:1.3; min-width:0; }
         .group-customer-id{ font-family:'JetBrains Mono',monospace; font-weight:700; font-size:0.95rem; color:var(--ink); }
         .group-customer-name{ font-weight:700; font-size:0.7rem; color:var(--ink-soft); margin-top:2px; line-height:1.45; word-break:keep-all; overflow-wrap:normal; }
@@ -883,6 +888,32 @@ $selfPickupMethods = ['รับเองรถใหญ่', 'รับเอ�
             vertical-align: middle !important;
         }
 
+        /* ✅ CSS สำหรับ checkbox ให้อยู่ด้านซ้าย */
+        .checkbox-left-cell {
+            text-align: left !important;
+            vertical-align: top !important;
+            padding: 14px 15px;
+        }
+
+        .checkbox-wrapper {
+            display: flex;
+            align-items: flex-start;
+            gap: 8px;
+        }
+
+        .checkbox-wrapper input[type="checkbox"] {
+            margin-top: 4px;
+            flex-shrink: 0;
+            width: 22px;
+            height: 22px;
+            cursor: pointer;
+        }
+
+        .checkbox-content {
+            min-width: 0;
+            flex: 1;
+        }
+
         @media (max-width:768px){
             .view-controls{ flex-direction:column; }
             .view-btn{ width:100%; text-align:center; }
@@ -913,9 +944,9 @@ $selfPickupMethods = ['รับเองรถใหญ่', 'รับเอ�
             </div>
 
             <div class="view-controls">
-                <button class="view-btn delivery active" onclick="setView('delivery')">🚚 ส่งของ <span class="view-count">{{ $billCount }}</span></button>
+                <button class="view-btn delivery active" onclick="setView('delivery')"> ส่งของ <span class="view-count">{{ $billCount }}</span></button>
                 <button class="view-btn doc" onclick="setView('doc')">📄 บิลชั่วคราว <span class="view-count">{{ $docCount }}</span></button>
-                <button class="view-btn pickup" onclick="setView('pickup')"> รับของเอง <span class="view-count">{{ $poCount }}</span></button>
+                <button class="view-btn pickup" onclick="setView('pickup')">📦 รับของเอง <span class="view-count">{{ $poCount }}</span></button>
             </div>
         </div>
 
@@ -939,21 +970,21 @@ $selfPickupMethods = ['รับเองรถใหญ่', 'รับเอ�
                     <input type="text" id="searchBillCustomer" placeholder="เช่น CUS-16026" oninput="filterBillTable()">
                 </div>
                 <div class="search-group">
-                    <label for="searchBillSO">🔍 รหัส SO:</label>
+                    <label for="searchBillSO"> รหัส SO:</label>
                     <input type="text" id="searchBillSO" placeholder="เช่น 69/013216" oninput="filterBillTable()">
                 </div>
-                <button type="button" class="search-clear-btn" onclick="clearBillSearch()">✕ ล้าง</button>
+                <button type="button" class="search-clear-btn" onclick="clearBillSearch()"> ล้าง</button>
             </div>
         </div>
 
         <div id="searchDoc" class="search-wrapper">
             <div class="search-bar">
                 <div class="search-group">
-                    <label for="searchDocCustomer">🔍 รหัสลูกค้า:</label>
+                    <label for="searchDocCustomer"> รหัสลูกค้า:</label>
                     <input type="text" id="searchDocCustomer" placeholder="เช่น CUS-16026" oninput="filterDocTable()">
                 </div>
                 <div class="search-group">
-                    <label for="searchDocNo">🔍 เลขที่เอกสาร:</label>
+                    <label for="searchDocNo"> เลขที่เอกสาร:</label>
                     <input type="text" id="searchDocNo" placeholder="เช่น DOC-001" oninput="filterDocTable()">
                 </div>
                 <button type="button" class="search-clear-btn" onclick="clearDocSearch()">✕ ล้าง</button>
@@ -963,11 +994,11 @@ $selfPickupMethods = ['รับเองรถใหญ่', 'รับเอ�
         <div id="searchPickup" class="search-wrapper">
             <div class="search-bar">
                 <div class="search-group">
-                    <label for="searchPoCustomer">🔍 ลูกค้า / ผู้ขาย:</label>
+                    <label for="searchPoCustomer"> ลูกค้า / ผู้ขาย:</label>
                     <input type="text" id="searchPoCustomer" placeholder="เช่น CUS-16026" oninput="filterPoTable()">
                 </div>
                 <div class="search-group">
-                    <label for="searchPoSo">🔍 PO / SO:</label>
+                    <label for="searchPoSo"> PO / SO:</label>
                     <input type="text" id="searchPoSo" placeholder="เช่น 69/013216" oninput="filterPoTable()">
                 </div>
                 <button type="button" class="search-clear-btn" onclick="clearPoSearch()">✕ ล้าง</button>
@@ -998,11 +1029,10 @@ $selfPickupMethods = ['รับเองรถใหญ่', 'รับเอ�
                     @if(count($billGroups) > 0)
                     <table class="job-list-table" id="billTable">
                         <colgroup>
-                            <col style="width:6%"><col style="width:26%"><col style="width:20%"><col style="width:20%"><col style="width:28%">
+                              <col style="width:35%"><col style="width:17%"><col style="width:12%"><col style="width:36%">
                         </colgroup>
                         <thead>
                             <tr>
-                                <th></th>
                                 <th>ลูกค้า</th>
                                 <th>SO / บิล</th>
                                 <th>ผู้เบิก / เวลา</th>
@@ -1025,9 +1055,6 @@ $selfPickupMethods = ['รับเองรถใหญ่', 'รับเอ�
                                         data-customer-id="{{ $group['customer_id'] }}"
                                         data-customer-name="{{ $groupCustomerName }}"
                                         data-so-id="{{ $bill->so_id }}">
-                                        <td class="col-check">
-                                            <input type="checkbox" class="job-checkbox bill-checkbox" value="bill:{{ $bill->so_detail_id }}" data-group="{{ $groupKey }}" onchange="updateSelectedCount()">
-                                        </td>
                                         @if($loop->first)
                                         <td class="col-customer" data-group="{{ $groupKey }}" rowspan="{{ $groupRowCount }}">
                                             <div class="group-row-inner">
@@ -1049,9 +1076,14 @@ $selfPickupMethods = ['รับเองรถใหญ่', 'รับเอ�
                                             @endif
                                         </td>
                                         @endif
-                                        <td class="text-center-cell">
-                                            <div class="job-id-primary">SO {{ $bill->so_id }}</div>
-                                            <div class="job-id-secondary">บิล {{ $bill->billid }}</div>
+                                        <td class="checkbox-left-cell">
+                                            <div class="checkbox-wrapper">
+                                                <input type="checkbox" class="job-checkbox bill-checkbox" value="bill:{{ $bill->so_detail_id }}" data-group="{{ $groupKey }}" onchange="updateSelectedCount()">
+                                                <div class="checkbox-content">
+                                                    <div class="job-id-primary">SO {{ $bill->so_id }}</div>
+                                                    <div class="job-id-secondary">บิล {{ $bill->billid }}</div>
+                                                </div>
+                                            </div>
                                         </td>
                                         <td class="job-meta text-center-cell">
                                             <div class="meta-name-chip">{{ $bill->emp_picker ?: '-' }}</div>
@@ -1086,11 +1118,10 @@ $selfPickupMethods = ['รับเองรถใหญ่', 'รับเอ�
                     @if(count($docGroups) > 0)
                     <table class="job-list-table" id="docTable">
                         <colgroup>
-                            <col style="width:6%"><col style="width:26%"><col style="width:20%"><col style="width:20%"><col style="width:28%">
+                            <col style="width:35%"><col style="width:17%"><col style="width:12%"><col style="width:36%">
                         </colgroup>
                         <thead>
                             <tr>
-                                <th></th>
                                 <th>ลูกค้า</th>
                                 <th>เลขที่เอกสาร</th>
                                 <th>ผู้ดูแล / เวลา</th>
@@ -1113,9 +1144,6 @@ $selfPickupMethods = ['รับเองรถใหญ่', 'รับเอ�
                                         data-customer-id="{{ $group['customer_id'] }}"
                                         data-customer-name="{{ $groupCustomerName }}"
                                         data-doc-id="{{ $doc->doc_id }}">
-                                        <td class="col-check">
-                                            <input type="checkbox" class="job-checkbox doc-checkbox" value="doc:{{ $doc->doc_id }}" data-group="{{ $groupKey }}" onchange="updateSelectedCount()">
-                                        </td>
                                         @if($loop->first)
                                         <td class="col-customer" data-group="{{ $groupKey }}" rowspan="{{ $groupRowCount }}">
                                             <div class="group-row-inner">
@@ -1137,9 +1165,14 @@ $selfPickupMethods = ['รับเองรถใหญ่', 'รับเอ�
                                             @endif
                                         </td>
                                         @endif
-                                        <td class="text-center-cell">
-                                            <div class="job-id-primary">{{ $doc->doc_id }}</div>
-                                            <div class="job-id-secondary">{{ $doc->contact_name }}</div>
+                                        <td class="checkbox-left-cell">
+                                            <div class="checkbox-wrapper">
+                                                <input type="checkbox" class="job-checkbox doc-checkbox" value="doc:{{ $doc->doc_id }}" data-group="{{ $groupKey }}" onchange="updateSelectedCount()">
+                                                <div class="checkbox-content">
+                                                    <div class="job-id-primary">{{ $doc->doc_id }}</div>
+                                                    <div class="job-id-secondary">{{ $doc->contact_name }}</div>
+                                                </div>
+                                            </div>
                                         </td>
                                         <td class="job-meta text-center-cell">
                                             <div class="meta-name-chip">{{ $doc->emp_name ?: '-' }}</div>
@@ -1162,7 +1195,7 @@ $selfPickupMethods = ['รับเองรถใหญ่', 'รับเอ�
                 <div class="section-heading accent-pickup" onclick="setView('pickup')">
                     <div style="display: flex; flex-direction: column; gap: 4px;">
                         <h5 style="margin: 0; display: flex; align-items: center; gap: 8px;">
-                            📦 รับของเอง <span class="section-count">{{ $poCount }} รายการ</span>
+                             รับของเอง <span class="section-count">{{ $poCount }} รายการ</span>
                         </h5>
                         <div style="font-size: 0.75rem; opacity: 0.85; font-weight: 400; line-height: 1.2;">
                             (ครอบคลุมวิธีการจัดส่ง: {{ implode(', ', $selfPickupMethods) }})
@@ -1173,7 +1206,7 @@ $selfPickupMethods = ['รับเองรถใหญ่', 'รับเอ�
                             <input type="checkbox" class="form-check-input" id="checkAllPo">
                             <label class="form-check-label" for="checkAllPo">เลือกทั้งหมด</label>
                         </div>
-                        <span class="expand-hint"> ขยาย</span>
+                        <span class="expand-hint">⛶ ขยาย</span>
                     </div>
                 </div>
 
@@ -1181,16 +1214,14 @@ $selfPickupMethods = ['รับเองรถใหญ่', 'รับเอ�
                     @if(count($poGroups) > 0)
                     <table class="job-list-table" id="poTable">
                         <colgroup>
-                        <col style="width:5%">
+                        <col style="width:32%">
+                        <col style="width:14%">
+                        <col style="width:12%">
+                        <col style="width:12%">
                         <col style="width:30%">
-                        <col style="width:12%">
-                        <col style="width:12%">
-                        <col style="width:12%">
-                        <col style="width:29%">
                         </colgroup>
                         <thead>
                             <tr>
-                                <th></th>
                                 <th>ลูกค้า / ผู้ขาย</th>
                                 <th>PO / SO</th>
                                 <th>วิธีรับของ</th>
@@ -1244,11 +1275,8 @@ $selfPickupMethods = ['รับเองรถใหญ่', 'รับเอ�
                                         data-customer-name="{{ $groupCustomerName }}"
                                         data-po-num="{{ $poNum }}"
                                         data-so-num="{{ $po->SONum }}">
-                                        <td class="col-check" style="vertical-align: middle;">
-                                            <input type="checkbox" class="job-checkbox po-checkbox" value="po:{{ $poNum }}" data-po="{{ $poNum }}" data-group="{{ $groupKey }}" onchange="updateSelectedCount()">
-                                        </td>
                                         @if($loop->first)
-                                        <td class="col-customer" data-group="{{ $groupKey }}" rowspan="{{ $actualRowCount }}" style="vertical-align: middle;">
+                                        <td class="col-customer" data-group="{{ $groupKey }}" rowspan="{{ $actualRowCount }}" style="vertical-align: top;">
                                             <div class="group-row-inner">
                                                 <div class="group-row-left">
                                                     <input type="checkbox" class="group-select-checkbox" data-group="{{ $groupKey }}" onchange="onGroupCheckboxChange(this)">
@@ -1268,9 +1296,14 @@ $selfPickupMethods = ['รับเองรถใหญ่', 'รับเอ�
                                             @endif
                                         </td>
                                         @endif
-                                        <td class="text-center-cell" style="vertical-align: middle;">
-                                            <div class="job-id-primary">{{ $poNum }}</div>
-                                            <div class="job-id-secondary">SO {{ $po->SONum }}</div>
+                                        <td class="checkbox-left-cell" style="vertical-align: middle;">
+                                            <div class="checkbox-wrapper">
+                                                <input type="checkbox" class="job-checkbox po-checkbox" value="po:{{ $poNum }}" data-po="{{ $poNum }}" data-group="{{ $groupKey }}" onchange="updateSelectedCount()">
+                                                <div class="checkbox-content">
+                                                    <div class="job-id-primary">{{ $poNum }}</div>
+                                                    <div class="job-id-secondary">SO {{ $po->SONum }}</div>
+                                                </div>
+                                            </div>
                                         </td>
                                         <td class="text-center-cell" style="vertical-align: middle;">
                                             {{ $po->DeliveryMethod }}
@@ -1309,7 +1342,7 @@ $selfPickupMethods = ['รับเองรถใหญ่', 'รับเอ�
 
 <div class="save-floatbar">
     <span class="floatbar-count">เลือก <strong id="selectedCount">0</strong> รายการ</span>
-    <button id="openModalBtn" class="btn btn-manifest btn-manifest-cta" disabled>💾 บันทึก</button>
+    <button id="openModalBtn" class="btn btn-manifest btn-manifest-cta" disabled> บันทึก</button>
 </div>
 
 <div class="modal fade" id="driverModal" tabindex="-1" aria-hidden="true">
@@ -1320,7 +1353,7 @@ $selfPickupMethods = ['รับเองรถใหญ่', 'รับเอ�
                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
             <div class="modal-body">
-                <div class="mb-3" id="deliveryDateGroup">
+                <div class="mb-3">
                     <label class="form-label">วันที่จัดส่ง <span class="required-mark">*</span></label>
                     <input type="date" id="deliveryDateInput" class="form-control">
                 </div>
@@ -1364,7 +1397,7 @@ function showToast(message, type = 'info', duration = 4000) {
         success: '✓',
         error: '✕',
         warning: '⚠',
-        info: 'ℹ'
+        info: ''
     };
     
     const titles = {
@@ -1683,11 +1716,6 @@ document.addEventListener('DOMContentLoaded', function() {
     });
 
     document.getElementById('openModalBtn').addEventListener('click', function() {
-        // งานรับเข้าเอง (po:) ล้วน → ไม่ต้องให้เลือกวันกำหนดส่ง ซ่อนช่องวันที่ไปเลย
-        const checkedJobs = Array.from(document.querySelectorAll('.job-checkbox:checked'));
-        const allSelfPickup = checkedJobs.length > 0 && checkedJobs.every(cb => cb.value.startsWith('po:'));
-        const dateGroup = document.getElementById('deliveryDateGroup');
-        if (dateGroup) dateGroup.style.display = allSelfPickup ? 'none' : '';
         new bootstrap.Modal(document.getElementById('driverModal')).show();
     });
 
@@ -1720,11 +1748,7 @@ document.addEventListener('DOMContentLoaded', function() {
         const vehicle = vehicleInput.value.trim();
         const driver = driverInput.value.trim();
 
-        // งานรับเข้าเอง (po:) ไม่ต้องกำหนดวันที่รับ — บังคับวันที่เฉพาะเมื่อมีงานจัดส่ง/เอกสารปนอยู่
-        const checkedJobs = Array.from(document.querySelectorAll('.job-checkbox:checked'));
-        const allSelfPickup = checkedJobs.length > 0 && checkedJobs.every(cb => cb.value.startsWith('po:'));
-
-        if (!allSelfPickup && !date) {
+        if (!date) {
             showToast('กรุณาระบุวันที่จัดส่ง', 'error');
             return;
         }

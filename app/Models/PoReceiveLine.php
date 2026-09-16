@@ -25,6 +25,7 @@ class PoReceiveLine extends Model
 
     protected $fillable = [
         'po_id',
+        'so_id',
         'good_name',
         'recv_qty',
         'unit_price',

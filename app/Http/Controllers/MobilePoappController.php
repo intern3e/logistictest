@@ -310,47 +310,69 @@ class MobilePoappController extends Controller
         $receivedAt = now();
         $receivedBy = $validated['ReceivedBy'] ?? optional($request->user())->name;
 
+        // แยก SO (PO เชื่อมหลาย SO) → รับเข้า/พิมพ์ แยกต่อ SO
+        $soNums = array_values(array_unique(array_filter(array_map('trim', explode(',', (string) ($validated['SONum'] ?? ''))))));
+        if (empty($soNums)) {
+            $soNums = [null]; // เผื่อไม่มี SO (ปกติจะมี เพราะฝั่งหน้าบังคับเชื่อม SO)
+        }
+
+        // ดึงข้อมูลลูกค้า/PO ลูกค้า ต่อ SO จาก 3e so (แยกข้อมูลกันตาม SO)
+        $soInfo = collect();
+        $realSoNums = array_values(array_filter($soNums));
+        if (!empty($realSoNums)) {
+            $soInfo = DB::connection(self::LEGACY_CONNECTION)->table('so')
+                ->whereIn('SONum', $realSoNums)
+                ->get(['SONum', 'CustName', 'CustPONo'])
+                ->keyBy('SONum');
+        }
+
         try {
-            $header = DB::transaction(function () use ($validated, $photoPath, $receivedAt, $receivedBy) {
+            $header = DB::transaction(function () use ($validated, $photoPath, $receivedAt, $receivedBy, $soNums, $soInfo) {
+                $last = null;
+                // 1 SO = 1 po_receives (แยก record) + ไส้ในของ SO นั้น
+                foreach ($soNums as $soNum) {
+                    $info     = $soNum ? $soInfo->get($soNum) : null;
+                    $custName = optional($info)->CustName ?: ($validated['CustName'] ?? null);
+                    $custPONo = optional($info)->CustPONo ?: ($validated['CustPONo'] ?? null);
 
-                $header = PoReceive::where('po_id', $validated['PONum'])->lockForUpdate()->first();
+                    $header = PoReceive::where('po_id', $validated['PONum'])
+                        ->where('so_id', $soNum)
+                        ->lockForUpdate()->first();
 
-                $custName = $validated['CustName'] ?? null;
-                $custPONo = $validated['CustPONo'] ?? null;
+                    if ($header) {
+                        $header->update([
+                            'status'    => $validated['Status'],
+                            'cust_name' => $custName ?: $header->cust_name,
+                            'POref'     => $custPONo ?: $header->POref,
+                        ]);
+                    } else {
+                        $header = PoReceive::create([
+                            'po_id'         => $validated['PONum'],
+                            'so_id'         => $soNum,
+                            'status'        => $validated['Status'],
+                            'cust_name'     => $custName,
+                            'POref'         => $custPONo,
+                            'checkout_by'   => null,
+                            'checkout_time' => null,
+                        ]);
+                    }
 
-                if ($header) {
-                    $header->update([
-                        'so_id'     => $validated['SONum'] ?? $header->so_id,
-                        'status'    => $validated['Status'],
-                        'cust_name' => $custName ?: $header->cust_name,
-                        'POref'     => $custPONo ?: $header->POref,
-                    ]);
-                } else {
-                    $header = PoReceive::create([
-                        'po_id'         => $validated['PONum'],
-                        'so_id'         => $validated['SONum'] ?? null,
-                        'status'        => $validated['Status'],
-                        'cust_name'     => $custName,
-                        'POref'         => $custPONo,
-                        'checkout_by'   => null,
-                        'checkout_time' => null,
-                    ]);
+                    foreach ($validated['items'] as $it) {
+                        PoReceiveLine::create([
+                            'po_id'       => $validated['PONum'],
+                            'so_id'       => $soNum,
+                            'good_name'   => $it['GoodName'] ?? null,
+                            'recv_qty'    => $it['RecvQty'],
+                            'unit_price'  => $it['UnitPrice'] ?? null,
+                            'shelf'       => $validated['Shelf'] ?? null,
+                            'photo_path'  => $photoPath,
+                            'received_by' => $receivedBy,
+                            'received_at' => $receivedAt,
+                        ]);
+                    }
+                    $last = $header;
                 }
-
-                foreach ($validated['items'] as $it) {
-                    PoReceiveLine::create([
-                        'po_id'       => $validated['PONum'],
-                        'good_name'   => $it['GoodName'] ?? null,
-                        'recv_qty'    => $it['RecvQty'],
-                        'unit_price'  => $it['UnitPrice'] ?? null,
-                        'shelf'       => $validated['Shelf'] ?? null,
-                        'photo_path'  => $photoPath,
-                        'received_by' => $receivedBy,
-                        'received_at' => $receivedAt,
-                    ]);
-                }
-
-                return $header;
+                return $last;
             });
         } catch (\Exception $e) {
             if ($photoPath) {
@@ -362,15 +384,18 @@ class MobilePoappController extends Controller
             ], 500);
         }
 
-        // ── พิมพ์สติกเกอร์ ──
-        if (!empty($validated['Printer']) && !empty($validated['SONum'])) {
-            $this->insertPrintWarehouse(
-                $validated['SONum'],
-                $validated['CustPONo'] ?? '',
-                $validated['CustName'] ?? '',
-                $validated['Printer'],
-                $validated['PrintSheets'] ?? 1
-            );
+        // ── พิมพ์สติกเกอร์: แยกทุก SO พร้อมข้อมูลลูกค้า/PO ลูกค้าของ SO นั้น ──
+        if (!empty($validated['Printer'])) {
+            foreach ($realSoNums as $soNum) {
+                $info = $soInfo->get($soNum);
+                $this->insertPrintWarehouse(
+                    $soNum,
+                    optional($info)->CustPONo ?: ($validated['CustPONo'] ?? ''),
+                    optional($info)->CustName ?: ($validated['CustName'] ?? ''),
+                    $validated['Printer'],
+                    $validated['PrintSheets'] ?? 1
+                );
+            }
         }
 
         $rowCount = count($validated['items']);
@@ -387,7 +412,15 @@ class MobilePoappController extends Controller
     public function history(Request $request)
     {
         $query = PoReceiveLine::query()
-            ->join('po_receives', 'po_receives.po_id', '=', 'po_receives_line.po_id')
+            // join แบบรวม so_id เพื่อกันแถวซ้ำเมื่อ 1 PO มีหลาย po_receives (แยกต่อ SO)
+            // รองรับข้อมูลเก่า: line.so_id = null → จับกับ header เดียวของ PO นั้น (เดิมมี 1 แถว/PO)
+            ->join('po_receives', function ($j) {
+                $j->on('po_receives.po_id', '=', 'po_receives_line.po_id')
+                  ->where(function ($q) {
+                      $q->whereColumn('po_receives.so_id', '=', 'po_receives_line.so_id')
+                        ->orWhereNull('po_receives_line.so_id');
+                  });
+            })
             ->select(
                 'po_receives_line.id',
                 'po_receives_line.po_id',

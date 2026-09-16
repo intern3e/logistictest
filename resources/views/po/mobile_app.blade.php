@@ -1077,8 +1077,12 @@ async function searchPO(){
         const legacyActive = !!(legacy && legacy.active);        // ยังมีของอยู่ในคลังจากระบบเก่า
         const legacyCheckedOut = !!(legacy && legacy.checked_out); // ถูกเช็คของออกในระบบเก่าแล้ว
 
-        // แสดงหน้า "รับเข้าแล้ว" เมื่อ (A) รับครบในระบบใหม่ หรือ (B) มีของค้างคลังจากระบบเก่า
-        if(hasRemaining.length === 0 || legacyActive){
+        // แสดงหน้า "รับเข้าแล้ว" เมื่อ (A) รับครบในระบบใหม่ หรือ
+        // (B) มีของค้างคลังจากระบบเก่า "และ" ยังไม่เคยรับเข้าในระบบใหม่มาก่อนเลย
+        // (ถ้า PO นี้รับเข้าในระบบใหม่มาแล้วบางส่วน (status บางส่วน) ต้องปล่อยให้รับเข้าต่อได้เสมอ
+        //  ไม่ควรถูกเบือนไปหน้าแก้ไขชั้นวาง/ดึงข้อมูลระบบเก่าเพราะ legacyActive)
+        const legacyOnly = legacyActive && historyRows.length === 0;
+        if(hasRemaining.length === 0 || legacyOnly){
             lastFullyReceivedPO = data.DocuNo;
             const docuNo    = data.DocuNo;
             const fromNew   = hasRemaining.length === 0;          // รับครบจากระบบใหม่

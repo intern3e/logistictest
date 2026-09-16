@@ -2,6 +2,7 @@
 <html lang="th">
 <head>
 <meta charset="UTF-8">
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta name="csrf-token" content="{{ csrf_token() }}">
 <title>สร้างใบมัดจำ — ระบบจัดการเอกสาร</title>
@@ -22,9 +23,17 @@
   --shadow-xs:0 1px 2px rgba(62,106,225,.06); --shadow-sm:0 2px 8px rgba(62,106,225,.08);
   --shadow-md:0 4px 16px rgba(62,106,225,.10); --shadow-lg:0 8px 32px rgba(62,106,225,.14);
   --r-sm:4px; --r-md:6px; --r-lg:12px; --r-xl:16px;
-  --font-thai:'Sarabun',system-ui,sans-serif; --font-mono:'JetBrains Mono',ui-monospace,monospace;
+  --font-thai:'Sarabun',system-ui,-apple-system,sans-serif;
+  --font-mono:'JetBrains Mono',ui-monospace,monospace;
   --t-fast:.12s ease; --t-base:.2s ease;
 }
+
+/* ✅ สำคัญ: ใช้ Sarabun สำหรับข้อความไทย โดยไม่ใส่ letter-spacing/feature-settings ที่ทำลายสระ */
+body, input, textarea, select, button, table, th, td, div, span, label, p, h1, h2, h3, h4, h5, h6 {
+  font-family: var(--font-thai);
+  line-height: 1.6;
+}
+
 body{font-family:var(--font-thai);font-size:15px;background:var(--bg);color:var(--text);line-height:1.6;min-height:100vh;-webkit-font-smoothing:antialiased}
 #loadingOverlay{display:none;position:fixed;inset:0;background:rgba(255,255,255,.92);backdrop-filter:blur(4px);z-index:9999;justify-content:center;align-items:center;flex-direction:column;gap:16px}
 @keyframes spin{to{transform:rotate(360deg)}}
@@ -88,10 +97,10 @@ body{font-family:var(--font-thai);font-size:15px;background:var(--bg);color:var(
 .span-2{grid-column:span 2}
 .span-full{grid-column:1/-1}
 .field{display:flex;flex-direction:column;gap:6px}
-.field label{font-size:12px;font-weight:700;color:var(--text-secondary);letter-spacing:.04em;display:flex;align-items:center;gap:5px}
+.field label{font-size:12px;font-weight:700;color:var(--text-secondary);display:flex;align-items:center;gap:5px}
 .field label .req{color:var(--red);font-size:14px;line-height:1}
 .field label .tip{display:inline-flex;align-items:center;justify-content:center;width:14px;height:14px;background:var(--bg-alt);border:1px solid var(--border);border-radius:3px;font-size:10px;color:var(--text-muted);cursor:help;font-style:normal;font-weight:700;position:relative}
-.field label .tip:hover::after{content:attr(data-tip);position:absolute;bottom:calc(100% + 6px);left:50%;transform:translateX(-50%);background:var(--text);color:#fff;font-size:11px;font-weight:400;padding:5px 9px;border-radius:var(--r-sm);white-space:nowrap;pointer-events:none;z-index:50;letter-spacing:0}
+.field label .tip:hover::after{content:attr(data-tip);position:absolute;bottom:calc(100% + 6px);left:50%;transform:translateX(-50%);background:var(--text);color:#fff;font-size:11px;font-weight:400;padding:5px 9px;border-radius:var(--r-sm);white-space:nowrap;pointer-events:none;z-index:50}
 .field-wrap{position:relative}
 .field input[type="text"],.field input[type="number"],.field textarea{padding:10px 12px;border:1.5px solid var(--border);border-radius:var(--r-md);background:var(--surface);color:var(--text);font-size:14px;font-family:inherit;outline:none;transition:border var(--t-fast),box-shadow var(--t-fast),background var(--t-fast);width:100%}
 .field input[type="text"]:focus,.field input[type="number"]:focus,.field textarea:focus{border-color:var(--primary);background:var(--surface);box-shadow:0 0 0 3px rgba(62,106,225,.12)}
@@ -145,11 +154,11 @@ body{font-family:var(--font-thai);font-size:15px;background:var(--bg);color:var(
 .btn-link.warn{color:var(--red)}
 .btn-link.warn:hover{background:var(--red-light)}
 .tbl-wrap{overflow-x:auto;-webkit-overflow-scrolling:touch;border-radius:var(--r-md);border:1px solid var(--border)}
-table{width:100%;border-collapse:collapse;font-size:14px;table-layout:fixed}
+table{width:100%;border-collapse:separate;border-spacing:0;font-size:14px;table-layout:fixed}
 thead{background:var(--primary)}
-th{padding:11px 16px;font-size:11px;font-weight:700;color:#fff;letter-spacing:.07em;text-transform:uppercase;border-bottom:none;border-right:1px solid rgba(255,255,255,.15);text-align:left;white-space:nowrap}
+th{padding:11px 16px;font-size:11px;font-weight:700;color:#fff;letter-spacing:.07em;text-transform:uppercase;border-bottom:none;border-right:1px solid rgba(255,255,255,.15);text-align:left;white-space:nowrap;position:relative;z-index:1}
 th:last-child{border-right:none}
-td{padding:12px 16px;border-bottom:1px solid var(--border-light);border-right:1px solid var(--border-light);vertical-align:middle}
+td{padding:12px 16px;border-bottom:1px solid var(--border-light);border-right:1px solid var(--border-light);vertical-align:middle;position:relative;z-index:1}
 td:last-child{border-right:none}
 tbody tr:last-child td{border-bottom:none}
 tbody tr:hover td{background:var(--primary-light)}
@@ -752,9 +761,12 @@ const PDF_TEMPLATE_URL = "{{ asset('storage/deposit_templates/templates.pdf') }}
 const PDF_PREVIEW_BASE = "{{ url('/deposit/preview') }}";
 let PDF_URL = PDF_TEMPLATE_URL;
 
-function fmt(n){ return '฿'+n.toLocaleString('th-TH',{minimumFractionDigits:2,maximumFractionDigits:2}) }
-function fmtPlain(n){ return n.toLocaleString('th-TH',{minimumFractionDigits:2,maximumFractionDigits:2}) }
-function fmtPct(n){ return n.toLocaleString('th-TH',{minimumFractionDigits:2,maximumFractionDigits:4}) }
+function round2(n) { return Math.round(n * 100) / 100; }
+function round6(n) { return Math.round(n * 1000000) / 1000000; }
+
+function fmt(n){ return '฿'+round2(n).toLocaleString('th-TH',{minimumFractionDigits:2,maximumFractionDigits:2}) }
+function fmtPlain(n){ return round2(n).toLocaleString('th-TH',{minimumFractionDigits:2,maximumFractionDigits:2}) }
+function fmtPct(n){ return round2(n).toLocaleString('th-TH',{minimumFractionDigits:2,maximumFractionDigits:4}) }
 
 function showLoading(msg){ document.getElementById('loadingOverlay').style.display='flex'; document.getElementById('loadingMsg').textContent=msg||'กำลังโหลดข้อมูล...'; }
 function hideLoading(){ document.getElementById('loadingOverlay').style.display='none'; }
@@ -784,21 +796,25 @@ function getSelectedItems(){ return ALL_ITEMS.filter(it => it.selected); }
 
 function buildPreviewUrl(){
   const params = new URLSearchParams();
-  params.set('so_id',            document.getElementById('so_id').value || '');
-  params.set('sell_date',        document.getElementById('sell_date').value || '');
-  params.set('customer_id',      document.getElementById('customer_id').value || '');
-  params.set('tax_id',           document.getElementById('tax_id').value || '');
-  params.set('customer_name',    document.getElementById('customer_name').value || '');
-  params.set('contactso',        document.getElementById('contactso').value || '');
-  params.set('customer_tel',     document.getElementById('customer_tel').value || '');
-  params.set('customer_address', document.getElementById('customer_address').value || '');
-  params.set('note',             document.getElementById('note').value || '');
-  params.set('emp_name',         document.getElementById('hidden-emp').value || '');
-  params.set('sale_name',        document.getElementById('hidden-sale').value || '');
-  params.set('billid',           document.getElementById('billid').value || '');
-  params.set('grand_total',      document.getElementById('hidden-grandtotal').value || '0');
-  params.set('po_document',      document.getElementById('hidden-po').value || '');
-  params.set('discount',         document.getElementById('hidden-discount').value || '0');
+  const getVal = (id) => {
+    const el = document.getElementById(id);
+    return el ? (el.value || '').trim() : '';
+  };
+  params.set('so_id',            getVal('so_id'));
+  params.set('sell_date',        getVal('sell_date'));
+  params.set('customer_id',      getVal('customer_id'));
+  params.set('tax_id',           getVal('tax_id'));
+  params.set('customer_name',    getVal('customer_name'));
+  params.set('contactso',        getVal('contactso'));
+  params.set('customer_tel',     getVal('customer_tel'));
+  params.set('customer_address', getVal('customer_address'));
+  params.set('note',             getVal('note'));
+  params.set('emp_name',         getVal('hidden-emp'));
+  params.set('sale_name',        getVal('hidden-sale'));
+  params.set('billid',           getVal('billid'));
+  params.set('grand_total',      getVal('hidden-grandtotal') || '0');
+  params.set('po_document',      getVal('hidden-po'));
+  params.set('discount',         getVal('hidden-discount') || '0');
   const selectedIdx = getSelectedItems().map(it => it.idx);
   params.set('selected_items', JSON.stringify(selectedIdx));
   const deposits = [];
@@ -807,9 +823,9 @@ function buildPreviewUrl(){
     if(active[k]){
       const raw = parseFloat(document.getElementById('dep-'+k).value) || 0;
       let pct, amt;
-      if(mode[k]==='pct'){ pct = Math.min(100, Math.max(0, raw)); amt = BASE * pct / 100; }
-      else { amt = Math.max(0, raw); pct = BASE > 0 ? amt / BASE * 100 : 0; }
-      if(amt > 0) deposits.push({ type:typeMap[k], percent:+pct.toFixed(4), amount:+amt.toFixed(2) });
+      if(mode[k]==='pct'){ pct = Math.min(100, Math.max(0, round2(raw))); amt = round2(BASE * pct / 100); }
+      else { amt = round2(Math.max(0, raw)); pct = BASE > 0 ? round6(amt / BASE * 100) : 0; }
+      if(amt > 0) deposits.push({ type: typeMap[k], percent: +pct.toFixed(6), amount: +amt.toFixed(2) });
     }
   });
   params.set('deposits', JSON.stringify(deposits));
@@ -878,18 +894,16 @@ async function fetchSODetails(soNum){
     const data=await res.json();
     if(!data.SoDetail){hideLoading();showToast('ไม่พบข้อมูล SO','ไม่พบข้อมูล SO: '+soNum,'error');return;}
     const d=data.SoDetail, s=data.SoStatus;
-    
-    // ✅ ดึงค่าส่วนลดจาก API (ตรวจสอบทั้ง SoDetail และ SoStatus)
     const disc = parseFloat(d.BaseDiscAmnt || s.BaseDiscAmnt || 0);
-    DISCOUNT = isNaN(disc) ? 0 : disc;
+    DISCOUNT = isNaN(disc) ? 0 : round2(disc);
     document.getElementById('hidden-discount').value = DISCOUNT.toFixed(2);
-
     document.getElementById('so_id').value=s.SONum||'';
     document.getElementById('customer_id').value=s.CustID||'';
     document.getElementById('customer_name').value=d.CustName||'';
     document.getElementById('tax_id').value=d.TaxId||'';
     document.getElementById('customer_tel').value=d.ContTel||'';
-    document.getElementById('customer_address').value=[d.CustAddr1,d.ContDistrict,d.ContAmphur,d.ContProvince,d.ContPostCode].filter(Boolean).join(', ');
+    const addrEl = document.getElementById('customer_address');
+    addrEl.value = [d.CustAddr1, d.ContDistrict, d.ContAmphur, d.ContProvince, d.ContPostCode].filter(Boolean).join(', ');
     const custPONo = d.CustPONo || s.CustPONo || '';
     const bi = document.getElementById('billid');
     if(bi) bi.value = custPONo;
@@ -931,9 +945,9 @@ function renderItems(items){
     return;
   }
   items.forEach((item, idx)=>{
-    const qty  =parseFloat(item.GoodQty2)  ||0;
-    const price=parseFloat(item.GoodPrice2)||0;
-    const sub  =qty*price;
+    const qty  = parseFloat(item.GoodQty2) || 0;
+    const price = parseFloat(item.GoodPrice2) || 0;
+    const sub = round2(qty * price);
     const name = (item.GoodName||'').trim();
     ALL_ITEMS.push({ idx, name, qty, price, sub, selected: true });
     tbody.insertAdjacentHTML('beforeend',`
@@ -975,19 +989,12 @@ function updateCheckAllState(){
 }
 
 function recalcBase(){
-  FULL_TOTAL = ALL_ITEMS.reduce((s, it) => s + it.sub, 0);
-  BASE       = ALL_ITEMS.filter(it => it.selected).reduce((s, it) => s + it.sub, 0);
-  
-  // ✅ อัปเดตการแสดงส่วนลดใน UI
+  FULL_TOTAL = round2(ALL_ITEMS.reduce((s, it) => s + it.sub, 0));
+  BASE       = round2(ALL_ITEMS.filter(it => it.selected).reduce((s, it) => s + it.sub, 0));
   const srowDisc = document.getElementById('srow-disc');
   const svalDisc = document.getElementById('sval-disc');
-  if (DISCOUNT > 0) {
-    srowDisc.style.display = 'flex';
-    svalDisc.textContent = '-' + fmt(DISCOUNT);
-  } else {
-    srowDisc.style.display = 'none';
-  }
-
+  if (DISCOUNT > 0) { srowDisc.style.display = 'flex'; svalDisc.textContent = '-' + fmt(DISCOUNT); }
+  else { srowDisc.style.display = 'none'; }
   const sel = ALL_ITEMS.filter(it => it.selected).length;
   document.getElementById('sel-count').textContent  = sel;
   document.getElementById('sel-total').textContent  = ALL_ITEMS.length;
@@ -1000,14 +1007,14 @@ function recalcBase(){
     document.getElementById('sv-sub').textContent = fmt(BASE);
   } else { selRow.style.display = 'none'; }
   document.getElementById('hidden-subtotal').value   = FULL_TOTAL.toFixed(2);
-  document.getElementById('hidden-grandtotal').value = Math.max(0, FULL_TOTAL - DISCOUNT).toFixed(2); // ✅ ปรับยอดรวมเบื้องต้น
+  document.getElementById('hidden-grandtotal').value = round2(Math.max(0, FULL_TOTAL - DISCOUNT)).toFixed(2);
   updateCheckAllState();
   KEYS.forEach(k => {
     if(active[k] && mode[k] === 'amt'){
       const inp = document.getElementById('dep-'+k);
       const cur = parseFloat(inp.value) || 0;
       const otherAmt = getOtherAmt(k);
-      const maxAmt = Math.max(0, +(BASE - otherAmt).toFixed(2)); // ✅ ใช้ BASE แทน FULL_TOTAL
+      const maxAmt = Math.max(0, round2(BASE - otherAmt));
       if(cur > maxAmt) inp.value = maxAmt;
     }
   });
@@ -1034,7 +1041,7 @@ function setMode(k, m){
   const tabAmt = document.getElementById('mtab-'+k+'-amt');
   tabPct.className = 'mode-tab' + (m==='pct' ? ' on-'+k : '');
   tabAmt.className = 'mode-tab' + (m==='amt' ? ' on-'+k : '');
-  if(m === 'pct'){ unit.textContent = '%'; inp.max = '100'; inp.step = '1'; inp.placeholder = '0'; }
+  if(m === 'pct'){ unit.textContent = '%'; inp.max = '100'; inp.step = '0.01'; inp.placeholder = '0'; }
   else { unit.textContent = '฿'; inp.removeAttribute('max'); inp.step = '0.01'; inp.placeholder = '0.00'; }
   inp.value = '';
   const res = document.getElementById('dres-'+k);
@@ -1051,7 +1058,7 @@ function toggleCard(k){
       document.getElementById('dcard-'+id).className = 'dep-card';
       document.getElementById('dtog-'+id).className  = 'dep-toggle';
       const inp = document.getElementById('dep-'+id);
-      inp.disabled = true; inp.value = ''; inp.max = '100'; inp.step = '1'; inp.placeholder = '0';
+      inp.disabled = true; inp.value = ''; inp.max = '100'; inp.step = '0.01'; inp.placeholder = '0';
       document.getElementById('mtab-'+id+'-pct').className = 'mode-tab on-'+id;
       document.getElementById('mtab-'+id+'-amt').className = 'mode-tab';
       document.getElementById('unit-'+id).textContent = '%';
@@ -1077,8 +1084,8 @@ function getOtherAmt(k){
   const other = k === 'g' ? 'b' : 'g';
   if(!active[other]) return 0;
   const raw = parseFloat(document.getElementById('dep-'+other).value) || 0;
-  if(mode[other] === 'pct'){ const pct = Math.min(100, Math.max(0, Math.floor(raw))); return BASE * pct / 100; }
-  return Math.max(0, Math.round(raw * 100) / 100);
+  if(mode[other] === 'pct'){ const pct = Math.min(100, Math.max(0, round2(raw))); return round2(BASE * pct / 100); }
+  return round2(Math.max(0, raw));
 }
 
 function onDepInput(k){
@@ -1086,13 +1093,14 @@ function onDepInput(k){
   let raw = parseFloat(inp.value);
   if(isNaN(raw) || raw < 0){ inp.value = ''; calc(); return; }
   if(mode[k] === 'pct'){
-    if(!Number.isInteger(raw)){ raw = Math.floor(raw); inp.value = raw; }
-    if(raw > 100){ inp.value = 100; showToastOnce('เกินขีดจำกัด','เปอร์เซ็นต์มัดจำต้องไม่เกิน 100%','warning'); }
+    let rounded = round2(raw);
+    if(rounded > 100){ rounded = 100; showToastOnce('เกินขีดจำกัด','เปอร์เซ็นต์มัดจำต้องไม่เกิน 100%','warning'); }
+    inp.value = rounded; raw = rounded;
   } else {
-    const rounded = Math.round(raw * 100) / 100;
-    if(rounded !== raw){ raw = rounded; inp.value = raw; }
+    const rounded = round2(raw);
+    if(rounded !== raw){ raw = rounded; inp.value = rounded; }
     const otherAmt = getOtherAmt(k);
-    const maxAmt = Math.max(0, +(BASE - otherAmt).toFixed(2)); // ✅ ใช้ BASE แทน FULL_TOTAL
+    const maxAmt = Math.max(0, round2(BASE - otherAmt));
     if(raw > maxAmt){ inp.value = maxAmt; showToastOnce('เกินยอดรวม',`มัดจำ${names[k]}ต้องไม่เกิน ${fmt(maxAmt)}`,'warning'); }
   }
   calc();
@@ -1112,37 +1120,32 @@ function calc(){
       const raw = parseFloat(document.getElementById('dep-'+k).value) || 0;
       let pct, amt;
       if(mode[k]==='pct'){
-        pct = Math.min(100, Math.max(0, Math.floor(raw)));
-        amt = BASE * pct / 100;
+        pct = Math.min(100, Math.max(0, round2(raw)));
+        amt = round2(BASE * pct / 100);
         res.className = 'dep-result '+k;
         res.textContent = amt > 0 ? fmtPlain(amt)+' บาท' : 'กรอกเปอร์เซ็นต์มัดจำ';
       } else {
-        amt = Math.max(0, Math.round(raw * 100) / 100);
-        pct = BASE > 0 ? (amt / BASE * 100) : 0;
+        amt = round2(Math.max(0, raw));
+        pct = BASE > 0 ? round6(amt / BASE * 100) : 0;
         res.className = 'dep-result '+k;
         res.textContent = amt > 0 ? 'คิดเป็น '+fmtPct(pct)+'% ของยอดที่เลือก' : 'กรอกจำนวนเงินมัดจำ';
       }
       totDepAmt += amt;
       srow.style.display = 'flex';
-      slbl.textContent = 'หักมัดจำ'+names[k]+' ('+fmtPct(pct)+'%)';
+      slbl.textContent = 'หักมัดจำ'+names[k]+' ('+fmtPct(round2(pct))+'%)';
       sval.textContent = '-'+fmt(amt);
     } else { srow.style.display = 'none'; }
   });
-  
-  // ✅ คำนวณยอดสุทธิต่อการชำระ (ยอดรวม - ส่วนลด)
-  const netBeforeDeposit = Math.max(0, FULL_TOTAL - DISCOUNT);
-  // ป้องกันยอดมัดจำรวมเกินยอดสุทธิที่ลูกค้าต้องจ่ายจริง
+  totDepAmt = round2(totDepAmt);
+  const netBeforeDeposit = round2(Math.max(0, FULL_TOTAL - DISCOUNT));
   totDepAmt = Math.min(totDepAmt, netBeforeDeposit);
-  
   const any = Object.values(active).some(v=>v);
-  const net = Math.max(0, netBeforeDeposit - totDepAmt);
-  
+  const net = round2(Math.max(0, netBeforeDeposit - totDepAmt));
   document.getElementById('srow-tot').style.display = any ? 'flex' : 'none';
   document.getElementById('sval-tot').textContent = '-'+fmt(totDepAmt);
   document.getElementById('sv-grand').textContent = fmt(net);
-  document.getElementById('sv-grand-vat').textContent = fmt(net * 1.07);
+  document.getElementById('sv-grand-vat').textContent = fmt(round2(net * 1.07));
   document.getElementById('hidden-grandtotal').value = net.toFixed(2);
-  
   const dth = document.getElementById('dep-th');
   if(any && totDepAmt > 0){
     dth.style.display = '';
@@ -1153,7 +1156,7 @@ function calc(){
       if(!cell || !item) return;
       cell.style.display = '';
       if(item.selected && BASE > 0){
-        const itemDep = (item.sub / BASE) * totDepAmt;
+        const itemDep = round2((item.sub / BASE) * totDepAmt);
         cell.textContent = '-฿'+fmtPlain(itemDep);
         cell.style.color = '';
       } else { cell.textContent = '—'; cell.style.color = 'var(--text-hint)'; }
@@ -1169,7 +1172,6 @@ document.getElementById('submitBill').addEventListener('click', async function()
   const btn = this;
   const soId = document.getElementById('so_id').value.trim();
   const contactso = document.getElementById('contactso').value.trim();
-  const customerTel = document.getElementById('customer_tel').value.trim();
   if(!soId){ showToast('ข้อมูลไม่ครบ','ไม่พบเลขที่ SO','error'); return; }
   if(!contactso){ showToast('ข้อมูลไม่ครบ','กรุณากรอกชื่อผู้ติดต่อ','error'); document.getElementById('contactso').focus(); return; }
   const selectedItems = getSelectedItems();
@@ -1182,9 +1184,9 @@ document.getElementById('submitBill').addEventListener('click', async function()
     if(active[k]){
       const raw = parseFloat(document.getElementById('dep-'+k).value) || 0;
       let pct, amt;
-      if(mode[k]==='pct'){ pct = Math.min(100, Math.max(0, raw)); amt = BASE * pct / 100; }
-      else { amt = Math.max(0, raw); pct = BASE > 0 ? amt / BASE * 100 : 0; }
-      if(amt > 0) deposits.push({ type:typeMap[k], percent:+pct.toFixed(4), amount:+amt.toFixed(2) });
+      if(mode[k]==='pct'){ pct = Math.min(100, Math.max(0, round2(raw))); amt = round2(BASE * pct / 100); }
+      else { amt = round2(Math.max(0, raw)); pct = BASE > 0 ? round6(amt / BASE * 100) : 0; }
+      if(amt > 0) deposits.push({ type:typeMap[k], percent:+pct.toFixed(6), amount:+amt.toFixed(2) });
     }
   });
   if(deposits.length === 0){ showToast('ข้อมูลมัดจำไม่ถูกต้อง','กรุณากรอกค่ามัดจำให้มากกว่า 0','warning'); return; }
@@ -1194,19 +1196,19 @@ document.getElementById('submitBill').addEventListener('click', async function()
     customer_id: document.getElementById('customer_id').value,
     customer_name: document.getElementById('customer_name').value,
     contactso: contactso,
-    customer_tel: customerTel,
+    customer_tel: document.getElementById('customer_tel').value,
     customer_address: document.getElementById('customer_address').value,
     note: document.getElementById('note').value,
     emp_name: document.getElementById('hidden-emp').value,
     sale_name: (document.getElementById('hidden-sale').value || '').trim(),
     po_document: (document.getElementById('hidden-po').value || '').trim(),
     billid: document.getElementById('billid').value,
-    subtotal: parseFloat(document.getElementById('hidden-subtotal').value) || 0,
-    discount: DISCOUNT, // ✅ เพิ่มค่าส่วนลดเข้าไปใน Payload
-    grand_total: parseFloat(document.getElementById('hidden-grandtotal').value) || 0,
+    subtotal: FULL_TOTAL,
+    discount: DISCOUNT,
+    grand_total: round2(Math.max(0, FULL_TOTAL - DISCOUNT)),
     deposits: deposits,
     tax_id: document.getElementById('tax_id').value,
-    selected_items: selectedItems.map(it => ({ idx:it.idx, name:it.name, qty:it.qty, price:it.price, sub:+it.sub.toFixed(2) })),
+    selected_items: selectedItems.map(it => ({ idx:it.idx, name:it.name, qty:it.qty, price:it.price, sub:round2(it.sub) })),
     selected_count: selectedItems.length,
     total_count: ALL_ITEMS.length,
   };
