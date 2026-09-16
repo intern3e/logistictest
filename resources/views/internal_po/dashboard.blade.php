@@ -1,3 +1,68 @@
+@if($printMode ?? false)
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<style>
+    {{-- ⚠️ dompdf ไม่มีฟอนต์ไทยในตัว ต้อง embed ฟอนต์เอง วางไฟล์ .ttf ไว้ที่ public/fonts/ --}}
+    @font-face {
+        font-family: 'Sarabun';
+        src: url('{{ public_path('fonts/Sarabun-Regular.ttf') }}') format('truetype');
+        font-weight: normal;
+    }
+    @font-face {
+        font-family: 'Sarabun';
+        src: url('{{ public_path('fonts/Sarabun-Bold.ttf') }}') format('truetype');
+        font-weight: bold;
+    }
+    * { font-family: 'Sarabun', sans-serif; }
+    body { font-size: 14px; color: #111; }
+    h1 { font-size: 18px; margin-bottom: 4px; }
+    .meta { font-size: 12px; color: #555; margin-bottom: 18px; }
+    table { width: 100%; border-collapse: collapse; margin-bottom: 18px; }
+    th, td { border: 1px solid #999; padding: 6px 8px; font-size: 13px; }
+    th { background: #eee; text-align: left; }
+    .po-block { margin-bottom: 22px; }
+    .po-header { font-size: 15px; font-weight: bold; margin-bottom: 6px; }
+    .num { text-align: right; }
+</style>
+</head>
+<body>
+    <h1>เอกสารรายการ Internal PO</h1>
+    <div class="meta">
+        พิมพ์โดย: {{ $printedBy }} &nbsp;|&nbsp; วันที่พิมพ์: {{ $printedAt->format('d/m/Y H:i') }}
+    </div>
+
+    @forelse ($printHeads as $h)
+        <div class="po-block">
+            <div class="po-header">
+                PO ภายใน: {{ $h->internal_id }} &nbsp;|&nbsp; SO: {{ $h->SO_id }} &nbsp;|&nbsp; ลูกค้า: {{ $h->customer_name ?: '-' }}
+            </div>
+            <table>
+                <thead>
+                    <tr>
+                        <th style="width:15%;">รหัสสินค้า</th>
+                        <th>ชื่อสินค้า</th>
+                        <th style="width:12%;" class="num">จำนวน</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach ($h->lines as $line)
+                        <tr>
+                            <td>{{ $line->item_id ?: '-' }}</td>
+                            <td>{{ $line->item_name }}</td>
+                            <td class="num">{{ rtrim(rtrim(number_format((float) $line->item_quantity, 2), '0'), '.') }}</td>
+                        </tr>
+                    @endforeach
+                </tbody>
+            </table>
+        </div>
+    @empty
+        <p>ไม่พบข้อมูล</p>
+    @endforelse
+</body>
+</html>
+@else
 <!DOCTYPE html>
 <html lang="th">
 <head>
@@ -277,7 +342,6 @@
                     </div>
                 @endif
             </div>
-
             <div class="action-toolbar" id="actionToolbar" hidden>
                 <span class="selcount">เลือกแล้ว <span id="selCount">0</span> ใบ</span>
                 <div class="divider"></div>
@@ -294,6 +358,9 @@
                 </div>
                 <button type="button" class="btn-success" id="btnMain" onclick="submitFinish()">
                     จัดเสร็จ + พิมพ์ (<span id="selCountA">0</span>)
+                </button>
+                <button type="button" class="btn-ghost" id="btnPrintDoc" onclick="submitPrintDocument()">
+                    พิมพ์เอกสาร (<span id="selCountC">0</span>)
                 </button>
                 <button type="button" class="btn-danger" id="btnCancel" onclick="submitCancel()">
                     ยกเลิก (<span id="selCountB">0</span>)
@@ -320,51 +387,73 @@
                 <th>ชื่อสินค้า</th>
                 <th class="center" style="width:80px;">จำนวน</th>
                 <th>ลูกค้า</th>
+                <th class="col-key">สร้างโดย</th>
+                <th class="col-key">เวลาสร้าง</th>
             </tr>
         </thead>
-        <tbody>
-        @forelse ($heads as $h)
-            @php
-                $todo     = $h->status === \App\Models\internal_po::ST_PENDING;
-                $cancel   = $h->status === \App\Models\internal_po::ST_CANCEL;
-                $cls      = $cancel ? 'cancelled' : (!$todo ? 'done' : '');
-                $lines    = $h->lines ?? collect();
-            @endphp
-            @forelse ($lines as $line)
-                @php
-                    $lineId   = $line->id ?? null;                 // ระบบใหม่มี id ราย line / ของเก่า = null
-                    $picked   = !empty($line->picked_at);
-                    $chkVal   = $lineId ? ('line:' . $lineId) : ('po:' . $h->internal_id);  // ของเก่าจัดทั้ง PO
-                    $lineCls  = $cancel ? 'cancelled' : (($picked || !$todo) ? 'done' : '');
-                @endphp
-                <tr class="{{ $lineCls }}" data-internal-id="{{ $h->internal_id }}">
-                    <td class="center">
-                        @if ($todo && !$picked)
-                            <input type="checkbox" class="chkLine" value="{{ $chkVal }}">
-                        @elseif ($picked)
-                            <input type="checkbox" checked disabled title="จัดแล้ว">
-                        @endif
-                    </td>
-                    <td class="col-key">@if ($loop->first)<span class="ref-link">{{ $h->internal_id }}</span>@endif</td>
-                    <td class="col-key">@if ($loop->first){{ $h->SO_id }}@endif</td>
-                    <td class="col-key">{{ $line->item_id ?: '—' }}</td>
-                    <td>{{ $line->item_name }}</td>
-                    <td class="center">{{ rtrim(rtrim(number_format((float) $line->item_quantity, 2), '0'), '.') }}</td>
-                    <td class="cust-cell">@if ($loop->first){{ $h->customer_name }}@endif</td>
-                </tr>
-            @empty
-                <tr class="{{ $cls }}" data-internal-id="{{ $h->internal_id }}">
-                    <td class="center"></td>
-                    <td class="col-key"><span class="ref-link">{{ $h->internal_id }}</span></td>
-                    <td class="col-key">{{ $h->SO_id }}</td>
-                    <td class="col-key" colspan="3" style="color:#999;">— ไม่มีไส้ใน —</td>
-                    <td class="cust-cell">{{ $h->customer_name }}</td>
-                </tr>
-            @endforelse
-        @empty
-            <tr><td colspan="7" class="empty">ไม่มีรายการ</td></tr>
-        @endforelse
-        </tbody>
+<tbody>
+@forelse ($heads as $h)
+    @php
+        $todo     = $h->status === \App\Models\internal_po::ST_PENDING;
+        $cancel   = $h->status === \App\Models\internal_po::ST_CANCEL;
+        $cls      = $cancel ? 'cancelled' : (!$todo ? 'done' : '');
+        $lines    = $h->lines ?? collect();
+    @endphp
+    @forelse ($lines as $line)
+        @php
+            $lineId   = $line->id ?? null;
+            $picked   = !empty($line->picked_at);
+            $chkVal   = $lineId ? ('line:' . $lineId) : ('po:' . $h->internal_id);
+            $lineCls  = $cancel ? 'cancelled' : (($picked || !$todo) ? 'done' : '');
+        @endphp
+        <tr class="{{ $lineCls }}" data-internal-id="{{ $h->internal_id }}">
+            <td class="center">
+                @if ($todo && !$picked)
+                    <input type="checkbox" class="chkLine" value="{{ $chkVal }}">
+                @elseif ($picked)
+                    <input type="checkbox" checked disabled title="จัดแล้ว">
+                @endif
+            </td>
+            <td class="col-key">@if ($loop->first)<span class="ref-link">{{ $h->internal_id }}</span>@endif</td>
+            <td class="col-key">@if ($loop->first){{ $h->SO_id }}@endif</td>
+            <td class="col-key">{{ $line->item_id ?: '—' }}</td>
+            <td>{{ $line->item_name }}</td>
+            <td class="center">{{ rtrim(rtrim(number_format((float) $line->item_quantity, 2), '0'), '.') }}</td>
+            <td class="cust-cell">@if ($loop->first){{ $h->customer_name }}@endif</td>
+            <td class="col-key">
+                @if ($loop->first)
+                    {{ $h->create_by ?? 'ระบบเก่า' }}
+                @endif
+            </td>
+            <td class="col-key">
+                @if ($loop->first)
+                    {{ !empty($h->timestamp) ? \Carbon\Carbon::parse($h->timestamp)->format('d/m/Y H:i') : '—' }}
+                @endif
+            </td>
+        </tr>
+    @empty
+        <tr class="{{ $cls }}" data-internal-id="{{ $h->internal_id }}">
+            <td class="center"></td>
+            <td class="col-key"><span class="ref-link">{{ $h->internal_id }}</span></td>
+            <td class="col-key">{{ $h->SO_id }}</td>
+            <td class="col-key" colspan="3" style="color:#999;">— ไม่มีไส้ใน —</td>
+            <td class="cust-cell">{{ $h->customer_name }}</td>
+            <td class="col-key">
+                @if ($loop->first)
+                    {{ $h->create_by ?? 'ระบบเก่า' }}
+                @endif
+            </td>
+            <td class="col-key">
+                @if ($loop->first)
+                    {{ !empty($h->timestamp) ? \Carbon\Carbon::parse($h->timestamp)->format('d/m/Y H:i') : '—' }}
+                @endif
+            </td>
+        </tr>
+    @endforelse
+@empty
+    <tr><td colspan="9" class="empty">ไม่มีรายการ</td></tr>
+@endforelse
+</tbody>
     </table>
     </div>
 
@@ -431,9 +520,10 @@
 </div>
 
 <script>
-const FINISH_URL = "{{ route('internal_po.pick.submit') }}";
-const CANCEL_URL = "{{ route('internal_po.cancel') }}";
-const CSRF       = document.querySelector('meta[name="csrf-token"]').content;
+const FINISH_URL     = "{{ route('internal_po.pick.submit') }}";
+const CANCEL_URL     = "{{ route('internal_po.cancel') }}";
+const PRINT_DOC_URL  = "{{ route('internal_po.print_document') }}";
+const CSRF           = document.querySelector('meta[name="csrf-token"]').content;
 
 const PO_ITEMS = {
     @foreach ($heads as $h)
@@ -450,8 +540,39 @@ function refreshBtn() {
     document.getElementById('selCount').textContent  = n;
     document.getElementById('selCountA').textContent = n;
     document.getElementById('selCountB').textContent = n;
+    document.getElementById('selCountC').textContent = n;
     document.getElementById('actionToolbar').hidden = (n === 0);
 }
+
+function submitPrintDocument() {
+    const ids = selectedIds();
+    if (!ids.length) { alert('ยังไม่ได้เลือกรายการ'); return; }
+
+    // สร้างฟอร์มชั่วคราว ส่งแบบ POST เปิดแท็บใหม่ เพื่อแสดง PDF (fetch ธรรมดาเปิดแท็บใหม่ไม่ได้)
+    const form = document.createElement('form');
+    form.method = 'POST';
+    form.action = PRINT_DOC_URL;
+    form.target = '_blank';
+
+    const csrfInput = document.createElement('input');
+    csrfInput.type = 'hidden';
+    csrfInput.name = '_token';
+    csrfInput.value = CSRF;
+    form.appendChild(csrfInput);
+
+    ids.forEach(function (id) {
+        const input = document.createElement('input');
+        input.type = 'hidden';
+        input.name = 'ids[]';
+        input.value = id;
+        form.appendChild(input);
+    });
+
+    document.body.appendChild(form);
+    form.submit();
+    document.body.removeChild(form);
+}
+
 document.getElementById('chkAll').addEventListener('change', function () {
     document.querySelectorAll('.chkLine').forEach(c => c.checked = this.checked);
     refreshBtn();
@@ -586,3 +707,4 @@ document.addEventListener('keydown', function (e) {
 </script>
 </body>
 </html>
+@endif

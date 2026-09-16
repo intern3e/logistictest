@@ -14,6 +14,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
+use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Support\Facades\Cache;
 
 class InternalPoController extends Controller
@@ -61,13 +62,11 @@ private function ensureLegacyInternalPoMigrated(array $ids): void
         ->get();
 
     if ($rows->isEmpty()) return;
-
     $soIdsAll   = $rows->pluck('SO')->unique()->values()->all();
     $custBySoId = DB::connection(self::LEGACY_CONNECTION)->table('so')
         ->whereIn('SONum', $soIdsAll)
-        ->get(['SONum', 'CustName'])
+        ->get(['SONum', 'CustName', 'CustID', 'CustPONo'])   // เพิ่ม CustID, CustPONo
         ->keyBy('SONum');
-
     $poNumsAll = $rows->pluck('PO')->unique()->values()->all();
     $linesByPo = DB::connection(self::LEGACY_CONNECTION)->table('internal_poline')
         ->whereIn('PONum', $poNumsAll)
@@ -80,12 +79,17 @@ private function ensureLegacyInternalPoMigrated(array $ids): void
         foreach ($rows as $row) {
             if (internal_po::where('internal_id', $row->PO)->exists()) continue;
 
-            internal_po::create([
-                'internal_id'   => $row->PO,
-                'SO_id'         => $row->SO,
-                'customer_name' => optional($custBySoId->get($row->SO))->CustName,
-                'status'        => internal_po::ST_PENDING,
-            ]);
+            $cust = $custBySoId->get($row->SO);
+
+        internal_po::create([
+            'internal_id'   => $row->PO,
+            'SO_id'         => $row->SO,
+            'customer_name' => optional($cust)->CustName,
+            'customer_code' => optional($cust)->CustID,
+            'POref'         => optional($cust)->CustPONo,
+            'status'        => internal_po::ST_PENDING,
+            'create_by'     => 'ระบบเก่า',
+        ]);
 
             foreach ($linesByPo->get($row->PO, collect()) as $line) {
                 internal_poline::create([
@@ -377,6 +381,72 @@ private function hydrateLegacyPageItems(\Illuminate\Support\Collection $lightIte
             'heads', 'locations', 'operatorName', 'printers', 'statuses', 'statusCounts', 'selectedStatus'
         ));
     }
+    public function printDocument(Request $request)
+{
+    $authUser = Auth::guard('web')->user();
+    if (!$authUser) {
+        abort(401, 'เซสชันหมดอายุ กรุณาเข้าสู่ระบบใหม่');
+    }
+
+    $request->validate([
+        'ids'   => 'required|array|min:1',
+        'ids.*' => 'string',
+    ]);
+
+    $rawIds = $request->input('ids');
+
+    // แยกประเภท id เหมือน pickSubmit(): line:<id> = เลือกเฉพาะไส้ในบรรทัดนั้น / po:<internal_id> = ของเก่ายังไม่ migrate
+    $lineIds = [];
+    $poIds   = [];
+    foreach ($rawIds as $raw) {
+        if (strpos($raw, 'line:') === 0)   $lineIds[] = substr($raw, 5);
+        elseif (strpos($raw, 'po:') === 0) $poIds[]   = substr($raw, 3);
+        else                               $poIds[]   = $raw;
+    }
+
+    // ของเก่า → migrate เข้าระบบใหม่ก่อน (เผื่อยังไม่เคย migrate จะได้มี record ให้ดึงมาพิมพ์)
+    if (!empty($poIds)) {
+        $this->ensureLegacyInternalPoMigrated($poIds);
+        // ของเก่าติ๊กเลือกทั้งใบ (checkbox เดียวแทนทั้ง PO) → เอาทุกบรรทัดของ PO นั้นมา
+        $lineIds = array_merge(
+            $lineIds,
+            internal_poline::whereIn('internal_id', $poIds)->pluck('id')->map(fn ($v) => (string) $v)->all()
+        );
+    }
+
+    $lineIds = array_values(array_unique(array_filter($lineIds)));
+    if (empty($lineIds)) {
+        abort(404, 'ไม่พบรายการที่เลือก');
+    }
+
+    // ดึงเฉพาะไส้ในที่ถูกติ๊กเลือกจริง ๆ เท่านั้น (ไม่ดึงบรรทัดอื่นของ PO เดียวกันที่ไม่ได้เลือก)
+    $lines = internal_poline::whereIn('id', $lineIds)->orderBy('id')->get();
+
+    $headsById = internal_po::whereIn('internal_id', $lines->pluck('internal_id')->unique())
+        ->get()
+        ->keyBy('internal_id');
+
+    // จัดกลุ่มไส้ในตาม PO เพื่อโชว์เป็นบล็อกในเอกสาร
+    $printHeads = $lines->groupBy('internal_id')->map(function ($groupLines, $internalId) use ($headsById) {
+        $head = $headsById->get($internalId);
+        return (object) [
+            'internal_id'   => $internalId,
+            'SO_id'         => $head->SO_id ?? '-',
+            'customer_name' => $head->customer_name ?? '-',
+            'lines'         => $groupLines,
+        ];
+    })->values();
+
+    // ใช้ view ไฟล์เดียวกับ dashboard — ส่ง printMode=true เพื่อสลับไปเรนเดอร์ส่วนของเอกสารพิมพ์แทน
+    $pdf = Pdf::loadView('internal_po.dashboard', [
+        'printMode'  => true,
+        'printHeads' => $printHeads,
+        'printedBy'  => $authUser->name,
+        'printedAt'  => Carbon::now(),
+    ])->setPaper('a4', 'portrait');
+
+    return $pdf->stream('internal-po-' . Carbon::now()->format('YmdHis') . '.pdf');
+}
 
     public function pickSubmit(Request $request)
     {

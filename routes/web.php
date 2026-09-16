@@ -420,10 +420,12 @@ Route::delete('/api/users/{id}', [InventoryController::class, 'deleteUser']);
 Route::get('/api/role-catalog',  [InventoryController::class, 'getRoleCatalog']);
 
 use App\Http\Controllers\InternalPoController;
+
 Route::prefix('internal-po')->name('internal_po.')->group(function () {
     Route::match(['get', 'post'], 'pick', [InternalPoController::class, 'pickDashboard'])->name('pick');
     Route::post('pick/submit',    [InternalPoController::class, 'pickSubmit'])->name('pick.submit');
     Route::post('cancel',         [InternalPoController::class, 'markCancel'])->name('cancel');
+    Route::post('print-document', [InternalPoController::class, 'printDocument'])->name('print_document');
 });
 
 use App\Http\Controllers\StoreController;
