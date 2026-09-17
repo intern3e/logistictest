@@ -17,8 +17,8 @@ use Illuminate\Support\Facades\Storage;
 
 class MobilePoappController extends Controller
 {
-    // private string $apiBase = 'http://server_update:8000';
-    private string $apiBase = 'http://192.168.1.169:8000';
+    private string $apiBase = 'http://server_update:8000';
+    // private string $apiBase = 'http://192.168.1.169:8000';
 
     /** ชื่อ connection ของฐานข้อมูลระบบเก่า (ตาราง store) — ใช้เช็คว่า PO ถูกเช็คของออกทางระบบเก่าไปแล้วหรือยัง */
     const LEGACY_CONNECTION = 'mysql_3e';

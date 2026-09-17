@@ -13,19 +13,37 @@ class ShelfsaleController extends Controller
 {
     /** connection ฐานข้อมูลระบบเก่า 3e (อ่านอย่างเดียว) */
     const LEGACY_CONNECTION = 'mysql_3e';
-    /** connection MSSQL account03 (อ่านอย่างเดียว) — "ดึงท้ายสุด" หลังคัดกรองแล้วเท่านั้น */
-    const MSSQL_CONNECTION  = 'mssql_account03';
+
+    /** รายชื่อชั้นวาง — ชุดเดียวกับหน้า mobile-app (po/mobile_app.blade.php SHELF_OPTIONS) */
+    const SHELF_OPTIONS = [
+        "1A01","1Kโบว์","1กวาง","1กี้","1ตี๋/พลอย","1ต่าย","1ท๊อป","1นภา",
+        "1นุ/เต้น","1นุช","1นุ่น","1น้อย/มล","1น้ำ/กิ๊ฟ","1ฟอง","1ฟิล์ม",
+        "1ภิรุณ","1มุก","1หนิง","1หมิง","1หมู/ต๋อง","1เจี๊ยบ","1เชร์",
+        "1เนย","1เอก","1แยม","1แอม","1โจ",
+        "A11","A12","A13","A14","A21","A22","A23","A24",
+        "A31","A32","A33","A34","A41","A42","A43","A44",
+        "aom stock","B1",
+        "C1","C10","C11","C12","C13","C14","C15","C16",
+        "C2","C3","C4","C5","C6","C7","C8","C9","Cท่อ",
+        "LASADA",
+        "Qกรมศุลเล็","Qจัดแล้วรอ","Qติดปัญหา","Qบิลสด","QรอครบSO","Qสหกรณ์","Qแก้ไข","Qแดง",
+        "top stock","Z55",
+        "ขมจ่ายแล้ว","ของเกิน","คืนstock","ช.เดช","ช.โอ","ชัย-เดช","ชัย1","ชัย2",
+        "ด.1","ด.10","ด.11","ด.12","ด.2","ด.3","ด.4","ด.5","ด.6","ด.7","ด.8","ด.9",
+        "ทำคืน","ท๊อปบน","ปอ-ฮิคาริ","ปิดรับบิล","ปี69","พู่",
+        "ว๊าล","ว๊าลแก้ไข","หน้าออฟฟิศ","หยกรอบิล","หยกรอเคลีย","หลังออฟฟิศ",
+    ];
 
     /**
      * หน้า /shelfsale — โหลดแค่ตัวกรอง (ไม่ดึงข้อมูลตอนเปิดหน้า)
-     * ข้อมูลจะแสดงก็ต่อเมื่อผู้ใช้เลือกตัวกรองแล้วกดค้นหา (เรียก data())
+     * ข้อมูลจะแสดงก็ต่อเมื่อเลือกตัวกรอง (ชั้น/Sale) แล้วกดค้นหา -> เรียก data()
      */
     public function index()
     {
         $user    = $this->requireLogin();
         $creator = $user->name ?? $user->username ?? ($user->id_emp ?? 'ผู้ใช้งาน');
 
-        // dropdown Sale — cache 30 นาที กัน groupBy เต็มตาราง so ทุกครั้งที่เปิดหน้า
+        // dropdown Sale — เหมือนเดิม (ดึงจาก 3e so) แต่ cache 30 นาที กัน groupBy เต็มตารางทุกครั้ง
         $saleOptions = Cache::remember('shelfsale_sale_options', 1800, function () {
             return DB::connection(self::LEGACY_CONNECTION)->table('so')
                 ->whereNotNull('createdBy')->where('createdBy', '!=', '')
@@ -34,60 +52,46 @@ class ShelfsaleController extends Controller
                 ->sort()->values();
         });
 
-        return view('sale.dashboardshelf', compact('saleOptions', 'creator'));
+        $shelfOptions = collect(self::SHELF_OPTIONS);
+
+        return view('sale.dashboardshelf', compact('saleOptions', 'shelfOptions', 'creator'));
     }
 
     /**
-     * ดึงข้อมูลตามตัวกรอง (AJAX) — ลำดับการดึง: ถูก -> แพง
-     *   1) ของบนชั้นจาก logistic (po_receives_line) + 3e (store)  -> กรองด้วย shelf/po/วันที่ ใน SQL
-     *   2) ข้อมูลลูกค้า/Sale จาก 3e so (whereIn)                    -> กรองด้วย customer/sale
-     *   3) (ท้ายสุด) MSSQL account03: ราคา(SumGoodAmnt), กำหนดส่ง(ShipDate), ชื่อสินค้าเก่า(PODT)
-     *      เฉพาะแถวที่ "ผ่านตัวกรองแล้ว" เท่านั้น เพื่อให้แตะ account03 น้อยที่สุด
+     * ดึงข้อมูลตามตัวกรอง (AJAX) — กรองด้วย "ชั้น" และ/หรือ "Sale" เท่านั้น (เหมือน filter เดิม)
+     * ลำดับ: logistic (po_receives_line) + 3e (store) -> ข้อมูลลูกค้า/Sale จาก 3e so
      */
     public function data(Request $request)
     {
         $this->requireLogin();
 
-        $fShelf   = trim((string) $request->input('shelf', ''));
-        $fSale    = trim((string) $request->input('sale', ''));
-        $fSo      = trim((string) $request->input('so', ''));
-        $fPo      = trim((string) $request->input('po', ''));
-        $fCust    = trim((string) $request->input('customer', ''));
-        $fFrom    = $request->input('date_from');
-        $fTo      = $request->input('date_to');
-        $fOverdue = $request->input('overdue') == '1';
+        $fShelf = trim((string) $request->input('shelf', ''));
+        $fSale  = trim((string) $request->input('sale', ''));
 
-        // ต้องเลือกตัวกรองอย่างน้อย 1 อย่าง ถึงจะดึง (กันโหลดทั้งหมด)
-        $hasFilter = $fShelf !== '' || $fSale !== '' || $fSo !== '' || $fPo !== ''
-            || $fCust !== '' || filled($fFrom) || filled($fTo) || $fOverdue;
-        if (!$hasFilter) {
+        // ต้องเลือกตัวกรองอย่างน้อย 1 อย่างก่อน (กันโหลดทั้งหมด)
+        if ($fShelf === '' && $fSale === '') {
             return response()->json([
                 'ok'      => true,
                 'rows'    => [],
-                'message' => 'กรุณาเลือกตัวกรองอย่างน้อย 1 อย่างก่อนค้นหา',
+                'message' => 'กรุณาเลือกตัวกรอง (ชั้น หรือ Sale) ก่อนค้นหา',
             ]);
         }
 
-        // ---------- 1) ของใหม่: logistic po_receives_line ----------
+        // --- ของใหม่: logistic po_receives_line (บนชั้น + ยังไม่เช็คเอาท์) ---
         $newQ = PoReceiveLine::whereNotNull('shelf')
             ->where('shelf', '!=', '')
             ->whereHas('header', fn ($q) => $q->whereNull('checkout_time'))
             ->with('header');
         if ($fShelf !== '') $newQ->where('shelf', 'LIKE', "%{$fShelf}%");
-        if ($fPo !== '')    $newQ->where('po_id', 'LIKE', "%{$fPo}%");
-        if (filled($fFrom)) $newQ->where('received_at', '>=', $fFrom . ' 00:00:00');
-        if (filled($fTo))   $newQ->where('received_at', '<=', $fTo . ' 23:59:59');
 
         $newItems = $newQ->get()->map(fn ($line) => (object) [
             'so'          => optional($line->header)->so_id,
             'po'          => optional($line->header)->po_id,
             'shelf'       => $line->shelf,
             'received_at' => $line->received_at,
-            'good_name'   => $line->good_name,
-            'is_legacy'   => false,
         ]);
 
-        // ---------- 2) ของเก่า: 3e store (กรอง po ระบบใหม่ใน PHP ไม่ใช้ NOT IN) ----------
+        // --- ของเก่า: 3e store (กรอง po ระบบใหม่ใน PHP ไม่ใช้ NOT IN) ---
         $poInNewSet = array_flip(
             PoReceive::pluck('po_id')->filter()
                 ->map(fn ($p) => preg_replace('/^PO/i', '', (string) $p))
@@ -100,9 +104,6 @@ class ShelfsaleController extends Controller
             })
             ->whereNotNull('areaS')->where('areaS', '!=', '');
         if ($fShelf !== '') $legQ->where('areaS', 'LIKE', "%{$fShelf}%");
-        if ($fPo !== '')    $legQ->where('PO', 'LIKE', "%{$fPo}%");
-        if (filled($fFrom)) $legQ->where('DATEAREA', '>=', $fFrom . ' 00:00:00');
-        if (filled($fTo))   $legQ->where('DATEAREA', '<=', $fTo . ' 23:59:59');
 
         $legacyItems = $legQ->get(['SO', 'PO', 'areaS', 'DATEAREA'])
             ->reject(fn ($row) => isset($poInNewSet[preg_replace('/^PO/i', '', (string) $row->PO)]))
@@ -111,22 +112,15 @@ class ShelfsaleController extends Controller
                 'po'          => $row->PO,
                 'shelf'       => $row->areaS,
                 'received_at' => filled($row->DATEAREA) ? Carbon::parse($row->DATEAREA) : null,
-                'good_name'   => null,      // ของเก่าไม่มีชื่อสินค้า -> ไปดึงจาก PODT ตอนท้าย
-                'is_legacy'   => true,
             ]);
 
         $items = $newItems->concat($legacyItems)->sortByDesc('received_at')->values();
-
-        // กรองด้วยเลข SO (มีในมือแล้ว)
-        if ($fSo !== '') {
-            $items = $items->filter(fn ($it) => stripos((string) $it->so, $fSo) !== false)->values();
-        }
 
         if ($items->isEmpty()) {
             return response()->json(['ok' => true, 'rows' => []]);
         }
 
-        // ---------- 2.5) ลูกค้า/Sale จาก 3e so ----------
+        // --- ลูกค้า / Sale จาก 3e so ---
         $soNums = $items->pluck('so')->filter()->unique()->values()->all();
         $soInfo = collect();
         if (!empty($soNums)) {
@@ -148,113 +142,21 @@ class ShelfsaleController extends Controller
             return $it;
         });
 
-        // กรองด้วยลูกค้า / Sale / งานค้าง (หลังได้ข้อมูล so แล้ว)
-        if ($fCust !== '') {
-            $items = $items->filter(function ($it) use ($fCust) {
-                return stripos((string) $it->cust_name, $fCust) !== false
-                    || stripos((string) $it->cust_id, $fCust) !== false;
-            })->values();
-        }
+        // กรองด้วย Sale (หลังได้ข้อมูล so)
         if ($fSale !== '') {
             $items = $items->filter(fn ($it) => stripos((string) $it->sale, $fSale) !== false)->values();
         }
-        if ($fOverdue) {
-            $items = $items->filter(fn ($it) => $it->days_in !== null && $it->days_in >= 4)->values();
-        }
 
-        if ($items->isEmpty()) {
-            return response()->json(['ok' => true, 'rows' => []]);
-        }
-
-        // ---------- 3) ท้ายสุด: MSSQL account03 เฉพาะแถวที่ผ่านตัวกรองแล้ว ----------
-        $priceByDocu = collect();   // ราคา รวมต่อ PO
-        $shipByDocu  = collect();   // กำหนดส่งต่อ SO
-        $namesByPo   = [];          // ชื่อสินค้าเก่าต่อ PO (legacy)
-
-        try {
-            // 3.1 ราคา (POHD.SumGoodAmnt) — DocuNo = 'PO' + เลข PO
-            $poDocuNos = $items->pluck('po')->filter()
-                ->map(fn ($p) => 'PO' . preg_replace('/^PO/i', '', (string) $p))
-                ->unique()->values()->all();
-            if (!empty($poDocuNos)) {
-                $priceByDocu = DB::connection(self::MSSQL_CONNECTION)->table('POHD')
-                    ->whereIn('DocuNo', $poDocuNos)
-                    ->get(['DocuNo', 'SumGoodAmnt'])
-                    ->keyBy('DocuNo');
-            }
-
-            // 3.2 กำหนดส่ง (SOHD.ShipDate) — DocuNo = 'SO' + เลข SO
-            $soDocuNos = array_map(fn ($s) => 'SO' . $s, $soNums);
-            if (!empty($soDocuNos)) {
-                $shipByDocu = DB::connection(self::MSSQL_CONNECTION)->table('SOHD')
-                    ->whereIn('DocuNo', $soDocuNos)
-                    ->get(['DocuNo', 'ShipDate'])
-                    ->keyBy('DocuNo');
-            }
-
-            // 3.3 ชื่อสินค้าของงานเก่า (PODT) — เฉพาะ PO ที่เป็น legacy และผ่านตัวกรอง
-            $legacyDocus = $items->filter(fn ($it) => $it->is_legacy)
-                ->pluck('po')->filter()
-                ->map(fn ($p) => 'PO' . preg_replace('/^PO/i', '', (string) $p))
-                ->unique()->values()->all();
-            if (!empty($legacyDocus)) {
-                $heads = DB::connection(self::MSSQL_CONNECTION)->table('POHD')
-                    ->whereIn('DocuNo', $legacyDocus)
-                    ->get(['POID', 'DocuNo']);
-                if ($heads->isNotEmpty()) {
-                    $poidToClean = [];
-                    foreach ($heads as $h) {
-                        $poidToClean[$h->POID] = preg_replace('/^PO/i', '', (string) $h->DocuNo);
-                    }
-                    $dt = DB::connection(self::MSSQL_CONNECTION)->table('PODT')
-                        ->whereIn('POID', array_keys($poidToClean))
-                        ->where('CancelFlag', '<>', 'Y')
-                        ->get(['POID', 'GoodName']);
-                    foreach ($dt as $line) {
-                        $clean = $poidToClean[$line->POID] ?? null;
-                        if ($clean === null) continue;
-                        $namesByPo[$clean][] = trim((string) $line->GoodName);
-                    }
-                }
-            }
-        } catch (\Throwable $e) {
-            // เชื่อม account03 ไม่ได้ — ไม่ทำให้ทั้งหน้าพัง แค่ไม่มีราคา/กำหนดส่ง/ชื่อสินค้าเก่า
-            \Illuminate\Support\Facades\Log::warning('shelfsale MSSQL failed: ' . $e->getMessage());
-        }
-
-        // ---------- ประกอบผลลัพธ์ ----------
-        $rows = $items->map(function ($it) use ($priceByDocu, $shipByDocu, $namesByPo, $now) {
-            $docu  = 'PO' . preg_replace('/^PO/i', '', (string) $it->po);
-            $price = (float) (optional($priceByDocu->get($docu))->SumGoodAmnt ?? 0);
-
-            $ship     = optional($shipByDocu->get('SO' . $it->so))->ShipDate;
-            $dueDays  = null;
-            if (filled($ship)) {
-                $dueDays = (int) $now->copy()->startOfDay()->diffInDays(Carbon::parse($ship)->startOfDay(), false);
-            }
-
-            $cleanPo  = preg_replace('/^PO/i', '', (string) $it->po);
-            $product  = $it->good_name;
-            if (!$product && isset($namesByPo[$cleanPo])) {
-                $product = implode(', ', array_slice($namesByPo[$cleanPo], 0, 20));
-            }
-
-            return [
-                'so'          => $it->so ?: '-',
-                'po'          => $it->po ?: '-',
-                'shelf'       => $it->shelf ?: '',
-                'cust_id'     => $it->cust_id ?: '-',
-                'cust_name'   => $it->cust_name ?: '-',
-                'sale'        => $it->sale ?: '-',
-                'product'     => $product ?: '-',
-                'price'       => $price,
-                'received_at' => $it->received_at ? $it->received_at->format('d/m/Y H:i') : null,
-                'days_in'     => $it->days_in,
-                'ship_date'   => filled($ship) ? Carbon::parse($ship)->format('d/m/Y') : null,
-                'due_days'    => $dueDays,
-                'is_legacy'   => $it->is_legacy,
-            ];
-        })->values();
+        $rows = $items->map(fn ($it) => [
+            'so'          => $it->so ?: '-',
+            'po'          => $it->po ?: '-',
+            'shelf'       => $it->shelf ?: '',
+            'cust_id'     => $it->cust_id ?: '-',
+            'cust_name'   => $it->cust_name ?: '-',
+            'sale'        => $it->sale ?: '-',
+            'received_at' => $it->received_at ? $it->received_at->format('d/m/Y H:i') : null,
+            'days_in'     => $it->days_in,
+        ])->values();
 
         return response()->json(['ok' => true, 'rows' => $rows]);
     }

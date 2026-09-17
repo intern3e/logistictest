@@ -409,19 +409,18 @@
     <main>
         <div class="toolbar">
             <div class="filter-group">
-                <input type="search" id="fShelf" placeholder="🔍 ชั้น..." autocomplete="off">
-                <input type="search" id="fSale" list="saleList" placeholder="🔍 Sale..." autocomplete="off">
+                <input type="search" id="fShelf" list="shelfList" placeholder="🔍 ค้นหาโดยชั้น..." autocomplete="off">
+                <datalist id="shelfList">
+                    @foreach($shelfOptions as $sh)
+                        <option value="{{ $sh }}"></option>
+                    @endforeach
+                </datalist>
+                <input type="search" id="fSale" list="saleList" placeholder="🔍 ค้นหาโดย Sale (createdBy)..." autocomplete="off">
                 <datalist id="saleList">
                     @foreach($saleOptions as $s)
                         <option value="{{ $s }}"></option>
                     @endforeach
                 </datalist>
-                <input type="search" id="fSo" placeholder="🔍 SO..." autocomplete="off">
-                <input type="search" id="fPo" placeholder="🔍 PO..." autocomplete="off">
-                <input type="search" id="fCust" placeholder="🔍 ลูกค้า (ชื่อ/รหัส)..." autocomplete="off">
-                <input type="date" id="fFrom" title="รับเข้าตั้งแต่วันที่">
-                <input type="date" id="fTo" title="รับเข้าถึงวันที่">
-                <label class="filter-check"><input type="checkbox" id="fOverdue"> เฉพาะค้าง ≥ 4 วัน</label>
                 <button type="button" class="btn-primary" id="btnSearch">ค้นหา</button>
                 <button type="button" class="btn-ghost" id="btnClear">ล้าง</button>
             </div>
@@ -445,14 +444,11 @@
                             <th>รหัสลูกค้า</th>
                             <th style="text-align:left;">ลูกค้า</th>
                             <th>Sale</th>
-                            <th style="text-align:left;">สินค้า</th>
-                            <th>ราคารวม</th>
-                            <th>กำหนดส่ง</th>
                             <th>เวลาที่รับเข้า</th>
                         </tr>
                     </thead>
                     <tbody id="tableBody">
-                        <tr><td colspan="10" class="empty">เลือกตัวกรองอย่างน้อย 1 อย่าง แล้วกด "ค้นหา"</td></tr>
+                        <tr><td colspan="7" class="empty">เลือกตัวกรอง (ชั้น หรือ Sale) แล้วกด "ค้นหา"</td></tr>
                     </tbody>
                 </table>
             </div>
@@ -466,22 +462,13 @@
     const showCount  = document.getElementById('showCount');
     const btnSearch  = document.getElementById('btnSearch');
     const btnClear   = document.getElementById('btnClear');
-    const F = {
-        shelf: document.getElementById('fShelf'),
-        sale:  document.getElementById('fSale'),
-        so:    document.getElementById('fSo'),
-        po:    document.getElementById('fPo'),
-        customer: document.getElementById('fCust'),
-        date_from: document.getElementById('fFrom'),
-        date_to:   document.getElementById('fTo'),
-        overdue:   document.getElementById('fOverdue'),
-    };
+    const fShelf     = document.getElementById('fShelf');
+    const fSale      = document.getElementById('fSale');
 
     function esc(s){ return String(s ?? '').replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m])); }
-    function fmtBaht(n){ return Number(n||0).toLocaleString('th-TH',{minimumFractionDigits:2,maximumFractionDigits:2}); }
 
     function setMsg(text){
-        tbody.innerHTML = '<tr><td colspan="10" class="empty">' + esc(text) + '</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="7" class="empty">' + esc(text) + '</td></tr>';
     }
 
     function rowHtml(r){
@@ -489,19 +476,6 @@
         const recv = r.received_at
             ? esc(r.received_at) + ' <span class="days-badge">+' + r.days_in + ' วัน</span>'
             : '<span class="dash">-</span>';
-
-        let ship = '<span class="dash">-</span>';
-        if (r.ship_date) {
-            let badge = '';
-            if (r.due_days !== null) {
-                const cls = r.due_days < 0 ? 'due-warn' : 'due-ok';
-                const txt = r.due_days < 0 ? ('เลย ' + Math.abs(r.due_days) + ' วัน')
-                          : (r.due_days === 0 ? 'ครบวันนี้' : ('อีก ' + r.due_days + ' วัน'));
-                badge = ' <span class="due-badge ' + cls + '">' + txt + '</span>';
-            }
-            ship = esc(r.ship_date) + badge;
-        }
-
         const shelf = r.shelf ? '<span class="shelf-badge">' + esc(r.shelf) + '</span>' : '<span class="dash">-</span>';
 
         return '<tr>'
@@ -511,23 +485,14 @@
             + '<td class="num">' + esc(r.cust_id) + '</td>'
             + '<td class="cust-cell">' + esc(r.cust_name) + '</td>'
             + '<td>' + esc(r.sale) + '</td>'
-            + '<td style="text-align:left;">' + esc(r.product) + '</td>'
-            + '<td class="price-cell">' + fmtBaht(r.price) + '</td>'
-            + '<td>' + ship + '</td>'
             + '<td class="recv-time ' + (overdueRecv ? 'overdue' : '') + '">' + recv + '</td>'
             + '</tr>';
     }
 
     async function search(){
         const params = new URLSearchParams();
-        params.set('shelf',     F.shelf.value.trim());
-        params.set('sale',      F.sale.value.trim());
-        params.set('so',        F.so.value.trim());
-        params.set('po',        F.po.value.trim());
-        params.set('customer',  F.customer.value.trim());
-        params.set('date_from', F.date_from.value);
-        params.set('date_to',   F.date_to.value);
-        params.set('overdue',   F.overdue.checked ? '1' : '0');
+        params.set('shelf', fShelf.value.trim());
+        params.set('sale',  fSale.value.trim());
 
         btnSearch.disabled = true;
         setMsg('⏳ กำลังค้นหา...');
@@ -553,14 +518,12 @@
 
     btnSearch.addEventListener('click', search);
     btnClear.addEventListener('click', () => {
-        Object.values(F).forEach(el => { if (el.type === 'checkbox') el.checked = false; else el.value = ''; });
+        fShelf.value = ''; fSale.value = '';
         showCount.textContent = 0;
-        setMsg('เลือกตัวกรองอย่างน้อย 1 อย่าง แล้วกด "ค้นหา"');
+        setMsg('เลือกตัวกรอง (ชั้น หรือ Sale) แล้วกด "ค้นหา"');
     });
     // กด Enter ในช่องกรอง = ค้นหา
-    document.querySelectorAll('.filter-group input').forEach(el => {
-        el.addEventListener('keydown', e => { if (e.key === 'Enter') search(); });
-    });
+    [fShelf, fSale].forEach(el => el.addEventListener('keydown', e => { if (e.key === 'Enter') search(); }));
 </script>
 </body>
 </html>
