@@ -830,4 +830,21 @@ class MobilePoappController extends Controller
             'message'  => "ดึงข้อมูลเข้าระบบใหม่แล้ว {$count} รายการ",
         ]);
     }
+    public function getProductVender(Request $request)
+{
+    $request->validate(['VendorCode' => 'required|string|max:50']);
+    $vendorCode = $request->query('VendorCode');
+
+    try {
+        $res = Http::timeout(15)->get($this->apiBase . '/api/getProductVender', [
+            'VendorCode' => $vendorCode,
+        ]);
+        if ($res->failed()) {
+            return response()->json(['message' => 'server_update ตอบกลับ error'], $res->status());
+        }
+        return response()->json($res->json());
+    } catch (\Exception $e) {
+        return response()->json(['message' => 'เชื่อมต่อ server_update ไม่ได้: ' . $e->getMessage()], 502);
+    }
+}
 }

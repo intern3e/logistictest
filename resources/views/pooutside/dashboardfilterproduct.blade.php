@@ -207,7 +207,7 @@
    ถ้าไม่ระบุ จะ default เป็น VEN-13383 */
 const params = new URLSearchParams(window.location.search);
 const VENDOR_CODE = params.get('VendorCode') || 'VEN-13383';
-const API_URL = `http://server_update:8000/api/getProductVender?VendorCode=${encodeURIComponent(VENDOR_CODE)}`;
+const API_URL = `{{ url('/api/getProductVender') }}?VendorCode=${encodeURIComponent(VENDOR_CODE)}`;
 
 /* หน้ารับสินค้าเข้า (PO) — คลิกเลขที่ PO แล้วพาไปหน้านี้พร้อมค้นหาเลขที่กดไปด้วย
    หน้าปลายทาง (po.mobile_app) รับ PONum แบบ "ไม่มี prefix PO" (เช่น 6905-01975)
