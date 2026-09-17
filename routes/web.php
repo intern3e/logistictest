@@ -470,3 +470,5 @@ Route::get('/adminOT', [OtRequestController::class, 'index']);
 use App\Http\Controllers\ShelfsaleController;
 Route::get('/shelfsale', [ShelfsaleController::class, 'index']);
 Route::get('/shelfsale/data', [ShelfsaleController::class, 'data'])->name('shelfsale.data');
+Route::post('/shelfsale/move',     [StoreController::class, 'shelfsaleMove'])->name('shelfsale.move');
+Route::post('/shelfsale/checkout', [StoreController::class, 'shelfsaleCheckout'])->name('shelfsale.checkout');

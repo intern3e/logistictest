@@ -13,6 +13,8 @@ class ShelfsaleController extends Controller
 {
     /** connection ฐานข้อมูลระบบเก่า 3e (อ่านอย่างเดียว) */
     const LEGACY_CONNECTION = 'mysql_3e';
+    /** connection MSSQL account03 (อ่านอย่างเดียว) — ดึงราคา/กำหนดส่ง/ชื่อสินค้าเก่า "ท้ายสุด" หลังคัดกรอง */
+    const MSSQL_CONNECTION  = 'mssql_account03';
 
     /** รายชื่อชั้นวาง — ชุดเดียวกับหน้า mobile-app (po/mobile_app.blade.php SHELF_OPTIONS) */
     const SHELF_OPTIONS = [
@@ -43,6 +45,13 @@ class ShelfsaleController extends Controller
         $user    = $this->requireLogin();
         $creator = $user->name ?? $user->username ?? ($user->id_emp ?? 'ผู้ใช้งาน');
 
+        // สิทธิ์การมองเห็น: admin/store/stock เห็นทุกชั้นทุก Sale, role อื่น (เช่น sale) เห็นเฉพาะงานของตัวเอง
+        $seeAll     = in_array($user->role ?? '', ['admin', 'store', 'stock'], true);
+        $isSaleView = !$seeAll;
+        $loginName  = $user->name ?? '';
+        $canSeePrice = in_array($user->role ?? '', ['admin', 'sale'], true);   // เห็นมูลค่า เฉพาะ admin/sale
+        $canManage   = $seeAll;                                                // ย้ายชั้น/เช็คเอาท์ เฉพาะ admin/store/stock
+
         // dropdown Sale — เหมือนเดิม (ดึงจาก 3e so) แต่ cache 30 นาที กัน groupBy เต็มตารางทุกครั้ง
         $saleOptions = Cache::remember('shelfsale_sale_options', 1800, function () {
             return DB::connection(self::LEGACY_CONNECTION)->table('so')
@@ -54,7 +63,7 @@ class ShelfsaleController extends Controller
 
         $shelfOptions = collect(self::SHELF_OPTIONS);
 
-        return view('sale.dashboardshelf', compact('saleOptions', 'shelfOptions', 'creator'));
+        return view('sale.dashboardshelf', compact('saleOptions', 'shelfOptions', 'creator', 'isSaleView', 'loginName', 'canSeePrice', 'canManage'));
     }
 
     /**
@@ -63,56 +72,98 @@ class ShelfsaleController extends Controller
      */
     public function data(Request $request)
     {
-        $this->requireLogin();
+        $user = $this->requireLogin();
 
         $fShelf = trim((string) $request->input('shelf', ''));
         $fSale  = trim((string) $request->input('sale', ''));
+        $fSo    = trim((string) $request->input('so', ''));
+        $fPo    = trim((string) $request->input('po', ''));
+
+        // role sale (ไม่ใช่ admin/store/stock) -> บังคับเห็นเฉพาะงานของตัวเอง (ชื่อ Sale = ชื่อตัวเอง)
+        $seeAll = in_array($user->role ?? '', ['admin', 'store', 'stock'], true);
+        if (!$seeAll) {
+            $fSale = $user->name ?? '';
+        }
 
         // ต้องเลือกตัวกรองอย่างน้อย 1 อย่างก่อน (กันโหลดทั้งหมด)
-        if ($fShelf === '' && $fSale === '') {
+        if ($fShelf === '' && $fSale === '' && $fSo === '' && $fPo === '') {
             return response()->json([
                 'ok'      => true,
                 'rows'    => [],
-                'message' => 'กรุณาเลือกตัวกรอง (ชั้น หรือ Sale) ก่อนค้นหา',
+                'message' => 'กรุณาเลือกตัวกรอง (ชั้น / Sale / SO / PO) ก่อนค้นหา',
             ]);
         }
 
         // --- ของใหม่: logistic po_receives_line (บนชั้น + ยังไม่เช็คเอาท์) ---
         $newQ = PoReceiveLine::whereNotNull('shelf')
             ->where('shelf', '!=', '')
-            ->whereHas('header', fn ($q) => $q->whereNull('checkout_time'))
+            ->whereHas('header', function ($q) use ($fSo) {
+                $q->whereNull('checkout_time');
+                if ($fSo !== '') $q->where('so_id', 'LIKE', "%{$fSo}%");
+            })
             ->with('header');
         if ($fShelf !== '') $newQ->where('shelf', 'LIKE', "%{$fShelf}%");
+        if ($fPo !== '')    $newQ->where('po_id', 'LIKE', "%{$fPo}%");
 
         $newItems = $newQ->get()->map(fn ($line) => (object) [
             'so'          => optional($line->header)->so_id,
             'po'          => optional($line->header)->po_id,
             'shelf'       => $line->shelf,
             'received_at' => $line->received_at,
+            'good_name'   => $line->good_name,
+            'line_id'     => $line->id,
         ]);
 
-        // --- ของเก่า: 3e store (กรอง po ระบบใหม่ใน PHP ไม่ใช้ NOT IN) ---
+        // --- ของเก่า: 3e store — ของ "บนชั้น" ใช้คอลัมน์ Area (เป็น id ของชั้น) + ยังไม่เช็คเอาท์ ---
+        //   Area = รหัสชั้น -> แปลชื่อชั้นจากตาราง area (areaName)
         $poInNewSet = array_flip(
             PoReceive::pluck('po_id')->filter()
                 ->map(fn ($p) => preg_replace('/^PO/i', '', (string) $p))
                 ->all()
         );
 
-        $legQ = DB::connection(self::LEGACY_CONNECTION)->table('store')
-            ->where(function ($q) {
-                $q->whereNull('DATECHECKOUT')->orWhere('DATECHECKOUT', '');
-            })
-            ->whereNotNull('areaS')->where('areaS', '!=', '');
-        if ($fShelf !== '') $legQ->where('areaS', 'LIKE', "%{$fShelf}%");
+        // ถ้ากรองด้วยชื่อชั้น -> หา id ชั้นที่ชื่อ match ก่อน แล้วค่อยกรอง store.Area IN ids
+        $shelfAreaIds = null;
+        if ($fShelf !== '') {
+            $shelfAreaIds = DB::connection(self::LEGACY_CONNECTION)->table('area')
+                ->where('areaName', 'LIKE', "%{$fShelf}%")
+                ->pluck('ID')->values()->all();
+        }
 
-        $legacyItems = $legQ->get(['SO', 'PO', 'areaS', 'DATEAREA'])
-            ->reject(fn ($row) => isset($poInNewSet[preg_replace('/^PO/i', '', (string) $row->PO)]))
-            ->map(fn ($row) => (object) [
+        $legacyItems = collect();
+        // ถ้ากรองชั้นแล้วไม่เจอ id ชั้นที่ชื่อ match -> ไม่มี legacy (ข้าม query)
+        if (!($fShelf !== '' && empty($shelfAreaIds))) {
+            $legQ = DB::connection(self::LEGACY_CONNECTION)->table('store')
+                ->whereIn('statusArea', ['0', '1'])
+                ->whereNotNull('Area')->where('Area', '<>', '')
+                ->where(function ($q) {
+                    $q->whereNull('DATECHECKOUT')->orWhere('DATECHECKOUT', '');
+                });
+            if (!empty($shelfAreaIds)) $legQ->whereIn('Area', $shelfAreaIds);
+            if ($fPo !== '') $legQ->where('PO', 'LIKE', "%{$fPo}%");
+            if ($fSo !== '') $legQ->where('SO', 'LIKE', "%{$fSo}%");
+
+            $legacyRows = $legQ->get(['SO', 'PO', 'Area', 'DATEAREA'])
+                ->reject(fn ($row) => isset($poInNewSet[preg_replace('/^PO/i', '', (string) $row->PO)]))
+                ->values();
+
+            // แปลรหัสชั้น (Area) -> ชื่อชั้น (areaName)
+            $areaNames = collect();
+            $areaIds   = $legacyRows->pluck('Area')->filter()->unique()->values()->all();
+            if (!empty($areaIds)) {
+                $areaNames = DB::connection(self::LEGACY_CONNECTION)->table('area')
+                    ->whereIn('ID', $areaIds)->pluck('areaName', 'ID');
+            }
+
+            $legacyItems = $legacyRows->map(fn ($row) => (object) [
                 'so'          => $row->SO,
                 'po'          => $row->PO,
-                'shelf'       => $row->areaS,
+                'shelf'       => $areaNames[$row->Area] ?? '',
                 'received_at' => filled($row->DATEAREA) ? Carbon::parse($row->DATEAREA) : null,
+                'good_name'   => null,   // ของเก่าไม่มีชื่อสินค้า -> ดึงจาก PODT ตอนท้าย
+                'line_id'     => null,
             ]);
+        }
 
         $items = $newItems->concat($legacyItems)->sortByDesc('received_at')->values();
 
@@ -147,17 +198,110 @@ class ShelfsaleController extends Controller
             $items = $items->filter(fn ($it) => stripos((string) $it->sale, $fSale) !== false)->values();
         }
 
-        $rows = $items->map(fn ($it) => [
-            'so'          => $it->so ?: '-',
-            'po'          => $it->po ?: '-',
-            'shelf'       => $it->shelf ?: '',
-            'cust_id'     => $it->cust_id ?: '-',
-            'cust_name'   => $it->cust_name ?: '-',
-            'sale'        => $it->sale ?: '-',
-            'received_at' => $it->received_at ? $it->received_at->format('d/m/Y H:i') : null,
-            'days_in'     => $it->days_in,
-        ])->values();
+        if ($items->isEmpty()) {
+            return response()->json(['ok' => true, 'rows' => []]);
+        }
 
-        return response()->json(['ok' => true, 'rows' => $rows]);
+        // ===== ท้ายสุด: MSSQL account03 เฉพาะแถวที่ผ่านตัวกรองแล้ว =====
+        //   ราคา (POHD.SumGoodAmnt) / กำหนดส่ง (SOHD.ShipDate) / ชื่อสินค้าของงานเก่า (PODT)
+        $priceByDocu = collect();
+        $shipByDocu  = collect();
+        $namesByPo   = [];
+        try {
+            $poDocuNos = $items->pluck('po')->filter()
+                ->map(fn ($p) => 'PO' . preg_replace('/^PO/i', '', (string) $p))
+                ->unique()->values()->all();
+            if (!empty($poDocuNos)) {
+                $priceByDocu = DB::connection(self::MSSQL_CONNECTION)->table('POHD')
+                    ->whereIn('DocuNo', $poDocuNos)->get(['DocuNo', 'SumGoodAmnt'])->keyBy('DocuNo');
+            }
+
+            $soDocuNos = array_map(fn ($s) => 'SO' . $s, $soNums);
+            if (!empty($soDocuNos)) {
+                $shipByDocu = DB::connection(self::MSSQL_CONNECTION)->table('SOHD')
+                    ->whereIn('DocuNo', $soDocuNos)->get(['DocuNo', 'ShipDate'])->keyBy('DocuNo');
+            }
+
+            // ชื่อสินค้าของงานเก่า (PODT) เฉพาะ PO ที่เป็น legacy (ไม่มี line_id)
+            $legacyDocus = $items->filter(fn ($it) => empty($it->line_id))
+                ->pluck('po')->filter()
+                ->map(fn ($p) => 'PO' . preg_replace('/^PO/i', '', (string) $p))
+                ->unique()->values()->all();
+            if (!empty($legacyDocus)) {
+                $heads = DB::connection(self::MSSQL_CONNECTION)->table('POHD')
+                    ->whereIn('DocuNo', $legacyDocus)->get(['POID', 'DocuNo']);
+                if ($heads->isNotEmpty()) {
+                    $poidToClean = [];
+                    foreach ($heads as $h) {
+                        $poidToClean[$h->POID] = preg_replace('/^PO/i', '', (string) $h->DocuNo);
+                    }
+                    $dt = DB::connection(self::MSSQL_CONNECTION)->table('PODT')
+                        ->whereIn('POID', array_keys($poidToClean))
+                        ->where('CancelFlag', '<>', 'Y')
+                        ->get(['POID', 'GoodName']);
+                    foreach ($dt as $line) {
+                        $clean = $poidToClean[$line->POID] ?? null;
+                        if ($clean === null) continue;
+                        $namesByPo[$clean][] = trim((string) $line->GoodName);
+                    }
+                }
+            }
+        } catch (\Throwable $e) {
+            \Illuminate\Support\Facades\Log::warning('shelfsale MSSQL failed: ' . $e->getMessage());
+        }
+
+        // ===== รวมเป็น 1 แถวต่อ 1 PO (เหมือนตารางชั้น SALE เดิม) =====
+        $rows = $items->groupBy(fn ($it) => preg_replace('/^PO/i', '', (string) $it->po))
+            ->map(function ($group, $cleanPo) use ($priceByDocu, $shipByDocu, $namesByPo, $now) {
+                $first    = $group->first();
+                $shelves  = $group->pluck('shelf')->filter()->unique()->values();
+                $isLegacy = $group->every(fn ($it) => empty($it->line_id));
+                $docu     = 'PO' . $cleanPo;
+
+                $price = (float) (optional($priceByDocu->get($docu))->SumGoodAmnt ?? 0);
+                $ship  = optional($shipByDocu->get('SO' . $first->so))->ShipDate;
+                $dueDays = null;
+                if (filled($ship)) {
+                    $dueDays = (int) $now->copy()->startOfDay()->diffInDays(Carbon::parse($ship)->startOfDay(), false);
+                }
+
+                if ($isLegacy && !empty($namesByPo[$cleanPo])) {
+                    $shelfForLegacy = $shelves->first() ?: '';
+                    $products = collect($namesByPo[$cleanPo])->map(fn ($n) => [
+                        'name' => $n ?: '-', 'shelf' => $shelfForLegacy, 'line_id' => null,
+                    ])->values();
+                } else {
+                    $products = $group->map(fn ($it) => [
+                        'name' => $it->good_name ?: '-', 'shelf' => $it->shelf ?: '', 'line_id' => $it->line_id,
+                    ])->values();
+                }
+
+                return [
+                    'so'         => $first->so ?: '-',
+                    'po'         => $cleanPo ?: '-',
+                    'shelf'      => $shelves->count() === 1 ? $shelves->first()
+                                    : ($shelves->count() > 1 ? 'หลายชั้น' : '-'),
+                    'cust_id'    => $first->cust_id ?: '-',
+                    'cust_name'  => $first->cust_name ?: '-',
+                    'sale'       => $first->sale ?: '-',
+                    'ship_date'  => filled($ship) ? Carbon::parse($ship)->format('d/m/Y') : null,
+                    'due_days'   => $dueDays,
+                    'price'      => $price,
+                    'products'   => $products,
+                    'item_count' => $products->count(),
+                    '_ship_ts'   => filled($ship) ? Carbon::parse($ship)->timestamp : null,
+                ];
+            })->values();
+
+        // เรียง "กำหนดส่งไกลสุด (ล่าสุด) ขึ้นก่อน" — ไม่มีกำหนดส่งไว้ท้ายสุด
+        $rows = $rows->sortByDesc(fn ($r) => $r['_ship_ts'] ?? -1)->values();
+
+        $totalValue = (float) $rows->sum('price');
+
+        return response()->json([
+            'ok'          => true,
+            'rows'        => $rows,
+            'total_value' => $totalValue,
+        ]);
     }
 }

@@ -1665,6 +1665,207 @@ class StoreController extends Controller
         return $updated;
     }
 
+    /**
+     * migrate ของเก่า "ที่อยู่บนชั้นแล้ว" (3e store) เข้าระบบใหม่ (po_receives / internal_po) พร้อมตั้งชั้นใหม่
+     * ใช้ตอนกด "ย้ายชั้น" ในหน้า shelfsale — แก้ 3e ไม่ได้ จึงย้ายเข้ามาจัดการในระบบใหม่ (ชั้นใหม่)
+     * $legacyRows: object ที่มี ->SO, ->PO
+     */
+    private function migrateOnShelfLegacyToReceive(\Illuminate\Support\Collection $legacyRows, string $shelf, string $user): int
+    {
+        if ($legacyRows->isEmpty()) return 0;
+
+        $poNums    = $legacyRows->pluck('PO')->filter()->unique()->values()->all();
+        $itemsByPo = $this->fetchMssqlPoItems($poNums);
+        $soIds     = $legacyRows->pluck('SO')->filter()->unique()->values()->all();
+        $custBySo  = DB::connection(self::LEGACY_CONNECTION)->table('so')
+            ->whereIn('SONum', $soIds)
+            ->get(['SONum', 'CustName', 'CustPONo', 'CustID'])
+            ->keyBy('SONum');
+
+        $now     = Carbon::now();
+        $created = 0;
+
+        DB::transaction(function () use ($legacyRows, $itemsByPo, $custBySo, $shelf, $user, $now, &$created) {
+            foreach ($legacyRows as $row) {
+                $poId = 'PO' . $row->PO;
+                $soId = $row->SO;
+                $cust = $custBySo->get($soId);
+
+                $lines = $itemsByPo->get($row->PO, collect());
+                if ($lines->isEmpty()) {
+                    $lines = collect([(object) ['item_name' => '—', 'item_quantity' => 1]]);
+                }
+
+                // งานภายใน (PO มี A) -> internal_po พร้อมชั้น
+                if ($this->isInternalPoNumber($row->PO)) {
+                    $ok = $this->createInternalFromLegacyRow(
+                        $row, $lines,
+                        optional($cust)->CustPONo, optional($cust)->CustName, optional($cust)->CustID,
+                        $user, $now, $shelf
+                    );
+                    if ($ok) $created++;
+                    continue;
+                }
+
+                if (PoReceive::where('po_id', $poId)->where('so_id', $soId)->exists()) continue;
+
+                PoReceive::create([
+                    'po_id'     => $poId,
+                    'so_id'     => $soId,
+                    'status'    => 'ครบ',
+                    'POref'     => optional($cust)->CustPONo,
+                    'cust_name' => optional($cust)->CustName,
+                ]);
+                foreach ($lines as $line) {
+                    PoReceiveLine::create([
+                        'po_id'       => $poId,
+                        'so_id'       => $soId,
+                        'good_name'   => $line->item_name,
+                        'recv_qty'    => $line->item_quantity,
+                        'unit_price'  => null,
+                        'shelf'       => $shelf,
+                        'photo_path'  => null,
+                        'received_by' => $user,
+                        'received_at' => $now,
+                    ]);
+                }
+                $created++;
+            }
+        });
+
+        return $created;
+    }
+
+    /**
+     * ย้ายชั้นจากหน้า shelfsale (เฉพาะ admin/store/stock)
+     *  - งานใหม่ (po_receives_line): อัปเดต shelf ของทุกไส้ในของ PO นี้
+     *  - งานเก่า (3e store บนชั้น): migrate เข้าระบบใหม่พร้อมชั้นใหม่ (แก้ 3e ไม่ได้)
+     */
+    public function shelfsaleMove(Request $request)
+    {
+        $authUser = Auth::guard('web')->user();
+        if (!$authUser) {
+            return response()->json(['ok' => false, 'message' => 'เซสชันหมดอายุ กรุณาเข้าสู่ระบบใหม่'], 401);
+        }
+        if (!in_array($authUser->role, ['admin', 'store', 'stock'], true)) {
+            return response()->json(['ok' => false, 'message' => 'คุณไม่มีสิทธิ์ย้ายชั้น'], 403);
+        }
+
+        $request->validate([
+            'po'      => 'required|string|max:50',
+            'so'      => 'nullable|string|max:50',
+            'shelf'   => 'required|string|max:100',
+            'line_id' => 'nullable|integer',   // ระบุ = ย้ายรายสินค้า (เฉพาะงานใหม่)
+        ]);
+
+        $poClean = preg_replace('/^PO/i', '', trim($request->input('po')));
+        $poId    = 'PO' . $poClean;
+        $so      = $request->filled('so') ? trim($request->input('so')) : null;
+        $shelf   = trim($request->input('shelf'));
+        $lineId  = $request->filled('line_id') ? (int) $request->input('line_id') : null;
+
+        try {
+            // ย้ายรายสินค้า (งานใหม่): อัปเดตเฉพาะไส้ในบรรทัดนั้น
+            if ($lineId !== null) {
+                $line = PoReceiveLine::where('id', $lineId)->whereNull('cancelled_at')->first();
+                if (!$line) {
+                    return response()->json(['ok' => false, 'message' => 'ไม่พบรายการสินค้านี้'], 404);
+                }
+                $line->shelf = $shelf;
+                $line->save();
+                return response()->json(['ok' => true, 'message' => 'ย้ายชั้นรายการสินค้าเรียบร้อย']);
+            }
+
+            // งานใหม่: มีไส้ในในระบบใหม่แล้ว -> อัปเดตชั้นทั้ง PO
+            $lineQ = PoReceiveLine::where('po_id', $poId)->whereNull('cancelled_at');
+            if ((clone $lineQ)->exists()) {
+                (clone $lineQ)->update(['shelf' => $shelf]);
+                return response()->json(['ok' => true, 'message' => 'ย้ายชั้นเรียบร้อย']);
+            }
+
+            // งานเก่า: ดึงแถวบนชั้นจาก 3e แล้ว migrate เข้าระบบใหม่พร้อมชั้นใหม่
+            $rows = DB::connection(self::LEGACY_CONNECTION)->table('store')
+                ->where('PO', $poClean)
+                ->when($so, fn ($q) => $q->where('SO', $so))
+                ->whereIn('statusArea', ['0', '1'])
+                ->whereNotNull('Area')->where('Area', '<>', '')
+                ->where(function ($q) {
+                    $q->whereNull('DATECHECKOUT')->orWhere('DATECHECKOUT', '');
+                })
+                ->get(['SO', 'PO']);
+
+            if ($rows->isEmpty()) {
+                return response()->json(['ok' => false, 'message' => 'ไม่พบรายการบนชั้นของ PO นี้'], 404);
+            }
+
+            $n = $this->migrateOnShelfLegacyToReceive($rows, $shelf, $authUser->name);
+            return $n > 0
+                ? response()->json(['ok' => true, 'message' => 'ย้ายชั้นเรียบร้อย (' . $n . ' รายการ)'])
+                : response()->json(['ok' => false, 'message' => 'ย้ายชั้นไม่สำเร็จ'], 409);
+        } catch (\Exception $e) {
+            return response()->json(['ok' => false, 'message' => 'เกิดข้อผิดพลาด: ' . $e->getMessage()], 500);
+        }
+    }
+
+    /**
+     * เช็คเอาท์จากหน้า shelfsale (เฉพาะ admin/store/stock)
+     *  - งานใหม่: ตั้ง po_receives.checkout_by/checkout_time
+     *  - งานเก่า: checkoutLegacyAndMigrate (migrate + เช็คเอาท์)
+     */
+    public function shelfsaleCheckout(Request $request)
+    {
+        $authUser = Auth::guard('web')->user();
+        if (!$authUser) {
+            return response()->json(['ok' => false, 'message' => 'เซสชันหมดอายุ กรุณาเข้าสู่ระบบใหม่'], 401);
+        }
+        if (!in_array($authUser->role, ['admin', 'store', 'stock'], true)) {
+            return response()->json(['ok' => false, 'message' => 'คุณไม่มีสิทธิ์เช็คเอาท์'], 403);
+        }
+
+        $request->validate([
+            'po' => 'required|string|max:50',
+            'so' => 'nullable|string|max:50',
+        ]);
+
+        $poClean = preg_replace('/^PO/i', '', trim($request->input('po')));
+        $poId    = 'PO' . $poClean;
+        $so      = $request->filled('so') ? trim($request->input('so')) : null;
+
+        try {
+            // งานใหม่: มี po_receives อยู่แล้ว
+            $recQ = PoReceive::where('po_id', $poId)->when($so, fn ($q) => $q->where('so_id', $so));
+            if ((clone $recQ)->exists()) {
+                (clone $recQ)->whereNull('checkout_by')->update([
+                    'checkout_by'   => $authUser->name,
+                    'checkout_time' => Carbon::now(),
+                ]);
+                return response()->json(['ok' => true, 'message' => 'เช็คเอาท์เรียบร้อย']);
+            }
+
+            // งานเก่า: หา store id บนชั้น แล้ว migrate + เช็คเอาท์
+            $storeIds = DB::connection(self::LEGACY_CONNECTION)->table('store')
+                ->where('PO', $poClean)
+                ->when($so, fn ($q) => $q->where('SO', $so))
+                ->whereIn('statusArea', ['0', '1'])
+                ->whereNotNull('Area')->where('Area', '<>', '')
+                ->where(function ($q) {
+                    $q->whereNull('DATECHECKOUT')->orWhere('DATECHECKOUT', '');
+                })
+                ->pluck('ID')->all();
+
+            if (empty($storeIds)) {
+                return response()->json(['ok' => false, 'message' => 'ไม่พบรายการบนชั้นของ PO นี้'], 404);
+            }
+
+            $n = $this->checkoutLegacyAndMigrate($storeIds, $authUser->name);
+            return $n > 0
+                ? response()->json(['ok' => true, 'message' => 'เช็คเอาท์เรียบร้อย (' . $n . ' รายการ)'])
+                : response()->json(['ok' => false, 'message' => 'เช็คเอาท์ไม่สำเร็จ'], 409);
+        } catch (\Exception $e) {
+            return response()->json(['ok' => false, 'message' => 'เกิดข้อผิดพลาด: ' . $e->getMessage()], 500);
+        }
+    }
+
     private function migratedLegacyPoNums(): array
     {
         // PO ปกติที่ถูกย้ายเข้าระบบใหม่ = po_receives (ตัด prefix "PO" ออก)

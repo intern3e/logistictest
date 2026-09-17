@@ -184,6 +184,33 @@
         .due-ok  { background:#e7f5ec; color:#1a7f3c; }
         .due-warn{ background:#fdecea; color:#c0392b; }
         .price-cell { text-align:right; font-variant-numeric:tabular-nums; white-space:nowrap; }
+        .due-overdue { color:#c0392b; font-weight:600; }
+        .due-today   { color:#b7791f; font-weight:600; }
+        .due-upcoming{ color:#1a7f3c; }
+        .btn-view { padding:4px 12px; border:1px solid var(--border); border-radius:6px; background:var(--canvas); color:var(--ink); font-family:inherit; font-size:12.5px; cursor:pointer; }
+        .btn-view:hover { background:#f3f4f6; }
+        .sub-table { width:100%; background:#fff; border-collapse:collapse; }
+        .sub-table th, .sub-table td { border:1px solid #e5e7eb; padding:4px 8px; font-size:13px; text-align:center; }
+        .sub-table th { background:#eef2f7; }
+        .btn-move { border-color:#3E6AE1 !important; color:#3E6AE1 !important; }
+        .btn-checkout { border-color:#c0392b !important; color:#c0392b !important; }
+        .move-modal { display:none; position:fixed; inset:0; background:rgba(0,0,0,.4); z-index:200; align-items:center; justify-content:center; }
+        .move-box { background:#fff; border-radius:12px; padding:20px; width:min(92vw,380px); box-shadow:0 10px 40px rgba(0,0,0,.2); }
+        .move-title { font-weight:600; margin-bottom:12px; color:var(--ink); }
+        .move-box input { width:100%; padding:9px 12px; border:1px solid var(--border); border-radius:8px; font-family:inherit; font-size:14px; margin-bottom:14px; box-sizing:border-box; }
+        .move-actions { display:flex; gap:10px; justify-content:flex-end; }
+        /* ตัวเลือก filter แบบแสดงรายการข้างล่าง (เหมือน store_location) */
+        .autocomplete-wrap { position:relative; display:inline-block; }
+        .suggest-panel {
+            display:none; position:absolute; left:0; right:0; top:calc(100% + 4px);
+            background:var(--canvas); border:1px solid var(--border); border-radius:6px;
+            box-shadow:0 8px 24px rgba(0,0,0,.12); max-height:min(320px,45vh); overflow-y:auto; z-index:9999;
+        }
+        .suggest-panel.open { display:block; }
+        .suggest-item { padding:9px 14px; font-size:13px; color:var(--ink); cursor:pointer; border-bottom:1px solid #f1f5f9; }
+        .suggest-item:last-child { border-bottom:none; }
+        .suggest-item:hover, .suggest-item.hl { background:#eef2ff; color:var(--primary); }
+        .suggest-empty { padding:12px 14px; font-size:13px; color:#6b7280; text-align:center; }
 
         .toolbar input[type="search"]:focus,
         .toolbar input[type="text"]:focus,
@@ -409,18 +436,28 @@
     <main>
         <div class="toolbar">
             <div class="filter-group">
-                <input type="search" id="fShelf" list="shelfList" placeholder="🔍 ค้นหาโดยชั้น..." autocomplete="off">
+                <div class="autocomplete-wrap">
+                    <input type="search" id="fShelf" placeholder="🔍 ค้นหาโดยชั้น..." autocomplete="off">
+                    <div id="shelfSuggest" class="suggest-panel"></div>
+                </div>
+                {{-- datalist ไว้ให้ modal ย้ายชั้นใช้ --}}
                 <datalist id="shelfList">
                     @foreach($shelfOptions as $sh)
                         <option value="{{ $sh }}"></option>
                     @endforeach
                 </datalist>
-                <input type="search" id="fSale" list="saleList" placeholder="🔍 ค้นหาโดย Sale (createdBy)..." autocomplete="off">
-                <datalist id="saleList">
-                    @foreach($saleOptions as $s)
-                        <option value="{{ $s }}"></option>
-                    @endforeach
-                </datalist>
+                @if(($isSaleView ?? false))
+                    {{-- role sale: ล็อกช่อง Sale เป็นชื่อตัวเอง (ดูได้เฉพาะงานของตัวเอง) --}}
+                    <input type="search" id="fSale" value="{{ $loginName ?? '' }}" readonly
+                           title="เห็นเฉพาะงานของคุณ" style="background:#f3f4f6;color:#6b7280;cursor:not-allowed;">
+                @else
+                    <div class="autocomplete-wrap">
+                        <input type="search" id="fSale" placeholder="🔍 ค้นหาโดย Sale (createdBy)..." autocomplete="off">
+                        <div id="saleSuggest" class="suggest-panel"></div>
+                    </div>
+                @endif
+                <input type="search" id="fSo" placeholder="🔍 ค้นหาโดย SO..." autocomplete="off">
+                <input type="search" id="fPo" placeholder="🔍 ค้นหาโดย PO..." autocomplete="off">
                 <button type="button" class="btn-primary" id="btnSearch">ค้นหา</button>
                 <button type="button" class="btn-ghost" id="btnClear">ล้าง</button>
             </div>
@@ -429,32 +466,59 @@
         <div class="table-topbar">
             <div class="table-info">
                 รอเช็คเอาท์ <span id="showCount">0</span> รายการ
-                &nbsp;•&nbsp; งานค้าง 4 วันขึ้นไปช่องเวลาจะเป็นสีแดง
+                @if(($canSeePrice ?? false))
+                    &nbsp;•&nbsp; มูลค่าทั้งหมด: <b id="totalValue">0.00</b> บาท
+                @endif
+                &nbsp;•&nbsp; สถานะสีแดง = เลยกำหนดส่ง / เหลือง = ครบวันนี้
             </div>
         </div>
 
         <div class="table-scroll">
             <div class="table-inner">
+                @php $colspan = 6 + (($canSeePrice ?? false) ? 1 : 0) + (($canManage ?? false) ? 1 : 0); @endphp
                 <table>
                     <thead>
                         <tr>
+                            <th>ชั้นวาง</th>
+                            <th>กำหนดส่ง</th>
+                            <th>สถานะ</th>
                             <th>SO</th>
                             <th>PO</th>
-                            <th>ชั้น</th>
-                            <th>รหัสลูกค้า</th>
-                            <th style="text-align:left;">ลูกค้า</th>
-                            <th>Sale</th>
-                            <th>เวลาที่รับเข้า</th>
+                            @if(($isSaleView ?? false))
+                                <th style="text-align:left;">ลูกค้า</th>
+                            @else
+                                <th>Sale</th>
+                            @endif
+                            @if(($canSeePrice ?? false))
+                                <th style="text-align:right;">มูลค่า</th>
+                            @endif
+                            <th>สินค้า</th>
+                            @if(($canManage ?? false))
+                                <th>จัดการ</th>
+                            @endif
                         </tr>
                     </thead>
                     <tbody id="tableBody">
-                        <tr><td colspan="7" class="empty">เลือกตัวกรอง (ชั้น หรือ Sale) แล้วกด "ค้นหา"</td></tr>
+                        <tr><td colspan="{{ $colspan }}" class="empty">เลือกตัวกรอง (ชั้น / Sale / SO / PO) แล้วกด "ค้นหา"</td></tr>
                     </tbody>
                 </table>
             </div>
         </div>
     </main>
 </div>
+
+@if(($canManage ?? false))
+<div id="moveModal" class="move-modal">
+    <div class="move-box">
+        <div class="move-title">ย้ายชั้น — <span id="movePoLabel"></span></div>
+        <input type="search" id="moveShelfInput" list="shelfList" placeholder="เลือกชั้น..." autocomplete="off">
+        <div class="move-actions">
+            <button type="button" class="btn-ghost" onclick="closeMove()">ยกเลิก</button>
+            <button type="button" class="btn-primary" id="moveConfirmBtn" onclick="confirmMove()">ยืนยัน</button>
+        </div>
+    </div>
+</div>
+@endif
 
 <script>
     const DATA_URL   = "{{ route('shelfsale.data') }}";
@@ -464,35 +528,163 @@
     const btnClear   = document.getElementById('btnClear');
     const fShelf     = document.getElementById('fShelf');
     const fSale      = document.getElementById('fSale');
+    const fSo        = document.getElementById('fSo');
+    const fPo        = document.getElementById('fPo');
+
+    const IS_SALE       = {{ ($isSaleView ?? false) ? 'true' : 'false' }};
+    const CAN_SEE_PRICE = {{ ($canSeePrice ?? false) ? 'true' : 'false' }};
+    const CAN_MANAGE    = {{ ($canManage ?? false) ? 'true' : 'false' }};
+    const COLSPAN       = {{ 6 + (($canSeePrice ?? false) ? 1 : 0) + (($canManage ?? false) ? 1 : 0) }};
+    const CSRF          = document.querySelector('meta[name="csrf-token"]').content;
+    const MOVE_URL      = "{{ route('shelfsale.move') }}";
+    const CHECKOUT_URL  = "{{ route('shelfsale.checkout') }}";
 
     function esc(s){ return String(s ?? '').replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m])); }
+    function escJs(s){ return String(s ?? '').replace(/\\/g,'\\\\').replace(/'/g,"\\'"); }
+    function fmtBaht(n){ return Number(n||0).toLocaleString('th-TH',{minimumFractionDigits:2,maximumFractionDigits:2}); }
+
+    // ===== ตัวเลือก filter แบบรายการข้างล่าง (เหมือน store_location) =====
+    const SHELF_OPTIONS = @json($shelfOptions ?? []);
+    const SALE_OPTIONS  = @json($saleOptions ?? []);
+    function attachSuggest(input, panel, options){
+        if (!input || !panel) return;
+        let hl = -1;
+        function render(){
+            const q = (input.value || '').trim().toLowerCase();
+            const matches = (q ? options.filter(s => String(s).toLowerCase().includes(q)) : options).slice(0, 40);
+            hl = -1;
+            if (!matches.length){ panel.innerHTML = '<div class="suggest-empty">ไม่พบตัวเลือก</div>'; panel.classList.add('open'); return; }
+            panel.innerHTML = matches.map(s => '<div class="suggest-item" data-val="' + String(s).replace(/"/g,'&quot;') + '">' + esc(s) + '</div>').join('');
+            panel.classList.add('open');
+        }
+        input.addEventListener('focus', render);
+        input.addEventListener('input', render);
+        panel.addEventListener('mousedown', e => {
+            const it = e.target.closest('.suggest-item'); if (!it) return;
+            e.preventDefault(); input.value = it.dataset.val; panel.classList.remove('open'); input.focus();
+        });
+        input.addEventListener('keydown', e => {
+            const items = Array.from(panel.querySelectorAll('.suggest-item'));
+            if (e.key === 'ArrowDown' && items.length){ e.preventDefault(); hl = Math.min(hl+1, items.length-1); items.forEach((it,i)=>it.classList.toggle('hl', i===hl)); items[hl].scrollIntoView({block:'nearest'}); }
+            else if (e.key === 'ArrowUp' && items.length){ e.preventDefault(); hl = Math.max(hl-1, 0); items.forEach((it,i)=>it.classList.toggle('hl', i===hl)); items[hl].scrollIntoView({block:'nearest'}); }
+            else if (e.key === 'Enter' && hl >= 0 && items[hl]){ e.preventDefault(); input.value = items[hl].dataset.val; panel.classList.remove('open'); }
+            else if (e.key === 'Escape'){ panel.classList.remove('open'); }
+        });
+        input.addEventListener('blur', () => setTimeout(() => panel.classList.remove('open'), 120));
+    }
+    attachSuggest(fShelf, document.getElementById('shelfSuggest'), SHELF_OPTIONS);
+    if (fSale && !fSale.readOnly) attachSuggest(fSale, document.getElementById('saleSuggest'), SALE_OPTIONS);
 
     function setMsg(text){
-        tbody.innerHTML = '<tr><td colspan="7" class="empty">' + esc(text) + '</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="' + COLSPAN + '" class="empty">' + esc(text) + '</td></tr>';
     }
 
-    function rowHtml(r){
-        const overdueRecv = (r.days_in !== null && r.days_in >= 4);
-        const recv = r.received_at
-            ? esc(r.received_at) + ' <span class="days-badge">+' + r.days_in + ' วัน</span>'
-            : '<span class="dash">-</span>';
-        const shelf = r.shelf ? '<span class="shelf-badge">' + esc(r.shelf) + '</span>' : '<span class="dash">-</span>';
+    function dueCell(r){
+        if (r.due_days === null || r.due_days === undefined) return { cls:'', txt:'-' };
+        if (r.due_days > 0)  return { cls:'due-upcoming', txt:'อีก ' + r.due_days + ' วัน' };
+        if (r.due_days === 0) return { cls:'due-today', txt:'ครบวันนี้' };
+        return { cls:'due-overdue', txt:'เลย ' + Math.abs(r.due_days) + ' วัน' };
+    }
 
-        return '<tr>'
+    function rowHtml(r, i){
+        const d = dueCell(r);
+        const shelf = r.shelf ? '<span class="shelf-badge">' + esc(r.shelf) + '</span>' : '<span class="dash">-</span>';
+        const custOrSale = IS_SALE
+            ? '<td class="cust-cell">' + esc(r.cust_name) + '</td>'
+            : '<td>' + esc(r.sale) + '</td>';
+        const priceCell = CAN_SEE_PRICE ? '<td class="price-cell">' + fmtBaht(r.price) + '</td>' : '';
+
+        const manageCell = CAN_MANAGE
+            ? '<td style="text-align:center;white-space:nowrap;">'
+              + '<button type="button" class="btn-view btn-move" onclick="openMove(\'' + escJs(r.po) + '\',\'' + escJs(r.so) + '\')">ย้ายชั้น</button> '
+              + '<button type="button" class="btn-view btn-checkout" onclick="doCheckout(this,\'' + escJs(r.po) + '\',\'' + escJs(r.so) + '\')">เช็คเอาท์</button>'
+              + '</td>'
+            : '';
+
+        const main = '<tr>'
+            + '<td>' + shelf + '</td>'
+            + '<td>' + (r.ship_date ? esc(r.ship_date) : '<span class="dash">-</span>') + '</td>'
+            + '<td class="' + d.cls + '">' + esc(d.txt) + '</td>'
             + '<td class="num"><span class="ref-link">' + esc(r.so) + '</span></td>'
             + '<td class="num">' + esc(r.po) + '</td>'
-            + '<td>' + shelf + '</td>'
-            + '<td class="num">' + esc(r.cust_id) + '</td>'
-            + '<td class="cust-cell">' + esc(r.cust_name) + '</td>'
-            + '<td>' + esc(r.sale) + '</td>'
-            + '<td class="recv-time ' + (overdueRecv ? 'overdue' : '') + '">' + recv + '</td>'
+            + custOrSale
+            + priceCell
+            + '<td style="text-align:center;"><button type="button" class="btn-view" onclick="toggleProducts(' + i + ',this)">ดูสินค้า (' + (r.item_count || 0) + ')</button></td>'
+            + manageCell
             + '</tr>';
+
+        const prodCols = CAN_MANAGE ? 3 : 2;
+        const prodRows = (r.products || []).map(p => {
+            const moveBtn = CAN_MANAGE
+                ? '<td><button type="button" class="btn-view btn-move" onclick="openMove(\'' + escJs(r.po) + '\',\'' + escJs(r.so) + '\',' + (p.line_id ? p.line_id : 'null') + ')">ย้ายชั้น</button></td>'
+                : '';
+            return '<tr><td>' + esc(p.shelf || '-') + '</td><td style="text-align:left;">' + esc(p.name || '-') + '</td>' + moveBtn + '</tr>';
+        }).join('') || ('<tr><td colspan="' + prodCols + '">ไม่มีรายการสินค้า</td></tr>');
+
+        const sub = '<tr class="products-row" id="prod-' + i + '" style="display:none;">'
+            + '<td colspan="' + COLSPAN + '" style="background:#f8fafc;padding:8px 12px;">'
+            + '<table class="sub-table"><thead><tr><th style="width:180px;">ชั้นวาง</th><th style="text-align:left;">ชื่อสินค้า</th>'
+            + (CAN_MANAGE ? '<th style="width:110px;">ย้าย</th>' : '') + '</tr></thead>'
+            + '<tbody>' + prodRows + '</tbody></table></td></tr>';
+
+        return main + sub;
+    }
+
+    function toggleProducts(i, btn){
+        const el = document.getElementById('prod-' + i);
+        if (!el) return;
+        el.style.display = (el.style.display === 'none') ? '' : 'none';
+    }
+
+    // ===== ย้ายชั้น / เช็คเอาท์ (admin/store/stock) =====
+    let moveTarget = null;
+    function openMove(po, so, lineId){
+        moveTarget = { po: po, so: so, lineId: (lineId || null) };
+        document.getElementById('movePoLabel').textContent = 'PO ' + po + (so ? ' / SO ' + so : '')
+            + (moveTarget.lineId ? ' (เฉพาะรายการนี้)' : '');
+        const inp = document.getElementById('moveShelfInput'); inp.value = '';
+        document.getElementById('moveModal').style.display = 'flex';
+        setTimeout(() => inp.focus(), 30);
+    }
+    function closeMove(){ const m = document.getElementById('moveModal'); if (m) m.style.display = 'none'; moveTarget = null; }
+    async function confirmMove(){
+        if (!moveTarget) return;
+        const shelf = document.getElementById('moveShelfInput').value.trim();
+        if (!shelf) { alert('กรุณาเลือกชั้น'); return; }
+        const btn = document.getElementById('moveConfirmBtn'); btn.disabled = true; btn.textContent = 'กำลังบันทึก...';
+        try {
+            const res = await fetch(MOVE_URL, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': CSRF, 'Accept': 'application/json' },
+                body: JSON.stringify({ po: moveTarget.po, so: moveTarget.so, shelf: shelf, line_id: moveTarget.lineId })
+            });
+            const data = await res.json().catch(() => null);
+            if (!res.ok || !data || !data.ok) { alert((data && data.message) || 'ย้ายชั้นไม่สำเร็จ'); return; }
+            closeMove(); search();
+        } catch (e) { console.error(e); alert('เกิดข้อผิดพลาดในการเชื่อมต่อ'); }
+        finally { btn.disabled = false; btn.textContent = 'ยืนยัน'; }
+    }
+    async function doCheckout(btn, po, so){
+        if (!confirm('ยืนยันเช็คเอาท์ PO ' + po + ' ?')) return;
+        btn.disabled = true;
+        try {
+            const res = await fetch(CHECKOUT_URL, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': CSRF, 'Accept': 'application/json' },
+                body: JSON.stringify({ po: po, so: so })
+            });
+            const data = await res.json().catch(() => null);
+            if (!res.ok || !data || !data.ok) { alert((data && data.message) || 'เช็คเอาท์ไม่สำเร็จ'); btn.disabled = false; return; }
+            search();
+        } catch (e) { console.error(e); alert('เกิดข้อผิดพลาดในการเชื่อมต่อ'); btn.disabled = false; }
     }
 
     async function search(){
         const params = new URLSearchParams();
         params.set('shelf', fShelf.value.trim());
         params.set('sale',  fSale.value.trim());
+        params.set('so',    fSo.value.trim());
+        params.set('po',    fPo.value.trim());
 
         btnSearch.disabled = true;
         setMsg('⏳ กำลังค้นหา...');
@@ -505,8 +697,10 @@
 
             const rows = data.rows || [];
             showCount.textContent = rows.length;
+            const tv = document.getElementById('totalValue');
+            if (tv) tv.textContent = fmtBaht(data.total_value || 0);
             if (rows.length === 0) { setMsg(data.message || 'ไม่พบรายการตามตัวกรอง'); return; }
-            tbody.innerHTML = rows.map(rowHtml).join('');
+            tbody.innerHTML = rows.map((r, i) => rowHtml(r, i)).join('');
         } catch (e) {
             console.error(e);
             setMsg('เกิดข้อผิดพลาดในการเชื่อมต่อ');
@@ -518,12 +712,14 @@
 
     btnSearch.addEventListener('click', search);
     btnClear.addEventListener('click', () => {
-        fShelf.value = ''; fSale.value = '';
+        fShelf.value = ''; fSo.value = ''; fPo.value = '';
+        if (!fSale.readOnly) fSale.value = '';   // role sale ล็อกชื่อไว้ ไม่ล้าง
         showCount.textContent = 0;
-        setMsg('เลือกตัวกรอง (ชั้น หรือ Sale) แล้วกด "ค้นหา"');
+        const tv = document.getElementById('totalValue'); if (tv) tv.textContent = '0.00';
+        setMsg('เลือกตัวกรอง (ชั้น / Sale / SO / PO) แล้วกด "ค้นหา"');
     });
     // กด Enter ในช่องกรอง = ค้นหา
-    [fShelf, fSale].forEach(el => el.addEventListener('keydown', e => { if (e.key === 'Enter') search(); }));
+    [fShelf, fSale, fSo, fPo].forEach(el => el.addEventListener('keydown', e => { if (e.key === 'Enter') search(); }));
 </script>
 </body>
 </html>
