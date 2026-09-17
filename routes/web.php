@@ -463,7 +463,7 @@ Route::post('/api/receivePO/cancel', [MobilePoappController::class, 'cancelRecei
 Route::post('/api/receivePO/updateShelf', [MobilePoappController::class, 'updateShelf'])->name('mobile.po.receive.updateShelf');
 Route::get('/api/receivePO/legacyStore', [MobilePoappController::class, 'legacyStore'])->name('mobile.po.receive.legacyStore');
 Route::post('/api/receivePO/migrateLegacy', [MobilePoappController::class, 'migrateLegacy'])->name('mobile.po.receive.migrateLegacy');
-
+Route::get('/api/getProductVender', [MobilePoappController::class, 'getProductVender'])->name('mobile.po.getProductVender');
 use App\Http\Controllers\OtRequestController;
 Route::get('/adminOT', [OtRequestController::class, 'index']);
 
