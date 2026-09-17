@@ -17,8 +17,8 @@ use Illuminate\Support\Facades\Storage;
 
 class MobilePoappController extends Controller
 {
-    private string $apiBase = 'http://server_update:8000';
-    // private string $apiBase = 'http://192.168.1.169:8000';
+    // private string $apiBase = 'http://server_update:8000';
+    private string $apiBase = 'http://192.168.1.169:8000';
 
     /** ชื่อ connection ของฐานข้อมูลระบบเก่า (ตาราง store) — ใช้เช็คว่า PO ถูกเช็คของออกทางระบบเก่าไปแล้วหรือยัง */
     const LEGACY_CONNECTION = 'mysql_3e';
@@ -285,7 +285,9 @@ class MobilePoappController extends Controller
     {
         $validated = $request->validate([
             'PONum'             => 'required|string|max:50',
-            'SONum'             => 'nullable|string|max:50',
+            // SONum = รายการ SO ต่อด้วย comma (1 PO ผูกได้หลาย SO) แล้วแยกเก็บราย SO ภายหลัง
+            // จึงยาวเกิน 50 ได้ (เช่น 8 SO) — so_id ที่เก็บจริงต่อแถวยังเป็น SO เดี่ยว (<=50)
+            'SONum'             => 'nullable|string|max:1000',
             'Status'            => 'required|in:ครบ,บางส่วน',
             'Shelf'             => 'nullable|string|max:100',
             'Photo'             => 'nullable|string',
@@ -751,7 +753,7 @@ class MobilePoappController extends Controller
 
         $validated = $request->validate([
             'PONum'             => 'required|string|max:50',
-            'SONum'             => 'nullable|string|max:50',
+            'SONum'             => 'nullable|string|max:1000',
             'CustName'          => 'nullable|string|max:500',
             'CustPONo'          => 'nullable|string|max:100',
             'ReceivedBy'        => 'nullable|string|max:100',

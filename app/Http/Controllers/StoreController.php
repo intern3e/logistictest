@@ -710,6 +710,30 @@ class StoreController extends Controller
             ->all();
     }
 
+    /**
+     * SO ที่ "มีบิล" ตรงเงื่อนไข ใช้เป็นฐานเติม phantom (SO มีบิลแต่ไม่มีของบนชั้น ก็ต้องแสดง/เช็คเอาท์ได้)
+     *  - โหมดกรองตามวันบิล ($soIds != null): ใช้ so ของวันนั้นตามเดิม
+     *  - โหมดค้นหา (soIds == null): ดึง so จาก tblbill ที่ so_id/ponum ตรงคำค้น
+     */
+    private function billSoIdsForSearch(?array $soIds, ?string $soNum, ?string $poNum): array
+    {
+        if ($soIds !== null) {
+            return $soIds;
+        }
+        if (($soNum === null || $soNum === '') && ($poNum === null || $poNum === '')) {
+            return [];
+        }
+
+        return DB::table('tblbill')
+            ->when($soNum, fn ($q) => $q->where('so_id', 'LIKE', '%' . $soNum . '%'))
+            ->when($poNum, fn ($q) => $q->where(self::TBLBILL_POREF_COLUMN, 'LIKE', '%' . $poNum . '%'))
+            ->pluck('so_id')
+            ->filter()
+            ->unique()
+            ->values()
+            ->all();
+    }
+
     private function billRowsBySo(array $soIds, ?string $billDate = null): \Illuminate\Support\Collection
     {
         if (!$soIds) return collect();
@@ -1115,9 +1139,12 @@ class StoreController extends Controller
             ->filter(fn ($h) => !empty($h->so_id))
             ->groupBy('so_id');
 
+        // SO ที่ "มีบิล" ตรงเงื่อนไข (โหมดกรองตามวันบิล = so ของวันนั้น / โหมดค้นหา = so ที่บิลตรงคำค้น)
+        // ใช้เป็นฐานสำหรับเติม "SO ที่มีบิลแต่ไม่มีของบนชั้น" (phantom) — เดิมโหมดค้นหาไม่เติมเลย ทำให้ค้นไม่ขึ้น
+        $billSoIds      = $this->billSoIdsForSearch($soIds, $soNum, $poNum);
         $soIdsFromHeads = $grouped->keys()->values()->all();
-        $soIdsForBills  = $soIds !== null
-            ? array_values(array_unique(array_merge($soIds, $soIdsFromHeads)))
+        $soIdsForBills  = !empty($billSoIds)
+            ? array_values(array_unique(array_merge($billSoIds, $soIdsFromHeads)))
             : $soIdsFromHeads;
         $billRowsBySo = $this->billRowsBySo($soIdsForBills, $billDate);
 
@@ -1143,9 +1170,9 @@ class StoreController extends Controller
             ];
         })->values();
 
-        if ($soIds !== null) {
+        if (!empty($billSoIds)) {
             $presentSoIds = $summaries->pluck('so_id')->all();
-            $missingSoIds = array_values(array_diff($soIds, $presentSoIds));
+            $missingSoIds = array_values(array_diff($billSoIds, $presentSoIds));
 
             if ($missingSoIds) {
                 $phantoms = collect($missingSoIds)->map(function ($soId) use ($billRowsBySo, $calcAllDone) {

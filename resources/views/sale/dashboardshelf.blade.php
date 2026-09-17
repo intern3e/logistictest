@@ -158,6 +158,8 @@
         }
 
         .toolbar input[type="search"],
+        .toolbar input[type="text"],
+        .toolbar input[type="date"],
         .toolbar select {
             padding: 7px 10px;
             border: 1px solid var(--border);
@@ -167,11 +169,25 @@
             background: var(--canvas);
             color: var(--ink);
             transition: all 0.2s;
-            min-width: 180px;
+            min-width: 150px;
             white-space: nowrap;
         }
+        .toolbar input[type="date"] { min-width: 140px; }
+        .btn-primary {
+            padding: 7px 16px; border: none; border-radius: 6px; cursor: pointer;
+            font-family: inherit; font-size: 13px; font-weight: 600;
+            background: var(--primary); color: #fff;
+        }
+        .btn-primary:hover { filter: brightness(.95); }
+        .filter-check { display:inline-flex; align-items:center; gap:6px; font-size:13px; color:var(--ink); white-space:nowrap; }
+        .due-badge { display:inline-block; margin-left:6px; padding:1px 7px; border-radius:999px; font-size:11px; font-weight:600; }
+        .due-ok  { background:#e7f5ec; color:#1a7f3c; }
+        .due-warn{ background:#fdecea; color:#c0392b; }
+        .price-cell { text-align:right; font-variant-numeric:tabular-nums; white-space:nowrap; }
 
         .toolbar input[type="search"]:focus,
+        .toolbar input[type="text"]:focus,
+        .toolbar input[type="date"]:focus,
         .toolbar select:focus {
             outline: none;
             border-color: var(--primary);
@@ -393,20 +409,27 @@
     <main>
         <div class="toolbar">
             <div class="filter-group">
-                <input type="search" id="fShelf" placeholder="🔍 ค้นหาโดยชั้น..." autocomplete="off">
-                <input type="search" id="fSale" list="saleList" placeholder="🔍 ค้นหาโดย Sale (createdBy)..." autocomplete="off">
+                <input type="search" id="fShelf" placeholder="🔍 ชั้น..." autocomplete="off">
+                <input type="search" id="fSale" list="saleList" placeholder="🔍 Sale..." autocomplete="off">
                 <datalist id="saleList">
                     @foreach($saleOptions as $s)
                         <option value="{{ $s }}"></option>
                     @endforeach
                 </datalist>
+                <input type="search" id="fSo" placeholder="🔍 SO..." autocomplete="off">
+                <input type="search" id="fPo" placeholder="🔍 PO..." autocomplete="off">
+                <input type="search" id="fCust" placeholder="🔍 ลูกค้า (ชื่อ/รหัส)..." autocomplete="off">
+                <input type="date" id="fFrom" title="รับเข้าตั้งแต่วันที่">
+                <input type="date" id="fTo" title="รับเข้าถึงวันที่">
+                <label class="filter-check"><input type="checkbox" id="fOverdue"> เฉพาะค้าง ≥ 4 วัน</label>
+                <button type="button" class="btn-primary" id="btnSearch">ค้นหา</button>
                 <button type="button" class="btn-ghost" id="btnClear">ล้าง</button>
             </div>
         </div>
 
         <div class="table-topbar">
             <div class="table-info">
-                รอเช็คเอาท์ <span id="showCount">{{ $items->count() }}</span> รายการ
+                รอเช็คเอาท์ <span id="showCount">0</span> รายการ
                 &nbsp;•&nbsp; งานค้าง 4 วันขึ้นไปช่องเวลาจะเป็นสีแดง
             </div>
         </div>
@@ -422,42 +445,14 @@
                             <th>รหัสลูกค้า</th>
                             <th style="text-align:left;">ลูกค้า</th>
                             <th>Sale</th>
+                            <th style="text-align:left;">สินค้า</th>
+                            <th>ราคารวม</th>
+                            <th>กำหนดส่ง</th>
                             <th>เวลาที่รับเข้า</th>
                         </tr>
                     </thead>
                     <tbody id="tableBody">
-                        @forelse($items as $item)
-                            @php
-                                $isOverdue = $item->days_in !== null && $item->days_in >= 4;
-                            @endphp
-                            <tr
-                                data-shelf="{{ mb_strtolower((string)($item->shelf ?? '')) }}"
-                                data-sale="{{ mb_strtolower((string)($item->sale ?? '')) }}"
-                            >
-                                <td class="num"><span class="ref-link">{{ $item->so ?: '-' }}</span></td>
-                                <td class="num">{{ $item->po ?: '-' }}</td>
-                                <td>
-                                    @if($item->shelf)
-                                        <span class="shelf-badge">{{ $item->shelf }}</span>
-                                    @else
-                                        <span class="dash">-</span>
-                                    @endif
-                                </td>
-                                <td class="num">{{ $item->cust_id ?: '-' }}</td>
-                                <td class="cust-cell">{{ $item->cust_name ?: '-' }}</td>
-                                <td>{{ $item->sale ?: '-' }}</td>
-                                <td class="recv-time {{ $isOverdue ? 'overdue' : '' }}">
-                                    @if($item->received_at)
-                                        {{ $item->received_at->format('d/m/Y H:i') }}
-                                        <span class="days-badge">+{{ $item->days_in }} วัน</span>
-                                    @else
-                                        <span class="dash">-</span>
-                                    @endif
-                                </td>
-                            </tr>
-                        @empty
-                            <tr><td colspan="7" class="empty">ไม่มีสินค้าที่รอเช็คเอาท์</td></tr>
-                        @endforelse
+                        <tr><td colspan="10" class="empty">เลือกตัวกรองอย่างน้อย 1 อย่าง แล้วกด "ค้นหา"</td></tr>
                     </tbody>
                 </table>
             </div>
@@ -466,38 +461,106 @@
 </div>
 
 <script>
-    const fShelf   = document.getElementById('fShelf');
-    const fSale    = document.getElementById('fSale');
-    const btnClear = document.getElementById('btnClear');
-    const tbody    = document.getElementById('tableBody');
-    const showCount= document.getElementById('showCount');
+    const DATA_URL   = "{{ route('shelfsale.data') }}";
+    const tbody      = document.getElementById('tableBody');
+    const showCount  = document.getElementById('showCount');
+    const btnSearch  = document.getElementById('btnSearch');
+    const btnClear   = document.getElementById('btnClear');
+    const F = {
+        shelf: document.getElementById('fShelf'),
+        sale:  document.getElementById('fSale'),
+        so:    document.getElementById('fSo'),
+        po:    document.getElementById('fPo'),
+        customer: document.getElementById('fCust'),
+        date_from: document.getElementById('fFrom'),
+        date_to:   document.getElementById('fTo'),
+        overdue:   document.getElementById('fOverdue'),
+    };
 
-    function applyFilter() {
-        if (!tbody) return;
-        const shelfQ = (fShelf.value || '').trim().toLowerCase();
-        const saleQ  = (fSale.value  || '').trim().toLowerCase();
-        let shown = 0;
+    function esc(s){ return String(s ?? '').replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m])); }
+    function fmtBaht(n){ return Number(n||0).toLocaleString('th-TH',{minimumFractionDigits:2,maximumFractionDigits:2}); }
 
-        tbody.querySelectorAll('tr').forEach(tr => {
-            if (!tr.hasAttribute('data-shelf')) return; // ข้ามแถว empty
-            const shelf = tr.getAttribute('data-shelf') || '';
-            const sale  = tr.getAttribute('data-sale')  || '';
-            const ok = (shelfQ === '' || shelf.includes(shelfQ))
-                    && (saleQ  === '' || sale.includes(saleQ));
-            tr.classList.toggle('hidden-row', !ok);
-            if (ok) shown++;
-        });
-
-        if (showCount) showCount.textContent = shown;
+    function setMsg(text){
+        tbody.innerHTML = '<tr><td colspan="10" class="empty">' + esc(text) + '</td></tr>';
     }
 
-    if (tbody) {
-        fShelf.addEventListener('input', applyFilter);
-        fSale.addEventListener('input', applyFilter);
-        btnClear.addEventListener('click', () => {
-            fShelf.value = ''; fSale.value = ''; applyFilter();
-        });
+    function rowHtml(r){
+        const overdueRecv = (r.days_in !== null && r.days_in >= 4);
+        const recv = r.received_at
+            ? esc(r.received_at) + ' <span class="days-badge">+' + r.days_in + ' วัน</span>'
+            : '<span class="dash">-</span>';
+
+        let ship = '<span class="dash">-</span>';
+        if (r.ship_date) {
+            let badge = '';
+            if (r.due_days !== null) {
+                const cls = r.due_days < 0 ? 'due-warn' : 'due-ok';
+                const txt = r.due_days < 0 ? ('เลย ' + Math.abs(r.due_days) + ' วัน')
+                          : (r.due_days === 0 ? 'ครบวันนี้' : ('อีก ' + r.due_days + ' วัน'));
+                badge = ' <span class="due-badge ' + cls + '">' + txt + '</span>';
+            }
+            ship = esc(r.ship_date) + badge;
+        }
+
+        const shelf = r.shelf ? '<span class="shelf-badge">' + esc(r.shelf) + '</span>' : '<span class="dash">-</span>';
+
+        return '<tr>'
+            + '<td class="num"><span class="ref-link">' + esc(r.so) + '</span></td>'
+            + '<td class="num">' + esc(r.po) + '</td>'
+            + '<td>' + shelf + '</td>'
+            + '<td class="num">' + esc(r.cust_id) + '</td>'
+            + '<td class="cust-cell">' + esc(r.cust_name) + '</td>'
+            + '<td>' + esc(r.sale) + '</td>'
+            + '<td style="text-align:left;">' + esc(r.product) + '</td>'
+            + '<td class="price-cell">' + fmtBaht(r.price) + '</td>'
+            + '<td>' + ship + '</td>'
+            + '<td class="recv-time ' + (overdueRecv ? 'overdue' : '') + '">' + recv + '</td>'
+            + '</tr>';
     }
+
+    async function search(){
+        const params = new URLSearchParams();
+        params.set('shelf',     F.shelf.value.trim());
+        params.set('sale',      F.sale.value.trim());
+        params.set('so',        F.so.value.trim());
+        params.set('po',        F.po.value.trim());
+        params.set('customer',  F.customer.value.trim());
+        params.set('date_from', F.date_from.value);
+        params.set('date_to',   F.date_to.value);
+        params.set('overdue',   F.overdue.checked ? '1' : '0');
+
+        btnSearch.disabled = true;
+        setMsg('⏳ กำลังค้นหา...');
+        try {
+            const res = await fetch(DATA_URL + '?' + params.toString(), {
+                headers: { 'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest' }
+            });
+            const data = await res.json();
+            if (!res.ok || !data.ok) { setMsg((data && data.message) || 'ค้นหาไม่สำเร็จ'); showCount.textContent = 0; return; }
+
+            const rows = data.rows || [];
+            showCount.textContent = rows.length;
+            if (rows.length === 0) { setMsg(data.message || 'ไม่พบรายการตามตัวกรอง'); return; }
+            tbody.innerHTML = rows.map(rowHtml).join('');
+        } catch (e) {
+            console.error(e);
+            setMsg('เกิดข้อผิดพลาดในการเชื่อมต่อ');
+            showCount.textContent = 0;
+        } finally {
+            btnSearch.disabled = false;
+        }
+    }
+
+    btnSearch.addEventListener('click', search);
+    btnClear.addEventListener('click', () => {
+        Object.values(F).forEach(el => { if (el.type === 'checkbox') el.checked = false; else el.value = ''; });
+        showCount.textContent = 0;
+        setMsg('เลือกตัวกรองอย่างน้อย 1 อย่าง แล้วกด "ค้นหา"');
+    });
+    // กด Enter ในช่องกรอง = ค้นหา
+    document.querySelectorAll('.filter-group input').forEach(el => {
+        el.addEventListener('keydown', e => { if (e.key === 'Enter') search(); });
+    });
 </script>
 </body>
 </html>

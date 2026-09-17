@@ -469,3 +469,4 @@ Route::get('/adminOT', [OtRequestController::class, 'index']);
 
 use App\Http\Controllers\ShelfsaleController;
 Route::get('/shelfsale', [ShelfsaleController::class, 'index']);
+Route::get('/shelfsale/data', [ShelfsaleController::class, 'data'])->name('shelfsale.data');
