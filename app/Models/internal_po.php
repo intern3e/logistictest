@@ -17,7 +17,7 @@ class internal_po extends Model
         'customer_name', 'create_by', 'timestamp',
         'status',
         'pick_by',     'pick_at',      // ด่าน 1: จัดเสร็จ
-        'location_by', 'location_at',  // ด่าน 2: ระบุตำแหน่ง
+        'location_by', 'location_at', 'location',  // ด่าน 2: ระบุตำแหน่ง
         'checkout_by', 'checkout_at',  // ด่าน 3: ของออก
     ];
 

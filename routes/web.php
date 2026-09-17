@@ -442,6 +442,7 @@ Route::prefix('store')->name('store.')->group(function () {
     Route::post('location/submit',            [StoreController::class, 'locationSubmit'])->name('location.submit');
     Route::post('location/claim',              [StoreController::class, 'locationClaim'])->name('location.claim');
     Route::post('location/finish',             [StoreController::class, 'locationFinish'])->name('location.finish');
+    Route::post('location/finish-internal',    [StoreController::class, 'locationFinishInternal'])->name('location.finishInternal');
     Route::match(['get', 'post'], 'checkout',  [StoreController::class, 'checkoutDashboard'])->name('checkout');
     Route::post('checkout/submit',             [StoreController::class, 'checkoutSubmit'])->name('checkout.submit');
     Route::post('location/legacy-claim', [StoreController::class, 'legacyClaim'])->name('location.legacyClaim');

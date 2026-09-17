@@ -419,7 +419,9 @@ class MobilePoappController extends Controller
                   ->where(function ($q) {
                       $q->whereColumn('po_receives.so_id', '=', 'po_receives_line.so_id')
                         ->orWhereNull('po_receives_line.so_id');
-                  });
+                  })
+                  // กัน join ไปเจอ header เก่าที่ถูกยกเลิก (1 po,so มีได้หลาย header) -> แถวซ้ำ
+                  ->whereNull('po_receives.cancelled_at');
             })
             ->select(
                 'po_receives_line.id',
@@ -529,27 +531,35 @@ class MobilePoappController extends Controller
 
         try {
             DB::transaction(function () use ($validated, $cancelBy) {
-                $header = PoReceive::where('po_id', $validated['PONum'])
+                // ยกเลิก "ทั้ง PO" = ทุก header (ทุก SO) ที่ยัง active ของ po_id นี้
+                $headers = PoReceive::where('po_id', $validated['PONum'])
                     ->lockForUpdate()
-                    ->first();
+                    ->get();
 
-                if (!$header) {
+                if ($headers->isEmpty()) {
                     abort(404, 'ไม่พบข้อมูลการรับเข้าของ PO นี้');
                 }
+
+                $now = now();
 
                 // ไม่ลบ row / รูปทิ้ง — เก็บไว้เป็นประวัติ (กันข้อมูลหาย)
                 // mark ยกเลิกเฉพาะ line ที่ยัง active อยู่ เพื่อไม่ให้นับเป็นของที่รับแล้ว (รับเข้าใหม่ได้)
                 PoReceiveLine::where('po_id', $validated['PONum'])
                     ->whereNull('cancelled_at')
                     ->update([
-                        'cancelled_at' => now(),
+                        'cancelled_at' => $now,
                         'cancelled_by' => $cancelBy,
                     ]);
 
-                // อัปเดตแค่สถานะ ไม่แตะ checkout_by / checkout_time
-                $header->update([
-                    'status' => $validated['Status'],
-                ]);
+                // soft-cancel header ทุก SO: ตั้ง cancelled_at/by + สถานะ "รับเข้าผิด"
+                // -> global scope จะซ่อน header เหล่านี้ ทำให้รับเข้าใหม่แล้วสร้าง record ใหม่ (ไม่ทับของเก่า)
+                foreach ($headers as $header) {
+                    $header->update([
+                        'status'       => $validated['Status'],
+                        'cancelled_at' => $now,
+                        'cancelled_by' => $cancelBy,
+                    ]);
+                }
             });
         } catch (\Illuminate\Http\Exceptions\HttpResponseException $e) {
             throw $e;
@@ -577,10 +587,12 @@ class MobilePoappController extends Controller
         }
 
         $validated = $request->validate([
-            'PONum'         => 'required|string|max:50',
-            'Lines'         => 'required|array|min:1',
-            'Lines.*.id'    => 'required|integer',
-            'Lines.*.shelf' => 'nullable|string|max:100',
+            'PONum'           => 'required|string|max:50',
+            'Lines'           => 'required|array|min:1',
+            'Lines.*.id'      => 'required|integer',
+            'Lines.*.shelf'   => 'nullable|string|max:100',
+            'Lines.*.qty'     => 'nullable|numeric|min:0',      // แก้จำนวนที่รับ
+            'Lines.*.deleted' => 'nullable|boolean',            // ลบรายการที่เพิ่มผิด (soft-cancel)
         ]);
 
         $updatedBy = optional($request->user())->name;
@@ -615,7 +627,20 @@ class MobilePoappController extends Controller
                     if (!$line) {
                         continue; // ข้าม line ที่ไม่ใช่ของ PO นี้ / ถูกยกเลิกไปแล้ว
                     }
+
+                    // ลบรายการที่เพิ่มผิด → soft-cancel (เก็บประวัติไว้ ไม่ลบจริง)
+                    if (!empty($l['deleted'])) {
+                        $line->cancelled_at = now();
+                        $line->cancelled_by = optional(request()->user())->name;
+                        $line->save();
+                        $count++;
+                        continue;
+                    }
+
                     $line->shelf = $l['shelf'] ?? null;
+                    if (array_key_exists('qty', $l) && $l['qty'] !== null && $l['qty'] !== '') {
+                        $line->recv_qty = (float) $l['qty'];
+                    }
                     $line->save();
                     $count++;
                 }

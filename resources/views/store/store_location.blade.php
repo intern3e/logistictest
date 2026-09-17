@@ -962,6 +962,12 @@
                                 $isClaimed   = $h->type === 'external' && ($h->claimed ?? false);
                                 $isFinished  = $h->type === 'external' && ($h->finished ?? false);
                                 $poType      = str_contains((string) $h->po_display, 'A') ? 'internal' : 'external';
+                                // internal_po: PENDING+claim แล้ว = กำลังจัดการ (ต้องกด "จัดการเสร็จสิ้น") / FINISH = พร้อมระบุตำแหน่ง
+                                $rowStatus       = $h->status ?? null;
+                                $internalPending = $h->type === 'internal' && $rowStatus === \App\Models\internal_po::ST_PENDING;
+                                $internalReady   = $h->type === 'internal' && $rowStatus === \App\Models\internal_po::ST_FINISH;
+                                // เลือก checkbox เพื่อระบุตำแหน่งได้เฉพาะ: internal ที่พร้อม, หรือ external/legacy ที่ยังไม่ถูก claim
+                                $canSelect       = $h->type === 'internal' ? $internalReady : ($todo && !$isClaimed);
                             @endphp
                             <tr class="{{ $cls }}" data-done="{{ $todo ? 0 : 1 }}"
                                 data-so="{{ $h->so_id }}"
@@ -969,7 +975,7 @@
                                 data-customer="{{ $h->customer_name }}"
                                 data-po-type="{{ $poType }}">
                                 <td class="center">
-                                    @if ($todo && !$isClaimed)<input type="checkbox" class="chkLine" value="{{ $checkboxVal }}">@endif
+                                    @if ($canSelect)<input type="checkbox" class="chkLine" value="{{ $checkboxVal }}">@endif
                                 </td>
                                 <td>
                                     <span class="ref-link">{{ $h->po_display }}</span>
@@ -983,18 +989,22 @@
                                 </td>
                                 <td><span style="font-weight:600;">{{ $h->so_id }}</span></td>
                                 <td class="items-cell">
-                                    @if (is_null($items))
-                                        <button type="button" class="btn-view-items" data-po="{{ $h->po_display }}">ดูสินค้า</button>
-                                    @elseif ($items->count() <= 2)
-                                        <span style="font-weight:500;">{{ $items->pluck('item_name')->implode(', ') }}</span>
-                                    @else
-                                        <details class="items-expand">
-                                            <summary>{{ $items->first()->item_name }} <span class="more">+{{ $items->count() - 1 }} รายการ</span></summary>
-                                            @foreach ($items as $it)
-                                                <div class="subline">{{ $it->item_name }} ({{ number_format($it->item_quantity, 2) }})</div>
-                                            @endforeach
-                                        </details>
-                                    @endif
+                                    @php
+                                        $itemsJson = $items
+                                            ? $items->map(fn ($it) => [
+                                                'name' => $it->item_name,
+                                                'qty'  => (float) $it->item_quantity,
+                                                'so'   => $it->so ?? $it->so_id ?? null,
+                                            ])->values()
+                                            : null;
+                                    @endphp
+                                    {{-- ทุกแถวใช้ปุ่มเปิด popup เหมือนกัน: มี items แล้วฝังไว้ (ไม่ต้อง fetch) / ไม่มี = โหลดตอนกด
+                                         ส่ง data-so ไปด้วย เพราะ PO เดียวกันมีได้หลาย SO → ต้องกรองให้เห็นเฉพาะ SO ของแถวนี้ --}}
+                                    <button type="button" class="btn-view-items"
+                                        data-po="{{ $h->po_display }}" data-so="{{ $h->so_id }}"
+                                        @if ($itemsJson !== null) data-items='@json($itemsJson)' @endif>
+                                        ดูสินค้า @if ($items) ({{ $items->count() }}) @endif
+                                    </button>
                                 </td>
                                 <td class="cust-cell">{{ $h->customer_name }}</td>
                                 <td>{{ $h->sale ?: '—' }}</td>
@@ -1012,7 +1022,16 @@
                                             <button type="button" class="btn-claim" data-po="{{ $h->id }}" data-type="{{ $h->type }}">กำลังจัดการ</button>
                                         @endif
                                     @else
-                                        <span style="font-weight:600; color: var(--ink);">{{ $location ?: '—' }}</span>
+                                        {{-- internal_po --}}
+                                        @if ($internalPending)
+                                            <button type="button" class="btn-finish-claim" data-po="{{ $h->id }}" data-internal="1">จัดการเสร็จสิ้น</button>
+                                            <div class="muted">โดย {{ $h->claimed_by ?: '—' }}</div>
+                                            <div class="muted">{{ $h->claimed_at ? \Carbon\Carbon::parse($h->claimed_at)->format('d/m/Y H:i') : '' }}</div>
+                                        @elseif ($internalReady)
+                                            <span class="finished-tag">พร้อมระบุตำแหน่ง</span>
+                                        @else
+                                            <span style="font-weight:600; color: var(--ink);">{{ $location ?: '—' }}</span>
+                                        @endif
                                     @endif
                                 </td>
                                 <td><span style="font-size:12px;">{{ $h->packed_by ?: '—' }}</span></td>
@@ -1091,6 +1110,7 @@
 const SUBMIT_URL = "{{ route('store.location.submit') }}";
 const CLAIM_URL  = "{{ route('store.location.claim') }}";
 const FINISH_URL = "{{ route('store.location.finish') }}";
+const FINISH_INTERNAL_URL = "{{ route('store.location.finishInternal') }}";
 const LEGACY_ITEMS_URL = "{{ route('store.location.legacyItems') }}";
 const LEGACY_CLAIM_URL = "{{ route('store.location.legacyClaim') }}";
 const CSRF       = document.querySelector('meta[name="csrf-token"]').content;
@@ -1220,46 +1240,108 @@ document.querySelectorAll('.btn-claim').forEach(btn => {
     });
 });
 document.querySelectorAll('.btn-finish-claim').forEach(btn => {
-    btn.addEventListener('click', () => postClaimAction(FINISH_URL, btn.dataset.po, btn, 'คุณยืนยันที่จะจัดงานเสร็จสิ้นหรือไม่'));
+    btn.addEventListener('click', () => {
+        if (btn.dataset.internal === '1') {
+            postClaimAction(FINISH_INTERNAL_URL, btn.dataset.po, btn, 'คุณยืนยันที่จะจัดงานเสร็จสิ้นหรือไม่', 'internal_id');
+        } else {
+            postClaimAction(FINISH_URL, btn.dataset.po, btn, 'คุณยืนยันที่จะจัดงานเสร็จสิ้นหรือไม่');
+        }
+    });
 });
 
 const itemsModal     = document.getElementById('itemsModal');
 const itemsModalTitle = document.getElementById('itemsModalTitle');
 const itemsModalBody  = document.getElementById('itemsModalBody');
 
+// ดึง SO จากชื่อสินค้าที่ฝัง "_SO69/008617" ไว้ (กรณีไม่มี field so มาให้)
+function extractSoFromName(name){
+    const m = String(name || '').match(/_SO\s*([0-9./-]+)/i);
+    return m ? m[1] : '';
+}
+// ตัดส่วน "_SO..." ออกจากชื่อให้สะอาด (SO ไปแสดงในคอลัมน์ SO แทน)
+function cleanItemName(name){
+    return String(name || '').replace(/_SO\s*[0-9./-]+/ig, '').trim() || '-';
+}
+// normalize SO เพื่อเทียบ (ตัดช่องว่าง/คำนำหน้า SO)
+function normSo(v){
+    return String(v || '').replace(/\s+/g, '').replace(/^SO/i, '');
+}
+// SO ของ item: จาก field so/so_id ก่อน ถ้าไม่มีค่อยแกะจากชื่อ
+function soOfItem(it){
+    const rawName = it.name ?? it.item_name ?? '-';
+    return (it.so ?? it.so_id ?? '') || extractSoFromName(rawName) || '';
+}
+// filterSo = so_id ของแถวที่กด → แสดงเฉพาะสินค้าของ PO+SO นั้น (PO เดียวกันมีได้หลาย SO)
+function renderItemsTable(items, filterSo){
+    if (!items || !items.length) {
+        itemsModalBody.innerHTML = '<div class="items-modal-empty">ไม่พบรายการสินค้า</div>';
+        return;
+    }
+    // กรองให้เหลือเฉพาะ SO ของแถวนี้ (ถ้าข้อมูลระบุ SO ได้)
+    const want = normSo(filterSo);
+    if (want) {
+        const anyHasSo = items.some(it => normSo(soOfItem(it)) !== '');
+        if (anyHasSo) {
+            items = items.filter(it => normSo(soOfItem(it)) === want);
+        }
+    }
+    if (!items.length) {
+        itemsModalBody.innerHTML = '<div class="items-modal-empty">ไม่พบรายการสินค้าของ SO นี้</div>';
+        return;
+    }
+    // จัดกลุ่มตาม SO เพื่อให้เห็นว่าแต่ละ SO มีสินค้าอะไรบ้าง
+    const groups = {};
+    const order  = [];
+    items.forEach(it => {
+        const rawName = it.name ?? it.item_name ?? '-';
+        const so = soOfItem(it);
+        const key = so || 'ไม่ระบุ SO';
+        if (!groups[key]) { groups[key] = []; order.push(key); }
+        groups[key].push({ name: cleanItemName(rawName), qty: Number(it.qty ?? it.item_quantity ?? 0) });
+    });
+
+    const blocks = order.map(so => {
+        const rows = groups[so].map(r => `
+            <tr>
+                <td style="text-align:left; font-weight:500;">${r.name}</td>
+                <td class="num" style="text-align:right;">${r.qty.toFixed(2)}</td>
+            </tr>`).join('');
+        return `
+            <div style="margin-bottom:14px;">
+                <div style="display:inline-block;background:#EAF0FE;color:#2563eb;font-weight:600;
+                            font-size:13px;padding:3px 12px;border-radius:999px;margin-bottom:6px;">SO ${so}</div>
+                <table>
+                    <thead><tr><th style="text-align:left;">ชื่อสินค้า</th><th style="text-align:right;">จำนวน</th></tr></thead>
+                    <tbody>${rows}</tbody>
+                </table>
+            </div>`;
+    }).join('');
+    itemsModalBody.innerHTML = blocks;
+}
+
 document.querySelectorAll('.btn-view-items').forEach(btn => {
     btn.addEventListener('click', async () => {
         const po = btn.dataset.po;
-        itemsModalTitle.textContent = '📋 รายการสินค้า — PO ' + po;
-        itemsModalBody.innerHTML = '<div class="items-modal-loading">⏳ กำลังโหลด...</div>';
+        const so = btn.dataset.so || '';
+        itemsModalTitle.textContent = '📋 รายการสินค้า — PO ' + po + (so ? ' / SO ' + so : '');
         itemsModal.showModal();
 
+        // มี items ฝังไว้แล้ว (external/legacy/new) → แสดงเลย ไม่ต้อง fetch (กรองตาม SO ของแถวนี้)
+        if (btn.dataset.items) {
+            try { renderItemsTable(JSON.parse(btn.dataset.items), so); }
+            catch (e) { itemsModalBody.innerHTML = '<div class="items-modal-empty">ข้อมูลสินค้าผิดพลาด</div>'; }
+            return;
+        }
+
+        // ไม่มี → โหลดจาก server (ส่ง so ไปด้วยเพื่อกรองฝั่ง server ในอนาคต + กรองซ้ำฝั่ง client)
+        itemsModalBody.innerHTML = '<div class="items-modal-loading">⏳ กำลังโหลด...</div>';
         try {
-            const res = await fetch(LEGACY_ITEMS_URL + '?po=' + encodeURIComponent(po), {
+            const res = await fetch(LEGACY_ITEMS_URL + '?po=' + encodeURIComponent(po) + (so ? '&so=' + encodeURIComponent(so) : ''), {
                 headers: { 'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest' }
             });
             const data = await res.json();
-
-            if (res.ok && data.ok) {
-                if (!data.items.length) {
-                    itemsModalBody.innerHTML = '<div class="items-modal-empty">ไม่พบรายการสินค้า</div>';
-                    return;
-                }
-                const rows = data.items.map(it => `
-                    <tr>
-                        <td style="text-align:left; font-weight:500;">${it.item_name}</td>
-                        <td class="num" style="text-align:right;">${Number(it.item_quantity).toFixed(2)}</td>
-                    </tr>
-                `).join('');
-                itemsModalBody.innerHTML = `
-                    <table>
-                        <thead><tr><th style="text-align:left;">ชื่อสินค้า</th><th style="text-align:right;">จำนวน</th></tr></thead>
-                        <tbody>${rows}</tbody>
-                    </table>
-                `;
-            } else {
-                itemsModalBody.innerHTML = '<div class="items-modal-empty">โหลดไม่สำเร็จ</div>';
-            }
+            if (res.ok && data.ok) renderItemsTable(data.items, so);
+            else itemsModalBody.innerHTML = '<div class="items-modal-empty">โหลดไม่สำเร็จ</div>';
         } catch (e) {
             console.error(e);
             itemsModalBody.innerHTML = '<div class="items-modal-empty">เกิดข้อผิดพลาด</div>';

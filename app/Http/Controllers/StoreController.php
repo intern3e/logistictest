@@ -535,6 +535,58 @@ class StoreController extends Controller
         return response()->json($result, $result['ok'] ? 200 : 409);
     }
 
+    /**
+     * "จัดการเสร็จสิ้น" สำหรับงานภายใน (internal_po) บนหน้า /store/location
+     * เปลี่ยนสถานะจาก "กำลังจัดการ" (ST_PENDING ที่ถูก claim แล้ว) -> ST_FINISH พร้อมปักหมุดไส้ในทุกบรรทัด
+     * เพื่อให้เลือกระบุตำแหน่งต่อได้
+     */
+    public function locationFinishInternal(Request $request)
+    {
+        $authUser = Auth::guard('web')->user();
+        if (!$authUser) {
+            return response()->json(['ok' => false, 'message' => 'เซสชันหมดอายุ กรุณาเข้าสู่ระบบใหม่'], 401);
+        }
+        if (!in_array($authUser->role, ['admin', 'stock', 'store'], true)) {
+            return response()->json(['ok' => false, 'message' => 'คุณไม่มีสิทธิ์ดำเนินการ'], 403);
+        }
+
+        $request->validate(['internal_id' => 'required|string']);
+        $internalId = $request->input('internal_id');
+
+        try {
+            $result = DB::transaction(function () use ($internalId, $authUser) {
+                $head = internal_po::where('internal_id', $internalId)
+                    ->lockForUpdate()
+                    ->first();
+
+                if (!$head) {
+                    return ['ok' => false, 'message' => 'ไม่พบรายการที่ต้องจัดการ'];
+                }
+                if ($head->status !== internal_po::ST_PENDING) {
+                    return ['ok' => false, 'message' => 'PO นี้ไม่ได้อยู่ระหว่างจัดการ หรือดำเนินการไปแล้ว'];
+                }
+
+                $now = Carbon::now();
+
+                internal_poline::where('internal_id', $internalId)
+                    ->whereNull('picked_at')
+                    ->update(['picked_at' => $now, 'picked_by' => $authUser->name]);
+
+                $head->update([
+                    'status'  => internal_po::ST_FINISH,
+                    'pick_by' => $authUser->name,
+                    'pick_at' => $now,
+                ]);
+
+                return ['ok' => true, 'message' => 'จัดการเสร็จสิ้นแล้ว'];
+            });
+        } catch (\Exception $e) {
+            return response()->json(['ok' => false, 'message' => 'เกิดข้อผิดพลาด: ' . $e->getMessage()], 500);
+        }
+
+        return response()->json($result, $result['ok'] ? 200 : 409);
+    }
+
     private function buildExternalPendingLocationRows(Request $request): \Illuminate\Support\Collection
     {
         if ($request->filled('location')) {
@@ -558,13 +610,14 @@ class StoreController extends Controller
 
             return (object) [
                 'type'          => 'external',
-                'id'            => $h->po_id . '|' . $h->so_id,
+                'id'            => $h->po_id,
                 'po_display'    => $h->po_id,
                 'so_id'         => $h->so_id,
                 'customer_name' => $h->cust_name,
                 'items'         => $lines->map(fn ($l) => (object) [
                     'item_name'     => $l->good_name,
                     'item_quantity' => $l->recv_qty,
+                    'so'            => $l->so_id ?? $h->so_id,
                 ]),
                 'total_qty'   => $lines->sum('recv_qty'),
                 'location'    => null,
@@ -739,7 +792,18 @@ class StoreController extends Controller
         $todoStatus = internal_po::ST_FINISH;
         $statuses   = [internal_po::ST_FINISH, internal_po::ST_STORED, internal_po::ST_CHECKOUT];
 
-        $query = $this->buildLocationQuery($request, $statuses);
+        // โหลด internal_po ที่:
+        //  - สถานะ FINISH/STORED/CHECKOUT (flow ปกติ) หรือ
+        //  - สถานะ PENDING แต่ถูก "claim" ที่หน้านี้แล้ว (pick_by != null) = กำลังจัดการ รอกด "จัดการเสร็จสิ้น"
+        //    (PENDING ที่ยังไม่ claim คืองานบน dashboard internal_po จึงไม่เอามาโชว์ที่นี่)
+        $query = $this->buildLocationQuery($request, null)
+            ->where(function ($w) use ($statuses) {
+                $w->whereIn('status', $statuses)
+                  ->orWhere(function ($w2) {
+                      $w2->where('status', internal_po::ST_PENDING)
+                         ->whereNotNull('pick_by');
+                  });
+            });
 
         $internalHeads = $query
             ->orderByRaw('FIELD(status, ?) DESC', [$todoStatus])
@@ -751,15 +815,20 @@ class StoreController extends Controller
                 'po_display'    => $h->internal_id,
                 'so_id'         => $h->SO_id,
                 'customer_name' => $h->customer_name,
+                'status'        => $h->status,
                 'items'         => $h->lines->map(fn ($it) => (object) [
                     'item_name'     => $it->item_name,
                     'item_quantity' => $it->item_quantity,
+                    'so'            => $it->SO_id ?? $h->SO_id,
                 ]),
-                'total_qty' => $h->lines->sum('item_quantity'),
-                'location'  => $h->location,
-                'packed_by' => $h->pick_by,
-                'packed_at' => $h->pick_at,
-                'todo'      => $h->status === $todoStatus,
+                'total_qty'  => $h->lines->sum('item_quantity'),
+                'location'   => $h->location,
+                'packed_by'  => $h->pick_by,
+                'packed_at'  => $h->pick_at,
+                'claimed_by' => $h->pick_by,
+                'claimed_at' => $h->pick_at,
+                // todo = ยังต้องดำเนินการต่อ (กำลังจัดการ=PENDING หรือ พร้อมระบุตำแหน่ง=FINISH)
+                'todo'       => in_array($h->status, [internal_po::ST_PENDING, internal_po::ST_FINISH], true),
             ]);
 
         $externalHeads = $this->buildExternalPendingLocationRows($request);
@@ -866,8 +935,7 @@ class StoreController extends Controller
             [$type, $id] = array_pad(explode(':', $raw, 2), 2, null);
             if ($id === null) { $internalIds[] = $raw; continue; }
             if ($type === 'internal') $internalIds[] = $id;
-            // external id = "po_id|so_id" → ระบุตำแหน่ง (ชั้นวาง) ใช้ po_id (ชั้นเดียวกันทุก SO ของ PO นั้น)
-            if ($type === 'external') $externalPoIds[] = explode('|', (string) $id, 2)[0];
+            if ($type === 'external') $externalPoIds[] = $id;   // location: id = po_id
             if ($type === 'legacy')   $legacyStoreIds[] = $id;
         }
 
@@ -1472,14 +1540,61 @@ class StoreController extends Controller
                 ->keyBy('so_id')
             : collect();
 
+        // รหัสลูกค้า (customer_code = CustID) จาก 3e so สำหรับงานภายใน
+        $custBySoId = DB::connection(self::LEGACY_CONNECTION)->table('so')
+            ->whereIn('SONum', $legacyRows->pluck('SO')->filter()->unique()->values()->all())
+            ->get(['SONum', 'CustName', 'CustID'])
+            ->keyBy('SONum');
+
         $now     = Carbon::now();
         $updated = 0;
 
-        DB::transaction(function () use ($legacyRows, $itemsByPo, $billMetaBySoId, $user, $now, &$updated) {
+        DB::transaction(function () use ($legacyRows, $itemsByPo, $billMetaBySoId, $custBySoId, $user, $now, &$updated) {
             foreach ($legacyRows as $row) {
                 $poId = 'PO' . $row->PO;
                 $soId = $row->SO;
                 $meta = $billMetaBySoId->get($soId);
+
+                // PO ที่มี A (งานภายใน) -> เก็บ/เช็คเอาท์ที่ internal_po ไม่ใช่ po_receives
+                if ($this->isInternalPoNumber($row->PO)) {
+                    $head = internal_po::firstOrNew(['internal_id' => $row->PO]);
+                    $head->SO_id         = $soId;
+                    $head->status        = internal_po::ST_CHECKOUT;
+                    $head->checkout_by   = $user;
+                    $head->checkout_at   = $now;
+                    if (!$head->location)    $head->location    = $row->areaName;
+                    if (!$head->location_at) $head->location_at = $row->DATEAREA ?? $now;
+                    if (!$head->pick_at)     $head->pick_at     = $now;
+                    if (!$head->pick_by)     $head->pick_by     = $user;
+                    if (!$head->create_by)   $head->create_by   = $user;
+                    if (!$head->timestamp)   $head->timestamp   = $now;
+                    if ($meta) {
+                        $head->POref         = $meta->{self::TBLBILL_POREF_COLUMN} ?? $head->POref;
+                        $head->customer_name = $meta->{self::TBLBILL_CUSTOMER_COLUMN} ?? $head->customer_name;
+                    }
+                    $cust = $custBySoId->get($soId);
+                    if ($cust) {
+                        if (!$head->customer_name) $head->customer_name = $cust->CustName;
+                        if (!$head->customer_code) $head->customer_code = $cust->CustID;
+                    }
+                    $head->save();
+
+                    if (internal_poline::where('internal_id', $row->PO)->count() === 0) {
+                        foreach ($itemsByPo->get($row->PO, collect()) as $line) {
+                            internal_poline::create([
+                                'internal_id'   => $row->PO,
+                                'SO_id'         => $soId,
+                                'item_name'     => $line->item_name,
+                                'item_quantity' => $line->item_quantity,
+                                'picked_at'     => $now,
+                                'picked_by'     => $user,
+                            ]);
+                        }
+                    }
+
+                    $updated++;
+                    continue;
+                }
 
                 $receive = PoReceive::firstOrNew([
                     'po_id' => $poId,
@@ -1498,6 +1613,7 @@ class StoreController extends Controller
                     foreach ($itemsByPo->get($row->PO, collect()) as $line) {
                         PoReceiveLine::create([
                             'po_id'       => $poId,
+                            'so_id'       => $soId,
                             'good_name'   => $line->item_name,
                             'recv_qty'    => $line->item_quantity,
                             'unit_price'  => null,
@@ -1524,10 +1640,15 @@ class StoreController extends Controller
 
     private function migratedLegacyPoNums(): array
     {
-        return PoReceive::pluck('po_id')
+        // PO ปกติที่ถูกย้ายเข้าระบบใหม่ = po_receives (ตัด prefix "PO" ออก)
+        $fromReceive = PoReceive::pluck('po_id')
             ->filter(fn ($id) => str_starts_with($id, 'PO'))
-            ->map(fn ($id) => substr($id, 2))
-            ->unique()->values()->all();
+            ->map(fn ($id) => substr($id, 2));
+
+        // งานภายใน (PO มี A) ที่ถูกย้ายเข้าระบบใหม่ = internal_po (internal_id = เลข PO ดิบอยู่แล้ว)
+        $fromInternal = internal_po::pluck('internal_id');
+
+        return $fromReceive->merge($fromInternal)->unique()->values()->all();
     }
 
     private function buildLegacyPendingLocationRows(Request $request): \Illuminate\Support\Collection
@@ -1556,7 +1677,11 @@ class StoreController extends Controller
 
         $poIdsCandidate  = $rows->map(fn ($r) => 'PO' . $r->PO)->unique()->values()->all();
         $alreadyMigrated = PoReceive::whereIn('po_id', $poIdsCandidate)->pluck('po_id')->flip();
-        $rows = $rows->reject(fn ($r) => $alreadyMigrated->has('PO' . $r->PO))->values();
+        // งานภายใน (PO มี A) ที่ถูก claim ไปแล้วจะอยู่ที่ internal_po ไม่ใช่ po_receives
+        // ต้องกรองออกด้วย ไม่งั้นจะโผล่ซ้ำให้กด "จัดการ" ได้อีก
+        $rawPoCandidate    = $rows->pluck('PO')->unique()->values()->all();
+        $migratedInternal  = internal_po::whereIn('internal_id', $rawPoCandidate)->pluck('internal_id')->flip();
+        $rows = $rows->reject(fn ($r) => $alreadyMigrated->has('PO' . $r->PO) || $migratedInternal->has($r->PO))->values();
         if ($rows->isEmpty()) return collect();
         $rows = $rows->unique('PO')->values();
 
@@ -1645,16 +1770,46 @@ class StoreController extends Controller
             ->groupBy('so_id')
             ->map(fn ($rows) => $rows->last());
 
+        // ชื่อ/รหัสลูกค้าจาก 3e so (customer_code = CustID) สำหรับงานภายใน
+        $custBySoId = DB::connection(self::LEGACY_CONNECTION)->table('so')
+            ->whereIn('SONum', $soIds)
+            ->get(['SONum', 'CustName', 'CustID'])
+            ->keyBy('SONum');
+
         $now     = Carbon::now();
         $updated = 0;
 
-        DB::transaction(function () use ($legacyRows, $itemsByPo, $billMetaBySoId, $location, $user, $now, &$updated) {
+        DB::transaction(function () use ($legacyRows, $itemsByPo, $billMetaBySoId, $custBySoId, $location, $user, $now, &$updated) {
             foreach ($legacyRows as $row) {
                 $poId = 'PO' . $row->PO;
 
-                if (PoReceive::where('po_id', $poId)->exists()) continue;
+                $meta  = $billMetaBySoId->get($row->SO);
+                $lines = $itemsByPo->get($row->PO, collect());
+                if ($lines->isEmpty()) {
+                    $lines = collect([(object) ['item_name' => '—', 'item_quantity' => 1]]);
+                }
 
-                $meta = $billMetaBySoId->get($row->SO);
+                // PO ที่มี A (งานภายใน) -> เก็บที่ internal_po พร้อมระบุตำแหน่งเลย
+                if ($this->isInternalPoNumber($row->PO)) {
+                    $cust     = $custBySoId->get($row->SO);
+                    $custName = filled(optional($cust)->CustName)
+                        ? $cust->CustName
+                        : ($meta->{self::TBLBILL_CUSTOMER_COLUMN} ?? null);
+                    $created  = $this->createInternalFromLegacyRow(
+                        $row,
+                        $lines,
+                        $meta->{self::TBLBILL_POREF_COLUMN} ?? null,
+                        $custName,
+                        optional($cust)->CustID,
+                        $user,
+                        $now,
+                        $location
+                    );
+                    if ($created) $updated++;
+                    continue;
+                }
+
+                if (PoReceive::where('po_id', $poId)->exists()) continue;
 
                 $receive = PoReceive::create([
                     'po_id'     => $poId,
@@ -1664,14 +1819,10 @@ class StoreController extends Controller
                     'cust_name' => $meta->{self::TBLBILL_CUSTOMER_COLUMN} ?? null,
                 ]);
 
-                $lines = $itemsByPo->get($row->PO, collect());
-                if ($lines->isEmpty()) {
-                    $lines = collect([(object) ['item_name' => '—', 'item_quantity' => 1]]);
-                }
-
                 foreach ($lines as $line) {
                     PoReceiveLine::create([
                         'po_id'       => $poId,
+                        'so_id'       => $row->SO,
                         'good_name'   => $line->item_name,
                         'recv_qty'    => $line->item_quantity,
                         'unit_price'  => null,
@@ -1687,6 +1838,73 @@ class StoreController extends Controller
         });
 
         return $updated;
+    }
+
+    /**
+     * PO ที่เป็น "งานภายใน" (มี -A ตามด้วยตัวเลข เช่น 6907-A0115) ต้องเก็บที่ internal_po
+     * ส่วน PO ปกติ (ไม่มี A เช่น 6903-03055) เก็บที่ po_receives
+     * $poNum = เลข PO ดิบจากตาราง store (ยังไม่มี prefix "PO")
+     */
+    private function isInternalPoNumber(?string $poNum): bool
+    {
+        return $poNum !== null && preg_match('/-A\d/i', $poNum) === 1;
+    }
+
+    /**
+     * สร้าง internal_po + internal_poline จาก 1 แถวของตาราง store (งานภายใน)
+     * ใช้ร่วมกันทั้งตอน "จัดการ" (claim, ไม่มี location) และตอน "ระบุตำแหน่ง" (มี location)
+     * internal_id = เลข PO ดิบ (ไม่มี prefix "PO") เช่น 6907-A0115
+     * คืน true ถ้าสร้างใหม่, false ถ้ามีอยู่แล้ว (กันซ้ำ)
+     */
+    private function createInternalFromLegacyRow(
+        $row,
+        $lines,
+        ?string $poref,
+        ?string $custName,
+        ?string $custCode,
+        string $user,
+        \Carbon\Carbon $now,
+        ?string $location = null
+    ): bool {
+        $internalId = $row->PO; // เลข PO ดิบ = internal_id เช่น 6907-A0115
+
+        if (internal_po::where('internal_id', $internalId)->exists()) {
+            return false;
+        }
+
+        // ไม่มี location = แค่ "กำลังจัดการ" (claim) -> ST_PENDING (ยังต้องกด "จัดการเสร็จสิ้น" ก่อน)
+        //   ไส้ในยังไม่ปักหมุด (picked_at = null) เหมือน flow ของ external
+        // มี location = เลือกจากรายการเก่าแล้วระบุตำแหน่งเลยในครั้งเดียว -> ปักหมุด + ST_STORED
+        $finished = $location !== null;
+
+        internal_po::create([
+            'internal_id'   => $internalId,
+            'SO_id'         => $row->SO,
+            'POref'         => $poref,
+            'customer_name' => $custName,
+            'customer_code' => $custCode,
+            'create_by'     => $user,
+            'timestamp'     => $now,
+            'status'        => $finished ? internal_po::ST_STORED : internal_po::ST_PENDING,
+            'pick_by'       => $user,   // ผู้ claim (กำลังจัดการ)
+            'pick_at'       => $now,
+            'location_by'   => $finished ? $user : null,
+            'location_at'   => $finished ? $now : null,
+            'location'      => $location,
+        ]);
+
+        foreach ($lines as $line) {
+            internal_poline::create([
+                'internal_id'   => $internalId,
+                'SO_id'         => $row->SO,
+                'item_name'     => $line->item_name,
+                'item_quantity' => $line->item_quantity,
+                'picked_at'     => $finished ? $now : null,
+                'picked_by'     => $finished ? $user : null,
+            ]);
+        }
+
+        return true;
     }
 
     public function legacyClaim(Request $request)
@@ -1721,10 +1939,18 @@ class StoreController extends Controller
                     return ['ok' => false, 'message' => 'ไม่พบรายการนี้ หรือถูกเปลี่ยนสถานะไปแล้ว'];
                 }
 
-                $poId = 'PO' . $row->PO;
+                $poId       = 'PO' . $row->PO;
+                $isInternal = $this->isInternalPoNumber($row->PO);
 
-                if (PoReceive::where('po_id', $poId)->exists()) {
-                    return ['ok' => false, 'message' => 'PO นี้มีคนกำลังจัดการอยู่แล้ว หรือถูกย้ายไปแล้ว'];
+                // กันซ้ำ: งานภายในเช็คที่ internal_po, งานปกติเช็คที่ po_receives
+                if ($isInternal) {
+                    if (internal_po::where('internal_id', $row->PO)->exists()) {
+                        return ['ok' => false, 'message' => 'PO นี้มีคนกำลังจัดการอยู่แล้ว หรือถูกย้ายไปแล้ว'];
+                    }
+                } else {
+                    if (PoReceive::where('po_id', $poId)->exists()) {
+                        return ['ok' => false, 'message' => 'PO นี้มีคนกำลังจัดการอยู่แล้ว หรือถูกย้ายไปแล้ว'];
+                    }
                 }
 
                 $itemsByPo = $this->fetchLegacyPoItemsBatch([$row->PO]);
@@ -1734,8 +1960,9 @@ class StoreController extends Controller
                 }
 
                 $soRow    = DB::connection(self::LEGACY_CONNECTION)->table('so')
-                    ->where('SONum', $row->SO)->first(['CustName']);
+                    ->where('SONum', $row->SO)->first(['CustName', 'CustID']);
                 $custName = filled(optional($soRow)->CustName) ? $soRow->CustName : null;
+                $custCode = optional($soRow)->CustID;
 
                 $billMeta = DB::table('tblbill')
                     ->where('so_id', $row->SO)
@@ -1746,6 +1973,22 @@ class StoreController extends Controller
                     $custName = $billMeta->{self::TBLBILL_CUSTOMER_COLUMN};
                 }
 
+                $now = Carbon::now();
+
+                // PO ที่มี A (งานภายใน) -> เก็บที่ internal_po ไม่ใช่ po_receives
+                if ($isInternal) {
+                    $this->createInternalFromLegacyRow(
+                        $row,
+                        $lines,
+                        $billMeta->{self::TBLBILL_POREF_COLUMN} ?? null,
+                        $custName,
+                        $custCode,
+                        $authUser->name,
+                        $now
+                    );
+                    return ['ok' => true, 'message' => 'เริ่มจัดการงานแล้ว'];
+                }
+
                 PoReceive::create([
                     'po_id'     => $poId,
                     'so_id'     => $row->SO,
@@ -1754,10 +1997,10 @@ class StoreController extends Controller
                     'cust_name' => $custName,
                 ]);
 
-                $now = Carbon::now();
                 foreach ($lines as $line) {
                     PoReceiveLine::create([
                         'po_id'       => $poId,
+                        'so_id'       => $row->SO,
                         'good_name'   => $line->item_name,
                         'recv_qty'    => $line->item_quantity,
                         'unit_price'  => null,

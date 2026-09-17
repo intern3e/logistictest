@@ -75,6 +75,29 @@
     }
     .es-save:active{background:#3457B1}
     .es-save:disabled{background:#9DB4EC;cursor:default}
+    /* ===== แก้ไขที่รับแล้ว: overlay เต็มจอ (กันทับฟอร์มรับเข้า) + จัด box ตาม SO ===== */
+    .es-modal{
+        position:fixed;left:0;right:0;top:0;bottom:0;
+        height:100vh;height:100dvh;background:#F5F6F8;
+        z-index:90;display:none;overflow-y:auto;
+        padding:20px 16px calc(28px + env(safe-area-inset-bottom));
+    }
+    .es-modal.show{display:block}
+    .es-modal-inner{max-width:520px;margin:0 auto}
+    .es-so-box{
+        background:#fff;border:1px solid #E4E7EC;border-radius:14px;
+        padding:12px 14px;margin-bottom:14px;box-shadow:0 1px 2px rgba(16,24,40,.04);
+    }
+    .es-so-head{
+        display:flex;align-items:center;gap:8px;
+        font-size:14px;font-weight:600;color:#171A20;
+        padding-bottom:10px;margin-bottom:4px;border-bottom:1px solid #ECEEF1;
+    }
+    .es-so-badge{
+        display:inline-block;background:#EAF0FE;color:#3E6AE1;
+        font-size:12.5px;font-weight:600;padding:3px 10px;border-radius:999px;
+    }
+    .es-so-cust{font-size:12px;color:#8E8E8E;font-weight:400}
     :root{
         --blue:#3E6AE1;
         --blue-dark:#3457B1;
@@ -611,6 +634,9 @@
 </div>
 <div id="toast"></div>
 
+<!-- Overlay: แก้ไข/ย้ายชั้นวางของที่รับแล้ว (จัด box ตาม SO) -->
+<div class="es-modal" id="editShelfModal"><div class="es-modal-inner" id="editShelfBody"></div></div>
+
 <!-- Bottom sheet: Shelf -->
 <div class="sheet-overlay" id="shelfOverlay" onclick="closeShelfSheetBackdrop(event)">
     <div class="sheet" onclick="event.stopPropagation()">
@@ -664,10 +690,19 @@ const CSRF_TOKEN = '{{ csrf_token() }}';
 let lastFullyReceivedPO = null;
 const RECEIVED_BY = @json(Auth::user()->name ?? '');
 
-// เครื่องพิมพ์ default ตามชื่อผู้ใช้ (บาส/tuk = สโตร์) — เป็นแค่ค่าเริ่มต้นที่ถูกเลือกให้ ผู้ใช้เปลี่ยนเองได้
+// เครื่องพิมพ์ default ตามชื่อผู้ใช้ — เป็นแค่ค่าเริ่มต้นที่ถูกเลือกให้ ผู้ใช้เปลี่ยนเองได้ (ไม่ล็อค)
+//   บาส/tuk = สโตร์ , พู่ = ภายใน , ว้าล = ไม่พิมพ์
 const DEFAULT_PRINTER = (function(){
     const n = (RECEIVED_BY || '').trim().toLowerCase();
-    return (n.includes('บาส') || n.includes('tuk')) ? 'TSC TTP-247 store' : '';
+    if (n.includes('บาส') || n.includes('tuk')) return 'TSC TTP-247 store';
+    if (n.includes('พู่'))                       return 'TSC TTP-247 internal';
+    if (n.includes('ว้าล') || n.includes('ว๊าล')) return 'none';
+    return '';
+})();
+// ค่าเริ่มต้น "ไม่ระบุชั้นวาง" ตามชื่อผู้ใช้ (พู่ / ว้าล) — เป็นแค่ค่าเริ่มต้น ผู้ใช้ติ๊กออกเองได้
+const DEFAULT_NO_SHELF = (function(){
+    const n = (RECEIVED_BY || '').trim().toLowerCase();
+    return n.includes('พู่') || n.includes('ว้าล') || n.includes('ว๊าล');
 })();
 const IS_ADMIN = @json(Auth::user() && Auth::user()->role === 'admin');
 
@@ -691,7 +726,8 @@ if (DEFAULT_PRINTER) {
     if (sel) {
         sel.value = DEFAULT_PRINTER;
         const sc = document.getElementById('sheetCtrl');
-        if (sc) sc.style.display = 'flex';
+        // แสดงช่องจำนวนแผ่นเฉพาะเมื่อเลือกเครื่องพิมพ์จริง (ไม่ใช่ "ไม่พิมพ์"/none)
+        if (sc) sc.style.display = (DEFAULT_PRINTER !== 'none') ? 'flex' : 'none';
     }
 }
 
@@ -1238,6 +1274,7 @@ function toggleSoCard(){
                     <span>กำหนดส่ง: <b>${fmtDate(po.ShipDate)}</b></span>
                     <span class="v-amnt">ยอดสุทธิ: <b>${fmtNum(po.NetAmnt)} ฿</b></span>
                 </div>
+                ${historyRows.length ? `<div style="margin-top:10px;"><button type="button" class="btn-edit-shelf" onclick="openEditShelf()">✎ แก้ไขที่รับแล้ว (ชั้นวาง/จำนวน/ลบ)</button></div>` : ''}
             </div>`;
 
         if(hasSO){
@@ -1415,55 +1452,101 @@ async function migrateLegacyThenEdit(){
 
 /* ========== แก้ไข/ย้ายชั้นวาง ========== */
 let editShelfState = {};   // { lineId: shelf }
+let editQtyState   = {};   // { lineId: qty }  แก้จำนวนที่รับ
+let editDelState   = {};   // { lineId: true } ลบรายการที่เพิ่มผิด
 
 function openEditShelf(){
     if(!historyRows.length){ toast('ไม่มีรายการให้แก้ไข','error'); return; }
-    editShelfState = {};
-    historyRows.forEach(r => { editShelfState[r.id] = r.shelf || ''; });
+    editShelfState = {}; editQtyState = {}; editDelState = {};
+    historyRows.forEach(r => {
+        editShelfState[r.id] = r.shelf || '';
+        editQtyState[r.id]   = fmtQty(r.recv_qty);
+        editDelState[r.id]   = false;
+    });
     renderEditShelf();
 }
 
+function renderEditRow(r){
+    const {name} = splitGoodName(r.good_name || '');
+    const cur = editShelfState[r.id] || '';
+    const shelfTxt = cur ? esc(cur) : 'เลือกชั้นวาง';
+    const cls = cur ? '' : ' placeholder';
+    const del = !!editDelState[r.id];
+    const q   = editQtyState[r.id] ?? '';
+    return `
+        <div class="es-row" style="${del ? 'opacity:.5;' : ''}">
+            <div class="es-name">${esc(name || '-')} ${del ? '<span style="color:#c0392b;">(ลบ)</span>' : ''}</div>
+            <div class="es-sub">ผู้รับ: ${esc(r.received_by || '-')}</div>
+            <div class="es-shelf-line" style="${del ? 'pointer-events:none;' : ''}">
+                <input type="number" inputmode="decimal" min="0" step="0.01" value="${esc(String(q))}"
+                    oninput="editQtyState['${esc(String(r.id))}']=this.value"
+                    style="width:76px;height:40px;border:1px solid #D6DBE3;border-radius:10px;padding:0 8px;text-align:center;" title="จำนวน">
+                <button type="button" class="es-shelf-btn" onclick="openShelfSheet('edit:${esc(String(r.id))}')">
+                    <span class="es-shelf-txt${cls}">${shelfTxt}</span>
+                    <span class="chev">▾</span>
+                </button>
+            </div>
+            <div style="margin-top:6px;">
+                <button type="button" class="es-clear" onclick="toggleDelEdit('${esc(String(r.id))}')">${del ? 'เลิกลบ' : 'ลบรายการนี้'}</button>
+            </div>
+        </div>`;
+}
+
 function renderEditShelf(){
-    const rows = historyRows.map(r => {
-        const {name} = splitGoodName(r.good_name || '');
-        const cur = editShelfState[r.id] || '';
-        const shelfTxt = cur ? esc(cur) : 'เลือกชั้นวาง';
-        const cls = cur ? '' : ' placeholder';
+    // จัดกลุ่มรายการที่รับแล้วเป็น box ตาม SO (so_num) เพื่อให้ดูง่ายเมื่อ 1 PO มีหลาย SO
+    const groups = {};
+    const order  = [];
+    historyRows.forEach(r => {
+        const so = r.so_num || '-';
+        if(!groups[so]){ groups[so] = []; order.push(so); }
+        groups[so].push(r);
+    });
+
+    const boxes = order.map(so => {
+        const inner = groups[so].map(renderEditRow).join('');
+        const soLabel = so === '-' ? 'ไม่ระบุ SO' : ('SO ' + esc(so));
         return `
-            <div class="es-row">
-                <div class="es-name">${esc(name || '-')}</div>
-                <div class="es-sub">ผู้รับ: ${esc(r.received_by || '-')} · ×${fmtQty(r.recv_qty)}</div>
-                <div class="es-shelf-line">
-                    <button type="button" class="es-shelf-btn" onclick="openShelfSheet('edit:${esc(String(r.id))}')">
-                        <span class="es-shelf-txt${cls}">${shelfTxt}</span>
-                        <span class="chev">▾</span>
-                    </button>
-                    ${cur ? `<button type="button" class="es-clear" onclick="clearEditShelf('${esc(String(r.id))}')">ล้าง</button>` : ''}
+            <div class="es-so-box">
+                <div class="es-so-head"><span class="es-so-badge">${soLabel}</span>
+                    <span class="es-so-cust">${groups[so].length} รายการ</span>
                 </div>
+                ${inner}
             </div>`;
     }).join('');
 
-    $('stateBox').innerHTML = `
-        <div class="es-wrap">
-            <div class="es-head">แก้ไขชั้นวาง — ${esc(editPONum || '')}</div>
-            <div class="es-note">ย้ายตำแหน่งชั้นวางของสินค้าที่รับเข้าแล้ว (แก้ได้เฉพาะ PO ที่ยังไม่ถูกเช็คของออก)</div>
-            ${rows}
-            <div class="es-actions">
-                <button type="button" class="es-back" onclick="reloadCurrentPO()">กลับ</button>
-                <button type="button" class="es-save" id="esSaveBtn" onclick="saveEditShelf()">บันทึกการย้าย</button>
-            </div>
+    $('editShelfBody').innerHTML = `
+        <div class="es-head">แก้ไขรายการรับเข้า — ${esc(editPONum || '')}</div>
+        <div class="es-note">แก้ชั้นวาง / จำนวน หรือลบรายการที่เพิ่มผิด (เฉพาะ PO ที่ยังไม่ถูกเช็คของออก)</div>
+        ${boxes}
+        <div class="es-actions">
+            <button type="button" class="es-back" onclick="closeEditShelf()">กลับ</button>
+            <button type="button" class="es-save" id="esSaveBtn" onclick="saveEditShelf()">บันทึก</button>
         </div>`;
-    $('stateBox').style.display = 'block';
+    $('editShelfModal').classList.add('show');
+    $('editShelfModal').scrollTop = 0;
+}
+
+function closeEditShelf(){
+    $('editShelfModal').classList.remove('show');
 }
 
 function clearEditShelf(id){
     editShelfState[id] = '';
     renderEditShelf();
 }
+function toggleDelEdit(id){
+    editDelState[id] = !editDelState[id];
+    renderEditShelf();
+}
 
 async function saveEditShelf(){
     if(!editPONum){ toast('ไม่พบเลขที่ PO','error'); return; }
-    const Lines = historyRows.map(r => ({ id: r.id, shelf: editShelfState[r.id] || null }));
+    const Lines = historyRows.map(r => ({
+        id: r.id,
+        shelf: editShelfState[r.id] || null,
+        qty: (editQtyState[r.id] === '' || editQtyState[r.id] == null) ? null : parseFloat(editQtyState[r.id]),
+        deleted: !!editDelState[r.id]
+    }));
 
     $('esSaveBtn').disabled = true;
     $('esSaveBtn').textContent = 'กำลังบันทึก...';
@@ -1476,11 +1559,12 @@ async function saveEditShelf(){
         const result = await res.json().catch(()=>null);
         if(!res.ok) throw new Error((result && result.message) || ('HTTP '+res.status));
         toast((result && result.message) || 'ย้ายชั้นวางเรียบร้อย','ok');
+        closeEditShelf();
         reloadCurrentPO();
     }catch(err){
         toast('บันทึกไม่สำเร็จ : '+err.message,'error');
         $('esSaveBtn').disabled = false;
-        $('esSaveBtn').textContent = 'บันทึกการย้าย';
+        $('esSaveBtn').textContent = 'บันทึก';
     }
 }
 
@@ -1681,8 +1765,9 @@ function esc(s){ return String(s).replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&l
 function escJs(s){ return String(s).replace(/\\/g,'\\\\').replace(/'/g,"\\'"); }
 function clearResult(){
     currentPO = null; historyDetailMap = new Map();
-    historyRows = []; editPONum = null; shelfSheetTarget = null; editShelfState = {};
+    historyRows = []; editPONum = null; shelfSheetTarget = null; editShelfState = {}; editQtyState = {}; editDelState = {};
     legacyMigratePayload = null;   // หมายเหตุ: ไม่ reset autoOpenEditAfterLoad ที่นี่ เพราะต้องคงค่าข้ามการ reload
+    const esm = $('editShelfModal'); if(esm) esm.classList.remove('show');
     $('poInput').value = '';
     $('poHead').innerHTML = ''; $('soCard').innerHTML = '';
     $('itemList').innerHTML = '';
@@ -1690,9 +1775,9 @@ function clearResult(){
     $('topFields').style.display = 'none';
     $('navBar').classList.remove('show');
     resetShelf(); resetPrinter(); removePhoto();
-    noShelf = false;
-    $('noShelfChk').checked = false;
-    $('shelfSelect').classList.remove('locked');
+    // คืนค่าเริ่มต้น "ไม่ระบุชั้นวาง" ตามผู้ใช้ (พู่/ว้าล = ติ๊กให้อัตโนมัติ, คนอื่น = ไม่ติ๊ก) — เปลี่ยนเองได้
+    $('noShelfChk').checked = DEFAULT_NO_SHELF;
+    onNoShelfToggle();
 }
 let toastTimer;
 function toast(msg, type=''){
@@ -1783,6 +1868,14 @@ function showCheckedOutPO(poNumber, body){
         '<br>ไม่สามารถรับเข้าเพิ่มได้';
     $('stateBox').style.display = 'block';
 }
+
+/* ค่าเริ่มต้นตอนโหลดหน้า: ติ๊ก "ไม่ระบุชั้นวาง" ให้ผู้ใช้ที่กำหนดไว้ (พู่/ว้าล) — เปลี่ยนเองได้ */
+(function initUserDefaults(){
+    if (DEFAULT_NO_SHELF) {
+        $('noShelfChk').checked = true;
+        onNoShelfToggle();
+    }
+})();
 
 /* ========== Auto-search จาก query string (?PONum=...) ==========
    เผื่อกรณีเปิดมาจากหน้าอื่น (เช่น หน้าตัวกรอง PO vendor) แล้วอยากให้ค้นหาเลข PO ที่กดมาให้อัตโนมัติ
