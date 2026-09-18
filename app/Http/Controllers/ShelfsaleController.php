@@ -45,12 +45,12 @@ class ShelfsaleController extends Controller
         $user    = $this->requireLogin();
         $creator = $user->name ?? $user->username ?? ($user->id_emp ?? 'ผู้ใช้งาน');
 
-        // สิทธิ์การมองเห็น: admin/store/stock เห็นทุกชั้นทุก Sale, role อื่น (เช่น sale) เห็นเฉพาะงานของตัวเอง
-        $seeAll     = in_array($user->role ?? '', ['admin', 'store', 'stock'], true);
+        // สิทธิ์การมองเห็น: admin/store/stock และ sale เห็นทุกชั้นทุก Sale (sale ไม่ล็อกเฉพาะชื่อตัวเองแล้ว)
+        $seeAll     = in_array($user->role ?? '', ['admin', 'store', 'stock', 'sale'], true);
         $isSaleView = !$seeAll;
         $loginName  = $user->name ?? '';
-        $canSeePrice = in_array($user->role ?? '', ['admin', 'sale'], true);   // เห็นมูลค่า เฉพาะ admin/sale
-        $canManage   = $seeAll;                                                // ย้ายชั้น/เช็คเอาท์ เฉพาะ admin/store/stock
+        $canSeePrice = in_array($user->role ?? '', ['admin', 'sale'], true);            // เห็นมูลค่า เฉพาะ admin/sale
+        $canManage   = in_array($user->role ?? '', ['admin', 'store', 'stock'], true);  // ย้ายชั้น/เช็คเอาท์ เฉพาะ admin/store/stock
 
         // dropdown Sale — เหมือนเดิม (ดึงจาก 3e so) แต่ cache 30 นาที กัน groupBy เต็มตารางทุกครั้ง
         $saleOptions = Cache::remember('shelfsale_sale_options', 1800, function () {
@@ -79,8 +79,8 @@ class ShelfsaleController extends Controller
         $fSo    = trim((string) $request->input('so', ''));
         $fPo    = trim((string) $request->input('po', ''));
 
-        // role sale (ไม่ใช่ admin/store/stock) -> บังคับเห็นเฉพาะงานของตัวเอง (ชื่อ Sale = ชื่อตัวเอง)
-        $seeAll = in_array($user->role ?? '', ['admin', 'store', 'stock'], true);
+        // admin/store/stock และ sale เห็นทุก Sale — role อื่นเท่านั้นที่ถูกบังคับเห็นเฉพาะงานของตัวเอง
+        $seeAll = in_array($user->role ?? '', ['admin', 'store', 'stock', 'sale'], true);
         if (!$seeAll) {
             $fSale = $user->name ?? '';
         }

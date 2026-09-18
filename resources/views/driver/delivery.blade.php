@@ -1617,6 +1617,29 @@ function containsText(haystack, needle) {
     return normalizeText(haystack).includes(normalizeText(needle));
 }
 
+// ทำให้เซลล์ "ลูกค้า" (col-customer มี rowspan อยู่แถวแรก) แสดงเสมอเมื่อกลุ่มยังมองเห็นอยู่
+// ถ้าแถวแรกถูกซ่อนจากการค้นหา ให้ย้ายเซลล์ลูกค้าไปไว้แถวแรกที่ยังมองเห็น + ปรับ rowspan
+function fixGroupCustomerCells(rows) {
+    const groups = {};
+    Array.from(rows).forEach(r => {
+        const g = r.dataset.group;
+        if (!g) return;
+        (groups[g] = groups[g] || []).push(r);
+    });
+    Object.values(groups).forEach(groupRows => {
+        const cell = groupRows.map(r => r.querySelector('.col-customer')).find(Boolean);
+        if (!cell) return;
+        const visibleRows = groupRows.filter(r => r.style.display !== 'none');
+        if (visibleRows.length === 0) { cell.style.display = 'none'; return; }
+        const firstVisible = visibleRows[0];
+        if (cell.parentElement !== firstVisible) {
+            firstVisible.insertBefore(cell, firstVisible.firstChild);
+        }
+        cell.rowSpan = visibleRows.length;
+        cell.style.display = '';
+    });
+}
+
 function filterBillTable() {
     const custQuery = document.getElementById('searchBillCustomer').value;
     const soQuery = document.getElementById('searchBillSO').value;
@@ -1642,12 +1665,7 @@ function filterBillTable() {
         if (show) groupVisibility[group] = true;
     });
 
-    rows.forEach(row => {
-        const custCell = row.querySelector('.col-customer');
-        if (custCell) {
-            custCell.style.display = groupVisibility[row.dataset.group] ? '' : 'none';
-        }
-    });
+    fixGroupCustomerCells(rows);
 
     updateSectionCount('panelDelivery', rows);
 }
@@ -1683,12 +1701,7 @@ function filterDocTable() {
         if (show) groupVisibility[group] = true;
     });
 
-    rows.forEach(row => {
-        const custCell = row.querySelector('.col-customer');
-        if (custCell) {
-            custCell.style.display = groupVisibility[row.dataset.group] ? '' : 'none';
-        }
-    });
+    fixGroupCustomerCells(rows);
 
     updateSectionCount('panelDoc', rows);
 }
@@ -1725,12 +1738,7 @@ function filterPoTable() {
         if (show) groupVisibility[group] = true;
     });
 
-    rows.forEach(row => {
-        const custCell = row.querySelector('.col-customer');
-        if (custCell) {
-            custCell.style.display = groupVisibility[row.dataset.group] ? '' : 'none';
-        }
-    });
+    fixGroupCustomerCells(rows);
 
     updateSectionCount('panelPickup', rows);
 }

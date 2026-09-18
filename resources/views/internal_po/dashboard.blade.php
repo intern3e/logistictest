@@ -443,7 +443,7 @@
                     @if ($lineId && $todo && !$picked)
                         @if ($canChangeItem)
                             <button type="button" class="btn-line btn-line-change"
-                                    onclick="openChangeItem({{ $lineId }}, '{{ $line->item_average ?? 0 }}')">เปลี่ยนสินค้า</button>
+                                    onclick="openChangeItem({{ $lineId }})">เปลี่ยนสินค้า</button>
                         @endif
                         @if ($canCancelLine)
                             <button type="button" class="btn-line btn-line-cancel"
@@ -736,11 +736,10 @@ let changeLineId = null;
 let changePicked = null;   // {item_id, name}
 let itemSearchTimer = null;
 
-function openChangeItem(lineId, curAvg){
+function openChangeItem(lineId){
     changeLineId = lineId; changePicked = null;
     document.getElementById('ciLineId').textContent = lineId;
     document.getElementById('ciSearch').value = '';
-    document.getElementById('ciAvg').value = curAvg || '';
     document.getElementById('ciPicked').textContent = 'ยังไม่ได้เลือกสินค้า';
     document.getElementById('ciResults').innerHTML = '';
     document.getElementById('changeItemModal').style.display = 'flex';
@@ -775,13 +774,12 @@ function ciPick(itemId, name){
 async function saveChangeItem(){
     if (!changeLineId) return;
     if (!changePicked){ alert('กรุณาพิมพ์ชื่อแล้วเลือกสินค้าก่อน'); return; }
-    const avg = document.getElementById('ciAvg').value;
     const btn = document.getElementById('ciSaveBtn'); btn.disabled = true; btn.textContent = 'กำลังบันทึก...';
     try {
         const res = await fetch(CHANGE_ITEM_URL, {
             method:'POST',
             headers:{ 'Content-Type':'application/json','Accept':'application/json','X-CSRF-TOKEN':CSRF },
-            body: JSON.stringify({ line_id: changeLineId, item_id: changePicked.item_id, item_name: changePicked.name, item_average: avg === '' ? null : avg })
+            body: JSON.stringify({ line_id: changeLineId, item_id: changePicked.item_id, item_name: changePicked.name })
         });
         const data = await res.json().catch(()=>null);
         if (!res.ok || !data || !data.ok){ alert((data&&data.message)||'เปลี่ยนสินค้าไม่สำเร็จ'); btn.disabled=false; btn.textContent='บันทึก'; return; }
@@ -830,8 +828,6 @@ async function cancelLine(lineId, btn){
         <input type="search" id="ciSearch" placeholder="พิมพ์ชื่อ/รหัสสินค้า แล้วเลือก..." autocomplete="off" oninput="ciOnSearch()">
         <div id="ciResults"></div>
         <div id="ciPicked">ยังไม่ได้เลือกสินค้า</div>
-        <label style="font-size:13px;color:#374151;">ราคาเฉลี่ย</label>
-        <input type="number" id="ciAvg" step="0.01" min="0" placeholder="ราคาเฉลี่ย" style="margin-top:4px;">
         <div class="ci-actions">
             <button type="button" class="btn-ghost" onclick="closeChangeItem()">ยกเลิก</button>
             <button type="button" class="btn-success" id="ciSaveBtn" onclick="saveChangeItem()">บันทึก</button>

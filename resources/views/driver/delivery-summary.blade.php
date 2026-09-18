@@ -664,6 +664,12 @@
     font-size:.86rem; font-weight:700; cursor:pointer;
 }
 .btn-cancel-box:hover{ background:var(--danger-soft); }
+/* checkbox เลือกยกเลิกราย row (ชิดขวา) */
+.cancel-select-label{
+    margin-left:auto; display:inline-flex; align-items:center; gap:4px;
+    font-size:.74rem; font-weight:600; color:var(--danger); cursor:pointer; white-space:nowrap; flex-shrink:0;
+}
+.cancel-select{ width:16px; height:16px; accent-color:var(--danger); cursor:pointer; }
 /* เลขขนส่ง (เฉพาะขนส่งเอกชน) */
 .box-transport-id{
     display:flex; align-items:center; gap:8px; flex-wrap:wrap;
@@ -869,6 +875,10 @@
                                                                         @else
                                                                             <span class="job-bill-no">บิล {{ $item['bill_no'] }}</span>
                                                                         @endif
+                                                                        <label class="cancel-select-label" title="เลือกเพื่อยกเลิกงานนี้">
+                                                                            <input type="checkbox" class="cancel-select" data-billid="{{ $item['id'] }}">
+                                                                            <span>ยกเลิก</span>
+                                                                        </label>
                                                                     </div>
                                                                 @endforeach
                                                             </div>
@@ -883,7 +893,7 @@
                                                     </div>
 
                                                     <div class="box-actions">
-                                                        <button type="button" class="btn-cancel-box" onclick="cancelBoxAssignment('{{ $boxKey }}')">ยกเลิกงาน / คืนคิว</button>
+                                                        <button type="button" class="btn-cancel-box" onclick="cancelBoxAssignment('{{ $boxKey }}')">ยกเลิกงานที่เลือก / คืนคิว</button>
                                                         <a class="btn-print-group" target="_blank" href="{{ $printUrl }}">
                                                             <svg width="15" height="15" viewBox="0 0 16 16" fill="none"><path d="M4 6V2h8v4M4 11H2.75A.75.75 0 0 1 2 10.25v-3.5A.75.75 0 0 1 2.75 6h10.5a.75.75 0 0 1 .75.75v3.5a.75.75 0 0 1-.75.75H12M4 9h8v5H4V9Z" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
                                                             ปริ้นใบงาน (A4)
@@ -987,11 +997,15 @@ function collectBoxBillIds(boxKey, onlyPrivate){
     return Array.from(new Set(ids));
 }
 
-// ยกเลิกงาน (คืนกลับไปหน้าจ่ายงาน) — ยืนยันก่อน แล้วลบ transaction_transport ของกล่องนี้
+// ยกเลิกงานที่เลือก (คืนกลับไปหน้าจ่ายงาน) — ยกเลิกเฉพาะแถวที่ติ๊ก "ยกเลิก" ในกล่องนี้
 async function cancelBoxAssignment(boxKey){
-    const billIds = collectBoxBillIds(boxKey, false);
-    if(!billIds.length){ showToast('ไม่พบงานในกล่องนี้', 'error'); return; }
-    if(!confirm('ยืนยันยกเลิกงานนี้ ' + billIds.length + ' รายการ?\nงานจะถูกคืนกลับไปหน้าจ่ายงานเพื่อจ่ายให้คนขับใหม่')) return;
+    const box = document.getElementById(boxKey);
+    if(!box){ return; }
+    const billIds = Array.from(new Set(
+        Array.from(box.querySelectorAll('.cancel-select:checked')).map(cb => cb.dataset.billid).filter(Boolean)
+    ));
+    if(!billIds.length){ showToast('กรุณาติ๊กเลือกงานที่จะยกเลิกก่อน', 'warning'); return; }
+    if(!confirm('ยืนยันยกเลิกงานที่เลือก ' + billIds.length + ' รายการ?\nงานจะถูกคืนกลับไปหน้าจ่ายงานเพื่อจ่ายให้คนขับใหม่')) return;
     try{
         const res = await fetch(CANCEL_ASSIGN_URL, {
             method: 'POST',
@@ -1001,7 +1015,8 @@ async function cancelBoxAssignment(boxKey){
         const data = await res.json();
         if(res.ok && data.ok){
             showToast(data.message || 'ยกเลิกงานแล้ว', 'success');
-            setTimeout(() => { window.location.href = DELIVERYTRACK_URL; }, 900);
+            // อยู่หน้าเดิม แค่รีโหลดเพื่ออัปเดตรายการ (คงตัวกรอง date/bill_id ไว้)
+            setTimeout(() => { window.location.reload(); }, 900);
         } else {
             showToast(data.message || 'ยกเลิกไม่สำเร็จ', 'error');
         }
