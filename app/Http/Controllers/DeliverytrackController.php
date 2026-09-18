@@ -39,11 +39,23 @@ class DeliverytrackController extends Controller
 
     protected array $responsiblePersons = ['บอย', 'แซม', 'กบ', 'joey', 'yuth', 'แฟงค์', 'เก่ง', 'แมน', 'เอ', 'กอลฟ์', 'บังเดช', 'เอ้'];
 
+    /**
+     * สิทธิ์เข้าใช้งานหน้าจ่ายงาน/สรุปงาน:
+     *   - role: admin, store, stock, accounting
+     *   - หรือ ผู้ใช้เฉพาะบุคคล: ชื่อ "FILM"
+     */
+    private function hasDeliveryAccess($user): bool
+    {
+        if (!$user) return false;
+        if (in_array($user->role, ['admin', 'store', 'stock', 'accounting'], true)) return true;
+        return strcasecmp(trim((string) ($user->name ?? '')), 'FILM') === 0;
+    }
+
     private function checkAccess()
     {
         if (!Auth::guard('web')->check()) return redirect()->guest(route('login'));
         $user = Auth::guard('web')->user();
-        if (!in_array($user->role, ['admin', 'store', 'stock', 'accounting', 'sale'], true)) abort(403, 'คุณไม่มีสิทธิ์เข้าใช้งานหน้านี้');
+        if (!$this->hasDeliveryAccess($user)) abort(403, 'คุณไม่มีสิทธิ์เข้าใช้งานหน้านี้');
         return null;
     }
 
@@ -534,7 +546,7 @@ class DeliverytrackController extends Controller
     {
         $user = Auth::guard('web')->user();
         if (!$user) return response()->json(['ok' => false, 'message' => 'เซสชันหมดอายุ กรุณาเข้าสู่ระบบใหม่'], 401);
-        if (!in_array($user->role, ['admin', 'store', 'stock', 'accounting', 'sale'], true)) {
+        if (!$this->hasDeliveryAccess($user)) {
             return response()->json(['ok' => false, 'message' => 'ไม่มีสิทธิ์ดำเนินการ'], 403);
         }
 
@@ -559,7 +571,7 @@ class DeliverytrackController extends Controller
     {
         $user = Auth::guard('web')->user();
         if (!$user) return response()->json(['ok' => false, 'message' => 'เซสชันหมดอายุ กรุณาเข้าสู่ระบบใหม่'], 401);
-        if (!in_array($user->role, ['admin', 'store', 'stock', 'accounting', 'sale'], true)) {
+        if (!$this->hasDeliveryAccess($user)) {
             return response()->json(['ok' => false, 'message' => 'ไม่มีสิทธิ์ดำเนินการ'], 403);
         }
 
