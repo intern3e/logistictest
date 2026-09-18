@@ -184,9 +184,46 @@
         .due-ok  { background:#e7f5ec; color:#1a7f3c; }
         .due-warn{ background:#fdecea; color:#c0392b; }
         .price-cell { text-align:right; font-variant-numeric:tabular-nums; white-space:nowrap; }
-        .due-overdue { color:#c0392b; font-weight:600; }
+        .due-overdue { color:#c0392b; font-weight:800; }
         .due-today   { color:#b7791f; font-weight:600; }
         .due-upcoming{ color:#1a7f3c; }
+
+        /* ===== แถวเลยกำหนด: กระพริบแดงเรียกความสนใจ (อยากให้รีบเคลีย) ===== */
+        @keyframes rowBlink { 0%,100%{ background:#fff1f1; } 50%{ background:#ffd4d4; } }
+        tr.row-overdue > td { animation: rowBlink 1.1s ease-in-out infinite; }
+        tr.row-overdue > td:first-child { box-shadow: inset 4px 0 0 var(--danger); }
+        tr.row-today > td { background:#fffbeb; }
+        @media (prefers-reduced-motion: reduce){
+            tr.row-overdue > td { animation:none; background:#ffdede; }
+        }
+
+        /* ===== แถบขวาบน: แจ้งเตือนเลยกำหนด + มูลค่ารวม ===== */
+        .banner-right { display:flex; align-items:center; gap:12px; flex-shrink:0; }
+        @keyframes alertPulse { 0%,100%{ box-shadow:0 0 0 0 rgba(192,57,43,.45); } 50%{ box-shadow:0 0 0 6px rgba(192,57,43,0); } }
+        .overdue-alert {
+            display:inline-flex; align-items:center; gap:7px;
+            background:var(--danger); color:#fff; font-weight:800; font-size:13.5px;
+            padding:7px 14px; border-radius:999px; white-space:nowrap;
+            animation: alertPulse 1.3s ease-in-out infinite;
+        }
+        .overdue-alert .oa-icon {
+            display:inline-flex; align-items:center; justify-content:center;
+            width:18px; height:18px; border-radius:50%; background:#fff; color:var(--danger);
+            font-weight:900; font-size:13px;
+        }
+        .value-block {
+            display:flex; flex-direction:column; align-items:flex-end; line-height:1.15;
+            background:var(--danger-light); border:1.5px solid var(--danger); border-radius:10px;
+            padding:6px 14px; white-space:nowrap;
+        }
+        .value-block .vb-label { font-size:11px; font-weight:700; color:var(--danger-dark); letter-spacing:.3px; }
+        .value-block .vb-amount { font-size:18px; font-weight:800; color:var(--danger); font-variant-numeric:tabular-nums; }
+        .value-block .vb-amount .vb-unit { font-size:12px; font-weight:600; margin-left:2px; }
+        @media (max-width:768px){
+            .banner-right { flex-wrap:wrap; gap:8px; }
+            .value-block { padding:4px 10px; }
+            .value-block .vb-amount { font-size:15px; }
+        }
         .btn-view { padding:4px 12px; border:1px solid var(--border); border-radius:6px; background:var(--canvas); color:var(--ink); font-family:inherit; font-size:12.5px; cursor:pointer; }
         .btn-view:hover { background:#f3f4f6; }
         .sub-table { width:100%; background:#fff; border-collapse:collapse; }
@@ -430,7 +467,18 @@
             <span class="h1">ชั้น SALE</span>
             <span class="sticker">SALE</span>
         </div>
-        <div class="user-badge">ผู้ใช้งาน: {{ $creator }}</div>
+        <div class="banner-right">
+            <div class="overdue-alert" id="overdueAlert" style="display:none;">
+                <span class="oa-icon">!</span> เลยกำหนด <b id="overdueCount">0</b> รายการ
+            </div>
+            @if(($canSeePrice ?? false))
+                <div class="value-block">
+                    <span class="vb-label">มูลค่าทั้งหมด</span>
+                    <span class="vb-amount"><span id="totalValue">0.00</span><span class="vb-unit">บาท</span></span>
+                </div>
+            @endif
+            <div class="user-badge">ผู้ใช้งาน: {{ $creator }}</div>
+        </div>
     </div>
 
     <main>
@@ -466,10 +514,7 @@
         <div class="table-topbar">
             <div class="table-info">
                 รอเช็คเอาท์ <span id="showCount">0</span> รายการ
-                @if(($canSeePrice ?? false))
-                    &nbsp;•&nbsp; มูลค่าทั้งหมด: <b id="totalValue">0.00</b> บาท
-                @endif
-                &nbsp;•&nbsp; สถานะสีแดง = เลยกำหนดส่ง / เหลือง = ครบวันนี้
+                &nbsp;•&nbsp; แถวกระพริบแดง = เลยกำหนดส่ง (เรียงงานเลยกำหนดมากสุดไว้บน) / เหลือง = ครบวันนี้
             </div>
         </div>
 
@@ -579,6 +624,13 @@
         tbody.innerHTML = '<tr><td colspan="' + COLSPAN + '" class="empty">' + esc(text) + '</td></tr>';
     }
 
+    function updateOverdueAlert(n){
+        const el = document.getElementById('overdueAlert');
+        const c  = document.getElementById('overdueCount');
+        if (c) c.textContent = n;
+        if (el) el.style.display = n > 0 ? 'inline-flex' : 'none';
+    }
+
     function dueCell(r){
         if (r.due_days === null || r.due_days === undefined) return { cls:'', txt:'-' };
         if (r.due_days > 0)  return { cls:'due-upcoming', txt:'อีก ' + r.due_days + ' วัน' };
@@ -601,7 +653,9 @@
               + '</td>'
             : '';
 
-        const main = '<tr>'
+        const rowCls = (r.due_days !== null && r.due_days !== undefined && r.due_days < 0) ? 'row-overdue'
+                     : (r.due_days === 0 ? 'row-today' : '');
+        const main = '<tr class="' + rowCls + '">'
             + '<td>' + shelf + '</td>'
             + '<td>' + (r.ship_date ? esc(r.ship_date) : '<span class="dash">-</span>') + '</td>'
             + '<td class="' + d.cls + '">' + esc(d.txt) + '</td>'
@@ -696,15 +750,29 @@
             if (!res.ok || !data.ok) { setMsg((data && data.message) || 'ค้นหาไม่สำเร็จ'); showCount.textContent = 0; return; }
 
             const rows = data.rows || [];
+
+            // เรียงงานเลยกำหนดมากสุดไว้บนสุด (due_days ยิ่งติดลบมาก = เลยกำหนดมาก), ไม่มีกำหนดไว้ท้าย
+            rows.sort((a, b) => {
+                const da = (a.due_days === null || a.due_days === undefined) ? Infinity : a.due_days;
+                const db = (b.due_days === null || b.due_days === undefined) ? Infinity : b.due_days;
+                return da - db;
+            });
+
             showCount.textContent = rows.length;
             const tv = document.getElementById('totalValue');
             if (tv) tv.textContent = fmtBaht(data.total_value || 0);
+
+            // แจ้งเตือนจำนวนงานเลยกำหนด (มุมขวาบน)
+            const overdue = rows.filter(r => r.due_days !== null && r.due_days !== undefined && r.due_days < 0).length;
+            updateOverdueAlert(overdue);
+
             if (rows.length === 0) { setMsg(data.message || 'ไม่พบรายการตามตัวกรอง'); return; }
             tbody.innerHTML = rows.map((r, i) => rowHtml(r, i)).join('');
         } catch (e) {
             console.error(e);
             setMsg('เกิดข้อผิดพลาดในการเชื่อมต่อ');
             showCount.textContent = 0;
+            updateOverdueAlert(0);
         } finally {
             btnSearch.disabled = false;
         }
@@ -716,6 +784,7 @@
         if (!fSale.readOnly) fSale.value = '';   // role sale ล็อกชื่อไว้ ไม่ล้าง
         showCount.textContent = 0;
         const tv = document.getElementById('totalValue'); if (tv) tv.textContent = '0.00';
+        updateOverdueAlert(0);
         setMsg('เลือกตัวกรอง (ชั้น / Sale / SO / PO) แล้วกด "ค้นหา"');
     });
     // กด Enter ในช่องกรอง = ค้นหา
