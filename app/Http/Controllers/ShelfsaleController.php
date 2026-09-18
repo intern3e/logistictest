@@ -45,12 +45,12 @@ class ShelfsaleController extends Controller
         $user    = $this->requireLogin();
         $creator = $user->name ?? $user->username ?? ($user->id_emp ?? 'ผู้ใช้งาน');
 
-        // สิทธิ์การมองเห็น: admin/store/stock และ sale เห็นทุกชั้นทุก Sale (sale ไม่ล็อกเฉพาะชื่อตัวเองแล้ว)
-        $seeAll     = in_array($user->role ?? '', ['admin', 'store', 'stock', 'sale'], true);
+        // สิทธิ์การมองเห็น: admin/store/stock และ sale/sale_assistant/support เห็นทุกชั้นทุก Sale (ไม่ล็อกเฉพาะชื่อตัวเอง)
+        $seeAll     = in_array($user->role ?? '', ['admin', 'store', 'stock', 'sale', 'sale_assistant', 'support'], true);
         $isSaleView = !$seeAll;
         $loginName  = $user->name ?? '';
-        $canSeePrice = in_array($user->role ?? '', ['admin', 'sale'], true);            // เห็นมูลค่า เฉพาะ admin/sale
-        $canManage   = in_array($user->role ?? '', ['admin', 'store', 'stock'], true);  // ย้ายชั้น/เช็คเอาท์ เฉพาะ admin/store/stock
+        $canSeePrice = in_array($user->role ?? '', ['admin', 'sale', 'sale_assistant', 'support'], true);  // เห็นมูลค่า
+        $canManage   = in_array($user->role ?? '', ['admin', 'store', 'stock'], true);                     // ย้ายชั้น/เช็คเอาท์ เฉพาะ admin/store/stock
 
         // dropdown Sale — เหมือนเดิม (ดึงจาก 3e so) แต่ cache 30 นาที กัน groupBy เต็มตารางทุกครั้ง
         $saleOptions = Cache::remember('shelfsale_sale_options', 1800, function () {
@@ -79,8 +79,8 @@ class ShelfsaleController extends Controller
         $fSo    = trim((string) $request->input('so', ''));
         $fPo    = trim((string) $request->input('po', ''));
 
-        // admin/store/stock และ sale เห็นทุก Sale — role อื่นเท่านั้นที่ถูกบังคับเห็นเฉพาะงานของตัวเอง
-        $seeAll = in_array($user->role ?? '', ['admin', 'store', 'stock', 'sale'], true);
+        // admin/store/stock และ sale/sale_assistant/support เห็นทุก Sale — role อื่นเท่านั้นที่ถูกบังคับเห็นเฉพาะงานของตัวเอง
+        $seeAll = in_array($user->role ?? '', ['admin', 'store', 'stock', 'sale', 'sale_assistant', 'support'], true);
         if (!$seeAll) {
             $fSale = $user->name ?? '';
         }
