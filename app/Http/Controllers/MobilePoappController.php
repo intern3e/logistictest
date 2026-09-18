@@ -517,9 +517,9 @@ class MobilePoappController extends Controller
 
     public function cancelReceive(Request $request)
     {
-        if (!Auth::guard('web')->check() || Auth::user()->role !== 'admin') {
+        if (!Auth::guard('web')->check() || !in_array(Auth::user()->role, ['admin', 'stock', 'store'], true)) {
             return response()->json([
-                'message' => 'คุณไม่มีสิทธิ์ยกเลิกการรับเข้า (เฉพาะ admin เท่านั้น)',
+                'message' => 'คุณไม่มีสิทธิ์ยกเลิกการรับเข้า (เฉพาะ admin/stock/store)',
             ], 403);
         }
 
@@ -592,8 +592,7 @@ class MobilePoappController extends Controller
             'PONum'           => 'required|string|max:50',
             'Lines'           => 'required|array|min:1',
             'Lines.*.id'      => 'required|integer',
-            'Lines.*.shelf'   => 'nullable|string|max:100',
-            'Lines.*.qty'     => 'nullable|numeric|min:0',      // แก้จำนวนที่รับ
+            'Lines.*.shelf'   => 'nullable|string|max:100',  
             'Lines.*.deleted' => 'nullable|boolean',            // ลบรายการที่เพิ่มผิด (soft-cancel)
         ]);
 
@@ -640,9 +639,6 @@ class MobilePoappController extends Controller
                     }
 
                     $line->shelf = $l['shelf'] ?? null;
-                    if (array_key_exists('qty', $l) && $l['qty'] !== null && $l['qty'] !== '') {
-                        $line->recv_qty = (float) $l['qty'];
-                    }
                     $line->save();
                     $count++;
                 }

@@ -108,7 +108,7 @@ class DocController extends Controller
                 'contact_name' => 'required|string|max:255',
                 'contact_tel' => 'nullable|string|max:255',
                 'com_address' => 'required|string|max:255',
-                'com_la_long' => 'required|string|max:255',
+                'com_la_long' => 'nullable|string|max:255', // ✅ อนุญาตให้เป็นค่าว่าง
                 'datestamp' => 'required|date',
                 'statusdeli' => 'nullable|array',
                 'notes' => 'nullable|string',
@@ -137,7 +137,6 @@ class DocController extends Controller
                 $i = $nextNumber + 1;
                 do {
                     $doc_id = $prefix . str_pad($i, 4, '0', STR_PAD_LEFT);
-                    // ✅ แก้ไขจุดที่ 1: เปลี่ยนจาก 'docid' เป็น 'doc_id' ให้ตรงกับชื่อคอลัมน์ในฐานข้อมูล
                     $exists = Docbills::where('doc_id', $doc_id)->exists();
                     $i++;
                 } while ($exists);
@@ -171,7 +170,10 @@ class DocController extends Controller
             $doc->contact_name = $request->input('contact_name');
             $doc->contact_tel = $request->input('contact_tel');
             $doc->com_address = $request->input('com_address');
-            $doc->com_la_long = $request->input('com_la_long');
+            
+            // ✅ แก้ไขจุดที่ 1: การันตีว่าถ้าเป็น null จะเปลี่ยนเป็น '' (Empty String) ทันที
+            $doc->com_la_long = $request->input('com_la_long') ?? ''; 
+            
             $doc->notes = $notes;
             $doc->datestamp = $request->input('datestamp');
             $doc->doctype = $request->input('doctype');
@@ -234,7 +236,7 @@ class DocController extends Controller
                 'contact_name' => 'required|string|max:255',
                 'contact_tel' => 'nullable|string|max:255',
                 'com_address' => 'required|string|max:255',
-                'com_la_long' => 'required|string|max:255',
+                'com_la_long' => 'nullable|string|max:255', // ✅ อนุญาตให้เป็นค่าว่าง
                 'datestamp' => 'required|date',
                 'notes' => 'nullable|string',
             ]);
@@ -264,7 +266,10 @@ class DocController extends Controller
                 'contact_name' => $request->input('contact_name'),
                 'contact_tel' => $request->input('contact_tel'),
                 'com_address' => $request->input('com_address'),
-                'com_la_long' => $request->input('com_la_long'),
+                
+                // ✅ แก้ไขจุดที่ 2: การันตีว่าถ้าเป็น null จะเปลี่ยนเป็น '' (Empty String) ทันที
+                'com_la_long' => $request->input('com_la_long') ?? '',
+                
                 'notes' => $notes,
                 'datestamp' => $request->input('datestamp'),
                 'doctype' => $request->input('doctype'),
@@ -306,7 +311,6 @@ class DocController extends Controller
         }
 
         try {
-            // ✅ แก้ไขจุดที่ 2: ใช้ชื่อ Model ให้ตรงกับที่นิยามไว้ (ตัวเล็ก)
             $doc_details = docbillsdetail::where('doc_id', $doc_id)->get();
 
             if ($doc_details->isEmpty()) {
@@ -350,6 +354,43 @@ class DocController extends Controller
         }
     }
 
+    public function searchCustAndVendor(Request $request)
+    {
+        if (!Auth::guard('web')->user()) {
+            return response()->json(['error' => 'เซสชันหมดอายุ กรุณาเข้าสู่ระบบใหม่'], 401);
+        }
+
+        $searchKey = trim((string) $request->input('keySearch'));
+        if (mb_strlen($searchKey) < 3) {
+            return response()->json(['error' => 'โปรดกรอกคำค้นหาอย่างน้อย 3 ตัวอักษร']);
+        }
+
+        $conn = 'mssql_account03';
+
+        $customers = DB::connection($conn)->table('EMCust')
+            ->where(function ($q) use ($searchKey) {
+                $q->where('CustName', 'LIKE', "%{$searchKey}%")
+                  ->orWhere('CustCode', 'LIKE', "%{$searchKey}%");
+            })
+            ->select('CustCode', 'CustName', 'CustAddr1', 'CustAddr2', 'District', 'Amphur', 'PostCode', 'ContAddr1', 'ContAddr2', 'ContDistrict', 'ContAmphur', 'ContProvince', 'ContPostCode')
+            ->limit(100)
+            ->get();
+
+        $vendors = DB::connection($conn)->table('EMVendor')
+            ->where(function ($q) use ($searchKey) {
+                $q->where('VendorName', 'LIKE', "%{$searchKey}%")
+                  ->orWhere('VendorCode', 'LIKE', "%{$searchKey}%");
+            })
+            ->select('VendorCode', 'VendorName', 'VendorAddr1', 'VendorAddr2', 'District', 'Amphur', 'PostCode', 'ContAddr1', 'ContAddr2', 'ContDistrict', 'ContAmphur', 'ContProvince', 'ContPostCode')
+            ->limit(100)
+            ->get();
+
+        return response()->json([
+            'Customer' => $customers,
+            'Supplier' => $vendors,
+        ]);
+    }
+
     public function savePdfBill(Request $request)
     {
         if (!Auth::guard('web')->user()) {
@@ -367,7 +408,6 @@ class DocController extends Controller
 
             $path = $file->storeAs('temporary_bill', $doc_id . '.pdf', 'public');
 
-            // อัปเดตสถานะว่ามีการสร้าง PDF แล้ว
             Docbills::where('doc_id', $doc_id)->update(['statuspdf' => 1]);
 
             return response()->json(['success' => true, 'path' => $path]);

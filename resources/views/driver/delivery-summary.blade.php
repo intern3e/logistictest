@@ -5,10 +5,10 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>สรุปงานคนขับ</title>
     <script>
-        // ถ้าเข้าหน้านี้มาโดยยังไม่ได้กรองวันที่ ให้เด้งไปกรองวันที่ปัจจุบันทันที
+        // ถ้าเข้าหน้านี้มาโดยยังไม่ได้กรองวันที่ (และไม่ได้ค้นด้วยเลขบิล) ให้เด้งไปกรองวันที่ปัจจุบันทันที
         (function () {
             const params = new URLSearchParams(window.location.search);
-            if (!params.has('date')) {
+            if (!params.has('date') && !params.get('bill_id')) {
                 const today = new Date();
                 const yyyy = today.getFullYear();
                 const mm = String(today.getMonth() + 1).padStart(2, '0');
@@ -636,8 +636,8 @@
 .summary-mode-pickup .stop-row:not([data-type="po"]){ display:none !important; }
 .summary-mode-pickup .box-print-all{ display:none !important; }  /* ปุ่มปริ้นใบงานส่งของ ซ่อนในโหมดรับของ */
 .summary-mode-delivery .pickup-select{ display:none; }
-/* งานรับของที่ครบแล้ว */
-.pickup-done{ text-decoration:line-through; color:#98a2b3; }
+/* งานรับของที่ครบแล้ว (รับเข้าแล้ว = เขียว, กดปริ้นไม่ได้) */
+.pickup-done{ color:#0f7a3d; font-weight:600; }
 .pickup-done-badge{
     display:inline-block; margin-left:6px; padding:1px 8px; border-radius:10px;
     background:#d1fadf; color:#0f7a3d; font-size:11px; font-weight:600;
@@ -700,12 +700,17 @@
     <div class="dashboard-bar">
         <form method="GET" action="{{ route('deliverytrack.summary') }}" class="dashboard-filter">
             <div class="filter-field">
-                <label for="filterDate">กรองตามวันที่จัดส่ง</label>
-                <input type="date" id="filterDate" name="date" value="{{ $date ?: $todayKey }}">
+                <label for="filterDate">กรองตามวันที่ (ส่งของ=วันจัดส่ง · รับเอง=วันจ่ายงาน)</label>
+                <input type="date" id="filterDate" name="date" value="{{ ($billId ?? '') !== '' ? $date : ($date ?: $todayKey) }}">
+            </div>
+            <div class="filter-field">
+                <label for="filterBillId">ค้นหาเลขบิล / SO / PO</label>
+                <input type="text" id="filterBillId" name="bill_id" value="{{ $billId ?? '' }}" placeholder="เช่น 6901-01149" autocomplete="off"
+                       style="border:1px solid var(--line-strong);border-radius:var(--radius-sm);padding:9px 12px;font-size:.95rem;font-family:inherit;color:var(--ink);background:var(--surface);min-width:190px;">
             </div>
             <div class="filter-actions">
                 <button type="submit" class="btn-filter">กรอง</button>
-                @if ($date)
+                @if ($date || ($billId ?? '') !== '')
                     <a href="{{ route('deliverytrack.summary') }}" class="btn-clear">ล้างตัวกรอง</a>
                 @endif
             </div>
@@ -728,15 +733,16 @@
     </div>
 
     <div class="summary-tabs">
-        <button type="button" class="summary-tab active" data-mode="delivery" onclick="switchSummaryMode('delivery')">ส่งของ</button>
-        <button type="button" class="summary-tab" data-mode="pickup" onclick="switchSummaryMode('pickup')">รับของ (ไปรับเอง)</button>
+        <button type="button" class="summary-tab active" data-mode="company" onclick="switchSummaryMode('company')">🚚 ขนส่งโดยบริษัท</button>
+        <button type="button" class="summary-tab" data-mode="private" onclick="switchSummaryMode('private')">🏢 ขนส่งเอกชน</button>
+        <button type="button" class="summary-tab" data-mode="pickup" onclick="switchSummaryMode('pickup')">📦 รับของเอง</button>
     </div>
 
     <div id="summaryContent" class="summary-mode-delivery">
     @forelse ($boxesByDate as $dateKey => $boxes)
         @php
             $dateKeyId = 'date_' . preg_replace('/[^A-Za-z0-9_-]/', '_', $dateKey);
-            $isDefaultOpen = count($boxesByDate) === 1 || $dateKey === $todayKey;
+            $isDefaultOpen = count($boxesByDate) === 1 || $dateKey === $todayKey || ($billId ?? '') !== '';
 
             $isValidDate = (bool) preg_match('/^\d{4}-\d{2}-\d{2}$/', $dateKey);
             $displayDate = $dateKey;
@@ -820,7 +826,7 @@
                                                             <div class="stops-list">
                                                                 @foreach ($cust['items'] as $item)
                                                                     @php $isPo = ($item['type'] ?? '') === 'po'; $isDone = !empty($item['is_complete']); @endphp
-                                                                    <div class="stop-row" data-type="{{ $item['type'] ?? '' }}" data-complete="{{ $isDone ? 1 : 0 }}">
+                                                                    <div class="stop-row" data-type="{{ $item['type'] ?? '' }}" data-complete="{{ $isDone ? 1 : 0 }}" data-transport="{{ $item['transport_type'] ?? '' }}">
                                                                         @if ($isPo)
                                                                             <input type="checkbox" class="pickup-select" value="{{ $item['id'] }}"
                                                                                    {{ $isDone ? 'disabled' : '' }} onchange="updatePickupCount()">
@@ -828,7 +834,7 @@
                                                                         <span class="job-seq-marker">{{ $item['seq'] }}</span>
                                                                         @if ($isPo)
                                                                             <span class="job-bill-no {{ $isDone ? 'pickup-done' : '' }}">ไปรับเอง PO {{ $item['bill_no'] }}</span>
-                                                                            @if ($isDone)<span class="pickup-done-badge">ครบแล้ว</span>@endif
+                                                                            @if ($isDone)<span class="pickup-done-badge">รับเข้าแล้ว</span>@endif
                                                                         @else
                                                                             <span class="job-bill-no">บิล {{ $item['bill_no'] }}</span>
                                                                         @endif
@@ -885,9 +891,20 @@ function switchSummaryMode(mode){
     if(el){ el.className = 'summary-mode-' + mode; }
     document.querySelectorAll('.summary-tab').forEach(t => t.classList.toggle('active', t.dataset.mode === mode));
     document.getElementById('pickupPrintBar').style.display = (mode === 'pickup') ? 'flex' : 'none';
-    // ซ่อน block/box/date-group ที่ไม่มีรายการในโหมดนั้น
+
+    // แสดง/ซ่อนราย row: pickup = งานไปรับเอง (po), company/private = บิลส่งของตามประเภทขนส่ง (null→company)
+    function rowVisible(row){
+        const type = row.dataset.type || '';
+        if(mode === 'pickup') return type === 'po';
+        if(type === 'po') return false;
+        const t = (row.dataset.transport === 'private') ? 'private' : 'company';
+        return t === mode;
+    }
+    document.querySelectorAll('.stop-row').forEach(row => { row.style.display = rowVisible(row) ? '' : 'none'; });
+
+    // ซ่อน block/box/date-group ที่ไม่มี row มองเห็น
     document.querySelectorAll('.job-block').forEach(bl => {
-        const rows = bl.querySelectorAll(mode === 'pickup' ? '.stop-row[data-type="po"]' : '.stop-row:not([data-type="po"])');
+        const rows = Array.from(bl.querySelectorAll('.stop-row')).filter(r => r.style.display !== 'none');
         bl.style.display = rows.length ? '' : 'none';
     });
     document.querySelectorAll('.box-card').forEach(bc => {
@@ -917,8 +934,25 @@ function printSelectedPickup(){
     });
     document.getElementById('pickupPrintForm').submit();
 }
-// ตั้งค่าเริ่มต้น: โหมดส่งของ (ซ่อนงานรับเองออกจาก block/box ที่ไม่มีรายการส่ง)
-document.addEventListener('DOMContentLoaded', function(){ switchSummaryMode('delivery'); });
+// เช็คว่าโหมดนั้นมี row ให้เห็นไหม (ใช้ตอนค้นด้วยเลขบิลเพื่อเด้งไปแท็บที่มีผล)
+function modeHasRows(mode){
+    return Array.from(document.querySelectorAll('.stop-row')).some(row => {
+        const type = row.dataset.type || '';
+        if(mode === 'pickup') return type === 'po';
+        if(type === 'po') return false;
+        const t = (row.dataset.transport === 'private') ? 'private' : 'company';
+        return t === mode;
+    });
+}
+// ตั้งค่าเริ่มต้น: ปกติโหมดส่งของ — แต่ถ้าค้นด้วยเลขบิล ให้เด้งไปแท็บแรกที่มีผลลัพธ์
+document.addEventListener('DOMContentLoaded', function(){
+    const hasBillSearch = @json(($billId ?? '') !== '');
+    let initial = 'company';
+    if (hasBillSearch) {
+        initial = ['company','private','pickup'].find(m => modeHasRows(m)) || 'company';
+    }
+    switchSummaryMode(initial);
+});
 
 function toggleBoxCard(id) {
     const card = document.getElementById(id);

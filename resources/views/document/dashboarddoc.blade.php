@@ -153,6 +153,7 @@
 
         table {
             width: 100%;
+            table-layout: fixed;
             border-collapse: collapse;
             background-color: var(--paper);
             font-size: clamp(10px, 0.62vw + 4px, 14px);
@@ -167,6 +168,8 @@
             border: 1px solid var(--line);
             text-align: center;
             vertical-align: middle;
+            overflow-wrap: break-word;
+            word-break: break-word;
         }
 
         th.customer-name, td.customer-name { text-align: left !important; }
@@ -185,30 +188,27 @@
         /* แถวที่ statusdeli == 1 */
         td.row-flagged { background-color: var(--ink-150) !important; font-weight: 600; }
 
-        /* ✅ CSS สำหรับกำหนดความกว้างคอลัมน์ (ปรับใหม่ตามข้อมูลจริง) */
-        .col-no { width: 45px; }
-        .col-docid { width: 100px; }
-        .col-so { width: 95px; }
-        .col-headcom { width: 180px; }
-        .col-comname { width: 180px; }
-        .col-contact { width: 110px; }
-        .col-tel { width: 55px; }
-        .col-doctype { width: 80px; }
-        .col-emp { width: 70px; }
-        .col-date { width: 85px; }
-        .col-pdf { width: 45px; }
-        .col-detail { width: 160px; }
-        .col-edit { width: 60px; }
+        .col-no      { width: 4%; }
+        .col-docid   { width: 7%; }
+        .col-so      { width: 7%; }
+        .col-headcom { width: 13%; }
+        .col-comname { width: 12%; }
+        .col-contact { width: 9%; }
+        .col-tel     { width: 6%; }
+        .col-doctype { width: 7%; }
+        .col-emp     { width: 6%; }
+        .col-date    { width: 7%; }
+        .col-pdf     { width: 5%; }
+        .col-detail  { width: 11%; }
+        .col-edit    { width: 6%; }
 
-        /* ทำให้ข้อความในคอลัมน์เบอร์โทรไม่ขึ้นบรรทัดใหม่ */
         td.col-tel, th.col-tel {
             white-space: nowrap;
             text-align: center;
         }
 
-        /* เพิ่มความกว้างให้คอลัมน์ข้อมูลรายละเอียด */
         td.col-detail, th.col-detail {
-            min-width: 160px;
+            min-width: 140px;
         }
 
         /* ปุ่มไอคอนเอกสาร PDF */
@@ -273,6 +273,151 @@
             resize: vertical;
             width: 100%;
         }
+
+        /* 🚚 Popup สถานะจ่ายงาน - ปรับปรุงใหม่ */
+        #deliveryPopup .popup-content {
+            max-width: 900px;
+            max-height: 85vh;
+            padding: 30px;
+        }
+
+        #deliveryPopup h3 {
+            font-size: 22px;
+            margin-bottom: 20px;
+            padding-bottom: 15px;
+            border-bottom: 2px solid var(--ink-150);
+            color: var(--ink-900);
+        }
+
+        #dlvBody { line-height: 1.8; font-size: 15px; }
+
+        #dlvBody .delivery-card {
+            background: linear-gradient(135deg, #f8f9fa 0%, #ffffff 100%);
+            border: 1px solid #e0e0e0;
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 15px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+
+        #dlvBody .delivery-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.12);
+        }
+
+        #dlvBody .section-title {
+            font-weight: 700;
+            color: #1971c2;
+            font-size: 16px;
+            margin-bottom: 12px;
+            padding-bottom: 8px;
+            border-bottom: 1px dashed var(--ink-150);
+        }
+
+        #dlvBody .info-row {
+            display: flex;
+            margin-bottom: 8px;
+            align-items: flex-start;
+        }
+
+        #dlvBody .info-label {
+            font-weight: 600;
+            color: var(--ink-700);
+            min-width: 120px;
+            flex-shrink: 0;
+        }
+
+        #dlvBody .info-value {
+            color: var(--ink-900);
+            flex: 1;
+        }
+
+        #dlvBody .status-badge {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-weight: 600;
+            font-size: 13px;
+        }
+
+        #dlvBody .status-received {
+            background-color: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+
+        #dlvBody .status-pending {
+            background-color: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+
+        #dlvBody .no-delivery {
+            text-align: center;
+            padding: 40px 20px;
+            background-color: #fff3cd;
+            border: 2px dashed #ffc107;
+            border-radius: 12px;
+            color: #856404;
+            font-size: 16px;
+            font-weight: 600;
+        }
+
+/* ปุ่มสถานะจ่ายงาน */
+        .btn-delivery-status {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+            padding: 8px 14px;
+            border-radius: 6px;
+            font-weight: 600;
+            font-size: 13px;
+            text-decoration: none;
+            transition: all 0.3s;
+            border: none; /* เอาเส้นกรอบออกทั้งหมด */
+            cursor: pointer;
+            vertical-align: middle;
+        }
+
+        /* สีแดง: เริ่มต้น หรือ ยังไม่มีข้อมูล */
+        .btn-delivery-status.no-delivery {
+            color: #dc3545;
+            background-color: #fff5f5; /* พื้นหลังสีแดงอ่อนมากๆ แทนกรอบ */
+            animation: pulse-glow 2s infinite;
+        }
+
+        .btn-delivery-status.no-delivery:hover {
+            background-color: #dc3545;
+            color: #fff;
+            animation: none;
+        }
+
+        /* สีเขียว: เมื่อมีข้อมูลการจ่ายงานแล้ว */
+        .btn-delivery-status.has-delivery {
+            color: #155724;
+            background-color: #d4edda;
+            animation: none;
+        }
+
+        .btn-delivery-status.has-delivery:hover {
+            background-color: #155724;
+            color: #fff;
+        }
+
+        /* เอฟเฟกต์เรืองแสงจางๆ แทนการใช้กรอบ */
+        @keyframes pulse-glow {
+            0% {
+                box-shadow: 0 0 0 0 rgba(220, 53, 69, 0.4);
+            }
+            70% {
+                box-shadow: 0 0 0 6px rgba(220, 53, 69, 0);
+            }
+            100% {
+                box-shadow: 0 0 0 0 rgba(220, 53, 69, 0);
+            }
+        }
     </style>
 </head>
 <body>
@@ -280,9 +425,7 @@
         <h2>เอกสารชั่วคราว</h2>
         <div class="buttons">
             <span>👤 ผู้ใช้: {{ $creator }}</span>
-
             <a href="{{ route('document.insertdoc') }}" class="btn btn-solid">สร้างเอกสารชั่วคราว</a>
-
             @csrf
             <a href="http://server_update:8000/solist" class="btn btn-outline-light">🚪 หน้าหลัก</a>
         </div>
@@ -310,13 +453,12 @@
         </div>
 
         <div class="search-box">
-            <input type="text" id="search-input" placeholder="🔍 ค้นหา เลขที่บิล" onkeyup="searchTable()">
+            <input type="text" id="search-input" placeholder=" ค้นหา เลขที่บิล" onkeyup="searchTable()">
         </div>
     </div>
 
     <div class="table-container">
         <table>
-            <!-- colgroup สำหรับกำหนดความกว้างแต่ละคอลัมน์ -->
             <colgroup>
                 <col class="col-no">
                 <col class="col-docid">
@@ -408,8 +550,15 @@
                             เพิ่มเติม
                         </a>
                         <br>
-                        <a href="javascript:void(0);" style="color:#1971c2;" onclick="openDeliveryStatus('{{ $item->doc_id }}')">
-                            สถานะจ่ายงาน
+                        
+                        {{-- ปุ่มสถานะจ่ายงาน: เริ่มต้นเป็นสีแดง (no-delivery) --}}
+                        <a href="javascript:void(0);" 
+                           class="btn-delivery-status no-delivery" 
+                           id="btn-dlv-{{ $item->doc_id }}"
+                           data-bill-id="{{ $item->doc_id }}"
+                           onclick="openDeliveryStatus('{{ $item->doc_id }}', this)"
+                           style="border-bottom:none; margin-top: 5px;">
+                            <span class="btn-text">️ สถานะยังไม่จ่ายงาน</span>
                         </a>
                     </td>
 
@@ -430,7 +579,7 @@
         @endif
     </div>
 
-    <!-- Popup -->
+    <!-- Popup รายละเอียด -->
     <div class="popup-overlay" id="popup" style="display: none;">
         <div class="popup-content">
             <span class="close-btn" onclick="closePopup()">&times;</span>
@@ -465,9 +614,9 @@
 
     <!-- Popup: สถานะจ่ายงานให้คนขับ -->
     <div class="popup-overlay" id="deliveryPopup" style="display:none;">
-        <div class="popup-content" style="max-width:560px;">
+        <div class="popup-content">
             <span class="close-btn" onclick="closeDeliveryStatus()">&times;</span>
-            <h3 style="margin-top:0;">สถานะจ่ายงานให้คนขับ — <span id="dlvBillId"></span></h3>
+            <h3>📦 สถานะจ่ายงานให้คนขับ — <span id="dlvBillId" style="color:#1971c2;"></span></h3>
             <div id="dlvBody" style="line-height:1.7;"></div>
         </div>
     </div>
@@ -489,21 +638,46 @@
 
         const form = document.getElementById('autoSearchForm');
         const dateInput = document.getElementById('date');
-
         dateInput.addEventListener('change', () => { form.submit(); });
 
         window.addEventListener('load', () => {
             if (!sessionStorage.getItem('hasAutoSubmitted')) {
                 sessionStorage.setItem('hasAutoSubmitted', 'true');
                 form.submit();
+            } else {
+                // ✅ ตรวจสอบสถานะจ่ายงานทั้งหมดเมื่อโหลดหน้าเว็บ
+                checkAllDeliveryStatus();
             }
         });
 
+        // ✅ ฟังก์ชันตรวจสอบสถานะจ่ายงานทั้งหมด
+        async function checkAllDeliveryStatus() {
+            const buttons = document.querySelectorAll('.btn-delivery-status');
+            
+            for (const btn of buttons) {
+                const billId = btn.getAttribute('data-bill-id');
+                if (!billId) continue;
+                
+                try {
+                    const res = await fetch(DELIVERY_STATUS_URL + '?bill_id=' + encodeURIComponent(billId), 
+                        {headers:{'Accept':'application/json'}});
+                    const j = await res.json();
+                    
+                    // ถ้ามีข้อมูลการจ่ายงาน ให้เปลี่ยนเป็นสีเขียว
+                    if (j.found && j.rows && j.rows.length > 0) {
+                        btn.className = 'btn-delivery-status has-delivery';
+                        btn.innerHTML = '<span class="btn-text">✓ จ่ายงานแล้ว</span>';
+                    }
+                } catch (e) {
+                    console.error('Error checking status for bill', billId, e);
+                    // ถ้า error ยังคงเป็นสีแดง
+                }
+            }
+        }
+
         function openPopup(doc_id, com_name, com_address, contact_name, contact_tel, notes) {
             document.getElementById("popup").style.display = "flex";
-
-            let popupBody = document.getElementById("popup-body-1");
-            popupBody.innerHTML = `
+            document.getElementById("popup-body-1").innerHTML = `
                 <tr>
                     <td>${doc_id}</td>
                     <td>${com_name}</td>
@@ -550,7 +724,9 @@
         }
 
         const DELIVERY_STATUS_URL = "{{ route('document.deliveryStatus') }}";
+        
         function escHtml(s){ return String(s == null ? '' : s).replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m])); }
+        
         function fmtDT(s){
             if(!s) return '-';
             const d = new Date(String(s).replace(' ','T'));
@@ -558,40 +734,86 @@
             const p = n => String(n).padStart(2,'0');
             return p(d.getDate())+'/'+p(d.getMonth()+1)+'/'+(d.getFullYear()+543)+' '+p(d.getHours())+':'+p(d.getMinutes());
         }
-        async function openDeliveryStatus(billId){
+
+        async function openDeliveryStatus(billId, btnElement) {
             const pop = document.getElementById('deliveryPopup');
             document.getElementById('dlvBillId').textContent = billId;
-            document.getElementById('dlvBody').innerHTML = 'กำลังโหลด...';
+            document.getElementById('dlvBody').innerHTML = '<div style="text-align:center;padding:40px;"><div style="font-size:18px;color:#666;">กำลังโหลดข้อมูล...</div></div>';
             pop.style.display = 'flex';
-            try{
+            
+            try {
                 const res = await fetch(DELIVERY_STATUS_URL + '?bill_id=' + encodeURIComponent(billId), {headers:{'Accept':'application/json'}});
                 const j = await res.json();
-                if(!j.found || !j.rows.length){
-                    document.getElementById('dlvBody').innerHTML = '<div style="color:#c0392b;">บิลนี้ยังไม่มีการจ่ายงานให้คนขับ</div>';
-                    return;
+                
+                if (!j.found || !j.rows.length) {
+                    // ไม่พบข้อมูล: ปุ่มยังคงเป็นสีแดง (no-delivery) ตามค่าเริ่มต้น
+                    document.getElementById('dlvBody').innerHTML = `
+                        <div class="no-delivery">
+                            <div style="font-size:48px;margin-bottom:15px;">⚠️</div>
+                            <div>บิลนี้ยังไม่มีการจ่ายงานให้คนขับ</div>
+                            <div style="font-size:14px;margin-top:10px;color:#6c757d;">กรุณาติดต่อฝ่ายจ่ายงานเพื่อดำเนินการ</div>
+                        </div>
+                    `;
+                } else {
+                    // พบข้อมูล: เปลี่ยนปุ่มจากสีแดง เป็น สีเขียว/น้ำเงิน (has-delivery)
+                    if (btnElement) {
+                        btnElement.className = 'btn-delivery-status has-delivery';
+                        btnElement.innerHTML = '<span class="btn-text">✓ จ่ายงานแล้ว</span>';
+                    }
+
+                    document.getElementById('dlvBody').innerHTML = j.rows.map(r => {
+                        const recv = r.received
+                            ? '<span class="status-badge status-received">✓ รับงานแล้ว</span>'
+                            : '<span class="status-badge status-pending"> ยังไม่รับงาน</span>';
+                        return `
+                            <div class="delivery-card">
+                                <div class="section-title">📋 ข้อมูลการจ่ายงาน</div>
+                                <div class="info-row">
+                                    <div class="info-label">ผู้จ่ายงาน:</div>
+                                    <div class="info-value"><b>${escHtml(r.name_pick || '-')}</b></div>
+                                </div>
+                                <div class="info-row">
+                                    <div class="info-label">เวลาจ่ายงาน:</div>
+                                    <div class="info-value">${fmtDT(r.time_pick)}</div>
+                                </div>
+                                <div class="info-row">
+                                    <div class="info-label">คนขับ:</div>
+                                    <div class="info-value"><b>${escHtml(r.driver_name || '-')}</b></div>
+                                </div>
+                                <div class="info-row">
+                                    <div class="info-label">รถ/ขนส่ง:</div>
+                                    <div class="info-value">${escHtml(r.transport_name || '-')}</div>
+                                </div>
+                                
+                                <div class="section-title" style="margin-top:20px;">🚚 การรับงาน / สถานะ</div>
+                                <div class="info-row">
+                                    <div class="info-label">สถานะ:</div>
+                                    <div class="info-value">${recv}</div>
+                                </div>
+                                <div class="info-row">
+                                    <div class="info-label">ผู้รับงาน:</div>
+                                    <div class="info-value"><b>${escHtml(r.check_name || '-')}</b></div>
+                                </div>
+                                <div class="info-row">
+                                    <div class="info-label">เวลารับงาน:</div>
+                                    <div class="info-value">${fmtDT(r.check_time)}</div>
+                                </div>
+                                ${r.delivery_date ? `
+                                <div class="info-row">
+                                    <div class="info-label">กำหนดส่ง:</div>
+                                    <div class="info-value" style="color:#6c757d;">${escHtml(r.delivery_date)}</div>
+                                </div>` : ''}
+                            </div>`;
+                    }).join('');
                 }
-                document.getElementById('dlvBody').innerHTML = j.rows.map(r => {
-                    const recv = r.received
-                        ? '<span style="color:#1e7a3d;font-weight:600;">รับงานแล้ว</span>'
-                        : '<span style="color:#c0392b;font-weight:600;">ยังไม่รับงาน</span>';
-                    return `
-                        <div style="border:1px solid #e0e0e0;border-radius:8px;padding:12px 14px;margin-bottom:10px;">
-                            <div style="font-weight:600;color:#1971c2;margin-bottom:6px;">จ่ายงาน</div>
-                            <div>ผู้จ่ายงาน: <b>${escHtml(r.name_pick || '-')}</b></div>
-                            <div>เมื่อ: ${fmtDT(r.time_pick)}</div>
-                            <div>คนขับ: <b>${escHtml(r.driver_name || '-')}</b> &nbsp; รถ/ขนส่ง: ${escHtml(r.transport_name || '-')}</div>
-                            <div style="font-weight:600;color:#1971c2;margin:8px 0 6px;">การรับงาน / สถานะ</div>
-                            <div>สถานะ: ${recv}</div>
-                            <div>ผู้รับงาน: <b>${escHtml(r.check_name || '-')}</b></div>
-                            <div>เมื่อ: ${fmtDT(r.check_time)}</div>
-                            ${r.delivery_date ? `<div style="color:#666;margin-top:4px;">กำหนดส่ง: ${escHtml(r.delivery_date)}</div>` : ''}
-                        </div>`;
-                }).join('');
-            }catch(e){
-                document.getElementById('dlvBody').innerHTML = '<div style="color:#c0392b;">โหลดข้อมูลไม่สำเร็จ</div>';
+            } catch (e) {
+                document.getElementById('dlvBody').innerHTML = '<div class="no-delivery" style="background-color:#f8d7da;border-color:#f5c6cb;color:#721c24;">โหลดข้อมูลไม่สำเร็จ<br><small style="font-size:13px;">กรุณาลองใหม่อีกครั้ง</small></div>';
             }
         }
-        function closeDeliveryStatus(){ document.getElementById('deliveryPopup').style.display = 'none'; }
+
+        function closeDeliveryStatus() { 
+            document.getElementById('deliveryPopup').style.display = 'none'; 
+        }
 
         function searchTable() {
             let searchInput = document.getElementById("search-input").value.toLowerCase();

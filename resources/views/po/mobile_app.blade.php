@@ -695,16 +695,24 @@ const RECEIVED_BY = @json(Auth::user()->name ?? '');
 const DEFAULT_PRINTER = (function(){
     const n = (RECEIVED_BY || '').trim().toLowerCase();
     if (n.includes('บาส') || n.includes('tuk')) return 'TSC TTP-247 store';
-    if (n.includes('พู่'))                       return 'TSC TTP-247 internal';
+    if (n.includes('พู่'))                       return '\\\\ว้าล\\TSC TTP-247';   // ภายนอก
     if (n.includes('ว้าล') || n.includes('ว๊าล')) return 'none';
     return '';
 })();
-// ค่าเริ่มต้น "ไม่ระบุชั้นวาง" ตามชื่อผู้ใช้ (พู่ / ว้าล) — เป็นแค่ค่าเริ่มต้น ผู้ใช้ติ๊กออกเองได้
-const DEFAULT_NO_SHELF = (function(){
+// ค่าเริ่มต้น "ชั้นวาง" ตามชื่อผู้ใช้ (พู่ / ว้าล) — เป็นแค่ค่าเริ่มต้นที่ถูกเลือกให้ ผู้ใช้เปลี่ยนเองได้ (เหมือน default เครื่องพิมพ์)
+//   พู่ = "พู่/เอ็ม" , ว้าล = "ว้าล/เอ็ม"
+const DEFAULT_SHELF = (function(){
     const n = (RECEIVED_BY || '').trim().toLowerCase();
-    return n.includes('พู่') || n.includes('ว้าล') || n.includes('ว๊าล');
+    if (n.includes('พู่'))                        return 'พู่/เอ็ม';
+    if (n.includes('ว้าล') || n.includes('ว๊าล')) return 'ว้าล/เอ็ม';
+    return '';
 })();
 const IS_ADMIN = @json(Auth::user() && Auth::user()->role === 'admin');
+// ยกเลิกการรับเข้า (กรณีรับผิดจำนวน) -> admin/stock/store กดได้
+@php
+    $canCancelReceive = Auth::user() && in_array(Auth::user()->role, ['admin', 'stock', 'store'], true);
+@endphp
+const CAN_CANCEL = @json($canCancelReceive);
 
 if(!RECEIVED_BY){
     document.body.innerHTML = `
@@ -747,7 +755,7 @@ const SHELF_OPTIONS = [
   "ขมจ่ายแล้ว","ของเกิน","คืนstock","ช.เดช","ช.โอ","ชัย-เดช","ชัย1","ชัย2",
   "ด.1","ด.10","ด.11","ด.12","ด.2","ด.3","ด.4","ด.5","ด.6","ด.7","ด.8","ด.9",
   "ทำคืน","ท๊อปบน","ปอ-ฮิคาริ","ปิดรับบิล","ปี69","พู่",
-  "ว๊าล","ว๊าลแก้ไข","หน้าออฟฟิศ","หยกรอบิล","หยกรอเคลีย","หลังออฟฟิศ"
+  "ว๊าล","ว๊าลแก้ไข","หน้าออฟฟิศ","หยกรอบิล","หยกรอเคลีย","หลังออฟฟิศ","พู่/เอ็ม","ว้าล/เอ็ม"
 ];
 
 let currentPO = null;
@@ -1162,10 +1170,10 @@ async function searchPO(){
                         แก้ไขชั้นวาง
                     </button>
                 </div>` : '';
-            const cancelBtnHtml = (fromNew && IS_ADMIN) ? `
+            const cancelBtnHtml = (fromNew && CAN_CANCEL) ? `
                 <div style="margin-top:10px">
                     <button type="button" class="btn-cancel-receive" onclick="openCancelModal()">
-                        ยกเลิกการรับเข้า
+                        ยกเลิกการรับเข้า (รับผิด → รับใหม่)
                     </button>
                 </div>` : '';
             // ปุ่มแก้ไข (ระบบเก่า): ดึงข้อมูลเข้าระบบใหม่ก่อน แล้วค่อยแก้สถานที่
@@ -1274,7 +1282,7 @@ function toggleSoCard(){
                     <span>กำหนดส่ง: <b>${fmtDate(po.ShipDate)}</b></span>
                     <span class="v-amnt">ยอดสุทธิ: <b>${fmtNum(po.NetAmnt)} ฿</b></span>
                 </div>
-                ${historyRows.length ? `<div style="margin-top:10px;"><button type="button" class="btn-edit-shelf" onclick="openEditShelf()">✎ แก้ไขที่รับแล้ว (ชั้นวาง/จำนวน/ลบ)</button></div>` : ''}
+                ${historyRows.length ? `<div style="margin-top:10px;"><button type="button" class="btn-edit-shelf" onclick="openEditShelf()">✎ แก้ไขที่รับแล้ว (ชั้นวาง/ลบ)</button></div>` : ''}
             </div>`;
 
         if(hasSO){
@@ -1452,15 +1460,13 @@ async function migrateLegacyThenEdit(){
 
 /* ========== แก้ไข/ย้ายชั้นวาง ========== */
 let editShelfState = {};   // { lineId: shelf }
-let editQtyState   = {};   // { lineId: qty }  แก้จำนวนที่รับ
 let editDelState   = {};   // { lineId: true } ลบรายการที่เพิ่มผิด
 
 function openEditShelf(){
     if(!historyRows.length){ toast('ไม่มีรายการให้แก้ไข','error'); return; }
-    editShelfState = {}; editQtyState = {}; editDelState = {};
+    editShelfState = {}; editDelState = {};
     historyRows.forEach(r => {
         editShelfState[r.id] = r.shelf || '';
-        editQtyState[r.id]   = fmtQty(r.recv_qty);
         editDelState[r.id]   = false;
     });
     renderEditShelf();
@@ -1472,15 +1478,11 @@ function renderEditRow(r){
     const shelfTxt = cur ? esc(cur) : 'เลือกชั้นวาง';
     const cls = cur ? '' : ' placeholder';
     const del = !!editDelState[r.id];
-    const q   = editQtyState[r.id] ?? '';
     return `
         <div class="es-row" style="${del ? 'opacity:.5;' : ''}">
             <div class="es-name">${esc(name || '-')} ${del ? '<span style="color:#c0392b;">(ลบ)</span>' : ''}</div>
-            <div class="es-sub">ผู้รับ: ${esc(r.received_by || '-')}</div>
+            <div class="es-sub">ผู้รับ: ${esc(r.received_by || '-')} · จำนวนที่รับ: <b>${esc(fmtQty(r.recv_qty))}</b></div>
             <div class="es-shelf-line" style="${del ? 'pointer-events:none;' : ''}">
-                <input type="number" inputmode="decimal" min="0" step="0.01" value="${esc(String(q))}"
-                    oninput="editQtyState['${esc(String(r.id))}']=this.value"
-                    style="width:76px;height:40px;border:1px solid #D6DBE3;border-radius:10px;padding:0 8px;text-align:center;" title="จำนวน">
                 <button type="button" class="es-shelf-btn" onclick="openShelfSheet('edit:${esc(String(r.id))}')">
                     <span class="es-shelf-txt${cls}">${shelfTxt}</span>
                     <span class="chev">▾</span>
@@ -1516,7 +1518,7 @@ function renderEditShelf(){
 
     $('editShelfBody').innerHTML = `
         <div class="es-head">แก้ไขรายการรับเข้า — ${esc(editPONum || '')}</div>
-        <div class="es-note">แก้ชั้นวาง / จำนวน หรือลบรายการที่เพิ่มผิด (เฉพาะ PO ที่ยังไม่ถูกเช็คของออก)</div>
+        <div class="es-note">แก้ชั้นวาง หรือลบรายการที่เพิ่มผิด (เฉพาะ PO ที่ยังไม่ถูกเช็คของออก) — ไม่สามารถแก้ไขจำนวนได้</div>
         ${boxes}
         <div class="es-actions">
             <button type="button" class="es-back" onclick="closeEditShelf()">กลับ</button>
@@ -1544,7 +1546,6 @@ async function saveEditShelf(){
     const Lines = historyRows.map(r => ({
         id: r.id,
         shelf: editShelfState[r.id] || null,
-        qty: (editQtyState[r.id] === '' || editQtyState[r.id] == null) ? null : parseFloat(editQtyState[r.id]),
         deleted: !!editDelState[r.id]
     }));
 
@@ -1765,7 +1766,7 @@ function esc(s){ return String(s).replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&l
 function escJs(s){ return String(s).replace(/\\/g,'\\\\').replace(/'/g,"\\'"); }
 function clearResult(){
     currentPO = null; historyDetailMap = new Map();
-    historyRows = []; editPONum = null; shelfSheetTarget = null; editShelfState = {}; editQtyState = {}; editDelState = {};
+    historyRows = []; editPONum = null; shelfSheetTarget = null; editShelfState = {}; editDelState = {};
     legacyMigratePayload = null;   // หมายเหตุ: ไม่ reset autoOpenEditAfterLoad ที่นี่ เพราะต้องคงค่าข้ามการ reload
     const esm = $('editShelfModal'); if(esm) esm.classList.remove('show');
     $('poInput').value = '';
@@ -1775,9 +1776,10 @@ function clearResult(){
     $('topFields').style.display = 'none';
     $('navBar').classList.remove('show');
     resetShelf(); resetPrinter(); removePhoto();
-    // คืนค่าเริ่มต้น "ไม่ระบุชั้นวาง" ตามผู้ใช้ (พู่/ว้าล = ติ๊กให้อัตโนมัติ, คนอื่น = ไม่ติ๊ก) — เปลี่ยนเองได้
-    $('noShelfChk').checked = DEFAULT_NO_SHELF;
+    // คืนค่าเริ่มต้นชั้นวางตามผู้ใช้ (พู่ = "พู่/เอ็ม", ว้าล = "ว้าล/เอ็ม") — ไม่ติ๊ก "ไม่ระบุชั้นวาง" อีกต่อไป, เปลี่ยนเองได้
+    $('noShelfChk').checked = false;
     onNoShelfToggle();
+    if (DEFAULT_SHELF) selectShelf(DEFAULT_SHELF);
 }
 let toastTimer;
 function toast(msg, type=''){
@@ -1788,7 +1790,7 @@ function toast(msg, type=''){
 }
 let cancelScrollY = 0;
 function openCancelModal(){
-    if(!IS_ADMIN){ toast('เฉพาะ admin เท่านั้นที่ยกเลิกการรับเข้าได้','error'); return; }
+    if(!CAN_CANCEL){ toast('เฉพาะ admin/stock/store เท่านั้นที่ยกเลิกการรับเข้าได้','error'); return; }
     if(!lastFullyReceivedPO){ toast('ไม่พบเลขที่ PO','error'); return; }
     $('cancelPONum').textContent = lastFullyReceivedPO;
 
@@ -1869,12 +1871,9 @@ function showCheckedOutPO(poNumber, body){
     $('stateBox').style.display = 'block';
 }
 
-/* ค่าเริ่มต้นตอนโหลดหน้า: ติ๊ก "ไม่ระบุชั้นวาง" ให้ผู้ใช้ที่กำหนดไว้ (พู่/ว้าล) — เปลี่ยนเองได้ */
+/* ค่าเริ่มต้นตอนโหลดหน้า: เลือกชั้นวาง default ให้ผู้ใช้ที่กำหนดไว้ (พู่ = "พู่/เอ็ม", ว้าล = "ว้าล/เอ็ม") — เปลี่ยนเองได้ */
 (function initUserDefaults(){
-    if (DEFAULT_NO_SHELF) {
-        $('noShelfChk').checked = true;
-        onNoShelfToggle();
-    }
+    if (DEFAULT_SHELF) selectShelf(DEFAULT_SHELF);
 })();
 
 /* ========== Auto-search จาก query string (?PONum=...) ==========

@@ -100,7 +100,6 @@
     <div class="header-bar">
         <h2 class="text-dark">{{ isset($doc) ? 'แก้ไขใบชั่วคราว' : 'สร้างใบชั่วคราว' }}</h2>
         
-        <!-- ✅ แก้ไขจุดที่ 1: ปุ่มย้อนกลับชี้ไปที่ Dashboard โดยตรง -->
         <button onclick="window.location.href='{{ route('document.dashboarddoc') }}'" class="btn-back">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg>
             ย้อนกลับ
@@ -181,6 +180,9 @@
                                 <option value="บริษัท เอ อี แอนด์ ที อินเตอร์เนชั่นแนล จำกัด" {{ isset($doc) && $doc->headcom == 'บริษัท เอ อี แอนด์ ที อินเตอร์เนชั่นแนล จำกัด' ? 'selected' : '' }} style="text-align:left;">บริษัท เอ อี แอนด์ ที อินเตอร์เนชั่นแนล จำกัด</option>
                                 <option value="บริษัท ทริปเปิ้ล อี ไลท์ติ้ง จำกัด" {{ isset($doc) && $doc->headcom == 'บริษัท ทริปเปิ้ล อี ไลท์ติ้ง จำกัด' ? 'selected' : '' }} style="text-align:left;">บริษัท ทริปเปิ้ล อี ไลท์ติ้ง จำกัด</option>
                                 <option value="บริษัท ทริปเปิ้ล อี เอ็มไพร์ กรุ๊ป จำกัด" {{ isset($doc) && $doc->headcom == 'บริษัท ทริปเปิ้ล อี เอ็มไพร์ กรุ๊ป จำกัด' ? 'selected' : '' }} style="text-align:left;">บริษัท ทริปเปิ้ล อี เอ็มไพร์ กรุ๊ป จำกัด</option>
+                                <option value="บริษัท ชาเวสต์ เรียลเอสเตท จำกัด" {{ isset($doc) && $doc->headcom == 'บริษัท ชาเวสต์ เรียลเอสเตท จำกัด' ? 'selected' : '' }} style="text-align:left;">บริษัท ชาเวสต์ เรียลเอสเตท จำกัด</option>
+                                <option value="บริษัท เทคเพียร์ เอ็นจิเนียริ่ง จำกัด" {{ isset($doc) && $doc->headcom == 'บริษัท เทคเพียร์ เอ็นจิเนียริ่ง จำกัด' ? 'selected' : '' }} style="text-align:left;">บริษัท เทคเพียร์ เอ็นจิเนียริ่ง จำกัด</option>
+                                <option value="บริษัท เดชา อิเล็คทริค แอนด์ คอนสตรัคชั่น จำกัด" {{ isset($doc) && $doc->headcom == 'บริษัท เดชา อิเล็คทริค แอนด์ คอนสตรัคชั่น จำกัด' ? 'selected' : '' }} style="text-align:left;">บริษัท เดชา อิเล็คทริค แอนด์ คอนสตรัคชั่น จำกัด</option>
                             </select>
                         </div>
 
@@ -247,9 +249,23 @@
                             <label for="com_address">ที่อยู่จัดส่ง <span class="req">*</span></label>
                             <textarea id="com_address" name="com_address" rows="2">{{ $doc->com_address ?? '' }}</textarea>
                         </div>
-                        <div class="field span-full">
-                            <label for="com_la_long">พิกัด (ละติจูด, ลองจิจูด) <span class="req">*</span></label>
-                            <div class="coords-row">
+                      <div class="field span-full">
+                            <!-- จัดหัวข้อหลักกับ Checkbox ให้อยู่บรรทัดเดียวกัน -->
+                            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                                <label for="com_la_long" style="margin: 0;">พิกัด (ละติจูด, ลองจิจูด)</label>
+                                
+                                <div style="display: flex; align-items: center; gap: 8px;">
+                                    <input type="checkbox" id="no_coords_check" name="no_coords_check" 
+                                        style="width: 18px; height: 18px; cursor: pointer;" 
+                                        onchange="toggleCoordsField()">
+                                    <label for="no_coords_check" style="margin: 0; cursor: pointer; font-weight: 500; color: var(--text-secondary); white-space: nowrap;">
+                                        ไม่ระบุพิกัด / ไม่มีแผนที่
+                                    </label>
+                                </div>
+                            </div>
+
+                            <!-- ส่วนช่องกรอกพิกัดและปุ่ม Google Maps (อยู่บรรทัดถัดมา) -->
+                            <div class="coords-row" id="coords_input_container">
                                 <input type="text" id="com_la_long" name="com_la_long" placeholder="13.7563, 100.5018" value="{{ $doc->com_la_long ?? '' }}">
                                 <button type="button" class="btn-custom" onclick="openGoogleMaps()">
                                     <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
@@ -309,7 +325,6 @@
                                 </tr>
                             </thead>
                             <tbody id="detail">
-                                <!-- รายการสินค้าจะถูกเพิ่มผ่าน JS หรือโหลดจาก $docDetails -->
                             </tbody>
                         </table>
                     </div>
@@ -369,7 +384,6 @@
         { id: "doctype",      label: "ประเภทบิล" },
         { id: "headcom",      label: "ชื่อบริษัทหัวเอกสาร" },
         { id: "com_address",  label: "ที่อยู่จัดส่ง" },
-        { id: "com_la_long",  label: "พิกัด (ละติจูด, ลองจิจูด)" }, // ✅ เพิ่มบรรทัดนี้
         { id: "contact_name", label: "ชื่อผู้ติดต่อ" },
         { id: "contact_tel",  label: "เบอร์ติดต่อ" },
         { id: "notes",        label: "รายละเอียดเพิ่มเติมเกี่ยวกับการจัดส่ง" },
@@ -393,6 +407,25 @@
             if (invalid) { errors.push(rule); markFieldError(el); }
             else { clearFieldError(el); }
         });
+        
+        // ✅ Validate coordinates field based on checkbox state
+        const coordsEl = document.getElementById("com_la_long");
+        const noCoordsCheck = document.getElementById("no_coords_check");
+        
+        if (noCoordsCheck && noCoordsCheck.checked) {
+            // Checkbox is checked - coordinates field is optional/hidden
+            clearFieldError(coordsEl);
+        } else {
+            // Checkbox is NOT checked - coordinates field is required
+            const coordsInvalid = !coordsEl || !coordsEl.value || !coordsEl.value.trim();
+            if (coordsInvalid) {
+                errors.push({ id: "com_la_long", label: "พิกัด (ละติจูด, ลองจิจูด)" });
+                markFieldError(coordsEl);
+            } else {
+                clearFieldError(coordsEl);
+            }
+        }
+        
         const soEl = document.getElementById("so_num");
         if (soEl) { clearFieldError(soEl); }
         return errors;
@@ -439,6 +472,32 @@
         }
     }
 
+    function toggleCoordsField() {
+        const checkbox = document.getElementById('no_coords_check');
+        const coordsInput = document.getElementById('coords_input_container');
+        const coordsField = document.getElementById('com_la_long');
+        const mapFrame = document.getElementById('mapFrame');
+        const mapEmpty = document.getElementById('mapEmpty');
+        
+        if (checkbox.checked) {
+            // ✅ Checkbox checked - hide coords field, clear value
+            coordsInput.style.display = 'none';
+            coordsField.value = '';
+            coordsField.removeAttribute('disabled');
+            mapFrame.src = '';
+            if (mapEmpty) {
+                mapEmpty.style.display = 'flex';
+                mapEmpty.innerHTML = 'ไม่ระบุพิกัด / ไม่มีแผนที่';
+            }
+        } else {
+            // ✅ Checkbox unchecked - show coords field
+            coordsInput.style.display = 'flex';
+            coordsField.removeAttribute('disabled');
+            updateMap();
+        }
+        refreshSubmitState();
+    }
+
     document.addEventListener("DOMContentLoaded", function () {
         if (!document.getElementById('datestamp').value) {
             document.getElementById('datestamp').value = new Date().toISOString().split('T')[0];
@@ -448,13 +507,27 @@
         toggleSoBlock();
         refreshSubmitState();
 
-        VALIDATION_RULES.concat([{ id: "so_num" }]).forEach(function (rule) {
+        VALIDATION_RULES.concat([{ id: "so_num" }, { id: "com_la_long" }]).forEach(function (rule) {
             const el = document.getElementById(rule.id);
             if (!el) return;
             el.addEventListener("input", refreshSubmitState);
             el.addEventListener("change", refreshSubmitState);
             el.addEventListener("blur", refreshSubmitState);
         });
+
+        // ✅ Initialize checkbox state - default to unchecked (show coords field)
+        const checkbox = document.getElementById('no_coords_check');
+        if (checkbox) {
+            checkbox.checked = false; 
+        }
+        
+        const coordsInput = document.getElementById('coords_input_container');
+        if (coordsInput) {
+            coordsInput.style.display = 'flex';
+        }
+
+        // Update map if coordinates exist
+        updateMap();
 
         @if(isset($docDetails))
             const existingItems = @json($docDetails ?? []);
@@ -574,7 +647,7 @@
     async function autoSelectCustomerByCode(custCode, custNameFallback) {
         try {
             const searchTerm = custNameFallback && custNameFallback.length >= 3 ? custNameFallback : custCode;
-            const response = await fetch(`http://server_update:8000/api/getCustAndVendor?keySearch=${encodeURIComponent(searchTerm)}`);
+            const response = await fetch(`{{ route('document.searchCustVendor') }}?keySearch=${encodeURIComponent(searchTerm)}`);
             if (!response.ok) throw new Error("HTTP " + response.status);
             const data = await response.json();
             const results = [...(data.Customer || []), ...(data.Supplier || [])];
@@ -639,7 +712,7 @@
         currentAbortController = new AbortController();
         showLoadingInList();
         try {
-            const response = await fetch(`http://server_update:8000/api/getCustAndVendor?keySearch=${encodeURIComponent(keyword)}`, { signal: currentAbortController.signal });
+            const response = await fetch(`{{ route('document.searchCustVendor') }}?keySearch=${encodeURIComponent(keyword)}`, { signal: currentAbortController.signal });
             if (!response.ok) throw new Error("เกิดข้อผิดพลาดในการโหลดข้อมูล");
             const data = await response.json();
             const results = [...(data.Customer || []), ...(data.Supplier || [])];
@@ -728,6 +801,94 @@
 </script>
 
 <script>
+    // ค้นหา/เติมข้อมูลลูกค้าจาก "รหัสลูกค้า" — พิมพ์รหัสแล้วดึงชื่อ+ที่อยู่มาให้อัตโนมัติ
+    (function () {
+        const codeInput = document.getElementById('cust_code_search');
+        const codeList = document.getElementById('cust_code_autocomplete');
+        if (!codeInput || !codeList) return;
+
+        let codeDebounce = null;
+        let codeAbort = null;
+
+        function fillFromMatch(m) {
+            const code = (m.CustCode || m.VendorCode || '').trim();
+            const name = (m.CustName || m.VendorName || '').trim();
+            const addr = [m.ContAddr1, m.ContAddr2, m.ContDistrict, m.ContAmphur, m.ContProvince, m.ContPostCode]
+                .filter(p => p && p.trim() !== '').join(' ').trim();
+            document.getElementById('id_com').value = code;
+            codeInput.value = code;
+            document.getElementById('com_name').value = name;
+            document.getElementById('com_address').value = addr;
+            codeList.style.display = 'none';
+            const nameList = document.getElementById('autocomplete_list');
+            if (nameList) nameList.style.display = 'none';
+            if (typeof fetchlalong === 'function') fetchlalong();
+        }
+
+        async function searchByCode(term) {
+            if (codeAbort) codeAbort.abort();
+            codeAbort = new AbortController();
+            const url = `{{ route('document.searchCustVendor') }}?keySearch=${encodeURIComponent(term)}`;
+            const res = await fetch(url, { signal: codeAbort.signal });
+            if (!res.ok) throw new Error('HTTP ' + res.status);
+            const data = await res.json();
+            return [...(data.Customer || []), ...(data.Supplier || [])];
+        }
+
+        function renderCodeList(results) {
+            if (!results.length) { codeList.style.display = 'none'; return; }
+            codeList.innerHTML = '';
+            results.slice(0, 50).forEach(m => {
+                const code = (m.CustCode || m.VendorCode || '').trim();
+                const name = (m.CustName || m.VendorName || '').trim();
+                const li = document.createElement('li');
+                li.textContent = code + ' — ' + name;
+                li.addEventListener('click', () => fillFromMatch(m));
+                codeList.appendChild(li);
+            });
+            codeList.style.display = 'block';
+        }
+
+        function findExact(results, term) {
+            const t = term.trim().toUpperCase();
+            return results.filter(m => (m.CustCode || m.VendorCode || '').trim().toUpperCase() === t);
+        }
+
+        codeInput.addEventListener('input', function () {
+            const term = this.value.trim();
+            clearTimeout(codeDebounce);
+            if (term.length < 3) { codeList.style.display = 'none'; return; }
+            codeDebounce = setTimeout(async () => {
+                try {
+                    const results = await searchByCode(term);
+                    const exact = findExact(results, term);
+                    if (exact.length === 1) { fillFromMatch(exact[0]); return; }
+                    renderCodeList(results);
+                } catch (e) { if (e.name !== 'AbortError') console.error(e); }
+            }, 350);
+        });
+
+        codeInput.addEventListener('keydown', async function (e) {
+            if (e.key !== 'Enter') return;
+            e.preventDefault();
+            clearTimeout(codeDebounce);
+            const term = this.value.trim();
+            if (term.length < 1) return;
+            try {
+                const results = await searchByCode(term);
+                const exact = findExact(results, term);
+                if (exact.length >= 1) { fillFromMatch(exact[0]); return; }
+                renderCodeList(results);
+            } catch (err) { if (err.name !== 'AbortError') console.error(err); }
+        });
+
+        document.addEventListener('click', function (e) {
+            if (!codeInput.contains(e.target) && !codeList.contains(e.target)) {
+                codeList.style.display = 'none';
+            }
+        });
+    })();
+
     function updateMap() {
         const coords = document.getElementById('com_la_long').value.trim();
         const frame = document.getElementById('mapFrame');
@@ -741,7 +902,14 @@
             if (empty) empty.style.display = 'flex';
         }
     }
-    document.getElementById('com_la_long').addEventListener('input', updateMap);
+    document.getElementById('com_la_long').addEventListener('input', function() {
+        const checkbox = document.getElementById('no_coords_check');
+        if (checkbox && checkbox.checked) {
+            checkbox.checked = false;
+            document.getElementById('coords_input_container').style.display = 'flex';
+        }
+        updateMap();
+    });
     updateMap();
 
     let mapWindow;
@@ -832,6 +1000,9 @@ document.addEventListener('DOMContentLoaded', function () {
         .then(data => {
             if (data.com_la_long) {
                 document.getElementById("com_la_long").value = data.com_la_long;
+                const checkbox = document.getElementById('no_coords_check');
+                if (checkbox) checkbox.checked = false;
+                document.getElementById('coords_input_container').style.display = 'flex';
                 updateMap();
             } else {
                 document.getElementById("com_la_long").value = '';
@@ -867,6 +1038,19 @@ document.getElementById('submitBill').addEventListener('click', async function (
     let formData = new FormData(document.getElementById('billForm'));
     formData.delete('item_name[]');
     formData.delete('item_quantity[]');
+
+    // ✅ Handle coordinates field based on checkbox state
+    formData.delete('com_la_long');
+    const noCoordsCheck = document.getElementById('no_coords_check');
+    const coordsField = document.getElementById('com_la_long');
+    
+    if (noCoordsCheck && noCoordsCheck.checked) {
+        // ✅ Checkbox checked - send empty string to DB
+        formData.append('com_la_long', '');
+    } else {
+        // ✅ Checkbox not checked - send actual value
+        formData.append('com_la_long', coordsField.value || '');
+    }
 
     let itemRows = document.querySelectorAll('#detail tr');
     let itemsForPdf = [];
@@ -909,7 +1093,6 @@ document.getElementById('submitBill').addEventListener('click', async function (
 
         alert(data.success || 'บันทึกสำเร็จ');
         
-        // ✅ แก้ไขจุดที่ 2: Redirect ไปยัง Dashboard โดยใช้ Route Helper แบบ Absolute Path
         window.location.href = '{{ route("document.dashboarddoc") }}';
 
     } catch (error) {
@@ -984,8 +1167,9 @@ async function generateAndUploadBillPdf(doc_id, items) {
         tableRowsHtml = `<tr><td colspan="3" style="border:1px solid #94a3b8; padding:12px; text-align:center; color:#888; font-size:18px;">ไม่มีข้อมูลสินค้า</td></tr>`;
     }
 
+    const noCoordsCheck = document.getElementById('no_coords_check');
     const coords = document.getElementById('com_la_long').value.trim();
-    const hasCoords = coords !== '' && coords !== 'ไม่มีข้อมูล';
+    const hasCoords = !noCoordsCheck.checked && coords !== '' && coords !== 'ไม่มีข้อมูล' && /^-?\d+(\.\d+)?\s*,\s*-?\d+(\.\d+)?$/.test(coords);
     const mapLink = hasCoords ? `https://www.google.com/maps?q=${encodeURIComponent(coords)}` : '';
 
     let qrDataUrl = '';
@@ -1100,12 +1284,12 @@ async function generateAndUploadBillPdf(doc_id, items) {
                 <div style="display:flex; align-items:center;"><span style="font-weight:700; color:#475569; width:95px; flex-shrink:0; text-align:left;">ผู้ติดต่อ</span><span style="font-weight:700; color:#475569; padding-right:8px;">:</span><span style="flex:1;">${escapeHtmlSo(contact_name) || '-'} <span style="display:inline-block; margin-left:80px;"><span style="font-weight:700; color:#475569;">โทร :</span> ${escapeHtmlSo(contact_tel) || '-'}</span></span></div>
                 <div style="display:flex; align-items:center;"><span style="font-weight:700; color:#475569; width:95px; flex-shrink:0; text-align:left;">หมายเหตุ</span><span style="font-weight:700; color:#475569; padding-right:8px;">:</span><span style="flex:1;">${escapeHtmlSo(notes) || '-'}</span></div>
             </div>
-            <div style="text-align:center; flex-shrink:0;">
+            ${hasCoords ? `<div style="text-align:center; flex-shrink:0;">
                 <div style="display:inline-block; text-align:center;">
                     ${qrBlockHtml}
                     <div style="margin-top:4px; font-size:14px; font-weight:700; color:#64748b; letter-spacing:.05em; text-align:center;">MAP</div>
                 </div>
-            </div>
+            </div>` : ''}
         </div>`;
 
     const cleanTableRowsHtml = tableRowsHtml.replace(/\.00/g, '');
@@ -1201,7 +1385,8 @@ async function generateAndUploadBillPdf(doc_id, items) {
         const isLastPage = i === pages.length - 1;
         const pageCanvas = document.createElement('canvas');
         pageCanvas.width = pageCanvasWidth;
-        pageCanvas.height = pageHeightPx;
+        const pageHeightPx2 = Math.round(PAGE_HEIGHT_PT * pxPerPt);
+        pageCanvas.height = pageHeightPx2;
         const ctx = pageCanvas.getContext('2d');
         ctx.fillStyle = '#FFFFFF';
         ctx.fillRect(0, 0, pageCanvas.width, pageCanvas.height);
@@ -1218,7 +1403,7 @@ async function generateAndUploadBillPdf(doc_id, items) {
             ctx.fillStyle = '#94a3b8';
             ctx.textAlign = 'center';
             ctx.textBaseline = 'bottom';
-            ctx.fillText(`แผ่นที่ ${i + 1}/${pages.length}`, pageCanvasWidth / 2, pageHeightPx - PRINT_SAFE_BOTTOM_PX);
+            ctx.fillText(`แผ่นที่ ${i + 1}/${pages.length}`, pageCanvasWidth / 2, pageHeightPx2 - PRINT_SAFE_BOTTOM_PX);
         }
 
         if (headRowHeight > 0) {
@@ -1233,7 +1418,7 @@ async function generateAndUploadBillPdf(doc_id, items) {
             const sigDrawH = sigCanvas.height * sigScale;
             const sigOffsetX = (pageCanvasWidth - sigDrawW) / 2;
             let sigOffsetY = sigZoneStartY + Math.max(0, (sigZoneHeightPx - sigDrawH) / 2);
-            const maxOffsetY = pageHeightPx - PRINT_SAFE_BOTTOM_PX - sigDrawH;
+            const maxOffsetY = pageHeightPx2 - PRINT_SAFE_BOTTOM_PX - sigDrawH;
             sigOffsetY = Math.min(sigOffsetY, Math.max(sigZoneStartY, maxOffsetY));
             ctx.drawImage(sigCanvas, 0, 0, sigCanvas.width, sigCanvas.height, sigOffsetX, sigOffsetY, sigDrawW, sigDrawH);
 
@@ -1313,5 +1498,5 @@ async function generateAndUploadBillPdf(doc_id, items) {
     }
 </script>
 
-</body>
+</body> 
 </html>

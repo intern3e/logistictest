@@ -69,13 +69,25 @@ class DeliverytrackController extends Controller
         $docbills = $docbills->reject(fn ($d) => $dispatched->has($d->doc_id))->values();
         $poJobs   = $poJobs->reject(fn ($p) => $dispatched->has($p->PONum))->values();
 
+        // แยกบิลตามประเภทขนส่ง: private = 'private', นอกนั้น (รวม null) = company
+        $companyBills = $bills->filter(fn ($b) => ($b->transport_type ?: 'company') !== 'private')->values();
+        $privateBills = $bills->filter(fn ($b) => $b->transport_type === 'private')->values();
+
+        $activeTransport = $request->input('transport') === 'private' ? 'private' : 'company';
+
+        // ส่งบิลทั้งสองฝั่ง (company/private) ไปพร้อมกัน แล้วให้ฝั่ง JS สลับโชว์เอง
+        // เพื่อไม่ต้องรีโหลดหน้า+รัน query ข้ามฐาน (ERP/SQL Server) ใหม่ทุกครั้งที่กดสลับขนส่ง
         return view('driver.delivery', [
-            'billGroups'         => $this->groupBillsByCustomer($bills),
+            'companyBillGroups'  => $this->groupBillsByCustomer($companyBills),
+            'privateBillGroups'  => $this->groupBillsByCustomer($privateBills),
             'docGroups'          => $this->groupDocsByCustomer($docbills),
             'poGroups'           => $this->groupPoByVendor($poJobs),
             'responsiblePersons' => $this->responsiblePersons,
             'deliveryMethods'    => $this->deliveryMethods,
             'loggedInName'       => $this->loggedInName(),
+            'activeTransport'    => $activeTransport,
+            'companyCount'       => $companyBills->count(),
+            'privateCount'       => $privateBills->count(),
         ]);
     }
 
@@ -289,18 +301,75 @@ class DeliverytrackController extends Controller
     public function summary(Request $request)
     {
         if ($resp = $this->checkAccess()) return $resp;
-        $date = $request->input('date');
-        $query = transaction_delivery::query()->orderBy('delivery_date');
-        if (filled($date)) $query->whereDate('delivery_date', $date);
-        
-        $boxesByDate = [];
-        foreach ($query->get()->groupBy(function ($d) {
-            return $d->delivery_date ? Carbon::parse($d->delivery_date)->format('Y-m-d') : 'ไม่ระบุวันที่';
-        }) as $dateKey => $group) {
-            $boxesByDate[$dateKey] = $this->buildDispatchBoxes($group);
+        $date   = $request->input('date');
+        $billId = trim((string) $request->input('bill_id', ''));
+
+        $query = transaction_delivery::query()->orderBy('id');
+
+        if ($billId !== '') {
+            // ค้นหาด้วยเลขบิล/SO/PO — ข้ามตัวกรองวันที่ เพื่อให้เจอบิลไม่ว่าจะอยู่วันไหน
+            // transaction_delivery.bill_id เก็บ so_detail_id (บิล), doc_id (บิลชั่วคราว) หรือ PONum (รับเอง)
+            // งานส่งของจริงมองเห็นเป็น "เลขบิล (billid)/SO" จึงต้องแปลงกลับเป็น so_detail_id ก่อน
+            $billMatchIds = Bill::where('billid', 'LIKE', "%{$billId}%")
+                ->orWhere('so_id', 'LIKE', "%{$billId}%")
+                ->pluck('so_detail_id')->all();
+            $query->where(function ($q) use ($billId, $billMatchIds) {
+                $q->where('bill_id', 'LIKE', "%{$billId}%");   // ครอบคลุม PONum (รับเอง) และ doc_id (บิลชั่วคราว) ที่เก็บตรง ๆ
+                if (!empty($billMatchIds)) $q->orWhereIn('bill_id', $billMatchIds);
+            });
+        } elseif (filled($date)) {
+            // ส่งของ (บิล/บิลชั่วคราว) ดูจาก delivery_date, รับเอง (po) ดูจาก time_pick → ดึงที่ตรงอย่างใดอย่างหนึ่งก่อน
+            $query->where(function ($q) use ($date) {
+                $q->whereDate('delivery_date', $date)->orWhereDate('time_pick', $date);
+            });
         }
+
+        $boxesByDate = $this->summaryBoxesByDate($query->get());
+
+        // ตอนกรองวันที่ (ไม่ได้ค้นด้วยเลขบิล) เก็บเฉพาะกลุ่มของวันที่ที่เลือก (เพราะ query ด้านบน over-fetch จาก OR)
+        if ($billId === '' && filled($date)) {
+            $boxesByDate = array_intersect_key($boxesByDate, [$date => true]);
+        }
+
         ksort($boxesByDate);
-        return view('driver.delivery-summary', ['date' => $date, 'boxesByDate' => $boxesByDate, 'loggedInName' => $this->loggedInName()]);
+        return view('driver.delivery-summary', [
+            'date'         => $date,
+            'billId'       => $billId,
+            'boxesByDate'  => $boxesByDate,
+            'loggedInName' => $this->loggedInName(),
+        ]);
+    }
+
+    /**
+     * จัดกลุ่ม transaction_delivery เป็น boxes ต่อ "วันที่ที่ถูกต้องตามประเภทงาน"
+     *   - ส่งของ (บิล/บิลชั่วคราว) → ใช้ delivery_date
+     *   - รับเอง (po) → ใช้ time_pick
+     */
+    private function summaryBoxesByDate($deliveries): array
+    {
+        if ($deliveries->isEmpty()) return [];
+
+        $ids = $deliveries->pluck('bill_id')->unique();
+        // id ที่เป็นงานส่งของ (บิล/บิลชั่วคราว) — ที่เหลือถือเป็นงานรับเอง (po)
+        $billKeys = Bill::whereIn('so_detail_id', $ids)->pluck('so_detail_id')->map(fn ($v) => (string) $v)->flip();
+        $docKeys  = Docbills::whereIn('doc_id', $ids)->pluck('doc_id')->map(fn ($v) => (string) $v)->flip();
+
+        $grouped = $deliveries->groupBy(function ($d) use ($billKeys, $docKeys) {
+            $id = (string) $d->bill_id;
+            $isDelivery = $billKeys->has($id) || $docKeys->has($id);
+            if ($isDelivery) {
+                return $d->delivery_date ? Carbon::parse($d->delivery_date)->format('Y-m-d') : 'ไม่ระบุวันที่';
+            }
+            // งานรับเอง → ยึด time_pick เป็นวันที่
+            return $d->time_pick ? Carbon::parse($d->time_pick)->format('Y-m-d') : 'ไม่ระบุวันที่';
+        });
+
+        $boxesByDate = [];
+        foreach ($grouped as $dateKey => $group) {
+            $boxes = $this->buildDispatchBoxes($group);
+            if (!empty($boxes)) $boxesByDate[$dateKey] = $boxes;
+        }
+        return $boxesByDate;
     }
 
     // ==========================================
@@ -408,12 +477,23 @@ class DeliverytrackController extends Controller
                 ];
             }
 
+            // ประเภทขนส่งของ item: บิลจริง = ตาม tblbill.transport_type (null→company),
+            // บิลชั่วคราว(doc) = company, งานไปรับเอง(po) = null (แยกด้วย type)
+            if ($itemType === 'bill') {
+                $itemTransport = ($bill->transport_type ?: 'company');
+            } elseif ($itemType === 'doc') {
+                $itemTransport = 'company';
+            } else {
+                $itemTransport = null;
+            }
+
             $boxes[$boxKey]['customers'][$customerCode]['items'][] = [
-                'id'          => $id,
-                'bill_no'     => $billNo,
-                'notes'       => $notes,
-                'type'        => $itemType,     // bill | doc | po (po = งานไปรับเอง)
-                'is_complete' => $isComplete,   // true = PO รับเข้าครบแล้ว → เลือกไม่ได้/ไม่พิมพ์
+                'id'             => $id,
+                'bill_no'        => $billNo,
+                'notes'          => $notes,
+                'type'           => $itemType,     // bill | doc | po (po = งานไปรับเอง)
+                'is_complete'    => $isComplete,   // true = PO รับเข้าครบแล้ว → เลือกไม่ได้/ไม่พิมพ์
+                'transport_type' => $itemTransport,
             ];
 
             $boxes[$boxKey]['total_items']++;

@@ -932,8 +932,9 @@ $selfPickupMethods = ['รับเองรถใหญ่', 'รับเอ�
 <div class="container-fluid">
     @php
         $poCount = collect($poGroups)->sum(fn($g) => count($g['rows']));
-        $billCount = collect($billGroups)->sum(fn($g) => count($g['rows']));
         $docCount = collect($docGroups)->sum(fn($g) => count($g['rows']));
+        $companyBillCount = collect($companyBillGroups)->sum(fn($g) => count($g['rows']));
+        $privateBillCount = collect($privateBillGroups)->sum(fn($g) => count($g['rows']));
     @endphp
 
     <div class="page-header">
@@ -944,9 +945,11 @@ $selfPickupMethods = ['รับเองรถใหญ่', 'รับเอ�
             </div>
 
             <div class="view-controls">
-                <button class="view-btn delivery active" onclick="setView('delivery')"> ส่งของ <span class="view-count">{{ $billCount }}</span></button>
-                <button class="view-btn doc" onclick="setView('doc')">📄 บิลชั่วคราว <span class="view-count">{{ $docCount }}</span></button>
-                <button class="view-btn pickup" onclick="setView('pickup')">📦 รับของเอง <span class="view-count">{{ $poCount }}</span></button>
+                @php $activeTransport = $activeTransport ?? 'company'; @endphp
+                    <button type="button" class="view-btn transport-toggle delivery {{ $activeTransport === 'company' ? 'active' : '' }}" data-transport="company" onclick="setTransport('company')">🚚 ขนส่งโดยบริษัท <span class="view-count">{{ $companyCount ?? $companyBillCount }}</span></button>
+                    <button type="button" class="view-btn transport-toggle delivery {{ $activeTransport === 'private' ? 'active' : '' }}" data-transport="private" onclick="setTransport('private')">🏢 ขนส่งเอกชน <span class="view-count">{{ $privateCount ?? $privateBillCount }}</span></button>
+                    <button class="view-btn" data-view="doc" onclick="setView('doc')">📄 บิลชั่วคราว <span class="view-count">{{ $docCount }}</span></button>
+                    <button class="view-btn" data-view="pickup" onclick="setView('pickup')">📦 รับของเอง <span class="view-count">{{ $poCount }}</span></button>
             </div>
         </div>
 
@@ -1015,7 +1018,7 @@ $selfPickupMethods = ['รับเองรถใหญ่', 'รับเอ�
             {{-- Panel 1: ส่งของ --}}
             <div class="grid-panel" id="panelDelivery" data-type="delivery">
                 <div class="section-heading accent-delivery" onclick="setView('delivery')">
-                    <h5>🚚 ส่งของ <span class="section-count">{{ $billCount }} รายการ</span></h5>
+                    <h5><span id="deliveryPanelTitle">{{ ($activeTransport ?? 'company') === 'private' ? '🏢 ขนส่งเอกชน' : '🚚 ขนส่งโดยบริษัท' }}</span> <span class="section-count" id="deliveryPanelCount">{{ $activeTransport === 'private' ? $privateBillCount : $companyBillCount }} รายการ</span></h5>
                     <div style="display:flex;align-items:center;gap:15px;">
                         <div class="form-check" onclick="event.stopPropagation()">
                             <input type="checkbox" class="form-check-input" id="checkAllBills">
@@ -1026,8 +1029,11 @@ $selfPickupMethods = ['รับเองรถใหญ่', 'รับเอ�
                 </div>
 
                 <div class="job-list-table-wrap">
-                    @if(count($billGroups) > 0)
-                    <table class="job-list-table" id="billTable">
+                    @php $billPanes = ['company' => $companyBillGroups, 'private' => $privateBillGroups]; @endphp
+                    @foreach($billPanes as $tKey => $tGroups)
+                    <div class="transport-pane" data-transport="{{ $tKey }}" style="{{ $tKey === $activeTransport ? '' : 'display:none;' }}">
+                    @if(count($tGroups) > 0)
+                    <table class="job-list-table bill-table-js" data-transport="{{ $tKey }}">
                         <colgroup>
                               <col style="width:35%"><col style="width:17%"><col style="width:12%"><col style="width:36%">
                         </colgroup>
@@ -1040,9 +1046,9 @@ $selfPickupMethods = ['รับเองรถใหญ่', 'รับเอ�
                             </tr>
                         </thead>
                         <tbody>
-                            @foreach($billGroups as $group)
+                            @foreach($tGroups as $group)
                                 @php
-                                    $groupKey = 'bill-'.$loop->index;
+                                    $groupKey = 'bill-'.$tKey.'-'.$loop->index;
                                     $firstBillRow = $group['rows'][0]['bill'] ?? null;
                                     $groupCustomerName = $group['customer_name'] ?? null;
                                     $groupAddress = $firstBillRow->customer_address ?? null;
@@ -1052,6 +1058,7 @@ $selfPickupMethods = ['รับเองรถใหญ่', 'รับเอ�
                                     @php $bill = $row['bill']; @endphp
                                     <tr class="job-detail-row"
                                         data-group="{{ $groupKey }}"
+                                        data-transport="{{ $tKey }}"
                                         data-customer-id="{{ $group['customer_id'] }}"
                                         data-customer-name="{{ $groupCustomerName }}"
                                         data-so-id="{{ $bill->so_id }}">
@@ -1078,7 +1085,7 @@ $selfPickupMethods = ['รับเองรถใหญ่', 'รับเอ�
                                         @endif
                                         <td class="checkbox-left-cell">
                                             <div class="checkbox-wrapper">
-                                                <input type="checkbox" class="job-checkbox bill-checkbox" value="bill:{{ $bill->so_detail_id }}" data-group="{{ $groupKey }}" onchange="updateSelectedCount()">
+                                                <input type="checkbox" class="job-checkbox bill-checkbox" value="bill:{{ $bill->so_detail_id }}" data-group="{{ $groupKey }}" data-transport="{{ $tKey }}" onchange="updateSelectedCount()">
                                                 <div class="checkbox-content">
                                                     <div class="job-id-primary">SO {{ $bill->so_id }}</div>
                                                     <div class="job-id-secondary">บิล {{ $bill->billid }}</div>
@@ -1098,6 +1105,8 @@ $selfPickupMethods = ['รับเองรถใหญ่', 'รับเอ�
                     @else
                     <div class="empty-note">ไม่มีงานค้างจ่าย</div>
                     @endif
+                    </div>
+                    @endforeach
                 </div>
             </div>
 
@@ -1353,7 +1362,7 @@ $selfPickupMethods = ['รับเองรถใหญ่', 'รับเอ�
                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
             <div class="modal-body">
-                <div class="mb-3">
+                <div class="mb-3" id="deliveryDateGroup">
                     <label class="form-label">วันที่จัดส่ง <span class="required-mark">*</span></label>
                     <input type="date" id="deliveryDateInput" class="form-control">
                 </div>
@@ -1447,35 +1456,69 @@ function hideToast(toastId) {
     }
 }
 
+let currentTransport = @json($activeTransport ?? 'company');
+
 function setView(mode) {
     const grid = document.getElementById('dashboardGrid');
     const panels = document.querySelectorAll('.grid-panel');
-    const btns = document.querySelectorAll('.view-btn');
-    
+    const btns = document.querySelectorAll('.view-btn:not(.transport-toggle)');
+    const transportBtns = document.querySelectorAll('.view-btn.transport-toggle');
+
     const searchWrappers = document.querySelectorAll('.search-wrapper');
     searchWrappers.forEach(wrapper => wrapper.classList.remove('active'));
-    
-    const searchMap = {
-        'delivery': 'searchDelivery',
-        'doc': 'searchDoc',
-        'pickup': 'searchPickup'
-    };
-    
+
+    const searchMap = { 'delivery': 'searchDelivery', 'doc': 'searchDoc', 'pickup': 'searchPickup' };
     const activeSearch = document.getElementById(searchMap[mode]);
-    if (activeSearch) {
-        activeSearch.classList.add('active');
-    }
+    if (activeSearch) activeSearch.classList.add('active');
 
     btns.forEach(btn => btn.classList.remove('active'));
+
+    // ปุ่มขนส่ง (company/private) จะฟ้าเฉพาะตอนอยู่ view "delivery" เท่านั้น
+    // พอสลับไป doc/pickup ต้องเอาสีฟ้าออก เพื่อให้มีปุ่มฟ้าแค่อันเดียวเสมอ
+    transportBtns.forEach(btn => {
+        const isActive = mode === 'delivery' && btn.dataset.transport === currentTransport;
+        btn.classList.toggle('active', isActive);
+    });
 
     grid.classList.add('is-filtered');
     panels.forEach(p => {
         p.classList.toggle('is-expanded', p.dataset.type === mode);
     });
-    const activeBtn = document.querySelector(`.view-btn.${mode}`);
+
+    const activeBtn = document.querySelector(`.view-btn[data-view="${mode}"]`);
     if (activeBtn) activeBtn.classList.add('active');
 }
 
+// สลับขนส่ง company/private แบบฝั่ง JS ล้วน (ไม่รีโหลดหน้า → ไม่ query ข้ามฐานใหม่)
+function setTransport(t) {
+    currentTransport = t;
+
+    // โชว์เฉพาะ pane ของขนส่งที่เลือก
+    document.querySelectorAll('#panelDelivery .transport-pane').forEach(pane => {
+        const isActivePane = pane.dataset.transport === t;
+        pane.style.display = isActivePane ? '' : 'none';
+        // เคลียร์ติ๊กของ pane ที่ถูกซ่อน กันไม่ให้ส่งบิลของขนส่งอีกฝั่งไปด้วยตอนบันทึก
+        if (!isActivePane) {
+            pane.querySelectorAll('.job-checkbox:checked').forEach(cb => cb.checked = false);
+            pane.querySelectorAll('.group-select-checkbox').forEach(cb => { cb.checked = false; cb.indeterminate = false; });
+        }
+    });
+
+    // อัปเดตหัวข้อ panel + จำนวนตามขนส่งที่เลือก
+    const titleEl = document.getElementById('deliveryPanelTitle');
+    if (titleEl) titleEl.textContent = t === 'private' ? '🏢 ขนส่งเอกชน' : '🚚 ขนส่งโดยบริษัท';
+    const activePane = document.querySelector(`#panelDelivery .transport-pane[data-transport="${t}"]`);
+    const rowCount = activePane ? activePane.querySelectorAll('tbody tr.job-detail-row').length : 0;
+    const countEl = document.getElementById('deliveryPanelCount');
+    if (countEl) countEl.textContent = rowCount + ' รายการ';
+
+    // เผื่อ checkbox "เลือกทั้งหมด" ค้างสถานะไว้
+    const checkAll = document.getElementById('checkAllBills');
+    if (checkAll) checkAll.checked = false;
+
+    setView('delivery');
+    updateSelectedCount();
+}
 function toggleGroupSelection(groupId) {
     const checkboxes = document.querySelectorAll(`.job-checkbox[data-group="${groupId}"]`);
     if (checkboxes.length === 0) return;
@@ -1516,6 +1559,19 @@ function updateSelectedCount() {
     document.getElementById('selectedCount').textContent = count;
     document.getElementById('openModalBtn').disabled = count === 0;
     syncGroupCheckboxes();
+}
+
+// เลือกเฉพาะงาน "รับของเอง" (po:) ล้วน ๆ หรือไม่ — ถ้าใช่ ไม่ต้องบังคับกรอกวันที่
+function isPickupOnlySelection() {
+    const selected = Array.from(document.querySelectorAll('.job-checkbox:checked'));
+    return selected.length > 0 && selected.every(cb => cb.value.startsWith('po:'));
+}
+
+// รับของเอง = ซ่อนช่องวันที่ทั้งหมด (ไม่ต้องกรอก), งานอื่น = แสดงตามปกติ
+function configureDeliveryDateField() {
+    const pickupOnly = isPickupOnlySelection();
+    const group = document.getElementById('deliveryDateGroup');
+    if (group) group.style.display = pickupOnly ? 'none' : '';
 }
 
 function setupAutocomplete(inputEl, listEl, options) {
@@ -1564,10 +1620,10 @@ function containsText(haystack, needle) {
 function filterBillTable() {
     const custQuery = document.getElementById('searchBillCustomer').value;
     const soQuery = document.getElementById('searchBillSO').value;
-    const table = document.getElementById('billTable');
-    if (!table) return;
+    const pane = document.querySelector(`#panelDelivery .transport-pane[data-transport="${currentTransport}"]`);
+    if (!pane) return;
 
-    const rows = table.querySelectorAll('tbody tr.job-detail-row');
+    const rows = pane.querySelectorAll('tbody tr.job-detail-row');
     const groupVisibility = {};
 
     rows.forEach(row => {
@@ -1701,7 +1757,10 @@ document.addEventListener('DOMContentLoaded', function() {
     setView('delivery');
 
     document.getElementById('checkAllBills')?.addEventListener('change', function() {
-        document.querySelectorAll('.bill-checkbox').forEach(cb => cb.checked = this.checked);
+        // เลือกทั้งหมดเฉพาะขนส่งฝั่งที่กำลังโชว์อยู่เท่านั้น
+        const pane = document.querySelector(`#panelDelivery .transport-pane[data-transport="${currentTransport}"]`);
+        if (!pane) return;
+        pane.querySelectorAll('.bill-checkbox').forEach(cb => cb.checked = this.checked);
         updateSelectedCount();
     });
     
@@ -1716,6 +1775,7 @@ document.addEventListener('DOMContentLoaded', function() {
     });
 
     document.getElementById('openModalBtn').addEventListener('click', function() {
+        configureDeliveryDateField();
         new bootstrap.Modal(document.getElementById('driverModal')).show();
     });
 
@@ -1744,13 +1804,18 @@ document.addEventListener('DOMContentLoaded', function() {
     });
 
     document.getElementById('confirmSaveBtn').addEventListener('click', function() {
-        const date = document.getElementById('deliveryDateInput').value;
+        let date = document.getElementById('deliveryDateInput').value;
         const vehicle = vehicleInput.value.trim();
         const driver = driverInput.value.trim();
+        const pickupOnly = isPickupOnlySelection();
 
+        // รับของเอง: ไม่บังคับกรอกวันที่ — ถ้าเว้นว่างใช้วันที่วันนี้ให้อัตโนมัติ
         if (!date) {
-            showToast('กรุณาระบุวันที่จัดส่ง', 'error');
-            return;
+            if (!pickupOnly) {
+                showToast('กรุณาระบุวันที่จัดส่ง', 'error');
+                return;
+            }
+            date = new Date().toISOString().split('T')[0];
         }
         if (!vehicle) {
             showToast('กรุณาเลือกวิธีการจัดส่ง', 'error');

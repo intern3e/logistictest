@@ -110,6 +110,7 @@ Route::get('/insertdoc', [DocController::class, 'insertdoc'])->name('document.in
 Route::post('/insertdocu', [DocController::class, 'insertDocu'])->name('insertdocu');
 Route::get('/get-docbill-detail/{doc_id}', [DocController::class, 'getDocBillDetail'])->name('getdocBillDetail'); // แก้ชื่อฟังก์ชันให้ตรงกับ Controller (getDocBillDetail)
 Route::post('/fetch-doclalong', [DocController::class, 'fetchlalong']);
+Route::get('/search-cust-vendor', [DocController::class, 'searchCustAndVendor'])->name('document.searchCustVendor');
 Route::post('/save-bill-pdf', [DocController::class, 'savePdfBill'])->name('savebillpdf');
 
 // 👉 Route สำหรับแก้ไขเอกสาร
@@ -434,6 +435,9 @@ Route::prefix('internal-po')->name('internal_po.')->group(function () {
     Route::post('pick/submit',    [InternalPoController::class, 'pickSubmit'])->name('pick.submit');
     Route::post('cancel',         [InternalPoController::class, 'markCancel'])->name('cancel');
     Route::post('print-document', [InternalPoController::class, 'printDocument'])->name('print_document');
+    Route::get('item-search',     [InternalPoController::class, 'itemSearch'])->name('item_search');
+    Route::post('change-item',    [InternalPoController::class, 'changeItem'])->name('change_item');
+    Route::post('cancel-line',    [InternalPoController::class, 'cancelLine'])->name('cancel_line');
 });
 
 use App\Http\Controllers\StoreController;

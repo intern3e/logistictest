@@ -376,6 +376,13 @@
         </div>
     </div>
 
+    @php
+        $curRole = optional(auth('web')->user())->role;
+        $canChangeItem = in_array($curRole, ['admin', 'stock'], true);
+        $canCancelLine = in_array($curRole, ['admin', 'stock', 'store'], true);
+        $canManageLine = $canChangeItem || $canCancelLine;
+        $totalCols     = 9 + ($canManageLine ? 1 : 0);
+    @endphp
     <div class="table-scroll">
     <table>
         <thead>
@@ -389,6 +396,7 @@
                 <th>ลูกค้า</th>
                 <th class="col-key">สร้างโดย</th>
                 <th class="col-key">เวลาสร้าง</th>
+                @if ($canManageLine)<th class="center" style="width:150px;">จัดการ</th>@endif
             </tr>
         </thead>
 <tbody>
@@ -430,6 +438,20 @@
                     {{ !empty($h->timestamp) ? \Carbon\Carbon::parse($h->timestamp)->format('d/m/Y H:i') : '—' }}
                 @endif
             </td>
+            @if ($canManageLine)
+                <td class="center" style="white-space:nowrap;">
+                    @if ($lineId && $todo && !$picked)
+                        @if ($canChangeItem)
+                            <button type="button" class="btn-line btn-line-change"
+                                    onclick="openChangeItem({{ $lineId }}, '{{ $line->item_average ?? 0 }}')">เปลี่ยนสินค้า</button>
+                        @endif
+                        @if ($canCancelLine)
+                            <button type="button" class="btn-line btn-line-cancel"
+                                    onclick="cancelLine({{ $lineId }}, this)">ยกเลิก</button>
+                        @endif
+                    @endif
+                </td>
+            @endif
         </tr>
     @empty
         <tr class="{{ $cls }}" data-internal-id="{{ $h->internal_id }}">
@@ -448,10 +470,11 @@
                     {{ !empty($h->timestamp) ? \Carbon\Carbon::parse($h->timestamp)->format('d/m/Y H:i') : '—' }}
                 @endif
             </td>
+            @if ($canManageLine)<td></td>@endif
         </tr>
     @endforelse
 @empty
-    <tr><td colspan="9" class="empty">ไม่มีรายการ</td></tr>
+    <tr><td colspan="{{ $totalCols }}" class="empty">ไม่มีรายการ</td></tr>
 @endforelse
 </tbody>
     </table>
@@ -520,10 +543,13 @@
 </div>
 
 <script>
-const FINISH_URL     = "{{ route('internal_po.pick.submit') }}";
-const CANCEL_URL     = "{{ route('internal_po.cancel') }}";
-const PRINT_DOC_URL  = "{{ route('internal_po.print_document') }}";
-const CSRF           = document.querySelector('meta[name="csrf-token"]').content;
+const FINISH_URL       = "{{ route('internal_po.pick.submit') }}";
+const CANCEL_URL       = "{{ route('internal_po.cancel') }}";
+const PRINT_DOC_URL    = "{{ route('internal_po.print_document') }}";
+const ITEM_SEARCH_URL  = "{{ route('internal_po.item_search') }}";
+const CHANGE_ITEM_URL  = "{{ route('internal_po.change_item') }}";
+const CANCEL_LINE_URL  = "{{ route('internal_po.cancel_line') }}";
+const CSRF             = document.querySelector('meta[name="csrf-token"]').content;
 
 const PO_ITEMS = {
     @foreach ($heads as $h)
@@ -704,7 +730,114 @@ document.addEventListener('keydown', function (e) {
         clearTimeout(debounceTimer);
     });
 })();
+
+/* ===== เปลี่ยนสินค้า / ยกเลิกสินค้า รายไส้ใน ===== */
+let changeLineId = null;
+let changePicked = null;   // {item_id, name}
+let itemSearchTimer = null;
+
+function openChangeItem(lineId, curAvg){
+    changeLineId = lineId; changePicked = null;
+    document.getElementById('ciLineId').textContent = lineId;
+    document.getElementById('ciSearch').value = '';
+    document.getElementById('ciAvg').value = curAvg || '';
+    document.getElementById('ciPicked').textContent = 'ยังไม่ได้เลือกสินค้า';
+    document.getElementById('ciResults').innerHTML = '';
+    document.getElementById('changeItemModal').style.display = 'flex';
+    setTimeout(() => document.getElementById('ciSearch').focus(), 30);
+}
+function closeChangeItem(){ document.getElementById('changeItemModal').style.display = 'none'; changeLineId = null; }
+
+function ciOnSearch(){
+    clearTimeout(itemSearchTimer);
+    const q = document.getElementById('ciSearch').value.trim();
+    if (q.length < 2){ document.getElementById('ciResults').innerHTML = ''; return; }
+    itemSearchTimer = setTimeout(async () => {
+        try {
+            const res = await fetch(ITEM_SEARCH_URL + '?q=' + encodeURIComponent(q), { headers: { 'Accept':'application/json','X-Requested-With':'XMLHttpRequest' } });
+            const data = await res.json();
+            const items = (data && data.items) || [];
+            const box = document.getElementById('ciResults');
+            if (!items.length){ box.innerHTML = '<div class="ci-empty">ไม่พบสินค้า</div>'; return; }
+            box.innerHTML = items.map(it =>
+                '<div class="ci-item" onclick="ciPick(\'' + String(it.item_id).replace(/'/g,"\\'") + '\',\'' + String(it.name).replace(/'/g,"\\'") + '\')">'
+                + '<b>' + (it.item_id||'') + '</b> — ' + (it.name||'') + ' <span class="ci-qty">คงเหลือ ' + (it.quantity||0) + '</span></div>'
+            ).join('');
+        } catch(e){ console.error(e); }
+    }, 300);
+}
+function ciPick(itemId, name){
+    changePicked = { item_id: itemId, name: name };
+    document.getElementById('ciPicked').innerHTML = 'เลือก: <b>' + itemId + '</b> — ' + name;
+    document.getElementById('ciResults').innerHTML = '';
+    document.getElementById('ciSearch').value = name;
+}
+async function saveChangeItem(){
+    if (!changeLineId) return;
+    if (!changePicked){ alert('กรุณาพิมพ์ชื่อแล้วเลือกสินค้าก่อน'); return; }
+    const avg = document.getElementById('ciAvg').value;
+    const btn = document.getElementById('ciSaveBtn'); btn.disabled = true; btn.textContent = 'กำลังบันทึก...';
+    try {
+        const res = await fetch(CHANGE_ITEM_URL, {
+            method:'POST',
+            headers:{ 'Content-Type':'application/json','Accept':'application/json','X-CSRF-TOKEN':CSRF },
+            body: JSON.stringify({ line_id: changeLineId, item_id: changePicked.item_id, item_name: changePicked.name, item_average: avg === '' ? null : avg })
+        });
+        const data = await res.json().catch(()=>null);
+        if (!res.ok || !data || !data.ok){ alert((data&&data.message)||'เปลี่ยนสินค้าไม่สำเร็จ'); btn.disabled=false; btn.textContent='บันทึก'; return; }
+        location.reload();
+    } catch(e){ console.error(e); alert('เกิดข้อผิดพลาด'); btn.disabled=false; btn.textContent='บันทึก'; }
+}
+async function cancelLine(lineId, btn){
+    if (!confirm('ยกเลิกสินค้ารายการนี้?')) return;
+    btn.disabled = true;
+    try {
+        const res = await fetch(CANCEL_LINE_URL, {
+            method:'POST',
+            headers:{ 'Content-Type':'application/json','Accept':'application/json','X-CSRF-TOKEN':CSRF },
+            body: JSON.stringify({ line_id: lineId })
+        });
+        const data = await res.json().catch(()=>null);
+        if (!res.ok || !data || !data.ok){ alert((data&&data.message)||'ยกเลิกไม่สำเร็จ'); btn.disabled=false; return; }
+        location.reload();
+    } catch(e){ console.error(e); alert('เกิดข้อผิดพลาด'); btn.disabled=false; }
+}
 </script>
+
+<style>
+    .btn-line{ padding:4px 9px; border-radius:6px; font-size:12px; font-family:inherit; cursor:pointer; border:1px solid; background:#fff; }
+    .btn-line-change{ border-color:#3E6AE1; color:#3E6AE1; }
+    .btn-line-change:hover{ background:#eef2ff; }
+    .btn-line-cancel{ border-color:#c0392b; color:#c0392b; margin-left:4px; }
+    .btn-line-cancel:hover{ background:#fdecea; }
+    #changeItemModal{ display:none; position:fixed; inset:0; background:rgba(0,0,0,.45); z-index:400; align-items:center; justify-content:center; }
+    #changeItemModal .ci-box{ background:#fff; border-radius:14px; padding:20px; width:min(94vw,460px); box-shadow:0 12px 40px rgba(0,0,0,.25); }
+    #changeItemModal h3{ margin:0 0 12px; font-size:16px; }
+    #changeItemModal input{ width:100%; padding:9px 12px; border:1px solid #d6dbe3; border-radius:8px; font-family:inherit; font-size:14px; box-sizing:border-box; }
+    #ciResults{ max-height:230px; overflow-y:auto; border:1px solid #eee; border-radius:8px; margin-top:6px; }
+    #ciResults:empty{ display:none; }
+    .ci-item{ padding:8px 12px; font-size:13px; cursor:pointer; border-bottom:1px solid #f1f5f9; }
+    .ci-item:hover{ background:#eef2ff; }
+    .ci-qty{ color:#6b7280; font-size:12px; }
+    .ci-empty{ padding:10px; text-align:center; color:#6b7280; font-size:13px; }
+    #ciPicked{ margin:10px 0; font-size:13px; color:#1e293b; }
+    .ci-actions{ display:flex; gap:10px; justify-content:flex-end; margin-top:8px; }
+</style>
+
+<div id="changeItemModal">
+    <div class="ci-box">
+        <h3>เปลี่ยนสินค้า (ไส้ใน #<span id="ciLineId"></span>)</h3>
+        <input type="search" id="ciSearch" placeholder="พิมพ์ชื่อ/รหัสสินค้า แล้วเลือก..." autocomplete="off" oninput="ciOnSearch()">
+        <div id="ciResults"></div>
+        <div id="ciPicked">ยังไม่ได้เลือกสินค้า</div>
+        <label style="font-size:13px;color:#374151;">ราคาเฉลี่ย</label>
+        <input type="number" id="ciAvg" step="0.01" min="0" placeholder="ราคาเฉลี่ย" style="margin-top:4px;">
+        <div class="ci-actions">
+            <button type="button" class="btn-ghost" onclick="closeChangeItem()">ยกเลิก</button>
+            <button type="button" class="btn-success" id="ciSaveBtn" onclick="saveChangeItem()">บันทึก</button>
+        </div>
+    </div>
+</div>
 </body>
 </html>
 @endif

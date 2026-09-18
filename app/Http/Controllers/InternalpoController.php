@@ -491,14 +491,19 @@ private function hydrateLegacyPageItems(\Illuminate\Support\Collection $lightIte
         }
 
         try {
-            $finishedPoIds = DB::transaction(function () use ($lineIds, $operatorName) {
-                // มาร์คไส้ในที่เลือกว่า "จัดแล้ว"
-                internal_poline::whereIn('id', $lineIds)
+            $result = DB::transaction(function () use ($lineIds, $operatorName) {
+                // เฉพาะไส้ในที่ "ยังไม่ถูกจัด" ในรอบนี้ (กันจัด/ปริ้นซ้ำ)
+                $pickedNowIds = internal_poline::whereIn('id', $lineIds)
                     ->whereNull('picked_at')
-                    ->update([
-                        'picked_at' => Carbon::now()->toDateTimeString(),
-                        'picked_by' => $operatorName,
-                    ]);
+                    ->pluck('id')->all();
+
+                if (!empty($pickedNowIds)) {
+                    internal_poline::whereIn('id', $pickedNowIds)
+                        ->update([
+                            'picked_at' => Carbon::now()->toDateTimeString(),
+                            'picked_by' => $operatorName,
+                        ]);
+                }
 
                 // PO ที่ไส้ในถูกจัดครบทุกอันแล้ว → ปิดงาน (FINISH)
                 $affectedPoIds = internal_poline::whereIn('id', $lineIds)
@@ -522,28 +527,43 @@ private function hydrateLegacyPageItems(\Illuminate\Support\Collection $lightIte
                         }
                     }
                 }
-                return $finished;
+                return ['pickedIds' => $pickedNowIds, 'finished' => $finished];
             });
         } catch (\Exception $e) {
             return response()->json(['ok' => false, 'message' => 'จัดเสร็จไม่สำเร็จ: ' . $e->getMessage()], 500);
         }
 
-        // พิมพ์สติ๊กเกอร์ + ซิงก์ inventory เฉพาะ PO ที่จัดครบแล้วในรอบนี้
+        $pickedNowIds  = $result['pickedIds'];
+        $finishedPoIds = $result['finished'];
+
+        // พิมพ์สติ๊กเกอร์ + ตัดสต็อก "รายไส้ในที่เพิ่งจัดในรอบนี้" (ไม่รอทั้ง PO ครบ)
         $printOk = true;
         $hikariHadError = false;
-        if (!empty($finishedPoIds)) {
-            $finishedHeads = internal_po::whereIn('internal_id', $finishedPoIds)->with('lines')->get();
+        if (!empty($pickedNowIds)) {
+            $pickedLines = internal_poline::whereIn('id', $pickedNowIds)->get();
+            $headsById   = internal_po::whereIn('internal_id', $pickedLines->pluck('internal_id')->unique()->values()->all())
+                ->get()->keyBy('internal_id');
 
-            $needItemIds = $finishedHeads->flatMap(fn ($h) => $h->lines->pluck('item_id'))->filter()->unique()->values()->all();
+            // ตัดสต็อก Hikari เฉพาะไส้ในที่เพิ่งจัด (สร้าง head ชั่วคราวที่ lines = เฉพาะไส้ในรอบนี้)
+            $deductHeads = collect();
+            foreach ($pickedLines->groupBy('internal_id') as $poId => $plines) {
+                $head = $headsById->get($poId);
+                if (!$head) continue;
+                $clone = clone $head;
+                $clone->setRelation('lines', $plines->values());
+                $deductHeads->push($clone);
+            }
+            $needItemIds   = $pickedLines->pluck('item_id')->filter()->unique()->values()->all();
             $itemSnapshots = !empty($needItemIds) ? $this->hikariGetItemsBulk($needItemIds) : [];
-            $hikariHadError = $this->syncHikariStockout($finishedHeads, $itemSnapshots, $operatorName);
+            $hikariHadError = $this->syncHikariStockout($deductHeads, $itemSnapshots, $operatorName);
 
-            $printOk = $this->insertPrintWarehouse($finishedHeads, $printer, $printSheets);
+            // ปริ้นสติ๊กเกอร์รายไส้ใน
+            $printOk = $this->insertPrintWarehouseLines($pickedLines, $headsById, $printer, $printSheets);
         }
 
-        $message = 'จัดไส้ในแล้ว ' . count($lineIds) . ' รายการ';
+        $message = 'จัดไส้ในแล้ว ' . count($pickedNowIds) . ' รายการ (พิมพ์สติ๊กเกอร์ + ตัดสต็อกรายไส้ใน)';
         if (!empty($finishedPoIds)) {
-            $message .= ' · ปิดงานครบ ' . count($finishedPoIds) . ' PO (พิมพ์สติ๊กเกอร์ ' . $printSheets . ' แผ่น/ใบ ที่ ' . $printer . ')';
+            $message .= ' · ปิดงานครบ ' . count($finishedPoIds) . ' PO';
         }
         if (!$printOk) {
             $message .= ' ⚠️ แต่สั่งพิมพ์สติ๊กเกอร์ไม่สำเร็จ (เขียน printwarehouse ไม่ได้ — ตรวจสิทธิ์ DB 3e)';
@@ -591,6 +611,117 @@ private function hydrateLegacyPageItems(\Illuminate\Support\Collection $lightIte
     }
 
     /**
+     * ค้นหาสินค้าจาก master (Hikari /items) สำหรับ "เปลี่ยนสินค้า" — พิมพ์ชื่อแล้วเลือก (เหมือน so/show)
+     * คืน [{item_id, name, quantity}] (เฉพาะ typeitem 'คลัง')
+     */
+    public function itemSearch(Request $request)
+    {
+        $authUser = Auth::guard('web')->user();
+        if (!$authUser || !in_array($authUser->role, ['admin', 'stock', 'store'], true)) {
+            return response()->json(['ok' => false, 'items' => []], 403);
+        }
+
+        $q = trim((string) $request->input('q', ''));
+        if (mb_strlen($q) < 2) {
+            return response()->json(['ok' => true, 'items' => []]);
+        }
+
+        // cache รายการสินค้าทั้งหมด 10 นาที (Hikari มี ~15000 รายการ) แล้วค้นใน memory
+        $items = Cache::remember('hikari_items_all', 600, function () {
+            try {
+                $res = Http::timeout(30)
+                    ->withHeaders(['x-api-key' => self::HIKARI_API_KEY])
+                    ->baseUrl(self::HIKARI_API_URL)
+                    ->get('/items');
+                return $res->successful() ? $res->json() : [];
+            } catch (\Throwable $e) {
+                Log::warning('itemSearch: hikari /items failed: ' . $e->getMessage());
+                return [];
+            }
+        });
+
+        $out = collect($items)
+            ->filter(fn ($it) => ($it['typeitem'] ?? '') === 'คลัง')
+            ->filter(function ($it) use ($q) {
+                return mb_stripos((string) ($it['name'] ?? ''), $q) !== false
+                    || stripos((string) ($it['iditem'] ?? ''), $q) !== false;
+            })
+            ->take(30)
+            ->map(fn ($it) => [
+                'item_id'  => $it['iditem'] ?? '',
+                'name'     => $it['name'] ?? '',
+                'quantity' => $it['quantity'] ?? 0,
+            ])
+            ->values();
+
+        return response()->json(['ok' => true, 'items' => $out]);
+    }
+
+    /**
+     * เปลี่ยนสินค้าของไส้ในรายการหนึ่ง (เฉพาะ admin/stock) — บันทึกครบทุกคอลัมน์
+     *   item_id (รหัส), item_name (ชื่อ), item_average (ราคาเฉลี่ย), item_total = เฉลี่ย × จำนวน
+     */
+    public function changeItem(Request $request)
+    {
+        $authUser = Auth::guard('web')->user();
+        if (!$authUser || !in_array($authUser->role, ['admin', 'stock'], true)) {
+            return response()->json(['ok' => false, 'message' => 'เฉพาะ admin/stock เท่านั้นที่เปลี่ยนสินค้าได้'], 403);
+        }
+
+        $request->validate([
+            'line_id'      => 'required|integer',
+            'item_id'      => 'required|string|max:100',
+            'item_name'    => 'required|string|max:500',
+            'item_average' => 'nullable|numeric|min:0',
+        ]);
+
+        $line = internal_poline::find($request->input('line_id'));
+        if (!$line) {
+            return response()->json(['ok' => false, 'message' => 'ไม่พบรายการสินค้านี้'], 404);
+        }
+        if (!empty($line->picked_at)) {
+            return response()->json(['ok' => false, 'message' => 'รายการนี้จัดเสร็จ/ตัดสต็อกไปแล้ว เปลี่ยนสินค้าไม่ได้'], 409);
+        }
+
+        $avg = $request->filled('item_average')
+            ? (float) $request->input('item_average')
+            : (float) ($line->item_average ?? 0);
+
+        $line->item_id      = $request->input('item_id');
+        $line->item_name    = $request->input('item_name');
+        $line->item_average = $avg;
+        $line->item_total   = $avg * (float) $line->item_quantity;
+        $line->save();
+
+        return response()->json(['ok' => true, 'message' => 'เปลี่ยนสินค้าเรียบร้อย']);
+    }
+
+    /**
+     * ยกเลิกสินค้ารายตัวใน PO (เฉพาะที่ยังไม่จัดเสร็จ) — admin/stock/store
+     */
+    public function cancelLine(Request $request)
+    {
+        $authUser = Auth::guard('web')->user();
+        if (!$authUser || !in_array($authUser->role, ['admin', 'stock', 'store'], true)) {
+            return response()->json(['ok' => false, 'message' => 'คุณไม่มีสิทธิ์ยกเลิกสินค้า'], 403);
+        }
+
+        $request->validate(['line_id' => 'required|integer']);
+
+        $line = internal_poline::find($request->input('line_id'));
+        if (!$line) {
+            return response()->json(['ok' => false, 'message' => 'ไม่พบรายการสินค้านี้'], 404);
+        }
+        if (!empty($line->picked_at)) {
+            return response()->json(['ok' => false, 'message' => 'รายการนี้จัดเสร็จไปแล้ว ยกเลิกไม่ได้'], 409);
+        }
+
+        $line->delete();
+
+        return response()->json(['ok' => true, 'message' => 'ยกเลิกสินค้าเรียบร้อย']);
+    }
+
+    /**
      * คิวพิมพ์สติ๊กเกอร์ลง printwarehouse (3e)
      * คืน true = สั่งพิมพ์สำเร็จ, false = ล้มเหลว (เช่น user ไม่มีสิทธิ์ INSERT บน 3e) เพื่อให้แจ้งเตือนผู้ใช้ได้
      */
@@ -617,6 +748,38 @@ private function hydrateLegacyPageItems(\Illuminate\Support\Collection $lightIte
             return true;
         } catch (\Exception $e) {
             Log::error('insertPrintWarehouse failed: ' . $e->getMessage());
+            return false;
+        }
+    }
+
+    /**
+     * ปริ้นสติ๊กเกอร์ "รายไส้ใน" (1 สติ๊กเกอร์ต่อ 1 ไส้ในที่จัด × printQty) — ใช้ข้อมูลหัว PO ของไส้ในนั้น
+     */
+    private function insertPrintWarehouseLines($pickedLines, $headsById, string $printerName, int $printQty): bool
+    {
+        $rows = [];
+        foreach ($pickedLines as $line) {
+            $h = $headsById->get($line->internal_id);
+            if (!$h) continue;
+            for ($i = 0; $i < $printQty; $i++) {
+                $rows[] = [
+                    'SONum'        => $h->SO_id,
+                    'PORef'        => $h->POref ?? null,
+                    'CustName'     => $h->customer_name,
+                    'Print_Qty'    => 1,
+                    'Printed_Flag' => 'N',
+                    'printerName'  => $printerName,
+                ];
+            }
+        }
+
+        if (!$rows) return true;
+
+        try {
+            DB::connection('mysql_3e')->table('printwarehouse')->insert($rows);
+            return true;
+        } catch (\Exception $e) {
+            Log::error('insertPrintWarehouseLines failed: ' . $e->getMessage());
             return false;
         }
     }

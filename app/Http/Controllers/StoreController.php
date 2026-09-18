@@ -1405,14 +1405,16 @@ class StoreController extends Controller
         $user = $authUser->name;
 
         $request->validate([
-            'ids'      => 'nullable|array',
-            'ids.*'    => 'string',
-            'dn_nos'   => 'nullable|array',
-            'dn_nos.*' => 'string',
+            'ids'            => 'nullable|array',
+            'ids.*'          => 'string',
+            'dn_nos'         => 'nullable|array',
+            'dn_nos.*'       => 'string',
+            'transport_type' => 'nullable|in:company,private',   // ประเภทขนส่ง (ตอนจัดบิล)
         ]);
 
-        $ids   = $request->input('ids', []);
-        $dnNos = array_values(array_unique(array_filter($request->input('dn_nos', []))));
+        $ids           = $request->input('ids', []);
+        $dnNos         = array_values(array_unique(array_filter($request->input('dn_nos', []))));
+        $transportType = $request->input('transport_type');
 
         if (!$ids && !$dnNos) {
             return response()->json(['ok' => false, 'message' => 'ยังไม่ได้เลือกรายการ'], 422);
@@ -1472,13 +1474,25 @@ class StoreController extends Controller
         $pickedBills = 0;
         if ($dnNos) {
             try {
+                $pickerUpdate = [
+                    self::TBLBILL_PICKER_COLUMN      => $user,
+                    self::TBLBILL_PICKER_TIME_COLUMN => Carbon::now()->toDateTimeString(),
+                ];
+                if (in_array($transportType, ['company', 'private'], true)) {
+                    $pickerUpdate['transport_type'] = $transportType;
+                }
                 $pickedBills = DB::table('tblbill')
                     ->whereIn(self::TBLBILL_DN_COLUMN, $dnNos)
                     ->whereNull(self::TBLBILL_PICKER_COLUMN)
-                    ->update([
-                        self::TBLBILL_PICKER_COLUMN      => $user,
-                        self::TBLBILL_PICKER_TIME_COLUMN => Carbon::now()->toDateTimeString(),
-                    ]);
+                    ->update($pickerUpdate);
+
+                // เผื่อบิลถูกจัดไปแล้ว (มี emp_picker) แต่ต้องอัปเดต/แก้ประเภทขนส่ง
+                if (in_array($transportType, ['company', 'private'], true)) {
+                    DB::table('tblbill')
+                        ->whereIn(self::TBLBILL_DN_COLUMN, $dnNos)
+                        ->whereNull('transport_type')
+                        ->update(['transport_type' => $transportType]);
+                }
             } catch (\Exception $e) {
                 Log::warning('checkoutSubmit: บันทึก emp_picker/picker_time ลง tblbill ไม่สำเร็จ: ' . $e->getMessage());
             }

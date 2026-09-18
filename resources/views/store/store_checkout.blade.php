@@ -219,10 +219,16 @@
     .dn-no.is-cancelled { color: var(--danger); text-decoration: line-through; }
     .dn-time { font-size: 13px; color: var(--muted); }
     
-    .dnSelectAll, .chkPickOnly {
+    .dnSelectAll, .chkPickOnly, .chkBill {
         width: 20px; height: 20px; accent-color: var(--primary); flex-shrink: 0; cursor: pointer;
         border: 2px solid var(--border); border-radius: 4px;
     }
+    .chkBill { accent-color: var(--success-dark); }
+    .dn-check-label {
+        display: inline-flex; align-items: center; gap: 6px; cursor: pointer;
+        font-size: 13px; font-weight: 600; color: var(--muted); white-space: nowrap;
+    }
+    .dn-check-label:has(.chkBill) { color: var(--success-dark); }
     .dn-cancelled-badge {
         font-size: 13px; font-weight: 600; color: var(--danger); margin-left: auto; white-space: nowrap;
         background: var(--danger-light); padding: 2px 8px; border-radius: 4px;
@@ -396,20 +402,20 @@
 
                     @foreach ($dnList as $dnIdx => $dn)
                         @php
-                            $dnElId        = $soIdSafe . '_dn' . $dnIdx;
-                            $isCancelled   = $dn->cancelled ?? false;
-                            $isPicked      = $dn->picked ?? false;
-                            $isItemHost    = ($dnIdx === $itemHostDnIdx);
-                            $showSelectAll = $isItemHost && !$isCancelled && !$isPicked && !$bill->todo_groups->isEmpty();
-                            $showPickOnly  = !$isCancelled && !$isPicked && !$showSelectAll && ($dn->dn_no ?? null);
+                            $dnElId       = $soIdSafe . '_dn' . $dnIdx;
+                            $isCancelled  = $dn->cancelled ?? false;
+                            $isPicked     = $dn->picked ?? false;
+                            $isItemHost   = ($dnIdx === $itemHostDnIdx);
+                            // จัดบิลออก (dispatch bill) แยกอิสระจากเช็คเอ้าของ (ของติ๊กราย PO เอง)
+                            $hasBill      = !$isCancelled && !$isPicked && ($dn->dn_no ?? null);
                         @endphp
                         <div class="dn-section {{ $isCancelled ? 'dn-cancelled' : '' }}" id="{{ $dnElId }}" data-dnno="{{ $dn->dn_no ?? '' }}">
                             <div class="dn-section-header">
-                                @if ($showSelectAll)
-                                    <input type="checkbox" class="dnSelectAll" id="{{ $selectAllId }}"
-                                        onchange="toggleDnSelectAll(document.getElementById('{{ $itemsElId }}'), this.checked)">
-                                @elseif ($showPickOnly)
-                                    <input type="checkbox" class="chkPickOnly" onchange="syncCardFromPickOnly(this)">
+                                @if ($hasBill)
+                                    <label class="dn-check-label" title="จัดบิลออก (ไม่เกี่ยวกับเช็คเอ้าของ)">
+                                        <input type="checkbox" class="chkBill" data-dnno="{{ $dn->dn_no }}" onchange="updateFloatBar()">
+                                        <span>จัดบิลออก</span>
+                                    </label>
                                 @endif
                                 <span class="dn-no {{ $isCancelled ? 'is-cancelled' : ($isPicked ? 'is-done' : '') }}">{{ ($dn->dn_no ?? null) ? $dn->dn_no : '— (ไม่มีเลขที่บิล)' }}</span>
                                 
@@ -542,6 +548,19 @@
     <button type="button" class="btn-success" id="floatSubmitBtn" onclick="submitAllCheckout()">💾 บันทึก</button>
 </div>
 
+{{-- Modal เลือกประเภทการขนส่ง (ตอนจัดบิล) --}}
+<div id="transportModal" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,.45); z-index:300; align-items:center; justify-content:center;">
+    <div style="background:#fff; border-radius:14px; padding:22px; width:min(92vw,380px); box-shadow:0 12px 40px rgba(0,0,0,.25);">
+        <div style="font-size:16px; font-weight:600; margin-bottom:4px;">เลือกประเภทการขนส่ง</div>
+        <div style="font-size:13px; color:#6b7280; margin-bottom:16px;">สำหรับบิลที่กำลังจัด</div>
+        <div style="display:flex; flex-direction:column; gap:10px;">
+            <button type="button" onclick="pickTransport('company')" style="padding:14px; border:1.5px solid #3E6AE1; border-radius:10px; background:#eef2ff; color:#1e3a8a; font-size:15px; font-weight:600; cursor:pointer;">🚚 ขนส่งโดยรถบริษัท</button>
+            <button type="button" onclick="pickTransport('private')" style="padding:14px; border:1.5px solid #16a34a; border-radius:10px; background:#f0fdf4; color:#166534; font-size:15px; font-weight:600; cursor:pointer;">🏢 บริษัทขนส่ง (เอกชน)</button>
+            <button type="button" onclick="closeTransport()" style="padding:10px; border:1px solid #e5e7eb; border-radius:10px; background:#fff; color:#6b7280; font-size:14px; cursor:pointer;">ยกเลิก</button>
+        </div>
+    </div>
+</div>
+
 <script>
 const SUBMIT_URL = "{{ route('store.checkout.submit') }}";
 const CSRF = document.querySelector('meta[name="csrf-token"]').content;
@@ -591,19 +610,13 @@ function toggleSoCard(id) {
 }
 
 function updateDnButton(itemsEl) {
+    // sync เฉพาะ "เลือกของทั้งหมด" กับ checkbox ของ (chkGroup) เท่านั้น — ไม่ไปยุ่งกับ checkbox บิล
     const allBoxes = itemsEl.querySelectorAll('.chkGroup');
     const checked  = itemsEl.querySelectorAll('.chkGroup:checked').length;
     const selectAll = document.getElementById(itemsEl.dataset.selectall);
-    let allChecked = false;
     if (selectAll) {
-        allChecked = allBoxes.length > 0 && checked === allBoxes.length;
-        selectAll.checked       = allChecked;
+        selectAll.checked       = allBoxes.length > 0 && checked === allBoxes.length;
         selectAll.indeterminate = checked > 0 && checked < allBoxes.length;
-
-        const card = itemsEl.closest('.so-card');
-        if (card) {
-            card.querySelectorAll('.chkPickOnly').forEach(cb => { cb.checked = allChecked; });
-        }
     }
     updateFloatBar();
 }
@@ -613,32 +626,10 @@ function toggleDnSelectAll(dnEl, checked) {
     updateDnButton(dnEl);
 }
 
-function syncCardFromPickOnly(cb) {
-    if (!cb.checked) {
-        updateFloatBar();
-        return;
-    }
-    const card = cb.closest('.so-card');
-    if (!card) { updateFloatBar(); return; }
-
-    card.querySelectorAll('.chkPickOnly').forEach(other => { other.checked = true; });
-
-    const itemsEl = card.querySelector('[data-selectall]');
-    if (itemsEl) {
-        itemsEl.querySelectorAll('.chkGroup').forEach(g => { g.checked = true; });
-        const selectAll = document.getElementById(itemsEl.dataset.selectall);
-        if (selectAll) {
-            selectAll.checked       = true;
-            selectAll.indeterminate = false;
-        }
-    }
-    updateFloatBar();
-}
-
 function updateFloatBar() {
-    const checkedGroups   = document.querySelectorAll('.chkGroup:checked').length;
-    const checkedPickOnly = document.querySelectorAll('.chkPickOnly:checked').length;
-    const total = checkedGroups + checkedPickOnly;
+    const checkedGroups = document.querySelectorAll('.chkGroup:checked').length;  // เช็คเอ้าของ
+    const checkedBills  = document.querySelectorAll('.chkBill:checked').length;   // จัดบิลออก
+    const total = checkedGroups + checkedBills;
     const bar = document.getElementById('floatBar');
     const cnt = document.getElementById('floatCount');
     if (cnt) cnt.textContent = total;
@@ -648,26 +639,50 @@ function updateFloatBar() {
 
 function clearAllChecks() {
     document.querySelectorAll('.chkGroup:checked').forEach(cb => { cb.checked = false; });
-    document.querySelectorAll('.chkPickOnly:checked').forEach(cb => { cb.checked = false; });
+    document.querySelectorAll('.chkBill:checked').forEach(cb => { cb.checked = false; });
     document.querySelectorAll('.dnSelectAll').forEach(cb => { cb.checked = false; cb.indeterminate = false; });
     updateFloatBar();
 }
 
-async function submitAllCheckout() {
-    const checkedBoxes  = Array.from(document.querySelectorAll('.chkGroup:checked'));
-    const pickOnlyBoxes = Array.from(document.querySelectorAll('.chkPickOnly:checked'));
-    if (!checkedBoxes.length && !pickOnlyBoxes.length) return;
+let pendingSubmit = null;   // เก็บ {ids, dnNos, totalCount} ระหว่างรอเลือกประเภทขนส่ง
 
-    const ids = Array.from(new Set(checkedBoxes.map(c => c.value)));
-    const dnNos = Array.from(new Set(
-        checkedBoxes.map(c => c.closest('.dn-section')?.dataset.dnno)
-            .concat(pickOnlyBoxes.map(c => c.closest('.dn-section')?.dataset.dnno))
-            .filter(Boolean)
-    ));
+function submitAllCheckout() {
+    // เช็คเอ้าของ (ids) มาจาก checkbox ของ (chkGroup) เท่านั้น
+    // จัดบิลออก (dnNos) มาจาก checkbox บิล (chkBill) ที่ติ๊กเองเท่านั้น — ไม่ derive จาก PO
+    const checkedBoxes = Array.from(document.querySelectorAll('.chkGroup:checked'));
+    const billBoxes    = Array.from(document.querySelectorAll('.chkBill:checked'));
+    if (!checkedBoxes.length && !billBoxes.length) return;
 
-    const totalCount = ids.length + pickOnlyBoxes.length;
-    if (!confirm('ยืนยันบันทึกข้อมูล ' + totalCount + ' รายการใช่หรือไม่?')) return;
+    const ids   = Array.from(new Set(checkedBoxes.map(c => c.value)));
+    const dnNos = Array.from(new Set(billBoxes.map(c => c.dataset.dnno).filter(Boolean)));
 
+    const totalCount = ids.length + dnNos.length;
+    pendingSubmit = { ids, dnNos, totalCount };
+
+    // มีจัดบิลออก -> ต้องเลือกประเภทขนส่งก่อน
+    if (dnNos.length > 0) {
+        document.getElementById('transportModal').style.display = 'flex';
+        return;
+    }
+    // เช็คเอ้าของอย่างเดียว (ไม่จัดบิล) -> ยืนยันแล้วส่งเลย
+    if (!confirm('ยืนยันบันทึกข้อมูล ' + totalCount + ' รายการใช่หรือไม่?')) { pendingSubmit = null; return; }
+    doSubmit(null);
+}
+
+function closeTransport() {
+    document.getElementById('transportModal').style.display = 'none';
+    pendingSubmit = null;
+}
+
+function pickTransport(type) {
+    document.getElementById('transportModal').style.display = 'none';
+    if (!pendingSubmit) return;
+    doSubmit(type);
+}
+
+async function doSubmit(transportType) {
+    if (!pendingSubmit) return;
+    const { ids, dnNos } = pendingSubmit;
     const btn = document.getElementById('floatSubmitBtn');
     btn.disabled = true;
     try {
@@ -679,7 +694,7 @@ async function submitAllCheckout() {
                 'X-Requested-With': 'XMLHttpRequest',
                 'X-CSRF-TOKEN': CSRF,
             },
-            body: JSON.stringify({ ids, dn_nos: dnNos }),
+            body: JSON.stringify({ ids, dn_nos: dnNos, transport_type: transportType }),
         });
         const data = await res.json();
         if (res.ok && data.ok) {
@@ -692,6 +707,8 @@ async function submitAllCheckout() {
         console.error(e);
         alert('เกิดข้อผิดพลาดในการเชื่อมต่อ');
         btn.disabled = false;
+    } finally {
+        pendingSubmit = null;
     }
 }
 </script>
