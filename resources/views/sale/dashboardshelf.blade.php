@@ -227,8 +227,8 @@
         .btn-view { padding:4px 12px; border:1px solid var(--border); border-radius:6px; background:var(--canvas); color:var(--ink); font-family:inherit; font-size:12.5px; cursor:pointer; }
         .btn-view:hover { background:#f3f4f6; }
         .sub-table { width:100%; background:#fff; border-collapse:collapse; }
-        .sub-table th, .sub-table td { border:1px solid #e5e7eb; padding:4px 8px; font-size:13px; text-align:center; }
-        .sub-table th { background:#eef2f7; }
+        .sub-table th, .sub-table td { border:1px solid #e5e7eb; padding:4px 8px; font-size:13px; text-align:center; color:#111827; }
+        .sub-table th { background:#eef2f7; color:#111827; }
         .btn-move { border-color:#3E6AE1 !important; color:#3E6AE1 !important; }
         .btn-checkout { border-color:#c0392b !important; color:#c0392b !important; }
         .move-modal { display:none; position:fixed; inset:0; background:rgba(0,0,0,.4); z-index:200; align-items:center; justify-content:center; }

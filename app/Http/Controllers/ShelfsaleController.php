@@ -184,9 +184,10 @@ class ShelfsaleController extends Controller
         $now = Carbon::now();
         $items = $items->map(function ($it) use ($soInfo, $now) {
             $so = $soInfo->get($it->so);
-            $it->cust_id   = optional($so)->CustID;
-            $it->cust_name = optional($so)->CustName;
-            $it->sale      = optional($so)->createdBy;
+            // งานภายในถือข้อมูลลูกค้า/Sale ของตัวเองอยู่แล้ว — ใช้ค่าจาก 3e so ถ้ามี ไม่งั้นคงค่าเดิม
+            $it->cust_id   = optional($so)->CustID    ?? ($it->cust_id ?? null);
+            $it->cust_name = optional($so)->CustName  ?? ($it->cust_name ?? null);
+            $it->sale      = optional($so)->createdBy ?? ($it->sale ?? null);
             $it->days_in   = $it->received_at
                 ? (int) $it->received_at->copy()->startOfDay()->diffInDays($now->copy()->startOfDay())
                 : null;
@@ -250,10 +251,52 @@ class ShelfsaleController extends Controller
             \Illuminate\Support\Facades\Log::warning('shelfsale MSSQL failed: ' . $e->getMessage());
         }
 
-        // ===== รวมเป็น 1 แถวต่อ 1 PO (เหมือนตารางชั้น SALE เดิม) =====
-        $rows = $items->groupBy(fn ($it) => preg_replace('/^PO/i', '', (string) $it->po))
-            ->map(function ($group, $cleanPo) use ($priceByDocu, $shipByDocu, $namesByPo, $now) {
+        // ===== ชื่อสินค้าของงาน "รหัส A" (เช่น 6905-A0347) — ดึงจาก 3e.internal_poline (PONum -> Description) =====
+        //   งานเหล่านี้ไม่มีใน MSSQL PODT ชื่อสินค้าจึงต้องดึงจากตาราง internal_poline ในฐาน 3e
+        $legacyCleanPos = $items->filter(fn ($it) => empty($it->line_id))
+            ->pluck('po')->filter()
+            ->map(fn ($p) => preg_replace('/^PO/i', '', (string) $p))
+            ->unique()->values()->all();
+        if (!empty($legacyCleanPos)) {
+            try {
+                $posWithPodt = array_flip(array_keys($namesByPo));   // PO ที่มีชื่อจาก PODT แล้ว (ไม่ต้องซ้ำ)
+                $internalLines = DB::connection(self::LEGACY_CONNECTION)->table('internal_poline')
+                    ->whereIn('PONum', $legacyCleanPos)
+                    ->orderBy('POLineSeq')
+                    ->get(['PONum', 'Description']);
+                foreach ($internalLines as $ln) {
+                    $clean = preg_replace('/^PO/i', '', (string) $ln->PONum);
+                    if (isset($posWithPodt[$clean])) continue;
+                    $name = trim((string) $ln->Description);
+                    if ($name !== '') $namesByPo[$clean][] = $name;
+                }
+            } catch (\Throwable $e) {
+                \Illuminate\Support\Facades\Log::warning('shelfsale 3e.internal_poline failed: ' . $e->getMessage());
+            }
+
+            // fallback: PO ที่ยังไม่มีชื่อ (ทั้ง PODT และ 3e.internal_poline ไม่มี) -> ดึงจาก logistic.internal_poline (internal_id -> item_name)
+            $stillMissing = array_values(array_filter($legacyCleanPos, fn ($p) => empty($namesByPo[$p])));
+            if (!empty($stillMissing)) {
+                try {
+                    $logiLines = DB::table('internal_poline')   // default connection = ฐาน logistic
+                        ->whereIn('internal_id', $stillMissing)
+                        ->get(['internal_id', 'item_name']);
+                    foreach ($logiLines as $ln) {
+                        $clean = preg_replace('/^PO/i', '', (string) $ln->internal_id);
+                        $name  = trim((string) $ln->item_name);
+                        if ($name !== '') $namesByPo[$clean][] = $name;
+                    }
+                } catch (\Throwable $e) {
+                    \Illuminate\Support\Facades\Log::warning('shelfsale logistic.internal_poline failed: ' . $e->getMessage());
+                }
+            }
+        }
+
+        // ===== รวมเป็น 1 แถวต่อ 1 (PO + SO) — ถ้ารหัส PO,SO เดียวกัน แสดงแถวเดียว =====
+        $rows = $items->groupBy(fn ($it) => preg_replace('/^PO/i', '', (string) $it->po) . '|' . (string) $it->so)
+            ->map(function ($group) use ($priceByDocu, $shipByDocu, $namesByPo, $now) {
                 $first    = $group->first();
+                $cleanPo  = preg_replace('/^PO/i', '', (string) $first->po);
                 $shelves  = $group->pluck('shelf')->filter()->unique()->values();
                 $isLegacy = $group->every(fn ($it) => empty($it->line_id));
                 $docu     = 'PO' . $cleanPo;
