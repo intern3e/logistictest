@@ -43,7 +43,7 @@ class DeliverytrackController extends Controller
     {
         if (!Auth::guard('web')->check()) return redirect()->guest(route('login'));
         $user = Auth::guard('web')->user();
-        if (!in_array($user->role, ['admin', 'store', 'sale', 'accounting'], true)) abort(403, 'คุณไม่มีสิทธิ์เข้าใช้งานหน้านี้');
+        if (!in_array($user->role, ['admin', 'store', 'stock', 'accounting'], true)) abort(403, 'คุณไม่มีสิทธิ์เข้าใช้งานหน้านี้');
         return null;
     }
 
@@ -534,7 +534,7 @@ class DeliverytrackController extends Controller
     {
         $user = Auth::guard('web')->user();
         if (!$user) return response()->json(['ok' => false, 'message' => 'เซสชันหมดอายุ กรุณาเข้าสู่ระบบใหม่'], 401);
-        if (!in_array($user->role, ['admin', 'store', 'sale', 'accounting'], true)) {
+        if (!in_array($user->role, ['admin', 'store', 'stock', 'accounting'], true)) {
             return response()->json(['ok' => false, 'message' => 'ไม่มีสิทธิ์ดำเนินการ'], 403);
         }
 
@@ -559,7 +559,7 @@ class DeliverytrackController extends Controller
     {
         $user = Auth::guard('web')->user();
         if (!$user) return response()->json(['ok' => false, 'message' => 'เซสชันหมดอายุ กรุณาเข้าสู่ระบบใหม่'], 401);
-        if (!in_array($user->role, ['admin', 'store', 'sale', 'accounting'], true)) {
+        if (!in_array($user->role, ['admin', 'store', 'stock', 'accounting'], true)) {
             return response()->json(['ok' => false, 'message' => 'ไม่มีสิทธิ์ดำเนินการ'], 403);
         }
 
