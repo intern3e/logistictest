@@ -195,6 +195,26 @@
     .so-head-main { flex: 1; min-width: 0; }
     .so-id { font-weight: 700; font-size: 17px; word-break: break-all; color: var(--ink); }
     .so-id.is-done { color: var(--success-dark); }
+    .so-billno-row {
+        display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin-top: 6px;
+    }
+    .so-billno-count {
+        font-size: 12px; font-weight: 700; color: var(--muted);
+        background: #f1f5f9; border: 1px solid var(--border);
+        padding: 2px 8px; border-radius: 20px; white-space: nowrap;
+    }
+    .so-billno-chip {
+        font-size: 13px; font-weight: 600; font-variant-numeric: tabular-nums;
+        color: var(--primary-dark); background: var(--primary-light); border: 1px solid #c7dbff;
+        padding: 2px 9px; border-radius: 6px; word-break: break-all;
+    }
+    .so-billno-chip.is-picked {
+        color: var(--success-dark); background: var(--success-light); border-color: #bbf7d0;
+    }
+    .so-billno-chip.is-cancelled {
+        color: var(--danger); background: var(--danger-light); border-color: #fecaca;
+        text-decoration: line-through;
+    }
     .so-sub {
         font-size: 14px; color: var(--muted); margin-top: 4px;
         white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
@@ -324,6 +344,7 @@
             
             <input type="search" name="SONum" id="searchSO" value="{{ request('SONum') }}" placeholder=" ค้นหาเลข SO..." autocomplete="off">
             <input type="search" name="PONum" id="searchPO" value="{{ request('PONum') }}" placeholder=" ค้นหาเลข PO..." autocomplete="off">
+            <input type="search" name="BillNo" id="searchBillNo" value="{{ request('BillNo') }}" placeholder=" ค้นหาเลขบิล..." autocomplete="off">
             
             <label class="field-label">
                 วันที่เปิดบิล
@@ -368,8 +389,21 @@
                 <div class="so-card-header" role="button" tabindex="0" aria-expanded="false"
                      onclick="toggleSoCard('{{ $soIdSafe }}')">
                     <span class="so-toggle" aria-hidden="true">▶</span>
+                    @php
+                        $headerBills = $bill->bills->filter(fn ($d) => !empty($d->dn_no))
+                            ->unique('dn_no')->values();
+                    @endphp
                     <div class="so-head-main">
                         <div class="so-id {{ $bill->all_done ? 'is-done' : '' }}">{{ $bill->so_id }}</div>
+                        @if($headerBills->isNotEmpty())
+                            <div class="so-billno-row">
+                                <span class="so-billno-count">{{ $headerBills->count() }} บิล</span>
+                                @foreach($headerBills as $hb)
+                                    <span class="so-billno-chip {{ ($hb->cancelled ?? false) ? 'is-cancelled' : (($hb->picked ?? false) ? 'is-picked' : '') }}"
+                                          title="{{ ($hb->cancelled ?? false) ? 'ยกเลิกแล้ว' : (($hb->picked ?? false) ? 'จัดบิลแล้ว' : 'รอจัดบิล') }}">{{ $hb->dn_no }}</span>
+                                @endforeach
+                            </div>
+                        @endif
                         <div class="so-sub">
                             @if($bill->customer_id) <span style="font-weight:600;">{{ $bill->customer_id }}</span> @endif
                             @if($bill->customer_id && $bill->customer_name) · @endif
@@ -571,12 +605,14 @@ function triggerAutoSearch() {
     searchTimer = setTimeout(() => {
         const soVal = document.getElementById('searchSO').value.trim();
         const poVal = document.getElementById('searchPO').value.trim();
-        
-        if (soVal === '' && poVal === '') {
+        const billVal = document.getElementById('searchBillNo').value.trim();
+
+        if (soVal === '' && poVal === '' && billVal === '') {
             const currentFilter = "{{ request('filter_status', 'pending') }}";
             const url = new URL(window.location.href);
             url.searchParams.delete('SONum');
             url.searchParams.delete('PONum');
+            url.searchParams.delete('BillNo');
             url.searchParams.set('filter_status', currentFilter);
             window.location.href = url.toString();
             return;
@@ -599,6 +635,7 @@ function clearAllFilters() {
 
 document.getElementById('searchSO').addEventListener('input', triggerAutoSearch);
 document.getElementById('searchPO').addEventListener('input', triggerAutoSearch);
+document.getElementById('searchBillNo').addEventListener('input', triggerAutoSearch);
 document.getElementById('searchDate').addEventListener('change', triggerDateSearch);
 
 function toggleSoCard(id) {

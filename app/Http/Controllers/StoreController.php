@@ -1048,7 +1048,7 @@ class StoreController extends Controller
         // ★ 1. รับค่า filter_status จาก request (ค่าเริ่มต้นเป็น 'pending')
         $filterStatus = $request->input('filter_status', 'pending');
 
-        $hasSoOrPoSearch = $request->filled('SONum') || $request->filled('PONum');
+        $hasSoOrPoSearch = $request->filled('SONum') || $request->filled('PONum') || $request->filled('BillNo');
         $isDefaultView   = !$hasSoOrPoSearch && !$request->filled('bill_date');
 
         if ($hasSoOrPoSearch) {
@@ -1059,10 +1059,19 @@ class StoreController extends Controller
             $billDate = $request->input('bill_date');
         }
 
-        $soNum = $request->input('SONum');
-        $poNum = $request->input('PONum');
+        $soNum  = $request->input('SONum');
+        $poNum  = $request->input('PONum');
+        $billNo = $request->input('BillNo');
 
         $soIds = $this->soIdsByBillDate($billDate);
+
+        // ค้นหาด้วยเลขบิล (tblbill.billid) → จำกัดเฉพาะ SO ที่มีบิลตรงคำค้น
+        if (filled($billNo)) {
+            $billSoIds = DB::table('tblbill')
+                ->where(self::TBLBILL_DN_COLUMN, 'LIKE', '%' . $billNo . '%')
+                ->pluck('so_id')->filter()->unique()->values()->all();
+            $soIds = !empty($billSoIds) ? $billSoIds : ['__no_match__'];
+        }
 
         $soSummaries = $this->buildSoSummaries($soIds, $soNum, $poNum, $billDate);
         

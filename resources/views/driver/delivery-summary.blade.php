@@ -3,6 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="csrf-token" content="{{ csrf_token() }}">
     <title>สรุปงานคนขับ</title>
     <script>
         // ถ้าเข้าหน้านี้มาโดยยังไม่ได้กรองวันที่ (และไม่ได้ค้นด้วยเลขบิล) ให้เด้งไปกรองวันที่ปัจจุบันทันที
@@ -651,6 +652,36 @@
     background:#fff; border:1px solid #e0e0e0; box-shadow:0 6px 24px rgba(0,0,0,.14);
     padding:10px 18px; border-radius:12px; font-size:14px;
 }
+/* แถวปุ่มท้ายกล่องงาน (ยกเลิก + ปริ้น) */
+.box-actions{
+    display:flex; align-items:center; justify-content:space-between; gap:10px; flex-wrap:wrap;
+    margin-top:12px; padding-top:12px; border-top:1px solid var(--line);
+}
+.btn-cancel-box{
+    display:inline-flex; align-items:center; gap:6px;
+    padding:9px 16px; border-radius:var(--radius-sm);
+    border:1px solid var(--danger); background:var(--surface); color:var(--danger);
+    font-size:.86rem; font-weight:700; cursor:pointer;
+}
+.btn-cancel-box:hover{ background:var(--danger-soft); }
+/* เลขขนส่ง (เฉพาะขนส่งเอกชน) */
+.box-transport-id{
+    display:flex; align-items:center; gap:8px; flex-wrap:wrap;
+    margin-top:12px; padding-top:12px; border-top:1px solid var(--line);
+    font-size:.86rem;
+}
+.transport-id-label{ color:var(--ink-soft); font-weight:600; }
+.transport-id-value{ font-family:var(--font-mono); font-weight:700; color:var(--ink); }
+.btn-transport-id{
+    margin-left:auto;
+    padding:7px 14px; border-radius:var(--radius-sm);
+    border:1px solid var(--primary); background:var(--primary); color:#fff;
+    font-size:.82rem; font-weight:700; cursor:pointer;
+}
+.btn-transport-id:hover{ background:var(--primary-deep); }
+/* private-only: แสดงเฉพาะโหมดขนส่งเอกชน */
+.private-only{ display:none; }
+.summary-mode-private .private-only{ display:flex; }
 </style>
 </head>
 <body>
@@ -733,9 +764,9 @@
     </div>
 
     <div class="summary-tabs">
-        <button type="button" class="summary-tab active" data-mode="company" onclick="switchSummaryMode('company')">🚚 ขนส่งโดยบริษัท</button>
-        <button type="button" class="summary-tab" data-mode="private" onclick="switchSummaryMode('private')">🏢 ขนส่งเอกชน</button>
-        <button type="button" class="summary-tab" data-mode="pickup" onclick="switchSummaryMode('pickup')">📦 รับของเอง</button>
+        <button type="button" class="summary-tab active" data-mode="company" onclick="switchSummaryMode('company')">ขนส่งโดยบริษัท</button>
+        <button type="button" class="summary-tab" data-mode="private" onclick="switchSummaryMode('private')">ขนส่งเอกชน</button>
+        <button type="button" class="summary-tab" data-mode="pickup" onclick="switchSummaryMode('pickup')">รับของเอง</button>
     </div>
 
     <div id="summaryContent" class="summary-mode-delivery">
@@ -826,7 +857,7 @@
                                                             <div class="stops-list">
                                                                 @foreach ($cust['items'] as $item)
                                                                     @php $isPo = ($item['type'] ?? '') === 'po'; $isDone = !empty($item['is_complete']); @endphp
-                                                                    <div class="stop-row" data-type="{{ $item['type'] ?? '' }}" data-complete="{{ $isDone ? 1 : 0 }}" data-transport="{{ $item['transport_type'] ?? '' }}">
+                                                                    <div class="stop-row" data-type="{{ $item['type'] ?? '' }}" data-complete="{{ $isDone ? 1 : 0 }}" data-transport="{{ $item['transport_type'] ?? '' }}" data-billid="{{ $item['id'] }}">
                                                                         @if ($isPo)
                                                                             <input type="checkbox" class="pickup-select" value="{{ $item['id'] }}"
                                                                                    {{ $isDone ? 'disabled' : '' }} onchange="updatePickupCount()">
@@ -844,7 +875,15 @@
                                                         </div>
                                                     @endforeach
 
-                                                    <div class="box-print-all">
+                                                    {{-- เลขขนส่ง (id_transport) — แสดง/แก้ไขเฉพาะโหมดขนส่งเอกชน --}}
+                                                    <div class="box-transport-id private-only">
+                                                        <span class="transport-id-label">เลขขนส่ง:</span>
+                                                        <span class="transport-id-value" id="{{ $boxKey }}_transportId">{{ $box['id_transport'] ?: 'ยังไม่ระบุ' }}</span>
+                                                        <button type="button" class="btn-transport-id" onclick="editBoxTransportId('{{ $boxKey }}')">เพิ่ม / แก้เลขขนส่ง</button>
+                                                    </div>
+
+                                                    <div class="box-actions">
+                                                        <button type="button" class="btn-cancel-box" onclick="cancelBoxAssignment('{{ $boxKey }}')">ยกเลิกงาน / คืนคิว</button>
                                                         <a class="btn-print-group" target="_blank" href="{{ $printUrl }}">
                                                             <svg width="15" height="15" viewBox="0 0 16 16" fill="none"><path d="M4 6V2h8v4M4 11H2.75A.75.75 0 0 1 2 10.25v-3.5A.75.75 0 0 1 2.75 6h10.5a.75.75 0 0 1 .75.75v3.5a.75.75 0 0 1-.75.75H12M4 9h8v5H4V9Z" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
                                                             ปริ้นใบงาน (A4)
@@ -874,7 +913,7 @@
 
     <div class="pickup-print-bar" id="pickupPrintBar" style="display:none;">
         <span>เลือกงานรับของ <strong id="pickupCount">0</strong> รายการ</span>
-        <button type="button" class="btn-filter" onclick="printSelectedPickup()">🖨️ ปริ้นที่เลือก</button>
+        <button type="button" class="btn-filter" onclick="printSelectedPickup()">ปริ้นที่เลือก</button>
     </div>
 
 </div>
@@ -934,6 +973,66 @@ function printSelectedPickup(){
     });
     document.getElementById('pickupPrintForm').submit();
 }
+
+const CSRF_TOKEN = document.querySelector('meta[name="csrf-token"]').content;
+const CANCEL_ASSIGN_URL = "{{ route('deliverytrack.cancelAssignment') }}";
+const SAVE_TRANSPORT_ID_URL = "{{ route('deliverytrack.saveTransportId') }}";
+const DELIVERYTRACK_URL = "{{ route('deliverytrack') }}";
+
+function collectBoxBillIds(boxKey, onlyPrivate){
+    const box = document.getElementById(boxKey);
+    if(!box) return [];
+    const sel = onlyPrivate ? '.stop-row[data-billid][data-transport="private"]' : '.stop-row[data-billid]';
+    const ids = Array.from(box.querySelectorAll(sel)).map(r => r.dataset.billid).filter(Boolean);
+    return Array.from(new Set(ids));
+}
+
+// ยกเลิกงาน (คืนกลับไปหน้าจ่ายงาน) — ยืนยันก่อน แล้วลบ transaction_transport ของกล่องนี้
+async function cancelBoxAssignment(boxKey){
+    const billIds = collectBoxBillIds(boxKey, false);
+    if(!billIds.length){ showToast('ไม่พบงานในกล่องนี้', 'error'); return; }
+    if(!confirm('ยืนยันยกเลิกงานนี้ ' + billIds.length + ' รายการ?\nงานจะถูกคืนกลับไปหน้าจ่ายงานเพื่อจ่ายให้คนขับใหม่')) return;
+    try{
+        const res = await fetch(CANCEL_ASSIGN_URL, {
+            method: 'POST',
+            headers: { 'Content-Type':'application/json', 'Accept':'application/json', 'X-Requested-With':'XMLHttpRequest', 'X-CSRF-TOKEN': CSRF_TOKEN },
+            body: JSON.stringify({ bill_ids: billIds }),
+        });
+        const data = await res.json();
+        if(res.ok && data.ok){
+            showToast(data.message || 'ยกเลิกงานแล้ว', 'success');
+            setTimeout(() => { window.location.href = DELIVERYTRACK_URL; }, 900);
+        } else {
+            showToast(data.message || 'ยกเลิกไม่สำเร็จ', 'error');
+        }
+    }catch(e){ console.error(e); showToast('เกิดข้อผิดพลาดในการเชื่อมต่อ', 'error'); }
+}
+
+// เพิ่ม/แก้ไขเลขขนส่ง (id_transport) ของงานขนส่งเอกชน
+async function editBoxTransportId(boxKey){
+    const billIds = collectBoxBillIds(boxKey, true);
+    if(!billIds.length){ showToast('ไม่พบงานขนส่งเอกชนในกล่องนี้', 'error'); return; }
+    const valEl = document.getElementById(boxKey + '_transportId');
+    const current = (valEl && valEl.textContent.trim() !== 'ยังไม่ระบุ') ? valEl.textContent.trim() : '';
+    const input = prompt('กรอกเลขขนส่ง (id_transport):', current);
+    if(input === null) return;  // กดยกเลิก
+    const idTransport = input.trim();
+    try{
+        const res = await fetch(SAVE_TRANSPORT_ID_URL, {
+            method: 'POST',
+            headers: { 'Content-Type':'application/json', 'Accept':'application/json', 'X-Requested-With':'XMLHttpRequest', 'X-CSRF-TOKEN': CSRF_TOKEN },
+            body: JSON.stringify({ bill_ids: billIds, id_transport: idTransport }),
+        });
+        const data = await res.json();
+        if(res.ok && data.ok){
+            if(valEl) valEl.textContent = idTransport !== '' ? idTransport : 'ยังไม่ระบุ';
+            showToast(data.message || 'บันทึกแล้ว', 'success');
+        } else {
+            showToast(data.message || 'บันทึกไม่สำเร็จ', 'error');
+        }
+    }catch(e){ console.error(e); showToast('เกิดข้อผิดพลาดในการเชื่อมต่อ', 'error'); }
+}
+
 // เช็คว่าโหมดนั้นมี row ให้เห็นไหม (ใช้ตอนค้นด้วยเลขบิลเพื่อเด้งไปแท็บที่มีผล)
 function modeHasRows(mode){
     return Array.from(document.querySelectorAll('.stop-row')).some(row => {

@@ -335,6 +335,8 @@ Route::get('/deliverytrack/print-all-group', [DeliverytrackController::class, 'p
 Route::post('/return/{id}/new-bill', [DeliverytrackController::class, 'saveNewBill'])->name('deliverytrack.newbill');
 Route::get('/deliverytrack/summary', [DeliverytrackController::class, 'summary'])->name('deliverytrack.summary');
 Route::post('/deliverytrack/print-selected-pickup', [DeliverytrackController::class, 'printSelectedPickup'])->name('deliverytrack.printSelectedPickup');
+Route::post('/deliverytrack/cancel-assignment', [DeliverytrackController::class, 'cancelAssignment'])->name('deliverytrack.cancelAssignment');
+Route::post('/deliverytrack/save-transport-id', [DeliverytrackController::class, 'saveTransportId'])->name('deliverytrack.saveTransportId');
  
 
 use App\Http\Controllers\SoItemController;

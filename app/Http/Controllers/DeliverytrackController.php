@@ -43,7 +43,7 @@ class DeliverytrackController extends Controller
     {
         if (!Auth::guard('web')->check()) return redirect()->guest(route('login'));
         $user = Auth::guard('web')->user();
-        if (!in_array($user->role, ['admin', 'store', 'sale'], true)) abort(403, 'คุณไม่มีสิทธิ์เข้าใช้งานหน้านี้');
+        if (!in_array($user->role, ['admin', 'store', 'sale', 'accounting'], true)) abort(403, 'คุณไม่มีสิทธิ์เข้าใช้งานหน้านี้');
         return null;
     }
 
@@ -460,11 +460,17 @@ class DeliverytrackController extends Controller
                     'assigned_by'    => $delivery->assigned_by ?: null,
                     'time_pick'      => $delivery->time_pick ?: null,
                     'delivery_date'  => $delivery->delivery_date,
+                    'id_transport'   => $delivery->id_transport ?: null,
                     'total_items'    => 0,
                     'customers'      => [],
                 ];
-            } elseif (empty($boxes[$boxKey]['assigned_by']) && !empty($delivery->assigned_by)) {
-                $boxes[$boxKey]['assigned_by'] = $delivery->assigned_by;
+            } else {
+                if (empty($boxes[$boxKey]['assigned_by']) && !empty($delivery->assigned_by)) {
+                    $boxes[$boxKey]['assigned_by'] = $delivery->assigned_by;
+                }
+                if (empty($boxes[$boxKey]['id_transport']) && !empty($delivery->id_transport)) {
+                    $boxes[$boxKey]['id_transport'] = $delivery->id_transport;
+                }
             }
 
             if (!isset($boxes[$boxKey]['customers'][$customerCode])) {
@@ -518,6 +524,64 @@ class DeliverytrackController extends Controller
         unset($box);
 
         return $boxes;
+    }
+
+    /**
+     * ยกเลิกการจ่ายงาน (คืนงานกลับไปหน้าจ่ายงาน) — ลบแถวใน transaction_transport
+     * เมื่อไม่มีแถวใน transaction_transport แล้ว งานจะกลับไปโผล่ในหน้า deliverytrack ให้จ่ายใหม่ได้
+     */
+    public function cancelAssignment(Request $request)
+    {
+        $user = Auth::guard('web')->user();
+        if (!$user) return response()->json(['ok' => false, 'message' => 'เซสชันหมดอายุ กรุณาเข้าสู่ระบบใหม่'], 401);
+        if (!in_array($user->role, ['admin', 'store', 'sale', 'accounting'], true)) {
+            return response()->json(['ok' => false, 'message' => 'ไม่มีสิทธิ์ดำเนินการ'], 403);
+        }
+
+        $validated = $request->validate([
+            'bill_ids'   => 'required|array|min:1',
+            'bill_ids.*' => 'required|string',
+        ]);
+        $billIds = array_values(array_unique($validated['bill_ids']));
+
+        $deleted = transaction_delivery::whereIn('bill_id', $billIds)->delete();
+
+        if ($deleted === 0) {
+            return response()->json(['ok' => false, 'message' => 'ไม่พบงานที่จะยกเลิก (อาจถูกยกเลิกไปก่อนแล้ว)'], 404);
+        }
+        return response()->json(['ok' => true, 'message' => 'ยกเลิกงาน ' . $deleted . ' รายการ คืนกลับไปหน้าจ่ายงานแล้ว']);
+    }
+
+    /**
+     * บันทึกเลขขนส่ง (id_transport) สำหรับงานขนส่งเอกชน — อัปเดตทุกแถวในกล่องงานเดียวกัน
+     */
+    public function saveTransportId(Request $request)
+    {
+        $user = Auth::guard('web')->user();
+        if (!$user) return response()->json(['ok' => false, 'message' => 'เซสชันหมดอายุ กรุณาเข้าสู่ระบบใหม่'], 401);
+        if (!in_array($user->role, ['admin', 'store', 'sale', 'accounting'], true)) {
+            return response()->json(['ok' => false, 'message' => 'ไม่มีสิทธิ์ดำเนินการ'], 403);
+        }
+
+        $validated = $request->validate([
+            'bill_ids'     => 'required|array|min:1',
+            'bill_ids.*'   => 'required|string',
+            'id_transport' => 'nullable|string|max:100',
+        ]);
+        $billIds     = array_values(array_unique($validated['bill_ids']));
+        $idTransport = trim((string) ($validated['id_transport'] ?? ''));
+
+        $updated = transaction_delivery::whereIn('bill_id', $billIds)
+            ->update(['id_transport' => $idTransport !== '' ? $idTransport : null]);
+
+        if ($updated === 0) {
+            return response()->json(['ok' => false, 'message' => 'ไม่พบงานที่จะบันทึกเลขขนส่ง'], 404);
+        }
+        return response()->json([
+            'ok'           => true,
+            'message'      => $idTransport !== '' ? 'บันทึกเลขขนส่งแล้ว' : 'ล้างเลขขนส่งแล้ว',
+            'id_transport' => $idTransport,
+        ]);
     }
 
     /**

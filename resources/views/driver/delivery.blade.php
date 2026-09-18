@@ -888,7 +888,7 @@ $selfPickupMethods = ['รับเองรถใหญ่', 'รับเอ�
             vertical-align: middle !important;
         }
 
-        /* ✅ CSS สำหรับ checkbox ให้อยู่ด้านซ้าย */
+        /* CSS สำหรับ checkbox ให้อยู่ด้านซ้าย */
         .checkbox-left-cell {
             text-align: left !important;
             vertical-align: top !important;
@@ -946,10 +946,10 @@ $selfPickupMethods = ['รับเองรถใหญ่', 'รับเอ�
 
             <div class="view-controls">
                 @php $activeTransport = $activeTransport ?? 'company'; @endphp
-                    <button type="button" class="view-btn transport-toggle delivery {{ $activeTransport === 'company' ? 'active' : '' }}" data-transport="company" onclick="setTransport('company')">🚚 ขนส่งโดยบริษัท <span class="view-count">{{ $companyCount ?? $companyBillCount }}</span></button>
-                    <button type="button" class="view-btn transport-toggle delivery {{ $activeTransport === 'private' ? 'active' : '' }}" data-transport="private" onclick="setTransport('private')">🏢 ขนส่งเอกชน <span class="view-count">{{ $privateCount ?? $privateBillCount }}</span></button>
-                    <button class="view-btn" data-view="doc" onclick="setView('doc')">📄 บิลชั่วคราว <span class="view-count">{{ $docCount }}</span></button>
-                    <button class="view-btn" data-view="pickup" onclick="setView('pickup')">📦 รับของเอง <span class="view-count">{{ $poCount }}</span></button>
+                    <button type="button" class="view-btn transport-toggle delivery {{ $activeTransport === 'company' ? 'active' : '' }}" data-transport="company" onclick="setTransport('company')">ขนส่งโดยบริษัท <span class="view-count">{{ $companyCount ?? $companyBillCount }}</span></button>
+                    <button type="button" class="view-btn transport-toggle delivery {{ $activeTransport === 'private' ? 'active' : '' }}" data-transport="private" onclick="setTransport('private')">ขนส่งเอกชน <span class="view-count">{{ $privateCount ?? $privateBillCount }}</span></button>
+                    <button class="view-btn" data-view="doc" onclick="setView('doc')">บิลชั่วคราว <span class="view-count">{{ $docCount }}</span></button>
+                    <button class="view-btn" data-view="pickup" onclick="setView('pickup')">รับของเอง <span class="view-count">{{ $poCount }}</span></button>
             </div>
         </div>
 
@@ -962,8 +962,8 @@ $selfPickupMethods = ['รับเองรถใหญ่', 'รับเอ�
         </div>
     </div>
 
-    @if (session('success')) <div class="alert alert-success">✅ {{ session('success') }}</div> @endif
-    @if (session('error')) <div class="alert alert-danger">⚠️ {{ session('error') }}</div> @endif
+    @if (session('success')) <div class="alert alert-success">{{ session('success') }}</div> @endif
+    @if (session('error')) <div class="alert alert-danger">{{ session('error') }}</div> @endif
 
     <div class="search-container">
         <div id="searchDelivery" class="search-wrapper active">
@@ -990,7 +990,7 @@ $selfPickupMethods = ['รับเองรถใหญ่', 'รับเอ�
                     <label for="searchDocNo"> เลขที่เอกสาร:</label>
                     <input type="text" id="searchDocNo" placeholder="เช่น DOC-001" oninput="filterDocTable()">
                 </div>
-                <button type="button" class="search-clear-btn" onclick="clearDocSearch()">✕ ล้าง</button>
+                <button type="button" class="search-clear-btn" onclick="clearDocSearch()">ล้าง</button>
             </div>
         </div>
 
@@ -1004,7 +1004,7 @@ $selfPickupMethods = ['รับเองรถใหญ่', 'รับเอ�
                     <label for="searchPoSo"> PO / SO:</label>
                     <input type="text" id="searchPoSo" placeholder="เช่น 69/013216" oninput="filterPoTable()">
                 </div>
-                <button type="button" class="search-clear-btn" onclick="clearPoSearch()">✕ ล้าง</button>
+                <button type="button" class="search-clear-btn" onclick="clearPoSearch()">ล้าง</button>
             </div>
         </div>
     </div>
@@ -1018,13 +1018,13 @@ $selfPickupMethods = ['รับเองรถใหญ่', 'รับเอ�
             {{-- Panel 1: ส่งของ --}}
             <div class="grid-panel" id="panelDelivery" data-type="delivery">
                 <div class="section-heading accent-delivery" onclick="setView('delivery')">
-                    <h5><span id="deliveryPanelTitle">{{ ($activeTransport ?? 'company') === 'private' ? '🏢 ขนส่งเอกชน' : '🚚 ขนส่งโดยบริษัท' }}</span> <span class="section-count" id="deliveryPanelCount">{{ $activeTransport === 'private' ? $privateBillCount : $companyBillCount }} รายการ</span></h5>
+                    <h5><span id="deliveryPanelTitle">{{ ($activeTransport ?? 'company') === 'private' ? 'ขนส่งเอกชน' : 'ขนส่งโดยบริษัท' }}</span> <span class="section-count" id="deliveryPanelCount">{{ $activeTransport === 'private' ? $privateBillCount : $companyBillCount }} รายการ</span></h5>
                     <div style="display:flex;align-items:center;gap:15px;">
                         <div class="form-check" onclick="event.stopPropagation()">
                             <input type="checkbox" class="form-check-input" id="checkAllBills">
                             <label class="form-check-label" for="checkAllBills">เลือกทั้งหมด</label>
                         </div>
-                        <span class="expand-hint">⛶ ขยาย</span>
+                        <span class="expand-hint">ขยาย</span>
                     </div>
                 </div>
 
@@ -1113,13 +1113,13 @@ $selfPickupMethods = ['รับเองรถใหญ่', 'รับเอ�
             {{-- Panel 2: บิลชั่วคราว --}}
             <div class="grid-panel" id="panelDoc" data-type="doc">
                 <div class="section-heading accent-doc" onclick="setView('doc')">
-                    <h5>📄 บิลชั่วคราว <span class="section-count">{{ $docCount }} รายการ</span></h5>
+                    <h5>บิลชั่วคราว <span class="section-count">{{ $docCount }} รายการ</span></h5>
                     <div style="display:flex;align-items:center;gap:15px;">
                         <div class="form-check" onclick="event.stopPropagation()">
                             <input type="checkbox" class="form-check-input" id="checkAllDocs">
                             <label class="form-check-label" for="checkAllDocs">เลือกทั้งหมด</label>
                         </div>
-                        <span class="expand-hint">⛶ ขยาย</span>
+                        <span class="expand-hint">ขยาย</span>
                     </div>
                 </div>
 
@@ -1215,7 +1215,7 @@ $selfPickupMethods = ['รับเองรถใหญ่', 'รับเอ�
                             <input type="checkbox" class="form-check-input" id="checkAllPo">
                             <label class="form-check-label" for="checkAllPo">เลือกทั้งหมด</label>
                         </div>
-                        <span class="expand-hint">⛶ ขยาย</span>
+                        <span class="expand-hint">ขยาย</span>
                     </div>
                 </div>
 
@@ -1246,7 +1246,7 @@ $selfPickupMethods = ['รับเองรถใหญ่', 'รับเอ�
                                     $groupCustomerName = $group['customer_name'] ?? null;
                                     $groupAddress = $group['vendor_address'] ?? ($firstPoRow->vendor_address ?? null);
                                     
-                                    // ✅ คำนวณจำนวน PO ที่ไม่ซ้ำกันในกลุ่มนี้
+                                    // คำนวณจำนวน PO ที่ไม่ซ้ำกันในกลุ่มนี้
                                     $uniquePoNums = array_unique(array_map(function($r) {
                                         return $r['po']->PONum ?? '';
                                     }, $group['rows']));
@@ -1260,10 +1260,10 @@ $selfPickupMethods = ['รับเองรถใหญ่', 'รับเอ�
                                         $po = $row['po'];
                                         $poNum = $po->PONum ?? '';
                                         
-                                        // ✅ เช็คว่า PO นี้เคยเห็นแล้วหรือยัง
+                                        // เช็คว่า PO นี้เคยเห็นแล้วหรือยัง
                                         $isDuplicatePo = in_array($poNum, $seenPoNums);
                                         
-                                        // ✅ ถ้า PO ซ้ำ ข้ามการสร้างแถวนี้ไปเลย
+                                        // ถ้า PO ซ้ำ ข้ามการสร้างแถวนี้ไปเลย
                                         if ($isDuplicatePo) {
                                             continue;
                                         }
@@ -1403,9 +1403,9 @@ function showToast(message, type = 'info', duration = 4000) {
     const toastId = 'toast-' + Date.now();
     
     const icons = {
-        success: '✓',
-        error: '✕',
-        warning: '⚠',
+        success: '',
+        error: '',
+        warning: '',
         info: ''
     };
     
@@ -1506,7 +1506,7 @@ function setTransport(t) {
 
     // อัปเดตหัวข้อ panel + จำนวนตามขนส่งที่เลือก
     const titleEl = document.getElementById('deliveryPanelTitle');
-    if (titleEl) titleEl.textContent = t === 'private' ? '🏢 ขนส่งเอกชน' : '🚚 ขนส่งโดยบริษัท';
+    if (titleEl) titleEl.textContent = t === 'private' ? 'ขนส่งเอกชน' : 'ขนส่งโดยบริษัท';
     const activePane = document.querySelector(`#panelDelivery .transport-pane[data-transport="${t}"]`);
     const rowCount = activePane ? activePane.querySelectorAll('tbody tr.job-detail-row').length : 0;
     const countEl = document.getElementById('deliveryPanelCount');

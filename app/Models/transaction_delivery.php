@@ -19,7 +19,8 @@ class transaction_delivery extends Model
         'check_time',
         'status',
         'note',
-        'delivery_date'
+        'delivery_date',
+        'id_transport',
     ];
 
     protected $casts = [
