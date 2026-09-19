@@ -250,7 +250,6 @@
                             <textarea id="com_address" name="com_address" rows="2">{{ $doc->com_address ?? '' }}</textarea>
                         </div>
                       <div class="field span-full">
-                            <!-- จัดหัวข้อหลักกับ Checkbox ให้อยู่บรรทัดเดียวกัน -->
                             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
                                 <label for="com_la_long" style="margin: 0;">พิกัด (ละติจูด, ลองจิจูด)</label>
                                 
@@ -264,9 +263,8 @@
                                 </div>
                             </div>
 
-                            <!-- ส่วนช่องกรอกพิกัดและปุ่ม Google Maps (อยู่บรรทัดถัดมา) -->
                             <div class="coords-row" id="coords_input_container">
-                                <input type="text" id="com_la_long" name="com_la_long" placeholder="13.7563, 100.5018" value="{{ $doc->com_la_long ?? '' }}">
+                                <input type="text" id="com_la_long" name="com_la_long" placeholder="14.593499, 99.860624" value="{{ $doc->com_la_long ?? '' }}">
                                 <button type="button" class="btn-custom" onclick="openGoogleMaps()">
                                     <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
                                         <path d="M7 1.5c-2.21 0-4 1.79-4 4 0 3 4 7 4 7s4-4 4-7c0-2.21-1.79-4-4-4z" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round"/>
@@ -408,15 +406,12 @@
             else { clearFieldError(el); }
         });
         
-        // ✅ Validate coordinates field based on checkbox state
         const coordsEl = document.getElementById("com_la_long");
         const noCoordsCheck = document.getElementById("no_coords_check");
         
         if (noCoordsCheck && noCoordsCheck.checked) {
-            // Checkbox is checked - coordinates field is optional/hidden
             clearFieldError(coordsEl);
         } else {
-            // Checkbox is NOT checked - coordinates field is required
             const coordsInvalid = !coordsEl || !coordsEl.value || !coordsEl.value.trim();
             if (coordsInvalid) {
                 errors.push({ id: "com_la_long", label: "พิกัด (ละติจูด, ลองจิจูด)" });
@@ -480,7 +475,6 @@
         const mapEmpty = document.getElementById('mapEmpty');
         
         if (checkbox.checked) {
-            // ✅ Checkbox checked - hide coords field, clear value
             coordsInput.style.display = 'none';
             coordsField.value = '';
             coordsField.removeAttribute('disabled');
@@ -490,7 +484,6 @@
                 mapEmpty.innerHTML = 'ไม่ระบุพิกัด / ไม่มีแผนที่';
             }
         } else {
-            // ✅ Checkbox unchecked - show coords field
             coordsInput.style.display = 'flex';
             coordsField.removeAttribute('disabled');
             updateMap();
@@ -515,7 +508,6 @@
             el.addEventListener("blur", refreshSubmitState);
         });
 
-        // ✅ Initialize checkbox state - default to unchecked (show coords field)
         const checkbox = document.getElementById('no_coords_check');
         if (checkbox) {
             checkbox.checked = false; 
@@ -526,7 +518,6 @@
             coordsInput.style.display = 'flex';
         }
 
-        // Update map if coordinates exist
         updateMap();
 
         @if(isset($docDetails))
@@ -801,7 +792,6 @@
 </script>
 
 <script>
-    // ค้นหา/เติมข้อมูลลูกค้าจาก "รหัสลูกค้า" — พิมพ์รหัสแล้วดึงชื่อ+ที่อยู่มาให้อัตโนมัติ
     (function () {
         const codeInput = document.getElementById('cust_code_search');
         const codeList = document.getElementById('cust_code_autocomplete');
@@ -893,9 +883,9 @@
         const coords = document.getElementById('com_la_long').value.trim();
         const frame = document.getElementById('mapFrame');
         const empty = document.getElementById('mapEmpty');
-        const isValid = /^-?\d+(\.\d+)?\s*,\s*-?\d+(\.\d+)?$/.test(coords);
-        if (isValid) {
-            frame.src = `https://www.google.com/maps?q=${encodeURIComponent(coords)}&output=embed`;
+        const parsed = cleanAndParseCoords(coords);
+        if (parsed) {
+            frame.src = `https://www.google.com/maps?q=${parsed.lat},${parsed.lng}&output=embed`;
             if (empty) empty.style.display = 'none';
         } else {
             frame.src = '';
@@ -1039,16 +1029,13 @@ document.getElementById('submitBill').addEventListener('click', async function (
     formData.delete('item_name[]');
     formData.delete('item_quantity[]');
 
-    // ✅ Handle coordinates field based on checkbox state
     formData.delete('com_la_long');
     const noCoordsCheck = document.getElementById('no_coords_check');
     const coordsField = document.getElementById('com_la_long');
     
     if (noCoordsCheck && noCoordsCheck.checked) {
-        // ✅ Checkbox checked - send empty string to DB
         formData.append('com_la_long', '');
     } else {
-        // ✅ Checkbox not checked - send actual value
         formData.append('com_la_long', coordsField.value || '');
     }
 
@@ -1110,19 +1097,95 @@ function formatDateTH(dateStr) {
     return `${d}/${m}/${y}`;
 }
 
+// ✅ ฟังก์ชันแยกพิกัดแบบอัจฉริยะ รองรับทุกรูปแบบ
+function cleanAndParseCoords(coords) {
+    if (!coords || coords.trim() === '') return null;
+    
+    let cleaned = coords.trim();
+    console.log('🔍 พิกัดต้นฉบับ:', cleaned);
+    
+    // แปลงเป็นตัวพิมพ์ใหญ่เพื่อตรวจสอบทิศทาง
+    const upper = cleaned.toUpperCase();
+    
+    // แทนที่สัญลักษณ์ต่างๆ ด้วยช่องว่าง
+    cleaned = cleaned.replace(/[°'"NSEW]/gi, ' ');
+    cleaned = cleaned.replace(/,/g, ' ');
+    cleaned = cleaned.replace(/\s+/g, ' ').trim();
+    
+    // แยกด้วยช่องว่าง
+    const parts = cleaned.split(' ').filter(p => p !== '');
+    
+    // หาตัวเลขทศนิยมทั้งหมด
+    const numbers = [];
+    parts.forEach(part => {
+        const match = part.match(/-?\d+\.?\d*/);
+        if (match) {
+            let num = parseFloat(match[0]);
+            numbers.push(num);
+        }
+    });
+    
+    // ตรวจสอบทิศทาง (S และ W ต้องเป็นลบ)
+    if (upper.includes('S') && numbers[0] > 0) numbers[0] *= -1;
+    if (upper.includes('W') && numbers[1] > 0) numbers[1] *= -1;
+    
+    // ต้องมีอย่างน้อย 2 ตัวเลข
+    if (numbers.length >= 2) {
+        const result = {
+            lat: numbers[0],
+            lng: numbers[1]
+        };
+        console.log('✅ แยกพิกัดสำเร็จ:', result);
+        return result;
+    }
+    
+    console.warn('⚠️ ไม่สามารถแยกพิกัดได้:', coords);
+    return null;
+}
+
 function generateQrDataUrl(text, size = 150) {
     return new Promise((resolve, reject) => {
         const tempDiv = document.createElement('div');
-        tempDiv.style.position = 'absolute'; tempDiv.style.left = '-9999px'; tempDiv.style.top = '-9999px';
+        tempDiv.style.position = 'absolute';
+        tempDiv.style.visibility = 'hidden';
+        tempDiv.style.left = '0';
+        tempDiv.style.top = '0';
+        tempDiv.style.width = size + 'px';
+        tempDiv.style.height = size + 'px';
+        tempDiv.style.zIndex = '-1';
         document.body.appendChild(tempDiv);
+        
         try {
-            new QRCode(tempDiv, { text: text, width: size, height: size, correctLevel: QRCode.CorrectLevel.M });
+            tempDiv.innerHTML = '';
+            if (typeof QRCode === 'undefined') {
+                tempDiv.remove();
+                reject(new Error('ไม่พบไลบรารี QRCode'));
+                return;
+            }
+            
+            new QRCode(tempDiv, { 
+                text: text, 
+                width: size, 
+                height: size, 
+                correctLevel: QRCode.CorrectLevel.M 
+            });
+            
             setTimeout(() => {
                 const canvas = tempDiv.querySelector('canvas');
-                const dataUrl = canvas ? canvas.toDataURL('image/png') : (tempDiv.querySelector('img') ? tempDiv.querySelector('img').src : '');
+                let dataUrl = '';
+                if (canvas) {
+                    try { dataUrl = canvas.toDataURL('image/png'); } catch (e) { console.warn('Canvas toDataURL failed:', e); }
+                }
+                if (!dataUrl) {
+                    const img = tempDiv.querySelector('img');
+                    if (img && img.src && img.src.startsWith('data:image')) {
+                        dataUrl = img.src;
+                    }
+                }
                 tempDiv.remove();
-                resolve(dataUrl);
-            }, 50);
+                if (dataUrl) { resolve(dataUrl); }
+                else { reject(new Error('ไม่สามารถสร้างข้อมูล QR Code ได้')); }
+            }, 150);
         } catch (err) {
             tempDiv.remove();
             reject(err);
@@ -1130,11 +1193,15 @@ function generateQrDataUrl(text, size = 150) {
     });
 }
 
-async function ensureFontsLoaded() {
-    if (!document.fonts) return;
-    const specs = ['400 18px Sarabun', '700 18px Sarabun', '400 13px Sarabun', '700 13px Sarabun', '800 36px Sarabun', '700 28px Sarabun', '600 16px Sarabun', '700 14px Sarabun'];
-    try { await Promise.all(specs.map(spec => document.fonts.load(spec))); } catch (e) { console.warn('ensureFontsLoaded: some font specs failed to preload', e); }
-    try { await document.fonts.ready; } catch (e) { console.warn('ensureFontsLoaded: document.fonts.ready rejected', e); }
+function ensureFontsLoaded() {
+    return new Promise(resolve => {
+        if (!document.fonts) { resolve(); return; }
+        const specs = ['400 18px Sarabun', '700 18px Sarabun', '400 13px Sarabun', '700 13px Sarabun', '800 36px Sarabun', '700 28px Sarabun', '600 16px Sarabun', '700 14px Sarabun'];
+        Promise.all(specs.map(spec => document.fonts.load(spec).catch(() => {})))
+            .then(() => document.fonts.ready)
+            .catch(() => {})
+            .finally(() => resolve());
+    });
 }
 
 async function generateAndUploadBillPdf(doc_id, items) {
@@ -1169,13 +1236,36 @@ async function generateAndUploadBillPdf(doc_id, items) {
 
     const noCoordsCheck = document.getElementById('no_coords_check');
     const coords = document.getElementById('com_la_long').value.trim();
-    const hasCoords = !noCoordsCheck.checked && coords !== '' && coords !== 'ไม่มีข้อมูล' && /^-?\d+(\.\d+)?\s*,\s*-?\d+(\.\d+)?$/.test(coords);
-    const mapLink = hasCoords ? `https://www.google.com/maps?q=${encodeURIComponent(coords)}` : '';
+    
+    const hasCoords = !noCoordsCheck.checked && coords !== '' && coords !== 'ไม่มีข้อมูล';
+    
+    let qrText = '';
+    let validCoords = null;
+    
+    if (hasCoords) {
+        // ✅ ใช้ฟังก์ชันแยกพิกัดแบบอัจฉริยะ
+        validCoords = cleanAndParseCoords(coords);
+        
+        if (validCoords) {
+            // ✅ สร้างเป็นลิงก์ Google Maps
+            qrText = `https://www.google.com/maps?q=${validCoords.lat},${validCoords.lng}`;
+            console.log('✅ QR Code URL:', qrText);
+        } else {
+            console.warn('⚠️ ไม่สามารถแยกพิกัดได้ จะใช้ข้อความเดิม');
+            qrText = coords;
+        }
+    }
 
     let qrDataUrl = '';
-    if (hasCoords) { qrDataUrl = await generateQrDataUrl(mapLink, 260); }
+    if (hasCoords && qrText) {
+        try {
+            qrDataUrl = await generateQrDataUrl(qrText, 260);
+        } catch (qrErr) {
+            console.warn('สร้าง QR Code ไม่สำเร็จ:', qrErr);
+        }
+    }
 
-    const qrBlockHtml = hasCoords ? `<div id="qrBlock" style="text-align:center; align-self:flex-start; margin-top:6px;"><img src="${qrDataUrl}" style="width:80px;height:80px;display:block;margin:0 auto;" /></div>` : '';
+    const qrBlockHtml = (hasCoords && qrDataUrl) ? `<div id="qrBlock" style="text-align:center; align-self:flex-start; margin-top:6px;"><img src="${qrDataUrl}" style="width:80px;height:80px;display:block;margin:0 auto;" /></div>` : '';
 
     const CONTAINER_WIDTH_CSS = 1123;
     const PAGE_WIDTH_PT = 595.28;
@@ -1255,7 +1345,7 @@ async function generateAndUploadBillPdf(doc_id, items) {
         return boundaries;
     }
 
-    const headerHtml = `
+   const headerHtml = `
         <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:10px; padding-bottom:10px;">
             <div>
                 <h1 style="margin:0; font-size:36px; font-weight:800; color:#1e293b; letter-spacing:.01em;">${escapeHtmlSo(headcom)}</h1>
@@ -1279,12 +1369,12 @@ async function generateAndUploadBillPdf(doc_id, items) {
         </div>
         <div style="background:#f8fafc; border:1px solid #e2e8f0; border-radius:6px; padding:12px 18px; margin-bottom:0; display:flex; align-items:center; justify-content:space-between; gap:16px;">
             <div style="font-size:20px; line-height:1.8; color:#1e293b; flex:1; min-width:0;">
-                <div style="display:flex; align-items:center;"><span style="font-weight:700; color:#475569; width:95px; flex-shrink:0; text-align:left;">บริษัท</span><span style="font-weight:700; color:#475569; padding-right:8px;">:</span><span style="flex:1;">${escapeHtmlSo(name) || '-'}</span></div>
-                <div style="display:flex; align-items:center;"><span style="font-weight:700; color:#475569; width:95px; flex-shrink:0; text-align:left;">ที่อยู่</span><span style="font-weight:700; color:#475569; padding-right:8px;">:</span><span style="flex:1;">${escapeHtmlSo(address) || '-'}</span></div>
-                <div style="display:flex; align-items:center;"><span style="font-weight:700; color:#475569; width:95px; flex-shrink:0; text-align:left;">ผู้ติดต่อ</span><span style="font-weight:700; color:#475569; padding-right:8px;">:</span><span style="flex:1;">${escapeHtmlSo(contact_name) || '-'} <span style="display:inline-block; margin-left:80px;"><span style="font-weight:700; color:#475569;">โทร :</span> ${escapeHtmlSo(contact_tel) || '-'}</span></span></div>
-                <div style="display:flex; align-items:center;"><span style="font-weight:700; color:#475569; width:95px; flex-shrink:0; text-align:left;">หมายเหตุ</span><span style="font-weight:700; color:#475569; padding-right:8px;">:</span><span style="flex:1;">${escapeHtmlSo(notes) || '-'}</span></div>
+                <div style="display:flex; align-items:flex-start;"><span style="font-weight:700; color:#475569; width:95px; flex-shrink:0; text-align:left;">บริษัท</span><span style="font-weight:700; color:#475569; padding-right:8px;">:</span><span style="flex:1;">${escapeHtmlSo(name) || '-'}</span></div>
+                <div style="display:flex; align-items:flex-start;"><span style="font-weight:700; color:#475569; width:95px; flex-shrink:0; text-align:left;">ที่อยู่</span><span style="font-weight:700; color:#475569; padding-right:8px;">:</span><span style="flex:1;">${escapeHtmlSo(address) || '-'}</span></div>
+                <div style="display:flex; align-items:flex-start;"><span style="font-weight:700; color:#475569; width:95px; flex-shrink:0; text-align:left;">ผู้ติดต่อ</span><span style="font-weight:700; color:#475569; padding-right:8px;">:</span><span style="flex:1;">${escapeHtmlSo(contact_name) || '-'} <span style="display:inline-block; margin-left:80px;"><span style="font-weight:700; color:#475569;">โทร :</span> ${escapeHtmlSo(contact_tel) || '-'}</span></span></div>
+<div style="display:flex; align-items:flex-start;"><span style="font-weight:700; color:#475569; width:95px; flex-shrink:0; text-align:left;">หมายเหตุ</span><span style="font-weight:700; color:#475569; padding-right:8px;">:</span><span style="flex:1; word-break:break-word; overflow-wrap:break-word;">${escapeHtmlSo(notes) || '-'}</span></div>
             </div>
-            ${hasCoords ? `<div style="text-align:center; flex-shrink:0;">
+            ${hasCoords && qrDataUrl ? `<div style="text-align:center; flex-shrink:0;">
                 <div style="display:inline-block; text-align:center;">
                     ${qrBlockHtml}
                     <div style="margin-top:4px; font-size:14px; font-weight:700; color:#64748b; letter-spacing:.05em; text-align:center;">MAP</div>
@@ -1337,7 +1427,7 @@ async function generateAndUploadBillPdf(doc_id, items) {
             </div>
         </div>`;
 
-    const { canvas: headerCanvas, markerRect: qrBlockRect } = await captureHtmlChunkWithMarker(headerHtml, '30px 40px 12px 40px', hasCoords ? 'qrBlock' : null);
+    const { canvas: headerCanvas, markerRect: qrBlockRect } = await captureHtmlChunkWithMarker(headerHtml, '30px 40px 12px 40px', (hasCoords && qrDataUrl) ? 'qrBlock' : null);
     const { canvas: tableCanvas, rowRects, headRect: tableHeadRect } = await captureContentWithRows(tableHtml, '0 40px 0 40px');
     const sigCanvas = await captureHtmlChunk(signatureHtml, '0 40px 0 40px');
 

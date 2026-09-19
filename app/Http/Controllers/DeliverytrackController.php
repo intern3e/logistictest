@@ -512,6 +512,7 @@ class DeliverytrackController extends Controller
                 'type'           => $itemType,     // bill | doc | po (po = งานไปรับเอง)
                 'is_complete'    => $isComplete,   // true = PO รับเข้าครบแล้ว → เลือกไม่ได้/ไม่พิมพ์
                 'transport_type' => $itemTransport,
+                'id_transport'   => $delivery->id_transport ?: null,   // เลขขนส่ง แยกรายบิล (งานขนส่งเอกชน)
             ];
 
             $boxes[$boxKey]['total_items']++;

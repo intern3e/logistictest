@@ -380,7 +380,8 @@
         $curRole = optional(auth('web')->user())->role;
         $canChangeItem = in_array($curRole, ['admin', 'stock'], true);
         $canCancelLine = in_array($curRole, ['admin', 'stock', 'store'], true);
-        $canManageLine = $canChangeItem || $canCancelLine;
+        $canEditQty    = in_array($curRole, ['admin', 'stock', 'store'], true);
+        $canManageLine = $canChangeItem || $canCancelLine || $canEditQty;
         $totalCols     = 9 + ($canManageLine ? 1 : 0);
     @endphp
     <div class="table-scroll">
@@ -440,10 +441,15 @@
             </td>
             @if ($canManageLine)
                 <td class="center" style="white-space:nowrap;">
-                    @if ($lineId && $todo && !$picked)
+                    {{-- แสดงปุ่มตาม "ไส้ในยังไม่จัด (picked_at ว่าง) + PO ไม่ถูกยกเลิก" ไม่ผูกกับสถานะหัว PO --}}
+                    @if ($lineId && !$picked && !$cancel)
                         @if ($canChangeItem)
                             <button type="button" class="btn-line btn-line-change"
                                     onclick="openChangeItem({{ $lineId }})">เปลี่ยนสินค้า</button>
+                        @endif
+                        @if ($canEditQty)
+                            <button type="button" class="btn-line btn-line-qty"
+                                    onclick="editQty({{ $lineId }}, {{ (float) $line->item_quantity }})">แก้จำนวน</button>
                         @endif
                         @if ($canCancelLine)
                             <button type="button" class="btn-line btn-line-cancel"
@@ -548,6 +554,7 @@ const CANCEL_URL       = "{{ route('internal_po.cancel') }}";
 const PRINT_DOC_URL    = "{{ route('internal_po.print_document') }}";
 const ITEM_SEARCH_URL  = "{{ route('internal_po.item_search') }}";
 const CHANGE_ITEM_URL  = "{{ route('internal_po.change_item') }}";
+const CHANGE_QTY_URL   = "{{ route('internal_po.change_qty') }}";
 const CANCEL_LINE_URL  = "{{ route('internal_po.cancel_line') }}";
 const CSRF             = document.querySelector('meta[name="csrf-token"]').content;
 
@@ -786,6 +793,22 @@ async function saveChangeItem(){
         location.reload();
     } catch(e){ console.error(e); alert('เกิดข้อผิดพลาด'); btn.disabled=false; btn.textContent='บันทึก'; }
 }
+async function editQty(lineId, curQty){
+    const input = prompt('แก้ไขจำนวนสินค้า:', curQty);
+    if (input === null) return;
+    const qty = parseFloat(input);
+    if (isNaN(qty) || qty < 0){ alert('กรุณากรอกจำนวนที่ถูกต้อง (>= 0)'); return; }
+    try {
+        const res = await fetch(CHANGE_QTY_URL, {
+            method:'POST',
+            headers:{ 'Content-Type':'application/json','Accept':'application/json','X-CSRF-TOKEN':CSRF },
+            body: JSON.stringify({ line_id: lineId, quantity: qty })
+        });
+        const data = await res.json().catch(()=>null);
+        if (!res.ok || !data || !data.ok){ alert((data&&data.message)||'แก้จำนวนไม่สำเร็จ'); return; }
+        location.reload();
+    } catch(e){ console.error(e); alert('เกิดข้อผิดพลาด'); }
+}
 async function cancelLine(lineId, btn){
     if (!confirm('ยกเลิกสินค้ารายการนี้?')) return;
     btn.disabled = true;
@@ -806,6 +829,8 @@ async function cancelLine(lineId, btn){
     .btn-line{ padding:4px 9px; border-radius:6px; font-size:12px; font-family:inherit; cursor:pointer; border:1px solid; background:#fff; }
     .btn-line-change{ border-color:#3E6AE1; color:#3E6AE1; }
     .btn-line-change:hover{ background:#eef2ff; }
+    .btn-line-qty{ border-color:#c47f17; color:#c47f17; margin-left:4px; }
+    .btn-line-qty:hover{ background:#fef7e6; }
     .btn-line-cancel{ border-color:#c0392b; color:#c0392b; margin-left:4px; }
     .btn-line-cancel:hover{ background:#fdecea; }
     #changeItemModal{ display:none; position:fixed; inset:0; background:rgba(0,0,0,.45); z-index:400; align-items:center; justify-content:center; }

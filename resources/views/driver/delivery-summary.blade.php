@@ -670,24 +670,20 @@
     font-size:.74rem; font-weight:600; color:var(--danger); cursor:pointer; white-space:nowrap; flex-shrink:0;
 }
 .cancel-select{ width:16px; height:16px; accent-color:var(--danger); cursor:pointer; }
-/* เลขขนส่ง (เฉพาะขนส่งเอกชน) */
-.box-transport-id{
-    display:flex; align-items:center; gap:8px; flex-wrap:wrap;
-    margin-top:12px; padding-top:12px; border-top:1px solid var(--line);
-    font-size:.86rem;
+/* เลขขนส่ง แยกทีละบิล (เฉพาะขนส่งเอกชน) */
+.row-transport{
+    align-items:center; gap:6px; font-size:.78rem; color:var(--ink-soft); white-space:nowrap;
 }
-.transport-id-label{ color:var(--ink-soft); font-weight:600; }
-.transport-id-value{ font-family:var(--font-mono); font-weight:700; color:var(--ink); }
-.btn-transport-id{
-    margin-left:auto;
-    padding:7px 14px; border-radius:var(--radius-sm);
+.row-transport .row-transport-val{ font-family:var(--font-mono); font-weight:700; color:var(--primary); }
+.btn-row-transport{
+    padding:3px 10px; border-radius:var(--radius-sm);
     border:1px solid var(--primary); background:var(--primary); color:#fff;
-    font-size:.82rem; font-weight:700; cursor:pointer;
+    font-size:.72rem; font-weight:700; cursor:pointer;
 }
-.btn-transport-id:hover{ background:var(--primary-deep); }
+.btn-row-transport:hover{ background:var(--primary-deep); }
 /* private-only: แสดงเฉพาะโหมดขนส่งเอกชน */
 .private-only{ display:none; }
-.summary-mode-private .private-only{ display:flex; }
+.summary-mode-private .private-only{ display:inline-flex; }
 </style>
 </head>
 <body>
@@ -875,6 +871,13 @@
                                                                         @else
                                                                             <span class="job-bill-no">บิล {{ $item['bill_no'] }}</span>
                                                                         @endif
+                                                                        @unless ($isPo)
+                                                                            {{-- เลขขนส่ง แยกทีละบิล (แสดง/แก้เฉพาะโหมดขนส่งเอกชน) --}}
+                                                                            <span class="row-transport private-only">
+                                                                                เลขขนส่ง: <b class="row-transport-val" data-tp-billid="{{ $item['id'] }}">{{ $item['id_transport'] ?: '—' }}</b>
+                                                                                <button type="button" class="btn-row-transport" data-billid="{{ $item['id'] }}" onclick="editRowTransportId(this)">แก้</button>
+                                                                            </span>
+                                                                        @endunless
                                                                         <label class="cancel-select-label" title="เลือกเพื่อยกเลิกงานนี้">
                                                                             <input type="checkbox" class="cancel-select" data-billid="{{ $item['id'] }}">
                                                                             <span>ยกเลิก</span>
@@ -884,13 +887,6 @@
                                                             </div>
                                                         </div>
                                                     @endforeach
-
-                                                    {{-- เลขขนส่ง (id_transport) — แสดง/แก้ไขเฉพาะโหมดขนส่งเอกชน --}}
-                                                    <div class="box-transport-id private-only">
-                                                        <span class="transport-id-label">เลขขนส่ง:</span>
-                                                        <span class="transport-id-value" id="{{ $boxKey }}_transportId">{{ $box['id_transport'] ?: 'ยังไม่ระบุ' }}</span>
-                                                        <button type="button" class="btn-transport-id" onclick="editBoxTransportId('{{ $boxKey }}')">เพิ่ม / แก้เลขขนส่ง</button>
-                                                    </div>
 
                                                     <div class="box-actions">
                                                         <button type="button" class="btn-cancel-box" onclick="cancelBoxAssignment('{{ $boxKey }}')">ยกเลิกงานที่เลือก / คืนคิว</button>
@@ -1023,24 +1019,24 @@ async function cancelBoxAssignment(boxKey){
     }catch(e){ console.error(e); showToast('เกิดข้อผิดพลาดในการเชื่อมต่อ', 'error'); }
 }
 
-// เพิ่ม/แก้ไขเลขขนส่ง (id_transport) ของงานขนส่งเอกชน
-async function editBoxTransportId(boxKey){
-    const billIds = collectBoxBillIds(boxKey, true);
-    if(!billIds.length){ showToast('ไม่พบงานขนส่งเอกชนในกล่องนี้', 'error'); return; }
-    const valEl = document.getElementById(boxKey + '_transportId');
-    const current = (valEl && valEl.textContent.trim() !== 'ยังไม่ระบุ') ? valEl.textContent.trim() : '';
-    const input = prompt('กรอกเลขขนส่ง (id_transport):', current);
+// เพิ่ม/แก้ไขเลขขนส่ง (id_transport) แยกทีละบิล (งานขนส่งเอกชน)
+async function editRowTransportId(btn){
+    const billId = btn.dataset.billid;
+    if(!billId){ return; }
+    const valEl = btn.parentElement.querySelector('.row-transport-val');
+    const current = (valEl && valEl.textContent.trim() !== '—') ? valEl.textContent.trim() : '';
+    const input = prompt('กรอกเลขขนส่งของบิลนี้:', current);
     if(input === null) return;  // กดยกเลิก
     const idTransport = input.trim();
     try{
         const res = await fetch(SAVE_TRANSPORT_ID_URL, {
             method: 'POST',
             headers: { 'Content-Type':'application/json', 'Accept':'application/json', 'X-Requested-With':'XMLHttpRequest', 'X-CSRF-TOKEN': CSRF_TOKEN },
-            body: JSON.stringify({ bill_ids: billIds, id_transport: idTransport }),
+            body: JSON.stringify({ bill_ids: [billId], id_transport: idTransport }),
         });
         const data = await res.json();
         if(res.ok && data.ok){
-            if(valEl) valEl.textContent = idTransport !== '' ? idTransport : 'ยังไม่ระบุ';
+            if(valEl) valEl.textContent = idTransport !== '' ? idTransport : '—';
             showToast(data.message || 'บันทึกแล้ว', 'success');
         } else {
             showToast(data.message || 'บันทึกไม่สำเร็จ', 'error');

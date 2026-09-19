@@ -439,6 +439,7 @@ Route::prefix('internal-po')->name('internal_po.')->group(function () {
     Route::post('print-document', [InternalPoController::class, 'printDocument'])->name('print_document');
     Route::get('item-search',     [InternalPoController::class, 'itemSearch'])->name('item_search');
     Route::post('change-item',    [InternalPoController::class, 'changeItem'])->name('change_item');
+    Route::post('change-qty',     [InternalPoController::class, 'changeQty'])->name('change_qty');
     Route::post('cancel-line',    [InternalPoController::class, 'cancelLine'])->name('cancel_line');
 });
 

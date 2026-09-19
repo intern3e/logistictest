@@ -22,7 +22,7 @@
         * { box-sizing: border-box; }
 
         html, body {
-            font-size: clamp(12px, 0.45vw + 7px, 16px);
+            font-size: clamp(11px, 0.4vw + 6px, 14px);
         }
 
         body {
@@ -31,7 +31,7 @@
             margin: 0;
             padding: 0;
             color: var(--ink-900);
-            line-height: 1.6;
+            line-height: 1.5;
         }
 
         a {
@@ -47,29 +47,29 @@
             background-color: var(--ink-900);
             color: #fff;
             border-radius: var(--radius);
-            padding: 10px 30px;
+            padding: 8px 20px;
             display: flex;
             justify-content: space-between;
             align-items: center;
             flex-wrap: wrap;
             box-shadow: 0 4px 10px rgba(0, 0, 0, 0.18);
-            margin: 20px;
+            margin: 15px;
         }
 
         .header h2 {
-            font-size: clamp(16px, 1vw + 6px, 22px);
+            font-size: clamp(14px, 0.9vw + 5px, 18px);
             margin: 0;
             letter-spacing: 0.02em;
         }
 
-        .buttons { display: flex; gap: 12px; align-items: center; }
-        .buttons span { font-size: clamp(11px, 0.55vw + 5px, 14px); color: var(--ink-150); }
+        .buttons { display: flex; gap: 10px; align-items: center; }
+        .buttons span { font-size: clamp(10px, 0.5vw + 4px, 12px); color: var(--ink-150); }
 
         .btn {
-            padding: 7px 16px;
+            padding: 5px 12px;
             border-radius: var(--radius);
             font-weight: 600;
-            font-size: clamp(11px, 0.55vw + 5px, 14px);
+            font-size: clamp(10px, 0.5vw + 4px, 12px);
             transition: 0.2s;
             border: 1px solid #fff;
         }
@@ -93,11 +93,11 @@
             display: inline-flex;
             align-items: center;
             justify-content: center;
-            padding: 5px 10px;
+            padding: 4px 8px;
             border-radius: var(--radius);
             background-color: var(--paper);
             color: var(--ink-900);
-            font-size: clamp(10px, 0.5vw + 4px, 12px);
+            font-size: clamp(9px, 0.45vw + 3px, 11px);
             font-weight: 600;
             text-decoration: none;
             transition: 0.2s;
@@ -115,61 +115,63 @@
             justify-content: space-between;
             align-items: center;
             flex-wrap: wrap;
-            gap: 10px;
+            gap: 8px;
             background-color: var(--paper);
-            padding: 12px 24px;
-            margin: 0 20px;
+            padding: 10px 20px;
+            margin: 0 15px;
             border: 1px solid var(--line);
             border-radius: var(--radius);
         }
 
-        .filter-form { display: flex; align-items: center; gap: 10px; font-size: clamp(11px, 0.55vw + 5px, 14px); }
+        .filter-form { display: flex; align-items: center; gap: 8px; font-size: clamp(10px, 0.5vw + 4px, 12px); }
         .filter-form label { font-weight: 600; color: var(--ink-700); }
 
         .filter-form input[type="date"],
         .headcom select {
-            padding: 6px 12px;
+            padding: 5px 10px;
             border-radius: var(--radius);
             border: 1px solid var(--ink-150);
             background-color: var(--paper);
-            font-size: clamp(11px, 0.55vw + 5px, 14px);
+            font-size: clamp(10px, 0.5vw + 4px, 12px);
             color: var(--ink-900);
         }
 
         .headcom { display: flex; align-items: center; gap: 8px; }
-        .headcom label { font-weight: 600; color: var(--ink-700); font-size: clamp(11px, 0.55vw + 5px, 14px); }
+        .headcom label { font-weight: 600; color: var(--ink-700); font-size: clamp(10px, 0.5vw + 4px, 12px); }
 
         .search-box { margin-left: auto; }
 
         #search-input {
-            padding: 6px 12px;
+            padding: 5px 10px;
             border: 1px solid var(--ink-150);
             border-radius: var(--radius);
-            font-size: clamp(11px, 0.55vw + 5px, 14px);
+            font-size: clamp(10px, 0.5vw + 4px, 12px);
         }
 
         /* TABLE */
-        .table-container { padding: 20px; overflow-x: auto; }
+        .table-container { padding: 15px; overflow-x: auto; }
 
         table {
             width: 100%;
             table-layout: fixed;
             border-collapse: collapse;
             background-color: var(--paper);
-            font-size: clamp(10px, 0.62vw + 4px, 14px);
+            font-size: clamp(9px, 0.5vw + 3px, 11px);
             border-radius: 10px;
             overflow: hidden;
-            min-width: 1180px;
+            min-width: 1200px;
             border: 1px solid var(--line);
         }
 
         th, td {
-            padding: 8px 10px;
+            padding: 6px 8px;
             border: 1px solid var(--line);
             text-align: center;
             vertical-align: middle;
             overflow-wrap: break-word;
             word-break: break-word;
+            word-wrap: break-word;
+            hyphens: auto;
         }
 
         th.customer-name, td.customer-name { text-align: left !important; }
@@ -177,38 +179,52 @@
         table thead {
             background-color: var(--ink-900);
             color: #fff;
-            font-size: clamp(10px, 0.62vw + 4px, 14px);
+            font-size: clamp(9px, 0.5vw + 3px, 11px);
         }
 
         table tbody tr:nth-child(even) { background-color: var(--ink-050); }
         table tbody tr:hover { background-color: var(--ink-100); }
 
-        .wrap-text { text-align: left; white-space: normal; word-wrap: break-word; padding: 10px; }
+        .wrap-text { text-align: left; white-space: normal; word-wrap: break-word; padding: 8px; }
 
         /* แถวที่ statusdeli == 1 */
         td.row-flagged { background-color: var(--ink-150) !important; font-weight: 600; }
 
-        .col-no      { width: 4%; }
-        .col-docid   { width: 7%; }
-        .col-so      { width: 7%; }
-        .col-headcom { width: 13%; }
-        .col-comname { width: 12%; }
-        .col-contact { width: 9%; }
-        .col-tel     { width: 6%; }
-        .col-doctype { width: 7%; }
-        .col-emp     { width: 6%; }
-        .col-date    { width: 7%; }
-        .col-pdf     { width: 5%; }
-        .col-detail  { width: 11%; }
-        .col-edit    { width: 6%; }
+        /* ปรับความกว้างคอลัมน์ใหม่ - เล็กลง */
+        .col-no      { width: 4%; min-width: 35px; }
+        .col-docid   { width: 8%; min-width: 80px; }
+        .col-so      { width: 7%; min-width: 70px; }
+        .col-headcom { width: 13%; min-width: 120px; }
+        .col-comname { width: 13%; min-width: 120px; }
+        .col-contact { width: 9%; min-width: 100px; }
+        .col-tel     { width: 9%; min-width: 100px; }
+        .col-doctype { width: 7%; min-width: 70px; }
+        .col-emp     { width: 6%; min-width: 60px; }
+        .col-date    { width: 7%; min-width: 70px; }
+        .col-pdf     { width: 5%; min-width: 45px; }
+        .col-detail  { width: 11%; min-width: 120px; }
+        .col-edit    { width: 5%; min-width: 50px; }
 
         td.col-tel, th.col-tel {
-            white-space: nowrap;
             text-align: center;
+            white-space: normal;
+            word-break: break-all;
+            overflow-wrap: break-word;
+            line-height: 1.3;
+            font-size: clamp(8px, 0.45vw + 2px, 10px);
+        }
+
+        td.col-contact, th.col-contact {
+            white-space: normal;
+            word-break: break-word;
+            overflow-wrap: break-word;
+            line-height: 1.3;
+            font-size: clamp(8px, 0.45vw + 2px, 10px);
         }
 
         td.col-detail, th.col-detail {
-            min-width: 140px;
+            min-width: 120px;
+            white-space: normal;
         }
 
         /* ปุ่มไอคอนเอกสาร PDF */
@@ -216,8 +232,8 @@
             display: inline-flex;
             align-items: center;
             justify-content: center;
-            width: 34px;
-            height: 34px;
+            width: 30px;
+            height: 30px;
             border-radius: 50%;
             border: 1.5px solid var(--ink-900);
             background-color: var(--paper);
@@ -226,20 +242,20 @@
         }
         .pdf-btn:hover { background-color: var(--ink-900); }
         .pdf-btn:hover svg { stroke: #fff; }
-        .pdf-btn svg { width: 17px; height: 17px; stroke: var(--ink-900); transition: 0.2s; }
+        .pdf-btn svg { width: 15px; height: 15px; stroke: var(--ink-900); transition: 0.2s; }
 
         .pdf-btn-disabled {
             display: inline-flex;
             align-items: center;
             justify-content: center;
-            width: 34px;
-            height: 34px;
+            width: 30px;
+            height: 30px;
             border-radius: 50%;
             border: 1.5px dashed var(--ink-300);
             background-color: var(--ink-050);
             cursor: not-allowed;
         }
-        .pdf-btn-disabled svg { width: 17px; height: 17px; stroke: var(--ink-300); }
+        .pdf-btn-disabled svg { width: 15px; height: 15px; stroke: var(--ink-300); }
 
         /* POPUP */
         .popup-overlay {
@@ -274,7 +290,7 @@
             width: 100%;
         }
 
-        /* 🚚 Popup สถานะจ่ายงาน - ปรับปรุงใหม่ */
+        /*  Popup สถานะจ่ายงาน */
         #deliveryPopup .popup-content {
             max-width: 900px;
             max-height: 85vh;
@@ -364,27 +380,26 @@
             font-weight: 600;
         }
 
-/* ปุ่มสถานะจ่ายงาน */
+        /* ปุ่มสถานะจ่ายงาน */
         .btn-delivery-status {
             display: inline-flex;
             align-items: center;
             justify-content: center;
             gap: 6px;
-            padding: 8px 14px;
+            padding: 6px 10px;
             border-radius: 6px;
             font-weight: 600;
-            font-size: 13px;
+            font-size: clamp(9px, 0.45vw + 3px, 11px);
             text-decoration: none;
             transition: all 0.3s;
-            border: none; /* เอาเส้นกรอบออกทั้งหมด */
+            border: none;
             cursor: pointer;
             vertical-align: middle;
         }
 
-        /* สีแดง: เริ่มต้น หรือ ยังไม่มีข้อมูล */
         .btn-delivery-status.no-delivery {
             color: #dc3545;
-            background-color: #fff5f5; /* พื้นหลังสีแดงอ่อนมากๆ แทนกรอบ */
+            background-color: #fff5f5;
             animation: pulse-glow 2s infinite;
         }
 
@@ -394,7 +409,6 @@
             animation: none;
         }
 
-        /* สีเขียว: เมื่อมีข้อมูลการจ่ายงานแล้ว */
         .btn-delivery-status.has-delivery {
             color: #155724;
             background-color: #d4edda;
@@ -406,17 +420,10 @@
             color: #fff;
         }
 
-        /* เอฟเฟกต์เรืองแสงจางๆ แทนการใช้กรอบ */
         @keyframes pulse-glow {
-            0% {
-                box-shadow: 0 0 0 0 rgba(220, 53, 69, 0.4);
-            }
-            70% {
-                box-shadow: 0 0 0 6px rgba(220, 53, 69, 0);
-            }
-            100% {
-                box-shadow: 0 0 0 0 rgba(220, 53, 69, 0);
-            }
+            0% { box-shadow: 0 0 0 0 rgba(220, 53, 69, 0.4); }
+            70% { box-shadow: 0 0 0 6px rgba(220, 53, 69, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(220, 53, 69, 0); }
         }
     </style>
 </head>
@@ -445,10 +452,15 @@
                 <option value="">ทั้งหมด</option>
                 <option value="บริษัท ทริปเปิ้ล อี เทรดดิ้ง จำกัด">บริษัท ทริปเปิ้ล อี เทรดดิ้ง จำกัด</option>
                 <option value="บริษัท ทริปเปิ้ล อี อินโนเวชั่น จำกัด">บริษัท ทริปเปิ้ล อี อินโนเวชั่น จำกัด</option>
-                <option value="บริษัท ทริปเปิ้ลพี แฟคทอรี่ จำกัด">บริษัท ทริปเปิ้ลพี แฟคทอรี่ จำกัด</option>
+                <option value="บริษัท ทริบเปิ้ล พี แฟคตอรี่ แอนด์ เอ็นจิเนียริ่ง จำกัด">บริษัท ทริบเปิ้ล พี แฟคตอรี่ แอนด์ เอ็นจิเนียริ่ง จำกัด</option>
                 <option value="บริษัท เอตะ แอนด์ พอล อินโนเวชั่น จำกัด">บริษัท เอตะ แอนด์ พอล อินโนเวชั่น จำกัด</option>
                 <option value="บริษัท ฮิคาริ เดงกิ จำกัด">บริษัท ฮิคาริ เดงกิ จำกัด</option>
                 <option value="บริษัท เอ อี แอนด์ ที อินเตอร์เนชั่นแนล จำกัด">บริษัท เอ อี แอนด์ ที อินเตอร์เนชั่นแนล จำกัด</option>
+                <option value="บริษัท ทริปเปิ้ล อี ไลท์ติ้ง จำกัด">บริษัท ทริปเปิ้ล อี ไลท์ติ้ง จำกัด</option>
+                <option value="บริษัท ทริปเปิ้ล อี เอ็มไพร์ กรุ๊ป จำกัด">บริษัท ทริปเปิ้ล อี เอ็มไพร์ กรุ๊ป จำกัด</option>
+                <option value="บริษัท ชาเวสต์ เรียลเอสเตท จำกัด">บริษัท ชาเวสต์ เรียลเอสเตท จำกัด</option>
+                <option value="บริษัท เทคเพียร์ เอ็นจิเนียริ่ง จำกัด">บริษัท เทคเพียร์ เอ็นจิเนียริ่ง จำกัด</option>
+                <option value="บริษัท เดชา อิเล็คทริค แอนด์ คอนสตรัคชั่น จำกัด">บริษัท เดชา อิเล็คทริค แอนด์ คอนสตรัคชั่น จำกัด</option>
             </select>
         </div>
 
@@ -511,7 +523,7 @@
                     <td>{{ $item->so_id ?? '-' }}</td>
                     <td>{{ $item->headcom }}</td>
                     <td>{{ $item->com_name }}</td>
-                    <td>{{ $item->contact_name }}</td>
+                    <td class="col-contact">{{ $item->contact_name }}</td>
                     <td class="col-tel">{{ $item->contact_tel }}</td>
                     <td>{{ $item->doctype }}</td>
                     <td>{{ $item->emp_name }}</td>
@@ -551,7 +563,7 @@
                         </a>
                         <br>
                         
-                        {{-- ปุ่มสถานะจ่ายงาน: เริ่มต้นเป็นสีแดง (no-delivery) --}}
+                        {{-- ปุ่มสถานะจ่ายงาน --}}
                         <a href="javascript:void(0);" 
                            class="btn-delivery-status no-delivery" 
                            id="btn-dlv-{{ $item->doc_id }}"
@@ -645,12 +657,10 @@
                 sessionStorage.setItem('hasAutoSubmitted', 'true');
                 form.submit();
             } else {
-                // ✅ ตรวจสอบสถานะจ่ายงานทั้งหมดเมื่อโหลดหน้าเว็บ
                 checkAllDeliveryStatus();
             }
         });
 
-        // ✅ ฟังก์ชันตรวจสอบสถานะจ่ายงานทั้งหมด
         async function checkAllDeliveryStatus() {
             const buttons = document.querySelectorAll('.btn-delivery-status');
             
@@ -663,14 +673,12 @@
                         {headers:{'Accept':'application/json'}});
                     const j = await res.json();
                     
-                    // ถ้ามีข้อมูลการจ่ายงาน ให้เปลี่ยนเป็นสีเขียว
                     if (j.found && j.rows && j.rows.length > 0) {
                         btn.className = 'btn-delivery-status has-delivery';
                         btn.innerHTML = '<span class="btn-text">✓ จ่ายงานแล้ว</span>';
                     }
                 } catch (e) {
                     console.error('Error checking status for bill', billId, e);
-                    // ถ้า error ยังคงเป็นสีแดง
                 }
             }
         }
@@ -746,7 +754,6 @@
                 const j = await res.json();
                 
                 if (!j.found || !j.rows.length) {
-                    // ไม่พบข้อมูล: ปุ่มยังคงเป็นสีแดง (no-delivery) ตามค่าเริ่มต้น
                     document.getElementById('dlvBody').innerHTML = `
                         <div class="no-delivery">
                             <div style="font-size:48px;margin-bottom:15px;">⚠️</div>
@@ -755,7 +762,6 @@
                         </div>
                     `;
                 } else {
-                    // พบข้อมูล: เปลี่ยนปุ่มจากสีแดง เป็น สีเขียว/น้ำเงิน (has-delivery)
                     if (btnElement) {
                         btnElement.className = 'btn-delivery-status has-delivery';
                         btnElement.innerHTML = '<span class="btn-text">✓ จ่ายงานแล้ว</span>';

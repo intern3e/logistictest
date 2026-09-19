@@ -693,7 +693,48 @@ private function hydrateLegacyPageItems(\Illuminate\Support\Collection $lightIte
         $line->item_total   = $avg * (float) $line->item_quantity;
         $line->save();
 
+        // จดบันทึกการแก้ไข (ข้อมูลถูก migrate ลง DB ใหม่แล้วผ่านขั้นตอนจัด/pick)
+        Log::info('internal_po.changeItem', [
+            'by' => $authUser->name, 'internal_id' => $line->internal_id, 'line_id' => $line->id,
+            'item_id' => $line->item_id, 'item_name' => $line->item_name,
+        ]);
+
         return response()->json(['ok' => true, 'message' => 'เปลี่ยนสินค้าเรียบร้อย']);
+    }
+
+    /**
+     * แก้ไขจำนวนสินค้ารายไส้ใน (เฉพาะที่ยังไม่จัดเสร็จ) — admin/stock/store
+     */
+    public function changeQty(Request $request)
+    {
+        $authUser = Auth::guard('web')->user();
+        if (!$authUser || !in_array($authUser->role, ['admin', 'stock', 'store'], true)) {
+            return response()->json(['ok' => false, 'message' => 'คุณไม่มีสิทธิ์แก้ไขจำนวน'], 403);
+        }
+
+        $request->validate([
+            'line_id'  => 'required|integer',
+            'quantity' => 'required|numeric|min:0',
+        ]);
+
+        $line = internal_poline::find($request->input('line_id'));
+        if (!$line) {
+            return response()->json(['ok' => false, 'message' => 'ไม่พบรายการสินค้านี้'], 404);
+        }
+        if (!empty($line->picked_at)) {
+            return response()->json(['ok' => false, 'message' => 'รายการนี้จัดเสร็จ/ตัดสต็อกไปแล้ว แก้จำนวนไม่ได้'], 409);
+        }
+
+        $qty = (float) $request->input('quantity');
+        $line->item_quantity = $qty;
+        $line->item_total    = (float) ($line->item_average ?? 0) * $qty;
+        $line->save();
+
+        Log::info('internal_po.changeQty', [
+            'by' => $authUser->name, 'internal_id' => $line->internal_id, 'line_id' => $line->id, 'quantity' => $qty,
+        ]);
+
+        return response()->json(['ok' => true, 'message' => 'แก้ไขจำนวนเรียบร้อย']);
     }
 
     /**
@@ -716,7 +757,13 @@ private function hydrateLegacyPageItems(\Illuminate\Support\Collection $lightIte
             return response()->json(['ok' => false, 'message' => 'รายการนี้จัดเสร็จไปแล้ว ยกเลิกไม่ได้'], 409);
         }
 
+        $internalId = $line->internal_id;
+        $itemName   = $line->item_name;
         $line->delete();
+
+        Log::info('internal_po.cancelLine', [
+            'by' => $authUser->name, 'internal_id' => $internalId, 'line_id' => $request->input('line_id'), 'item_name' => $itemName,
+        ]);
 
         return response()->json(['ok' => true, 'message' => 'ยกเลิกสินค้าเรียบร้อย']);
     }
