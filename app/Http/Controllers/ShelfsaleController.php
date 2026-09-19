@@ -47,7 +47,11 @@ class ShelfsaleController extends Controller
 
         // สิทธิ์การมองเห็น: admin/store/stock และ sale/sale_assistant/support เห็นทุกชั้นทุก Sale (ไม่ล็อกเฉพาะชื่อตัวเอง)
         $seeAll     = in_array($user->role ?? '', ['admin', 'store', 'stock', 'sale', 'sale_assistant', 'support'], true);
-        $isSaleView = !$seeAll;
+        // แสดงคอลัมน์ "ชื่อลูกค้า" แทน "Sale" สำหรับ sale/support/sale_assistant
+        $isSaleView = in_array($user->role ?? '', ['sale', 'sale_assistant', 'support'], true);
+        // ล็อกช่อง Sale = ชื่อตัวเอง เฉพาะ role ที่ถูกบังคับเห็นเฉพาะงานตัวเอง (นอกกลุ่ม seeAll)
+        $lockSale   = !$seeAll;
+        $autoLoad   = ($user->role ?? '') === 'admin';   // admin โหลดของทุก Sale ทันทีที่เข้าหน้า
         $loginName  = $user->name ?? '';
         $canSeePrice = in_array($user->role ?? '', ['admin', 'sale', 'sale_assistant', 'support'], true);  // เห็นมูลค่า
         $canManage   = in_array($user->role ?? '', ['admin', 'store', 'stock'], true);                     // ย้ายชั้น/เช็คเอาท์ เฉพาะ admin/store/stock
@@ -63,7 +67,7 @@ class ShelfsaleController extends Controller
 
         $shelfOptions = collect(self::SHELF_OPTIONS);
 
-        return view('sale.dashboardshelf', compact('saleOptions', 'shelfOptions', 'creator', 'isSaleView', 'loginName', 'canSeePrice', 'canManage'));
+        return view('sale.dashboardshelf', compact('saleOptions', 'shelfOptions', 'creator', 'isSaleView', 'lockSale', 'autoLoad', 'loginName', 'canSeePrice', 'canManage'));
     }
 
     /**
@@ -85,8 +89,9 @@ class ShelfsaleController extends Controller
             $fSale = $user->name ?? '';
         }
 
-        // ต้องเลือกตัวกรองอย่างน้อย 1 อย่างก่อน (กันโหลดทั้งหมด)
-        if ($fShelf === '' && $fSale === '' && $fSo === '' && $fPo === '') {
+        // ต้องเลือกตัวกรองอย่างน้อย 1 อย่างก่อน (กันโหลดทั้งหมด) — ยกเว้น admin ที่โหลดของทุก Sale ได้เลย
+        $isAdmin = ($user->role ?? '') === 'admin';
+        if (!$isAdmin && $fShelf === '' && $fSale === '' && $fSo === '' && $fPo === '') {
             return response()->json([
                 'ok'      => true,
                 'rows'    => [],

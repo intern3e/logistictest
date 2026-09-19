@@ -606,6 +606,7 @@
             padding: 0;
             width: 520px;
             max-width: 92vw;
+            max-height: 90vh;
             border-radius: var(--radius);
             box-shadow: 0 20px 60px rgba(0,0,0,0.15);
             position: fixed;
@@ -616,6 +617,8 @@
             overflow: hidden;
             animation: dialog-enter 0.25s ease;
         }
+        /* เปิดอยู่ = flex column เพื่อให้ body เลื่อนได้ ส่วนหัว/ปุ่มปิดตรึงไว้ (สินค้าเยอะก็ยังกดปิดได้) */
+        dialog[open] { display: flex; flex-direction: column; }
 
         @keyframes dialog-enter {
             from { opacity: 0; transform: translate(-50%, -48%) scale(0.96); }
@@ -643,7 +646,11 @@
 
         .dialog-body {
             padding: 0 24px 24px;
+            overflow-y: auto;          /* สินค้าเยอะ = เลื่อนดูได้ */
+            min-height: 0;
+            flex: 1 1 auto;
         }
+        .dialog-header, .dialog-actions { flex-shrink: 0; }   /* หัว + ปุ่มปิด ตรึงไว้เสมอ */
 
         dialog label {
             display: block;

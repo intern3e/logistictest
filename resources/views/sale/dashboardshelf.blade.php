@@ -628,7 +628,7 @@
                     <input type="search" id="fShelf" placeholder=" ค้นหาโดยชั้น..." autocomplete="off">
                     <div id="shelfSuggest" class="suggest-panel"></div>
                 </div>
-                @if(($isSaleView ?? false))
+                @if(($lockSale ?? false))
                     <input type="search" id="fSale" value="{{ $loginName ?? '' }}" readonly
                            title="เห็นเฉพาะงานของคุณ" style="background:#f3f4f6;color:#6b7280;cursor:not-allowed;">
                 @else
@@ -748,6 +748,7 @@
     const fSo        = document.getElementById('fSo');
     const fPo        = document.getElementById('fPo');
 
+    const AUTO_LOAD     = {{ ($autoLoad ?? false) ? 'true' : 'false' }};   // admin: โหลดทั้งหมดได้แม้ไม่กรอง
     const IS_SALE       = {{ ($isSaleView ?? false) ? 'true' : 'false' }};
     const CAN_SEE_PRICE = {{ ($canSeePrice ?? false) ? 'true' : 'false' }};
     const CAN_MANAGE    = {{ ($canManage ?? false) ? 'true' : 'false' }};
@@ -761,6 +762,11 @@
     function esc(s){ return String(s ?? '').replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m])); }
     function escJs(s){ return String(s ?? '').replace(/\\/g,'\\\\').replace(/'/g,"\\'"); }
     function fmtBaht(n){ return Number(n||0).toLocaleString('th-TH',{minimumFractionDigits:2,maximumFractionDigits:2}); }
+    // คลิกเลข SO -> เปิดหน้า sodetail ของ server_update
+    function soLink(so){
+        if (!so || so === '-') return '<span class="ref-link">-</span>';
+        return '<a class="ref-link" href="http://server_update:8000/sodetail?SONum=' + encodeURIComponent(so) + '" target="_blank" rel="noopener">' + esc(so) + '</a>';
+    }
 
     const SHELF_OPTIONS = @json($shelfOptions ?? []);
     const SALE_OPTIONS  = @json($saleOptions ?? []);
@@ -889,7 +895,7 @@
             + '<td>' + shelf + '</td>'
             + '<td class="' + dueDateClass + '">' + (r.ship_date ? esc(r.ship_date) : '<span class="dash">-</span>') + '</td>'
             + '<td class="' + d.cls + '">' + esc(d.txt) + '</td>'
-            + '<td class="num"><span class="ref-link">' + esc(r.so) + '</span></td>'
+            + '<td class="num">' + soLink(r.so) + '</td>'
             + '<td class="num">' + esc(r.po) + '</td>'
             + custOrSale
             + priceCell
@@ -987,7 +993,8 @@
     }
 
     async function search(){
-        if (!hasFilter()) {
+        // admin (AUTO_LOAD) โหลดทั้งหมดได้แม้ไม่กรอง — role อื่นต้องมีตัวกรองก่อน
+        if (!AUTO_LOAD && !hasFilter()) {
             if (showCount) showCount.textContent = 0;
             const tv0 = document.getElementById('totalValue'); if (tv0) tv0.textContent = '0.00';
             updateOverdueAlert(0);
@@ -1067,6 +1074,11 @@
 
     // มุมมอง Sale: ช่อง Sale ถูกล็อกค่าไว้แล้วตั้งแต่โหลดหน้า ให้ค้นหาให้เลยโดยไม่ต้องรอผู้ใช้พิมพ์อะไรเพิ่ม
     if (fSale && fSale.readOnly && fSale.value.trim()) { search(); }
+
+    @if(($autoLoad ?? false))
+    // admin: โหลดของทุก Sale ทันทีที่เข้าหน้า (ไม่ต้องกรองก่อน)
+    search();
+    @endif
 
 </script>
 </body>

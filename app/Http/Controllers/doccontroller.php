@@ -31,10 +31,21 @@ class DocController extends Controller
         $authUser = $this->resolveSsoUser($request, 'document.dashboarddoc');
         $creator  = $authUser->name;
 
-        $date = $request->get('date');
+        $date   = $request->get('date');
+        $search = trim((string) $request->get('search', ''));
         $message = null;
 
-        if ($date) {
+        if ($search !== '') {
+            // ค้นหาเลขที่บิล: หาได้ทุกวัน ไม่จำกัดเฉพาะวันที่เลือกไว้
+            $docbill = Docbills::where('doc_id', 'like', '%' . $search . '%')
+                        ->orderBy('doc_id', 'desc')
+                        ->limit(500)
+                        ->get();
+
+            if ($docbill->isEmpty()) {
+                $message = 'ไม่พบเลขที่บิลที่ค้นหา';
+            }
+        } elseif ($date) {
             $docbill = Docbills::whereDate('time', $date)
                         ->orderBy('doc_id', 'desc')
                         ->get();
@@ -45,6 +56,22 @@ class DocController extends Controller
         } else {
             $docbill = Docbills::orderBy('doc_id', 'desc')->get();
         }
+
+        // โหลดสถานะ "จ่ายงานแล้ว" ของทุกบิลในครั้งเดียว (query เดียว) แทนการเช็คทีละบิลฝั่ง frontend
+        $docIds = $docbill->pluck('doc_id')->all();
+        $deliveredIds = [];
+        if (!empty($docIds)) {
+            $deliveredIds = DB::table('transaction_transport')
+                ->whereIn('bill_id', $docIds)
+                ->distinct()
+                ->pluck('bill_id')
+                ->flip()
+                ->all();
+        }
+
+        $docbill->each(function ($item) use ($deliveredIds) {
+            $item->has_delivery = isset($deliveredIds[$item->doc_id]);
+        });
 
         return view('document.dashboarddoc', compact('docbill', 'message', 'creator'));
     }

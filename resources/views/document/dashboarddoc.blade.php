@@ -159,7 +159,7 @@
             font-size: clamp(9px, 0.5vw + 3px, 11px);
             border-radius: 10px;
             overflow: hidden;
-            min-width: 1200px;
+            min-width: 950px;
             border: 1px solid var(--line);
         }
 
@@ -191,39 +191,19 @@
         td.row-flagged { background-color: var(--ink-150) !important; font-weight: 600; }
 
         /* ปรับความกว้างคอลัมน์ใหม่ - เล็กลง */
-        .col-no      { width: 4%; min-width: 35px; }
-        .col-docid   { width: 8%; min-width: 80px; }
-        .col-so      { width: 7%; min-width: 70px; }
-        .col-headcom { width: 13%; min-width: 120px; }
-        .col-comname { width: 13%; min-width: 120px; }
-        .col-contact { width: 9%; min-width: 100px; }
-        .col-tel     { width: 9%; min-width: 100px; }
-        .col-doctype { width: 7%; min-width: 70px; }
-        .col-emp     { width: 6%; min-width: 60px; }
-        .col-date    { width: 7%; min-width: 70px; }
-        .col-pdf     { width: 5%; min-width: 45px; }
-        .col-detail  { width: 11%; min-width: 120px; }
-        .col-edit    { width: 5%; min-width: 50px; }
-
-        td.col-tel, th.col-tel {
-            text-align: center;
-            white-space: normal;
-            word-break: break-all;
-            overflow-wrap: break-word;
-            line-height: 1.3;
-            font-size: clamp(8px, 0.45vw + 2px, 10px);
-        }
-
-        td.col-contact, th.col-contact {
-            white-space: normal;
-            word-break: break-word;
-            overflow-wrap: break-word;
-            line-height: 1.3;
-            font-size: clamp(8px, 0.45vw + 2px, 10px);
-        }
+        .col-no      { width: 5%;  min-width: 35px; }
+        .col-docid   { width: 10%; min-width: 90px; }
+        .col-so      { width: 9%;  min-width: 80px; }
+        .col-headcom { width: 16%; min-width: 150px; }
+        .col-comname { width: 17%; min-width: 150px; }
+        .col-emp     { width: 8%;  min-width: 70px; }
+        .col-date    { width: 9%;  min-width: 80px; }
+        .col-pdf     { width: 6%;  min-width: 50px; }
+        .col-detail  { width: 14%; min-width: 140px; }
+        .col-edit    { width: 6%;  min-width: 60px; }
 
         td.col-detail, th.col-detail {
-            min-width: 120px;
+            min-width: 140px;
             white-space: normal;
         }
 
@@ -465,7 +445,8 @@
         </div>
 
         <div class="search-box">
-            <input type="text" id="search-input" placeholder=" ค้นหา เลขที่บิล" onkeyup="searchTable()">
+            <input type="text" id="search-input" name="search" form="autoSearchForm"
+                   value="{{ request('search', '') }}" placeholder=" ค้นหา เลขที่บิล (ค้นหาได้ทุกวัน)" autocomplete="off">
         </div>
     </div>
 
@@ -477,9 +458,6 @@
                 <col class="col-so">
                 <col class="col-headcom">
                 <col class="col-comname">
-                <col class="col-contact">
-                <col class="col-tel">
-                <col class="col-doctype">
                 <col class="col-emp">
                 <col class="col-date">
                 <col class="col-pdf">
@@ -493,9 +471,6 @@
                     <th>เลข SO</th>
                     <th>บริษัทผู้ส่ง</th>
                     <th>บริษัท</th>
-                    <th>ผู้ติดต่อ</th>
-                    <th class="col-tel">เบอร์โทร</th>
-                    <th>ประเภทงาน</th>
                     <th>ผู้เปิดบิล</th>
                     <th>วันที่</th>
                     <th>เอกสาร PDF</th>
@@ -523,9 +498,6 @@
                     <td>{{ $item->so_id ?? '-' }}</td>
                     <td>{{ $item->headcom }}</td>
                     <td>{{ $item->com_name }}</td>
-                    <td class="col-contact">{{ $item->contact_name }}</td>
-                    <td class="col-tel">{{ $item->contact_tel }}</td>
-                    <td>{{ $item->doctype }}</td>
                     <td>{{ $item->emp_name }}</td>
                     <td>{{ \Carbon\Carbon::parse($item->time)->format('d/m/Y') }}</td>
 
@@ -557,6 +529,7 @@
                             '{{ $item->com_address }}',
                             '{{ $item->contact_name }}',
                             '{{ $item->contact_tel }}',
+                            '{{ $item->doctype }}',
                             '{{ $item->notes }}'
                         )">
                             เพิ่มเติม
@@ -565,12 +538,12 @@
                         
                         {{-- ปุ่มสถานะจ่ายงาน --}}
                         <a href="javascript:void(0);" 
-                           class="btn-delivery-status no-delivery" 
+                           class="btn-delivery-status {{ $item->has_delivery ? 'has-delivery' : 'no-delivery' }}" 
                            id="btn-dlv-{{ $item->doc_id }}"
                            data-bill-id="{{ $item->doc_id }}"
                            onclick="openDeliveryStatus('{{ $item->doc_id }}', this)"
                            style="border-bottom:none; margin-top: 5px;">
-                            <span class="btn-text">️ สถานะยังไม่จ่ายงาน</span>
+                            <span class="btn-text">{{ $item->has_delivery ? '✓ จ่ายงานแล้ว' : 'สถานะยังไม่จ่ายงาน' }}</span>
                         </a>
                     </td>
 
@@ -604,6 +577,7 @@
                             <th>ที่อยู่</th>
                             <th>ผู้ติดต่อ</th>
                             <th>เบอร์โทร</th>
+                            <th>ประเภทงาน</th>
                         </tr>
                     </thead>
                     <tbody id="popup-body-1"></tbody>
@@ -652,38 +626,21 @@
         const dateInput = document.getElementById('date');
         dateInput.addEventListener('change', () => { form.submit(); });
 
+        const searchInputEl = document.getElementById('search-input');
+        let searchDebounce = null;
+        searchInputEl.addEventListener('input', () => {
+            if (searchDebounce) clearTimeout(searchDebounce);
+            searchDebounce = setTimeout(() => { form.submit(); }, 500);
+        });
+
         window.addEventListener('load', () => {
             if (!sessionStorage.getItem('hasAutoSubmitted')) {
                 sessionStorage.setItem('hasAutoSubmitted', 'true');
                 form.submit();
-            } else {
-                checkAllDeliveryStatus();
             }
         });
 
-        async function checkAllDeliveryStatus() {
-            const buttons = document.querySelectorAll('.btn-delivery-status');
-            
-            for (const btn of buttons) {
-                const billId = btn.getAttribute('data-bill-id');
-                if (!billId) continue;
-                
-                try {
-                    const res = await fetch(DELIVERY_STATUS_URL + '?bill_id=' + encodeURIComponent(billId), 
-                        {headers:{'Accept':'application/json'}});
-                    const j = await res.json();
-                    
-                    if (j.found && j.rows && j.rows.length > 0) {
-                        btn.className = 'btn-delivery-status has-delivery';
-                        btn.innerHTML = '<span class="btn-text">✓ จ่ายงานแล้ว</span>';
-                    }
-                } catch (e) {
-                    console.error('Error checking status for bill', billId, e);
-                }
-            }
-        }
-
-        function openPopup(doc_id, com_name, com_address, contact_name, contact_tel, notes) {
+        function openPopup(doc_id, com_name, com_address, contact_name, contact_tel, doctype, notes) {
             document.getElementById("popup").style.display = "flex";
             document.getElementById("popup-body-1").innerHTML = `
                 <tr>
@@ -692,6 +649,7 @@
                     <td>${com_address}</td>
                     <td>${contact_name}</td>
                     <td>${contact_tel}</td>
+                    <td>${doctype}</td>
                 </tr>
             `;
             document.getElementById("popup-body-3").value = notes;
@@ -821,18 +779,6 @@
             document.getElementById('deliveryPopup').style.display = 'none'; 
         }
 
-        function searchTable() {
-            let searchInput = document.getElementById("search-input").value.toLowerCase();
-            let table = document.querySelector("table tbody");
-            let rows = table.getElementsByTagName("tr");
-
-            for (let i = 0; i < rows.length; i++) {
-                let row = rows[i];
-                let cells = row.getElementsByTagName("td");
-                let docId = cells[1] ? cells[1].textContent.toLowerCase() : "";
-                row.style.display = (docId.indexOf(searchInput) > -1) ? "" : "none";
-            }
-        }
     </script>
 </body>
 </html>

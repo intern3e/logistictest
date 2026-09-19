@@ -507,18 +507,19 @@
     .confirm-overlay.show{display:flex}
     .confirm-box{
         background:var(--canvas);width:100%;max-width:400px;
+        max-height:90vh;display:flex;flex-direction:column;   /* สินค้าเยอะ = body เลื่อนได้ ปุ่มไม่หลุดจอ */
         border-radius:12px;padding:22px 20px;animation:popIn .18s ease;
     }
     @keyframes popIn{from{transform:scale(.94);opacity:0}to{transform:scale(1);opacity:1}}
-    .confirm-title{font-size:18px;font-weight:600;color:var(--carbon);margin-bottom:10px}
-    .confirm-body{font-size:15px;color:var(--graphite);line-height:1.7;margin-bottom:18px}
+    .confirm-title{font-size:18px;font-weight:600;color:var(--carbon);margin-bottom:10px;flex-shrink:0}
+    .confirm-body{font-size:15px;color:var(--graphite);line-height:1.7;margin-bottom:18px;overflow-y:auto;min-height:0;flex:1 1 auto}
     .confirm-body b{color:var(--carbon);font-weight:500}
     .confirm-body .row{display:flex;justify-content:space-between;gap:12px;padding:4px 0}
     .confirm-body .row span:first-child{color:var(--pewter)}
     .confirm-status{display:inline-block;font-size:13px;font-weight:500;padding:2px 10px;border-radius:12px}
     .confirm-status.full{color:var(--green);background:var(--green-bg)}
     .confirm-status.partial{color:var(--amber);background:var(--amber-bg)}
-    .confirm-actions{display:flex;gap:10px}
+    .confirm-actions{display:flex;gap:10px;flex-shrink:0}
     .confirm-actions button{
         flex:1;height:44px;border:none;border-radius:var(--r);
         font-size:15px;font-weight:500;font-family:inherit;cursor:pointer;
