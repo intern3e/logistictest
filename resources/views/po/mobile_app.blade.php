@@ -454,6 +454,7 @@
     .state{
         position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);
         width:calc(100% - 48px);max-width:calc(var(--content-w) - 48px);
+        max-height:90vh;overflow-y:auto;-webkit-overflow-scrolling:touch;   /* เนื้อหายาว (สรุปรับเข้าแล้ว) = เลื่อนถึงปุ่มแก้ชั้นได้ */
         text-align:center;color:var(--pewter);font-size:15px;line-height:1.7;z-index:10;
     }
     .state .icon{font-size:40px;margin-bottom:12px;opacity:.85}
