@@ -263,6 +263,116 @@
         }
         .modal-actions { display:flex; gap:10px; justify-content:flex-end; margin-top: 16px; }
         .modal-box input { width:100%; padding:9px 12px; border:1px solid var(--border); border-radius:8px; font-family:inherit; font-size:14px; margin-bottom:14px; box-sizing:border-box; }
+
+        /* ===== Modal ย้ายชั้น ===== */
+        .move-modal-box {
+            width: min(92vw, 400px);
+            animation: modalPop .18s ease;
+        }
+        @keyframes modalPop {
+            from { opacity: 0; transform: translateY(10px) scale(.96); }
+            to   { opacity: 1; transform: translateY(0) scale(1); }
+        }
+        @media (prefers-reduced-motion: reduce) {
+            .move-modal-box { animation: none; }
+        }
+        .move-modal-header {
+            display: flex;
+            align-items: flex-start;
+            gap: 12px;
+            margin-bottom: 18px;
+        }
+        .move-modal-icon {
+            width: 40px;
+            height: 40px;
+            border-radius: 10px;
+            flex-shrink: 0;
+            background: var(--primary-light);
+            color: var(--primary-dark);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 19px;
+        }
+        .move-modal-heading {
+            flex: 1;
+            min-width: 0;
+            padding-top: 1px;
+        }
+        .move-modal-title {
+            font-weight: 700;
+            font-size: 16px;
+            color: var(--ink);
+            line-height: 1.3;
+        }
+        .move-modal-sub {
+            margin-top: 3px;
+            font-size: 12.5px;
+            color: var(--muted);
+            font-weight: 600;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        .modal-close-btn {
+            width: 28px;
+            height: 28px;
+            border-radius: 8px;
+            border: 1px solid var(--border);
+            background: var(--canvas);
+            color: var(--muted);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 13px;
+            padding: 0;
+            flex-shrink: 0;
+            cursor: pointer;
+        }
+        .modal-close-btn:hover { background: #f3f4f6; color: var(--ink); }
+        .move-modal-label {
+            display: block;
+            font-size: 12.5px;
+            font-weight: 700;
+            color: var(--muted);
+            margin-bottom: 6px;
+            letter-spacing: .2px;
+        }
+        .move-modal-input-wrap { position: relative; }
+        .move-modal-input-icon {
+            position: absolute;
+            left: 12px;
+            top: 50%;
+            transform: translateY(-50%);
+            font-size: 14px;
+            pointer-events: none;
+        }
+        .move-modal-input-toggle {
+            position: absolute;
+            right: 4px;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 28px;
+            height: 28px;
+            border: none;
+            background: transparent;
+            color: var(--muted);
+            font-size: 12px;
+            cursor: pointer;
+            border-radius: 6px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .move-modal-input-toggle:hover { background: var(--primary-light); color: var(--primary-dark); }
+        .modal-box .move-modal-input {
+            padding: 11px 34px 11px 34px;
+        }
+        .modal-box .move-modal-input:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px var(--primary-light);
+        }
         
         .autocomplete-wrap { position:relative; display:inline-block; }
         .suggest-panel {
@@ -313,39 +423,6 @@
         .btn-ghost:hover {
             background: #f3f4f6;
             color: var(--ink);
-        }
-
-        .table-topbar {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            gap: 12px;
-            margin-bottom: 12px;
-            flex-wrap: wrap;
-            width: 100%;
-        }
-
-        .table-info {
-            font-size: 13px;
-            color: var(--muted);
-            font-weight: 500;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-        }
-
-        .table-info::before {
-            content: '';
-            width: 7px;
-            height: 7px;
-            background: var(--warning);
-            border-radius: 50%;
-            animation: pulse 2s infinite;
-        }
-
-        @keyframes pulse {
-            0%, 100% { opacity: 1; }
-            50% { opacity: 0.4; }
         }
 
         .table-scroll {
@@ -481,6 +558,36 @@
             font-style: italic;
         }
 
+        .loading-state {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 10px;
+            width: min(300px, 80%);
+        }
+
+        .progress-track {
+            width: 100%;
+            height: 9px;
+            background: var(--primary-light);
+            border-radius: 999px;
+            overflow: hidden;
+        }
+
+        .progress-fill {
+            height: 100%;
+            width: 0%;
+            background: var(--primary);
+            border-radius: 999px;
+            transition: width 0.18s ease;
+        }
+
+        .progress-label {
+            color: var(--muted);
+            font-size: 14px;
+            font-variant-numeric: tabular-nums;
+        }
+
         tbody tr td[colspan] {
             padding: 0;
         }
@@ -510,12 +617,6 @@
             <div class="overdue-alert" id="overdueAlert" style="display:none;">
                 <span class="oa-icon">!</span> เลยกำหนด <b id="overdueCount">0</b> รายการ
             </div>
-            @if(($canSeePrice ?? false))
-                <div class="value-block">
-                    <span class="vb-label">มูลค่าทั้งหมด</span>
-                    <span class="vb-amount"><span id="totalValue">0.00</span><span class="vb-unit">บาท</span></span>
-                </div>
-            @endif
             <div class="user-badge">ผู้ใช้งาน: {{ $creator }}</div>
         </div>
     </div>
@@ -527,11 +628,6 @@
                     <input type="search" id="fShelf" placeholder=" ค้นหาโดยชั้น..." autocomplete="off">
                     <div id="shelfSuggest" class="suggest-panel"></div>
                 </div>
-                <datalist id="shelfList">
-                    @foreach($shelfOptions as $sh)
-                        <option value="{{ $sh }}"></option>
-                    @endforeach
-                </datalist>
                 @if(($isSaleView ?? false))
                     <input type="search" id="fSale" value="{{ $loginName ?? '' }}" readonly
                            title="เห็นเฉพาะงานของคุณ" style="background:#f3f4f6;color:#6b7280;cursor:not-allowed;">
@@ -543,16 +639,14 @@
                 @endif
                 <input type="search" id="fSo" placeholder=" ค้นหาโดย SO..." autocomplete="off">
                 <input type="search" id="fPo" placeholder=" ค้นหาโดย PO..." autocomplete="off">
-                <button type="button" class="btn-primary" id="btnSearch">ค้นหา</button>
                 <button type="button" class="btn-ghost" id="btnClear">ล้าง</button>
             </div>
-        </div>
-
-        <div class="table-topbar">
-            <div class="table-info">
-                รอเช็คเอาท์ <span id="showCount">0</span> รายการ
-                &nbsp;•&nbsp; <b>ช่องกำหนดส่งกระพริบแดง</b> = เลยกำหนดส่ง (เรียงงานเลยกำหนดมากสุดไว้บน) / เหลือง = ครบวันนี้
-            </div>
+            @if(($canSeePrice ?? false))
+                <div class="value-block">
+                    <span class="vb-label">มูลค่าทั้งหมด</span>
+                    <span class="vb-amount"><span id="totalValue">0.00</span><span class="vb-unit">บาท</span></span>
+                </div>
+            @endif
         </div>
 
         <div class="table-scroll">
@@ -581,7 +675,7 @@
                         </tr>
                     </thead>
                     <tbody id="tableBody">
-                        <tr><td colspan="{{ $colspan }}"><div class="empty-wrapper"><div class="empty-state">เลือกตัวกรอง (ชั้น / Sale / SO / PO) แล้วกด "ค้นหา"</div></div></td></tr>
+                        <tr><td colspan="{{ $colspan }}"><div class="empty-wrapper"><div class="empty-state">พิมพ์หรือเลือกตัวกรอง (ชั้น / Sale / SO / PO) เพื่อค้นหาอัตโนมัติ</div></div></td></tr>
                     </tbody>
                 </table>
             </div>
@@ -592,15 +686,23 @@
 @if(($canManage ?? false))
 <!-- Modal ย้ายชั้น -->
 <div id="moveModal" class="modal-overlay">
-    <div class="modal-box" style="width: min(92vw, 380px);">
-        <div class="modal-title">
-            <span>ย้ายชั้น — <span id="movePoLabel"></span></span>
-            <button type="button" class="btn-ghost" onclick="closeMove()" style="padding: 4px 8px;">✕</button>
+    <div class="modal-box move-modal-box">
+        <div class="move-modal-header">
+            <div class="move-modal-heading">
+                <div class="move-modal-title">ย้ายชั้นวาง</div>
+                <div class="move-modal-sub" id="movePoLabel"></div>
+            </div>
+            <button type="button" class="modal-close-btn" onclick="closeMove()" aria-label="ปิด">✕</button>
         </div>
-        <input type="search" id="moveShelfInput" list="shelfList" placeholder="เลือกชั้น..." autocomplete="off">
+        <label class="move-modal-label" for="moveShelfInput">ย้ายไปยังชั้น</label>
+        <div class="move-modal-input-wrap">
+            <input type="search" id="moveShelfInput" placeholder="เลือกหรือพิมพ์ชื่อชั้น..." autocomplete="off" class="move-modal-input">
+            <button type="button" class="move-modal-input-toggle" id="moveShelfToggle" aria-label="แสดงรายการชั้น">▾</button>
+            <div id="moveShelfSuggest" class="suggest-panel"></div>
+        </div>
         <div class="modal-actions">
             <button type="button" class="btn-ghost" onclick="closeMove()">ยกเลิก</button>
-            <button type="button" class="btn-primary" id="moveConfirmBtn" onclick="confirmMove()">ยืนยัน</button>
+            <button type="button" class="btn-primary" id="moveConfirmBtn" onclick="confirmMove()">ยืนยันย้ายชั้น</button>
         </div>
     </div>
 </div>
@@ -639,8 +741,7 @@
     const DATA_URL   = "{{ route('shelfsale.data') }}";
     const tbody      = document.getElementById('tableBody');
     const mainTable  = document.getElementById('mainTable');
-    const showCount  = document.getElementById('showCount');
-    const btnSearch  = document.getElementById('btnSearch');
+    const showCount  = document.getElementById('showCount'); // element removed from UI; kept null-safe below
     const btnClear   = document.getElementById('btnClear');
     const fShelf     = document.getElementById('fShelf');
     const fSale      = document.getElementById('fSale');
@@ -663,7 +764,7 @@
 
     const SHELF_OPTIONS = @json($shelfOptions ?? []);
     const SALE_OPTIONS  = @json($saleOptions ?? []);
-    function attachSuggest(input, panel, options){
+    function attachSuggest(input, panel, options, onPick, toggleBtn){
         if (!input || !panel) return;
         let hl = -1;
         function render(){
@@ -679,22 +780,70 @@
         panel.addEventListener('mousedown', e => {
             const it = e.target.closest('.suggest-item'); if (!it) return;
             e.preventDefault(); input.value = it.dataset.val; panel.classList.remove('open'); input.focus();
+            if (onPick) onPick();
         });
         input.addEventListener('keydown', e => {
             const items = Array.from(panel.querySelectorAll('.suggest-item'));
             if (e.key === 'ArrowDown' && items.length){ e.preventDefault(); hl = Math.min(hl+1, items.length-1); items.forEach((it,i)=>it.classList.toggle('hl', i===hl)); items[hl].scrollIntoView({block:'nearest'}); }
             else if (e.key === 'ArrowUp' && items.length){ e.preventDefault(); hl = Math.max(hl-1, 0); items.forEach((it,i)=>it.classList.toggle('hl', i===hl)); items[hl].scrollIntoView({block:'nearest'}); }
-            else if (e.key === 'Enter' && hl >= 0 && items[hl]){ e.preventDefault(); input.value = items[hl].dataset.val; panel.classList.remove('open'); }
+            else if (e.key === 'Enter' && hl >= 0 && items[hl]){ e.preventDefault(); input.value = items[hl].dataset.val; panel.classList.remove('open'); if (onPick) onPick(); }
             else if (e.key === 'Escape'){ panel.classList.remove('open'); }
         });
         input.addEventListener('blur', () => setTimeout(() => panel.classList.remove('open'), 120));
+        document.addEventListener('mousedown', e => {
+            if (!panel.classList.contains('open')) return;
+            if (input.contains(e.target) || panel.contains(e.target)) return;
+            if (toggleBtn && toggleBtn.contains(e.target)) return;
+            panel.classList.remove('open');
+        });
+        if (toggleBtn) {
+            toggleBtn.addEventListener('mousedown', e => {
+                e.preventDefault();
+                if (panel.classList.contains('open')) { panel.classList.remove('open'); }
+                else { input.focus(); render(); }
+            });
+        }
     }
-    attachSuggest(fShelf, document.getElementById('shelfSuggest'), SHELF_OPTIONS);
-    if (fSale && !fSale.readOnly) attachSuggest(fSale, document.getElementById('saleSuggest'), SALE_OPTIONS);
+    attachSuggest(fShelf, document.getElementById('shelfSuggest'), SHELF_OPTIONS, () => search());
+    if (fSale && !fSale.readOnly) attachSuggest(fSale, document.getElementById('saleSuggest'), SALE_OPTIONS, () => search());
+    attachSuggest(document.getElementById('moveShelfInput'), document.getElementById('moveShelfSuggest'), SHELF_OPTIONS, null, document.getElementById('moveShelfToggle'));
 
     function setMsg(text){
         if (mainTable) mainTable.classList.add('is-empty');
         tbody.innerHTML = '<tr><td colspan="' + COLSPAN + '"><div class="empty-wrapper"><div class="empty-state">' + esc(text) + '</div></div></td></tr>';
+    }
+
+    function setLoading(text){
+        if (mainTable) mainTable.classList.add('is-empty');
+        tbody.innerHTML = '<tr><td colspan="' + COLSPAN + '"><div class="empty-wrapper"><div class="loading-state">'
+            + '<div class="progress-track"><div class="progress-fill" id="progressFill"></div></div>'
+            + '<div class="progress-label" id="progressLabel">' + esc(text) + ' 0%</div>'
+            + '</div></div></td></tr>';
+    }
+
+    let progressTimer = null;
+    function startProgress(text){
+        if (progressTimer) clearInterval(progressTimer);
+        let pct = 0;
+        const fillEl  = () => document.getElementById('progressFill');
+        const labelEl = () => document.getElementById('progressLabel');
+        progressTimer = setInterval(() => {
+            // ค่อย ๆ วิ่งเข้าใกล้ 90% แบบชะลอความเร็ว (ของจริงไม่รู้ % จนกว่าจะได้ response)
+            pct += (90 - pct) * 0.15 + 0.6;
+            if (pct > 90) pct = 90;
+            const f = fillEl(), l = labelEl();
+            if (f) f.style.width = pct.toFixed(0) + '%';
+            if (l) l.textContent = text + ' ' + pct.toFixed(0) + '%';
+        }, 120);
+    }
+    function stopProgress(complete){
+        if (progressTimer) { clearInterval(progressTimer); progressTimer = null; }
+        if (complete) {
+            const f = document.getElementById('progressFill');
+            const l = document.getElementById('progressLabel');
+            if (f) f.style.width = '100%';
+            if (l) l.textContent = l.textContent.replace(/\d+%$/, '100%');
+        }
     }
 
     function updateOverdueAlert(n){
@@ -795,7 +944,6 @@
             + (moveTarget.lineId ? ' (เฉพาะรายการนี้)' : '');
         const inp = document.getElementById('moveShelfInput'); inp.value = '';
         document.getElementById('moveModal').style.display = 'flex';
-        setTimeout(() => inp.focus(), 30);
     }
     function closeMove(){ 
         const m = document.getElementById('moveModal'); 
@@ -834,21 +982,34 @@
         } catch (e) { console.error(e); alert('เกิดข้อผิดพลาดในการเชื่อมต่อ'); btn.disabled = false; }
     }
 
+    function hasFilter(){
+        return !!(fShelf.value.trim() || fSale.value.trim() || fSo.value.trim() || fPo.value.trim());
+    }
+
     async function search(){
+        if (!hasFilter()) {
+            if (showCount) showCount.textContent = 0;
+            const tv0 = document.getElementById('totalValue'); if (tv0) tv0.textContent = '0.00';
+            updateOverdueAlert(0);
+            setMsg('พิมพ์หรือเลือกตัวกรอง (ชั้น / Sale / SO / PO) เพื่อค้นหาอัตโนมัติ');
+            return;
+        }
+
         const params = new URLSearchParams();
         params.set('shelf', fShelf.value.trim());
         params.set('sale',  fSale.value.trim());
         params.set('so',    fSo.value.trim());
         params.set('po',    fPo.value.trim());
 
-        btnSearch.disabled = true;
-        setMsg('⏳ กำลังค้นหา...');
+        setLoading('กำลังค้นหา...');
+        startProgress('กำลังค้นหา...');
         try {
             const res = await fetch(DATA_URL + '?' + params.toString(), {
                 headers: { 'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest' }
             });
             const data = await res.json();
-            if (!res.ok || !data.ok) { setMsg((data && data.message) || 'ค้นหาไม่สำเร็จ'); showCount.textContent = 0; return; }
+            stopProgress();
+            if (!res.ok || !data.ok) { setMsg((data && data.message) || 'ค้นหาไม่สำเร็จ'); if (showCount) showCount.textContent = 0; return; }
 
             const rows = data.rows || [];
             currentRows = rows;
@@ -859,7 +1020,7 @@
                 return da - db;
             });
 
-            showCount.textContent = rows.length;
+            if (showCount) showCount.textContent = rows.length;
             const tv = document.getElementById('totalValue');
             if (tv) tv.textContent = fmtBaht(data.total_value || 0);
 
@@ -872,24 +1033,41 @@
             tbody.innerHTML = rows.map((r, i) => rowHtml(r, i)).join('');
         } catch (e) {
             console.error(e);
+            stopProgress();
             setMsg('เกิดข้อผิดพลาดในการเชื่อมต่อ');
-            showCount.textContent = 0;
+            if (showCount) showCount.textContent = 0;
             updateOverdueAlert(0);
-        } finally {
-            btnSearch.disabled = false;
         }
     }
 
-    btnSearch.addEventListener('click', search);
+    let searchDebounce = null;
+    function scheduleSearch(delay = 450){
+        if (searchDebounce) clearTimeout(searchDebounce);
+        searchDebounce = setTimeout(() => { search(); }, delay);
+    }
+
     btnClear.addEventListener('click', () => {
+        if (searchDebounce) clearTimeout(searchDebounce);
         fShelf.value = ''; fSo.value = ''; fPo.value = '';
         if (!fSale.readOnly) fSale.value = '';
-        showCount.textContent = 0;
+        if (showCount) showCount.textContent = 0;
         const tv = document.getElementById('totalValue'); if (tv) tv.textContent = '0.00';
         updateOverdueAlert(0);
-        setMsg('เลือกตัวกรอง (ชั้น / Sale / SO / PO) แล้วกด "ค้นหา"');
+        setMsg('พิมพ์หรือเลือกตัวกรอง (ชั้น / Sale / SO / PO) เพื่อค้นหาอัตโนมัติ');
     });
-    [fShelf, fSale, fSo, fPo].forEach(el => el.addEventListener('keydown', e => { if (e.key === 'Enter') search(); }));
+
+    // ค้นหาอัตโนมัติขณะพิมพ์ (debounce กันยิง request ถี่เกินไป)
+    [fShelf, fSo, fPo].forEach(el => el.addEventListener('input', () => scheduleSearch()));
+    if (fSale && !fSale.readOnly) fSale.addEventListener('input', () => scheduleSearch());
+
+    // กด Enter ให้ค้นหาทันทีโดยไม่ต้องรอ debounce
+    [fShelf, fSale, fSo, fPo].forEach(el => el.addEventListener('keydown', e => {
+        if (e.key === 'Enter') { if (searchDebounce) clearTimeout(searchDebounce); search(); }
+    }));
+
+    // มุมมอง Sale: ช่อง Sale ถูกล็อกค่าไว้แล้วตั้งแต่โหลดหน้า ให้ค้นหาให้เลยโดยไม่ต้องรอผู้ใช้พิมพ์อะไรเพิ่ม
+    if (fSale && fSale.readOnly && fSale.value.trim()) { search(); }
+
 </script>
 </body>
 </html>
