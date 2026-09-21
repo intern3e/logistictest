@@ -524,6 +524,8 @@ class DeliverytrackController extends Controller
                 'is_complete'    => $isComplete,   // true = PO รับเข้าครบแล้ว → เลือกไม่ได้/ไม่พิมพ์
                 'transport_type' => $itemTransport,
                 'id_transport'   => $delivery->id_transport ?: null,   // เลขขนส่ง แยกรายบิล (งานขนส่งเอกชน)
+                'name_pick'      => $delivery->name_pick ?: null,      // ผู้จ่ายงาน (รายบิล)
+                'time_pick'      => $delivery->time_pick ?: null,      // เวลาจ่ายงาน (รายบิล)
             ];
 
             $boxes[$boxKey]['total_items']++;

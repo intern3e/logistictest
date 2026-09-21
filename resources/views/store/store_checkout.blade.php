@@ -329,13 +329,15 @@
     @media (max-width: 1400px){ .top-banner { flex-wrap: wrap; } }
     @media (max-width: 1200px){ .so-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
     @media (max-width: 768px){ .so-grid { grid-template-columns: 1fr; } main { padding: 12px; } .top-banner { padding: 12px; } }
+    .btn-move-shelf{ padding:5px 12px; border:1px solid var(--primary,#3E6AE1); color:var(--primary,#3E6AE1); background:#fff; border-radius:6px; font-size:13px; font-family:inherit; cursor:pointer; }
+    .btn-move-shelf:hover{ background:#eef2ff; }
 </style>
 </head>
 <body lang="th">
 
 <div class="top-banner">
     <div class="title-group">
-        <span class="h1">📦 จัดบิลส่งของ</span>
+        <span class="h1">จัดบิลส่งของ</span>
     </div>
 
     <div class="toolbar-container">
@@ -411,7 +413,7 @@
                         </div>
                     </div>
                     @if ($bill->all_done)
-                        <span class="so-status done">✓ จัดของแล้ว</span>
+                        <span class="so-status done">จัดของแล้ว</span>
                     @else
                         <span class="so-status pending">⏳ รอดำเนินการ</span>
                     @endif
@@ -419,7 +421,7 @@
 
                 <div class="so-body">
                     @if ($bill->bills->isEmpty())
-                        <div class="no-dn-note">⚠️ ยังไม่พบข้อมูลบิลขนส่ง (tblbill) ของ SO นี้</div>
+                        <div class="no-dn-note">ยังไม่พบข้อมูลบิลขนส่ง (tblbill) ของ SO นี้</div>
                     @endif
 
                     @php
@@ -504,7 +506,7 @@
                                         @endphp
                                         @foreach ($locLines as $it)
                                             <div class="item-row-meta">
-                                                📍 ที่เก็บ: {{ $it->shelf ?? '—' }} · จัดโดย: {{ $it->done_by ?? '—' }}
+                                                ที่เก็บ: {{ $it->shelf ?? '—' }} · จัดโดย: {{ $it->done_by ?? '—' }}
                                                 @if (!empty($it->done_at)) ({{ \Carbon\Carbon::parse($it->done_at)->addYears(543)->format('d/m/Y H:i') }}) @endif
                                             </div>
                                         @endforeach
@@ -512,16 +514,21 @@
 
                                     @if ($g->type !== 'external')
                                         <div class="po-row-meta">
-                                            📍 ที่เก็บ: {{ $g->location ?: '—' }} · จัดโดย: {{ $g->done_by ?: '—' }}
+                                            ที่เก็บ: {{ $g->location ?: '—' }} · จัดโดย: {{ $g->done_by ?: '—' }}
                                             @if ($g->done_at) ({{ \Carbon\Carbon::parse($g->done_at)->addYears(543)->format('d/m/Y H:i') }}) @endif
                                         </div>
                                     @endif
                                     @if (!$g->todo)
                                         <div class="po-row-meta checkout-meta">
-                                            ✓ เช็คของออก{{ ($g->checkout_by ?? null) ? ' โดย ' . $g->checkout_by : '' }}
+                                            เช็คของออก{{ ($g->checkout_by ?? null) ? ' โดย ' . $g->checkout_by : '' }}
                                             @if ($g->checkout_at ?? null)
                                                 ({{ \Carbon\Carbon::parse($g->checkout_at)->addYears(543)->format('d/m/Y H:i') }})
                                             @endif
+                                        </div>
+                                    @else
+                                        <div class="po-row-meta" style="margin-top:6px;">
+                                            <button type="button" class="btn-move-shelf"
+                                                onclick="openMoveShelf('{{ $poClean($g->po_display) }}','{{ $bill->so_id }}')">ย้ายชั้นวาง (PO/SO นี้)</button>
                                         </div>
                                     @endif
                                 </div>
@@ -535,7 +542,7 @@
     </div>
     @else
         <div class="empty-state">
-            📭 ไม่พบบิลที่ตรงกับเงื่อนไขการค้นหา
+            ไม่พบบิลที่ตรงกับเงื่อนไขการค้นหา
         </div>
     @endif
 
@@ -579,7 +586,7 @@
 <div class="checkout-floatbar" id="floatBar" hidden>
     <span class="floatbar-count">เลือกไว้ <strong id="floatCount">0</strong> รายการ</span>
     <button type="button" class="btn-ghost" onclick="clearAllChecks()">ล้างค่า</button>
-    <button type="button" class="btn-success" id="floatSubmitBtn" onclick="submitAllCheckout()">💾 บันทึก</button>
+    <button type="button" class="btn-success" id="floatSubmitBtn" onclick="submitAllCheckout()">บันทึก</button>
 </div>
 
 {{-- Modal เลือกประเภทการขนส่ง (ตอนจัดบิล) --}}
@@ -588,16 +595,58 @@
         <div style="font-size:16px; font-weight:600; margin-bottom:4px;">เลือกประเภทการขนส่ง</div>
         <div style="font-size:13px; color:#6b7280; margin-bottom:16px;">สำหรับบิลที่กำลังจัด</div>
         <div style="display:flex; flex-direction:column; gap:10px;">
-            <button type="button" onclick="pickTransport('company')" style="padding:14px; border:1.5px solid #3E6AE1; border-radius:10px; background:#eef2ff; color:#1e3a8a; font-size:15px; font-weight:600; cursor:pointer;">🚚 ขนส่งโดยรถบริษัท</button>
-            <button type="button" onclick="pickTransport('private')" style="padding:14px; border:1.5px solid #16a34a; border-radius:10px; background:#f0fdf4; color:#166534; font-size:15px; font-weight:600; cursor:pointer;">🏢 บริษัทขนส่ง (เอกชน)</button>
+            <button type="button" onclick="pickTransport('company')" style="padding:14px; border:1.5px solid #3E6AE1; border-radius:10px; background:#eef2ff; color:#1e3a8a; font-size:15px; font-weight:600; cursor:pointer;">ขนส่งโดยรถบริษัท</button>
+            <button type="button" onclick="pickTransport('private')" style="padding:14px; border:1.5px solid #16a34a; border-radius:10px; background:#f0fdf4; color:#166534; font-size:15px; font-weight:600; cursor:pointer;">บริษัทขนส่ง (เอกชน)</button>
             <button type="button" onclick="closeTransport()" style="padding:10px; border:1px solid #e5e7eb; border-radius:10px; background:#fff; color:#6b7280; font-size:14px; cursor:pointer;">ยกเลิก</button>
+        </div>
+    </div>
+</div>
+
+{{-- Modal ย้ายชั้นวาง (ต่อ PO+SO) --}}
+<div id="moveShelfModal" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,.45); z-index:300; align-items:center; justify-content:center;">
+    <div style="background:#fff; border-radius:14px; padding:20px; width:min(92vw,380px); box-shadow:0 12px 40px rgba(0,0,0,.25);">
+        <div style="font-weight:600; margin-bottom:10px;">ย้ายชั้นวาง — <span id="msLabel"></span></div>
+        <input type="search" id="msShelf" list="msShelfList" placeholder="เลือกชั้นวาง..." autocomplete="off"
+               style="width:100%; padding:9px 12px; border:1px solid #d6dbe3; border-radius:8px; box-sizing:border-box; font-family:inherit; font-size:14px;">
+        <datalist id="msShelfList">@foreach(\App\Http\Controllers\ShelfsaleController::SHELF_OPTIONS as $sh)<option value="{{ $sh }}"></option>@endforeach</datalist>
+        <div style="display:flex; gap:10px; justify-content:flex-end; margin-top:14px;">
+            <button type="button" class="btn-ghost" onclick="closeMoveShelf()">ยกเลิก</button>
+            <button type="button" class="btn-success" id="msSaveBtn" onclick="confirmMoveShelf()">ย้าย</button>
         </div>
     </div>
 </div>
 
 <script>
 const SUBMIT_URL = "{{ route('store.checkout.submit') }}";
+const MOVE_SHELF_URL = "{{ route('shelfsale.move') }}";
 const CSRF = document.querySelector('meta[name="csrf-token"]').content;
+
+/* ===== ย้ายชั้นวาง (ต่อ PO+SO) ===== */
+let msTarget = null;
+function openMoveShelf(po, so){
+    msTarget = { po: po, so: so };
+    document.getElementById('msLabel').textContent = 'PO ' + po + ' / SO ' + so;
+    document.getElementById('msShelf').value = '';
+    document.getElementById('moveShelfModal').style.display = 'flex';
+    setTimeout(() => document.getElementById('msShelf').focus(), 30);
+}
+function closeMoveShelf(){ document.getElementById('moveShelfModal').style.display = 'none'; msTarget = null; }
+async function confirmMoveShelf(){
+    if (!msTarget) return;
+    const shelf = document.getElementById('msShelf').value.trim();
+    if (!shelf){ alert('กรุณาเลือกชั้นวาง'); return; }
+    const btn = document.getElementById('msSaveBtn'); btn.disabled = true; btn.textContent = 'กำลังย้าย...';
+    try {
+        const res = await fetch(MOVE_SHELF_URL, {
+            method: 'POST',
+            headers: { 'Content-Type':'application/json','X-CSRF-TOKEN':CSRF,'Accept':'application/json' },
+            body: JSON.stringify({ po: msTarget.po, so: msTarget.so, shelf: shelf })
+        });
+        const data = await res.json().catch(() => null);
+        if (!res.ok || !data || !data.ok){ alert((data && data.message) || 'ย้ายชั้นไม่สำเร็จ'); btn.disabled = false; btn.textContent = 'ย้าย'; return; }
+        window.location.reload();
+    } catch(e){ console.error(e); alert('เกิดข้อผิดพลาด'); btn.disabled = false; btn.textContent = 'ย้าย'; }
+}
 
 let searchTimer;
 function triggerAutoSearch() {

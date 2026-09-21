@@ -145,15 +145,22 @@ class StoreController extends Controller
                 $receive    = $receives->get($row['id'] . '|' . ($row['so_id'] ?? ''));
                 $orderedMap = $orderedByPo->get($row['id'], collect());
 
-                $receivedByName = $receive
-                    ? $receive->lines->groupBy('good_name')->map(fn ($g) => (float) $g->sum('recv_qty'))
+                // กรองไส้ในให้ "เฉพาะ SO ของแถวนี้" (po_receives_line.so_id) — 1 PO มีหลาย SO
+                // ข้อมูลเก่า so_id ว่าง = จับกับ header เดียว จึงยังนับรวม
+                $rowSoId = $row['so_id'] ?? null;
+                $soLines = $receive
+                    ? $receive->lines->filter(function ($l) use ($rowSoId) {
+                        return $l->so_id === null || $l->so_id === '' || (string) $l->so_id === (string) $rowSoId;
+                    })
                     : collect();
+
+                $receivedByName = $soLines->groupBy('good_name')->map(fn ($g) => (float) $g->sum('recv_qty'));
 
                 $items    = [];
                 $anyShort = false;
 
                 if ($receive) {
-                    foreach ($receive->lines->unique('good_name') as $l) {
+                    foreach ($soLines->unique('good_name') as $l) {
                         $ordered = $orderedMap->has($l->good_name) ? (float) $orderedMap->get($l->good_name) : null;
                         $recv    = $receivedByName->get($l->good_name, 0);
                         $short   = $ordered !== null && $recv < $ordered;
@@ -1799,8 +1806,11 @@ class StoreController extends Controller
                 return response()->json(['ok' => true, 'message' => 'ย้ายชั้นรายการสินค้าเรียบร้อย']);
             }
 
-            // งานใหม่: มีไส้ในในระบบใหม่แล้ว -> อัปเดตชั้นทั้ง PO
-            $lineQ = PoReceiveLine::where('po_id', $poId)->whereNull('cancelled_at');
+            // งานใหม่: มีไส้ในในระบบใหม่แล้ว -> อัปเดตชั้น "เฉพาะ PO+SO นั้น" (ไม่ใช่ทั้ง PO)
+            $lineQ = PoReceiveLine::where('po_id', $poId)->whereNull('cancelled_at')
+                ->when($so, fn ($q) => $q->where(function ($w) use ($so) {
+                    $w->where('so_id', $so)->orWhereNull('so_id');
+                }));
             if ((clone $lineQ)->exists()) {
                 (clone $lineQ)->update(['shelf' => $shelf]);
                 return response()->json(['ok' => true, 'message' => 'ย้ายชั้นเรียบร้อย']);

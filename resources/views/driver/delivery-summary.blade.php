@@ -140,7 +140,7 @@
     .btn-ghost:hover{ background:var(--paper); border-color:var(--ink-faint); color:var(--ink); text-decoration:none; }
     .btn-ghost svg{ flex-shrink:0; }
 
-    /* ---------- Dashboard bar: filter + stats ---------- */
+    /* ---------- Dashboard bar: filter + tabs (single frame) ---------- */
     .dashboard-bar{
         display:flex;
         align-items:stretch;
@@ -159,6 +159,9 @@
         gap:14px;
         padding:18px 20px;
         border-bottom:1px solid var(--line);
+    }
+    .filter-field{
+        max-width:230px;
     }
     .filter-field label{
         display:block;
@@ -207,6 +210,14 @@
     }
     .btn-clear:hover{ background:var(--paper); color:var(--ink); text-decoration:none; }
 
+    .summary-tabs-wrap{
+        display:flex;
+        align-items:center;
+        padding:18px 20px;
+        border-left:1px solid var(--line);
+    }
+    .summary-tabs-wrap .summary-tabs{ margin:0; }
+
     .dashboard-stats{
         flex:1 1 360px;
         display:flex;
@@ -237,7 +248,7 @@
 
     @media (max-width:860px){
         .dashboard-filter{ border-right:none; }
-        .dashboard-stats{ border-top:1px solid var(--line); }
+        .summary-tabs-wrap{ border-left:none; border-top:1px solid var(--line); width:100%; }
     }
 
     /* ---------- Date groups ---------- */
@@ -475,7 +486,8 @@
     .stop-row{
         display:flex;
         align-items:baseline;
-        gap:10px;
+        flex-wrap:wrap;               /* ให้ผู้จ่ายงานตกไปบรรทัดใหม่ได้ */
+        gap:6px 10px;
         padding:7px 8px;
         border-bottom:1px solid var(--line);
     }
@@ -488,7 +500,14 @@
         font-size:.78rem;
         color:var(--ink-faint);
     }
-    .job-bill-no{ font-size:.88rem; color:var(--ink); font-weight:500; }
+    .job-bill-no{ font-size:.88rem; color:var(--ink); font-weight:500; white-space:nowrap; }  /* เลขบิล/PO บรรทัดเดียว */
+    /* ผู้จ่ายงาน + เวลาจ่ายงาน (รายบิล) — ตัวบาง 2 บรรทัด ขึ้นบรรทัดใหม่ใต้เลขบิล */
+    .job-assign-meta{
+        flex:1 1 100%;
+        order:99;                     /* ตกไปบรรทัดล่าง — "ยกเลิก" อยู่แถวบนเดียวกับบิล */
+        padding-left:42px;
+        font-weight:300; font-size:.76rem; color:var(--ink-faint);
+    }
 
     .box-print-all{
         text-align:right;
@@ -692,7 +711,6 @@
 <div id="toastContainer" class="toast-container"></div>
 
 <div class="page-shell">
-    @php $canCancelJobs = $canCancelJobs ?? false; @endphp
 
     <div class="page-header">
         <div class="page-title-row">
@@ -705,7 +723,6 @@
             </div>
         </div>
         <div class="page-header-user">
-            <div class="user-line">ผู้ใช้งาน: <strong>{{ $loggedInName }}</strong></div>
             <a href="{{ route('deliverytrack') }}" class="btn-ghost">
                 <svg width="14" height="14" viewBox="0 0 16 16" fill="none"><path d="M10 3L5 8l5 5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
                 กลับไปหน้าจ่ายงาน
@@ -734,12 +751,10 @@
     <div class="dashboard-bar">
         <form method="GET" action="{{ route('deliverytrack.summary') }}" class="dashboard-filter">
             <div class="filter-field">
-                <label for="filterDate">กรองตามวันที่ (ส่งของ=วันจัดส่ง · รับเอง=วันจ่ายงาน)</label>
-                <input type="date" id="filterDate" name="date" value="{{ ($billId ?? '') !== '' ? $date : ($date ?: $todayKey) }}">
+                <input type="date" id="filterDate" name="date" title="กรองตามวันที่ (ส่งของ=วันจัดส่ง · รับเอง=วันจ่ายงาน)" aria-label="กรองตามวันที่ (ส่งของ=วันจัดส่ง · รับเอง=วันจ่ายงาน)" value="{{ ($billId ?? '') !== '' ? $date : ($date ?: $todayKey) }}">
             </div>
             <div class="filter-field">
-                <label for="filterBillId">ค้นหาเลขบิล / SO / PO</label>
-                <input type="text" id="filterBillId" name="bill_id" value="{{ $billId ?? '' }}" placeholder="เช่น 6901-01149" autocomplete="off"
+                <input type="text" id="filterBillId" name="bill_id" value="{{ $billId ?? '' }}" placeholder="เช่น 6901-01149" aria-label="ค้นหาเลขบิล / SO / PO" autocomplete="off"
                        style="border:1px solid var(--line-strong);border-radius:var(--radius-sm);padding:9px 12px;font-size:.95rem;font-family:inherit;color:var(--ink);background:var(--surface);min-width:190px;">
             </div>
             <div class="filter-actions">
@@ -750,26 +765,13 @@
             </div>
         </form>
 
-        <div class="dashboard-stats">
-            <div class="stat-tile">
-                <div class="stat-value is-amber">{{ number_format($totalItemsAll) }}</div>
-                <div class="stat-label">รายการจัดส่งทั้งหมด</div>
-            </div>
-            <div class="stat-tile">
-                <div class="stat-value is-amber">{{ number_format($totalBoxesAll) }}</div>
-                <div class="stat-label">กลุ่มงาน (รถ/คนขับ)</div>
-            </div>
-            <div class="stat-tile">
-                <div class="stat-value is-primary">{{ number_format($totalDriversAll) }}</div>
-                <div class="stat-label">คนขับที่ปฏิบัติงาน</div>
+        <div class="summary-tabs-wrap">
+            <div class="summary-tabs">
+                <button type="button" class="summary-tab active" data-mode="company" onclick="switchSummaryMode('company')">ขนส่งโดยบริษัท</button>
+                <button type="button" class="summary-tab" data-mode="private" onclick="switchSummaryMode('private')">ขนส่งเอกชน</button>
+                <button type="button" class="summary-tab" data-mode="pickup" onclick="switchSummaryMode('pickup')">รับของเอง</button>
             </div>
         </div>
-    </div>
-
-    <div class="summary-tabs">
-        <button type="button" class="summary-tab active" data-mode="company" onclick="switchSummaryMode('company')">ขนส่งโดยบริษัท</button>
-        <button type="button" class="summary-tab" data-mode="private" onclick="switchSummaryMode('private')">ขนส่งเอกชน</button>
-        <button type="button" class="summary-tab" data-mode="pickup" onclick="switchSummaryMode('pickup')">รับของเอง</button>
     </div>
 
     <div id="summaryContent" class="summary-mode-delivery">
@@ -832,7 +834,6 @@
                                             <svg class="box-toggle-icon" width="14" height="14" viewBox="0 0 16 16" fill="none">
                                                 <path d="M5 3l6 5-6 5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
                                             </svg>
-                                            <span class="box-avatar {{ $hasDriver ? '' : 'is-unassigned' }}">{{ $driverInitial }}</span>
                                             <span class="box-head-main">
                                                 <span class="box-transport-name">{{ $box['transport_name'] }}</span>
                                                 @if ($hasDriver)
@@ -847,15 +848,13 @@
                                         <div class="box-card-collapse">
                                             <div class="box-card-collapse-inner" id="{{ $boxKey }}_panel">
                                                 <div class="box-card-body">
-                                                    <div class="box-assigned-by">
-                                                        <svg width="13" height="13" viewBox="0 0 16 16" fill="none"><path d="M2 13.5c0-2.5 2.2-4 6-4s6 1.5 6 4" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/><circle cx="8" cy="5.5" r="2.5" stroke="currentColor" stroke-width="1.3"/></svg>
-                                                        ผู้จ่ายงาน: {{ $box['assigned_by'] ?: '-' }}
-                                                    </div>
-
                                                     @foreach ($box['customers'] as $cust)
                                                         <div class="job-block">
                                                             <div>
                                                                 <span class="job-customer-code">{{ $cust['customer_code'] }}</span>
+                                                                @if (!empty($cust['customer_name']))
+                                                                    <span class="job-customer-name">{{ $cust['customer_name'] }}</span>
+                                                                @endif
                                                             </div>
                                                             <div class="stops-list">
                                                                 @foreach ($cust['items'] as $item)
@@ -872,6 +871,9 @@
                                                                         @else
                                                                             <span class="job-bill-no">บิล {{ $item['bill_no'] }}</span>
                                                                         @endif
+                                                                        @if (!empty($item['name_pick']) || !empty($item['time_pick']))
+                                                                            <span class="job-assign-meta">ผู้จ่ายงาน {{ $item['name_pick'] ?: '—' }}@if(!empty($item['time_pick'])) · {{ \Carbon\Carbon::parse($item['time_pick'])->addYears(543)->format('d/m/Y H:i') }}@endif</span>
+                                                                        @endif
                                                                         @unless ($isPo)
                                                                             {{-- เลขขนส่ง แยกทีละบิล (แสดง/แก้เฉพาะโหมดขนส่งเอกชน) --}}
                                                                             <span class="row-transport private-only">
@@ -879,12 +881,10 @@
                                                                                 <button type="button" class="btn-row-transport" data-billid="{{ $item['id'] }}" onclick="editRowTransportId(this)">แก้</button>
                                                                             </span>
                                                                         @endunless
-                                                                        @if ($canCancelJobs)
                                                                         <label class="cancel-select-label" title="เลือกเพื่อยกเลิกงานนี้">
                                                                             <input type="checkbox" class="cancel-select" data-billid="{{ $item['id'] }}">
                                                                             <span>ยกเลิก</span>
                                                                         </label>
-                                                                        @endif
                                                                     </div>
                                                                 @endforeach
                                                             </div>
@@ -892,9 +892,7 @@
                                                     @endforeach
 
                                                     <div class="box-actions">
-                                                        @if ($canCancelJobs)
                                                         <button type="button" class="btn-cancel-box" onclick="cancelBoxAssignment('{{ $boxKey }}')">ยกเลิกงานที่เลือก / คืนคิว</button>
-                                                        @endif
                                                         <a class="btn-print-group" target="_blank" href="{{ $printUrl }}">
                                                             <svg width="15" height="15" viewBox="0 0 16 16" fill="none"><path d="M4 6V2h8v4M4 11H2.75A.75.75 0 0 1 2 10.25v-3.5A.75.75 0 0 1 2.75 6h10.5a.75.75 0 0 1 .75.75v3.5a.75.75 0 0 1-.75.75H12M4 9h8v5H4V9Z" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
                                                             ปริ้นใบงาน (A4)

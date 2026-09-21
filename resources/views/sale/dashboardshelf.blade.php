@@ -692,7 +692,7 @@
                 <div class="move-modal-title">ย้ายชั้นวาง</div>
                 <div class="move-modal-sub" id="movePoLabel"></div>
             </div>
-            <button type="button" class="modal-close-btn" onclick="closeMove()" aria-label="ปิด">✕</button>
+            <button type="button" class="modal-close-btn" onclick="closeMove()" aria-label="ปิด"></button>
         </div>
         <label class="move-modal-label" for="moveShelfInput">ย้ายไปยังชั้น</label>
         <div class="move-modal-input-wrap">
@@ -712,7 +712,7 @@
     <div class="modal-box modal-box-lg">
         <div class="modal-title">
             <span>รายการสินค้า — <span id="productPoLabel"></span></span>
-            <button type="button" class="btn-ghost" onclick="closeProductModal()" style="padding: 4px 8px;">✕</button>
+            <button type="button" class="btn-ghost" onclick="closeProductModal()" style="padding: 4px 8px;"></button>
         </div>
         <div class="modal-body">
             <table class="sub-table">

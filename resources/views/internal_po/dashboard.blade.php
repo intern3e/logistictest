@@ -4,7 +4,7 @@
 <head>
 <meta charset="utf-8">
 <style>
-    {{-- ⚠️ dompdf ไม่มีฟอนต์ไทยในตัว ต้อง embed ฟอนต์เอง วางไฟล์ .ttf ไว้ที่ public/fonts/ --}}
+    {{-- dompdf ไม่มีฟอนต์ไทยในตัว ต้อง embed ฟอนต์เอง วางไฟล์ .ttf ไว้ที่ public/fonts/ --}}
     @font-face {
         font-family: 'Sarabun';
         src: url('{{ public_path('fonts/Sarabun-Regular.ttf') }}') format('truetype');

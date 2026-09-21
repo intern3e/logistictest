@@ -524,7 +524,7 @@
         }
 
         .finished-tag::before {
-            content: '✓';
+            content: '';
             font-size: 10px;
             font-weight: 800;
         }
@@ -552,7 +552,7 @@
         }
 
         .btn-view-items::before {
-            content: '📦';
+            content: '';
             font-size: 11px;
         }
 
@@ -1018,13 +1018,15 @@
                                 <td>
                                     @if ($h->type === 'external' || $h->type === 'legacy')
                                         @if ($isClaimed)
+                                            {{-- do_it: มีคนเอาของออกไปทำ (ยังไม่กดรับคืน) --}}
                                             <button type="button" class="btn-finish-claim" data-po="{{ $h->id }}">จัดการเสร็จสิ้น</button>
-                                            <div class="muted">โดย {{ $h->claimed_by ?: '—' }}</div>
+                                            <div class="muted">เอาไปทำโดย {{ $h->claimed_by ?: '—' }}</div>
                                             <div class="muted">{{ $h->claimed_at ? \Carbon\Carbon::parse($h->claimed_at)->format('d/m/Y H:i') : '' }}</div>
                                         @elseif ($isFinished)
-                                            <span class="finished-tag">เสร็จสิ้น</span>
-                                            <div class="muted">โดย {{ $h->finished_by ?: ($h->claimed_by ?: '—') }}</div>
-                                            <div class="muted">{{ $h->finished_at ? \Carbon\Carbon::parse($h->finished_at)->format('d/m/Y H:i') : '' }}</div>
+                                            {{-- ผู้ดูแลกดรับของกลับแล้ว (sus) → พร้อมระบุตำแหน่ง — แสดงทั้งคนเอาไป (do_it) และคนรับคืน (sus) --}}
+                                            <span class="finished-tag">พร้อมระบุตำแหน่ง</span>
+                                            <div class="muted">เอาไปทำโดย {{ $h->claimed_by ?: '—' }}{{ $h->claimed_at ? ' · ' . \Carbon\Carbon::parse($h->claimed_at)->format('d/m/Y H:i') : '' }}</div>
+                                            <div class="muted">รับคืนโดย {{ $h->finished_by ?: '—' }}{{ $h->finished_at ? ' · ' . \Carbon\Carbon::parse($h->finished_at)->format('d/m/Y H:i') : '' }}</div>
                                         @else
                                             <button type="button" class="btn-claim" data-po="{{ $h->id }}" data-type="{{ $h->type }}">กำลังจัดการ</button>
                                         @endif
@@ -1045,7 +1047,7 @@
                                 <td class="muted">{{ $h->packed_at ? \Carbon\Carbon::parse($h->packed_at)->format('d/m/Y H:i') : '—' }}</td>
                             </tr>
                         @empty
-                            <tr><td colspan="10" class="empty">📭 ไม่มีรายการที่รอระบุตำแหน่ง</td></tr>
+                            <tr><td colspan="10" class="empty">ไม่มีรายการที่รอระบุตำแหน่ง</td></tr>
                         @endforelse
                     </tbody>
                 </table>
@@ -1074,7 +1076,7 @@
 
 <dialog id="locModal">
     <div class="dialog-header">
-        <h2>📦 ระบุตำแหน่งจัดเก็บ</h2>
+        <h2>ระบุตำแหน่งจัดเก็บ</h2>
     </div>
     <div class="dialog-body">
         <label for="inpLocation">ชั้นวาง</label>
@@ -1086,7 +1088,7 @@
 
         @if (($locations ?? collect())->count())
             <div class="chips-section">
-                <div class="chips-label">⚡ ใช้ล่าสุด</div>
+                <div class="chips-label">ใช้ล่าสุด</div>
                 <div class="chips">
                     @foreach ($locations->take(6) as $loc)
                         <span class="chip" onclick="pickLoc(this)">{{ $loc }}</span>
@@ -1103,7 +1105,7 @@
 
 <dialog id="itemsModal">
     <div class="dialog-header">
-        <h2 id="itemsModalTitle">📋 รายการสินค้า</h2>
+        <h2 id="itemsModalTitle">รายการสินค้า</h2>
     </div>
     <div class="dialog-body">
         <div id="itemsModalBody"></div>
@@ -1330,7 +1332,7 @@ document.querySelectorAll('.btn-view-items').forEach(btn => {
     btn.addEventListener('click', async () => {
         const po = btn.dataset.po;
         const so = btn.dataset.so || '';
-        itemsModalTitle.textContent = '📋 รายการสินค้า — PO ' + po + (so ? ' / SO ' + so : '');
+        itemsModalTitle.textContent = 'รายการสินค้า — PO ' + po + (so ? ' / SO ' + so : '');
         itemsModal.showModal();
 
         // มี items ฝังไว้แล้ว (external/legacy/new) → แสดงเลย ไม่ต้อง fetch (กรองตาม SO ของแถวนี้)
@@ -1361,7 +1363,7 @@ function openModal() {
     if (!selectedIds().length) { alert('ยังไม่ได้เลือกรายการ'); return; }
     document.getElementById('inpLocation').value = '';
     const h = document.getElementById('dlgHint');
-    h.textContent = '📌 จะบันทึก ' + selectedIds().length + ' ใบ (ทุกใบที่เลือกจะใช้ตำแหน่งเดียวกัน)';
+    h.textContent = 'จะบันทึก ' + selectedIds().length + ' ใบ (ทุกใบที่เลือกจะใช้ตำแหน่งเดียวกัน)';
     h.style.color = '#1e293b';
     h.style.borderLeftColor = 'var(--primary)';
     modal.showModal();
@@ -1372,14 +1374,14 @@ async function confirmLoc() {
     const box = document.getElementById('inpLocation').value.trim();
     const h   = document.getElementById('dlgHint');
     if (!box) {
-        h.textContent = '⚠️ กรุณาระบุชั้นวาง';
+        h.textContent = 'กรุณาระบุชั้นวาง';
         h.style.color = 'var(--danger)';
         h.style.borderLeftColor = 'var(--danger)';
         document.getElementById('inpLocation').focus();
         return;
     }
     if (!SHELF_OPTIONS.includes(box)) {
-        h.textContent = '❌ ไม่พบชั้นวางนี้ในระบบ กรุณาเลือกจากรายการ';
+        h.textContent = 'ไม่พบชั้นวางนี้ในระบบ กรุณาเลือกจากรายการ';
         h.style.color = 'var(--danger)';
         h.style.borderLeftColor = 'var(--danger)';
         document.getElementById('inpLocation').focus();
@@ -1398,7 +1400,7 @@ async function confirmLoc() {
             body: JSON.stringify({ ids: selectedIds(), user: currentUser(), location: box })
         });
         const data = await res.json();
-        if (res.ok && data.ok) { alert('✅ ' + data.message); window.location.reload(); }
+        if (res.ok && data.ok) { alert('' + data.message); window.location.reload(); }
         else { alert(data.message || 'บันทึกไม่สำเร็จ'); btn.disabled = false; btn.textContent = 'บันทึกตำแหน่ง'; }
     } catch (e) { console.error(e); alert('เกิดข้อผิดพลาด'); btn.disabled = false; btn.textContent = 'บันทึกตำแหน่ง'; }
 }

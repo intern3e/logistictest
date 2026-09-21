@@ -102,17 +102,22 @@ class ShelfsaleController extends Controller
         // --- ของใหม่: logistic po_receives_line (บนชั้น + ยังไม่เช็คเอาท์) ---
         $newQ = PoReceiveLine::whereNotNull('shelf')
             ->where('shelf', '!=', '')
-            ->whereHas('header', function ($q) use ($fSo) {
-                $q->whereNull('checkout_time');
-                if ($fSo !== '') $q->where('so_id', 'LIKE', "%{$fSo}%");
-            })
+            ->whereHas('header', fn ($q) => $q->whereNull('checkout_time'))
             ->with('header');
         if ($fShelf !== '') $newQ->where('shelf', 'LIKE', "%{$fShelf}%");
         if ($fPo !== '')    $newQ->where('po_id', 'LIKE', "%{$fPo}%");
+        // กรอง SO ที่ "ตัว line เอง" (per-SO) — ข้อมูลเก่าที่ so_id ว่างยังดึงมา (ไป fallback header)
+        if ($fSo !== '') {
+            $newQ->where(function ($q) use ($fSo) {
+                $q->where('so_id', 'LIKE', "%{$fSo}%")->orWhereNull('so_id');
+            });
+        }
 
+        // ใช้ so_id/po_id "ของ line เอง" เป็นหลัก (แยกต่อ SO ได้ถูกต้องเมื่อ 1 PO มีหลาย SO)
+        // header ผูกด้วย po_id อย่างเดียว จึงใช้เป็น fallback เฉพาะข้อมูลเก่าที่ line.so_id ว่าง
         $newItems = $newQ->get()->map(fn ($line) => (object) [
-            'so'          => optional($line->header)->so_id,
-            'po'          => optional($line->header)->po_id,
+            'so'          => $line->so_id ?: optional($line->header)->so_id,
+            'po'          => $line->po_id ?: optional($line->header)->po_id,
             'shelf'       => $line->shelf,
             'received_at' => $line->received_at,
             'good_name'   => $line->good_name,

@@ -976,6 +976,10 @@ $selfPickupMethods = ['รับเองรถใหญ่', 'รับเอ�
                     <label for="searchBillSO"> รหัส SO:</label>
                     <input type="text" id="searchBillSO" placeholder="เช่น 69/013216" oninput="filterBillTable()">
                 </div>
+                <div class="search-group">
+                    <label for="searchBillNo"> เลขบิล:</label>
+                    <input type="text" id="searchBillNo" placeholder="เช่น 46909-02085" oninput="filterBillTable()">
+                </div>
                 <button type="button" class="search-clear-btn" onclick="clearBillSearch()"> ล้าง</button>
             </div>
         </div>
@@ -1061,6 +1065,7 @@ $selfPickupMethods = ['รับเองรถใหญ่', 'รับเอ�
                                         data-transport="{{ $tKey }}"
                                         data-customer-id="{{ $group['customer_id'] }}"
                                         data-customer-name="{{ $groupCustomerName }}"
+                                        data-bill-no="{{ $bill->billid }}"
                                         data-so-id="{{ $bill->so_id }}">
                                         @if($loop->first)
                                         <td class="col-customer" data-group="{{ $groupKey }}" rowspan="{{ $groupRowCount }}">
@@ -1643,6 +1648,7 @@ function fixGroupCustomerCells(rows) {
 function filterBillTable() {
     const custQuery = document.getElementById('searchBillCustomer').value;
     const soQuery = document.getElementById('searchBillSO').value;
+    const billQuery = document.getElementById('searchBillNo').value;
     const pane = document.querySelector(`#panelDelivery .transport-pane[data-transport="${currentTransport}"]`);
     if (!pane) return;
 
@@ -1653,10 +1659,12 @@ function filterBillTable() {
         const customerId = row.dataset.customerId || '';
         const customerName = row.dataset.customerName || '';
         const soId = row.dataset.soId || '';
+        const billNo = row.dataset.billNo || '';
 
         const matchCustomer = containsText(customerId, custQuery) || containsText(customerName, custQuery);
         const matchSO = containsText(soId, soQuery);
-        const show = matchCustomer && matchSO;
+        const matchBill = containsText(billNo, billQuery);
+        const show = matchCustomer && matchSO && matchBill;
 
         row.style.display = show ? '' : 'none';
 
@@ -1673,6 +1681,7 @@ function filterBillTable() {
 function clearBillSearch() {
     document.getElementById('searchBillCustomer').value = '';
     document.getElementById('searchBillSO').value = '';
+    document.getElementById('searchBillNo').value = '';
     filterBillTable();
 }
 
