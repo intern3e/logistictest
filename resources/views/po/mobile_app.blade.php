@@ -795,9 +795,10 @@ async function getReceivedHistory(ponum){
     const qtyMap = new Map();    // normName → total received qty
     const detailMap = new Map(); // normName → [{received_by, received_at, recv_qty, shelf}]
     let rawRows = [];            // raw rows (มี id, shelf) สำหรับแสดง/แก้ไขชั้นวาง
+    let poStatus = null;         // สถานะรับเข้าระบบใหม่: 'ครบ' | 'บางส่วน' | null (ยังไม่รับ)
     try{
         const res = await fetch(`${HISTORY_URL}?PONum=${encodeURIComponent(ponum)}`);
-        if(!res.ok) return { qtyMap, detailMap, rows: rawRows };
+        if(!res.ok) return { qtyMap, detailMap, rows: rawRows, poStatus };
         const rows = await res.json();
         rawRows = rows || [];
 
@@ -807,6 +808,7 @@ async function getReceivedHistory(ponum){
         const seenDetail = new Set(); // กัน detailMap แสดงประวัติซ้ำข้าม SO (so|item|by|at|qty|shelf)
         (rows || []).forEach(r => {
             if(!r.good_name) return;
+            if(!poStatus && r.po_status) poStatus = r.po_status;   // สถานะรับเข้า (ครบ/บางส่วน) จาก header ที่ยัง active
             const key = normName(r.good_name);
             const qty = parseFloat(r.recv_qty || 0);
             const so  = r.so_num || r.so_id || '__noso__';
@@ -836,7 +838,7 @@ async function getReceivedHistory(ponum){
             }
         }
     }catch(e){ /* silent */ }
-    return { qtyMap, detailMap, rows: rawRows };
+    return { qtyMap, detailMap, rows: rawRows, poStatus };
 }
 
 /* ค้นหา qty จาก map ด้วย flexible matching */
@@ -1150,7 +1152,14 @@ async function searchPO(){
         // (ถ้า PO นี้รับเข้าในระบบใหม่มาแล้วบางส่วน (status บางส่วน) ต้องปล่อยให้รับเข้าต่อได้เสมอ
         //  ไม่ควรถูกเบือนไปหน้าแก้ไขชั้นวาง/ดึงข้อมูลระบบเก่าเพราะ legacyActive)
         const legacyOnly = legacyActive && historyRows.length === 0;
-        if(hasRemaining.length === 0 || legacyOnly){
+        // ใช้สถานะรับเข้าเป็นตัวตัดสินหลัก (เร็ว/ชัวร์กว่าเทียบจำนวน):
+        //   'บางส่วน' -> ต้องรับต่อได้เสมอ (ไม่เด้งไปหน้าย้ายชั้น) แล้วค่อยดูว่าเหลือเท่าไหร่จาก _remainingQty
+        //   'ครบ'     -> ไปหน้ารับแล้ว/ย้ายชั้น
+        //   null (ยังไม่รับระบบใหม่) -> ตัดสินจากจำนวนคงเหลือ (hasRemaining) ตามเดิม
+        const poStatusNew    = history.poStatus || null;
+        const isPartialNew   = poStatusNew === 'บางส่วน';
+        const fullyReceivedNew = poStatusNew === 'ครบ' || (!poStatusNew && hasRemaining.length === 0);
+        if(!isPartialNew && (fullyReceivedNew || legacyOnly)){
             lastFullyReceivedPO = data.DocuNo;
             const docuNo    = data.DocuNo;
             const fromNew   = hasRemaining.length === 0;          // รับครบจากระบบใหม่
