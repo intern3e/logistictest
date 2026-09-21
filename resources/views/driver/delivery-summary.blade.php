@@ -692,6 +692,7 @@
 <div id="toastContainer" class="toast-container"></div>
 
 <div class="page-shell">
+    @php $canCancelJobs = $canCancelJobs ?? false; @endphp
 
     <div class="page-header">
         <div class="page-title-row">
@@ -878,10 +879,12 @@
                                                                                 <button type="button" class="btn-row-transport" data-billid="{{ $item['id'] }}" onclick="editRowTransportId(this)">แก้</button>
                                                                             </span>
                                                                         @endunless
+                                                                        @if ($canCancelJobs)
                                                                         <label class="cancel-select-label" title="เลือกเพื่อยกเลิกงานนี้">
                                                                             <input type="checkbox" class="cancel-select" data-billid="{{ $item['id'] }}">
                                                                             <span>ยกเลิก</span>
                                                                         </label>
+                                                                        @endif
                                                                     </div>
                                                                 @endforeach
                                                             </div>
@@ -889,7 +892,9 @@
                                                     @endforeach
 
                                                     <div class="box-actions">
+                                                        @if ($canCancelJobs)
                                                         <button type="button" class="btn-cancel-box" onclick="cancelBoxAssignment('{{ $boxKey }}')">ยกเลิกงานที่เลือก / คืนคิว</button>
+                                                        @endif
                                                         <a class="btn-print-group" target="_blank" href="{{ $printUrl }}">
                                                             <svg width="15" height="15" viewBox="0 0 16 16" fill="none"><path d="M4 6V2h8v4M4 11H2.75A.75.75 0 0 1 2 10.25v-3.5A.75.75 0 0 1 2.75 6h10.5a.75.75 0 0 1 .75.75v3.5a.75.75 0 0 1-.75.75H12M4 9h8v5H4V9Z" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
                                                             ปริ้นใบงาน (A4)

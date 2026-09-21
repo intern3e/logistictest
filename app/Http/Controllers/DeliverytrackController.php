@@ -51,6 +51,16 @@ class DeliverytrackController extends Controller
         return strcasecmp(trim((string) ($user->name ?? '')), 'FILM') === 0;
     }
 
+    /**
+     * สิทธิ์ "ยกเลิกงาน" ในหน้าสรุป: เฉพาะผู้ใช้ชื่อ FILM หรือ role admin
+     */
+    private function canCancelAssignment($user): bool
+    {
+        if (!$user) return false;
+        if (($user->role ?? '') === 'admin') return true;
+        return strcasecmp(trim((string) ($user->name ?? '')), 'FILM') === 0;
+    }
+
     private function checkAccess()
     {
         if (!Auth::guard('web')->check()) return redirect()->guest(route('login'));
@@ -345,10 +355,11 @@ class DeliverytrackController extends Controller
 
         ksort($boxesByDate);
         return view('driver.delivery-summary', [
-            'date'         => $date,
-            'billId'       => $billId,
-            'boxesByDate'  => $boxesByDate,
-            'loggedInName' => $this->loggedInName(),
+            'date'          => $date,
+            'billId'        => $billId,
+            'boxesByDate'   => $boxesByDate,
+            'loggedInName'  => $this->loggedInName(),
+            'canCancelJobs' => $this->canCancelAssignment(Auth::guard('web')->user()),
         ]);
     }
 
@@ -547,8 +558,9 @@ class DeliverytrackController extends Controller
     {
         $user = Auth::guard('web')->user();
         if (!$user) return response()->json(['ok' => false, 'message' => 'เซสชันหมดอายุ กรุณาเข้าสู่ระบบใหม่'], 401);
-        if (!$this->hasDeliveryAccess($user)) {
-            return response()->json(['ok' => false, 'message' => 'ไม่มีสิทธิ์ดำเนินการ'], 403);
+        // ยกเลิกงานได้เฉพาะผู้ใช้ชื่อ "FILM" หรือ role admin เท่านั้น
+        if (!$this->canCancelAssignment($user)) {
+            return response()->json(['ok' => false, 'message' => 'เฉพาะผู้ใช้ FILM หรือ admin เท่านั้นที่ยกเลิกงานได้'], 403);
         }
 
         $validated = $request->validate([

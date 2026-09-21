@@ -224,6 +224,9 @@ private function hydrateLegacyPageItems(\Illuminate\Support\Collection $lightIte
     {
         $q = $withLines ? internal_po::with('lines') : internal_po::query();
 
+        // ไม่ดึง PO ที่ไม่มีไส้ในเลย (ต้องมีอย่างน้อย 1 รายการ)
+        $q->whereHas('lines');
+
         if ($request->filled('SONum')) {
             $q->where('SO_id', 'LIKE', '%' . $request->input('SONum') . '%');
         }
@@ -761,11 +764,39 @@ private function hydrateLegacyPageItems(\Illuminate\Support\Collection $lightIte
         $itemName   = $line->item_name;
         $line->delete();
 
+        $finished    = false;
+        $cancelledPo = false;
+        $total   = internal_poline::where('internal_id', $internalId)->count();
+        $pickedN = internal_poline::where('internal_id', $internalId)->whereNotNull('picked_at')->count();
+
+        if ($total === 0) {
+            // ยกเลิกไส้ในจนหมด และไม่เคยจัดเลย (ไส้ในที่จัดแล้วยกเลิกไม่ได้) → ปิด PO เป็นสถานะ "ยกเลิก" (จะไม่ขึ้นในหน้าจัด)
+            $affected = internal_po::where('internal_id', $internalId)
+                ->where('status', internal_po::ST_PENDING)
+                ->update(['status' => internal_po::ST_CANCEL]);
+            $cancelledPo = $affected > 0;
+        } elseif ($pickedN === $total) {
+            // ลบไส้ในแล้ว ที่เหลือ "จัดครบทุกอัน" → ปิดงานเป็น FINISH เพื่อให้ไปต่อที่ store/location ได้
+            $affected = internal_po::where('internal_id', $internalId)
+                ->where('status', internal_po::ST_PENDING)
+                ->update([
+                    'status'  => internal_po::ST_FINISH,
+                    'pick_by' => $authUser->name,
+                    'pick_at' => Carbon::now()->toDateTimeString(),
+                ]);
+            $finished = $affected > 0;
+        }
+
         Log::info('internal_po.cancelLine', [
-            'by' => $authUser->name, 'internal_id' => $internalId, 'line_id' => $request->input('line_id'), 'item_name' => $itemName,
+            'by' => $authUser->name, 'internal_id' => $internalId, 'line_id' => $request->input('line_id'),
+            'item_name' => $itemName, 'auto_finished' => $finished, 'auto_cancelled' => $cancelledPo,
         ]);
 
-        return response()->json(['ok' => true, 'message' => 'ยกเลิกสินค้าเรียบร้อย']);
+        $message = 'ยกเลิกสินค้าเรียบร้อย';
+        if ($cancelledPo) $message = 'ยกเลิกไส้ในทั้งหมดแล้ว · ปิด PO เป็นสถานะ "ยกเลิก"';
+        elseif ($finished) $message = 'ยกเลิกสินค้าแล้ว · ไส้ในที่เหลือจัดครบ ปิดงาน (จัดเสร็จ) ให้อัตโนมัติ';
+
+        return response()->json(['ok' => true, 'message' => $message]);
     }
 
     /**

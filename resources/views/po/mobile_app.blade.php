@@ -800,19 +800,41 @@ async function getReceivedHistory(ponum){
         if(!res.ok) return { qtyMap, detailMap, rows: rawRows };
         const rows = await res.json();
         rawRows = rows || [];
+
+        // 1 PO เชื่อมหลาย SO → receivePO เก็บจำนวน "เท่ากันต่อ SO" (ซ้ำ) จึงต้องนับ received ต่อ SO
+        // ไม่ใช่รวมข้าม SO (กันนับซ้ำจนดูเหมือนรับครบ ทั้งที่จริงเป็นบางส่วน)
+        const perSoQty = new Map();   // soKey → Map(itemKey → qty)
+        const seenDetail = new Set(); // กัน detailMap แสดงประวัติซ้ำข้าม SO (so|item|by|at|qty|shelf)
         (rows || []).forEach(r => {
             if(!r.good_name) return;
             const key = normName(r.good_name);
             const qty = parseFloat(r.recv_qty || 0);
-            qtyMap.set(key, (qtyMap.get(key) || 0) + qty);
-            if(!detailMap.has(key)) detailMap.set(key, []);
-            detailMap.get(key).push({
-                received_by: r.received_by || '-',
-                received_at: r.received_at || '',
-                recv_qty: qty,
-                shelf: r.shelf || ''
-            });
+            const so  = r.so_num || r.so_id || '__noso__';
+
+            if(!perSoQty.has(so)) perSoQty.set(so, new Map());
+            const m = perSoQty.get(so);
+            m.set(key, (m.get(key) || 0) + qty);
+
+            // detailMap: แสดงประวัติแบบไม่ซ้ำข้าม SO (แต่ละ SO รับด้วยข้อมูลเดียวกัน)
+            const dedupeKey = [key, r.received_by||'', r.received_at||'', qty, r.shelf||''].join('|');
+            if(!seenDetail.has(dedupeKey)){
+                seenDetail.add(dedupeKey);
+                if(!detailMap.has(key)) detailMap.set(key, []);
+                detailMap.get(key).push({
+                    received_by: r.received_by || '-',
+                    received_at: r.received_at || '',
+                    recv_qty: qty,
+                    shelf: r.shelf || ''
+                });
+            }
         });
+
+        // received qty ของ PO = จำนวนต่อ SO ที่มากสุด (แต่ละ SO qty เท่ากันอยู่แล้ว)
+        for(const [, m] of perSoQty){
+            for(const [key, q] of m){
+                qtyMap.set(key, Math.max(qtyMap.get(key) || 0, q));
+            }
+        }
     }catch(e){ /* silent */ }
     return { qtyMap, detailMap, rows: rawRows };
 }
