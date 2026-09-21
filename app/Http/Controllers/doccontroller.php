@@ -63,6 +63,7 @@ class DocController extends Controller
         if (!empty($docIds)) {
             $deliveredIds = DB::table('transaction_transport')
                 ->whereIn('bill_id', $docIds)
+                ->whereNull('cancelled_at')   // งานที่ยกเลิกแล้วไม่นับว่าจ่ายแล้ว
                 ->distinct()
                 ->pluck('bill_id')
                 ->flip()
@@ -85,6 +86,7 @@ class DocController extends Controller
 
         $rows = DB::table('transaction_transport')
             ->where('bill_id', $billId)
+            ->whereNull('cancelled_at')   // ไม่ดึงงานที่ยกเลิกแล้วมาแสดง
             ->orderByDesc('id')
             ->get();
 

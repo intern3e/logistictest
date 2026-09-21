@@ -98,6 +98,13 @@
         font-size:12.5px;font-weight:600;padding:3px 10px;border-radius:999px;
     }
     .es-so-cust{font-size:12px;color:#8E8E8E;font-weight:400}
+    .es-round{
+        border:1px solid #ECEEF1;border-radius:10px;padding:8px 12px;margin-top:10px;background:#FBFBFC;
+    }
+    .es-round-head{
+        font-size:12.5px;font-weight:600;color:#3457B1;
+        padding-bottom:6px;margin-bottom:2px;border-bottom:1px dashed #E4E7EC;
+    }
     :root{
         --blue:#3E6AE1;
         --blue-dark:#3457B1;
@@ -590,9 +597,9 @@
         <div class="combo-item photo-item">
             <div class="lbl">รูปหน้างาน</div>
             <div class="photo-tap" id="photoTap" onclick="triggerPhoto()">
-                <span class="ph-icon" id="photoIcon">📷</span>
+                <span class="ph-icon" id="photoIcon"></span>
                 <img id="photoImg" alt="รูปถ่ายที่แนบ">
-                <button type="button" class="photo-remove" id="btnRemovePhoto" onclick="removePhoto(event)">✕</button>
+                <button type="button" class="photo-remove" id="btnRemovePhoto" onclick="removePhoto(event)">×</button>
             </div>
             <input type="file" id="photoInput" accept="image/*" capture="environment" style="display:none" onchange="onPhotoSelected(event)">
         </div>
@@ -626,7 +633,7 @@
 
 <!-- State -->
 <div id="stateBox" class="state">
-    <div class="icon">🔎</div>
+    <div class="icon"></div>
     พิมพ์เลขที่ PO แล้วกดค้นหา
 </div>
 
@@ -644,7 +651,7 @@
     <div class="sheet" onclick="event.stopPropagation()">
         <div class="sheet-header">
             <span>เลือกชั้นวาง</span>
-            <button type="button" class="sheet-close" onclick="closeShelfSheet()">✕</button>
+            <button type="button" class="sheet-close" onclick="closeShelfSheet()">×</button>
         </div>
         <input type="text" id="shelfSearch" class="sheet-search" placeholder="พิมพ์ค้นหา"
                autocomplete="off" oninput="renderShelfList()">
@@ -721,7 +728,7 @@ if(!RECEIVED_BY){
         <div style="min-height:100vh;display:flex;flex-direction:column;align-items:center;
                     justify-content:center;padding:32px;text-align:center;
                     font-family:'Sarabun',-apple-system,Arial,sans-serif;color:#171A20;">
-            <div style="font-size:44px;margin-bottom:16px;">🔒</div>
+            <div style="font-size:44px;margin-bottom:16px;"></div>
             <div style="font-size:17px;font-weight:500;margin-bottom:8px;">ไม่พบสิทธิ์เข้าใช้งาน</div>
         </div>`;
     throw new Error('access_denied: not logged in');
@@ -1040,7 +1047,7 @@ function printerLabel(val){
 function showNotFound(poNumber){
     clearResult();
     $('stateBox').innerHTML =
-        '<div class="icon">❌</div>' +
+        '<div class="icon"></div>' +
         '<span class="err" style="font-size:16px;font-weight:500;color:var(--carbon)">ไม่พบ PO นี้</span><br>' +
         esc(poNumber) + '<br>ตรวจสอบเลขที่แล้วค้นหาใหม่';
     $('stateBox').style.display = 'block';
@@ -1246,7 +1253,7 @@ async function searchPO(){
             const place = c.checkout_place ? esc(c.checkout_place) : '';
             const by    = c.by ? esc(c.by) : '';
             $('stateBox').innerHTML =
-                '<div class="icon">🚫</div>' +
+                '<div class="icon"></div>' +
                 '<span class="err" style="font-size:16px;font-weight:500;color:var(--carbon)">PO นี้ถูกเช็คของออกไปแล้ว (ระบบเก่า)</span><br>' +
                 esc(data.DocuNo || poNumber) +
                 (by ? '<br>ผู้รับเข้า <b>' + by + '</b>' : '') +
@@ -1262,7 +1269,7 @@ async function searchPO(){
         if(!data._soList || data._soList.length === 0){
             clearResult();
             $('stateBox').innerHTML =
-                '<div class="icon">⚠️</div>' +
+                '<div class="icon"></div>' +
                 '<span class="err" style="font-size:16px;font-weight:500;color:var(--carbon)">ไม่สามารถรับเข้าได้</span><br>' +
                 'เลข PO <b>' + esc(poNumber) + '</b><br>ยังไม่ได้เชื่อมกับ SO';
             $('stateBox').style.display = 'block';
@@ -1274,7 +1281,7 @@ async function searchPO(){
         renderPO(data);
     }catch(err){
         clearResult();
-        $('stateBox').innerHTML = '<div class="icon">⚠️</div><span class="err">เชื่อมต่อ server ไม่ได้<br>' + esc(err.message) + '</span>';
+        $('stateBox').innerHTML = '<div class="icon"></div><span class="err">เชื่อมต่อ server ไม่ได้<br>' + esc(err.message) + '</span>';
         $('stateBox').style.display = 'block';
     }finally{
         $('btnSearch').disabled = false;
@@ -1315,7 +1322,10 @@ function toggleSoCard(){
                     <span>กำหนดส่ง: <b>${fmtDate(po.ShipDate)}</b></span>
                     <span class="v-amnt">ยอดสุทธิ: <b>${fmtNum(po.NetAmnt)} ฿</b></span>
                 </div>
-                ${historyRows.length ? `<div style="margin-top:10px;"><button type="button" class="btn-edit-shelf" onclick="openEditShelf()">✎ แก้ไขที่รับแล้ว (ชั้นวาง/ลบ)</button></div>` : ''}
+                ${historyRows.length ? `<div style="margin-top:10px;display:flex;gap:8px;flex-wrap:wrap;">
+                    <button type="button" class="btn-edit-shelf" onclick="openEditShelf()">แก้ไขที่รับแล้ว (ชั้นวาง)</button>
+                    ${CAN_CANCEL ? `<button type="button" class="btn-cancel-receive" onclick="openCancelModal('${esc(po.DocuNo || '')}')">ยกเลิกการรับเข้า</button>` : ''}
+                </div>` : ''}
             </div>`;
 
         if(hasSO){
@@ -1493,14 +1503,12 @@ async function migrateLegacyThenEdit(){
 
 /* ========== แก้ไข/ย้ายชั้นวาง ========== */
 let editShelfState = {};   // { lineId: shelf }
-let editDelState   = {};   // { lineId: true } ลบรายการที่เพิ่มผิด
 
 function openEditShelf(){
     if(!historyRows.length){ toast('ไม่มีรายการให้แก้ไข','error'); return; }
-    editShelfState = {}; editDelState = {};
+    editShelfState = {};
     historyRows.forEach(r => {
         editShelfState[r.id] = r.shelf || '';
-        editDelState[r.id]   = false;
     });
     renderEditShelf();
 }
@@ -1510,48 +1518,60 @@ function renderEditRow(r){
     const cur = editShelfState[r.id] || '';
     const shelfTxt = cur ? esc(cur) : 'เลือกชั้นวาง';
     const cls = cur ? '' : ' placeholder';
-    const del = !!editDelState[r.id];
     return `
-        <div class="es-row" style="${del ? 'opacity:.5;' : ''}">
-            <div class="es-name">${esc(name || '-')} ${del ? '<span style="color:#c0392b;">(ลบ)</span>' : ''}</div>
+        <div class="es-row">
+            <div class="es-name">${esc(name || '-')}</div>
             <div class="es-sub">ผู้รับ: ${esc(r.received_by || '-')} · จำนวนที่รับ: <b>${esc(fmtQty(r.recv_qty))}</b></div>
-            <div class="es-shelf-line" style="${del ? 'pointer-events:none;' : ''}">
+            <div class="es-shelf-line">
                 <button type="button" class="es-shelf-btn" onclick="openShelfSheet('edit:${esc(String(r.id))}')">
                     <span class="es-shelf-txt${cls}">${shelfTxt}</span>
                     <span class="chev">▾</span>
                 </button>
             </div>
-            <div style="margin-top:6px;">
-                <button type="button" class="es-clear" onclick="toggleDelEdit('${esc(String(r.id))}')">${del ? 'เลิกลบ' : 'ลบรายการนี้'}</button>
-            </div>
         </div>`;
 }
 
 function renderEditShelf(){
-    // จัดกลุ่มรายการที่รับแล้วเป็น box ตาม SO (so_num) เพื่อให้ดูง่ายเมื่อ 1 PO มีหลาย SO
-    const groups = {};
-    const order  = [];
+    // กล่องใหญ่ = แยกตาม SO (1 PO เชื่อมได้หลาย SO) → ภายในแต่ละ SO แยกตาม "รอบการรับเข้า" (received_at)
+    const soGroups = {};
+    const soOrder  = [];
     historyRows.forEach(r => {
         const so = r.so_num || '-';
-        if(!groups[so]){ groups[so] = []; order.push(so); }
-        groups[so].push(r);
+        if(!soGroups[so]){ soGroups[so] = { rounds: {}, order: [] }; soOrder.push(so); }
+        const round = r.received_at || '-';
+        if(!soGroups[so].rounds[round]){ soGroups[so].rounds[round] = []; soGroups[so].order.push(round); }
+        soGroups[so].rounds[round].push(r);
     });
 
-    const boxes = order.map(so => {
-        const inner = groups[so].map(renderEditRow).join('');
+    const boxes = soOrder.map(so => {
+        const g = soGroups[so];
+        const roundKeys = g.order.slice().sort();   // เรียงตามเวลารับ (เก่า→ใหม่)
+        let totalRows = 0;
+        const roundHtml = roundKeys.map((rk, idx) => {
+            const rows = g.rounds[rk];
+            totalRows += rows.length;
+            const by   = rows[0].received_by || '-';
+            const when = rk === '-' ? '-' : fmtDateTime(rk);
+            const inner = rows.map(renderEditRow).join('');
+            return `
+                <div class="es-round">
+                    <div class="es-round-head">รับเข้าครั้งที่ ${idx + 1} · ผู้รับ ${esc(by)} · ${esc(when)}</div>
+                    ${inner}
+                </div>`;
+        }).join('');
         const soLabel = so === '-' ? 'ไม่ระบุ SO' : ('SO ' + esc(so));
         return `
             <div class="es-so-box">
                 <div class="es-so-head"><span class="es-so-badge">${soLabel}</span>
-                    <span class="es-so-cust">${groups[so].length} รายการ</span>
+                    <span class="es-so-cust">${roundKeys.length} ครั้ง · ${totalRows} รายการ</span>
                 </div>
-                ${inner}
+                ${roundHtml}
             </div>`;
     }).join('');
 
     $('editShelfBody').innerHTML = `
         <div class="es-head">แก้ไขรายการรับเข้า — ${esc(editPONum || '')}</div>
-        <div class="es-note">แก้ชั้นวาง หรือลบรายการที่เพิ่มผิด (เฉพาะ PO ที่ยังไม่ถูกเช็คของออก) — ไม่สามารถแก้ไขจำนวนได้</div>
+        <div class="es-note">แก้ชั้นวางของแต่ละรายการ (เฉพาะ PO ที่ยังไม่ถูกเช็คของออก) — ไม่สามารถแก้ไขจำนวนได้</div>
         ${boxes}
         <div class="es-actions">
             <button type="button" class="es-back" onclick="closeEditShelf()">กลับ</button>
@@ -1569,17 +1589,12 @@ function clearEditShelf(id){
     editShelfState[id] = '';
     renderEditShelf();
 }
-function toggleDelEdit(id){
-    editDelState[id] = !editDelState[id];
-    renderEditShelf();
-}
 
 async function saveEditShelf(){
     if(!editPONum){ toast('ไม่พบเลขที่ PO','error'); return; }
     const Lines = historyRows.map(r => ({
         id: r.id,
-        shelf: editShelfState[r.id] || null,
-        deleted: !!editDelState[r.id]
+        shelf: editShelfState[r.id] || null
     }));
 
     $('esSaveBtn').disabled = true;
@@ -1700,7 +1715,7 @@ async function confirmSave(){
         closeConfirm();
         toast(`รับเข้าสำเร็จ ${selectedCount} รายการ`,'ok');
         clearResult();
-        $('stateBox').innerHTML = '<div class="icon">🔎</div>พิมพ์เลขที่ PO แล้วกดค้นหา';
+        $('stateBox').innerHTML = '<div class="icon"></div>พิมพ์เลขที่ PO แล้วกดค้นหา';
         $('stateBox').style.display = 'block';
     }catch(err){
         closeConfirm();
@@ -1822,10 +1837,12 @@ function toast(msg, type=''){
     toastTimer = setTimeout(()=> t.className='', type==='error' ? 8000 : 2600);
 }
 let cancelScrollY = 0;
-function openCancelModal(){
+let cancelTargetPO = null;
+function openCancelModal(po){
     if(!CAN_CANCEL){ toast('เฉพาะ admin/stock/store เท่านั้นที่ยกเลิกการรับเข้าได้','error'); return; }
-    if(!lastFullyReceivedPO){ toast('ไม่พบเลขที่ PO','error'); return; }
-    $('cancelPONum').textContent = lastFullyReceivedPO;
+    cancelTargetPO = po || lastFullyReceivedPO || editPONum || (currentPO && currentPO.DocuNo) || null;
+    if(!cancelTargetPO){ toast('ไม่พบเลขที่ PO','error'); return; }
+    $('cancelPONum').textContent = cancelTargetPO;
 
     cancelScrollY = window.scrollY || window.pageYOffset || 0;
     document.body.style.position = 'fixed';
@@ -1844,7 +1861,8 @@ function closeCancelModal(){
 function closeCancelBackdrop(e){ if(e.target.id==='cancelOverlay') closeCancelModal(); }
 
 async function doCancelReceive(){
-    if(!lastFullyReceivedPO) return;
+    const target = cancelTargetPO || lastFullyReceivedPO;
+    if(!target) return;
 
     $('cancelOkBtn').disabled = true;
     $('cancelOkBtn').textContent = 'กำลังยกเลิก...';
@@ -1858,7 +1876,7 @@ async function doCancelReceive(){
                 'Accept': 'application/json'
             },
             body: JSON.stringify({
-                PONum: lastFullyReceivedPO,
+                PONum: target,
                 Status: 'รับเข้าผิด',
                 CancelBy: RECEIVED_BY || null
             })
@@ -1870,7 +1888,7 @@ async function doCancelReceive(){
         toast('ยกเลิกการรับเข้าเรียบร้อย','ok');
         lastFullyReceivedPO = null;
         clearResult();
-        $('stateBox').innerHTML = '<div class="icon">🔎</div>พิมพ์เลขที่ PO แล้วกดค้นหา';
+        $('stateBox').innerHTML = '<div class="icon"></div>พิมพ์เลขที่ PO แล้วกดค้นหา';
         $('stateBox').style.display = 'block';
     }catch(err){
         toast('ยกเลิกไม่สำเร็จ : ' + err.message, 'error');
@@ -1884,7 +1902,7 @@ function showCancelledPO(poNumber, body){
     const by = body && body.cancelled_by ? esc(body.cancelled_by) : '';
     const at = body && body.cancelled_at ? fmtDateTime(body.cancelled_at) : '';
     $('stateBox').innerHTML =
-        '<div class="icon">🚫</div>' +
+        '<div class="icon"></div>' +
         '<span class="err" style="font-size:16px;font-weight:500;color:var(--carbon)">PO นี้ถูกยกเลิกในระบบแล้ว</span><br>' +
         esc(poNumber) +
         (by ? '<br>ยกเลิกโดย <b>' + by + '</b>' : '') +

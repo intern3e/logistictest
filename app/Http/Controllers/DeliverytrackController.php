@@ -569,12 +569,24 @@ class DeliverytrackController extends Controller
         ]);
         $billIds = array_values(array_unique($validated['bill_ids']));
 
-        $deleted = transaction_delivery::whereIn('bill_id', $billIds)->delete();
+        // soft-cancel: ตั้งสถานะ "ยกเลิก" ไว้ (ไม่ลบทิ้ง) -> ข้อมูลไม่หาย, ตรวจย้อนหลังได้,
+        // และ global scope จะซ่อนงานที่ยกเลิกออกจากทุกหน้า (สรุปงานคนขับ/so.show/dashboarddoc/oil)
+        // ทำให้หน้าจ่ายงานถือว่ายังไม่จ่าย -> คืนงานกลับไปจ่ายใหม่ได้
+        $updated = transaction_delivery::whereIn('bill_id', $billIds)
+            ->update([
+                'cancelled_at' => Carbon::now()->toDateTimeString(),
+                'cancelled_by' => $user->name,
+            ]);
 
-        if ($deleted === 0) {
+        if ($updated === 0) {
             return response()->json(['ok' => false, 'message' => 'ไม่พบงานที่จะยกเลิก (อาจถูกยกเลิกไปก่อนแล้ว)'], 404);
         }
-        return response()->json(['ok' => true, 'message' => 'ยกเลิกงาน ' . $deleted . ' รายการ คืนกลับไปหน้าจ่ายงานแล้ว']);
+
+        \Illuminate\Support\Facades\Log::info('deliverytrack.cancelAssignment', [
+            'by' => $user->name, 'bill_ids' => $billIds, 'cancelled' => $updated,
+        ]);
+
+        return response()->json(['ok' => true, 'message' => 'ยกเลิกงาน ' . $updated . ' รายการ คืนกลับไปหน้าจ่ายงานแล้ว']);
     }
 
     /**

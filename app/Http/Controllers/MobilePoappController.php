@@ -440,6 +440,17 @@ class MobilePoappController extends Controller
             )
             // ไม่เอา line ที่ถูกยกเลิกไปแล้ว (cancelled) — จะได้ไม่ถูกนับเป็นของที่รับแล้ว
             ->whereNull('po_receives_line.cancelled_at')
+            // กันข้อมูล "รับเข้าผิด" หลุดมา: บาง line ของ batch ที่ยกเลิกอาจไม่ถูก mark cancelled_at
+            // แล้วไป join กับ header ตัวที่ยัง active (po+so เดียวกัน) → ตัดออกด้วยเงื่อนไข
+            // "มี header ที่ถูกยกเลิก (po+so เดียวกัน) ซึ่งยกเลิกหลัง/พร้อมเวลาที่ line นี้ถูกรับ" = line เป็นของ batch เก่าที่ยกเลิกไปแล้ว
+            ->whereNotExists(function ($q) {
+                $q->selectRaw('1')
+                  ->from('po_receives as pr_cancel')
+                  ->whereColumn('pr_cancel.po_id', 'po_receives_line.po_id')
+                  ->whereColumn('pr_cancel.so_id', 'po_receives_line.so_id')
+                  ->whereNotNull('pr_cancel.cancelled_at')
+                  ->whereColumn('pr_cancel.cancelled_at', '>=', 'po_receives_line.received_at');
+            })
             ->orderByDesc('po_receives_line.received_at');
 
         if ($request->filled('PONum')) {
