@@ -252,42 +252,34 @@ class BillreceiveController extends Controller
         $userName = $this->userName($user);
         $now      = Carbon::now();
 
-        // ===== ส่งวันใหม่: สร้าง row ใหม่ (เหมือนระบบเก่า) ไม่แก้ row เดิม =====
+        // ===== ส่งใหม่: คืนงานกลับไปหน้าจ่ายงาน (deliverytrack) เพื่อจ่ายให้คนขับใหม่ =====
+        // ไม่กำหนดวันที่ที่นี่แล้ว -> soft-cancel งานจ่ายเดิม (cancelled_at) ; global scope จะซ่อนงานนี้
+        // ทำให้งานกลับไปโผล่ในหน้าจ่ายงานขนส่ง แล้วค่อยจ่ายคนขับ/เลือกวันใหม่ที่นั่น
         if ($validated['action'] === 'redo') {
-            if (empty($validated['redo_date'])) {
-                return response()->json(['ok' => false, 'message' => 'กรุณาเลือกวันที่จะส่งใหม่'], 422);
-            }
-            $newDate = Carbon::parse($validated['redo_date']);
-            $newTime = $newDate->copy()->setTime(9, 0, 0);   // เริ่ม 09:00 เหมือนระบบเก่า
-
-            DB::transaction(function () use ($deliveries, $userName, $newTime) {
-                // 1 so_detail_id เดิม -> สร้างงานส่งใหม่ 1 แถว โดยผู้จ่ายงาน = ผู้ล็อกอิน
+            DB::transaction(function () use ($deliveries, $userName, $now) {
                 foreach ($deliveries as $d) {
-                    $origDate = $d->delivery_date
-                        ? Carbon::parse($d->delivery_date)->format('Y-m-d')
-                        : (optional($d->time_pick)->format('Y-m-d') ?: '-');
-                    $note = 'มีการให้ไปส่งใหม่จาก วันที่ ' . $origDate
-                          . ' โดย ' . $userName . ' ' . $newTime->format('Y-m-d H:i:s');
+                    // เก็บประวัติ: งานนี้เคยไปวันไหน คนขับใคร ผู้จ่ายงานใคร แล้วไม่สำเร็จ (ต้องส่งใหม่)
+                    $wentDate = $d->delivery_date
+                        ? Carbon::parse($d->delivery_date)->format('d/m/Y')
+                        : (optional($d->time_pick)->format('d/m/Y') ?: '-');
 
-                    transaction_delivery::create([
-                        'bill_id'        => $d->bill_id,
-                        'name_pick'      => $userName,
-                        'time_pick'      => $newTime,
-                        'transport_name' => $d->transport_name,
-                        'driver_name'    => $d->driver_name,
-                        'delivery_date'  => null,
-                        'check_name'     => null,
-                        'check_time'     => null,
-                        'status'         => '0',
-                        'note'           => $note,
-                    ]);
+                    $d->status       = 'ส่งใหม่';          // ประวัติ: ไม่สำเร็จ ต้องส่งใหม่
+                    $d->check_name   = $userName;
+                    $d->check_time   = $now;
+                    $d->cancelled_at = $now;               // คืนงานไปหน้าจ่ายงาน (ซ่อนจากงาน active) แต่ยังเก็บเป็นประวัติ
+                    $d->cancelled_by = $userName;
+                    $d->note = 'ส่งใหม่ (ไม่สำเร็จ) เคยไปวันที่ ' . $wentDate
+                             . ' · คนขับ ' . ($d->driver_name ?: '-')
+                             . ' · จ่ายโดย ' . ($d->name_pick ?: '-')
+                             . ' · สั่งส่งใหม่โดย ' . $userName . ' ' . $now->format('Y-m-d H:i');
+                    $d->save();
                 }
             });
 
             return response()->json([
                 'ok'      => true,
                 'action'  => 'redo',
-                'message' => 'สร้างงานส่งใหม่วันที่ ' . $newDate->format('d/m/Y') . ' โดย ' . $userName . ' แล้ว',
+                'message' => 'คืนงานไปหน้าจ่ายงานแล้ว — ไปจ่ายให้คนขับใหม่ได้ที่หน้าจ่ายงานขนส่ง',
             ]);
         }
 

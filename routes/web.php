@@ -487,6 +487,11 @@ Route::get('/shelfsale/data', [ShelfsaleController::class, 'data'])->name('shelf
 Route::post('/shelfsale/move',     [StoreController::class, 'shelfsaleMove'])->name('shelfsale.move');
 Route::post('/shelfsale/checkout', [StoreController::class, 'shelfsaleCheckout'])->name('shelfsale.checkout');
 
+use App\Http\Controllers\WrongBillController;
+Route::get('/wrongbill',       [WrongBillController::class, 'index']);
+Route::get('/wrongbill/data',  [WrongBillController::class, 'data'])->name('wrongbill.data');
+Route::post('/wrongbill/solve',[WrongBillController::class, 'solve'])->name('wrongbill.solve');
+
 Route::get('/dashboardmanual', function () {
     return view('manual.dashboardmanual');
 });

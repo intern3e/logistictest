@@ -251,19 +251,6 @@ a { color: inherit; text-decoration: none; }
   <button type="button" class="act" style="background:rgba(255,255,255,.15);color:#fff;border:none;" onclick="clearBulk()">ล้างเลือก</button>
 </div>
 
-<!-- Modal ส่งวันใหม่ (ปฏิทิน) -->
-<div class="modal-overlay" id="redoModal" onclick="if(event.target===this)closeRedo()">
-  <div class="modal-box">
-    <div class="modal-title" id="redoTitle">ส่งวันใหม่</div>
-    <p class="modal-sub">เลือกวันที่จะส่งใหม่ ระบบจะบันทึกผู้จ่ายงานเป็นชื่อของคุณอัตโนมัติ</p>
-    <label class="modal-label" for="redoDate">วันที่ส่งใหม่</label>
-    <input type="date" id="redoDate" class="modal-date">
-    <div class="modal-actions">
-      <button type="button" class="btn" onclick="closeRedo()">ยกเลิก</button>
-      <button type="button" class="btn btn-primary" id="redoConfirmBtn" onclick="submitRedo()">ยืนยันเปลี่ยนวันที่</button>
-    </div>
-  </div>
-</div>
 
 <div class="toast-wrap" id="toastWrap"></div>
 
@@ -408,7 +395,7 @@ function render(){
     } else {
       actions = `<button type="button" class="act ok"    onclick="doAction(${i},'ok')">สำเร็จ</button>
          <button type="button" class="act hold"  onclick="doAction(${i},'hold')">ค้างบิล</button>
-         <button type="button" class="act redo"  onclick="doRedo(${i})">ส่งวันใหม่</button>
+         <button type="button" class="act redo"  onclick="doRedo(${i})">ส่งใหม่ (จ่ายงานใหม่)</button>
          <button type="button" class="act wrong" onclick="toggleWrong(${i})">สินค้าผิด</button>`;
     }
 
@@ -480,37 +467,16 @@ async function submitWrong(i){
   }catch(e){ toast('ผิดพลาด: '+e.message, true); }
 }
 
-let _redoIndex = null;
-function doRedo(i){
+// ส่งใหม่ = คืนงานกลับไปหน้าจ่ายงานขนส่ง (deliverytrack) เพื่อจ่ายให้คนขับใหม่ (ไม่ต้องเลือกวันที่แล้ว)
+async function doRedo(i){
   const r = currentRows[i];
   if(!r) return;
-  _redoIndex = i;
-  document.getElementById('redoTitle').textContent = `ส่งวันใหม่ — บิล ${r.bill_no}`;
-  const dp = document.getElementById('redoDate');
-  dp.value = new Date().toISOString().split('T')[0];
-  document.getElementById('redoModal').classList.add('open');
-  setTimeout(()=>{ try{ dp.focus(); dp.showPicker && dp.showPicker(); }catch(e){} }, 60);
-}
-function closeRedo(){
-  document.getElementById('redoModal').classList.remove('open');
-  _redoIndex = null;
-}
-async function submitRedo(){
-  if(_redoIndex === null) return;
-  const r = currentRows[_redoIndex];
-  const d = (document.getElementById('redoDate').value || '').trim();
-  if(!/^\d{4}-\d{2}-\d{2}$/.test(d)){ toast('กรุณาเลือกวันที่ให้ถูกต้อง', true); return; }
-  const [y,m,dd] = d.split('-');
-  if(!confirm(`ยืนยันเปลี่ยนวันที่ส่งบิล ${r.bill_no} เป็น ${dd}/${m}/${y} ใช่หรือไม่?`)) return;
-  const btn = document.getElementById('redoConfirmBtn');
-  btn.disabled = true;
+  if(!confirm(`ส่งบิล ${r.bill_no} ใหม่?\nงานจะถูกคืนกลับไปหน้าจ่ายงานขนส่ง เพื่อจ่ายให้คนขับใหม่ (เลือกวัน/คนขับที่นั่น)`)) return;
   try{
-    const data = await postConfirm({ job_key:r.job_key, action:'redo', redo_date:d, tx_ids:r.tx_ids });
-    toast(data.message || 'บันทึกส่งใหม่เรียบร้อย');
-    closeRedo();
+    const data = await postConfirm({ job_key:r.job_key, action:'redo', tx_ids:r.tx_ids });
+    toast(data.message || 'คืนงานไปจ่ายงานใหม่แล้ว');
     loadData();
   }catch(e){ toast('ผิดพลาด: '+e.message, true); }
-  finally{ btn.disabled = false; }
 }
 
 document.getElementById('btnSearch').addEventListener('click', loadData);
