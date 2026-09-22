@@ -340,10 +340,8 @@ class DeliverytrackController extends Controller
                 if (!empty($billMatchIds)) $q->orWhereIn('bill_id', $billMatchIds);
             });
         } elseif (filled($date)) {
-            // ส่งของ (บิล/บิลชั่วคราว) ดูจาก delivery_date, รับเอง (po) ดูจาก time_pick → ดึงที่ตรงอย่างใดอย่างหนึ่งก่อน
-            $query->where(function ($q) use ($date) {
-                $q->whereDate('delivery_date', $date)->orWhereDate('time_pick', $date);
-            });
+            // ทุกงาน (ส่งของ/บิลชั่วคราว/รับเอง) ใช้ delivery_date เป็นหลัก
+            $query->whereDate('delivery_date', $date);
         }
 
         $boxesByDate = $this->summaryBoxesByDate($query->get());
@@ -365,26 +363,14 @@ class DeliverytrackController extends Controller
 
     /**
      * จัดกลุ่ม transaction_delivery เป็น boxes ต่อ "วันที่ที่ถูกต้องตามประเภทงาน"
-     *   - ส่งของ (บิล/บิลชั่วคราว) → ใช้ delivery_date
-     *   - รับเอง (po) → ใช้ time_pick
+     *   ทุกงาน (ส่งของ/บิลชั่วคราว/รับเอง) → ใช้ delivery_date
      */
     private function summaryBoxesByDate($deliveries): array
     {
         if ($deliveries->isEmpty()) return [];
 
-        $ids = $deliveries->pluck('bill_id')->unique();
-        // id ที่เป็นงานส่งของ (บิล/บิลชั่วคราว) — ที่เหลือถือเป็นงานรับเอง (po)
-        $billKeys = Bill::whereIn('so_detail_id', $ids)->pluck('so_detail_id')->map(fn ($v) => (string) $v)->flip();
-        $docKeys  = Docbills::whereIn('doc_id', $ids)->pluck('doc_id')->map(fn ($v) => (string) $v)->flip();
-
-        $grouped = $deliveries->groupBy(function ($d) use ($billKeys, $docKeys) {
-            $id = (string) $d->bill_id;
-            $isDelivery = $billKeys->has($id) || $docKeys->has($id);
-            if ($isDelivery) {
-                return $d->delivery_date ? Carbon::parse($d->delivery_date)->format('Y-m-d') : 'ไม่ระบุวันที่';
-            }
-            // งานรับเอง → ยึด time_pick เป็นวันที่
-            return $d->time_pick ? Carbon::parse($d->time_pick)->format('Y-m-d') : 'ไม่ระบุวันที่';
+        $grouped = $deliveries->groupBy(function ($d) {
+            return $d->delivery_date ? Carbon::parse($d->delivery_date)->format('Y-m-d') : 'ไม่ระบุวันที่';
         });
 
         $boxesByDate = [];

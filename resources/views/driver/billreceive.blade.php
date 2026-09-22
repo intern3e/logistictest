@@ -216,13 +216,39 @@ a { color: inherit; text-decoration: none; }
       <label for="fBill">ค้นหาเลขบิล (ไม่สนวันที่)</label>
       <input type="text" id="fBill" placeholder="เช่น 46909-02085" autocomplete="off">
     </div>
+    <div class="fg">
+      <label for="fCust">รหัสลูกค้า</label>
+      <input type="text" id="fCust" placeholder="เช่น CUS-16026" autocomplete="off">
+    </div>
+    <div class="fg">
+      <label for="fCustName">ชื่อลูกค้า</label>
+      <input type="text" id="fCustName" placeholder="พิมพ์ชื่อลูกค้า" autocomplete="off">
+    </div>
+    <div class="fg">
+      <label for="fStatus">สถานะบิล</label>
+      <select id="fStatus" style="height:38px;padding:0 10px;border:1px solid var(--line);border-radius:8px;font-family:inherit;font-size:13px;">
+        <option value="">ทั้งหมด</option>
+        <option value="pending">รอส่ง / ค้าง</option>
+        <option value="ok">สำเร็จ</option>
+        <option value="hold">ค้างบิล</option>
+        <option value="wrong">สินค้าผิด</option>
+      </select>
+    </div>
     <button type="button" class="btn btn-primary" id="btnSearch">ค้นหา</button>
     <button type="button" class="btn" id="btnClear">ล้าง</button>
-    <span class="hint">ค้นเลขบิลจะไม่สนใจวันที่ที่เลือก</span>
+    <span class="hint">ค้นเลขบิลจะไม่สนใจวันที่ · รหัส/ชื่อลูกค้า/สถานะ กรองในรายการที่โหลดมา</span>
   </div>
 
   <div class="count-bar" id="countBar"></div>
   <div id="list"></div>
+</div>
+
+<!-- แถบเลือกหลายรายการ (bulk) -->
+<div id="bulkBar" style="display:none;position:fixed;left:50%;bottom:20px;transform:translateX(-50%);z-index:900;background:#0f172a;color:#fff;border-radius:30px;box-shadow:0 10px 25px -5px rgba(0,0,0,.3);padding:10px 18px;display:none;align-items:center;gap:12px;">
+  <span>เลือก <b id="bulkCount">0</b> รายการ</span>
+  <button type="button" class="act ok" onclick="bulkSetStatus('ok')">สำเร็จ</button>
+  <button type="button" class="act hold" onclick="bulkSetStatus('hold')">ค้างบิล</button>
+  <button type="button" class="act" style="background:rgba(255,255,255,.15);color:#fff;border:none;" onclick="clearBulk()">ล้างเลือก</button>
 </div>
 
 <!-- Modal ส่งวันใหม่ (ปฏิทิน) -->
@@ -275,6 +301,56 @@ function statusInfo(st){
 function isReceived(r){ return ['จัดส่งสำเร็จ','ค้างบิล','สินค้าผิด'].includes(((r&&r.status)||'').trim()); }
 
 let currentRows = [];
+let selectedBulk = new Set();   // เก็บ index (ของ currentRows) ที่ติ๊กเลือกไว้
+
+// map สถานะจริง -> key สำหรับ filter
+function statusKey(r){
+  const s = ((r&&r.status)||'').trim();
+  if(s === 'จัดส่งสำเร็จ') return 'ok';
+  if(s === 'ค้างบิล')     return 'hold';
+  if(s === 'สินค้าผิด')    return 'wrong';
+  return 'pending';   // รอส่ง / ส่งใหม่
+}
+
+// กรอง client-side: รหัสลูกค้า / ชื่อลูกค้า / สถานะ — คืน [{r, i}] (i = index จริงใน currentRows)
+function getFilteredRows(){
+  const cust  = (document.getElementById('fCust').value||'').trim().toLowerCase();
+  const cname = (document.getElementById('fCustName').value||'').trim().toLowerCase();
+  const st    = document.getElementById('fStatus').value;
+  return currentRows.map((r,i)=>({r,i})).filter(({r})=>{
+    if(cust  && !((r.customer_code||'').toLowerCase().includes(cust)))  return false;
+    if(cname && !((r.customer_name||'').toLowerCase().includes(cname))) return false;
+    if(st    && statusKey(r) !== st) return false;
+    return true;
+  });
+}
+
+function toggleBulk(i, checked){ if(checked) selectedBulk.add(i); else selectedBulk.delete(i); updateBulkBar(); }
+function clearBulk(){ selectedBulk.clear(); render(); }
+function updateBulkBar(){
+  const bar = document.getElementById('bulkBar');
+  document.getElementById('bulkCount').textContent = selectedBulk.size;
+  bar.style.display = selectedBulk.size ? 'flex' : 'none';
+}
+async function bulkSetStatus(action){
+  const idxs = Array.from(selectedBulk);
+  if(!idxs.length) return;
+  const label = action==='ok' ? 'สำเร็จ' : 'ค้างบิล';
+  if(!confirm(`ยืนยันตั้งสถานะ "${label}" ให้ ${idxs.length} รายการที่เลือก?`)) return;
+  let okN=0, failN=0;
+  for(const i of idxs){
+    const r = currentRows[i];
+    if(!r) continue;
+    try{
+      const data = await postConfirm({ job_key:r.job_key, action, tx_ids:r.tx_ids });
+      r.status = data.status; r.check_name = data.check_name; r.check_time = data.check_time;
+      okN++;
+    }catch(e){ failN++; }
+  }
+  selectedBulk.clear();
+  toast(`ตั้งสถานะสำเร็จ ${okN} รายการ${failN?` · ล้มเหลว ${failN}`:''}`, failN>0);
+  render();
+}
 
 async function loadData(){
   const q = fBill.value.trim();
@@ -288,6 +364,7 @@ async function loadData(){
     const data = await res.json();
     if(!res.ok || !data.ok){ throw new Error(data.message || 'โหลดข้อมูลไม่สำเร็จ'); }
     currentRows = data.rows || [];
+    selectedBulk.clear();
     render();
   }catch(e){
     listEl.innerHTML = `<div class="state">เกิดข้อผิดพลาด: ${esc(e.message)}</div>`;
@@ -295,15 +372,17 @@ async function loadData(){
 }
 
 function render(){
-  if(!currentRows.length){
-    listEl.innerHTML = '<div class="state">ไม่พบรายการงานในระบบ</div>';
+  const rows = getFilteredRows();
+  if(!rows.length){
+    listEl.innerHTML = '<div class="state">ไม่พบรายการตามเงื่อนไข</div>';
     countBar.textContent = '';
+    updateBulkBar();
     return;
   }
-  const doneN = currentRows.filter(isReceived).length;
-  countBar.innerHTML = `พบทั้งหมด <b>${currentRows.length}</b> บิล · รับเข้าแล้ว <b>${doneN}</b> · คงเหลือ <b>${currentRows.length-doneN}</b>`;
+  const doneN = rows.filter(({r})=>isReceived(r)).length;
+  countBar.innerHTML = `แสดง <b>${rows.length}</b> บิล · รับเข้าแล้ว <b>${doneN}</b> · คงเหลือ <b>${rows.length-doneN}</b>`;
 
-  listEl.innerHTML = currentRows.map((r,i)=>{
+  listEl.innerHTML = rows.map(({r,i})=>{
     const si = statusInfo(r.status);
     const typeLabel = r.type==='doc' ? 'บิลชั่วคราว'
                     : (r.type==='private' ? 'บิล · ขนส่งเอกชน' : 'บิล · ส่งโดยบริษัท');
@@ -318,9 +397,11 @@ function render(){
     const redispatched = !received && !!r.redispatched_to;   // ถูกจ่ายใหม่ไปวันหลังแล้ว
     let actions;
     if(received){
-      // รับเข้าแล้ว -> เปลี่ยนวันส่งไม่ได้ ไม่มีปุ่ม สีตามสถานะ (สำเร็จ=เขียว, ค้างบิล=ฟ้า, สินค้าผิด=แดง+หมายเหตุ)
+      // รับเข้าแล้ว -> แสดงผลตามสถานะ + ให้กลับมากด "สำเร็จ" ได้ (เช่น ค้างบิล/สินค้าผิด -> เปลี่ยนเป็นสำเร็จภายหลัง)
       const noteLine = (r.note && si.cls==='wrong') ? `<br>หมายเหตุ: ${esc(r.note)}` : '';
-      actions = `<div class="job-result ${si.cls}">✓ รับเข้าแล้ว: ${esc(si.txt)}<br>โดย ${esc(r.check_name||'-')}${r.check_time?' · เมื่อ '+esc(r.check_time):''}${noteLine}</div>`;
+      const canReSuccess = (((r.status||'').trim()) !== 'จัดส่งสำเร็จ');
+      actions = `<div class="job-result ${si.cls}">รับเข้าแล้ว: ${esc(si.txt)}<br>โดย ${esc(r.check_name||'-')}${r.check_time?' · เมื่อ '+esc(r.check_time):''}${noteLine}</div>`
+        + (canReSuccess ? `<button type="button" class="act ok" style="margin-top:6px;" onclick="doAction(${i},'ok')">เปลี่ยนเป็นสำเร็จ</button>` : '');
     } else if(redispatched){
       // งานต้นทางที่ถูกจ่ายใหม่ไปวันอื่นแล้ว -> ไม่มีปุ่ม แสดงว่าย้ายไปวันไหน
       actions = `<div class="job-redispatched">↻ ถูกจ่ายใหม่ให้ไปวันที่ ${esc(r.redispatched_to)} แล้ว</div>`;
@@ -331,7 +412,11 @@ function render(){
          <button type="button" class="act wrong" onclick="toggleWrong(${i})">สินค้าผิด</button>`;
     }
 
+    const chk = !redispatched
+      ? `<input type="checkbox" class="job-chk" ${selectedBulk.has(i)?'checked':''} onchange="toggleBulk(${i},this.checked)" title="เลือกเพื่อตั้งสถานะพร้อมกัน" style="width:20px;height:20px;align-self:center;margin-right:4px;cursor:pointer;flex-shrink:0;">`
+      : '';
     return `<div class="job type-${r.type} ${received||redispatched?'done':''}" id="job-${i}">
+      ${chk}
       <div class="job-main">
         <div class="job-line1">
           <span class="job-type">${esc(typeLabel)}</span>
@@ -429,9 +514,16 @@ async function submitRedo(){
 }
 
 document.getElementById('btnSearch').addEventListener('click', loadData);
-document.getElementById('btnClear').addEventListener('click', ()=>{ fBill.value=''; fDate.value = new Date().toISOString().split('T')[0]; loadData(); });
+document.getElementById('btnClear').addEventListener('click', ()=>{
+  fBill.value=''; fDate.value = new Date().toISOString().split('T')[0];
+  document.getElementById('fCust').value=''; document.getElementById('fCustName').value=''; document.getElementById('fStatus').value='';
+  loadData();
+});
 fBill.addEventListener('keydown', e=>{ if(e.key==='Enter') loadData(); });
 fDate.addEventListener('change', ()=>{ if(fBill.value.trim()==='') loadData(); });
+// filter รหัส/ชื่อลูกค้า/สถานะ = กรอง client-side (render ทันที ไม่ต้องโหลดใหม่)
+['fCust','fCustName'].forEach(id => document.getElementById(id).addEventListener('input', render));
+document.getElementById('fStatus').addEventListener('change', render);
 
 document.addEventListener('DOMContentLoaded', ()=>{
   fDate.value = new Date().toISOString().split('T')[0];

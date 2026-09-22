@@ -1047,7 +1047,10 @@ class StoreController extends Controller
     {
         $authUser = $this->resolveSsoUser($request, 'store.checkout');
 
-        if (!in_array($authUser->role, ['admin', 'stock', 'store'], true)) {
+        // อนุญาต: role admin/stock/store หรือ ผู้ใช้เฉพาะบุคคล (JOYINDY, jun, Aom, ลัดดา)
+        $allowedNames = ['joyindy', 'jun', 'aom', 'ลัดดา'];
+        $userName = strtolower(trim((string) ($authUser->name ?? '')));
+        if (!in_array($authUser->role, ['admin', 'stock', 'store'], true) && !in_array($userName, $allowedNames, true)) {
             abort(403, 'คุณไม่มีสิทธิ์เข้าใช้งานหน้านี้');
         }
 

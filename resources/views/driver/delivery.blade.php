@@ -1581,11 +1581,10 @@ function isPickupOnlySelection() {
     return selected.length > 0 && selected.every(cb => cb.value.startsWith('po:'));
 }
 
-// รับของเอง = ซ่อนช่องวันที่ทั้งหมด (ไม่ต้องกรอก), งานอื่น = แสดงตามปกติ
+// แสดงช่องวันที่เสมอ — รับของเองก็เลือกวันที่จัดส่งได้ เก็บเข้า delivery_date เหมือนงานส่งของ
 function configureDeliveryDateField() {
-    const pickupOnly = isPickupOnlySelection();
     const group = document.getElementById('deliveryDateGroup');
-    if (group) group.style.display = pickupOnly ? 'none' : '';
+    if (group) group.style.display = '';
 }
 
 function setupAutocomplete(inputEl, listEl, options) {
