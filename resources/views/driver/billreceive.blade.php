@@ -104,17 +104,27 @@ a { color: inherit; text-decoration: none; }
   transition: all 0.2s ease;
 }
 .job:hover { border-color: #cbd5e1; box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.04); }
-.job.done { opacity: 0.78; background: #fafafa; border-style: dashed; }
+.job.done { opacity: 0.78; border-style: dashed; }
+/* บล็อคพื้นหลังตามประเภทบิล (ประกาศหลัง .done เพื่อให้สีชนะแม้การ์ดถูก dim) */
+.job.type-company, .job.type-private { background: #1e40af; border-color: #1a3894; }
+.job.type-company .job-bill, .job.type-private .job-bill,
+.job.type-company .job-cust, .job.type-private .job-cust { color: #ffffff; }
+.job.type-company .job-type, .job.type-private .job-type { color: #c7d2fe; }
+.job.type-company .job-meta, .job.type-private .job-meta { color: #c7d2fe; }
+.job.type-company .job-meta .mi b, .job.type-private .job-meta .mi b { color: #e0e7ff; }
+.job.type-company .job-actions, .job.type-private .job-actions { border-left-color: rgba(255,255,255,0.22); }
+.job.type-doc { background: rgb(255, 247, 237); border-color: #f5e0cf; }
 .job-main { flex: 1 1 380px; min-width: 280px; }
 
 .job-line1 { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-bottom: 6px; }
+.job-type { font-size: 12.5px; font-weight: 600; color: var(--ink3); }
 .job-bill { font-weight: 700; font-size: 16px; color: var(--ink); }
 .job-code { font-family: var(--font-mono); font-size: 12px; color: var(--primary); background: var(--primary-light); padding: 3px 9px; border-radius: 6px; font-weight: 600; }
 
 .badge { font-size: 11.5px; font-weight: 700; padding: 4px 10px; border-radius: 30px; letter-spacing: 0.3px; }
 .badge.pending { background: var(--line-light); color: var(--ink3); border: 1px solid var(--line); }
 .badge.ok { background: var(--green-l); color: var(--green-d); }
-.badge.hold { background: var(--amber-l); color: var(--amber-d); }
+.badge.hold { background: var(--primary-light); color: var(--primary); }   /* ค้างบิล = สีฟ้า */
 .badge.wrong { background: var(--red-l); color: var(--red-d); }
 
 .job-cust { font-size: 14.5px; color: var(--ink2); font-weight: 600; margin-bottom: 10px; }
@@ -142,7 +152,13 @@ a { color: inherit; text-decoration: none; }
 .act.redo:hover:not(:disabled) { background: var(--primary-hover); }
 .act.wrong { background: var(--red); }
 .act.wrong:hover:not(:disabled) { background: var(--red-d); }
-.job-confirmed { font-size: 12.5px; color: var(--green-d); font-weight: 600; align-self: center; background: var(--green-l); padding: 6px 12px; border-radius: 8px; display: inline-flex; align-items: center; gap: 6px; }
+.job-confirmed { font-size: 12.5px; color: var(--green-d); font-weight: 600; align-self: center; background: var(--green-l); padding: 8px 14px; border-radius: 8px; line-height: 1.5; text-align: left; }
+/* กล่องผลรับเข้า สีตามสถานะ */
+.job-result { font-size: 12.5px; font-weight: 600; align-self: center; padding: 8px 14px; border-radius: 8px; line-height: 1.5; text-align: left; }
+.job-result.ok { color: var(--green-d); background: var(--green-l); }
+.job-result.hold { color: var(--primary); background: var(--primary-light); }      /* ค้างบิล = ฟ้า */
+.job-result.wrong { color: var(--red-d); background: var(--red-l); }                 /* สินค้าผิด = แดง */
+.job-redispatched { font-size: 12.5px; color: var(--amber-d); font-weight: 600; align-self: center; background: var(--amber-l); padding: 8px 14px; border-radius: 8px; line-height: 1.5; text-align: left; }
 
 /* Wrong Box form toggle */
 .wrong-box { flex: 1 1 100%; display: none; gap: 10px; margin-top: 12px; padding-top: 12px; border-top: 1px dashed var(--line); align-items: center; flex-wrap: wrap; }
@@ -261,6 +277,9 @@ function statusInfo(st){
   return {cls:'pending', txt:'รอส่ง'};
 }
 
+// "รับเข้าแล้ว" = สถานะเป็นผลจริง (สำเร็จ/ค้างบิล/สินค้าผิด) เท่านั้น — ไม่ดูแค่ check_time
+function isReceived(r){ return ['จัดส่งสำเร็จ','ค้างบิล','สินค้าผิด'].includes(((r&&r.status)||'').trim()); }
+
 let currentRows = [];
 
 async function loadData(){
@@ -287,7 +306,7 @@ function render(){
     countBar.textContent = '';
     return;
   }
-  const doneN = currentRows.filter(r=>r.confirmed).length;
+  const doneN = currentRows.filter(isReceived).length;
   countBar.innerHTML = `พบทั้งหมด <b>${currentRows.length}</b> บิล · รับเข้าแล้ว <b>${doneN}</b> · คงเหลือ <b>${currentRows.length-doneN}</b>`;
 
   listEl.innerHTML = currentRows.map((r,i)=>{
@@ -295,29 +314,37 @@ function render(){
     const typeLabel = r.type==='doc' ? 'บิลชั่วคราว'
                     : (r.type==='private' ? 'บิล · ขนส่งเอกชน' : 'บิล · ส่งโดยบริษัท');
     const meta = [];
-    if(r.so_id)        meta.push(`<span class="mi"><b>SO</b> ${esc(r.so_id)}</span>`);
-    meta.push(`<span class="mi"><b>ผู้จ่ายงาน</b> ${esc(r.name_pick||'-')}</span>`);
-    if(r.time_pick)    meta.push(`<span class="mi"><b>จ่ายเมื่อ</b> ${esc(r.time_pick)}</span>`);
-    if(r.driver_name)  meta.push(`<span class="mi"><b>คนขับ</b> ${esc(r.driver_name)}</span>`);
+    if(r.driver_name)   meta.push(`<span class="mi"><b>คนขับ</b> ${esc(r.driver_name)}</span>`);
     if(r.transport_name)meta.push(`<span class="mi"><b>ขนส่ง</b> ${esc(r.transport_name)}</span>`);
     if(r.delivery_date) meta.push(`<span class="mi"><b>วันส่ง</b> ${esc(r.delivery_date)}</span>`);
+    meta.push(`<span class="mi"><b>ผู้จ่ายงาน</b> ${esc(r.name_pick||'-')}</span>`);
+    if(r.time_pick)     meta.push(`<span class="mi"><b>จ่ายเมื่อ</b> ${esc(r.time_pick)}</span>`);
 
-    const actions = r.confirmed
-      ? `<div class="job-confirmed">✓ ${esc(si.txt)} · ${esc(r.check_name||'-')}${r.check_time?' ('+esc(r.check_time)+')':''}</div>
-         <button type="button" class="act redo" onclick="doRedo(${i})">ส่งวันใหม่</button>`
-      : `<button type="button" class="act ok"    onclick="doAction(${i},'ok')">สำเร็จ</button>
+    const received = isReceived(r);
+    const redispatched = !received && !!r.redispatched_to;   // ถูกจ่ายใหม่ไปวันหลังแล้ว
+    let actions;
+    if(received){
+      // รับเข้าแล้ว -> เปลี่ยนวันส่งไม่ได้ ไม่มีปุ่ม สีตามสถานะ (สำเร็จ=เขียว, ค้างบิล=ฟ้า, สินค้าผิด=แดง+หมายเหตุ)
+      const noteLine = (r.note && si.cls==='wrong') ? `<br>หมายเหตุ: ${esc(r.note)}` : '';
+      actions = `<div class="job-result ${si.cls}">✓ รับเข้าแล้ว: ${esc(si.txt)}<br>โดย ${esc(r.check_name||'-')}${r.check_time?' · เมื่อ '+esc(r.check_time):''}${noteLine}</div>`;
+    } else if(redispatched){
+      // งานต้นทางที่ถูกจ่ายใหม่ไปวันอื่นแล้ว -> ไม่มีปุ่ม แสดงว่าย้ายไปวันไหน
+      actions = `<div class="job-redispatched">↻ ถูกจ่ายใหม่ให้ไปวันที่ ${esc(r.redispatched_to)} แล้ว</div>`;
+    } else {
+      actions = `<button type="button" class="act ok"    onclick="doAction(${i},'ok')">สำเร็จ</button>
          <button type="button" class="act hold"  onclick="doAction(${i},'hold')">ค้างบิล</button>
          <button type="button" class="act redo"  onclick="doRedo(${i})">ส่งวันใหม่</button>
          <button type="button" class="act wrong" onclick="toggleWrong(${i})">สินค้าผิด</button>`;
+    }
 
-    return `<div class="job ${r.confirmed?'done':''}" id="job-${i}">
+    return `<div class="job type-${r.type} ${received||redispatched?'done':''}" id="job-${i}">
       <div class="job-main">
         <div class="job-line1">
-          <span class="job-bill">${esc(typeLabel)} ${esc(r.bill_no||'-')}</span>
+          <span class="job-type">${esc(typeLabel)}</span>
           ${r.customer_code?`<span class="job-code">${esc(r.customer_code)}</span>`:''}
-          <span class="badge ${si.cls}">${esc(si.txt)}</span>
+          <span class="job-bill">${esc(r.bill_no||'-')}</span>
         </div>
-        <div class="job-cust">${esc(r.customer_name||'-')}</div>
+        <div class="job-cust">${r.so_id?`<b>SO ${esc(r.so_id)}</b> · `:''}${esc(r.customer_name||'-')}</div>
         <div class="job-meta">${meta.join('')}</div>
         ${r.note?`<div class="job-note">หมายเหตุ: ${esc(r.note)}</div>`:''}
         <div class="wrong-box" id="wrong-${i}">
@@ -353,9 +380,9 @@ async function doAction(i, action){
   const labels = {ok:'สำเร็จ', hold:'ค้างบิล'};
   if(!confirm(`ยืนยันบันทึกสถานะ "${labels[action]}" สำหรับบิล ${r.bill_no}?`)) return;
   try{
-    const data = await postConfirm({ job_key:r.job_key, action });
+    const data = await postConfirm({ job_key:r.job_key, action, tx_ids:r.tx_ids });
     toast(data.message || 'บันทึกข้อมูลเรียบร้อย');
-    r.confirmed = true; r.status = data.status; r.check_name = data.check_name; r.check_time = data.check_time;
+    r.status = data.status; r.check_name = data.check_name; r.check_time = data.check_time;
     render();
   }catch(e){ toast('ผิดพลาด: '+e.message, true); }
 }
@@ -367,9 +394,9 @@ async function submitWrong(i){
   if(!note){ toast('กรุณากรอกหมายเหตุสินค้าผิด', true); return; }
   if(!confirm(`ยืนยันบันทึก "สินค้าผิด" สำหรับบิล ${r.bill_no}?`)) return;
   try{
-    const data = await postConfirm({ job_key:r.job_key, action:'wrong', note });
+    const data = await postConfirm({ job_key:r.job_key, action:'wrong', note, tx_ids:r.tx_ids });
     toast(data.message || 'บันทึกข้อมูลเรียบร้อย');
-    r.confirmed = true; r.status = data.status; r.check_name = data.check_name; r.check_time = data.check_time; r.note = note;
+    r.status = data.status; r.check_name = data.check_name; r.check_time = data.check_time; r.note = note;
     render();
   }catch(e){ toast('ผิดพลาด: '+e.message, true); }
 }
@@ -399,7 +426,7 @@ async function submitRedo(){
   const btn = document.getElementById('redoConfirmBtn');
   btn.disabled = true;
   try{
-    const data = await postConfirm({ job_key:r.job_key, action:'redo', redo_date:d });
+    const data = await postConfirm({ job_key:r.job_key, action:'redo', redo_date:d, tx_ids:r.tx_ids });
     toast(data.message || 'บันทึกส่งใหม่เรียบร้อย');
     closeRedo();
     loadData();

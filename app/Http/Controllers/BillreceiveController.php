@@ -99,6 +99,12 @@ class BillreceiveController extends Controller
 
         $ids = $deliveries->pluck('bill_id')->filter()->unique()->values();
 
+        // time_pick ล่าสุดของแต่ละ bill_id (ทุกวัน) — ใช้ตรวจว่างานถูก "จ่ายใหม่" ไปวันหลังแล้วหรือยัง
+        $latestByBill = transaction_delivery::whereIn('bill_id', $ids)
+            ->get(['bill_id', 'time_pick'])
+            ->groupBy('bill_id')
+            ->map(function ($g) { return $g->max('time_pick'); });
+
         // resolve เลขบิล/ลูกค้า จาก 3 แหล่ง
         $billsBySoDetail = Bill::whereIn('so_detail_id', $ids)
             ->get(['so_detail_id', 'billid', 'so_id', 'customer_id', 'customer_name', 'transport_type'])
@@ -134,9 +140,14 @@ class BillreceiveController extends Controller
                 continue;
             }
 
-            if (!isset($grouped[$key])) {
-                $grouped[$key] = [
-                    'job_key'       => $key,
+            // แยกเป็น 1 แถวต่อ "รอบจ่าย" (bill + วันที่ time_pick) — งานที่ถูกจ่ายใหม่ไปวันอื่น
+            // จะเป็นคนละแถว ทำให้ค้นเลขบิลแล้วเห็นทั้งงานเดิม(ที่ถูกจ่ายใหม่) และงานใหม่(พร้อมผล)
+            $dispatchDate = optional($d->time_pick)->format('Y-m-d') ?: 'nodate';
+            $groupKey     = $key . '|' . $dispatchDate;
+
+            if (!isset($grouped[$groupKey])) {
+                $grouped[$groupKey] = [
+                    'job_key'       => $key,   // ใช้ resolve tblbill/docbills (ระดับบิล)
                     'type'          => $type,
                     'bill_no'       => $no,
                     'so_id'         => $soId,
@@ -145,15 +156,27 @@ class BillreceiveController extends Controller
                     '_rows'         => collect(),
                 ];
             }
-            $grouped[$key]['_rows']->push($d);
+            $grouped[$groupKey]['_rows']->push($d);
         }
 
-        $rows = collect($grouped)->map(function ($g) {
+        $rows = collect($grouped)->map(function ($g) use ($latestByBill) {
             $rowsCol = $g['_rows'];
             // ใช้แถวล่าสุด (time_pick) เป็นตัวแทนข้อมูลการจ่ายงาน/สถานะ
             $first = $rowsCol->sortByDesc('time_pick')->first();
+
+            // ตรวจว่างานนี้ถูกจ่ายใหม่ไปวันหลังหรือยัง (มีแถว time_pick ใหม่กว่าตัวแทน)
+            $repTime = $first->time_pick;
+            $reTo = null;
+            foreach ($rowsCol->pluck('bill_id')->unique() as $bid) {
+                $latest = $latestByBill->get($bid);
+                if ($latest && $repTime && $latest->gt($repTime)) {
+                    if (!$reTo || $latest->gt($reTo)) $reTo = $latest;
+                }
+            }
+
             return [
                 'job_key'        => $g['job_key'],
+                'tx_ids'         => $rowsCol->pluck('id')->values()->all(),   // id ของรอบจ่ายนี้เท่านั้น
                 'type'           => $g['type'],
                 'bill_no'        => $g['bill_no'],
                 'so_id'          => $g['so_id'],
@@ -169,7 +192,15 @@ class BillreceiveController extends Controller
                 'check_name'     => (string) ($first->check_name ?? ''),
                 'check_time'     => optional($first->check_time)->format('Y-m-d H:i'),
                 'confirmed'      => !empty($first->check_time),
+                'redispatched_to'=> $reTo ? $reTo->format('Y-m-d') : null,   // ถูกจ่ายใหม่ไปวันที่ ...
             ];
+        })->values();
+
+        // เรียง: จัดกลุ่มตามขนส่ง (transport_name) ให้อยู่ติดกัน -> แล้วตามบิล -> รอบจ่าย (เก่าก่อน)
+        // ขนส่งว่างดันไปท้ายสุด
+        $rows = $rows->sortBy(function ($r) {
+            $t = trim((string) $r['transport_name']);
+            return ($t === '' ? '1|' : '0|' . $t) . '||' . $r['bill_no'] . '|' . ($r['time_pick'] ?? '');
         })->values();
 
         return response()->json(['ok' => true, 'rows' => $rows]);
@@ -190,6 +221,8 @@ class BillreceiveController extends Controller
             'action'    => 'required|string|in:ok,hold,wrong,redo',
             'note'      => 'nullable|string|max:1000',
             'redo_date' => 'nullable|date',
+            'tx_ids'    => 'nullable|array',       // id ของ "รอบจ่าย" ที่จะทำ (ไม่กระทบรอบอื่น)
+            'tx_ids.*'  => 'integer',
         ]);
 
         [$type, $rawId] = array_pad(explode(':', $validated['job_key'], 2), 2, null);
@@ -197,11 +230,14 @@ class BillreceiveController extends Controller
             return response()->json(['ok' => false, 'message' => 'รูปแบบงานไม่ถูกต้อง'], 422);
         }
 
-        // หา transaction_transport ที่เกี่ยวข้องกับบิลนี้
-        $billid = null;
-        if ($type === 'bill') {
-            $billid = $rawId;
-            $soIds  = Bill::where('billid', $billid)->pluck('so_detail_id');
+        // ระดับบิล (ใช้ update tblbill/docbills)
+        $billid = ($type === 'bill') ? $rawId : null;
+
+        // รายการที่จะทำ: ถ้าส่ง tx_ids มา -> เฉพาะรอบจ่ายนั้น ไม่งั้น fallback ทั้งบิล
+        if (!empty($validated['tx_ids'])) {
+            $deliveries = transaction_delivery::whereIn('id', $validated['tx_ids'])->get();
+        } elseif ($type === 'bill') {
+            $soIds = Bill::where('billid', $billid)->pluck('so_detail_id');
             if ($soIds->isEmpty()) {
                 return response()->json(['ok' => false, 'message' => 'ไม่พบเลขบิลนี้'], 404);
             }
@@ -216,30 +252,42 @@ class BillreceiveController extends Controller
         $userName = $this->userName($user);
         $now      = Carbon::now();
 
-        // ===== ส่งวันใหม่: เปลี่ยนผู้จ่ายงาน/วันจ่ายเป็นของผู้ล็อกอิน + วันที่เลือก =====
+        // ===== ส่งวันใหม่: สร้าง row ใหม่ (เหมือนระบบเก่า) ไม่แก้ row เดิม =====
         if ($validated['action'] === 'redo') {
             if (empty($validated['redo_date'])) {
                 return response()->json(['ok' => false, 'message' => 'กรุณาเลือกวันที่จะส่งใหม่'], 422);
             }
             $newDate = Carbon::parse($validated['redo_date']);
-            $newTime = $newDate->copy()->setTime((int) $now->format('H'), (int) $now->format('i'), 0);
+            $newTime = $newDate->copy()->setTime(9, 0, 0);   // เริ่ม 09:00 เหมือนระบบเก่า
 
-            DB::transaction(function () use ($deliveries, $userName, $newDate, $newTime) {
+            DB::transaction(function () use ($deliveries, $userName, $newTime) {
+                // 1 so_detail_id เดิม -> สร้างงานส่งใหม่ 1 แถว โดยผู้จ่ายงาน = ผู้ล็อกอิน
                 foreach ($deliveries as $d) {
-                    $d->name_pick     = $userName;
-                    $d->time_pick     = $newTime;
-                    $d->delivery_date = $newDate->toDateString();
-                    $d->status        = '0';   // กลับเป็นรอส่ง (ยังไม่ยืนยันผล)
-                    $d->check_name    = null;
-                    $d->check_time    = null;
-                    $d->save();
+                    $origDate = $d->delivery_date
+                        ? Carbon::parse($d->delivery_date)->format('Y-m-d')
+                        : (optional($d->time_pick)->format('Y-m-d') ?: '-');
+                    $note = 'มีการให้ไปส่งใหม่จาก วันที่ ' . $origDate
+                          . ' โดย ' . $userName . ' ' . $newTime->format('Y-m-d H:i:s');
+
+                    transaction_delivery::create([
+                        'bill_id'        => $d->bill_id,
+                        'name_pick'      => $userName,
+                        'time_pick'      => $newTime,
+                        'transport_name' => $d->transport_name,
+                        'driver_name'    => $d->driver_name,
+                        'delivery_date'  => null,
+                        'check_name'     => null,
+                        'check_time'     => null,
+                        'status'         => '0',
+                        'note'           => $note,
+                    ]);
                 }
             });
 
             return response()->json([
                 'ok'      => true,
                 'action'  => 'redo',
-                'message' => 'ส่งใหม่วันที่ ' . $newDate->format('d/m/Y') . ' โดย ' . $userName,
+                'message' => 'สร้างงานส่งใหม่วันที่ ' . $newDate->format('d/m/Y') . ' โดย ' . $userName . ' แล้ว',
             ]);
         }
 
