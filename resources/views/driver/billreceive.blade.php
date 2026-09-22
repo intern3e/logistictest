@@ -104,20 +104,14 @@ a { color: inherit; text-decoration: none; }
   transition: all 0.2s ease;
 }
 .job:hover { border-color: #cbd5e1; box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.04); }
-.job.done { opacity: 0.78; border-style: dashed; }
-/* บล็อคพื้นหลังตามประเภทบิล (ประกาศหลัง .done เพื่อให้สีชนะแม้การ์ดถูก dim) */
-.job.type-company, .job.type-private { background: #1e40af; border-color: #1a3894; }
-.job.type-company .job-bill, .job.type-private .job-bill,
-.job.type-company .job-cust, .job.type-private .job-cust { color: #ffffff; }
-.job.type-company .job-type, .job.type-private .job-type { color: #c7d2fe; }
-.job.type-company .job-meta, .job.type-private .job-meta { color: #c7d2fe; }
-.job.type-company .job-meta .mi b, .job.type-private .job-meta .mi b { color: #e0e7ff; }
-.job.type-company .job-actions, .job.type-private .job-actions { border-left-color: rgba(255,255,255,0.22); }
-.job.type-doc { background: rgb(255, 247, 237); border-color: #f5e0cf; }
+.job.done { opacity: 0.78; background: #fafafa; border-style: dashed; }
+/* ทำสีเฉพาะป้ายประเภท (type label) ไม่ระบายทั้งกล่อง */
+.job.type-company .job-type, .job.type-private .job-type { background: #d8e6ff; color: #1e40af; border-color: #9ec0ff; }
+.job.type-doc .job-type { background: rgb(255, 247, 237); color: #b45309; border-color: #f3d3ac; }
 .job-main { flex: 1 1 380px; min-width: 280px; }
 
 .job-line1 { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-bottom: 6px; }
-.job-type { font-size: 12.5px; font-weight: 600; color: var(--ink3); }
+.job-type { font-size: 12px; font-weight: 700; color: var(--ink3); padding: 3px 10px; border-radius: 6px; border: 1px solid var(--line); background: var(--line-light); }
 .job-bill { font-weight: 700; font-size: 16px; color: var(--ink); }
 .job-code { font-family: var(--font-mono); font-size: 12px; color: var(--primary); background: var(--primary-light); padding: 3px 9px; border-radius: 6px; font-weight: 600; }
 
