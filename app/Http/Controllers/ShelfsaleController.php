@@ -302,9 +302,30 @@ class ShelfsaleController extends Controller
             }
         }
 
+        // ระบุว่าชื่อสินค้า (งานเก่า) เป็นของ SO ใด จาก token "S.<so>=<qty>" ที่ฝังในชื่อ
+        //   - ไม่มี token S.<...> เลย = ใช้ร่วมทุก SO (แสดงทุกแถว)
+        //   - มี token = แสดงเฉพาะ SO ที่ตรง (เทียบด้วยตัวเลขล้วน รองรับทั้งรูปเต็ม 69/018052 และย่อ 019208)
+        $soBelongs = function ($name, $soNum) {
+            if (!preg_match_all('/S\.([0-9\/]+)/u', (string) $name, $m)) {
+                return true;
+            }
+            $soDigits = preg_replace('/\D/', '', (string) $soNum);
+            if ($soDigits === '') return true;
+            foreach ($m[1] as $tok) {
+                $tokDigits = preg_replace('/\D/', '', $tok);
+                if ($tokDigits === '') continue;
+                if ($tokDigits === $soDigits
+                    || str_ends_with($soDigits, $tokDigits)
+                    || str_ends_with($tokDigits, $soDigits)) {
+                    return true;
+                }
+            }
+            return false;
+        };
+
         // ===== รวมเป็น 1 แถวต่อ 1 (PO + SO) — ถ้ารหัส PO,SO เดียวกัน แสดงแถวเดียว =====
         $rows = $items->groupBy(fn ($it) => preg_replace('/^PO/i', '', (string) $it->po) . '|' . (string) $it->so)
-            ->map(function ($group) use ($priceByDocu, $shipByDocu, $namesByPo, $now) {
+            ->map(function ($group) use ($priceByDocu, $shipByDocu, $namesByPo, $now, $soBelongs) {
                 $first    = $group->first();
                 $cleanPo  = preg_replace('/^PO/i', '', (string) $first->po);
                 $shelves  = $group->pluck('shelf')->filter()->unique()->values();
@@ -320,7 +341,13 @@ class ShelfsaleController extends Controller
 
                 if ($isLegacy && !empty($namesByPo[$cleanPo])) {
                     $shelfForLegacy = $shelves->first() ?: '';
-                    $products = collect($namesByPo[$cleanPo])->map(fn ($n) => [
+                    // งานเก่า: ชื่อสินค้าเป็นระดับ PO -> กรองเฉพาะที่เป็นของ SO นี้ (ตาม token S.<so>)
+                    $filtered = collect($namesByPo[$cleanPo])
+                        ->filter(fn ($n) => $soBelongs($n, $first->so))
+                        ->values();
+                    // เผื่อ token ไม่ตรงรูปแบบจนกรองหมด -> แสดงทั้งหมดกันข้อมูลหาย
+                    if ($filtered->isEmpty()) $filtered = collect($namesByPo[$cleanPo])->values();
+                    $products = $filtered->map(fn ($n) => [
                         'name' => $n ?: '-', 'shelf' => $shelfForLegacy, 'line_id' => null,
                     ])->values();
                 } else {
@@ -332,8 +359,8 @@ class ShelfsaleController extends Controller
                 return [
                     'so'         => $first->so ?: '-',
                     'po'         => $cleanPo ?: '-',
-                    'shelf'      => $shelves->count() === 1 ? $shelves->first()
-                                    : ($shelves->count() > 1 ? 'หลายชั้น' : '-'),
+                    // ชั้นวาง: แสดงรายชื่อชั้นทั้งหมดของ SO นี้ (ไม่ใช้คำว่า "หลายชั้น")
+                    'shelf'      => $shelves->isNotEmpty() ? $shelves->implode(', ') : '-',
                     'cust_id'    => $first->cust_id ?: '-',
                     'cust_name'  => $first->cust_name ?: '-',
                     'sale'       => $first->sale ?: '-',

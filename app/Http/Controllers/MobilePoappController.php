@@ -206,21 +206,28 @@ class MobilePoappController extends Controller
             }
 
             $docuNo = $norm['DocuNo'] ?? null;
-            $cancelledPO = PooutsideCancelled::where('po_id', $poNum)
+            // ยกเลิกราย SO: pooutside_cancelled เก็บคู่ (po_id, so_id) — 1 PO ผูกได้หลาย SO
+            // ยกเลิกเฉพาะ SO ที่อยู่ในตาราง ถ้ายังมี SO อื่นที่ไม่ถูกยกเลิก ให้รับเข้าต่อได้
+            $cancelledRows = PooutsideCancelled::where('po_id', $poNum)
                 ->when($docuNo, fn($q) => $q->orWhere('po_id', $docuNo))
-                ->first();
+                ->get(['po_id', 'so_id', 'cancelled_by', 'cancelled_at', 'note']);
 
-            if ($cancelledPO) {
+            // แถว so_id ว่าง = ยกเลิกทั้ง PO -> บล็อกทั้งใบ (พฤติกรรมเดิม)
+            $wholePoCancel = $cancelledRows->first(fn($r) => trim((string) $r->so_id) === '');
+            if ($wholePoCancel) {
                 return response()->json([
                     'cancelled'    => true,
                     'message'      => 'PO นี้ถูกยกเลิกในระบบแล้ว',
-                    'po_id'        => $cancelledPO->po_id,
-                    'so_id'        => $cancelledPO->so_id,
-                    'cancelled_by' => $cancelledPO->cancelled_by,
-                    'cancelled_at' => optional($cancelledPO->cancelled_at)->format('Y-m-d H:i:s'),
-                    'note'         => $cancelledPO->note,
+                    'po_id'        => $wholePoCancel->po_id,
+                    'so_id'        => $wholePoCancel->so_id,
+                    'cancelled_by' => $wholePoCancel->cancelled_by,
+                    'cancelled_at' => optional($wholePoCancel->cancelled_at)->format('Y-m-d H:i:s'),
+                    'note'         => $wholePoCancel->note,
                 ], 409);
             }
+            $cancelledSoNorm = $cancelledRows
+                ->map(fn($r) => strtoupper(preg_replace('/^SO/i', '', trim((string) $r->so_id))))
+                ->filter()->unique()->values()->all();
 
             // ★ เช็คระบบใหม่: PO ถูกเช็คของออก (po_receives.checkout_by มีค่าแล้ว) → ห้ามรับเข้าเพิ่ม
             $checkedOutNew = PoReceive::where('po_id', $poNum)
@@ -244,6 +251,26 @@ class MobilePoappController extends Controller
 
             $soNums = $norm['SONumList'] ?? ($norm['SONum'] ? [$norm['SONum']] : []);
             $soNums = array_values(array_unique(array_filter($soNums)));
+
+            // ตัด SO ที่ถูกยกเลิก (ยกเลิกราย SO) ออก — เหลือเฉพาะ SO ที่ยังรับเข้าได้
+            if (!empty($cancelledSoNorm)) {
+                $soNums = array_values(array_filter($soNums, function ($s) use ($cancelledSoNorm) {
+                    return !in_array(strtoupper(preg_replace('/^SO/i', '', trim((string) $s))), $cancelledSoNorm, true);
+                }));
+                // ทุก SO ถูกยกเลิกหมด -> ถือว่า PO นี้ยกเลิกทั้งใบ
+                if (empty($soNums)) {
+                    $c = $cancelledRows->first();
+                    return response()->json([
+                        'cancelled'    => true,
+                        'message'      => 'PO นี้ถูกยกเลิกในระบบแล้ว',
+                        'po_id'        => $c->po_id,
+                        'so_id'        => $c->so_id,
+                        'cancelled_by' => $c->cancelled_by,
+                        'cancelled_at' => optional($c->cancelled_at)->format('Y-m-d H:i:s'),
+                        'note'         => $c->note,
+                    ], 409);
+                }
+            }
 
             $latestSoNum = $norm['SONumLatest'] ?? ($soNums[0] ?? null);
 
@@ -302,11 +329,18 @@ class MobilePoappController extends Controller
             'items.*.RecvQty'   => 'required|numeric|gt:0',
         ]);
 
-        if (PooutsideCancelled::where('po_id', $validated['PONum'])->exists()) {
+        // ยกเลิกราย SO: pooutside_cancelled เก็บคู่ (po_id, so_id) — 1 PO ผูกหลาย SO ได้
+        // ถ้ายกเลิกแค่บาง SO ให้รับเข้า SO ที่เหลือได้ (ตัด SO ที่ยกเลิกออกด้านล่าง)
+        // ถ้ามีแถว so_id ว่าง = ยกเลิกทั้ง PO -> บล็อกทั้งใบ
+        $cancelledRows = PooutsideCancelled::where('po_id', $validated['PONum'])->get(['so_id']);
+        if ($cancelledRows->first(fn($r) => trim((string) $r->so_id) === '')) {
             return response()->json([
                 'message' => 'ไม่สามารถบันทึกรับเข้าได้ เนื่องจาก PO นี้ถูกยกเลิกในระบบแล้ว',
             ], 409);
         }
+        $cancelledSoNorm = $cancelledRows
+            ->map(fn($r) => strtoupper(preg_replace('/^SO/i', '', trim((string) $r->so_id))))
+            ->filter()->unique()->values()->all();
 
         $photoPath  = $this->savePhotoBase64($validated['Photo'] ?? null, $validated['PONum']);
         $receivedAt = now();
@@ -314,6 +348,19 @@ class MobilePoappController extends Controller
 
         // แยก SO (PO เชื่อมหลาย SO) → รับเข้า/พิมพ์ แยกต่อ SO
         $soNums = array_values(array_unique(array_filter(array_map('trim', explode(',', (string) ($validated['SONum'] ?? ''))))));
+
+        // ตัด SO ที่ถูกยกเลิก (pooutside_cancelled) ออก — รับเข้าเฉพาะ SO ที่ยังไม่ยกเลิก
+        if (!empty($cancelledSoNorm) && !empty($soNums)) {
+            $soNums = array_values(array_filter($soNums, function ($s) use ($cancelledSoNorm) {
+                return !in_array(strtoupper(preg_replace('/^SO/i', '', trim((string) $s))), $cancelledSoNorm, true);
+            }));
+            if (empty($soNums)) {
+                return response()->json([
+                    'message' => 'SO ที่เลือกถูกยกเลิกในระบบแล้ว ไม่สามารถรับเข้าได้',
+                ], 409);
+            }
+        }
+
         if (empty($soNums)) {
             $soNums = [null]; // เผื่อไม่มี SO (ปกติจะมี เพราะฝั่งหน้าบังคับเชื่อม SO)
         }

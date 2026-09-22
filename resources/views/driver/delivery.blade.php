@@ -740,6 +740,11 @@ $selfPickupMethods = ['รับเองรถใหญ่', 'รับเอ�
 
         .required-mark{ color:#c62828; }
         .optional-hint{ font-weight:400; font-size:0.85rem; color:var(--ink-faint); }
+        .btn-switch-tp{ margin-top:5px; display:inline-flex; align-items:center; gap:3px; padding:2px 8px;
+            font-size:0.72rem; font-weight:600; border:1px solid #cbd5e1; border-radius:6px;
+            background:#f8fafc; color:#475569; cursor:pointer; font-family:inherit; }
+        .btn-switch-tp:hover{ border-color:var(--delivery); color:var(--delivery); background:#eff6ff; }
+        .btn-switch-tp:disabled{ opacity:.5; cursor:wait; }
         .autocomplete-list{
             display:none;
             position:absolute;
@@ -1094,6 +1099,12 @@ $selfPickupMethods = ['รับเองรถใหญ่', 'รับเอ�
                                                 <div class="checkbox-content">
                                                     <div class="job-id-primary">SO {{ $bill->so_id }}</div>
                                                     <div class="job-id-secondary">บิล {{ $bill->billid }}</div>
+                                                    <button type="button" class="btn-switch-tp"
+                                                            data-billid="{{ $bill->billid }}"
+                                                            data-to="{{ $tKey === 'private' ? 'company' : 'private' }}"
+                                                            onclick="event.stopPropagation(); switchTransportType(this)">
+                                                        ↔ ย้ายไป{{ $tKey === 'private' ? 'ขนส่งบริษัท' : 'ขนส่งเอกชน' }}
+                                                    </button>
                                                 </div>
                                             </div>
                                         </td>
@@ -1379,7 +1390,7 @@ $selfPickupMethods = ['รับเองรถใหญ่', 'รับเอ�
                 </div>
                 <div class="mb-3 position-relative">
                     <label class="form-label" id="driverLabel">
-                        ผู้รับผิดชอบ <span class="optional-hint" id="driverOptionalHint">(ไม่บังคับ)</span>
+                        ผู้รับผิดชอบ <span class="required-mark" id="driverOptionalHint">*</span>
                     </label>
                     <input type="text" id="driverSelect" class="form-control"
                            placeholder="พิมพ์เพื่อค้นหา หรือเลือกจากรายการ" autocomplete="off">
@@ -1685,6 +1696,37 @@ function clearBillSearch() {
     filterBillTable();
 }
 
+// สลับประเภทขนส่งของบิล (company <-> private) แล้วรีโหลดเพื่อจัดกลุ่มใหม่
+async function switchTransportType(btn) {
+    const billid = btn.dataset.billid;
+    const to     = btn.dataset.to;   // ปลายทางที่จะย้ายไป
+    if (!billid || !to) return;
+    const toLabel = to === 'private' ? 'ขนส่งเอกชน' : 'ขนส่งโดยบริษัท';
+    if (!confirm('ย้ายบิล ' + billid + ' ไปเป็น "' + toLabel + '" ?')) return;
+
+    const token = document.querySelector('#dispatchForm input[name=_token]')?.value || '';
+    btn.disabled = true;
+    try {
+        const res = await fetch("{{ route('deliverytrack.setTransportType') }}", {
+            method: 'POST',
+            headers: { 'Content-Type':'application/json', 'Accept':'application/json', 'X-Requested-With':'XMLHttpRequest', 'X-CSRF-TOKEN': token },
+            body: JSON.stringify({ billid: billid, transport_type: to }),
+        });
+        const data = await res.json();
+        if (res.ok && data.ok) {
+            showToast(data.message || 'ย้ายประเภทขนส่งแล้ว', 'success');
+            setTimeout(() => window.location.reload(), 700);
+        } else {
+            showToast(data.message || 'ย้ายไม่สำเร็จ', 'error');
+            btn.disabled = false;
+        }
+    } catch (e) {
+        console.error(e);
+        showToast('เกิดข้อผิดพลาดในการเชื่อมต่อ', 'error');
+        btn.disabled = false;
+    }
+}
+
 function filterDocTable() {
     const custQuery = document.getElementById('searchDocCustomer').value;
     const docQuery = document.getElementById('searchDocNo').value;
@@ -1814,7 +1856,7 @@ document.addEventListener('DOMContentLoaded', function() {
     vehicleInput?.addEventListener('vehicleOrDriverInput', function () {
         const isSales = isSelfDeliverySales();
         salesHint.style.display = isSales ? 'block' : 'none';
-        driverOptionalHint.style.display = isSales ? 'none' : 'inline';
+        driverOptionalHint.style.display = 'inline';  // ผู้รับผิดชอบบังคับกรอกเสมอ
         driverInput.placeholder = isSales
             ? 'พิมพ์ชื่อเซลล์ที่ไปส่งเอง (บังคับ)'
             : 'พิมพ์เพื่อค้นหา หรือเลือกจากรายการ';
@@ -1838,11 +1880,13 @@ document.addEventListener('DOMContentLoaded', function() {
             showToast('กรุณาเลือกวิธีการจัดส่ง', 'error');
             return;
         }
-        if (isSelfDeliverySales() && !driver) {
-            showToast('เลือก "เซลล์ไปส่งเอง" กรุณาพิมพ์ชื่อเซลล์ที่ไปส่งเองในช่องผู้รับผิดชอบด้วย', 'warning');
+        if (!driver) {
+            showToast(isSelfDeliverySales()
+                ? 'เลือก "เซลล์ไปส่งเอง" กรุณาพิมพ์ชื่อเซลล์ที่ไปส่งเองในช่องผู้รับผิดชอบด้วย'
+                : 'กรุณาระบุผู้รับผิดชอบ', 'error');
             return;
         }
-        if (!isSelfDeliverySales() && driver && !responsiblePersonsData.includes(driver)) {
+        if (!isSelfDeliverySales() && !responsiblePersonsData.includes(driver)) {
             showToast('กรุณาเลือกชื่อผู้รับผิดชอบจากรายการที่มีให้เท่านั้น', 'error');
             return;
         }

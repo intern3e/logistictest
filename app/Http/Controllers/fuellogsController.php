@@ -744,7 +744,16 @@ public function update(Request $request, $id)
                 ]);
             });
 
-            return ['bill_out_by' => $driverName, 'jobs' => $jobs->values()];
+            // ทะเบียนรถ = transport_name ที่คนขับคนนี้ใช้บ่อยสุดในวันนั้น (mode)
+            $transportName = $driverDeliveries
+                ->map(fn ($d) => trim((string) $d->transport_name))
+                ->filter()
+                ->countBy()
+                ->sortDesc()
+                ->keys()
+                ->first() ?? '';
+
+            return ['bill_out_by' => $driverName, 'transport_name' => $transportName, 'jobs' => $jobs->values()];
         })->values();
 
         return response()->json(['data' => $data, 'source' => 'db']);

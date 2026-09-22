@@ -337,7 +337,13 @@ Route::get('/deliverytrack/summary', [DeliverytrackController::class, 'summary']
 Route::post('/deliverytrack/print-selected-pickup', [DeliverytrackController::class, 'printSelectedPickup'])->name('deliverytrack.printSelectedPickup');
 Route::post('/deliverytrack/cancel-assignment', [DeliverytrackController::class, 'cancelAssignment'])->name('deliverytrack.cancelAssignment');
 Route::post('/deliverytrack/save-transport-id', [DeliverytrackController::class, 'saveTransportId'])->name('deliverytrack.saveTransportId');
- 
+Route::post('/deliverytrack/set-transport-type', [DeliverytrackController::class, 'setTransportType'])->name('deliverytrack.setTransportType');
+
+use App\Http\Controllers\BillreceiveController;
+Route::get('/billreceive',          [BillreceiveController::class, 'index'])->name('billreceive');
+Route::get('/billreceive/data',     [BillreceiveController::class, 'data'])->name('billreceive.data');
+Route::post('/billreceive/confirm', [BillreceiveController::class, 'confirm'])->name('billreceive.confirm');
+
 
 use App\Http\Controllers\SoItemController;
 Route::get('/soitem',                                  [SoItemController::class, 'index']);

@@ -689,7 +689,7 @@
     font-size:.74rem; font-weight:600; color:var(--danger); cursor:pointer; white-space:nowrap; flex-shrink:0;
 }
 .cancel-select{ width:16px; height:16px; accent-color:var(--danger); cursor:pointer; }
-/* เลขขนส่ง แยกทีละบิล (เฉพาะขนส่งเอกชน) */
+/* เลขขนส่ง แยกทีละบิล (ทั้งขนส่งโดยบริษัทและขนส่งเอกชน) */
 .row-transport{
     align-items:center; gap:6px; font-size:.78rem; color:var(--ink-soft); white-space:nowrap;
 }
@@ -700,8 +700,9 @@
     font-size:.72rem; font-weight:700; cursor:pointer;
 }
 .btn-row-transport:hover{ background:var(--primary-deep); }
-/* private-only: แสดงเฉพาะโหมดขนส่งเอกชน */
+/* เลขขนส่ง: แสดงทั้งโหมดขนส่งบริษัทและเอกชน (ไม่โชว์ในโหมดรับของเอง เพราะไม่มีในแถว PO) */
 .private-only{ display:none; }
+.summary-mode-company .private-only,
 .summary-mode-private .private-only{ display:inline-flex; }
 </style>
 </head>
@@ -875,16 +876,18 @@
                                                                             <span class="job-assign-meta">ผู้จ่ายงาน {{ $item['name_pick'] ?: '—' }}@if(!empty($item['time_pick'])) · {{ \Carbon\Carbon::parse($item['time_pick'])->addYears(543)->format('d/m/Y H:i') }}@endif</span>
                                                                         @endif
                                                                         @unless ($isPo)
-                                                                            {{-- เลขขนส่ง แยกทีละบิล (แสดง/แก้เฉพาะโหมดขนส่งเอกชน) --}}
+                                                                            {{-- เลขขนส่ง แยกทีละบิล (แสดง/แก้ได้ทั้งขนส่งบริษัทและเอกชน) --}}
                                                                             <span class="row-transport private-only">
                                                                                 เลขขนส่ง: <b class="row-transport-val" data-tp-billid="{{ $item['id'] }}">{{ $item['id_transport'] ?: '—' }}</b>
                                                                                 <button type="button" class="btn-row-transport" data-billid="{{ $item['id'] }}" onclick="editRowTransportId(this)">แก้</button>
                                                                             </span>
                                                                         @endunless
+                                                                        @if (!empty($canCancelJobs))
                                                                         <label class="cancel-select-label" title="เลือกเพื่อยกเลิกงานนี้">
                                                                             <input type="checkbox" class="cancel-select" data-billid="{{ $item['id'] }}">
                                                                             <span>ยกเลิก</span>
                                                                         </label>
+                                                                        @endif
                                                                     </div>
                                                                 @endforeach
                                                             </div>
@@ -892,7 +895,9 @@
                                                     @endforeach
 
                                                     <div class="box-actions">
+                                                        @if (!empty($canCancelJobs))
                                                         <button type="button" class="btn-cancel-box" onclick="cancelBoxAssignment('{{ $boxKey }}')">ยกเลิกงานที่เลือก / คืนคิว</button>
+                                                        @endif
                                                         <a class="btn-print-group" target="_blank" href="{{ $printUrl }}">
                                                             <svg width="15" height="15" viewBox="0 0 16 16" fill="none"><path d="M4 6V2h8v4M4 11H2.75A.75.75 0 0 1 2 10.25v-3.5A.75.75 0 0 1 2.75 6h10.5a.75.75 0 0 1 .75.75v3.5a.75.75 0 0 1-.75.75H12M4 9h8v5H4V9Z" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
                                                             ปริ้นใบงาน (A4)

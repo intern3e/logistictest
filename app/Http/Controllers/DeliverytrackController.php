@@ -285,8 +285,12 @@ class DeliverytrackController extends Controller
             'driver_name' => 'nullable|string|max:255', 'transport_name' => 'required|string|max:255', 'delivery_date' => 'required|date',
         ]);
 
-        if ($validated['transport_name'] === 'เซลล์ไปส่งเอง' && blank($validated['driver_name'] ?? null)) {
-            return redirect()->back()->with('error', 'เลือก "เซลล์ไปส่งเอง" กรุณาระบุชื่อเซลล์ที่ไปส่งเองด้วย');
+        // ผู้รับผิดชอบบังคับกรอกเสมอ
+        if (blank($validated['driver_name'] ?? null)) {
+            $msg = $validated['transport_name'] === 'เซลล์ไปส่งเอง'
+                ? 'เลือก "เซลล์ไปส่งเอง" กรุณาระบุชื่อเซลล์ที่ไปส่งเองด้วย'
+                : 'กรุณาระบุผู้รับผิดชอบ';
+            return redirect()->back()->with('error', $msg);
         }
         if ($validated['transport_name'] !== 'เซลล์ไปส่งเอง' && filled($validated['driver_name'] ?? null) && !in_array($validated['driver_name'], $this->responsiblePersons, true)) {
             return redirect()->back()->with('error', 'กรุณาเลือกชื่อผู้รับผิดชอบจากรายการที่มีให้เท่านั้น');
@@ -620,6 +624,38 @@ class DeliverytrackController extends Controller
             'ok'           => true,
             'message'      => $idTransport !== '' ? 'บันทึกเลขขนส่งแล้ว' : 'ล้างเลขขนส่งแล้ว',
             'id_transport' => $idTransport,
+        ]);
+    }
+
+    /**
+     * เปลี่ยนประเภทขนส่งของบิล (company <-> private) — อัปเดตทุกแถว tblbill ที่ billid ตรงกัน
+     */
+    public function setTransportType(Request $request)
+    {
+        $user = Auth::guard('web')->user();
+        if (!$user) return response()->json(['ok' => false, 'message' => 'เซสชันหมดอายุ กรุณาเข้าสู่ระบบใหม่'], 401);
+        if (!$this->hasDeliveryAccess($user)) {
+            return response()->json(['ok' => false, 'message' => 'ไม่มีสิทธิ์ดำเนินการ'], 403);
+        }
+
+        $validated = $request->validate([
+            'billid'         => 'required|string',
+            'transport_type' => 'required|in:company,private',
+        ]);
+
+        // เก็บ 'private' ตรง ๆ, ส่วน company เก็บเป็น 'company' (null ก็ถือเป็น company อยู่แล้ว)
+        $updated = DB::table('tblbill')
+            ->where('billid', $validated['billid'])
+            ->update(['transport_type' => $validated['transport_type']]);
+
+        if ($updated === 0) {
+            return response()->json(['ok' => false, 'message' => 'ไม่พบบิลนี้ (อาจถูกเปลี่ยนไปแล้ว)'], 404);
+        }
+
+        $label = $validated['transport_type'] === 'private' ? 'ขนส่งเอกชน' : 'ขนส่งโดยบริษัท';
+        return response()->json([
+            'ok'      => true,
+            'message' => 'ย้ายบิล ' . $validated['billid'] . ' ไปเป็น ' . $label . ' แล้ว (' . $updated . ' รายการ)',
         ]);
     }
 

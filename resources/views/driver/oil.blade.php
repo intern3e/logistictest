@@ -401,7 +401,7 @@ html{overflow-y:auto;}
 }
 .entry-layout {
   display: grid;
-  grid-template-columns: 1fr 400px;
+  grid-template-columns: 1fr;
   gap: 28px;
 }
 @media (max-width: 1024px) {
@@ -655,6 +655,24 @@ html{overflow-y:auto;}
 .er-plate-select:focus, .er-num-input:focus {
   border-color: #3e6ae1;
   box-shadow: 0 0 0 3px rgba(62, 106, 225, 0.12);
+}
+/* ทะเบียนรถ (transport_name) แบบอ่านอย่างเดียว แก้ไม่ได้ */
+.er-plate-fixed {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 40px;
+  padding: 4px 10px;
+  font-size: 13px;
+  font-weight: 600;
+  color: #374151;
+  background: #f3f4f6;
+  border: 1px solid #e5e7eb;
+  border-radius: 6px;
+  width: 100%;
+  text-align: center;
+  line-height: 1.25;
+  word-break: break-word;
 }
 
 .er-time-pair,
@@ -1411,6 +1429,10 @@ html{overflow-y:auto;}
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
             <span>Export PDF</span>
           </button>
+          <a href="{{ route('billreceive') }}" class="entry-export-btn" style="background:#3e6ae1;text-decoration:none;" title="ไปหน้ารับเข้าบิล">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
+            <span>รับเข้าบิล</span>
+          </a>
         </div>
       </div>
 
@@ -1457,19 +1479,6 @@ html{overflow-y:auto;}
         </table>
       </div>
     </div>
-
-    <aside class="jobs-panel" id="inlineJobsWrap">
-      <div class="jobs-panel-head">
-        <div class="jobs-panel-title">
-          <span class="ico">📋</span>
-          <span id="jobsPanelTitleText">รายการงาน</span>
-        </div>
-        <span id="ilJobDateChip" class="job-date-chip" style="display:none">วันนี้</span>
-      </div>
-      <div class="jobs-panel-body" id="inlineJobTableWrap">
-        <div class="job-loading">คลิกที่แถวคนขับ<br>เพื่อดูรายการงานของคนนั้น</div>
-      </div>
-    </aside>
   </div>
   @endif
 
@@ -1866,6 +1875,7 @@ async function fetchJobsByDate(dateStr){
 
   const drivers=rawData.map(b=>({
     driver_name:b.bill_out_by||'ไม่ระบุ',
+    transport_name:b.transport_name||'',   // ทะเบียนรถ = transport ที่ใช้บ่อยสุดของวันนั้น
     // ไม่แสดง "งานรับเอง" (job_key ขึ้นต้น unknown:) บนหน้า oil
     jobs:(b.jobs||[]).filter(j=>!String(j.job_key||'').startsWith('unknown:')).map(j=>({
       job_key:j.job_key||null,
@@ -1892,8 +1902,9 @@ async function fetchJobsByDate(dateStr){
     if(!bucket[dedupKey]){
       let displayName=rawName;
       if(allowed){const canon=ALLOWED_DRIVERS.find(nm=>_normalizeDriver(nm)===dedupKey);if(canon)displayName=canon;}
-      bucket[dedupKey]={name:displayName,jobs:[]};
+      bucket[dedupKey]={name:displayName,jobs:[],transport_name:d.transport_name||''};
     }
+    if(!bucket[dedupKey].transport_name && d.transport_name)bucket[dedupKey].transport_name=d.transport_name;
     (d.jobs||[]).forEach(j=>bucket[dedupKey].jobs.push(j));
   });
   JOBS_PROCESSED[dateStr]={whitelist,auto};
@@ -2014,6 +2025,7 @@ async function _fetchLastPlates() {
   return _lastPlatesCache || {};
 }
 function _autoSelectPlates() {
+  return; // ทะเบียนรถดึงจาก transport_name อัตโนมัติแล้ว (แก้ไม่ได้) ไม่ต้อง auto-fill จากทะเบียนล่าสุด
   if (!_lastPlatesCache) return;
   document.querySelectorAll('.er-plate-select[data-key]').forEach(sel => {
     if (sel.value) return;
@@ -2117,7 +2129,7 @@ function ilRenderDriverRows(date){
     const _plateOptsRow=(window.PLATE_LIST||[]).map(p=>`<option value="${p}" ${p===_dPlate?'selected':''}>${p}</option>`).join('');
     return`<tr class="entry-row" data-key="${key}" onclick="erFocusRow('${key}')">
       <td data-label="คนขับ"><div class="er-driver"><span class="er-driver-avatar">${ini}</span><div class="er-driver-info"><div class="er-driver-name" title="${d.name}">${d.name}</div><div class="er-driver-jobs">${d.jobs.length} งาน · <span class="er-ok">${okC} ✓</span>${failC>0?` · <span class="er-fail">${failC} ✕</span>`:''}</div></div></div></td>
-      <td data-label="ทะเบียนรถ"><select class="er-plate-select" data-key="${key}" onchange="erUpdateRow('${key}')" onfocus="erFocusRow('${key}')"><option value="">— เลือกทะเบียน —</option>${_plateOptsRow}</select></td>
+      <td data-label="ทะเบียนรถ"><input type="hidden" class="er-plate-select" data-key="${key}" value="${(d.transport_name||'').replace(/"/g,'&quot;')}"><div class="er-plate-fixed" title="${(d.transport_name||'').replace(/"/g,'&quot;')}">${d.transport_name?d.transport_name:'—'}</div></td>
       <td data-label="เวลา">
         <div class="er-time-stack">
           <div class="time-input-wrapper">
