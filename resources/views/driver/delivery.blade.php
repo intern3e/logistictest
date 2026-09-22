@@ -542,7 +542,7 @@ $selfPickupMethods = ['รับเองรถใหญ่', 'รับเอ�
             box-shadow:0 2px 12px rgba(0,0,0,0.08);
             display:flex;
             flex-direction:column;
-            min-height:650px;
+            min-height:calc(100vh - 220px);
         }
 
         .dashboard-grid.is-filtered .grid-panel{ display:none; }
@@ -603,7 +603,7 @@ $selfPickupMethods = ['รับเองรถใหญ่', 'รับเอ�
             gap:4px;
         }
 
-        .job-list-table-wrap{ flex:1; overflow:auto; max-height:calc(100vh - 220px); }
+        .job-list-table-wrap{ flex:1; }
         .job-list-table{ width:100%; border-collapse:collapse; font-size:0.8rem; table-layout:fixed; }
         
         .job-list-table thead th{ 
@@ -668,10 +668,8 @@ $selfPickupMethods = ['รับเองรถใหญ่', 'รับเอ�
             font-size:0.7rem;
             color:var(--ink-soft);
             white-space:normal;
-            overflow:hidden;
-            display:-webkit-box;
-            -webkit-line-clamp:2;
-            -webkit-box-orient:vertical;
+            word-wrap:break-word;
+            overflow-wrap:break-word;
             line-height:1.4;
         }
         
@@ -1112,7 +1110,7 @@ $selfPickupMethods = ['รับเองรถใหญ่', 'รับเอ�
                                             <div class="meta-name-chip">{{ $bill->emp_picker ?: '-' }}</div>
                                             <div class="meta-time">{{ $bill->time }}</div>
                                         </td>
-                                        <td class="job-notes" title="{{ $bill->notes }}">{{ $bill->notes ? mb_strimwidth($bill->notes, 0, 100, '...') : '-' }}</td>
+                                        <td class="job-notes">{{ $bill->notes ?: '-' }}</td>
                                     </tr>
                                 @endforeach
                             @endforeach
@@ -1203,7 +1201,7 @@ $selfPickupMethods = ['รับเองรถใหญ่', 'รับเอ�
                                             <div class="meta-name-chip">{{ $doc->emp_name ?: '-' }}</div>
                                             <div class="meta-time">{{ $doc->time }}</div>
                                         </td>
-                                        <td class="job-notes" title="{{ $doc->notes }}">{{ $doc->notes ? mb_strimwidth($doc->notes, 0, 100, '...') : '-' }}</td>
+                                        <td class="job-notes">{{ $doc->notes ?: '-' }}</td>
                                     </tr>
                                 @endforeach
                             @endforeach
