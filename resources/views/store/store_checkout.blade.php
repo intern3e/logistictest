@@ -260,6 +260,30 @@
     .dn-section.dn-cancelled > .dn-section-header { background: var(--danger-light); }
     .dn-body { padding: 8px 16px 16px; }
 
+    /* เช็คบ็อกซ์ "ได้รับบิลแล้ว" (ตัวจำของสโตร์) */
+    .bill-received-label {
+        display: inline-flex; align-items: center; gap: 5px; cursor: pointer;
+        font-size: 12px; font-weight: 600; color: var(--muted); white-space: nowrap;
+        border: 1px dashed var(--border, #d1d5db); border-radius: 6px; padding: 2px 8px; margin-left: 6px;
+    }
+    .bill-received-label input { width: 15px; height: 15px; cursor: pointer; accent-color: #059669; }
+    .bill-received-label.is-received {
+        color: #059669; border-style: solid; border-color: #6ee7b7; background: #ecfdf5;
+    }
+
+    /* Dropdown เลือกชั้นวาง (custom ใหญ่กว่า datalist) */
+    .ms-shelf-list {
+        display: none; position: absolute; left: 0; right: 0; top: calc(100% + 6px);
+        background: #fff; border: 1px solid #d6dbe3; border-radius: 10px;
+        box-shadow: 0 12px 30px rgba(0,0,0,.15); max-height: 340px; overflow-y: auto; z-index: 10;
+        padding: 6px;
+    }
+    .ms-shelf-opt {
+        padding: 12px 14px; font-size: 15.5px; font-weight: 500; color: #1f2937;
+        border-radius: 8px; cursor: pointer; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    }
+    .ms-shelf-opt:hover { background: #eff4ff; color: #2853d5; }
+
     /* ===== Item Table Head & PO Rows ===== */
     .item-col-head {
         display: flex; justify-content: space-between; gap: 10px;
@@ -454,6 +478,15 @@
                                     </label>
                                 @endif
                                 <span class="dn-no {{ $isCancelled ? 'is-cancelled' : ($isPicked ? 'is-done' : '') }}">{{ ($dn->dn_no ?? null) ? $dn->dn_no : '— (ไม่มีเลขที่บิล)' }}</span>
+                                @if (!empty($dn->dn_no))
+                                    <label class="bill-received-label {{ ($dn->bill_received ?? false) ? 'is-received' : '' }}"
+                                           title="ติ๊กว่าสโตร์ได้รับบิลนี้แล้ว (กันบิลปริ้นแล้วหาย)">
+                                        <input type="checkbox" class="chkBillReceived" data-billid="{{ $dn->dn_no }}"
+                                               {{ ($dn->bill_received ?? false) ? 'checked' : '' }}
+                                               onchange="toggleBillReceived(this)">
+                                        <span>ได้รับบิลแล้ว</span>
+                                    </label>
+                                @endif
                                 
                                 @if (!empty($dn->time))
                                     <span class="dn-time">{{ \Carbon\Carbon::parse($dn->time)->addYears(543)->format('d/m/Y H:i') }}</span>
@@ -606,9 +639,12 @@
 <div id="moveShelfModal" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,.45); z-index:300; align-items:center; justify-content:center;">
     <div style="background:#fff; border-radius:14px; padding:20px; width:min(92vw,380px); box-shadow:0 12px 40px rgba(0,0,0,.25);">
         <div style="font-weight:600; margin-bottom:10px;">ย้ายชั้นวาง — <span id="msLabel"></span></div>
-        <input type="search" id="msShelf" list="msShelfList" placeholder="เลือกชั้นวาง..." autocomplete="off"
-               style="width:100%; padding:9px 12px; border:1px solid #d6dbe3; border-radius:8px; box-sizing:border-box; font-family:inherit; font-size:14px;">
-        <datalist id="msShelfList">@foreach(\App\Http\Controllers\ShelfsaleController::SHELF_OPTIONS as $sh)<option value="{{ $sh }}"></option>@endforeach</datalist>
+        <div style="position:relative;">
+            <input type="search" id="msShelf" placeholder="เลือกหรือพิมพ์ชั้นวาง..." autocomplete="off"
+                   oninput="renderShelfOptions(this.value)" onfocus="renderShelfOptions(this.value)"
+                   style="width:100%; padding:13px 14px; border:1px solid #d6dbe3; border-radius:10px; box-sizing:border-box; font-family:inherit; font-size:16px;">
+            <div id="msShelfList" class="ms-shelf-list"></div>
+        </div>
         <div style="display:flex; gap:10px; justify-content:flex-end; margin-top:14px;">
             <button type="button" class="btn-ghost" onclick="closeMoveShelf()">ยกเลิก</button>
             <button type="button" class="btn-success" id="msSaveBtn" onclick="confirmMoveShelf()">ย้าย</button>
@@ -619,7 +655,68 @@
 <script>
 const SUBMIT_URL = "{{ route('store.checkout.submit') }}";
 const MOVE_SHELF_URL = "{{ route('shelfsale.move') }}";
+const BILL_RECEIVED_URL = "{{ route('store.checkout.billReceived') }}";
 const CSRF = document.querySelector('meta[name="csrf-token"]').content;
+
+/* ===== Dropdown เลือกชั้นวาง (custom) ===== */
+const SHELF_OPTIONS = @json(\App\Http\Controllers\ShelfsaleController::SHELF_OPTIONS);
+function _msEscHtml(s){ return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+function renderShelfOptions(q){
+    const list = document.getElementById('msShelfList');
+    if(!list) return;
+    const query = (q||'').trim().toLowerCase();
+    const items = SHELF_OPTIONS.filter(s => !query || String(s).toLowerCase().includes(query));
+    list.innerHTML = items.map(s => `<div class="ms-shelf-opt" data-val="${_msEscHtml(s)}">${_msEscHtml(s)}</div>`).join('');
+    list.style.display = items.length ? 'block' : 'none';
+}
+document.addEventListener('DOMContentLoaded', function(){
+    const list = document.getElementById('msShelfList');
+    const inp  = document.getElementById('msShelf');
+    if(list){
+        list.addEventListener('mousedown', function(e){
+            const opt = e.target.closest('.ms-shelf-opt');
+            if(!opt) return;
+            e.preventDefault();
+            if(inp) inp.value = opt.dataset.val;
+            list.style.display = 'none';
+        });
+    }
+    if(inp){
+        inp.addEventListener('blur', () => setTimeout(() => { if(list) list.style.display = 'none'; }, 150));
+    }
+});
+
+/* ===== สโตร์ติ๊กว่าได้รับบิลแล้ว (บันทึก tblbill.status_bill) ===== */
+async function toggleBillReceived(cb){
+    const billid = cb.dataset.billid;
+    const label  = cb.closest('.bill-received-label');
+    // เอาติ๊กออก -> ยืนยันก่อน
+    if(!cb.checked){
+        if(!confirm('เอาการติ๊ก "ได้รับบิลแล้ว" ของบิล ' + billid + ' ออกใช่ไหม?')){
+            cb.checked = true;   // ยกเลิก -> ติ๊กกลับ
+            return;
+        }
+    }
+    const received = cb.checked;
+    cb.disabled = true;
+    try{
+        const res = await fetch(BILL_RECEIVED_URL, {
+            method:'POST',
+            headers:{ 'Content-Type':'application/json','X-CSRF-TOKEN':CSRF,'Accept':'application/json','X-Requested-With':'XMLHttpRequest' },
+            body: JSON.stringify({ billid: billid, received: received }),
+        });
+        const data = await res.json();
+        if(res.ok && data.ok){
+            if(label) label.classList.toggle('is-received', received);
+        } else {
+            cb.checked = !received;   // rollback
+            alert(data.message || 'บันทึกไม่สำเร็จ');
+        }
+    }catch(e){
+        cb.checked = !received;       // rollback
+        alert('เชื่อมต่อไม่สำเร็จ');
+    }finally{ cb.disabled = false; }
+}
 
 /* ===== ย้ายชั้นวาง (ต่อ PO+SO) ===== */
 let msTarget = null;

@@ -1388,7 +1388,7 @@ $selfPickupMethods = ['รับเองรถใหญ่', 'รับเอ�
                 </div>
                 <div class="mb-3 position-relative">
                     <label class="form-label" id="driverLabel">
-                        ผู้รับผิดชอบ <span class="required-mark" id="driverOptionalHint">*</span>
+                        ผู้รับผิดชอบ <span class="optional-hint" id="driverOptionalHint">(ไม่บังคับ)</span>
                     </label>
                     <input type="text" id="driverSelect" class="form-control"
                            placeholder="พิมพ์เพื่อค้นหา หรือเลือกจากรายการ" autocomplete="off">
@@ -1854,7 +1854,7 @@ document.addEventListener('DOMContentLoaded', function() {
     vehicleInput?.addEventListener('vehicleOrDriverInput', function () {
         const isSales = isSelfDeliverySales();
         salesHint.style.display = isSales ? 'block' : 'none';
-        driverOptionalHint.style.display = 'inline';  // ผู้รับผิดชอบบังคับกรอกเสมอ
+        driverOptionalHint.style.display = isSales ? 'none' : 'inline';
         driverInput.placeholder = isSales
             ? 'พิมพ์ชื่อเซลล์ที่ไปส่งเอง (บังคับ)'
             : 'พิมพ์เพื่อค้นหา หรือเลือกจากรายการ';
@@ -1878,13 +1878,11 @@ document.addEventListener('DOMContentLoaded', function() {
             showToast('กรุณาเลือกวิธีการจัดส่ง', 'error');
             return;
         }
-        if (!driver) {
-            showToast(isSelfDeliverySales()
-                ? 'เลือก "เซลล์ไปส่งเอง" กรุณาพิมพ์ชื่อเซลล์ที่ไปส่งเองในช่องผู้รับผิดชอบด้วย'
-                : 'กรุณาระบุผู้รับผิดชอบ', 'error');
+        if (isSelfDeliverySales() && !driver) {
+            showToast('เลือก "เซลล์ไปส่งเอง" กรุณาพิมพ์ชื่อเซลล์ที่ไปส่งเองในช่องผู้รับผิดชอบด้วย', 'warning');
             return;
         }
-        if (!isSelfDeliverySales() && !responsiblePersonsData.includes(driver)) {
+        if (!isSelfDeliverySales() && driver && !responsiblePersonsData.includes(driver)) {
             showToast('กรุณาเลือกชื่อผู้รับผิดชอบจากรายการที่มีให้เท่านั้น', 'error');
             return;
         }

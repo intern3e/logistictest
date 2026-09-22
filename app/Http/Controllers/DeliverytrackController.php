@@ -285,12 +285,8 @@ class DeliverytrackController extends Controller
             'driver_name' => 'nullable|string|max:255', 'transport_name' => 'required|string|max:255', 'delivery_date' => 'required|date',
         ]);
 
-        // ผู้รับผิดชอบบังคับกรอกเสมอ
-        if (blank($validated['driver_name'] ?? null)) {
-            $msg = $validated['transport_name'] === 'เซลล์ไปส่งเอง'
-                ? 'เลือก "เซลล์ไปส่งเอง" กรุณาระบุชื่อเซลล์ที่ไปส่งเองด้วย'
-                : 'กรุณาระบุผู้รับผิดชอบ';
-            return redirect()->back()->with('error', $msg);
+        if ($validated['transport_name'] === 'เซลล์ไปส่งเอง' && blank($validated['driver_name'] ?? null)) {
+            return redirect()->back()->with('error', 'เลือก "เซลล์ไปส่งเอง" กรุณาระบุชื่อเซลล์ที่ไปส่งเองด้วย');
         }
         if ($validated['transport_name'] !== 'เซลล์ไปส่งเอง' && filled($validated['driver_name'] ?? null) && !in_array($validated['driver_name'], $this->responsiblePersons, true)) {
             return redirect()->back()->with('error', 'กรุณาเลือกชื่อผู้รับผิดชอบจากรายการที่มีให้เท่านั้น');

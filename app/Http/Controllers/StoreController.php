@@ -748,7 +748,7 @@ class StoreController extends Controller
         $dnColumn = self::TBLBILL_DN_COLUMN;
         $columns  = array_values(array_filter([
             'so_id', 'time', self::TBLBILL_CUSTOMER_COLUMN, self::TBLBILL_CUSTOMER_ID_COLUMN,
-            self::TBLBILL_OPENED_BY_COLUMN, $dnColumn, 'status',
+            self::TBLBILL_OPENED_BY_COLUMN, $dnColumn, 'status', 'status_bill',
             self::TBLBILL_PICKER_COLUMN, self::TBLBILL_PICKER_TIME_COLUMN,
         ]));
 
@@ -807,6 +807,7 @@ class StoreController extends Controller
                     'picked'        => $isPicked,
                     'picked_by'     => $pickedBy,
                     'picked_at'     => $pickedAt,
+                    'bill_received' => !empty($row->status_bill),   // สโตร์ติ๊กว่าได้รับบิลแล้ว (tblbill.status_bill)
                 ];
             })
             ->groupBy('so_id');
@@ -1118,6 +1119,39 @@ class StoreController extends Controller
             'billDate'      => $billDate,
             'isDefaultView' => $isDefaultView,
             'daySummary'    => $daySummary,
+        ]);
+    }
+
+    /**
+     * สโตร์ติ๊ก/เอาติ๊กออก "ได้รับบิลแล้ว" — บันทึกที่ tblbill.status_bill
+     *   received=true  -> status_bill = 'ได้รับแล้ว'
+     *   received=false -> status_bill = null
+     * เป็นแค่ตัวจำของสโตร์ (กันบิลปริ้นแล้วหาย) ไม่กระทบสถานะอื่น
+     */
+    public function setBillReceived(Request $request)
+    {
+        $authUser = $this->resolveSsoUser($request, 'store.checkout');
+        if (!in_array($authUser->role, ['admin', 'stock', 'store'], true)) {
+            return response()->json(['ok' => false, 'message' => 'ไม่มีสิทธิ์ดำเนินการ'], 403);
+        }
+
+        $validated = $request->validate([
+            'billid'   => 'required|string',
+            'received' => 'required|boolean',
+        ]);
+
+        $affected = DB::table('tblbill')
+            ->where(self::TBLBILL_DN_COLUMN, $validated['billid'])
+            ->update(['status_bill' => $validated['received'] ? 'ได้รับแล้ว' : null]);
+
+        if ($affected === 0) {
+            return response()->json(['ok' => false, 'message' => 'ไม่พบเลขบิลนี้'], 404);
+        }
+
+        return response()->json([
+            'ok'       => true,
+            'received' => (bool) $validated['received'],
+            'message'  => $validated['received'] ? 'บันทึกว่าได้รับบิลแล้ว' : 'เอาการรับบิลออกแล้ว',
         ]);
     }
 

@@ -458,6 +458,7 @@ Route::prefix('store')->name('store.')->group(function () {
     Route::post('location/finish-internal',    [StoreController::class, 'locationFinishInternal'])->name('location.finishInternal');
     Route::match(['get', 'post'], 'checkout',  [StoreController::class, 'checkoutDashboard'])->name('checkout');
     Route::post('checkout/submit',             [StoreController::class, 'checkoutSubmit'])->name('checkout.submit');
+    Route::post('checkout/bill-received',       [StoreController::class, 'setBillReceived'])->name('checkout.billReceived');
     Route::post('location/legacy-claim', [StoreController::class, 'legacyClaim'])->name('location.legacyClaim');
 });
 Route::get('/store/location/legacy-items', [StoreController::class, 'legacyItemsForPo'])
