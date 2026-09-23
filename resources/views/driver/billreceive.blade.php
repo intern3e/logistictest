@@ -233,7 +233,7 @@ a { color: inherit; text-decoration: none; }
       <label for="fStatus">สถานะบิล</label>
       <select id="fStatus" style="height:38px;padding:0 10px;border:1px solid var(--line);border-radius:8px;font-family:inherit;font-size:13px;">
         <option value="">ทั้งหมด</option>
-        <option value="pending">รอส่ง / ค้าง</option>
+        <option value="pending">รอรับเข้า</option>
         <option value="ok">สำเร็จ</option>
         <option value="hold">ค้างบิล</option>
         <option value="wrong">สินค้าผิด</option>

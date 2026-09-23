@@ -593,6 +593,15 @@
             <input type="checkbox" id="noShelfChk" onchange="onNoShelfToggle()">
             <span>ไม่ระบุชั้นวาง (ไปกำหนดทีหลังที่หน้าระบุตำแหน่ง)</span>
         </label>
+        <!-- ส่งต่อให้ (ดูและต่อ) — แสดงเฉพาะผู้ใช้ "พู่" -->
+        <div id="handoffWrap" style="display:none;margin-top:8px;">
+            <div class="lbl">ส่งต่อให้ (ดูและต่อ)</div>
+            <select id="handoffSelect" class="printer-select" style="width:100%;" onchange="onHandoffChange()">
+                <option value="">— ไม่ส่งต่อ (ระบุชั้นตามปกติ) —</option>
+                <option value="โอ">โอ</option>
+                <option value="ฟิว">ฟิว</option>
+            </select>
+        </div>
     </div>
         <div class="combo-item photo-item">
             <div class="lbl">รูปหน้างาน</div>
@@ -717,6 +726,9 @@ const DEFAULT_SHELF = (function(){
     return '';
 })();
 const IS_ADMIN = @json(Auth::user() && Auth::user()->role === 'admin');
+// ผู้ใช้ "พู่": เลือกรูปจากแกลเลอรีได้ + มีดรอปดาว "ส่งต่อให้ (ดูและต่อ)" โอ/ฟิว (งานนี้ไม่มีชั้น -> บันทึก do_it แทน)
+const IS_PU = (RECEIVED_BY || '').includes('พู่');
+let handoffPerson = '';   // ชื่อที่พู่เลือกส่งต่อ (โอ/ฟิว) — ถ้ามีค่า = งานนี้ไม่ระบุชั้น
 // ยกเลิกการรับเข้า (กรณีรับผิดจำนวน) -> admin/stock/store กดได้
 @php
     $canCancelReceive = Auth::user() && in_array(Auth::user()->role, ['admin', 'stock', 'store'], true);
@@ -734,6 +746,14 @@ if(!RECEIVED_BY){
     throw new Error('access_denied: not logged in');
 }
 document.getElementById('userName').textContent = RECEIVED_BY;
+
+// ผู้ใช้ "พู่": เปิดดรอปดาวส่งต่อ + อนุญาตเลือกรูปจากแกลเลอรี (เอา capture ออก เพื่อให้ iPhone แสดงตัวเลือกแกลเลอรี/กล้อง)
+if (IS_PU) {
+    const hw = document.getElementById('handoffWrap');
+    if (hw) hw.style.display = '';
+    const pi = document.getElementById('photoInput');
+    if (pi) pi.removeAttribute('capture');
+}
 
 // ตั้งค่าเริ่มต้นเครื่องพิมพ์ให้ (บาส/tuk = สโตร์) ตอนโหลดหน้า
 // NOTE: ใช้ document.getElementById ตรง ๆ ห้ามเรียก onPrinterChange/$ ตรงนี้
@@ -774,9 +794,25 @@ let noShelf = false;
 function onNoShelfToggle(){
     noShelf = $('noShelfChk').checked;
     const btn = $('shelfSelect');
-    btn.disabled = noShelf;             
+    btn.disabled = noShelf;
     if(noShelf){ resetShelf(); btn.classList.add('locked'); }
     else{ btn.classList.remove('locked'); }
+}
+// พู่: เลือกส่งต่อให้ (โอ/ฟิว) -> งานนี้ไม่ระบุชั้น (ล็อกช่องชั้นวาง) แล้วบันทึก do_it แทน
+function onHandoffChange(){
+    handoffPerson = ($('handoffSelect') ? $('handoffSelect').value : '') || '';
+    const btn = $('shelfSelect');
+    const noChk = $('noShelfChk');
+    if(handoffPerson){
+        // ล็อก/ล้างชั้นวาง เพราะงานนี้จะไม่มีชั้น
+        resetShelf();
+        if(btn){ btn.disabled = true; btn.classList.add('locked'); }
+        if(noChk){ noChk.checked = false; noChk.disabled = true; }
+        noShelf = false;
+    }else{
+        if(btn){ btn.disabled = false; btn.classList.remove('locked'); }
+        if(noChk){ noChk.disabled = false; }
+    }
 }
 let historyDetailMap = new Map();
 let historyRows = [];          // raw ประวัติการรับ (มี id, shelf) ของ PO ล่าสุด — ใช้แสดง/แก้ไขชั้นวาง
@@ -1633,7 +1669,9 @@ function openConfirm(){
     const selected = getSelectedItems();
     if(selected.length === 0){ toast('กรุณาเลือกสินค้าอย่างน้อย 1 รายการ','error'); return; }
     if(selected.some(s => s.RecvQty <= 0)){ toast('จำนวนรับต้องมากกว่า 0','error'); return; }
-    if(!noShelf && !selectedShelf){ toast('กรุณาเลือกชั้นวาง หรือติ๊ก "ไม่ระบุชั้นวาง"','error'); return; }
+    // พู่ที่เลือกส่งต่อให้ (โอ/ฟิว) -> งานนี้ไม่ต้องระบุชั้น
+    const handoff = IS_PU ? ((($('handoffSelect') && $('handoffSelect').value) || '')) : '';
+    if(!handoff && !noShelf && !selectedShelf){ toast('กรุณาเลือกชั้นวาง หรือติ๊ก "ไม่ระบุชั้นวาง"','error'); return; }
     if(!$('printerSelect').value){ toast('กรุณาเลือกเครื่องพิมพ์หรือเลือกไม่พิมพ์','error'); return; }
 
     const printerVal = $('printerSelect').value;
@@ -1651,7 +1689,8 @@ function openConfirm(){
         PONum: currentPO.DocuNo,
         SONum: soNums || null,
         Status: status,
-        Shelf: noShelf ? null : (selectedShelf || null),
+        Shelf: handoff ? null : (noShelf ? null : (selectedShelf || null)),
+        DoIt: handoff || null,
         Printer: printer,
         PrintSheets: printSheets,
         ReceivedBy: RECEIVED_BY || null,
@@ -1670,7 +1709,9 @@ function openConfirm(){
         ${custNames ? `<div class="row"><span>ลูกค้า</span><span><b>${esc(custNames)}</b></span></div>` : ''}
         <div class="row"><span>จำนวนรายการ</span><span><b>${selected.length}</b> รายการ</span></div>
         <div class="row"><span>จำนวนรวม</span><span><b>${fmtQty(totalQty)}</b> ชิ้น</span></div>
-        <div class="row"><span>ชั้นวาง</span><span><b>${noShelf ? 'ยังไม่ระบุ' : esc(selectedShelf)}</b></span></div>
+        ${handoff
+            ? `<div class="row"><span>ส่งต่อให้ (ดูและต่อ)</span><span><b>${esc(handoff)}</b></span></div>`
+            : `<div class="row"><span>ชั้นวาง</span><span><b>${noShelf ? 'ยังไม่ระบุ' : esc(selectedShelf)}</b></span></div>`}
         <div class="row"><span>สถานะ PO</span><span>${statusBadge}</span></div>
         ${printer ? `<div class="row"><span>พิมพ์สติกเกอร์</span><span><b>${esc(printerLabel(printer))}</b> × ${printSheets}</span></div>` : ''}
     `;
@@ -1826,8 +1867,12 @@ function clearResult(){
     resetShelf(); resetPrinter(); removePhoto();
     // คืนค่าเริ่มต้นชั้นวางตามผู้ใช้ (พู่ = "พู่/เอ็ม", ว้าล = "ว้าล/เอ็ม") — ไม่ติ๊ก "ไม่ระบุชั้นวาง" อีกต่อไป, เปลี่ยนเองได้
     $('noShelfChk').checked = false;
+    // รีเซ็ตดรอปดาวส่งต่อ (พู่)
+    handoffPerson = '';
+    const hs = $('handoffSelect'); if(hs){ hs.value = ''; }
     onNoShelfToggle();
-    if (DEFAULT_SHELF) selectShelf(DEFAULT_SHELF);
+    if(IS_PU) onHandoffChange();
+    if (DEFAULT_SHELF && !(IS_PU && handoffPerson)) selectShelf(DEFAULT_SHELF);
 }
 let toastTimer;
 function toast(msg, type=''){

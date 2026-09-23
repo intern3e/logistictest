@@ -321,6 +321,8 @@ class MobilePoappController extends Controller
             'Printer'           => 'nullable|string|max:100',
             'PrintSheets'       => 'nullable|integer|min:1',
             'ReceivedBy'        => 'nullable|string|max:100',
+            // ส่งต่อให้ (ดูและต่อ) — สำหรับผู้ใช้ "พู่": งานนี้ไม่มีชั้น แต่บันทึก do_it/do_it_time แทน
+            'DoIt'              => 'nullable|string|max:100',
             'CustPONo'          => 'nullable|string|max:200',
             'CustName'          => 'nullable|string|max:500',
             'items'             => 'required|array|min:1',
@@ -345,6 +347,8 @@ class MobilePoappController extends Controller
         $photoPath  = $this->savePhotoBase64($validated['Photo'] ?? null, $validated['PONum']);
         $receivedAt = now();
         $receivedBy = $validated['ReceivedBy'] ?? optional($request->user())->name;
+        // ส่งต่อให้ (โอ/ฟิว): ถ้ามี -> งานนี้ไม่กำหนดชั้น (shelf = null) แต่บันทึก do_it/do_it_time = ชื่อ + เวลาที่บันทึก
+        $doIt       = trim((string) ($validated['DoIt'] ?? '')) ?: null;
 
         // แยก SO (PO เชื่อมหลาย SO) → รับเข้า/พิมพ์ แยกต่อ SO
         $soNums = array_values(array_unique(array_filter(array_map('trim', explode(',', (string) ($validated['SONum'] ?? ''))))));
@@ -376,7 +380,7 @@ class MobilePoappController extends Controller
         }
 
         try {
-            $header = DB::transaction(function () use ($validated, $photoPath, $receivedAt, $receivedBy, $soNums, $soInfo) {
+            $header = DB::transaction(function () use ($validated, $photoPath, $receivedAt, $receivedBy, $soNums, $soInfo, $doIt) {
                 $last = null;
                 // 1 SO = 1 po_receives (แยก record) + ไส้ในของ SO นั้น
                 foreach ($soNums as $soNum) {
@@ -413,10 +417,13 @@ class MobilePoappController extends Controller
                             'good_name'   => $it['GoodName'] ?? null,
                             'recv_qty'    => $it['RecvQty'],
                             'unit_price'  => $it['UnitPrice'] ?? null,
-                            'shelf'       => $validated['Shelf'] ?? null,
+                            // ส่งต่อให้ (do_it): งานนี้ไม่มีชั้น -> shelf = null
+                            'shelf'       => $doIt ? null : ($validated['Shelf'] ?? null),
                             'photo_path'  => $photoPath,
                             'received_by' => $receivedBy,
                             'received_at' => $receivedAt,
+                            'do_it'       => $doIt,
+                            'do_it_time'  => $doIt ? $receivedAt : null,
                         ]);
                     }
                     $last = $header;

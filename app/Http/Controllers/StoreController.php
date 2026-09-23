@@ -455,11 +455,15 @@ class StoreController extends Controller
             return response()->json(['ok' => false, 'message' => 'คุณไม่มีสิทธิ์ดำเนินการ'], 403);
         }
 
-        $request->validate(['po_id' => 'required|string']);
+        $request->validate([
+            'po_id' => 'required|string',
+            'do_by' => 'nullable|string|max:100',   // ชื่อผู้จัดการที่เลือกจากดรอปดาว (โอ/ฟิว) — ถ้าไม่ส่งใช้ชื่อผู้ล็อกอิน
+        ]);
         $poId = $request->input('po_id');
+        $doBy = trim((string) $request->input('do_by', '')) ?: $authUser->name;
 
         try {
-            $result = DB::transaction(function () use ($poId, $authUser) {
+            $result = DB::transaction(function () use ($poId, $doBy) {
                 $lines = PoReceiveLine::where('po_id', $poId)
                     ->whereNull('shelf')
                     ->lockForUpdate()
@@ -481,7 +485,7 @@ class StoreController extends Controller
 
                 PoReceiveLine::where('po_id', $poId)
                     ->whereNull('shelf')
-                    ->update(['do_it' => $authUser->name, 'do_it_time' => Carbon::now()]);
+                    ->update(['do_it' => $doBy, 'do_it_time' => Carbon::now()]);
 
                 return ['ok' => true, 'message' => 'เริ่มจัดการงานแล้ว'];
             });
@@ -2215,11 +2219,15 @@ class StoreController extends Controller
             return response()->json(['ok' => false, 'message' => 'คุณไม่มีสิทธิ์ดำเนินการ'], 403);
         }
 
-        $request->validate(['store_id' => 'required']);
+        $request->validate([
+            'store_id' => 'required',
+            'do_by'    => 'nullable|string|max:100',   // ชื่อผู้จัดการที่เลือกจากดรอปดาว (โอ/ฟิว)
+        ]);
         $storeId = $request->input('store_id');
+        $doBy    = trim((string) $request->input('do_by', '')) ?: $authUser->name;
 
         try {
-            $result = DB::transaction(function () use ($storeId, $authUser) {
+            $result = DB::transaction(function () use ($storeId, $authUser, $doBy) {
                 $row = DB::connection(self::LEGACY_CONNECTION)->table('store')
                     ->where('ID', $storeId)
                     // ตรงกับเงื่อนไข "งานที่ยังไม่ขึ้นชั้น (Area ว่าง) + ยังไม่เช็คเอาท์"
@@ -2281,7 +2289,7 @@ class StoreController extends Controller
                         $billMeta->{self::TBLBILL_POREF_COLUMN} ?? null,
                         $custName,
                         $custCode,
-                        $authUser->name,
+                        $doBy,
                         $now
                     );
                     return ['ok' => true, 'message' => 'เริ่มจัดการงานแล้ว'];
@@ -2310,7 +2318,7 @@ class StoreController extends Controller
                 }
 
                 PoReceiveLine::where('po_id', $poId)
-                    ->update(['do_it' => $authUser->name, 'do_it_time' => $now]);
+                    ->update(['do_it' => $doBy, 'do_it_time' => $now]);
 
                 return ['ok' => true, 'message' => 'เริ่มจัดการงานแล้ว'];
             });

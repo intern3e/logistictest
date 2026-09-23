@@ -493,6 +493,20 @@
             transform: translateY(-1px);
         }
 
+        /* ดรอปดาว "กำลังจัดการ" — เลือกชื่อผู้จัดการ (โอ/ฟิว) */
+        .claim-select {
+            font-size: 11px;
+            font-weight: 700;
+            padding: 5px 10px;
+            border-radius: 16px;
+            background: var(--primary-light);
+            color: var(--primary-dark);
+            border: 1px solid #bfdbfe;
+            cursor: pointer;
+            font-family: inherit;
+        }
+        .claim-select:focus { outline: none; border-color: var(--primary); box-shadow: 0 0 0 2px var(--primary-light); }
+
         .btn-finish-claim {
             font-size: 11px;
             font-weight: 700;
@@ -1028,7 +1042,12 @@
                                             <div class="muted">เอาไปทำโดย {{ $h->claimed_by ?: '—' }}{{ $h->claimed_at ? ' · ' . \Carbon\Carbon::parse($h->claimed_at)->format('d/m/Y H:i') : '' }}</div>
                                             <div class="muted">รับคืนโดย {{ $h->finished_by ?: '—' }}{{ $h->finished_at ? ' · ' . \Carbon\Carbon::parse($h->finished_at)->format('d/m/Y H:i') : '' }}</div>
                                         @else
-                                            <button type="button" class="btn-claim" data-po="{{ $h->id }}" data-type="{{ $h->type }}">กำลังจัดการ</button>
+                                            {{-- เลือกชื่อผู้จัดการ (โอ/ฟิว) -> บันทึกเข้า do_it --}}
+                                            <select class="claim-select" data-po="{{ $h->id }}" data-type="{{ $h->type }}">
+                                                <option value="">กำลังจัดการ...</option>
+                                                <option value="โอ">โอ</option>
+                                                <option value="ฟิว">ฟิว</option>
+                                            </select>
                                         @endif
                                     @else
                                         {{-- internal_po --}}
@@ -1217,35 +1236,44 @@ document.querySelectorAll('.chkLine').forEach(c => c.addEventListener('change', 
 
 function pickLoc(el) { const i = document.getElementById('inpLocation'); i.value = el.textContent.trim(); i.focus(); }
 
-async function postClaimAction(url, poId, btn, confirmMsg, fieldName = 'po_id') {
-    if (!confirm(confirmMsg)) return;
+async function postClaimAction(url, poId, btn, confirmMsg, fieldName = 'po_id', extra = {}) {
+    if (!confirm(confirmMsg)) return false;
     btn.disabled = true;
     try {
         const res = await fetch(url, {
             method: 'POST',
             headers: { 'Content-Type':'application/json','Accept':'application/json','X-Requested-With':'XMLHttpRequest','X-CSRF-TOKEN':CSRF },
-            body: JSON.stringify({ [fieldName]: poId })
+            body: JSON.stringify({ [fieldName]: poId, ...extra })
         });
         const data = await res.json();
         if (res.ok && data.ok) {
             window.location.reload();
+            return true;
         } else {
             alert(data.message || 'ดำเนินการไม่สำเร็จ');
             btn.disabled = false;
+            return false;
         }
     } catch (e) {
         console.error(e);
         alert('เกิดข้อผิดพลาด');
         btn.disabled = false;
+        return false;
     }
 }
-document.querySelectorAll('.btn-claim').forEach(btn => {
-    btn.addEventListener('click', () => {
-        if (btn.dataset.type === 'legacy') {
-            postClaimAction(LEGACY_CLAIM_URL, btn.dataset.po, btn, 'คุณกำลังจัดการงาน PO นี้ใช่หรือไม่', 'store_id');
-        } else {
-            postClaimAction(CLAIM_URL, btn.dataset.po, btn, 'คุณกำลังจัดการงาน PO นี้ใช่หรือไม่');
-        }
+// ดรอปดาว "กำลังจัดการ" — เลือกชื่อ (โอ/ฟิว) แล้วบันทึกเข้า do_it
+document.querySelectorAll('.claim-select').forEach(sel => {
+    sel.addEventListener('change', async () => {
+        const doBy = sel.value;
+        if (!doBy) return;
+        const ok = await postClaimAction(
+            sel.dataset.type === 'legacy' ? LEGACY_CLAIM_URL : CLAIM_URL,
+            sel.dataset.po, sel,
+            'ยืนยันให้ "' + doBy + '" เป็นผู้จัดการงาน PO นี้ใช่หรือไม่',
+            sel.dataset.type === 'legacy' ? 'store_id' : 'po_id',
+            { do_by: doBy }
+        );
+        if (!ok) sel.value = '';   // ยกเลิก/ล้มเหลว -> รีเซ็ตดรอปดาว
     });
 });
 document.querySelectorAll('.btn-finish-claim').forEach(btn => {
