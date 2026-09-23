@@ -12,54 +12,171 @@ use App\Models\Bill;
 use function Laravel\Prompts\table;
 use Illuminate\Support\Facades\Validator;
 
+use Carbon\Carbon;
+
 class AdminController extends Controller
 {
     public function dashboard(Request $request)
     {
         $this->requireLogin($request);
         $date = $request->get('date');
+        $search = $request->get('search'); // คำค้นหา ใช้ค้นทุกแถวในระบบ ไม่ใช่แค่หน้าที่แสดงอยู่
         $message = null;  // กำหนดค่าเริ่มต้นให้กับตัวแปร $message
-        
+
+        // แสดงเฉพาะข้อมูลตั้งแต่วันที่นี้เป็นต้นไป (อิงวันที่ส่งของ date_of_dali)
+        $startDate = '2026-09-19';
+
+        $query = Bill::query()->whereDate('date_of_dali', '>=', $startDate);
+
         // ถ้าผู้ใช้กรอกวันที่ ให้กรองข้อมูลที่มีวันที่ตรงกับที่เลือก
         if ($date) {
-            $bill = Bill::whereDate('date_of_dali', $date)  // ใช้ชื่อคอลัมน์ที่ถูกต้อง
-                        ->orderBy('so_detail_id', 'desc')
-                        ->get();
-            
-            // ตรวจสอบว่ามีข้อมูลหรือไม่
-            if ($bill->isEmpty()) {
-                $message = 'ไม่พบข้อมูลที่ตรงกับวันที่เลือก';
-            } 
-        } else {
-            // ถ้าไม่ได้กรอกวันที่ จะดึงข้อมูลทั้งหมด
-            $bill = Bill::orderBy('so_detail_id', 'desc')
-                        ->get();
+            $query->whereDate('date_of_dali', $date); // ใช้ชื่อคอลัมน์วันที่ของคุณ
         }
-    
-        return view('admin.dashboardadmin', compact('bill', 'message'));
+
+        // ถ้าผู้ใช้พิมพ์คำค้นหา ให้ค้นจากรหัสลูกค้า, รหัส SO และเลขบิล (billid) ทั่วทั้งฐานข้อมูล
+        if ($search) {
+            $query->where(function ($q) use ($search) {
+                $q->where('customer_id', 'like', "%{$search}%")
+                  ->orWhere('so_id', 'like', "%{$search}%")
+                  ->orWhere('billid', 'like', "%{$search}%");
+            });
+        }
+
+        // ===== สรุปความคืบหน้าแต่ละขั้น (เปิดบิล / จัดเส้นทาง / ส่งสินค้า) =====
+        // นับตามเงื่อนไขที่กรองอยู่ (วันที่/คำค้นหา) ถ้าไม่กรอง = ทั้งระบบ, ไม่นับรายการที่ยกเลิก (statuspdf = 6)
+        $billTable = (new Bill)->getTable();
+        $statsBase = clone $query;
+        $active = function () use ($statsBase) {
+            return (clone $statsBase)->where(function ($q) {
+                $q->whereNull('statuspdf')->orWhere('statuspdf', '!=', 6);
+            });
+        };
+
+        $activeCount    = $active()->count();
+        $cancelledCount = (clone $statsBase)->where('statuspdf', 6)->count();
+
+        $billDone  = $active()->where('statuspdf', 1)->count();
+        // เงื่อนไข "จัดเส้นทางแล้ว" = มีแถวใน transaction_transport ที่มี time_pick
+        // 2 ตารางใช้ collation ต่างกัน (general_ci / unicode_ci) ต้องบังคับให้ตรงกันก่อนเทียบ
+        $routeExists = function ($q) use ($billTable) {
+            $q->select(DB::raw(1))
+              ->from('transaction_transport')
+              ->whereRaw('transaction_transport.bill_id COLLATE utf8mb4_unicode_ci = ' . $billTable . '.so_detail_id COLLATE utf8mb4_unicode_ci')
+              ->whereNotNull('transaction_transport.time_pick');
+        };
+
+        $routeDone = $active()->whereExists($routeExists)->count();
+        $deliDone  = $active()->where('statusdeli', 'จัดส่งสำเร็จ')->count();
+
+        $stageStats = [
+            ['label' => 'เปิดบิลส่งของ', 'icon' => 'fa-file-invoice', 'done' => $billDone,  'pending' => $activeCount - $billDone],
+            ['label' => 'จัดเส้นทาง',    'icon' => 'fa-route',        'done' => $routeDone, 'pending' => $activeCount - $routeDone],
+            ['label' => 'ส่งสินค้า',      'icon' => 'fa-truck',        'done' => $deliDone,  'pending' => $activeCount - $deliDone],
+        ];
+        foreach ($stageStats as &$s) {
+            $s['percent'] = $activeCount > 0 ? round($s['done'] * 100 / $activeCount) : 0;
+        }
+        unset($s);
+
+        // ===== ฟิลเตอร์ตามสถานะแต่ละขั้น (ใช้กับตารางเท่านั้น การ์ดสรุปด้านบนยังนับตามวันที่/คำค้นหา) =====
+        $notCancelled = function ($q) {
+            $q->whereNull('statuspdf')->orWhere('statuspdf', '!=', 6);
+        };
+
+        $billStatus  = $request->get('bill_status');
+        $routeStatus = $request->get('route_status');
+        $deliStatus  = $request->get('deli_status');
+
+        // เปิดบิลส่งของ
+        if ($billStatus === 'done') {
+            $query->where('statuspdf', 1);
+        } elseif ($billStatus === 'pending') {
+            $query->where(function ($q) {
+                $q->whereNull('statuspdf')->orWhereNotIn('statuspdf', [1, 6]);
+            });
+        } elseif ($billStatus === 'cancel') {
+            $query->where('statuspdf', 6);
+        }
+
+        // จัดเส้นทาง
+        if ($routeStatus === 'done') {
+            $query->where($notCancelled)->whereExists($routeExists);
+        } elseif ($routeStatus === 'pending') {
+            $query->where($notCancelled)->whereNotExists($routeExists);
+        }
+
+        // ส่งสินค้า
+        $deliMap = ['success' => 'จัดส่งสำเร็จ', 'hold' => 'ค้างบิล', 'wrong' => 'สินค้าผิด'];
+        if (isset($deliMap[$deliStatus])) {
+            $query->where($notCancelled)->where('statusdeli', $deliMap[$deliStatus]);
+        } elseif ($deliStatus === 'pending') {
+            // "รอดำเนินการ" = ยังไม่มีผลส่งจริง (null, '', '0' หรือค่าอื่นที่ไม่ใช่ 3 สถานะผลส่ง)
+            $query->where($notCancelled)->where(function ($q) use ($deliMap) {
+                $q->whereNull('statusdeli')
+                  ->orWhereNotIn('statusdeli', array_values($deliMap));
+            });
+        }
+
+        $bill = $query->orderBy('so_id', 'desc') // เปลี่ยนมาเรียงตาม so_id ตามโครงสร้างจริง
+                      ->paginate(200); // เปลี่ยนจาก get() เป็น paginate(200) เพื่อแบ่งหน้า
+
+        // ตรวจสอบว่ามีข้อมูลหรือไม่
+        if ($bill->isEmpty()) {
+            $message = 'ไม่พบข้อมูลที่ตรงกับเงื่อนไขที่เลือก';
+        }
+
+        // คงค่า Query String (เช่น วันที่เลือก, คำค้นหา) ไว้ในลิงก์เปลี่ยนหน้า
+        $bill->appends($request->all());
+
+        // "จัดสินค้า": ดึงเวลาจริงจากตาราง transaction_transport (bill_id ในตารางนี้ เก็บ so_detail_id ของบิล)
+        // เพื่อเอาเวลา (time_pick) และชื่อผู้จัด (name_pick) จริงจาก DB มาแสดง แทนการเดาจาก emp_picker เฉยๆ
+        $soDetailIds = $bill->getCollection()->pluck('so_detail_id')->filter()->unique()->values()->toArray();
+
+        $pickLogs = DB::table('transaction_transport')
+            ->whereIn('bill_id', $soDetailIds)
+            ->get()
+            ->keyBy('bill_id');
+
+        $bill->getCollection()->transform(function ($item) use ($pickLogs) {
+            $log = $pickLogs->get($item->so_detail_id);
+            $item->pack_name = $log->name_pick ?? null;
+            $item->pack_time = $log->time_pick ?? null;
+            // "ส่งสินค้า": เวลาและชื่อผู้กดยืนยันผลส่ง (บันทึกจากหน้า /billreceive)
+            $item->deli_name = $log->check_name ?? null;
+            $item->deli_time = $log->check_time ?? null;
+            return $item;
+        });
+
+        // คำนวณจำนวนทั้งหมดในระบบ
+        $totalCount = Bill::whereDate('date_of_dali', '>=', $startDate)->count();
+
+        // คำนวณจำนวนเฉพาะในวันนี้ (อ้างอิงจากคอลัมน์ date_of_dali และวันที่ปัจจุบัน)
+        $todayCount = Bill::whereDate('date_of_dali', Carbon::today())->count();
+
+        return view('admin.dashboardadmin', compact('bill', 'message', 'totalCount', 'todayCount', 'stageStats', 'activeCount', 'cancelledCount', 'startDate'));
     }
     public function dashboardpdf(Request $request)
     {
         // หน้านี้ไม่ต้อง login
         $date = $request->get('date');
         $message = null;  // กำหนดค่าเริ่มต้นให้กับตัวแปร $message
-        
+
         // ถ้าผู้ใช้กรอกวันที่ ให้กรองข้อมูลที่มีวันที่ตรงกับที่เลือก
         if ($date) {
             $bill = Bill::whereDate('date_of_dali', $date)  // ใช้ชื่อคอลัมน์ที่ถูกต้อง
                         ->orderBy('so_detail_id', 'desc')
                         ->get();
-            
+
             // ตรวจสอบว่ามีข้อมูลหรือไม่
             if ($bill->isEmpty()) {
                 $message = 'ไม่พบข้อมูลที่ตรงกับวันที่เลือก';
-            } 
+            }
         } else {
             // ถ้าไม่ได้กรอกวันที่ จะดึงข้อมูลทั้งหมด
             $bill = Bill::orderBy('so_detail_id', 'desc')
                         ->get();
         }
-    
+
         return view('admin.dashboardadminpdf', compact('bill', 'message'));
     }
 
@@ -68,23 +185,23 @@ class AdminController extends Controller
         $this->requireLogin($request);
         $date = $request->get('date');
         $message = null;  // กำหนดค่าเริ่มต้นให้กับตัวแปร $message
-        
+
         // ถ้าผู้ใช้กรอกวันที่ ให้กรองข้อมูลที่มีวันที่ตรงกับที่เลือก
         if ($date) {
             $bill = Bill::whereDate('date_of_dali', $date)  // ใช้ชื่อคอลัมน์ที่ถูกต้อง
                         ->orderBy('so_detail_id', 'desc')
                         ->get();
-            
+
             // ตรวจสอบว่ามีข้อมูลหรือไม่
             if ($bill->isEmpty()) {
                 $message = 'ไม่พบข้อมูลที่ตรงกับวันที่เลือก';
-            } 
+            }
         } else {
             // ถ้าไม่ได้กรอกวันที่ จะดึงข้อมูลทั้งหมด
             $bill = Bill::orderBy('so_detail_id', 'desc')
                         ->get();
         }
-    
+
         return view('admin.adminroute', compact('bill', 'message'));
     }
 
@@ -93,17 +210,17 @@ class AdminController extends Controller
         // หน้านี้ไม่ต้อง login
         $date = $request->get('date');
         $message = null;  // กำหนดค่าเริ่มต้นให้กับตัวแปร $message
-        
+
         // ถ้าผู้ใช้กรอกวันที่ ให้กรองข้อมูลที่มีวันที่ตรงกับที่เลือก
         if ($date) {
             $bill = Bill::whereDate('time', $date)  // ใช้ชื่อคอลัมน์ที่ถูกต้อง
                         ->orderBy('so_detail_id', 'desc')
                         ->get();
-            
+
             // ตรวจสอบว่ามีข้อมูลหรือไม่
             if ($bill->isEmpty()) {
                 $message = 'ไม่พบข้อมูลที่ตรงกับวันที่เลือก';
-            } 
+            }
         } else {
             // ถ้าไม่ได้กรอกวันที่ จะดึงข้อมูลทั้งหมด
             $bill = Bill::orderBy('so_detail_id', 'desc')
@@ -220,7 +337,7 @@ public function updateStatuspdf2(Request $request)
         return response()->json(['success' => false, 'message' => 'Failed to update status', 'error' => $e->getMessage()], 500);
     }
 }
-public function updateDeliveryDate(Request $request) 
+public function updateDeliveryDate(Request $request)
 {
     try {
         // ตรวจสอบข้อมูลที่ส่งมา
@@ -306,7 +423,7 @@ public function uploadBillIssue(Request $request)
 {
     $request->validate([
         'bill_issue_no' => 'required|string',
-        'pdffilebillissue' => 'required|mimes:pdf|max:10240' 
+        'pdffilebillissue' => 'required|mimes:pdf|max:10240'
     ]);
 
     $billIssueNo = $request->bill_issue_no;

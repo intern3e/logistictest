@@ -5,7 +5,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>ข้อมูลจัดส่ง</title>
-
+    
     {{-- bust cache --}}
     <link rel="stylesheet" href="{{ asset('css/dashboard.blade.css') }}?v={{ time() }}">
 
@@ -80,11 +80,6 @@
             font-size: inherit !important;
         }
 
-        /* --- ช่อง REF (ลบ inline 10px เดิม → class นี้ ไหลตามจอ) --- */
-        td.td-ref {
-            font-size: clamp(9px, 0.5vw + 3px, 12px) !important;
-        }
-
         /* --- ประเภทงาน: ไหลตามจอ (เดิมแข็ง 10px) + แคบ + สีเต็มช่อง --- */
         th.col-type, td.col-type {
             width: 96px !important;
@@ -127,7 +122,7 @@
         <h2>ข้อมูลจัดส่ง</h2>
 
         <div class="buttons">
-       <span>👤 ผู้ใช้: {{ request()->get('create_by', 'Guest') }}</span>
+       <span> ผู้ใช้: {{ request()->get('create_by', 'Guest') }}</span>
             @csrf
 
             <a href="http://server_update:8000/solist" button  type="submit" class="btn btn-danger">🚪 หน้าหลัก</a>
@@ -236,7 +231,7 @@ window.addEventListener('load', () => {
                     <th>อ้างอิงใบส่งของ</th>
                     <th>อ้างอิงใบสั่งขาย</th>
                     <th>อ้างอิงใบสั่งซื้อ</th>
-                    <th>REF</th>
+                    {{-- ✅ ลบ REF ออกจากตารางหลัก --}}
                     <th>ชื่อลูกค้า</th>
                     <th>วันที่จัดส่ง</th>
                     <th>ผู้บันทึก</th>
@@ -292,8 +287,9 @@ window.addEventListener('load', () => {
                     </td>
 
                     <td>{{ $item->ponum }}</td>
-                    {{-- ✅ REF: ลบ inline font-size:10px → class td-ref (ไหลตามจอ) --}}
-                    <td class="td-ref">{{ $item->so_detail_id }}</td>
+                    
+                    {{-- ✅ ลบ REF ออกจากตารางหลัก (แต่ยังส่งเข้า Popup อยู่) --}}
+                    
                     <td class="wrap-text" style="text-align: left; white-space: normal; word-wrap: break-word;">
                         {{ $item->customer_name }}
                     </td>

@@ -9,10 +9,50 @@
     <link href="https://fonts.googleapis.com/css2?family=Prompt:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <style>
         body { font-family: 'Prompt', sans-serif; }
+        /* กันหน้าเลื่อนซ้ายขวาเวลาเปลี่ยนเมนู (scrollbar โผล่/หาย) ให้ทุกเมนูตำแหน่งเท่ากัน */
+        html { overflow-y: scroll; scrollbar-gutter: stable; }
+        /* ปุ่มในสารบัญ: ขนาดเท่ากันทุกอัน อยู่บรรทัดเดียว */
+        aside ul button { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-height: 40px; }
         [x-cloak] { display: none !important; }
+
+        /* รูปในคู่มือกดเพื่อขยายได้ */
+        main img { cursor: zoom-in; transition: opacity .15s; }
+        /* กรอบรูปทุกอันขนาดเท่ากัน */
+        main li img { width: 100%; height: 12rem; object-fit: contain; display: block; }
+        main img:hover { opacity: .85; }
+
+        /* ===== Lightbox ขยายรูป ===== */
+        #lightbox {
+            position: fixed; inset: 0; z-index: 9999;
+            background: rgba(15, 23, 42, .88);
+            display: none; align-items: center; justify-content: center;
+            padding: 24px;
+        }
+        #lightbox.open { display: flex; }
+        #lightbox img {
+            max-width: 95vw; max-height: 88vh;
+            object-fit: contain; border-radius: 8px;
+            background: #fff; box-shadow: 0 10px 40px rgba(0,0,0,.4);
+            cursor: zoom-out;
+        }
+        #lightbox .lb-btn {
+            position: absolute; background: rgba(255,255,255,.92); color: #1f2937;
+            border: none; border-radius: 9999px; width: 44px; height: 44px;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 22px; cursor: pointer; box-shadow: 0 2px 8px rgba(0,0,0,.25);
+        }
+        #lightbox .lb-btn:hover { background: #fff; }
+        #lightbox .lb-close { top: 16px; right: 16px; }
+        #lightbox .lb-prev { left: 16px; top: 50%; transform: translateY(-50%); }
+        #lightbox .lb-next { right: 16px; top: 50%; transform: translateY(-50%); }
+        #lightbox .lb-caption {
+            position: absolute; bottom: 14px; left: 50%; transform: translateX(-50%);
+            color: #e5e7eb; font-size: 13px; text-align: center; white-space: nowrap;
+        }
     </style>
 </head>
-<body class="bg-gray-50 text-gray-800 antialiased" x-data="{ activeTab: null }">
+<body class="bg-gray-50 text-gray-800 antialiased" x-data="{ activeTab: null }"
+      x-init="$watch('activeTab', () => $nextTick(() => document.getElementById('manual-grid').scrollIntoView({ behavior: 'smooth', block: 'start' })))">
 
     <main class="max-w-7xl mx-auto px-4 py-8 sm:px-6 lg:px-8 space-y-8">
         
@@ -23,7 +63,7 @@
             <p class="text-gray-500 text-sm mt-1">รายละเอียดและขั้นตอนการใช้งานฟังก์ชันต่างๆ ภายในระบบบริหารจัดการ</p>
         </div>
 
-        <div class="grid grid-cols-1 lg:grid-cols-4 gap-8">
+        <div id="manual-grid" class="grid grid-cols-1 lg:grid-cols-4 gap-8 items-start" style="scroll-margin-top: 24px;">
             
             <aside class="lg:col-span-1">
                 <div class="bg-white rounded-xl shadow-sm p-6 sticky top-6 border border-gray-200">
@@ -43,18 +83,18 @@
                             </button>
                         </li>
                         <li>
-                            <button @click="activeTab = 'create-so'" :class="activeTab === 'create-so' ? 'text-blue-600 font-bold bg-blue-50' : 'text-gray-600 hover:text-blue-600'" class="w-full text-left px-3 py-2 rounded-md transition">
-                                3. การสร้าง SO ใหม่ (Create SO)
+                            <button @click="activeTab = 'rec'" :class="activeTab === 'rec' ? 'text-blue-600 font-bold bg-blue-50' : 'text-gray-600 hover:text-blue-600'" class="w-full text-left px-3 py-2 rounded-md transition">
+                                3. วิธีสร้างใบชั่วคราว (Rec)
                             </button>
                         </li>
                         <li>
-                            <button @click="activeTab = 'search-filter'" :class="activeTab === 'search-filter' ? 'text-blue-600 font-bold bg-blue-50' : 'text-gray-600 hover:text-blue-600'" class="w-full text-left px-3 py-2 rounded-md transition">
-                                4. การค้นหาและกรองข้อมูล
+                            <button @click="activeTab = 'inventory'" :class="activeTab === 'inventory' ? 'text-blue-600 font-bold bg-blue-50' : 'text-gray-600 hover:text-blue-600'" class="w-full text-left px-3 py-2 rounded-md transition">
+                                4. ค้นหาสินค้า (Inventory)
                             </button>
                         </li>
                         <li>
-                            <button @click="activeTab = 'table-info'" :class="activeTab === 'table-info' ? 'text-blue-600 font-bold bg-blue-50' : 'text-gray-600 hover:text-blue-600'" class="w-full text-left px-3 py-2 rounded-md transition">
-                                5. รายละเอียดตารางและสถานะ
+                            <button @click="activeTab = 'sale-shelf'" :class="activeTab === 'sale-shelf' ? 'text-blue-600 font-bold bg-blue-50' : 'text-gray-600 hover:text-blue-600'" class="w-full text-left px-3 py-2 rounded-md transition">
+                                5. ชั้นวาง Sale
                             </button>
                         </li>
                         <li>
@@ -66,7 +106,7 @@
                 </div>
             </aside>
 
-            <div class="lg:col-span-3 space-y-6">
+            <div class="lg:col-span-3 flex flex-col gap-6">
                 
                 <section x-show="activeTab === null || activeTab === 'billing'" x-transition class="bg-white rounded-xl shadow-sm p-6 sm:p-8 border border-gray-200 space-y-6">
                     <div>
@@ -79,7 +119,7 @@
                             <li>
                                 เลือกเมนู <span class="bg-blue-600 text-white px-2 py-0.5 rounded text-xs font-semibold shadow-sm inline-block my-1">Sale Order</span> ในโปรแกรม myAccount จากนั้นให้ไปที่เมนู <span class="bg-blue-600 text-white px-2 py-0.5 rounded text-xs font-semibold shadow-sm inline-block my-1">ขายเชื่อ</span>
                                 
-                                <div class="mt-3 mb-2 grid grid-cols-1 sm:grid-cols-2 gap-4 pl-0 sm:pl-4">
+                                <div class="mt-3 mb-2 grid grid-cols-1 sm:grid-cols-2 gap-4">
                                     <div class="border border-gray-200 rounded-lg p-1 bg-gray-50 shadow-sm">
                                         <img src="https://lh3.googleusercontent.com/d/1YRNHiaZYtsTrEtZXpiL51ziukmZ2KiL4" alt="ตัวอย่างภาพที่ 1" class="w-full h-48 rounded object-contain bg-gray-100">
                                     </div>
@@ -112,7 +152,7 @@
                             <li>
                                ไปที่ <span class="bg-blue-600 text-white px-2 py-0.5 rounded text-xs font-semibold shadow-sm inline-block my-1">Create SO</span> สร้าง SO ใน SERVER เเละ ค้นหา <span class="bg-blue-600 text-white px-2 py-0.5 rounded text-xs font-semibold shadow-sm inline-block my-1">ค้นหา SO</span>
                                 
-                                <div class="mt-3 mb-2 grid grid-cols-1 sm:grid-cols-2 gap-4 pl-0 sm:pl-4">
+                                <div class="mt-3 mb-2 grid grid-cols-1 sm:grid-cols-2 gap-4">
                                     <div class="border border-gray-200 rounded-lg p-1 bg-gray-50 shadow-sm">
                                         <img src="https://lh3.googleusercontent.com/d/1uij-kIlpZqU5DLc7W0NxUz7d2m2lnsVB" alt="ตัวอย่างการค้นหา SO" class="w-full h-48 rounded object-contain bg-gray-100">
                                     </div>
@@ -148,13 +188,13 @@
                                     </div>
                                 </div>
 
-                                <div class="mt-3 mb-2 space-y-4 sm:space-y-0 sm:flex sm:space-x-4 pl-0 sm:pl-4">
+                                <div class="mt-3 mb-2 grid grid-cols-1 sm:grid-cols-2 gap-4">
 
-                                    <div class="border border-gray-200 rounded-lg p-1 bg-gray-50 shadow-sm sm:w-1/2">
+                                    <div class="border border-gray-200 rounded-lg p-1 bg-gray-50 shadow-sm">
                                         <img src="https://lh3.googleusercontent.com/d/1jr18bqS8O5tBH3eRu96hz8ir_yAYFzuY" alt="ขั้นตอนบันทึกข้อมูลจัดส่ง 1" class="w-full h-48 rounded object-contain bg-gray-100">
                                     </div>
 
-                                    <div class="relative group max-w-lg sm:w-1/2 mx-auto sm:mx-0">
+                                    <div class="relative group min-w-0">
                                         <button onclick="document.getElementById('slider-steps').scrollBy({ left: -document.getElementById('slider-steps').offsetWidth, behavior: 'smooth' })" class="absolute left-2 top-1/2 -translate-y-1/2 z-10 bg-white/90 hover:bg-white text-gray-800 p-2 rounded-full shadow-md transition-all h-10 w-10 flex items-center justify-center">
                                             <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
@@ -186,7 +226,7 @@
                             </li>
                             <li>
                                 บันทึกเส้นทางส่งสินค้าเสร็จสิ้น ข้อมูลจะขึ้นใน <span class="bg-blue-600 text-white px-2 py-0.5 rounded text-xs font-semibold shadow-sm inline-block my-1">Billing</span>
-                                <div class="mt-3 mb-2 grid grid-cols-1 sm:grid-cols-2 gap-4 pl-0 sm:pl-4">
+                                <div class="mt-3 mb-2 grid grid-cols-1 sm:grid-cols-2 gap-4">
                                     <div class="border border-gray-200 rounded-lg p-1 bg-gray-50 shadow-sm">
                                         <img src="https://lh3.googleusercontent.com/d/14Bo68P9SWNE-r_VpCAFPjrfcN_n83tKo" alt="ตัวอย่างภาพที่ 1" class="w-full h-48 rounded object-contain bg-gray-100">
                                     </div>
@@ -245,7 +285,7 @@
                                     <img src="https://lh3.googleusercontent.com/d/1jr18bqS8O5tBH3eRu96hz8ir_yAYFzuY" alt="ตัวอย่าง Deposit" class="w-full h-48 rounded object-contain bg-gray-100">
                                 </div>
 
-                                <div class="relative group border border-gray-200 rounded-lg p-1 bg-gray-50 shadow-sm overflow-hidden">
+                                <div class="relative group min-w-0 border border-gray-200 rounded-lg p-1 bg-gray-50 shadow-sm overflow-hidden">
                                     <button type="button" onclick="document.getElementById('slider-deposit').scrollBy({ left: -document.getElementById('slider-deposit').offsetWidth, behavior: 'smooth' })" class="absolute left-2 top-1/2 -translate-y-1/2 z-10 bg-white/90 hover:bg-white text-gray-800 p-2 rounded-full shadow-md transition-all h-10 w-10 flex items-center justify-center">
                                         <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
@@ -283,72 +323,107 @@
                     </ol>
                 </section>
 
-                <section x-show="activeTab === null || activeTab === 'create-so'" x-transition class="bg-white rounded-xl shadow-sm p-6 sm:p-8 border border-gray-200">
+                <section x-show="activeTab === null || activeTab === 'rec'" x-transition class="bg-white rounded-xl shadow-sm p-6 sm:p-8 border border-gray-200">
                     <h2 class="text-lg font-bold text-gray-900 mb-3 flex items-center">
-                        <span class="bg-blue-100 text-blue-600 px-2.5 py-1 rounded-md mr-3 text-xs font-semibold">03</span> 
-                        การสร้าง SO ใหม่ (Create SO)
+                        <span class="bg-blue-100 text-blue-600 px-2.5 py-1 rounded-md mr-3 text-xs font-semibold">03</span>
+                        วิธีสร้างใบชั่วคราว (Rec)
                     </h2>
-                    <p class="text-gray-600 text-sm mb-4">สำหรับสร้างคำสั่งซื้อใหม่ ท่านสามารถคลิกที่ปุ่มสีเขียวตามตัวอย่างด้านล่าง:</p>
-                    <div class="inline-block bg-emerald-700 text-white px-3 py-1.5 rounded-md text-xs font-semibold shadow-sm mb-3">
-                         Create SO
-                    </div>
-                    <ul class="list-disc list-inside space-y-1.5 text-sm text-gray-600">
-                        <li>กรอกรายละเอียดข้อมูลลูกค้า รหัสสินค้า และจำนวนให้ครบถ้วน</li>
-                        <li>คลิกปุ่มบันทึกข้อมูล (Save) เพื่อยืนยันการสร้าง SO</li>
-                    </ul>
+                    <p class="text-gray-600 text-sm mb-4">ขั้นตอนการออกบิลชั่วคราวในระบบ มีขั้นตอนดังนี้:</p>
+
+                    <ol class="list-decimal list-inside text-gray-600 text-sm space-y-6">
+                        <li class="pl-2">
+                            <span>ไปที่เมนู <span class="bg-blue-600 text-white px-2 py-0.5 rounded text-xs font-semibold shadow-sm inline-block my-1">Bill ชั่วคราว</span> เพื่อเข้าไปหน้าบิลชั่วคราว จากนั้นให้กดที่ <span class="bg-blue-600 text-white px-2 py-0.5 rounded text-xs font-semibold shadow-sm inline-block my-1">สร้างเอกสารชั่วคราว</span></span> เพื่อเริ่มสร้างเอกสาร
+                                                         <div class="mt-4 mb-4 border border-gray-200 rounded-lg bg-gray-50 p-4">
+                                <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
+                                    <div class="border border-gray-200 rounded-md px-3 py-2.5 text-xs text-gray-700 hover:border-blue-300 transition">
+                                        <span class="font-semibold text-blue-600 mr-1">3.1</span>กำหนด วันที่ เเละ ประเภทบิล
+                                    </div>
+                                    <div class="border border-gray-200 rounded-md px-3 py-2.5 text-xs text-gray-700 hover:border-blue-300 transition">
+                                        <span class="font-semibold text-blue-600 mr-1">3.2</span> เลือกชื่อบริษัทหัวเอกสาร
+                                    </div>
+                                    <div class="border border-gray-200 rounded-md px-3 py-2.5 text-xs text-gray-700 hover:border-blue-300 transition">
+                                        <span class="font-semibold text-blue-600 mr-1">3.3</span> เลือกข้อมูลบริษัท ผู้ติดต่อ เบอร์ และพิกัด (ค้นหาอัตโนมัติด้วยเลข SO)
+                                    </div>
+                                    <div class="border border-gray-200 rounded-md px-3 py-2.5 text-xs text-gray-700 hover:border-blue-300 transition">
+                                        <span class="font-semibold text-blue-600 mr-1">3.4</span> กรอกรายละเอียดเพิ่มเติม
+                                    </div>
+                                     <div class="border border-gray-200 rounded-md px-3 py-2.5 text-xs text-gray-700 hover:border-blue-300 transition">
+                                        <span class="font-semibold text-blue-600 mr-1">3.5</span> เพิ่มสินค้าตามจำนวนที่ต้องการ
+                                    </div>
+                                    <div class="border border-gray-200 rounded-md px-3 py-2.5 text-xs text-gray-700 hover:border-blue-300 transition">
+                                        <span class="font-semibold text-blue-600 mr-1">3.6</span> สร้างเอกสาร
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="mt-3 mb-2 grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                <div class="border border-gray-200 rounded-lg p-1 bg-gray-50 shadow-sm">
+                                    <img src="https://lh3.googleusercontent.com/d/1zTUyVmsXL1E48ysoLKaSqa8wbT__CBvb" alt="ตัวอย่างการสร้างใบชั่วคราว (Rec) 1" class="w-full h-48 rounded object-contain bg-gray-100">
+                                </div>
+                                <div class="border border-gray-200 rounded-lg p-1 bg-gray-50 shadow-sm">
+                                    <img src="https://lh3.googleusercontent.com/d/1Gkh15hBmxGiCr00-VKXz5QJPHvOKco_N" alt="ตัวอย่างการสร้างใบชั่วคราว (Rec) 2" class="w-full h-48 rounded object-contain bg-gray-100">
+                                </div>
+                            </div>
+                        </li>
+                        <li class="pl-2">
+                            <span>ไปที่เมนู <span class="bg-blue-600 text-white px-2 py-0.5 rounded text-xs font-semibold shadow-sm inline-block my-1">Bill ชั่วคราว</span> เพื่อเข้าไปหน้าบิลชั่วคราว จากนั้นให้กดที่ <span class="bg-blue-600 text-white px-2 py-0.5 rounded text-xs font-semibold shadow-sm inline-block my-1">สร้างเอกสารชั่วคราว</span></span> เพื่อเริ่มสร้างเอกสาร
+
+                            <div class="mt-3 mb-2 grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                <div class="border border-gray-200 rounded-lg p-1 bg-gray-50 shadow-sm">
+                                    <img src="https://lh3.googleusercontent.com/d/1fM37ofvDkX0YRkzISOw_jsZnMyMsM-Lh" alt="ตัวอย่างขั้นตอนที่ 2 ภาพที่ 1" class="w-full h-48 rounded object-contain bg-gray-100">
+                                </div>
+                                <div class="border border-gray-200 rounded-lg p-1 bg-gray-50 shadow-sm">
+                                    <img src="https://lh3.googleusercontent.com/d/1BGmCyk5H6KUoDCcKw55qmOlQri59wrp8" alt="ตัวอย่างขั้นตอนที่ 2 ภาพที่ 2" class="w-full h-48 rounded object-contain bg-gray-100">
+                                </div>
+                            </div>
+                        </li>
+                    </ol>
+                   
                 </section>
 
-                <section x-show="activeTab === null || activeTab === 'search-filter'" x-transition class="bg-white rounded-xl shadow-sm p-6 sm:p-8 border border-gray-200">
+                <section x-show="activeTab === null || activeTab === 'inventory'" x-transition class="bg-white rounded-xl shadow-sm p-6 sm:p-8 border border-gray-200">
                     <h2 class="text-lg font-bold text-gray-900 mb-3 flex items-center">
-                        <span class="bg-blue-100 text-blue-600 px-2.5 py-1 rounded-md mr-3 text-xs font-semibold">04</span> 
-                        การค้นหาข้อมูล (Searching Data)
+                        <span class="bg-blue-100 text-blue-600 px-2.5 py-1 rounded-md mr-3 text-xs font-semibold">04</span>
+                        วิธีค้นหาสินค้าในระบบ Inventory
                     </h2>
-                    <p class="text-gray-600 text-sm mb-4">ท่านสามารถค้นหาข้อมูลย้อนหลังหรือกรองข้อมูลตามเงื่อนไขต่างๆ ได้จากฟิลเตอร์ด้านบน:</p>
-                    <div class="flex flex-wrap gap-2">
-                        <span class="border border-blue-300 bg-blue-50 text-blue-700 px-3 py-1 rounded text-xs font-medium">🔍 Search (ค้นหา)</span>
-                        <span class="border border-red-300 bg-red-50 text-red-600 px-3 py-1 rounded text-xs font-medium">🔄 Reset (ล้างค่า)</span>
-                    </div>
+                    <p class="text-gray-600 text-sm mb-4">ขั้นตอนการค้นหาสินค้าในระบบ Inventory มีขั้นตอนดังนี้:</p>
+
+                    <ol class="list-decimal list-inside text-gray-600 text-sm space-y-6">
+                        <li class="pl-2">
+                            <span>ไปที่เมนู <span class="bg-blue-600 text-white px-2 py-0.5 rounded text-xs font-semibold shadow-sm inline-block my-1">Inventory</span> จากนั้นเลือก <span class="bg-blue-600 text-white px-2 py-0.5 rounded text-xs font-semibold shadow-sm inline-block my-1">ค้นหาสินค้า</span> แล้วพิมพ์รหัสสินค้าหรือชื่อสินค้าเพื่อค้นหา</span>
+
+                            <div class="mt-3 mb-2 grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                <div class="border border-gray-200 rounded-lg p-1 bg-gray-50 shadow-sm">
+                                    <img src="https://lh3.googleusercontent.com/d/1lbDzuEXo4ojhT8pfcSMit0tWGDUIfA-T" alt="ตัวอย่างการค้นหาสินค้า Inventory 1" class="w-full h-48 rounded object-contain bg-gray-100">
+                                </div>
+                                <div class="border border-gray-200 rounded-lg p-1 bg-gray-50 shadow-sm">
+                                    <img src="https://lh3.googleusercontent.com/d/13sb8ltBMyfBKDv8gSJikSZXhbNgZDKMW" alt="ตัวอย่างการค้นหาสินค้า Inventory 2" class="w-full h-48 rounded object-contain bg-gray-100">
+                                </div>
+                            </div>
+                        </li>
+                    </ol>
                 </section>
 
-                <section x-show="activeTab === null || activeTab === 'table-info'" x-transition class="bg-white rounded-xl shadow-sm p-6 sm:p-8 border border-gray-200">
+                <section x-show="activeTab === null || activeTab === 'sale-shelf'" x-transition class="bg-white rounded-xl shadow-sm p-6 sm:p-8 border border-gray-200">
                     <h2 class="text-lg font-bold text-gray-900 mb-3 flex items-center">
-                        <span class="bg-blue-100 text-blue-600 px-2.5 py-1 rounded-md mr-3 text-xs font-semibold">05</span> 
-                        ตารางแสดงข้อมูลและสถานะ (Table & Status)
+                        <span class="bg-blue-100 text-blue-600 px-2.5 py-1 rounded-md mr-3 text-xs font-semibold">05</span>
+                        ชั้นวาง Sale
                     </h2>
-                    <p class="text-gray-600 text-sm mb-4">ตารางจะแสดงผลรายการ SO, รหัสลูกค้า, ชื่อลูกค้า และสถานะปัจจุบัน (เช่น <span class="text-pink-600 font-semibold">PARTIAL</span> หมายถึง สินค้ายังจัดส่งไม่ครบ)</p>
+                    <p class="text-gray-600 text-sm mb-4">ขั้นตอนการใช้งานชั้นวาง Sale มีขั้นตอนดังนี้:</p>
 
-                    <div class="border border-gray-200 rounded-lg overflow-hidden mt-4">
-                        <div class="bg-emerald-100 px-4 py-2 text-xs font-semibold text-emerald-900 border-b border-emerald-200">
-                            ข้อมูลทั้งหมด 140160 (ตัวอย่างการแสดงผล)
-                        </div>
-                        <table class="w-full text-left text-xs">
-                            <thead class="bg-emerald-100 text-emerald-900 font-semibold border-b border-emerald-200">
-                                <tr>
-                                    <th class="p-2.5">SO</th>
-                                    <th class="p-2.5">รหัสลูกค้า</th>
-                                    <th class="p-2.5">ชื่อลูกค้า</th>
-                                    <th class="p-2.5">สถานะ</th>
-                                    <th class="p-2.5">วันส่ง</th>
-                                </tr>
-                            </thead>
-                            <tbody class="divide-y divide-gray-100 text-gray-700">
-                                <tr class="hover:bg-gray-50">
-                                    <td class="p-2.5 text-pink-600 font-medium">69/014203</td>
-                                    <td class="p-2.5 bg-pink-50 text-pink-800">CUS-06003</td>
-                                    <td class="p-2.5">แคล-คอมพ์ อีเล็คโทรนิคส์ฯ</td>
-                                    <td class="p-2.5">PARTIAL</td>
-                                    <td class="p-2.5">2026-07-15</td>
-                                </tr>
-                                <tr class="hover:bg-gray-50">
-                                    <td class="p-2.5 text-pink-600 font-medium">69/014202</td>
-                                    <td class="p-2.5 bg-pink-50 text-pink-800">CUS-11315</td>
-                                    <td class="p-2.5">เคซีอี เทคโนโลยี จำกัด</td>
-                                    <td class="p-2.5">PARTIAL</td>
-                                    <td class="p-2.5">2026-08-08</td>
-                                </tr>
-                            </tbody>
-                        </table>
-                    </div>
+                    <ol class="list-decimal list-inside text-gray-600 text-sm space-y-6">
+                        <li class="pl-2">
+                            <span>ไปที่เมนู <span class="bg-blue-600 text-white px-2 py-0.5 rounded text-xs font-semibold shadow-sm inline-block my-1">MENU</span> จากนั้นเลือก <span class="bg-blue-600 text-white px-2 py-0.5 rounded text-xs font-semibold shadow-sm inline-block my-1">ชั้นวาง Sale</span> เพื่อเข้าสู่หน้าชั้นวาง Sale</span>
+
+                            <div class="mt-3 mb-2 grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                <div class="border border-gray-200 rounded-lg p-1 bg-gray-50 shadow-sm">
+                                    <img src="https://lh3.googleusercontent.com/d/1KXnUgKd3diMCyLmZ47EUoU6U4QfQWedi" alt="ตัวอย่างชั้นวาง Sale 1" class="w-full h-48 rounded object-contain bg-gray-100">
+                                </div>
+                                <div class="border border-gray-200 rounded-lg p-1 bg-gray-50 shadow-sm">
+                                    <img src="https://lh3.googleusercontent.com/d/1RqcuYwxMyfOaQp4OYMg9CF-QBC4qo-YF" alt="ตัวอย่างชั้นวาง Sale 2" class="w-full h-48 rounded object-contain bg-gray-100">
+                                </div>
+                            </div>
+                        </li>
+                    </ol>
                 </section>
 
                 <section x-show="activeTab === null || activeTab === 'support'" x-transition class="bg-white rounded-xl shadow-sm p-6 sm:p-8 border border-gray-200">
@@ -363,9 +438,76 @@
         </div>
     </main>
 
-    <footer class="bg-white border-t border-gray-200 mt-12 py-6 text-center text-xs text-gray-500">
-        <p>&copy; 2026 Dashboard Manual System. All rights reserved.</p>
-    </footer>
+    <!-- Lightbox: กดที่รูปเพื่อดูภาพใหญ่ (กดพื้นหลัง / ปุ่ม X / Esc เพื่อปิด, ลูกศรซ้ายขวาเพื่อเลื่อนรูปในขั้นตอนเดียวกัน) -->
+    <div id="lightbox" aria-hidden="true">
+        <button type="button" class="lb-btn lb-close" aria-label="ปิด">&times;</button>
+        <button type="button" class="lb-btn lb-prev" aria-label="รูปก่อนหน้า">&#8249;</button>
+        <img id="lightbox-img" src="" alt="">
+        <button type="button" class="lb-btn lb-next" aria-label="รูปถัดไป">&#8250;</button>
+        <div class="lb-caption"></div>
+    </div>
+
+    <script>
+        (function () {
+            const box     = document.getElementById('lightbox');
+            const boxImg  = document.getElementById('lightbox-img');
+            const caption = box.querySelector('.lb-caption');
+            const btnPrev = box.querySelector('.lb-prev');
+            const btnNext = box.querySelector('.lb-next');
+            let group = [], index = 0;
+
+            function show() {
+                const img = group[index];
+                boxImg.src = img.src;
+                boxImg.alt = img.alt;
+                caption.textContent = img.alt + (group.length > 1 ? `  (${index + 1}/${group.length})` : '');
+                const multi = group.length > 1;
+                btnPrev.style.display = multi ? '' : 'none';
+                btnNext.style.display = multi ? '' : 'none';
+            }
+
+            function open(img) {
+                // รวมรูปในขั้นตอนเดียวกัน (li เดียวกัน) ให้เลื่อนดูต่อได้
+                const scope = img.closest('li') || img.closest('section') || document;
+                group = Array.from(scope.querySelectorAll('img'));
+                index = Math.max(0, group.indexOf(img));
+                show();
+                box.classList.add('open');
+                box.setAttribute('aria-hidden', 'false');
+                document.body.style.overflow = 'hidden';
+            }
+
+            function close() {
+                box.classList.remove('open');
+                box.setAttribute('aria-hidden', 'true');
+                document.body.style.overflow = '';
+                boxImg.src = '';
+            }
+
+            function step(d) {
+                index = (index + d + group.length) % group.length;
+                show();
+            }
+
+            document.querySelector('main').addEventListener('click', function (e) {
+                const img = e.target.closest('img');
+                if (img) open(img);
+            });
+
+            box.addEventListener('click', function (e) {
+                if (e.target === box || e.target === boxImg || e.target.classList.contains('lb-close')) close();
+            });
+            btnPrev.addEventListener('click', function (e) { e.stopPropagation(); step(-1); });
+            btnNext.addEventListener('click', function (e) { e.stopPropagation(); step(1); });
+
+            document.addEventListener('keydown', function (e) {
+                if (!box.classList.contains('open')) return;
+                if (e.key === 'Escape') close();
+                if (e.key === 'ArrowLeft' && group.length > 1) step(-1);
+                if (e.key === 'ArrowRight' && group.length > 1) step(1);
+            });
+        })();
+    </script>
 
 </body>
 </html>
