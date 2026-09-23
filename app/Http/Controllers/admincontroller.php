@@ -23,14 +23,23 @@ class AdminController extends Controller
         $search = $request->get('search'); // คำค้นหา ใช้ค้นทุกแถวในระบบ ไม่ใช่แค่หน้าที่แสดงอยู่
         $message = null;  // กำหนดค่าเริ่มต้นให้กับตัวแปร $message
 
-        // แสดงเฉพาะข้อมูลตั้งแต่วันที่นี้เป็นต้นไป (อิงวันที่ส่งของ date_of_dali)
+        // แสดงเฉพาะข้อมูลตั้งแต่วันที่นี้เป็นต้นไป
         $startDate = '2026-09-19';
 
-        $query = Bill::query()->whereDate('date_of_dali', '>=', $startDate);
+        // เงื่อนไขช่วงวันที่: นับทั้งวันที่ส่งของ (date_of_dali) หรือ วันที่งานเข้า (time) อย่างใดอย่างหนึ่ง
+        $sinceStart = function ($q) use ($startDate) {
+            $q->whereDate('date_of_dali', '>=', $startDate)
+              ->orWhereDate('time', '>=', $startDate);
+        };
 
-        // ถ้าผู้ใช้กรอกวันที่ ให้กรองข้อมูลที่มีวันที่ตรงกับที่เลือก
+        $query = Bill::query()->where($sinceStart);
+
+        // ถ้าผู้ใช้กรอกวันที่ ให้กรองข้อมูลที่วันที่ส่งของ หรือ วันที่งานเข้า ตรงกับที่เลือก
         if ($date) {
-            $query->whereDate('date_of_dali', $date); // ใช้ชื่อคอลัมน์วันที่ของคุณ
+            $query->where(function ($q) use ($date) {
+                $q->whereDate('date_of_dali', $date)
+                  ->orWhereDate('time', $date);
+            });
         }
 
         // ถ้าผู้ใช้พิมพ์คำค้นหา ให้ค้นจากรหัสลูกค้า, รหัส SO และเลขบิล (billid) ทั่วทั้งฐานข้อมูล
@@ -147,11 +156,15 @@ class AdminController extends Controller
             return $item;
         });
 
-        // คำนวณจำนวนทั้งหมดในระบบ
-        $totalCount = Bill::whereDate('date_of_dali', '>=', $startDate)->count();
+        // คำนวณจำนวนทั้งหมดในระบบ (ตั้งแต่วันเริ่ม นับทั้งวันที่ส่งของ หรือ วันที่งานเข้า)
+        $totalCount = Bill::where($sinceStart)->count();
 
-        // คำนวณจำนวนเฉพาะในวันนี้ (อ้างอิงจากคอลัมน์ date_of_dali และวันที่ปัจจุบัน)
-        $todayCount = Bill::whereDate('date_of_dali', Carbon::today())->count();
+        // คำนวณจำนวนวันนี้ (เวลาไทย) นับทั้งงานที่เข้าวันนี้ และงานที่ส่งวันนี้
+        $today = Carbon::today('Asia/Bangkok')->toDateString();
+        $todayCount = Bill::where(function ($q) use ($today) {
+            $q->whereDate('date_of_dali', $today)
+              ->orWhereDate('time', $today);
+        })->count();
 
         return view('admin.dashboardadmin', compact('bill', 'message', 'totalCount', 'todayCount', 'stageStats', 'activeCount', 'cancelledCount', 'startDate'));
     }
