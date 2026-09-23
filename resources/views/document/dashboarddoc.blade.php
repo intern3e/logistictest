@@ -428,7 +428,7 @@
 
         <div class="headcom">
             <label for="headcom">บริษัทผู้ส่ง :</label>
-            <select id="headcom" onchange="filterTable()">
+            <select id="headcom" name="headcom" form="autoSearchForm" onchange="document.getElementById('autoSearchForm').submit()">
                 <option value="">ทั้งหมด</option>
                 <option value="บริษัท ทริปเปิ้ล อี เทรดดิ้ง จำกัด">บริษัท ทริปเปิ้ล อี เทรดดิ้ง จำกัด</option>
                 <option value="บริษัท ทริปเปิ้ล อี อินโนเวชั่น จำกัด">บริษัท ทริปเปิ้ล อี อินโนเวชั่น จำกัด</option>
@@ -625,6 +625,10 @@
         const form = document.getElementById('autoSearchForm');
         const dateInput = document.getElementById('date');
         dateInput.addEventListener('change', () => { form.submit(); });
+
+        // จำค่าบริษัทผู้ส่งที่เลือกไว้ (ค้นข้ามวัน)
+        const headcomSel = document.getElementById('headcom');
+        if (headcomSel) headcomSel.value = @json(request('headcom', ''));
 
         const searchInputEl = document.getElementById('search-input');
         let searchDebounce = null;

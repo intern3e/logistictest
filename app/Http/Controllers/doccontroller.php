@@ -31,8 +31,9 @@ class DocController extends Controller
         $authUser = $this->resolveSsoUser($request, 'document.dashboarddoc');
         $creator  = $authUser->name;
 
-        $date   = $request->get('date');
-        $search = trim((string) $request->get('search', ''));
+        $date    = $request->get('date');
+        $search  = trim((string) $request->get('search', ''));
+        $headcom = trim((string) $request->get('headcom', ''));
         $message = null;
 
         if ($search !== '') {
@@ -44,6 +45,16 @@ class DocController extends Controller
 
             if ($docbill->isEmpty()) {
                 $message = 'ไม่พบเลขที่บิลที่ค้นหา';
+            }
+        } elseif ($headcom !== '') {
+            // เลือกบริษัทผู้ส่ง: ค้นทุกวัน (ไม่สนวันที่)
+            $docbill = Docbills::where('com_name', $headcom)
+                        ->orderBy('doc_id', 'desc')
+                        ->limit(500)
+                        ->get();
+
+            if ($docbill->isEmpty()) {
+                $message = 'ไม่พบข้อมูลของบริษัทผู้ส่งนี้';
             }
         } elseif ($date) {
             $docbill = Docbills::whereDate('time', $date)
@@ -115,6 +126,36 @@ class DocController extends Controller
         $authUser = $this->resolveSsoUser($request, 'document.insertdoc');
         $creator  = $authUser->name;
         return view('document.insertdoc', compact('creator'));
+    }
+
+    /**
+     * ดึง "บิลค้าง" (statusdeli = 'ค้างบิล') ของลูกค้าที่เลือก เพื่อให้กดเพิ่มเป็นรายการในใบชั่วคราว
+     */
+    public function holdBillsForCustomer(Request $request)
+    {
+        $this->resolveSsoUser($request, 'document.insertdoc');
+
+        $idCom = trim((string) $request->input('id_com', ''));
+        if ($idCom === '') {
+            return response()->json(['ok' => true, 'bills' => []]);
+        }
+
+        $bills = \App\Models\Bill::where('customer_id', $idCom)
+            ->where('statusdeli', 'ค้างบิล')
+            ->orderByDesc('billid')
+            ->limit(300)
+            ->get(['billid', 'so_id', 'NG'])
+            ->unique('billid')
+            ->values()
+            ->map(function ($b) {
+                return [
+                    'billid' => (string) $b->billid,
+                    'so_id'  => (string) ($b->so_id ?? ''),
+                    'note'   => (string) ($b->NG ?? ''),
+                ];
+            });
+
+        return response()->json(['ok' => true, 'bills' => $bills]);
     }
 
     public function insertDocu(Request $request)

@@ -125,6 +125,7 @@ a { color: inherit; text-decoration: none; }
 .job-meta { display: flex; flex-wrap: wrap; gap: 8px 18px; font-size: 12.5px; color: var(--ink3); }
 .job-meta .mi b { color: var(--ink2); font-weight: 600; }
 .job-note { margin-top: 8px; font-size: 12.5px; color: var(--red-d); background: var(--red-l); padding: 8px 12px; border-radius: 8px; border-left: 3px solid var(--red); font-weight: 500; }
+.job-linked { margin-top: 8px; font-size: 12.5px; color: #b45309; background: #fff7ed; padding: 8px 12px; border-radius: 8px; border-left: 3px solid #f0b374; font-weight: 600; }
 
 /* Actions */
 .job-actions { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; align-self: stretch; padding-left: 20px; border-left: 1px solid var(--line); }
@@ -225,6 +226,10 @@ a { color: inherit; text-decoration: none; }
       <input type="text" id="fCustName" placeholder="พิมพ์ชื่อลูกค้า" autocomplete="off">
     </div>
     <div class="fg">
+      <label for="fDriver">คนขับ</label>
+      <input type="text" id="fDriver" placeholder="พิมพ์ชื่อคนขับ" autocomplete="off">
+    </div>
+    <div class="fg">
       <label for="fStatus">สถานะบิล</label>
       <select id="fStatus" style="height:38px;padding:0 10px;border:1px solid var(--line);border-radius:8px;font-family:inherit;font-size:13px;">
         <option value="">ทั้งหมด</option>
@@ -247,7 +252,7 @@ a { color: inherit; text-decoration: none; }
 <div id="bulkBar" style="display:none;position:fixed;left:50%;bottom:20px;transform:translateX(-50%);z-index:900;background:#0f172a;color:#fff;border-radius:30px;box-shadow:0 10px 25px -5px rgba(0,0,0,.3);padding:10px 18px;display:none;align-items:center;gap:12px;">
   <span>เลือก <b id="bulkCount">0</b> รายการ</span>
   <button type="button" class="act ok" onclick="bulkSetStatus('ok')">สำเร็จ</button>
-  <button type="button" class="act hold" onclick="bulkSetStatus('hold')">ค้างบิล</button>
+  <button type="button" class="act redo" onclick="bulkRedo()">จัดส่งใหม่</button>
   <button type="button" class="act" style="background:rgba(255,255,255,.15);color:#fff;border:none;" onclick="clearBulk()">ล้างเลือก</button>
 </div>
 
@@ -303,10 +308,12 @@ function statusKey(r){
 function getFilteredRows(){
   const cust  = (document.getElementById('fCust').value||'').trim().toLowerCase();
   const cname = (document.getElementById('fCustName').value||'').trim().toLowerCase();
+  const drv   = (document.getElementById('fDriver').value||'').trim().toLowerCase();
   const st    = document.getElementById('fStatus').value;
   return currentRows.map((r,i)=>({r,i})).filter(({r})=>{
     if(cust  && !((r.customer_code||'').toLowerCase().includes(cust)))  return false;
     if(cname && !((r.customer_name||'').toLowerCase().includes(cname))) return false;
+    if(drv   && !((r.driver_name||'').toLowerCase().includes(drv)))     return false;
     if(st    && statusKey(r) !== st) return false;
     return true;
   });
@@ -323,14 +330,20 @@ async function bulkSetStatus(action){
   const idxs = Array.from(selectedBulk);
   if(!idxs.length) return;
   const label = action==='ok' ? 'สำเร็จ' : 'ค้างบิล';
+  let note = '';
+  if(action==='hold'){
+    note = (prompt(`หมายเหตุค้างบิล (ใช้กับ ${idxs.length} รายการที่เลือก):`, '') || '').trim();
+    if(!note){ toast('กรุณากรอกหมายเหตุค้างบิล', true); return; }
+  }
   if(!confirm(`ยืนยันตั้งสถานะ "${label}" ให้ ${idxs.length} รายการที่เลือก?`)) return;
   let okN=0, failN=0;
   for(const i of idxs){
     const r = currentRows[i];
     if(!r) continue;
     try{
-      const data = await postConfirm({ job_key:r.job_key, action, tx_ids:r.tx_ids });
+      const data = await postConfirm({ job_key:r.job_key, action, note, tx_ids:r.tx_ids });
       r.status = data.status; r.check_name = data.check_name; r.check_time = data.check_time;
+      if(note) r.note = note;
       okN++;
     }catch(e){ failN++; }
   }
@@ -339,15 +352,41 @@ async function bulkSetStatus(action){
   render();
 }
 
+// bulk จัดส่งใหม่ = คืนงานที่เลือกกลับไปหน้าจ่ายงานขนส่ง
+async function bulkRedo(){
+  const idxs = Array.from(selectedBulk);
+  if(!idxs.length) return;
+  if(!confirm(`จัดส่งใหม่ ${idxs.length} รายการที่เลือก?\nงานจะถูกคืนกลับไปหน้าจ่ายงานขนส่ง เพื่อจ่ายให้คนขับใหม่`)) return;
+  let okN=0, failN=0;
+  for(const i of idxs){
+    const r = currentRows[i];
+    if(!r) continue;
+    try{ await postConfirm({ job_key:r.job_key, action:'redo', tx_ids:r.tx_ids }); okN++; }
+    catch(e){ failN++; }
+  }
+  selectedBulk.clear();
+  toast(`คืนงานไปจ่ายใหม่ ${okN} รายการ${failN?` · ล้มเหลว ${failN}`:''}`, failN>0);
+  loadData();
+}
+
 async function loadData(){
-  const q = fBill.value.trim();
-  const date = fDate.value;
+  const q      = fBill.value.trim();
+  const cust   = document.getElementById('fCust').value.trim();
+  const cname  = document.getElementById('fCustName').value.trim();
+  const driver = document.getElementById('fDriver').value.trim();
+  const status = document.getElementById('fStatus').value;
+  const anyFilter = q || cust || cname || driver || status;
+  const params = new URLSearchParams();
+  if(q) params.set('q', q);
+  if(cust) params.set('cust', cust);
+  if(cname) params.set('cname', cname);
+  if(driver) params.set('driver', driver);
+  if(status) params.set('status', status);
+  if(!anyFilter) params.set('date', fDate.value);   // ไม่มีตัวกรอง -> ตามวันที่
   listEl.innerHTML = '<div class="state"><span class="spinner"></span>กำลังโหลดข้อมูล...</div>';
   countBar.textContent = '';
   try{
-    const url = q !== '' ? `${DATA_URL}?q=${encodeURIComponent(q)}`
-                         : `${DATA_URL}?date=${encodeURIComponent(date)}`;
-    const res = await fetch(url, {headers:{'Accept':'application/json','X-Requested-With':'XMLHttpRequest'}});
+    const res = await fetch(`${DATA_URL}?${params.toString()}`, {headers:{'Accept':'application/json','X-Requested-With':'XMLHttpRequest'}});
     const data = await res.json();
     if(!res.ok || !data.ok){ throw new Error(data.message || 'โหลดข้อมูลไม่สำเร็จ'); }
     currentRows = data.rows || [];
@@ -385,8 +424,9 @@ function render(){
     let actions;
     if(received){
       // รับเข้าแล้ว -> แสดงผลตามสถานะ + ให้กลับมากด "สำเร็จ" ได้ (เช่น ค้างบิล/สินค้าผิด -> เปลี่ยนเป็นสำเร็จภายหลัง)
-      const noteLine = (r.note && si.cls==='wrong') ? `<br>หมายเหตุ: ${esc(r.note)}` : '';
-      const canReSuccess = (((r.status||'').trim()) !== 'จัดส่งสำเร็จ');
+      const noteLine = (r.note && (si.cls==='wrong' || si.cls==='hold')) ? `<br>หมายเหตุ: ${esc(r.note)}` : '';
+      // "เปลี่ยนเป็นสำเร็จ" แสดงเฉพาะงานที่ค้างบิลเท่านั้น
+      const canReSuccess = (((r.status||'').trim()) === 'ค้างบิล');
       actions = `<div class="job-result ${si.cls}">รับเข้าแล้ว: ${esc(si.txt)}<br>โดย ${esc(r.check_name||'-')}${r.check_time?' · เมื่อ '+esc(r.check_time):''}${noteLine}</div>`
         + (canReSuccess ? `<button type="button" class="act ok" style="margin-top:6px;" onclick="doAction(${i},'ok')">เปลี่ยนเป็นสำเร็จ</button>` : '');
     } else if(redispatched){
@@ -394,9 +434,9 @@ function render(){
       actions = `<div class="job-redispatched">↻ ถูกจ่ายใหม่ให้ไปวันที่ ${esc(r.redispatched_to)} แล้ว</div>`;
     } else {
       actions = `<button type="button" class="act ok"    onclick="doAction(${i},'ok')">สำเร็จ</button>
-         <button type="button" class="act hold"  onclick="doAction(${i},'hold')">ค้างบิล</button>
+         <button type="button" class="act hold"  onclick="openNote(${i},'hold')">ค้างบิล</button>
          <button type="button" class="act redo"  onclick="doRedo(${i})">ส่งใหม่ (จ่ายงานใหม่)</button>
-         <button type="button" class="act wrong" onclick="toggleWrong(${i})">สินค้าผิด</button>`;
+         <button type="button" class="act wrong" onclick="openNote(${i},'wrong')">สินค้าผิด</button>`;
     }
 
     const chk = !redispatched
@@ -412,11 +452,12 @@ function render(){
         </div>
         <div class="job-cust">${r.so_id?`<b>SO ${esc(r.so_id)}</b> · `:''}${esc(r.customer_name||'-')}</div>
         <div class="job-meta">${meta.join('')}</div>
-        ${r.note?`<div class="job-note">หมายเหตุ: ${esc(r.note)}</div>`:''}
-        <div class="wrong-box" id="wrong-${i}">
-          <input type="text" id="wrongnote-${i}" placeholder="ระบุรายละเอียดสินค้าผิด...">
-          <button type="button" class="act wrong" onclick="submitWrong(${i})">บันทึกสินค้าผิด</button>
-          <button type="button" class="act" onclick="toggleWrong(${i})">ยกเลิก</button>
+        ${(r.linked_bills && r.linked_bills.length)?`<div class="job-linked">เชื่อมกัน ${r.linked_bills.length} บิลค้าง: ${r.linked_bills.map(esc).join(', ')}</div>`:''}
+        ${(!received && r.note)?`<div class="job-note">หมายเหตุ: ${esc(r.note)}</div>`:''}
+        <div class="wrong-box" id="wrong-${i}" data-action="wrong">
+          <input type="text" id="wrongnote-${i}" placeholder="ระบุหมายเหตุ...">
+          <button type="button" class="act wrong" id="notesave-${i}" onclick="submitNote(${i})">บันทึก</button>
+          <button type="button" class="act" onclick="closeNote(${i})">ยกเลิก</button>
         </div>
       </div>
       <div class="job-actions">${actions}</div>
@@ -424,10 +465,20 @@ function render(){
   }).join('');
 }
 
-function toggleWrong(i){
-  const box = document.getElementById('wrong-'+i);
-  if(box){ box.classList.toggle('open'); if(box.classList.contains('open')) document.getElementById('wrongnote-'+i)?.focus(); }
+// เปิดกล่องหมายเหตุ (ใช้ได้ทั้ง ค้างบิล และ สินค้าผิด) — ต้องกรอกหมายเหตุก่อนบันทึก
+function openNote(i, action){
+  const box  = document.getElementById('wrong-'+i);
+  const inp  = document.getElementById('wrongnote-'+i);
+  const save = document.getElementById('notesave-'+i);
+  if(!box) return;
+  box.dataset.action = action;
+  const label = action==='hold' ? 'ค้างบิล' : 'สินค้าผิด';
+  if(inp)  inp.placeholder = action==='hold' ? 'ระบุหมายเหตุค้างบิล...' : 'ระบุรายละเอียดสินค้าผิด...';
+  if(save){ save.textContent = 'บันทึก'+label; save.className = 'act ' + (action==='hold' ? 'hold' : 'wrong'); }
+  box.classList.add('open');
+  inp?.focus();
 }
+function closeNote(i){ document.getElementById('wrong-'+i)?.classList.remove('open'); }
 
 async function postConfirm(payload){
   const res = await fetch(CONFIRM_URL, {
@@ -453,14 +504,17 @@ async function doAction(i, action){
   }catch(e){ toast('ผิดพลาด: '+e.message, true); }
 }
 
-async function submitWrong(i){
+async function submitNote(i){
   const r = currentRows[i];
   if(!r) return;
+  const box = document.getElementById('wrong-'+i);
+  const action = (box && box.dataset.action) || 'wrong';
+  const label = action==='hold' ? 'ค้างบิล' : 'สินค้าผิด';
   const note = (document.getElementById('wrongnote-'+i)?.value || '').trim();
-  if(!note){ toast('กรุณากรอกหมายเหตุสินค้าผิด', true); return; }
-  if(!confirm(`ยืนยันบันทึก "สินค้าผิด" สำหรับบิล ${r.bill_no}?`)) return;
+  if(!note){ toast('กรุณากรอกหมายเหตุ'+label, true); return; }
+  if(!confirm(`ยืนยันบันทึก "${label}" สำหรับบิล ${r.bill_no}?`)) return;
   try{
-    const data = await postConfirm({ job_key:r.job_key, action:'wrong', note, tx_ids:r.tx_ids });
+    const data = await postConfirm({ job_key:r.job_key, action, note, tx_ids:r.tx_ids });
     toast(data.message || 'บันทึกข้อมูลเรียบร้อย');
     r.status = data.status; r.check_name = data.check_name; r.check_time = data.check_time; r.note = note;
     render();
@@ -482,14 +536,20 @@ async function doRedo(i){
 document.getElementById('btnSearch').addEventListener('click', loadData);
 document.getElementById('btnClear').addEventListener('click', ()=>{
   fBill.value=''; fDate.value = new Date().toISOString().split('T')[0];
-  document.getElementById('fCust').value=''; document.getElementById('fCustName').value=''; document.getElementById('fStatus').value='';
+  document.getElementById('fCust').value=''; document.getElementById('fCustName').value='';
+  document.getElementById('fDriver').value=''; document.getElementById('fStatus').value='';
   loadData();
 });
 fBill.addEventListener('keydown', e=>{ if(e.key==='Enter') loadData(); });
 fDate.addEventListener('change', ()=>{ if(fBill.value.trim()==='') loadData(); });
-// filter รหัส/ชื่อลูกค้า/สถานะ = กรอง client-side (render ทันที ไม่ต้องโหลดใหม่)
-['fCust','fCustName'].forEach(id => document.getElementById(id).addEventListener('input', render));
-document.getElementById('fStatus').addEventListener('change', render);
+// filter รหัส/ชื่อลูกค้า/สถานะ = ค้นข้ามวัน (โหลดใหม่จาก server) + render ทันทีระหว่างพิมพ์
+let _filterTimer = null;
+['fCust','fCustName','fDriver'].forEach(id => document.getElementById(id).addEventListener('input', ()=>{
+  render();  // กรองชุดที่โหลดมาทันที
+  clearTimeout(_filterTimer);
+  _filterTimer = setTimeout(loadData, 400);  // แล้วค่อยโหลดข้ามวันจาก server
+}));
+document.getElementById('fStatus').addEventListener('change', loadData);
 
 document.addEventListener('DOMContentLoaded', ()=>{
   fDate.value = new Date().toISOString().split('T')[0];

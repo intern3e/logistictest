@@ -312,6 +312,12 @@
                     <button type="button" class="btn btn-danger" id="clearAllItemsBtn" style="padding:8px 16px;font-size:12px;">ลบสินค้าทั้งหมด</button>
                 </div>
                 <div class="card-body">
+                    <div id="holdBillsBox" style="display:none;margin-bottom:14px;padding:12px 14px;border:1px solid #f3d3ac;background:#fff7ed;border-radius:10px;">
+                        <div style="font-size:13px;font-weight:700;color:#b45309;margin-bottom:8px;">
+                            บิลค้างของลูกค้านี้ <span style="font-weight:400;color:#9a6a3a;">(คลิกเพื่อเพิ่มเป็นรายการ)</span>
+                        </div>
+                        <div id="holdBillsList" style="display:flex;flex-wrap:wrap;gap:8px;"></div>
+                    </div>
                     <div class="tbl-wrap">
                         <table class="table">
                             <thead>
@@ -972,8 +978,49 @@ document.addEventListener('DOMContentLoaded', function () {
 </script>
 
 <script>
+    // โหลดบิลค้าง (statusdeli='ค้างบิล') ของลูกค้าที่เลือก -> แสดงชิปให้กดเพิ่มเป็นรายการ
+    async function loadHoldBills(idCom){
+        const box  = document.getElementById('holdBillsBox');
+        const list = document.getElementById('holdBillsList');
+        if(!box || !list) return;
+        if(!idCom){ box.style.display='none'; list.innerHTML=''; return; }
+        try{
+            const res = await fetch("{{ route('document.holdBills') }}?id_com=" + encodeURIComponent(idCom),
+                { headers:{ 'Accept':'application/json','X-Requested-With':'XMLHttpRequest' } });
+            const data = await res.json();
+            const bills = (data && data.bills) || [];
+            if(!bills.length){ box.style.display='none'; list.innerHTML=''; return; }
+            list.innerHTML = bills.map(function(b){
+                const title = b.note ? escapeHtmlSo(b.note) : '';
+                const so = b.so_id ? ' (' + escapeHtmlSo(b.so_id) + ')' : '';
+                return '<button type="button" data-bill="'+escapeHtmlSo(b.billid)+'" title="'+title+'" onclick="addHoldBillItem(this)" '
+                    + 'style="padding:6px 12px;border:1px solid #f0b374;background:#fff;color:#b45309;border-radius:20px;font-family:inherit;font-size:12.5px;font-weight:600;cursor:pointer;">'
+                    + '+ ' + escapeHtmlSo(b.billid) + so + '</button>';
+            }).join('');
+            box.style.display='block';
+        }catch(e){ box.style.display='none'; list.innerHTML=''; }
+    }
+    function addHoldBillItem(btn){
+        const bill = btn.dataset.bill;
+        if(!bill) return;
+        const exists = Array.from(document.querySelectorAll('#detail input[name="item_name[]"]'))
+            .some(function(inp){ return inp.value.trim() === bill; });
+        if(!exists){
+            addItemRow(bill, '1');
+            // ช่องเลขบิลที่กดเพิ่มมา -> แก้ไม่ได้ (readonly) เฉพาะแถวนี้
+            const rows = document.querySelectorAll('#detail tr');
+            const lastRow = rows[rows.length - 1];
+            const nameInp = lastRow && lastRow.querySelector('input[name="item_name[]"]');
+            if(nameInp){ nameInp.readOnly = true; nameInp.style.background = '#f1f3f5'; nameInp.dataset.holdbill = '1'; }
+        }
+        btn.disabled = true;
+        btn.style.opacity = '.5';
+        btn.style.cursor = 'default';
+    }
+
     function fetchlalong() {
         var id_com = document.getElementById("id_com").value;
+        loadHoldBills(id_com);   // โหลดบิลค้างของลูกค้านี้
         if (!id_com) {
             document.getElementById("com_la_long").value = '';
             return;

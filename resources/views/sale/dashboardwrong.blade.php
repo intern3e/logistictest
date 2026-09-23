@@ -70,6 +70,8 @@
         .badge-pending{background:var(--danger-light);color:var(--danger-dark)}
         .badge-tracking{background:var(--warning-light);color:var(--warning)}
         .badge-cleared{background:var(--success-light);color:var(--success-dark)}
+        .badge-wrong{background:var(--danger-light);color:var(--danger-dark)}
+        .badge-hold{background:#e3f0ff;color:#1e5bb8}
         .solve-info{font-size:12.5px;color:var(--muted)}
         .solve-info b{color:var(--ink)}
         .newbill-chip{display:inline-block;background:var(--primary-light);color:var(--primary-dark);border:1px solid #bfdbfe;border-radius:6px;padding:1px 8px;font-weight:700;font-size:12px}
@@ -116,8 +118,8 @@
 <div class="page-frame">
     <div class="top-banner">
         <div class="title-group">
-            <span class="h1">แก้ของผิด</span>
-            <span class="sticker">สินค้าผิด</span>
+            <span class="h1">แก้ของผิด / ค้างบิล</span>
+            <span class="sticker">สินค้าผิด + ค้างบิล</span>
         </div>
         <div class="banner-right">
             <div class="count-block">
@@ -298,7 +300,9 @@
             + (r.wrong_time?'<div class="solve-info">'+esc(r.wrong_time)+'</div>':'')
             + (r.driver_name?'<div class="solve-info">คนขับ: '+esc(r.driver_name)+'</div>':'');
         return '<tr>'
-            + '<td class="num"><div class="ref-link">'+esc(r.bill_no||'-')+'</div>'+(r.so_id?'<div>'+soLink(r.so_id)+'</div>':'')+'</td>'
+            + '<td class="num"><div class="ref-link">'+esc(r.bill_no||'-')+'</div>'
+              + (r.deli_status==='ค้างบิล' ? '<div style="margin-top:3px;"><span class="badge badge-hold">ค้างบิล</span></div>' : '<div style="margin-top:3px;"><span class="badge badge-wrong">สินค้าผิด</span></div>')
+              + (r.so_id?'<div>'+soLink(r.so_id)+'</div>':'')+'</td>'
             + '<td class="cell-left">'+cust+'</td>'
             + '<td>'+(r.sale?esc(r.sale):'<span class="dash">-</span>')+'</td>'
             + '<td class="reason-cell">'+(r.reason?esc(r.reason):'<span class="dash">-</span>')+'</td>'

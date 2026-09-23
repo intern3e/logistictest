@@ -27,6 +27,7 @@ use Illuminate\Support\Facades\Log;
 class WrongBillController extends Controller
 {
     const DELI_STATUS_WRONG = 'สินค้าผิด';
+    const DELI_STATUS_HOLD  = 'ค้างบิล';
     const SOLVE_STOCK       = 'เก็บเข้าสต็อก';
     /** สถานะที่ถือว่าบิล "เคลียร์" เมื่อบิลใหม่ไปถึงสถานะนี้ */
     const CLEARED_STATUSES  = ['จัดส่งสำเร็จ', 'ค้างบิล'];
@@ -82,8 +83,8 @@ class WrongBillController extends Controller
             ]);
         }
 
-        // ===== 1) ดึงงานที่สถานะ "สินค้าผิด" =====
-        $wrongs = transaction_delivery::where('status', self::DELI_STATUS_WRONG)
+        // ===== 1) ดึงงานที่สถานะ "สินค้าผิด" และ "ค้างบิล" =====
+        $wrongs = transaction_delivery::whereIn('status', [self::DELI_STATUS_WRONG, self::DELI_STATUS_HOLD])
             ->orderByDesc('check_time')
             ->get();
 
@@ -221,6 +222,7 @@ class WrongBillController extends Controller
                 'customer_code' => $g['customer_code'],
                 'customer_name' => $g['customer_name'],
                 'sale'          => $g['sale'],
+                'deli_status'   => (string) ($first->status ?? ''),   // สินค้าผิด หรือ ค้างบิล
                 'reason'        => (string) ($first->note ?? ''),
                 'wrong_by'      => (string) ($first->check_name ?? ''),
                 'wrong_time'    => optional($first->check_time)->format('Y-m-d H:i'),

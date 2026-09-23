@@ -73,26 +73,59 @@ class BillreceiveController extends Controller
         [$user, $err] = $this->requireEditorApi();
         if ($err) return $err;
 
-        $q    = trim((string) $request->input('q', ''));
-        $date = $request->input('date');
+        $q      = trim((string) $request->input('q', ''));
+        $cust   = trim((string) $request->input('cust', ''));
+        $cname  = trim((string) $request->input('cname', ''));
+        $driver = trim((string) $request->input('driver', ''));
+        $status = trim((string) $request->input('status', ''));   // ok|hold|wrong|pending|''
+        $date   = $request->input('date');
+
+        // มีตัวกรองใด ๆ (เลขบิล/รหัส/ชื่อลูกค้า/คนขับ/สถานะ) -> ไม่สนวันที่
+        $ignoreDate = ($q !== '' || $cust !== '' || $cname !== '' || $driver !== '' || $status !== '');
 
         $query = transaction_delivery::query();
 
-        if ($q !== '') {
-            // ค้นด้วยเลขบิล -> ไม่สนวันที่ (จับทั้ง billid ใน tblbill, doc_id, และ bill_id ตรง ๆ)
-            $soDetailIds = Bill::where('billid', 'LIKE', "%{$q}%")->pluck('so_detail_id')->all();
-            $docIds      = Docbills::where('doc_id', 'LIKE', "%{$q}%")->pluck('doc_id')->all();
-            $ids         = array_values(array_unique(array_merge($soDetailIds, $docIds)));
-            $query->where(function ($w) use ($ids, $q) {
-                if (!empty($ids)) $w->whereIn('bill_id', $ids);
-                $w->orWhere('bill_id', 'LIKE', "%{$q}%");
-            });
+        if ($ignoreDate) {
+            // สร้างชุด bill_id ที่ตรงแต่ละเงื่อนไข (เลขบิล/รหัส/ชื่อลูกค้า) แล้ว intersect
+            $sets = [];
+            if ($q !== '') {
+                $sets[] = array_values(array_unique(array_merge(
+                    Bill::where('billid', 'LIKE', "%{$q}%")->pluck('so_detail_id')->all(),
+                    Docbills::where('doc_id', 'LIKE', "%{$q}%")->pluck('doc_id')->all()
+                )));
+            }
+            if ($cust !== '') {
+                $sets[] = array_values(array_unique(array_merge(
+                    Bill::where('customer_id', 'LIKE', "%{$cust}%")->pluck('so_detail_id')->all(),
+                    Docbills::where('id_com', 'LIKE', "%{$cust}%")->pluck('doc_id')->all()
+                )));
+            }
+            if ($cname !== '') {
+                $sets[] = array_values(array_unique(array_merge(
+                    Bill::where('customer_name', 'LIKE', "%{$cname}%")->pluck('so_detail_id')->all(),
+                    Docbills::where('com_name', 'LIKE', "%{$cname}%")->pluck('doc_id')->all()
+                )));
+            }
+            if (!empty($sets)) {
+                $billIds = array_shift($sets);
+                foreach ($sets as $s) $billIds = array_values(array_intersect($billIds, $s));
+                if (empty($billIds)) {
+                    return response()->json(['ok' => true, 'rows' => []]);
+                }
+                $query->whereIn('bill_id', $billIds);
+            }
+            // กรองคนขับ (driver_name อยู่บน transaction_transport ตรง ๆ)
+            if ($driver !== '') {
+                $query->where('driver_name', 'LIKE', "%{$driver}%");
+            }
+            // status/คนขับ อย่างเดียว (ไม่มี bill/cust/cname) -> โหลดข้ามวัน (จำกัดจำนวน) แล้วกรองหลัง group
+            $query->orderByDesc('time_pick')->limit(3000);
         } else {
             if (!$date) $date = Carbon::now()->toDateString();
-            $query->whereDate('time_pick', $date);
+            $query->whereDate('time_pick', $date)->orderByDesc('time_pick');
         }
 
-        $deliveries = $query->orderByDesc('time_pick')->get();
+        $deliveries = $query->get();
         if ($deliveries->isEmpty()) {
             return response()->json(['ok' => true, 'rows' => []]);
         }
@@ -196,11 +229,53 @@ class BillreceiveController extends Controller
             ];
         })->values();
 
-        // เรียง: จัดกลุ่มตามขนส่ง (transport_name) ให้อยู่ติดกัน -> แล้วตามบิล -> รอบจ่าย (เก่าก่อน)
-        // ขนส่งว่างดันไปท้ายสุด
-        $rows = $rows->sortBy(function ($r) {
-            $t = trim((string) $r['transport_name']);
-            return ($t === '' ? '1|' : '0|' . $t) . '||' . $r['bill_no'] . '|' . ($r['time_pick'] ?? '');
+        // กรองสถานะ (หลัง group ใช้สถานะของแถวตัวแทน)
+        if ($status !== '') {
+            $rows = $rows->filter(function ($r) use ($status) {
+                $s = trim((string) $r['status']);
+                $key = $s === 'จัดส่งสำเร็จ' ? 'ok'
+                     : ($s === 'ค้างบิล' ? 'hold'
+                     : ($s === 'สินค้าผิด' ? 'wrong' : 'pending'));
+                return $key === $status;
+            })->values();
+        }
+
+        if ($ignoreDate) {
+            // โหมดกรอง -> เรียงวันที่ล่าสุดไปอดีต
+            $rows = $rows->sortByDesc(function ($r) { return $r['time_pick'] ?? ''; })->values();
+        } else {
+            // โหมดรายวัน -> จัดกลุ่มตามขนส่ง (transport_name) ให้อยู่ติดกัน แล้วตามบิล/รอบจ่าย (ขนส่งว่างท้ายสุด)
+            $rows = $rows->sortBy(function ($r) {
+                $t = trim((string) $r['transport_name']);
+                return ($t === '' ? '1|' : '0|' . $t) . '||' . $r['bill_no'] . '|' . ($r['time_pick'] ?? '');
+            })->values();
+        }
+
+        // แสดงหน้าละ 100 รายการ
+        $rows = $rows->take(100)->values();
+
+        // เชื่อมโยงใบชั่วคราว (doc) -> บิลค้างที่ผูกไว้ (รายการสินค้าใน doc_detail ที่เป็นเลขบิลสถานะ 'ค้างบิล')
+        $docNos = $rows->where('type', 'doc')->pluck('bill_no')->filter()->unique()->values()->all();
+        $linkedByDoc = [];
+        if (!empty($docNos)) {
+            $details = DB::table('doc_detail')->whereIn('doc_id', $docNos)->get(['doc_id', 'item_name']);
+            $cand = $details->pluck('item_name')->map(function ($s) { return trim((string) $s); })
+                ->filter()->unique()->values()->all();
+            $holdSet = [];
+            if (!empty($cand)) {
+                $holdSet = Bill::whereIn('billid', $cand)->where('statusdeli', 'ค้างบิล')
+                    ->pluck('billid')->map(function ($b) { return (string) $b; })->unique()->flip()->all();
+            }
+            foreach ($details as $dt) {
+                $name = trim((string) $dt->item_name);
+                if ($name !== '' && isset($holdSet[$name])) $linkedByDoc[(string) $dt->doc_id][] = $name;
+            }
+            foreach ($linkedByDoc as $k => $v) $linkedByDoc[$k] = array_values(array_unique($v));
+        }
+        $rows = $rows->map(function ($r) use ($linkedByDoc) {
+            $r['linked_bills'] = ($r['type'] === 'doc' && isset($linkedByDoc[$r['bill_no']]))
+                ? $linkedByDoc[$r['bill_no']] : [];
+            return $r;
         })->values();
 
         return response()->json(['ok' => true, 'rows' => $rows]);
@@ -292,8 +367,10 @@ class BillreceiveController extends Controller
         $status = $statusMap[$validated['action']];
         $note   = trim((string) ($validated['note'] ?? ''));
 
-        if ($validated['action'] === 'wrong' && $note === '') {
-            return response()->json(['ok' => false, 'message' => 'กรุณากรอกหมายเหตุสินค้าผิด'], 422);
+        // ค้างบิล และ สินค้าผิด ต้องมีหมายเหตุ
+        if (in_array($validated['action'], ['wrong', 'hold'], true) && $note === '') {
+            $msg = $validated['action'] === 'hold' ? 'กรุณากรอกหมายเหตุค้างบิล' : 'กรุณากรอกหมายเหตุสินค้าผิด';
+            return response()->json(['ok' => false, 'message' => $msg], 422);
         }
 
         DB::transaction(function () use ($deliveries, $status, $note, $userName, $now, $type, $billid, $rawId, $validated) {
@@ -306,13 +383,14 @@ class BillreceiveController extends Controller
             }
 
             // อัปเดตไส้ในบิล/เอกสาร (statusdeli / NG) — งานไปรับเอง (unknown) ไม่มีไส้ใน
+            $writeNg = in_array($validated['action'], ['wrong', 'hold'], true);
             if ($type === 'bill') {
                 $upd = ['statusdeli' => $status];
-                if ($validated['action'] === 'wrong') $upd['NG'] = $note;
+                if ($writeNg) $upd['NG'] = $note;
                 DB::table('tblbill')->where('billid', $billid)->update($upd);
             } elseif ($type === 'doc') {
                 $upd = ['statusdeli' => $status];
-                if ($validated['action'] === 'wrong') $upd['NG'] = $note;
+                if ($writeNg) $upd['NG'] = $note;
                 DB::table('docbills')->where('doc_id', $rawId)->update($upd);
             }
         });
