@@ -366,12 +366,15 @@
 </div>
 
 <script>
-    const SO_ENABLED_COMPANY = "บริษัท ทริปเปิ้ล อี เทรดดิ้ง จำกัด";
+    const SO_ENABLED_COMPANIES = [
+        "บริษัท ทริปเปิ้ล อี เทรดดิ้ง จำกัด",
+        "บริษัท ทริบเปิ้ล พี แฟคตอรี่ แอนด์ เอ็นจิเนียริ่ง จำกัด"
+    ];
 
     function toggleSoBlock() {
         const headcom = document.getElementById("headcom").value;
         const soBlock = document.getElementById("so_block");
-        if (headcom === SO_ENABLED_COMPANY) {
+        if (SO_ENABLED_COMPANIES.includes(headcom)) {
             soBlock.style.display = "flex";
         } else {
             soBlock.style.display = "none";

@@ -139,9 +139,11 @@
         .headcom { display: flex; align-items: center; gap: 8px; }
         .headcom label { font-weight: 600; color: var(--ink-700); font-size: clamp(10px, 0.5vw + 4px, 12px); }
 
-        .search-box { margin-left: auto; }
+        .search-box { margin-left: auto; display: flex; align-items: center; gap: 16px; flex-wrap: wrap; }
+        .search-field { display: flex; align-items: center; gap: 6px; }
+        .search-field label { font-weight: 600; color: var(--ink-700); font-size: clamp(10px, 0.5vw + 4px, 12px); white-space: nowrap; }
 
-        #search-input {
+        #search-input, #so-input {
             padding: 5px 10px;
             border: 1px solid var(--ink-150);
             border-radius: var(--radius);
@@ -445,8 +447,16 @@
         </div>
 
         <div class="search-box">
-            <input type="text" id="search-input" name="search" form="autoSearchForm"
-                   value="{{ request('search', '') }}" placeholder=" ค้นหา เลขที่บิล (ค้นหาได้ทุกวัน)" autocomplete="off">
+            <div class="search-field">
+                <label for="search-input">เลขเอกสารชั่วคราว :</label>
+                <input type="text" id="search-input" name="search" form="autoSearchForm"
+                       value="{{ request('search', '') }}" autocomplete="off">
+            </div>
+            <div class="search-field">
+                <label for="so-input">เลข SO :</label>
+                <input type="text" id="so-input" name="so" form="autoSearchForm"
+                       value="{{ request('so', '') }}" autocomplete="off">
+            </div>
         </div>
     </div>
 
@@ -636,6 +646,16 @@
             if (searchDebounce) clearTimeout(searchDebounce);
             searchDebounce = setTimeout(() => { form.submit(); }, 500);
         });
+
+        // ค้นหาด้วยเลข SO (ไม่สนวันที่) — debounce เหมือนช่องเลขเอกสาร
+        const soInputEl = document.getElementById('so-input');
+        if (soInputEl) {
+            let soDebounce = null;
+            soInputEl.addEventListener('input', () => {
+                if (soDebounce) clearTimeout(soDebounce);
+                soDebounce = setTimeout(() => { form.submit(); }, 500);
+            });
+        }
 
         window.addEventListener('load', () => {
             if (!sessionStorage.getItem('hasAutoSubmitted')) {

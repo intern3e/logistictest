@@ -439,7 +439,9 @@ function render(){
          <button type="button" class="act wrong" onclick="openNote(${i},'wrong')">สินค้าผิด</button>`;
     }
 
-    const chk = !redispatched
+    // เช็คบ็อกซ์ (bulk) เฉพาะงานที่ยังทำได้ = ยังไม่รับเข้า หรือ ค้างบิล ; สำเร็จ/สินค้าผิด/ถูกจ่ายใหม่ = ไม่มี
+    const bulkable = !redispatched && (!received || (((r.status||'').trim()) === 'ค้างบิล'));
+    const chk = bulkable
       ? `<input type="checkbox" class="job-chk" ${selectedBulk.has(i)?'checked':''} onchange="toggleBulk(${i},this.checked)" title="เลือกเพื่อตั้งสถานะพร้อมกัน" style="width:20px;height:20px;align-self:center;margin-right:4px;cursor:pointer;flex-shrink:0;">`
       : '';
     return `<div class="job type-${r.type} ${received||redispatched?'done':''}" id="job-${i}">

@@ -32,19 +32,21 @@ class DocController extends Controller
         $creator  = $authUser->name;
 
         $date    = $request->get('date');
-        $search  = trim((string) $request->get('search', ''));
+        $search  = trim((string) $request->get('search', ''));   // เลขเอกสารชั่วคราว (doc_id)
+        $so      = trim((string) $request->get('so', ''));       // เลข SO
         $headcom = trim((string) $request->get('headcom', ''));
         $message = null;
 
-        if ($search !== '') {
-            // ค้นหาเลขที่บิล: หาได้ทุกวัน ไม่จำกัดเฉพาะวันที่เลือกไว้
-            $docbill = Docbills::where('doc_id', 'like', '%' . $search . '%')
+        if ($search !== '' || $so !== '') {
+            // ค้นหาด้วยเลขเอกสารชั่วคราว / เลข SO: หาได้ทุกวัน ไม่จำกัดวันที่ (ใส่พร้อมกันได้ = AND)
+            $docbill = Docbills::when($search !== '', fn ($q) => $q->where('doc_id', 'like', '%' . $search . '%'))
+                        ->when($so !== '', fn ($q) => $q->where('so_id', 'like', '%' . $so . '%'))
                         ->orderBy('doc_id', 'desc')
                         ->limit(500)
                         ->get();
 
             if ($docbill->isEmpty()) {
-                $message = 'ไม่พบเลขที่บิลที่ค้นหา';
+                $message = 'ไม่พบเอกสารที่ค้นหา';
             }
         } elseif ($headcom !== '') {
             // เลือกบริษัทผู้ส่ง: ค้นทุกวัน (ไม่สนวันที่)
