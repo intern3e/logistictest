@@ -430,7 +430,7 @@
 
         <div class="headcom">
             <label for="headcom">บริษัทผู้ส่ง :</label>
-            <select id="headcom" name="headcom" form="autoSearchForm" onchange="document.getElementById('autoSearchForm').submit()">
+            <select id="headcom" name="headcom" form="autoSearchForm" onchange="if(window.submitFilters){submitFilters()}else{document.getElementById('autoSearchForm').submit()}">
                 <option value="">ทั้งหมด</option>
                 <option value="บริษัท ทริปเปิ้ล อี เทรดดิ้ง จำกัด">บริษัท ทริปเปิ้ล อี เทรดดิ้ง จำกัด</option>
                 <option value="บริษัท ทริปเปิ้ล อี อินโนเวชั่น จำกัด">บริษัท ทริปเปิ้ล อี อินโนเวชั่น จำกัด</option>
@@ -634,26 +634,46 @@
 
         const form = document.getElementById('autoSearchForm');
         const dateInput = document.getElementById('date');
-        dateInput.addEventListener('change', () => { form.submit(); });
+        const headcomSel = document.getElementById('headcom');
+        const searchInputEl = document.getElementById('search-input');
+        const soInputEl = document.getElementById('so-input');
 
         // จำค่าบริษัทผู้ส่งที่เลือกไว้ (ค้นข้ามวัน)
-        const headcomSel = document.getElementById('headcom');
         if (headcomSel) headcomSel.value = @json(request('headcom', ''));
 
-        const searchInputEl = document.getElementById('search-input');
+        // ยิงค้นหาแบบ explicit navigation — เก็บค่าทุกฟิลเตอร์ (วันที่ / บริษัทผู้ส่ง / เลขเอกสาร / SO)
+        // ไม่พึ่ง attribute form= ของ element ที่อยู่นอก <form> (สาเหตุที่ตัวกรองบริษัทผู้ส่งเดิมไม่ทำงาน)
+        window.submitFilters = function submitFilters() {
+            const base = @json(route('document.dashboarddoc'));
+            const p = new URLSearchParams();
+            const date    = dateInput ? dateInput.value : '';
+            const headcom = headcomSel ? headcomSel.value : '';
+            const search  = searchInputEl ? searchInputEl.value.trim() : '';
+            const so      = soInputEl ? soInputEl.value.trim() : '';
+            if (date)    p.set('date', date);
+            if (headcom) p.set('headcom', headcom);
+            if (search)  p.set('search', search);
+            if (so)      p.set('so', so);
+            window.location.href = base + '?' + p.toString();
+        };
+
+        if (dateInput)   dateInput.addEventListener('change', () => submitFilters());
+        if (headcomSel)  headcomSel.addEventListener('change', () => submitFilters());
+
         let searchDebounce = null;
-        searchInputEl.addEventListener('input', () => {
-            if (searchDebounce) clearTimeout(searchDebounce);
-            searchDebounce = setTimeout(() => { form.submit(); }, 500);
-        });
+        if (searchInputEl) {
+            searchInputEl.addEventListener('input', () => {
+                if (searchDebounce) clearTimeout(searchDebounce);
+                searchDebounce = setTimeout(() => submitFilters(), 500);
+            });
+        }
 
         // ค้นหาด้วยเลข SO (ไม่สนวันที่) — debounce เหมือนช่องเลขเอกสาร
-        const soInputEl = document.getElementById('so-input');
         if (soInputEl) {
             let soDebounce = null;
             soInputEl.addEventListener('input', () => {
                 if (soDebounce) clearTimeout(soDebounce);
-                soDebounce = setTimeout(() => { form.submit(); }, 500);
+                soDebounce = setTimeout(() => submitFilters(), 500);
             });
         }
 

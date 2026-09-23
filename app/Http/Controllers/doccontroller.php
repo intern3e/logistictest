@@ -49,8 +49,8 @@ class DocController extends Controller
                 $message = 'ไม่พบเอกสารที่ค้นหา';
             }
         } elseif ($headcom !== '') {
-            // เลือกบริษัทผู้ส่ง: ค้นทุกวัน (ไม่สนวันที่)
-            $docbill = Docbills::where('com_name', $headcom)
+            // เลือกบริษัทผู้ส่ง (headcom = บริษัทหัวเอกสาร): ค้นทุกวัน (ไม่สนวันที่)
+            $docbill = Docbills::where('headcom', $headcom)
                         ->orderBy('doc_id', 'desc')
                         ->limit(500)
                         ->get();
