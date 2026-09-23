@@ -738,6 +738,7 @@ $selfPickupMethods = ['รับเองรถใหญ่', 'รับเอ�
 
         .required-mark{ color:#c62828; }
         .optional-hint{ font-weight:400; font-size:0.85rem; color:var(--ink-faint); }
+        .form-control.driver-locked{ background:#f1f3f5; color:#495057; cursor:not-allowed; }
         .btn-switch-tp{ margin-top:5px; display:inline-flex; align-items:center; gap:3px; padding:2px 8px;
             font-size:0.72rem; font-weight:600; border:1px solid #cbd5e1; border-radius:6px;
             background:#f8fafc; color:#475569; cursor:pointer; font-family:inherit; }
@@ -1832,6 +1833,15 @@ document.addEventListener('DOMContentLoaded', function() {
 
     document.getElementById('openModalBtn').addEventListener('click', function() {
         configureDeliveryDateField();
+        // รีเซ็ต: วิธีจัดส่งว่าง + ผู้รับผิดชอบ ว่าง/แก้ได้ปกติ
+        if (typeof vehicleInput !== 'undefined' && vehicleInput) vehicleInput.value = '';
+        if (typeof salesHint !== 'undefined' && salesHint) salesHint.style.display = 'none';
+        if (typeof driverInput !== 'undefined' && driverInput) {
+            driverInput.value = '';
+            driverInput.readOnly = false;
+            driverInput.classList.remove('driver-locked');
+            driverInput.placeholder = 'พิมพ์เพื่อค้นหา หรือเลือกจากรายการ';
+        }
         new bootstrap.Modal(document.getElementById('driverModal')).show();
     });
 
@@ -1842,6 +1852,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
     const deliveryMethodsData = @json($transportOptions);
     const responsiblePersonsData = @json($driverOptions);
+    const LOGIN_NAME = @json($loggedInName ?? '');
 
     setupAutocomplete(vehicleInput, document.getElementById('vehicleSuggest'), deliveryMethodsData);
     setupAutocomplete(driverInput, document.getElementById('driverSuggest'), responsiblePersonsData);
@@ -1851,12 +1862,27 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     vehicleInput?.addEventListener('vehicleOrDriverInput', function () {
-        const isSales = isSelfDeliverySales();
+        const method = vehicleInput.value.trim();
+        const isSales = method === 'เซลล์ไปส่งเอง';
+        const isAccount = method === 'บัญชี';
         salesHint.style.display = isSales ? 'block' : 'none';
         driverOptionalHint.style.display = isSales ? 'none' : 'inline';
-        driverInput.placeholder = isSales
-            ? 'พิมพ์ชื่อเซลล์ที่ไปส่งเอง (บังคับ)'
-            : 'พิมพ์เพื่อค้นหา หรือเลือกจากรายการ';
+
+        if (isAccount) {
+            // เลือก "บัญชี" -> ดึงชื่อผู้ล็อกอินมาใส่ + read only
+            driverInput.value = LOGIN_NAME;
+            driverInput.readOnly = true;
+            driverInput.classList.add('driver-locked');
+            driverInput.placeholder = 'ผู้รับผิดชอบ (บัญชี = ผู้ล็อกอิน)';
+        } else {
+            // วิธีอื่น -> แก้ได้ปกติ (ล้างชื่อล็อกอินที่ถูกเติมจาก "บัญชี" ออก)
+            driverInput.readOnly = false;
+            driverInput.classList.remove('driver-locked');
+            if (driverInput.value.trim() === LOGIN_NAME) driverInput.value = '';
+            driverInput.placeholder = isSales
+                ? 'พิมพ์ชื่อเซลล์ที่ไปส่งเอง (บังคับ)'
+                : 'พิมพ์เพื่อค้นหา หรือเลือกจากรายการ';
+        }
     });
 
     document.getElementById('confirmSaveBtn').addEventListener('click', function() {
@@ -1881,7 +1907,7 @@ document.addEventListener('DOMContentLoaded', function() {
             showToast('เลือก "เซลล์ไปส่งเอง" กรุณาพิมพ์ชื่อเซลล์ที่ไปส่งเองในช่องผู้รับผิดชอบด้วย', 'warning');
             return;
         }
-        if (!isSelfDeliverySales() && driver && !responsiblePersonsData.includes(driver)) {
+        if (!isSelfDeliverySales() && driver && driver !== LOGIN_NAME && !responsiblePersonsData.includes(driver)) {
             showToast('กรุณาเลือกชื่อผู้รับผิดชอบจากรายการที่มีให้เท่านั้น', 'error');
             return;
         }

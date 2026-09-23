@@ -21,7 +21,7 @@ class DeliverytrackController extends Controller
     protected string $selfPickupStartDate = '2026-01-01';
 
     protected array $deliveryMethods = [
-        'มอเตอร์ไซต์กบ', 'มอเตอร์ไซด์ในเมือง', 'มอเตอร์ไซค์ - พระราม 2', 'เซลล์ไปส่งเอง',
+        'บัญชี', 'มอเตอร์ไซต์กบ', 'มอเตอร์ไซด์ในเมือง', 'มอเตอร์ไซค์ - พระราม 2', 'เซลล์ไปส่งเอง',
         '3ฒย 478', '3ฉมง 3059', '2ฒธ 1621', '2ฒธ 1620', '3ฒก 6071', '2ฒฏ 3017',
         '4ฒฎ 5861', '2ฒศ 6762', '2ฉธ 1619', '6 ล้อ', 'laramove', 'สุราษฎร์ทัวร์ เอ็กเพรส',
         'แท็กซี่คอนซูม 02-6230110', 'AT SPEED 02-233-6062', 'PM 081-564-5920',
@@ -288,7 +288,10 @@ class DeliverytrackController extends Controller
         if ($validated['transport_name'] === 'เซลล์ไปส่งเอง' && blank($validated['driver_name'] ?? null)) {
             return redirect()->back()->with('error', 'เลือก "เซลล์ไปส่งเอง" กรุณาระบุชื่อเซลล์ที่ไปส่งเองด้วย');
         }
-        if ($validated['transport_name'] !== 'เซลล์ไปส่งเอง' && filled($validated['driver_name'] ?? null) && !in_array($validated['driver_name'], $this->responsiblePersons, true)) {
+        if ($validated['transport_name'] !== 'เซลล์ไปส่งเอง'
+            && filled($validated['driver_name'] ?? null)
+            && $validated['driver_name'] !== $this->loggedInName()
+            && !in_array($validated['driver_name'], $this->responsiblePersons, true)) {
             return redirect()->back()->with('error', 'กรุณาเลือกชื่อผู้รับผิดชอบจากรายการที่มีให้เท่านั้น');
         }
 
