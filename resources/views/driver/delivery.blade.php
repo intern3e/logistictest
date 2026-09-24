@@ -525,6 +525,18 @@ $selfPickupMethods = ['รับเองรถใหญ่', 'รับเอ�
             color: var(--danger);
             border-color: var(--danger);
         }
+        .search-go-btn {
+            background: var(--primary, #2853d5);
+            border: 1px solid var(--primary, #2853d5);
+            border-radius: 8px;
+            padding: 8px 18px;
+            font-size: 0.85rem;
+            cursor: pointer;
+            color: #fff;
+            transition: all 0.2s;
+            font-weight: 600;
+        }
+        .search-go-btn:hover { filter: brightness(.93); }
 
         .dashboard-grid{ 
             display:grid; 
@@ -974,16 +986,17 @@ $selfPickupMethods = ['รับเองรถใหญ่', 'รับเอ�
             <div class="search-bar">
                 <div class="search-group">
                     <label for="searchBillCustomer"> รหัสลูกค้า:</label>
-                    <input type="text" id="searchBillCustomer" placeholder="เช่น CUS-16026" oninput="filterBillTable()">
+                    <input type="text" id="searchBillCustomer" placeholder="เช่น CUS-16026" onkeydown="if(event.key==='Enter'){event.preventDefault();filterBillTable();}">
                 </div>
                 <div class="search-group">
                     <label for="searchBillSO"> รหัส SO:</label>
-                    <input type="text" id="searchBillSO" placeholder="เช่น 69/013216" oninput="filterBillTable()">
+                    <input type="text" id="searchBillSO" placeholder="เช่น 69/013216" onkeydown="if(event.key==='Enter'){event.preventDefault();filterBillTable();}">
                 </div>
                 <div class="search-group">
                     <label for="searchBillNo"> เลขบิล:</label>
-                    <input type="text" id="searchBillNo" placeholder="เช่น 46909-02085" oninput="filterBillTable()">
+                    <input type="text" id="searchBillNo" placeholder="เช่น 46909-02085" onkeydown="if(event.key==='Enter'){event.preventDefault();filterBillTable();}">
                 </div>
+                <button type="button" class="search-go-btn" onclick="filterBillTable()"> ค้นหา</button>
                 <button type="button" class="search-clear-btn" onclick="clearBillSearch()"> ล้าง</button>
             </div>
         </div>
@@ -992,12 +1005,13 @@ $selfPickupMethods = ['รับเองรถใหญ่', 'รับเอ�
             <div class="search-bar">
                 <div class="search-group">
                     <label for="searchDocCustomer"> รหัสลูกค้า:</label>
-                    <input type="text" id="searchDocCustomer" placeholder="เช่น CUS-16026" oninput="filterDocTable()">
+                    <input type="text" id="searchDocCustomer" placeholder="เช่น CUS-16026" onkeydown="if(event.key==='Enter'){event.preventDefault();filterDocTable();}">
                 </div>
                 <div class="search-group">
                     <label for="searchDocNo"> เลขที่เอกสาร:</label>
-                    <input type="text" id="searchDocNo" placeholder="เช่น DOC-001" oninput="filterDocTable()">
+                    <input type="text" id="searchDocNo" placeholder="เช่น DOC-001" onkeydown="if(event.key==='Enter'){event.preventDefault();filterDocTable();}">
                 </div>
+                <button type="button" class="search-go-btn" onclick="filterDocTable()"> ค้นหา</button>
                 <button type="button" class="search-clear-btn" onclick="clearDocSearch()">ล้าง</button>
             </div>
         </div>
@@ -1006,12 +1020,13 @@ $selfPickupMethods = ['รับเองรถใหญ่', 'รับเอ�
             <div class="search-bar">
                 <div class="search-group">
                     <label for="searchPoCustomer"> ลูกค้า / ผู้ขาย:</label>
-                    <input type="text" id="searchPoCustomer" placeholder="เช่น CUS-16026" oninput="filterPoTable()">
+                    <input type="text" id="searchPoCustomer" placeholder="เช่น CUS-16026" onkeydown="if(event.key==='Enter'){event.preventDefault();filterPoTable();}">
                 </div>
                 <div class="search-group">
                     <label for="searchPoSo"> PO / SO:</label>
-                    <input type="text" id="searchPoSo" placeholder="เช่น 69/013216" oninput="filterPoTable()">
+                    <input type="text" id="searchPoSo" placeholder="เช่น 69/013216" onkeydown="if(event.key==='Enter'){event.preventDefault();filterPoTable();}">
                 </div>
+                <button type="button" class="search-go-btn" onclick="filterPoTable()"> ค้นหา</button>
                 <button type="button" class="search-clear-btn" onclick="clearPoSearch()">ล้าง</button>
             </div>
         </div>

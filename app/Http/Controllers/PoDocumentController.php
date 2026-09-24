@@ -19,7 +19,7 @@ use Smalot\PdfParser\Parser as PdfParser;
 class PoDocumentController extends Controller
 {
     private $specialCustomers = ['CUS-26039'];
-    private $tcusPerBillPage = 6;
+    private $tcusPerBillPage = 7;
     private $depositPdfPath = null; 
     private $dateOverlayPdfPath = null;
 

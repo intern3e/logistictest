@@ -175,6 +175,24 @@ body{
     white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0;
 }
 
+/* ===== "ไม่ต้องปริ้นบิล" chip — class แยก ปรับเองได้ตรงนี้ ===== */
+/*   sale-chip สูงจริง 38px (ไอคอน 22 + padding 14 + border 2 ; box-sizing:border-box) */
+.noprint-chip{
+    margin-left:auto;
+    position:relative;top:3.1px;             /* << ขยับกล่องลง (ปรับค่าตรงนี้) */
+    display:inline-flex;align-items:center;gap:8px;
+    height:38px;box-sizing:border-box;
+    padding:0 14px;
+    background:#f3f4f6;
+    border:1px solid #e5e7eb;
+    border-radius:var(--r);
+    font-size:12px;font-weight:600;color:#4b5563;
+    white-space:nowrap;cursor:pointer;user-select:none;
+}
+.noprint-chip input[type="checkbox"]{
+    width:16px;height:16px;margin:0;cursor:pointer;accent-color:#6b7280;flex-shrink:0;
+}
+
 .card-body{padding:22px 24px}
 
 /* ===== Section divider ===== */
@@ -652,7 +670,12 @@ table.table tbody tr:hover td{background:var(--primary-light)}
                 <h3>ข้อมูลเอกสาร</h3>
                 <p>Sales Order, บิลส่งของ และผู้รับผิดชอบ</p>
             </div>
-            <div class="sale-chip" title="ผู้ขายที่รับผิดชอบเอกสารนี้">
+            {{-- บล็อก "ไม่ต้องปริ้นบิล" — ใช้ class .noprint-chip (ปรับ CSS ได้เองด้านบน) : ติ๊ก = statuspdf=3 --}}
+            <label class="noprint-chip" id="noPrintWrap" title="ติ๊กเพื่อบันทึกบิลโดยไม่ต้องปริ้น (ยังจัดบิล/ส่งของได้ปกติ)">
+                <input type="checkbox" id="noPrintChk">
+                ไม่ต้องปริ้นบิล
+            </label>
+            <div class="sale-chip" title="ผู้ขายที่รับผิดชอบเอกสารนี้" style="margin-left:0;">
                 <div class="sale-chip-icon">
                     <svg width="12" height="12" viewBox="0 0 14 14" fill="none">
                         <circle cx="7" cy="5" r="2.6" stroke="#3E6AE1" stroke-width="1.4"/>
@@ -1467,9 +1490,7 @@ detailObserver.observe(document.getElementById('detail'), { childList:true, subt
 window.addEventListener('DOMContentLoaded', refreshSubmitState);
 
 /* ====================== Submit ====================== */
-document.getElementById('submitBill').addEventListener('click', async function(event){
-    event.preventDefault();
-    const btn = this;
+async function doSubmitBill(btn, noPrint){
     const form = document.getElementById('billForm');
     const errors = validateForm();
     if(errors.length > 0){
@@ -1507,6 +1528,7 @@ document.getElementById('submitBill').addEventListener('click', async function(e
             if(!confirmNoPO){ resetBtn(); return; }
         }
         let formData = new FormData(form);
+        formData.append('no_print', noPrint ? '1' : '0');   // ไม่สั่งปริ้น -> statuspdf = 3
         if(typeof convertedPDFBlob !== 'undefined' && convertedPDFBlob){
             formData.append('POdocument', convertedPDFBlob, originalFilename || 'upload.pdf');
         }
@@ -1543,6 +1565,11 @@ document.getElementById('submitBill').addEventListener('click', async function(e
         btn.innerHTML = originalHTML;
         refreshSubmitState();
     }
+}
+document.getElementById('submitBill').addEventListener('click', function(event){
+    event.preventDefault();
+    var noPrint = !!(document.getElementById('noPrintChk') && document.getElementById('noPrintChk').checked);
+    doSubmitBill(this, noPrint);   // ติ๊ก "ไม่ต้องปริ้นบิล" -> statuspdf = 3
 });
 </script>
 

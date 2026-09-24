@@ -660,22 +660,13 @@
         if (dateInput)   dateInput.addEventListener('change', () => submitFilters());
         if (headcomSel)  headcomSel.addEventListener('change', () => submitFilters());
 
-        let searchDebounce = null;
-        if (searchInputEl) {
-            searchInputEl.addEventListener('input', () => {
-                if (searchDebounce) clearTimeout(searchDebounce);
-                searchDebounce = setTimeout(() => submitFilters(), 500);
+        // ช่องเลขเอกสารชั่วคราว + เลข SO : ค้นหาเมื่อกด Enter (ไม่ auto-reload ระหว่างพิมพ์)
+        [searchInputEl, soInputEl].forEach(el => {
+            if (!el) return;
+            el.addEventListener('keydown', e => {
+                if (e.key === 'Enter') { e.preventDefault(); submitFilters(); }
             });
-        }
-
-        // ค้นหาด้วยเลข SO (ไม่สนวันที่) — debounce เหมือนช่องเลขเอกสาร
-        if (soInputEl) {
-            let soDebounce = null;
-            soInputEl.addEventListener('input', () => {
-                if (soDebounce) clearTimeout(soDebounce);
-                soDebounce = setTimeout(() => submitFilters(), 500);
-            });
-        }
+        });
 
         window.addEventListener('load', () => {
             if (!sessionStorage.getItem('hasAutoSubmitted')) {

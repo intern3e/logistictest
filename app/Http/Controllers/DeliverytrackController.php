@@ -23,7 +23,7 @@ class DeliverytrackController extends Controller
     protected array $deliveryMethods = [
         'บัญชี', 'มอเตอร์ไซต์กบ', 'มอเตอร์ไซด์ในเมือง', 'มอเตอร์ไซค์ - พระราม 2', 'เซลล์ไปส่งเอง',
         '3ฒย 478', '3ฉมง 3059', '2ฒธ 1621', '2ฒธ 1620', '3ฒก 6071', '2ฒฏ 3017',
-        '4ฒฎ 5861', '2ฒศ 6762', '2ฉธ 1619', '6 ล้อ', 'laramove', 'สุราษฎร์ทัวร์ เอ็กเพรส',
+        '4ฒฎ 5861', '2ฒศ 6762', '2ฉธ 1619', '6 ล้อ','ลูกค้ารับเอง','lalamove', 'สุราษฎร์ทัวร์ เอ็กเพรส',
         'แท็กซี่คอนซูม 02-6230110', 'AT SPEED 02-233-6062', 'PM 081-564-5920',
         'ป้าติ๊ก P.P 083-082-1026', 'ข้ามสมุทรขนส่ง 02-887-0368', 'ระยองพัฒนา 02-2229296',
         'นิวอุดร ขนส่ง 085-4830094', '999ขนส่ง 087-053 5488', 'นิ่มซี่เส็ง 02-282-7936',
@@ -34,7 +34,7 @@ class DeliverytrackController extends Controller
         'ประจวบทองขัยขนส่ง สาย 2 02-4481976-7, 086-3679602', 'สี่สหายขนส่ง (1988) 02-4516712-6',
         'ไอที ทรานสปอร์ต 089-6491111', 'เอ็มเอส เอ็กซ์เพรส 086-1217672, 089-0990782',
         'เอส.ดี. เอ็กซ์เพรส 02-2144341, 2165846', 'KERRY', 'Grab', 'ขนส่ง SD EXPRESS',
-        'TB พาร์ท', 'ขนส่ง โกโลด', 'ขนส่ง BS', 'ขนส่ง มะม่วง', 'ขนส่ง PJ', 'ขนส่ง คู่บุญ', 'ธนมัยสาย2',
+        'TB พาร์ท', 'ขนส่ง โกโลด', 'ขนส่ง BS', 'ขนส่ง มะม่วง', 'ขนส่ง PJ', 'ขนส่ง คู่บุญ', 'ธนมัยสาย2','เหล่าสุวรรณ'
     ];
 
     protected array $responsiblePersons = ['บอย', 'แซม', 'กบ', 'joey', 'yuth', 'แฟงค์', 'เก่ง', 'แมน', 'เอ', 'กอลฟ์', 'บังเดช', 'เอ้'];
@@ -93,6 +93,29 @@ class DeliverytrackController extends Controller
         $bills    = $bills->reject(fn ($b) => $dispatched->has($b->so_detail_id))->values();
         $docbills = $docbills->reject(fn ($d) => $dispatched->has($d->doc_id))->values();
         $poJobs   = $poJobs->reject(fn ($p) => $dispatched->has($p->PONum))->values();
+
+        // ===== ตรวจ ERP "หลังสุด": บิลที่ถูกยกเลิกใน ERP (SOInvHD.DocuStatus = 'C') ไม่ต้องดึงมา =====
+        //   เช็คเฉพาะเลขบิล (billid = INVNO) ที่จะขึ้นหน้านี้จริงเท่านั้น จึงไม่ต้อง query ทั้งหมด (ไม่ช้า)
+        $billIds = $bills->pluck('billid')->filter()->unique()->values()->all();
+        if (!empty($billIds)) {
+            try {
+                $cancelled = collect();
+                foreach (array_chunk($billIds, 1000) as $chunk) {
+                    $c = DB::connection($this->account03Connection)->table('SOInvHD')
+                        ->whereIn('INVNO', $chunk)
+                        ->where('DocuStatus', 'C')
+                        ->pluck('INVNO');
+                    $cancelled = $cancelled->merge($c);
+                }
+                $cancelledSet = $cancelled->map(fn ($v) => (string) $v)->flip();
+                if ($cancelledSet->isNotEmpty()) {
+                    $bills = $bills->reject(fn ($b) => $cancelledSet->has((string) $b->billid))->values();
+                }
+            } catch (\Throwable $e) {
+                // ERP/MSSQL ล่ม -> ไม่ให้หน้าพัง แค่ไม่ได้กรองบิลยกเลิก
+                \Illuminate\Support\Facades\Log::warning('deliverytrack: ตรวจ SOInvHD.DocuStatus ไม่สำเร็จ: ' . $e->getMessage());
+            }
+        }
 
         // แยกบิลตามประเภทขนส่ง: private = 'private', นอกนั้น (รวม null) = company
         $companyBills = $bills->filter(fn ($b) => ($b->transport_type ?: 'company') !== 'private')->values();

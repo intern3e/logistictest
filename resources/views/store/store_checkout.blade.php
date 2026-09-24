@@ -787,6 +787,16 @@ document.getElementById('searchDate').addEventListener('change', triggerDateSear
 function toggleSoCard(id) {
     const card = document.getElementById(id);
     if (!card) return;
+    const willOpen = card.classList.contains('collapsed');   // ตอนนี้ปิดอยู่ = กำลังจะเปิด
+    if (willOpen) {
+        // accordion: เปิดอันใหม่ -> ปิดอันที่เปิดค้างอยู่ทั้งหมด
+        document.querySelectorAll('.so-card:not(.collapsed)').forEach(other => {
+            if (other === card) return;
+            other.classList.add('collapsed');
+            const h = other.querySelector('.so-card-header');
+            if (h) h.setAttribute('aria-expanded', 'false');
+        });
+    }
     const collapsed = card.classList.toggle('collapsed');
     const header = card.querySelector('.so-card-header');
     if (header) header.setAttribute('aria-expanded', collapsed ? 'false' : 'true');

@@ -100,6 +100,7 @@
         td.col-status .status-done   { color: #16a34a !important; font-weight: 600 !important; }
         td.col-status .status-doing  { color: #2563eb !important; font-weight: 600 !important; }
         td.col-status .status-cancel { color: #dc2626 !important; font-weight: 600 !important; }
+        td.col-status .status-noprint { color: #6b7280 !important; font-weight: 600 !important; }
 
         /* --- อ้างอิงใบส่งของ: กดได้ = เขียว (ขนาด inherit จาก td) --- */
         td.col-billid a { color: #16a34a !important; }
@@ -323,6 +324,8 @@ window.addEventListener('load', () => {
                         <span class="status-doing">กำลังดำเนินการ</span>
                     @elseif($item->statuspdf == 6)
                         <span class="status-cancel">ยกเลิก</span>
+                    @elseif($item->statuspdf == 3)
+                        <span class="status-noprint">ไม่ปริ้นบิล</span>
                     @else
                         <span class="status-done">ปริ้นสำเร็จ</span>
                     @endif

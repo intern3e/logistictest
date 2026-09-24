@@ -210,7 +210,8 @@ public function fetchFormType(Request $request)
         $bill->so_id = $request->input('so_id');
         $bill->ponum = $request->input('ponum');
         $bill->status = 0;
-        $bill->statuspdf = 0;
+        // statuspdf: 0 = รอปริ้น, 3 = ไม่ต้องปริ้น (จัดบิล/ส่งของได้ปกติ แต่ไม่เข้าคิวปริ้น)
+        $bill->statuspdf = ($request->input('no_print') === '1' || $request->input('no_print') === 1) ? 3 : 0;
         $bill->statusdeli = 0;
         $bill->customer_id = $request->input('customer_id');
         $bill->customer_name = $request->input('customer_name');
