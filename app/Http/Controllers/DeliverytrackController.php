@@ -79,7 +79,10 @@ class DeliverytrackController extends Controller
     {
         if ($resp = $this->checkAccess()) return $resp;
 
-        $bills = Bill::whereNotNull('emp_picker')->where('emp_picker', '!=', '')->orderBy('time')->get();
+        // statuspdf = '6' คือบิลที่ถูกยกเลิก — ไม่ต้องดึงมาจ่ายงาน
+        $bills = Bill::whereNotNull('emp_picker')->where('emp_picker', '!=', '')
+            ->where('statuspdf', '!=', '6')
+            ->orderBy('time')->get();
         $docbills = Docbills::where('status', '0')->orderBy('time')->get();
         $poJobs = $this->getPendingSelfPickupPOs();
 
