@@ -890,12 +890,13 @@
             : '<td>' + esc(r.sale) + '</td>';
         const priceCell = CAN_SEE_PRICE ? '<td class="price-cell">' + fmtBaht(r.price) + '</td>' : '';
 
+        // เช็คเอาท์แล้ว -> ของออกไปแล้ว ย้ายชั้นไม่ได้ (แสดงแค่ "เช็คเอาท์แล้ว")
         const manageCell = CAN_MANAGE
             ? '<td style="text-align:center;white-space:nowrap;">'
-              + '<button type="button" class="btn-view btn-move" onclick="openMove(\'' + escJs(r.po) + '\',\'' + escJs(r.so) + '\')">ย้ายชั้น</button> '
               + (r.is_checkedout
                   ? '<span class="dash" style="font-size:11.5px;">เช็คเอาท์แล้ว</span>'
-                  : '<button type="button" class="btn-view btn-checkout" onclick="doCheckout(this,\'' + escJs(r.po) + '\',\'' + escJs(r.so) + '\',' + (r.po_receive_id || 'null') + ')">เช็คเอาท์</button>')
+                  : '<button type="button" class="btn-view btn-move" onclick="openMove(\'' + escJs(r.po) + '\',\'' + escJs(r.so) + '\')">ย้ายชั้น</button> '
+                    + '<button type="button" class="btn-view btn-checkout" onclick="doCheckout(this,\'' + escJs(r.po) + '\',\'' + escJs(r.so) + '\',' + (r.po_receive_id || 'null') + ')">เช็คเอาท์</button>')
               + '</td>'
             : '';
 
@@ -942,9 +943,10 @@
             tbodyModal.innerHTML = '<tr><td colspan="' + prodCols + '" style="text-align:center; padding: 24px; color: var(--muted);">ไม่มีรายการสินค้า</td></tr>';
         } else {
             tbodyModal.innerHTML = products.map(p => {
-                const moveBtn = CAN_MANAGE 
+                // เช็คเอาท์แล้ว -> ย้ายชั้นรายสินค้าไม่ได้
+                const moveBtn = (CAN_MANAGE && !row.is_checkedout)
                     ? '<td style="text-align:center;"><button type="button" class="btn-view btn-move" onclick="closeProductModal(); openMove(\'' + escJs(po) + '\', \'' + escJs(so) + '\', ' + (p.line_id ? p.line_id : 'null') + ')">ย้ายชั้น</button></td>'
-                    : '';
+                    : (CAN_MANAGE ? '<td style="text-align:center;"><span class="dash" style="font-size:11.5px;">เช็คเอาท์แล้ว</span></td>' : '');
                 return '<tr>' +
                     '<td>' + esc(p.shelf || '-') + '</td>' +
                     '<td style="text-align:left;">' + esc(p.name || '-') + '</td>' +

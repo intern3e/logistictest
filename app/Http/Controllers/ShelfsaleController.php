@@ -111,8 +111,17 @@ class ShelfsaleController extends Controller
         if ($fShelf !== '') $newQ->where('shelf', 'LIKE', "%{$fShelf}%");
         if ($fPo !== '')    $newQ->where('po_id', 'LIKE', "%{$fPo}%");
         if ($fSo !== '') {
-            $newQ->where(function ($q) use ($fSo) {
-                $q->where('so_id', 'LIKE', "%{$fSo}%")->orWhereNull('so_id');
+            // po_id ที่ header มี so_id ตรงคำค้น — ใช้จับ line เก่าที่ so_id ว่าง (so อยู่บน header)
+            //   ป้องกันบั๊ก: เดิม orWhereNull('so_id') ดึงทุก line ที่ so_id ว่างมาปนทุกการค้นหา
+            $soMatchPoIds = PoReceive::where('so_id', 'LIKE', "%{$fSo}%")
+                ->pluck('po_id')->filter()->unique()->values()->all();
+            $newQ->where(function ($q) use ($fSo, $soMatchPoIds) {
+                $q->where('so_id', 'LIKE', "%{$fSo}%");
+                if (!empty($soMatchPoIds)) {
+                    $q->orWhere(function ($w) use ($soMatchPoIds) {
+                        $w->whereNull('so_id')->whereIn('po_id', $soMatchPoIds);
+                    });
+                }
             });
         }
         $newLines = $newQ->get();
