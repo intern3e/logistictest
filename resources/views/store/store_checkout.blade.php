@@ -355,6 +355,11 @@
     @media (max-width: 768px){ .so-grid { grid-template-columns: 1fr; } main { padding: 12px; } .top-banner { padding: 12px; } }
     .btn-move-shelf{ padding:5px 12px; border:1px solid var(--primary,#3E6AE1); color:var(--primary,#3E6AE1); background:#fff; border-radius:6px; font-size:13px; font-family:inherit; cursor:pointer; }
     .btn-move-shelf:hover{ background:#eef2ff; }
+    /* ย้ายชั้นรายสินค้า */
+    .item-move-row{ display:flex; align-items:center; justify-content:space-between; gap:8px; padding:2px 4px 8px; border-bottom:1px dashed var(--border); margin-bottom:6px; }
+    .item-move-shelf{ font-size:12px; color:var(--muted); }
+    .btn-move-line{ padding:3px 10px; border:1px solid var(--primary,#3E6AE1); color:var(--primary,#3E6AE1); background:#fff; border-radius:6px; font-size:12px; font-family:inherit; cursor:pointer; white-space:nowrap; }
+    .btn-move-line:hover{ background:#eef2ff; }
 </style>
 </head>
 <body lang="th">
@@ -519,6 +524,9 @@
                                             <span class="source-tag">{{ $sourceLabel($g->type) }}</span>
                                         @endif
                                         <span class="po-num">PO: {{ $poClean($g->po_display) }}</span>
+                                        @if ($g->type === 'external' && ($g->multi_round ?? false))
+                                            <span class="source-tag" style="background:var(--primary-light);color:var(--primary-dark);border-color:#c7dbff;">รอบที่ {{ $g->round_no }}</span>
+                                        @endif
                                     </div>
 
                                     <div class="item-col-head"><span>ชื่อสินค้า</span><span>จำนวน</span></div>
@@ -528,6 +536,17 @@
                                             <div class="item-name">{{ $it->item_name }}</div>
                                             <div class="item-qty">{{ rtrim(rtrim(number_format($it->item_quantity, 2), '0'), '.') }}</div>
                                         </div>
+                                        @if ($g->type === 'external' && $g->todo && ($it->id ?? null))
+                                            {{-- ย้ายชั้น "รายสินค้า" (บางรายการในรอบเดียวไปคนละชั้นได้) --}}
+                                            <div class="item-move-row">
+                                                <span class="item-move-shelf">ชั้น: {{ $it->shelf ?: '—' }}</span>
+                                                <button type="button" class="btn-move-line"
+                                                        data-lineid="{{ $it->id }}"
+                                                        data-name="{{ $it->item_name }}"
+                                                        data-shelf="{{ $it->shelf }}"
+                                                        onclick="openMoveShelfLineBtn(this)">ย้ายชั้นรายการนี้</button>
+                                            </div>
+                                        @endif
                                     @endforeach
 
                                     @if ($g->type === 'external')
@@ -561,7 +580,7 @@
                                     @else
                                         <div class="po-row-meta" style="margin-top:6px;">
                                             <button type="button" class="btn-move-shelf"
-                                                onclick="openMoveShelf('{{ $poClean($g->po_display) }}','{{ $bill->so_id }}')">ย้ายชั้นวาง (PO/SO นี้)</button>
+                                                onclick="openMoveShelf('{{ $poClean($g->po_display) }}','{{ $bill->so_id }}','{{ $g->receive_id ?? '' }}')">ย้ายชั้นวาง{{ ($g->type === 'external' && ($g->multi_round ?? false)) ? ' (รอบที่ ' . $g->round_no . ')' : ' (PO/SO นี้)' }}</button>
                                         </div>
                                     @endif
                                 </div>
@@ -720,9 +739,20 @@ async function toggleBillReceived(cb){
 
 /* ===== ย้ายชั้นวาง (ต่อ PO+SO) ===== */
 let msTarget = null;
-function openMoveShelf(po, so){
-    msTarget = { po: po, so: so };
-    document.getElementById('msLabel').textContent = 'PO ' + po + ' / SO ' + so;
+function openMoveShelf(po, so, receiveId){
+    msTarget = { mode:'round', po: po, so: so, receive_id: (receiveId || '') };
+    document.getElementById('msLabel').textContent = 'PO ' + po + ' / SO ' + so + (receiveId ? ' · รอบรับเข้า #' + receiveId : '');
+    document.getElementById('msShelf').value = '';
+    document.getElementById('moveShelfModal').style.display = 'flex';
+    setTimeout(() => document.getElementById('msShelf').focus(), 30);
+}
+// ย้ายชั้น "รายสินค้า" (line เดียว) — บางรายการในรอบเดียวไปคนละชั้น
+function openMoveShelfLineBtn(btn){
+    const lineId = btn.dataset.lineid;
+    const name   = btn.dataset.name || '';
+    const shelf  = btn.dataset.shelf || '';
+    msTarget = { mode:'line', line_id: lineId, name: name };
+    document.getElementById('msLabel').textContent = 'สินค้า: ' + name + (shelf ? ' · ชั้นเดิม ' + shelf : '');
     document.getElementById('msShelf').value = '';
     document.getElementById('moveShelfModal').style.display = 'flex';
     setTimeout(() => document.getElementById('msShelf').focus(), 30);
@@ -737,7 +767,11 @@ async function confirmMoveShelf(){
         const res = await fetch(MOVE_SHELF_URL, {
             method: 'POST',
             headers: { 'Content-Type':'application/json','X-CSRF-TOKEN':CSRF,'Accept':'application/json' },
-            body: JSON.stringify({ po: msTarget.po, so: msTarget.so, shelf: shelf })
+            body: JSON.stringify(
+                msTarget.mode === 'line'
+                    ? { line_id: msTarget.line_id, shelf: shelf }
+                    : { po: msTarget.po, so: msTarget.so, shelf: shelf, po_receive_id: (msTarget.receive_id || null) }
+            )
         });
         const data = await res.json().catch(() => null);
         if (!res.ok || !data || !data.ok){ alert((data && data.message) || 'ย้ายชั้นไม่สำเร็จ'); btn.disabled = false; btn.textContent = 'ย้าย'; return; }

@@ -307,6 +307,7 @@ function statusInfo(st){
   if(s === 'ค้างบิล')     return {cls:'hold', txt:'ค้างบิล'};
   if(s === 'สินค้าผิด')    return {cls:'wrong', txt:'สินค้าผิด'};
   if(s === 'ส่งใหม่วันพรุ่งนี้') return {cls:'hold', txt:'ส่งใหม่'};
+  if(s === 'ส่งใหม่')            return {cls:'wrong', txt:'ส่งใหม่'};
   return {cls:'pending', txt:'รอส่ง'};
 }
 
@@ -427,7 +428,10 @@ function render(){
     return;
   }
   const doneN = rows.filter(({r})=>isReceived(r)).length;
-  countBar.innerHTML = `แสดง <b>${rows.length}</b> บิล · รับเข้าแล้ว <b>${doneN}</b> · คงเหลือ <b>${rows.length-doneN}</b>`;
+  const histN = rows.filter(({r})=>!!r.cancelled).length;   // แถวประวัติ (ไม่นับเป็นคงเหลือ)
+  const pendN = rows.length - doneN - histN;
+  countBar.innerHTML = `แสดง <b>${rows.length}</b> บิล · รับเข้าแล้ว <b>${doneN}</b> · คงเหลือ <b>${pendN<0?0:pendN}</b>`
+    + (histN?` · ประวัติ <b>${histN}</b>`:'');
 
   listEl.innerHTML = rows.map(({r,i})=>{
     const si = statusInfo(r.status);
@@ -441,9 +445,16 @@ function render(){
     if(r.time_pick)     meta.push(`<span class="mi"><b>จ่ายเมื่อ</b> ${esc(r.time_pick)}</span>`);
 
     const received = isReceived(r);
-    const redispatched = !received && !!r.redispatched_to;   // ถูกจ่ายใหม่ไปวันหลังแล้ว
+    const isHistory = !!r.cancelled;                          // แถวประวัติ (รอบเก่าที่ถูกแทนที่/ยกเลิก) -> อ่านอย่างเดียว
+    const redispatched = !received && !isHistory && !!r.redispatched_to;   // ถูกจ่ายใหม่ไปวันหลังแล้ว
     let actions;
-    if(received){
+    if(isHistory){
+      // ประวัติรอบเก่า: เช่น สินค้าผิด/ส่งใหม่ -> ถูกจ่ายใหม่แล้ว = แสดงผลลัพธ์รอบนั้น ไม่มีปุ่ม/ติ๊ก
+      const hi = statusInfo(r.status);
+      actions = `<div class="job-redispatched">↻ ประวัติรอบนี้: ${esc(hi.txt)}`
+        + `${r.check_name?' · โดย '+esc(r.check_name):''}${r.check_time?' · '+esc(r.check_time):''}`
+        + `${r.cancelled_at?'<br>ถูกแทนที่/จ่ายใหม่เมื่อ '+esc(r.cancelled_at)+(r.cancelled_by?' โดย '+esc(r.cancelled_by):''):''}</div>`;
+    } else if(received){
       // รับเข้าแล้ว -> แสดงผลตามสถานะ + ให้กลับมากด "สำเร็จ" ได้ (เช่น ค้างบิล/สินค้าผิด -> เปลี่ยนเป็นสำเร็จภายหลัง)
       const noteLine = (r.note && (si.cls==='wrong' || si.cls==='hold')) ? `<br>หมายเหตุ: ${esc(r.note)}` : '';
       // "เปลี่ยนเป็นสำเร็จ" แสดงเฉพาะงานที่ค้างบิลเท่านั้น
@@ -465,11 +476,11 @@ function render(){
     }
 
     // เช็คบ็อกซ์ (bulk) เฉพาะ editor + งานที่ยังไม่รับเข้า ; สำเร็จ/ค้างบิล/สินค้าผิด/ถูกจ่ายใหม่ = ติ๊กไม่ได้
-    const bulkable = CAN_EDIT && !redispatched && !received;
+    const bulkable = CAN_EDIT && !redispatched && !received && !isHistory;
     const chk = bulkable
       ? `<input type="checkbox" class="job-chk" ${selectedBulk.has(i)?'checked':''} onchange="toggleBulk(${i},this.checked)" title="เลือกเพื่อตั้งสถานะพร้อมกัน" style="width:20px;height:20px;align-self:center;margin-right:4px;cursor:pointer;flex-shrink:0;">`
       : '';
-    return `<div class="job type-${r.type} ${received||redispatched?'done':''}" id="job-${i}">
+    return `<div class="job type-${r.type} ${received||redispatched||isHistory?'done':''}" id="job-${i}">
       ${chk}
       <div class="job-main">
         <div class="job-line1">
@@ -480,7 +491,7 @@ function render(){
         <div class="job-cust">${r.so_id?`<b>SO ${esc(r.so_id)}</b> · `:''}${esc(r.customer_name||'-')}</div>
         <div class="job-meta">${meta.join('')}</div>
         ${(r.linked_bills && r.linked_bills.length)?`<div class="job-linked">เชื่อมกัน ${r.linked_bills.length} บิลค้าง: ${r.linked_bills.map(esc).join(', ')}</div>`:''}
-        ${(!received && r.note)?`<div class="job-note">หมายเหตุ: ${esc(r.note)}</div>`:''}
+        ${((!received || isHistory) && r.note)?`<div class="job-note">หมายเหตุ: ${esc(r.note)}</div>`:''}
         <div class="wrong-box" id="wrong-${i}" data-action="wrong">
           <input type="text" id="wrongnote-${i}" placeholder="ระบุหมายเหตุ...">
           <button type="button" class="act wrong" id="notesave-${i}" onclick="submitNote(${i})">บันทึก</button>

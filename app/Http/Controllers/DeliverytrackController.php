@@ -477,6 +477,10 @@ class DeliverytrackController extends Controller
                 continue;
             }
             $isComplete = $itemType === 'po' ? ($poComplete ?? false) : false;
+            // ยืนยันสถานะแล้ว (จัดส่งสำเร็จ/ค้างบิล/สินค้าผิด หรือมี check_time) -> ยกเลิก/คืนคิวไม่ได้แล้ว
+            $confirmedStatuses = ['จัดส่งสำเร็จ', 'ค้างบิล', 'สินค้าผิด'];
+            $isConfirmed = !empty($delivery->check_time)
+                || in_array((string) ($delivery->status ?? ''), $confirmedStatuses, true);
 
             $transport = $delivery->transport_name ?: 'ไม่ระบุวิธีการจัดส่ง';
             $driver    = $delivery->driver_name ?: null;
@@ -528,6 +532,8 @@ class DeliverytrackController extends Controller
                 'notes'          => $notes,
                 'type'           => $itemType,     // bill | doc | po (po = งานไปรับเอง)
                 'is_complete'    => $isComplete,   // true = PO รับเข้าครบแล้ว → เลือกไม่ได้/ไม่พิมพ์
+                'confirmed'      => $isConfirmed,  // true = ยืนยันสถานะจัดส่งแล้ว → ยกเลิก/คืนคิวไม่ได้
+                'status'         => (string) ($delivery->status ?? ''),
                 'transport_type' => $itemTransport,
                 'id_transport'   => $delivery->id_transport ?: null,   // เลขขนส่ง แยกรายบิล (งานขนส่งเอกชน)
                 'name_pick'      => $delivery->name_pick ?: null,      // ผู้จ่ายงาน (รายบิล)
@@ -580,14 +586,17 @@ class DeliverytrackController extends Controller
         // soft-cancel: ตั้งสถานะ "ยกเลิก" ไว้ (ไม่ลบทิ้ง) -> ข้อมูลไม่หาย, ตรวจย้อนหลังได้,
         // และ global scope จะซ่อนงานที่ยกเลิกออกจากทุกหน้า (สรุปงานคนขับ/so.show/dashboarddoc/oil)
         // ทำให้หน้าจ่ายงานถือว่ายังไม่จ่าย -> คืนงานกลับไปจ่ายใหม่ได้
+        // งานที่ยืนยันสถานะจัดส่งแล้ว (มี check_time หรือ status สำเร็จ/ค้างบิล/สินค้าผิด) ยกเลิกไม่ได้ -> ข้ามไป
         $updated = transaction_delivery::whereIn('bill_id', $billIds)
+            ->whereNull('check_time')
+            ->whereNotIn('status', ['จัดส่งสำเร็จ', 'ค้างบิล', 'สินค้าผิด'])
             ->update([
                 'cancelled_at' => Carbon::now()->toDateTimeString(),
                 'cancelled_by' => $user->name,
             ]);
 
         if ($updated === 0) {
-            return response()->json(['ok' => false, 'message' => 'ไม่พบงานที่จะยกเลิก (อาจถูกยกเลิกไปก่อนแล้ว)'], 404);
+            return response()->json(['ok' => false, 'message' => 'ไม่พบงานที่จะยกเลิก (อาจถูกยกเลิก หรือยืนยันสถานะจัดส่งไปแล้ว)'], 404);
         }
 
         \Illuminate\Support\Facades\Log::info('deliverytrack.cancelAssignment', [

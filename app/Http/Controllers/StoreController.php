@@ -1324,6 +1324,7 @@ class StoreController extends Controller
                 return (object) [
                     'type'          => 'internal',
                     'id'            => $h->internal_id,
+                    'receive_id'    => null,
                     'po_display'    => $h->internal_id,
                     'so_id'         => $h->SO_id,
                     'customer_name' => null,
@@ -1339,38 +1340,57 @@ class StoreController extends Controller
                 ];
             });
 
-        $externalHeads = PoReceive::with('lines')
-            ->whereIn('so_id', $pageSoIds)
+        // header ต่อ "รอบรับเข้า" (po_receives 1 แถว = 1 รอบ) — ของมาหลายรอบ = หลาย header
+        $externalHeaders = PoReceive::whereIn('so_id', $pageSoIds)
             ->when($soNum, fn ($q) => $q->where('so_id', 'LIKE', '%' . $soNum . '%'))
             ->when($poNum, fn ($q) => $q->where('po_id', 'LIKE', '%' . $poNum . '%'))
-            ->get()
-            ->map(function ($h) {
-                $items = $h->lines;
-                $todo  = is_null($h->checkout_by);
-                $first = $items->first();
-                return (object) [
-                    'type'          => 'external',
-                    'id'            => $h->po_id . '|' . $h->so_id,
-                    'po_display'    => $h->po_id,
-                    'so_id'         => $h->so_id,
-                    'customer_name' => null,
-                    'items'         => $items->map(fn ($it) => (object) [
-                        'item_name'     => $it->good_name,
-                        'item_quantity' => $it->recv_qty,
-                        'shelf'         => $it->shelf,
-                        'done_by'       => $it->received_by,
-                        'done_at'       => $it->received_at,
-                    ]),
-                    'location'      => optional($first)->shelf,
-                    'done_by'       => optional($first)->received_by,
-                    'done_at'       => optional($first)->received_at,
-                    'checkout_by'   => $h->checkout_by,
-                    'checkout_at'   => $h->checkout_time,
-                    'status'        => $todo ? 'รับเข้าแล้ว (รอของออก)' : 'เอาของออกแล้ว',
-                    'status_color'  => $todo ? 'orange' : 'green',
-                    'todo'          => $todo,
-                ];
-            });
+            ->get();
+
+        // ดึงไส้ใน "แยกตามรอบ" (po_receive_id) ไม่รวมทั้ง po_id — เพราะรับหลายรอบเก็บคนละชั้นได้
+        $extHeaderIds = $externalHeaders->pluck('id')->all();
+        $linesByRid   = $extHeaderIds
+            ? PoReceiveLine::whereIn('po_receive_id', $extHeaderIds)->get()->groupBy('po_receive_id')
+            : collect();
+        // fallback: ไส้ในเก่าที่ยังไม่มี po_receive_id -> ผูกตาม po_id (+so_id) ให้ header เดียวที่มี
+        $extPoIds    = $externalHeaders->pluck('po_id')->unique()->values()->all();
+        $orphanByPoSo = $extPoIds
+            ? PoReceiveLine::whereIn('po_id', $extPoIds)->whereNull('po_receive_id')->get()
+                ->groupBy(fn ($l) => $l->po_id . '|' . ($l->so_id ?? ''))
+            : collect();
+
+        $externalHeads = $externalHeaders->map(function ($h) use ($linesByRid, $orphanByPoSo) {
+            $items = $linesByRid->get($h->id, collect());
+            if ($items->isEmpty()) {
+                $items = $orphanByPoSo->get($h->po_id . '|' . ($h->so_id ?? ''), collect());
+            }
+            $todo  = is_null($h->checkout_by);
+            $first = $items->first();
+            return (object) [
+                'type'          => 'external',
+                // id รวม receive_id -> เช็คเอาท์/ย้ายชั้น "รายรอบ" ไม่กระทบรอบอื่น
+                'id'            => $h->po_id . '|' . $h->so_id . '|' . $h->id,
+                'receive_id'    => $h->id,
+                'po_display'    => $h->po_id,
+                'so_id'         => $h->so_id,
+                'customer_name' => null,
+                'items'         => $items->map(fn ($it) => (object) [
+                    'id'            => $it->id,          // line id -> ย้ายชั้นรายสินค้าได้
+                    'item_name'     => $it->good_name,
+                    'item_quantity' => $it->recv_qty,
+                    'shelf'         => $it->shelf,
+                    'done_by'       => $it->received_by,
+                    'done_at'       => $it->received_at,
+                ]),
+                'location'      => optional($first)->shelf,
+                'done_by'       => optional($first)->received_by,
+                'done_at'       => optional($first)->received_at,
+                'checkout_by'   => $h->checkout_by,
+                'checkout_at'   => $h->checkout_time,
+                'status'        => $todo ? 'รับเข้าแล้ว (รอของออก)' : 'เอาของออกแล้ว',
+                'status_color'  => $todo ? 'orange' : 'green',
+                'todo'          => $todo,
+            ];
+        });
 
         $legacyHeadsRaw = $this->loadLegacyStoreHeads($soNum, null, $poNum, $pageSoIds);
 
@@ -1384,6 +1404,7 @@ class StoreController extends Controller
             return (object) [
                 'type'          => 'legacy',
                 'id'            => $h->ID,
+                'receive_id'    => null,
                 'po_display'    => $h->PO ?: '—',
                 'so_id'         => $h->SO,
                 'customer_name' => null,
@@ -1436,9 +1457,21 @@ class StoreController extends Controller
             $groups = $groupedBySo->get($soId, collect());
 
             $groups = $groups
-                ->groupBy(fn ($g) => $g->type . '|' . $g->po_display)
+                // external แยกตามรอบรับเข้า (receive_id) -> รอบ 1/รอบ 2 เป็นคนละกล่อง ไม่ยุบรวม
+                ->groupBy(fn ($g) => $g->type . '|' . $g->po_display . '|' . ($g->receive_id ?? ''))
                 ->map(fn ($dupes) => $dupes->sortByDesc(fn ($g) => (string) $g->done_at)->first())
                 ->values();
+
+            // ทำเครื่องหมาย "รอบที่" เฉพาะ external ที่ PO เดียวกันมีหลายรอบ (รอบเดียวไม่ต้องโชว์ป้าย)
+            $groups->where('type', 'external')->groupBy('po_display')->each(function ($rounds) {
+                if ($rounds->count() > 1) {
+                    $rounds->sortBy(fn ($g) => (string) $g->done_at)->values()
+                        ->each(function ($g, $i) {
+                            $g->multi_round = true;
+                            $g->round_no    = $i + 1;
+                        });
+                }
+            });
 
             $billRows  = $billsBySo->get($soId, collect());
             $todoCount = $groups->where('todo', true)->count();
@@ -1513,17 +1546,27 @@ class StoreController extends Controller
                         ]);
                 }
                 if ($externalIds) {
-                    // external id = "po_id|so_id" → เช็คเอาท์แยกต่อ SO
+                    // external id = "po_id|so_id|receive_id" → เช็คเอาท์ "รายรอบ" (เฉพาะ header ที่เลือก)
                     foreach ($externalIds as $raw) {
-                        [$poId, $soId] = array_pad(explode('|', (string) $raw, 2), 2, null);
-                        $q = PoReceive::where('po_id', $poId)->whereNull('checkout_by');
-                        if ($soId !== null && $soId !== '') {
-                            $q->where('so_id', $soId);
+                        [$poId, $soId, $rid] = array_pad(explode('|', (string) $raw, 3), 3, null);
+                        if ($rid !== null && $rid !== '') {
+                            // ระบุรอบชัดเจน -> เช็คเอาท์เฉพาะ header นั้น
+                            $updated += PoReceive::where('id', (int) $rid)->whereNull('checkout_by')
+                                ->update([
+                                    'checkout_by'   => $user,
+                                    'checkout_time' => Carbon::now(),
+                                ]);
+                        } else {
+                            // fallback (ค่าเก่าไม่มี receive_id) -> เช็คเอาท์ทุกรอบของ po+so ที่ยังไม่ออก
+                            $q = PoReceive::where('po_id', $poId)->whereNull('checkout_by');
+                            if ($soId !== null && $soId !== '') {
+                                $q->where('so_id', $soId);
+                            }
+                            $updated += $q->update([
+                                'checkout_by'   => $user,
+                                'checkout_time' => Carbon::now(),
+                            ]);
                         }
-                        $updated += $q->update([
-                            'checkout_by'   => $user,
-                            'checkout_time' => Carbon::now(),
-                        ]);
                     }
                 }
             });
@@ -1830,17 +1873,19 @@ class StoreController extends Controller
         }
 
         $request->validate([
-            'po'      => 'required|string|max:50',
-            'so'      => 'nullable|string|max:50',
-            'shelf'   => 'required|string|max:100',
-            'line_id' => 'nullable|integer',   // ระบุ = ย้ายรายสินค้า (เฉพาะงานใหม่)
+            'po'             => 'required_without:line_id|nullable|string|max:50',
+            'so'             => 'nullable|string|max:50',
+            'shelf'          => 'required|string|max:100',
+            'line_id'        => 'nullable|integer',   // ระบุ = ย้ายรายสินค้า (เฉพาะงานใหม่)
+            'po_receive_id'  => 'nullable|integer',   // ระบุ = ย้ายเฉพาะ "รอบรับเข้า" นั้น (ไม่กระทบรอบอื่น)
         ]);
 
-        $poClean = preg_replace('/^PO/i', '', trim($request->input('po')));
-        $poId    = 'PO' . $poClean;
-        $so      = $request->filled('so') ? trim($request->input('so')) : null;
-        $shelf   = trim($request->input('shelf'));
-        $lineId  = $request->filled('line_id') ? (int) $request->input('line_id') : null;
+        $poClean   = preg_replace('/^PO/i', '', trim((string) $request->input('po')));
+        $poId      = 'PO' . $poClean;
+        $so        = $request->filled('so') ? trim($request->input('so')) : null;
+        $shelf     = trim($request->input('shelf'));
+        $lineId    = $request->filled('line_id') ? (int) $request->input('line_id') : null;
+        $receiveId = $request->filled('po_receive_id') ? (int) $request->input('po_receive_id') : null;
 
         try {
             // ย้ายรายสินค้า (งานใหม่): อัปเดตเฉพาะไส้ในบรรทัดนั้น
@@ -1849,9 +1894,26 @@ class StoreController extends Controller
                 if (!$line) {
                     return response()->json(['ok' => false, 'message' => 'ไม่พบรายการสินค้านี้'], 404);
                 }
+                // รอบของสินค้านี้ถูกเช็คของออกแล้ว -> ย้ายไม่ได้
+                $roundCheckedOut = $line->po_receive_id
+                    ? PoReceive::where('id', $line->po_receive_id)->whereNotNull('checkout_by')->exists()
+                    : PoReceive::where('po_id', $line->po_id)->whereNull('checkout_by')->doesntExist();
+                if ($roundCheckedOut) {
+                    return response()->json(['ok' => false, 'message' => 'รอบนี้ถูกเช็คของออกไปแล้ว ย้ายชั้นไม่ได้'], 409);
+                }
                 $line->shelf = $shelf;
                 $line->save();
                 return response()->json(['ok' => true, 'message' => 'ย้ายชั้นรายการสินค้าเรียบร้อย']);
+            }
+
+            // ย้ายเฉพาะ "รอบรับเข้า" (po_receive_id) — รับหลายรอบเก็บคนละชั้นได้ ไม่ปนกัน
+            if ($receiveId !== null) {
+                $ridQ = PoReceiveLine::where('po_receive_id', $receiveId)->whereNull('cancelled_at');
+                if ((clone $ridQ)->exists()) {
+                    (clone $ridQ)->update(['shelf' => $shelf]);
+                    return response()->json(['ok' => true, 'message' => 'ย้ายชั้นรอบนี้เรียบร้อย']);
+                }
+                return response()->json(['ok' => false, 'message' => 'ไม่พบรายการของรอบรับเข้านี้'], 404);
             }
 
             // งานใหม่: มีไส้ในในระบบใหม่แล้ว -> อัปเดตชั้น "เฉพาะ PO+SO นั้น" (ไม่ใช่ทั้ง PO)

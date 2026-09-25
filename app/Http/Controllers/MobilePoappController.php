@@ -229,20 +229,28 @@ class MobilePoappController extends Controller
                 ->map(fn($r) => strtoupper(preg_replace('/^SO/i', '', trim((string) $r->so_id))))
                 ->filter()->unique()->values()->all();
 
-            // ★ เช็คระบบใหม่: PO ถูกเช็คของออก (po_receives.checkout_by มีค่าแล้ว) → ห้ามรับเข้าเพิ่ม
-            $checkedOutNew = PoReceive::where('po_id', $poNum)
-                ->when($docuNo, fn($q) => $q->orWhere('po_id', $docuNo))
-                ->whereNotNull('checkout_by')
-                ->first();
+            // ★ เช็คระบบใหม่ (รองรับรับเข้าหลายรอบ):
+            //   บล็อก "ห้ามรับเข้าเพิ่ม" เฉพาะเมื่อ PO รับครบจริงและเช็คของออกหมดแล้ว
+            //   = ทุกรอบ (header) เช็คเอาท์แล้ว "และ" ไม่มีรอบไหนเป็น 'บางส่วน' (คือครบทุกรอบ)
+            //   ถ้ายังมีรอบบางส่วน หรือมีรอบที่ยังไม่เช็คเอาท์ -> รับเข้ารอบใหม่/ต่อได้
+            $newHeaders = PoReceive::where(function ($q) use ($poNum, $docuNo) {
+                    $q->where('po_id', $poNum);
+                    if ($docuNo) $q->orWhere('po_id', $docuNo);
+                })
+                ->get(['po_id', 'so_id', 'status', 'checkout_by', 'checkout_time']);
 
-            if ($checkedOutNew) {
+            $hasPendingRound = $newHeaders->contains(fn($h) => empty($h->checkout_by));           // ยังมีรอบที่ยังไม่เช็คเอาท์
+            $hasPartialRound = $newHeaders->contains(fn($h) => trim((string) $h->status) === 'บางส่วน'); // ยังมีรอบที่รับบางส่วน
+
+            if ($newHeaders->isNotEmpty() && !$hasPendingRound && !$hasPartialRound) {
+                $co = $newHeaders->last();
                 return response()->json([
                     'checked_out' => true,
-                    'message'     => 'PO นี้ถูกเช็คของออกไปแล้ว ไม่สามารถรับเข้าเพิ่มได้',
-                    'po_id'       => $checkedOutNew->po_id,
-                    'so_id'       => $checkedOutNew->so_id,
-                    'checkout_by' => $checkedOutNew->checkout_by,
-                    'checkout_at' => optional($checkedOutNew->checkout_time)->format('Y-m-d H:i:s'),
+                    'message'     => 'PO นี้รับครบและเช็คของออกไปแล้ว ไม่สามารถรับเข้าเพิ่มได้',
+                    'po_id'       => $co->po_id,
+                    'so_id'       => $co->so_id,
+                    'checkout_by' => $co->checkout_by,
+                    'checkout_at' => optional($co->checkout_time)->format('Y-m-d H:i:s'),
                 ], 409);
             }
 
@@ -603,27 +611,32 @@ class MobilePoappController extends Controller
 
         try {
             DB::transaction(function () use ($validated, $cancelBy) {
-                // ยกเลิก "ทั้ง PO" = ทุก header (ทุก SO) ที่ยัง active ของ po_id นี้
+                // ยกเลิกเฉพาะ "รอบที่ยังไม่เช็คของออก" (checkout_by ว่าง) — รอบที่ของออกไปแล้วห้ามยกเลิก (ของส่งไปแล้ว)
                 $headers = PoReceive::where('po_id', $validated['PONum'])
+                    ->whereNull('checkout_by')
                     ->lockForUpdate()
                     ->get();
 
                 if ($headers->isEmpty()) {
-                    abort(404, 'ไม่พบข้อมูลการรับเข้าของ PO นี้');
+                    abort(404, 'ไม่พบรอบรับเข้าที่ยกเลิกได้ (อาจเช็คของออกไปแล้วทั้งหมด)');
                 }
 
-                $now = now();
+                $now     = now();
+                $ridList = $headers->pluck('id')->all();
 
                 // ไม่ลบ row / รูปทิ้ง — เก็บไว้เป็นประวัติ (กันข้อมูลหาย)
-                // mark ยกเลิกเฉพาะ line ที่ยัง active อยู่ เพื่อไม่ให้นับเป็นของที่รับแล้ว (รับเข้าใหม่ได้)
+                // mark ยกเลิกเฉพาะ line ของรอบที่ยกเลิก (po_receive_id ตรง หรือ ไม่มี fk = รอบเก่า) และยัง active
                 PoReceiveLine::where('po_id', $validated['PONum'])
                     ->whereNull('cancelled_at')
+                    ->where(function ($q) use ($ridList) {
+                        $q->whereIn('po_receive_id', $ridList)->orWhereNull('po_receive_id');
+                    })
                     ->update([
                         'cancelled_at' => $now,
                         'cancelled_by' => $cancelBy,
                     ]);
 
-                // soft-cancel header ทุก SO: ตั้ง cancelled_at/by + สถานะ "รับเข้าผิด"
+                // soft-cancel header เฉพาะรอบที่ยังไม่เช็คเอาท์: ตั้ง cancelled_at/by + สถานะ "รับเข้าผิด"
                 // -> global scope จะซ่อน header เหล่านี้ ทำให้รับเข้าใหม่แล้วสร้าง record ใหม่ (ไม่ทับของเก่า)
                 foreach ($headers as $header) {
                     $header->update([
@@ -670,33 +683,46 @@ class MobilePoappController extends Controller
 
         try {
             $result = DB::transaction(function () use ($validated) {
-                $header = PoReceive::where('po_id', $validated['PONum'])
-                    ->lockForUpdate()
-                    ->first();
-
-                if (!$header) {
-                    abort(404, 'ไม่พบข้อมูลการรับเข้าของ PO นี้');
-                }
-
-                // ★ PO ที่ถูกเช็คของออกแล้ว ห้ามย้ายชั้นวาง
-                if (!empty($header->checkout_by)) {
-                    abort(409, 'PO นี้ถูกเช็คของออกไปแล้ว ไม่สามารถย้ายชั้นวางได้');
-                }
-
                 $ids = array_column($validated['Lines'], 'id');
 
                 // ดึงเฉพาะ line ที่เป็นของ PO นี้ และยังไม่ถูกยกเลิก
                 $lines = PoReceiveLine::where('po_id', $validated['PONum'])
                     ->whereNull('cancelled_at')
                     ->whereIn('id', $ids)
+                    ->lockForUpdate()
                     ->get()
                     ->keyBy('id');
 
+                if ($lines->isEmpty()) {
+                    abort(404, 'ไม่พบข้อมูลการรับเข้าของ PO นี้');
+                }
+
+                // ★ เช็คสถานะเช็คเอาท์ "ราย รอบ" (po_receive_id) — รอบที่เช็คของออกแล้ว ห้ามย้ายชั้น
+                //   (รับหลายรอบ: รอบเก่าเช็คเอาท์ไปแล้ว แต่รอบใหม่ยังย้ายชั้นได้)
+                $ridSet = $lines->pluck('po_receive_id')->filter()->unique()->values()->all();
+                $checkedOutRids = $ridSet
+                    ? PoReceive::whereIn('id', $ridSet)->whereNotNull('checkout_by')->pluck('id')->flip()
+                    : collect();
+                // fallback รอบเก่า (line ไม่มี po_receive_id): ถือตาม header ของ po_id
+                $legacyPoCheckedOut = PoReceive::where('po_id', $validated['PONum'])
+                    ->whereNull('checkout_by')->doesntExist()
+                    && PoReceive::where('po_id', $validated['PONum'])->exists();
+
                 $count = 0;
+                $blocked = 0;
                 foreach ($validated['Lines'] as $l) {
                     $line = $lines->get($l['id']);
                     if (!$line) {
                         continue; // ข้าม line ที่ไม่ใช่ของ PO นี้ / ถูกยกเลิกไปแล้ว
+                    }
+
+                    // รอบของ line นี้ถูกเช็คของออกแล้ว -> ห้ามแก้ (ข้าม)
+                    $roundCheckedOut = $line->po_receive_id
+                        ? $checkedOutRids->has($line->po_receive_id)
+                        : $legacyPoCheckedOut;
+                    if ($roundCheckedOut) {
+                        $blocked++;
+                        continue;
                     }
 
                     // ลบรายการที่เพิ่มผิด → soft-cancel (เก็บประวัติไว้ ไม่ลบจริง)
@@ -711,6 +737,11 @@ class MobilePoappController extends Controller
                     $line->shelf = $l['shelf'] ?? null;
                     $line->save();
                     $count++;
+                }
+
+                // แก้ไม่ได้เลยเพราะทุกรายการอยู่ในรอบที่เช็คของออกไปแล้ว
+                if ($count === 0 && $blocked > 0) {
+                    abort(409, 'รอบที่เลือกถูกเช็คของออกไปแล้ว ไม่สามารถย้ายชั้นวางได้');
                 }
 
                 return $count;
@@ -863,7 +894,7 @@ class MobilePoappController extends Controller
                 if ($header) {
                     $header->update($attrs);
                 } else {
-                    PoReceive::create(array_merge($attrs, [
+                    $header = PoReceive::create(array_merge($attrs, [
                         'po_id'         => $validated['PONum'],
                         'checkout_by'   => null,
                         'checkout_time' => null,
@@ -874,6 +905,7 @@ class MobilePoappController extends Controller
                 foreach ($validated['items'] as $it) {
                     PoReceiveLine::create([
                         'po_id'       => $validated['PONum'],
+                        'po_receive_id' => $header->id,   // ผูก line กับรอบ (header) นี้
                         'good_name'   => $it['GoodName'] ?? null,
                         'recv_qty'    => $it['RecvQty'],
                         'unit_price'  => $it['UnitPrice'] ?? null,

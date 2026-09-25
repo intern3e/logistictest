@@ -120,6 +120,10 @@ class BillreceiveController extends Controller
         $query = transaction_delivery::query();
 
         if ($ignoreDate) {
+            // โหมดค้นหา/กรอง -> ดึงแถวที่ถูกยกเลิก (cancelled) มาด้วย เพื่อให้เห็น "ประวัติรอบเก่า"
+            // (เช่น รอบแรกสินค้าผิด/ส่งใหม่ -> soft-cancel -> จ่ายใหม่ -> รอบใหม่สำเร็จ)
+            // หน้ารายวัน (ไม่มีตัวกรอง) ยังคงแสดงเฉพาะงาน active ตามเดิม
+            $query->withoutGlobalScope('notCancelled');
             // สร้างชุด bill_id ที่ตรงแต่ละเงื่อนไข (เลขบิล/รหัส/ชื่อลูกค้า) แล้ว intersect
             $sets = [];
             if ($q !== '') {
@@ -260,6 +264,9 @@ class BillreceiveController extends Controller
                 'check_time'     => optional($first->check_time)->format('Y-m-d H:i'),
                 'confirmed'      => !empty($first->check_time),
                 'redispatched_to'=> $reTo ? $reTo->format('Y-m-d') : null,   // ถูกจ่ายใหม่ไปวันที่ ...
+                'cancelled'      => !empty($first->cancelled_at),            // แถวประวัติ (รอบเก่าที่ถูกแทนที่) -> อ่านอย่างเดียว
+                'cancelled_by'   => (string) ($first->cancelled_by ?? ''),
+                'cancelled_at'   => optional($first->cancelled_at)->format('Y-m-d H:i'),
             ];
         })->values();
 

@@ -689,6 +689,11 @@
     font-size:.74rem; font-weight:600; color:var(--danger); cursor:pointer; white-space:nowrap; flex-shrink:0;
 }
 .cancel-select{ width:16px; height:16px; accent-color:var(--danger); cursor:pointer; }
+/* งานที่ยืนยันสถานะจัดส่งแล้ว -> ยกเลิกไม่ได้ (ล็อกแถวไว้) */
+.job-confirmed-lock{
+    margin-left:auto; display:inline-flex; align-items:center; gap:4px;
+    font-size:.74rem; font-weight:700; color:var(--success, #2b8a3e); white-space:nowrap; flex-shrink:0;
+}
 /* เลขขนส่ง แยกทีละบิล (ทั้งขนส่งโดยบริษัทและขนส่งเอกชน) */
 .row-transport{
     align-items:center; gap:6px; font-size:.78rem; color:var(--ink-soft); white-space:nowrap;
@@ -883,10 +888,15 @@
                                                                             </span>
                                                                         @endunless
                                                                         @if (!empty($canCancelJobs))
-                                                                        <label class="cancel-select-label" title="เลือกเพื่อยกเลิกงานนี้">
-                                                                            <input type="checkbox" class="cancel-select" data-billid="{{ $item['id'] }}">
-                                                                            <span>ยกเลิก</span>
-                                                                        </label>
+                                                                            @if (!empty($item['confirmed']))
+                                                                                {{-- ยืนยันสถานะจัดส่งแล้ว -> ยกเลิก/คืนคิวไม่ได้ ล็อกแถวไว้ --}}
+                                                                                <span class="job-confirmed-lock" title="ยืนยันสถานะจัดส่งแล้ว — ยกเลิกไม่ได้">✓ ยืนยันแล้ว</span>
+                                                                            @else
+                                                                                <label class="cancel-select-label" title="เลือกเพื่อยกเลิกงานนี้">
+                                                                                    <input type="checkbox" class="cancel-select" data-billid="{{ $item['id'] }}">
+                                                                                    <span>ยกเลิก</span>
+                                                                                </label>
+                                                                            @endif
                                                                         @endif
                                                                     </div>
                                                                 @endforeach

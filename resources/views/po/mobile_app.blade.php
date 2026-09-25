@@ -849,8 +849,14 @@ async function getReceivedHistory(ponum){
         // ไม่ใช่รวมข้าม SO (กันนับซ้ำจนดูเหมือนรับครบ ทั้งที่จริงเป็นบางส่วน)
         const perSoQty = new Map();   // soKey → Map(itemKey → qty)
         const seenDetail = new Set(); // กัน detailMap แสดงประวัติซ้ำข้าม SO (so|item|by|at|qty|shelf)
+        const seenLineIds = new Set();// กันนับซ้ำ: 1 line join เจอหลาย header (รอบเก่าเช็คเอาท์+รอบใหม่ po,so เดียวกัน) -> นับครั้งเดียว
         (rows || []).forEach(r => {
             if(!r.good_name) return;
+            // แถวที่เป็น line เดียวกัน (id เดียวกัน) ซ้ำจาก join หลาย header -> ข้าม ไม่นับซ้ำ
+            if(r.id != null){
+                if(seenLineIds.has(r.id)) return;
+                seenLineIds.add(r.id);
+            }
             if(!poStatus && r.po_status) poStatus = r.po_status;   // สถานะรับเข้า (ครบ/บางส่วน) จาก header ที่ยัง active
             const key = normName(r.good_name);
             const qty = parseFloat(r.recv_qty || 0);
@@ -1199,10 +1205,13 @@ async function searchPO(){
         //   'บางส่วน' -> ต้องรับต่อได้เสมอ (ไม่เด้งไปหน้าย้ายชั้น) แล้วค่อยดูว่าเหลือเท่าไหร่จาก _remainingQty
         //   'ครบ'     -> ไปหน้ารับแล้ว/ย้ายชั้น
         //   null (ยังไม่รับระบบใหม่) -> ตัดสินจากจำนวนคงเหลือ (hasRemaining) ตามเดิม
-        const poStatusNew    = history.poStatus || null;
-        const isPartialNew   = poStatusNew === 'บางส่วน';
-        const fullyReceivedNew = poStatusNew === 'ครบ' || (!poStatusNew && hasRemaining.length === 0);
-        if(!isPartialNew && (fullyReceivedNew || legacyOnly)){
+        // "รับครบ" = ไม่มีของเหลือให้รับจริง ๆ (นับจากจำนวน) — ไม่เชื่อ poStatus='ครบ'/'บางส่วน'
+        //   เพราะกรณีหลายรอบ: header แต่ละรอบเก็บสถานะ ณ ตอนนั้น (รอบเก่าค้าง 'บางส่วน' ตลอด)
+        //   ตัดสินจาก "ของเหลือจริง" (hasRemaining) เท่านั้น:
+        //     hasRemaining > 0  -> ยังไม่ครบ -> เปิดฟอร์มรับต่อ (รอบใหม่)
+        //     hasRemaining == 0 -> ครบแล้ว   -> แสดงหน้ารับแล้ว (บล็อกเสมอ แม้เคยมีรอบบางส่วน)
+        const fullyReceivedNew = hasRemaining.length === 0;
+        if(fullyReceivedNew || legacyOnly){
             lastFullyReceivedPO = data.DocuNo;
             const docuNo    = data.DocuNo;
             const fromNew   = hasRemaining.length === 0;          // รับครบจากระบบใหม่
