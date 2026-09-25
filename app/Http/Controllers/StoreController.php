@@ -1047,14 +1047,21 @@ class StoreController extends Controller
         return $q->orderBy('store.DATEAREA', 'asc')->get();
     }
 
+    /** สิทธิ์ใช้งานหน้าเช็คเอาท์: role admin/stock/store หรือ ผู้ใช้เฉพาะบุคคล */
+    private function canUseCheckout($user): bool
+    {
+        if (!$user) return false;
+        if (in_array($user->role ?? '', ['admin', 'stock', 'store'], true)) return true;
+        $allowedNames = ['joyindy', 'jun', 'aom', 'ladda', 'wunwun', 'kae'];
+        return in_array(strtolower(trim((string) ($user->name ?? ''))), $allowedNames, true);
+    }
+
     public function checkoutDashboard(Request $request)
     {
         $authUser = $this->resolveSsoUser($request, 'store.checkout');
 
-        // อนุญาต: role admin/stock/store หรือ ผู้ใช้เฉพาะบุคคล (JOYINDY, jun, Aom, ลัดดา)
-        $allowedNames = ['joyindy', 'jun', 'aom', 'ลัดดา'];
-        $userName = strtolower(trim((string) ($authUser->name ?? '')));
-        if (!in_array($authUser->role, ['admin', 'stock', 'store'], true) && !in_array($userName, $allowedNames, true)) {
+        // อนุญาต: role admin/stock/store หรือ ผู้ใช้เฉพาะบุคคล (joyindy/jun/aom/ladda/wunwun/kae)
+        if (!$this->canUseCheckout($authUser)) {
             abort(403, 'คุณไม่มีสิทธิ์เข้าใช้งานหน้านี้');
         }
 
@@ -1138,7 +1145,7 @@ class StoreController extends Controller
     public function setBillReceived(Request $request)
     {
         $authUser = $this->resolveSsoUser($request, 'store.checkout');
-        if (!in_array($authUser->role, ['admin', 'stock', 'store'], true)) {
+        if (!$this->canUseCheckout($authUser)) {
             return response()->json(['ok' => false, 'message' => 'ไม่มีสิทธิ์ดำเนินการ'], 403);
         }
 
@@ -1899,14 +1906,29 @@ class StoreController extends Controller
         $request->validate([
             'po' => 'required|string|max:50',
             'so' => 'nullable|string|max:50',
+            'po_receive_id' => 'nullable|integer',
         ]);
 
         $poClean = preg_replace('/^PO/i', '', trim($request->input('po')));
         $poId    = 'PO' . $poClean;
         $so      = $request->filled('so') ? trim($request->input('so')) : null;
+        $poReceiveId = $request->input('po_receive_id');
 
         try {
-            // งานใหม่: มี po_receives อยู่แล้ว
+            // ระบุ "รอบ" (po_receive_id) -> เช็คเอาท์เฉพาะรอบนั้น (รับเข้าหลายรอบ = เช็คเอาท์แยกรอบ)
+            if ($poReceiveId) {
+                $hdr = PoReceive::where('id', $poReceiveId)->whereNull('checkout_by')->first();
+                if (!$hdr) {
+                    return response()->json(['ok' => false, 'message' => 'รอบนี้เช็คเอาท์ไปแล้ว หรือไม่พบ'], 409);
+                }
+                $hdr->update([
+                    'checkout_by'   => $authUser->name,
+                    'checkout_time' => Carbon::now(),
+                ]);
+                return response()->json(['ok' => true, 'message' => 'เช็คเอาท์เรียบร้อย (รอบนี้)']);
+            }
+
+            // งานใหม่: มี po_receives อยู่แล้ว (ไม่ระบุรอบ -> เช็คเอาท์รอบที่ยังไม่ปิดของ PO+SO)
             $recQ = PoReceive::where('po_id', $poId)->when($so, fn ($q) => $q->where('so_id', $so));
             if ((clone $recQ)->exists()) {
                 (clone $recQ)->whereNull('checkout_by')->update([

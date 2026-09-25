@@ -344,6 +344,7 @@ use App\Http\Controllers\BillreceiveController;
 Route::get('/billreceive',          [BillreceiveController::class, 'index'])->name('billreceive');
 Route::get('/billreceive/data',     [BillreceiveController::class, 'data'])->name('billreceive.data');
 Route::post('/billreceive/confirm', [BillreceiveController::class, 'confirm'])->name('billreceive.confirm');
+Route::post('/billreceive/change-driver', [BillreceiveController::class, 'changeDriver'])->name('billreceive.changeDriver');
 
 
 use App\Http\Controllers\SoItemController;

@@ -78,10 +78,10 @@ class ShelfsaleController extends Controller
     {
         $user = $this->requireLogin();
 
-        $fShelf = trim((string) $request->input('shelf', ''));
-        $fSale  = trim((string) $request->input('sale', ''));
-        $fSo    = trim((string) $request->input('so', ''));
-        $fPo    = trim((string) $request->input('po', ''));
+        $fShelf  = trim((string) $request->input('shelf', ''));
+        $fSale   = trim((string) $request->input('sale', ''));
+        $fSo     = trim((string) $request->input('so', ''));
+        $fPo     = trim((string) $request->input('po', ''));
 
         // admin/store/stock และ sale/sale_assistant/support เห็นทุก Sale — role อื่นเท่านั้นที่ถูกบังคับเห็นเฉพาะงานของตัวเอง
         $seeAll = in_array($user->role ?? '', ['admin', 'store', 'stock', 'sale', 'sale_assistant', 'support'], true);
@@ -89,9 +89,15 @@ class ShelfsaleController extends Controller
             $fSale = $user->name ?? '';
         }
 
-        // ต้องเลือกตัวกรองอย่างน้อย 1 อย่างก่อน (กันโหลดทั้งหมด) — ยกเว้น admin ที่โหลดของทุก Sale ได้เลย
-        $isAdmin = ($user->role ?? '') === 'admin';
-        if (!$isAdmin && $fShelf === '' && $fSale === '' && $fSo === '' && $fPo === '') {
+        $isAdmin   = ($user->role ?? '') === 'admin';
+        $hasFilter = $fShelf !== '' || $fSale !== '' || $fSo !== '' || $fPo !== '';
+
+        // แสดง "ของที่เคยเช็คเอาท์" เฉพาะตอนค้นด้วย PO หรือ SO เท่านั้น (ไม่งั้นดึงของเก่าที่เช็คเอาท์แล้วเป็นแสนแถว)
+        //   ค้น PO/SO -> รวมทั้งที่ยังไม่เช็คเอาท์ + เช็คเอาท์แล้ว ; นอกนั้น -> เฉพาะที่ยังไม่เช็คเอาท์
+        $fStatus = ($fPo !== '' || $fSo !== '') ? 'all' : 'pending';
+
+        // role อื่น (ไม่ใช่ admin) ต้องมีตัวกรองก่อน — admin โหลดของทุก Sale (รอเช็คเอาท์) ได้เลย
+        if (!$isAdmin && !$hasFilter) {
             return response()->json([
                 'ok'      => true,
                 'rows'    => [],
@@ -99,30 +105,59 @@ class ShelfsaleController extends Controller
             ]);
         }
 
-        // --- ของใหม่: logistic po_receives_line (บนชั้น + ยังไม่เช็คเอาท์) ---
-        $newQ = PoReceiveLine::whereNotNull('shelf')
-            ->where('shelf', '!=', '')
-            ->whereHas('header', fn ($q) => $q->whereNull('checkout_time'))
-            ->with('header');
+        // --- ของใหม่: logistic po_receives_line (บนชั้น) — resolve "รอบ" (header) ต่อ line ด้วย po_receive_id ---
+        //   รองรับเคส PO เช็คเอาท์รอบแรกไปแล้ว + ของมาใหม่เป็นรอบใหม่ (คนละ header) แยกสถานะเช็คเอาท์ได้ถูกต้อง
+        $newQ = PoReceiveLine::whereNotNull('shelf')->where('shelf', '!=', '');
         if ($fShelf !== '') $newQ->where('shelf', 'LIKE', "%{$fShelf}%");
         if ($fPo !== '')    $newQ->where('po_id', 'LIKE', "%{$fPo}%");
-        // กรอง SO ที่ "ตัว line เอง" (per-SO) — ข้อมูลเก่าที่ so_id ว่างยังดึงมา (ไป fallback header)
         if ($fSo !== '') {
             $newQ->where(function ($q) use ($fSo) {
                 $q->where('so_id', 'LIKE', "%{$fSo}%")->orWhereNull('so_id');
             });
         }
+        $newLines = $newQ->get();
 
-        // ใช้ so_id/po_id "ของ line เอง" เป็นหลัก (แยกต่อ SO ได้ถูกต้องเมื่อ 1 PO มีหลาย SO)
-        // header ผูกด้วย po_id อย่างเดียว จึงใช้เป็น fallback เฉพาะข้อมูลเก่าที่ line.so_id ว่าง
-        $newItems = $newQ->get()->map(fn ($line) => (object) [
-            'so'          => $line->so_id ?: optional($line->header)->so_id,
-            'po'          => $line->po_id ?: optional($line->header)->po_id,
-            'shelf'       => $line->shelf,
-            'received_at' => $line->received_at,
-            'good_name'   => $line->good_name,
-            'line_id'     => $line->id,
-        ]);
+        // map line -> header : มี po_receive_id ใช้ตรง ๆ, ไม่มี (ข้อมูลเก่า header เดียว) fallback ด้วย po_id
+        $hdrById = collect();
+        $hdrByPo = collect();
+        $fkIds = $newLines->pluck('po_receive_id')->filter()->unique()->values()->all();
+        if (!empty($fkIds)) {
+            $hdrById = PoReceive::whereIn('id', $fkIds)->get()->keyBy('id');
+        }
+        $fallbackPoIds = $newLines->filter(fn ($l) => empty($l->po_receive_id))
+            ->pluck('po_id')->filter()->unique()->values()->all();
+        if (!empty($fallbackPoIds)) {
+            $hdrByPo = PoReceive::whereIn('po_id', $fallbackPoIds)->get()->keyBy('po_id');
+        }
+        $resolveHeader = function ($line) use ($hdrById, $hdrByPo) {
+            return $line->po_receive_id ? $hdrById->get($line->po_receive_id) : $hdrByPo->get($line->po_id);
+        };
+
+        $newItems = $newLines->map(function ($line) use ($resolveHeader) {
+                $h = $resolveHeader($line);
+                return (object) [
+                    'so'          => $line->so_id ?: optional($h)->so_id,
+                    'po'          => $line->po_id ?: optional($h)->po_id,
+                    'shelf'       => $line->shelf,
+                    'received_at' => $line->received_at,
+                    'good_name'   => $line->good_name,
+                    'line_id'     => $line->id,
+                    'po_receive_id' => $line->po_receive_id,
+                    'checkout_by' => optional($h)->checkout_by,
+                    'checkout_at' => optional($h)->checkout_time,
+                    '_has_header' => (bool) $h,
+                    '_checked'    => filled(optional($h)->checkout_time),
+                ];
+            })
+            // header ถูกยกเลิก/ไม่พบ (global scope notCancelled) -> ตัดออก (เหมือนเดิมที่ whereHas ตัด)
+            ->filter(fn ($it) => $it->_has_header)
+            // กรองตามสถานะเช็คเอาท์ของ "รอบ" นั้น ๆ
+            ->filter(function ($it) use ($fStatus) {
+                if ($fStatus === 'checkedout') return $it->_checked;
+                if ($fStatus === 'all') return true;
+                return !$it->_checked;   // pending (รอเช็คเอาท์)
+            })
+            ->values();
 
         // --- ของเก่า: 3e store — ของ "บนชั้น" ใช้คอลัมน์ Area (เป็น id ของชั้น) + ยังไม่เช็คเอาท์ ---
         //   Area = รหัสชั้น -> แปลชื่อชั้นจากตาราง area (areaName)
@@ -145,15 +180,23 @@ class ShelfsaleController extends Controller
         if (!($fShelf !== '' && empty($shelfAreaIds))) {
             $legQ = DB::connection(self::LEGACY_CONNECTION)->table('store')
                 ->whereIn('statusArea', ['0', '1'])
-                ->whereNotNull('Area')->where('Area', '<>', '')
-                ->where(function ($q) {
+                ->whereNotNull('Area')->where('Area', '<>', '');
+            // กรองตามสถานะเช็คเอาท์ (ของเก่าดูจาก DATECHECKOUT)
+            if ($fStatus === 'checkedout') {
+                $legQ->whereNotNull('DATECHECKOUT')->where('DATECHECKOUT', '<>', '');
+            } elseif ($fStatus === 'all') {
+                // ไม่กรอง — เอาทั้งที่เช็คเอาท์แล้วและยังไม่เช็คเอาท์
+            } else { // pending
+                $legQ->where(function ($q) {
                     $q->whereNull('DATECHECKOUT')->orWhere('DATECHECKOUT', '');
                 });
+            }
             if (!empty($shelfAreaIds)) $legQ->whereIn('Area', $shelfAreaIds);
             if ($fPo !== '') $legQ->where('PO', 'LIKE', "%{$fPo}%");
             if ($fSo !== '') $legQ->where('SO', 'LIKE', "%{$fSo}%");
 
-            $legacyRows = $legQ->get(['SO', 'PO', 'Area', 'DATEAREA'])
+            // จำกัดผลลัพธ์ของเก่ากันดึงมหาศาลในโหมด checkout (ของที่เช็คเอาท์แล้วมีเป็นแสน)
+            $legacyRows = $legQ->limit(3000)->get(['SO', 'PO', 'Area', 'DATEAREA', 'DATECHECKOUT'])
                 ->reject(fn ($row) => isset($poInNewSet[preg_replace('/^PO/i', '', (string) $row->PO)]))
                 ->values();
 
@@ -172,6 +215,9 @@ class ShelfsaleController extends Controller
                 'received_at' => filled($row->DATEAREA) ? Carbon::parse($row->DATEAREA) : null,
                 'good_name'   => null,   // ของเก่าไม่มีชื่อสินค้า -> ดึงจาก PODT ตอนท้าย
                 'line_id'     => null,
+                'po_receive_id' => null,
+                'checkout_by' => null,   // ระบบเก่า: ไม่มีชื่อผู้เช็คเอาท์ (แสดงแค่เวลา)
+                'checkout_at' => filled($row->DATECHECKOUT) ? Carbon::parse($row->DATECHECKOUT) : null,
             ]);
         }
 
@@ -323,8 +369,8 @@ class ShelfsaleController extends Controller
             return false;
         };
 
-        // ===== รวมเป็น 1 แถวต่อ 1 (PO + SO) — ถ้ารหัส PO,SO เดียวกัน แสดงแถวเดียว =====
-        $rows = $items->groupBy(fn ($it) => preg_replace('/^PO/i', '', (string) $it->po) . '|' . (string) $it->so)
+        // ===== รวมเป็น 1 แถวต่อ 1 (PO + SO + รอบ) — แยกตาม "รอบรับเข้า" (po_receive_id) เพื่อไม่รวมรอบเก่า+ใหม่เป็นแถวเดียว =====
+        $rows = $items->groupBy(fn ($it) => preg_replace('/^PO/i', '', (string) $it->po) . '|' . (string) $it->so . '|' . (string) ($it->po_receive_id ?? ''))
             ->map(function ($group) use ($priceByDocu, $shipByDocu, $namesByPo, $now, $soBelongs) {
                 $first    = $group->first();
                 $cleanPo  = preg_replace('/^PO/i', '', (string) $first->po);
@@ -356,25 +402,34 @@ class ShelfsaleController extends Controller
                     ])->values();
                 }
 
+                // ข้อมูลเช็คเอาท์ (ระบบใหม่: ใคร+เมื่อ, ระบบเก่า: เฉพาะเวลา)
+                $coAt = $first->checkout_at ?? null;
                 return [
-                    'so'         => $first->so ?: '-',
-                    'po'         => $cleanPo ?: '-',
+                    'so'          => $first->so ?: '-',
+                    'po'          => $cleanPo ?: '-',
                     // ชั้นวาง: แสดงรายชื่อชั้นทั้งหมดของ SO นี้ (ไม่ใช้คำว่า "หลายชั้น")
-                    'shelf'      => $shelves->isNotEmpty() ? $shelves->implode(', ') : '-',
-                    'cust_id'    => $first->cust_id ?: '-',
-                    'cust_name'  => $first->cust_name ?: '-',
-                    'sale'       => $first->sale ?: '-',
-                    'ship_date'  => filled($ship) ? Carbon::parse($ship)->format('d/m/Y') : null,
-                    'due_days'   => $dueDays,
-                    'price'      => $price,
-                    'products'   => $products,
-                    'item_count' => $products->count(),
-                    '_ship_ts'   => filled($ship) ? Carbon::parse($ship)->timestamp : null,
+                    'shelf'       => $shelves->isNotEmpty() ? $shelves->implode(', ') : '-',
+                    'cust_id'     => $first->cust_id ?: '-',
+                    'cust_name'   => $first->cust_name ?: '-',
+                    'sale'        => $first->sale ?: '-',
+                    'ship_date'   => filled($ship) ? Carbon::parse($ship)->format('d/m/Y') : null,
+                    'due_days'    => $dueDays,
+                    'price'       => $price,
+                    'products'    => $products,
+                    'item_count'  => $products->count(),
+                    'is_checkedout' => filled($coAt),
+                    'checkout_by'   => $first->checkout_by ?: null,
+                    'checkout_at'   => filled($coAt) ? Carbon::parse($coAt)->format('d/m/Y H:i') : null,
+                    'po_receive_id' => $first->po_receive_id ?? null,   // รอบ (header) — ใช้เช็คเอาท์แยกรอบ
+                    '_ship_ts'    => filled($ship) ? Carbon::parse($ship)->timestamp : null,
                 ];
             })->values();
 
-        // เรียง "กำหนดส่งไกลสุด (ล่าสุด) ขึ้นก่อน" — ไม่มีกำหนดส่งไว้ท้ายสุด
-        $rows = $rows->sortByDesc(fn ($r) => $r['_ship_ts'] ?? -1)->values();
+        // เรียง: "ยังไม่เช็คเอาท์" ขึ้นก่อน -> ตามด้วย "เช็คเอาท์แล้ว" ; ในกลุ่มเรียงกำหนดส่งไกลสุดขึ้นก่อน
+        $rows = $rows->sortBy(function ($r) {
+            $base = $r['is_checkedout'] ? 1e13 : 0;
+            return $base - ($r['_ship_ts'] ?? -1);
+        })->values();
 
         $totalValue = (float) $rows->sum('price');
 

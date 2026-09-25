@@ -49,6 +49,37 @@ class BillreceiveController extends Controller
         return [$user, null];
     }
 
+    /** role ที่ "เข้าดู" หน้านี้ได้ (รับเข้า/เปลี่ยนคนขับ = editor เท่านั้น) */
+    private function viewerRoles(): array
+    {
+        return ['admin', 'store', 'accounting', 'sale', 'sale_assistant', 'support'];
+    }
+
+    private function canEdit($user = null): bool
+    {
+        $user = $user ?: Auth::guard('web')->user();
+        return $user && in_array($user->role ?? '', $this->editorRoles(), true);
+    }
+
+    private function requireViewerPage(Request $request)
+    {
+        if (!Auth::guard('web')->check()) return redirect()->guest(route('login'));
+        if (!in_array(Auth::guard('web')->user()->role ?? '', $this->viewerRoles(), true)) {
+            abort(403, 'คุณไม่มีสิทธิ์เข้าใช้งานหน้านี้');
+        }
+        return null;
+    }
+
+    private function requireViewerApi()
+    {
+        $user = Auth::guard('web')->user();
+        if (!$user) return [null, response()->json(['ok' => false, 'message' => 'เซสชันหมดอายุ กรุณาเข้าสู่ระบบใหม่'], 401)];
+        if (!in_array($user->role ?? '', $this->viewerRoles(), true)) {
+            return [null, response()->json(['ok' => false, 'message' => 'ไม่มีสิทธิ์'], 403)];
+        }
+        return [$user, null];
+    }
+
     private function userName($user = null): string
     {
         $user = $user ?: Auth::guard('web')->user();
@@ -57,9 +88,12 @@ class BillreceiveController extends Controller
 
     public function index(Request $request)
     {
-        if ($resp = $this->requireEditorPage($request)) return $resp;
+        if ($resp = $this->requireViewerPage($request)) return $resp;
         return view('driver.billreceive', [
-            'loggedInName' => $this->userName(),
+            'loggedInName'       => $this->userName(),
+            'canEdit'            => $this->canEdit(),                        // admin/store/accounting = แก้ได้
+            'deliveryMethods'    => config('delivery.methods', []),
+            'responsiblePersons' => config('delivery.responsible_persons', []),
         ]);
     }
 
@@ -70,7 +104,7 @@ class BillreceiveController extends Controller
      */
     public function data(Request $request)
     {
-        [$user, $err] = $this->requireEditorApi();
+        [$user, $err] = $this->requireViewerApi();   // viewer เห็นได้, editor เท่านั้นที่กดรับเข้า/เปลี่ยนคนขับ
         if ($err) return $err;
 
         $q      = trim((string) $request->input('q', ''));
@@ -402,6 +436,90 @@ class BillreceiveController extends Controller
             'check_name' => $userName,
             'check_time' => $now->format('Y-m-d H:i'),
             'message'    => 'บันทึกสถานะ "' . $status . '" แล้ว',
+        ]);
+    }
+
+    /**
+     * เปลี่ยนคนขับ/ขนส่ง แล้วบันทึกว่างานนี้ "จัดส่งสำเร็จ"
+     *   - soft-cancel รอบเดิม + สร้าง row ใหม่ (status=จัดส่งสำเร็จ) พร้อมจดว่าเปลี่ยนจากใครเป็นใคร โดยใคร
+     *   - เฉพาะ admin/store/accounting
+     */
+    public function changeDriver(Request $request)
+    {
+        [$user, $err] = $this->requireEditorApi();
+        if ($err) return $err;
+
+        $validated = $request->validate([
+            'job_key'        => 'required|string',
+            'tx_ids'         => 'required|array|min:1',
+            'tx_ids.*'       => 'integer',
+            'driver_name'    => 'nullable|string|max:255',
+            'transport_name' => 'nullable|string|max:255',
+        ]);
+
+        [$type, $rawId] = array_pad(explode(':', $validated['job_key'], 2), 2, null);
+        if (!$rawId || !in_array($type, ['bill', 'doc', 'unknown'], true)) {
+            return response()->json(['ok' => false, 'message' => 'รูปแบบงานไม่ถูกต้อง'], 422);
+        }
+        $billid = ($type === 'bill') ? $rawId : null;
+
+        $newDriver    = trim((string) ($validated['driver_name'] ?? ''));
+        $newTransport = trim((string) ($validated['transport_name'] ?? ''));
+        if ($newDriver === '' && $newTransport === '') {
+            return response()->json(['ok' => false, 'message' => 'กรุณาเลือกคนขับหรือขนส่งใหม่'], 422);
+        }
+
+        $deliveries = transaction_delivery::whereIn('id', $validated['tx_ids'])->get();
+        if ($deliveries->isEmpty()) {
+            return response()->json(['ok' => false, 'message' => 'ไม่พบรายการจ่ายงานนี้'], 404);
+        }
+
+        $userName = $this->userName($user);
+        $now      = Carbon::now();
+        $rep      = $deliveries->sortByDesc('time_pick')->first();
+        $oldDriver      = $rep->driver_name ?: '-';
+        $oldTransport   = $rep->transport_name ?: '-';
+        $finalDriver    = $newDriver !== ''    ? $newDriver    : $oldDriver;
+        $finalTransport = $newTransport !== '' ? $newTransport : $oldTransport;
+
+        $parts = [];
+        if ($finalDriver !== $oldDriver)       $parts[] = 'คนขับจาก ' . $oldDriver . ' เป็น ' . $finalDriver;
+        if ($finalTransport !== $oldTransport) $parts[] = 'ขนส่งจาก ' . $oldTransport . ' เป็น ' . $finalTransport;
+        $changeNote = 'เปลี่ยน' . (empty($parts) ? 'คนขับ/ขนส่ง' : implode(' · ', $parts)) . ' โดย ' . $userName;
+
+        DB::transaction(function () use ($deliveries, $rep, $userName, $now, $finalDriver, $finalTransport, $changeNote, $type, $billid, $rawId) {
+            // soft-cancel รอบเดิม (ถูกแทนที่ด้วยรอบใหม่)
+            foreach ($deliveries as $d) {
+                $d->cancelled_at = $now;
+                $d->cancelled_by = $userName;
+                $d->save();
+            }
+            // สร้างรอบใหม่ = จัดส่งสำเร็จ ด้วยคนขับ/ขนส่งใหม่
+            transaction_delivery::create([
+                'bill_id'        => $rep->bill_id,
+                'name_pick'      => $rep->name_pick,
+                'time_pick'      => $rep->time_pick,
+                'transport_name' => $finalTransport,
+                'driver_name'    => $finalDriver,
+                'delivery_date'  => $rep->delivery_date,
+                'status'         => self::DELI_STATUS_OK,
+                'check_name'     => $userName,
+                'check_time'     => $now,
+                'note'           => $changeNote,
+                'id_transport'   => $rep->id_transport,
+            ]);
+            // อัปเดตไส้ในบิล/เอกสาร -> จัดส่งสำเร็จ
+            if ($type === 'bill') {
+                DB::table('tblbill')->where('billid', $billid)->update(['statusdeli' => self::DELI_STATUS_OK]);
+            } elseif ($type === 'doc') {
+                DB::table('docbills')->where('doc_id', $rawId)->update(['statusdeli' => self::DELI_STATUS_OK]);
+            }
+        });
+
+        Log::info("billreceive.changeDriver {$validated['job_key']} -> {$finalDriver} / {$finalTransport} by {$userName}");
+        return response()->json([
+            'ok'      => true,
+            'message' => 'เปลี่ยนเป็นคนขับ "' . $finalDriver . '" / ขนส่ง "' . $finalTransport . '" และบันทึกจัดส่งสำเร็จแล้ว',
         ]);
     }
 }

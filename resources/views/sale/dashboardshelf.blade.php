@@ -151,11 +151,19 @@
 
         .toolbar .filter-group {
             display: flex;
-            gap: 8px;
+            gap: 10px;
             flex-wrap: wrap;
             align-items: center;
             flex: 1;
         }
+        /* label หน้ากล่อง input แทน placeholder */
+        .toolbar .fg { display: flex; align-items: center; gap: 6px; }
+        .toolbar .fg > label {
+            font-size: 12px; font-weight: 700; color: var(--muted);
+            white-space: nowrap; letter-spacing: .2px;
+        }
+        .toolbar .fg .autocomplete-wrap { display: inline-block; }
+        .toolbar .fg select { min-width: 140px; cursor: pointer; }
 
         .toolbar input[type="search"],
         .toolbar input[type="text"],
@@ -593,6 +601,9 @@
         }
 
         .dash { color: var(--muted); }
+        .checkout-cell { font-size: 12px; line-height: 1.35; }
+        .checkout-cell b { color: var(--ink); font-weight: 700; }
+        .checkout-cell .co-time { color: var(--muted); font-size: 11.5px; white-space: nowrap; }
 
         @media (max-width: 768px) {
             .top-banner { padding: 10px 16px; }
@@ -624,23 +635,27 @@
     <main>
         <div class="toolbar">
             <div class="filter-group">
-                <div class="autocomplete-wrap">
-                    <input type="search" id="fShelf" placeholder=" ค้นหาโดยชั้น..." autocomplete="off">
-                    <div id="shelfSuggest" class="suggest-panel"></div>
-                </div>
-                @if(($lockSale ?? false))
-                    <input type="search" id="fSale" value="{{ $loginName ?? '' }}" readonly
-                           title="เห็นเฉพาะงานของคุณ" style="background:#f3f4f6;color:#6b7280;cursor:not-allowed;">
-                @else
+                <div class="fg"><label for="fSo">SO</label>
+                    <input type="search" id="fSo" autocomplete="off"></div>
+                <div class="fg"><label for="fPo">PO</label>
+                    <input type="search" id="fPo" autocomplete="off"></div>
+                <div class="fg"><label for="fShelf">ชั้นวาง</label>
                     <div class="autocomplete-wrap">
-                        <input type="search" id="fSale" placeholder=" ค้นหาโดย Sale (createdBy)..." autocomplete="off">
-                        <div id="saleSuggest" class="suggest-panel"></div>
-                    </div>
-                @endif
-                <input type="search" id="fSo" placeholder=" ค้นหาโดย SO..." autocomplete="off">
-                <input type="search" id="fPo" placeholder=" ค้นหาโดย PO..." autocomplete="off">
+                        <input type="search" id="fShelf" autocomplete="off">
+                        <div id="shelfSuggest" class="suggest-panel"></div>
+                    </div></div>
+                <div class="fg"><label for="fSale">SALE</label>
+                    @if(($lockSale ?? false))
+                        <input type="search" id="fSale" value="{{ $loginName ?? '' }}" readonly
+                               title="เห็นเฉพาะงานของคุณ" style="background:#f3f4f6;color:#6b7280;cursor:not-allowed;">
+                    @else
+                        <div class="autocomplete-wrap">
+                            <input type="search" id="fSale" autocomplete="off">
+                            <div id="saleSuggest" class="suggest-panel"></div>
+                        </div>
+                    @endif
+                </div>
                 <button type="button" class="btn-ghost" id="btnClear">ล้าง</button>
-            </div>
             @if(($canSeePrice ?? false))
                 <div class="value-block">
                     <span class="vb-label">มูลค่าทั้งหมด</span>
@@ -651,7 +666,7 @@
 
         <div class="table-scroll">
             <div class="table-inner">
-                @php $colspan = 7 + (($canSeePrice ?? false) ? 1 : 0) + (($canManage ?? false) ? 1 : 0); @endphp
+                @php $colspan = 8 + (($canSeePrice ?? false) ? 1 : 0) + (($canManage ?? false) ? 1 : 0); @endphp
                 <table id="mainTable" class="is-empty">
                     <thead>
                         <tr>
@@ -669,6 +684,7 @@
                                 <th style="text-align:right;">มูลค่า</th>
                             @endif
                             <th>สินค้า</th>
+                            <th>เช็คเอาท์</th>
                             @if(($canManage ?? false))
                                 <th>จัดการ</th>
                             @endif
@@ -752,7 +768,7 @@
     const IS_SALE       = {{ ($isSaleView ?? false) ? 'true' : 'false' }};
     const CAN_SEE_PRICE = {{ ($canSeePrice ?? false) ? 'true' : 'false' }};
     const CAN_MANAGE    = {{ ($canManage ?? false) ? 'true' : 'false' }};
-    const COLSPAN       = {{ 7 + (($canSeePrice ?? false) ? 1 : 0) + (($canManage ?? false) ? 1 : 0) }};
+    const COLSPAN       = {{ 8 + (($canSeePrice ?? false) ? 1 : 0) + (($canManage ?? false) ? 1 : 0) }};
     const CSRF          = document.querySelector('meta[name="csrf-token"]').content;
     const MOVE_URL      = "{{ route('shelfsale.move') }}";
     const CHECKOUT_URL  = "{{ route('shelfsale.checkout') }}";
@@ -877,7 +893,9 @@
         const manageCell = CAN_MANAGE
             ? '<td style="text-align:center;white-space:nowrap;">'
               + '<button type="button" class="btn-view btn-move" onclick="openMove(\'' + escJs(r.po) + '\',\'' + escJs(r.so) + '\')">ย้ายชั้น</button> '
-              + '<button type="button" class="btn-view btn-checkout" onclick="doCheckout(this,\'' + escJs(r.po) + '\',\'' + escJs(r.so) + '\')">เช็คเอาท์</button>'
+              + (r.is_checkedout
+                  ? '<span class="dash" style="font-size:11.5px;">เช็คเอาท์แล้ว</span>'
+                  : '<button type="button" class="btn-view btn-checkout" onclick="doCheckout(this,\'' + escJs(r.po) + '\',\'' + escJs(r.so) + '\',' + (r.po_receive_id || 'null') + ')">เช็คเอาท์</button>')
               + '</td>'
             : '';
 
@@ -891,6 +909,12 @@
             'ดูสินค้า (' + (r.item_count || 0) + ')' +
             '</button></td>';
 
+        // คอลัมน์เช็คเอาท์: ระบบใหม่แสดงชื่อ+เวลา, ระบบเก่าแสดงแค่เวลา
+        const checkoutCell = '<td class="checkout-cell">' + (r.is_checkedout
+            ? (r.checkout_by ? '<b>' + esc(r.checkout_by) + '</b>' : '<span class="dash">— (ระบบเก่า)</span>')
+              + (r.checkout_at ? '<div class="co-time">' + esc(r.checkout_at) + '</div>' : '')
+            : '<span class="dash">-</span>') + '</td>';
+
         return '<tr class="' + rowCls + '">'
             + '<td>' + shelf + '</td>'
             + '<td class="' + dueDateClass + '">' + (r.ship_date ? esc(r.ship_date) : '<span class="dash">-</span>') + '</td>'
@@ -900,6 +924,7 @@
             + custOrSale
             + priceCell
             + productBtn
+            + checkoutCell
             + manageCell
             + '</tr>';
     }
@@ -973,14 +998,14 @@
         } catch (e) { console.error(e); alert('เกิดข้อผิดพลาดในการเชื่อมต่อ'); }
         finally { btn.disabled = false; btn.textContent = 'ยืนยัน'; }
     }
-    async function doCheckout(btn, po, so){
-        if (!confirm('ยืนยันเช็คเอาท์ PO ' + po + ' ?')) return;
+    async function doCheckout(btn, po, so, poReceiveId){
+        if (!confirm('ยืนยันเช็คเอาท์ PO ' + po + ' (รอบนี้) ?')) return;
         btn.disabled = true;
         try {
             const res = await fetch(CHECKOUT_URL, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': CSRF, 'Accept': 'application/json' },
-                body: JSON.stringify({ po: po, so: so })
+                body: JSON.stringify({ po: po, so: so, po_receive_id: poReceiveId || null })
             });
             const data = await res.json().catch(() => null);
             if (!res.ok || !data || !data.ok) { alert((data && data.message) || 'เช็คเอาท์ไม่สำเร็จ'); btn.disabled = false; return; }

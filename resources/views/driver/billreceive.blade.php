@@ -257,12 +257,33 @@ a { color: inherit; text-decoration: none; }
 </div>
 
 
+<!-- Modal เปลี่ยนคนขับ/ขนส่ง -->
+<div id="changeModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:1000;align-items:center;justify-content:center;padding:16px;">
+  <div style="background:#fff;border-radius:14px;padding:22px;width:min(94vw,440px);box-shadow:0 20px 50px rgba(0,0,0,.3);">
+    <div style="font-weight:700;font-size:17px;margin-bottom:4px;">เปลี่ยนคนขับ / ขนส่ง</div>
+    <div id="changeBillLabel" style="color:#64748b;font-size:12.5px;margin-bottom:16px;line-height:1.5;"></div>
+    <label style="display:block;font-size:12.5px;font-weight:700;color:#64748b;margin-bottom:6px;">คนขับ (ผู้รับผิดชอบ)</label>
+    <select id="changeDriver" style="width:100%;padding:10px 12px;border:1px solid #dee2e6;border-radius:8px;font-family:inherit;font-size:14px;margin-bottom:14px;"></select>
+    <label style="display:block;font-size:12.5px;font-weight:700;color:#64748b;margin-bottom:6px;">ขนส่ง (วิธีการจัดส่ง)</label>
+    <select id="changeTransport" style="width:100%;padding:10px 12px;border:1px solid #dee2e6;border-radius:8px;font-family:inherit;font-size:14px;margin-bottom:8px;"></select>
+    <div style="font-size:12px;color:#94a3b8;margin-bottom:16px;">* ยืนยันแล้วจะบันทึกงานนี้เป็น "จัดส่งสำเร็จ" พร้อมจดว่าเปลี่ยนคนขับ/ขนส่งจากใครเป็นใคร</div>
+    <div style="display:flex;gap:10px;justify-content:flex-end;">
+      <button type="button" class="act" onclick="closeChangeDriver()">ยกเลิก</button>
+      <button type="button" class="act ok" id="changeConfirmBtn" onclick="confirmChangeDriver()">ยืนยัน (บันทึกสำเร็จ)</button>
+    </div>
+  </div>
+</div>
+
 <div class="toast-wrap" id="toastWrap"></div>
 
 <script>
 const DATA_URL    = "{{ route('billreceive.data') }}";
 const CONFIRM_URL = "{{ route('billreceive.confirm') }}";
+const CHANGE_URL  = "{{ route('billreceive.changeDriver') }}";
 const CSRF = document.querySelector('meta[name="csrf-token"]').content;
+const CAN_EDIT = {{ ($canEdit ?? false) ? 'true' : 'false' }};   // admin/store/accounting = รับเข้า/เปลี่ยนคนขับได้
+const DELIVERY_METHODS    = @json($deliveryMethods ?? []);
+const RESPONSIBLE_PERSONS = @json($responsiblePersons ?? []);
 
 const fDate = document.getElementById('fDate');
 const fBill = document.getElementById('fBill');
@@ -428,19 +449,23 @@ function render(){
       // "เปลี่ยนเป็นสำเร็จ" แสดงเฉพาะงานที่ค้างบิลเท่านั้น
       const canReSuccess = (((r.status||'').trim()) === 'ค้างบิล');
       actions = `<div class="job-result ${si.cls}">รับเข้าแล้ว: ${esc(si.txt)}<br>โดย ${esc(r.check_name||'-')}${r.check_time?' · เมื่อ '+esc(r.check_time):''}${noteLine}</div>`
-        + (canReSuccess ? `<button type="button" class="act ok" style="margin-top:6px;" onclick="doAction(${i},'ok')">เปลี่ยนเป็นสำเร็จ</button>` : '');
+        + ((CAN_EDIT && canReSuccess) ? `<button type="button" class="act ok" style="margin-top:6px;" onclick="doAction(${i},'ok')">เปลี่ยนเป็นสำเร็จ</button>` : '');
     } else if(redispatched){
       // งานต้นทางที่ถูกจ่ายใหม่ไปวันอื่นแล้ว -> ไม่มีปุ่ม แสดงว่าย้ายไปวันไหน
       actions = `<div class="job-redispatched">↻ ถูกจ่ายใหม่ให้ไปวันที่ ${esc(r.redispatched_to)} แล้ว</div>`;
-    } else {
+    } else if(CAN_EDIT){
       actions = `<button type="button" class="act ok"    onclick="doAction(${i},'ok')">สำเร็จ</button>
          <button type="button" class="act hold"  onclick="openNote(${i},'hold')">ค้างบิล</button>
          <button type="button" class="act redo"  onclick="doRedo(${i})">ส่งใหม่ (จ่ายงานใหม่)</button>
-         <button type="button" class="act wrong" onclick="openNote(${i},'wrong')">สินค้าผิด</button>`;
+         <button type="button" class="act wrong" onclick="openNote(${i},'wrong')">สินค้าผิด</button>
+         <button type="button" class="act" style="border-color:#2853d5;color:#2853d5;" onclick="openChangeDriver(${i})">เปลี่ยนคนขับ/ขนส่ง</button>`;
+    } else {
+      // viewer (sale/support/sale_assistant) — ดูอย่างเดียว
+      actions = `<div class="job-result pending" style="color:#6b7280;background:#f1f5f9;">รอรับเข้า (ดูอย่างเดียว)</div>`;
     }
 
-    // เช็คบ็อกซ์ (bulk) เฉพาะงานที่ยังไม่รับเข้าเท่านั้น ; สำเร็จ/ค้างบิล/สินค้าผิด/ถูกจ่ายใหม่ = ติ๊กไม่ได้
-    const bulkable = !redispatched && !received;
+    // เช็คบ็อกซ์ (bulk) เฉพาะ editor + งานที่ยังไม่รับเข้า ; สำเร็จ/ค้างบิล/สินค้าผิด/ถูกจ่ายใหม่ = ติ๊กไม่ได้
+    const bulkable = CAN_EDIT && !redispatched && !received;
     const chk = bulkable
       ? `<input type="checkbox" class="job-chk" ${selectedBulk.has(i)?'checked':''} onchange="toggleBulk(${i},this.checked)" title="เลือกเพื่อตั้งสถานะพร้อมกัน" style="width:20px;height:20px;align-self:center;margin-right:4px;cursor:pointer;flex-shrink:0;">`
       : '';
@@ -534,6 +559,54 @@ async function doRedo(i){
     loadData();
   }catch(e){ toast('ผิดพลาด: '+e.message, true); }
 }
+
+/* ===== เปลี่ยนคนขับ/ขนส่ง ===== */
+let changeIdx = null;
+function fillChangeSelect(id, options, current){
+  const sel = document.getElementById(id);
+  const cur = (current||'').trim();
+  let html = '<option value="">— ไม่เปลี่ยน (คงเดิม) —</option>';
+  const list = options.slice();
+  // ถ้าค่าปัจจุบันไม่มีใน list -> ใส่ไว้ให้เลือกได้ (จะได้เห็นค่าเดิม)
+  if(cur && list.indexOf(cur) === -1) list.unshift(cur);
+  html += list.map(o => `<option value="${esc(o)}" ${o===cur?'selected':''}>${esc(o)}</option>`).join('');
+  sel.innerHTML = html;
+}
+function openChangeDriver(i){
+  if(!CAN_EDIT) return;
+  const r = currentRows[i];
+  if(!r) return;
+  changeIdx = i;
+  document.getElementById('changeBillLabel').innerHTML =
+    `บิล <b>${esc(r.bill_no||'-')}</b><br>คนขับเดิม: <b>${esc(r.driver_name||'-')}</b> · ขนส่งเดิม: <b>${esc(r.transport_name||'-')}</b>`;
+  fillChangeSelect('changeDriver', RESPONSIBLE_PERSONS, r.driver_name);
+  fillChangeSelect('changeTransport', DELIVERY_METHODS, r.transport_name);
+  document.getElementById('changeModal').style.display = 'flex';
+}
+function closeChangeDriver(){ document.getElementById('changeModal').style.display = 'none'; changeIdx = null; }
+async function confirmChangeDriver(){
+  if(changeIdx === null) return;
+  const r = currentRows[changeIdx];
+  const driver    = document.getElementById('changeDriver').value.trim();
+  const transport = document.getElementById('changeTransport').value.trim();
+  if(!driver && !transport){ toast('กรุณาเลือกคนขับหรือขนส่งใหม่', true); return; }
+  if(!confirm('ยืนยันเปลี่ยนคนขับ/ขนส่ง และบันทึกงานนี้เป็น "จัดส่งสำเร็จ" ?')) return;
+  const btn = document.getElementById('changeConfirmBtn'); btn.disabled = true;
+  try{
+    const res = await fetch(CHANGE_URL, {
+      method:'POST',
+      headers:{'Content-Type':'application/json','Accept':'application/json','X-Requested-With':'XMLHttpRequest','X-CSRF-TOKEN':CSRF},
+      body: JSON.stringify({ job_key:r.job_key, tx_ids:r.tx_ids, driver_name:driver, transport_name:transport })
+    });
+    const data = await res.json().catch(()=>null);
+    if(!res.ok || !data || !data.ok){ toast((data&&data.message)||'บันทึกไม่สำเร็จ', true); btn.disabled=false; return; }
+    toast(data.message || 'เปลี่ยนคนขับ/ขนส่ง และบันทึกสำเร็จแล้ว');
+    closeChangeDriver();
+    loadData();
+  }catch(e){ toast('ผิดพลาด: '+e.message, true); }
+  finally{ btn.disabled = false; }
+}
+document.getElementById('changeModal').addEventListener('click', function(e){ if(e.target===this) closeChangeDriver(); });
 
 document.getElementById('btnSearch').addEventListener('click', loadData);
 document.getElementById('btnClear').addEventListener('click', ()=>{

@@ -388,17 +388,21 @@ class MobilePoappController extends Controller
                     $custName = optional($info)->CustName ?: ($validated['CustName'] ?? null);
                     $custPONo = optional($info)->CustPONo ?: ($validated['CustPONo'] ?? null);
 
+                    // เอา "รอบล่าสุด" ของ PO+SO นี้ (header ใหม่สุด)
                     $header = PoReceive::where('po_id', $validated['PONum'])
                         ->where('so_id', $soNum)
+                        ->orderByDesc('id')
                         ->lockForUpdate()->first();
 
-                    if ($header) {
+                    if ($header && empty($header->checkout_time)) {
+                        // รอบล่าสุดยังไม่เช็คเอาท์ -> รับเข้ารอบเดิม
                         $header->update([
                             'status'    => $validated['Status'],
                             'cust_name' => $custName ?: $header->cust_name,
                             'POref'     => $custPONo ?: $header->POref,
                         ]);
                     } else {
+                        // ไม่มีรอบ หรือ รอบล่าสุดเช็คเอาท์ไปแล้ว -> สร้าง "รอบใหม่" (รับเข้าครบ รอเช็คเอาท์ใหม่)
                         $header = PoReceive::create([
                             'po_id'         => $validated['PONum'],
                             'so_id'         => $soNum,
@@ -412,8 +416,9 @@ class MobilePoappController extends Controller
 
                     foreach ($validated['items'] as $it) {
                         PoReceiveLine::create([
-                            'po_id'       => $validated['PONum'],
-                            'so_id'       => $soNum,
+                            'po_id'         => $validated['PONum'],
+                            'po_receive_id' => $header->id,   // << ผูก line กับรอบ (header) นี้
+                            'so_id'         => $soNum,
                             'good_name'   => $it['GoodName'] ?? null,
                             'recv_qty'    => $it['RecvQty'],
                             'unit_price'  => $it['UnitPrice'] ?? null,
