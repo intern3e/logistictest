@@ -405,6 +405,11 @@
         @media (min-width: 901px) {
             /* block + ชิดซ้าย -> ทุกแถวเริ่มที่ขอบซ้ายเดียวกัน ไม่ขยับตามความยาวข้อมูล */
             .stage-inner { display: block; text-align: left; padding-left: 8px; }
+            /* ขยับให้ขอบซ้ายตรงกับตัวหนังสือหัวคอลัมน์ (ค่า --stage-pad-N คำนวณด้วย JS ด้านล่าง) */
+            #billTable tbody td:nth-child(4) .stage-inner { padding-left: var(--stage-pad-0, 8px); }
+            #billTable tbody td:nth-child(5) .stage-inner { padding-left: var(--stage-pad-1, 8px); }
+            #billTable tbody td:nth-child(6) .stage-inner { padding-left: var(--stage-pad-2, 8px); }
+            #billTable tbody td:nth-child(7) .stage-inner { padding-left: var(--stage-pad-3, 8px); }
             .stage-inner .status-meta { display: block; margin-left: 0; margin-right: 0; }
         }
         .status-meta i { color: var(--faint); width: 14px; text-align: center; }
@@ -642,7 +647,7 @@
         @endif
 
         <div class="table-responsive">
-            <table>
+            <table id="billTable">
                 <colgroup>
                     <col class="col-info"><col class="col-info"><col class="col-info">
                     <col class="col-stage"><col class="col-stage"><col class="col-stage"><col class="col-stage"><col class="col-dur">
@@ -1172,6 +1177,35 @@
             sumForm.querySelector('select[name="sum_driver"]').addEventListener('change', () => sumForm.submit());
             sumForm.querySelector('select[name="sum_sale"]')?.addEventListener('change', () => sumForm.submit());
         }
+    })();
+    </script>
+
+    <script>
+    // ให้ข้อมูลในคอลัมน์ขั้นตอน เริ่มตรงกับตัวหนังสือหัวคอลัมน์ (หัวจัดกลาง -> วัดตำแหน่งจริงแล้วตั้ง padding)
+    (function () {
+        const table = document.getElementById('billTable');
+        if (!table) return;
+        function align() {
+            const ths = table.querySelectorAll('thead th.th-stage');
+            const row = table.querySelector('tbody tr');
+            for (let i = 0; i < 4; i++) {
+                const th = ths[i];
+                const td = row && row.children[3 + i];
+                if (!th || !td || window.innerWidth <= 900) { table.style.removeProperty('--stage-pad-' + i); continue; }
+                const range = document.createRange();
+                range.selectNodeContents(th);
+                const textLeft = range.getBoundingClientRect().left;
+                const tdBox = td.getBoundingClientRect();
+                const tdPad = parseFloat(getComputedStyle(td).paddingLeft) || 0;
+                const pad = Math.max(0, Math.round(textLeft - tdBox.left - tdPad));
+                table.style.setProperty('--stage-pad-' + i, pad + 'px');
+            }
+        }
+        align();
+        window.addEventListener('resize', align);
+        // เปิดหน้ามาที่แท็บอื่น ตารางถูกซ่อน วัดไม่ได้ -> วัดใหม่ตอนกลับมาแท็บรายการ
+        document.querySelectorAll('.view-btn').forEach(b => b.addEventListener('click', () => setTimeout(align)));
+        if (document.fonts && document.fonts.ready) document.fonts.ready.then(align);
     })();
     </script>
 
