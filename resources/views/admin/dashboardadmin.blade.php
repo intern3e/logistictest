@@ -287,6 +287,7 @@
             th.th-info, td.td-info { white-space: normal; overflow: visible; text-overflow: clip; padding: 10px 8px; background: #f8fafc; }
             tbody td.td-dur { grid-column: span 6 !important; }
             .dur-list { width: 100%; }
+            .stage-inner { display: contents; }
             tbody td.td-stage { grid-column: span 3; display: flex; flex-wrap: wrap; align-items: center; gap: 6px 10px; border-top: 1px solid #edf2f7; }
             tbody td.td-stage .status-meta { margin-top: 0; margin-left: 0; margin-right: 0; }
             tbody td.td-stage .status-meta { flex: 0 0 100%; min-height: 0 !important; }
@@ -400,6 +401,11 @@
         .status-meta .bill-price { line-height: 1.75; }
         tbody td.td-stage:not(.td-dur) { vertical-align: top; padding-top: 18px; }
         tbody td.td-stage:not(.td-dur) .status-meta { min-height: calc(3 * 1.75em); }
+        /* ป้ายสถานะ + รายละเอียด ชิดซ้ายแนวเดียวกัน (ทั้งก้อนอยู่กลางคอลัมน์) */
+        @media (min-width: 901px) {
+            .stage-inner { display: inline-block; text-align: left; max-width: 100%; }
+            .stage-inner .status-meta { display: block; margin-left: 0; margin-right: 0; }
+        }
         .status-meta i { color: var(--faint); width: 14px; text-align: center; }
         .bill-price { color: var(--ink); font-weight: 700; }
         .bill-price i { color: #d97706 !important; }
@@ -679,6 +685,7 @@
                         <td class="td-info" data-label="เลขบิล">{{ $item->billid ?? '-' }}</td>
 
                         <td class="td-stage{{ $stepCls(0) }}" data-label="เปิดบิลส่งของ">
+                            <div class="stage-inner">
                             @if($isCancelled)
                                 <span class="badge danger"><i class="fa-solid fa-ban"></i> ยกเลิก</span>
                             @elseif(isset($item->statuspdf) && in_array((string) $item->statuspdf, ['1', '2'], true))
@@ -696,9 +703,11 @@
                                     @endif
                                 </div>
                             @endif
+                            </div>
                         </td>
 
                         <td class="td-stage{{ $stepCls(1) }}" data-label="จัดสินค้า">
+                            <div class="stage-inner">
                             @if($isCancelled) <span class="badge danger"><i class="fa-solid fa-ban"></i> ยกเลิก</span>
                             @elseif($item->pick_done)
                                 <span class="badge success"><i class="fa-solid fa-box-open"></i> จัดสินค้าแล้ว</span>
@@ -709,9 +718,11 @@
                                     </div>
                                 @endif
                             @else <span class="badge pending"><i class="fa-solid fa-clock"></i> รอดำเนินการ</span> @endif
+                            </div>
                         </td>
 
                         <td class="td-stage{{ $stepCls(2) }}" data-label="จัดเส้นทาง">
+                            <div class="stage-inner">
                             @if($isCancelled) <span class="badge danger"><i class="fa-solid fa-ban"></i> ยกเลิก</span>
                             @else
                                 @if($item->route_done) <span class="badge success"><i class="fa-solid fa-route"></i> จัดเส้นทางแล้ว</span>
@@ -724,9 +735,11 @@
                                 @endphp
                                 @if(count($routeLines)) <div class="status-meta">{!! implode('<br>', $routeLines) !!}</div> @endif
                             @endif
+                            </div>
                         </td>
 
                         <td class="td-stage{{ $stepCls(3) }}" data-label="ส่งสินค้า">
+                            <div class="stage-inner">
                             @if($isCancelled) <span class="badge danger"><i class="fa-solid fa-ban"></i> ยกเลิก</span>
                             @elseif(!empty($item->statusdeli))
                                 @php
@@ -750,6 +763,7 @@
                                 <span class="badge pending"><i class="fa-solid fa-clock"></i> รอดำเนินการ</span>
                                 @if(!empty($item->deli_name)) <div class="status-meta"><i class="fa-solid fa-user"></i> คนขับ: {{ $item->deli_name }}</div> @endif
                             @endif
+                            </div>
                         </td>
 
                         <td class="td-stage td-dur" data-label="ระยะเวลา">
@@ -801,15 +815,31 @@
                     <i class="fa-solid fa-magnifying-glass"></i>
                     <input type="text" name="po_search" id="poSearch" value="{{ $poSearch ?? '' }}" placeholder="ค้นหา เลข PO, รหัส SO..." autocomplete="off">
                 </div>
-                <input type="date" name="po_date" class="sum-input" value="{{ $poDate ?? '' }}" title="วันนัดรับ" onchange="this.form.submit()">
+                <input type="date" name="po_date" id="poDate" class="sum-input" value="{{ $poDate ?? '' }}" title="วันนัดรับ (ค่าเริ่มต้น = วันนี้)" onchange="this.form.submit()">
+                <button type="button" class="btn-reset" style="color:#1d4ed8;border-color:#1d4ed8;"
+                        title="แสดง PO ทุกวันนัดรับ"
+                        onclick="document.getElementById('poDate').value='';this.form.submit()"><i class="fa-regular fa-calendar"></i> ทุกวัน</button>
+                <select name="po_days" class="stage-select {{ ($poDays ?? '') !== '' ? 'active' : '' }}" onchange="this.form.submit()">
+                    <option value="">สถานะวันนัดรับ: ทั้งหมด</option>
+                    <option value="late" @selected(($poDays ?? '') === 'late')>เลยกำหนด</option>
+                    <option value="today" @selected(($poDays ?? '') === 'today')>วันนี้</option>
+                    <option value="soon" @selected(($poDays ?? '') === 'soon')>อีก 1-3 วัน</option>
+                    <option value="future" @selected(($poDays ?? '') === 'future')>มากกว่า 3 วัน</option>
+                </select>
+                <select name="po_dispatch" class="stage-select {{ ($poDispatch ?? '') !== '' ? 'active' : '' }}" onchange="this.form.submit()">
+                    <option value="">การส่ง / จ่ายงาน: ทั้งหมด</option>
+                    <option value="none" @selected(($poDispatch ?? '') === 'none')>ยังไม่จ่ายงาน</option>
+                    <option value="assigned" @selected(($poDispatch ?? '') === 'assigned')>จ่ายงานแล้ว (รอส่ง)</option>
+                    <option value="sent" @selected(($poDispatch ?? '') === 'sent')>ส่งเสร็จแล้ว</option>
+                </select>
                 <select name="po_status" class="stage-select {{ ($poStatus ?? '') !== '' ? 'active' : '' }}" onchange="this.form.submit()">
-                    <option value="">สถานะ: ทั้งหมด</option>
+                    <option value="">สถานะรับของ: ทั้งหมด</option>
                     <option value="wait" @selected(($poStatus ?? '') === 'wait')>รอรับของ</option>
-                    <option value="unassigned" @selected(($poStatus ?? '') === 'unassigned')>ยังไม่จ่ายงาน</option>
                     <option value="partial" @selected(($poStatus ?? '') === 'partial')>รับบางส่วน</option>
                     <option value="done" @selected(($poStatus ?? '') === 'done')>รับครบแล้ว</option>
                     <option value="cancel" @selected(($poStatus ?? '') === 'cancel')>ยกเลิก</option>
                 </select>
+                <a href="{{ route('admin.dashboardadmin') }}?view=po#po" class="btn-reset"><i class="fa-solid fa-rotate-right"></i> รีเซ็ต</a>
             </form>
 
             @if(!empty($poError))

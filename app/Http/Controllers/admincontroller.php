@@ -516,9 +516,11 @@ class AdminController extends Controller
         [$poList, $poCounts, $poError] = $this->buildPoReceive($request);
         $poStatus = $request->input('po_status', '');
         $poSearch = trim((string) $request->input('po_search', ''));
-        $poDate   = $request->input('po_date', '');
+        $poDate   = self::poDateFilter($request);
+        $poDays     = (string) $request->input('po_days', '');
+        $poDispatch = (string) $request->input('po_dispatch', '');
 
-        return view('admin.dashboardadmin', compact('bill', 'message', 'totalCount', 'todayCount', 'stageStats', 'activeCount', 'cancelledCount', 'startDate', 'countDate', 'moneyAllSum', 'moneyDaySum', 'avgTotal', 'driverSummary', 'driverOptions', 'sumPeriod', 'sumDate', 'sumDriver', 'sumLabel', 'sumTotals', 'sumTab', 'sumSale', 'saleOptions', 'saleSummary', 'saleTotals', 'poList', 'poCounts', 'poError', 'poStatus', 'poSearch', 'poDate'));
+        return view('admin.dashboardadmin', compact('bill', 'message', 'totalCount', 'todayCount', 'stageStats', 'activeCount', 'cancelledCount', 'startDate', 'countDate', 'moneyAllSum', 'moneyDaySum', 'avgTotal', 'driverSummary', 'driverOptions', 'sumPeriod', 'sumDate', 'sumDriver', 'sumLabel', 'sumTotals', 'sumTab', 'sumSale', 'saleOptions', 'saleSummary', 'saleTotals', 'poList', 'poCounts', 'poError', 'poStatus', 'poSearch', 'poDate', 'poDays', 'poDispatch'));
     }
 
     // ===================== PO รับของ (ไปรับของเอง) =====================
@@ -551,14 +553,23 @@ class AdminController extends Controller
         return $map[$old] ?? ['key' => 'wait', 'label' => 'รอรับของ', 'badge' => 'pending'];
     }
 
+    // วันนัดรับที่ใช้กรอง: ไม่ส่ง po_date มาเลย (เปิดหน้าครั้งแรก) = วันนี้ ; ส่งมาว่าง (กด "ทุกวัน") = ไม่กรองวัน
+    private static function poDateFilter(Request $request): string
+    {
+        if (!$request->has('po_date')) return Carbon::now('Asia/Bangkok')->toDateString();
+        return (string) $request->input('po_date', '');
+    }
+
     private function buildPoReceive(Request $request): array
     {
         set_time_limit(120);
         ini_set('memory_limit', '256M');
 
-        $status = (string) $request->input('po_status', '');
+        $status   = (string) $request->input('po_status', '');      // สถานะรับของ
+        $days     = (string) $request->input('po_days', '');        // สถานะวันนัดรับ
+        $dispatch = (string) $request->input('po_dispatch', '');    // สถานะการส่ง / จ่ายงาน
         $search = trim((string) $request->input('po_search', ''));
-        $date   = (string) $request->input('po_date', '');
+        $date   = self::poDateFilter($request);
         $counts = ['all' => 0, 'wait' => 0, 'partial' => 0, 'done' => 0, 'cancel' => 0, 'unassigned' => 0];
 
         try {
@@ -679,7 +690,16 @@ class AdminController extends Controller
             $counts[$st['key']]++;
             if (!$po->assigned && in_array($st['key'], ['wait', 'partial'], true)) $counts['unassigned']++;
 
-            if ($status === '' || $status === $st['key'] || ($status === 'unassigned' && !$po->assigned && in_array($st['key'], ['wait', 'partial'], true))) {
+            // สถานะการส่ง / จ่ายงาน: none = ยังไม่จ่ายงาน, assigned = จ่ายงานแล้ว (รอส่ง), sent = ส่งเสร็จแล้ว
+            $po->dispatch_key = !$log ? 'none' : (!empty($log->check_time) ? 'sent' : 'assigned');
+            // สถานะวันนัดรับ: late / today / soon / future (ตาม days_class)
+            $po->days_key = $po->days_class !== '' ? substr($po->days_class, 3) : '';
+
+            $okStatus   = $status === '' || $status === $st['key']
+                || ($status === 'unassigned' && !$po->assigned && in_array($st['key'], ['wait', 'partial'], true));
+            $okDays     = $days === '' || $days === $po->days_key;
+            $okDispatch = $dispatch === '' || $dispatch === $po->dispatch_key;
+            if ($okStatus && $okDays && $okDispatch) {
                 $rows->push($po);
             }
         }
