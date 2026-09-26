@@ -401,16 +401,15 @@
         .status-meta .bill-price { line-height: 1.75; }
         tbody td.td-stage:not(.td-dur) { vertical-align: top; padding-top: 18px; }
         tbody td.td-stage:not(.td-dur) .status-meta { min-height: calc(3 * 1.75em); }
-        /* ป้ายสถานะ + รายละเอียด ชิดซ้ายของช่อง */
+        /* ป้ายสถานะอยู่กลางใต้หัวคอลัมน์ ; รายละเอียดเป็นก้อนกว้างเท่ากันทุกแถว (กว้างสุดของคอลัมน์) อยู่กลาง ข้อความชิดซ้าย
+           -> ทุกแถวเริ่มตรงกัน ไม่ขยับตามความยาวข้อมูล (ค่า --meta-w-N คำนวณด้วย JS ด้านล่าง) */
         @media (min-width: 901px) {
-            /* block + ชิดซ้าย -> ทุกแถวเริ่มที่ขอบซ้ายเดียวกัน ไม่ขยับตามความยาวข้อมูล */
-            .stage-inner { display: block; text-align: left; padding-left: 8px; }
-            /* ขยับให้ขอบซ้ายตรงกับตัวหนังสือหัวคอลัมน์ (ค่า --stage-pad-N คำนวณด้วย JS ด้านล่าง) */
-            #billTable tbody td:nth-child(4) .stage-inner { padding-left: var(--stage-pad-0, 8px); }
-            #billTable tbody td:nth-child(5) .stage-inner { padding-left: var(--stage-pad-1, 8px); }
-            #billTable tbody td:nth-child(6) .stage-inner { padding-left: var(--stage-pad-2, 8px); }
-            #billTable tbody td:nth-child(7) .stage-inner { padding-left: var(--stage-pad-3, 8px); }
-            .stage-inner .status-meta { display: block; margin-left: 0; margin-right: 0; }
+            .stage-inner { display: block; text-align: center; }
+            .stage-inner .status-meta { display: block; margin-left: auto; margin-right: auto; max-width: 100%; text-align: left; }
+            #billTable tbody td:nth-child(4) .stage-inner .status-meta { width: var(--meta-w-0, auto); }
+            #billTable tbody td:nth-child(5) .stage-inner .status-meta { width: var(--meta-w-1, auto); }
+            #billTable tbody td:nth-child(6) .stage-inner .status-meta { width: var(--meta-w-2, auto); }
+            #billTable tbody td:nth-child(7) .stage-inner .status-meta { width: var(--meta-w-3, auto); }
         }
         .status-meta i { color: var(--faint); width: 14px; text-align: center; }
         .bill-price { color: var(--ink); font-weight: 700; }
@@ -1181,24 +1180,22 @@
     </script>
 
     <script>
-    // ให้ข้อมูลในคอลัมน์ขั้นตอน เริ่มตรงกับตัวหนังสือหัวคอลัมน์ (หัวจัดกลาง -> วัดตำแหน่งจริงแล้วตั้ง padding)
+    // คอลัมน์ขั้นตอน: ให้ก้อนรายละเอียดทุกแถวกว้างเท่ากัน (= แถวที่ยาวสุดในคอลัมน์นั้น) -> อยู่กลางใต้หัวแล้วเริ่มตรงกันทุกแถว
     (function () {
         const table = document.getElementById('billTable');
         if (!table) return;
         function align() {
-            const ths = table.querySelectorAll('thead th.th-stage');
-            const row = table.querySelector('tbody tr');
+            for (let i = 0; i < 4; i++) table.style.removeProperty('--meta-w-' + i);
+            if (window.innerWidth <= 900) return;
             for (let i = 0; i < 4; i++) {
-                const th = ths[i];
-                const td = row && row.children[3 + i];
-                if (!th || !td || window.innerWidth <= 900) { table.style.removeProperty('--stage-pad-' + i); continue; }
-                const range = document.createRange();
-                range.selectNodeContents(th);
-                const textLeft = range.getBoundingClientRect().left;
-                const tdBox = td.getBoundingClientRect();
-                const tdPad = parseFloat(getComputedStyle(td).paddingLeft) || 0;
-                const pad = Math.max(0, Math.round(textLeft - tdBox.left - tdPad));
-                table.style.setProperty('--stage-pad-' + i, pad + 'px');
+                const metas = table.querySelectorAll('tbody tr > td:nth-child(' + (4 + i) + ') .status-meta');
+                let max = 0;
+                metas.forEach(m => {
+                    m.style.width = 'max-content';
+                    max = Math.max(max, m.getBoundingClientRect().width);
+                    m.style.width = '';
+                });
+                if (max > 0) table.style.setProperty('--meta-w-' + i, Math.ceil(max) + 'px');
             }
         }
         align();
