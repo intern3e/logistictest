@@ -401,17 +401,19 @@
         .status-meta .bill-price { line-height: 1.75; }
         tbody td.td-stage:not(.td-dur) { vertical-align: top; padding-top: 18px; }
         tbody td.td-stage:not(.td-dur) .status-meta { min-height: calc(3 * 1.75em); }
-        /* คอลัมน์ขั้นตอน: ป้าย + รายละเอียดอยู่ในก้อนเดียว กว้างเท่ากันทุกแถว วางกลางใต้หัวคอลัมน์
-           ข้างในชิดซ้าย -> ขอบซ้ายป้ายตรงกับรายละเอียด และตรงกันทุกแถว ; บรรทัดที่ยาวเกิน (เช่นชื่อผู้ขาย) ตัดเป็น ...
-           (ค่า --stage-w-N คำนวณด้วย JS ด้านล่าง) */
+        /* คอลัมน์ขั้นตอน: ไอคอนในป้ายสถานะ + ไอคอนของทุกบรรทัดรายละเอียด อยู่แนวเดียวกับไอคอนหัวคอลัมน์ ทุกแถว
+           (--stage-pad-N = ระยะจากขอบช่องถึงไอคอนหัวคอลัมน์ คำนวณด้วย JS ด้านล่าง)
+           บรรทัดที่ยาวเกิน STAGE_META_MAX (เช่นชื่อผู้ขาย) ตัดเป็น ... */
         @media (min-width: 901px) {
-            .stage-inner { display: block; text-align: left; margin: 0 auto; max-width: 100%; }
-            .stage-inner .status-meta { display: block; margin-left: 0; margin-right: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+            .stage-inner { display: block; text-align: left; }
+            #billTable tbody td:nth-child(4) .stage-inner { padding-left: var(--stage-pad-0, 0px); }
+            #billTable tbody td:nth-child(5) .stage-inner { padding-left: var(--stage-pad-1, 0px); }
+            #billTable tbody td:nth-child(6) .stage-inner { padding-left: var(--stage-pad-2, 0px); }
+            #billTable tbody td:nth-child(7) .stage-inner { padding-left: var(--stage-pad-3, 0px); }
+            /* ดึงป้ายไปทางซ้ายเท่าขอบในของป้าย (10px) -> ไอคอนในป้ายตรงกับไอคอนหัวคอลัมน์ */
+            .stage-inner > .badge { margin-left: -10px; }
+            .stage-inner .status-meta { display: block; margin-left: 0; margin-right: 0; max-width: 135px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
             .stage-inner .status-meta > div { overflow: hidden; text-overflow: ellipsis; }
-            #billTable tbody td:nth-child(4) .stage-inner { width: var(--stage-w-0, auto); }
-            #billTable tbody td:nth-child(5) .stage-inner { width: var(--stage-w-1, auto); }
-            #billTable tbody td:nth-child(6) .stage-inner { width: var(--stage-w-2, auto); }
-            #billTable tbody td:nth-child(7) .stage-inner { width: var(--stage-w-3, auto); }
             /* คอลัมน์ระยะเวลา: กล่องกว้างเท่ากันทุกแถว -> เริ่มตรงกัน */
             #billTable tbody td.td-dur .dur-list { width: var(--dur-w, auto); max-width: 100%; }
         }
@@ -1184,12 +1186,10 @@
     </script>
 
     <script>
-    // คอลัมน์ขั้นตอน: ก้อน (ป้าย + รายละเอียด) กว้างเท่ากันทุกแถว -> วางกลางใต้หัวแล้วเริ่มตรงกันทุกแถว
-    //   กว้าง = ป้ายที่กว้างสุด หรือรายละเอียดที่ยาวสุด แต่ไม่เกิน STAGE_MAX_W (ยาวกว่านั้นตัดเป็น ...)
+    // คอลัมน์ขั้นตอน: เลื่อนข้อมูลให้ขอบซ้าย (ไอคอน) ตรงกับไอคอนหัวคอลัมน์ ; หัวจัดกลาง -> วัดตำแหน่งจริงแล้วตั้ง padding
     (function () {
         const table = document.getElementById('billTable');
         if (!table) return;
-        const STAGE_MAX_W = 170;
         function natural(el) {
             el.style.width = 'max-content';
             const w = el.getBoundingClientRect().width;
@@ -1197,26 +1197,25 @@
             return w;
         }
         function align() {
-            for (let i = 0; i < 4; i++) table.style.removeProperty('--stage-w-' + i);
+            for (let i = 0; i < 4; i++) table.style.removeProperty('--stage-pad-' + i);
             table.style.removeProperty('--dur-w');
             if (window.innerWidth <= 900) return;
+            const ths = table.querySelectorAll('thead th.th-stage');
+            const row = table.querySelector('tbody tr');
             for (let i = 0; i < 4; i++) {
-                const cells = table.querySelectorAll('tbody tr > td:nth-child(' + (4 + i) + ') .stage-inner');
-                let badgeMax = 0, metaMax = 0;
-                cells.forEach(c => {
-                    const b = c.querySelector('.badge');
-                    const m = c.querySelector('.status-meta');
-                    if (b) badgeMax = Math.max(badgeMax, b.getBoundingClientRect().width);
-                    if (m) metaMax = Math.max(metaMax, natural(m));
-                });
-                const w = Math.ceil(Math.max(badgeMax, Math.min(metaMax, STAGE_MAX_W)));
-                if (w > 0) table.style.setProperty('--stage-w-' + i, w + 'px');
-                // บรรทัดที่ถูกตัด -> เอาเมาส์ชี้ดูข้อความเต็มได้
-                cells.forEach(c => {
-                    const m = c.querySelector('.status-meta');
-                    if (m) m.title = m.scrollWidth > m.clientWidth + 1 ? m.innerText.replace(/\s*\n\s*/g, ' · ') : '';
-                });
+                const th = ths[i];
+                const td = row && row.children[3 + i];
+                if (!th || !td || !td.querySelector('.stage-inner')) continue;
+                const range = document.createRange();
+                range.selectNodeContents(th);
+                const headLeft = range.getBoundingClientRect().left;
+                const tdLeft = td.getBoundingClientRect().left + (parseFloat(getComputedStyle(td).paddingLeft) || 0);
+                table.style.setProperty('--stage-pad-' + i, Math.max(0, Math.round(headLeft - tdLeft)) + 'px');
             }
+            // บรรทัดที่ถูกตัด -> เอาเมาส์ชี้ดูข้อความเต็มได้
+            table.querySelectorAll('tbody .stage-inner .status-meta').forEach(m => {
+                m.title = m.scrollWidth > m.clientWidth + 1 ? m.innerText.replace(/\s*\n\s*/g, ' · ') : '';
+            });
             // คอลัมน์ระยะเวลา: กล่องกว้างเท่ากันทุกแถว
             let durMax = 0;
             table.querySelectorAll('tbody td.td-dur .dur-list').forEach(d => { durMax = Math.max(durMax, natural(d)); });
