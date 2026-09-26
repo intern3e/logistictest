@@ -410,6 +410,8 @@
             #billTable tbody td:nth-child(5) .stage-inner .status-meta { width: var(--meta-w-1, auto); }
             #billTable tbody td:nth-child(6) .stage-inner .status-meta { width: var(--meta-w-2, auto); }
             #billTable tbody td:nth-child(7) .stage-inner .status-meta { width: var(--meta-w-3, auto); }
+            /* คอลัมน์ระยะเวลา: กล่องกว้างเท่ากันทุกแถว -> เริ่มตรงกัน */
+            #billTable tbody td.td-dur .dur-list { width: var(--dur-w, auto); max-width: 100%; }
         }
         .status-meta i { color: var(--faint); width: 14px; text-align: center; }
         .bill-price { color: var(--ink); font-weight: 700; }
@@ -1186,7 +1188,15 @@
         if (!table) return;
         function align() {
             for (let i = 0; i < 4; i++) table.style.removeProperty('--meta-w-' + i);
+            table.style.removeProperty('--dur-w');
             if (window.innerWidth <= 900) return;
+            let durMax = 0;
+            table.querySelectorAll('tbody td.td-dur .dur-list').forEach(d => {
+                d.style.width = 'max-content';
+                durMax = Math.max(durMax, d.getBoundingClientRect().width);
+                d.style.width = '';
+            });
+            if (durMax > 0) table.style.setProperty('--dur-w', Math.ceil(durMax) + 'px');
             for (let i = 0; i < 4; i++) {
                 const metas = table.querySelectorAll('tbody tr > td:nth-child(' + (4 + i) + ') .status-meta');
                 let max = 0;
