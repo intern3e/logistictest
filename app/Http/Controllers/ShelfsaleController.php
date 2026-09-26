@@ -126,20 +126,32 @@ class ShelfsaleController extends Controller
         }
         $newLines = $newQ->get();
 
-        // map line -> header : มี po_receive_id ใช้ตรง ๆ, ไม่มี (ข้อมูลเก่า header เดียว) fallback ด้วย po_id
+        // map line -> header : มี po_receive_id ใช้ตรง ๆ
         $hdrById = collect();
-        $hdrByPo = collect();
         $fkIds = $newLines->pluck('po_receive_id')->filter()->unique()->values()->all();
         if (!empty($fkIds)) {
             $hdrById = PoReceive::whereIn('id', $fkIds)->get()->keyBy('id');
         }
+        // orphan (po_receive_id ว่าง = ข้อมูลก่อนมีฟีเจอร์): resolve ด้วย po_id+so_id
+        //   ต้องเลือก header ที่ "ยังไม่ถูกจับจอง" ด้วย line อื่น (เก่าสุด) — ไม่งั้นจะไปจับรอบใหม่ที่ยังไม่เช็คเอาท์ผิด
+        //   (เดิม keyBy('po_id') เก็บ header ตัวท้าย ทำให้ line รอบเก่าที่เช็คเอาท์แล้วโชว์เป็น "ยังไม่เช็คเอาท์")
+        $hdrsByPo = collect();
         $fallbackPoIds = $newLines->filter(fn ($l) => empty($l->po_receive_id))
             ->pluck('po_id')->filter()->unique()->values()->all();
         if (!empty($fallbackPoIds)) {
-            $hdrByPo = PoReceive::whereIn('po_id', $fallbackPoIds)->get()->keyBy('po_id');
+            $hdrsByPo = PoReceive::whereIn('po_id', $fallbackPoIds)->get()->groupBy('po_id');
         }
-        $resolveHeader = function ($line) use ($hdrById, $hdrByPo) {
-            return $line->po_receive_id ? $hdrById->get($line->po_receive_id) : $hdrByPo->get($line->po_id);
+        $claimedHeaderIds = array_flip($fkIds);   // header ที่มี line ผูกด้วย po_receive_id แล้ว
+        $resolveHeader = function ($line) use ($hdrById, $hdrsByPo, $claimedHeaderIds) {
+            if ($line->po_receive_id) return $hdrById->get($line->po_receive_id);
+            $cands = ($hdrsByPo->get($line->po_id) ?? collect())
+                ->filter(function ($h) use ($line) {
+                    return (string) ($h->so_id ?? '') === (string) ($line->so_id ?? '')
+                        || ($h->so_id ?? '') === '' || ($line->so_id ?? '') === '';
+                })
+                ->sortBy('id')->values();
+            $unclaimed = $cands->reject(fn ($h) => isset($claimedHeaderIds[$h->id]))->values();
+            return $unclaimed->first() ?: $cands->first();
         };
 
         $newItems = $newLines->map(function ($line) use ($resolveHeader) {
