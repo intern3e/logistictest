@@ -401,9 +401,10 @@
         .status-meta .bill-price { line-height: 1.75; }
         tbody td.td-stage:not(.td-dur) { vertical-align: top; padding-top: 18px; }
         tbody td.td-stage:not(.td-dur) .status-meta { min-height: calc(3 * 1.75em); }
-        /* ป้ายสถานะ + รายละเอียด ชิดซ้ายแนวเดียวกัน (ทั้งก้อนอยู่กลางคอลัมน์) */
+        /* ป้ายสถานะ + รายละเอียด ชิดซ้ายของช่อง */
         @media (min-width: 901px) {
-            .stage-inner { display: inline-block; text-align: left; max-width: 100%; }
+            /* block + ชิดซ้าย -> ทุกแถวเริ่มที่ขอบซ้ายเดียวกัน ไม่ขยับตามความยาวข้อมูล */
+            .stage-inner { display: block; text-align: left; padding-left: 8px; }
             .stage-inner .status-meta { display: block; margin-left: 0; margin-right: 0; }
         }
         .status-meta i { color: var(--faint); width: 14px; text-align: center; }
