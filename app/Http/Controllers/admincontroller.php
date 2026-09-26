@@ -755,34 +755,13 @@ class AdminController extends Controller
     }
 
     // ===================== ราคา =====================
-    const SO_DETAIL_API = 'http://server_update:8000/api/getSODetail';
-    const VAT_RATE      = 1.07;
+    // ยอดบิล (ก่อน VAT) ของ SO ดึงตรงจาก MSSQL (SOInvHD + SOInvDT) ทีเดียวทั้งหมด
+    //   เดิมยิง API getSODetail ทีละ SO -> SO เยอะ API ตอบไม่ทัน -> Maximum execution time exceeded
+    const VAT_RATE = 1.07;
 
     private static function normPo($v): string
     {
         return strtoupper(preg_replace('/^(SO|PO)/i', '', preg_replace('/\s+/', '', (string) $v)));
-    }
-
-    private static function billTotals($data): array
-    {
-        $out  = [];
-        $walk = function ($node) use (&$walk, &$out) {
-            if (!is_array($node)) return;
-            foreach ($node as $key => $val) {
-                if (is_array($val) && isset($val['items']) && is_array($val['items'])) {
-                    $sum = 0.0;
-                    foreach ($val['items'] as $it) {
-                        if (isset($it['GoodAmnt']) && is_numeric($it['GoodAmnt'])) $sum += (float) $it['GoodAmnt'];
-                    }
-                    $k = self::normPo($key);
-                    $out[$k] = ($out[$k] ?? 0) + $sum;
-                } elseif (is_array($val)) {
-                    $walk($val);
-                }
-            }
-        };
-        $walk($data);
-        return $out;
     }
 
     private function fetchSoPrices(array $soList): array
@@ -794,39 +773,41 @@ class AdminController extends Controller
             if (is_array($hit)) $result[$so] = $hit;
             else $missing[] = $so;
         }
+        if (empty($missing)) return $result;
 
-        foreach (array_chunk($missing, 8) as $chunk) {
-            try {
-                $responses = Http::pool(function ($pool) use ($chunk) {
-                    return array_map(
-                        fn ($so) => $pool->as($so)->timeout(20)->get(self::SO_DETAIL_API, ['SONum' => $so]),
-                        $chunk
-                    );
-                });
-            } catch (\Throwable $e) {
-                $responses = [];
-            }
+        // SOInvHD.SONO = 'SO' . so_id
+        $bySono = [];
+        foreach ($missing as $so) {
+            $bySono['SO' . $so] = $so;
+            $result[$so] = [];   // SO ที่ยังไม่มีบิล = ไม่มีราคา (ไม่ใช่ error)
+        }
 
-            foreach ($chunk as $so) {
-                $res = $responses[$so] ?? null;
-                $ok  = $res instanceof \Illuminate\Http\Client\Response && $res->successful();
-                if (!$ok) {
-                    try {
-                        $res = Http::timeout(20)->retry(2, 800, throw: false)->get(self::SO_DETAIL_API, ['SONum' => $so]);
-                        $ok  = $res->successful();
-                    } catch (\Throwable $e) {
-                        $ok = false;
-                    }
-                }
-                if ($ok) {
-                    $totals = self::billTotals($res->json() ?? []);
-                    Cache::put('so_bills:' . md5($so), $totals, 600);
-                    $result[$so] = $totals;
-                } else {
-                    \Log::warning('getSODetail failed for SO ' . $so);
-                    $result[$so] = null;
+        try {
+            // 1000 ต่อรอบ (MSSQL รับ parameter ได้ไม่เกิน 2100)
+            foreach (array_chunk(array_keys($bySono), 1000) as $chunk) {
+                $rows = DB::connection(self::PO_ACCOUNT_CONN)
+                    ->table('SOInvHD as hd')
+                    ->join('SOInvDT as dt', 'dt.SOInvID', '=', 'hd.SOInvID')
+                    ->whereIn('hd.SONO', $chunk)
+                    ->groupBy('hd.SONO', 'hd.InvNo')
+                    ->selectRaw('RTRIM(hd.SONO) as sono, RTRIM(hd.InvNo) as inv_no, SUM(dt.GoodAmnt) as amount')
+                    ->get();
+
+                foreach ($rows as $r) {
+                    $so = $bySono[$r->sono] ?? null;
+                    if ($so === null) continue;
+                    $k = self::normPo($r->inv_no);
+                    $result[$so][$k] = ($result[$so][$k] ?? 0) + (float) $r->amount;
                 }
             }
+        } catch (\Throwable $e) {
+            \Log::warning('fetchSoPrices: ดึงยอดบิลจาก account03 ไม่ได้ - ' . $e->getMessage());
+            foreach ($missing as $so) $result[$so] = null;
+            return $result;
+        }
+
+        foreach ($missing as $so) {
+            Cache::put('so_bills:' . md5($so), $result[$so], 600);
         }
         return $result;
     }
