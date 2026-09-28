@@ -1008,7 +1008,14 @@
                                         @endif
                                     </div>
                                 </td>
-                                <td><span style="font-weight:600;">{{ $h->so_id }}</span></td>
+                                <td>
+                                    @if (!empty($h->so_id))
+                                        <a href="http://server_update:8000/sodetail?SONum={{ urlencode($h->so_id) }}" target="_blank"
+                                           style="font-weight:600;color:#2853d5;text-decoration:none;" title="เปิดรายละเอียด SO">{{ $h->so_id }}</a>
+                                    @else
+                                        <span style="font-weight:600;">-</span>
+                                    @endif
+                                </td>
                                 <td class="items-cell">
                                     @php
                                         $itemsJson = $items
@@ -1331,7 +1338,8 @@ function renderItemsTable(items, filterSo){
     const order  = [];
     items.forEach(it => {
         const rawName = it.name ?? it.item_name ?? '-';
-        const so = soOfItem(it);
+        // SO ของรายการ: จากข้อมูล item ก่อน ถ้าไม่มีก็ใช้ SO ของแถวที่กด (modal เปิดตาม PO+SO อยู่แล้ว)
+        const so = soOfItem(it) || filterSo || '';
         const key = so || 'ไม่ระบุ SO';
         if (!groups[key]) { groups[key] = []; order.push(key); }
         groups[key].push({ name: cleanItemName(rawName), qty: Number(it.qty ?? it.item_quantity ?? 0) });

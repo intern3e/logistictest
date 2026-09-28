@@ -615,6 +615,26 @@ class StoreController extends Controller
             ))
             ->get();
 
+        // ★ ตัด PO ที่ "ถูกเช็คเอ้าในระบบเก่า (3e store.DATECHECKOUT มีค่า)" ออก
+        //   เคส: SO ปิดยอด/ขายไปแล้ว + ของถูกเช็คเอ้าจากระบบเก่าไปแล้ว = จบ ไม่ต้องมาขึ้นชั้นซ้ำ
+        if ($headers->isNotEmpty()) {
+            $rawPoNums = $headers->map(fn ($h) => preg_replace('/^PO/i', '', (string) $h->po_id))
+                ->filter()->unique()->values()->all();
+            if (!empty($rawPoNums)) {
+                $checkedOutOld = array_flip(
+                    DB::connection(self::LEGACY_CONNECTION)->table('store')
+                        ->whereIn('PO', $rawPoNums)
+                        ->whereNotNull('DATECHECKOUT')->where('DATECHECKOUT', '<>', '')
+                        ->pluck('PO')->map(fn ($p) => (string) $p)->unique()->all()
+                );
+                if (!empty($checkedOutOld)) {
+                    $headers = $headers->reject(fn ($h) =>
+                        isset($checkedOutOld[preg_replace('/^PO/i', '', (string) $h->po_id)])
+                    )->values();
+                }
+            }
+        }
+
         return $headers->map(function ($h) {
             $lines = $h->lines;
             $claim = $this->externalClaimStateFromLines($lines);
