@@ -1289,26 +1289,10 @@ async function searchPO(){
             return;
         }
 
-        // ถูกเช็คของออกในระบบเก่าแล้ว (มี DATECHECKOUT) → ห้ามรับเข้า
-        if(legacyCheckedOut){
-            clearResult();
-            const c = (legacy && legacy.checkout) || {};
-            const recv  = c.date ? fmtDateTime(c.date) : '';           // เวลารับเข้า (DATEAREA)
-            const at    = c.checkout_date ? fmtDateTime(c.checkout_date) : ''; // เวลาเช็คเอาท์
-            const place = c.checkout_place ? esc(c.checkout_place) : '';
-            const by    = c.by ? esc(c.by) : '';
-            $('stateBox').innerHTML =
-                '<div class="icon"></div>' +
-                '<span class="err" style="font-size:16px;font-weight:500;color:var(--carbon)">PO นี้ถูกเช็คของออกไปแล้ว (ระบบเก่า)</span><br>' +
-                esc(data.DocuNo || poNumber) +
-                (by ? '<br>ผู้รับเข้า <b>' + by + '</b>' : '') +
-                (recv ? '<br>รับเข้าเมื่อ ' + esc(recv) : '') +
-                (at ? '<br>เอาออกเมื่อ ' + esc(at) : '') +
-                (place ? ' · ที่ ' + place : '') +
-                '<br>ไม่สามารถรับเข้าได้';
-            $('stateBox').style.display = 'block';
-            return;
-        }
+        // เคยเช็คของออกในระบบเก่า (มี DATECHECKOUT) → "ไม่บล็อก" แล้ว
+        //   เพราะของมาใหม่รับเข้าเป็นรอบใหม่ได้ (ระบบใหม่แยกรอบด้วย po_receive_id)
+        //   เก็บข้อมูลไว้แจ้งเตือนแบบไม่ห้ามรับ (โชว์ banner ในฟอร์ม)
+        data._legacyCheckoutInfo = legacyCheckedOut ? ((legacy && legacy.checkout) || {}) : null;
 
         // ยังรับไม่ครบ + ไม่มีของค้างคลังระบบเก่า → ต้องมี SO ก่อนถึงจะรับเข้าได้
         if(!data._soList || data._soList.length === 0){
@@ -1344,12 +1328,28 @@ function toggleSoCard(){
 /* ========== Render PO ========== */
     function renderPO(po){
         $('stateBox').style.display = 'none';
+        // แจ้งเตือน (ไม่บล็อก) ถ้า PO นี้เคยถูกเช็คของออกในระบบเก่า
+        let legacyWarn = '';
+        if(po._legacyCheckoutInfo){
+            const c = po._legacyCheckoutInfo;
+            const at    = c.checkout_date ? fmtDateTime(c.checkout_date) : '';
+            const place = c.checkout_place ? esc(c.checkout_place) : '';
+            const by    = c.by ? esc(c.by) : '';
+            legacyWarn = '<div style="background:#fff7ed;border:1px solid #fed7aa;color:#9a3412;border-radius:10px;padding:10px 12px;margin-bottom:10px;font-size:13px;line-height:1.5;">'
+                + '⚠️ PO นี้เคยถูกเช็คของออกในระบบเก่า'
+                + (by ? ' · โดย <b>' + by + '</b>' : '')
+                + (at ? ' · เมื่อ ' + esc(at) : '')
+                + (place ? ' · ที่ ' + place : '')
+                + '<br>ยังรับเข้าได้ (บันทึกเป็นรอบใหม่)'
+                + '</div>';
+        }
         const soList = po._soList || [];       // ทุก SO (badge)
         const soInfo = po._soInfo || {};       // รายละเอียด SO ล่าสุด
         const hasSO = soList.length > 0;
         const extraCount = soList.length - 1;  // SO อื่นนอกจากตัวล่าสุด
 
         $('poHead').innerHTML = `
+            ${legacyWarn}
             <div class="po-head">
                 <div class="docu-row">
                     <div class="docu">${esc(po.DocuNo || '-')}</div>

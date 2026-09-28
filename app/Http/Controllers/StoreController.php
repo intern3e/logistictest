@@ -1371,17 +1371,21 @@ class StoreController extends Controller
         $linesByRid   = $extHeaderIds
             ? PoReceiveLine::whereIn('po_receive_id', $extHeaderIds)->get()->groupBy('po_receive_id')
             : collect();
-        // fallback: ไส้ในเก่าที่ยังไม่มี po_receive_id -> ผูกตาม po_id (+so_id) ให้ header เดียวที่มี
+        // fallback: ไส้ในเก่าที่ยังไม่มี po_receive_id (ข้อมูลก่อนมีฟีเจอร์) -> ผูกตาม po_id
+        //   จับ so_id แบบยืดหยุ่น (ตรง หรือ ฝั่งใดว่าง) กันเคส line so_id ว่าง/ต่างจาก header -> ไส้ในไม่ขึ้น
         $extPoIds    = $externalHeaders->pluck('po_id')->unique()->values()->all();
-        $orphanByPoSo = $extPoIds
+        $orphanByPo = $extPoIds
             ? PoReceiveLine::whereIn('po_id', $extPoIds)->whereNull('po_receive_id')->get()
-                ->groupBy(fn ($l) => $l->po_id . '|' . ($l->so_id ?? ''))
+                ->groupBy('po_id')
             : collect();
 
-        $externalHeads = $externalHeaders->map(function ($h) use ($linesByRid, $orphanByPoSo) {
+        $externalHeads = $externalHeaders->map(function ($h) use ($linesByRid, $orphanByPo) {
             $items = $linesByRid->get($h->id, collect());
             if ($items->isEmpty()) {
-                $items = $orphanByPoSo->get($h->po_id . '|' . ($h->so_id ?? ''), collect());
+                $items = ($orphanByPo->get($h->po_id) ?? collect())
+                    ->filter(fn ($l) => (string) ($l->so_id ?? '') === (string) ($h->so_id ?? '')
+                        || ($l->so_id ?? '') === '' || ($h->so_id ?? '') === '')
+                    ->values();
             }
             $todo  = is_null($h->checkout_by);
             $first = $items->first();
@@ -1410,7 +1414,10 @@ class StoreController extends Controller
                 'status_color'  => $todo ? 'orange' : 'green',
                 'todo'          => $todo,
             ];
-        });
+        })
+        // ตัด header ที่ "ไม่มีไส้ใน" (ไม่เคยรับเข้าจริง) -> ไม่ให้ขึ้น PO เปล่า และเช็คเอ้าออกไม่ได้
+        ->filter(fn ($head) => $head->items->isNotEmpty())
+        ->values();
 
         $legacyHeadsRaw = $this->loadLegacyStoreHeads($soNum, null, $poNum, $pageSoIds);
 
