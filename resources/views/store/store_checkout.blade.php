@@ -558,7 +558,7 @@
                                         @endphp
                                         @foreach ($locLines as $it)
                                             <div class="item-row-meta">
-                                                ที่เก็บ: {{ $it->shelf ?? '—' }} · จัดโดย: {{ $it->done_by ?? '—' }}
+                                                ที่เก็บ: {{ $it->shelf ?? '—' }} · รับเข้าโดย: {{ $it->done_by ?? '—' }}
                                                 @if (!empty($it->done_at)) ({{ \Carbon\Carbon::parse($it->done_at)->addYears(543)->format('d/m/Y H:i') }}) @endif
                                             </div>
                                         @endforeach
