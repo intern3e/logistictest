@@ -1366,6 +1366,36 @@ class StoreController extends Controller
             ->when($poNum, fn ($q) => $q->where('po_id', 'LIKE', '%' . $poNum . '%'))
             ->get();
 
+        // header เก่า "ก่อนมีฟังก์ชัน SO" -> so_id ว่าง/NULL/'0' : resolve SO จาก 3e polist ตาม po_id
+        //   (ผูก PO เข้ากับ SO ที่กำลังดู) แล้วนำมาแสดงด้วย ถ้าไม่ทำจะไม่ขึ้นทั้งที่รับเข้าไปแล้ว
+        try {
+            $poBySoRows = DB::connection(self::LEGACY_CONNECTION)->table('polist')
+                ->whereIn('SONum', $pageSoIds)
+                ->when($poNum, fn ($q) => $q->where('PONum', 'LIKE', '%' . $poNum . '%'))
+                ->get(['PONum', 'SONum']);
+            $soByPoId = [];
+            foreach ($poBySoRows as $r) {
+                if ($r->PONum !== null && $r->PONum !== '') {
+                    $soByPoId['PO' . preg_replace('/^PO/i', '', (string) $r->PONum)] = $r->SONum;
+                }
+            }
+            if (!empty($soByPoId)) {
+                $nullSoHeaders = PoReceive::whereIn('po_id', array_keys($soByPoId))
+                    ->where(function ($q) {
+                        $q->whereNull('so_id')->orWhere('so_id', '')->orWhere('so_id', '0');
+                    })
+                    ->get();
+                foreach ($nullSoHeaders as $h) {
+                    $h->so_id = $soByPoId[$h->po_id] ?? $h->so_id;   // ผูก SO ที่ resolve ได้
+                }
+                if ($nullSoHeaders->isNotEmpty()) {
+                    $externalHeaders = $externalHeaders->concat($nullSoHeaders);
+                }
+            }
+        } catch (\Exception $e) {
+            Log::warning('buildBillCards resolve null-so header failed: ' . $e->getMessage());
+        }
+
         // ดึงไส้ใน "แยกตามรอบ" (po_receive_id) ไม่รวมทั้ง po_id — เพราะรับหลายรอบเก็บคนละชั้นได้
         $extHeaderIds = $externalHeaders->pluck('id')->all();
         $linesByRid   = $extHeaderIds
@@ -1384,7 +1414,8 @@ class StoreController extends Controller
             if ($items->isEmpty()) {
                 $items = ($orphanByPo->get($h->po_id) ?? collect())
                     ->filter(fn ($l) => (string) ($l->so_id ?? '') === (string) ($h->so_id ?? '')
-                        || ($l->so_id ?? '') === '' || ($h->so_id ?? '') === '')
+                        || in_array((string) ($l->so_id ?? ''), ['', '0'], true)
+                        || in_array((string) ($h->so_id ?? ''), ['', '0'], true))
                     ->values();
             }
             $todo  = is_null($h->checkout_by);
