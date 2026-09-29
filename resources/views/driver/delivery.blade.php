@@ -672,7 +672,8 @@ $selfPickupMethods = ['รับเองรถใหญ่', 'รับเอ�
         .group-row-right{ display:flex; align-items:center; gap:10px; flex-shrink:0; white-space:nowrap; }
 
         .job-id-primary{ font-family:'JetBrains Mono',monospace; font-weight:700; font-size:0.8rem; color:var(--ink); }
-        .job-id-secondary{ font-size:0.7rem; color:var(--ink-soft); margin-top:3px; }
+        /* เลขบิล: หน้าและตัวใหญ่เท่า SO */
+        .job-id-secondary{ font-family:'JetBrains Mono',monospace; font-weight:700; font-size:0.8rem; color:var(--ink); margin-top:3px; }
         .job-meta{ font-size:0.75rem; }
         .meta-name-chip{ font-weight:600; margin-bottom:2px; }
         .meta-time{ font-size:0.7rem; color:var(--ink-soft); }
@@ -1064,7 +1065,7 @@ $selfPickupMethods = ['รับเองรถใหญ่', 'รับเอ�
                             <tr>
                                 <th>ลูกค้า</th>
                                 <th>SO / บิล</th>
-                                <th>ผู้เบิก / เวลา</th>
+                                <th>ผู้จัดบิล / เวลา</th>
                                 <th>หมายเหตุ</th>
                             </tr>
                         </thead>
@@ -1705,9 +1706,25 @@ function filterBillTable() {
     });
 
     fixGroupCustomerCells(rows);
+    updateGroupChips(rows);   // ป้าย "N บิล" ของลูกค้า = จำนวนบิลที่ค้นเจอ (ไม่ใช่บิลทั้งหมด)
 
     updateSectionCount('panelDelivery', rows);
     updateSelectedCount();   // sync จำนวนที่เลือก + สถานะ checkbox ลูกค้า หลังซ่อน/uncheck
+}
+
+// อัปเดตป้ายจำนวนบิลของแต่ละลูกค้าให้ตรงกับจำนวนแถวที่ "มองเห็น" (หลังกรอง)
+function updateGroupChips(rows) {
+    const cnt = {};
+    Array.from(rows).forEach(r => {
+        const g = r.dataset.group;
+        if (!g) return;
+        if (!(g in cnt)) cnt[g] = 0;
+        if (r.style.display !== 'none') cnt[g]++;
+    });
+    Object.keys(cnt).forEach(g => {
+        const chip = document.querySelector(`.col-customer[data-group="${g}"] .group-count-chip`);
+        if (chip) chip.textContent = cnt[g] + ' บิล';
+    });
 }
 
 function clearBillSearch() {

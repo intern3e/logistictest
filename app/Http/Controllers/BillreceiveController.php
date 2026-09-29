@@ -324,6 +324,16 @@ class BillreceiveController extends Controller
             })->values();
         }
 
+        // สรุปยอด "ทุกหน้า" ก่อนแบ่งหน้า — รับเข้าแล้ว/คงเหลือ/ประวัติ นับจากงานทั้งหมดที่ค้นเจอ
+        $statAll = 0; $statDone = 0; $statHist = 0;
+        foreach ($rows as $r) {
+            $rk = $rankOf($r);
+            if ($rk === 5) { $statHist++; continue; }   // ประวัติรอบเก่า (cancelled) ไม่นับเป็นคงเหลือ
+            $statAll++;
+            if (in_array($rk, [1, 2, 3], true)) $statDone++;   // สินค้าผิด/ค้างบิล/สำเร็จ = รับเข้าแล้ว
+        }
+        $statPending = max(0, $statAll - $statDone);   // ยังไม่ได้รับเข้า (รวมทุกหน้า)
+
         // แบ่งหน้า: หน้าละ 100 รายการ แต่เปิดหน้า 2, 3, ... ได้
         $perPage   = 100;
         $totalRows = $rows->count();
@@ -363,6 +373,13 @@ class BillreceiveController extends Controller
             'per_page'  => $perPage,
             'total'     => $totalRows,
             'last_page' => $lastPage,
+            // สรุปยอดรวมทุกหน้า (ไม่ใช่เฉพาะหน้าปัจจุบัน)
+            'stats'     => [
+                'all'     => $statAll,       // งานที่นับได้ทั้งหมด (ไม่รวมประวัติ)
+                'done'    => $statDone,      // รับเข้าแล้ว
+                'pending' => $statPending,   // ยังไม่ได้รับเข้า
+                'history' => $statHist,      // ประวัติรอบเก่า
+            ],
         ]);
     }
 

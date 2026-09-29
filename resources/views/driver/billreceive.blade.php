@@ -561,7 +561,7 @@ async function loadData(){
     const data = await res.json();
     if(!res.ok || !data.ok){ throw new Error(data.message || 'โหลดข้อมูลไม่สำเร็จ'); }
     currentRows = data.rows || [];
-    pageMeta = { page:data.page||1, last_page:data.last_page||1, total:data.total||0 };
+    pageMeta = { page:data.page||1, last_page:data.last_page||1, total:data.total||0, stats:data.stats||null };
     currentPage = pageMeta.page;
     selectedBulk.clear();
     render();
@@ -582,8 +582,18 @@ function render(){
   const doneN = rows.filter(({r})=>isReceived(r)).length;
   const histN = rows.filter(({r})=>!!r.cancelled).length;   // แถวประวัติ (ไม่นับเป็นคงเหลือ)
   const pendN = rows.length - doneN - histN;
-  countBar.innerHTML = `แสดง <b>${rows.length}</b> บิล · รับเข้าแล้ว <b>${doneN}</b> · คงเหลือ <b>${pendN<0?0:pendN}</b>`
-    + (histN?` · ประวัติ <b>${histN}</b>`:'');
+  // ยอดรวม "ทุกหน้า" จาก backend (ถ้ามี) — ไม่งั้น fallback เป็นเฉพาะหน้านี้
+  const st = pageMeta.stats;
+  if(st){
+    const parts = [`รับเข้าแล้ว <b>${st.done}</b>`, `ยังไม่รับเข้า <b style="color:#c0392b;">${st.pending}</b>`];
+    if(st.history) parts.push(`ประวัติ <b>${st.history}</b>`);
+    let bar = `ทั้งหมด <b>${st.all}</b> บิล · ` + parts.join(' · ');
+    if((pageMeta.last_page||1) > 1) bar += ` <span style="color:var(--ink3);">(หน้านี้แสดง ${rows.length})</span>`;
+    countBar.innerHTML = bar;
+  } else {
+    countBar.innerHTML = `แสดง <b>${rows.length}</b> บิล · รับเข้าแล้ว <b>${doneN}</b> · คงเหลือ <b>${pendN<0?0:pendN}</b>`
+      + (histN?` · ประวัติ <b>${histN}</b>`:'');
+  }
 
   listEl.innerHTML = rows.map(({r,i})=>{
     const si = statusInfo(r.status);

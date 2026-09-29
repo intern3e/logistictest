@@ -55,8 +55,9 @@ class ShelfsaleController extends Controller
         $loginName  = $user->name ?? '';
         $canSeePrice = in_array($user->role ?? '', ['admin', 'sale', 'sale_assistant', 'support'], true);  // เห็นมูลค่า
         $canManage   = in_array($user->role ?? '', ['admin', 'store', 'stock'], true);                     // ย้ายชั้น/เช็คเอาท์ เฉพาะ admin/store/stock
-        // คอลัมน์ "เช็คเอาท์": ซ่อนสำหรับ sale/support/sale_assistant (ไม่ต้องเห็น) — manage มีในคอลัมน์จัดการอยู่แล้ว
-        $showCheckout = !$isSaleView;
+        // คอลัมน์ "เช็คเอาท์": แสดงให้ "ทุก role ทุกแถว" (รวม admin/store/stock) เพื่อดูประวัติของที่เช็คเอ้าแล้ว
+        //   ตอนค้นด้วย PO/SO ; ฝั่ง manage มีคอลัมน์ "จัดการ" (ปุ่ม) แยกอีกคอลัมน์
+        $showCheckout = true;
 
         // dropdown Sale — เหมือนเดิม (ดึงจาก 3e so) แต่ cache 30 นาที กัน groupBy เต็มตารางทุกครั้ง
         $saleOptions = Cache::remember('shelfsale_sale_options', 1800, function () {
@@ -288,6 +289,7 @@ class ShelfsaleController extends Controller
         $priceByDocu = collect();
         $shipByDocu  = collect();
         $namesByPo   = [];
+        $orderedByPo = [];   // [cleanPo][normname] => จำนวนที่สั่ง (PODT.GoodQty2)
         try {
             $poDocuNos = $items->pluck('po')->filter()
                 ->map(fn ($p) => 'PO' . preg_replace('/^PO/i', '', (string) $p))
@@ -302,6 +304,28 @@ class ShelfsaleController extends Controller
             if (!empty($soDocuNos)) {
                 $shipByDocu = DB::connection(self::MSSQL_CONNECTION)->table('SOHD')
                     ->whereIn('DocuNo', $soDocuNos)->get(['DocuNo', 'ShipDate'])->keyBy('DocuNo');
+            }
+
+            // จำนวนที่ "สั่ง" (PODT.GoodQty2) ต่อ PO + ชื่อสินค้า — ใช้แสดง "รับจริง/สั่ง" และทำ PDF
+            if (!empty($poDocuNos)) {
+                $allHeads = DB::connection(self::MSSQL_CONNECTION)->table('POHD')
+                    ->whereIn('DocuNo', $poDocuNos)->get(['POID', 'DocuNo']);
+                $poidClean = [];
+                foreach ($allHeads as $h) {
+                    $poidClean[$h->POID] = preg_replace('/^PO/i', '', (string) $h->DocuNo);
+                }
+                if (!empty($poidClean)) {
+                    $allDt = DB::connection(self::MSSQL_CONNECTION)->table('PODT')
+                        ->whereIn('POID', array_keys($poidClean))
+                        ->where('CancelFlag', '<>', 'Y')
+                        ->get(['POID', 'GoodName', 'GoodQty2']);
+                    foreach ($allDt as $line) {
+                        $clean = $poidClean[$line->POID] ?? null;
+                        if ($clean === null) continue;
+                        $nk = mb_strtolower(preg_replace('/\s+/', ' ', trim((string) $line->GoodName)));
+                        $orderedByPo[$clean][$nk] = ($orderedByPo[$clean][$nk] ?? 0) + (float) $line->GoodQty2;
+                    }
+                }
             }
 
             // ชื่อสินค้าของงานเก่า (PODT) เฉพาะ PO ที่เป็น legacy (ไม่มี line_id)
@@ -415,9 +439,14 @@ class ShelfsaleController extends Controller
 
         // ===== รวมเป็น 1 แถวต่อ 1 (PO + SO + รอบ) — แยกตาม "รอบรับเข้า" (po_receive_id) เพื่อไม่รวมรอบเก่า+ใหม่เป็นแถวเดียว =====
         $rows = $items->groupBy(fn ($it) => preg_replace('/^PO/i', '', (string) $it->po) . '|' . (string) $it->so . '|' . (string) ($it->po_receive_id ?? ''))
-            ->map(function ($group) use ($priceByDocu, $shipByDocu, $namesByPo, $now, $soBelongs, $extractQty) {
+            ->map(function ($group) use ($priceByDocu, $shipByDocu, $namesByPo, $orderedByPo, $now, $soBelongs, $extractQty) {
                 $first    = $group->first();
                 $cleanPo  = preg_replace('/^PO/i', '', (string) $first->po);
+                // จำนวนที่สั่งของสินค้าชื่อนี้ใน PO นี้ (PODT.GoodQty2)
+                $orderedOf = function ($name) use ($orderedByPo, $cleanPo) {
+                    $nk = mb_strtolower(preg_replace('/\s+/', ' ', trim((string) $name)));
+                    return $orderedByPo[$cleanPo][$nk] ?? null;
+                };
                 $shelves  = $group->pluck('shelf')->filter()->unique()->values();
                 $isLegacy = $group->every(fn ($it) => empty($it->line_id));
                 $docu     = 'PO' . $cleanPo;
@@ -438,17 +467,17 @@ class ShelfsaleController extends Controller
                     // เผื่อ token ไม่ตรงรูปแบบจนกรองหมด -> แสดงทั้งหมดกันข้อมูลหาย
                     if ($filtered->isEmpty()) $filtered = collect($namesByPo[$cleanPo])->values();
                     $soForQty = $first->so;
-                    $products = $filtered->map(function ($it) use ($shelfForLegacy, $soForQty, $extractQty) {
+                    $products = $filtered->map(function ($it) use ($shelfForLegacy, $soForQty, $extractQty, $orderedOf) {
                         $nm = $it['name'] ?? '-';
                         // จำนวน: token S.<so>=qty ในชื่อก่อน (ต่อ SO) ไม่งั้นใช้ qty จากแหล่งข้อมูล (PODT/internal)
                         $qty = $extractQty($nm, $soForQty);
                         if ($qty === null) $qty = $it['qty'] ?? null;
-                        return ['name' => $nm ?: '-', 'shelf' => $shelfForLegacy, 'qty' => $qty, 'line_id' => null];
+                        return ['name' => $nm ?: '-', 'shelf' => $shelfForLegacy, 'qty' => $qty, 'ordered' => $orderedOf($nm), 'line_id' => null];
                     })->values();
                 } else {
                     $products = $group->map(fn ($it) => [
                         'name' => $it->good_name ?: '-', 'shelf' => $it->shelf ?: '',
-                        'qty' => $it->recv_qty, 'line_id' => $it->line_id,
+                        'qty' => $it->recv_qty, 'ordered' => $orderedOf($it->good_name), 'line_id' => $it->line_id,
                     ])->values();
                 }
 

@@ -653,6 +653,7 @@
                 </div>
                 <button type="button" class="btn-primary" id="btnSearch">ค้นหา</button>
                 <button type="button" class="btn-ghost" id="btnClear">ล้าง</button>
+                <button type="button" class="btn-ghost" id="btnPrint" title="พิมพ์/บันทึกเป็น PDF เฉพาะรายการที่ยังไม่ได้เช็คเอาท์">ปริ้นเอกสาร</button>
             @if(($canSeePrice ?? false))
                 <div class="value-block">
                     <span class="vb-label">มูลค่าทั้งหมด</span>
@@ -663,7 +664,7 @@
 
         <div class="table-scroll">
             <div class="table-inner">
-                @php $colspan = 7 + (($canSeePrice ?? false) ? 1 : 0) + (($canManage ?? false) || ($showCheckout ?? false) ? 1 : 0); @endphp
+                @php $colspan = 7 + (($canSeePrice ?? false) ? 1 : 0) + (($showCheckout ?? false) ? 1 : 0) + (($canManage ?? false) ? 1 : 0); @endphp
                 <table id="mainTable" class="is-empty">
                     <thead>
                         <tr>
@@ -681,11 +682,12 @@
                                 <th style="text-align:right;">มูลค่า</th>
                             @endif
                             <th>สินค้า</th>
-                            {{-- คอลัมน์ท้าย: manage = "จัดการ" (ปุ่ม+สถานะ) ; viewer ที่เห็น = "เช็คเอาท์" ; sale/support/sale_assistant = ไม่มีเลย --}}
+                            {{-- "เช็คเอาท์" (ประวัติใคร/เวลา) แสดงทุก role ; "จัดการ" (ปุ่มย้ายชั้น/เช็คเอาท์) เฉพาะ admin/store/stock --}}
+                            @if(($showCheckout ?? false))
+                                <th>เช็คเอาท์</th>
+                            @endif
                             @if(($canManage ?? false))
                                 <th>จัดการ</th>
-                            @elseif(($showCheckout ?? false))
-                                <th>เช็คเอาท์</th>
                             @endif
                         </tr>
                     </thead>
@@ -892,27 +894,23 @@
             : '<td class="cust-cell">' + esc(r.cust_name) + '</td>';
         const priceCell = CAN_SEE_PRICE ? '<td class="price-cell">' + fmtBaht(r.price) + '</td>' : '';
 
-        // ข้อมูลเช็คเอาท์ (ใคร + เมื่อไหร่) — ใช้แสดงทั้งฝั่ง manage และ viewer
+        // คอลัมน์ "เช็คเอาท์" (แสดงทุก role): เช็คเอาท์แล้ว -> ใคร/เมื่อ (ระบบเก่าแสดงแค่เวลา) ; ยังไม่ -> "-"
         const checkoutInfo = r.is_checkedout
             ? (r.checkout_by ? '<b>' + esc(r.checkout_by) + '</b>' : '<span class="dash">— (ระบบเก่า)</span>')
               + (r.checkout_at ? '<div class="co-time">' + esc(r.checkout_at) + '</div>' : '')
             : '<span class="dash">-</span>';
+        const checkoutCol = SHOW_CHECKOUT ? '<td class="checkout-cell">' + checkoutInfo + '</td>' : '';
 
-        // คอลัมน์ท้าย (รวมเช็คเอาท์ + จัดการ):
-        //   manage + ยังไม่เช็คเอาท์ -> ปุ่มย้ายชั้น/เช็คเอาท์ ; manage + เช็คเอาท์แล้ว -> ใคร/เมื่อ
-        //   viewer -> สถานะเช็คเอาท์ (ใคร/เมื่อ หรือ "-")
-        let lastCell = '';
-        if (CAN_MANAGE) {
-            lastCell = '<td class="checkout-cell" style="text-align:center;white-space:nowrap;">'
+        // คอลัมน์ "จัดการ" (เฉพาะ admin/store/stock): ยังไม่เช็คเอาท์ -> ปุ่ม ; เช็คเอาท์แล้ว -> ข้อความสั้น
+        const manageCol = CAN_MANAGE
+            ? '<td style="text-align:center;white-space:nowrap;">'
               + (r.is_checkedout
-                  ? 'เช็คเอาท์แล้ว · ' + checkoutInfo
+                  ? '<span class="dash" style="font-size:11.5px;">เช็คเอาท์แล้ว</span>'
                   : '<button type="button" class="btn-view btn-move" onclick="openMove(\'' + escJs(r.po) + '\',\'' + escJs(r.so) + '\')">ย้ายชั้น</button> '
                     + '<button type="button" class="btn-view btn-checkout" onclick="doCheckout(this,\'' + escJs(r.po) + '\',\'' + escJs(r.so) + '\',' + (r.po_receive_id || 'null') + ')">เช็คเอาท์</button>')
-              + '</td>';
-        } else if (SHOW_CHECKOUT) {
-            lastCell = '<td class="checkout-cell">' + checkoutInfo + '</td>';
-        }
-        // sale/support/sale_assistant: ไม่มีคอลัมน์นี้ (lastCell = '')
+              + '</td>'
+            : '';
+        const lastCell = checkoutCol + manageCol;
 
         const isOverdue = (r.due_days !== null && r.due_days !== undefined && r.due_days < 0);
         const isToday = (r.due_days === 0);
@@ -969,6 +967,84 @@
 
     function closeProductModal() {
         document.getElementById('productModal').style.display = 'none';
+    }
+
+    // ===== ปริ้นเอกสาร -> ดึงข้อมูลหน้านี้ (เฉพาะที่ "ยังไม่ได้เช็คเอาท์") ทำเป็น PDF =====
+    // แต่ละ row = 1 บล็อก (ชั้น/SO/PO/ลูกค้า/มูลค่า) + ตารางสินค้า (รับเข้าจริง/สั่ง)
+    // ใช้ page-break-inside:avoid กันตัวหนังสือขาดเมื่อหมดหน้ากระดาษ
+    function printDoc() {
+        const rows = (currentRows || []).filter(r => !r.is_checkedout);
+        if (!rows.length) {
+            alert('ไม่มีรายการที่ยังไม่ได้เช็คเอาท์สำหรับพิมพ์');
+            return;
+        }
+        const nz = v => (v !== null && v !== undefined && v !== '' && !isNaN(parseFloat(v))) ? (parseFloat(v) + '') : '-';
+        const custLabel = CAN_MANAGE ? 'Sale' : 'ลูกค้า';
+
+        let body = '';
+        rows.forEach((r, idx) => {
+            const products = r.products || [];
+            let prod = '';
+            if (!products.length) {
+                prod = '<tr><td colspan="3" class="pc">ไม่มีรายการสินค้า</td></tr>';
+            } else {
+                prod = products.map(p => {
+                    const recv = nz(p.qty);          // จำนวนที่รับเข้าจริง
+                    const ord  = nz(p.ordered);      // จำนวนที่สั่ง
+                    return '<tr>'
+                        + '<td class="pl">' + esc(p.name || '-') + '</td>'
+                        + '<td class="pc">' + esc(p.shelf || '-') + '</td>'
+                        + '<td class="pc"><b>' + esc(recv) + '</b> / ' + esc(ord) + '</td>'
+                        + '</tr>';
+                }).join('');
+            }
+            body += '<div class="blk">'
+                + '<div class="blk-h">'
+                +   '<span class="bh-no">' + (idx + 1) + '.</span>'
+                +   '<span class="bh-i"><span class="bh-l">SO</span> ' + esc(r.so || '-') + '</span>'
+                +   '<span class="bh-i"><span class="bh-l">PO</span> ' + esc(r.po || '-') + '</span>'
+                +   '<span class="bh-i"><span class="bh-l">ชั้นวาง</span> ' + esc(r.shelf || '-') + '</span>'
+                +   '<span class="bh-i"><span class="bh-l">' + custLabel + '</span> ' + esc(CAN_MANAGE ? (r.sale || '-') : (r.cust_name || '-')) + '</span>'
+                +   '<span class="bh-i"><span class="bh-l">กำหนดส่ง</span> ' + esc(r.ship_date || '-') + '</span>'
+                + '</div>'
+                + '<table class="ptbl">'
+                + '<colgroup><col class="c-name"><col class="c-shelf"><col class="c-qty"></colgroup>'
+                + '<thead><tr>'
+                +   '<th class="pl">สินค้า</th><th class="pc">ชั้นวาง</th><th class="pc">รับเข้าจริง / สั่ง</th>'
+                + '</tr></thead><tbody>' + prod + '</tbody></table>'
+                + '</div>';
+        });
+
+        const now = new Date();
+        const stamp = now.toLocaleString('th-TH');
+        const summary = 'ทั้งหมด ' + rows.length + ' รายการ';
+
+        const html = '<!DOCTYPE html><html lang="th"><head><meta charset="utf-8">'
+            + '<title>เอกสารรายการสินค้า</title><style>'
+            + '*{box-sizing:border-box;} body{font-family:"Sarabun","TH Sarabun New",Tahoma,sans-serif;color:#111;margin:16px auto;padding:0 24px;max-width:900px;font-size:13px;}'
+            + 'h1{font-size:17px;margin:0 0 2px;} .meta{font-size:12px;color:#555;margin-bottom:10px;}'
+            + '.blk{padding:2px 0 8px;margin-bottom:8px;page-break-inside:avoid;break-inside:avoid;}'
+            + '.blk-h{display:flex;flex-wrap:wrap;gap:6px 16px;align-items:baseline;margin-bottom:6px;padding-bottom:5px;border-bottom:1px solid #999;}'
+            + '.bh-no{font-weight:800;font-size:14px;} .bh-i{font-size:13px;} .bh-l{color:#777;font-size:11px;}'
+            + '.ptbl{width:100%;border-collapse:collapse;table-layout:fixed;} .ptbl th,.ptbl td{border:1px solid #bbb;padding:4px 6px;font-size:12.5px;overflow-wrap:anywhere;}'
+            + '.ptbl col.c-name{width:auto;} .ptbl col.c-shelf{width:26%;} .ptbl col.c-qty{width:22%;}'
+            + '.ptbl th{background:#eee;} .pl{text-align:left;} .pc{text-align:center;}'
+            + 'thead{display:table-header-group;}'
+            + '@page{margin:12mm 10mm;}'
+            /* ระยะห่างซ้าย-ขวาใส่ที่ body padding ด้วย -> มีขอบเสมอแม้ Chrome ตั้ง Margins=None */
+            + '@media print{body{margin:0;padding:0 14mm;max-width:none;} .blk{page-break-inside:avoid;break-inside:avoid;padding-top:6px;}}'
+            + '</style></head><body>'
+            + '<h1>รายการสินค้า (ยังไม่ได้เช็คเอาท์)</h1>'
+            + '<div class="meta">พิมพ์เมื่อ ' + esc(stamp) + ' · ' + esc(summary) + '</div>'
+            + body
+            + '<scr' + 'ipt>window.onload=function(){setTimeout(function(){window.print();},250);};</scr' + 'ipt>'
+            + '</body></html>';
+
+        const w = window.open('', '_blank');
+        if (!w) { alert('เบราว์เซอร์บล็อกหน้าต่างพิมพ์ กรุณาอนุญาต popup แล้วลองใหม่'); return; }
+        w.document.open();
+        w.document.write(html);
+        w.document.close();
     }
 
     document.querySelectorAll('.modal-overlay').forEach(modal => {
@@ -1103,6 +1179,9 @@
     // ค้นหาเมื่อกดปุ่ม "ค้นหา" เท่านั้น (ไม่ค้นอัตโนมัติขณะพิมพ์)
     const btnSearch = document.getElementById('btnSearch');
     if (btnSearch) btnSearch.addEventListener('click', () => { if (searchDebounce) clearTimeout(searchDebounce); search(); });
+
+    const btnPrint = document.getElementById('btnPrint');
+    if (btnPrint) btnPrint.addEventListener('click', printDoc);
 
     // กด Enter ในช่องกรอง = ค้นหาทันที
     [fShelf, fSale, fSo, fPo].forEach(el => el.addEventListener('keydown', e => {
