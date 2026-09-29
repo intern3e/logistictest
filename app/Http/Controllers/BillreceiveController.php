@@ -166,8 +166,13 @@ class BillreceiveController extends Controller
             // ไม่จำกัดวันที่ -> โหลดข้ามวัน (จำกัดจำนวน) แล้วกรองหลัง group
             $query->orderByDesc('time_pick')->limit(3000);
         } else {
-            // เลือกวันที่ -> ค้น/กรองเฉพาะงานที่จ่ายวันนั้น
-            $query->whereDate('time_pick', $date)->orderByDesc('time_pick');
+            // เลือกวันที่ -> ใช้ delivery_date (วันไปส่ง) เป็นหลัก ; ถ้า row ไม่มี delivery_date ให้ fallback ใช้ time_pick
+            $query->where(function ($w) use ($date) {
+                $w->whereDate('delivery_date', $date)
+                  ->orWhere(function ($q) use ($date) {
+                      $q->whereNull('delivery_date')->whereDate('time_pick', $date);
+                  });
+            })->orderByDesc('time_pick');
         }
 
         $deliveries = $query->get();
@@ -302,8 +307,13 @@ class BillreceiveController extends Controller
             })->values();
         }
 
-        // แสดงหน้าละ 100 รายการ
-        $rows = $rows->take(100)->values();
+        // แบ่งหน้า: หน้าละ 100 รายการ แต่เปิดหน้า 2, 3, ... ได้
+        $perPage   = 100;
+        $totalRows = $rows->count();
+        $lastPage  = max(1, (int) ceil($totalRows / $perPage));
+        $page      = (int) $request->input('page', 1);
+        $page      = max(1, min($page, $lastPage));
+        $rows      = $rows->slice(($page - 1) * $perPage, $perPage)->values();
 
         // เชื่อมโยงใบชั่วคราว (doc) -> บิลค้างที่ผูกไว้ (รายการสินค้าใน doc_detail ที่เป็นเลขบิลสถานะ 'ค้างบิล')
         $docNos = $rows->where('type', 'doc')->pluck('bill_no')->filter()->unique()->values()->all();
@@ -329,7 +339,14 @@ class BillreceiveController extends Controller
             return $r;
         })->values();
 
-        return response()->json(['ok' => true, 'rows' => $rows]);
+        return response()->json([
+            'ok'        => true,
+            'rows'      => $rows,
+            'page'      => $page,
+            'per_page'  => $perPage,
+            'total'     => $totalRows,
+            'last_page' => $lastPage,
+        ]);
     }
 
     /**

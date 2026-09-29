@@ -282,20 +282,20 @@ a { color: inherit; text-decoration: none; }
   <div class="filters">
     <div class="fg">
       <label class="all-dates" title="ติ๊กแล้วค้นหาทุกวัน ไม่สนวันที่"><input type="checkbox" id="fAllDates"> ไม่จำกัดวันที่</label>
-      <label for="fDate">วันที่จ่ายงาน (time_pick)</label>
+      <label for="fDate">วันที่จ่ายงาน</label>
       <input type="date" id="fDate">
     </div>
     <div class="fg">
       <label for="fBill">ค้นหาเลขบิล</label>
-      <input type="text" id="fBill" placeholder="เช่น 46909-02085" autocomplete="off">
+      <input type="text" id="fBill"autocomplete="off">
     </div>
     <div class="fg">
       <label for="fCust">รหัสลูกค้า</label>
-      <input type="text" id="fCust" placeholder="เช่น CUS-16026" autocomplete="off">
+      <input type="text" id="fCust"autocomplete="off">
     </div>
     <div class="fg">
       <label for="fCustName">ชื่อลูกค้า</label>
-      <input type="text" id="fCustName" placeholder="พิมพ์ชื่อลูกค้า" autocomplete="off">
+      <input type="text" id="fCustName" autocomplete="off">
     </div>
     <div class="fg">
       <label for="fDriver">คนขับ</label>
@@ -318,6 +318,7 @@ a { color: inherit; text-decoration: none; }
 
   <div class="count-bar" id="countBar"></div>
   <div id="list"></div>
+  <div id="pager" style="display:flex;justify-content:center;align-items:center;gap:8px;flex-wrap:wrap;margin:18px 0 6px;"></div>
 </div>
 
 <!-- แถบเลือกหลายรายการ (bulk) -->
@@ -442,6 +443,35 @@ function statusInfo(st){
 function isReceived(r){ return ['จัดส่งสำเร็จ','ค้างบิล','สินค้าผิด'].includes(((r&&r.status)||'').trim()); }
 
 let currentRows = [];
+let currentPage = 1;
+let pageMeta = { page:1, last_page:1, total:0 };
+
+// ค้นหา/กรองใหม่ = กลับหน้า 1 เสมอ
+function doSearch(){ currentPage = 1; loadData(); }
+// เปลี่ยนหน้า (pagination)
+function goPage(p){
+  const lp = pageMeta.last_page || 1;
+  currentPage = Math.max(1, Math.min(p, lp));
+  loadData();
+  window.scrollTo({ top:0, behavior:'smooth' });
+}
+function renderPager(){
+  const pager = document.getElementById('pager');
+  if(!pager) return;
+  const lp = pageMeta.last_page || 1, pg = pageMeta.page || 1, total = pageMeta.total || 0;
+  if(lp <= 1){ pager.innerHTML = total ? `<span style="color:var(--ink3);font-size:13px;">ทั้งหมด ${total} บิล</span>` : ''; return; }
+  const btn = (label, target, disabled, active) =>
+    `<button type="button" onclick="goPage(${target})" ${disabled?'disabled':''} class="btn${active?' btn-primary':''}" style="min-width:38px;height:34px;padding:0 10px;${disabled?'opacity:.45;cursor:not-allowed;':''}">${label}</button>`;
+  let html = btn('‹ ก่อนหน้า', pg-1, pg<=1, false);
+  // เลขหน้ารอบๆ หน้าปัจจุบัน
+  const from = Math.max(1, pg-2), to = Math.min(lp, pg+2);
+  if(from > 1) html += btn('1', 1, false, pg===1) + (from>2?'<span style="color:var(--ink3);">…</span>':'');
+  for(let i=from;i<=to;i++) html += btn(String(i), i, false, i===pg);
+  if(to < lp) html += (to<lp-1?'<span style="color:var(--ink3);">…</span>':'') + btn(String(lp), lp, false, pg===lp);
+  html += btn('ถัดไป ›', pg+1, pg>=lp, false);
+  html += `<span style="color:var(--ink3);font-size:13px;margin-left:8px;">หน้า ${pg}/${lp} · ${total} บิล</span>`;
+  pager.innerHTML = html;
+}
 let selectedBulk = new Set();   // เก็บ index (ของ currentRows) ที่ติ๊กเลือกไว้
 
 // map สถานะจริง -> key สำหรับ filter
@@ -522,15 +552,20 @@ async function loadData(){
   if(status) params.set('status', status);
   // เลือกวันที่ = ค้น/กรองเฉพาะวันนั้น ; ติ๊กไม่จำกัดวันที่ = ค้นทุกวัน
   params.set('date', fAllDates.checked ? 'all' : (fDate.value || ''));
+  params.set('page', currentPage);   // แบ่งหน้า (หน้าละ 100)
   listEl.innerHTML = '<div class="state"><span class="spinner"></span>กำลังโหลดข้อมูล...</div>';
   countBar.textContent = '';
+  document.getElementById('pager').innerHTML = '';
   try{
     const res = await fetch(`${DATA_URL}?${params.toString()}`, {headers:{'Accept':'application/json','X-Requested-With':'XMLHttpRequest'}});
     const data = await res.json();
     if(!res.ok || !data.ok){ throw new Error(data.message || 'โหลดข้อมูลไม่สำเร็จ'); }
     currentRows = data.rows || [];
+    pageMeta = { page:data.page||1, last_page:data.last_page||1, total:data.total||0 };
+    currentPage = pageMeta.page;
     selectedBulk.clear();
     render();
+    renderPager();
   }catch(e){
     listEl.innerHTML = `<div class="state">เกิดข้อผิดพลาด: ${esc(e.message)}</div>`;
   }
@@ -832,29 +867,29 @@ async function confirmChangeDriver(){
 }
 document.getElementById('changeModal').addEventListener('click', function(e){ if(e.target===this) closeChangeDriver(); });
 
-document.getElementById('btnSearch').addEventListener('click', loadData);
+document.getElementById('btnSearch').addEventListener('click', doSearch);
 document.getElementById('btnClear').addEventListener('click', ()=>{
   fBill.value=''; fDate.value = new Date().toISOString().split('T')[0];
   fAllDates.checked = false; fDate.disabled = false;
   document.getElementById('fCust').value=''; document.getElementById('fCustName').value='';
   document.getElementById('fDriver').value=''; document.getElementById('fStatus').value='';
-  loadData();
+  doSearch();
 });
-fBill.addEventListener('keydown', e=>{ if(e.key==='Enter') loadData(); });
-fDate.addEventListener('change', loadData);
-fAllDates.addEventListener('change', ()=>{ fDate.disabled = fAllDates.checked; loadData(); });
+fBill.addEventListener('keydown', e=>{ if(e.key==='Enter') doSearch(); });
+fDate.addEventListener('change', doSearch);
+fAllDates.addEventListener('change', ()=>{ fDate.disabled = fAllDates.checked; doSearch(); });
 // filter รหัส/ชื่อลูกค้า/คนขับ = โหลดใหม่จาก server (ตามวันที่ที่เลือก หรือทุกวันถ้าไม่จำกัด) + render ทันทีระหว่างพิมพ์
 let _filterTimer = null;
 ['fCust','fCustName','fDriver'].forEach(id => document.getElementById(id).addEventListener('input', ()=>{
   render();  // กรองชุดที่โหลดมาทันที
   clearTimeout(_filterTimer);
-  _filterTimer = setTimeout(loadData, 400);  // แล้วค่อยโหลดข้ามวันจาก server
+  _filterTimer = setTimeout(doSearch, 400);  // แล้วค่อยโหลดข้ามวันจาก server (กลับหน้า 1)
 }));
-document.getElementById('fStatus').addEventListener('change', loadData);
+document.getElementById('fStatus').addEventListener('change', doSearch);
 
 document.addEventListener('DOMContentLoaded', ()=>{
   fDate.value = new Date().toISOString().split('T')[0];
-  loadData();
+  doSearch();
 });
 </script>
 </body>
