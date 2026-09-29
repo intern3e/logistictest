@@ -372,12 +372,122 @@ window.addEventListener('load', () => {
     <script>
     const BILL_DELIVERY_URL = "{{ route('sale.billDelivery') }}";
     function dpEsc(s){ return (s==null?'':String(s)).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
-    function dpStatus(s){
-        s=(s||'').trim();
-        if(s==='จัดส่งสำเร็จ') return '<span style="color:#16a34a;font-weight:700;">จัดส่งสำเร็จ</span>';
-        if(s==='ค้างบิล')     return '<span style="color:#2563eb;font-weight:700;">ค้างบิล</span>';
-        if(s==='สินค้าผิด')    return '<span style="color:#dc2626;font-weight:700;">สินค้าผิด</span>';
-        return '<span style="color:#6b7280;font-weight:700;">รอส่ง</span>';
+    /* ===== ไทม์ไลน์รายละเอียดการจัดส่ง (โค้ดชุดเดียวกันในหน้า sale/dashboard, document/dashboarddoc, so/show) =====
+       rows = transaction_transport ทุกรอบของบิล (รวมรอบประวัติ cancelled_at) เรียงเก่า -> ใหม่
+       แต่ละรอบบอก: ใครจ่ายงาน -> ใครไปส่ง/รถอะไร/วันไหน -> ผลเป็นอย่างไร ใครยืนยัน -> จบรอบเพราะอะไร (ส่งใหม่/เปลี่ยนคนขับ/ยกเลิก) */
+    function dlvEsc(x){ return (x==null?'':String(x)).replace(/[&<>"']/g,function(c){return({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]);}); }
+    // สี/ข้อความตามผล (ชุดเดียวกับหน้า billreceive): สำเร็จ=เขียว, สินค้าผิด=แดง, ส่งใหม่=ฟ้า, ค้างบิล=ส้ม
+    function dlvStyle(st){
+        st = (st||'').toString().trim();
+        if(st.indexOf('สำเร็จ')!==-1 && st.indexOf('ไม่')===-1) return {bg:'#e8f5e9',fg:'#1b5e20',border:'#2e7d32',txt:'สำเร็จ'};
+        if(st.indexOf('สินค้าผิด')!==-1) return {bg:'#ffebee',fg:'#a91f1f',border:'#c62828',txt:'สินค้าผิด'};
+        if(st.indexOf('ไม่สำเร็จ')!==-1) return {bg:'#ffebee',fg:'#a91f1f',border:'#c62828',txt:'ไม่สำเร็จ'};
+        if(st.indexOf('ส่งใหม่')!==-1) return {bg:'#eaf0fc',fg:'#2853d5',border:'#2853d5',txt:'ส่งใหม่'};
+        if(st.indexOf('ค้างบิล')!==-1) return {bg:'#fff4e5',fg:'#b45309',border:'#ed6c02',txt:'ค้างบิล'};
+        if(st===''||st==='0') return {bg:'#f3f4f6',fg:'#6b7280',border:'#d1d5db',txt:'กำลังไปส่ง'};
+        return {bg:'#f3f4f6',fg:'#374151',border:'#d1d5db',txt:st};
+    }
+    function dlvBadge(txt, s){ return '<span style="background:'+s.bg+';color:'+s.fg+';font-size:12px;font-weight:700;padding:2px 10px;border-radius:10px;white-space:nowrap;">'+dlvEsc(txt)+'</span>'; }
+    // note อัตโนมัติตอนกดส่งใหม่ ("ส่งใหม่ (ไม่สำเร็จ) เหตุผล: .. · เคยไปวันที่ .. · จ่ายใหม่ให้ ..") -> ดึงเหตุผล/ผู้รับงานใหม่ออกมา
+    //   ส่วนอื่นซ้ำกับข้อมูลที่แสดงอยู่แล้วจึงไม่แสดงซ้ำ ; note ที่คนพิมพ์เอง (ค้างบิล/สินค้าผิด/ของผิด) แสดงตามจริง
+    function dlvParseNote(note){
+        note = (note||'').toString().trim();
+        if(!note) return {text:''};
+        if(note.indexOf('ส่งใหม่ (ไม่สำเร็จ)') === 0){
+            var m1 = note.match(/เหตุผล:\s*([^·]+)/), m2 = note.match(/จ่ายใหม่ให้\s*([^·]+?)(?:\s*·|$)/);
+            return {auto:true, reason: m1 ? m1[1].trim() : '', reassign: m2 ? m2[1].trim() : '', text:''};
+        }
+        return {text: note};
+    }
+    function dlvLine(label, val){
+        return '<div style="display:flex;gap:8px;align-items:baseline;">'
+             + '<span style="flex:0 0 110px;color:#6b7280;white-space:nowrap;">'+label+'</span>'
+             + '<span style="flex:1;min-width:0;">'+val+'</span></div>';
+    }
+    function dlvTimeline(rows){
+        rows = rows || [];
+        var total = rows.length, redoN = 0, active = [];
+        rows.forEach(function(r){
+            if((r.status||'').indexOf('ส่งใหม่') !== -1) redoN++;
+            if(!r.cancelled_at) active.push(r);
+        });
+        var latest = active.length ? active[active.length-1] : null;
+
+        // ── สรุปด้านบน ──
+        var h = '<div style="background:#f8fafc;border:1px solid #e5e7eb;border-radius:10px;padding:10px 14px;margin-bottom:12px;font-size:13.5px;color:#374151;line-height:1.8;">'
+              + 'จ่ายงานไปส่งทั้งหมด <b>'+total+'</b> รอบ' + (redoN ? ' · สั่งส่งใหม่ <b>'+redoN+'</b> ครั้ง' : '') + '<br>'
+              + 'สถานะตอนนี้: ';
+        if(latest){
+            var ls = dlvStyle(latest.status);
+            h += dlvBadge(ls.txt, ls) + ' · คนขับ <b>'+dlvEsc(latest.driver_name||'-')+'</b>'
+               + (latest.transport_name ? ' ('+dlvEsc(latest.transport_name)+')' : '')
+               + (latest.delivery_date ? ' · ไปส่งวันที่ <b>'+dlvEsc(latest.delivery_date)+'</b>' : '');
+        } else {
+            h += '<b style="color:#9a3412;">รอจ่ายงานใหม่</b> (ทุกรอบถูกส่งใหม่/ยกเลิกแล้ว — รอจ่ายที่หน้าจ่ายงานขนส่ง)';
+        }
+        h += '</div>';
+
+        // ── ทีละรอบ ──
+        rows.forEach(function(r, i){
+            var isHist = !!r.cancelled_at;
+            var isRedo = (r.status||'').indexOf('ส่งใหม่') !== -1;
+            var next   = rows[i+1];
+            // รอบที่จบไปแล้ว: ส่งใหม่ / เปลี่ยนคนขับ (รอบถัดไปเป็น note "เปลี่ยน...") / ยกเลิกการจ่ายงาน (คืนคิว)
+            var kind = !isHist ? '' : (isRedo ? 'redo' : ((next && /^เปลี่ยน/.test((next.note||'').trim())) ? 'change' : 'cancel'));
+            var s    = dlvStyle(r.status);
+            var pn   = dlvParseNote(r.note);
+            var st   = (r.status||'').toString().trim();
+            var hasResult = st !== '' && st !== '0' && !isRedo;   // มีผลจริง (สำเร็จ/ค้างบิล/สินค้าผิด)
+
+            var head, border;
+            if(kind === 'redo')        { head = dlvBadge('ไม่สำเร็จ / ส่งใหม่', dlvStyle('ส่งใหม่')); border = '#2853d5'; }
+            else if(kind === 'change') { head = dlvBadge('เปลี่ยนคนขับ/ขนส่ง', dlvStyle('ส่งใหม่')); border = '#2853d5'; }
+            else if(kind === 'cancel') { head = dlvBadge('ยกเลิกการจ่ายงาน', {bg:'#f3f4f6',fg:'#6b7280'}); border = '#9ca3af'; }
+            else                       { head = dlvBadge(s.txt, s); border = s.border; }
+
+            h += '<div style="border:2px '+(isHist?'dashed':'solid')+' '+border+';border-radius:10px;padding:10px 14px;background:#fff;">'
+               + '<div style="display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:6px;">'
+               +   '<span style="font-weight:700;color:#111827;">รอบที่ '+(i+1)
+               +   (isHist ? ' <span style="color:#9a3412;font-size:12px;font-weight:600;">(จบรอบแล้ว)</span>'
+                           : (r === latest ? ' <span style="color:#1b5e20;font-size:12px;font-weight:600;">(รอบปัจจุบัน)</span>' : ''))
+               +   '</span>' + head
+               + '</div>'
+               + '<div style="font-size:13.5px;color:#374151;line-height:1.9;">';
+
+            // 1) จ่ายงาน
+            h += dlvLine('จ่ายงานโดย', '<b>'+dlvEsc(r.name_pick||'-')+'</b>' + (r.time_pick ? ' · '+dlvEsc(r.time_pick) : ''));
+            // 2) ใครไปส่ง รถอะไร วันไหน
+            h += dlvLine('ผู้ไปส่ง', '<b>'+dlvEsc(r.driver_name||'-')+'</b>'
+                 + (r.transport_name ? ' · '+dlvEsc(r.transport_name) : '')
+                 + (r.delivery_date ? ' · ให้ไปส่งวันที่ <b>'+dlvEsc(r.delivery_date)+'</b>' : '')
+                 + (r.id_transport ? ' · เลขขนส่ง <b>'+dlvEsc(r.id_transport)+'</b>' : ''));
+            // 3) ผลการไปส่ง
+            if(hasResult){
+                h += dlvLine('ผลการส่ง', dlvBadge(s.txt, s)
+                     + ' · ยืนยันโดย <b>'+dlvEsc(r.check_name||'-')+'</b>' + (r.check_time ? ' · '+dlvEsc(r.check_time) : ''));
+            } else if(kind === 'redo'){
+                h += dlvLine('ผลการส่ง', '<b style="color:#a91f1f;">ไม่สำเร็จ</b>');
+            } else if(!isHist){
+                h += dlvLine('ผลการส่ง', '<span style="color:#9ca3af;">ยังไม่ยืนยันผล (อยู่ระหว่างไปส่ง)</span>');
+            }
+            // 4) จบรอบเพราะอะไร ใครทำ เมื่อไหร่
+            var by = '<b>'+dlvEsc(r.cancelled_by || r.check_name || '-')+'</b>' + (r.cancelled_at ? ' · '+dlvEsc(r.cancelled_at) : '');
+            if(kind === 'redo'){
+                h += dlvLine('สั่งส่งใหม่', by
+                     + (pn.reason ? ' · เหตุผล <b style="color:#a91f1f;">'+dlvEsc(pn.reason)+'</b>' : '')
+                     + (pn.reassign ? ' · จ่ายใหม่ให้ '+dlvEsc(pn.reassign) : ''));
+            } else if(kind === 'change'){
+                h += dlvLine('เปลี่ยนคนขับ', by + ' · ไปต่อที่รอบที่ '+(i+2));
+            } else if(kind === 'cancel'){
+                h += dlvLine('ยกเลิกการจ่าย', by + ' · คืนงานไปหน้าจ่ายงาน');
+            }
+            // 5) หมายเหตุที่คนพิมพ์ (ค้างบิล/สินค้าผิด/ของผิด/เปลี่ยนคนขับ ฯลฯ)
+            if(pn.text){ h += dlvLine('หมายเหตุ', '<span style="color:#6b7280;">'+dlvEsc(pn.text)+'</span>'); }
+
+            h += '</div></div>';
+            if(i < total-1){ h += '<div style="text-align:center;color:#9ca3af;font-size:11px;line-height:1;padding:3px 0;color:#c7ccd3;">|</div>'; }
+        });
+        return h;
     }
     async function openDeliveryPopup(billid){
         const pop=document.getElementById('deliveryPopup');
@@ -389,20 +499,7 @@ window.addEventListener('load', () => {
             const data=await res.json();
             const rows=(data&&data.rows)||[];
             if(!rows.length){ document.getElementById('dpBody').innerHTML='<div style="padding:16px;color:#6b7280;text-align:center;">ยังไม่มีข้อมูลการจ่ายงาน/จัดส่งของบิลนี้</div>'; return; }
-            document.getElementById('dpBody').innerHTML=rows.map(function(r){
-                const received=r.check_time
-                    ? '<div style="color:#16a34a;margin-top:4px;">รับเข้าแล้ว: '+dpStatus(r.status)+' · โดย '+dpEsc(r.check_name||'-')+' · '+dpEsc(r.check_time)+'</div>'
-                    : '<div style="margin-top:4px;">สถานะ: '+dpStatus(r.status)+'</div>';
-                return '<div style="border:1px solid #e5e7eb;border-radius:8px;padding:12px;margin-bottom:10px;font-size:14px;line-height:1.7;">'
-                    +'<div><b>ผู้จ่ายงาน:</b> '+dpEsc(r.name_pick||'-')+(r.time_pick?' · '+dpEsc(r.time_pick):'')+'</div>'
-                    +'<div><b>คนขับ:</b> '+dpEsc(r.driver_name||'-')+'</div>'
-                    +'<div><b>วิธีขนส่ง:</b> '+dpEsc(r.transport_name||'-')+'</div>'
-                    +'<div><b>เลขขนส่ง:</b> '+dpEsc(r.id_transport||'-')+'</div>'
-                    +(r.delivery_date?'<div><b>วันส่ง:</b> '+dpEsc(r.delivery_date)+'</div>':'')
-                    +received
-                    +(r.note?'<div style="color:#b45309;"><b>หมายเหตุ:</b> '+dpEsc(r.note)+'</div>':'')
-                    +'</div>';
-            }).join('');
+            document.getElementById('dpBody').innerHTML=dlvTimeline(rows);
         }catch(e){ document.getElementById('dpBody').innerHTML='<div style="padding:16px;color:#dc2626;text-align:center;">โหลดข้อมูลไม่สำเร็จ</div>'; }
     }
     function closeDeliveryPopup(){ document.getElementById('deliveryPopup').style.display='none'; }

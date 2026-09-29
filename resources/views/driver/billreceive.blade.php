@@ -81,6 +81,31 @@ a { color: inherit; text-decoration: none; }
   transition: all 0.2s; color: var(--ink);
 }
 .fg input:focus { border-color: var(--primary); box-shadow: 0 0 0 4px rgba(var(--primary-rgb),.12); }
+.fg input:disabled { background: var(--line-light); color: var(--ink4); cursor: not-allowed; }
+.fg .all-dates { display: inline-flex; align-items: center; gap: 6px; font-size: 12.5px; font-weight: 600; color: var(--ink2); cursor: pointer; user-select: none; }
+.fg .all-dates input { min-width: 0; width: 16px; height: 16px; padding: 0; margin: 0; cursor: pointer; }
+
+/* Modal ส่งใหม่ */
+.redo-opt { display: flex; gap: 10px; align-items: flex-start; border: 1px solid var(--line); border-radius: 10px; padding: 12px 14px; margin-bottom: 10px; cursor: pointer; }
+.redo-opt:hover { border-color: var(--primary); }
+.redo-opt.active { border-color: var(--primary); background: var(--primary-light); }
+.redo-opt input { margin-top: 3px; width: 16px; height: 16px; cursor: pointer; flex-shrink: 0; }
+.redo-opt b { display: block; font-size: 14px; color: var(--ink); }
+.redo-opt span { font-size: 12.5px; color: var(--ink3); }
+.redo-fields { display: none; padding: 4px 2px 6px; }
+.redo-fields.open { display: block; }
+.redo-fields label { display: block; font-size: 12.5px; font-weight: 700; color: var(--ink3); margin: 10px 0 6px; }
+.redo-fields input, .redo-fields select { width: 100%; height: 40px; padding: 0 12px; border: 1px solid var(--line-strong); border-radius: 8px; font-family: inherit; font-size: 14px; color: var(--ink); background: #fff; }
+.redo-fields input:focus, .redo-fields select:focus { outline: none; border-color: var(--primary); box-shadow: 0 0 0 3px rgba(var(--primary-rgb),.12); }
+/* เหตุผลส่งใหม่ */
+.redo-reason { border: 1px solid var(--line); border-radius: 10px; padding: 10px 14px; margin-bottom: 12px; background: #fffaf5; }
+.redo-reason-title { font-size: 13px; font-weight: 700; color: var(--ink); margin-bottom: 6px; }
+.redo-reason-opts { display: flex; gap: 18px; margin-bottom: 8px; }
+.reason-opt { display: inline-flex; align-items: center; gap: 6px; font-size: 14px; font-weight: 600; color: var(--ink2); cursor: pointer; }
+.reason-opt input { width: 16px; height: 16px; cursor: pointer; }
+#redoReasonText { width: 100%; height: 38px; padding: 0 12px; border: 1px solid var(--line-strong); border-radius: 8px; font-family: inherit; font-size: 14px; color: var(--ink); background: #fff; }
+#redoReasonText:disabled { background: var(--line-light); cursor: not-allowed; }
+#redoReasonText:focus { outline: none; border-color: var(--primary); box-shadow: 0 0 0 3px rgba(var(--primary-rgb),.12); }
 
 .btn {
   height: 42px; padding: 0 18px; border-radius: 10px; border: 1px solid var(--line-strong);
@@ -190,10 +215,56 @@ a { color: inherit; text-decoration: none; }
 .modal-actions { display: flex; gap: 10px; justify-content: flex-end; margin-top: 22px; }
 .modal-actions .btn { height: 42px; }
 
-@media(max-width: 640px) { 
-  .topbar { padding: 0 16px; }
-  .filters { padding: 14px; }
-  .job-actions { flex: 1 1 100%; justify-content: flex-start; margin-top: 8px; padding-left: 0; padding-top: 12px; border-left: none; border-top: 1px dashed var(--line); }
+/* ===== โหมดกะทัดรัด: ย่อ UI ให้เห็นงานได้มากขึ้นต่อจอ (เลื่อนน้อยลง) ===== */
+.topbar { height: 48px; padding: 0 14px; }
+.topbar .brand { font-size: 15px; gap: 8px; }
+.topbar .brand .tag { font-size: 10px; padding: 2px 8px; }
+.topbar a.back { padding: 4px 10px; font-size: 12px; border-radius: 8px; }
+.topbar .user { padding: 3px 10px 3px 3px; font-size: 12px; }
+.user-avatar { width: 22px; height: 22px; font-size: 11px; }
+.wrap { margin: 8px auto; padding: 0 10px; }
+
+.filters { padding: 10px 14px; gap: 8px 12px; margin-bottom: 8px; border-radius: 10px; }
+.fg { gap: 3px; }
+.fg label { font-size: 12px; }
+.fg input { height: 36px; min-width: 160px; padding: 0 12px; font-size: 13.5px; border-radius: 8px; }
+.fg .all-dates { font-size: 12px; gap: 5px; }
+.fg .all-dates input { width: 15px; height: 15px; }
+#fStatus { height: 36px !important; }
+.btn { height: 36px; padding: 0 14px; font-size: 13px; border-radius: 8px; }
+.hint { display: none; }
+.count-bar { font-size: 13px; margin: 0 2px 8px; }
+
+/* งาน 1 ใบ = 1 แถวตาราง (ขนาดเท่า td หน้าเก่า bills_billIn: ตัวอักษร 11pt/10pt, 2 บรรทัด, ช่องไฟชิด) */
+#list { display: flex; flex-direction: column; gap: 0; border: 1px solid var(--line-strong); border-radius: 6px; overflow: hidden; background: var(--card); }
+#list > .state { border: none; }
+/* ขอบเฉพาะเส้นล่าง (กว้าง 0 ด้านอื่น) — กันกฎเดิม .job.done { border-style: dashed } ทำให้ขอบหนาสีเข้มโผล่รอบแถว */
+.job { padding: 8px 12px; margin: 0; gap: 12px; border: 0 solid var(--line); border-bottom-width: 1px; border-radius: 0; box-shadow: none; align-items: center; flex-wrap: nowrap; }
+.job:last-child { border-bottom-width: 0; }
+.job:nth-child(even) { background: #f7f9fc; }                  /* สลับสีแถวแบบตาราง */
+.job:hover { background: #eef3ff; border-color: var(--line); box-shadow: none; }
+.job.done { opacity: .7; border-style: solid; border-color: var(--line); background: #fafafa; }
+.job-main { flex: 1 1 auto; min-width: 0; line-height: 1.5; }
+.job-line1 { gap: 8px; margin-bottom: 2px; flex-wrap: nowrap; min-width: 0; }
+.job-type, .job-code { font-size: 12px; padding: 1px 7px; border-radius: 4px; white-space: nowrap; flex-shrink: 0; }
+.job-bill { font-size: 15px; white-space: nowrap; flex-shrink: 0; }
+.job-cust { font-size: 15px; font-weight: 500; margin: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0; }
+.job-cust b { color: var(--ink); }
+.job-meta { gap: 0 16px; font-size: 13.5px; line-height: 1.5; }
+.job-note, .job-linked { margin: 2px 0; padding: 1px 8px; font-size: 13px; border-radius: 4px; border-left-width: 2px; }
+.job-actions { gap: 5px; padding-left: 12px; flex-wrap: nowrap; flex-shrink: 0; align-self: center; border-left: 1px solid var(--line); }
+.act { height: 32px; padding: 0 11px; font-size: 13px; border-radius: 6px; }
+.act.ok.main { min-width: 90px; height: 34px; font-size: 14px; }
+.act.arm { background: #0f172a !important; color: #fff !important; border-color: #0f172a !important; }
+.job-result, .job-redispatched { font-size: 13px; padding: 4px 10px; border-radius: 5px; line-height: 1.4; max-width: 440px; }
+.wrong-box { margin-top: 4px; padding-top: 4px; gap: 5px; }
+.wrong-box input { height: 30px; font-size: 13.5px; }
+.job-chk { width: 16px !important; height: 16px !important; margin-right: 0 !important; }
+
+@media(max-width: 640px) {
+  .filters { padding: 8px; }
+  .job { flex-wrap: wrap; }
+  .job-actions { flex: 1 1 100%; flex-wrap: wrap; justify-content: flex-start; padding-left: 0; padding-top: 6px; border-left: none; border-top: 1px dashed var(--line); }
 }
 </style>
 </head>
@@ -210,11 +281,12 @@ a { color: inherit; text-decoration: none; }
 <div class="wrap">
   <div class="filters">
     <div class="fg">
+      <label class="all-dates" title="ติ๊กแล้วค้นหาทุกวัน ไม่สนวันที่"><input type="checkbox" id="fAllDates"> ไม่จำกัดวันที่</label>
       <label for="fDate">วันที่จ่ายงาน (time_pick)</label>
       <input type="date" id="fDate">
     </div>
     <div class="fg">
-      <label for="fBill">ค้นหาเลขบิล (ไม่สนวันที่)</label>
+      <label for="fBill">ค้นหาเลขบิล</label>
       <input type="text" id="fBill" placeholder="เช่น 46909-02085" autocomplete="off">
     </div>
     <div class="fg">
@@ -241,7 +313,7 @@ a { color: inherit; text-decoration: none; }
     </div>
     <button type="button" class="btn btn-primary" id="btnSearch">ค้นหา</button>
     <button type="button" class="btn" id="btnClear">ล้าง</button>
-    <span class="hint">ค้นเลขบิลจะไม่สนใจวันที่ · รหัส/ชื่อลูกค้า/สถานะ กรองในรายการที่โหลดมา</span>
+    <span class="hint">เลือกวันที่ = ค้นเฉพาะงานที่จ่ายวันนั้น · ติ๊ก "ไม่จำกัดวันที่" = ค้นทุกวัน</span>
   </div>
 
   <div class="count-bar" id="countBar"></div>
@@ -274,6 +346,48 @@ a { color: inherit; text-decoration: none; }
   </div>
 </div>
 
+<!-- Modal ส่งใหม่: จ่ายใหม่ที่นี่เลย หรือ คืนไปเลือกใหม่ที่หน้าจ่ายงานขนส่ง -->
+<div class="modal-overlay" id="redoModal">
+  <div class="modal-box" style="max-width:460px;">
+    <div class="modal-title">ส่งใหม่</div>
+    <div class="modal-sub" id="redoLabel"></div>
+
+    <!-- เหตุผลที่ส่งใหม่ (บังคับเลือก): ไปไม่ทัน = จบ / อื่นๆ = ต้องพิมพ์ระบุ -->
+    <div class="redo-reason">
+      <div class="redo-reason-title">เหตุผลที่ส่งใหม่ <span style="color:var(--red)">*</span></div>
+      <div class="redo-reason-opts">
+        <label class="reason-opt"><input type="radio" name="redoReason" value="ไปไม่ทัน"> ไปไม่ทัน</label>
+        <label class="reason-opt"><input type="radio" name="redoReason" value="other"> อื่นๆ (ระบุ)</label>
+      </div>
+      <input type="text" id="redoReasonText" placeholder="ระบุเหตุผล..." maxlength="400" disabled>
+    </div>
+
+    <label class="redo-opt active" id="redoOptAssign">
+      <input type="radio" name="redoMode" value="assign" checked>
+      <div><b>เลือกเองเลย</b><span>กำหนดผู้รับผิดชอบ วิธีการจัดส่ง และวันที่ไปส่งที่นี่</span></div>
+    </label>
+    <div class="redo-fields open" id="redoFields">
+      <label for="redoDriver">ผู้รับผิดชอบ</label>
+      <input type="text" id="redoDriver" list="redoDriverList" placeholder="เลือกหรือพิมพ์ชื่อ (เว้นว่างได้)" autocomplete="off">
+      <datalist id="redoDriverList"></datalist>
+      <label for="redoTransport">วิธีการจัดส่ง</label>
+      <select id="redoTransport"></select>
+      <label for="redoDate">วันที่ไปส่ง</label>
+      <input type="date" id="redoDate">
+    </div>
+
+    <label class="redo-opt" id="redoOptReturn">
+      <input type="radio" name="redoMode" value="return">
+      <div><b>กลับไปเลือกใหม่ที่หน้าจ่ายงานขนส่ง</b><span>คืนงานไปหน้าจ่ายงาน แล้วค่อยเลือกคนขับ/วันที่ที่นั่น</span></div>
+    </label>
+
+    <div class="modal-actions">
+      <button type="button" class="btn" onclick="closeRedo()">ยกเลิก</button>
+      <button type="button" class="btn btn-primary" id="redoConfirmBtn" onclick="confirmRedo()">ยืนยันส่งใหม่</button>
+    </div>
+  </div>
+</div>
+
 <div class="toast-wrap" id="toastWrap"></div>
 
 <script>
@@ -287,8 +401,21 @@ const RESPONSIBLE_PERSONS = @json($responsiblePersons ?? []);
 
 const fDate = document.getElementById('fDate');
 const fBill = document.getElementById('fBill');
+const fAllDates = document.getElementById('fAllDates');
 const listEl = document.getElementById('list');
 const countBar = document.getElementById('countBar');
+let busy = false;       // กันกดซ้ำระหว่างบันทึก
+
+// ปุ่ม "สำเร็จ": คลิกครั้งแรก = "กดอีกครั้ง ✓" ที่ตำแหน่งเดิม, คลิกซ้ำที่เดิม = บันทึก
+//   (แทน popup confirm ที่เด้งกลางจอ ต้องเลื่อนเมาส์ไปกด)
+function armClick(btn, i, action){
+  if(btn.dataset.armed === '1'){ clearTimeout(btn._t); disarm(btn); doAction(i, action); return; }
+  document.querySelectorAll('.act.arm').forEach(disarm);
+  btn.dataset.armed = '1'; btn.dataset.label = btn.textContent; btn.textContent = 'กดอีกครั้ง ✓';
+  btn.classList.add('arm');
+  btn._t = setTimeout(()=>disarm(btn), 3000);
+}
+function disarm(b){ b.dataset.armed = ''; if(b.dataset.label) b.textContent = b.dataset.label; b.classList.remove('arm'); }
 
 function esc(s){ return (s==null?'':String(s)).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
 
@@ -374,21 +501,11 @@ async function bulkSetStatus(action){
   render();
 }
 
-// bulk จัดส่งใหม่ = คืนงานที่เลือกกลับไปหน้าจ่ายงานขนส่ง
-async function bulkRedo(){
+// bulk จัดส่งใหม่ = เปิด modal เลือกวิธี (จ่ายใหม่ที่นี่ / คืนไปหน้าจ่ายงาน) ใช้กับทุกรายการที่เลือก
+function bulkRedo(){
   const idxs = Array.from(selectedBulk);
   if(!idxs.length) return;
-  if(!confirm(`จัดส่งใหม่ ${idxs.length} รายการที่เลือก?\nงานจะถูกคืนกลับไปหน้าจ่ายงานขนส่ง เพื่อจ่ายให้คนขับใหม่`)) return;
-  let okN=0, failN=0;
-  for(const i of idxs){
-    const r = currentRows[i];
-    if(!r) continue;
-    try{ await postConfirm({ job_key:r.job_key, action:'redo', tx_ids:r.tx_ids }); okN++; }
-    catch(e){ failN++; }
-  }
-  selectedBulk.clear();
-  toast(`คืนงานไปจ่ายใหม่ ${okN} รายการ${failN?` · ล้มเหลว ${failN}`:''}`, failN>0);
-  loadData();
+  openRedo(idxs);
 }
 
 async function loadData(){
@@ -397,14 +514,14 @@ async function loadData(){
   const cname  = document.getElementById('fCustName').value.trim();
   const driver = document.getElementById('fDriver').value.trim();
   const status = document.getElementById('fStatus').value;
-  const anyFilter = q || cust || cname || driver || status;
   const params = new URLSearchParams();
   if(q) params.set('q', q);
   if(cust) params.set('cust', cust);
   if(cname) params.set('cname', cname);
   if(driver) params.set('driver', driver);
   if(status) params.set('status', status);
-  if(!anyFilter) params.set('date', fDate.value);   // ไม่มีตัวกรอง -> ตามวันที่
+  // เลือกวันที่ = ค้น/กรองเฉพาะวันนั้น ; ติ๊กไม่จำกัดวันที่ = ค้นทุกวัน
+  params.set('date', fAllDates.checked ? 'all' : (fDate.value || ''));
   listEl.innerHTML = '<div class="state"><span class="spinner"></span>กำลังโหลดข้อมูล...</div>';
   countBar.textContent = '';
   try{
@@ -435,14 +552,14 @@ function render(){
 
   listEl.innerHTML = rows.map(({r,i})=>{
     const si = statusInfo(r.status);
-    const typeLabel = r.type==='doc' ? 'บิลชั่วคราว'
-                    : (r.type==='private' ? 'บิล · ขนส่งเอกชน' : 'บิล · ส่งโดยบริษัท');
+    const typeLabel = r.type==='doc' ? 'ชั่วคราว' : (r.type==='private' ? 'เอกชน' : 'บริษัท');
+    const typeTitle = r.type==='doc' ? 'บิลชั่วคราว' : (r.type==='private' ? 'บิล · ขนส่งเอกชน' : 'บิล · ส่งโดยบริษัท');
+    // บรรทัด 2: คนขับ · ขนส่ง · วันส่ง · จ่ายโดย/เมื่อ (ข้อความสั้น)
     const meta = [];
-    if(r.driver_name)   meta.push(`<span class="mi"><b>คนขับ</b> ${esc(r.driver_name)}</span>`);
-    if(r.transport_name)meta.push(`<span class="mi"><b>ขนส่ง</b> ${esc(r.transport_name)}</span>`);
-    if(r.delivery_date) meta.push(`<span class="mi"><b>วันส่ง</b> ${esc(r.delivery_date)}</span>`);
-    meta.push(`<span class="mi"><b>ผู้จ่ายงาน</b> ${esc(r.name_pick||'-')}</span>`);
-    if(r.time_pick)     meta.push(`<span class="mi"><b>จ่ายเมื่อ</b> ${esc(r.time_pick)}</span>`);
+    if(r.driver_name)   meta.push(`<span class="mi"><b>${esc(r.driver_name)}</b></span>`);
+    if(r.transport_name)meta.push(`<span class="mi">${esc(r.transport_name)}</span>`);
+    if(r.delivery_date) meta.push(`<span class="mi">ส่ง ${esc(r.delivery_date)}</span>`);
+    meta.push(`<span class="mi">จ่าย ${esc(r.name_pick||'-')}${r.time_pick?' '+esc(r.time_pick):''}</span>`);
 
     const received = isReceived(r);
     const isHistory = !!r.cancelled;                          // แถวประวัติ (รอบเก่าที่ถูกแทนที่/ยกเลิก) -> อ่านอย่างเดียว
@@ -451,49 +568,49 @@ function render(){
     if(isHistory){
       // ประวัติรอบเก่า: เช่น สินค้าผิด/ส่งใหม่ -> ถูกจ่ายใหม่แล้ว = แสดงผลลัพธ์รอบนั้น ไม่มีปุ่ม/ติ๊ก
       const hi = statusInfo(r.status);
-      actions = `<div class="job-redispatched">↻ ประวัติรอบนี้: ${esc(hi.txt)}`
-        + `${r.check_name?' · โดย '+esc(r.check_name):''}${r.check_time?' · '+esc(r.check_time):''}`
-        + `${r.cancelled_at?'<br>ถูกแทนที่/จ่ายใหม่เมื่อ '+esc(r.cancelled_at)+(r.cancelled_by?' โดย '+esc(r.cancelled_by):''):''}</div>`;
+      actions = `<div class="job-redispatched" title="${r.cancelled_at?'ถูกแทนที่/จ่ายใหม่เมื่อ '+esc(r.cancelled_at)+(r.cancelled_by?' โดย '+esc(r.cancelled_by):''):''}">↻ ประวัติ: ${esc(hi.txt)}`
+        + `${r.check_name?' · '+esc(r.check_name):''}${r.check_time?' · '+esc(r.check_time):''}</div>`;
     } else if(received){
       // รับเข้าแล้ว -> แสดงผลตามสถานะ + ให้กลับมากด "สำเร็จ" ได้ (เช่น ค้างบิล/สินค้าผิด -> เปลี่ยนเป็นสำเร็จภายหลัง)
-      const noteLine = (r.note && (si.cls==='wrong' || si.cls==='hold')) ? `<br>หมายเหตุ: ${esc(r.note)}` : '';
+      const noteLine = (r.note && (si.cls==='wrong' || si.cls==='hold')) ? ` · ${esc(r.note)}` : '';
       // "เปลี่ยนเป็นสำเร็จ" แสดงเฉพาะงานที่ค้างบิลเท่านั้น
       const canReSuccess = (((r.status||'').trim()) === 'ค้างบิล');
-      actions = `<div class="job-result ${si.cls}">รับเข้าแล้ว: ${esc(si.txt)}<br>โดย ${esc(r.check_name||'-')}${r.check_time?' · เมื่อ '+esc(r.check_time):''}${noteLine}</div>`
-        + ((CAN_EDIT && canReSuccess) ? `<button type="button" class="act ok" style="margin-top:6px;" onclick="doAction(${i},'ok')">เปลี่ยนเป็นสำเร็จ</button>` : '');
+      actions = `<div class="job-result ${si.cls}">✓ ${esc(si.txt)} · ${esc(r.check_name||'-')}${r.check_time?' · '+esc(r.check_time):''}${noteLine}</div>`
+        + ((CAN_EDIT && canReSuccess) ? `<button type="button" class="act ok" onclick="armClick(this,${i},'ok')">เปลี่ยนเป็นสำเร็จ</button>` : '');
     } else if(redispatched){
       // งานต้นทางที่ถูกจ่ายใหม่ไปวันอื่นแล้ว -> ไม่มีปุ่ม แสดงว่าย้ายไปวันไหน
-      actions = `<div class="job-redispatched">↻ ถูกจ่ายใหม่ให้ไปวันที่ ${esc(r.redispatched_to)} แล้ว</div>`;
+      actions = `<div class="job-redispatched">↻ จ่ายใหม่ไปวันที่ ${esc(r.redispatched_to)}</div>`;
     } else if(CAN_EDIT){
-      actions = `<button type="button" class="act ok"    onclick="doAction(${i},'ok')">สำเร็จ</button>
+      actions = `<button type="button" class="act ok main" onclick="armClick(this,${i},'ok')" title="คลิก 2 ครั้งที่เดิม = บันทึกสำเร็จ">✓ สำเร็จ</button>
          <button type="button" class="act hold"  onclick="openNote(${i},'hold')">ค้างบิล</button>
-         <button type="button" class="act redo"  onclick="doRedo(${i})">ส่งใหม่ (จ่ายงานใหม่)</button>
+         <button type="button" class="act redo"  onclick="doRedo(${i})" title="ส่งใหม่ (จ่ายงานใหม่)">ส่งใหม่</button>
          <button type="button" class="act wrong" onclick="openNote(${i},'wrong')">สินค้าผิด</button>
-         <button type="button" class="act" style="border-color:#2853d5;color:#2853d5;" onclick="openChangeDriver(${i})">เปลี่ยนคนขับ/ขนส่ง</button>`;
+         <button type="button" class="act" style="border-color:#2853d5;color:#2853d5;" onclick="openChangeDriver(${i})" title="เปลี่ยนคนขับ/ขนส่ง">เปลี่ยนคนขับ</button>`;
     } else {
       // viewer (sale/support/sale_assistant) — ดูอย่างเดียว
-      actions = `<div class="job-result pending" style="color:#6b7280;background:#f1f5f9;">รอรับเข้า (ดูอย่างเดียว)</div>`;
+      actions = `<div class="job-result pending" style="color:#6b7280;background:#f1f5f9;">รอรับเข้า</div>`;
     }
 
     // เช็คบ็อกซ์ (bulk) เฉพาะ editor + งานที่ยังไม่รับเข้า ; สำเร็จ/ค้างบิล/สินค้าผิด/ถูกจ่ายใหม่ = ติ๊กไม่ได้
     const bulkable = CAN_EDIT && !redispatched && !received && !isHistory;
     const chk = bulkable
-      ? `<input type="checkbox" class="job-chk" ${selectedBulk.has(i)?'checked':''} onchange="toggleBulk(${i},this.checked)" title="เลือกเพื่อตั้งสถานะพร้อมกัน" style="width:20px;height:20px;align-self:center;margin-right:4px;cursor:pointer;flex-shrink:0;">`
+      ? `<input type="checkbox" class="job-chk" ${selectedBulk.has(i)?'checked':''} onchange="toggleBulk(${i},this.checked)" title="เลือกเพื่อตั้งสถานะพร้อมกัน" style="width:16px;height:16px;align-self:center;cursor:pointer;flex-shrink:0;">`
       : '';
     return `<div class="job type-${r.type} ${received||redispatched||isHistory?'done':''}" id="job-${i}">
       ${chk}
       <div class="job-main">
         <div class="job-line1">
-          <span class="job-type">${esc(typeLabel)}</span>
-          ${r.customer_code?`<span class="job-code">${esc(r.customer_code)}</span>`:''}
+          <span class="job-type" title="${esc(typeTitle)}">${esc(typeLabel)}</span>
           <span class="job-bill">${esc(r.bill_no||'-')}</span>
+          ${r.customer_code?`<span class="job-code">${esc(r.customer_code)}</span>`:''}
+          <span class="job-cust" title="${esc((r.so_id?'SO '+r.so_id+' · ':'')+(r.customer_name||''))}">${r.so_id?`<b>SO ${esc(r.so_id)}</b> · `:''}${esc(r.customer_name||'-')}</span>
         </div>
-        <div class="job-cust">${r.so_id?`<b>SO ${esc(r.so_id)}</b> · `:''}${esc(r.customer_name||'-')}</div>
         <div class="job-meta">${meta.join('')}</div>
         ${(r.linked_bills && r.linked_bills.length)?`<div class="job-linked">เชื่อมกัน ${r.linked_bills.length} บิลค้าง: ${r.linked_bills.map(esc).join(', ')}</div>`:''}
         ${((!received || isHistory) && r.note)?`<div class="job-note">หมายเหตุ: ${esc(r.note)}</div>`:''}
         <div class="wrong-box" id="wrong-${i}" data-action="wrong">
-          <input type="text" id="wrongnote-${i}" placeholder="ระบุหมายเหตุ...">
+          <input type="text" id="wrongnote-${i}" placeholder="ระบุหมายเหตุ..."
+                 onkeydown="noteKey(event,${i})">
           <button type="button" class="act wrong" id="notesave-${i}" onclick="submitNote(${i})">บันทึก</button>
           <button type="button" class="act" onclick="closeNote(${i})">ยกเลิก</button>
         </div>
@@ -517,6 +634,11 @@ function openNote(i, action){
   inp?.focus();
 }
 function closeNote(i){ document.getElementById('wrong-'+i)?.classList.remove('open'); }
+// ช่องหมายเหตุ: Enter = บันทึก, Esc = ยกเลิก
+function noteKey(e, i){
+  if(e.key === 'Enter'){ e.preventDefault(); submitNote(i); }
+  else if(e.key === 'Escape'){ e.preventDefault(); closeNote(i); }
+}
 
 async function postConfirm(payload){
   const res = await fetch(CONFIRM_URL, {
@@ -529,46 +651,137 @@ async function postConfirm(payload){
   return data;
 }
 
+// บันทึกสถานะ (ไม่มี popup confirm แล้ว — การยืนยันคือ Enter บนการ์ดที่เลือก / คลิกซ้ำที่ปุ่มเดิม)
 async function doAction(i, action){
   const r = currentRows[i];
-  if(!r) return;
+  if(!r || busy) return;
   const labels = {ok:'สำเร็จ', hold:'ค้างบิล'};
-  if(!confirm(`ยืนยันบันทึกสถานะ "${labels[action]}" สำหรับบิล ${r.bill_no}?`)) return;
+  busy = true;
   try{
     const data = await postConfirm({ job_key:r.job_key, action, tx_ids:r.tx_ids });
-    toast(data.message || 'บันทึกข้อมูลเรียบร้อย');
+    toast(`✓ บิล ${r.bill_no} : ${labels[action] || data.status}`);
     r.status = data.status; r.check_name = data.check_name; r.check_time = data.check_time;
     render();
   }catch(e){ toast('ผิดพลาด: '+e.message, true); }
+  finally{ busy = false; }
 }
 
 async function submitNote(i){
   const r = currentRows[i];
-  if(!r) return;
+  if(!r || busy) return;
   const box = document.getElementById('wrong-'+i);
   const action = (box && box.dataset.action) || 'wrong';
   const label = action==='hold' ? 'ค้างบิล' : 'สินค้าผิด';
   const note = (document.getElementById('wrongnote-'+i)?.value || '').trim();
-  if(!note){ toast('กรุณากรอกหมายเหตุ'+label, true); return; }
-  if(!confirm(`ยืนยันบันทึก "${label}" สำหรับบิล ${r.bill_no}?`)) return;
+  if(!note){ toast('กรุณากรอกหมายเหตุ'+label, true); document.getElementById('wrongnote-'+i)?.focus(); return; }
+  busy = true;
   try{
     const data = await postConfirm({ job_key:r.job_key, action, note, tx_ids:r.tx_ids });
-    toast(data.message || 'บันทึกข้อมูลเรียบร้อย');
+    toast(`✓ บิล ${r.bill_no} : ${label}`);
     r.status = data.status; r.check_name = data.check_name; r.check_time = data.check_time; r.note = note;
     render();
   }catch(e){ toast('ผิดพลาด: '+e.message, true); }
+  finally{ busy = false; }
 }
 
-// ส่งใหม่ = คืนงานกลับไปหน้าจ่ายงานขนส่ง (deliverytrack) เพื่อจ่ายให้คนขับใหม่ (ไม่ต้องเลือกวันที่แล้ว)
-async function doRedo(i){
-  const r = currentRows[i];
-  if(!r) return;
-  if(!confirm(`ส่งบิล ${r.bill_no} ใหม่?\nงานจะถูกคืนกลับไปหน้าจ่ายงานขนส่ง เพื่อจ่ายให้คนขับใหม่ (เลือกวัน/คนขับที่นั่น)`)) return;
-  try{
-    const data = await postConfirm({ job_key:r.job_key, action:'redo', tx_ids:r.tx_ids });
-    toast(data.message || 'คืนงานไปจ่ายงานใหม่แล้ว');
-    loadData();
-  }catch(e){ toast('ผิดพลาด: '+e.message, true); }
+/* ===== ส่งใหม่ =====
+   เลือกได้ 2 แบบ:
+   - assign: เลือกผู้รับผิดชอบ / วิธีการจัดส่ง / วันที่ไปส่ง ที่นี่เลย -> จ่ายงานใหม่ทันที
+   - return: คืนงานไปหน้าจ่ายงานขนส่ง (deliverytrack) แล้วค่อยเลือกคนขับ/วันใหม่ที่นั่น */
+let redoIdxs = [];
+function redoMode(){ return (document.querySelector('input[name="redoMode"]:checked')||{}).value || 'assign'; }
+function syncRedoMode(){
+  const m = redoMode();
+  document.getElementById('redoOptAssign').classList.toggle('active', m==='assign');
+  document.getElementById('redoOptReturn').classList.toggle('active', m==='return');
+  document.getElementById('redoFields').classList.toggle('open', m==='assign');
+}
+document.querySelectorAll('input[name="redoMode"]').forEach(r => r.addEventListener('change', syncRedoMode));
+
+// เหตุผลส่งใหม่: "ไปไม่ทัน" = จบ ไม่ต้องพิมพ์ / "อื่นๆ" = เปิดช่องให้พิมพ์ (บังคับกรอก)
+function redoReasonChoice(){ return (document.querySelector('input[name="redoReason"]:checked')||{}).value || ''; }
+function syncRedoReason(){
+  const txt = document.getElementById('redoReasonText');
+  const isOther = redoReasonChoice() === 'other';
+  txt.disabled = !isOther;
+  if(isOther) txt.focus(); else txt.value = '';
+}
+document.querySelectorAll('input[name="redoReason"]').forEach(r => r.addEventListener('change', syncRedoReason));
+
+function tomorrowISO(){
+  const d = new Date(); d.setDate(d.getDate()+1);
+  return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
+}
+function openRedo(idxs){
+  if(!CAN_EDIT) return;
+  redoIdxs = idxs.filter(i => currentRows[i]);
+  if(!redoIdxs.length) return;
+  const first = currentRows[redoIdxs[0]];
+  document.getElementById('redoLabel').innerHTML = redoIdxs.length === 1
+    ? `บิล <b>${esc(first.bill_no||'-')}</b> · คนขับเดิม <b>${esc(first.driver_name||'-')}</b> · ขนส่งเดิม <b>${esc(first.transport_name||'-')}</b>`
+    : `ใช้กับ <b>${redoIdxs.length}</b> รายการที่เลือก`;
+  // ค่าเริ่มต้น = คนขับ/ขนส่งเดิม, วันที่ = พรุ่งนี้
+  document.getElementById('redoDriverList').innerHTML = RESPONSIBLE_PERSONS.map(o => `<option value="${esc(o)}">`).join('');
+  document.getElementById('redoDriver').value = redoIdxs.length === 1 ? (first.driver_name||'') : '';
+  const cur = redoIdxs.length === 1 ? (first.transport_name||'').trim() : '';
+  const methods = DELIVERY_METHODS.slice();
+  if(cur && methods.indexOf(cur) === -1) methods.unshift(cur);
+  document.getElementById('redoTransport').innerHTML = '<option value="">— เลือกวิธีการจัดส่ง —</option>'
+    + methods.map(o => `<option value="${esc(o)}" ${o===cur?'selected':''}>${esc(o)}</option>`).join('');
+  document.getElementById('redoDate').value = tomorrowISO();
+  document.querySelector('input[name="redoMode"][value="assign"]').checked = true;
+  syncRedoMode();
+  // ล้างเหตุผลทุกครั้งที่เปิด -> ต้องเลือกใหม่
+  document.querySelectorAll('input[name="redoReason"]').forEach(r => { r.checked = false; });
+  syncRedoReason();
+  document.getElementById('redoModal').classList.add('open');
+}
+function closeRedo(){ document.getElementById('redoModal').classList.remove('open'); redoIdxs = []; }
+document.getElementById('redoModal').addEventListener('click', function(e){ if(e.target===this) closeRedo(); });
+
+// ปุ่ม "ส่งใหม่" ของแต่ละบิล
+function doRedo(i){ openRedo([i]); }
+
+async function confirmRedo(){
+  if(!redoIdxs.length) return;
+  const mode = redoMode();
+  // เหตุผลส่งใหม่ (บังคับ)
+  const choice = redoReasonChoice();
+  if(!choice){ toast('กรุณาเลือกเหตุผลที่ส่งใหม่', true); return; }
+  let reason = choice;
+  if(choice === 'other'){
+    reason = document.getElementById('redoReasonText').value.trim();
+    if(!reason){ toast('กรุณาระบุเหตุผลที่ส่งใหม่', true); document.getElementById('redoReasonText').focus(); return; }
+  }
+  const payloadExtra = { redo_mode: mode, redo_reason: reason };
+  if(mode === 'assign'){
+    const driver    = document.getElementById('redoDriver').value.trim();
+    const transport = document.getElementById('redoTransport').value.trim();
+    const date      = document.getElementById('redoDate').value;
+    if(!transport){ toast('กรุณาเลือกวิธีการจัดส่ง', true); return; }
+    if(!date){ toast('กรุณาเลือกวันที่ไปส่ง', true); return; }
+    if(transport === 'เซลล์ไปส่งเอง' && !driver){ toast('เลือก "เซลล์ไปส่งเอง" กรุณาระบุชื่อเซลล์ที่ไปส่งเอง', true); return; }
+    if(transport !== 'เซลล์ไปส่งเอง' && driver && RESPONSIBLE_PERSONS.indexOf(driver) === -1){
+      toast('กรุณาเลือกผู้รับผิดชอบจากรายการที่มีให้', true); return;
+    }
+    Object.assign(payloadExtra, { redo_driver: driver, redo_transport: transport, redo_date: date });
+  }
+  const btn = document.getElementById('redoConfirmBtn'); btn.disabled = true;
+  let okN = 0, failN = 0, lastMsg = '', lastErr = '';
+  for(const i of redoIdxs){
+    const r = currentRows[i];
+    try{
+      const data = await postConfirm(Object.assign({ job_key:r.job_key, action:'redo', tx_ids:r.tx_ids }, payloadExtra));
+      okN++; lastMsg = data.message || '';
+    }catch(e){ failN++; lastErr = e.message; }
+  }
+  btn.disabled = false;
+  const n = redoIdxs.length;
+  closeRedo();
+  selectedBulk.clear();
+  if(n === 1) toast(failN ? ('ผิดพลาด: ' + lastErr) : (lastMsg || 'ส่งใหม่แล้ว'), failN > 0);
+  else toast(`ส่งใหม่ ${okN} รายการ${failN?` · ล้มเหลว ${failN}`:''}`, failN > 0);
+  loadData();
 }
 
 /* ===== เปลี่ยนคนขับ/ขนส่ง ===== */
@@ -622,13 +835,15 @@ document.getElementById('changeModal').addEventListener('click', function(e){ if
 document.getElementById('btnSearch').addEventListener('click', loadData);
 document.getElementById('btnClear').addEventListener('click', ()=>{
   fBill.value=''; fDate.value = new Date().toISOString().split('T')[0];
+  fAllDates.checked = false; fDate.disabled = false;
   document.getElementById('fCust').value=''; document.getElementById('fCustName').value='';
   document.getElementById('fDriver').value=''; document.getElementById('fStatus').value='';
   loadData();
 });
 fBill.addEventListener('keydown', e=>{ if(e.key==='Enter') loadData(); });
-fDate.addEventListener('change', ()=>{ if(fBill.value.trim()==='') loadData(); });
-// filter รหัส/ชื่อลูกค้า/สถานะ = ค้นข้ามวัน (โหลดใหม่จาก server) + render ทันทีระหว่างพิมพ์
+fDate.addEventListener('change', loadData);
+fAllDates.addEventListener('change', ()=>{ fDate.disabled = fAllDates.checked; loadData(); });
+// filter รหัส/ชื่อลูกค้า/คนขับ = โหลดใหม่จาก server (ตามวันที่ที่เลือก หรือทุกวันถ้าไม่จำกัด) + render ทันทีระหว่างพิมพ์
 let _filterTimer = null;
 ['fCust','fCustName','fDriver'].forEach(id => document.getElementById(id).addEventListener('input', ()=>{
   render();  // กรองชุดที่โหลดมาทันที

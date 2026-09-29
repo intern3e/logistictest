@@ -73,7 +73,8 @@ table.calgrid{border-collapse:collapse;table-layout:fixed;width:100%;height:1px;
 .calgrid th.cyan-head,.calgrid td.cyan-cell{background:#3ce7e0!important;color:#003b3b!important}
 
 .calgrid td.name-cell{background:#fdf6e3;text-align:center;font-weight:700;color:#111827;font-size:14px;line-height:1.3}
-.calgrid td.name-cell .plate{display:block;font-weight:500;font-size:11px;color:#6b7280;font-family:monospace;white-space:normal}
+.calgrid td.name-cell .plate{display:block;font-weight:500;font-size:11px;color:#6b7280;font-family:monospace;white-space:nowrap}
+.calgrid td.num{white-space:nowrap!important;word-break:keep-all!important}
 .calgrid td.item-cell{background:#fffdf0;text-align:center;color:#4b5563;font-size:11.5px}
 .calgrid td.num{background:#fffefa;text-align:center;font-variant-numeric:tabular-nums;color:#111827}
 .calgrid td.num.empty{color:#6b7280;font-weight:600}
@@ -91,6 +92,19 @@ table.calgrid{border-collapse:collapse;table-layout:fixed;width:100%;height:1px;
 
 .calgrid tr.grand-row td{background:#111827;color:#fff;font-weight:700;font-size:11px;padding:4px 4px;border-color:rgba(0,0,0,0.25)}
 .calgrid tr.grand-row td.grand-val{color:#93c5fd;font-size:12px}
+
+/* ── สีประจำคนขับ: ทุกช่องของ 3 แถว (ค่าวิ่ง/OT/ค่ายก) ของคนเดียวกันเป็นสีเดียวกัน แต่ละคนคนละสี (--drv-bg ตั้งที่ <tr>) ── */
+.calgrid tbody tr.drv-color[data-driver-row] > td{background:var(--drv-bg)}
+.calgrid tbody tr.drv-color[data-driver-row] > td.cyan-cell{background:var(--drv-bg)!important}
+/* ตัวเลขทุกช่องห้ามตัดบรรทัด (เช่น 150 ต้องไม่กลายเป็น 3 บรรทัด) */
+.calgrid td.num,.calgrid td.person-tot,.calgrid td.tot-col,.calgrid td.grand-val{white-space:nowrap!important;word-break:keep-all!important}
+
+/* ── โหมดสร้างรูป JPG: ตารางทั้งหมด (ทั้ง 2 ส่วน) ต่อกันเป็นรูปเดียว กว้างพอให้ตัวเลขอยู่บรรทัดเดียว ── */
+.jpg-capture{position:fixed;left:0;top:0;z-index:-1;background:#fff;padding:16px;overflow:visible}
+.jpg-capture .calgrid thead{position:static}
+.jpg-capture table.calgrid{height:auto}
+.jpg-capture .print-page-break{margin-top:18px}
+.jpg-busy{position:fixed;inset:0;z-index:9999;background:rgba(255,255,255,.85);display:flex;align-items:center;justify-content:center;font-size:15px;font-weight:600;color:#111827}
 
 /* ── Inline Edit ── */
 .calgrid td.num.editable{cursor:pointer;position:relative;transition:background .15s}
@@ -210,9 +224,9 @@ html.print-mode .calgrid tr.grand-row td.grand-val { font-size: calc(11px * var(
     </div>
     <div class="tesla-right">
       <div class="tesla-user-badge">👤 ผู้ใช้: {{ $currentUser }}</div>
-      <button type="button" id="printReportBtn" class="tesla-btn tesla-btn-print">
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>
-        ปริ้น / บันทึก PDF
+      <button type="button" id="saveJpgBtn" class="tesla-btn tesla-btn-print">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+        บันทึกเป็นรูป JPG
       </button>
       <a href="{{ url('/oil').$userQuery }}" class="tesla-btn">
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg>
@@ -434,11 +448,15 @@ html.print-mode .calgrid tr.grand-row td.grand-val { font-size: calc(11px * var(
       @endphp
       @php
         // ── partial ย่อยสำหรับ render แถวคนขับ 3 บรรทัด (ค่าวิ่ง/OT/ค่ายก) ให้ใช้ซ้ำได้ทั้ง 2 ตาราง ──
-        $renderDriverRows = function ($drivers) use ($days, $mode) {
+        // สีอ่อนประจำคนขับ (วนตามลำดับ) — ตัวหนังสือเข้มอ่านง่ายบนทุกสี
+        $driverColors = ['#fde2e4','#dbeafe','#dcfce7','#fef3c7','#ede9fe','#cffafe','#ffedd5','#fce7f3','#e0e7ff','#ecfccb','#fae8ff','#ccfbf1'];
+        $renderDriverRows = function ($drivers) use ($days, $mode, $driverColors) {
           foreach ($drivers as $gi => $dg) {
-            $altClass = $gi % 2 === 1 ? 'group-alt' : '';
+            // $gi = ลำดับจริงใน $driverGrid (array_slice เก็บ key ไว้) -> คนเดิมได้สีเดิมทั้ง 2 ตาราง
+            $altClass = 'drv-color';
+            $drvStyle = '--drv-bg:' . $driverColors[$gi % count($driverColors)];
             ?>
-          <tr class="<?= $altClass ?>" data-driver-row="1">
+          <tr class="<?= $altClass ?>" style="<?= $drvStyle ?>" data-driver-row="1">
             <td class="name-cell" rowspan="3"><?= e($dg['label']) ?><span class="plate"><?= e($dg['plate']) ?></span></td>
             <td class="item-cell">ค่าวิ่ง</td>
             <?php foreach ($days as $day): $cell = $dg['days'][$day] ?? []; $v = $cell['delivery'] ?? 0; $has = $cell['has'] ?? false; ?>
@@ -451,7 +469,7 @@ html.print-mode .calgrid tr.grand-row td.grand-val { font-size: calc(11px * var(
             <td class="num tot-col"><?= $dg['totDelivery'] != 0 ? number_format($dg['totDelivery']) : '-' ?></td>
             <td class="person-tot <?= $mode==='week' ? 'cyan-cell' : '' ?>" rowspan="3">฿<?= number_format($dg['totAll']) ?></td>
           </tr>
-          <tr class="<?= $altClass ?>" data-driver-row="1">
+          <tr class="<?= $altClass ?>" style="<?= $drvStyle ?>" data-driver-row="1">
             <td class="item-cell">ค่า OT</td>
             <?php foreach ($days as $day): $cell = $dg['days'][$day] ?? []; $v = $cell['ot'] ?? 0; $has = $cell['has'] ?? false; ?>
               <td class="num editable <?= $v==0?'empty':'' ?>"
@@ -462,7 +480,7 @@ html.print-mode .calgrid tr.grand-row td.grand-val { font-size: calc(11px * var(
             <?php endforeach; ?>
             <td class="num tot-col"><?= $dg['totOt'] != 0 ? number_format($dg['totOt']) : '-' ?></td>
           </tr>
-          <tr class="<?= $altClass ?>" data-driver-row="1">
+          <tr class="<?= $altClass ?>" style="<?= $drvStyle ?>" data-driver-row="1">
             <td class="item-cell">ค่ายก</td>
             <?php foreach ($days as $day): $cell = $dg['days'][$day] ?? []; $v = $cell['handling'] ?? 0; $has = $cell['has'] ?? false; ?>
               <td class="num editable <?= $v==0?'empty':'' ?>"
@@ -646,90 +664,71 @@ html.print-mode .calgrid tr.grand-row td.grand-val { font-size: calc(11px * var(
   </div>
 </main>
 
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 <script>
+// ── บันทึกเป็นรูป JPG: เอาตารางทั้งหมด (รวมส่วน "(ต่อ)") มาต่อกันเป็นรูปเดียว โครงสร้างเดิม ──
+//    สร้างสำเนาตารางในกล่องที่กว้างพอ (ช่องวันละ ~46px) ให้ตัวเลขอยู่บรรทัดเดียว แล้วถ่ายด้วย html2canvas
 (function () {
-  var printBtn = document.getElementById('printReportBtn');
-  var html = document.documentElement;
+  var btn = document.getElementById('saveJpgBtn');
+  var DAY_COUNT = {{ $dayCount }};
+  @php
+    $jpgFileName = $mode === 'month'
+      ? 'ค่าวิ่ง_' . $selYear . '-' . str_pad($selMonth, 2, '0', STR_PAD_LEFT) . '.jpg'
+      : 'ค่าวิ่ง_สัปดาห์_' . $weekStart . '.jpg';
+  @endphp
+  var FILE_NAME = @json($jpgFileName);
 
-  // ── ปรับ font-size/padding จริง (ไม่ใช่ transform) ให้แต่ละ "หน้า" (แต่ละ table.calgrid) ──
-  // เต็มพอดีกับกระดาษ A4 แนวนอน ไม่ใช่แค่บีบให้เล็กลงอย่างเดียว แต่ขยายขึ้นได้ด้วยถ้าเนื้อหาน้อย
-  // เพื่อไม่ให้เหลือที่ว่างเยอะเกินไปตอนคนขับกลุ่มหลัง (กบ/joey/แมน) มีแค่ไม่กี่แถว
-  // หมายเหตุ: ถ้ามี "กบ" ตารางจะถูกแบ่งเป็น 2 <table> (ดู .print-page-break) เพื่อบังคับขึ้นหน้าใหม่จริง ๆ
-  // แต่ละตารางมีตัวแปร --print-scale ของตัวเอง (ตั้งแบบ inline) เพราะแต่ละหน้ามีปริมาณข้อมูลไม่เท่ากัน
-  function fitScaleForTable(tableEl, pageH, minScale, maxScale, step) {
-    var scale = 1;
-    tableEl.style.setProperty('--print-scale', scale.toFixed(3));
-    var height = tableEl.getBoundingClientRect().height;
-    var guard = 0;
+  btn.addEventListener('click', async function () {
+    if (typeof html2canvas !== 'function') { alert('โหลดตัวสร้างรูปไม่สำเร็จ กรุณารีเฟรชหน้าแล้วลองใหม่'); return; }
+    var src = document.querySelector('.grid-scroll');
+    if (!src) return;
 
-    if (height > pageH) {
-      // เนื้อหาเกินหน้า → บีบลงจนพอดี
-      while (height > pageH && scale > minScale && guard < 400) {
-        scale = Math.max(minScale, scale - step);
-        tableEl.style.setProperty('--print-scale', scale.toFixed(3));
-        height = tableEl.getBoundingClientRect().height;
-        guard++;
-      }
-    } else {
-      // เนื้อหาน้อยกว่าหน้า → ขยายขึ้นจนเกือบเต็มหน้า (หยุดก่อนที่จะล้นหน้า)
-      var lastGoodScale = scale;
-      while (height <= pageH && scale < maxScale && guard < 400) {
-        lastGoodScale = scale;
-        scale = Math.min(maxScale, scale + step);
-        tableEl.style.setProperty('--print-scale', scale.toFixed(3));
-        height = tableEl.getBoundingClientRect().height;
-        guard++;
-      }
-      if (height > pageH) {
-        tableEl.style.setProperty('--print-scale', lastGoodScale.toFixed(3));
-      }
+    var busy = document.createElement('div');
+    busy.className = 'jpg-busy';
+    busy.textContent = 'กำลังสร้างรูป...';
+    document.body.appendChild(busy);
+    btn.disabled = true;
+
+    // ช่องวันกว้าง ~46px (ช่องวันรวม = 62% ของตาราง ตาม colgroup) ; อย่างน้อย 1400px
+    var width = Math.max(1400, Math.round(DAY_COUNT * 46 / 0.62));
+    var box = document.createElement('div');
+    box.className = 'jpg-capture';
+    box.style.width = width + 'px';
+    box.innerHTML = src.innerHTML;
+    document.body.appendChild(box);
+
+    try {
+      if (document.fonts && document.fonts.ready) await document.fonts.ready;
+      var canvas = await html2canvas(box, {
+        backgroundColor: '#ffffff',
+        scale: 2,
+        width: box.offsetWidth,
+        height: box.offsetHeight,
+        windowWidth: box.offsetWidth,
+        windowHeight: box.offsetHeight,
+        scrollX: 0,
+        scrollY: 0
+      });
+      await new Promise(function (resolve) {
+        canvas.toBlob(function (blob) {
+          var a = document.createElement('a');
+          a.href = URL.createObjectURL(blob);
+          a.download = FILE_NAME;
+          document.body.appendChild(a);
+          a.click();
+          setTimeout(function () { URL.revokeObjectURL(a.href); a.remove(); }, 1000);
+          resolve();
+        }, 'image/jpeg', 0.92);
+      });
+    } catch (e) {
+      console.error('save jpg error:', e);
+      alert('สร้างรูปไม่สำเร็จ: ' + (e && e.message ? e.message : e));
+    } finally {
+      box.remove();
+      busy.remove();
+      btn.disabled = false;
     }
-  }
-
-  function fitTableToOnePage() {
-    var tables = document.querySelectorAll('table.calgrid');
-    var scrollEl = document.querySelector('.grid-scroll');
-    if (!tables.length || !scrollEl) return;
-
-    var mmToPx = 96 / 25.4;
-    var margin = 8;
-    var pageW = (297 - margin * 2) * mmToPx;
-    var pageH = (210 - margin * 2) * mmToPx;
-
-    html.classList.add('print-mode');
-    scrollEl.style.width = pageW + 'px';
-    html.style.setProperty('--print-scale', '1');
-
-    tables.forEach(function (t) {
-      fitScaleForTable(t, pageH, 0.55, 1.6, 0.02);
-    });
-  }
-
-  function resetTableScale() {
-    var scrollEl = document.querySelector('.grid-scroll');
-    html.classList.remove('print-mode');
-    html.style.removeProperty('--print-scale');
-    if (scrollEl) scrollEl.style.width = '';
-    document.querySelectorAll('table.calgrid').forEach(function (t) {
-      t.style.removeProperty('--print-scale');
-    });
-  }
-
-  printBtn.addEventListener('click', function () {
-    fitTableToOnePage();
-    window.print();
   });
-
-  window.addEventListener('beforeprint', fitTableToOnePage);
-  window.addEventListener('afterprint', resetTableScale);
-  if (window.matchMedia) {
-    var mql = window.matchMedia('print');
-    if (mql.addEventListener) {
-      mql.addEventListener('change', function (m) { if (m.matches) fitTableToOnePage(); else resetTableScale(); });
-    } else if (mql.addListener) {
-      mql.addListener(function (m) { if (m.matches) fitTableToOnePage(); else resetTableScale(); });
-    }
-  }
 })();
 </script>
 

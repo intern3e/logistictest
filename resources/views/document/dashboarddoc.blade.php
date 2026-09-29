@@ -402,6 +402,29 @@
             color: #fff;
         }
 
+        /* สีปุ่มตามผลจริง — เขียวเฉพาะจัดส่งสำเร็จ */
+        .btn-delivery-status.dlv-none  { color:#dc3545; background:#fff5f5; animation:pulse-glow 2s infinite; }   /* ยังไม่จ่ายงาน */
+        .btn-delivery-status.dlv-none:hover { background:#dc3545; color:#fff; animation:none; }
+        .btn-delivery-status.dlv-ok    { color:#155724; background:#d4edda; }                                     /* สำเร็จ = เขียว */
+        .btn-delivery-status.dlv-ok:hover    { background:#155724; color:#fff; }
+        .btn-delivery-status.dlv-hold  { color:#b45309; background:#fff4e5; }                                     /* ค้างบิล = ส้ม */
+        .btn-delivery-status.dlv-hold:hover  { background:#b45309; color:#fff; }
+        .btn-delivery-status.dlv-wrong { color:#a91f1f; background:#ffebee; }                                     /* สินค้าผิด = แดง */
+        .btn-delivery-status.dlv-wrong:hover { background:#a91f1f; color:#fff; }
+        .btn-delivery-status.dlv-redo  { color:#2853d5; background:#eaf0fc; }                                     /* ส่งใหม่ = ฟ้า */
+        .btn-delivery-status.dlv-redo:hover  { background:#2853d5; color:#fff; }
+        .btn-delivery-status.dlv-wait  { color:#374151; background:#f3f4f6; }                                     /* จ่ายแล้ว รอผล = เทา */
+        .btn-delivery-status.dlv-wait:hover  { background:#374151; color:#fff; }
+
+        /* ข้อความผลใต้ปุ่ม (ในตาราง) */
+        .dlv-inline { margin-top:4px; font-size:11px; line-height:1.5; padding:3px 7px; border-radius:5px; }
+        .dlv-inline.dlv-ok    { color:#155724; background:#eafaef; }
+        .dlv-inline.dlv-hold  { color:#b45309; background:#fff7ed; }
+        .dlv-inline.dlv-wrong { color:#a91f1f; background:#fdecec; }
+        .dlv-inline.dlv-redo  { color:#2853d5; background:#eef3fd; }
+        .dlv-inline.dlv-wait  { color:#374151; background:#f6f7f9; }
+        .dlv-inline-note { color:#6b7280; }
+
         @keyframes pulse-glow {
             0% { box-shadow: 0 0 0 0 rgba(220, 53, 69, 0.4); }
             70% { box-shadow: 0 0 0 6px rgba(220, 53, 69, 0); }
@@ -423,8 +446,14 @@
     <!-- Filter & Search Section -->
     <div class="filter-container">
         <form method="GET" action="{{ route('document.dashboarddoc') }}" class="filter-form" id="autoSearchForm">
-            <label for="date">📅 วันที่: เดือน / วัน / ปี</label>
-            <input type="date" id="date" name="date" value="{{ request('date', \Carbon\Carbon::today()->format('Y-m-d')) }}">
+            @php $allDates = request('date') === 'all'; @endphp
+            <label class="all-dates" style="display:inline-flex;align-items:center;gap:6px;cursor:pointer;user-select:none;font-weight:600;">
+                <input type="checkbox" id="allDates" {{ $allDates ? 'checked' : '' }} style="width:16px;height:16px;cursor:pointer;"> ไม่จำกัดวันที่
+            </label>
+            <label for="date">วันที่: เดือน / วัน / ปี</label>
+            <input type="date" id="date" name="date"
+                   value="{{ $allDates ? '' : request('date', \Carbon\Carbon::today()->format('Y-m-d')) }}"
+                   {{ $allDates ? 'disabled' : '' }}>
             <button type="submit" style="display: none;">ค้นหา</button>
         </form>
 
@@ -546,15 +575,31 @@
                         </a>
                         <br>
                         
-                        {{-- ปุ่มสถานะจ่ายงาน --}}
-                        <a href="javascript:void(0);" 
-                           class="btn-delivery-status {{ $item->has_delivery ? 'has-delivery' : 'no-delivery' }}" 
+                        {{-- ปุ่มสถานะจ่ายงาน: สีตามผลจริง (เขียว = จัดส่งสำเร็จเท่านั้น) --}}
+                        @php
+                            $st = $item->dlv_status ?? '';
+                            if (!$item->has_delivery)              { $dlvCls = 'dlv-none';   $dlvTxt = 'ยังไม่จ่ายงาน'; }
+                            elseif ($st === 'จัดส่งสำเร็จ')          { $dlvCls = 'dlv-ok';     $dlvTxt = 'จัดส่งสำเร็จ'; }
+                            elseif ($st === 'ค้างบิล')              { $dlvCls = 'dlv-hold';   $dlvTxt = 'ค้างบิล'; }
+                            elseif ($st === 'สินค้าผิด')            { $dlvCls = 'dlv-wrong';  $dlvTxt = 'สินค้าผิด'; }
+                            elseif ($st === 'ส่งใหม่')              { $dlvCls = 'dlv-redo';   $dlvTxt = 'สั่งส่งใหม่'; }
+                            else                                    { $dlvCls = 'dlv-wait';   $dlvTxt = 'จ่ายงานแล้ว · รอผล'; }
+                        @endphp
+                        <a href="javascript:void(0);"
+                           class="btn-delivery-status {{ $dlvCls }}"
                            id="btn-dlv-{{ $item->doc_id }}"
                            data-bill-id="{{ $item->doc_id }}"
                            onclick="openDeliveryStatus('{{ $item->doc_id }}', this)"
                            style="border-bottom:none; margin-top: 5px;">
-                            <span class="btn-text">{{ $item->has_delivery ? '✓ จ่ายงานแล้ว' : 'สถานะยังไม่จ่ายงาน' }}</span>
+                            <span class="btn-text">{{ $dlvTxt }}</span>
                         </a>
+                        {{-- ยืนยันผลแล้ว: ขึ้นผู้รับบิลเข้า · เวลา · หมายเหตุ ให้เห็นเลยที่ตาราง --}}
+                        @if ($item->dlv_confirmed)
+                            <div class="dlv-inline {{ $dlvCls }}">
+                                โดย <b>{{ $item->dlv_check_name ?: '-' }}</b>@if($item->dlv_check_time) · {{ $item->dlv_check_time }}@endif
+                                @if($item->dlv_note)<br><span class="dlv-inline-note">หมายเหตุ: {{ $item->dlv_note }}</span>@endif
+                            </div>
+                        @endif
                     </td>
 
                     {{-- ปุ่มแก้ไขข้อมูล --}}
@@ -643,14 +688,19 @@
 
         // ยิงค้นหาแบบ explicit navigation — เก็บค่าทุกฟิลเตอร์ (วันที่ / บริษัทผู้ส่ง / เลขเอกสาร / SO)
         // ไม่พึ่ง attribute form= ของ element ที่อยู่นอก <form> (สาเหตุที่ตัวกรองบริษัทผู้ส่งเดิมไม่ทำงาน)
+        const allDatesChk = document.getElementById('allDates');
+
         window.submitFilters = function submitFilters() {
             const base = @json(route('document.dashboarddoc'));
             const p = new URLSearchParams();
+            const allDates = allDatesChk ? allDatesChk.checked : false;
             const date    = dateInput ? dateInput.value : '';
             const headcom = headcomSel ? headcomSel.value : '';
             const search  = searchInputEl ? searchInputEl.value.trim() : '';
             const so      = soInputEl ? soInputEl.value.trim() : '';
-            if (date)    p.set('date', date);
+            // ไม่จำกัดวันที่ = ส่ง date=all (ค้นทั้งหมด) ; ไม่งั้นส่งวันที่ที่เลือก
+            if (allDates)     p.set('date', 'all');
+            else if (date)    p.set('date', date);
             if (headcom) p.set('headcom', headcom);
             if (search)  p.set('search', search);
             if (so)      p.set('so', so);
@@ -659,6 +709,10 @@
 
         if (dateInput)   dateInput.addEventListener('change', () => submitFilters());
         if (headcomSel)  headcomSel.addEventListener('change', () => submitFilters());
+        if (allDatesChk) allDatesChk.addEventListener('change', () => {
+            if (dateInput) dateInput.disabled = allDatesChk.checked;   // ติ๊กแล้วปิดช่องวันที่
+            submitFilters();
+        });
 
         // ช่องเลขเอกสารชั่วคราว + เลข SO : ค้นหาเมื่อกด Enter (ไม่ auto-reload ระหว่างพิมพ์)
         [searchInputEl, soInputEl].forEach(el => {
@@ -736,6 +790,124 @@
             return p(d.getDate())+'/'+p(d.getMonth()+1)+'/'+(d.getFullYear()+543)+' '+p(d.getHours())+':'+p(d.getMinutes());
         }
 
+    /* ===== ไทม์ไลน์รายละเอียดการจัดส่ง (โค้ดชุดเดียวกันในหน้า sale/dashboard, document/dashboarddoc, so/show) =====
+       rows = transaction_transport ทุกรอบของบิล (รวมรอบประวัติ cancelled_at) เรียงเก่า -> ใหม่
+       แต่ละรอบบอก: ใครจ่ายงาน -> ใครไปส่ง/รถอะไร/วันไหน -> ผลเป็นอย่างไร ใครยืนยัน -> จบรอบเพราะอะไร (ส่งใหม่/เปลี่ยนคนขับ/ยกเลิก) */
+    function dlvEsc(x){ return (x==null?'':String(x)).replace(/[&<>"']/g,function(c){return({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]);}); }
+    // สี/ข้อความตามผล (ชุดเดียวกับหน้า billreceive): สำเร็จ=เขียว, สินค้าผิด=แดง, ส่งใหม่=ฟ้า, ค้างบิล=ส้ม
+    function dlvStyle(st){
+        st = (st||'').toString().trim();
+        if(st.indexOf('สำเร็จ')!==-1 && st.indexOf('ไม่')===-1) return {bg:'#e8f5e9',fg:'#1b5e20',border:'#2e7d32',txt:'สำเร็จ'};
+        if(st.indexOf('สินค้าผิด')!==-1) return {bg:'#ffebee',fg:'#a91f1f',border:'#c62828',txt:'สินค้าผิด'};
+        if(st.indexOf('ไม่สำเร็จ')!==-1) return {bg:'#ffebee',fg:'#a91f1f',border:'#c62828',txt:'ไม่สำเร็จ'};
+        if(st.indexOf('ส่งใหม่')!==-1) return {bg:'#eaf0fc',fg:'#2853d5',border:'#2853d5',txt:'ส่งใหม่'};
+        if(st.indexOf('ค้างบิล')!==-1) return {bg:'#fff4e5',fg:'#b45309',border:'#ed6c02',txt:'ค้างบิล'};
+        if(st===''||st==='0') return {bg:'#f3f4f6',fg:'#6b7280',border:'#d1d5db',txt:'กำลังไปส่ง'};
+        return {bg:'#f3f4f6',fg:'#374151',border:'#d1d5db',txt:st};
+    }
+    function dlvBadge(txt, s){ return '<span style="background:'+s.bg+';color:'+s.fg+';font-size:12px;font-weight:700;padding:2px 10px;border-radius:10px;white-space:nowrap;">'+dlvEsc(txt)+'</span>'; }
+    // note อัตโนมัติตอนกดส่งใหม่ ("ส่งใหม่ (ไม่สำเร็จ) เหตุผล: .. · เคยไปวันที่ .. · จ่ายใหม่ให้ ..") -> ดึงเหตุผล/ผู้รับงานใหม่ออกมา
+    //   ส่วนอื่นซ้ำกับข้อมูลที่แสดงอยู่แล้วจึงไม่แสดงซ้ำ ; note ที่คนพิมพ์เอง (ค้างบิล/สินค้าผิด/ของผิด) แสดงตามจริง
+    function dlvParseNote(note){
+        note = (note||'').toString().trim();
+        if(!note) return {text:''};
+        if(note.indexOf('ส่งใหม่ (ไม่สำเร็จ)') === 0){
+            var m1 = note.match(/เหตุผล:\s*([^·]+)/), m2 = note.match(/จ่ายใหม่ให้\s*([^·]+?)(?:\s*·|$)/);
+            return {auto:true, reason: m1 ? m1[1].trim() : '', reassign: m2 ? m2[1].trim() : '', text:''};
+        }
+        return {text: note};
+    }
+    function dlvLine(label, val){
+        return '<div style="display:flex;gap:8px;align-items:baseline;">'
+             + '<span style="flex:0 0 110px;color:#6b7280;white-space:nowrap;">'+label+'</span>'
+             + '<span style="flex:1;min-width:0;">'+val+'</span></div>';
+    }
+    function dlvTimeline(rows){
+        rows = rows || [];
+        var total = rows.length, redoN = 0, active = [];
+        rows.forEach(function(r){
+            if((r.status||'').indexOf('ส่งใหม่') !== -1) redoN++;
+            if(!r.cancelled_at) active.push(r);
+        });
+        var latest = active.length ? active[active.length-1] : null;
+
+        // ── สรุปด้านบน ──
+        var h = '<div style="background:#f8fafc;border:1px solid #e5e7eb;border-radius:10px;padding:10px 14px;margin-bottom:12px;font-size:13.5px;color:#374151;line-height:1.8;">'
+              + 'จ่ายงานไปส่งทั้งหมด <b>'+total+'</b> รอบ' + (redoN ? ' · สั่งส่งใหม่ <b>'+redoN+'</b> ครั้ง' : '') + '<br>'
+              + 'สถานะตอนนี้: ';
+        if(latest){
+            var ls = dlvStyle(latest.status);
+            h += dlvBadge(ls.txt, ls) + ' · คนขับ <b>'+dlvEsc(latest.driver_name||'-')+'</b>'
+               + (latest.transport_name ? ' ('+dlvEsc(latest.transport_name)+')' : '')
+               + (latest.delivery_date ? ' · ไปส่งวันที่ <b>'+dlvEsc(latest.delivery_date)+'</b>' : '');
+        } else {
+            h += '<b style="color:#9a3412;">รอจ่ายงานใหม่</b> (ทุกรอบถูกส่งใหม่/ยกเลิกแล้ว — รอจ่ายที่หน้าจ่ายงานขนส่ง)';
+        }
+        h += '</div>';
+
+        // ── ทีละรอบ ──
+        rows.forEach(function(r, i){
+            var isHist = !!r.cancelled_at;
+            var isRedo = (r.status||'').indexOf('ส่งใหม่') !== -1;
+            var next   = rows[i+1];
+            // รอบที่จบไปแล้ว: ส่งใหม่ / เปลี่ยนคนขับ (รอบถัดไปเป็น note "เปลี่ยน...") / ยกเลิกการจ่ายงาน (คืนคิว)
+            var kind = !isHist ? '' : (isRedo ? 'redo' : ((next && /^เปลี่ยน/.test((next.note||'').trim())) ? 'change' : 'cancel'));
+            var s    = dlvStyle(r.status);
+            var pn   = dlvParseNote(r.note);
+            var st   = (r.status||'').toString().trim();
+            var hasResult = st !== '' && st !== '0' && !isRedo;   // มีผลจริง (สำเร็จ/ค้างบิล/สินค้าผิด)
+
+            var head, border;
+            if(kind === 'redo')        { head = dlvBadge('ไม่สำเร็จ / ส่งใหม่', dlvStyle('ส่งใหม่')); border = '#2853d5'; }
+            else if(kind === 'change') { head = dlvBadge('เปลี่ยนคนขับ/ขนส่ง', dlvStyle('ส่งใหม่')); border = '#2853d5'; }
+            else if(kind === 'cancel') { head = dlvBadge('ยกเลิกการจ่ายงาน', {bg:'#f3f4f6',fg:'#6b7280'}); border = '#9ca3af'; }
+            else                       { head = dlvBadge(s.txt, s); border = s.border; }
+
+            h += '<div style="border:2px '+(isHist?'dashed':'solid')+' '+border+';border-radius:10px;padding:10px 14px;background:#fff;">'
+               + '<div style="display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:6px;">'
+               +   '<span style="font-weight:700;color:#111827;">รอบที่ '+(i+1)
+               +   (isHist ? ' <span style="color:#9a3412;font-size:12px;font-weight:600;">(จบรอบแล้ว)</span>'
+                           : (r === latest ? ' <span style="color:#1b5e20;font-size:12px;font-weight:600;">(รอบปัจจุบัน)</span>' : ''))
+               +   '</span>' + head
+               + '</div>'
+               + '<div style="font-size:13.5px;color:#374151;line-height:1.9;">';
+
+            // 1) จ่ายงาน
+            h += dlvLine('จ่ายงานโดย', '<b>'+dlvEsc(r.name_pick||'-')+'</b>' + (r.time_pick ? ' · '+dlvEsc(r.time_pick) : ''));
+            // 2) ใครไปส่ง รถอะไร วันไหน
+            h += dlvLine('ผู้ไปส่ง', '<b>'+dlvEsc(r.driver_name||'-')+'</b>'
+                 + (r.transport_name ? ' · '+dlvEsc(r.transport_name) : '')
+                 + (r.delivery_date ? ' · ให้ไปส่งวันที่ <b>'+dlvEsc(r.delivery_date)+'</b>' : '')
+                 + (r.id_transport ? ' · เลขขนส่ง <b>'+dlvEsc(r.id_transport)+'</b>' : ''));
+            // 3) ผลการไปส่ง
+            if(hasResult){
+                h += dlvLine('ผลการส่ง', dlvBadge(s.txt, s)
+                     + ' · ยืนยันโดย <b>'+dlvEsc(r.check_name||'-')+'</b>' + (r.check_time ? ' · '+dlvEsc(r.check_time) : ''));
+            } else if(kind === 'redo'){
+                h += dlvLine('ผลการส่ง', '<b style="color:#a91f1f;">ไม่สำเร็จ</b>');
+            } else if(!isHist){
+                h += dlvLine('ผลการส่ง', '<span style="color:#9ca3af;">ยังไม่ยืนยันผล (อยู่ระหว่างไปส่ง)</span>');
+            }
+            // 4) จบรอบเพราะอะไร ใครทำ เมื่อไหร่
+            var by = '<b>'+dlvEsc(r.cancelled_by || r.check_name || '-')+'</b>' + (r.cancelled_at ? ' · '+dlvEsc(r.cancelled_at) : '');
+            if(kind === 'redo'){
+                h += dlvLine('สั่งส่งใหม่', by
+                     + (pn.reason ? ' · เหตุผล <b style="color:#a91f1f;">'+dlvEsc(pn.reason)+'</b>' : '')
+                     + (pn.reassign ? ' · จ่ายใหม่ให้ '+dlvEsc(pn.reassign) : ''));
+            } else if(kind === 'change'){
+                h += dlvLine('เปลี่ยนคนขับ', by + ' · ไปต่อที่รอบที่ '+(i+2));
+            } else if(kind === 'cancel'){
+                h += dlvLine('ยกเลิกการจ่าย', by + ' · คืนงานไปหน้าจ่ายงาน');
+            }
+            // 5) หมายเหตุที่คนพิมพ์ (ค้างบิล/สินค้าผิด/ของผิด/เปลี่ยนคนขับ ฯลฯ)
+            if(pn.text){ h += dlvLine('หมายเหตุ', '<span style="color:#6b7280;">'+dlvEsc(pn.text)+'</span>'); }
+
+            h += '</div></div>';
+            if(i < total-1){ h += '<div style="text-align:center;color:#9ca3af;font-size:11px;line-height:1;padding:3px 0;color:#c7ccd3;">|</div>'; }
+        });
+        return h;
+    }
+
         async function openDeliveryStatus(billId, btnElement) {
             const pop = document.getElementById('deliveryPopup');
             document.getElementById('dlvBillId').textContent = billId;
@@ -749,61 +921,14 @@
                 if (!j.found || !j.rows.length) {
                     document.getElementById('dlvBody').innerHTML = `
                         <div class="no-delivery">
-                            <div style="font-size:48px;margin-bottom:15px;">⚠️</div>
                             <div>บิลนี้ยังไม่มีการจ่ายงานให้คนขับ</div>
                             <div style="font-size:14px;margin-top:10px;color:#6c757d;">กรุณาติดต่อฝ่ายจ่ายงานเพื่อดำเนินการ</div>
                         </div>
                     `;
                 } else {
-                    if (btnElement) {
-                        btnElement.className = 'btn-delivery-status has-delivery';
-                        btnElement.innerHTML = '<span class="btn-text">✓ จ่ายงานแล้ว</span>';
-                    }
+                    // ไม่แตะสีปุ่มแล้ว — ปุ่มถือสีตามผลจริงจากฝั่ง server (เขียว = สำเร็จเท่านั้น)
 
-                    document.getElementById('dlvBody').innerHTML = j.rows.map(r => {
-                        const recv = r.received
-                            ? '<span class="status-badge status-received">✓ รับงานแล้ว</span>'
-                            : '<span class="status-badge status-pending"> ยังไม่รับงาน</span>';
-                        return `
-                            <div class="delivery-card">
-                                <div class="section-title">📋 ข้อมูลการจ่ายงาน</div>
-                                <div class="info-row">
-                                    <div class="info-label">ผู้จ่ายงาน:</div>
-                                    <div class="info-value"><b>${escHtml(r.name_pick || '-')}</b></div>
-                                </div>
-                                <div class="info-row">
-                                    <div class="info-label">เวลาจ่ายงาน:</div>
-                                    <div class="info-value">${fmtDT(r.time_pick)}</div>
-                                </div>
-                                <div class="info-row">
-                                    <div class="info-label">คนขับ:</div>
-                                    <div class="info-value"><b>${escHtml(r.driver_name || '-')}</b></div>
-                                </div>
-                                <div class="info-row">
-                                    <div class="info-label">รถ/ขนส่ง:</div>
-                                    <div class="info-value">${escHtml(r.transport_name || '-')}</div>
-                                </div>
-                                
-                                <div class="section-title" style="margin-top:20px;">🚚 การรับงาน / สถานะ</div>
-                                <div class="info-row">
-                                    <div class="info-label">สถานะ:</div>
-                                    <div class="info-value">${recv}</div>
-                                </div>
-                                <div class="info-row">
-                                    <div class="info-label">ผู้รับงาน:</div>
-                                    <div class="info-value"><b>${escHtml(r.check_name || '-')}</b></div>
-                                </div>
-                                <div class="info-row">
-                                    <div class="info-label">เวลารับงาน:</div>
-                                    <div class="info-value">${fmtDT(r.check_time)}</div>
-                                </div>
-                                ${r.delivery_date ? `
-                                <div class="info-row">
-                                    <div class="info-label">กำหนดส่ง:</div>
-                                    <div class="info-value" style="color:#6c757d;">${escHtml(r.delivery_date)}</div>
-                                </div>` : ''}
-                            </div>`;
-                    }).join('');
+                    document.getElementById('dlvBody').innerHTML = dlvTimeline(j.rows);
                 }
             } catch (e) {
                 document.getElementById('dlvBody').innerHTML = '<div class="no-delivery" style="background-color:#f8d7da;border-color:#f5c6cb;color:#721c24;">โหลดข้อมูลไม่สำเร็จ<br><small style="font-size:13px;">กรุณาลองใหม่อีกครั้ง</small></div>';

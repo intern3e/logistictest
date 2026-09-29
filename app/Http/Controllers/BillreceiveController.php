@@ -99,8 +99,9 @@ class BillreceiveController extends Controller
 
     /**
      * ดึงรายการงานจาก transaction_transport
-     *   - q (เลขบิล) มีค่า -> ค้นหาแบบไม่สนวันที่
-     *   - ไม่งั้น -> กรองตาม time_pick = date
+     *   - date = 'all' (ไม่จำกัดวันที่) -> ค้นทุกวัน
+     *   - date = วันที่ -> ค้นเฉพาะงานที่จ่าย (time_pick) วันนั้น (ตัวกรองอื่นกรองภายในวันนั้น)
+     *   - มีตัวกรอง (เลขบิล/ลูกค้า/คนขับ/สถานะ) -> รวมแถวประวัติ (รอบที่ถูกส่งใหม่/แทนที่) มาด้วย
      */
     public function data(Request $request)
     {
@@ -112,14 +113,17 @@ class BillreceiveController extends Controller
         $cname  = trim((string) $request->input('cname', ''));
         $driver = trim((string) $request->input('driver', ''));
         $status = trim((string) $request->input('status', ''));   // ok|hold|wrong|pending|''
-        $date   = $request->input('date');
+        $date   = trim((string) $request->input('date', ''));
+        $allDates = ($date === 'all');                 // ไม่จำกัดวันที่
+        if (!$allDates && $date === '') $date = Carbon::now()->toDateString();
 
-        // มีตัวกรองใด ๆ (เลขบิล/รหัส/ชื่อลูกค้า/คนขับ/สถานะ) -> ไม่สนวันที่
-        $ignoreDate = ($q !== '' || $cust !== '' || $cname !== '' || $driver !== '' || $status !== '');
+        // มีตัวกรองใด ๆ (เลขบิล/รหัส/ชื่อลูกค้า/คนขับ/สถานะ)
+        $hasFilter  = ($q !== '' || $cust !== '' || $cname !== '' || $driver !== '' || $status !== '');
+        $ignoreDate = $hasFilter || $allDates;   // ใช้เลือกวิธีเรียงผล (ล่าสุดก่อน)
 
         $query = transaction_delivery::query();
 
-        if ($ignoreDate) {
+        if ($hasFilter) {
             // โหมดค้นหา/กรอง -> ดึงแถวที่ถูกยกเลิก (cancelled) มาด้วย เพื่อให้เห็น "ประวัติรอบเก่า"
             // (เช่น รอบแรกสินค้าผิด/ส่งใหม่ -> soft-cancel -> จ่ายใหม่ -> รอบใหม่สำเร็จ)
             // หน้ารายวัน (ไม่มีตัวกรอง) ยังคงแสดงเฉพาะงาน active ตามเดิม
@@ -156,10 +160,13 @@ class BillreceiveController extends Controller
             if ($driver !== '') {
                 $query->where('driver_name', 'LIKE', "%{$driver}%");
             }
-            // status/คนขับ อย่างเดียว (ไม่มี bill/cust/cname) -> โหลดข้ามวัน (จำกัดจำนวน) แล้วกรองหลัง group
+        }
+
+        if ($allDates) {
+            // ไม่จำกัดวันที่ -> โหลดข้ามวัน (จำกัดจำนวน) แล้วกรองหลัง group
             $query->orderByDesc('time_pick')->limit(3000);
         } else {
-            if (!$date) $date = Carbon::now()->toDateString();
+            // เลือกวันที่ -> ค้น/กรองเฉพาะงานที่จ่ายวันนั้น
             $query->whereDate('time_pick', $date)->orderByDesc('time_pick');
         }
 
@@ -213,8 +220,11 @@ class BillreceiveController extends Controller
 
             // แยกเป็น 1 แถวต่อ "รอบจ่าย" (bill + วันที่ time_pick) — งานที่ถูกจ่ายใหม่ไปวันอื่น
             // จะเป็นคนละแถว ทำให้ค้นเลขบิลแล้วเห็นทั้งงานเดิม(ที่ถูกจ่ายใหม่) และงานใหม่(พร้อมผล)
+            // แถวประวัติ (ถูกส่งใหม่/แทนที่ -> cancelled_at) แยกกลุ่มจากงาน active เสมอ
+            //   ไม่งั้นรอบเก่ากับรอบใหม่ที่จ่ายวันเดียวกันจะถูกรวมเป็นแถวเดียว (เห็นแค่รอบล่าสุด)
             $dispatchDate = optional($d->time_pick)->format('Y-m-d') ?: 'nodate';
-            $groupKey     = $key . '|' . $dispatchDate;
+            $roundKey     = $d->cancelled_at ? ('c' . $d->cancelled_at->format('YmdHis')) : 'active';
+            $groupKey     = $key . '|' . $dispatchDate . '|' . $roundKey;
 
             if (!isset($grouped[$groupKey])) {
                 $grouped[$groupKey] = [
@@ -337,6 +347,10 @@ class BillreceiveController extends Controller
             'action'    => 'required|string|in:ok,hold,wrong,redo',
             'note'      => 'nullable|string|max:1000',
             'redo_date' => 'nullable|date',
+            'redo_mode'      => 'nullable|string|in:return,assign',   // return = คืนไปหน้าจ่ายงาน, assign = จ่ายใหม่ที่นี่เลย
+            'redo_reason'    => 'nullable|string|max:500',            // เหตุผลส่งใหม่: "ไปไม่ทัน" หรือข้อความที่ระบุเอง
+            'redo_driver'    => 'nullable|string|max:255',
+            'redo_transport' => 'nullable|string|max:255',
             'tx_ids'    => 'nullable|array',       // id ของ "รอบจ่าย" ที่จะทำ (ไม่กระทบรอบอื่น)
             'tx_ids.*'  => 'integer',
         ]);
@@ -368,11 +382,40 @@ class BillreceiveController extends Controller
         $userName = $this->userName($user);
         $now      = Carbon::now();
 
-        // ===== ส่งใหม่: คืนงานกลับไปหน้าจ่ายงาน (deliverytrack) เพื่อจ่ายให้คนขับใหม่ =====
-        // ไม่กำหนดวันที่ที่นี่แล้ว -> soft-cancel งานจ่ายเดิม (cancelled_at) ; global scope จะซ่อนงานนี้
-        // ทำให้งานกลับไปโผล่ในหน้าจ่ายงานขนส่ง แล้วค่อยจ่ายคนขับ/เลือกวันใหม่ที่นั่น
+        // ===== ส่งใหม่ =====
+        //   soft-cancel งานจ่ายเดิม (cancelled_at) เก็บเป็นประวัติ แล้วแต่ redo_mode:
+        //   - return (ค่าเดิม): คืนงานไปโผล่ในหน้าจ่ายงานขนส่ง ให้ไปเลือกคนขับ/วันใหม่ที่นั่น
+        //   - assign: จ่ายใหม่ที่นี่เลย (ผู้รับผิดชอบ / วิธีการจัดส่ง / วันที่ไปส่ง) -> สร้างแถวจ่ายงานใหม่ทันที
         if ($validated['action'] === 'redo') {
-            DB::transaction(function () use ($deliveries, $userName, $now) {
+            $mode = $validated['redo_mode'] ?? 'return';
+            $newDriver    = trim((string) ($validated['redo_driver'] ?? ''));
+            $newTransport = trim((string) ($validated['redo_transport'] ?? ''));
+            $newDate      = $validated['redo_date'] ?? null;
+            $reason       = trim((string) ($validated['redo_reason'] ?? ''));
+
+            // ต้องมีเหตุผลส่งใหม่เสมอ (ไปไม่ทัน / อื่นๆ ระบุเอง)
+            if ($reason === '') {
+                return response()->json(['ok' => false, 'message' => 'กรุณาเลือกเหตุผลที่ส่งใหม่'], 422);
+            }
+
+            if ($mode === 'assign') {
+                if ($newTransport === '') {
+                    return response()->json(['ok' => false, 'message' => 'กรุณาเลือกวิธีการจัดส่ง'], 422);
+                }
+                if (!$newDate) {
+                    return response()->json(['ok' => false, 'message' => 'กรุณาเลือกวันที่ไปส่ง'], 422);
+                }
+                // กติกาเดียวกับหน้าจ่ายงาน (DeliverytrackController@store)
+                if ($newTransport === 'เซลล์ไปส่งเอง' && $newDriver === '') {
+                    return response()->json(['ok' => false, 'message' => 'เลือก "เซลล์ไปส่งเอง" กรุณาระบุชื่อเซลล์ที่ไปส่งเองด้วย'], 422);
+                }
+                if ($newTransport !== 'เซลล์ไปส่งเอง' && $newDriver !== ''
+                    && !in_array($newDriver, config('delivery.responsible_persons', []), true)) {
+                    return response()->json(['ok' => false, 'message' => 'กรุณาเลือกผู้รับผิดชอบจากรายการที่มีให้เท่านั้น'], 422);
+                }
+            }
+
+            DB::transaction(function () use ($deliveries, $userName, $now, $mode, $newDriver, $newTransport, $newDate, $reason) {
                 foreach ($deliveries as $d) {
                     // เก็บประวัติ: งานนี้เคยไปวันไหน คนขับใคร ผู้จ่ายงานใคร แล้วไม่สำเร็จ (ต้องส่งใหม่)
                     $wentDate = $d->delivery_date
@@ -382,16 +425,48 @@ class BillreceiveController extends Controller
                     $d->status       = 'ส่งใหม่';          // ประวัติ: ไม่สำเร็จ ต้องส่งใหม่
                     $d->check_name   = $userName;
                     $d->check_time   = $now;
-                    $d->cancelled_at = $now;               // คืนงานไปหน้าจ่ายงาน (ซ่อนจากงาน active) แต่ยังเก็บเป็นประวัติ
+                    $d->cancelled_at = $now;               // ซ่อนจากงาน active แต่ยังเก็บเป็นประวัติ
                     $d->cancelled_by = $userName;
-                    $d->note = 'ส่งใหม่ (ไม่สำเร็จ) เคยไปวันที่ ' . $wentDate
+                    $d->note = 'ส่งใหม่ (ไม่สำเร็จ) เหตุผล: ' . $reason
+                             . ' · เคยไปวันที่ ' . $wentDate
                              . ' · คนขับ ' . ($d->driver_name ?: '-')
                              . ' · จ่ายโดย ' . ($d->name_pick ?: '-')
-                             . ' · สั่งส่งใหม่โดย ' . $userName . ' ' . $now->format('Y-m-d H:i');
+                             . ' · สั่งส่งใหม่โดย ' . $userName . ' ' . $now->format('Y-m-d H:i')
+                             . ($mode === 'assign'
+                                ? ' · จ่ายใหม่ให้ ' . ($newDriver ?: '-') . ' / ' . $newTransport
+                                  . ' วันที่ ' . Carbon::parse($newDate)->format('d/m/Y')
+                                : '');
                     $d->save();
+                }
+
+                if ($mode === 'assign') {
+                    // จ่ายงานใหม่ 1 แถวต่อ bill_id (เหมือนหน้าจ่ายงาน) — ข้ามถ้ายังมีงาน active ของ bill_id นั้นอยู่
+                    foreach ($deliveries->pluck('bill_id')->filter()->unique() as $billId) {
+                        if (transaction_delivery::where('bill_id', $billId)->exists()) continue;
+                        transaction_delivery::create([
+                            'bill_id'        => $billId,
+                            'name_pick'      => $userName,
+                            'time_pick'      => $now,
+                            'delivery_date'  => $newDate,
+                            'transport_name' => $newTransport,
+                            'driver_name'    => $newDriver !== '' ? $newDriver : null,
+                            'check_name'     => null,
+                            'check_time'     => null,
+                            'status'         => '0',
+                            'note'           => null,
+                        ]);
+                    }
                 }
             });
 
+            if ($mode === 'assign') {
+                return response()->json([
+                    'ok'      => true,
+                    'action'  => 'redo',
+                    'message' => 'จ่ายงานใหม่ให้ ' . ($newDriver ?: $newTransport) . ' วันที่ '
+                               . Carbon::parse($newDate)->format('d/m/Y') . ' แล้ว',
+                ]);
+            }
             return response()->json([
                 'ok'      => true,
                 'action'  => 'redo',

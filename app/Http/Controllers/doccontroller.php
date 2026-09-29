@@ -58,7 +58,8 @@ class DocController extends Controller
             if ($docbill->isEmpty()) {
                 $message = 'ไม่พบข้อมูลของบริษัทผู้ส่งนี้';
             }
-        } elseif ($date) {
+        } elseif ($date && $date !== 'all') {
+            // เลือกวัน = ค้นเฉพาะวันนั้น
             $docbill = Docbills::whereDate('time', $date)
                         ->orderBy('doc_id', 'desc')
                         ->get();
@@ -67,24 +68,37 @@ class DocController extends Controller
                 $message = 'ไม่พบข้อมูลที่ตรงกับวันที่เลือก';
             }
         } else {
-            $docbill = Docbills::orderBy('doc_id', 'desc')->get();
+            // ไม่จำกัดวันที่ (date=all หรือไม่ระบุ) = ค้นทั้งหมด
+            $docbill = Docbills::orderBy('doc_id', 'desc')->limit(1000)->get();
+
+            if ($docbill->isEmpty()) {
+                $message = 'ไม่พบข้อมูล';
+            }
         }
 
-        // โหลดสถานะ "จ่ายงานแล้ว" ของทุกบิลในครั้งเดียว (query เดียว) แทนการเช็คทีละบิลฝั่ง frontend
-        $docIds = $docbill->pluck('doc_id')->all();
-        $deliveredIds = [];
+        // โหลด "รอบล่าสุดที่ยัง active" ของแต่ละบิลในครั้งเดียว — ใช้ทำสถานะ/สี/ผู้รับ/เวลา/หมายเหตุบนปุ่ม
+        $docIds  = $docbill->pluck('doc_id')->all();
+        $dlvByDoc = collect();
         if (!empty($docIds)) {
-            $deliveredIds = DB::table('transaction_transport')
+            $dlvByDoc = DB::table('transaction_transport')
                 ->whereIn('bill_id', $docIds)
                 ->whereNull('cancelled_at')   // งานที่ยกเลิกแล้วไม่นับว่าจ่ายแล้ว
-                ->distinct()
-                ->pluck('bill_id')
-                ->flip()
-                ->all();
+                ->orderBy('id')
+                ->get(['bill_id', 'status', 'check_name', 'check_time', 'note'])
+                ->groupBy('bill_id')
+                ->map(fn ($rows) => $rows->last());   // รอบล่าสุด
         }
 
-        $docbill->each(function ($item) use ($deliveredIds) {
-            $item->has_delivery = isset($deliveredIds[$item->doc_id]);
+        $docbill->each(function ($item) use ($dlvByDoc) {
+            $r = $dlvByDoc->get($item->doc_id);
+            $item->has_delivery = (bool) $r;
+            $status = trim((string) ($r->status ?? ''));
+            // ผลจริง: 'จัดส่งสำเร็จ' = ยืนยันสำเร็จ (เขียว), 'ค้างบิล' (ส้ม), 'สินค้าผิด' (แดง), อื่นๆ/ยังไม่ยืนยัน = รอผล
+            $item->dlv_status     = $status;
+            $item->dlv_confirmed  = $r && !empty($r->check_name);      // ยืนยันผลแล้ว
+            $item->dlv_check_name = $r->check_name ?? null;
+            $item->dlv_check_time = ($r && $r->check_time) ? \Carbon\Carbon::parse($r->check_time)->format('d/m/Y H:i') : null;
+            $item->dlv_note       = $r->note ?? null;
         });
 
         return view('document.dashboarddoc', compact('docbill', 'message', 'creator'));
@@ -97,27 +111,33 @@ class DocController extends Controller
             return response()->json(['found' => false, 'rows' => []]);
         }
 
+        // ดึง "ทุกรอบ" รวมรอบที่ถูกยกเลิก/ส่งใหม่ (ประวัติ) เรียงเก่า -> ใหม่ ให้เห็นเส้นทางงานครบ
         $rows = DB::table('transaction_transport')
             ->where('bill_id', $billId)
-            ->whereNull('cancelled_at')   // ไม่ดึงงานที่ยกเลิกแล้วมาแสดง
-            ->orderByDesc('id')
+            ->orderBy('id')
             ->get();
 
         return response()->json([
             'found'   => $rows->isNotEmpty(),
+            'active'  => $rows->whereNull('cancelled_at')->count(),   // จำนวนรอบที่ยัง active (0 = คืนคิว รอจ่ายใหม่)
             'bill_id' => $billId,
+            // วันที่รูปแบบเดียวกับหน้า sale/dashboard และ so/show (d/m/Y H:i)
             'rows'    => $rows->map(function ($r) {
-                $received = !empty($r->check_name) || (string) $r->status === '1';
+                $fmt = fn ($v, $f) => $v ? \Carbon\Carbon::parse($v)->format($f) : null;
                 return [
                     'name_pick'      => $r->name_pick,
-                    'time_pick'      => $r->time_pick,
+                    'time_pick'      => $fmt($r->time_pick, 'd/m/Y H:i'),
                     'driver_name'    => $r->driver_name,
                     'transport_name' => $r->transport_name,
+                    'id_transport'   => $r->id_transport ?? null,
                     'check_name'     => $r->check_name,
-                    'check_time'     => $r->check_time,
+                    'check_time'     => $fmt($r->check_time, 'd/m/Y H:i'),
                     'status'         => $r->status,
-                    'received'       => $received,
-                    'delivery_date'  => $r->delivery_date,
+                    'received'       => !empty($r->check_name) || (string) $r->status === '1',
+                    'delivery_date'  => $fmt($r->delivery_date, 'd/m/Y'),
+                    'note'           => $r->note,
+                    'cancelled_at'   => $fmt($r->cancelled_at ?? null, 'd/m/Y H:i'),
+                    'cancelled_by'   => $r->cancelled_by ?? null,
                 ];
             })->values(),
         ]);

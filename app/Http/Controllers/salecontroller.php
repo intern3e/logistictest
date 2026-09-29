@@ -123,27 +123,29 @@ public function billDelivery(Request $request)
         return response()->json(['ok' => true, 'billid' => $billid, 'rows' => []]);
     }
 
+    // ดึง "ทุกรอบ" รวมรอบที่ถูกยกเลิก/ส่งใหม่ (ประวัติ) เรียงเก่า -> ใหม่ ให้เห็นเส้นทางงานครบ
     $rows = DB::table('transaction_transport')
         ->whereIn('bill_id', $soDetailIds)
-        ->whereNull('cancelled_at')
-        ->orderByDesc('time_pick')
-        ->get(['name_pick', 'time_pick', 'transport_name', 'driver_name',
-               'check_name', 'check_time', 'status', 'note', 'delivery_date', 'id_transport']);
+        ->orderBy('id')
+        ->get(['id', 'name_pick', 'time_pick', 'transport_name', 'driver_name',
+               'check_name', 'check_time', 'status', 'note', 'delivery_date', 'id_transport',
+               'cancelled_at', 'cancelled_by']);
 
-    $out = $rows->map(function ($r) {
-        return [
-            'name_pick'      => $r->name_pick,
-            'time_pick'      => $r->time_pick ? \Carbon\Carbon::parse($r->time_pick)->format('d/m/Y H:i') : null,
-            'transport_name' => $r->transport_name,
-            'driver_name'    => $r->driver_name,
-            'id_transport'   => $r->id_transport,
-            'status'         => $r->status,
-            'note'           => $r->note,
-            'delivery_date'  => $r->delivery_date ? \Carbon\Carbon::parse($r->delivery_date)->format('d/m/Y') : null,
-            'check_name'     => $r->check_name,
-            'check_time'     => $r->check_time ? \Carbon\Carbon::parse($r->check_time)->format('d/m/Y H:i') : null,
-        ];
-    })->values();
+    $fmt = fn ($v, $f) => $v ? \Carbon\Carbon::parse($v)->format($f) : null;
+    $out = $rows->map(fn ($r) => [
+        'name_pick'      => $r->name_pick,
+        'time_pick'      => $fmt($r->time_pick, 'd/m/Y H:i'),
+        'transport_name' => $r->transport_name,
+        'driver_name'    => $r->driver_name,
+        'id_transport'   => $r->id_transport,
+        'status'         => $r->status,
+        'note'           => $r->note,
+        'delivery_date'  => $fmt($r->delivery_date, 'd/m/Y'),
+        'check_name'     => $r->check_name,
+        'check_time'     => $fmt($r->check_time, 'd/m/Y H:i'),
+        'cancelled_at'   => $fmt($r->cancelled_at, 'd/m/Y H:i'),   // มีค่า = รอบประวัติ (ส่งใหม่/ยกเลิก/ถูกแทนที่)
+        'cancelled_by'   => $r->cancelled_by,
+    ])->values();
 
     return response()->json(['ok' => true, 'billid' => $billid, 'rows' => $out]);
 }
