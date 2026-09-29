@@ -296,12 +296,16 @@ class BillreceiveController extends Controller
             })->values();
         }
 
-        // ลำดับกลุ่ม: 0 = ยังไม่รับเข้า (แสดงก่อน), 1 = รับเข้าแล้ว / ถูกจ่ายใหม่แล้ว, 2 = ประวัติรอบเก่า (cancelled)
+        // ลำดับกลุ่มตามสถานะ (แต่ละสถานะเกาะกลุ่มกัน ไม่สลับปน):
+        //   0 = ยังไม่รับเข้า, 1 = สินค้าผิด, 2 = ค้างบิล, 3 = สำเร็จ,
+        //   4 = ถูกจ่ายใหม่ไปวันอื่นแล้ว, 5 = ประวัติรอบเก่า (cancelled)
         $rankOf = function ($r) {
-            if (!empty($r['cancelled'])) return 2;
+            if (!empty($r['cancelled'])) return 5;
             $s = trim((string) $r['status']);
-            $received = in_array($s, ['จัดส่งสำเร็จ', 'ค้างบิล', 'สินค้าผิด'], true);
-            if ($received || !empty($r['redispatched_to'])) return 1;
+            if ($s === 'สินค้าผิด')    return 1;
+            if ($s === 'ค้างบิล')      return 2;
+            if ($s === 'จัดส่งสำเร็จ') return 3;
+            if (!empty($r['redispatched_to'])) return 4;
             return 0;
         };
 
