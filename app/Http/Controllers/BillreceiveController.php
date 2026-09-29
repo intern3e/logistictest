@@ -296,14 +296,27 @@ class BillreceiveController extends Controller
             })->values();
         }
 
+        // ลำดับกลุ่ม: 0 = ยังไม่รับเข้า (แสดงก่อน), 1 = รับเข้าแล้ว / ถูกจ่ายใหม่แล้ว, 2 = ประวัติรอบเก่า (cancelled)
+        $rankOf = function ($r) {
+            if (!empty($r['cancelled'])) return 2;
+            $s = trim((string) $r['status']);
+            $received = in_array($s, ['จัดส่งสำเร็จ', 'ค้างบิล', 'สินค้าผิด'], true);
+            if ($received || !empty($r['redispatched_to'])) return 1;
+            return 0;
+        };
+
         if ($ignoreDate) {
-            // โหมดกรอง -> เรียงวันที่ล่าสุดไปอดีต
-            $rows = $rows->sortByDesc(function ($r) { return $r['time_pick'] ?? ''; })->values();
+            // โหมดกรอง -> งานยังไม่รับเข้าก่อน แล้วในแต่ละกลุ่มเรียงวันที่ล่าสุดไปอดีต
+            $rows = $rows->sort(function ($a, $b) use ($rankOf) {
+                $ra = $rankOf($a); $rb = $rankOf($b);
+                if ($ra !== $rb) return $ra <=> $rb;
+                return strcmp((string) ($b['time_pick'] ?? ''), (string) ($a['time_pick'] ?? ''));
+            })->values();
         } else {
-            // โหมดรายวัน -> จัดกลุ่มตามขนส่ง (transport_name) ให้อยู่ติดกัน แล้วตามบิล/รอบจ่าย (ขนส่งว่างท้ายสุด)
-            $rows = $rows->sortBy(function ($r) {
+            // โหมดรายวัน -> งานยังไม่รับเข้าก่อน แล้วจัดกลุ่มตามขนส่ง (transport_name) / บิล / รอบจ่าย (ขนส่งว่างท้ายสุด)
+            $rows = $rows->sortBy(function ($r) use ($rankOf) {
                 $t = trim((string) $r['transport_name']);
-                return ($t === '' ? '1|' : '0|' . $t) . '||' . $r['bill_no'] . '|' . ($r['time_pick'] ?? '');
+                return $rankOf($r) . '#' . ($t === '' ? '1|' : '0|' . $t) . '||' . $r['bill_no'] . '|' . ($r['time_pick'] ?? '');
             })->values();
         }
 
