@@ -25,7 +25,7 @@
             --warning: #ea580c;
             --row-hover: #f0f7ff;
             --row-done: #f8fafc;
-            --page-bg: #eef2f7;
+            --page-bg: #ffffff;
             --shadow-sm: 0 1px 2px rgba(0,0,0,0.04);
             --shadow: 0 1px 3px rgba(0,0,0,0.06), 0 1px 2px rgba(0,0,0,0.04);
             --shadow-md: 0 4px 6px -1px rgba(0,0,0,0.07), 0 2px 4px -2px rgba(0,0,0,0.05);
@@ -434,11 +434,11 @@
         }
 
         .table-scroll {
-            background: var(--canvas);
-            border-radius: 8px;
-            border: 1px solid var(--border);
+            background: transparent;
+            border-radius: 0;
+            border: none;
             overflow: hidden;
-            box-shadow: var(--shadow);
+            box-shadow: none;
             width: 100%;
         }
 
@@ -655,6 +655,7 @@
                         </div>
                     @endif
                 </div>
+                <button type="button" class="btn-primary" id="btnSearch">ค้นหา</button>
                 <button type="button" class="btn-ghost" id="btnClear">ล้าง</button>
             @if(($canSeePrice ?? false))
                 <div class="value-block">
@@ -691,7 +692,7 @@
                         </tr>
                     </thead>
                     <tbody id="tableBody">
-                        <tr><td colspan="{{ $colspan }}"><div class="empty-wrapper"><div class="empty-state">พิมพ์หรือเลือกตัวกรอง (ชั้น / Sale / SO / PO) เพื่อค้นหาอัตโนมัติ</div></div></td></tr>
+                        <tr><td colspan="{{ $colspan }}"><div class="empty-wrapper"><div class="empty-state">พิมพ์หรือเลือกตัวกรอง (ชั้น / Sale / SO / PO) แล้วกดปุ่ม "ค้นหา"</div></div></td></tr>
                     </tbody>
                 </table>
             </div>
@@ -736,6 +737,7 @@
                     <tr>
                         <th style="width: 150px;">ชั้นวาง</th>
                         <th style="text-align: left;">ชื่อสินค้า</th>
+                        <th style="width: 90px; text-align:center;">จำนวน</th>
                         @if(($canManage ?? false))
                             <th style="width: 110px;">จัดการ</th>
                         @endif
@@ -791,7 +793,7 @@
         let hl = -1;
         function render(){
             const q = (input.value || '').trim().toLowerCase();
-            const matches = (q ? options.filter(s => String(s).toLowerCase().includes(q)) : options).slice(0, 40);
+            const matches = (q ? options.filter(s => String(s).toLowerCase().includes(q)) : options).slice(0, 1000);
             hl = -1;
             if (!matches.length){ panel.innerHTML = '<div class="suggest-empty">ไม่พบตัวเลือก</div>'; panel.classList.add('open'); return; }
             panel.innerHTML = matches.map(s => '<div class="suggest-item" data-val="' + String(s).replace(/"/g,'&quot;') + '">' + esc(s) + '</div>').join('');
@@ -937,7 +939,7 @@
         document.getElementById('productPoLabel').textContent = 'PO ' + po + (so ? ' / SO ' + so : '');
         const tbodyModal = document.getElementById('productModalBody');
         const products = row.products || [];
-        const prodCols = CAN_MANAGE ? 3 : 2;
+        const prodCols = CAN_MANAGE ? 4 : 3;
         
         if (products.length === 0) {
             tbodyModal.innerHTML = '<tr><td colspan="' + prodCols + '" style="text-align:center; padding: 24px; color: var(--muted);">ไม่มีรายการสินค้า</td></tr>';
@@ -947,9 +949,12 @@
                 const moveBtn = (CAN_MANAGE && !row.is_checkedout)
                     ? '<td style="text-align:center;"><button type="button" class="btn-view btn-move" onclick="closeProductModal(); openMove(\'' + escJs(po) + '\', \'' + escJs(so) + '\', ' + (p.line_id ? p.line_id : 'null') + ')">ย้ายชั้น</button></td>'
                     : (CAN_MANAGE ? '<td style="text-align:center;"><span class="dash" style="font-size:11.5px;">เช็คเอาท์แล้ว</span></td>' : '');
+                const qtyTxt = (p.qty !== null && p.qty !== undefined && p.qty !== '')
+                    ? (parseFloat(p.qty) + '') : '-';
                 return '<tr>' +
                     '<td>' + esc(p.shelf || '-') + '</td>' +
                     '<td style="text-align:left;">' + esc(p.name || '-') + '</td>' +
+                    '<td style="text-align:center; font-weight:700;">' + esc(qtyTxt) + '</td>' +
                     moveBtn +
                     '</tr>';
             }).join('');
@@ -1025,7 +1030,7 @@
             if (showCount) showCount.textContent = 0;
             const tv0 = document.getElementById('totalValue'); if (tv0) tv0.textContent = '0.00';
             updateOverdueAlert(0);
-            setMsg('พิมพ์หรือเลือกตัวกรอง (ชั้น / Sale / SO / PO) เพื่อค้นหาอัตโนมัติ');
+            setMsg('พิมพ์หรือเลือกตัวกรอง (ชั้น / Sale / SO / PO) แล้วกดปุ่ม "ค้นหา"');
             return;
         }
 
@@ -1087,14 +1092,14 @@
         if (showCount) showCount.textContent = 0;
         const tv = document.getElementById('totalValue'); if (tv) tv.textContent = '0.00';
         updateOverdueAlert(0);
-        setMsg('พิมพ์หรือเลือกตัวกรอง (ชั้น / Sale / SO / PO) เพื่อค้นหาอัตโนมัติ');
+        setMsg('พิมพ์หรือเลือกตัวกรอง (ชั้น / Sale / SO / PO) แล้วกดปุ่ม "ค้นหา"');
     });
 
-    // ค้นหาอัตโนมัติขณะพิมพ์ (debounce กันยิง request ถี่เกินไป)
-    [fShelf, fSo, fPo].forEach(el => el.addEventListener('input', () => scheduleSearch()));
-    if (fSale && !fSale.readOnly) fSale.addEventListener('input', () => scheduleSearch());
+    // ค้นหาเมื่อกดปุ่ม "ค้นหา" เท่านั้น (ไม่ค้นอัตโนมัติขณะพิมพ์)
+    const btnSearch = document.getElementById('btnSearch');
+    if (btnSearch) btnSearch.addEventListener('click', () => { if (searchDebounce) clearTimeout(searchDebounce); search(); });
 
-    // กด Enter ให้ค้นหาทันทีโดยไม่ต้องรอ debounce
+    // กด Enter ในช่องกรอง = ค้นหาทันที
     [fShelf, fSale, fSo, fPo].forEach(el => el.addEventListener('keydown', e => {
         if (e.key === 'Enter') { if (searchDebounce) clearTimeout(searchDebounce); search(); }
     }));

@@ -29,6 +29,7 @@ use App\Models\Bill_Detail;
     Route::get('/', [salecontroller::class, 'home'])->name('home');
     Route::get('/SoItem', [SaleController::class, 'dashboard'])->name('sale.dashboard');
     Route::get('/dashboard', [SaleController::class, 'dashboard']);
+    Route::get('/sale/bill-delivery', [SaleController::class, 'billDelivery'])->name('sale.billDelivery');
     Route::get('/insertdata', [salecontroller::class, 'insertdata'])->name('sale.insertdata'); // GET
     Route::post('/insertdata', [salecontroller::class, 'insertData'])->name('sale.insertdata.post'); // POST
     Route::post('/sodetail', [SaleController::class, 'findData'])->name('sodetail.post');

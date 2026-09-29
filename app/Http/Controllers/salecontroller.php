@@ -86,6 +86,20 @@ public function dashboard(Request $request)
         ->paginate(100)
         ->appends($request->query());
 
+    // เช็คว่าบิลไหน "มีการจัดส่ง" (มีแถวใน transaction_transport ที่ยังไม่ยกเลิก) เพื่อไฮไลต์สถานะปริ้นสำเร็จ
+    $soDetailIds = $bill->getCollection()->pluck('so_detail_id')->filter()->unique()->values()->all();
+    $deliveredSet = [];
+    if (!empty($soDetailIds)) {
+        $deliveredSet = DB::table('transaction_transport')
+            ->whereIn('bill_id', $soDetailIds)
+            ->whereNull('cancelled_at')
+            ->distinct()->pluck('bill_id')->flip()->all();
+    }
+    $bill->getCollection()->transform(function ($item) use ($deliveredSet) {
+        $item->has_delivery = isset($deliveredSet[$item->so_detail_id]);
+        return $item;
+    });
+
     if ($bill->isEmpty()) {
         $message = $isSearching
             ? 'ไม่พบข้อมูลที่ค้นหา (ค้นทุกวันแล้ว)'
@@ -93,6 +107,45 @@ public function dashboard(Request $request)
     }
 
     return view('sale.dashboard', compact('bill', 'message', 'empList'));
+}
+
+/**
+ * ข้อมูลจัดส่ง/รับเข้าของบิล (สำหรับ popup หน้า sale/dashboard)
+ * ดึงจาก transaction_transport ตาม so_detail_id ของ billid นั้น + แสดง id_transport
+ */
+public function billDelivery(Request $request)
+{
+    $billid = trim((string) $request->input('billid', ''));
+    if ($billid === '') return response()->json(['ok' => false, 'rows' => []]);
+
+    $soDetailIds = Bill::where('billid', $billid)->pluck('so_detail_id')->all();
+    if (empty($soDetailIds)) {
+        return response()->json(['ok' => true, 'billid' => $billid, 'rows' => []]);
+    }
+
+    $rows = DB::table('transaction_transport')
+        ->whereIn('bill_id', $soDetailIds)
+        ->whereNull('cancelled_at')
+        ->orderByDesc('time_pick')
+        ->get(['name_pick', 'time_pick', 'transport_name', 'driver_name',
+               'check_name', 'check_time', 'status', 'note', 'delivery_date', 'id_transport']);
+
+    $out = $rows->map(function ($r) {
+        return [
+            'name_pick'      => $r->name_pick,
+            'time_pick'      => $r->time_pick ? \Carbon\Carbon::parse($r->time_pick)->format('d/m/Y H:i') : null,
+            'transport_name' => $r->transport_name,
+            'driver_name'    => $r->driver_name,
+            'id_transport'   => $r->id_transport,
+            'status'         => $r->status,
+            'note'           => $r->note,
+            'delivery_date'  => $r->delivery_date ? \Carbon\Carbon::parse($r->delivery_date)->format('d/m/Y') : null,
+            'check_name'     => $r->check_name,
+            'check_time'     => $r->check_time ? \Carbon\Carbon::parse($r->check_time)->format('d/m/Y H:i') : null,
+        ];
+    })->values();
+
+    return response()->json(['ok' => true, 'billid' => $billid, 'rows' => $out]);
 }
 
 

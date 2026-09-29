@@ -162,6 +162,7 @@ class ShelfsaleController extends Controller
                     'shelf'       => $line->shelf,
                     'received_at' => $line->received_at,
                     'good_name'   => $line->good_name,
+                    'recv_qty'    => $line->recv_qty,
                     'line_id'     => $line->id,
                     'po_receive_id' => $line->po_receive_id,
                     'checkout_by' => optional($h)->checkout_by,
@@ -316,11 +317,11 @@ class ShelfsaleController extends Controller
                     $dt = DB::connection(self::MSSQL_CONNECTION)->table('PODT')
                         ->whereIn('POID', array_keys($poidToClean))
                         ->where('CancelFlag', '<>', 'Y')
-                        ->get(['POID', 'GoodName']);
+                        ->get(['POID', 'GoodName', 'GoodQty2']);
                     foreach ($dt as $line) {
                         $clean = $poidToClean[$line->POID] ?? null;
                         if ($clean === null) continue;
-                        $namesByPo[$clean][] = trim((string) $line->GoodName);
+                        $namesByPo[$clean][] = ['name' => trim((string) $line->GoodName), 'qty' => $line->GoodQty2];
                     }
                 }
             }
@@ -340,12 +341,12 @@ class ShelfsaleController extends Controller
                 $internalLines = DB::connection(self::LEGACY_CONNECTION)->table('internal_poline')
                     ->whereIn('PONum', $legacyCleanPos)
                     ->orderBy('POLineSeq')
-                    ->get(['PONum', 'Description']);
+                    ->get(['PONum', 'Description', 'Quantity']);
                 foreach ($internalLines as $ln) {
                     $clean = preg_replace('/^PO/i', '', (string) $ln->PONum);
                     if (isset($posWithPodt[$clean])) continue;
                     $name = trim((string) $ln->Description);
-                    if ($name !== '') $namesByPo[$clean][] = $name;
+                    if ($name !== '') $namesByPo[$clean][] = ['name' => $name, 'qty' => $ln->Quantity];
                 }
             } catch (\Throwable $e) {
                 \Illuminate\Support\Facades\Log::warning('shelfsale 3e.internal_poline failed: ' . $e->getMessage());
@@ -357,11 +358,11 @@ class ShelfsaleController extends Controller
                 try {
                     $logiLines = DB::table('internal_poline')   // default connection = ฐาน logistic
                         ->whereIn('internal_id', $stillMissing)
-                        ->get(['internal_id', 'item_name']);
+                        ->get(['internal_id', 'item_name', 'item_quantity']);
                     foreach ($logiLines as $ln) {
                         $clean = preg_replace('/^PO/i', '', (string) $ln->internal_id);
                         $name  = trim((string) $ln->item_name);
-                        if ($name !== '') $namesByPo[$clean][] = $name;
+                        if ($name !== '') $namesByPo[$clean][] = ['name' => $name, 'qty' => $ln->item_quantity];
                     }
                 } catch (\Throwable $e) {
                     \Illuminate\Support\Facades\Log::warning('shelfsale logistic.internal_poline failed: ' . $e->getMessage());
@@ -390,9 +391,28 @@ class ShelfsaleController extends Controller
             return false;
         };
 
+        // ดึง "จำนวน" ของงานเก่าจาก token "S.<so>=<qty>" ในชื่อ (เลือก qty ของ SO ที่ตรง)
+        //   ถ้าไม่มี token = คืน null (แสดง '-')
+        $extractQty = function ($name, $soNum) {
+            if (!preg_match_all('/S\.([0-9\/]+)\s*=\s*([0-9]+(?:\.[0-9]+)?)/u', (string) $name, $m, PREG_SET_ORDER)) {
+                return null;
+            }
+            $soDigits = preg_replace('/\D/', '', (string) $soNum);
+            foreach ($m as $mm) {
+                $tokDigits = preg_replace('/\D/', '', $mm[1]);
+                if ($tokDigits === '') continue;
+                if ($soDigits === '' || $tokDigits === $soDigits
+                    || str_ends_with($soDigits, $tokDigits)
+                    || str_ends_with($tokDigits, $soDigits)) {
+                    return $mm[2];
+                }
+            }
+            return null;
+        };
+
         // ===== รวมเป็น 1 แถวต่อ 1 (PO + SO + รอบ) — แยกตาม "รอบรับเข้า" (po_receive_id) เพื่อไม่รวมรอบเก่า+ใหม่เป็นแถวเดียว =====
         $rows = $items->groupBy(fn ($it) => preg_replace('/^PO/i', '', (string) $it->po) . '|' . (string) $it->so . '|' . (string) ($it->po_receive_id ?? ''))
-            ->map(function ($group) use ($priceByDocu, $shipByDocu, $namesByPo, $now, $soBelongs) {
+            ->map(function ($group) use ($priceByDocu, $shipByDocu, $namesByPo, $now, $soBelongs, $extractQty) {
                 $first    = $group->first();
                 $cleanPo  = preg_replace('/^PO/i', '', (string) $first->po);
                 $shelves  = $group->pluck('shelf')->filter()->unique()->values();
@@ -410,16 +430,22 @@ class ShelfsaleController extends Controller
                     $shelfForLegacy = $shelves->first() ?: '';
                     // งานเก่า: ชื่อสินค้าเป็นระดับ PO -> กรองเฉพาะที่เป็นของ SO นี้ (ตาม token S.<so>)
                     $filtered = collect($namesByPo[$cleanPo])
-                        ->filter(fn ($n) => $soBelongs($n, $first->so))
+                        ->filter(fn ($it) => $soBelongs($it['name'] ?? '', $first->so))
                         ->values();
                     // เผื่อ token ไม่ตรงรูปแบบจนกรองหมด -> แสดงทั้งหมดกันข้อมูลหาย
                     if ($filtered->isEmpty()) $filtered = collect($namesByPo[$cleanPo])->values();
-                    $products = $filtered->map(fn ($n) => [
-                        'name' => $n ?: '-', 'shelf' => $shelfForLegacy, 'line_id' => null,
-                    ])->values();
+                    $soForQty = $first->so;
+                    $products = $filtered->map(function ($it) use ($shelfForLegacy, $soForQty, $extractQty) {
+                        $nm = $it['name'] ?? '-';
+                        // จำนวน: token S.<so>=qty ในชื่อก่อน (ต่อ SO) ไม่งั้นใช้ qty จากแหล่งข้อมูล (PODT/internal)
+                        $qty = $extractQty($nm, $soForQty);
+                        if ($qty === null) $qty = $it['qty'] ?? null;
+                        return ['name' => $nm ?: '-', 'shelf' => $shelfForLegacy, 'qty' => $qty, 'line_id' => null];
+                    })->values();
                 } else {
                     $products = $group->map(fn ($it) => [
-                        'name' => $it->good_name ?: '-', 'shelf' => $it->shelf ?: '', 'line_id' => $it->line_id,
+                        'name' => $it->good_name ?: '-', 'shelf' => $it->shelf ?: '',
+                        'qty' => $it->recv_qty, 'line_id' => $it->line_id,
                     ])->values();
                 }
 

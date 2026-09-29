@@ -327,7 +327,9 @@ window.addEventListener('load', () => {
                     @elseif($item->statuspdf == 3)
                         <span class="status-noprint">ไม่ปริ้นบิล</span>
                     @else
-                        <span class="status-done">ปริ้นสำเร็จ</span>
+                        <span class="status-done" style="cursor:pointer;text-decoration:underline;@if(!empty($item->has_delivery)) background:#FFE97A;color:#5a4b00;padding:2px 8px;border-radius:6px;@endif"
+                              title="{{ !empty($item->has_delivery) ? 'มีการจัดส่งแล้ว — ดูข้อมูล' : 'ดูข้อมูลจัดส่ง / รับเข้า' }}"
+                              onclick="openDeliveryPopup({{ json_encode((string) $item->billid) }})">ปริ้นสำเร็จ</span>
                     @endif
                     <br>
                     {{ $item->print_time ? \Carbon\Carbon::parse($item->print_time)->format('H:i d/m/Y') : '' }}
@@ -358,6 +360,54 @@ window.addEventListener('load', () => {
         <p style="text-align: center">{{ $message }}</p>
              @endif
     </div>
+
+    <!-- Popup ข้อมูลจัดส่ง / รับเข้า (กดจากสถานะ "ปริ้นสำเร็จ") -->
+    <div class="popup-overlay" id="deliveryPopup" style="display: none;">
+        <div class="popup-content" style="max-width:640px;">
+            <span class="close-btn" onclick="closeDeliveryPopup()">&times;</span>
+            <h3 style="margin:0 0 12px;">ข้อมูลจัดส่ง / รับเข้า — บิล <span id="dpBill"></span></h3>
+            <div id="dpBody"></div>
+        </div>
+    </div>
+    <script>
+    const BILL_DELIVERY_URL = "{{ route('sale.billDelivery') }}";
+    function dpEsc(s){ return (s==null?'':String(s)).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+    function dpStatus(s){
+        s=(s||'').trim();
+        if(s==='จัดส่งสำเร็จ') return '<span style="color:#16a34a;font-weight:700;">จัดส่งสำเร็จ</span>';
+        if(s==='ค้างบิล')     return '<span style="color:#2563eb;font-weight:700;">ค้างบิล</span>';
+        if(s==='สินค้าผิด')    return '<span style="color:#dc2626;font-weight:700;">สินค้าผิด</span>';
+        return '<span style="color:#6b7280;font-weight:700;">รอส่ง</span>';
+    }
+    async function openDeliveryPopup(billid){
+        const pop=document.getElementById('deliveryPopup');
+        document.getElementById('dpBill').textContent=billid;
+        document.getElementById('dpBody').innerHTML='<div style="padding:16px;text-align:center;color:#6b7280;">กำลังโหลด...</div>';
+        pop.style.display='flex';
+        try{
+            const res=await fetch(BILL_DELIVERY_URL+'?billid='+encodeURIComponent(billid),{headers:{'Accept':'application/json','X-Requested-With':'XMLHttpRequest'}});
+            const data=await res.json();
+            const rows=(data&&data.rows)||[];
+            if(!rows.length){ document.getElementById('dpBody').innerHTML='<div style="padding:16px;color:#6b7280;text-align:center;">ยังไม่มีข้อมูลการจ่ายงาน/จัดส่งของบิลนี้</div>'; return; }
+            document.getElementById('dpBody').innerHTML=rows.map(function(r){
+                const received=r.check_time
+                    ? '<div style="color:#16a34a;margin-top:4px;">รับเข้าแล้ว: '+dpStatus(r.status)+' · โดย '+dpEsc(r.check_name||'-')+' · '+dpEsc(r.check_time)+'</div>'
+                    : '<div style="margin-top:4px;">สถานะ: '+dpStatus(r.status)+'</div>';
+                return '<div style="border:1px solid #e5e7eb;border-radius:8px;padding:12px;margin-bottom:10px;font-size:14px;line-height:1.7;">'
+                    +'<div><b>ผู้จ่ายงาน:</b> '+dpEsc(r.name_pick||'-')+(r.time_pick?' · '+dpEsc(r.time_pick):'')+'</div>'
+                    +'<div><b>คนขับ:</b> '+dpEsc(r.driver_name||'-')+'</div>'
+                    +'<div><b>วิธีขนส่ง:</b> '+dpEsc(r.transport_name||'-')+'</div>'
+                    +'<div><b>เลขขนส่ง (id_transport):</b> '+dpEsc(r.id_transport||'-')+'</div>'
+                    +(r.delivery_date?'<div><b>วันส่ง:</b> '+dpEsc(r.delivery_date)+'</div>':'')
+                    +received
+                    +(r.note?'<div style="color:#b45309;"><b>หมายเหตุ:</b> '+dpEsc(r.note)+'</div>':'')
+                    +'</div>';
+            }).join('');
+        }catch(e){ document.getElementById('dpBody').innerHTML='<div style="padding:16px;color:#dc2626;text-align:center;">โหลดข้อมูลไม่สำเร็จ</div>'; }
+    }
+    function closeDeliveryPopup(){ document.getElementById('deliveryPopup').style.display='none'; }
+    document.getElementById('deliveryPopup').addEventListener('click',function(e){ if(e.target===this) closeDeliveryPopup(); });
+    </script>
 
     <!-- Popup -->
     <div class="popup-overlay" id="popup" style="display: none;">
