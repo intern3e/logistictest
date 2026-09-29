@@ -1549,10 +1549,17 @@ function setTransport(t) {
     setView('delivery');
     updateSelectedCount();
 }
+// checkbox ที่ "มองเห็นอยู่" เท่านั้น (แถวที่ถูกซ่อนจากการค้นหา = ไม่นับ/ไม่เลือก)
+//   -> กดเลือกลูกค้า/เลือกทั้งหมด แล้วส่งเฉพาะบิลที่ค้นหาเจอ ไม่ใช่ทุกบิลของลูกค้า
+function cbVisible(cb) { return !!(cb && cb.offsetParent); }
+function visibleGroupCbs(groupId) {
+    return Array.from(document.querySelectorAll(`.job-checkbox[data-group="${groupId}"]`)).filter(cbVisible);
+}
+
 function toggleGroupSelection(groupId) {
-    const checkboxes = document.querySelectorAll(`.job-checkbox[data-group="${groupId}"]`);
+    const checkboxes = visibleGroupCbs(groupId);
     if (checkboxes.length === 0) return;
-    const allChecked = Array.from(checkboxes).every(cb => cb.checked);
+    const allChecked = checkboxes.every(cb => cb.checked);
     checkboxes.forEach(cb => cb.checked = !allChecked);
     updateSelectedCount();
 }
@@ -1566,26 +1573,24 @@ document.querySelectorAll('.job-list-table-wrap').forEach(wrap => {
 });
 
 function onGroupCheckboxChange(checkbox) {
-    const groupId = checkbox.dataset.group;
-    const checkboxes = document.querySelectorAll(`.job-checkbox[data-group="${groupId}"]`);
-    checkboxes.forEach(cb => cb.checked = checkbox.checked);
+    // เลือกเฉพาะบิลที่มองเห็น (ที่ค้นหาเจอ) ของลูกค้านั้น ไม่รวมบิลที่ถูกซ่อน
+    visibleGroupCbs(checkbox.dataset.group).forEach(cb => cb.checked = checkbox.checked);
     updateSelectedCount();
 }
 
 function syncGroupCheckboxes() {
     document.querySelectorAll('.group-select-checkbox').forEach(groupCb => {
-        const groupId = groupCb.dataset.group;
-        const children = document.querySelectorAll(`.job-checkbox[data-group="${groupId}"]`);
-        if (children.length === 0) return;
+        const children = visibleGroupCbs(groupCb.dataset.group);   // เฉพาะบิลที่มองเห็น
+        if (children.length === 0) { groupCb.checked = false; groupCb.indeterminate = false; return; }
 
-        const checkedCount = Array.from(children).filter(cb => cb.checked).length;
+        const checkedCount = children.filter(cb => cb.checked).length;
         groupCb.checked = checkedCount === children.length;
         groupCb.indeterminate = checkedCount > 0 && checkedCount < children.length;
     });
 }
 
 function updateSelectedCount() {
-    const count = document.querySelectorAll('.job-checkbox:checked').length;
+    const count = Array.from(document.querySelectorAll('.job-checkbox:checked')).filter(cbVisible).length;
     document.getElementById('selectedCount').textContent = count;
     document.getElementById('openModalBtn').disabled = count === 0;
     syncGroupCheckboxes();
@@ -1593,7 +1598,7 @@ function updateSelectedCount() {
 
 // เลือกเฉพาะงาน "รับของเอง" (po:) ล้วน ๆ หรือไม่ — ถ้าใช่ ไม่ต้องบังคับกรอกวันที่
 function isPickupOnlySelection() {
-    const selected = Array.from(document.querySelectorAll('.job-checkbox:checked'));
+    const selected = Array.from(document.querySelectorAll('.job-checkbox:checked')).filter(cbVisible);
     return selected.length > 0 && selected.every(cb => cb.value.startsWith('po:'));
 }
 
@@ -1691,6 +1696,8 @@ function filterBillTable() {
         const show = matchCustomer && matchSO && matchBill;
 
         row.style.display = show ? '' : 'none';
+        // แถวที่ถูกซ่อนจากการค้นหา -> เอาติ๊กออก จะได้ไม่ถูกส่งไปด้วยตอนกดจ่ายงาน
+        if (!show) { const cb = row.querySelector('.job-checkbox'); if (cb) cb.checked = false; }
 
         const group = row.dataset.group;
         if (!groupVisibility[group]) groupVisibility[group] = false;
@@ -1700,6 +1707,7 @@ function filterBillTable() {
     fixGroupCustomerCells(rows);
 
     updateSectionCount('panelDelivery', rows);
+    updateSelectedCount();   // sync จำนวนที่เลือก + สถานะ checkbox ลูกค้า หลังซ่อน/uncheck
 }
 
 function clearBillSearch() {
@@ -1832,7 +1840,8 @@ document.addEventListener('DOMContentLoaded', function() {
         // เลือกทั้งหมดเฉพาะขนส่งฝั่งที่กำลังโชว์อยู่เท่านั้น
         const pane = document.querySelector(`#panelDelivery .transport-pane[data-transport="${currentTransport}"]`);
         if (!pane) return;
-        pane.querySelectorAll('.bill-checkbox').forEach(cb => cb.checked = this.checked);
+        // เลือกทั้งหมด = เฉพาะบิลที่มองเห็นอยู่ (ที่ค้นหาเจอ) ไม่รวมบิลที่ถูกซ่อน
+        pane.querySelectorAll('.bill-checkbox').forEach(cb => { if (cbVisible(cb)) cb.checked = this.checked; });
         updateSelectedCount();
     });
     
@@ -1930,8 +1939,14 @@ document.addEventListener('DOMContentLoaded', function() {
         const form = document.getElementById('dispatchForm');
         const div = document.getElementById('jobInputs');
         div.innerHTML = '';
-        
-        document.querySelectorAll('.job-checkbox:checked').forEach(cb => {
+
+        // ส่งเฉพาะบิลที่ "ติ๊ก + มองเห็นอยู่" (ที่ค้นหาเจอ) เท่านั้น ไม่ส่งบิลที่ถูกซ่อน
+        const picked = Array.from(document.querySelectorAll('.job-checkbox:checked')).filter(cbVisible);
+        if (picked.length === 0) {
+            showToast('ยังไม่ได้เลือกงานที่จะจ่าย', 'warning');
+            return;
+        }
+        picked.forEach(cb => {
             const input = document.createElement('input');
             input.type = 'hidden';
             input.name = 'jobs[]';

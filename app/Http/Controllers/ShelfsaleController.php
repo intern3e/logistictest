@@ -46,7 +46,7 @@ class ShelfsaleController extends Controller
         $creator = $user->name ?? $user->username ?? ($user->id_emp ?? 'ผู้ใช้งาน');
 
         // สิทธิ์การมองเห็น: admin/store/stock และ sale/sale_assistant/support เห็นทุกชั้นทุก Sale (ไม่ล็อกเฉพาะชื่อตัวเอง)
-        $seeAll     = in_array($user->role ?? '', ['admin', 'store', 'stock', 'sale', 'sale_assistant', 'support'], true);
+        $seeAll     = in_array($user->role ?? '', ['admin', 'store', 'stock', 'sale', 'sale_assistant', 'support', 'accounting'], true);
         // แสดงคอลัมน์ "ชื่อลูกค้า" แทน "Sale" สำหรับ sale/support/sale_assistant
         $isSaleView = in_array($user->role ?? '', ['sale', 'sale_assistant', 'support'], true);
         // ล็อกช่อง Sale = ชื่อตัวเอง เฉพาะ role ที่ถูกบังคับเห็นเฉพาะงานตัวเอง (นอกกลุ่ม seeAll)
@@ -55,6 +55,8 @@ class ShelfsaleController extends Controller
         $loginName  = $user->name ?? '';
         $canSeePrice = in_array($user->role ?? '', ['admin', 'sale', 'sale_assistant', 'support'], true);  // เห็นมูลค่า
         $canManage   = in_array($user->role ?? '', ['admin', 'store', 'stock'], true);                     // ย้ายชั้น/เช็คเอาท์ เฉพาะ admin/store/stock
+        // คอลัมน์ "เช็คเอาท์": ซ่อนสำหรับ sale/support/sale_assistant (ไม่ต้องเห็น) — manage มีในคอลัมน์จัดการอยู่แล้ว
+        $showCheckout = !$isSaleView;
 
         // dropdown Sale — เหมือนเดิม (ดึงจาก 3e so) แต่ cache 30 นาที กัน groupBy เต็มตารางทุกครั้ง
         $saleOptions = Cache::remember('shelfsale_sale_options', 1800, function () {
@@ -67,7 +69,7 @@ class ShelfsaleController extends Controller
 
         $shelfOptions = collect(self::SHELF_OPTIONS);
 
-        return view('sale.dashboardshelf', compact('saleOptions', 'shelfOptions', 'creator', 'isSaleView', 'lockSale', 'autoLoad', 'loginName', 'canSeePrice', 'canManage'));
+        return view('sale.dashboardshelf', compact('saleOptions', 'shelfOptions', 'creator', 'isSaleView', 'lockSale', 'autoLoad', 'loginName', 'canSeePrice', 'canManage', 'showCheckout'));
     }
 
     /**
@@ -83,8 +85,8 @@ class ShelfsaleController extends Controller
         $fSo     = trim((string) $request->input('so', ''));
         $fPo     = trim((string) $request->input('po', ''));
 
-        // admin/store/stock และ sale/sale_assistant/support เห็นทุก Sale — role อื่นเท่านั้นที่ถูกบังคับเห็นเฉพาะงานของตัวเอง
-        $seeAll = in_array($user->role ?? '', ['admin', 'store', 'stock', 'sale', 'sale_assistant', 'support'], true);
+        // admin/store/stock/accounting และ sale/sale_assistant/support เห็นทุก Sale — role อื่นเท่านั้นที่ถูกบังคับเห็นเฉพาะงานของตัวเอง
+        $seeAll = in_array($user->role ?? '', ['admin', 'store', 'stock', 'sale', 'sale_assistant', 'support', 'accounting'], true);
         if (!$seeAll) {
             $fSale = $user->name ?? '';
         }
@@ -291,8 +293,9 @@ class ShelfsaleController extends Controller
                 ->map(fn ($p) => 'PO' . preg_replace('/^PO/i', '', (string) $p))
                 ->unique()->values()->all();
             if (!empty($poDocuNos)) {
+                // มูลค่า PO ดึงจากคอลัมน์ NetAmnt (ยอดสุทธิ) ตามที่กำหนด
                 $priceByDocu = DB::connection(self::MSSQL_CONNECTION)->table('POHD')
-                    ->whereIn('DocuNo', $poDocuNos)->get(['DocuNo', 'SumGoodAmnt'])->keyBy('DocuNo');
+                    ->whereIn('DocuNo', $poDocuNos)->get(['DocuNo', 'NetAmnt'])->keyBy('DocuNo');
             }
 
             $soDocuNos = array_map(fn ($s) => 'SO' . $s, $soNums);
@@ -419,7 +422,7 @@ class ShelfsaleController extends Controller
                 $isLegacy = $group->every(fn ($it) => empty($it->line_id));
                 $docu     = 'PO' . $cleanPo;
 
-                $price = (float) (optional($priceByDocu->get($docu))->SumGoodAmnt ?? 0);
+                $price = (float) (optional($priceByDocu->get($docu))->NetAmnt ?? 0);
                 $ship  = optional($shipByDocu->get('SO' . $first->so))->ShipDate;
                 $dueDays = null;
                 if (filled($ship)) {
@@ -478,7 +481,18 @@ class ShelfsaleController extends Controller
             return $base - ($r['_ship_ts'] ?? -1);
         })->values();
 
-        $totalValue = (float) $rows->sum('price');
+        // PO ซ้ำ (โผล่หลายแถว = หลาย SO/หลายรอบ): ทุกแถวยังแสดงราคาปกติ
+        //   แต่ "มูลค่าทั้งหมด" คิดแต่ละ PO ครั้งเดียว (ไม่บวกซ้ำ)
+        $seenPo     = [];
+        $totalValue = 0.0;
+        foreach ($rows as $r) {
+            $po = (string) ($r['po'] ?? '');
+            if ($po !== '' && $po !== '-') {
+                if (isset($seenPo[$po])) continue;   // PO ซ้ำ -> ไม่บวกยอดรวมซ้ำ
+                $seenPo[$po] = true;
+            }
+            $totalValue += (float) ($r['price'] ?? 0);
+        }
 
         return response()->json([
             'ok'          => true,

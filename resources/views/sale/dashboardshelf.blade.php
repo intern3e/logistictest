@@ -135,17 +135,18 @@
             flex: 1;
         }
 
+        /* ตัวกรอง: แบน ไม่มีกรอบ/เงา */
         .toolbar {
-            background: var(--canvas);
-            border: 1px solid var(--border);
-            border-radius: 8px;
-            padding: 10px 16px;
-            margin-bottom: 16px;
+            background: transparent;
+            border: none;
+            border-radius: 0;
+            padding: 4px 0 12px;
+            margin-bottom: 8px;
             display: flex;
             gap: 8px;
             flex-wrap: wrap;
             align-items: center;
-            box-shadow: var(--shadow-sm);
+            box-shadow: none;
             width: 100%;
         }
 
@@ -461,17 +462,13 @@
             min-width: 0;
         }
 
+        /* เอากรอบตารางออกทั้งหมด — ไม่มีเส้นกรอบ/เส้นตาราง เหลือแค่สลับสีแถว + หัวตาราง */
         th, td {
-            border-bottom: 1px solid var(--border);
-            border-right: 1px solid var(--border);
+            border: none;
             padding: 10px 12px;
             text-align: center;
             font-size: 13px;
             vertical-align: middle;
-        }
-
-        th:last-child, td:last-child {
-            border-right: none;
         }
 
         thead th {
@@ -480,8 +477,7 @@
             font-weight: 700;
             font-size: 12px;
             letter-spacing: 0.3px;
-            border-bottom: 2px solid var(--primary-dark);
-            border-right-color: rgba(255,255,255,0.2);
+            border-bottom: none;
             position: sticky;
             top: 0;
             z-index: 10;
@@ -667,7 +663,7 @@
 
         <div class="table-scroll">
             <div class="table-inner">
-                @php $colspan = 8 + (($canSeePrice ?? false) ? 1 : 0) + (($canManage ?? false) ? 1 : 0); @endphp
+                @php $colspan = 7 + (($canSeePrice ?? false) ? 1 : 0) + (($canManage ?? false) || ($showCheckout ?? false) ? 1 : 0); @endphp
                 <table id="mainTable" class="is-empty">
                     <thead>
                         <tr>
@@ -676,18 +672,20 @@
                             <th>สถานะ</th>
                             <th>SO</th>
                             <th>PO</th>
-                            @if(($isSaleView ?? false))
-                                <th style="text-align:left;">ลูกค้า</th>
-                            @else
+                            @if(($canManage ?? false))
                                 <th>Sale</th>
+                            @else
+                                <th style="text-align:left;">ลูกค้า</th>
                             @endif
                             @if(($canSeePrice ?? false))
                                 <th style="text-align:right;">มูลค่า</th>
                             @endif
                             <th>สินค้า</th>
-                            <th>เช็คเอาท์</th>
+                            {{-- คอลัมน์ท้าย: manage = "จัดการ" (ปุ่ม+สถานะ) ; viewer ที่เห็น = "เช็คเอาท์" ; sale/support/sale_assistant = ไม่มีเลย --}}
                             @if(($canManage ?? false))
                                 <th>จัดการ</th>
+                            @elseif(($showCheckout ?? false))
+                                <th>เช็คเอาท์</th>
                             @endif
                         </tr>
                     </thead>
@@ -770,6 +768,7 @@
     const IS_SALE       = {{ ($isSaleView ?? false) ? 'true' : 'false' }};
     const CAN_SEE_PRICE = {{ ($canSeePrice ?? false) ? 'true' : 'false' }};
     const CAN_MANAGE    = {{ ($canManage ?? false) ? 'true' : 'false' }};
+    const SHOW_CHECKOUT = {{ ($showCheckout ?? false) ? 'true' : 'false' }};   // sale/support/sale_assistant = false (ไม่มีคอลัมน์เช็คเอาท์)
     const COLSPAN       = {{ 8 + (($canSeePrice ?? false) ? 1 : 0) + (($canManage ?? false) ? 1 : 0) }};
     const CSRF          = document.querySelector('meta[name="csrf-token"]').content;
     const MOVE_URL      = "{{ route('shelfsale.move') }}";
@@ -887,20 +886,33 @@
     function rowHtml(r, i){
         const d = dueCell(r);
         const shelf = r.shelf ? '<span class="shelf-badge">' + esc(r.shelf) + '</span>' : '<span class="dash">-</span>';
-        const custOrSale = IS_SALE
-            ? '<td class="cust-cell">' + esc(r.cust_name) + '</td>'
-            : '<td>' + esc(r.sale) + '</td>';
+        // Sale: admin/store/stock เห็นชื่อ Sale ; role อื่นทั้งหมดเห็น "ชื่อบริษัทลูกค้า"
+        const custOrSale = CAN_MANAGE
+            ? '<td>' + esc(r.sale) + '</td>'
+            : '<td class="cust-cell">' + esc(r.cust_name) + '</td>';
         const priceCell = CAN_SEE_PRICE ? '<td class="price-cell">' + fmtBaht(r.price) + '</td>' : '';
 
-        // เช็คเอาท์แล้ว -> ของออกไปแล้ว ย้ายชั้นไม่ได้ (แสดงแค่ "เช็คเอาท์แล้ว")
-        const manageCell = CAN_MANAGE
-            ? '<td style="text-align:center;white-space:nowrap;">'
+        // ข้อมูลเช็คเอาท์ (ใคร + เมื่อไหร่) — ใช้แสดงทั้งฝั่ง manage และ viewer
+        const checkoutInfo = r.is_checkedout
+            ? (r.checkout_by ? '<b>' + esc(r.checkout_by) + '</b>' : '<span class="dash">— (ระบบเก่า)</span>')
+              + (r.checkout_at ? '<div class="co-time">' + esc(r.checkout_at) + '</div>' : '')
+            : '<span class="dash">-</span>';
+
+        // คอลัมน์ท้าย (รวมเช็คเอาท์ + จัดการ):
+        //   manage + ยังไม่เช็คเอาท์ -> ปุ่มย้ายชั้น/เช็คเอาท์ ; manage + เช็คเอาท์แล้ว -> ใคร/เมื่อ
+        //   viewer -> สถานะเช็คเอาท์ (ใคร/เมื่อ หรือ "-")
+        let lastCell = '';
+        if (CAN_MANAGE) {
+            lastCell = '<td class="checkout-cell" style="text-align:center;white-space:nowrap;">'
               + (r.is_checkedout
-                  ? '<span class="dash" style="font-size:11.5px;">เช็คเอาท์แล้ว</span>'
+                  ? 'เช็คเอาท์แล้ว · ' + checkoutInfo
                   : '<button type="button" class="btn-view btn-move" onclick="openMove(\'' + escJs(r.po) + '\',\'' + escJs(r.so) + '\')">ย้ายชั้น</button> '
                     + '<button type="button" class="btn-view btn-checkout" onclick="doCheckout(this,\'' + escJs(r.po) + '\',\'' + escJs(r.so) + '\',' + (r.po_receive_id || 'null') + ')">เช็คเอาท์</button>')
-              + '</td>'
-            : '';
+              + '</td>';
+        } else if (SHOW_CHECKOUT) {
+            lastCell = '<td class="checkout-cell">' + checkoutInfo + '</td>';
+        }
+        // sale/support/sale_assistant: ไม่มีคอลัมน์นี้ (lastCell = '')
 
         const isOverdue = (r.due_days !== null && r.due_days !== undefined && r.due_days < 0);
         const isToday = (r.due_days === 0);
@@ -912,12 +924,6 @@
             'ดูสินค้า (' + (r.item_count || 0) + ')' +
             '</button></td>';
 
-        // คอลัมน์เช็คเอาท์: ระบบใหม่แสดงชื่อ+เวลา, ระบบเก่าแสดงแค่เวลา
-        const checkoutCell = '<td class="checkout-cell">' + (r.is_checkedout
-            ? (r.checkout_by ? '<b>' + esc(r.checkout_by) + '</b>' : '<span class="dash">— (ระบบเก่า)</span>')
-              + (r.checkout_at ? '<div class="co-time">' + esc(r.checkout_at) + '</div>' : '')
-            : '<span class="dash">-</span>') + '</td>';
-
         return '<tr class="' + rowCls + '">'
             + '<td>' + shelf + '</td>'
             + '<td class="' + dueDateClass + '">' + (r.ship_date ? esc(r.ship_date) : '<span class="dash">-</span>') + '</td>'
@@ -927,8 +933,7 @@
             + custOrSale
             + priceCell
             + productBtn
-            + checkoutCell
-            + manageCell
+            + lastCell
             + '</tr>';
     }
 
