@@ -397,7 +397,7 @@ window.addEventListener('load', () => {
                     +'<div><b>ผู้จ่ายงาน:</b> '+dpEsc(r.name_pick||'-')+(r.time_pick?' · '+dpEsc(r.time_pick):'')+'</div>'
                     +'<div><b>คนขับ:</b> '+dpEsc(r.driver_name||'-')+'</div>'
                     +'<div><b>วิธีขนส่ง:</b> '+dpEsc(r.transport_name||'-')+'</div>'
-                    +'<div><b>เลขขนส่ง (id_transport):</b> '+dpEsc(r.id_transport||'-')+'</div>'
+                    +'<div><b>เลขขนส่ง:</b> '+dpEsc(r.id_transport||'-')+'</div>'
                     +(r.delivery_date?'<div><b>วันส่ง:</b> '+dpEsc(r.delivery_date)+'</div>':'')
                     +received
                     +(r.note?'<div style="color:#b45309;"><b>หมายเหตุ:</b> '+dpEsc(r.note)+'</div>':'')
