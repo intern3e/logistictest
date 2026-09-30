@@ -1907,16 +1907,17 @@ document.addEventListener('DOMContentLoaded', function() {
     vehicleInput?.addEventListener('vehicleOrDriverInput', function () {
         const method = vehicleInput.value.trim();
         const isSales = method === 'เซลล์ไปส่งเอง';
-        const isAccount = method === 'บัญชี';
+        // "บัญชี" และ "ซัพรับเอง" -> ดึงชื่อผู้ล็อกอินมาใส่ + ล็อกเหมือนกัน
+        const isAccount = method === 'บัญชี' || method === 'ซัพรับเอง';
         salesHint.style.display = isSales ? 'block' : 'none';
         driverOptionalHint.style.display = isSales ? 'none' : 'inline';
 
         if (isAccount) {
-            // เลือก "บัญชี" -> ดึงชื่อผู้ล็อกอินมาใส่ + read only
+            // เลือก "บัญชี"/"ซัพรับเอง" -> ดึงชื่อผู้ล็อกอินมาใส่ + read only
             driverInput.value = LOGIN_NAME;
             driverInput.readOnly = true;
             driverInput.classList.add('driver-locked');
-            driverInput.placeholder = 'ผู้รับผิดชอบ (บัญชี = ผู้ล็อกอิน)';
+            driverInput.placeholder = 'ผู้รับผิดชอบ (' + method + ' = ผู้ล็อกอิน)';
         } else {
             // วิธีอื่น -> แก้ได้ปกติ (ล้างชื่อล็อกอินที่ถูกเติมจาก "บัญชี" ออก)
             driverInput.readOnly = false;
