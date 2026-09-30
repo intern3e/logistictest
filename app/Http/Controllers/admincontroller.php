@@ -954,7 +954,8 @@ class AdminController extends Controller
         if ($idcust === '') {
             return response()->json(['found' => false]);
         }
-        $row = DB::table('custdetail')->where('idcust', $idcust)->first();
+        // เทียบแบบตัดช่องว่างหัวท้าย เผื่อ idcust ในฐานข้อมูลมีเว้นวรรคติดมา
+        $row = DB::table('custdetail')->whereRaw('TRIM(idcust) = ?', [$idcust])->first();
         if (!$row) {
             return response()->json(['found' => false]);
         }
@@ -990,9 +991,11 @@ class AdminController extends Controller
             'note'     => $data['note'] ?? null,
         ];
 
-        $exists = DB::table('custdetail')->where('idcust', $idcust)->exists();
-        if ($exists) {
-            DB::table('custdetail')->where('idcust', $idcust)->update($payload);
+        // เทียบแบบตัดช่องว่างหัวท้าย เผื่อ idcust เดิมในฐานข้อมูลมีเว้นวรรคติดมา
+        $existing = DB::table('custdetail')->whereRaw('TRIM(idcust) = ?', [$idcust])->first();
+        if ($existing) {
+            DB::table('custdetail')->where('idcust', $existing->idcust)
+                ->update(array_merge($payload, ['idcust' => $idcust]));   // normalize idcust ให้ไม่มีช่องว่าง
             return response()->json(['ok' => true, 'mode' => 'update', 'message' => 'อัปเดตข้อมูลลูกค้า ' . $idcust . ' เรียบร้อย']);
         }
 

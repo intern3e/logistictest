@@ -94,14 +94,14 @@
                 <!-- กล่อง 1: รหัสลูกค้า -->
                 <div class="box">
                     <label class="box-label" for="idcust"><span class="num">1</span> รหัสลูกค้า <span class="req">*</span></label>
-                    <input type="text" id="idcust" name="idcust" placeholder="เช่น CUS-16809" autocomplete="off">
+                    <input type="text" id="idcust" name="idcust" autocomplete="off">
                     <span class="box-hint" id="idcustHint">พิมพ์รหัสแล้วระบบจะดึงข้อมูลเดิมมาให้อัตโนมัติ (ถ้ามี)</span>
                 </div>
 
                 <!-- กล่อง 2: ชื่อลูกค้า -->
                 <div class="box">
                     <label class="box-label" for="namecust"><span class="num">2</span> ชื่อลูกค้า</label>
-                    <input type="text" id="namecust" name="namecust" placeholder="ชื่อบริษัท / ลูกค้า" autocomplete="off">
+                    <input type="text" id="namecust" name="namecust" autocomplete="off">
                     <span class="box-hint">ชื่อที่ใช้แสดงคู่กับรหัสลูกค้า</span>
                 </div>
 
@@ -115,6 +115,7 @@
                         <option value="บิล/PO3/วางบิล/สำเนาหน้าบิล2">บิล/PO3/วางบิล/สำเนาหน้าบิล2</option>
                         <option value="บิล/PO3/สำเนาหน้าบิล2">บิล/PO3/สำเนาหน้าบิล2</option>
                         <option value="บิล/PO3/บัญชี">บิล/PO3/บัญชี</option>
+                        <option value="บิล/PO3/สำเนาหน้าบิล3">บิล/PO3/สำเนาหน้าบิล3</option>
                         <option value="บิล/PO5/สำเนาหน้าบิล3">บิล/PO5/สำเนาหน้าบิล3</option>
                     </select>
                     <span class="box-hint">ใช้ตอนเปิดบิลของลูกค้ารายนี้</span>
@@ -123,7 +124,7 @@
                 <!-- กล่อง 4: หมายเหตุ -->
                 <div class="box">
                     <label class="box-label" for="note"><span class="num">4</span> หมายเหตุ (note)</label>
-                    <textarea id="note" name="note" rows="2" placeholder="หมายเหตุเพิ่มเติมของลูกค้ารายนี้"></textarea>
+                    <textarea id="note" name="note" rows="2"></textarea>
                     <span class="box-hint">ข้อความนี้จะดึงไปแสดงตอนเปิดบิล</span>
                 </div>
             </div>
@@ -207,9 +208,12 @@ async function save(){
         });
         const data = await res.json();
         if(res.ok && data.ok){
-            setMsg((data.mode === 'update' ? '✓ ' : '✓ ') + (data.message || 'บันทึกแล้ว'), 'ok');
-            idHint.textContent = 'พบข้อมูลเดิม — การบันทึกจะเป็นการอัปเดต';
-            idHint.className = 'box-hint found';
+            setMsg('✓ ' + (data.message || 'บันทึกแล้ว'), 'ok');
+            // บันทึกสำเร็จ -> ล้างฟอร์มพร้อมเปิดบิลรายถัดไป
+            idcust.value=''; namecust.value=''; formtype.value=''; note.value='';
+            idHint.textContent = 'พิมพ์รหัสแล้วระบบจะดึงข้อมูลเดิมมาให้อัตโนมัติ (ถ้ามี)';
+            idHint.className = 'box-hint';
+            idcust.focus();
         } else {
             setMsg(data.message || 'บันทึกไม่สำเร็จ', 'err');
         }
