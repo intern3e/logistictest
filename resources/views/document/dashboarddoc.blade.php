@@ -448,7 +448,7 @@
         <form method="GET" action="{{ route('document.dashboarddoc') }}" class="filter-form" id="autoSearchForm">
             @php $allDates = request('date') === 'all'; @endphp
             <label class="all-dates" style="display:inline-flex;align-items:center;gap:6px;cursor:pointer;user-select:none;font-weight:600;">
-                <input type="checkbox" id="allDates" {{ $allDates ? 'checked' : '' }} style="width:16px;height:16px;cursor:pointer;"> ไม่จำกัดวันที่
+                
             </label>
             <label for="date">วันที่: เดือน / วัน / ปี</label>
             <input type="date" id="date" name="date"
@@ -458,7 +458,7 @@
         </form>
 
         <div class="headcom">
-            <label for="headcom">บริษัทผู้ส่ง :</label>
+            <label for="headcom">ชื่อบริษัท :</label>
             <select id="headcom" name="headcom" form="autoSearchForm" onchange="if(window.submitFilters){submitFilters()}else{document.getElementById('autoSearchForm').submit()}">
                 <option value="">ทั้งหมด</option>
                 <option value="บริษัท ทริปเปิ้ล อี เทรดดิ้ง จำกัด">บริษัท ทริปเปิ้ล อี เทรดดิ้ง จำกัด</option>
@@ -474,22 +474,20 @@
                 <option value="บริษัท เดชา อิเล็คทริค แอนด์ คอนสตรัคชั่น จำกัด">บริษัท เดชา อิเล็คทริค แอนด์ คอนสตรัคชั่น จำกัด</option>
             </select>
         </div>
+        <input type="checkbox" id="allDates" {{ $allDates ? 'checked' : '' }} style="width:16px;height:16px;cursor:pointer;"> เลือกทั้งหมด
 
         <div class="search-box">
             <div class="search-field">
-                <label for="search-input">เลขเอกสารชั่วคราว :</label>
                 <input type="text" id="search-input" name="search" form="autoSearchForm"
-                       value="{{ request('search', '') }}" autocomplete="off">
+                       value="{{ request('search', '') }}" autocomplete="off" placeholder="เลขเอกสารชั่วคราว">
             </div>
             <div class="search-field">
-                <label for="so-input">เลข SO :</label>
                 <input type="text" id="so-input" name="so" form="autoSearchForm"
-                       value="{{ request('so', '') }}" autocomplete="off">
+                       value="{{ request('so', '') }}" autocomplete="off" placeholder="SO">
             </div>
             <div class="search-field">
-                <label for="com-input">บริษัท / ลูกค้า :</label>
                 <input type="text" id="com-input" name="com" form="autoSearchForm"
-                       value="{{ request('com', '') }}" autocomplete="off">
+                       value="{{ request('com', '') }}" autocomplete="off" placeholder="ชื่อ">
             </div>
             <div class="search-field">
                 <button type="button" id="clear-filters-btn" onclick="clearFilters()"
@@ -517,8 +515,8 @@
                     <th>ลำดับ</th>
                     <th>เลขที่บิล</th>
                     <th>เลข SO</th>
-                    <th>บริษัทผู้ส่ง</th>
-                    <th>บริษัท</th>
+                    <th>ชื่อบริษัท</th>
+                    <th>ชื่อ</th>
                     <th>ผู้เปิดบิล</th>
                     <th>วันที่</th>
                     <th>เอกสาร PDF</th>
