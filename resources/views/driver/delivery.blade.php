@@ -1713,7 +1713,7 @@ function filterBillTable() {
 }
 
 // อัปเดตป้ายจำนวนบิลของแต่ละลูกค้าให้ตรงกับจำนวนแถวที่ "มองเห็น" (หลังกรอง)
-function updateGroupChips(rows) {
+function updateGroupChips(rows, unit = 'บิล') {
     const cnt = {};
     Array.from(rows).forEach(r => {
         const g = r.dataset.group;
@@ -1723,7 +1723,7 @@ function updateGroupChips(rows) {
     });
     Object.keys(cnt).forEach(g => {
         const chip = document.querySelector(`.col-customer[data-group="${g}"] .group-count-chip`);
-        if (chip) chip.textContent = cnt[g] + ' บิล';
+        if (chip) chip.textContent = cnt[g] + ' ' + unit;
     });
 }
 
@@ -1791,6 +1791,7 @@ function filterDocTable() {
     });
 
     fixGroupCustomerCells(rows);
+    updateGroupChips(rows, 'เอกสาร');   // ป้าย "N เอกสาร" = จำนวนที่ค้นเจอ (ไม่ใช่ทั้งหมดของลูกค้า)
 
     updateSectionCount('panelDoc', rows);
 }
@@ -1828,6 +1829,7 @@ function filterPoTable() {
     });
 
     fixGroupCustomerCells(rows);
+    updateGroupChips(rows, 'PO');   // ป้าย "N PO" = จำนวนที่ค้นเจอ (ไม่ใช่ทั้งหมดของลูกค้า)
 
     updateSectionCount('panelPickup', rows);
 }
