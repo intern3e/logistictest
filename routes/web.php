@@ -74,6 +74,10 @@ Route::post('/update-statuspdfso', [admincontroller::class, 'updateStatuspdf']);
 Route::post('/update-statuspdfsoback', [admincontroller::class, 'updateStatuspdfback']);
 Route::post('/update-billissue', [admincontroller::class, 'updateBillIssue']);
 Route::get('/adminroute', [AdminController::class, 'adminroute'])->name('admin.adminroute');
+// จัดการข้อมูลลูกค้า (custdetail): idcust / namecust / formtype / note — upsert ตาม idcust
+Route::get('/admin/custdetail', [admincontroller::class, 'custdetailForm'])->name('admin.custdetail');
+Route::post('/admin/custdetail/lookup', [admincontroller::class, 'custdetailLookup'])->name('admin.custdetail.lookup');
+Route::post('/admin/custdetail/save', [admincontroller::class, 'custdetailSave'])->name('admin.custdetail.save');
 Route::post('/update-statuspdfso2', [admincontroller::class, 'updateStatuspdf2']);
 Route::post('/update-statuspdfcan', [admincontroller::class, 'updateStatuspdfcan']);
 Route::post('/update-delivery-date', [admincontroller::class, 'updateDeliveryDate'])->name('update.delivery.date');

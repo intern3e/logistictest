@@ -826,7 +826,9 @@
                             <div class="box-grid">
                                 @foreach ($boxes as $box)
                                     @php
-                                        $boxKey = 'box_' . preg_replace('/[^A-Za-z0-9_-]/', '_', $dateKey . '_' . $box['transport_name'] . '_' . ($box['driver_name'] ?? 'none'));
+                                        // ใช้ index ต่อท้ายกันชนกัน — ชื่อขนส่ง/คนขับเป็นภาษาไทยจะโดน preg_replace แปลงเป็น "_" หมด
+                                        // ทำให้หลายกล่อง (เช่น "เซลล์ไปส่งเอง" แอม/ฟอง/เอก) ได้ id ซ้ำกัน กดแล้วเปิดผิดกล่อง
+                                        $boxKey = 'box_' . preg_replace('/[^A-Za-z0-9_-]/', '_', $dateKey) . '_' . $loop->index;
                                         $printUrl = route('deliverytrack.printGroup', [
                                             'date'      => $dateKey === 'ไม่ระบุวันที่' ? null : $dateKey,
                                             'transport' => $box['transport_name'],

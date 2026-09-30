@@ -232,6 +232,22 @@ public function fetchFormType(Request $request)
             'formtype.not_in' => 'กรุณาเลือกประเภทฟอร์มให้ถูกต้อง',
             'typeinbill.required' => 'กรุณาเลือกประเภทสินค้า/บริการ'
                 ]);
+
+        // กันเพิ่มซ้ำ: ถ้ามีบิลนี้อยู่แล้วและยังไม่ถูกยกเลิก (statuspdf != 6) -> เพิ่มไม่ได้
+        // ต้องติดต่อยกเลิกบิลเดิม (statuspdf = 6) ก่อนถึงจะเพิ่มใหม่ได้
+        $billidIn = $request->input('billid');
+        $activeExists = Bill::where('billid', $billidIn)
+            ->where(function ($q) {
+                $q->whereNull('statuspdf')->orWhere('statuspdf', '!=', '6');
+            })
+            ->exists();
+        if ($activeExists) {
+            DB::rollBack();
+            return response()->json([
+                'error' => "มีเลขบิล {$billidIn} นี้อยู่ในระบบแล้ว หากต้องการเพิ่มใหม่ ต้องติดต่อยกเลิกบิลนี้ก่อนถึงจะเพิ่มได้",
+            ]);
+        }
+
         $prefix = date('ym'); // เช่น 2505
 
         // 🔸 ดึงเลขล่าสุดในเดือนเดียวกัน
@@ -386,7 +402,13 @@ public function fetchContactSo(Request $request)
     {
         $billid = $request->input('billid');
 
-        $existingBill = Bill::where('billid', $billid)->first();
+        // มีบิลนี้อยู่แล้วและ "ยังไม่ถูกยกเลิก" (statuspdf != 6) -> ห้ามเพิ่มซ้ำ
+        // ถ้าบิลถูกยกเลิกแล้ว (statuspdf = 6) หรือยังไม่มีในระบบ -> เพิ่มได้
+        $existingBill = Bill::where('billid', $billid)
+            ->where(function ($q) {
+                $q->whereNull('statuspdf')->orWhere('statuspdf', '!=', '6');
+            })
+            ->first();
 
         if ($existingBill) {
             return response()->json([

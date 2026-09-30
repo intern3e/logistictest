@@ -937,6 +937,69 @@ class AdminController extends Controller
         return view('admin.adminroute', compact('bill', 'message'));
     }
 
+    /* ============ จัดการข้อมูลลูกค้า (custdetail): idcust / namecust / formtype / note ============ */
+
+    // แสดงฟอร์มจัดการข้อมูลลูกค้า
+    public function custdetailForm(Request $request)
+    {
+        $user = $this->requireLogin($request, 'custdetail');
+        return view('admin.custdetail', ['creator' => $user->name ?? '']);
+    }
+
+    // ค้นข้อมูลเดิมของ idcust (ไว้เติมฟอร์มอัตโนมัติเวลาแก้ไข)
+    public function custdetailLookup(Request $request)
+    {
+        $this->requireLogin($request, 'custdetail');
+        $idcust = trim((string) $request->input('idcust'));
+        if ($idcust === '') {
+            return response()->json(['found' => false]);
+        }
+        $row = DB::table('custdetail')->where('idcust', $idcust)->first();
+        if (!$row) {
+            return response()->json(['found' => false]);
+        }
+        return response()->json([
+            'found'    => true,
+            'idcust'   => $row->idcust,
+            'namecust' => $row->namecust,
+            'formtype' => $row->formtype,
+            'note'     => $row->note,
+        ]);
+    }
+
+    // บันทึก: ถ้า idcust มีอยู่แล้ว -> update, ถ้าไม่มี -> insert (ตัดช่องว่างหัวท้าย idcust)
+    public function custdetailSave(Request $request)
+    {
+        $this->requireLogin($request, 'custdetail');
+
+        $data = $request->validate([
+            'idcust'   => 'required|string|max:255',
+            'namecust' => 'nullable|string|max:255',
+            'formtype' => 'nullable|string|max:255',
+            'note'     => 'nullable|string',
+        ]);
+
+        $idcust = trim($data['idcust']);   // บางทีรหัสลูกค้าติดช่องว่างหัวท้ายมา
+        if ($idcust === '') {
+            return response()->json(['ok' => false, 'message' => 'กรุณากรอกรหัสลูกค้า'], 422);
+        }
+
+        $payload = [
+            'namecust' => isset($data['namecust']) ? trim((string) $data['namecust']) : null,
+            'formtype' => $data['formtype'] ?? null,
+            'note'     => $data['note'] ?? null,
+        ];
+
+        $exists = DB::table('custdetail')->where('idcust', $idcust)->exists();
+        if ($exists) {
+            DB::table('custdetail')->where('idcust', $idcust)->update($payload);
+            return response()->json(['ok' => true, 'mode' => 'update', 'message' => 'อัปเดตข้อมูลลูกค้า ' . $idcust . ' เรียบร้อย']);
+        }
+
+        DB::table('custdetail')->insert(array_merge($payload, ['idcust' => $idcust]));
+        return response()->json(['ok' => true, 'mode' => 'insert', 'message' => 'เพิ่มข้อมูลลูกค้า ' . $idcust . ' เรียบร้อย']);
+    }
+
     public function history(Request $request)
     {
         $date = $request->get('date');

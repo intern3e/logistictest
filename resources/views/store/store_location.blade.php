@@ -1040,7 +1040,7 @@
                                     @if ($h->type === 'external' || $h->type === 'legacy')
                                         @if ($isClaimed)
                                             {{-- do_it: มีคนเอาของออกไปทำ (ยังไม่กดรับคืน) --}}
-                                            <button type="button" class="btn-finish-claim" data-po="{{ $h->id }}">จัดการเสร็จสิ้น</button>
+                                            <button type="button" class="btn-finish-claim" data-po="{{ $h->id }}" data-checkbox="{{ $h->type }}:{{ $h->id }}">จัดการเสร็จสิ้น</button>
                                             <div class="muted">เอาไปทำโดย {{ $h->claimed_by ?: '—' }}</div>
                                             <div class="muted">{{ $h->claimed_at ? \Carbon\Carbon::parse($h->claimed_at)->format('d/m/Y H:i') : '' }}</div>
                                         @elseif ($isFinished)
@@ -1059,7 +1059,7 @@
                                     @else
                                         {{-- internal_po --}}
                                         @if ($internalPending)
-                                            <button type="button" class="btn-finish-claim" data-po="{{ $h->id }}" data-internal="1">จัดการเสร็จสิ้น</button>
+                                            <button type="button" class="btn-finish-claim" data-po="{{ $h->id }}" data-internal="1" data-checkbox="internal:{{ $h->id }}">จัดการเสร็จสิ้น</button>
                                             <div class="muted">โดย {{ $h->claimed_by ?: '—' }}</div>
                                             <div class="muted">{{ $h->claimed_at ? \Carbon\Carbon::parse($h->claimed_at)->format('d/m/Y H:i') : '' }}</div>
                                         @elseif ($internalReady)
@@ -1243,7 +1243,7 @@ document.querySelectorAll('.chkLine').forEach(c => c.addEventListener('change', 
 
 function pickLoc(el) { const i = document.getElementById('inpLocation'); i.value = el.textContent.trim(); i.focus(); }
 
-async function postClaimAction(url, poId, btn, confirmMsg, fieldName = 'po_id', extra = {}) {
+async function postClaimAction(url, poId, btn, confirmMsg, fieldName = 'po_id', extra = {}, autoLoc = null) {
     if (!confirm(confirmMsg)) return false;
     btn.disabled = true;
     try {
@@ -1254,6 +1254,8 @@ async function postClaimAction(url, poId, btn, confirmMsg, fieldName = 'po_id', 
         });
         const data = await res.json();
         if (res.ok && data.ok) {
+            // จำใบที่เพิ่ง "จัดการเสร็จสิ้น" ไว้ -> หลังรีโหลดจะเปิดเลือกชั้นวางให้ทันที (ไม่ต้องติ๊ก/กดเอง)
+            if (autoLoc) { try { sessionStorage.setItem('store_autoLoc', autoLoc); } catch (e) {} }
             window.location.reload();
             return true;
         } else {
@@ -1285,10 +1287,11 @@ document.querySelectorAll('.claim-select').forEach(sel => {
 });
 document.querySelectorAll('.btn-finish-claim').forEach(btn => {
     btn.addEventListener('click', () => {
+        const autoLoc = btn.dataset.checkbox || null;   // ใบนี้เพื่อเปิดเลือกชั้นวางต่อทันทีหลังยืนยัน
         if (btn.dataset.internal === '1') {
-            postClaimAction(FINISH_INTERNAL_URL, btn.dataset.po, btn, 'คุณยืนยันที่จะจัดงานเสร็จสิ้นหรือไม่', 'internal_id');
+            postClaimAction(FINISH_INTERNAL_URL, btn.dataset.po, btn, 'คุณยืนยันที่จะจัดงานเสร็จสิ้นหรือไม่', 'internal_id', {}, autoLoc);
         } else {
-            postClaimAction(FINISH_URL, btn.dataset.po, btn, 'คุณยืนยันที่จะจัดงานเสร็จสิ้นหรือไม่');
+            postClaimAction(FINISH_URL, btn.dataset.po, btn, 'คุณยืนยันที่จะจัดงานเสร็จสิ้นหรือไม่', 'po_id', {}, autoLoc);
         }
     });
 });
@@ -1505,6 +1508,20 @@ btnClear.addEventListener('click', () => {
 });
 
 liveFilter();
+
+// หลังกด "จัดการเสร็จสิ้น" + ยืนยัน -> รีโหลดแล้วเปิดเลือกชั้นวางของใบนั้นให้เลย (ไม่ต้องมาติ๊ก/กดเลือกเอง)
+(function autoOpenLocation(){
+    let val = null;
+    try { val = sessionStorage.getItem('store_autoLoc'); sessionStorage.removeItem('store_autoLoc'); } catch (e) {}
+    if (!val) return;
+    const chk = document.querySelector('.chkLine[value="' + val.replace(/"/g, '\\"') + '"]');
+    if (!chk || chk.disabled) return;
+    // เหลือเลือกเฉพาะใบนี้ใบเดียว แล้วเปิด modal ให้เลือกชั้นวางทันที
+    document.querySelectorAll('.chkLine:checked').forEach(c => { if (c !== chk) c.checked = false; });
+    chk.checked = true;
+    refreshBtn();
+    openModal();
+})();
 </script>
 </body>
 </html>

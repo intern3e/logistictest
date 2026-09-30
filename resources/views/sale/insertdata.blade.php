@@ -1520,8 +1520,10 @@ async function doSubmitBill(btn, noPrint){
         });
         let checkData = await safeJson(checkResponse, 'check.billid');
         if(checkData.exists){
-            let confirmAdd = confirm(`${checkData.billid} นี้ถูกสร้างโดย ${checkData.emp_name} แล้ว\nต้องการเพิ่มข้อมูลอีกครั้งหรือไม่?`);
-            if(!confirmAdd){ resetBtn(); return; }
+            // มีเลขบิลนี้อยู่ในระบบแล้ว (ยังไม่ถูกยกเลิก) -> เพิ่มไม่ได้ ต้องติดต่อยกเลิกก่อน
+            alert(`มีเลขบิล ${checkData.billid} นี้อยู่ในระบบแล้ว\n\nหากต้องการเพิ่มใหม่ ต้องติดต่อยกเลิกบิลนี้ก่อน ถึงจะเพิ่มข้อมูลได้`);
+            resetBtn();
+            return;
         }
         if(typeof convertedPDFBlob === 'undefined' || !convertedPDFBlob){
             const confirmNoPO = confirm("คุณยังไม่ได้แนบเอกสาร PO\nต้องการเพิ่มข้อมูลโดยไม่มีเอกสาร PO ใช่หรือไม่?");

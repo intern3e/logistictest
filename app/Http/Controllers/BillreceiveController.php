@@ -193,7 +193,7 @@ class BillreceiveController extends Controller
             ->get(['so_detail_id', 'billid', 'so_id', 'customer_id', 'customer_name', 'transport_type'])
             ->keyBy('so_detail_id');
         $docs = Docbills::whereIn('doc_id', $ids)
-            ->get(['doc_id', 'id_com', 'com_name'])
+            ->get(['doc_id', 'id_com', 'com_name', 'so_id'])
             ->keyBy('doc_id');
 
         // จัดกลุ่มเป็น 1 แถวต่อ 1 บิล — ดึงเฉพาะ บิล (บริษัท/เอกชน) + บิลชั่วคราว (doc)
@@ -217,7 +217,8 @@ class BillreceiveController extends Controller
                 $key   = 'doc:' . $billId;
                 $custC = (string) ($doc->id_com ?? '');
                 $custN = (string) ($doc->com_name ?? '');
-                $soId  = '';
+                // บิลชั่วคราว: ถ้ามี so_id ในเอกสารก็แสดงด้วย
+                $soId  = (string) ($doc->so_id ?? '');
             } else {
                 // งานไปรับของเอง (PO) -> ไม่ดึงมาหน้านี้
                 continue;

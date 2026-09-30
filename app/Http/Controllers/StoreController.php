@@ -778,6 +778,10 @@ class StoreController extends Controller
 
         $rows = DB::table('tblbill')
             ->whereIn('so_id', $soIds)
+            // บิลที่ถูกยกเลิก (statuspdf = 6) ไม่ต้องดึงมาจัด — ไม่งั้นเลขบิลเดิมจะขึ้นซ้ำ 2 อัน
+            ->where(function ($q) {
+                $q->whereNull('statuspdf')->orWhere('statuspdf', '!=', '6');
+            })
             ->when($billDate, fn ($q) => $q->whereDate('time', $billDate))
             ->orderBy('time')
             ->get($columns);
