@@ -491,6 +491,10 @@
                 <input type="text" id="com-input" name="com" form="autoSearchForm"
                        value="{{ request('com', '') }}" autocomplete="off">
             </div>
+            <div class="search-field">
+                <button type="button" id="clear-filters-btn" onclick="clearFilters()"
+                        style="padding:5px 14px;border:1px solid var(--ink-150);border-radius:var(--radius);background:#f3f4f6;color:var(--ink-700);font-weight:600;font-size:clamp(10px,0.5vw + 4px,12px);cursor:pointer;font-family:inherit;white-space:nowrap;">ล้าง filter</button>
+            </div>
         </div>
     </div>
 
@@ -695,6 +699,11 @@
         // ยิงค้นหาแบบ explicit navigation — เก็บค่าทุกฟิลเตอร์ (วันที่ / บริษัทผู้ส่ง / เลขเอกสาร / SO)
         // ไม่พึ่ง attribute form= ของ element ที่อยู่นอก <form> (สาเหตุที่ตัวกรองบริษัทผู้ส่งเดิมไม่ทำงาน)
         const allDatesChk = document.getElementById('allDates');
+
+        // ล้างตัวกรองทั้งหมด -> กลับไปค่าเริ่มต้น (วันนี้ / ไม่ติ๊กไม่จำกัดวันที่ / ไม่มีคำค้น)
+        window.clearFilters = function clearFilters() {
+            window.location.href = @json(route('document.dashboarddoc'));
+        };
 
         window.submitFilters = function submitFilters() {
             const base = @json(route('document.dashboarddoc'));

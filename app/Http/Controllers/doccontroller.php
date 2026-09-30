@@ -38,47 +38,28 @@ class DocController extends Controller
         $headcom = trim((string) $request->get('headcom', ''));
         $message = null;
 
-        if ($search !== '' || $so !== '' || $com !== '') {
-            // ค้นหาด้วยเลขเอกสารชั่วคราว / เลข SO / บริษัท(ลูกค้า): หาได้ทุกวัน ไม่จำกัดวันที่ (ใส่พร้อมกันได้ = AND)
-            $docbill = Docbills::when($search !== '', fn ($q) => $q->where('doc_id', 'like', '%' . $search . '%'))
-                        ->when($so !== '', fn ($q) => $q->where('so_id', 'like', '%' . $so . '%'))
-                        ->when($com !== '', fn ($q) => $q->where(function ($w) use ($com) {
-                            $w->where('com_name', 'like', '%' . $com . '%')
-                              ->orWhere('id_com', 'like', '%' . $com . '%');
-                        }))
-                        ->orderBy('doc_id', 'desc')
-                        ->limit(500)
-                        ->get();
+        // "ไม่จำกัดวันที่" = date=all -> ค้นทุกวัน ; ไม่งั้นกรองเฉพาะวันที่เลือก (ไม่ได้ระบุ = วันนี้)
+        $allDates = ($date === 'all');
+        if (!$allDates && ($date === null || $date === '')) {
+            $date = \Carbon\Carbon::today()->toDateString();
+        }
 
-            if ($docbill->isEmpty()) {
-                $message = 'ไม่พบเอกสารที่ค้นหา';
-            }
-        } elseif ($headcom !== '') {
-            // เลือกบริษัทผู้ส่ง (headcom = บริษัทหัวเอกสาร): ค้นทุกวัน (ไม่สนวันที่)
-            $docbill = Docbills::where('headcom', $headcom)
-                        ->orderBy('doc_id', 'desc')
-                        ->limit(500)
-                        ->get();
+        // รวมทุกตัวกรอง (เลขเอกสาร / SO / บริษัทลูกค้า / บริษัทผู้ส่ง) เข้ากับวันที่แบบ AND
+        // ถ้าไม่ติ๊ก "ไม่จำกัดวันที่" จะกรองเฉพาะวันนั้น ๆ ทุกกรณี (รวมถึงตอนเลือกบริษัทผู้ส่ง)
+        $q = Docbills::query()
+            ->when($search !== '', fn ($qq) => $qq->where('doc_id', 'like', '%' . $search . '%'))
+            ->when($so !== '', fn ($qq) => $qq->where('so_id', 'like', '%' . $so . '%'))
+            ->when($com !== '', fn ($qq) => $qq->where(function ($w) use ($com) {
+                $w->where('com_name', 'like', '%' . $com . '%')
+                  ->orWhere('id_com', 'like', '%' . $com . '%');
+            }))
+            ->when($headcom !== '', fn ($qq) => $qq->where('headcom', $headcom))
+            ->when(!$allDates, fn ($qq) => $qq->whereDate('time', $date));
 
-            if ($docbill->isEmpty()) {
-                $message = 'ไม่พบข้อมูลของบริษัทผู้ส่งนี้';
-            }
-        } elseif ($date && $date !== 'all') {
-            // เลือกวัน = ค้นเฉพาะวันนั้น
-            $docbill = Docbills::whereDate('time', $date)
-                        ->orderBy('doc_id', 'desc')
-                        ->get();
+        $docbill = $q->orderBy('doc_id', 'desc')->limit(1000)->get();
 
-            if ($docbill->isEmpty()) {
-                $message = 'ไม่พบข้อมูลที่ตรงกับวันที่เลือก';
-            }
-        } else {
-            // ไม่จำกัดวันที่ (date=all หรือไม่ระบุ) = ค้นทั้งหมด
-            $docbill = Docbills::orderBy('doc_id', 'desc')->limit(1000)->get();
-
-            if ($docbill->isEmpty()) {
-                $message = 'ไม่พบข้อมูล';
-            }
+        if ($docbill->isEmpty()) {
+            $message = 'ไม่พบข้อมูล';
         }
 
         // โหลด "รอบล่าสุดที่ยัง active" ของแต่ละบิลในครั้งเดียว — ใช้ทำสถานะ/สี/ผู้รับ/เวลา/หมายเหตุบนปุ่ม
