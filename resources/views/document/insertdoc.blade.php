@@ -1395,7 +1395,7 @@ async function generateAndUploadBillPdf(doc_id, items) {
         return boundaries;
     }
 
-   const headerHtml = `
+  const headerHtml = `
         <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:10px; padding-bottom:10px;">
             <div>
                 <h1 style="margin:0; font-size:36px; font-weight:800; color:#1e293b; letter-spacing:.01em;">${escapeHtmlSo(headcom)}</h1>
@@ -1417,12 +1417,12 @@ async function generateAndUploadBillPdf(doc_id, items) {
         <div style="background:#fff; border:1.5px solid #1e293b; border-radius:6px; padding:8px 14px; text-align:center; margin:0 0 10px;">
             <h2 style="margin:0; font-size:28px; font-weight:700; color:#1e293b; letter-spacing:.01em;">ใบส่งของชั่วคราว</h2>
         </div>
-        <div style="background:#f8fafc; border:1px solid #e2e8f0; border-radius:6px; padding:12px 18px; margin-bottom:0; display:flex; align-items:center; justify-content:space-between; gap:16px;">
+        <div style="background:#fff; border:none; padding:12px 18px; margin-bottom:0; display:flex; align-items:center; justify-content:space-between; gap:16px;">
             <div style="font-size:20px; line-height:1.8; color:#1e293b; flex:1; min-width:0;">
                 <div style="display:flex; align-items:flex-start;"><span style="font-weight:700; color:#475569; width:95px; flex-shrink:0; text-align:left;">บริษัท</span><span style="font-weight:700; color:#475569; padding-right:8px;">:</span><span style="flex:1;">${escapeHtmlSo(name) || '-'}</span></div>
                 <div style="display:flex; align-items:flex-start;"><span style="font-weight:700; color:#475569; width:95px; flex-shrink:0; text-align:left;">ที่อยู่</span><span style="font-weight:700; color:#475569; padding-right:8px;">:</span><span style="flex:1;">${escapeHtmlSo(address) || '-'}</span></div>
                 <div style="display:flex; align-items:flex-start;"><span style="font-weight:700; color:#475569; width:95px; flex-shrink:0; text-align:left;">ผู้ติดต่อ</span><span style="font-weight:700; color:#475569; padding-right:8px;">:</span><span style="flex:1;">${escapeHtmlSo(contact_name) || '-'} <span style="display:inline-block; margin-left:80px;"><span style="font-weight:700; color:#475569;">โทร :</span> ${escapeHtmlSo(contact_tel) || '-'}</span></span></div>
-<div style="display:flex; align-items:flex-start;"><span style="font-weight:700; color:#475569; width:95px; flex-shrink:0; text-align:left;">หมายเหตุ</span><span style="font-weight:700; color:#475569; padding-right:8px;">:</span><span style="flex:1; word-break:break-word; overflow-wrap:break-word;">${escapeHtmlSo(notes) || '-'}</span></div>
+                <div style="display:flex; align-items:flex-start;"><span style="font-weight:700; color:#475569; width:95px; flex-shrink:0; text-align:left;">หมายเหตุ</span><span style="font-weight:700; color:#475569; padding-right:8px;">:</span><span style="flex:1; word-break:break-word; overflow-wrap:break-word;">${escapeHtmlSo(notes) || '-'}</span></div>
             </div>
             ${hasCoords && qrDataUrl ? `<div style="text-align:center; flex-shrink:0;">
                 <div style="display:inline-block; text-align:center;">

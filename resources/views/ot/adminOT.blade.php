@@ -191,6 +191,8 @@ td.col-detail .clip {
 .badge.b-approved::before { background: #10b981; }
 .badge.b-rejected { color: #991b1b; background: var(--red-bg); border-color: var(--red-border); }
 .badge.b-rejected::before { background: #ef4444; }
+.badge.b-overdue { color: #991b1b; background: var(--red-bg); border-color: var(--red-border); }
+.badge.b-overdue::before { background: #ef4444; animation: pulse-dot 1.6s ease-in-out infinite; }
 @keyframes pulse-dot { 0%, 100% { opacity: 1; } 50% { opacity: 0.4; } }
 .btn-view {
   display: inline-flex; align-items: center; gap: 6px; height: 26px; padding: 0 10px;
@@ -903,6 +905,7 @@ function normalizeRow(e, i) {
     department: e.department || '',
     startTime: start,
     endTime: end,
+    _startAt: _realInstant(e.start_time),
     hours: hoursStr,
     workDetail: _cleanPhotosMarker(e.work_detail || ''),
     status: normStatus(e.status),
@@ -1055,6 +1058,37 @@ function minutesBetween(startTime, endTime) {
   if (e <= s) e += 24 * 60;
   return e - s;
 }
+// ── เลยกำหนด: ยัง "กำลังทำงาน" แต่ผ่านมาเกิน 8 ชม.จากเวลาเริ่มงาน (ยังไม่กดเลิกงาน) ──
+const OVERDUE_LIMIT_MIN = 8 * 60; // 480 นาที
+// คืนเวลาจริง (epoch) ของเวลาเริ่มงาน — มี TZ ใช้ตามนั้น, ไม่มีถือเป็นเวลาไทย (+7)
+function _realInstant(v) {
+  if (v === null || v === undefined || v === '') return null;
+  const s = String(v).trim();
+  if (_hasTZInfo(s)) { const d = new Date(s); return isNaN(d.getTime()) ? null : d; }
+  const p = _parseNaive(s);
+  if (p) return new Date(Date.UTC(p.y, p.mo - 1, p.d, p.h, p.mi, p.s) - 7 * 3600 * 1000);
+  const d = new Date(s); return isNaN(d.getTime()) ? null : d;
+}
+// เลยกำหนดหรือยัง — เฉพาะแถวที่ยังกำลังทำงานและเกิน 8 ชม.
+function isOverdue(r) {
+  if (!r || r.status !== 'กำลังทำงาน') return false;
+  if (!r._startAt) return false;
+  return (Date.now() - r._startAt.getTime()) / 60000 > OVERDUE_LIMIT_MIN;
+}
+// เกินมากี่นาทีจาก 8 ชม. (สำหรับ tooltip)
+function overdueByMin(r) {
+  if (!isOverdue(r)) return 0;
+  return Math.floor((Date.now() - r._startAt.getTime()) / 60000 - OVERDUE_LIMIT_MIN);
+}
+// เวลาเลิกงานอัตโนมัติ = เวลาเข้างาน + 8 ชม. (คืนเป็น "HH:MM", ข้ามเที่ยงคืนวนกลับ)
+function _autoEndHHMM(startStr) {
+  const p = String(startStr || '').split(':');
+  if (p.length < 2) return '';
+  let mins = (parseInt(p[0], 10) || 0) * 60 + (parseInt(p[1], 10) || 0) + OVERDUE_LIMIT_MIN;
+  mins = ((mins % 1440) + 1440) % 1440;
+  return String(Math.floor(mins / 60)).padStart(2, '0') + ':' + String(mins % 60).padStart(2, '0');
+}
+
 function formatDurationMin(total) {
   if (!total || total <= 0) return '0';
   const h = Math.floor(total / 60), m = total % 60;
@@ -1349,6 +1383,12 @@ function renderTable() {
                     : r.status === 'ไม่อนุมัติ' ? 'b-rejected'
                     : r.status === 'กำลังทำงาน' ? 'b-working'
                     : 'b-pending';
+    // ── เลยกำหนด: เกิน 8 ชม.แล้วยังไม่กดเลิกงาน ──
+    const _overdue = isOverdue(r);
+    const badgeClassFinal = _overdue ? 'b-overdue' : badgeClass;
+    const statusText = _overdue ? 'เลยกำหนด' : r.status;
+    const _od = _overdue ? overdueByMin(r) : 0;
+    const statusTitle = _overdue ? ('เกินกำหนด 8 ชม. มาแล้ว ' + formatDurationMin(_od) + ' (ยังไม่กดเลิกงาน)') : '';
     const hasIn = !!(r.selfieIn || r.mapIn);
     const hasOut = !!(r.selfieOut || r.mapOut);
     const hasExtra = r.extraPhotos && r.extraPhotos.length > 0;
@@ -1366,14 +1406,18 @@ function renderTable() {
     const isPending = r.status === 'รออนุมัติ';
     const isWorking = r.status === 'กำลังทำงาน';
     let timeRange;
-    if (isWorking) {
+    if (isWorking && _overdue) {
+      // เลยกำหนด: โชว์เวลาเลิกอัตโนมัติ (เข้างาน + 8 ชม.) แทนจุดสด
+      timeRange = `<b>${escapeHtml(r.startTime)}</b><span class="arr">→</span><b style="color:var(--red);">${escapeHtml(_autoEndHHMM(r.startTime))}</b>`;
+    } else if (isWorking) {
       timeRange = `<b>${escapeHtml(r.startTime)}</b><span class="arr">→</span><span style="color:var(--blue);">●</span>`;
     } else if (r.startTime && r.endTime) {
       timeRange = `<b>${escapeHtml(r.startTime)}</b><span class="arr">→</span><b>${escapeHtml(r.endTime)}</b>`;
     } else { timeRange = '<span class="dim">—</span>'; }
 
     let actions = '';
-    if (isPending) {
+    // ★ เลยกำหนด (overdue) ให้อนุมัติ/ไม่อนุมัติได้เหมือนรายการรออนุมัติ
+    if (isPending || _overdue) {
       actions = `
         <button class="icon-btn approve" title="อนุมัติ" onclick="openActionById(${r.id}, 'อนุมัติ')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></button>
         <button class="icon-btn reject" title="ไม่อนุมัติ" onclick="openActionById(${r.id}, 'ไม่อนุมัติ')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>`;
@@ -1403,7 +1447,7 @@ function renderTable() {
       <td class="col-detail hide-sm"><div class="clip" title="${escapeHtml(r.workDetail || '')}">${escapeHtml(r.workDetail || '—')}</div></td>
       <td class="col-allowance">${allowCell}</td>
       <td>${viewBtn}</td>
-      <td><span class="badge ${badgeClass}">${escapeHtml(r.status)}</span></td>
+      <td><span class="badge ${badgeClassFinal}"${statusTitle ? ` title="${escapeHtml(statusTitle)}"` : ''}>${escapeHtml(statusText)}</span></td>
       <td class="hide-md" style="color:var(--ink-2);font-size:12px;max-width:160px;">${escapeHtml(r.note || '—')}</td>
       <td><div class="row-actions">${actions}</div></td>
     </tr>`;

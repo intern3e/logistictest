@@ -493,6 +493,13 @@
                 <button type="button" id="clear-filters-btn" onclick="clearFilters()"
                         style="padding:5px 14px;border:1px solid var(--ink-150);border-radius:var(--radius);background:#f3f4f6;color:var(--ink-700);font-weight:600;font-size:clamp(10px,0.5vw + 4px,12px);cursor:pointer;font-family:inherit;white-space:nowrap;">ล้าง filter</button>
             </div>
+            <div class="search-field">
+                <button type="button" id="refresh-btn" onclick="refreshPage()" title="โหลดข้อมูลใหม่ (คงตัวกรองเดิม)"
+                        style="display:inline-flex;align-items:center;gap:5px;padding:5px 14px;border:1px solid var(--blue-700, #2853d5);border-radius:var(--radius);background:var(--blue-700, #2853d5);color:#fff;font-weight:600;font-size:clamp(10px,0.5vw + 4px,12px);cursor:pointer;font-family:inherit;white-space:nowrap;">
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M23 4v6h-6"/><path d="M1 20v-6h6"/><path d="M3.51 9a9 9 0 0114.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0020.49 15"/></svg>
+                    รีเฟรช
+                </button>
+            </div>
         </div>
     </div>
 
@@ -541,7 +548,7 @@
                             {{ $item->doc_id }}
                         @endif
                     </td>
-                    <td>{{ $item->so_id ?? '-' }}</td>
+                    <td>{{ $item->so_id ? preg_replace('/^SO\s*/i', '', trim($item->so_id)) : '-' }}</td>
                     <td>{{ $item->headcom }}</td>
                     <td>{{ $item->com_name }}</td>
                     <td>{{ $item->emp_name }}</td>
@@ -701,6 +708,11 @@
         // ล้างตัวกรองทั้งหมด -> กลับไปค่าเริ่มต้น (วันนี้ / ไม่ติ๊กไม่จำกัดวันที่ / ไม่มีคำค้น)
         window.clearFilters = function clearFilters() {
             window.location.href = @json(route('document.dashboarddoc'));
+        };
+
+        // รีเฟรช = โหลดข้อมูลหน้าเดิมใหม่ (คงตัวกรอง/วันที่ที่เลือกไว้)
+        window.refreshPage = function refreshPage() {
+            window.location.reload();
         };
 
         window.submitFilters = function submitFilters() {
