@@ -113,12 +113,13 @@ class BillreceiveController extends Controller
         $cname  = trim((string) $request->input('cname', ''));
         $driver = trim((string) $request->input('driver', ''));
         $status = trim((string) $request->input('status', ''));   // ok|hold|wrong|pending|''
+        $headcom = trim((string) $request->input('headcom', '')); // บริษัทผู้ส่ง (เฉพาะบิลชั่วคราว/doc)
         $date   = trim((string) $request->input('date', ''));
         $allDates = ($date === 'all');                 // ไม่จำกัดวันที่
         if (!$allDates && $date === '') $date = Carbon::now()->toDateString();
 
-        // มีตัวกรองใด ๆ (เลขบิล/รหัส/ชื่อลูกค้า/คนขับ/สถานะ)
-        $hasFilter  = ($q !== '' || $cust !== '' || $cname !== '' || $driver !== '' || $status !== '');
+        // มีตัวกรองใด ๆ (เลขบิล/รหัส/ชื่อลูกค้า/คนขับ/สถานะ/บริษัทผู้ส่ง)
+        $hasFilter  = ($q !== '' || $cust !== '' || $cname !== '' || $driver !== '' || $status !== '' || $headcom !== '');
         $ignoreDate = $hasFilter || $allDates;   // ใช้เลือกวิธีเรียงผล (ล่าสุดก่อน)
 
         $query = transaction_delivery::query();
@@ -147,6 +148,10 @@ class BillreceiveController extends Controller
                     Bill::where('customer_name', 'LIKE', "%{$cname}%")->pluck('so_detail_id')->all(),
                     Docbills::where('com_name', 'LIKE', "%{$cname}%")->pluck('doc_id')->all()
                 )));
+            }
+            // บริษัทผู้ส่ง (headcom) มีเฉพาะบิลชั่วคราว -> intersect กับ doc_id ของบริษัทนั้น = เหลือเฉพาะบิลชั่วคราวบริษัทนี้
+            if ($headcom !== '') {
+                $sets[] = Docbills::where('headcom', $headcom)->pluck('doc_id')->all();
             }
             if (!empty($sets)) {
                 $billIds = array_shift($sets);
@@ -193,7 +198,7 @@ class BillreceiveController extends Controller
             ->get(['so_detail_id', 'billid', 'so_id', 'customer_id', 'customer_name', 'transport_type'])
             ->keyBy('so_detail_id');
         $docs = Docbills::whereIn('doc_id', $ids)
-            ->get(['doc_id', 'id_com', 'com_name', 'so_id'])
+            ->get(['doc_id', 'id_com', 'com_name', 'so_id', 'headcom'])
             ->keyBy('doc_id');
 
         // จัดกลุ่มเป็น 1 แถวต่อ 1 บิล — ดึงเฉพาะ บิล (บริษัท/เอกชน) + บิลชั่วคราว (doc)
@@ -210,6 +215,7 @@ class BillreceiveController extends Controller
                 $custC = (string) ($b->customer_id ?? '');
                 $custN = (string) ($b->customer_name ?? '');
                 $soId  = (string) ($b->so_id ?? '');
+                $headcomVal = '';   // บิลปกติไม่มีบริษัทผู้ส่ง
             } elseif ($docs->has($billId)) {
                 $doc   = $docs->get($billId);
                 $type  = 'doc';
@@ -219,6 +225,7 @@ class BillreceiveController extends Controller
                 $custN = (string) ($doc->com_name ?? '');
                 // บิลชั่วคราว: ถ้ามี so_id ในเอกสารก็แสดงด้วย
                 $soId  = (string) ($doc->so_id ?? '');
+                $headcomVal = (string) ($doc->headcom ?? '');   // บริษัทผู้ส่ง
             } else {
                 // งานไปรับของเอง (PO) -> ไม่ดึงมาหน้านี้
                 continue;
@@ -238,6 +245,7 @@ class BillreceiveController extends Controller
                     'type'          => $type,
                     'bill_no'       => $no,
                     'so_id'         => $soId,
+                    'headcom'       => $headcomVal,
                     'customer_code' => $custC,
                     'customer_name' => $custN,
                     '_rows'         => collect(),
@@ -267,6 +275,7 @@ class BillreceiveController extends Controller
                 'type'           => $g['type'],
                 'bill_no'        => $g['bill_no'],
                 'so_id'          => $g['so_id'],
+                'headcom'        => $g['headcom'] ?? '',
                 'customer_code'  => $g['customer_code'],
                 'customer_name'  => $g['customer_name'],
                 'name_pick'      => (string) ($first->name_pick ?? ''),   // ผู้จ่ายงาน

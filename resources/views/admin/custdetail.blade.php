@@ -46,6 +46,8 @@
             font-size:14px;font-family:inherit;outline:none;transition:border .15s,box-shadow .15s;
         }
         .box input:focus,.box textarea:focus,.box select:focus{border-color:var(--primary);box-shadow:0 0 0 2px rgba(62,106,225,.12)}
+        .box input[readonly]{background:var(--bg);color:var(--ink2);cursor:default;border-style:dashed}
+        .box input[readonly]:focus{border-color:var(--border);box-shadow:none}
         .box input#idcust{font-family:var(--mono);font-weight:600;letter-spacing:.02em}
         .box textarea{resize:vertical;min-height:72px;line-height:1.5}
         .box select{cursor:pointer;appearance:none;-webkit-appearance:none;
@@ -101,8 +103,8 @@
                 <!-- กล่อง 2: ชื่อลูกค้า -->
                 <div class="box">
                     <label class="box-label" for="namecust"><span class="num">2</span> ชื่อลูกค้า</label>
-                    <input type="text" id="namecust" name="namecust" autocomplete="off">
-                    <span class="box-hint">ชื่อที่ใช้แสดงคู่กับรหัสลูกค้า</span>
+                    <input type="text" id="namecust" name="namecust" autocomplete="off" readonly>
+                    <span class="box-hint">ดึงจากรหัสลูกค้าอัตโนมัติ (พิมพ์เองไม่ได้)</span>
                 </div>
 
                 <!-- กล่อง 3: แบบฟอร์มเอกสาร -->
@@ -142,9 +144,10 @@
 </div>
 
 <script>
-const CSRF       = document.querySelector('meta[name="csrf-token"]').content;
-const LOOKUP_URL = "{{ route('admin.custdetail.lookup') }}";
-const SAVE_URL   = "{{ route('admin.custdetail.save') }}";
+const CSRF        = document.querySelector('meta[name="csrf-token"]').content;
+const LOOKUP_URL  = "{{ route('admin.custdetail.lookup') }}";
+const SAVE_URL    = "{{ route('admin.custdetail.save') }}";
+const CUST_SEARCH_URL = "{{ route('document.searchCustVendor') }}";   // ดึงชื่อลูกค้าจากฐานข้อมูลหลัก (เหมือนหน้า insertdoc)
 
 const idcust   = document.getElementById('idcust');
 const namecust = document.getElementById('namecust');
@@ -156,11 +159,24 @@ const btnSave  = document.getElementById('btnSave');
 
 function setMsg(text, cls){ saveMsg.textContent = text || ''; saveMsg.className = 'save-msg' + (cls ? ' ' + cls : ''); }
 
-// ดึงข้อมูลเดิมมาเติมฟอร์มเมื่อออกจากช่องรหัสลูกค้า (ถ้ามีอยู่แล้ว = โหมดแก้ไข)
+// ดึงชื่อลูกค้าจากฐานข้อมูลลูกค้าหลักด้วยรหัส (แบบเดียวกับหน้า insertdoc) — เลือกเฉพาะที่รหัสตรงเป๊ะ
+async function fetchCustName(code){
+    try{
+        const res = await fetch(CUST_SEARCH_URL + '?keySearch=' + encodeURIComponent(code), { headers:{'Accept':'application/json'} });
+        if(!res.ok) return null;
+        const data = await res.json();
+        const all = [...(data.Customer || []), ...(data.Supplier || [])];
+        const t = code.trim().toUpperCase();
+        const m = all.find(x => (x.CustCode || x.VendorCode || '').trim().toUpperCase() === t);
+        return m ? ((m.CustName || m.VendorName || '').trim() || null) : null;
+    }catch(e){ return null; }
+}
+
+// ดึงข้อมูลเดิมมาเติมฟอร์มเมื่อออกจากช่องรหัสลูกค้า (ถ้ามีอยู่แล้ว = โหมดแก้ไข) + ดึงชื่อลูกค้าจากระบบหลัก
 let lookupTimer = null;
 async function lookupCust(){
     const v = idcust.value.trim();
-    if(!v){ idHint.textContent = 'พิมพ์รหัสแล้วระบบจะดึงข้อมูลเดิมมาให้อัตโนมัติ (ถ้ามี)'; idHint.className = 'box-hint'; return; }
+    if(!v){ idHint.textContent = 'พิมพ์รหัสแล้วระบบจะดึงข้อมูลเดิมมาให้อัตโนมัติ (ถ้ามี)'; idHint.className = 'box-hint'; namecust.value = ''; return; }
     try{
         const res = await fetch(LOOKUP_URL, {
             method:'POST',
@@ -179,6 +195,10 @@ async function lookupCust(){
             idHint.className = 'box-hint';
         }
     }catch(e){ /* เงียบไว้ ไม่รบกวนการกรอก */ }
+
+    // ใส่รหัสแล้วดึงชื่อลูกค้าจากฐานข้อมูลหลักมาให้เลย (ถ้ารหัสยังไม่เปลี่ยนระหว่างรอผล)
+    const officialName = await fetchCustName(v);
+    if(idcust.value.trim() === v) namecust.value = officialName || namecust.value || '';
 }
 idcust.addEventListener('blur', lookupCust);
 idcust.addEventListener('input', () => {

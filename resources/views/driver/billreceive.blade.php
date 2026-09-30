@@ -311,6 +311,23 @@ a { color: inherit; text-decoration: none; }
         <option value="wrong">สินค้าผิด</option>
       </select>
     </div>
+    <div class="fg">
+      <label for="fHeadcom">บริษัทผู้ส่ง <span style="color:var(--ink3);font-weight:500;">(บิลชั่วคราว)</span></label>
+      <select id="fHeadcom" style="height:38px;padding:0 10px;border:1px solid var(--line);border-radius:8px;font-family:inherit;font-size:13px;min-width:220px;">
+        <option value="">ทั้งหมด</option>
+        <option value="บริษัท ทริปเปิ้ล อี เทรดดิ้ง จำกัด">บริษัท ทริปเปิ้ล อี เทรดดิ้ง จำกัด</option>
+        <option value="บริษัท ทริปเปิ้ล อี อินโนเวชั่น จำกัด">บริษัท ทริปเปิ้ล อี อินโนเวชั่น จำกัด</option>
+        <option value="บริษัท ทริบเปิ้ล พี แฟคตอรี่ แอนด์ เอ็นจิเนียริ่ง จำกัด">บริษัท ทริบเปิ้ล พี แฟคตอรี่ แอนด์ เอ็นจิเนียริ่ง จำกัด</option>
+        <option value="บริษัท เอตะ แอนด์ พอล อินโนเวชั่น จำกัด">บริษัท เอตะ แอนด์ พอล อินโนเวชั่น จำกัด</option>
+        <option value="บริษัท ฮิคาริ เดงกิ จำกัด">บริษัท ฮิคาริ เดงกิ จำกัด</option>
+        <option value="บริษัท เอ อี แอนด์ ที อินเตอร์เนชั่นแนล จำกัด">บริษัท เอ อี แอนด์ ที อินเตอร์เนชั่นแนล จำกัด</option>
+        <option value="บริษัท ทริปเปิ้ล อี ไลท์ติ้ง จำกัด">บริษัท ทริปเปิ้ล อี ไลท์ติ้ง จำกัด</option>
+        <option value="บริษัท ทริปเปิ้ล อี เอ็มไพร์ กรุ๊ป จำกัด">บริษัท ทริปเปิ้ล อี เอ็มไพร์ กรุ๊ป จำกัด</option>
+        <option value="บริษัท ชาเวสต์ เรียลเอสเตท จำกัด">บริษัท ชาเวสต์ เรียลเอสเตท จำกัด</option>
+        <option value="บริษัท เทคเพียร์ เอ็นจิเนียริ่ง จำกัด">บริษัท เทคเพียร์ เอ็นจิเนียริ่ง จำกัด</option>
+        <option value="บริษัท เดชา อิเล็คทริค แอนด์ คอนสตรัคชั่น จำกัด">บริษัท เดชา อิเล็คทริค แอนด์ คอนสตรัคชั่น จำกัด</option>
+      </select>
+    </div>
     <button type="button" class="btn btn-primary" id="btnSearch">ค้นหา</button>
     <button type="button" class="btn" id="btnClear">ล้าง</button>
     <span class="hint">เลือกวันที่ = ค้นเฉพาะงานที่จ่ายวันนั้น · ติ๊ก "ไม่จำกัดวันที่" = ค้นทุกวัน</span>
@@ -544,12 +561,14 @@ async function loadData(){
   const cname  = document.getElementById('fCustName').value.trim();
   const driver = document.getElementById('fDriver').value.trim();
   const status = document.getElementById('fStatus').value;
+  const headcom = document.getElementById('fHeadcom').value;
   const params = new URLSearchParams();
   if(q) params.set('q', q);
   if(cust) params.set('cust', cust);
   if(cname) params.set('cname', cname);
   if(driver) params.set('driver', driver);
   if(status) params.set('status', status);
+  if(headcom) params.set('headcom', headcom);   // บริษัทผู้ส่ง (เฉพาะบิลชั่วคราว)
   // เลือกวันที่ = ค้น/กรองเฉพาะวันนั้น ; ติ๊กไม่จำกัดวันที่ = ค้นทุกวัน
   params.set('date', fAllDates.checked ? 'all' : (fDate.value || ''));
   params.set('page', currentPage);   // แบ่งหน้า (หน้าละ 100)
@@ -883,6 +902,7 @@ document.getElementById('btnClear').addEventListener('click', ()=>{
   fAllDates.checked = false; fDate.disabled = false;
   document.getElementById('fCust').value=''; document.getElementById('fCustName').value='';
   document.getElementById('fDriver').value=''; document.getElementById('fStatus').value='';
+  document.getElementById('fHeadcom').value='';
   doSearch();
 });
 fBill.addEventListener('keydown', e=>{ if(e.key==='Enter') doSearch(); });
@@ -896,6 +916,7 @@ let _filterTimer = null;
   _filterTimer = setTimeout(doSearch, 400);  // แล้วค่อยโหลดข้ามวันจาก server (กลับหน้า 1)
 }));
 document.getElementById('fStatus').addEventListener('change', doSearch);
+document.getElementById('fHeadcom').addEventListener('change', doSearch);   // เลือกบริษัทผู้ส่ง = โหลดใหม่ (เฉพาะบิลชั่วคราว)
 
 document.addEventListener('DOMContentLoaded', ()=>{
   fDate.value = new Date().toISOString().split('T')[0];
