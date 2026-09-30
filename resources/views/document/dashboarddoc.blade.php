@@ -143,7 +143,7 @@
         .search-field { display: flex; align-items: center; gap: 6px; }
         .search-field label { font-weight: 600; color: var(--ink-700); font-size: clamp(10px, 0.5vw + 4px, 12px); white-space: nowrap; }
 
-        #search-input, #so-input {
+        #search-input, #so-input, #com-input {
             padding: 5px 10px;
             border: 1px solid var(--ink-150);
             border-radius: var(--radius);
@@ -486,6 +486,11 @@
                 <input type="text" id="so-input" name="so" form="autoSearchForm"
                        value="{{ request('so', '') }}" autocomplete="off">
             </div>
+            <div class="search-field">
+                <label for="com-input">บริษัท / ลูกค้า :</label>
+                <input type="text" id="com-input" name="com" form="autoSearchForm"
+                       value="{{ request('com', '') }}" autocomplete="off">
+            </div>
         </div>
     </div>
 
@@ -682,6 +687,7 @@
         const headcomSel = document.getElementById('headcom');
         const searchInputEl = document.getElementById('search-input');
         const soInputEl = document.getElementById('so-input');
+        const comInputEl = document.getElementById('com-input');
 
         // จำค่าบริษัทผู้ส่งที่เลือกไว้ (ค้นข้ามวัน)
         if (headcomSel) headcomSel.value = @json(request('headcom', ''));
@@ -698,12 +704,14 @@
             const headcom = headcomSel ? headcomSel.value : '';
             const search  = searchInputEl ? searchInputEl.value.trim() : '';
             const so      = soInputEl ? soInputEl.value.trim() : '';
+            const com     = comInputEl ? comInputEl.value.trim() : '';
             // ไม่จำกัดวันที่ = ส่ง date=all (ค้นทั้งหมด) ; ไม่งั้นส่งวันที่ที่เลือก
             if (allDates)     p.set('date', 'all');
             else if (date)    p.set('date', date);
             if (headcom) p.set('headcom', headcom);
             if (search)  p.set('search', search);
             if (so)      p.set('so', so);
+            if (com)     p.set('com', com);
             window.location.href = base + '?' + p.toString();
         };
 
@@ -715,7 +723,7 @@
         });
 
         // ช่องเลขเอกสารชั่วคราว + เลข SO : ค้นหาเมื่อกด Enter (ไม่ auto-reload ระหว่างพิมพ์)
-        [searchInputEl, soInputEl].forEach(el => {
+        [searchInputEl, soInputEl, comInputEl].forEach(el => {
             if (!el) return;
             el.addEventListener('keydown', e => {
                 if (e.key === 'Enter') { e.preventDefault(); submitFilters(); }

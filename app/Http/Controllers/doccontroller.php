@@ -34,13 +34,18 @@ class DocController extends Controller
         $date    = $request->get('date');
         $search  = trim((string) $request->get('search', ''));   // เลขเอกสารชั่วคราว (doc_id)
         $so      = trim((string) $request->get('so', ''));       // เลข SO
+        $com     = trim((string) $request->get('com', ''));      // ชื่อบริษัท/ลูกค้า (com_name หรือ id_com)
         $headcom = trim((string) $request->get('headcom', ''));
         $message = null;
 
-        if ($search !== '' || $so !== '') {
-            // ค้นหาด้วยเลขเอกสารชั่วคราว / เลข SO: หาได้ทุกวัน ไม่จำกัดวันที่ (ใส่พร้อมกันได้ = AND)
+        if ($search !== '' || $so !== '' || $com !== '') {
+            // ค้นหาด้วยเลขเอกสารชั่วคราว / เลข SO / บริษัท(ลูกค้า): หาได้ทุกวัน ไม่จำกัดวันที่ (ใส่พร้อมกันได้ = AND)
             $docbill = Docbills::when($search !== '', fn ($q) => $q->where('doc_id', 'like', '%' . $search . '%'))
                         ->when($so !== '', fn ($q) => $q->where('so_id', 'like', '%' . $so . '%'))
+                        ->when($com !== '', fn ($q) => $q->where(function ($w) use ($com) {
+                            $w->where('com_name', 'like', '%' . $com . '%')
+                              ->orWhere('id_com', 'like', '%' . $com . '%');
+                        }))
                         ->orderBy('doc_id', 'desc')
                         ->limit(500)
                         ->get();

@@ -80,6 +80,92 @@ class InventoryController extends Controller
         ]);
     }
 
+    // ═══════════════ วิเคราะห์สินค้า (Brand / ต้นทุน) — admin เท่านั้น ═══════════════
+    public function brandAnalysisPage(Request $request)
+    {
+        $authUser = $this->checkAuth($request);
+        if (($authUser['auth'] ?? '') !== 'admin') abort(403, 'เฉพาะผู้ดูแลระบบ');
+        return view('inventory.analyzeinventory', [
+            'authUser' => $authUser,
+            'authRole' => $authUser['auth'] ?? 'viewer',
+        ]);
+    }
+
+    // ข้อมูลก้อนเดียวสำหรับหน้าวิเคราะห์: สินค้า + brand + transaction (ทุกหน้า)
+    public function getBrandAnalysis()
+    {
+        $this->guardRole(['admin']);
+
+        $items = collect($this->api('GET', '/items') ?? [])->map(fn($r) => [
+            'iditem'    => $r['iditem'] ?? $r['item_id'] ?? '',
+            'name'      => $r['name'] ?? $r['item_name'] ?? '',
+            'quantity'  => $r['quantity'] ?? $r['item_quantity'] ?? 0,
+            'typeitem'  => $r['typeitem'] ?? $r['item_type'] ?? '',
+            'location'  => $r['location'] ?? $r['item_location'] ?? '',
+            'brand'     => $r['brand'] ?? $r['item_brand'] ?? '',
+            'privilege' => $r['privilege'] ?? $r['item_privilege'] ?? '',
+        ])->values();
+
+        try {
+            $brands = collect($this->api('GET', '/items/brands') ?? [])
+                ->map(fn($r) => is_string($r) ? $r : ($r['brand'] ?? ''))->filter()->values();
+        } catch (\Throwable $e) {
+            $brands = collect($items)->pluck('brand')->map(fn($b) => trim((string) $b))->filter()->unique()->sort()->values();
+        }
+
+        $tx = collect($this->fetchAllTransactionsRaw())->map(function ($r) {
+            $cp = $r['currency_price'] ?? null;
+            return [
+                'timestamp'      => $this->fmtTs($r['timestamp'] ?? $r['Timestamp'] ?? ''),
+                'operator'       => $r['addby'] ?? '',
+                'type'           => $r['transaction_type'] ?? '',
+                'bill'           => $r['document_id'] ?? '',
+                'iditem'         => $r['item_id'] ?? '',
+                'product'        => $r['item_name'] ?? '',
+                'brand'          => $r['item_brand'] ?? '',
+                'quantity'       => (float) ($r['item_quantity'] ?? 0),
+                'unit_price'     => (float) ($r['item_unit_price'] ?? 0),
+                'currency_price' => ($cp !== null && $cp !== '') ? (float) $cp : null,
+                'currency_type'  => $r['currency_type'] ?? 'บาท',
+            ];
+        })->values();
+
+        return response()->json(compact('items', 'brands', 'tx'));
+    }
+
+    // ดึง transaction ทุกหน้าแบบดิบ (ยังไม่ map เป็น key ไทย) — ใช้กับหน้าวิเคราะห์ที่ต้องการ item_unit_price/item_brand
+    private function fetchAllTransactionsRaw(): array
+    {
+        return Cache::remember('all_transactions_raw', 60, function () {
+            $limit = 5000;
+            $headers = ['Accept' => 'application/json', 'x-api-key' => $this->apiKey];
+            try {
+                $first = Http::withHeaders($headers)->timeout(60)
+                            ->get($this->baseUrl . "/transaction?page=1&limit={$limit}");
+            } catch (\Throwable $e) {
+                Log::error('fetchAllTransactionsRaw page1 failed: ' . $e->getMessage());
+                return [];
+            }
+            $all = $first->ok() ? ($first->json() ?? []) : [];
+            if (count($all) < $limit) return $all;
+
+            $responses = Http::pool(function ($pool) use ($headers, $limit) {
+                for ($p = 2; $p <= 50; $p++) {
+                    $pool->as("p{$p}")->withHeaders($headers)->timeout(60)
+                        ->get($this->baseUrl . "/transaction?page={$p}&limit={$limit}");
+                }
+            });
+            foreach ($responses as $res) {
+                if (!($res instanceof \Illuminate\Http\Client\Response) || !$res->ok()) continue;
+                $rows = $res->json() ?? [];
+                if (empty($rows)) break;
+                $all = array_merge($all, $rows);
+                if (count($rows) < $limit) break;
+            }
+            return $all;
+        });
+    }
+
     // ═══════════════ ITEMS ═══════════════
     public function getPageData()
     {
@@ -340,8 +426,9 @@ class InventoryController extends Controller
             return collect($all)->map(fn($r) => $this->mapTx($r))->values()->all();
         });
     }
-    private function clearTxCache(): void { 
+    private function clearTxCache(): void {
         Cache::forget('all_transactions');
+        Cache::forget('all_transactions_raw');
     }
 
     public function getTransactionPage(Request $request)

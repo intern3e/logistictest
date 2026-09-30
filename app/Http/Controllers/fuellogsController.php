@@ -378,7 +378,7 @@ public function store(Request $request)
     $request->validate([
         'work_date'       => 'required|date',
         'driver_name'     => 'required|string|max:100',
-        'vehicle_id'      => 'required|string|max:50',
+        'vehicle_id'      => 'required|string|max:255',
         'total_price'     => 'required|numeric|min:0',
         'total_distance'  => 'nullable|numeric|min:0',
         'liters'          => 'nullable|numeric|min:0',
@@ -436,7 +436,7 @@ public function update(Request $request, $id)
     $request->validate([
         'work_date'       => 'required|date',
         'driver_name'     => 'required|string|max:100',
-        'vehicle_id'      => 'required|string|max:50',
+        'vehicle_id'      => 'required|string|max:255',
         'total_price'     => 'required|numeric|min:0',
         'total_distance'  => 'nullable|numeric|min:0',
         'liters'          => 'nullable|numeric|min:0',

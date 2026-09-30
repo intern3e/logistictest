@@ -404,6 +404,9 @@ Route::get('/inventory/pr',           [InventoryController::class, 'prPage'])->n
 Route::get('/inventory/pr/dashboard', [InventoryController::class, 'prDashboardPage'])->name('inventory.pr.dashboard');
 Route::get('/inventory/users',        [InventoryController::class, 'manageUsersPage'])->name('inventory.users');
 Route::get('/inventory/vehicles',     [InventoryController::class, 'vehiclesPage'])->name('inventory.vehicles');
+// วิเคราะห์สินค้า (ตาม Brand + ต้นทุน) — admin เท่านั้น
+Route::get('/inventory/analyze',      [InventoryController::class, 'brandAnalysisPage'])->name('inventory.analyze');
+Route::get('/api/inventory/brand-analysis', [InventoryController::class, 'getBrandAnalysis']);
 Route::get('/inventory',              [InventoryController::class, 'entry']);
  
 // API: Items
