@@ -56,6 +56,8 @@
     /* แบ่งครึ่งจอ บน=อดีต ล่าง=อนาคต */
     .split{display:flex;flex-direction:column;gap:18px}
     .pane{background:var(--card);border:1px solid var(--line-strong);border-radius:14px;overflow:hidden}
+    .pane.past{background:#fef2f2;border-color:#fca5a5}
+    .pane.past .pane-body .day{border-color:#fecaca}
     .pane-head{padding:11px 16px;border-bottom:1px solid var(--line);display:flex;align-items:center;gap:10px;flex-wrap:wrap}
     .pane-head.past{background:#fef2f2}
     .pane-head.future{background:#eff6ff}
@@ -88,7 +90,7 @@
 
     <div class="split">
       {{-- ครึ่งบน: อดีตที่ยังไม่รับเข้า --}}
-      <div class="pane">
+      <div class="pane past">
         <div class="pane-head past">
           <span class="sh-title">① อดีตที่ยังไม่รับเข้า</span>
           <span class="sh-sub">เลยกำหนดแล้วแต่ยังไม่ได้รับเข้า</span>
