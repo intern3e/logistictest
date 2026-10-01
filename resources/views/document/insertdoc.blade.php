@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="csrf-token" content="{{ csrf_token() }}">
-    <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Kanit:wght@300;400;500;600&family=Sarabun:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
@@ -13,97 +13,141 @@
 <style>
     * { box-sizing: border-box; }
     :root {
-        --primary: #3E6AE1; --primary-hover: #2f56c4; --primary-light: #eef2fd; --primary-border: #c7d5f5;
-        --amber: #f59e0b; --amber-light: #fef3c7; --red: #dc2626; --red-light: #fee2e2;
-        --bg: #f5f7fa; --surface: #ffffff; --border: #e5e7eb; --border-light: #f0f2f5;
-        --text: #1b2d4f; --text-secondary: #374151; --text-muted: #6b7280;
-        --shadow-sm: 0 1px 3px rgba(0,0,0,0.05); --shadow-md: 0 4px 12px rgba(62,106,225,0.10);
-        --radius: 12px; --radius-sm: 6px;
+        /* ธีมเดียวกับหน้ารายการเอกสาร (ขาวดำ) */
+        --primary: #111827; --primary-hover: #000000; --primary-light: #f3f4f6; --primary-border: #e5e7eb;
+        --amber: #f59e0b; --amber-light: #fef3c7; --red: #dc2626; --red-light: #fef2f2;
+        --bg: #f8fafc; --surface: #ffffff; --border: #e2e8f0; --border-light: #e8edf3;
+        --text: #0f172a; --text-secondary: #334155; --text-muted: #64748b;
+        --shadow-sm: 0 1px 2px rgba(15,23,42,.04), 0 4px 14px rgba(15,23,42,.05); --shadow-md: 0 8px 24px rgba(15,23,42,.10);
+        --radius: 18px; --radius-sm: 12px;
     }
-    body { font-family: 'Sarabun', 'Segoe UI', system-ui, sans-serif; background: var(--bg); color: var(--text); margin: 0; padding: 0; line-height: 1.5; font-size: 14px; }
-    .container { max-width: 1400px; margin: 4px auto 14px; padding: 0 20px; }
-    .header-bar { padding: 6px 0; display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
-    .text-dark { font-size: 17px; font-weight: 700; color: var(--text); margin: 0; display: flex; align-items: center; gap: 8px; }
-    .text-dark::before { content: '🧾'; font-size: 19px; }
-    .btn-back { background: var(--surface); color: var(--text-secondary); border: 1px solid var(--border); padding: 10px 20px; border-radius: var(--radius-sm); cursor: pointer; font-size: 14px; font-weight: 600; display: inline-flex; align-items: center; gap: 8px; transition: all 0.2s; text-decoration: none; }
-    .btn-back:hover { background: var(--bg); border-color: var(--text-muted); }
-    .page { display: grid; grid-template-columns: 2fr 3fr; grid-template-rows: auto auto; gap: 20px; margin-bottom: 24px; }
+    html { font-size: clamp(12px, 0.3vw + 8px, 15px); }
+    body { font-family: 'Inter', 'Kanit', 'Segoe UI', system-ui, sans-serif; background: var(--bg); color: var(--text); margin: 0; padding: 0; line-height: 1.5; font-size: 1rem; }
+    .container { max-width: 1440px; margin: 0 auto; padding: 0 32px 24px; }
+    svg.i { width: 16px; height: 16px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; flex: none; }
+
+    /* ===== แถบบน (แบบเดียวกับหน้ารายการ) ===== */
+    .topbar { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; background: var(--surface); border: 1px solid var(--border-light);
+              border-radius: 18px; margin: 15px 0 12px; padding: 12px 16px 12px 18px; box-shadow: var(--shadow-sm); }
+    .topbar h2 { margin: 0; font-size: clamp(17px, .8vw + 8px, 21px); font-weight: 700; letter-spacing: -.3px; display: flex; align-items: center; gap: 10px; white-space: nowrap; color: var(--text); }
+    .topbar h2 .logo { width: 36px; height: 36px; border-radius: 11px; color: #fff; display: flex; align-items: center; justify-content: center; background: #111827; box-shadow: 0 4px 10px rgba(17,24,39,.25); }
+    .topbar h2 .logo svg { width: 18px; height: 18px; }
+    .topbar .mode { font-size: .78rem; font-weight: 600; color: var(--text-muted); background: var(--primary-light); border-radius: 999px; padding: 3px 10px; }
+    .topbar .actions { margin-left: auto; display: flex; gap: 8px; align-items: center; }
+    .btn-back { height: 40px; background: var(--surface); color: var(--text-secondary); border: 1px solid var(--border-light); padding: 0 16px; border-radius: 12px; cursor: pointer;
+                font: inherit; font-size: .9rem; font-weight: 500; display: inline-flex; align-items: center; gap: 8px; transition: .15s; text-decoration: none; }
+    .btn-back:hover { background: var(--bg); border-color: var(--border); color: var(--text); }
+
+    /* ===== โครงหน้า ===== */
+    .page { display: grid; grid-template-columns: 2fr 3fr; grid-template-rows: auto auto; gap: 12px; margin-bottom: 12px; }
     .area-doc-company { grid-column: 1 / 3; grid-row: 1 / 2; }
     .area-address { grid-column: 1 / 2; grid-row: 2 / 3; align-self: start; min-height: 340px; }
     .area-items { grid-column: 2 / 3; grid-row: 2 / 3; min-height: 340px; }
-    .card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); box-shadow: var(--shadow-sm); overflow: hidden; height: 100%; }
-    .card-head { padding: 14px 24px; border-bottom: 1px solid var(--border-light); display: flex; align-items: center; gap: 12px; background: var(--surface); }
-    .card-icon { width: 40px; height: 40px; border-radius: var(--radius-sm); display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
-    .ci-green { background: #dbeafe; border: 1px solid #bfdbfe; }
-    .ci-amber { background: var(--amber-light); border: 1px solid #fde68a; }
-    .card-head-text h3 { font-size: 16px; font-weight: 700; color: var(--text); margin: 0; }
-    .card-head-text p { font-size: 12px; color: var(--text-muted); margin: 2px 0 0; }
-    .card-body { padding: 24px; }
-    .form-grid-2 { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; }
+    .card { background: var(--surface); border: 1px solid var(--border-light); border-radius: var(--radius); box-shadow: var(--shadow-sm); overflow: visible; height: 100%; }
+    .card-head { padding: 16px 24px; border-bottom: 1px solid var(--border-light); display: flex; align-items: center; gap: 12px; background: transparent; }
+    .card-icon { width: 40px; height: 40px; border-radius: 12px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; color: var(--text); }
+    .card-icon svg * { stroke: currentColor; }
+    .ci-green, .ci-amber { background: var(--primary-light); border: 1px solid var(--border); }
+    .card-head-text h3 { font-size: 1.05rem; font-weight: 700; color: var(--text); margin: 0; }
+    .card-head-text p { font-size: .82rem; color: var(--text-muted); margin: 2px 0 0; }
+    .card-body { padding: 20px 24px 24px; }
+    .form-grid-2 { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; }
     .span-full { grid-column: 1 / -1; }
     .header-field-date { min-width: 0; flex: 0 0 auto; }
-    .header-field-doctype { min-width: 240px; flex: 1 1 240px; max-width: 320px; }
+    .header-field-doctype { min-width: 240px; flex: 1 1 240px; max-width: 340px; }
     .headcom-com-row { display: grid; grid-template-columns: 1fr 2.5fr; gap: 16px; margin-bottom: 0; }
-    .so-contact-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px 16px; }
+    .so-contact-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px 16px; }
+
+    /* ===== ช่องกรอก (สูงเท่ากัน มุมมน พื้นเทาอ่อน) ===== */
     .field { display: flex; flex-direction: column; gap: 6px; margin-bottom: 0; }
-    .field label { font-size: 13px; font-weight: 600; color: var(--text-secondary); display: flex; align-items: center; gap: 4px; }
-    .field label .req { color: var(--red); font-size: 13px; }
-    .field input[type="text"], .field input[type="date"], .field select { width: 100%; height: 42px; padding: 10px 12px; border: 1.5px solid var(--border); border-radius: var(--radius-sm); background: var(--surface); color: var(--text); font-size: 14px; font-family: inherit; outline: none; transition: all 0.2s; }
-    .field textarea { width: 100%; padding: 10px 12px; border: 1.5px solid var(--border); border-radius: var(--radius-sm); background: var(--surface); color: var(--text); font-size: 14px; font-family: inherit; outline: none; transition: all 0.2s; resize: vertical; min-height: 80px; }
-    .field input:focus, .field select:focus, .field textarea:focus { border-color: var(--primary); box-shadow: 0 0 0 3px rgba(62,106,225,0.10); }
+    .field label { font-size: .86rem; font-weight: 500; color: var(--text-secondary); display: flex; align-items: center; gap: 4px; }
+    .field label .req { color: var(--red); font-size: .86rem; }
+    .field input[type="text"], .field input[type="date"], .field select {
+        width: 100%; height: 40px; padding: 0 12px; border: 1px solid var(--border-light); border-radius: 8px; background: var(--bg);
+        color: var(--text); font-size: .92rem; font-family: inherit; outline: none; transition: .15s; }
+    .field textarea { width: 100%; padding: 10px 12px; border: 1px solid var(--border-light); border-radius: 12px; background: var(--bg); color: var(--text);
+                      font-size: .92rem; font-family: inherit; outline: none; transition: .15s; resize: vertical; min-height: 80px; }
+    .field input:hover, .field select:hover, .field textarea:hover { border-color: var(--border); }
+    .field input:focus, .field select:focus, .field textarea:focus { background: #fff; border-color: var(--primary); box-shadow: 0 0 0 3px var(--primary-light); }
+    .field input[type="checkbox"] { accent-color: var(--primary); }
     .field.is-invalid input, .field.is-invalid select, .field.is-invalid textarea { border-color: var(--red) !important; background: var(--red-light) !important; }
-    .field select { cursor: pointer; appearance: none; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath d='M3 4.5L6 7.5L9 4.5' stroke='%236b7280' stroke-width='1.5' stroke-linecap='round' fill='none'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 12px center; padding-right: 36px; }
-    .autocomplete-list { list-style: none; margin: 4px 0 0; padding: 4px; position: absolute; top: 100%; left: 0; right: 0; background: var(--surface); border: 1.5px solid var(--border); border-radius: var(--radius-sm); box-shadow: var(--shadow-md); max-height: 240px; overflow-y: auto; z-index: 100; }
-    .autocomplete-list li { padding: 10px 12px; font-size: 13px; color: var(--text); border-radius: 4px; cursor: pointer; }
+    .field select { cursor: pointer; appearance: none; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath d='M3 4.5L6 7.5L9 4.5' stroke='%2364748b' stroke-width='1.5' stroke-linecap='round' fill='none'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 12px center; padding-right: 36px; }
+    #other_input { width: 100%; height: 40px; padding: 0 12px; border: 1px solid var(--border-light); border-radius: 12px; background: var(--bg); font: inherit; font-size: .92rem; outline: none; }
+    #other_input:focus { background: #fff; border-color: var(--primary); box-shadow: 0 0 0 3px var(--primary-light); }
+
+    /* รายการค้นหาอัตโนมัติ */
+    .autocomplete-list { list-style: none; margin: 6px 0 0; padding: 6px; position: absolute; top: 100%; left: 0; right: 0; background: var(--surface); border: 1px solid var(--border);
+                         border-radius: 12px; box-shadow: var(--shadow-md); max-height: 280px; overflow-y: auto; z-index: 100; }
+    .autocomplete-list li { padding: 9px 12px; font-size: .88rem; color: var(--text); border-radius: 8px; cursor: pointer; }
     .autocomplete-list li:hover { background: var(--primary-light); }
+    .ac-row { display: flex; align-items: center; gap: 8px; }
+    .ac-name { display: flex; align-items: center; gap: 8px; font-weight: 500; min-width: 0; }
+    .ac-type { flex: none; font-size: .72rem; font-weight: 600; border-radius: 6px; padding: 1px 7px; font-family: 'JetBrains Mono', monospace; }
+    .ac-type-cust { background: #f1f5f9; color: #334155; }
+    .ac-type-vendor { background: #fef3c7; color: #92400e; }
+    .ac-addr { font-size: .78rem; color: var(--text-muted); margin-top: 2px; }
+    .ac-loading { color: var(--text-muted); }
+    #no_data_message { margin-top: 6px; font-size: .82rem; color: var(--text-muted); }
+
     .coords-row { display: flex; gap: 8px; align-items: stretch; }
-    .coords-row input { flex: 1; font-family: 'JetBrains Mono', monospace; font-size: 13px; }
-    .btn-custom { display: inline-flex; align-items: center; justify-content: center; gap: 6px; height: 42px; padding: 0 16px; border: 1.5px solid var(--primary); background: var(--primary); color: #fff; font-size: 13px; font-weight: 600; border-radius: var(--radius-sm); cursor: pointer; white-space: nowrap; transition: all 0.2s; }
+    .coords-row input { flex: 1; font-family: 'JetBrains Mono', monospace; font-size: .86rem; }
+    .btn-custom { display: inline-flex; align-items: center; justify-content: center; gap: 6px; height: 40px; padding: 0 16px; border: 1px solid var(--primary); background: var(--primary);
+                  color: #fff; font: inherit; font-size: .86rem; font-weight: 600; border-radius: 12px; cursor: pointer; white-space: nowrap; transition: .15s; }
     .btn-custom:hover { background: var(--primary-hover); border-color: var(--primary-hover); }
-    .preview-frame { border: 1px solid var(--border); border-radius: var(--radius-sm); overflow: hidden; background: var(--bg); height: 200px; position: relative; margin-top: 8px; }
+    .preview-frame { border: 1px solid var(--border-light); border-radius: 12px; overflow: hidden; background: var(--bg); height: 200px; position: relative; margin-top: 8px; }
     .preview-frame iframe { width: 100%; height: 100%; border: none; }
-    .preview-empty { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px; padding: 16px; text-align: center; background: var(--bg); color: var(--text-muted); font-size: 12px; }
-    .tbl-wrap { overflow-x: auto; overflow-y: auto; max-height: 296px; border: 1px solid var(--border); border-radius: var(--radius-sm); margin-bottom: 16px; }
-    table.table { width: 100%; border-collapse: collapse; font-size: 14px; }
-    table.table thead { background: var(--primary); }
-    table.table th { padding: 12px 16px; font-size: 13px; font-weight: 700; color: #fff; text-align: left; border-right: 1px solid rgba(255,255,255,0.15); white-space: nowrap; position: sticky; top: 0; z-index: 2; background: var(--primary); }
-    table.table th:last-child { border-right: none; }
-    table.table td { padding: 10px 16px; border-bottom: 1px solid var(--border-light); border-right: 1px solid var(--border-light); vertical-align: middle; }
-    table.table td:last-child { border-right: none; }
+    .preview-empty { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px; padding: 16px; text-align: center; background: var(--bg); color: var(--text-muted); font-size: .82rem; }
+
+    /* ===== ตารางสินค้า (แบบเดียวกับหน้ารายการ) ===== */
+    .tbl-wrap { overflow-x: auto; overflow-y: auto; max-height: 296px; border: 1px solid var(--border-light); border-radius: 14px; margin-bottom: 16px; }
+    table.table { width: 100%; border-collapse: collapse; font-size: .92rem; }
+    table.table thead { background: var(--bg); }
+    table.table th { padding: 10px 14px; font-size: .84rem; font-weight: 600; color: #475569; text-align: left; border-bottom: 1px solid var(--border); white-space: nowrap; position: sticky; top: 0; z-index: 2; background: var(--bg); }
+    table.table td { padding: 8px 14px; border-bottom: 1px solid var(--border-light); vertical-align: middle; }
     table.table tbody tr:last-child td { border-bottom: none; }
-    table.table tbody tr:hover td { background: var(--primary-light); }
-    .form-control1 { width: 100%; padding: 8px 10px; border: 1px solid var(--border); border-radius: 4px; font-size: 13px; background: var(--surface); color: var(--text); font-family: 'JetBrains Mono', monospace; }
-    .btn { padding: 10px 20px; border-radius: var(--radius-sm); border: 1.5px solid var(--primary); cursor: pointer; font-weight: 600; font-size: 13px; font-family: inherit; transition: all 0.2s; }
+    table.table tbody tr:hover td { background: #fafbfc; }
+    .row-num { color: var(--text-muted); }
+    .form-control1 { width: 100%; height: 36px; padding: 0 10px; border: 1px solid var(--border-light); border-radius: 10px; font-size: .9rem; background: var(--bg); color: var(--text); font-family: inherit; outline: none; transition: .15s; }
+    .form-control1:focus { background: #fff; border-color: var(--primary); box-shadow: 0 0 0 3px var(--primary-light); }
+    .item_quantity { font-family: 'JetBrains Mono', monospace; }
+
+    /* ===== ปุ่ม ===== */
+    .btn { height: 36px; padding: 0 16px; border-radius: 10px; border: 1px solid var(--primary); cursor: pointer; font-weight: 600; font-size: .84rem; font-family: inherit; transition: .15s; display: inline-flex; align-items: center; justify-content: center; gap: 6px; }
     .btn-success { background: var(--primary); color: #fff; }
     .btn-success:hover { background: var(--primary-hover); }
-    .btn-danger { background: #fff; color: var(--red); border-color: var(--red); padding: 6px 12px; font-size: 12px; }
-    .btn-danger:hover { background: var(--red-light); }
-    .validation-summary { background: var(--red-light); border: 1px solid #fecaca; border-radius: var(--radius); padding: 16px 20px; margin-bottom: 20px; display: none; }
+    .btn-danger { background: #fff; color: var(--red); border-color: #fecaca; height: 32px; padding: 0 12px; font-size: .8rem; }
+    .btn-danger:hover { background: var(--red-light); border-color: var(--red); }
+
+    .validation-summary { background: var(--red-light); border: 1px solid #fecaca; border-radius: 14px; padding: 14px 18px; margin-bottom: 16px; display: none; }
     .validation-summary.show { display: block; }
-    .validation-summary-title { font-size: 14px; font-weight: 700; color: var(--red); margin: 0 0 8px; display: flex; align-items: center; gap: 6px; }
-    .validation-summary ul { margin: 0; padding-left: 20px; font-size: 13px; color: var(--text-secondary); }
+    .validation-summary-title { font-size: .92rem; font-weight: 700; color: var(--red); margin: 0 0 8px; display: flex; align-items: center; gap: 6px; }
+    .validation-summary ul { margin: 0; padding-left: 20px; font-size: .86rem; color: var(--text-secondary); }
     .validation-summary li { margin-bottom: 4px; }
-    .submit-row { display: flex; flex-direction: column; align-items: center; gap: 12px; margin-top: 24px; padding: 24px 0; }
-    .btn-submit-main { display: inline-flex; align-items: center; justify-content: center; gap: 8px; background: linear-gradient(135deg, var(--primary) 0%, #5a85e8 100%); color: #fff; border: none; padding: 16px 48px; border-radius: var(--radius); font-size: 16px; font-weight: 700; cursor: pointer; min-width: 260px; min-height: 48px; font-family: inherit; transition: all 0.2s; box-shadow: var(--shadow-md); }
-    .btn-submit-main:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(62,106,225,0.25); }
-    .btn-submit-main:disabled { opacity: 0.6; cursor: not-allowed; transform: none; }
-    .btn-hint { font-size: 12px; color: var(--text-muted); display: flex; align-items: center; gap: 5px; }
+    .submit-row { display: flex; flex-direction: column; align-items: center; gap: 10px; margin-top: 16px; padding: 16px 0 4px; }
+    .btn-submit-main { display: inline-flex; align-items: center; justify-content: center; gap: 8px; background: var(--primary); color: #fff; border: none; padding: 0 44px; height: 48px;
+                       border-radius: 14px; font-size: 1rem; font-weight: 600; cursor: pointer; min-width: 260px; font-family: inherit; transition: .15s; box-shadow: 0 4px 14px rgba(17,24,39,.25); }
+    .btn-submit-main:hover { background: var(--primary-hover); transform: translateY(-1px); box-shadow: 0 8px 20px rgba(17,24,39,.3); }
+    .btn-submit-main:disabled { opacity: .55; cursor: not-allowed; transform: none; box-shadow: none; }
+    .btn-hint { font-size: .8rem; color: var(--text-muted); display: flex; align-items: center; gap: 5px; }
     .btn-hint.warn { color: var(--red); font-weight: 600; }
+
     @media (max-width: 1150px) { .header-field-date, .header-field-doctype { flex: 1 1 100%; min-width: 0; max-width: none; width: 100%; } .header-field-date input#datestamp { width: 100%; } }
     @media (max-width: 992px) { .page { grid-template-columns: 1fr; grid-template-rows: auto; } .area-doc-company, .area-address, .area-items { grid-column: 1 / -1; grid-row: auto; } }
-    @media (max-width: 640px) { .container { padding: 0 12px; margin: 4px auto 12px; } .header-bar { padding: 6px 0; } .text-dark { font-size: 20px; } .card-body { padding: 16px; } .form-grid-2 { grid-template-columns: 1fr; } .headcom-com-row { grid-template-columns: 1fr; } .so-contact-row { grid-template-columns: 1fr; } .btn-submit-main { width: 100%; min-width: 0; } }
+    @media (max-width: 640px) { .container { padding: 0 10px 12px; } .card-body { padding: 16px; } .form-grid-2 { grid-template-columns: 1fr; } .headcom-com-row { grid-template-columns: 1fr; } .so-contact-row { grid-template-columns: 1fr; } .btn-submit-main { width: 100%; min-width: 0; } }
 </style>
 </head>
 <body>
 
 <div class="container">
-    <div class="header-bar">
-        <h2 class="text-dark">{{ isset($doc) ? 'แก้ไขใบชั่วคราว' : 'สร้างใบชั่วคราว' }}</h2>
-        
-        <button onclick="window.location.href='{{ route('document.dashboarddoc') }}'" class="btn-back">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg>
-            ย้อนกลับ
-        </button>
+    <div class="topbar">
+        <h2><span class="logo"><svg class="i" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6M16 13H8M16 17H8"/></svg></span>{{ isset($doc) ? 'แก้ไขใบชั่วคราว' : 'สร้างใบชั่วคราว' }}</h2>
+        @if(isset($doc))<span class="mode">{{ $doc->doc_id }}</span>@endif
+        <div class="actions">
+            <button type="button" onclick="window.location.href='{{ route('document.dashboarddoc') }}'" class="btn-back">
+                <svg class="i" viewBox="0 0 24 24"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg>
+                กลับหน้ารายการ
+            </button>
+        </div>
     </div>
 
     <form id="billForm" method="POST" action="{{ isset($doc) ? route('document.updatedoc', $doc->doc_id) : route('insertdocu') }}">
@@ -1401,7 +1445,7 @@ async function generateAndUploadBillPdf(doc_id, items) {
                 <h1 style="margin:0; font-size:36px; font-weight:800; color:#1e293b; letter-spacing:.01em;">${escapeHtmlSo(headcom)}</h1>
                 <p style="margin:4px 0 0; font-size:26px; color:#64748b;">ประเภทบิล: <span style="font-weight:600;color:#334155;">${escapeHtmlSo(type)}</span>${soNum ? `&nbsp;&nbsp; เลข SO: <span style="font-weight:600;color:#334155;">${escapeHtmlSo(soNum.replace(/^so/i, ''))}</span>` : ''}</p>
             </div>
-            <div style="border:1.5px solid #1e293b; border-radius:6px; min-width:160px; text-align:left; background:#f8fafc; font-size:18px; color:#1e293b; overflow:hidden;">
+            <div style="border:1.5px solid #1e293b; border-radius:6px; min-width:160px; text-align:left; background:#fff; font-size:18px; color:#1e293b; overflow:hidden;">
                 <div style="padding:8px 12px; border-bottom:1px solid #cbd5e1; display:flex; align-items:center;">
                     <span style="font-weight:700; color:#64748b; width:55px; display:inline-block;">SP</span> 
                     <span style="font-weight:700; color:#64748b; padding-right:4px;">:</span> 
@@ -1417,7 +1461,7 @@ async function generateAndUploadBillPdf(doc_id, items) {
         <div style="background:#fff; border:1.5px solid #1e293b; border-radius:6px; padding:8px 14px; text-align:center; margin:0 0 10px;">
             <h2 style="margin:0; font-size:28px; font-weight:700; color:#1e293b; letter-spacing:.01em;">ใบส่งของชั่วคราว</h2>
         </div>
-        <div style="background:#fff; border:none; padding:12px 18px; margin-bottom:0; display:flex; align-items:center; justify-content:space-between; gap:16px;">
+        <div style="background:#fff; border:none; padding:12px 0; margin-bottom:0; display:flex; align-items:center; justify-content:space-between; gap:16px;">
             <div style="font-size:20px; line-height:1.8; color:#1e293b; flex:1; min-width:0;">
                 <div style="display:flex; align-items:flex-start;"><span style="font-weight:700; color:#475569; width:95px; flex-shrink:0; text-align:left;">บริษัท</span><span style="font-weight:700; color:#475569; padding-right:8px;">:</span><span style="flex:1;">${escapeHtmlSo(name) || '-'}</span></div>
                 <div style="display:flex; align-items:flex-start;"><span style="font-weight:700; color:#475569; width:95px; flex-shrink:0; text-align:left;">ที่อยู่</span><span style="font-weight:700; color:#475569; padding-right:8px;">:</span><span style="flex:1;">${escapeHtmlSo(address) || '-'}</span></div>
@@ -1446,7 +1490,7 @@ async function generateAndUploadBillPdf(doc_id, items) {
         </table>`;
 
     const signatureHtml = `
-        <div style="display:flex; justify-content:center; align-items:flex-start; width:100%; gap:300px; margin-top:36px; padding-top:8px;">
+        <div style="display:flex; justify-content:space-between; align-items:flex-start; width:100%; margin-top:36px; padding-top:8px;">
             <div style="text-align:center;">
                 <div style="border-bottom:1px solid #1e293b; height:44px; width:280px; margin:0 auto;"></div>
                 <p style="margin:8px 0 0; font-size:13px; font-weight:700; color:#334155;">ผู้รับสินค้า</p>

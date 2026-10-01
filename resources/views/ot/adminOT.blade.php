@@ -1816,6 +1816,8 @@ const COMPANY_LOGOS = {
   'triple e empire group': '1suv0dKh7_FIPamBvZLv-Iza0T9nkcYNo',
   'ae&t international': '1HGo9tq8McRab8Zej2ydhDDFoz5WwCuZZ',
   'chavest': '162qxrHZ9n9K4HbYbzUjRCBQq-VYpk6Pn',
+  'triple e lighting': '15ujjcMPWSruIhEuWkQMpsDBcDvW8Rmdn',  // เพิ่มใหม่ - TR
+  'eita & paul': '1pkXkzEbYd8kIOAlUj_heuGgTOOO45pWT',        // เพิ่มใหม่ - EI
 };
 function companyLogo(company) {
   const id = COMPANY_LOGOS[String(company || '').trim().toLowerCase()];

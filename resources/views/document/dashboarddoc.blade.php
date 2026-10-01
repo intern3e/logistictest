@@ -4,745 +4,576 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>เอกสารชั่วคราว</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600;700;800&family=Prompt:wght@300;400;500;600;700&family=Mali:wght@300;400;500;600;700&family=Chakra+Petch:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 
     <style>
         :root {
-            --ink-900: #111111;
-            --ink-700: #333333;
-            --ink-500: #666666;
-            --ink-300: #999999;
-            --ink-150: #d4d4d4;
-            --ink-100: #e6e6e6;
-            --ink-050: #f4f4f4;
-            --paper:   #ffffff;
-            --line:    #dcdcdc;
-            --radius:  6px;
+            --brand:#111827; --brand-600:#111827; --brand-50:#f3f4f6; --brand-100:#e5e7eb;
+            --mint:#f8fafc; --mint-ink:#475569; --mint-line:#e2e8f0;
+            --pink:#fbd0f0; --pink-ink:#86198f;
+            --ink-900:#0f172a; --ink-700:#334155; --ink-500:#64748b; --ink-300:#94a3b8;
+            --ink-150:#e2e8f0; --ink-100:#f1f5f9; --ink-050:#f8fafc;
+            --paper:#fff; --line:#e8edf3; --radius:8px;
+            --shadow:0 1px 2px rgba(15,23,42,.04),0 4px 14px rgba(15,23,42,.05);
         }
-
         * { box-sizing: border-box; }
-
-        html, body {
-            font-size: clamp(11px, 0.4vw + 6px, 14px);
-        }
-
+        html, body { height: 100%; font-size: clamp(12px, 0.3vw + 8px, 15px); }
         body {
-            font-family: 'Segoe UI', 'Noto Sans Thai', 'Roboto', sans-serif;
-            background-color: var(--ink-050);
-            margin: 0;
-            padding: 0;
-            color: var(--ink-900);
-            line-height: 1.5;
+            margin: 0; display: flex; flex-direction: column;
+            font-family: 'Sarabun', 'Prompt', 'Mali', 'Chakra Petch', 'Segoe UI', sans-serif;
+            background: var(--ink-050); color: var(--ink-900); line-height: 1.6;
         }
+        a { color: var(--brand-600); text-decoration: none; font-weight: 500; }
+        a:hover { text-decoration: underline; }
+        svg.i { width: 15px; height: 15px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; flex: none; }
 
-        a {
-            color: var(--ink-900);
-            text-decoration: none;
-            font-weight: 600;
-            border-bottom: 1px solid var(--ink-300);
+        /* ===== TOP BAR (หัว + ตัวกรอง แถวเดียว) ===== */
+        .topbar {
+            display: flex; align-items: center; gap: 14px; flex-wrap: wrap;
+            background: var(--paper); border: 1px solid var(--line); border-radius: 18px;
+            margin: 15px 15px 12px; padding: 12px 16px 12px 18px; box-shadow: var(--shadow);
         }
-        a:hover { border-bottom-color: var(--ink-900); }
-
-        /* HEADER */
-        .header {
-            background-color: var(--ink-900);
-            color: #fff;
-            border-radius: var(--radius);
-            padding: 8px 20px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            flex-wrap: wrap;
-            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.18);
-            margin: 15px;
+        .topbar h2 {
+            margin: 0; flex: none; font-size: clamp(17px, .8vw + 8px, 21px); font-weight: 700; letter-spacing: -.3px;
+            display: flex; align-items: center; gap: 10px; white-space: nowrap; cursor: pointer;
         }
-
-        .header h2 {
-            font-size: clamp(14px, 0.9vw + 5px, 18px);
-            margin: 0;
-            letter-spacing: 0.02em;
+        .topbar h2:hover { opacity: 0.8; }
+        .topbar h2 .logo {
+            width: 36px; height: 36px; border-radius: 11px; color: #fff; display: flex; align-items: center; justify-content: center;
+            background: #111827; box-shadow: 0 4px 10px rgba(17,24,39,.25);
         }
+        .topbar h2 .logo svg { width: 18px; height: 18px; }
+        .vsep { width: 1px; height: 28px; background: var(--line); flex: none; }
 
-        .buttons { display: flex; gap: 10px; align-items: center; }
-        .buttons span { font-size: clamp(10px, 0.5vw + 4px, 12px); color: var(--ink-150); }
+        .tools { flex: 1 1 760px; display: flex; align-items: center; gap: 8px; min-width: 0; }
+        .actions { flex: none; display: flex; align-items: center; gap: 8px; margin-left: auto; }
 
+        /* ช่องกรอกทุกตัวสูงเท่ากัน */
+        .fld {
+            height: 40px; display: flex; align-items: center; gap: 8px; padding: 0 12px; margin: 0;
+            background: var(--ink-050); border: 1px solid var(--line); border-radius: 12px; transition: .15s; min-width: 0;
+        }
+        .fld:hover { border-color: var(--ink-150); }
+        .fld:focus-within { background: #fff; border-color: var(--brand); box-shadow: 0 0 0 3px var(--brand-50); }
+        .fld > svg { color: var(--ink-300); }
+        .fld input, .fld select {
+            border: 0; outline: 0; background: transparent; font: inherit; font-size: .9rem; color: var(--ink-900);
+            height: 100%; min-width: 0; padding: 0; font-family: 'Sarabun', 'Prompt', sans-serif;
+        }
+        .fld input::placeholder { color: var(--ink-300); }
+        .fld input:disabled { color: var(--ink-300); }
+
+        .q-box { flex: 1 1 280px; position: relative; }
+        .q-box input { flex: 1; }
+        .q-hint { flex: none; font-size: .72rem; font-weight: 600; color: var(--brand-600); background: var(--brand-50);
+                  border-radius: 999px; padding: 2px 9px; white-space: nowrap; }
+        .q-hint:empty { display: none; }
+        .f-date { flex: none; }
+        .f-date input { width: 128px; }
+        .f-com { flex: 0 1 270px; }
+        .f-com select { flex: 1; cursor: pointer; text-overflow: ellipsis; }
+
+        .chip {
+            height: 40px; flex: none; display: inline-flex; align-items: center; gap: 7px; padding: 0 12px;
+            border: 1px solid var(--line); border-radius: 12px; background: var(--paper); color: var(--ink-700);
+            font-size: .88rem; cursor: pointer; user-select: none; transition: .15s; white-space: nowrap;
+            font-family: 'Sarabun', 'Prompt', sans-serif;
+        }
+        .chip input { width: 15px; height: 15px; margin: 0; accent-color: var(--brand); cursor: pointer; }
+        .chip:hover { background: var(--ink-050); }
+        .chip:has(input:checked) { background: var(--brand-50); border-color: var(--brand-100); color: var(--brand-600); font-weight: 500; }
+
+        .icon-btn {
+            width: 40px; height: 40px; flex: none; display: inline-flex; align-items: center; justify-content: center;
+            border: 1px solid var(--line); border-radius: 12px; background: var(--paper); color: var(--ink-500);
+            cursor: pointer; transition: .15s; padding: 0;
+        }
+        .icon-btn svg { width: 17px; height: 17px; }
+        .icon-btn:hover { text-decoration: none; }
+        .icon-btn.reset:hover   { color: #dc2626; border-color: #fecaca; background: #fef2f2; }
+
+        .user {
+            height: 40px; display: inline-flex; align-items: center; gap: 8px; padding: 0 12px 0 5px;
+            border-radius: 999px; background: var(--ink-050); border: 1px solid var(--line); font-size: .86rem; color: var(--ink-700); white-space: nowrap;
+            font-family: 'Sarabun', 'Prompt', sans-serif;
+        }
+        .user .av {
+            width: 30px; height: 30px; border-radius: 50%; display: flex; align-items: center; justify-content: center;
+            background: var(--brand-100); color: var(--brand-600);
+        }
+        .user .av svg { width: 15px; height: 15px; }
         .btn {
-            padding: 5px 12px;
-            border-radius: var(--radius);
-            font-weight: 600;
-            font-size: clamp(10px, 0.5vw + 4px, 12px);
-            transition: 0.2s;
-            border: 1px solid #fff;
+            height: 40px; display: inline-flex; align-items: center; gap: 6px; padding: 0 16px; border-radius: 12px;
+            font-weight: 600; font-size: .9rem; border: 1px solid transparent; transition: .15s; white-space: nowrap;
+            font-family: 'Sarabun', 'Prompt', sans-serif;
+        }
+        .btn:hover { text-decoration: none; }
+        .btn-solid { background: var(--brand); color: #fff; border-color: var(--brand); box-shadow: 0 2px 8px rgba(17,24,39,.25); }
+        .btn-solid:hover { background: var(--brand-600); }
+
+        @media (max-width: 1500px) {
+            .tools { order: 3; flex-basis: 100%; }
+            .vsep { display: none; }
+        }
+        @media (max-width: 760px) {
+            .tools { flex-wrap: wrap; }
+            .q-box { flex-basis: 100%; }
+            .f-com { flex: 1 1 200px; }
+            .user span.name { display: none; }
         }
 
-        .btn-outline-light {
-            background-color: transparent;
-            color: #fff;
-            border: 1px solid #ffffff55;
+        /* ===== SPLIT VIEW ===== */
+        .split { flex: 1; min-height: 0; display: grid; grid-template-columns: minmax(320px, 35fr) 65fr; gap: 12px; margin: 0 15px 15px; }
+
+        .list { background: var(--paper); border: 1px solid var(--line); border-radius: 18px; box-shadow: var(--shadow); display: flex; flex-direction: column; min-height: 0; overflow: hidden; }
+        .list-head { padding: 12px 16px; border-bottom: 1px solid var(--line); }
+        .list-head .count { font-size: .85rem; color: var(--ink-500); font-family: 'Sarabun', 'Prompt', sans-serif; }
+        .list-head .count b { color: var(--ink-900); }
+        .list-body { overflow-y: auto; flex: 1; padding: 6px 8px 8px; }
+
+        .it { display: flex; gap: 12px; align-items: center; padding: 10px 12px; margin: 2px 0; border: 1px solid transparent; border-radius: 12px; cursor: pointer; transition: background .12s; outline: none; }
+        .it:hover { background: var(--ink-050); }
+        .it.on { background: var(--brand-50); border-color: var(--brand-100); box-shadow: inset 3px 0 0 var(--brand), 0 1px 3px rgba(17,24,39,.06); }
+        .it.on .mid b { color: var(--brand-600); }
+        .it:focus-visible { box-shadow: inset 0 0 0 2px var(--brand); }
+        .it .no { width: 22px; font-size: .75rem; color: var(--ink-300); text-align: right; flex: none; font-family: 'Sarabun', 'Prompt', sans-serif; }
+        .dot { width: 10px; height: 10px; border-radius: 50%; flex: none; background: var(--ink-300); }
+        .it .mid { min-width: 0; flex: 1; }
+        .it .mid b { display: flex; align-items: center; gap: 6px; font-weight: 600; font-family: 'Sarabun', 'Prompt', sans-serif; }
+        .it .mid small { display: block; color: var(--ink-500); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-family: 'Sarabun', 'Prompt', sans-serif; }
+        .it .right { text-align: right; font-size: .78rem; color: var(--ink-500); flex: none; font-family: 'Sarabun', 'Prompt', sans-serif; }
+        .it .right span { display: block; }
+        .it .right .badge { display: inline-flex; margin-top: 4px; font-size: .74rem; padding: 2px 10px; animation: none; }
+        .flag-tag { font-size: .68rem; font-weight: 600; background: #f5f3ff; color: #7c3aed; border-radius: 6px; padding: 0 6px; font-family: 'Sarabun', 'Prompt', sans-serif; }
+        .list-empty { padding: 40px 16px; text-align: center; color: var(--ink-500); font-family: 'Sarabun', 'Prompt', sans-serif; }
+
+        .det { background: var(--paper); border: 1px solid var(--line); border-radius: 18px; box-shadow: var(--shadow); padding: 26px 30px; overflow-y: auto; min-height: 0; }
+        .det-empty { height: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center; color: var(--ink-300); gap: 10px; text-align: center; font-family: 'Sarabun', 'Prompt', sans-serif; }
+        .det-empty svg { width: 48px; height: 48px; stroke-width: 1.4; }
+        .det-top { display: flex; align-items: center; gap: 12px 18px; flex-wrap: wrap; margin-bottom: 18px; }
+        .det-titles { flex: none; }
+        .det-top #det-dlv { flex: 1 1 380px; min-width: 0; margin: 0; }
+        /* ===== แถวสถานะจ่ายงาน (หัวเอกสาร) ===== */
+        .dlv-card { background: #fff !important; border: 1px solid var(--line) !important; border-left: 1px solid var(--line) !important; border-radius: 14px !important; padding: 8px 10px 8px 12px !important; }
+        .dlv-card.empty { background: #fffbeb !important; border-color: #fde68a !important; }
+        .dlv-card.err { background: #fef2f2 !important; border-color: #fecaca !important; }
+        .dlv-card .row1 { flex-wrap: nowrap; gap: 12px; }
+        .dlv-card .row1 .info1 { display: flex; align-items: center; gap: 14px; overflow: hidden; white-space: nowrap; }
+        .dlv-meta { display: inline-flex; align-items: center; gap: 6px; color: var(--ink-500); font-size: .86rem; min-width: 0; font-family: 'Sarabun', 'Prompt', sans-serif; }
+        .dlv-meta svg { width: 14px; height: 14px; color: var(--ink-300); flex: none; }
+        .dlv-meta b { color: var(--ink-900); font-weight: 600; overflow: hidden; text-overflow: ellipsis; }
+        .dlv-meta .muted { color: var(--ink-500); font-weight: 400; overflow: hidden; text-overflow: ellipsis; }
+        .dlv-card .hist-btn { flex: none; display: inline-flex; align-items: center; gap: 6px; height: 32px; padding: 0 12px; border: 1px solid var(--line); border-radius: 10px;
+                              background: #fff; color: var(--ink-700); font-size: .84rem; font-weight: 500; text-decoration: none !important; font-family: 'Sarabun', 'Prompt', sans-serif; }
+        .dlv-card .hist-btn:hover { background: var(--brand-50); border-color: var(--brand-100); color: var(--brand-600); }
+        .dlv-card .hist-btn .n { background: var(--ink-100); color: var(--ink-500); border-radius: 999px; padding: 0 7px; font-size: .74rem; line-height: 18px; }
+        .badge.st { gap: 6px; padding: 4px 11px; font-size: .78rem; flex: none; animation: none; font-family: 'Sarabun', 'Prompt', sans-serif; }
+        .badge.st::before { content: ""; width: 7px; height: 7px; border-radius: 50%; background: currentColor; }
+        .dlv-gray { color: #475569; background: #f1f5f9; }
+
+        /* ===== ไทม์ไลน์ในป๊อปอัพ ===== */
+        .hs-top { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; padding: 12px 14px; background: var(--ink-050); border: 1px solid var(--line); border-radius: 12px; margin-bottom: 18px; font-size: .9rem; color: var(--ink-700); font-family: 'Sarabun', 'Prompt', sans-serif; }
+        .hs-top .sp { margin-left: auto; color: var(--ink-500); font-size: .82rem; }
+        .tl { position: relative; padding-left: 26px; }
+        .tl::before { content: ""; position: absolute; left: 8px; top: 6px; bottom: 6px; width: 2px; background: var(--line); border-radius: 2px; }
+        .tl-item { position: relative; margin-bottom: 14px; }
+        .tl-item:last-child { margin-bottom: 0; }
+        .tl-dot { position: absolute; left: -26px; top: 12px; width: 18px; height: 18px; border-radius: 50%; background: #fff; border: 4px solid var(--dot, #94a3b8); }
+        .tl-card { border: 1px solid var(--line); border-radius: 12px; background: #fff; overflow: hidden; }
+        .tl-card.past { background: #fcfcfd; }
+        .tl-head { display: flex; align-items: center; gap: 8px; padding: 10px 14px; border-bottom: 1px solid var(--line); }
+        .tl-head b { font-size: .92rem; font-family: 'Sarabun', 'Prompt', sans-serif; }
+        .tl-head .tag { font-size: .72rem; font-weight: 600; color: var(--brand-600); background: var(--brand-50); border-radius: 999px; padding: 1px 8px; font-family: 'Sarabun', 'Prompt', sans-serif; }
+        .tl-head .tag.old { color: var(--ink-500); background: var(--ink-100); }
+        .tl-head .badge { margin-left: auto; }
+        .kv2 { display: grid; grid-template-columns: 104px 1fr; gap: 6px 12px; padding: 12px 14px; font-size: .88rem; font-family: 'Sarabun', 'Prompt', sans-serif; }
+        .kv2 dt { color: var(--ink-500); }
+        .kv2 dd { margin: 0; color: var(--ink-900); overflow-wrap: anywhere; }
+        .kv2 dd small { color: var(--ink-500); }
+        .kv2 dd.warn { color: #b91c1c; }
+
+        /* ป๊อปอัพ */
+        .modal { position: fixed; inset: 0; z-index: 1000; background: rgba(15,23,42,.55); display: flex; align-items: center; justify-content: center; padding: 20px; }
+        .modal[hidden] { display: none; }
+        .modal-box { background: #fff; width: 100%; max-width: 860px; max-height: 86vh; border-radius: 14px; box-shadow: 0 24px 60px rgba(0,0,0,.25);
+                     display: flex; flex-direction: column; overflow: hidden; animation: modal-in .15s ease-out; }
+        .modal-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 20px 28px; border-bottom: 1px solid var(--line); }
+        .modal-head h3 { margin: 0; font-size: 1.35rem; font-weight: 600; color: var(--ink-900); font-family: 'Sarabun', 'Prompt', sans-serif; }
+        .modal-x { border: 0; background: none; width: 40px; height: 40px; border-radius: 10px; font-size: 28px; line-height: 1; color: var(--ink-500); cursor: pointer; }
+        .modal-x:hover { background: var(--ink-100); color: var(--ink-900); }
+        .modal-body { padding: 22px 28px 28px; overflow-y: auto; }
+        /* ขยายตัวอักษรในป๊อปอัพ */
+        .modal-body .hs-top { font-size: 1.08rem; padding: 16px 18px; }
+        .modal-body .hs-top .sp { font-size: .98rem; }
+        .modal-body .tl-head { padding: 13px 18px; }
+        .modal-body .tl-head b { font-size: 1.12rem; }
+        .modal-body .tl-head .tag { font-size: .86rem; padding: 2px 10px; }
+        .modal-body .kv2 { grid-template-columns: 130px 1fr; gap: 10px 16px; padding: 16px 18px; font-size: 1.06rem; }
+        .modal-body .badge.st { font-size: .92rem; padding: 5px 13px; }
+        .modal-body .tl { padding-left: 32px; }
+        .modal-body .tl::before { left: 10px; }
+        .modal-body .tl-dot { left: -32px; top: 15px; width: 22px; height: 22px; border-width: 5px; }
+        .modal-body .tl-item { margin-bottom: 18px; }
+        .modal-body .kv2 dd small, .modal-body .kv2 dd { line-height: 1.6; }
+        .modal-body .kv2 dd small { font-size: .95rem; }
+        @keyframes modal-in { from { opacity: 0; transform: translateY(8px) scale(.98); } to { opacity: 1; transform: none; } }
+        .det-top h3 { margin: 0; font-size: 1.9rem; font-weight: 700; letter-spacing: -.6px; font-family: 'Sarabun', 'Prompt', sans-serif; }
+        .det-actions { margin-left: auto; display: flex; gap: 8px; align-items: center; flex: none; }
+        .det-sub { display: flex; flex-wrap: wrap; gap: 6px 14px; align-items: center; color: var(--ink-500); margin: 4px 0 0; font-size: .92rem; font-family: 'Sarabun', 'Prompt', sans-serif; }
+        /* ข้อมูลเอกสาร: รายการ หัวข้อ / ค่า แบบเรียบ */
+        .kv { border: 1px solid var(--line); border-radius: 14px; overflow: hidden; }
+        .kv-row { display: grid; grid-template-columns: 130px 1fr; gap: 12px; padding: 10px 16px; border-top: 1px solid var(--line); }
+        .kv-row:first-child { border-top: 0; }
+        .kv-row dt { color: var(--ink-500); font-size: .88rem; font-family: 'Sarabun', 'Prompt', sans-serif; }
+        .kv-row dd { margin: 0; font-weight: 500; overflow-wrap: anywhere; white-space: pre-wrap; font-family: 'Sarabun', 'Prompt', sans-serif; }
+        .kv-row dd small { color: var(--ink-500); font-weight: 400; }
+
+        /* สรุปสถานะจ่ายงาน (ด้านบน) */
+        .dlv-card { border: 1px solid var(--line); border-left: 4px solid var(--c, #94a3b8); background: var(--bgc, #f8fafc); padding: 10px 14px !important;
+                    border-radius: 14px; padding: 14px 16px; margin-bottom: 16px; }
+        .dlv-card .t { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; font-size: .95rem; font-family: 'Sarabun', 'Prompt', sans-serif; }
+        .dlv-card .t .lbl { font-weight: 700; }
+        .dlv-card .t .rounds { margin-left: auto; color: var(--ink-500); font-size: .82rem; }
+        .dlv-card .m { margin-top: 6px; color: var(--ink-700); font-size: .9rem; line-height: 1.8; }
+        .dlv-card .m b { color: var(--ink-900); }
+        .dlv-card .m .sep { color: var(--ink-300); margin: 0 6px; }
+        /* แถวเดียว: ป้ายสถานะ · รายละเอียด ······ รอบ · ดูประวัติ */
+        .dlv-card .row1 { display: flex; align-items: center; gap: 6px 12px; flex-wrap: wrap; font-size: .9rem; color: var(--ink-700); font-family: 'Sarabun', 'Prompt', sans-serif; }
+        .dlv-card .row1 .info1 { flex: 1; min-width: 0; }
+        .dlv-card .row1 .info1 b { color: var(--ink-900); }
+        .dlv-card .row1 .sep { color: var(--ink-300); margin: 0 6px; }
+        .dlv-card .row1 .rounds { color: var(--ink-500); font-size: .8rem; white-space: nowrap; }
+        .dlv-card .hist-btn { border: 0; background: none; padding: 0; font: inherit; font-size: .84rem; font-weight: 500; color: var(--brand-600); cursor: pointer; white-space: nowrap; }
+        .dlv-card .hist-btn:hover { text-decoration: underline; }
+        .dlv-card .hist-body { margin-top: 12px; }
+        .dlv-card details { margin-top: 8px; }
+        .dlv-card summary { cursor: pointer; color: var(--brand-600); font-size: .86rem; font-weight: 500; list-style: none; display: inline-flex; align-items: center; gap: 4px; }
+        .dlv-card summary::-webkit-details-marker { display: none; }
+        .dlv-card summary::before { content: "▸"; transition: transform .15s; display: inline-block; }
+        .dlv-card details[open] summary::before { transform: rotate(90deg); }
+        .dlv-card details > div { margin-top: 10px; }
+        .dlv-card.empty { --c: #f59e0b; --bgc: #fffbeb; color: #92400e; }
+        .dlv-card.err { --c: #ef4444; --bgc: #fef2f2; color: #991b1b; }
+
+        /* ===== แผ่นเอกสาร (รูปแบบเดียวกับไฟล์ PDF ใบส่งของชั่วคราว) ===== */
+        .paper-wrap { background: var(--ink-100); border-radius: 14px; padding: 22px; }
+        .paper {
+            background: #fff; max-width: 900px; margin: 0 auto; padding: 34px 40px 26px;
+            border: 1px solid #e2e8f0; border-radius: 4px;
+            box-shadow: 0 1px 2px rgba(15,23,42,.06), 0 10px 30px rgba(15,23,42,.08);
+            font-family: 'Sarabun', 'Prompt', 'Mali', sans-serif; color: #1e293b; font-size: 15px;
+            display: flex; flex-direction: column; min-height: 1100px;
         }
-        .btn-outline-light:hover { background-color: #ffffff22; border-color: #fff; }
+        .pd-head { display: flex; justify-content: space-between; align-items: flex-start; gap: 16px; margin-bottom: 10px; padding-bottom: 6px; }
+        .pd-head h1 { margin: 0; font-size: 26px; font-weight: 800; color: #1e293b; letter-spacing: .01em; line-height: 1.25; font-family: 'Sarabun', 'Prompt', sans-serif; }
+        .pd-head p { margin: 4px 0 0; font-size: 17px; color: #64748b; font-family: 'Sarabun', 'Prompt', sans-serif; }
+        .pd-head p b { font-weight: 600; color: #334155; }
+        .pd-box { border: 1.5px solid #1e293b; border-radius: 6px; min-width: 190px; background: #fff; font-size: 14px; color: #1e293b; overflow: hidden; flex: none; }
+        .pd-box div { padding: 6px 12px; display: flex; align-items: center; }
+        .pd-box div + div { border-top: 1px solid #cbd5e1; }
+        .pd-box .k { font-weight: 700; color: #64748b; width: 46px; }
+        .pd-box .c { font-weight: 700; color: #64748b; padding-right: 6px; }
+        .pd-box .v { font-weight: 800; }
+        .pd-box div + div .v { font-weight: 600; }
+        .pd-title { border: 1.5px solid #1e293b; border-radius: 6px; padding: 6px 14px; text-align: center; margin: 0 0 8px; }
+        .pd-title h2 { margin: 0; font-size: 21px; font-weight: 700; color: #1e293b; letter-spacing: .01em; font-family: 'Sarabun', 'Prompt', sans-serif; }
+        .pd-info { padding: 10px 0; font-size: 15px; line-height: 1.8; color: #1e293b; font-family: 'Sarabun', 'Prompt', sans-serif; }
+        .pd-info > div { display: flex; align-items: flex-start; }
+        .pd-info .l { font-weight: 700; color: #475569; width: 78px; flex-shrink: 0; }
+        .pd-info .c { font-weight: 700; color: #475569; padding-right: 8px; }
+        .pd-info .v { flex: 1; min-width: 0; overflow-wrap: anywhere; white-space: pre-wrap; }
+        .pd-info .tel { display: inline-block; margin-left: 60px; white-space: nowrap; }
+        .pd-info .tel b { font-weight: 700; color: #475569; }
+        .pd-table { width: 100%; border-collapse: collapse; font-size: 13.5px; margin: 12px 0 20px; font-family: 'Sarabun', 'Prompt', sans-serif; }
+        .pd-table th { border: 1px solid #94a3b8; padding: 7px; background: #fff; color: #1e293b; font-weight: 700; font-size: 14.5px; text-align: center; }
+        .pd-table td { border: 1px solid #94a3b8; padding: 7px 10px; color: #1e293b; }
+        .pd-table .n, .pd-table .q { text-align: center; }
+        .pd-table .n { width: 8%; } .pd-table .q { width: 18%; }
+        .pd-foot { margin-top: auto; display: flex; justify-content: space-between; align-items: flex-end; gap: 20px; padding-top: 30px; }
+        .pd-sign { text-align: center; width: 260px; }
+        .pd-sign .line { border-bottom: 1px solid #1e293b; height: 40px; }
+        .pd-sign p { margin: 8px 0 0; font-size: 12.5px; font-weight: 700; color: #334155; font-family: 'Sarabun', 'Prompt', sans-serif; }
+        .pd-sign .dt { display: flex; align-items: baseline; justify-content: center; gap: 4px; margin-top: 6px; font-size: 11px; color: #475569; font-family: 'Sarabun', 'Prompt', sans-serif; }
+        .pd-sign .dt i { display: inline-block; border-bottom: 1px solid #94a3b8; width: 56px; height: 11px; }
+        .pd-sign .dt s { text-decoration: none; color: #94a3b8; }
+        .pd-page { font-size: 11px; color: #64748b; padding-bottom: 26px; font-family: 'Sarabun', 'Prompt', sans-serif; }
+        .p-items, .p-note, .p-sign { display: none; }
 
-        .btn-solid {
-            background-color: #fff;
-            color: var(--ink-900);
-            border: 1px solid #fff;
-        }
-        .btn-solid:hover { background-color: var(--ink-150); }
+        @media (max-width: 1100px) { .paper { padding: 24px 20px; min-height: 0; } .paper-wrap { padding: 10px; } .pd-info .tel { margin-left: 24px; } }
 
-        /* ปุ่มแก้ไข */
-        .btn-edit {
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            padding: 4px 8px;
-            border-radius: var(--radius);
-            background-color: var(--paper);
-            color: var(--ink-900);
-            font-size: clamp(9px, 0.45vw + 3px, 11px);
-            font-weight: 600;
-            text-decoration: none;
-            transition: 0.2s;
-            border: 1px solid var(--ink-150);
-        }
-        .btn-edit:hover {
-            background-color: var(--ink-900);
-            color: #fff;
-            border-color: var(--ink-900);
-        }
 
-        /* FILTER */
-        .filter-container {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            flex-wrap: wrap;
-            gap: 8px;
-            background-color: var(--paper);
-            padding: 10px 20px;
-            margin: 0 15px;
-            border: 1px solid var(--line);
-            border-radius: var(--radius);
-        }
+        .info { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-bottom: 6px; }
+        .info > div { background: var(--paper); border: 1px solid var(--line); border-radius: 14px; padding: 12px 14px; min-width: 0; overflow-wrap: anywhere; display: flex; gap: 12px; align-items: flex-start; box-shadow: 0 1px 2px rgba(15,23,42,.03); }
+        .info .tile { width: 38px; height: 38px; border-radius: 10px; display: flex; align-items: center; justify-content: center; flex: none; }
+        .info .tile svg { width: 18px; height: 18px; }
+        .t-blue{background:#eff6ff;color:#2563eb}.t-green{background:#ecfdf3;color:#16a34a}.t-purple{background:#f5f3ff;color:#7c3aed}.t-orange{background:#fff7ed;color:#ea580c}.t-slate{background:#f1f5f9;color:#475569}
+        .info small { display: block; color: var(--ink-500); font-size: .78rem; font-family: 'Sarabun', 'Prompt', sans-serif; }
+        .info .v { font-weight: 500; font-family: 'Sarabun', 'Prompt', sans-serif; }
+        .info .wide { grid-column: span 2; }
+        .det h4 { margin: 20px 0 10px; font-size: 1.05rem; font-weight: 700; display: flex; align-items: center; gap: 8px; font-family: 'Sarabun', 'Prompt', sans-serif; }
+        .det h4 small { font-weight: 400; color: var(--ink-500); }
+        .items { width: 100%; border-collapse: separate; border-spacing: 0; border: 1px solid var(--line); border-radius: 14px; overflow: hidden; font-family: 'Sarabun', 'Prompt', sans-serif; }
+        .items th { background: var(--mint); color: var(--mint-ink); text-align: left; padding: 10px 14px; font-weight: 600; font-size: .85rem; border-bottom: 1px solid var(--mint-line); }
+        .items td { padding: 10px 14px; border-top: 1px solid var(--line); }
+        .items tr:hover td { background: var(--ink-050); }
+        .items td:last-child { font-weight: 600; }
+        .items th:last-child, .items td:last-child { text-align: right; width: 110px; }
+        .notes { white-space: pre-wrap; background: var(--ink-050); border: 1px solid var(--line); border-radius: 14px; padding: 12px 14px; color: var(--ink-700); min-height: 44px; font-family: 'Sarabun', 'Prompt', sans-serif; }
+        .loading { color: var(--ink-300); padding: 10px 0; font-family: 'Sarabun', 'Prompt', sans-serif; }
 
-        .filter-form { display: flex; align-items: center; gap: 8px; font-size: clamp(10px, 0.5vw + 4px, 12px); }
-        .filter-form label { font-weight: 600; color: var(--ink-700); }
+        .pdf-btn, .pdf-btn-disabled { display: inline-flex; align-items: center; justify-content: center; width: 38px; height: 38px; border-radius: 12px; }
+        .print-btn { display: inline-flex; align-items: center; gap: 6px; height: 38px; padding: 0 14px; border-radius: 12px; cursor: pointer;
+                     border: 1px solid var(--brand-100); background: var(--brand-50); color: var(--brand-600); font: inherit; font-size: .88rem; font-weight: 600; transition: .15s; font-family: 'Sarabun', 'Prompt', sans-serif; }
+        .print-btn:hover:not(:disabled) { background: var(--brand); border-color: var(--brand); color: #fff; }
+        .print-btn:disabled { border: 1.5px dashed var(--ink-300); background: var(--ink-050); color: var(--ink-300); cursor: not-allowed; }
+        .print-btn.loading { border-style: solid; border-color: var(--brand-100); background: var(--brand-50); color: var(--brand-600); cursor: progress; }
+        .pdf-btn { border: 1px solid var(--brand-100); background: var(--brand-50); color: var(--brand-600); transition: .15s; }
+        .pdf-btn:hover { background: var(--brand); color: #fff; text-decoration: none; }
+        .pdf-btn-disabled { border: 1.5px dashed var(--ink-300); background: var(--ink-050); color: var(--ink-300); cursor: not-allowed; }
+        .btn-edit { display: inline-flex; align-items: center; gap: 6px; padding: 8px 14px; border-radius: 12px; height: 38px; background: var(--paper); color: var(--ink-900); border: 1px solid var(--ink-150); font-size: .88rem; transition: .15s; font-family: 'Sarabun', 'Prompt', sans-serif; }
+        .btn-edit:hover { background: var(--brand-50); color: var(--brand-600); border-color: var(--brand); text-decoration: none; }
 
-        .filter-form input[type="date"],
-        .headcom select {
-            padding: 5px 10px;
-            border-radius: var(--radius);
-            border: 1px solid var(--ink-150);
-            background-color: var(--paper);
-            font-size: clamp(10px, 0.5vw + 4px, 12px);
-            color: var(--ink-900);
-        }
+        /* สถานะจ่ายงาน (สีตามผลจริง) */
+        .badge { display: inline-flex; align-items: center; padding: 3px 11px; border-radius: 999px; font-weight: 600; font-size: .78rem; white-space: nowrap; font-family: 'Sarabun', 'Prompt', sans-serif; }
+        .dlv-none  { color:#dc2626; background:#fee2e2; }   .dot.dlv-none  { background:#ef4444; }
+        .dlv-ok    { color:#166534; background:#d4f2e2; }   .dot.dlv-ok    { background:#22c55e; }
+        .dlv-hold  { color:#a16207; background:#fef3c7; }   .dot.dlv-hold  { background:#f59e0b; }
+        .dlv-wrong { color:#be185d; background:#fce7f3; }   .dot.dlv-wrong { background:#ec4899; }
+        .dlv-redo  { color:#1d4ed8; background:#dbeafe; }   .dot.dlv-redo  { background:#3b82f6; }
+        .dlv-wait  { color:#6d28d9; background:#ede9fe; }   .dot.dlv-wait  { background:#8b5cf6; }
+        .badge.dlv-none { animation: pulse-glow 2s infinite; }
+        .dlv-inline { margin-top: 8px; font-size: .85rem; padding: 6px 10px; border-radius: 8px; display: inline-block; font-family: 'Sarabun', 'Prompt', sans-serif; }
+        .dlv-inline-note { color: #6b7280; }
+        .no-delivery { text-align: center; padding: 26px 16px; background: #fff8e6; border: 2px dashed #fbbf24; border-radius: 12px; color: #92400e; font-weight: 500; font-family: 'Sarabun', 'Prompt', sans-serif; }
+        @keyframes pulse-glow { 0%{box-shadow:0 0 0 0 rgba(220,38,38,.35)} 70%{box-shadow:0 0 0 6px rgba(220,38,38,0)} 100%{box-shadow:0 0 0 0 rgba(220,38,38,0)} }
 
-        .headcom { display: flex; align-items: center; gap: 8px; }
-        .headcom label { font-weight: 600; color: var(--ink-700); font-size: clamp(10px, 0.5vw + 4px, 12px); }
-
-        .search-box { margin-left: auto; display: flex; align-items: center; gap: 16px; flex-wrap: wrap; }
-        .search-field { display: flex; align-items: center; gap: 6px; }
-        .search-field label { font-weight: 600; color: var(--ink-700); font-size: clamp(10px, 0.5vw + 4px, 12px); white-space: nowrap; }
-
-        #search-input, #so-input, #com-input {
-            padding: 5px 10px;
-            border: 1px solid var(--ink-150);
-            border-radius: var(--radius);
-            font-size: clamp(10px, 0.5vw + 4px, 12px);
-        }
-
-        /* TABLE */
-        .table-container { padding: 15px; overflow-x: auto; }
-
-        table {
-            width: 100%;
-            table-layout: fixed;
-            border-collapse: collapse;
-            background-color: var(--paper);
-            font-size: clamp(9px, 0.5vw + 3px, 11px);
-            border-radius: 10px;
-            overflow: hidden;
-            min-width: 950px;
-            border: 1px solid var(--line);
-        }
-
-        th, td {
-            padding: 6px 8px;
-            border: 1px solid var(--line);
-            text-align: center;
-            vertical-align: middle;
-            overflow-wrap: break-word;
-            word-break: break-word;
-            word-wrap: break-word;
-            hyphens: auto;
-        }
-
-        th.customer-name, td.customer-name { text-align: left !important; }
-
-        table thead {
-            background-color: var(--ink-900);
-            color: #fff;
-            font-size: clamp(9px, 0.5vw + 3px, 11px);
-        }
-
-        table tbody tr:nth-child(even) { background-color: var(--ink-050); }
-        table tbody tr:hover { background-color: var(--ink-100); }
-
-        .wrap-text { text-align: left; white-space: normal; word-wrap: break-word; padding: 8px; }
-
-        /* แถวที่ statusdeli == 1 */
-        td.row-flagged { background-color: var(--ink-150) !important; font-weight: 600; }
-
-        /* ปรับความกว้างคอลัมน์ใหม่ - เล็กลง */
-        .col-no      { width: 5%;  min-width: 35px; }
-        .col-docid   { width: 10%; min-width: 90px; }
-        .col-so      { width: 9%;  min-width: 80px; }
-        .col-headcom { width: 16%; min-width: 150px; }
-        .col-comname { width: 17%; min-width: 150px; }
-        .col-emp     { width: 8%;  min-width: 70px; }
-        .col-date    { width: 9%;  min-width: 80px; }
-        .col-pdf     { width: 6%;  min-width: 50px; }
-        .col-detail  { width: 14%; min-width: 140px; }
-        .col-edit    { width: 6%;  min-width: 60px; }
-
-        td.col-detail, th.col-detail {
-            min-width: 140px;
-            white-space: normal;
-        }
-
-        /* ปุ่มไอคอนเอกสาร PDF */
-        .pdf-btn {
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            width: 30px;
-            height: 30px;
-            border-radius: 50%;
-            border: 1.5px solid var(--ink-900);
-            background-color: var(--paper);
-            cursor: pointer;
-            transition: 0.2s;
-        }
-        .pdf-btn:hover { background-color: var(--ink-900); }
-        .pdf-btn:hover svg { stroke: #fff; }
-        .pdf-btn svg { width: 15px; height: 15px; stroke: var(--ink-900); transition: 0.2s; }
-
-        .pdf-btn-disabled {
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            width: 30px;
-            height: 30px;
-            border-radius: 50%;
-            border: 1.5px dashed var(--ink-300);
-            background-color: var(--ink-050);
-            cursor: not-allowed;
-        }
-        .pdf-btn-disabled svg { width: 15px; height: 15px; stroke: var(--ink-300); }
-
-        /* POPUP */
-        .popup-overlay {
-            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background-color: rgba(17, 17, 17, 0.6);
-            display: flex; align-items: center; justify-content: center;
-            z-index: 1000; padding: 20px;
-        }
-
-        .popup-content {
-            background-color: var(--paper);
-            padding: 25px;
-            border-radius: 12px;
-            width: 100%;
-            max-width: 1200px;
-            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
-            overflow-y: auto;
-            max-height: 90vh;
-            border: 1px solid var(--line);
-        }
-
-        .close-btn { float: right; font-size: 24px; cursor: pointer; color: var(--ink-700); }
-        .close-btn:hover { color: var(--ink-900); }
-
-        textarea {
-            font-family: 'Segoe UI', sans-serif;
-            font-size: clamp(11px, 0.55vw + 5px, 14px);
-            padding: 10px;
-            border: 1px solid var(--ink-150);
-            border-radius: var(--radius);
-            resize: vertical;
-            width: 100%;
-        }
-
-        /*  Popup สถานะจ่ายงาน */
-        #deliveryPopup .popup-content {
-            max-width: 900px;
-            max-height: 85vh;
-            padding: 30px;
-        }
-
-        #deliveryPopup h3 {
-            font-size: 22px;
-            margin-bottom: 20px;
-            padding-bottom: 15px;
-            border-bottom: 2px solid var(--ink-150);
-            color: var(--ink-900);
-        }
-
-        #dlvBody { line-height: 1.8; font-size: 15px; }
-
-        #dlvBody .delivery-card {
-            background: linear-gradient(135deg, #f8f9fa 0%, #ffffff 100%);
-            border: 1px solid #e0e0e0;
-            border-radius: 12px;
-            padding: 20px;
-            margin-bottom: 15px;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
-            transition: transform 0.2s, box-shadow 0.2s;
-        }
-
-        #dlvBody .delivery-card:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 4px 12px rgba(0,0,0,0.12);
-        }
-
-        #dlvBody .section-title {
-            font-weight: 700;
-            color: #1971c2;
-            font-size: 16px;
-            margin-bottom: 12px;
-            padding-bottom: 8px;
-            border-bottom: 1px dashed var(--ink-150);
-        }
-
-        #dlvBody .info-row {
-            display: flex;
-            margin-bottom: 8px;
-            align-items: flex-start;
-        }
-
-        #dlvBody .info-label {
-            font-weight: 600;
-            color: var(--ink-700);
-            min-width: 120px;
-            flex-shrink: 0;
-        }
-
-        #dlvBody .info-value {
-            color: var(--ink-900);
-            flex: 1;
-        }
-
-        #dlvBody .status-badge {
-            display: inline-block;
-            padding: 4px 12px;
-            border-radius: 20px;
-            font-weight: 600;
-            font-size: 13px;
-        }
-
-        #dlvBody .status-received {
-            background-color: #d4edda;
-            color: #155724;
-            border: 1px solid #c3e6cb;
-        }
-
-        #dlvBody .status-pending {
-            background-color: #f8d7da;
-            color: #721c24;
-            border: 1px solid #f5c6cb;
-        }
-
-        #dlvBody .no-delivery {
-            text-align: center;
-            padding: 40px 20px;
-            background-color: #fff3cd;
-            border: 2px dashed #ffc107;
-            border-radius: 12px;
-            color: #856404;
-            font-size: 16px;
-            font-weight: 600;
-        }
-
-        /* ปุ่มสถานะจ่ายงาน */
-        .btn-delivery-status {
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            gap: 6px;
-            padding: 6px 10px;
-            border-radius: 6px;
-            font-weight: 600;
-            font-size: clamp(9px, 0.45vw + 3px, 11px);
-            text-decoration: none;
-            transition: all 0.3s;
-            border: none;
-            cursor: pointer;
-            vertical-align: middle;
-        }
-
-        .btn-delivery-status.no-delivery {
-            color: #dc3545;
-            background-color: #fff5f5;
-            animation: pulse-glow 2s infinite;
-        }
-
-        .btn-delivery-status.no-delivery:hover {
-            background-color: #dc3545;
-            color: #fff;
-            animation: none;
-        }
-
-        .btn-delivery-status.has-delivery {
-            color: #155724;
-            background-color: #d4edda;
-            animation: none;
-        }
-
-        .btn-delivery-status.has-delivery:hover {
-            background-color: #155724;
-            color: #fff;
-        }
-
-        /* สีปุ่มตามผลจริง — เขียวเฉพาะจัดส่งสำเร็จ */
-        .btn-delivery-status.dlv-none  { color:#dc3545; background:#fff5f5; animation:pulse-glow 2s infinite; }   /* ยังไม่จ่ายงาน */
-        .btn-delivery-status.dlv-none:hover { background:#dc3545; color:#fff; animation:none; }
-        .btn-delivery-status.dlv-ok    { color:#155724; background:#d4edda; }                                     /* สำเร็จ = เขียว */
-        .btn-delivery-status.dlv-ok:hover    { background:#155724; color:#fff; }
-        .btn-delivery-status.dlv-hold  { color:#b45309; background:#fff4e5; }                                     /* ค้างบิล = ส้ม */
-        .btn-delivery-status.dlv-hold:hover  { background:#b45309; color:#fff; }
-        .btn-delivery-status.dlv-wrong { color:#a91f1f; background:#ffebee; }                                     /* สินค้าผิด = แดง */
-        .btn-delivery-status.dlv-wrong:hover { background:#a91f1f; color:#fff; }
-        .btn-delivery-status.dlv-redo  { color:#2853d5; background:#eaf0fc; }                                     /* ส่งใหม่ = ฟ้า */
-        .btn-delivery-status.dlv-redo:hover  { background:#2853d5; color:#fff; }
-        .btn-delivery-status.dlv-wait  { color:#374151; background:#f3f4f6; }                                     /* จ่ายแล้ว รอผล = เทา */
-        .btn-delivery-status.dlv-wait:hover  { background:#374151; color:#fff; }
-
-        /* ข้อความผลใต้ปุ่ม (ในตาราง) */
-        .dlv-inline { margin-top:4px; font-size:11px; line-height:1.5; padding:3px 7px; border-radius:5px; }
-        .dlv-inline.dlv-ok    { color:#155724; background:#eafaef; }
-        .dlv-inline.dlv-hold  { color:#b45309; background:#fff7ed; }
-        .dlv-inline.dlv-wrong { color:#a91f1f; background:#fdecec; }
-        .dlv-inline.dlv-redo  { color:#2853d5; background:#eef3fd; }
-        .dlv-inline.dlv-wait  { color:#374151; background:#f6f7f9; }
-        .dlv-inline-note { color:#6b7280; }
-
-        @keyframes pulse-glow {
-            0% { box-shadow: 0 0 0 0 rgba(220, 53, 69, 0.4); }
-            70% { box-shadow: 0 0 0 6px rgba(220, 53, 69, 0); }
-            100% { box-shadow: 0 0 0 0 rgba(220, 53, 69, 0); }
+        @media (max-width: 900px) {
+            body { height: auto; }
+            .split { grid-template-columns: 1fr; }
+            .list-body { max-height: 45vh; }
+            .info { grid-template-columns: 1fr 1fr; }
+            .info .wide { grid-column: span 2; }
         }
     </style>
 </head>
 <body>
-    <div class="header">
-        <h2>เอกสารชั่วคราว</h2>
-        <div class="buttons">
-            <span>👤 ผู้ใช้: {{ $creator }}</span>
-            <a href="{{ route('document.insertdoc') }}" class="btn btn-solid">สร้างเอกสารชั่วคราว</a>
+    <div class="topbar">
+        <h2 onclick="window.location.reload()" title="คลิกเพื่อรีเฟรชหน้าเว็บ"><span class="logo"><svg class="i" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6M16 13H8M16 17H8"/></svg></span>เอกสารชั่วคราว</h2>
+        <span class="vsep"></span>
+
+        <div class="tools">
+            <form method="GET" action="{{ route('document.dashboarddoc') }}" class="fld f-date" id="autoSearchForm" title="วันที่">
+                @php $allDates = request('date') === 'all'; @endphp
+                <svg class="i" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>
+                <input type="date" id="date" name="date"
+                       value="{{ $allDates ? '' : request('date', \Carbon\Carbon::today()->format('Y-m-d')) }}"
+                       {{ $allDates ? 'disabled' : '' }}>
+                <button type="submit" style="display: none;">ค้นหา</button>
+            </form>
+
+            <label class="chip"><input type="checkbox" id="allDates" {{ $allDates ? 'checked' : '' }}>ทั้งหมด</label>
+
+            <div class="fld f-com" title="บริษัท">
+                <svg class="i" viewBox="0 0 24 24"><rect x="4" y="2" width="16" height="20" rx="2"/><path d="M9 22v-4h6v4M8 6h.01M16 6h.01M12 6h.01M12 10h.01M12 14h.01M16 10h.01M16 14h.01M8 10h.01M8 14h.01"/></svg>
+                <select id="headcom" name="headcom" form="autoSearchForm" onchange="if(window.submitFilters){submitFilters()}else{document.getElementById('autoSearchForm').submit()}">
+                    <option value="">ทุกบริษัท</option>
+                    <option value="บริษัท ทริปเปิ้ล อี เทรดดิ้ง จำกัด">บริษัท ทริปเปิ้ล อี เทรดดิ้ง จำกัด</option>
+                    <option value="บริษัท ทริปเปิ้ล อี อินโนเวชั่น จำกัด">บริษัท ทริปเปิ้ล อี อินโนเวชั่น จำกัด</option>
+                    <option value="บริษัท ทริบเปิ้ล พี แฟคตอรี่ แอนด์ เอ็นจิเนียริ่ง จำกัด">บริษัท ทริบเปิ้ล พี แฟคตอรี่ แอนด์ เอ็นจิเนียริ่ง จำกัด</option>
+                    <option value="บริษัท เอตะ แอนด์ พอล อินโนเวชั่น จำกัด">บริษัท เอตะ แอนด์ พอล อินโนเวชั่น จำกัด</option>
+                    <option value="บริษัท ฮิคาริ เดงกิ จำกัด">บริษัท ฮิคาริ เดงกิ จำกัด</option>
+                    <option value="บริษัท เอ อี แอนด์ ที อินเตอร์เนชั่นแนล จำกัด">บริษัท เอ อี แอนด์ ที อินเตอร์เนชั่นแนล จำกัด</option>
+                    <option value="บริษัท ทริปเปิ้ล อี ไลท์ติ้ง จำกัด">บริษัท ทริปเปิ้ล อี ไลท์ติ้ง จำกัด</option>
+                    <option value="บริษัท ทริปเปิ้ล อี เอ็มไพร์ กรุ๊ป จำกัด">บริษัท ทริปเปิ้ล อี เอ็มไพร์ กรุ๊ป จำกัด</option>
+                    <option value="บริษัท ชาเวสต์ เรียลเอสเตท จำกัด">บริษัท ชาเวสต์ เรียลเอสเตท จำกัด</option>
+                    <option value="บริษัท เทคเพียร์ เอ็นจิเนียริ่ง จำกัด">บริษัท เทคเพียร์ เอ็นจิเนียริ่ง จำกัด</option>
+                    <option value="บริษัท เดชา อิเล็คทริค แอนด์ คอนสตรัคชั่น จำกัด">บริษัท เดชา อิเล็คทริค แอนด์ คอนสตรัคชั่น จำกัด</option>
+                </select>
+            </div>
+
+            {{-- ช่องค้นหาเดียว: ระบบเดาให้ว่าเป็น เลขเอกสาร / SO / ชื่อลูกค้า แล้วส่งเป็น search / so / com ตามเดิม --}}
+            <div class="fld q-box">
+                <svg class="i" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg>
+                <input type="text" id="q-input" value="{{ request('search') ?: (request('so') ?: request('com', '')) }}" autocomplete="off"
+                       placeholder="ค้นหา เลขเอกสาร / SO / ชื่อลูกค้า" title="พิมพ์เลขเอกสาร (เช่น SP6909-0025), เลข SO (เช่น 69/016727) หรือชื่อลูกค้า แล้วกด Enter">
+                <span class="q-hint" id="q-hint"></span>
+            </div>
+
+            <button type="button" id="clear-filters-btn" onclick="clearFilters()" class="icon-btn reset" title="ล้าง filter">
+                <svg class="i" viewBox="0 0 24 24"><path d="M3 12a9 9 0 1 0 3-6.7L3 8"/><path d="M3 3v5h5"/></svg>
+            </button>
+        </div>
+
+        <div class="actions">
+            <span class="user" title="ผู้ใช้"><span class="av"><svg class="i" viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg></span><span class="name">{{ $creator }}</span></span>
+            <a href="{{ route('document.insertdoc') }}" class="btn btn-solid"><svg class="i" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>สร้างเอกสาร</a>
             @csrf
-            <a href="http://server_update:8000/solist" class="btn btn-outline-light">🚪 หน้าหลัก</a>
         </div>
     </div>
 
-    <!-- Filter & Search Section -->
-    <div class="filter-container">
-        <form method="GET" action="{{ route('document.dashboarddoc') }}" class="filter-form" id="autoSearchForm">
-            @php $allDates = request('date') === 'all'; @endphp
-            <label class="all-dates" style="display:inline-flex;align-items:center;gap:6px;cursor:pointer;user-select:none;font-weight:600;">
-                
-            </label>
-            <label for="date">วันที่: เดือน / วัน / ปี</label>
-            <input type="date" id="date" name="date"
-                   value="{{ $allDates ? '' : request('date', \Carbon\Carbon::today()->format('Y-m-d')) }}"
-                   {{ $allDates ? 'disabled' : '' }}>
-            <button type="submit" style="display: none;">ค้นหา</button>
-        </form>
-
-        <div class="headcom">
-            <label for="headcom">ชื่อบริษัท :</label>
-            <select id="headcom" name="headcom" form="autoSearchForm" onchange="if(window.submitFilters){submitFilters()}else{document.getElementById('autoSearchForm').submit()}">
-                <option value="">ทั้งหมด</option>
-                <option value="บริษัท ทริปเปิ้ล อี เทรดดิ้ง จำกัด">บริษัท ทริปเปิ้ล อี เทรดดิ้ง จำกัด</option>
-                <option value="บริษัท ทริปเปิ้ล อี อินโนเวชั่น จำกัด">บริษัท ทริปเปิ้ล อี อินโนเวชั่น จำกัด</option>
-                <option value="บริษัท ทริบเปิ้ล พี แฟคตอรี่ แอนด์ เอ็นจิเนียริ่ง จำกัด">บริษัท ทริบเปิ้ล พี แฟคตอรี่ แอนด์ เอ็นจิเนียริ่ง จำกัด</option>
-                <option value="บริษัท เอตะ แอนด์ พอล อินโนเวชั่น จำกัด">บริษัท เอตะ แอนด์ พอล อินโนเวชั่น จำกัด</option>
-                <option value="บริษัท ฮิคาริ เดงกิ จำกัด">บริษัท ฮิคาริ เดงกิ จำกัด</option>
-                <option value="บริษัท เอ อี แอนด์ ที อินเตอร์เนชั่นแนล จำกัด">บริษัท เอ อี แอนด์ ที อินเตอร์เนชั่นแนล จำกัด</option>
-                <option value="บริษัท ทริปเปิ้ล อี ไลท์ติ้ง จำกัด">บริษัท ทริปเปิ้ล อี ไลท์ติ้ง จำกัด</option>
-                <option value="บริษัท ทริปเปิ้ล อี เอ็มไพร์ กรุ๊ป จำกัด">บริษัท ทริปเปิ้ล อี เอ็มไพร์ กรุ๊ป จำกัด</option>
-                <option value="บริษัท ชาเวสต์ เรียลเอสเตท จำกัด">บริษัท ชาเวสต์ เรียลเอสเตท จำกัด</option>
-                <option value="บริษัท เทคเพียร์ เอ็นจิเนียริ่ง จำกัด">บริษัท เทคเพียร์ เอ็นจิเนียริ่ง จำกัด</option>
-                <option value="บริษัท เดชา อิเล็คทริค แอนด์ คอนสตรัคชั่น จำกัด">บริษัท เดชา อิเล็คทริค แอนด์ คอนสตรัคชั่น จำกัด</option>
-            </select>
-        </div>
-        <input type="checkbox" id="allDates" {{ $allDates ? 'checked' : '' }} style="width:16px;height:16px;cursor:pointer;"> เลือกทั้งหมด
-
-        <div class="search-box">
-            <div class="search-field">
-                <input type="text" id="search-input" name="search" form="autoSearchForm"
-                       value="{{ request('search', '') }}" autocomplete="off" placeholder="เลขเอกสารชั่วคราว">
+    <!-- ===== รายการซ้าย + รายละเอียดขวา ===== -->
+    <div class="split">
+        <div class="list">
+            <div class="list-head">
+                <div class="count">ทั้งหมด <b>{{ count($docbill) }}</b> รายการ <span id="list-shown"></span></div>
             </div>
-            <div class="search-field">
-                <input type="text" id="so-input" name="so" form="autoSearchForm"
-                       value="{{ request('so', '') }}" autocomplete="off" placeholder="SO">
-            </div>
-            <div class="search-field">
-                <input type="text" id="com-input" name="com" form="autoSearchForm"
-                       value="{{ request('com', '') }}" autocomplete="off" placeholder="ชื่อ">
-            </div>
-            <div class="search-field">
-                <button type="button" id="clear-filters-btn" onclick="clearFilters()"
-                        style="padding:5px 14px;border:1px solid var(--ink-150);border-radius:var(--radius);background:#f3f4f6;color:var(--ink-700);font-weight:600;font-size:clamp(10px,0.5vw + 4px,12px);cursor:pointer;font-family:inherit;white-space:nowrap;">ล้าง filter</button>
-            </div>
-            <div class="search-field">
-                <button type="button" id="refresh-btn" onclick="refreshPage()" title="โหลดข้อมูลใหม่ (คงตัวกรองเดิม)"
-                        style="display:inline-flex;align-items:center;gap:5px;padding:5px 14px;border:1px solid var(--blue-700, #2853d5);border-radius:var(--radius);background:var(--blue-700, #2853d5);color:#fff;font-weight:600;font-size:clamp(10px,0.5vw + 4px,12px);cursor:pointer;font-family:inherit;white-space:nowrap;">
-                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M23 4v6h-6"/><path d="M1 20v-6h6"/><path d="M3.51 9a9 9 0 0114.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0020.49 15"/></svg>
-                    รีเฟรช
-                </button>
-            </div>
-        </div>
-    </div>
-
-    <div class="table-container">
-        <table>
-            <colgroup>
-                <col class="col-no">
-                <col class="col-docid">
-                <col class="col-so">
-                <col class="col-headcom">
-                <col class="col-comname">
-                <col class="col-emp">
-                <col class="col-date">
-                <col class="col-pdf">
-                <col class="col-detail">
-                <col class="col-edit">
-            </colgroup>
-            <thead>
-                <tr>
-                    <th>ลำดับ</th>
-                    <th>เลขที่บิล</th>
-                    <th>เลข SO</th>
-                    <th>ชื่อบริษัท</th>
-                    <th>ชื่อ</th>
-                    <th>ผู้เปิดบิล</th>
-                    <th>วันที่</th>
-                    <th>เอกสาร PDF</th>
-                    <th class="col-detail">ข้อมูลรายละเอียด</th>
-                    <th>แก้ไข</th>
-                </tr>
-            </thead>
-            <tbody id="table-body">
+            <div class="list-body" id="table-body">
                 @foreach($docbill as $item)
                 @php
                     $pdfPath = "temporary_bill/{$item->doc_id}.pdf";
                     $hasPdf = \Storage::exists('public/' . $pdfPath) || $item->statuspdf == 1;
+                    $st = $item->dlv_status ?? '';
+                    if (!$item->has_delivery)              { $dlvCls = 'dlv-none';   $dlvTxt = 'ยังไม่จ่ายงาน'; }
+                    elseif ($st === 'จัดส่งสำเร็จ')          { $dlvCls = 'dlv-ok';     $dlvTxt = 'จัดส่งสำเร็จ'; }
+                    elseif ($st === 'ค้างบิล')              { $dlvCls = 'dlv-hold';   $dlvTxt = 'ค้างบิล'; }
+                    elseif ($st === 'สินค้าผิด')            { $dlvCls = 'dlv-wrong';  $dlvTxt = 'สินค้าผิด'; }
+                    elseif ($st === 'ส่งใหม่')              { $dlvCls = 'dlv-redo';   $dlvTxt = 'สั่งส่งใหม่'; }
+                    else                                    { $dlvCls = 'dlv-wait';   $dlvTxt = 'จ่ายงานแล้ว · รอผล'; }
+                    $soNo = $item->so_id ? preg_replace('/^SO\s*/i', '', trim($item->so_id)) : '-';
                 @endphp
-                <tr>
-                    <td>{{ $loop->iteration }}</td>
-                    <td class="{{ $item->statusdeli == 1 ? 'row-flagged' : '' }}">
-                        @if($item->statusdeli == 1)
-                            <a href="https://drive.google.com/drive/u/0/search?q={{ $item->doc_id }}+parent:1WyDB1b01cDQ53Ap7B03UIGFbL6a2Y6WB" target="_blank">
-                                {{ $item->doc_id }}
-                            </a>
-                        @else
-                            {{ $item->doc_id }}
-                        @endif
-                    </td>
-                    <td>{{ $item->so_id ? preg_replace('/^SO\s*/i', '', trim($item->so_id)) : '-' }}</td>
-                    <td>{{ $item->headcom }}</td>
-                    <td>{{ $item->com_name }}</td>
-                    <td>{{ $item->emp_name }}</td>
-                    <td>{{ \Carbon\Carbon::parse($item->time)->format('d/m/Y') }}</td>
-
-                    {{-- เอกสาร PDF --}}
-                    <td>
-                        @if($hasPdf)
-                            <a href="{{ asset('storage/' . $pdfPath) }}" target="_blank" class="pdf-btn" style="border-bottom:none;" title="เปิดเอกสาร PDF">
-                                <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
-                                    <path d="M14 2v6h6"/>
-                                    <path d="M9 15h6"/>
-                                    <path d="M9 11h6"/>
-                                </svg>
-                            </a>
-                        @else
-                            <span class="pdf-btn-disabled" title="ยังไม่มีไฟล์ PDF">
-                                <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
-                                    <path d="M14 2v6h6"/>
-                                </svg>
-                            </span>
-                        @endif
-                    </td>
-
-                    <td class="col-detail">
-                        <a href="javascript:void(0);" onclick="openPopup(
-                            '{{ $item->doc_id }}',
-                            '{{ $item->com_name }}',
-                            '{{ $item->com_address }}',
-                            '{{ $item->contact_name }}',
-                            '{{ $item->contact_tel }}',
-                            '{{ $item->doctype }}',
-                            '{{ $item->notes }}'
-                        )">
-                            เพิ่มเติม
-                        </a>
-                        <br>
-                        
-                        {{-- ปุ่มสถานะจ่ายงาน: สีตามผลจริง (เขียว = จัดส่งสำเร็จเท่านั้น) --}}
-                        @php
-                            $st = $item->dlv_status ?? '';
-                            if (!$item->has_delivery)              { $dlvCls = 'dlv-none';   $dlvTxt = 'ยังไม่จ่ายงาน'; }
-                            elseif ($st === 'จัดส่งสำเร็จ')          { $dlvCls = 'dlv-ok';     $dlvTxt = 'จัดส่งสำเร็จ'; }
-                            elseif ($st === 'ค้างบิล')              { $dlvCls = 'dlv-hold';   $dlvTxt = 'ค้างบิล'; }
-                            elseif ($st === 'สินค้าผิด')            { $dlvCls = 'dlv-wrong';  $dlvTxt = 'สินค้าผิด'; }
-                            elseif ($st === 'ส่งใหม่')              { $dlvCls = 'dlv-redo';   $dlvTxt = 'สั่งส่งใหม่'; }
-                            else                                    { $dlvCls = 'dlv-wait';   $dlvTxt = 'จ่ายงานแล้ว · รอผล'; }
-                        @endphp
-                        <a href="javascript:void(0);"
-                           class="btn-delivery-status {{ $dlvCls }}"
-                           id="btn-dlv-{{ $item->doc_id }}"
-                           data-bill-id="{{ $item->doc_id }}"
-                           onclick="openDeliveryStatus('{{ $item->doc_id }}', this)"
-                           style="border-bottom:none; margin-top: 5px;">
-                            <span class="btn-text">{{ $dlvTxt }}</span>
-                        </a>
-                        {{-- ยืนยันผลแล้ว: ขึ้นผู้รับบิลเข้า · เวลา · หมายเหตุ ให้เห็นเลยที่ตาราง --}}
-                        @if ($item->dlv_confirmed)
-                            <div class="dlv-inline {{ $dlvCls }}">
-                                โดย <b>{{ $item->dlv_check_name ?: '-' }}</b>@if($item->dlv_check_time) · {{ $item->dlv_check_time }}@endif
-                                @if($item->dlv_note)<br><span class="dlv-inline-note">หมายเหตุ: {{ $item->dlv_note }}</span>@endif
-                            </div>
-                        @endif
-                    </td>
-
-                    {{-- ปุ่มแก้ไขข้อมูล --}}
-                    <td>
-                        <a href="{{ route('document.editdoc', $item->doc_id) }}" class="btn-edit" style="border-bottom:none;" title="แก้ไขเอกสาร">
-                           แก้ไข
-                        </a>
-                    </td>
-                </tr>
+                <div class="it" tabindex="0"
+                     data-doc="{{ $item->doc_id }}"
+                     data-so="{{ $soNo }}"
+                     data-headcom="{{ $item->headcom }}"
+                     data-com="{{ $item->com_name }}"
+                     data-address="{{ $item->com_address }}"
+                     data-contact="{{ $item->contact_name }}"
+                     data-tel="{{ $item->contact_tel }}"
+                     data-doctype="{{ $item->doctype }}"
+                     data-notes="{{ $item->notes }}"
+                     data-emp="{{ $item->emp_name }}"
+                     data-date="{{ \Carbon\Carbon::parse($item->time)->format('d/m/Y') }}"
+                     data-pdf="{{ $hasPdf ? asset('storage/' . $pdfPath) : '' }}"
+                     data-edit="{{ route('document.editdoc', $item->doc_id) }}"
+                     data-drive="{{ $item->statusdeli == 1 ? 'https://drive.google.com/drive/u/0/search?q=' . $item->doc_id . '+parent:1WyDB1b01cDQ53Ap7B03UIGFbL6a2Y6WB' : '' }}"
+                     data-dlv-cls="{{ $dlvCls }}"
+                     data-dlv-txt="{{ $dlvTxt }}"
+                     data-dlv-confirmed="{{ $item->dlv_confirmed ? 1 : 0 }}"
+                     data-dlv-by="{{ $item->dlv_check_name ?: '-' }}"
+                     data-dlv-time="{{ $item->dlv_check_time }}"
+                     data-dlv-note="{{ $item->dlv_note }}">
+                    <span class="no">{{ $loop->iteration }}</span>
+                    <div class="mid">
+                        <b>{{ $item->doc_id }} @if($item->statusdeli == 1)<span class="flag-tag">Drive</span>@endif</b>
+                        <small>{{ $item->com_name }}</small>
+                    </div>
+                    <div class="right">
+                        <span>{{ \Carbon\Carbon::parse($item->time)->format('d/m/Y') }}</span>
+                        <span class="badge {{ $dlvCls }}">{{ $dlvTxt }}</span>
+                    </div>
+                </div>
                 @endforeach
-            </tbody>
-        </table>
+                <div class="list-empty" id="list-empty" style="{{ count($docbill) ? 'display:none' : '' }}">ไม่พบเอกสาร</div>
+            </div>
+        </div>
 
-        @if(isset($message))
-            <br>
-            <p style="text-align: center">{{ $message }}</p>
-        @endif
-    </div>
-
-    <!-- Popup รายละเอียด -->
-    <div class="popup-overlay" id="popup" style="display: none;">
-        <div class="popup-content">
-            <span class="close-btn" onclick="closePopup()">&times;</span>
-            <div class="table-container">
-                <table>
-                    <thead>
-                        <tr>
-                            <th>เลขที่บิล</th>
-                            <th>บริษัท</th>
-                            <th>ที่อยู่</th>
-                            <th>ผู้ติดต่อ</th>
-                            <th>เบอร์โทร</th>
-                            <th>ประเภทงาน</th>
-                        </tr>
-                    </thead>
-                    <tbody id="popup-body-1"></tbody>
-                </table>
-                <br>
-                <table>
-                    <thead>
-                        <tr>
-                            <th>รายการ</th>
-                            <th>จำนวน</th>
-                        </tr>
-                    </thead>
-                    <tbody id="popup-body"></tbody>
-                </table>
-                <br>
-                <textarea id="popup-body-3" readonly></textarea>
+        <div class="det" id="detail">
+            <div class="det-empty">
+                <svg class="i" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6M16 13H8M16 17H8"/></svg>
+                <div>เลือกเอกสารทางซ้ายเพื่อดูรายละเอียด</div>
+                @if(isset($message))<div style="color:var(--ink-500)">{{ $message }}</div>@endif
             </div>
         </div>
     </div>
 
-    <!-- Popup: สถานะจ่ายงานให้คนขับ -->
-    <div class="popup-overlay" id="deliveryPopup" style="display:none;">
-        <div class="popup-content">
-            <span class="close-btn" onclick="closeDeliveryStatus()">&times;</span>
-            <h3>📦 สถานะจ่ายงานให้คนขับ — <span id="dlvBillId" style="color:#1971c2;"></span></h3>
-            <div id="dlvBody" style="line-height:1.7;"></div>
+    <!-- ป๊อปอัพประวัติการจ่ายงาน -->
+    <div class="modal" id="hist-modal" hidden onclick="if (event.target === this) closeDlvHistory()">
+        <div class="modal-box" role="dialog" aria-modal="true" aria-labelledby="hist-title">
+            <div class="modal-head">
+                <h3 id="hist-title">ประวัติการจ่ายงาน</h3>
+                <button type="button" class="modal-x" id="hist-close" onclick="closeDlvHistory()" aria-label="ปิด">&times;</button>
+            </div>
+            <div class="modal-body" id="hist-body"></div>
         </div>
     </div>
 
     <script>
-        function filterTable() {
-            let selectedType = document.getElementById("headcom").value;
-            let table = document.getElementById("table-body");
-            let rows = table.getElementsByTagName("tr");
-
-            for (let i = 0; i < rows.length; i++) {
-                let typeCell = rows[i].getElementsByTagName("td")[3];
-                if (typeCell) {
-                    let typeText = typeCell.textContent.trim();
-                    rows[i].style.display = (selectedType === "" || typeText === selectedType) ? "" : "none";
-                }
-            }
-        }
-
         const form = document.getElementById('autoSearchForm');
         const dateInput = document.getElementById('date');
         const headcomSel = document.getElementById('headcom');
-        const searchInputEl = document.getElementById('search-input');
-        const soInputEl = document.getElementById('so-input');
-        const comInputEl = document.getElementById('com-input');
+        const qInputEl = document.getElementById('q-input');
+        const qHintEl  = document.getElementById('q-hint');
+
+        // เดาว่าคำค้นเป็นอะไร -> ส่งเป็นพารามิเตอร์เดิมของ Controller (search / so / com)
+        function classifyQuery(v) {
+            v = (v || '').trim();
+            if (!v) return null;
+            if (/^SO[\s:#-]*\d[\d\/\s]*$/i.test(v)) return { key: 'so', value: v.replace(/^SO[\s:#-]*/i, ''), label: 'เลข SO' };
+            if (/^\d+\s*\/\s*\d+$/.test(v) || /^\d+$/.test(v)) return { key: 'so', value: v.replace(/\s+/g, ''), label: 'เลข SO' };
+            if (/^[A-Za-z]{1,5}\s*-?\d[\d-]*$/.test(v)) return { key: 'search', value: v.replace(/\s+/g, '').toUpperCase(), label: 'เลขเอกสาร' };
+            return { key: 'com', value: v, label: 'ชื่อลูกค้า' };
+        }
+        function updateHint() {
+            const c = classifyQuery(qInputEl.value);
+            qHintEl.textContent = c ? 'ค้นเป็น: ' + c.label : '';
+        }
+        if (qInputEl) { qInputEl.addEventListener('input', updateHint); updateHint(); }
+        const allDatesChk = document.getElementById('allDates');
 
         // จำค่าบริษัทผู้ส่งที่เลือกไว้ (ค้นข้ามวัน)
         if (headcomSel) headcomSel.value = @json(request('headcom', ''));
 
-        // ยิงค้นหาแบบ explicit navigation — เก็บค่าทุกฟิลเตอร์ (วันที่ / บริษัทผู้ส่ง / เลขเอกสาร / SO)
-        // ไม่พึ่ง attribute form= ของ element ที่อยู่นอก <form> (สาเหตุที่ตัวกรองบริษัทผู้ส่งเดิมไม่ทำงาน)
-        const allDatesChk = document.getElementById('allDates');
+        // บริษัทที่ใช้ล่าสุด (จำในเบราว์เซอร์นี้) ขึ้นไว้บนสุดของรายการ
+        const RECENT_KEY = 'dashboarddoc_recent_headcom';
+        function getRecentHeadcom() {
+            try { return JSON.parse(localStorage.getItem(RECENT_KEY)) || []; } catch (e) { return []; }
+        }
+        function saveRecentHeadcom(v) {
+            if (!v) return;
+            const r = [v].concat(getRecentHeadcom().filter(x => x !== v)).slice(0, 3);
+            try { localStorage.setItem(RECENT_KEY, JSON.stringify(r)); } catch (e) {}
+        }
+        function arrangeHeadcom() {
+            if (!headcomSel) return;
+            const cur  = headcomSel.value;
+            const all  = headcomSel.querySelector('option[value=""]');
+            const opts = Array.from(headcomSel.querySelectorAll('option')).filter(o => o.value);
+            const rec  = getRecentHeadcom().filter(v => opts.some(o => o.value === v));
+            headcomSel.innerHTML = '';
+            if (all) headcomSel.appendChild(all);
+            if (rec.length) {
+                const g1 = document.createElement('optgroup'); g1.label = 'ใช้ล่าสุด';
+                rec.forEach(v => g1.appendChild(opts.find(o => o.value === v)));
+                const g2 = document.createElement('optgroup'); g2.label = 'บริษัททั้งหมด';
+                opts.filter(o => rec.indexOf(o.value) === -1).forEach(o => g2.appendChild(o));
+                headcomSel.appendChild(g1); headcomSel.appendChild(g2);
+            } else {
+                opts.forEach(o => headcomSel.appendChild(o));
+            }
+            headcomSel.value = cur;
+        }
+        if (headcomSel) { saveRecentHeadcom(headcomSel.value); arrangeHeadcom(); }
 
-        // ล้างตัวกรองทั้งหมด -> กลับไปค่าเริ่มต้น (วันนี้ / ไม่ติ๊กไม่จำกัดวันที่ / ไม่มีคำค้น)
         window.clearFilters = function clearFilters() {
             window.location.href = @json(route('document.dashboarddoc'));
         };
-
-        // รีเฟรช = โหลดข้อมูลหน้าเดิมใหม่ (คงตัวกรอง/วันที่ที่เลือกไว้)
-        window.refreshPage = function refreshPage() {
-            window.location.reload();
-        };
-
         window.submitFilters = function submitFilters() {
             const base = @json(route('document.dashboarddoc'));
             const p = new URLSearchParams();
             const allDates = allDatesChk ? allDatesChk.checked : false;
             const date    = dateInput ? dateInput.value : '';
             const headcom = headcomSel ? headcomSel.value : '';
-            const search  = searchInputEl ? searchInputEl.value.trim() : '';
-            const so      = soInputEl ? soInputEl.value.trim() : '';
-            const com     = comInputEl ? comInputEl.value.trim() : '';
-            // ไม่จำกัดวันที่ = ส่ง date=all (ค้นทั้งหมด) ; ไม่งั้นส่งวันที่ที่เลือก
+            const q       = qInputEl ? classifyQuery(qInputEl.value) : null;
+            const search  = q && q.key === 'search' ? q.value : '';
+            const so      = q && q.key === 'so'     ? q.value : '';
+            const com     = q && q.key === 'com'    ? q.value : '';
             if (allDates)     p.set('date', 'all');
             else if (date)    p.set('date', date);
-            if (headcom) p.set('headcom', headcom);
+            if (headcom) { p.set('headcom', headcom); saveRecentHeadcom(headcom); }
             if (search)  p.set('search', search);
             if (so)      p.set('so', so);
             if (com)     p.set('com', com);
-            window.location.href = base + '?' + p.toString();
+            window.location.href = base + '?' + p.toString() + location.hash;
         };
 
         if (dateInput)   dateInput.addEventListener('change', () => submitFilters());
         if (headcomSel)  headcomSel.addEventListener('change', () => submitFilters());
         if (allDatesChk) allDatesChk.addEventListener('change', () => {
-            if (dateInput) dateInput.disabled = allDatesChk.checked;   // ติ๊กแล้วปิดช่องวันที่
+            if (dateInput) dateInput.disabled = allDatesChk.checked;
             submitFilters();
         });
-
-        // ช่องเลขเอกสารชั่วคราว + เลข SO : ค้นหาเมื่อกด Enter (ไม่ auto-reload ระหว่างพิมพ์)
-        [searchInputEl, soInputEl, comInputEl].forEach(el => {
+        [qInputEl].forEach(el => {
             if (!el) return;
             el.addEventListener('keydown', e => {
                 if (e.key === 'Enter') { e.preventDefault(); submitFilters(); }
@@ -756,59 +587,10 @@
             }
         });
 
-        function openPopup(doc_id, com_name, com_address, contact_name, contact_tel, doctype, notes) {
-            document.getElementById("popup").style.display = "flex";
-            document.getElementById("popup-body-1").innerHTML = `
-                <tr>
-                    <td>${doc_id}</td>
-                    <td>${com_name}</td>
-                    <td>${com_address}</td>
-                    <td>${contact_name}</td>
-                    <td>${contact_tel}</td>
-                    <td>${doctype}</td>
-                </tr>
-            `;
-            document.getElementById("popup-body-3").value = notes;
-
-            let secondPopupBody = document.getElementById("popup-body");
-            secondPopupBody.innerHTML = "<tr><td colspan='2'>กำลังโหลดข้อมูล...</td></tr>";
-
-            fetch(`/get-docbill-detail/${doc_id}`)
-                .then(response => response.json())
-                .then(data => {
-                    if (data.length > 0) {
-                        secondPopupBody.innerHTML = "";
-                        data.forEach(item => {
-                            secondPopupBody.insertAdjacentHTML("beforeend", `
-                                <tr>
-                                    <td>${item.item_name}</td>
-                                    <td>${item.quantity}</td>
-                                </tr>
-                            `);
-                        });
-                    } else {
-                        secondPopupBody.innerHTML = "<tr><td colspan='2'>ไม่มีข้อมูล</td></tr>";
-                    }
-                })
-                .catch(error => {
-                    console.error("Error fetching data:", error);
-                    secondPopupBody.innerHTML = "<tr><td colspan='2'>เกิดข้อผิดพลาดในการโหลดข้อมูล</td></tr>";
-                });
-        }
-
-        function closePopup() {
-            document.getElementById("popup").style.display = "none";
-        }
-
-        window.onclick = function(event) {
-            let popup = document.getElementById("popup");
-            if (event.target === popup) { closePopup(); }
-        }
-
         const DELIVERY_STATUS_URL = "{{ route('document.deliveryStatus') }}";
-        
+
         function escHtml(s){ return String(s == null ? '' : s).replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m])); }
-        
+
         function fmtDT(s){
             if(!s) return '-';
             const d = new Date(String(s).replace(' ','T'));
@@ -817,11 +599,8 @@
             return p(d.getDate())+'/'+p(d.getMonth()+1)+'/'+(d.getFullYear()+543)+' '+p(d.getHours())+':'+p(d.getMinutes());
         }
 
-    /* ===== ไทม์ไลน์รายละเอียดการจัดส่ง (โค้ดชุดเดียวกันในหน้า sale/dashboard, document/dashboarddoc, so/show) =====
-       rows = transaction_transport ทุกรอบของบิล (รวมรอบประวัติ cancelled_at) เรียงเก่า -> ใหม่
-       แต่ละรอบบอก: ใครจ่ายงาน -> ใครไปส่ง/รถอะไร/วันไหน -> ผลเป็นอย่างไร ใครยืนยัน -> จบรอบเพราะอะไร (ส่งใหม่/เปลี่ยนคนขับ/ยกเลิก) */
+    /* ===== ไทม์ไลน์รายละเอียดการจัดส่ง (โค้ดชุดเดียวกันในหน้า sale/dashboard, document/dashboarddoc, so/show) ===== */
     function dlvEsc(x){ return (x==null?'':String(x)).replace(/[&<>"']/g,function(c){return({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]);}); }
-    // สี/ข้อความตามผล (ชุดเดียวกับหน้า billreceive): สำเร็จ=เขียว, สินค้าผิด=แดง, ส่งใหม่=ฟ้า, ค้างบิล=ส้ม
     function dlvStyle(st){
         st = (st||'').toString().trim();
         if(st.indexOf('สำเร็จ')!==-1 && st.indexOf('ไม่')===-1) return {bg:'#e8f5e9',fg:'#1b5e20',border:'#2e7d32',txt:'สำเร็จ'};
@@ -833,8 +612,6 @@
         return {bg:'#f3f4f6',fg:'#374151',border:'#d1d5db',txt:st};
     }
     function dlvBadge(txt, s){ return '<span style="background:'+s.bg+';color:'+s.fg+';font-size:12px;font-weight:700;padding:2px 10px;border-radius:10px;white-space:nowrap;">'+dlvEsc(txt)+'</span>'; }
-    // note อัตโนมัติตอนกดส่งใหม่ ("ส่งใหม่ (ไม่สำเร็จ) เหตุผล: .. · เคยไปวันที่ .. · จ่ายใหม่ให้ ..") -> ดึงเหตุผล/ผู้รับงานใหม่ออกมา
-    //   ส่วนอื่นซ้ำกับข้อมูลที่แสดงอยู่แล้วจึงไม่แสดงซ้ำ ; note ที่คนพิมพ์เอง (ค้างบิล/สินค้าผิด/ของผิด) แสดงตามจริง
     function dlvParseNote(note){
         note = (note||'').toString().trim();
         if(!note) return {text:''};
@@ -858,7 +635,6 @@
         });
         var latest = active.length ? active[active.length-1] : null;
 
-        // ── สรุปด้านบน ──
         var h = '<div style="background:#f8fafc;border:1px solid #e5e7eb;border-radius:10px;padding:10px 14px;margin-bottom:12px;font-size:13.5px;color:#374151;line-height:1.8;">'
               + 'จ่ายงานไปส่งทั้งหมด <b>'+total+'</b> รอบ' + (redoN ? ' · สั่งส่งใหม่ <b>'+redoN+'</b> ครั้ง' : '') + '<br>'
               + 'สถานะตอนนี้: ';
@@ -872,17 +648,15 @@
         }
         h += '</div>';
 
-        // ── ทีละรอบ ──
         rows.forEach(function(r, i){
             var isHist = !!r.cancelled_at;
             var isRedo = (r.status||'').indexOf('ส่งใหม่') !== -1;
             var next   = rows[i+1];
-            // รอบที่จบไปแล้ว: ส่งใหม่ / เปลี่ยนคนขับ (รอบถัดไปเป็น note "เปลี่ยน...") / ยกเลิกการจ่ายงาน (คืนคิว)
             var kind = !isHist ? '' : (isRedo ? 'redo' : ((next && /^เปลี่ยน/.test((next.note||'').trim())) ? 'change' : 'cancel'));
             var s    = dlvStyle(r.status);
             var pn   = dlvParseNote(r.note);
             var st   = (r.status||'').toString().trim();
-            var hasResult = st !== '' && st !== '0' && !isRedo;   // มีผลจริง (สำเร็จ/ค้างบิล/สินค้าผิด)
+            var hasResult = st !== '' && st !== '0' && !isRedo;
 
             var head, border;
             if(kind === 'redo')        { head = dlvBadge('ไม่สำเร็จ / ส่งใหม่', dlvStyle('ส่งใหม่')); border = '#2853d5'; }
@@ -899,14 +673,11 @@
                + '</div>'
                + '<div style="font-size:13.5px;color:#374151;line-height:1.9;">';
 
-            // 1) จ่ายงาน
             h += dlvLine('จ่ายงานโดย', '<b>'+dlvEsc(r.name_pick||'-')+'</b>' + (r.time_pick ? ' · '+dlvEsc(r.time_pick) : ''));
-            // 2) ใครไปส่ง รถอะไร วันไหน
             h += dlvLine('ผู้ไปส่ง', '<b>'+dlvEsc(r.driver_name||'-')+'</b>'
                  + (r.transport_name ? ' · '+dlvEsc(r.transport_name) : '')
                  + (r.delivery_date ? ' · ให้ไปส่งวันที่ <b>'+dlvEsc(r.delivery_date)+'</b>' : '')
                  + (r.id_transport ? ' · เลขขนส่ง <b>'+dlvEsc(r.id_transport)+'</b>' : ''));
-            // 3) ผลการไปส่ง
             if(hasResult){
                 h += dlvLine('ผลการส่ง', dlvBadge(s.txt, s)
                      + ' · ยืนยันโดย <b>'+dlvEsc(r.check_name||'-')+'</b>' + (r.check_time ? ' · '+dlvEsc(r.check_time) : ''));
@@ -915,7 +686,6 @@
             } else if(!isHist){
                 h += dlvLine('ผลการส่ง', '<span style="color:#9ca3af;">ยังไม่ยืนยันผล (อยู่ระหว่างไปส่ง)</span>');
             }
-            // 4) จบรอบเพราะอะไร ใครทำ เมื่อไหร่
             var by = '<b>'+dlvEsc(r.cancelled_by || r.check_name || '-')+'</b>' + (r.cancelled_at ? ' · '+dlvEsc(r.cancelled_at) : '');
             if(kind === 'redo'){
                 h += dlvLine('สั่งส่งใหม่', by
@@ -926,46 +696,315 @@
             } else if(kind === 'cancel'){
                 h += dlvLine('ยกเลิกการจ่าย', by + ' · คืนงานไปหน้าจ่ายงาน');
             }
-            // 5) หมายเหตุที่คนพิมพ์ (ค้างบิล/สินค้าผิด/ของผิด/เปลี่ยนคนขับ ฯลฯ)
             if(pn.text){ h += dlvLine('หมายเหตุ', '<span style="color:#6b7280;">'+dlvEsc(pn.text)+'</span>'); }
 
             h += '</div></div>';
-            if(i < total-1){ h += '<div style="text-align:center;color:#9ca3af;font-size:11px;line-height:1;padding:3px 0;color:#c7ccd3;">|</div>'; }
+            if(i < total-1){ h += '<div style="text-align:center;color:#c7ccd3;font-size:11px;line-height:1;padding:3px 0;">|</div>'; }
         });
         return h;
     }
 
-        async function openDeliveryStatus(billId, btnElement) {
-            const pop = document.getElementById('deliveryPopup');
-            document.getElementById('dlvBillId').textContent = billId;
-            document.getElementById('dlvBody').innerHTML = '<div style="text-align:center;padding:40px;"><div style="font-size:18px;color:#666;">กำลังโหลดข้อมูล...</div></div>';
-            pop.style.display = 'flex';
-            
-            try {
-                const res = await fetch(DELIVERY_STATUS_URL + '?bill_id=' + encodeURIComponent(billId), {headers:{'Accept':'application/json'}});
-                const j = await res.json();
-                
-                if (!j.found || !j.rows.length) {
-                    document.getElementById('dlvBody').innerHTML = `
-                        <div class="no-delivery">
-                            <div>บิลนี้ยังไม่มีการจ่ายงานให้คนขับ</div>
-                            <div style="font-size:14px;margin-top:10px;color:#6c757d;">กรุณาติดต่อฝ่ายจ่ายงานเพื่อดำเนินการ</div>
-                        </div>
-                    `;
-                } else {
-                    // ไม่แตะสีปุ่มแล้ว — ปุ่มถือสีตามผลจริงจากฝั่ง server (เขียว = สำเร็จเท่านั้น)
+        /* ===== รายการซ้าย / รายละเอียดขวา ===== */
+        const listBody  = document.getElementById('table-body');
+        const detailEl  = document.getElementById('detail');
+        const items     = Array.from(listBody.querySelectorAll('.it'));
+        const itemCache = {};   // doc_id -> รายการสินค้า
+        const dlvCache  = {};   // doc_id -> แถวการจ่ายงาน
+        let current = null;
 
-                    document.getElementById('dlvBody').innerHTML = dlvTimeline(j.rows);
-                }
+        const ICON_PDF  = '<svg class="i" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6M9 15h6M9 11h6"/></svg>';
+        const ICON_PRINT = '<svg class="i" viewBox="0 0 24 24"><path d="M6 9V2h12v7"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>';
+
+        // พิมพ์ไฟล์ PDF ทันที (โหลดใน iframe ที่ซ่อนไว้แล้วเปิดหน้าต่างพิมพ์ ไม่เปิดแท็บใหม่)
+        window.printPdf = function () {
+            if (!current || !current.dataset.pdf) return;
+            const btn = document.getElementById('print-btn');
+            let url = current.dataset.pdf;
+            try { const u = new URL(url, location.href); url = u.pathname + u.search; } catch (e) {}   // ใช้ path เดียวกับหน้าเว็บ กันปัญหาข้ามโดเมน
+            url += (url.indexOf('?') === -1 ? '?' : '&') + 't=' + Date.now();                          // กันได้ไฟล์เก่าจาก cache
+            if (btn) { btn.disabled = true; btn.classList.add('loading'); btn.querySelector('span').textContent = 'กำลังเตรียม...'; }
+            const done = () => { if (btn) { btn.disabled = false; btn.classList.remove('loading'); btn.querySelector('span').textContent = 'พิมพ์'; } };
+            let fr = document.getElementById('print-frame');
+            if (fr) fr.remove();
+            fr = document.createElement('iframe');
+            fr.id = 'print-frame';
+            fr.style.cssText = 'position:fixed;right:0;bottom:0;width:1px;height:1px;border:0;opacity:0;pointer-events:none;';
+            fr.onload = function () {
+                setTimeout(function () {
+                    try { fr.contentWindow.focus(); fr.contentWindow.print(); }
+                    catch (e) { window.open(current.dataset.pdf, '_blank'); }   // เบราว์เซอร์ไม่ยอมให้สั่งพิมพ์ -> เปิดไฟล์ให้กดพิมพ์เอง
+                    done();
+                }, 400);
+            };
+            setTimeout(done, 15000);
+            fr.src = url;
+            document.body.appendChild(fr);
+        };
+        const ICON_EDIT = '<svg class="i" viewBox="0 0 24 24"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4z"/></svg>';
+        const ICON_DRV  = '<svg class="i" viewBox="0 0 24 24"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6M15 3h6v6M10 14 21 3"/></svg>';
+
+        const IC = {
+            user:'<svg class="i" viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>',
+            tag:'<svg class="i" viewBox="0 0 24 24"><path d="M20.59 13.41 13.42 20.58a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/><path d="M7 7h.01"/></svg>',
+            pin:'<svg class="i" viewBox="0 0 24 24"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>',
+            phone:'<svg class="i" viewBox="0 0 24 24"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.8 19.8 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6A19.8 19.8 0 0 1 2.12 4.18 2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.13.96.36 1.9.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.9.34 1.85.57 2.81.7A2 2 0 0 1 22 16.92z"/></svg>',
+            building:'<svg class="i" viewBox="0 0 24 24"><rect x="4" y="2" width="16" height="20" rx="2"/><path d="M9 22v-4h6v4M8 6h.01M16 6h.01M12 6h.01M12 10h.01M12 14h.01M16 10h.01M16 14h.01M8 10h.01M8 14h.01"/></svg>'
+        };
+        function card(cls, tone, icon, label, val) {
+            return '<div class="'+cls+'"><span class="tile '+tone+'">'+icon+'</span><div style="min-width:0"><small>'+label+'</small><div class="v">'+val+'</div></div></div>';
+        }
+
+        function selectItem(el, opts) {
+            if (!el) return;
+            opts = opts || {};
+            items.forEach(x => x.classList.remove('on'));
+            el.classList.add('on');
+            if (opts.scroll !== false) el.scrollIntoView({ block: 'nearest' });
+            current = el;
+            const d = el.dataset;
+            if (history.replaceState) history.replaceState(null, '', '#' + encodeURIComponent(d.doc));
+
+            const pdfBtn = d.pdf
+                ? '<button type="button" class="print-btn" id="print-btn" onclick="printPdf()" title="พิมพ์เอกสาร PDF">'+ICON_PRINT+'<span>พิมพ์</span></button>'
+                : '<button type="button" class="print-btn" disabled title="ยังไม่มีไฟล์ PDF">'+ICON_PRINT+'<span>พิมพ์</span></button>';
+            const driveBtn = d.drive
+                ? '<a class="btn-edit" href="'+escHtml(d.drive)+'" target="_blank" title="เปิดไฟล์ใน Google Drive">'+ICON_DRV+'Drive</a>' : '';
+            const kv = (label, val) => '<div class="kv-row"><dt>'+label+'</dt><dd>'+val+'</dd></div>';
+
+            detailEl.innerHTML =
+                '<div class="det-top">'
+              +   '<div class="det-titles"><h3>'+escHtml(d.doc)+'</h3>'
+              +     '<div class="det-sub"><span>SO '+escHtml(d.so)+'</span><span>เปิดโดย '+escHtml(d.emp || '-')+'</span><span>'+escHtml(d.date)+'</span></div></div>'
+              // สถานะจ่ายงานให้คนขับ อยู่ในหัว ระหว่างชื่อเอกสารกับปุ่ม
+              +   '<div id="det-dlv" class="dlv-card" style="--c:var(--ink-300)"><div class="row1"><span class="badge st '+escHtml(d.dlvCls)+'">'+escHtml(d.dlvTxt)+'</span>'
+              +     '<span class="info1" style="color:var(--ink-300)">กำลังโหลดสถานะจ่ายงาน...</span></div></div>'
+              +   '<div class="det-actions">'+driveBtn+pdfBtn
+              +     '<a class="btn-edit" href="'+escHtml(d.edit)+'" title="แก้ไขเอกสาร">'+ICON_EDIT+'แก้ไข</a></div>'
+              + '</div>'
+
+              // 2) แผ่นเอกสาร
+              + '<div class="paper-wrap"><div class="paper" id="det-paper">'
+              +   '<div class="pd-head">'
+              +     '<div><h1>'+escHtml(d.headcom || '-')+'</h1>'
+              +       '<p>ประเภทบิล: <b>'+escHtml(d.doctype || '-')+'</b>'+(d.so && d.so !== '-' ? '&nbsp;&nbsp; เลข SO: <b>'+escHtml(d.so)+'</b>' : '')+'</p></div>'
+              +     '<div class="pd-box"><div><span class="k">SP</span><span class="c">:</span><span class="v">'+escHtml(d.doc)+'</span></div>'
+              +       '<div><span class="k">DATE</span><span class="c">:</span><span class="v">'+escHtml(d.date)+'</span></div></div>'
+              +   '</div>'
+              +   '<div class="pd-title"><h2>ใบส่งของชั่วคราว</h2></div>'
+              +   '<div class="pd-info">'
+              +     '<div><span class="l">บริษัท</span><span class="c">:</span><span class="v">'+escHtml(d.com || '-')+'</span></div>'
+              +     '<div><span class="l">ที่อยู่</span><span class="c">:</span><span class="v">'+escHtml(d.address || '-')+'</span></div>'
+              +     '<div><span class="l">ผู้ติดต่อ</span><span class="c">:</span><span class="v">'+escHtml(d.contact || '-')
+              +       '<span class="tel"><b>โทร :</b> '+escHtml(d.tel || '-')+'</span></span></div>'
+              +     '<div><span class="l">หมายเหตุ</span><span class="c">:</span><span class="v">'+escHtml(d.notes || '-')+'</span></div>'
+              +   '</div>'
+              +   '<div id="det-items" class="loading">กำลังโหลดรายการสินค้า...</div>'
+              +   '<div class="pd-foot">'
+              +     '<div class="pd-sign"><div class="line"></div><p>ผู้รับสินค้า</p><div class="dt">วันที่ <i></i><s>/</s><i></i><s>/</s><i></i></div></div>'
+              +     '<div class="pd-page">แผ่นที่ 1/1</div>'
+              +     '<div class="pd-sign"><div class="line"></div><p>ผู้ส่งสินค้า</p><div class="dt">วันที่ <i></i><s>/</s><i></i><s>/</s><i></i></div></div>'
+              +   '</div>'
+              + '</div></div>';
+            detailEl.scrollTop = 0;
+            dlvHistHtml = '';
+            if (window.innerWidth <= 900 && opts.scroll !== false) detailEl.scrollIntoView({ behavior: 'smooth', block: 'start' });
+
+            loadItems(d.doc);
+            loadDelivery(d.doc);
+        }
+
+        function renderItems(docId, data) {
+            if (!current || current.dataset.doc !== docId) return;
+            const box = document.getElementById('det-items');
+            if (!box) return;
+            if (!data) { box.className = 'loading'; box.innerHTML = '<span style="color:#991b1b">เกิดข้อผิดพลาดในการโหลดรายการสินค้า</span>'; return; }
+            box.className = '';
+            box.innerHTML = '<table class="pd-table"><thead><tr><th class="n">ลำดับ</th><th>รายการ</th><th class="q">จำนวน</th></tr></thead><tbody>'
+                + (data.length
+                    ? data.map((it, i) => '<tr><td class="n">'+(i + 1)+'</td><td>'+escHtml(it.item_name)+'</td><td class="q">'+escHtml(String(it.quantity).replace(/\.00$/, ''))+'</td></tr>').join('')
+                    : '<tr><td colspan="3" style="text-align:center;color:#94a3b8;padding:18px">ไม่มีรายการสินค้า</td></tr>')
+                + '</tbody></table>';
+        }
+        function loadItems(docId) {
+            if (itemCache[docId]) return renderItems(docId, itemCache[docId]);
+            fetch(`/get-docbill-detail/${encodeURIComponent(docId)}`)
+                .then(r => r.json())
+                .then(data => { itemCache[docId] = data; renderItems(docId, data); })
+                .catch(err => { console.error('Error fetching data:', err); renderItems(docId, null); });
+        }
+
+        // สรุปสั้น ๆ ของรอบล่าสุด + กดดูประวัติทุกรอบ (ใช้ dlvTimeline เดิม)
+        // โทนสีสถานะ (ชุดเดียวกับป้ายในรายการซ้าย)
+        function dlvTone(st) {
+            st = (st || '').toString().trim();
+            if (st === '' || st === '0')                                  return { cls: 'dlv-wait',  dot: '#8b5cf6', txt: 'กำลังไปส่ง' };
+            if (st.indexOf('สำเร็จ') !== -1 && st.indexOf('ไม่') === -1)    return { cls: 'dlv-ok',    dot: '#22c55e', txt: 'สำเร็จ' };
+            if (st.indexOf('สินค้าผิด') !== -1)                             return { cls: 'dlv-wrong', dot: '#ec4899', txt: 'สินค้าผิด' };
+            if (st.indexOf('ไม่สำเร็จ') !== -1)                             return { cls: 'dlv-none',  dot: '#ef4444', txt: 'ไม่สำเร็จ' };
+            if (st.indexOf('ส่งใหม่') !== -1)                               return { cls: 'dlv-redo',  dot: '#3b82f6', txt: 'ส่งใหม่' };
+            if (st.indexOf('ค้างบิล') !== -1)                               return { cls: 'dlv-hold',  dot: '#f59e0b', txt: 'ค้างบิล' };
+            return { cls: 'dlv-gray', dot: '#94a3b8', txt: st };
+        }
+        const stBadge = t => '<span class="badge st '+t.cls+'">'+dlvEsc(t.txt)+'</span>';
+        const IC_TRUCK = '<svg class="i" viewBox="0 0 24 24"><path d="M1 4h14v12H1zM15 8h4l3 3v5h-7z"/><circle cx="5.5" cy="18.5" r="2"/><circle cx="18.5" cy="18.5" r="2"/></svg>';
+        const IC_CAL   = '<svg class="i" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>';
+        const IC_CHECK = '<svg class="i" viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></svg>';
+        const IC_HIST  = '<svg class="i" viewBox="0 0 24 24"><path d="M3 12a9 9 0 1 0 3-6.7L3 8"/><path d="M3 3v5h5M12 7v5l3 2"/></svg>';
+
+        function dlvSummary(rows) {
+            const active = rows.filter(r => !r.cancelled_at);
+            const r = active.length ? active[active.length - 1] : null;
+            const btn = '<button type="button" class="hist-btn" onclick="openDlvHistory()">'+IC_HIST+'ดูประวัติ<span class="n">'+rows.length+'</span></button>';
+            const hist = dlvHistoryHtml(rows);
+            if (!r) {
+                return { html: '<div class="row1">'+stBadge({cls:'dlv-hold', txt:'รอจ่ายงานใหม่'})
+                             + '<span class="info1"><span class="dlv-meta"><span class="muted">ทุกรอบถูกส่งใหม่/ยกเลิกแล้ว · รอจ่ายที่หน้าจ่ายงานขนส่ง</span></span></span>'+btn+'</div>', hist: hist };
+            }
+            const t  = dlvTone(r.status);
+            const st = (r.status || '').toString().trim();
+            const hasResult = st !== '' && st !== '0' && st.indexOf('ส่งใหม่') === -1;
+            let m = '<span class="dlv-meta">'+IC_TRUCK+'<b>'+dlvEsc(r.driver_name || '-')+'</b>'
+                  + (r.transport_name ? '<span class="muted">'+dlvEsc(r.transport_name)+'</span>' : '')+'</span>';
+            if (r.delivery_date) m += '<span class="dlv-meta">'+IC_CAL+'ไปส่ง <b>'+dlvEsc(r.delivery_date)+'</b></span>';
+            if (hasResult)       m += '<span class="dlv-meta">'+IC_CHECK+'ยืนยันโดย <b>'+dlvEsc(r.check_name || '-')+'</b></span>';
+            return { html: '<div class="row1">'+stBadge(t)+'<span class="info1">'+m+'</span>'+btn+'</div>', hist: hist };
+        }
+
+        // ไทม์ไลน์สำหรับป๊อปอัพ
+        function dlvHistoryHtml(rows) {
+            const active = rows.filter(r => !r.cancelled_at);
+            const latest = active.length ? active[active.length - 1] : null;
+            const redoN  = rows.filter(r => (r.status || '').indexOf('ส่งใหม่') !== -1).length;
+            let h = '<div class="hs-top">' + (latest ? stBadge(dlvTone(latest.status)) : stBadge({cls:'dlv-hold', txt:'รอจ่ายงานใหม่'}))
+                  + (latest ? '<span>คนขับ <b>'+dlvEsc(latest.driver_name || '-')+'</b>'+(latest.delivery_date ? ' · ไปส่ง <b>'+dlvEsc(latest.delivery_date)+'</b>' : '')+'</span>' : '')
+                  + '<span class="sp">ทั้งหมด '+rows.length+' รอบ'+(redoN ? ' · ส่งใหม่ '+redoN+' ครั้ง' : '')+'</span></div><div class="tl">';
+            rows.forEach((r, i) => {
+                const isHist = !!r.cancelled_at;
+                const isRedo = (r.status || '').indexOf('ส่งใหม่') !== -1;
+                const next   = rows[i + 1];
+                const kind   = !isHist ? '' : (isRedo ? 'redo' : ((next && /^เปลี่ยน/.test((next.note || '').trim())) ? 'change' : 'cancel'));
+                const st     = (r.status || '').toString().trim();
+                const pn     = dlvParseNote(r.note);
+                let t = dlvTone(r.status);
+                if (kind === 'redo')   t = { cls: 'dlv-redo', dot: '#3b82f6', txt: 'ไม่สำเร็จ · ส่งใหม่' };
+                if (kind === 'change') t = { cls: 'dlv-redo', dot: '#3b82f6', txt: 'เปลี่ยนคนขับ' };
+                if (kind === 'cancel') t = { cls: 'dlv-gray', dot: '#94a3b8', txt: 'ยกเลิกการจ่ายงาน' };
+                const row = (k, v, cls) => '<dt>'+k+'</dt><dd'+(cls ? ' class="'+cls+'"' : '')+'>'+v+'</dd>';
+                let kv = row('จ่ายงานโดย', dlvEsc(r.name_pick || '-') + (r.time_pick ? ' <small>· '+dlvEsc(r.time_pick)+'</small>' : ''))
+                       + row('คนขับ', '<b>'+dlvEsc(r.driver_name || '-')+'</b>' + (r.transport_name ? ' <small>· '+dlvEsc(r.transport_name)+'</small>' : ''));
+                if (r.delivery_date) kv += row('วันที่ไปส่ง', dlvEsc(r.delivery_date));
+                if (r.id_transport)  kv += row('เลขขนส่ง', dlvEsc(r.id_transport));
+                if (st !== '' && st !== '0' && !isRedo) kv += row('ผลการส่ง', stBadge(dlvTone(r.status)) + ' <small>โดย '+dlvEsc(r.check_name || '-')+(r.check_time ? ' · '+dlvEsc(r.check_time) : '')+'</small>');
+                else if (!isHist) kv += row('ผลการส่ง', '<small>ยังไม่ยืนยันผล (อยู่ระหว่างไปส่ง)</small>');
+                const by = dlvEsc(r.cancelled_by || r.check_name || '-') + (r.cancelled_at ? ' <small>· '+dlvEsc(r.cancelled_at)+'</small>' : '');
+                if (kind === 'redo') {
+                    kv += row('สั่งส่งใหม่โดย', by);
+                    if (pn.reason)   kv += row('เหตุผล', dlvEsc(pn.reason), 'warn');
+                    if (pn.reassign) kv += row('จ่ายใหม่ให้', dlvEsc(pn.reassign));
+                } else if (kind === 'change') kv += row('เปลี่ยนโดย', by + ' <small>· ไปต่อรอบที่ '+(i + 2)+'</small>');
+                else if (kind === 'cancel')   kv += row('ยกเลิกโดย', by + ' <small>· คืนงานไปหน้าจ่ายงาน</small>');
+                if (pn.text) kv += row('หมายเหตุ', dlvEsc(pn.text));
+                h += '<div class="tl-item" style="--dot:'+t.dot+'"><span class="tl-dot"></span><div class="tl-card'+(isHist ? ' past' : '')+'">'
+                   + '<div class="tl-head"><b>รอบที่ '+(i + 1)+'</b>'
+                   + (r === latest ? '<span class="tag">ปัจจุบัน</span>' : (isHist ? '<span class="tag old">จบรอบแล้ว</span>' : ''))
+                   + stBadge(t)+'</div><dl class="kv2" style="margin:0">'+kv+'</dl></div></div>';
+            });
+            return h + '</div>';
+        }
+
+        // ป๊อปอัพประวัติการจ่ายงาน
+        let dlvHistHtml = '';
+        window.openDlvHistory = function () {
+            const m = document.getElementById('hist-modal');
+            document.getElementById('hist-title').textContent = 'ประวัติการจ่ายงาน — ' + (current ? current.dataset.doc : '');
+            document.getElementById('hist-body').innerHTML = dlvHistHtml || '<div class="loading">ไม่มีข้อมูล</div>';
+            m.hidden = false;
+            document.body.style.overflow = 'hidden';
+            document.getElementById('hist-body').scrollTop = 0;
+            document.getElementById('hist-close').focus();
+        };
+        window.closeDlvHistory = function () {
+            document.getElementById('hist-modal').hidden = true;
+            document.body.style.overflow = '';
+        };
+        document.addEventListener('keydown', e => {
+            if (e.key === 'Escape' && !document.getElementById('hist-modal').hidden) closeDlvHistory();
+        });
+
+        function renderDelivery(docId, j) {
+            if (!current || current.dataset.doc !== docId) return;
+            const box = document.getElementById('det-dlv');
+            if (j === null) {
+                box.className = 'dlv-card err'; box.removeAttribute('style');
+                box.innerHTML = '<div class="row1" style="color:inherit"><b>โหลดสถานะจ่ายงานไม่สำเร็จ</b><span class="info1">กรุณาลองใหม่อีกครั้ง</span></div>';
+            } else if (!j.found || !j.rows.length) {
+                box.className = 'dlv-card empty'; box.removeAttribute('style');
+                box.innerHTML = '<div class="row1" style="color:inherit"><span class="badge st dlv-none">ยังไม่จ่ายงาน</span>'
+                              + '<span class="info1"><span class="dlv-meta" style="color:#92400e">บิลนี้ยังไม่มีการจ่ายงานให้คนขับ · กรุณาติดต่อฝ่ายจ่ายงานเพื่อดำเนินการ</span></span></div>';
+            } else {
+                const sm = dlvSummary(j.rows);
+                box.className = 'dlv-card'; box.removeAttribute('style');
+                box.innerHTML = sm.html;
+                dlvHistHtml = sm.hist;
+            }
+        }
+        async function loadDelivery(docId) {
+            if (dlvCache[docId]) return renderDelivery(docId, dlvCache[docId]);
+            try {
+                const res = await fetch(DELIVERY_STATUS_URL + '?bill_id=' + encodeURIComponent(docId), { headers: { 'Accept': 'application/json' } });
+                const j = await res.json();
+                dlvCache[docId] = j;
+                renderDelivery(docId, j);
             } catch (e) {
-                document.getElementById('dlvBody').innerHTML = '<div class="no-delivery" style="background-color:#f8d7da;border-color:#f5c6cb;color:#721c24;">โหลดข้อมูลไม่สำเร็จ<br><small style="font-size:13px;">กรุณาลองใหม่อีกครั้ง</small></div>';
+                renderDelivery(docId, null);
             }
         }
 
-        function closeDeliveryStatus() { 
-            document.getElementById('deliveryPopup').style.display = 'none'; 
-        }
+        // คลิก / Enter เลือกรายการ ; ลูกศรขึ้นลงเลื่อนรายการ
+        items.forEach(el => {
+            el.addEventListener('click', () => selectItem(el));
+            el.addEventListener('keydown', e => {
+                if (e.key === 'Enter') selectItem(el);
+            });
+        });
+        document.addEventListener('keydown', e => {
+            if (e.key !== 'ArrowDown' && e.key !== 'ArrowUp') return;
+            const tag = (document.activeElement && document.activeElement.tagName) || '';
+            if (tag === 'INPUT' || tag === 'SELECT' || tag === 'TEXTAREA') return;
+            const vis = items.filter(x => x.style.display !== 'none');
+            if (!vis.length) return;
+            e.preventDefault();
+            let i = vis.indexOf(current);
+            i = e.key === 'ArrowDown' ? Math.min(vis.length - 1, i + 1) : Math.max(0, i - 1);
+            selectItem(vis[i]);
+            vis[i].focus({ preventScroll: true });
+        });
 
+        // ช่องค้นหาด้านบน: พิมพ์ = กรองรายการที่โหลดมาแล้วทันที ; กด Enter = ค้นจาก server
+        const listEmpty  = document.getElementById('list-empty');
+        const listShown  = document.getElementById('list-shown');
+        qInputEl.addEventListener('input', () => {
+            const c = classifyQuery(qInputEl.value);
+            const q = c ? c.value.toLowerCase() : '';
+            let n = 0;
+            items.forEach(el => {
+                const d = el.dataset;
+                const hay = [d.doc, d.so, d.com, d.emp, d.headcom, d.dlvTxt].join(' ').toLowerCase();
+                const ok = !q || hay.indexOf(q) !== -1;
+                el.style.display = ok ? '' : 'none';
+                if (ok) n++;
+            });
+            listEmpty.style.display = n ? 'none' : '';
+            listShown.textContent = q ? '· แสดง ' + n + ' (กด Enter เพื่อค้นทั้งหมด)' : '';
+        });
+
+        // เปิดรายการเดิมจาก #hash (หลังรีเฟรช/กรอง) ไม่งั้นเลือกรายการแรก
+        (function initSelection(){
+            const want = decodeURIComponent((location.hash || '').slice(1));
+            const found = want && items.find(x => x.dataset.doc === want);
+            if (found) selectItem(found);
+            else if (items.length && window.innerWidth > 900) selectItem(items[0], { scroll: false });
+        })();
     </script>
 </body>
 </html>
