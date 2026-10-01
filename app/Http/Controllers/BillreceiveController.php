@@ -123,35 +123,63 @@ class BillreceiveController extends Controller
             $billNos = collect($billidByDetail)->map(fn ($b) => (string) $b)->filter()->unique()->values()->all();
             if (empty($billNos)) return;
 
-            // ประวัติ ERP ที่ "ส่งสำเร็จ" — ดึงครั้งเดียว
+            // ประวัติ ERP ที่ "ส่งสำเร็จ" หรือ "ค้างบิล" — ดึงครั้งเดียว
             $hist = DB::connection(self::ERP_CONNECTION)->table('bill_status_history')
                 ->whereIn('BillNo', $billNos)
-                ->where('BillInReason', 'ส่งสำเร็จ')
-                ->get(['BillNo', 'BillInByDesc', 'BillInBy', 'BillInDate']);
+                ->where(function ($w) {
+                    $w->where('BillInReason', 'ส่งสำเร็จ')
+                      ->orWhere('DeliveryMethodDesc', 'ค้างบิล');
+                })
+                ->get(['BillNo', 'BillInReason', 'BillInByDesc', 'BillInBy', 'BillInDate', 'DeliveryMethodDesc', 'ChangedBy', 'ChangedDate']);
             if ($hist->isEmpty()) return;
 
-            // เลือกแถวล่าสุดต่อเลขบิล
-            $histByBill = $hist->groupBy('BillNo')->map(fn ($g) => $g->sortByDesc('BillInDate')->first());
-
             $now = Carbon::now();
+
+            // สรุปผลต่อเลขบิล: "ส่งสำเร็จ" มาก่อน ถ้าไม่มีค่อยดู "ค้างบิล"
+            $resultByBill = $hist->groupBy('BillNo')->map(function ($g) use ($now) {
+                $ok = $g->filter(fn ($r) => trim((string) $r->BillInReason) === 'ส่งสำเร็จ')
+                        ->sortByDesc('BillInDate')->first();
+                if ($ok) {
+                    return (object) [
+                        'status' => self::DELI_STATUS_OK,
+                        'by'     => trim((string) ($ok->BillInByDesc ?: ($ok->BillInBy ?: ''))) ?: 'ERP',
+                        'time'   => !empty($ok->BillInDate) ? Carbon::parse($ok->BillInDate) : $now,
+                        'note'   => null,
+                    ];
+                }
+                $hold = $g->filter(fn ($r) => trim((string) $r->DeliveryMethodDesc) === 'ค้างบิล')
+                          ->sortByDesc('ChangedDate')->first();
+                if ($hold) {
+                    return (object) [
+                        'status' => self::DELI_STATUS_HOLD,
+                        'by'     => trim((string) ($hold->ChangedBy ?: '')) ?: 'ERP',
+                        'time'   => !empty($hold->ChangedDate) ? Carbon::parse($hold->ChangedDate) : $now,
+                        'note'   => 'ค้างบิล (จากระบบ ERP)',
+                    ];
+                }
+                return null;
+            });
+
             // รวบงานที่ค้างเป็นก้อนต่อ "บิล" แล้วอัปเดตทีเดียวต่อบิล (ไม่วนอัปเดตทีละแถว)
             $pendingByBill = $pending->groupBy('bill_id');
-            DB::transaction(function () use ($pendingByBill, $billidByDetail, $histByBill, $now) {
+            DB::transaction(function () use ($pendingByBill, $billidByDetail, $resultByBill) {
                 foreach ($pendingByBill as $billIdKey => $rows) {
                     $billid = $billidByDetail->get($billIdKey);
                     if (!$billid) continue;
-                    $h = $histByBill->get((string) $billid);
-                    if (!$h) continue;
+                    $r = $resultByBill->get((string) $billid);
+                    if (!$r) continue;
 
-                    $checkName = trim((string) ($h->BillInByDesc ?: ($h->BillInBy ?: ''))) ?: 'ERP';
-                    $checkTime = !empty($h->BillInDate) ? Carbon::parse($h->BillInDate) : $now;
+                    $upd = [
+                        'status'     => $r->status,
+                        'check_name' => $r->by,
+                        'check_time' => $r->time,
+                    ];
+                    if ($r->note !== null) $upd['note'] = $r->note;
+                    transaction_delivery::whereIn('id', $rows->pluck('id')->all())->update($upd);
 
-                    transaction_delivery::whereIn('id', $rows->pluck('id')->all())->update([
-                        'status'     => self::DELI_STATUS_OK,
-                        'check_name' => $checkName,
-                        'check_time' => $checkTime,
-                    ]);
-                    DB::table('tblbill')->where('billid', $billid)->update(['statusdeli' => self::DELI_STATUS_OK]);
+                    $billUpd = ['statusdeli' => $r->status];
+                    if ($r->status === self::DELI_STATUS_HOLD && $r->note !== null) $billUpd['NG'] = $r->note;
+                    DB::table('tblbill')->where('billid', $billid)->update($billUpd);
                 }
             });
         } catch (\Throwable $e) {
