@@ -244,7 +244,7 @@
     <table>
       <thead><tr>
         <th>Timestamp</th><th>ผู้ดำเนินงาน</th><th>ประเภท</th><th>เอกสาร</th><th>รายการ</th><th>จำนวน</th><th>ราคา/หน่วย</th><th>ชั้นวาง</th><th>JOB Detail</th><th>รูป</th>
-        @if($authRole==='admin')<th>จัดการ</th>@endif
+        @if($authRole==='admin' || strtolower(trim($authUser['name'] ?? '')) === 'chai')<th>จัดการ</th>@endif
       </tr></thead>
       <tbody id="tb"></tbody>
     </table>
@@ -255,7 +255,10 @@
 <script>
 const CSRF=document.querySelector('meta[name="csrf-token"]').content;
 const ROLE=@json($authRole);
-const COLS=ROLE==='admin'?11:10;
+const UNAME=@json(strtolower(trim($authUser['name'] ?? '')));   // ชื่อผู้ใช้
+// แก้ไข/ลบ: เฉพาะ admin หรือผู้ใช้ชื่อ chai (user สร้างได้อย่างเดียว)
+const CAN_EDIT=(ROLE==='admin'||UNAME==='chai');
+const COLS=CAN_EDIT?11:10;
 const PG=100;
 const typeMap={'รับเข้าสต็อก':'t-in','คืนเข้าสต็อก':'t-ret','ขายสินค้าออก':'t-sell','ยืมสินค้า':'t-bor','เบิกของ':'t-wit'};
 const NEST_URL=@json($nestUrl);
@@ -473,7 +476,7 @@ function render(){
       tr.cells[9].textContent = '-';
     }
 
-    if(ROLE==='admin'){
+    if(CAN_EDIT){
       const tdActs = document.createElement('td');
       tdActs.className = 'acts';
       const editBtn = document.createElement('button');
@@ -506,7 +509,7 @@ function clearFilter(){
 }
 
 function editRow(i){
-  if(ROLE!=='admin')return;
+  if(!CAN_EDIT)return;
   isEditingTxRow = true;
   const row=pageData[i],tr=document.getElementById('tb').children[i];if(!tr)return;tr.style.background='#EEF2FF';
   const types=['รับเข้าสต็อก','คืนเข้าสต็อก','ขายสินค้าออก','ยืมสินค้า','เบิกของ'];

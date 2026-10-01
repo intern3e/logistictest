@@ -50,6 +50,16 @@ class InventoryController extends Controller
         if (!in_array($auth, $allowed)) abort(403, 'ไม่มีสิทธิ์');
     }
 
+    /** สิทธิ์ "แก้ไข/ลบ" — เฉพาะ admin หรือผู้ใช้ชื่อ chai เท่านั้น (user สร้างได้อย่างเดียว) */
+    private function guardEditDelete(): void
+    {
+        $user = $this->requireLogin(null, 'inventory');
+        $auth = $user->auth ?? 'viewer';
+        $name = strtolower(trim((string) ($user->name ?? '')));
+        if ($auth === 'admin' || $name === 'chai') return;
+        abort(403, 'ไม่มีสิทธิ์แก้ไข/ลบ (เฉพาะ admin หรือ chai)');
+    }
+
     /**
      * ชื่อผู้ใช้ปัจจุบันจาก Auth (แทนที่ Session::get('user.name', ...) แบบเดิม)
      */
@@ -440,7 +450,7 @@ class InventoryController extends Controller
 
     public function updateProduct(Request $request, string $id)
     {
-        $this->guardRole(['admin', 'user']);
+        $this->guardEditDelete();
         $d = $request->all();
         $this->ensureBrand($d['brand'] ?? '');
         $this->ensureLocation($d['location'] ?? '');
@@ -489,7 +499,7 @@ class InventoryController extends Controller
     }
     public function deleteProduct(Request $request, string $id)
     {
-        $this->guardRole(['admin', 'user']);
+        $this->guardEditDelete();
 
         // ลบต้องมีเหตุผลเสมอ
         $reason = trim((string) $request->input('reason', $request->query('reason', '')));
@@ -627,7 +637,7 @@ class InventoryController extends Controller
 
     public function updateTransaction(Request $request, string $id)
     {
-        $this->guardRole(['admin', 'user']);
+        $this->guardEditDelete();
         $d = $request->all();
         $this->api('PUT', '/transaction/' . urlencode($id), [
             'addby' => $d['operator'] ?? '', 'transaction_type' => $d['type'] ?? '',
@@ -658,7 +668,7 @@ class InventoryController extends Controller
 
     public function deleteTransaction(Request $request, string $id)
     {
-        $this->guardRole(['admin', 'user']);
+        $this->guardEditDelete();
 
         $reason = trim((string) $request->input('reason', $request->query('reason', '')));
         if ($reason === '') {
