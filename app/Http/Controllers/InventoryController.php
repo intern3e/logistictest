@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\UserAuth;
+use App\Models\InventoryEditLog;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Cache;
@@ -56,6 +57,44 @@ class InventoryController extends Controller
     {
         return Auth::guard('web')->check() ? (Auth::user()->name ?? $default) : $default;
     }
+
+    // ═══════════════ บันทึกประวัติการแก้ไข/ลบ (inventory_edit_logs) ═══════════════
+    private function logInventoryEdit(array $data): void
+    {
+        try {
+            $user = Auth::guard('web')->user();
+            InventoryEditLog::create(array_merge([
+                'action'       => 'update',
+                'target_type'  => 'item',
+                'target_id'    => null,
+                'target_name'  => null,
+                'changes'      => null,
+                'qty_from'     => null,
+                'qty_to'       => null,
+                'reason'       => null,
+                'edited_by'    => $user->name ?? $this->currentUserName('ไม่ทราบ'),
+                'edited_by_id' => $user->id_emp ?? null,
+                'role'         => $user->auth ?? null,
+                'created_at'   => now(),
+            ], $data));
+        } catch (\Throwable $e) {
+            Log::error('logInventoryEdit failed: ' . $e->getMessage());
+        }
+    }
+
+    // สร้างรายการ diff ของฟิลด์ (เทียบค่าเดิม vs ใหม่) — ใช้ตอนแก้ไข
+    private function diffFields(array $labels, array $old, array $new): array
+    {
+        $changes = [];
+        foreach ($labels as $field => $label) {
+            $o = trim((string) ($old[$field] ?? ''));
+            $n = trim((string) ($new[$field] ?? ''));
+            if ($o !== $n) {
+                $changes[] = ['field' => $field, 'label' => $label, 'from' => $o, 'to' => $n];
+            }
+        }
+        return $changes;
+    }
     
     // ═══════════════ VIEWS ═══════════════
     public function transactionDashboard(Request $request)
@@ -78,6 +117,64 @@ class InventoryController extends Controller
             'nestUrl'  => config('services.nest.url'),
             'nestKey'  => config('services.nest.public_key'),
         ]);
+    }
+
+    // ═══════════════ ประวัติการแก้ไข (admin เท่านั้น) ═══════════════
+    public function editHistoryPage(Request $request)
+    {
+        $authUser = $this->checkAuth($request);
+        if (($authUser['auth'] ?? '') !== 'admin') abort(403, 'เฉพาะผู้ดูแลระบบ');
+        return view('inventory.edithistory', [
+            'authUser' => $authUser,
+            'authRole' => $authUser['auth'] ?? 'viewer',
+        ]);
+    }
+
+    public function getEditHistory(Request $request)
+    {
+        $this->guardRole(['admin']);
+
+        $action = trim((string) $request->input('action', ''));   // update | delete | ''
+        $tType  = trim((string) $request->input('target_type', '')); // item | transaction | ''
+        $q      = trim((string) $request->input('q', ''));
+        $date   = trim((string) $request->input('date', ''));
+
+        $rows = InventoryEditLog::query()
+            ->when($action !== '', fn ($w) => $w->where('action', $action))
+            ->when($tType !== '', fn ($w) => $w->where('target_type', $tType))
+            ->when($date !== '', fn ($w) => $w->whereDate('created_at', $date))
+            ->when($q !== '', fn ($w) => $w->where(function ($x) use ($q) {
+                $x->where('target_id', 'like', "%{$q}%")
+                  ->orWhere('target_name', 'like', "%{$q}%")
+                  ->orWhere('edited_by', 'like', "%{$q}%")
+                  ->orWhere('reason', 'like', "%{$q}%");
+            }))
+            ->orderByDesc('id')
+            ->limit(1000)
+            ->get()
+            ->map(function ($r) {
+                $changes = [];
+                if (!empty($r->changes)) {
+                    $decoded = json_decode($r->changes, true);
+                    if (is_array($decoded)) $changes = $decoded;
+                }
+                return [
+                    'id'          => $r->id,
+                    'action'      => $r->action,
+                    'target_type' => $r->target_type,
+                    'target_id'   => $r->target_id,
+                    'target_name' => $r->target_name,
+                    'changes'     => $changes,
+                    'qty_from'    => $r->qty_from,
+                    'qty_to'      => $r->qty_to,
+                    'reason'      => $r->reason,
+                    'edited_by'   => $r->edited_by,
+                    'role'        => $r->role,
+                    'created_at'  => $r->created_at ? \Carbon\Carbon::parse($r->created_at)->format('d/m/Y H:i:s') : '',
+                ];
+            });
+
+        return response()->json(['ok' => true, 'rows' => $rows]);
     }
 
     // ═══════════════ วิเคราะห์สินค้า (Brand / ต้นทุน) — admin เท่านั้น ═══════════════
@@ -205,6 +302,7 @@ class InventoryController extends Controller
             $page = max(1, (int) $request->input('page', 1));
             $limit = max(1, min(200, (int) $request->input('limit', 50)));
             $name = mb_strtolower($request->input('name', ''));
+            $idq = mb_strtolower(trim($request->input('id', '')));   // ค้นด้วยรหัสสินค้า
             $brand = mb_strtolower($request->input('brand', ''));
             $location = mb_strtolower($request->input('location', ''));
             $priv = $request->input('priv', '');
@@ -225,6 +323,7 @@ class InventoryController extends Controller
             ]);
 
             if ($name) $items = $items->filter(fn($i) => str_contains(mb_strtolower($i['name']), $name));
+            if ($idq) $items = $items->filter(fn($i) => str_contains(mb_strtolower($i['iditem']), $idq));
             if ($brand) $items = $items->filter(fn($i) => str_contains(mb_strtolower($i['brand']), $brand));
             if ($location) $items = $items->filter(fn($i) => str_contains(mb_strtolower($i['location']), $location));
             if ($priv) $items = $items->filter(fn($i) => $i['privilege'] === $priv);
@@ -341,26 +440,71 @@ class InventoryController extends Controller
 
     public function updateProduct(Request $request, string $id)
     {
-        $this->guardRole(['admin']);
+        $this->guardRole(['admin', 'user']);
         $d = $request->all();
-        $this->ensureBrand($d['brand'] ?? ''); 
+        $this->ensureBrand($d['brand'] ?? '');
         $this->ensureLocation($d['location'] ?? '');
-        
-        $this->api('PUT', '/items/' . urlencode($id), [
-            'name' => $d['name'], 
+
+        // ดึงค่าเดิมก่อนแก้ เพื่อบันทึกประวัติ (จากอะไร -> เป็นอะไร)
+        $old = [];
+        try { $old = $this->api('GET', '/items/' . urlencode($id)) ?? []; } catch (\Throwable $e) {}
+
+        $new = [
+            'name' => $d['name'],
             'quantity' => intval($d['quantity'] ?? 0),
-            'typeitem' => $d['typeitem'] ?? '', 
+            'typeitem' => $d['typeitem'] ?? '',
             'location' => $d['location'] ?? '-',
-            'brand' => $d['brand'] ?? '', 
+            'brand' => $d['brand'] ?? '',
             'privilege' => $d['privilege'] ?? '',
-        ]);
-        
+        ];
+
+        $this->api('PUT', '/items/' . urlencode($id), $new);
+
+        // บันทึกประวัติการแก้ไข (เฉพาะฟิลด์ที่เปลี่ยนจริง)
+        $changes = $this->diffFields([
+            'name' => 'ชื่อสินค้า', 'quantity' => 'จำนวน', 'typeitem' => 'ประเภท',
+            'location' => 'สถานที่เก็บ', 'brand' => 'ยี่ห้อ', 'privilege' => 'บริษัท',
+        ], [
+            'name' => $old['name'] ?? ($old['item_name'] ?? ''),
+            'quantity' => $old['quantity'] ?? ($old['item_quantity'] ?? ''),
+            'typeitem' => $old['typeitem'] ?? ($old['item_type'] ?? ''),
+            'location' => $old['location'] ?? ($old['item_location'] ?? ''),
+            'brand' => $old['brand'] ?? ($old['item_brand'] ?? ''),
+            'privilege' => $old['privilege'] ?? ($old['item_privilege'] ?? ''),
+        ], $new);
+
+        if (!empty($changes)) {
+            $qf = $old['quantity'] ?? ($old['item_quantity'] ?? null);
+            $this->logInventoryEdit([
+                'action' => 'update', 'target_type' => 'item',
+                'target_id' => $id, 'target_name' => $new['name'],
+                'changes' => json_encode($changes, JSON_UNESCAPED_UNICODE),
+                'qty_from' => is_numeric($qf) ? $qf : null,
+                'qty_to'   => $new['quantity'],
+            ]);
+        }
+
         $this->clearItemsCache();
         return response()->json(['success' => true]);
     }
-    public function deleteProduct(string $id)
+    public function deleteProduct(Request $request, string $id)
     {
-        $this->guardRole(['admin']);
+        $this->guardRole(['admin', 'user']);
+
+        // ลบต้องมีเหตุผลเสมอ
+        $reason = trim((string) $request->input('reason', $request->query('reason', '')));
+        if ($reason === '') {
+            return response()->json(['success' => false, 'error' => 'กรุณาระบุเหตุผลในการลบ'], 422);
+        }
+
+        // ชื่อ/จำนวนเดิมก่อนลบ (ไว้บันทึกประวัติ)
+        $name = ''; $qty = null;
+        try {
+            $it = $this->api('GET', '/items/' . urlencode($id)) ?? [];
+            $name = $it['name'] ?? ($it['item_name'] ?? '');
+            $qty  = $it['quantity'] ?? ($it['item_quantity'] ?? null);
+        } catch (\Throwable $e) {}
+
         try {
             $allTx = $this->fetchAllTransactions();
             foreach ($allTx as $tx) {
@@ -369,8 +513,16 @@ class InventoryController extends Controller
                 }
             }
         } catch (\Throwable $e) {}
-        
+
         $this->api('DELETE', '/items/' . urlencode($id));
+
+        $this->logInventoryEdit([
+            'action' => 'delete', 'target_type' => 'item',
+            'target_id' => $id, 'target_name' => $name,
+            'reason' => $reason,
+            'qty_from' => is_numeric($qty) ? $qty : null,
+        ]);
+
         $this->clearTxCache();
         $this->clearItemsCache();
         return response()->json(['success' => true]);
@@ -435,21 +587,23 @@ class InventoryController extends Controller
     {
         $all = collect($this->fetchAllTransactions());
 
-        $fDate  = $request->input('fDate', '');
-        $fOp    = mb_strtolower($request->input('fOp', ''));
-        $fBill  = mb_strtolower($request->input('fBill', ''));
-        $fItem  = mb_strtolower($request->input('fItem', ''));
-        $fType  = $request->input('fType', '');
-        $fShelf = mb_strtolower($request->input('fShelf', ''));
+        $fDate   = $request->input('fDate', '');
+        $fOp     = mb_strtolower($request->input('fOp', ''));
+        $fBill   = mb_strtolower($request->input('fBill', ''));
+        $fItem   = mb_strtolower($request->input('fItem', ''));
+        $fItemId = mb_strtolower(trim($request->input('fItemId', '')));   // ค้นด้วยรหัสสินค้า
+        $fType   = $request->input('fType', '');
+        $fShelf  = mb_strtolower($request->input('fShelf', ''));
 
-        if ($fDate || $fOp || $fBill || $fItem || $fType || $fShelf) {
-            $all = $all->filter(function ($r) use ($fDate, $fOp, $fBill, $fItem, $fType, $fShelf) {
-                if ($fDate  && !str_starts_with($r['Timestamp'] ?? '', $fDate)) return false;
-                if ($fOp    && !str_contains(mb_strtolower($r['ชื่อผู้ดำเนินงาน'] ?? ''), $fOp)) return false;
-                if ($fBill  && !str_contains(mb_strtolower($r['หมายเลขเอกสาร'] ?? ''), $fBill)) return false;
-                if ($fItem  && !str_contains(mb_strtolower($r['รายการ'] ?? ''), $fItem)) return false;
-                if ($fType  && ($r['ประเภทข้อมูล'] ?? '') !== $fType) return false;
-                if ($fShelf && !str_contains(mb_strtolower($r['ชั้นวาง'] ?? ''), $fShelf)) return false;
+        if ($fDate || $fOp || $fBill || $fItem || $fItemId || $fType || $fShelf) {
+            $all = $all->filter(function ($r) use ($fDate, $fOp, $fBill, $fItem, $fItemId, $fType, $fShelf) {
+                if ($fDate   && !str_starts_with($r['Timestamp'] ?? '', $fDate)) return false;
+                if ($fOp     && !str_contains(mb_strtolower($r['ชื่อผู้ดำเนินงาน'] ?? ''), $fOp)) return false;
+                if ($fBill   && !str_contains(mb_strtolower($r['หมายเลขเอกสาร'] ?? ''), $fBill)) return false;
+                if ($fItem   && !str_contains(mb_strtolower($r['รายการ'] ?? ''), $fItem)) return false;
+                if ($fItemId && !str_contains(mb_strtolower($r['item_id'] ?? ''), $fItemId)) return false;
+                if ($fType   && ($r['ประเภทข้อมูล'] ?? '') !== $fType) return false;
+                if ($fShelf  && !str_contains(mb_strtolower($r['ชั้นวาง'] ?? ''), $fShelf)) return false;
                 return true;
             });
         }
@@ -473,7 +627,7 @@ class InventoryController extends Controller
 
     public function updateTransaction(Request $request, string $id)
     {
-        $this->guardRole(['admin']);
+        $this->guardRole(['admin', 'user']);
         $d = $request->all();
         $this->api('PUT', '/transaction/' . urlencode($id), [
             'addby' => $d['operator'] ?? '', 'transaction_type' => $d['type'] ?? '',
@@ -483,14 +637,51 @@ class InventoryController extends Controller
             'transaction_note' => $d['note'] ?? null, 'oldQuantity' => floatval($d['oldQuantity'] ?? 0),
             'oldType' => $d['oldType'] ?? '', 'oldItemId' => $d['oldItemId'] ?? '',
         ]);
+
+        // บันทึกประวัติ (ใช้ค่าเดิมที่ frontend ส่งมา: oldQuantity/oldType)
+        $changes = $this->diffFields(
+            ['type' => 'ประเภท', 'quantity' => 'จำนวน'],
+            ['type' => $d['oldType'] ?? '', 'quantity' => $d['oldQuantity'] ?? ''],
+            ['type' => $d['type'] ?? '', 'quantity' => $d['quantity'] ?? '']
+        );
+        $this->logInventoryEdit([
+            'action' => 'update', 'target_type' => 'transaction',
+            'target_id' => $id, 'target_name' => (string) ($d['itemName'] ?? $d['oldItemId'] ?? ''),
+            'changes' => !empty($changes) ? json_encode($changes, JSON_UNESCAPED_UNICODE) : null,
+            'qty_from' => is_numeric($d['oldQuantity'] ?? null) ? (float) $d['oldQuantity'] : null,
+            'qty_to'   => is_numeric($d['quantity'] ?? null) ? (float) $d['quantity'] : null,
+        ]);
+
         $this->clearTxCache();
         return response()->json(['success' => true]);
     }
 
-    public function deleteTransaction(string $id)
+    public function deleteTransaction(Request $request, string $id)
     {
-        $this->guardRole(['admin']);
+        $this->guardRole(['admin', 'user']);
+
+        $reason = trim((string) $request->input('reason', $request->query('reason', '')));
+        if ($reason === '') {
+            return response()->json(['success' => false, 'error' => 'กรุณาระบุเหตุผลในการลบ'], 422);
+        }
+
+        // ข้อมูลเดิมของ transaction ไว้บันทึกประวัติ
+        $name = ''; $qty = null;
+        try {
+            $tx = $this->api('GET', '/transaction/' . urlencode($id)) ?? [];
+            $name = $tx['item_name'] ?? ($tx['item_id'] ?? '');
+            $qty  = $tx['item_quantity'] ?? null;
+        } catch (\Throwable $e) {}
+
         $this->api('DELETE', '/transaction/' . urlencode($id));
+
+        $this->logInventoryEdit([
+            'action' => 'delete', 'target_type' => 'transaction',
+            'target_id' => $id, 'target_name' => $name,
+            'reason' => $reason,
+            'qty_from' => is_numeric($qty) ? $qty : null,
+        ]);
+
         $this->clearTxCache();
         return response()->json(['success' => true]);
     }

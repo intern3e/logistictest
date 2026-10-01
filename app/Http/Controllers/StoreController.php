@@ -772,16 +772,15 @@ class StoreController extends Controller
         $dnColumn = self::TBLBILL_DN_COLUMN;
         $columns  = array_values(array_filter([
             'so_id', 'time', self::TBLBILL_CUSTOMER_COLUMN, self::TBLBILL_CUSTOMER_ID_COLUMN,
-            self::TBLBILL_OPENED_BY_COLUMN, $dnColumn, 'status', 'status_bill',
+            self::TBLBILL_OPENED_BY_COLUMN, $dnColumn, 'status', 'statuspdf', 'status_bill',
             self::TBLBILL_PICKER_COLUMN, self::TBLBILL_PICKER_TIME_COLUMN,
         ]));
 
+        // ดึงเลขบิลทั้งหมดของ SO ในวันนั้นทีเดียว (รวมบิลที่ยกเลิก statuspdf=6 ด้วย)
+        // เพื่อแยกได้ว่า SO นั้น "มีบิลแต่โดนยกเลิกหมด" (ยังไม่มีบิลมาเชื่อม) ต่างจาก "ไม่มีบิลเลย"
+        // บิลที่ยกเลิกจะไม่ถูกเอามาแสดง แต่ยังรู้ว่าเคยมี — ทำในคิวรี่เดียว ไม่แคช
         $rows = DB::table('tblbill')
             ->whereIn('so_id', $soIds)
-            // บิลที่ถูกยกเลิก (statuspdf = 6) ไม่ต้องดึงมาจัด — ไม่งั้นเลขบิลเดิมจะขึ้นซ้ำ 2 อัน
-            ->where(function ($q) {
-                $q->whereNull('statuspdf')->orWhere('statuspdf', '!=', '6');
-            })
             ->when($billDate, fn ($q) => $q->whereDate('time', $billDate))
             ->orderBy('time')
             ->get($columns);
@@ -831,7 +830,8 @@ class StoreController extends Controller
                     'customer_name' => $row->{self::TBLBILL_CUSTOMER_COLUMN} ?? null,
                     'customer_id'   => $row->{self::TBLBILL_CUSTOMER_ID_COLUMN} ?? null,
                     'opened_by'     => $row->{self::TBLBILL_OPENED_BY_COLUMN} ?? null,
-                    'cancelled'     => (int) ($row->status ?? 0) === self::TBLBILL_STATUS_CANCELLED,
+                    // บิลยกเลิก = statuspdf = 6 (ตรงกับหน้า so/show) — เดิมเช็คจาก status ผิดคอลัมน์
+                    'cancelled'     => (string) ($row->statuspdf ?? '') === '6',
                     'picked'        => $isPicked,
                     'picked_by'     => $pickedBy,
                     'picked_at'     => $pickedAt,
@@ -1236,25 +1236,34 @@ class StoreController extends Controller
             : $soIdsFromHeads;
         $billRowsBySo = $this->billRowsBySo($soIdsForBills, $billDate);
 
+        // all_done:
+        //  - มีบิลที่ยัง active (ไม่ยกเลิก) -> สำเร็จเมื่อจัดครบทุกบิล active (บิลยกเลิกไม่นับ)
+        //    เช่น SO มี 2 บิล จัด 1 ยกเลิก 1 = ถือว่าสำเร็จ
+        //  - ไม่มีบิล active แต่เคยมีบิล (โดนยกเลิกหมด) -> ยังไม่สำเร็จ ("ยังไม่มีบิลมาเชื่อม")
+        //  - ไม่มีบิลเลย -> ใช้สถานะของบนชั้น (ของเดิม)
         $calcAllDone = function ($billRows, $rows = null) {
             $activeBills = $billRows->where('cancelled', false);
             if ($activeBills->isNotEmpty()) {
                 return $activeBills->every(fn ($b) => $b->picked);
             }
+            if ($billRows->isNotEmpty()) {
+                return false; // มีบิลแต่ถูกยกเลิกหมด -> ยังไม่มีบิลมาเชื่อม
+            }
             return $rows ? $rows->where('todo', true)->isEmpty() : false;
         };
 
         $summaries = $grouped->map(function ($rows, $soId) use ($billRowsBySo, $calcAllDone) {
-            $billRows  = $billRowsBySo->get($soId, collect());
-            $firstBill = $billRows->first();
+            $billRows   = $billRowsBySo->get($soId, collect());
+            $activeBills = $billRows->where('cancelled', false)->values();   // แสดงเฉพาะบิลที่ไม่ยกเลิก
+            $firstBill  = $activeBills->first() ?: $billRows->first();
             return (object) [
                 'so_id'         => $soId,
                 'all_done'      => $calcAllDone($billRows, $rows),
-                'latest_time'   => $billRows->max('time'),
+                'latest_time'   => $activeBills->max('time') ?: $billRows->max('time'),
                 'customer_name' => optional($firstBill)->customer_name,
                 'customer_id'   => optional($firstBill)->customer_id,
                 'not_received'  => false,
-                'bills'         => $billRows,
+                'bills'         => $activeBills,
             ];
         })->values();
 
@@ -1264,16 +1273,17 @@ class StoreController extends Controller
 
             if ($missingSoIds) {
                 $phantoms = collect($missingSoIds)->map(function ($soId) use ($billRowsBySo, $calcAllDone) {
-                    $billRows  = $billRowsBySo->get($soId, collect());
-                    $firstBill = $billRows->first();
+                    $billRows   = $billRowsBySo->get($soId, collect());
+                    $activeBills = $billRows->where('cancelled', false)->values();
+                    $firstBill  = $activeBills->first() ?: $billRows->first();
                     return (object) [
                         'so_id'         => $soId,
                         'all_done'      => $calcAllDone($billRows),
-                        'latest_time'   => $billRows->max('time'),
+                        'latest_time'   => $activeBills->max('time') ?: $billRows->max('time'),
                         'customer_name' => optional($firstBill)->customer_name,
                         'customer_id'   => optional($firstBill)->customer_id,
                         'not_received'  => true,
-                        'bills'         => $billRows,
+                        'bills'         => $activeBills,
                     ];
                 });
                 $summaries = $summaries->concat($phantoms)->values();

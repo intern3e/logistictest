@@ -227,6 +227,7 @@
     @if($authRole === 'admin')
     <div class="sb-sec">รายงาน</div>
     <a class="sb-item" target="_blank" href="{{ route('inventory.analyze') }}"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>วิเคราะห์สินค้า</a>
+    <a class="sb-item" target="_blank" href="{{ route('inventory.edithistory') }}"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 3v5h5"/><path d="M3.05 13A9 9 0 1 0 6 5.3L3 8"/><path d="M12 7v5l4 2"/></svg>ประวัติการแก้ไข</a>
     @endif
   </div>
 </div>
@@ -249,6 +250,7 @@
       @if(in_array($authRole, ['admin','user']))
         <button class="btn btn-add" onclick="addRow()">+ เพิ่มสินค้าใหม่</button>
       @endif
+      <input type="text" id="sId" placeholder="รหัสสินค้า..." oninput="debounceFilter()">
       <input type="text" id="sName" placeholder="ชื่อสินค้า..." style="flex:2;min-width:200px" oninput="debounceFilter()">
       <input type="text" id="sBrand" placeholder="ยี่ห้อ..." oninput="debounceFilter()">
       <input type="text" id="sLoc" placeholder="สถานที่เก็บ" oninput="debounceFilter()">
@@ -272,7 +274,7 @@ const CSRF=document.querySelector('meta[name="csrf-token"]').content;
 const ROLE=@json($authRole);
 const NEST_URL=@json($nestUrl);
 const NEST_KEY=@json($nestKey);
-const CAN_ADD=(ROLE==='admin'||ROLE==='user'),CAN_EDIT=(ROLE==='admin');
+const CAN_ADD=(ROLE==='admin'||ROLE==='user'),CAN_EDIT=(ROLE==='admin'||ROLE==='user');
 const COLS=ROLE==='viewer'?6:7;
 const COMPANIES=[{code:'3E',label:'Triple E Trading'},{code:'3IN',label:'Triple E Innovation'},{code:'3EM',label:'Triple E Empire Group'},{code:'3EL',label:'Triple E Lighting'},{code:'HD',label:'Hikari Denki'},{code:'EP',label:'Eita & Paul'},{code:'3P',label:'Triple P Factory & Eng'},{code:'AE&T',label:'AE&T International'}];
 const PM={'3E':'b-3e','3IN':'b-3in','3EM':'b-3em','3EL':'b-3el','HD':'b-hd','EP':'b-ep','3P':'b-3p'};
@@ -316,7 +318,7 @@ let uBrands=[],uLocs=[],products=[],subs={},filtered=[],pg=1,totalItems=0;
 const PG=50;
 let exMap={},openSubKey=null;
 let filterTimeout=null;
-let currentFilters={name:'',brand:'',location:'',priv:'',type:''};
+let currentFilters={id:'',name:'',brand:'',location:'',priv:'',type:''};
 let progressInterval = null;
 let isEditingRow = false; // true ขณะกำลังเพิ่ม/แก้ไขแถว เพื่อกัน auto-refresh ทับข้อมูลที่กำลังพิมพ์
 
@@ -389,6 +391,7 @@ async function loadPage(page=1,showLoader=true){
     const params=new URLSearchParams({
       page:page,
       limit:PG,
+      id:currentFilters.id||'',
       name:currentFilters.name||'',
       brand:currentFilters.brand||'',
       location:currentFilters.location||'',
@@ -413,6 +416,7 @@ async function loadPage(page=1,showLoader=true){
 
 function applyFilter(){
   currentFilters={
+    id:(document.getElementById('sId').value||'').trim(),
     name:(document.getElementById('sName').value||'').trim(),
     brand:(document.getElementById('sBrand').value||'').trim(),
     location:(document.getElementById('sLoc').value||'').trim(),
@@ -424,8 +428,8 @@ function applyFilter(){
 }
 
 function clearFilter(){
-  ['sName','sBrand','sLoc','sPriv','sType'].forEach(id=>document.getElementById(id).value='');
-  currentFilters={name:'',brand:'',location:'',priv:'',type:''};
+  ['sId','sName','sBrand','sLoc','sPriv','sType'].forEach(id=>document.getElementById(id).value='');
+  currentFilters={id:'',name:'',brand:'',location:'',priv:'',type:''};
   pg=1;
   loadPage(1,true);
 }
@@ -720,8 +724,11 @@ async function delRow(i){
   let cnt=0;
   try{cnt=(await API.get('/api/items/'+encodeURIComponent(item.iditem)+'/tx-count')).count||0}catch(e){}
   if(!confirm(cnt>0?`⚠️ ${item.iditem}\nมี Transaction ${cnt} รายการ\nดำเนินการต่อ?`:`ต้องการลบ ${item.iditem}?`)) return;
+  const reason=(prompt('กรุณาระบุเหตุผลในการลบ '+item.iditem+' :','')||'').trim();
+  if(!reason){ toast('ต้องระบุเหตุผลในการลบ',true); return; }
   try{
-    await API.del('/api/items/'+encodeURIComponent(item.iditem));
+    const dr=await API.del('/api/items/'+encodeURIComponent(item.iditem)+'?reason='+encodeURIComponent(reason));
+    if(dr&&dr.success===false){ toast(dr.error||'ลบไม่สำเร็จ',true); return; }
     toast('ลบเรียบร้อย');
     await loadPage(pg,false);
     flushItemsPendingRefresh();
@@ -762,8 +769,11 @@ async function delSub(pid,si){
   if(!CAN_EDIT) return;
   const sub=(subs[pid]||[])[si];
   if(!sub||!confirm(`ลบ ${sub.iditem}?`)) return;
+  const reason=(prompt('กรุณาระบุเหตุผลในการลบ '+sub.iditem+' :','')||'').trim();
+  if(!reason){ toast('ต้องระบุเหตุผลในการลบ',true); return; }
   try{
-    await API.del('/api/items/'+encodeURIComponent(sub.iditem));
+    const dr=await API.del('/api/items/'+encodeURIComponent(sub.iditem)+'?reason='+encodeURIComponent(reason));
+    if(dr&&dr.success===false){ toast(dr.error||'ลบไม่สำเร็จ',true); return; }
     toast('ลบเรียบร้อย');
     await loadPage(pg,false);
     flushItemsPendingRefresh();

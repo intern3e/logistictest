@@ -764,7 +764,7 @@ $selfPickupMethods = ['รับเองรถใหญ่', 'รับเอ�
             right:0;
             z-index:2000;
             margin-top:4px;
-            max-height:240px;
+            max-height:300px;
             overflow-y:auto;
             background:#fff;
             border:1px solid var(--line-strong);
@@ -1619,7 +1619,7 @@ function setupAutocomplete(inputEl, listEl, options) {
         if (matches.length === 0) {
             listEl.innerHTML = '<div class="autocomplete-empty">ไม่พบรายการ</div>';
         } else {
-            listEl.innerHTML = matches.slice(0, 50).map(opt => `<div class="autocomplete-item">${opt}</div>`).join('');
+            listEl.innerHTML = matches.map(opt => `<div class="autocomplete-item">${opt}</div>`).join('');
         }
         listEl.style.display = 'block';
     }

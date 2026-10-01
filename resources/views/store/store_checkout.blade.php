@@ -132,6 +132,8 @@
     }
     .btn-success { background: var(--success); color: var(--on-primary); box-shadow: var(--shadow-sm); }
     .btn-success:hover { background: var(--success-dark); }
+    .btn-primary { background: #3E6AE1; color: #fff; box-shadow: var(--shadow-sm); }
+    .btn-primary:hover { background: #2f56c4; }
     .btn-ghost { background: var(--card-bg); color: var(--muted); border-color: var(--border); }
     .btn-ghost:hover { background: #f1f5f9; color: var(--ink); }
     button:disabled { opacity: .4; cursor: not-allowed; }
@@ -382,6 +384,7 @@
                 <input type="date" name="bill_date" id="searchDate" value="{{ $billDate }}">
             </label>
 
+            <button type="submit" class="btn-primary">ค้นหา</button>
             <button type="button" class="btn-ghost" onclick="clearAllFilters()">ล้าง</button>
         </form>
 
@@ -813,10 +816,8 @@ function clearAllFilters() {
     window.location.href = url.toString();
 }
 
-document.getElementById('searchSO').addEventListener('input', triggerAutoSearch);
-document.getElementById('searchPO').addEventListener('input', triggerAutoSearch);
-document.getElementById('searchBillNo').addEventListener('input', triggerAutoSearch);
-document.getElementById('searchDate').addEventListener('change', triggerDateSearch);
+// เปลี่ยนเป็น "กดค้นหา" เท่านั้น — ไม่ค้นหาอัตโนมัติระหว่างพิมพ์/เปลี่ยนวันแล้ว
+// (ฟอร์มมีปุ่ม submit "ค้นหา" แล้ว กด Enter ในช่องค้นหาก็ submit ได้ตามปกติ)
 
 function toggleSoCard(id) {
     const card = document.getElementById(id);

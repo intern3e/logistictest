@@ -160,6 +160,12 @@
                 <option value="wrong">ของผิด</option>
                 <option value="hold">ค้างบิล</option>
             </select>
+            <label class="tab-lbl" for="fKind" style="margin-left:8px;">ชนิดบิล:</label>
+            <select id="fKind">
+                <option value="all">ทั้งหมด</option>
+                <option value="bill">บิลส่งของ</option>
+                <option value="doc">บิลชั่วคราว</option>
+            </select>
             <label class="tab-lbl" for="fStatus" style="margin-left:8px;">สถานะ:</label>
             <select id="fStatus">
                 <option value="open">ยังไม่แก้</option>
@@ -177,7 +183,7 @@
                         <tr>
                             <th>เลขบิล / SO</th>
                             <th style="text-align:left;">ลูกค้า</th>
-                            <th>Sale</th>
+                            <th>ผู้เปิดบิล</th>
                             <th>ปัญหา</th>
                             <th>วิธีแก้ / ใครแก้ / เมื่อ</th>
                             <th>สถานะ</th>
@@ -236,6 +242,7 @@
 
     let currentType = 'all';
     let currentStatus = 'open';
+    let currentKind = 'all';   // all | bill (บิลส่งของ) | doc (บิลชั่วคราว)
 
     function esc(s){ return String(s ?? '').replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m])); }
     function escJs(s){ return String(s ?? '').replace(/\\/g,'\\\\').replace(/'/g,"\\'"); }
@@ -309,8 +316,8 @@
                 btns += '<button type="button" class="btn btn-changebill" onclick="openTarget(\'changebill\',\''+escJs(r.job_key)+'\',\''+escJs(r.bill_no)+'\')">เปลี่ยนเลขบิล</button>';
             }
         } else {
-            // แก้แล้ว/เคลียร์แล้ว -> ยกเลิกการแก้ (undo)
-            btns = '<button type="button" class="btn btn-undo" onclick="doUndo(\''+escJs(r.job_key)+'\')">ยกเลิกการแก้</button>';
+            // แก้แล้ว/เคลียร์แล้ว -> ยกเลิกการแก้ไขไม่ได้ (ล็อกไว้)
+            btns = '<span class="dash">—</span>';
         }
         return '<td><div class="actions-cell">'+btns+'</div></td>';
     }
@@ -323,7 +330,7 @@
         return '<tr>'
             + '<td class="num bill-cell" style="border-left-color:'+esc(r.border||'#dcdcdc')+';"><div class="ref-link">'+esc(r.bill_no||'-')+'</div>'+(r.so_id?'<div>'+soLink(r.so_id)+'</div>':'')+'</td>'
             + '<td class="cell-left">'+cust+'</td>'
-            + '<td>'+(r.sale?esc(r.sale):'<span class="dash">-</span>')+'</td>'
+            + '<td>'+(r.emp_name?esc(r.emp_name):'<span class="dash">-</span>')+'</td>'
             + '<td>'+prob+'</td>'
             + '<td>'+solveCell(r)+'</td>'
             + '<td>'+stateBadge(r)+'</td>'
@@ -338,6 +345,7 @@
         params.set('bill', fBill.value.trim());
         params.set('type', currentType);
         params.set('status', currentStatus);
+        params.set('kind', currentKind);
 
         setLoading('กำลังค้นหา...'); startProgress('กำลังค้นหา...');
         try{
@@ -359,6 +367,8 @@
     const fStatus = document.getElementById('fStatus');
     fType.addEventListener('change', () => { currentType = fType.value; search(); });
     fStatus.addEventListener('change', () => { currentStatus = fStatus.value; search(); });
+    const fKind = document.getElementById('fKind');
+    if (fKind) fKind.addEventListener('change', () => { currentKind = fKind.value; search(); });
     btnClear.addEventListener('click', () => {
         if(searchDebounce)clearTimeout(searchDebounce);
         if (fSale) fSale.value=''; fCust.value=''; fBill.value='';

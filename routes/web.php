@@ -347,6 +347,7 @@ Route::post('/deliverytrack/set-transport-type', [DeliverytrackController::class
 
 use App\Http\Controllers\BillreceiveController;
 Route::get('/billreceive',          [BillreceiveController::class, 'index'])->name('billreceive');
+Route::get('/billreceive/monitor',  [BillreceiveController::class, 'monitor'])->name('billreceive.monitor');
 Route::get('/billreceive/data',     [BillreceiveController::class, 'data'])->name('billreceive.data');
 Route::post('/billreceive/confirm', [BillreceiveController::class, 'confirm'])->name('billreceive.confirm');
 Route::post('/billreceive/change-driver', [BillreceiveController::class, 'changeDriver'])->name('billreceive.changeDriver');
@@ -407,6 +408,9 @@ Route::get('/inventory/vehicles',     [InventoryController::class, 'vehiclesPage
 // วิเคราะห์สินค้า (ตาม Brand + ต้นทุน) — admin เท่านั้น
 Route::get('/inventory/analyze',      [InventoryController::class, 'brandAnalysisPage'])->name('inventory.analyze');
 Route::get('/api/inventory/brand-analysis', [InventoryController::class, 'getBrandAnalysis']);
+// ประวัติการแก้ไข/ลบ สินค้า+transaction — admin เท่านั้น
+Route::get('/inventory/edit-history', [InventoryController::class, 'editHistoryPage'])->name('inventory.edithistory');
+Route::get('/api/inventory/edit-history', [InventoryController::class, 'getEditHistory']);
 Route::get('/inventory',              [InventoryController::class, 'entry']);
  
 // API: Items

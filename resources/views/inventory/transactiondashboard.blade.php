@@ -203,6 +203,7 @@
       <a class="sb-item"target="_blank" href="{{ route('inventory.pr.dashboard', $q) }}"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 16V8a2 2 0 00-1-1.73l-7-4a2 2 0 00-2 0l-7 4A2 2 0 003 8v8a2 2 0 001 1.73l7 4a2 2 0 002 0l7-4A2 2 0 0021 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/></svg>ขอซื้อ</a>
       <div class="sb-sec">รายงาน</div>
       <a class="sb-item" target="_blank" href="{{ route('inventory.analyze') }}"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>วิเคราะห์สินค้า</a>
+      <a class="sb-item" target="_blank" href="{{ route('inventory.edithistory') }}"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 3v5h5"/><path d="M3.05 13A9 9 0 1 0 6 5.3L3 8"/><path d="M12 7v5l4 2"/></svg>ประวัติการแก้ไข</a>
     @endif
   </div>
 </div>
@@ -224,6 +225,7 @@
       <div class="fbox" style="width:160px"><label>เลือกวันที่</label><input type="date" id="fDate" class="finput" onchange="applyFilter()"></div>
       <div class="fbox" style="width:200px"><label>ชื่อผู้ดำเนินงาน</label><input type="text" id="fOp" class="finput" placeholder="ค้นหา..." oninput="applyFilter()"></div>
       <div class="fbox" style="width:240px"><label>หมายเลขเอกสาร</label><input type="text" id="fBill" class="finput" placeholder="ค้นหา..." oninput="applyFilter()"></div>
+      <div class="fbox" style="width:160px"><label>รหัสสินค้า</label><input type="text" id="fItemId" class="finput" placeholder="ค้นหา..." oninput="applyFilter()"></div>
       <div class="fbox" style="flex:1;min-width:200px"><label>รายการสินค้า</label><input type="text" id="fItem" class="finput" placeholder="ค้นหา..." oninput="applyFilter()"></div>
       <div class="fbox" style="width:180px"><label>ประเภทข้อมูล</label>
         <select id="fType" class="finput" onchange="applyFilter()">
@@ -430,6 +432,7 @@ function buildQuery(page,limit){
   const fOp=document.getElementById('fOp').value.trim();    if(fOp) p.set('fOp',fOp);
   const fBill=document.getElementById('fBill').value.trim();if(fBill) p.set('fBill',fBill);
   const fItem=document.getElementById('fItem').value.trim();if(fItem) p.set('fItem',fItem);
+  const fItemId=document.getElementById('fItemId').value.trim();if(fItemId) p.set('fItemId',fItemId);
   const fType=document.getElementById('fType').value;        if(fType) p.set('fType',fType);
   const fShelf=document.getElementById('fShelf').value.trim();if(fShelf) p.set('fShelf',fShelf);
   return '/api/transaction?'+p.toString();
@@ -498,7 +501,7 @@ function applyFilter(){
   _debounce=setTimeout(()=>loadPage(1,false),400);
 }
 function clearFilter(){
-  ['fBill','fItem','fDate','fType','fShelf','fOp'].forEach(id=>document.getElementById(id).value='');
+  ['fBill','fItem','fItemId','fDate','fType','fShelf','fOp'].forEach(id=>document.getElementById(id).value='');
   loadPage(1,false);
 }
 
@@ -516,7 +519,7 @@ async function saveRow(i){
   if(!op||!bill){alert('กรุณากรอกข้อมูลให้ครบ');return}
   if(!confirm('ต้องการบันทึก?'))return;
   try{
-    await API.put('/api/transaction/'+encodeURIComponent(row.transaction_id),{operator:op,type:document.getElementById('eType').value,bill,quantity:document.getElementById('eQty').value,price:document.getElementById('ePrice').value||'',shelf:document.getElementById('eShelf').value.trim(),note:document.getElementById('eNote').value.trim(),image:document.getElementById('eImg').value.trim(),oldQuantity:row['จำนวน'],oldType:row['ประเภทข้อมูล'],oldItemId:row['item_id']});
+    await API.put('/api/transaction/'+encodeURIComponent(row.transaction_id),{operator:op,type:document.getElementById('eType').value,bill,quantity:document.getElementById('eQty').value,price:document.getElementById('ePrice').value||'',shelf:document.getElementById('eShelf').value.trim(),note:document.getElementById('eNote').value.trim(),image:document.getElementById('eImg').value.trim(),oldQuantity:row['จำนวน'],oldType:row['ประเภทข้อมูล'],oldItemId:row['item_id'],itemName:row['รายการ']});
     toast('บันทึกสำเร็จ');
     isEditingTxRow=false;
     await loadPage(pg,false);
@@ -529,8 +532,11 @@ async function saveRow(i){
 async function delRow(i){
   const row=pageData[i];
   if(!confirm(`ลบรายการ?\nเอกสาร: ${row['หมายเลขเอกสาร']}\nรายการ: ${row['รายการ']}`))return;
+  const reason=(prompt('กรุณาระบุเหตุผลในการลบรายการนี้ :','')||'').trim();
+  if(!reason){ toast('ต้องระบุเหตุผลในการลบ',true); return; }
   try{
-    await API.del('/api/transaction/'+encodeURIComponent(row.transaction_id));
+    const dr=await API.del('/api/transaction/'+encodeURIComponent(row.transaction_id)+'?reason='+encodeURIComponent(reason));
+    if(dr&&dr.success===false){ toast(dr.error||'ลบไม่สำเร็จ',true); return; }
     toast('ลบเรียบร้อย');
     isEditingTxRow=false;
     await loadPage(pg,false);

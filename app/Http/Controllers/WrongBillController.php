@@ -106,16 +106,16 @@ class WrongBillController extends Controller
 
         // ===== 2) งานที่ "แก้แล้ว" (solve_at ถูกตั้งจากหน้านี้) =====
         $fixedBills = Bill::whereNotNull('solve_at')
-            ->get(['so_detail_id', 'billid', 'so_id', 'customer_id', 'customer_name', 'sale_name', 'solve', 'solve_by', 'solve_at', 'statusdeli']);
+            ->get(['so_detail_id', 'billid', 'so_id', 'customer_id', 'customer_name', 'sale_name', 'emp_name', 'solve', 'solve_by', 'solve_at', 'statusdeli']);
         $fixedDocs = Docbills::whereNotNull('solve_at')
-            ->get(['doc_id', 'id_com', 'com_name', 'contact_name', 'solve', 'solve_by', 'solve_at', 'statusdeli']);
+            ->get(['doc_id', 'id_com', 'com_name', 'contact_name', 'emp_name', 'solve', 'solve_by', 'solve_at', 'statusdeli']);
 
         // resolve บิล/เอกสาร ของงานที่ยังไม่แก้
         $billsById = Bill::whereIn('so_detail_id', $activeIds)
-            ->get(['so_detail_id', 'billid', 'so_id', 'customer_id', 'customer_name', 'sale_name', 'solve', 'solve_by', 'solve_at', 'statusdeli'])
+            ->get(['so_detail_id', 'billid', 'so_id', 'customer_id', 'customer_name', 'sale_name', 'emp_name', 'solve', 'solve_by', 'solve_at', 'statusdeli'])
             ->keyBy('so_detail_id');
         $docsById = Docbills::whereIn('doc_id', $activeIds)
-            ->get(['doc_id', 'id_com', 'com_name', 'contact_name', 'solve', 'solve_by', 'solve_at', 'statusdeli'])
+            ->get(['doc_id', 'id_com', 'com_name', 'contact_name', 'emp_name', 'solve', 'solve_by', 'solve_at', 'statusdeli'])
             ->keyBy('doc_id');
 
         // ===== รวมเป็น 1 แถวต่อ 1 บิล (key = bill:<billid> / doc:<doc_id>) =====
@@ -129,7 +129,7 @@ class WrongBillController extends Controller
                 if (!empty($b->solve_at)) continue;   // แก้ไปแล้ว -> ไปโผล่ในกลุ่ม fixed
                 $key = 'bill:' . $b->billid;
                 if (!isset($rows[$key])) {
-                    $rows[$key] = $this->baseRow('bill', $b->billid, $b->so_id, $b->customer_id, $b->customer_name, $b->sale_name);
+                    $rows[$key] = $this->baseRow('bill', $b->billid, $b->so_id, $b->customer_id, $b->customer_name, $b->sale_name, $b->emp_name);
                     $rows[$key]['problem']    = $d->status;
                     $rows[$key]['reason']     = (string) ($d->note ?? '');
                     $rows[$key]['wrong_by']   = (string) ($d->check_name ?? '');
@@ -141,7 +141,7 @@ class WrongBillController extends Controller
                 if (!empty($doc->solve_at)) continue;
                 $key = 'doc:' . $bid;
                 if (!isset($rows[$key])) {
-                    $rows[$key] = $this->baseRow('doc', $bid, '', $doc->id_com, $doc->com_name, $doc->contact_name);
+                    $rows[$key] = $this->baseRow('doc', $bid, '', $doc->id_com, $doc->com_name, $doc->contact_name, $doc->emp_name);
                     $rows[$key]['problem']    = $d->status;
                     $rows[$key]['reason']     = (string) ($d->note ?? '');
                     $rows[$key]['wrong_by']   = (string) ($d->check_name ?? '');
@@ -155,7 +155,7 @@ class WrongBillController extends Controller
         foreach ($fixedBills as $b) {
             $key = 'bill:' . $b->billid;
             if (!isset($rows[$key])) {
-                $rows[$key] = $this->baseRow('bill', $b->billid, $b->so_id, $b->customer_id, $b->customer_name, $b->sale_name);
+                $rows[$key] = $this->baseRow('bill', $b->billid, $b->so_id, $b->customer_id, $b->customer_name, $b->sale_name, $b->emp_name);
             }
             $this->applySolve($rows[$key], $b->solve, $b->solve_by, $b->solve_at);
         }
@@ -163,7 +163,7 @@ class WrongBillController extends Controller
         foreach ($fixedDocs as $doc) {
             $key = 'doc:' . $doc->doc_id;
             if (!isset($rows[$key])) {
-                $rows[$key] = $this->baseRow('doc', $doc->doc_id, '', $doc->id_com, $doc->com_name, $doc->contact_name);
+                $rows[$key] = $this->baseRow('doc', $doc->doc_id, '', $doc->id_com, $doc->com_name, $doc->contact_name, $doc->emp_name);
             }
             $this->applySolve($rows[$key], $doc->solve, $doc->solve_by, $doc->solve_at);
         }
@@ -202,6 +202,11 @@ class WrongBillController extends Controller
         if ($fType === 'wrong') $rows = $rows->filter(fn ($r) => $r['problem'] === self::ST_WRONG)->values();
         elseif ($fType === 'hold') $rows = $rows->filter(fn ($r) => $r['problem'] === self::ST_HOLD)->values();
 
+        // ชนิดบิล: bill = บิลส่งของ (tblbill) , doc = บิลชั่วคราว (docbills)
+        $fKind = trim((string) $request->input('kind', 'all'));
+        if ($fKind === 'bill')     $rows = $rows->filter(fn ($r) => $r['type'] === 'bill')->values();
+        elseif ($fKind === 'doc')  $rows = $rows->filter(fn ($r) => $r['type'] === 'doc')->values();
+
         if ($fStat === 'open')        $rows = $rows->filter(fn ($r) => $r['state'] === 'open')->values();
         elseif ($fStat === 'fixed')   $rows = $rows->filter(fn ($r) => $r['state'] === 'fixed')->values();
         elseif ($fStat === 'cleared') $rows = $rows->filter(fn ($r) => $r['state'] === 'cleared')->values();
@@ -213,7 +218,7 @@ class WrongBillController extends Controller
         return response()->json(['ok' => true, 'rows' => $rows]);
     }
 
-    private function baseRow($type, $billNo, $soId, $custCode, $custName, $sale): array
+    private function baseRow($type, $billNo, $soId, $custCode, $custName, $sale, $empName = ''): array
     {
         return [
             'job_key'       => $type . ':' . $billNo,
@@ -223,6 +228,7 @@ class WrongBillController extends Controller
             'customer_code' => (string) $custCode,
             'customer_name' => (string) $custName,
             'sale'          => (string) $sale,
+            'emp_name'      => (string) $empName,   // ผู้เปิดบิล (tblbill/docbills.emp_name)
             'problem'       => '',
             'reason'        => '',
             'wrong_by'      => '',
@@ -349,7 +355,7 @@ class WrongBillController extends Controller
 
         $validated = $request->validate([
             'job_key'  => 'required|string',
-            'mode'     => 'required|string|in:resend,changebill,tempdoc,clear',
+            'mode'     => 'required|string|in:resend,changebill,tempdoc',
             'target'   => 'nullable|string|max:100',
         ]);
 
@@ -368,12 +374,7 @@ class WrongBillController extends Controller
         $userName = $user->name ?? $user->username ?? ($user->id_emp ?? 'ผู้ใช้งาน');
         $now      = Carbon::now();
 
-        // ยกเลิกการแก้ (กลับไปสถานะรอแก้)
-        if ($validated['mode'] === 'clear') {
-            $item->solve = null; $item->solve_by = null; $item->solve_at = null;
-            $item->save();
-            return response()->json(['ok' => true, 'message' => 'ยกเลิกการแก้ไขแล้ว — กลับไปสถานะรอแก้']);
-        }
+        // หมายเหตุ: ปิดการ "ยกเลิกการแก้ไข" (mode=clear) แล้ว — แก้ไปแล้วย้อนกลับไม่ได้
 
         // ── ส่งใหม่เลขบิลเดิม (ของผิด) : soft-cancel รอบที่ผิด คืนงานไปหน้าจ่ายงาน ──
         if ($validated['mode'] === 'resend') {

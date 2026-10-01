@@ -98,6 +98,74 @@ class BillreceiveController extends Controller
     }
 
     /**
+     * หน้า Monitor: สรุปรายวันว่ามี "บิลส่งของ" และ "บิลชั่วคราว" เลขอะไรบ้างที่ยังไม่ได้รับเข้า
+     * เข้ามาแล้วเห็นเลยว่าวันไหนมีบิลค้างรับเข้าอยู่
+     */
+    public function monitor(Request $request)
+    {
+        if ($resp = $this->requireViewerPage($request)) return $resp;
+
+        // งานที่ยัง active (ไม่ถูกยกเลิก/ส่งใหม่ — global scope notCancelled กรองให้แล้ว) ทุกวัน
+        $deliveries = transaction_delivery::query()->orderByDesc('time_pick')->limit(5000)->get();
+
+        $ids = $deliveries->pluck('bill_id')->filter()->unique()->values();
+        $billsBySoDetail = Bill::whereIn('so_detail_id', $ids)
+            ->get(['so_detail_id', 'billid', 'transport_type'])->keyBy('so_detail_id');
+        $docs = Docbills::whereIn('doc_id', $ids)->get(['doc_id'])->keyBy('doc_id');
+
+        $resultStatuses = ['จัดส่งสำเร็จ', 'ค้างบิล', 'สินค้าผิด'];
+        $pending = [];   // [day][kind] => [bill_no,...]
+
+        foreach ($deliveries->groupBy('bill_id') as $billId => $rows) {
+            $first  = $rows->sortByDesc('time_pick')->first();
+            $status = trim((string) ($first->status ?? ''));
+            if (in_array($status, $resultStatuses, true)) continue;   // รับเข้าแล้ว -> ข้าม
+
+            if ($billsBySoDetail->has($billId)) {
+                $no = (string) $billsBySoDetail->get($billId)->billid;
+                $kind = 'bill';
+            } elseif ($docs->has($billId)) {
+                $no = (string) $billId;
+                $kind = 'doc';
+            } else {
+                continue;   // งานไปรับของเอง (PO) ไม่นับ
+            }
+
+            $day = optional($first->delivery_date)->format('Y-m-d')
+                ?: (optional($first->time_pick)->format('Y-m-d') ?: 'ไม่ระบุวันที่');
+            $pending[$day][$kind][] = $no;
+        }
+
+        krsort($pending);   // วันล่าสุดก่อน
+        $days = [];
+        foreach ($pending as $day => $kinds) {
+            $bills = array_values(array_unique($kinds['bill'] ?? []));
+            $docsL = array_values(array_unique($kinds['doc'] ?? []));
+            sort($bills);
+            sort($docsL);
+            $thai = $day;
+            if (preg_match('/^\d{4}-\d{2}-\d{2}$/', $day)) {
+                $thai = Carbon::parse($day)->format('d/m/') . (Carbon::parse($day)->year + 543);
+            }
+            $days[] = [
+                'date'       => $day,
+                'date_thai'  => $thai,
+                'bills'      => $bills,
+                'docs'       => $docsL,
+                'bill_count' => count($bills),
+                'doc_count'  => count($docsL),
+                'total'      => count($bills) + count($docsL),
+            ];
+        }
+
+        return view('driver.billreceive_monitor', [
+            'loggedInName' => $this->userName(),
+            'days'         => $days,
+            'grandTotal'   => array_sum(array_column($days, 'total')),
+        ]);
+    }
+
+    /**
      * ดึงรายการงานจาก transaction_transport
      *   - date = 'all' (ไม่จำกัดวันที่) -> ค้นทุกวัน
      *   - date = วันที่ -> ค้นเฉพาะงานที่จ่าย (time_pick) วันนั้น (ตัวกรองอื่นกรองภายในวันนั้น)
@@ -114,6 +182,7 @@ class BillreceiveController extends Controller
         $driver = trim((string) $request->input('driver', ''));
         $status = trim((string) $request->input('status', ''));   // ok|hold|wrong|pending|''
         $headcom = trim((string) $request->input('headcom', '')); // บริษัทผู้ส่ง (เฉพาะบิลชั่วคราว/doc)
+        $kind   = trim((string) $request->input('kind', ''));     // '' | bill (บิลส่งของ) | doc (บิลชั่วคราว)
         $date   = trim((string) $request->input('date', ''));
         $allDates = ($date === 'all');                 // ไม่จำกัดวันที่
         if (!$allDates && $date === '') $date = Carbon::now()->toDateString();
@@ -294,6 +363,13 @@ class BillreceiveController extends Controller
                 'cancelled_at'   => optional($first->cancelled_at)->format('Y-m-d H:i'),
             ];
         })->values();
+
+        // กรองชนิดบิล: bill = บิลส่งของ (company/private) , doc = บิลชั่วคราว
+        if ($kind === 'bill') {
+            $rows = $rows->filter(fn ($r) => ($r['type'] ?? '') !== 'doc')->values();
+        } elseif ($kind === 'doc') {
+            $rows = $rows->filter(fn ($r) => ($r['type'] ?? '') === 'doc')->values();
+        }
 
         // กรองสถานะ (หลัง group ใช้สถานะของแถวตัวแทน)
         if ($status !== '') {

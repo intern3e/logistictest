@@ -273,6 +273,7 @@ a { color: inherit; text-decoration: none; }
 <div class="topbar">
   <div class="brand">รับเข้าบิล <span class="tag">BILL RECEIVE</span></div>
   <div class="right">
+    <a class="back" href="{{ route('billreceive.monitor') }}" target="_blank" style="border-color:var(--primary);color:var(--primary);background:var(--primary-light);font-weight:700;">📋 Monitor บิลค้างรับเข้า</a>
     <a class="back" href="{{ route('oil') }}">← กลับหน้าน้ำมัน</a>
     <span class="user"><span class="user-avatar">{{ mb_strtoupper(mb_substr($loggedInName, 0, 1)) }}</span>{{ $loggedInName }}</span>
   </div>
@@ -300,6 +301,14 @@ a { color: inherit; text-decoration: none; }
     <div class="fg">
       <label for="fDriver">คนขับ</label>
       <input type="text" id="fDriver" placeholder="พิมพ์ชื่อคนขับ" autocomplete="off">
+    </div>
+    <div class="fg">
+      <label for="fKind">ชนิดบิล</label>
+      <select id="fKind" style="height:38px;padding:0 10px;border:1px solid var(--line);border-radius:8px;font-family:inherit;font-size:13px;">
+        <option value="">ทั้งหมด</option>
+        <option value="bill">บิลส่งของ</option>
+        <option value="doc">บิลชั่วคราว</option>
+      </select>
     </div>
     <div class="fg">
       <label for="fStatus">สถานะบิล</label>
@@ -562,6 +571,7 @@ async function loadData(){
   const driver = document.getElementById('fDriver').value.trim();
   const status = document.getElementById('fStatus').value;
   const headcom = document.getElementById('fHeadcom').value;
+  const kind = document.getElementById('fKind').value;
   const params = new URLSearchParams();
   if(q) params.set('q', q);
   if(cust) params.set('cust', cust);
@@ -569,6 +579,7 @@ async function loadData(){
   if(driver) params.set('driver', driver);
   if(status) params.set('status', status);
   if(headcom) params.set('headcom', headcom);   // บริษัทผู้ส่ง (เฉพาะบิลชั่วคราว)
+  if(kind) params.set('kind', kind);            // ชนิดบิล: บิลส่งของ/บิลชั่วคราว
   // เลือกวันที่ = ค้น/กรองเฉพาะวันนั้น ; ติ๊กไม่จำกัดวันที่ = ค้นทุกวัน
   params.set('date', fAllDates.checked ? 'all' : (fDate.value || ''));
   params.set('page', currentPage);   // แบ่งหน้า (หน้าละ 100)
@@ -902,7 +913,7 @@ document.getElementById('btnClear').addEventListener('click', ()=>{
   fAllDates.checked = false; fDate.disabled = false;
   document.getElementById('fCust').value=''; document.getElementById('fCustName').value='';
   document.getElementById('fDriver').value=''; document.getElementById('fStatus').value='';
-  document.getElementById('fHeadcom').value='';
+  document.getElementById('fHeadcom').value=''; document.getElementById('fKind').value='';
   doSearch();
 });
 fBill.addEventListener('keydown', e=>{ if(e.key==='Enter') doSearch(); });
@@ -917,6 +928,7 @@ let _filterTimer = null;
 }));
 document.getElementById('fStatus').addEventListener('change', doSearch);
 document.getElementById('fHeadcom').addEventListener('change', doSearch);   // เลือกบริษัทผู้ส่ง = โหลดใหม่ (เฉพาะบิลชั่วคราว)
+document.getElementById('fKind').addEventListener('change', doSearch);      // เลือกชนิดบิล = โหลดใหม่
 
 document.addEventListener('DOMContentLoaded', ()=>{
   fDate.value = new Date().toISOString().split('T')[0];
