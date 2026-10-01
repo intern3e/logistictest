@@ -276,7 +276,7 @@ const UNAME=@json(strtolower(trim($authUser['name'] ?? '')));   // ชื่อ�
 const NEST_URL=@json($nestUrl);
 const NEST_KEY=@json($nestKey);
 // สร้าง: admin/user ; แก้ไข-ลบ: เฉพาะ admin หรือผู้ใช้ชื่อ chai
-const CAN_ADD=(ROLE==='admin'||ROLE==='user'),CAN_EDIT=(ROLE==='admin'||UNAME==='chai');
+const CAN_ADD=(ROLE==='admin'||ROLE==='user'),CAN_EDIT=(ROLE==='admin'||UNAME==='ชัย');
 const COLS=ROLE==='viewer'?6:7;
 const COMPANIES=[{code:'3E',label:'Triple E Trading'},{code:'3IN',label:'Triple E Innovation'},{code:'3EM',label:'Triple E Empire Group'},{code:'3EL',label:'Triple E Lighting'},{code:'HD',label:'Hikari Denki'},{code:'EP',label:'Eita & Paul'},{code:'3P',label:'Triple P Factory & Eng'},{code:'AE&T',label:'AE&T International'}];
 const PM={'3E':'b-3e','3IN':'b-3in','3EM':'b-3em','3EL':'b-3el','HD':'b-hd','EP':'b-ep','3P':'b-3p'};

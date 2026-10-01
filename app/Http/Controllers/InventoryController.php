@@ -56,8 +56,8 @@ class InventoryController extends Controller
         $user = $this->requireLogin(null, 'inventory');
         $auth = $user->auth ?? 'viewer';
         $name = strtolower(trim((string) ($user->name ?? '')));
-        if ($auth === 'admin' || $name === 'chai') return;
-        abort(403, 'ไม่มีสิทธิ์แก้ไข/ลบ (เฉพาะ admin หรือ chai)');
+        if ($auth === 'admin' || $name === 'ชัย') return;
+        abort(403, 'ไม่มีสิทธิ์แก้ไข/ลบ (เฉพาะ admin หรือ ชัย)');
     }
 
     /**
