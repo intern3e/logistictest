@@ -280,9 +280,9 @@ window.addEventListener('load', () => {
     @endif
 </td>
                     <td>
-                    <a href="#"
-                        class="text-blue-600 hover:underline"
-                        onclick="return openPopup3E('{{ $item->so_id }}');">
+                    <a href="http://server_update:8000/sodetail?SONum={{ urlencode($item->so_id) }}"
+                        target="_blank" rel="noopener"
+                        class="text-blue-600 hover:underline">
                         {{ $item->so_id }}
                     </a>
                     </td>

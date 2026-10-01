@@ -440,8 +440,64 @@ class DepositController extends Controller
             ->orderByDesc('id')
             ->get();
 
+        // เช็ค PO กับ ERP: ถ้า DocuStatus = 'Y' (ยกเลิกใน ERP แล้ว) -> อัปเดตเป็นยกเลิกอัตโนมัติ
+        $this->autoCancelByErpDocuStatus($pendingCancel);
+        // ดึงใหม่หลัง auto-cancel เพื่อให้ตารางแสดงเฉพาะที่ยังค้างจริง
+        $pendingCancel = \App\Models\PooutsideCancelled::query()
+            ->whereNull('status')
+            ->orderByDesc('id')
+            ->get();
+
         return view('deposit.botdeposit', compact('deposits', 'pendingCancel'));
     }
+
+    /**
+     * เช็ค PO ที่รอยกเลิก กับ ERP (getPODetail) — ถ้า DocuStatus = 'Y' แปลว่ายกเลิกใน ERP แล้ว
+     * ให้อัปเดตสถานะเป็น "ยกเลิก" อัตโนมัติ (ยิง ERP ทีละ 10 ใบแบบขนาน ไม่ช้า)
+     */
+    private function autoCancelByErpDocuStatus($rows): void
+    {
+        if ($rows->isEmpty()) return;
+
+        $byPo = $rows->filter(fn ($r) => !empty($r->po_id))->groupBy('po_id');
+        $poNums = $byPo->keys()->all();
+        if (empty($poNums)) return;
+
+        $toCancel = [];
+        foreach (array_chunk($poNums, 10) as $chunk) {
+            try {
+                $responses = Http::pool(function ($pool) use ($chunk) {
+                    $reqs = [];
+                    foreach ($chunk as $i => $po) {
+                        $reqs[] = $pool->as('po_' . $i)->timeout(20)
+                            ->get('http://server_update:8000/api/getPODetail', ['PONum' => $po]);
+                    }
+                    return $reqs;
+                });
+            } catch (\Throwable $e) {
+                Log::error('autoCancelByErpDocuStatus pool error: ' . $e->getMessage());
+                continue;
+            }
+
+            foreach ($chunk as $i => $po) {
+                $res = $responses['po_' . $i] ?? null;
+                if (!($res instanceof \Illuminate\Http\Client\Response) || !$res->successful()) continue;
+                $j = $res->json();
+                $docu = is_array($j) ? ($j['DocuStatus'] ?? null) : null;
+                if (strtoupper(trim((string) $docu)) === 'Y') {
+                    foreach ($byPo->get($po) as $r) {
+                        $toCancel[] = $r->id;
+                    }
+                }
+            }
+        }
+
+        if (!empty($toCancel)) {
+            \App\Models\PooutsideCancelled::whereIn('id', $toCancel)->update(['status' => 'ยกเลิก']);
+            Log::info('Auto-cancel pooutside by ERP DocuStatus=Y', ['count' => count($toCancel)]);
+        }
+    }
+
     private function generateDepositBillId()
     {
         $now      = $this->nowBkk();
