@@ -98,12 +98,77 @@ class BillreceiveController extends Controller
     }
 
     /**
+     * ตรวจเลขบิลที่ยัง "รอรับเข้า" กับ bill_status_history (db3e)
+     *  - ถ้า BillInReason = 'ส่งสำเร็จ' -> อัปเดตบิลนั้นเป็น "จัดส่งสำเร็จ" อัตโนมัติ
+     *    โดยใช้ผู้รับ (BillInByDesc) และเวลา (BillInDate) จากประวัติ ERP
+     *  - ดึงประวัติทีเดียว (whereIn) ไม่วนยิง DB, อัปเดตเฉพาะบิลที่ยัง pending เท่านั้น
+     */
+    private function syncSuccessFromErp(): void
+    {
+        try {
+            // งาน active ที่ยัง pending (ยังไม่มีผลรับเข้า: status ว่าง/null/0)
+            $pending = transaction_delivery::query()
+                ->where(function ($q) {
+                    $q->whereNull('status')->orWhere('status', '')->orWhere('status', '0');
+                })
+                ->limit(5000)
+                ->get(['id', 'bill_id', 'status']);
+            if ($pending->isEmpty()) return;
+
+            // map so_detail_id -> billid (เฉพาะบิลส่งของที่อยู่ใน tblbill)
+            $ids = $pending->pluck('bill_id')->filter()->unique()->values();
+            $billidByDetail = Bill::whereIn('so_detail_id', $ids)->pluck('billid', 'so_detail_id');
+            if ($billidByDetail->isEmpty()) return;
+
+            $billNos = collect($billidByDetail)->map(fn ($b) => (string) $b)->filter()->unique()->values()->all();
+            if (empty($billNos)) return;
+
+            // ประวัติ ERP ที่ "ส่งสำเร็จ" — ดึงครั้งเดียว
+            $hist = DB::connection(self::ERP_CONNECTION)->table('bill_status_history')
+                ->whereIn('BillNo', $billNos)
+                ->where('BillInReason', 'ส่งสำเร็จ')
+                ->get(['BillNo', 'BillInByDesc', 'BillInBy', 'BillInDate']);
+            if ($hist->isEmpty()) return;
+
+            // เลือกแถวล่าสุดต่อเลขบิล
+            $histByBill = $hist->groupBy('BillNo')->map(fn ($g) => $g->sortByDesc('BillInDate')->first());
+
+            $now = Carbon::now();
+            // รวบงานที่ค้างเป็นก้อนต่อ "บิล" แล้วอัปเดตทีเดียวต่อบิล (ไม่วนอัปเดตทีละแถว)
+            $pendingByBill = $pending->groupBy('bill_id');
+            DB::transaction(function () use ($pendingByBill, $billidByDetail, $histByBill, $now) {
+                foreach ($pendingByBill as $billIdKey => $rows) {
+                    $billid = $billidByDetail->get($billIdKey);
+                    if (!$billid) continue;
+                    $h = $histByBill->get((string) $billid);
+                    if (!$h) continue;
+
+                    $checkName = trim((string) ($h->BillInByDesc ?: ($h->BillInBy ?: ''))) ?: 'ERP';
+                    $checkTime = !empty($h->BillInDate) ? Carbon::parse($h->BillInDate) : $now;
+
+                    transaction_delivery::whereIn('id', $rows->pluck('id')->all())->update([
+                        'status'     => self::DELI_STATUS_OK,
+                        'check_name' => $checkName,
+                        'check_time' => $checkTime,
+                    ]);
+                    DB::table('tblbill')->where('billid', $billid)->update(['statusdeli' => self::DELI_STATUS_OK]);
+                }
+            });
+        } catch (\Throwable $e) {
+            Log::error('syncSuccessFromErp failed: ' . $e->getMessage());
+        }
+    }
+
+    /**
      * หน้า Monitor: สรุปรายวันว่ามี "บิลส่งของ" และ "บิลชั่วคราว" เลขอะไรบ้างที่ยังไม่ได้รับเข้า
      * เข้ามาแล้วเห็นเลยว่าวันไหนมีบิลค้างรับเข้าอยู่
      */
     public function monitor(Request $request)
     {
         if ($resp = $this->requireViewerPage($request)) return $resp;
+
+        // อัปเดตบิลที่ ERP บอกว่าส่งสำเร็จแล้วก่อน แล้วค่อยสรุปค้างรับเข้า
+        $this->syncSuccessFromErp();
 
         // งานที่ยัง active (ไม่ถูกยกเลิก/ส่งใหม่ — global scope notCancelled กรองให้แล้ว) ทุกวัน
         $deliveries = transaction_delivery::query()->orderByDesc('time_pick')->limit(5000)->get();
@@ -220,6 +285,9 @@ class BillreceiveController extends Controller
     {
         [$user, $err] = $this->requireViewerApi();   // viewer เห็นได้, editor เท่านั้นที่กดรับเข้า/เปลี่ยนคนขับ
         if ($err) return $err;
+
+        // ตรวจกับ bill_status_history (db3e): บิลไหน BillInReason = ส่งสำเร็จ -> อัปเดตเป็นสำเร็จอัตโนมัติ
+        $this->syncSuccessFromErp();
 
         $q      = trim((string) $request->input('q', ''));
         $cust   = trim((string) $request->input('cust', ''));
