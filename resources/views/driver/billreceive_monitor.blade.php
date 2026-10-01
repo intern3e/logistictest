@@ -48,6 +48,17 @@
     .chip.bill{background:var(--bill-soft);border-color:var(--bill-bd);color:var(--bill)}
     .chip.doc{background:var(--doc-soft);border-color:var(--doc-bd);color:var(--doc)}
     .none{color:var(--ink3);font-size:13px;font-style:italic}
+    /* สรุปแยก อดีต/อนาคต */
+    .summary-cards{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:18px}
+    @media(max-width:700px){.summary-cards{grid-template-columns:1fr}}
+    .sum-card{border:1px solid var(--line-strong);border-radius:14px;padding:14px 18px;background:var(--card)}
+    .sum-card.past{background:#fef2f2;border-color:#fca5a5}
+    .sum-card.future{background:#eff6ff;border-color:#93c5fd}
+    .sum-card-title{font-size:14px;font-weight:800;margin-bottom:10px}
+    .sum-card.past .sum-card-title{color:#b91c1c}
+    .sum-card.future .sum-card-title{color:#1d4ed8}
+    .sum-card-row{display:flex;align-items:center;gap:10px;flex-wrap:wrap;font-size:14px;color:var(--ink2)}
+    .sum-card-row .big{font-size:20px;font-weight:800;color:var(--ink)}
     /* สรุปแยกชนิด */
     .sum-split{display:inline-flex;gap:8px;margin-left:auto;flex-wrap:wrap}
     .pill{font-size:13px;font-weight:700;padding:4px 12px;border-radius:999px;border:1px solid}
@@ -78,14 +89,25 @@
   </div>
 
   <main>
-    <div class="summary">
-      <span>วันที่มีบิลค้างรับเข้า <b class="big">{{ $dayCount }}</b> วัน</span>
-      <span>·</span>
-      <span>รวมค้างรับเข้า <b class="big">{{ $grandTotal }}</b> บิล</span>
-      <span class="sum-split">
-        <span class="pill tag-bill">บิลส่งของ <b>{{ $grandBills }}</b></span>
-        <span class="pill tag-doc">บิลชั่วคราว <b>{{ $grandDocs }}</b></span>
-      </span>
+    <div class="summary-cards">
+      <div class="sum-card past">
+        <div class="sum-card-title">① อดีตที่ยังไม่รับเข้า</div>
+        <div class="sum-card-row">
+          <span><b class="big">{{ $pastDayCount }}</b> วัน</span>
+          <span>ค้าง <b class="big">{{ $pastTotal }}</b> บิล</span>
+          <span class="pill tag-bill">ส่งของ <b>{{ $pastBills }}</b></span>
+          <span class="pill tag-doc">ชั่วคราว <b>{{ $pastDocs }}</b></span>
+        </div>
+      </div>
+      <div class="sum-card future">
+        <div class="sum-card-title">② งานอนาคต (จ่ายแล้ว ยังไม่รับ)</div>
+        <div class="sum-card-row">
+          <span><b class="big">{{ $futureDayCount }}</b> วัน</span>
+          <span>ค้าง <b class="big">{{ $futureTotal }}</b> บิล</span>
+          <span class="pill tag-bill">ส่งของ <b>{{ $futureBills }}</b></span>
+          <span class="pill tag-doc">ชั่วคราว <b>{{ $futureDocs }}</b></span>
+        </div>
+      </div>
     </div>
 
     <div class="split">

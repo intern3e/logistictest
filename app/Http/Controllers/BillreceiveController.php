@@ -198,6 +198,15 @@ class BillreceiveController extends Controller
             'grandBills'   => array_sum(array_column($allDays, 'bill_count')),
             'grandDocs'    => array_sum(array_column($allDays, 'doc_count')),
             'dayCount'     => count($allDays),
+            // สรุปแยก อดีต / อนาคต
+            'pastDayCount'   => count($pastDays),
+            'pastTotal'      => array_sum(array_column($pastDays, 'total')),
+            'pastBills'      => array_sum(array_column($pastDays, 'bill_count')),
+            'pastDocs'       => array_sum(array_column($pastDays, 'doc_count')),
+            'futureDayCount' => count($futureDays),
+            'futureTotal'    => array_sum(array_column($futureDays, 'total')),
+            'futureBills'    => array_sum(array_column($futureDays, 'bill_count')),
+            'futureDocs'     => array_sum(array_column($futureDays, 'doc_count')),
         ]);
     }
 
