@@ -32,20 +32,40 @@
     .day-head{display:flex;align-items:center;gap:12px;padding:14px 18px;border-bottom:1px solid var(--line);background:#f7f9fc;flex-wrap:wrap}
     .day-date{font-size:17px;font-weight:800}
     .day-total{margin-left:auto;font-size:13px;font-weight:700;color:#fff;background:var(--primary);padding:4px 12px;border-radius:999px}
-    .day-body{display:grid;grid-template-columns:1fr 1fr;gap:0}
-    @media(max-width:700px){.day-body{grid-template-columns:1fr}}
-    .col{padding:14px 18px}
-    .col+.col{border-left:1px solid var(--line)}
-    @media(max-width:700px){.col+.col{border-left:none;border-top:1px solid var(--line)}}
-    .col-title{font-size:13px;font-weight:800;letter-spacing:.02em;margin-bottom:10px;display:flex;align-items:center;gap:8px}
-    .col-title .cnt{font-size:12px;font-weight:700;padding:2px 9px;border-radius:999px}
     .tag-bill{color:var(--bill)} .tag-bill .cnt{background:var(--bill-soft);color:var(--bill);border:1px solid var(--bill-bd)}
     .tag-doc{color:var(--doc)} .tag-doc .cnt{background:var(--doc-soft);color:var(--doc);border:1px solid var(--doc-bd)}
+    /* ภายในกล่องวัน: แต่ละกลุ่มคนขับเป็นแค่หัวข้อบรรทัด (ไม่มีกล่องซ้อน) */
+    .day-body{padding:0}
+    .grp-row{padding:10px 16px;border-top:1px solid var(--line)}
+    .grp-row:first-child{border-top:none}
+    .grp-label{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:7px}
+    .grp-transport{font-weight:800;font-size:14px;color:var(--primary)}
+    .grp-driver{font-size:13px;font-weight:600;color:var(--ink2)}
+    .grp-cnt{margin-left:auto;font-size:12px;font-weight:700;color:var(--ink2);background:var(--primary-soft);padding:2px 10px;border-radius:999px}
+    .grp-chips{display:flex;flex-wrap:wrap;gap:6px}
     .chips{display:flex;flex-wrap:wrap;gap:6px}
     .chip{font-family:'JetBrains Mono','Sarabun',monospace;font-size:13px;font-weight:600;padding:4px 10px;border-radius:7px;border:1px solid var(--line-strong);background:#fff}
     .chip.bill{background:var(--bill-soft);border-color:var(--bill-bd);color:var(--bill)}
     .chip.doc{background:var(--doc-soft);border-color:var(--doc-bd);color:var(--doc)}
     .none{color:var(--ink3);font-size:13px;font-style:italic}
+    /* สรุปแยกชนิด */
+    .sum-split{display:inline-flex;gap:8px;margin-left:auto;flex-wrap:wrap}
+    .pill{font-size:13px;font-weight:700;padding:4px 12px;border-radius:999px;border:1px solid}
+    .pill.tag-bill{background:var(--bill-soft);color:var(--bill);border-color:var(--bill-bd)}
+    .pill.tag-doc{background:var(--doc-soft);color:var(--doc);border-color:var(--doc-bd)}
+    /* แบ่งครึ่งจอ บน=อดีต ล่าง=อนาคต */
+    .split{display:flex;flex-direction:column;gap:18px}
+    .pane{background:var(--card);border:1px solid var(--line-strong);border-radius:14px;overflow:hidden}
+    .pane-head{padding:11px 16px;border-bottom:1px solid var(--line);display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+    .pane-head.past{background:#fef2f2}
+    .pane-head.future{background:#eff6ff}
+    .pane-head .sh-title{font-size:15px;font-weight:800}
+    .pane-head.past .sh-title{color:#b91c1c}
+    .pane-head.future .sh-title{color:#1d4ed8}
+    .pane-head .sh-sub{font-size:12px;color:var(--ink3)}
+    .pane-head .sh-cnt{margin-left:auto;font-size:12px;font-weight:700;padding:3px 11px;border-radius:999px;background:#fff;border:1px solid var(--line-strong)}
+    .pane-body{padding:14px}
+    .pane-body .day:last-child{margin-bottom:0}
   </style>
 </head>
 <body>
@@ -57,50 +77,48 @@
 
   <main>
     <div class="summary">
-      <span>วันที่มีบิลค้างรับเข้า <b class="big">{{ count($days) }}</b> วัน</span>
+      <span>วันที่มีบิลค้างรับเข้า <b class="big">{{ $dayCount }}</b> วัน</span>
       <span>·</span>
       <span>รวมค้างรับเข้า <b class="big">{{ $grandTotal }}</b> บิล</span>
+      <span class="sum-split">
+        <span class="pill tag-bill">บิลส่งของ <b>{{ $grandBills }}</b></span>
+        <span class="pill tag-doc">บิลชั่วคราว <b>{{ $grandDocs }}</b></span>
+      </span>
     </div>
 
-    @forelse ($days as $d)
-      <div class="day">
-        <div class="day-head">
-          <span class="day-date">{{ $d['date_thai'] }}</span>
-          <span class="day-total">ค้าง {{ $d['total'] }} บิล</span>
+    <div class="split">
+      {{-- ครึ่งบน: อดีตที่ยังไม่รับเข้า --}}
+      <div class="pane">
+        <div class="pane-head past">
+          <span class="sh-title">① อดีตที่ยังไม่รับเข้า</span>
+          <span class="sh-sub">เลยกำหนดแล้วแต่ยังไม่ได้รับเข้า</span>
+          <span class="sh-cnt">{{ count($pastDays) }} วัน</span>
         </div>
-        <div class="day-body">
-          <div class="col">
-            <div class="col-title tag-bill">บิลส่งของ <span class="cnt">{{ $d['bill_count'] }}</span></div>
-            @if (count($d['bills']))
-              <div class="chips">
-                @foreach ($d['bills'] as $no)
-                  <span class="chip bill">{{ $no }}</span>
-                @endforeach
-              </div>
-            @else
-              <div class="none">— ไม่มีบิลส่งของค้าง —</div>
-            @endif
-          </div>
-          <div class="col">
-            <div class="col-title tag-doc">บิลชั่วคราว <span class="cnt">{{ $d['doc_count'] }}</span></div>
-            @if (count($d['docs']))
-              <div class="chips">
-                @foreach ($d['docs'] as $no)
-                  <span class="chip doc">{{ $no }}</span>
-                @endforeach
-              </div>
-            @else
-              <div class="none">— ไม่มีบิลชั่วคราวค้าง —</div>
-            @endif
-          </div>
+        <div class="pane-body">
+          @forelse ($pastDays as $d)
+            @include('driver._monitor_day', ['d' => $d])
+          @empty
+            <div class="none" style="padding:20px;text-align:center;">— ไม่มีบิลอดีตค้างรับเข้า —</div>
+          @endforelse
         </div>
       </div>
-    @empty
-      <div class="empty">
-        <div class="ok">&#10003;</div>
-        <div>ไม่มีบิลค้างรับเข้า — รับเข้าครบทุกวันแล้ว</div>
+
+      {{-- ครึ่งล่าง: งานอนาคตที่จ่ายไปแล้ว แต่ยังไม่ได้รับ --}}
+      <div class="pane">
+        <div class="pane-head future">
+          <span class="sh-title">② งานอนาคตที่จ่ายไปแล้ว แต่ยังไม่ได้รับ</span>
+          <span class="sh-sub">ตั้งแต่วันนี้เป็นต้นไป</span>
+          <span class="sh-cnt">{{ count($futureDays) }} วัน</span>
+        </div>
+        <div class="pane-body">
+          @forelse ($futureDays as $d)
+            @include('driver._monitor_day', ['d' => $d])
+          @empty
+            <div class="none" style="padding:20px;text-align:center;">— ไม่มีงานอนาคตค้างรับเข้า —</div>
+          @endforelse
+        </div>
       </div>
-    @endforelse
+    </div>
   </main>
 </body>
 </html>

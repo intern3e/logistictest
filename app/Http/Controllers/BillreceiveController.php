@@ -114,7 +114,7 @@ class BillreceiveController extends Controller
         $docs = Docbills::whereIn('doc_id', $ids)->get(['doc_id'])->keyBy('doc_id');
 
         $resultStatuses = ['จัดส่งสำเร็จ', 'ค้างบิล', 'สินค้าผิด'];
-        $pending = [];   // [day][kind] => [bill_no,...]
+        $pending = [];   // [day][groupKey] => ['transport'=>, 'driver'=>, 'bill'=>[...], 'doc'=>[...]]
 
         foreach ($deliveries->groupBy('bill_id') as $billId => $rows) {
             $first  = $rows->sortByDesc('time_pick')->first();
@@ -133,35 +133,71 @@ class BillreceiveController extends Controller
 
             $day = optional($first->delivery_date)->format('Y-m-d')
                 ?: (optional($first->time_pick)->format('Y-m-d') ?: 'ไม่ระบุวันที่');
-            $pending[$day][$kind][] = $no;
+
+            // จัดกลุ่มเลขบิลตาม "ขนส่ง + คนขับ" (คนขับเดียวกันอยู่กล่องเดียวกัน)
+            $transport = trim((string) ($first->transport_name ?? '')) ?: 'ไม่ระบุขนส่ง';
+            $driver    = trim((string) ($first->driver_name ?? '')) ?: 'ไม่ระบุคนขับ';
+            $gkey      = $transport . ' | ' . $driver;
+            if (!isset($pending[$day][$gkey])) {
+                $pending[$day][$gkey] = ['transport' => $transport, 'driver' => $driver, 'bill' => [], 'doc' => []];
+            }
+            $pending[$day][$gkey][$kind][] = $no;
         }
 
-        krsort($pending);   // วันล่าสุดก่อน
-        $days = [];
-        foreach ($pending as $day => $kinds) {
-            $bills = array_values(array_unique($kinds['bill'] ?? []));
-            $docsL = array_values(array_unique($kinds['doc'] ?? []));
-            sort($bills);
-            sort($docsL);
-            $thai = $day;
-            if (preg_match('/^\d{4}-\d{2}-\d{2}$/', $day)) {
-                $thai = Carbon::parse($day)->format('d/m/') . (Carbon::parse($day)->year + 543);
+        ksort($pending);   // เรียงอดีต -> อนาคต
+        $today = Carbon::now()->toDateString();
+        $pastDays = [];     // อดีตที่ยังไม่รับเข้า (วันผ่านไปแล้ว / ไม่ระบุวันที่)
+        $futureDays = [];   // งานอนาคตที่จ่ายไปแล้ว แต่ยังไม่ได้รับ (วันนี้เป็นต้นไป)
+
+        foreach ($pending as $day => $gmap) {
+            ksort($gmap);   // เรียงกลุ่มตามชื่อขนส่ง/คนขับ
+            $groups = [];
+            $dayBill = 0; $dayDoc = 0;
+            foreach ($gmap as $g) {
+                $bills = array_values(array_unique($g['bill']));
+                $docsL = array_values(array_unique($g['doc']));
+                sort($bills);
+                sort($docsL);
+                $dayBill += count($bills);
+                $dayDoc  += count($docsL);
+                $groups[] = [
+                    'transport'  => $g['transport'],
+                    'driver'     => $g['driver'],
+                    'bills'      => $bills,
+                    'docs'       => $docsL,
+                    'bill_count' => count($bills),
+                    'doc_count'  => count($docsL),
+                    'total'      => count($bills) + count($docsL),
+                ];
             }
-            $days[] = [
+            $isValid = (bool) preg_match('/^\d{4}-\d{2}-\d{2}$/', $day);
+            $thai = $isValid ? (Carbon::parse($day)->format('d/m/') . (Carbon::parse($day)->year + 543)) : $day;
+            $row = [
                 'date'       => $day,
                 'date_thai'  => $thai,
-                'bills'      => $bills,
-                'docs'       => $docsL,
-                'bill_count' => count($bills),
-                'doc_count'  => count($docsL),
-                'total'      => count($bills) + count($docsL),
+                'groups'     => $groups,
+                'bill_count' => $dayBill,
+                'doc_count'  => $dayDoc,
+                'total'      => $dayBill + $dayDoc,
             ];
+            // วันที่ยังไม่ถึง (>= วันนี้) = งานอนาคต ; ก่อนวันนี้ หรือไม่ระบุวันที่ = อดีตค้างรับเข้า
+            if ($isValid && $day >= $today) {
+                $futureDays[] = $row;
+            } else {
+                $pastDays[] = $row;
+            }
         }
+
+        $allDays = array_merge($pastDays, $futureDays);
 
         return view('driver.billreceive_monitor', [
             'loggedInName' => $this->userName(),
-            'days'         => $days,
-            'grandTotal'   => array_sum(array_column($days, 'total')),
+            'pastDays'     => $pastDays,
+            'futureDays'   => $futureDays,
+            'grandTotal'   => array_sum(array_column($allDays, 'total')),
+            'grandBills'   => array_sum(array_column($allDays, 'bill_count')),
+            'grandDocs'    => array_sum(array_column($allDays, 'doc_count')),
+            'dayCount'     => count($allDays),
         ]);
     }
 
