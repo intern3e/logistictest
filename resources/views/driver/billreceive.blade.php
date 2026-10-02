@@ -377,7 +377,9 @@ a { color: inherit; text-decoration: none; }
 
 <!-- Modal ส่งใหม่: จ่ายใหม่ที่นี่เลย หรือ คืนไปเลือกใหม่ที่หน้าจ่ายงานขนส่ง -->
 <div class="modal-overlay" id="redoModal">
-  <div class="modal-box" style="max-width:460px;">
+  <div class="modal-box" style="max-width:460px;position:relative;">
+    <button type="button" aria-label="ปิด" onclick="closeRedo()"
+      style="position:absolute;top:14px;right:14px;width:32px;height:32px;border:none;background:#f1f5f9;color:#475569;border-radius:8px;font-size:18px;line-height:1;cursor:pointer;">&times;</button>
     <div class="modal-title">ส่งใหม่</div>
     <div class="modal-sub" id="redoLabel"></div>
 
@@ -814,7 +816,7 @@ function openRedo(idxs){
   document.getElementById('redoModal').classList.add('open');
 }
 function closeRedo(){ document.getElementById('redoModal').classList.remove('open'); redoIdxs = []; }
-document.getElementById('redoModal').addEventListener('click', function(e){ if(e.target===this) closeRedo(); });
+// ล็อก popup ส่งใหม่: ปิดได้เฉพาะกดกากบาท/ยกเลิก เท่านั้น (กดพื้นหลังข้างนอกไม่ปิด)
 
 // ปุ่ม "ส่งใหม่" ของแต่ละบิล
 function doRedo(i){ openRedo([i]); }
