@@ -360,6 +360,11 @@
         .cust-cell {
             text-align: left;
             font-weight: 500;
+            white-space: normal;        /* ชื่อยาวให้ขึ้นบรรทัดใหม่ */
+            word-break: break-word;
+            overflow-wrap: anywhere;
+            max-width: 220px;
+            line-height: 1.35;
         }
 
         .center {
@@ -965,6 +970,7 @@
                             <th>SO</th>
                             <th style="text-align:left;">รายการสินค้า</th>
                             <th style="text-align:left;">ลูกค้า</th>
+                            <th style="text-align:left;">ร้านค้า (PO)</th>
                             <th style="text-align:left;">Sale</th>
                             <th>จัดการ</th>
                             <th>รับโดย</th>
@@ -1034,7 +1040,22 @@
                                         ดูสินค้า @if ($items) ({{ $items->count() }}) @endif
                                     </button>
                                 </td>
-                                <td class="cust-cell">{{ $h->customer_name }}</td>
+                                <td class="cust-cell">
+                                    {{ $h->customer_name ?: '-' }}
+                                    @if(!empty($h->customer_id))
+                                        <div style="font-size:12px;color:#6b7280;margin-top:2px;">รหัส: {{ $h->customer_id }}</div>
+                                    @endif
+                                </td>
+                                <td class="cust-cell">
+                                    @if($poType === 'internal')
+                                        <span style="color:#9ca3af;">— ภายใน —</span>
+                                    @else
+                                        {{ $h->vendor_name ?: '-' }}
+                                        @if(!empty($h->vendor_code))
+                                            <div style="font-size:12px;color:#6b7280;margin-top:2px;">รหัส: {{ $h->vendor_code }}</div>
+                                        @endif
+                                    @endif
+                                </td>
                                 <td>{{ $h->sale ?: '—' }}</td>
                                 <td>
                                     @if ($h->type === 'external' || $h->type === 'legacy')
@@ -1073,7 +1094,7 @@
                                 <td class="muted">{{ $h->packed_at ? \Carbon\Carbon::parse($h->packed_at)->format('d/m/Y H:i') : '—' }}</td>
                             </tr>
                         @empty
-                            <tr><td colspan="10" class="empty">ไม่มีรายการที่รอระบุตำแหน่ง</td></tr>
+                            <tr><td colspan="11" class="empty">ไม่มีรายการที่รอระบุตำแหน่ง</td></tr>
                         @endforelse
                     </tbody>
                 </table>

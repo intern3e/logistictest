@@ -428,7 +428,11 @@
                             ->unique('dn_no')->values();
                     @endphp
                     <div class="so-head-main">
-                        <div class="so-id {{ $bill->all_done ? 'is-done' : '' }}">{{ $bill->so_id }}</div>
+                        <div class="so-id {{ $bill->all_done ? 'is-done' : '' }}">
+                            <a href="http://server_update:8000/sodetail?SONum={{ urlencode($bill->so_id) }}"
+                               target="_blank" rel="noopener" onclick="event.stopPropagation()"
+                               style="color:inherit;text-decoration:underline;text-decoration-style:dotted;">{{ $bill->so_id }}</a>
+                        </div>
                         @if($headerBills->isNotEmpty())
                             <div class="so-billno-row">
                                 <span class="so-billno-count">{{ $headerBills->count() }} บิล</span>
@@ -494,6 +498,10 @@
                                                onchange="toggleBillReceived(this)">
                                         <span>ได้รับบิลแล้ว</span>
                                     </label>
+                                    @if (($dn->bill_received ?? false) && (!empty($dn->bill_received_by) || !empty($dn->bill_received_at)))
+                                        @php $brTime = !empty($dn->bill_received_at) ? ' · ' . \Carbon\Carbon::parse($dn->bill_received_at)->addYears(543)->format('d/m/Y H:i') : ''; @endphp
+                                        <span class="dn-time">รับบิลโดย {{ $dn->bill_received_by ?: '-' }}{{ $brTime }}</span>
+                                    @endif
                                 @endif
                                 
                                 @if (!empty($dn->time))
@@ -506,9 +514,12 @@
                                 @if ($isCancelled)
                                     <span class="dn-cancelled-badge">ยกเลิกแล้ว</span>
                                 @elseif ($isPicked)
-                                    <span class="dn-picked-badge">
-                                        จัดของแล้ว{{ !empty($dn->picked_by) ? ' โดย ' . $dn->picked_by : '' }}
-                                    </span>
+                                    @php
+                                        $pBy = $dn->picked_by ?: 'ระบบเก่า';
+                                        $pLegacy = (($dn->picked_legacy ?? false) && !empty($dn->picked_by)) ? ' (ระบบเก่า)' : '';
+                                        $pAt = !empty($dn->picked_at) ? ' · ' . \Carbon\Carbon::parse($dn->picked_at)->addYears(543)->format('d/m/Y H:i') : '';
+                                    @endphp
+                                    <span class="dn-picked-badge">จัดของแล้ว โดย {{ $pBy }}{{ $pLegacy }}{{ $pAt }}</span>
                                 @endif
                             </div>
                         </div>

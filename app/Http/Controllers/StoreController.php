@@ -773,6 +773,7 @@ class StoreController extends Controller
         $columns  = array_values(array_filter([
             'so_id', 'time', self::TBLBILL_CUSTOMER_COLUMN, self::TBLBILL_CUSTOMER_ID_COLUMN,
             self::TBLBILL_OPENED_BY_COLUMN, $dnColumn, 'status', 'statuspdf', 'status_bill',
+            'status_bill_by', 'status_bill_time',
             self::TBLBILL_PICKER_COLUMN, self::TBLBILL_PICKER_TIME_COLUMN,
         ]));
 
@@ -784,6 +785,24 @@ class StoreController extends Controller
             ->when($billDate, fn ($q) => $q->whereDate('time', $billDate))
             ->orderBy('time')
             ->get($columns);
+
+        // ตรวจสถานะยกเลิกจาก ERP (SOInvHD.DocuStatus = 'C') เหมือนหน้า so/show — ถามทีเดียวทุกเลขบิล
+        $erpCancelled = [];
+        $invNos = $rows->pluck($dnColumn)->filter()->unique()->values()->all();
+        if (!empty($invNos)) {
+            try {
+                $inv = DB::connection(self::MSSQL_CONNECTION)->table('SOInvHD')
+                    ->whereIn('INVNO', $invNos)
+                    ->get(['INVNO', 'DocuStatus']);
+                foreach ($inv as $iv) {
+                    if (strtoupper(trim((string) $iv->DocuStatus)) === 'C') {
+                        $erpCancelled[(string) $iv->INVNO] = true;
+                    }
+                }
+            } catch (\Throwable $e) {
+                Log::warning('billRowsBySo SOInvHD check failed: ' . $e->getMessage());
+            }
+        }
 
         $needFallback = $rows
             ->filter(fn ($r) => empty($r->{self::TBLBILL_PICKER_COLUMN}) && !empty($r->{$dnColumn}))
@@ -808,18 +827,20 @@ class StoreController extends Controller
             : collect();
 
         return $rows
-            ->map(function ($row) use ($dnColumn, $legacyPickers) {
+            ->map(function ($row) use ($dnColumn, $legacyPickers, $erpCancelled) {
                 $dnNo = ($dnColumn && !empty($row->{$dnColumn})) ? $row->{$dnColumn} : null;
 
                 $pickedBy = $row->{self::TBLBILL_PICKER_COLUMN} ?? null;
                 $pickedAt = $row->{self::TBLBILL_PICKER_TIME_COLUMN} ?? null;
                 $isPicked = !empty($pickedBy); // ระบบใหม่: จัดสำเร็จเมื่อมี emp_picker
+                $pickedLegacy = false;
 
                 // ระบบเก่า (fallback): จัดสำเร็จเมื่อเลขบิลอยู่ใน BILL_STATUS_HISTORY (DeliveryStatus>=20)
                 // ชื่อผู้จัดใช้ bills.recNameBill (ไม่ใช่ UpdatedBy/ChangedBy)
                 if (!$isPicked && $dnNo && $legacyPickers->has($dnNo)) {
                     $legacy   = $legacyPickers->get($dnNo);
                     $isPicked = true;
+                    $pickedLegacy = true;                     // จัดโดยระบบเก่า
                     $pickedBy = $legacy->recNameBill ?: null; // ชื่อผู้จัดจากระบบเก่า
                     $pickedAt = $legacy->dateRecBill ?: null;
                 }
@@ -830,12 +851,16 @@ class StoreController extends Controller
                     'customer_name' => $row->{self::TBLBILL_CUSTOMER_COLUMN} ?? null,
                     'customer_id'   => $row->{self::TBLBILL_CUSTOMER_ID_COLUMN} ?? null,
                     'opened_by'     => $row->{self::TBLBILL_OPENED_BY_COLUMN} ?? null,
-                    // บิลยกเลิก = statuspdf = 6 (ตรงกับหน้า so/show) — เดิมเช็คจาก status ผิดคอลัมน์
-                    'cancelled'     => (string) ($row->statuspdf ?? '') === '6',
+                    // บิลยกเลิก = statuspdf = 6 (ในระบบ) หรือ DocuStatus = 'C' ใน ERP (SOInvHD) เหมือนหน้า so/show
+                    'cancelled'     => ((string) ($row->statuspdf ?? '') === '6')
+                                        || !empty($erpCancelled[(string) ($row->{$dnColumn} ?? '')]),
                     'picked'        => $isPicked,
                     'picked_by'     => $pickedBy,
                     'picked_at'     => $pickedAt,
+                    'picked_legacy' => $pickedLegacy,
                     'bill_received' => !empty($row->status_bill),   // สโตร์ติ๊กว่าได้รับบิลแล้ว (tblbill.status_bill)
+                    'bill_received_by'   => $row->status_bill_by ?? null,
+                    'bill_received_at'   => $row->status_bill_time ?? null,
                 ];
             })
             ->groupBy('so_id');
@@ -918,17 +943,54 @@ class StoreController extends Controller
             ['path' => $request->url(), 'query' => $request->query()]
         );
 
-        // เพิ่มชื่อ Sale (so.createdBy จาก DB เก่า 3e) — ดึงเฉพาะรายการในหน้านี้
+        // เพิ่มชื่อ Sale + รหัส/ชื่อร้านค้า (so.createdBy / CustID / CustName จาก DB เก่า 3e) — ดึงเฉพาะรายการในหน้านี้
         $soIds = collect($heads->items())->pluck('so_id')->filter()->unique()->values()->all();
         $saleBySo = collect();
         if (!empty($soIds)) {
             $saleBySo = DB::connection(self::LEGACY_CONNECTION)->table('so')
                 ->whereIn('SONum', $soIds)
-                ->get(['SONum', 'createdBy'])
+                ->get(['SONum', 'createdBy', 'CustID', 'CustName'])
                 ->keyBy('SONum');
         }
         $heads->getCollection()->transform(function ($h) use ($saleBySo) {
-            $h->sale = optional($saleBySo->get($h->so_id))->createdBy;
+            $so = $saleBySo->get($h->so_id);
+            $h->sale = optional($so)->createdBy;
+            // รหัสลูกค้า: internal มี customer_code อยู่แล้ว ; ที่เหลือดึงจาก so.CustID
+            $code = $h->customer_id ?? ($h->customer_code ?? null);
+            if (empty($code)) $code = optional($so)->CustID;
+            $h->customer_id = $code;
+            // ชื่อลูกค้า: ถ้ายังว่างให้เติมจาก so.CustName
+            if (empty($h->customer_name)) $h->customer_name = optional($so)->CustName;
+            return $h;
+        });
+
+        // ร้านค้า (vendor) ของ PO — เฉพาะ PO ภายนอก (รหัสที่มี 'A' = ภายใน ไม่มีร้านค้า)
+        // ดึงจาก db3e.polist (PONum -> VendorID, VendorName) คิวรี่เดียว
+        $extPoNums = collect($heads->items())
+            ->filter(fn ($h) => !str_contains((string) $h->po_display, 'A'))
+            ->map(fn ($h) => preg_replace('/^PO/i', '', (string) $h->po_display))
+            ->filter()->unique()->values()->all();
+        $vendorByPo = collect();
+        if (!empty($extPoNums)) {
+            try {
+                $vendorByPo = DB::connection(self::LEGACY_CONNECTION)->table('polist')
+                    ->whereIn('PONum', $extPoNums)
+                    ->get(['PONum', 'VendorID', 'VendorName'])
+                    ->keyBy(fn ($r) => (string) $r->PONum);
+            } catch (\Throwable $e) {
+                Log::warning('store_location vendor(polist) resolve failed: ' . $e->getMessage());
+            }
+        }
+        $heads->getCollection()->transform(function ($h) use ($vendorByPo) {
+            if (str_contains((string) $h->po_display, 'A')) {   // PO ภายใน -> ไม่มีร้านค้า
+                $h->vendor_code = null;
+                $h->vendor_name = null;
+                return $h;
+            }
+            $po = preg_replace('/^PO/i', '', (string) $h->po_display);
+            $v = $vendorByPo->get($po);
+            $h->vendor_code = optional($v)->VendorID;
+            $h->vendor_name = optional($v)->VendorName;
             return $h;
         });
 
@@ -1180,7 +1242,9 @@ class StoreController extends Controller
 
         $affected = DB::table('tblbill')
             ->where(self::TBLBILL_DN_COLUMN, $validated['billid'])
-            ->update(['status_bill' => $validated['received'] ? 'ได้รับแล้ว' : null]);
+            ->update($validated['received']
+                ? ['status_bill' => 'ได้รับแล้ว', 'status_bill_by' => $authUser->name, 'status_bill_time' => now()]
+                : ['status_bill' => null, 'status_bill_by' => null, 'status_bill_time' => null]);
 
         if ($affected === 0) {
             return response()->json(['ok' => false, 'message' => 'ไม่พบเลขบิลนี้'], 404);

@@ -44,6 +44,36 @@
     .grp-cnt{margin-left:auto;font-size:12px;font-weight:700;color:var(--ink2);background:var(--primary-soft);padding:2px 10px;border-radius:999px}
     .grp-chips{display:flex;flex-wrap:wrap;gap:6px}
     .chips{display:flex;flex-wrap:wrap;gap:6px}
+    /* รายการบิลแบบมีรายละเอียด */
+    .kind-label{font-size:12px;font-weight:800;margin:8px 0 5px}
+    .kind-label.tag-bill{color:var(--bill)} .kind-label.tag-doc{color:var(--doc)}
+    .bill-list{display:flex;flex-direction:column;gap:7px}
+    .bill-item{border:1px solid var(--line);border-left-width:3px;border-radius:8px;padding:7px 10px;background:#fff}
+    .bill-item.bill{border-left-color:var(--bill-bd)}
+    .bill-item.doc{border-left-color:var(--doc-bd);background:#fffdf9}
+    .bi-top{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+    .bi-no{font-family:'JetBrains Mono','Sarabun',monospace;font-weight:700;font-size:14px;color:var(--ink)}
+    .bill-item.bill .bi-no{color:var(--bill)} .bill-item.doc .bi-no{color:var(--doc)}
+    .bi-cust{font-size:13px;font-weight:600;color:var(--ink)}
+    .bi-cid{font-weight:400;color:var(--ink3)}
+    .bi-items-btn{margin-left:auto;font-size:12px;font-weight:700;color:#fff;background:var(--doc);border:none;border-radius:7px;padding:4px 12px;cursor:pointer}
+    .bi-items-btn:hover{filter:brightness(1.08)}
+    .bi-meta{display:flex;flex-wrap:wrap;gap:4px 16px;font-size:12px;color:var(--ink2);margin-top:4px}
+    .bi-meta b{color:var(--ink)}
+    .bi-note{font-size:12px;color:#b45309;margin-top:4px;background:#fff7ed;border-radius:6px;padding:3px 8px}
+    /* popup สินค้า */
+    .md-ov{display:none;position:fixed;inset:0;background:rgba(15,23,42,.5);z-index:100;align-items:center;justify-content:center;padding:16px}
+    .md-ov.on{display:flex}
+    .md-box{background:#fff;border-radius:14px;width:100%;max-width:520px;max-height:85vh;display:flex;flex-direction:column;overflow:hidden;box-shadow:0 20px 60px rgba(0,0,0,.25)}
+    .md-head{display:flex;align-items:center;gap:10px;padding:14px 18px;background:var(--doc);color:#fff}
+    .md-head h3{font-size:16px;font-weight:800;flex:1}
+    .md-x{background:rgba(255,255,255,.2);border:none;color:#fff;width:30px;height:30px;border-radius:8px;cursor:pointer;font-size:15px;font-weight:700}
+    .md-body{padding:14px 18px;overflow-y:auto}
+    .md-tbl{width:100%;border-collapse:collapse;font-size:14px}
+    .md-tbl th{text-align:left;color:var(--ink2);font-weight:700;font-size:12px;padding:6px 8px;border-bottom:2px solid var(--line)}
+    .md-tbl td{padding:7px 8px;border-bottom:1px solid var(--line)}
+    .md-tbl td.q{text-align:right;font-weight:700;white-space:nowrap}
+    .md-empty{text-align:center;color:var(--ink3);padding:24px}
     .chip{font-family:'JetBrains Mono','Sarabun',monospace;font-size:13px;font-weight:600;padding:4px 10px;border-radius:7px;border:1px solid var(--line-strong);background:#fff}
     .chip.bill{background:var(--bill-soft);border-color:var(--bill-bd);color:var(--bill)}
     .chip.doc{background:var(--doc-soft);border-color:var(--doc-bd);color:var(--doc)}
@@ -144,5 +174,39 @@
       </div>
     </div>
   </main>
+
+  <!-- Popup รายการสินค้าในบิลชั่วคราว -->
+  <div class="md-ov" id="docModal" onclick="if(event.target===this)closeDocItems()">
+    <div class="md-box">
+      <div class="md-head">
+        <h3>รายการสินค้า — <span id="docModalId">-</span></h3>
+        <button type="button" class="md-x" onclick="closeDocItems()">&#10005;</button>
+      </div>
+      <div class="md-body" id="docModalBody"></div>
+    </div>
+  </div>
+
+  <script>
+    const DOC_ITEMS_URL = "{{ route('billreceive.docItems') }}";
+    function escHtml(s){return String(s??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));}
+    async function showDocItems(docId){
+      const ov=document.getElementById('docModal');
+      document.getElementById('docModalId').textContent=docId;
+      const body=document.getElementById('docModalBody');
+      body.innerHTML='<div class="md-empty">กำลังโหลด...</div>';
+      ov.classList.add('on');
+      try{
+        const res=await fetch(DOC_ITEMS_URL+'?doc_id='+encodeURIComponent(docId),{headers:{'Accept':'application/json','X-Requested-With':'XMLHttpRequest'}});
+        const d=await res.json();
+        const items=(d&&d.items)||[];
+        if(!items.length){ body.innerHTML='<div class="md-empty">ไม่มีรายการสินค้า</div>'; return; }
+        body.innerHTML='<table class="md-tbl"><thead><tr><th>#</th><th>รายการสินค้า</th><th class="q">จำนวน</th></tr></thead><tbody>'+
+          items.map((it,i)=>'<tr><td>'+(i+1)+'</td><td>'+escHtml(it.item_name||'-')+'</td><td class="q">'+escHtml(it.quantity??'-')+'</td></tr>').join('')+
+          '</tbody></table>';
+      }catch(e){ body.innerHTML='<div class="md-empty">โหลดไม่สำเร็จ</div>'; }
+    }
+    function closeDocItems(){ document.getElementById('docModal').classList.remove('on'); }
+    document.addEventListener('keydown',e=>{ if(e.key==='Escape')closeDocItems(); });
+  </script>
 </body>
 </html>

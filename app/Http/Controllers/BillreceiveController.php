@@ -187,6 +187,20 @@ class BillreceiveController extends Controller
         }
     }
 
+    /** รายการสินค้าในบิลชั่วคราว (doc_detail) — ใช้กับ popup หน้า monitor */
+    public function docItems(Request $request)
+    {
+        [$user, $err] = $this->requireViewerApi();
+        if ($err) return $err;
+
+        $docId = trim((string) $request->input('doc_id', ''));
+        if ($docId === '') return response()->json(['ok' => false, 'items' => []]);
+
+        $items = DB::table('doc_detail')->where('doc_id', $docId)
+            ->get(['item_name', 'quantity']);
+        return response()->json(['ok' => true, 'doc_id' => $docId, 'items' => $items]);
+    }
+
     /**
      * หน้า Monitor: สรุปรายวันว่ามี "บิลส่งของ" และ "บิลชั่วคราว" เลขอะไรบ้างที่ยังไม่ได้รับเข้า
      * เข้ามาแล้วเห็นเลยว่าวันไหนมีบิลค้างรับเข้าอยู่
@@ -203,23 +217,46 @@ class BillreceiveController extends Controller
 
         $ids = $deliveries->pluck('bill_id')->filter()->unique()->values();
         $billsBySoDetail = Bill::whereIn('so_detail_id', $ids)
-            ->get(['so_detail_id', 'billid', 'transport_type'])->keyBy('so_detail_id');
-        $docs = Docbills::whereIn('doc_id', $ids)->get(['doc_id'])->keyBy('doc_id');
+            ->get(['so_detail_id', 'billid', 'transport_type', 'customer_id', 'customer_name', 'emp_name'])
+            ->keyBy('so_detail_id');
+        $docs = Docbills::whereIn('doc_id', $ids)
+            ->get(['doc_id', 'id_com', 'com_name', 'emp_name', 'notes'])
+            ->keyBy('doc_id');
 
         $resultStatuses = ['จัดส่งสำเร็จ', 'ค้างบิล', 'สินค้าผิด'];
-        $pending = [];   // [day][groupKey] => ['transport'=>, 'driver'=>, 'bill'=>[...], 'doc'=>[...]]
+        $pending = [];   // [day][groupKey] => ['transport'=>, 'driver'=>, 'bill'=>[obj...], 'doc'=>[obj...]]
 
         foreach ($deliveries->groupBy('bill_id') as $billId => $rows) {
             $first  = $rows->sortByDesc('time_pick')->first();
             $status = trim((string) ($first->status ?? ''));
             if (in_array($status, $resultStatuses, true)) continue;   // รับเข้าแล้ว -> ข้าม
 
+            $pickTime = optional($first->time_pick)->format('d/m/Y H:i');
+            $base = [
+                'name_pick' => trim((string) ($first->name_pick ?? '')),
+                'time_pick' => $pickTime ?: '',
+            ];
+
             if ($billsBySoDetail->has($billId)) {
-                $no = (string) $billsBySoDetail->get($billId)->billid;
+                $b = $billsBySoDetail->get($billId);
                 $kind = 'bill';
+                $item = $base + [
+                    'no'            => (string) $b->billid,
+                    'customer_id'   => (string) ($b->customer_id ?? ''),
+                    'customer_name' => (string) ($b->customer_name ?? ''),
+                    'opener'        => (string) ($b->emp_name ?? ''),
+                ];
             } elseif ($docs->has($billId)) {
-                $no = (string) $billId;
+                $d = $docs->get($billId);
                 $kind = 'doc';
+                $item = $base + [
+                    'no'            => (string) $billId,
+                    'doc_id'        => (string) $billId,
+                    'customer_id'   => (string) ($d->id_com ?? ''),
+                    'customer_name' => (string) ($d->com_name ?? ''),
+                    'opener'        => (string) ($d->emp_name ?? ''),
+                    'notes'         => (string) ($d->notes ?? ''),
+                ];
             } else {
                 continue;   // งานไปรับของเอง (PO) ไม่นับ
             }
@@ -227,14 +264,14 @@ class BillreceiveController extends Controller
             $day = optional($first->delivery_date)->format('Y-m-d')
                 ?: (optional($first->time_pick)->format('Y-m-d') ?: 'ไม่ระบุวันที่');
 
-            // จัดกลุ่มเลขบิลตาม "ขนส่ง + คนขับ" (คนขับเดียวกันอยู่กล่องเดียวกัน)
+            // จัดกลุ่มตาม "ขนส่ง + คนขับ" (คนขับเดียวกันอยู่กล่องเดียวกัน)
             $transport = trim((string) ($first->transport_name ?? '')) ?: 'ไม่ระบุขนส่ง';
             $driver    = trim((string) ($first->driver_name ?? '')) ?: 'ไม่ระบุคนขับ';
             $gkey      = $transport . ' | ' . $driver;
             if (!isset($pending[$day][$gkey])) {
                 $pending[$day][$gkey] = ['transport' => $transport, 'driver' => $driver, 'bill' => [], 'doc' => []];
             }
-            $pending[$day][$gkey][$kind][] = $no;
+            $pending[$day][$gkey][$kind][$item['no']] = $item;   // ใช้ no เป็น key กันซ้ำ
         }
 
         ksort($pending);   // เรียงอดีต -> อนาคต
@@ -247,10 +284,10 @@ class BillreceiveController extends Controller
             $groups = [];
             $dayBill = 0; $dayDoc = 0;
             foreach ($gmap as $g) {
-                $bills = array_values(array_unique($g['bill']));
-                $docsL = array_values(array_unique($g['doc']));
-                sort($bills);
-                sort($docsL);
+                $bills = array_values($g['bill']);   // array ของ object (keyed by no -> values)
+                $docsL = array_values($g['doc']);
+                usort($bills, fn ($a, $b) => strcmp($a['no'], $b['no']));
+                usort($docsL, fn ($a, $b) => strcmp($a['no'], $b['no']));
                 $dayBill += count($bills);
                 $dayDoc  += count($docsL);
                 $groups[] = [

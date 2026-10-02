@@ -452,49 +452,45 @@ class DepositController extends Controller
     }
 
     /**
-     * เช็ค PO ที่รอยกเลิก กับ ERP (getPODetail) — ถ้า DocuStatus = 'Y' แปลว่ายกเลิกใน ERP แล้ว
-     * ให้อัปเดตสถานะเป็น "ยกเลิก" อัตโนมัติ (ยิง ERP ทีละ 10 ใบแบบขนาน ไม่ช้า)
+     * เช็ค PO ที่รอยกเลิกกับ POHD (MSSQL) — รวบเลข PO ทั้งหมดแล้วถาม "ทีเดียว"
+     * ถ้า DocuStatus = 'Y' (ยกเลิกใน ERP แล้ว) -> อัปเดตเป็น "ยกเลิก" อัตโนมัติ
      */
     private function autoCancelByErpDocuStatus($rows): void
     {
         if ($rows->isEmpty()) return;
 
-        $byPo = $rows->filter(fn ($r) => !empty($r->po_id))->groupBy('po_id');
-        $poNums = $byPo->keys()->all();
-        if (empty($poNums)) return;
+        // map DocuNo (POHD) -> [ids]  ; DocuNo = 'PO' + เลข PO (ตัด prefix PO เดิมออกก่อน)
+        $idsByDocu = [];
+        foreach ($rows as $r) {
+            $po = trim((string) $r->po_id);
+            if ($po === '') continue;
+            $docu = 'PO' . preg_replace('/^PO/i', '', $po);
+            $idsByDocu[$docu][] = $r->id;
+        }
+        if (empty($idsByDocu)) return;
+
+        try {
+            // รวบทุก PO ถาม POHD ครั้งเดียว
+            $pohd = \Illuminate\Support\Facades\DB::connection('mssql_account03')->table('POHD')
+                ->whereIn('DocuNo', array_keys($idsByDocu))
+                ->get(['DocuNo', 'DocuStatus']);
+        } catch (\Throwable $e) {
+            Log::error('autoCancelByErpDocuStatus POHD query error: ' . $e->getMessage());
+            return;
+        }
 
         $toCancel = [];
-        foreach (array_chunk($poNums, 10) as $chunk) {
-            try {
-                $responses = Http::pool(function ($pool) use ($chunk) {
-                    $reqs = [];
-                    foreach ($chunk as $i => $po) {
-                        $reqs[] = $pool->as('po_' . $i)->timeout(20)
-                            ->get('http://server_update:8000/api/getPODetail', ['PONum' => $po]);
-                    }
-                    return $reqs;
-                });
-            } catch (\Throwable $e) {
-                Log::error('autoCancelByErpDocuStatus pool error: ' . $e->getMessage());
-                continue;
-            }
-
-            foreach ($chunk as $i => $po) {
-                $res = $responses['po_' . $i] ?? null;
-                if (!($res instanceof \Illuminate\Http\Client\Response) || !$res->successful()) continue;
-                $j = $res->json();
-                $docu = is_array($j) ? ($j['DocuStatus'] ?? null) : null;
-                if (strtoupper(trim((string) $docu)) === 'Y') {
-                    foreach ($byPo->get($po) as $r) {
-                        $toCancel[] = $r->id;
-                    }
+        foreach ($pohd as $h) {
+            if (strtoupper(trim((string) $h->DocuStatus)) === 'Y') {
+                foreach ($idsByDocu[$h->DocuNo] ?? [] as $id) {
+                    $toCancel[] = $id;
                 }
             }
         }
 
         if (!empty($toCancel)) {
             \App\Models\PooutsideCancelled::whereIn('id', $toCancel)->update(['status' => 'ยกเลิก']);
-            Log::info('Auto-cancel pooutside by ERP DocuStatus=Y', ['count' => count($toCancel)]);
+            Log::info('Auto-cancel pooutside by POHD DocuStatus=Y', ['count' => count($toCancel)]);
         }
     }
 
