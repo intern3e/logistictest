@@ -1112,9 +1112,20 @@ function companyAbbr(c) {
 }
 
 function computeSummary() {
-  const otData = allData.filter(r => !isCleaning(r));
+  // กรองข้อมูลตามบริษัทที่เลือก
+  const companyF = (document.getElementById('companyFilter').value || '').trim();
+  let filteredData = allData;
+  
+  if (companyF) {
+    filteredData = allData.filter(r => (r.company || '').trim() === companyF);
+  }
+  
+  // กรองงานทำความสะอาดออก
+  const otData = filteredData.filter(r => !isCleaning(r));
+  
   let total = otData.length, working = 0, pending = 0, approved = 0;
   let pendingMin = 0, approvedMin = 0;
+  
   otData.forEach(r => {
     const mins = minutesBetween(r.startTime, r.endTime);
     if (r.status === 'กำลังทำงาน') working++;
@@ -1122,6 +1133,7 @@ function computeSummary() {
     else if (r.status === 'ไม่อนุมัติ') {}
     else { pending++; pendingMin += mins; }
   });
+  
   document.getElementById('sumTotal').innerHTML = total + ' <span class="stat-sub">คำขอ</span>';
   document.getElementById('sumWorking').innerHTML = working + ' <span class="stat-sub">คน</span>';
   document.getElementById('sumPending').innerHTML = pending + ' <span class="stat-sub">· ' + formatDurationMin(pendingMin) + '</span>';
@@ -1253,6 +1265,7 @@ function onCompanyFilterChange() {
   sel.classList.toggle('active-filter', sel.value !== '');
   populateSupervisorFilter();
   renderTable();
+  computeSummary();  // ★ เพิ่มบรรทัดนี้เพื่ออัปเดตสถิติ
 }
 
 function getOrderedCompanies() {
@@ -1370,7 +1383,7 @@ function renderTable() {
       </div></td></tr>`;
     } else {
       body.innerHTML = `<tr><td colspan="13"><div class="empty">
-        <div class="empty-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg></div>
+        <div class="empty-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy='11' r='8'/><path d='m21 21-4.3-4.3'/></svg></div>
         <div class="empty-title">ไม่พบข้อมูล</div>
         <div class="empty-desc">ลองปรับตัวกรอง หรือล้างคำค้นหา</div>
       </div></td></tr>`;
@@ -1426,7 +1439,10 @@ function renderTable() {
     }
     actions += `<button class="icon-btn delete" title="ลบ" onclick="deleteRow(${r.id})"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-2 14a2 2 0 0 1-2 2H9a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/></svg></button>`;
 
-    const supCell = r.supervisor ? escapeHtml(r.supervisor) : '<span class="dim">—</span>';
+    // ★ แก้ไข: แสดง "เข้างานปกติ" แทน "-" หรือ "—" เมื่อไม่มีข้อมูลหัวหน้างาน
+    const supText = String(r.supervisor || '').trim();
+    const supCell = (supText && supText !== '-' && supText !== '—') ? escapeHtml(r.supervisor) : 'เข้างานปกติ';
+    
     const compCell = r.company ? `<span class="company-tag" title="${escapeHtml(r.company)}">${escapeHtml(companyAbbr(r.company))}</span>` : '<span class="dim">—</span>';
     let allowCell;
     if (hasAllowance(r)) {
@@ -1506,7 +1522,10 @@ function openAction(id, status, record) {
   }
   document.getElementById('actionReqId').textContent = record.requestId;
   document.getElementById('actionName').textContent = record.employeeName;
-  document.getElementById('actionSupervisor').textContent = record.supervisor || '—';
+  
+  // ★ แก้ไข: แสดง "เข้างานปกติ" แทน "—" ในหน้าต่างป๊อปอัปด้วย
+  document.getElementById('actionSupervisor').textContent = (record.supervisor && String(record.supervisor).trim() !== '' && String(record.supervisor) !== '-' && String(record.supervisor) !== '—') ? record.supervisor : 'เข้างานปกติ';
+  
   document.getElementById('actionCompany').textContent = record.company || '—';
   document.getElementById('actionAllowance').textContent =
     hasAllowance(record) ? (allowanceAmount(record) > 0
@@ -1818,6 +1837,7 @@ const COMPANY_LOGOS = {
   'chavest': '162qxrHZ9n9K4HbYbzUjRCBQq-VYpk6Pn',
   'triple e lighting': '15ujjcMPWSruIhEuWkQMpsDBcDvW8Rmdn',  // เพิ่มใหม่ - TR
   'eita & paul': '1pkXkzEbYd8kIOAlUj_heuGgTOOO45pWT',        // เพิ่มใหม่ - EI
+  'hikari denki': '1-SyANzGHhm9KloOXLPLW_qy9Qpz-sxWw',      // เพิ่มใหม่ - Hikari Denki
 };
 function companyLogo(company) {
   const id = COMPANY_LOGOS[String(company || '').trim().toLowerCase()];
@@ -1969,6 +1989,7 @@ function enterCompany(company) {
   _showPage('ot');
   populateSupervisorFilter();
   renderTable();
+  computeSummary();  // ★ เพิ่มบรรทัดนี้
 }
 
 function backToCompanyGate() {

@@ -8,6 +8,9 @@
       <div class="grp-row">
         <div class="grp-label">
           <span class="grp-transport">{{ $g['transport'] }}</span>
+          @if (!empty($g['id_transport']))
+            <span class="grp-idt">· รหัสขนส่ง: {{ $g['id_transport'] }}</span>
+          @endif
           <span class="grp-driver">· คนขับ: {{ $g['driver'] }}</span>
           <span class="grp-cnt">{{ $g['total'] }} บิล</span>
         </div>

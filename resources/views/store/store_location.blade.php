@@ -967,10 +967,9 @@
                         <tr>
                             <th class="center" style="width:50px;"><input type="checkbox" id="chkAll"></th>
                             <th>PO</th>
-                            <th>SO</th>
-                            <th style="text-align:left;">รายการสินค้า</th>
-                            <th style="text-align:left;">ลูกค้า</th>
                             <th style="text-align:left;">ร้านค้า (PO)</th>
+                            <th>SO</th>
+                            <th style="text-align:left;">ลูกค้า</th>
                             <th style="text-align:left;">Sale</th>
                             <th>จัดการ</th>
                             <th>รับโดย</th>
@@ -1013,16 +1012,6 @@
                                             <span class="po-type-badge po-external">ภายนอก</span>
                                         @endif
                                     </div>
-                                </td>
-                                <td>
-                                    @if (!empty($h->so_id))
-                                        <a href="http://server_update:8000/sodetail?SONum={{ urlencode($h->so_id) }}" target="_blank"
-                                           style="font-weight:600;color:#2853d5;text-decoration:none;" title="เปิดรายละเอียด SO">{{ $h->so_id }}</a>
-                                    @else
-                                        <span style="font-weight:600;">-</span>
-                                    @endif
-                                </td>
-                                <td class="items-cell">
                                     @php
                                         $itemsJson = $items
                                             ? $items->map(fn ($it) => [
@@ -1032,19 +1021,15 @@
                                             ])->values()
                                             : null;
                                     @endphp
-                                    {{-- ทุกแถวใช้ปุ่มเปิด popup เหมือนกัน: มี items แล้วฝังไว้ (ไม่ต้อง fetch) / ไม่มี = โหลดตอนกด
+                                    {{-- ปุ่มดูสินค้าอยู่ใต้เลข PO: มี items แล้วฝังไว้ (ไม่ต้อง fetch) / ไม่มี = โหลดตอนกด
                                          ส่ง data-so ไปด้วย เพราะ PO เดียวกันมีได้หลาย SO → ต้องกรองให้เห็นเฉพาะ SO ของแถวนี้ --}}
-                                    <button type="button" class="btn-view-items"
-                                        data-po="{{ $h->po_display }}" data-so="{{ $h->so_id }}"
-                                        @if ($itemsJson !== null) data-items='@json($itemsJson)' @endif>
-                                        ดูสินค้า @if ($items) ({{ $items->count() }}) @endif
-                                    </button>
-                                </td>
-                                <td class="cust-cell">
-                                    {{ $h->customer_name ?: '-' }}
-                                    @if(!empty($h->customer_id))
-                                        <div style="font-size:12px;color:#6b7280;margin-top:2px;">รหัส: {{ $h->customer_id }}</div>
-                                    @endif
+                                    <div style="margin-top:4px;">
+                                        <button type="button" class="btn-view-items"
+                                            data-po="{{ $h->po_display }}" data-so="{{ $h->so_id }}"
+                                            @if ($itemsJson !== null) data-items='@json($itemsJson)' @endif>
+                                            ดูสินค้า @if ($items) ({{ $items->count() }}) @endif
+                                        </button>
+                                    </div>
                                 </td>
                                 <td class="cust-cell">
                                     @if($poType === 'internal')
@@ -1054,6 +1039,20 @@
                                         @if(!empty($h->vendor_code))
                                             <div style="font-size:12px;color:#6b7280;margin-top:2px;">รหัส: {{ $h->vendor_code }}</div>
                                         @endif
+                                    @endif
+                                </td>
+                                <td>
+                                    @if (!empty($h->so_id))
+                                        <a href="http://server_update:8000/sodetail?SONum={{ urlencode($h->so_id) }}" target="_blank"
+                                           style="font-weight:600;color:#2853d5;text-decoration:none;" title="เปิดรายละเอียด SO">{{ $h->so_id }}</a>
+                                    @else
+                                        <span style="font-weight:600;">-</span>
+                                    @endif
+                                </td>
+                                <td class="cust-cell">
+                                    {{ $h->customer_name ?: '-' }}
+                                    @if(!empty($h->customer_id))
+                                        <div style="font-size:12px;color:#6b7280;margin-top:2px;">รหัส: {{ $h->customer_id }}</div>
                                     @endif
                                 </td>
                                 <td>{{ $h->sale ?: '—' }}</td>
@@ -1094,7 +1093,7 @@
                                 <td class="muted">{{ $h->packed_at ? \Carbon\Carbon::parse($h->packed_at)->format('d/m/Y H:i') : '—' }}</td>
                             </tr>
                         @empty
-                            <tr><td colspan="11" class="empty">ไม่มีรายการที่รอระบุตำแหน่ง</td></tr>
+                            <tr><td colspan="9" class="empty">ไม่มีรายการที่รอระบุตำแหน่ง</td></tr>
                         @endforelse
                     </tbody>
                 </table>

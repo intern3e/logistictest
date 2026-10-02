@@ -41,6 +41,7 @@
     .grp-label{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:7px}
     .grp-transport{font-weight:800;font-size:14px;color:var(--primary)}
     .grp-driver{font-size:13px;font-weight:600;color:var(--ink2)}
+    .grp-idt{font-size:13px;font-weight:600;color:var(--ink2)}
     .grp-cnt{margin-left:auto;font-size:12px;font-weight:700;color:var(--ink2);background:var(--primary-soft);padding:2px 10px;border-radius:999px}
     .grp-chips{display:flex;flex-wrap:wrap;gap:6px}
     .chips{display:flex;flex-wrap:wrap;gap:6px}

@@ -265,11 +265,12 @@ class BillreceiveController extends Controller
                 ?: (optional($first->time_pick)->format('Y-m-d') ?: 'ไม่ระบุวันที่');
 
             // จัดกลุ่มตาม "ขนส่ง + คนขับ" (คนขับเดียวกันอยู่กล่องเดียวกัน)
-            $transport = trim((string) ($first->transport_name ?? '')) ?: 'ไม่ระบุขนส่ง';
-            $driver    = trim((string) ($first->driver_name ?? '')) ?: 'ไม่ระบุคนขับ';
-            $gkey      = $transport . ' | ' . $driver;
+            $transport   = trim((string) ($first->transport_name ?? '')) ?: 'ไม่ระบุขนส่ง';
+            $driver      = trim((string) ($first->driver_name ?? '')) ?: 'ไม่ระบุคนขับ';
+            $idTransport = trim((string) ($first->id_transport ?? ''));
+            $gkey        = $transport . ' | ' . $driver;
             if (!isset($pending[$day][$gkey])) {
-                $pending[$day][$gkey] = ['transport' => $transport, 'driver' => $driver, 'bill' => [], 'doc' => []];
+                $pending[$day][$gkey] = ['transport' => $transport, 'driver' => $driver, 'id_transport' => $idTransport, 'bill' => [], 'doc' => []];
             }
             $pending[$day][$gkey][$kind][$item['no']] = $item;   // ใช้ no เป็น key กันซ้ำ
         }
@@ -291,8 +292,9 @@ class BillreceiveController extends Controller
                 $dayBill += count($bills);
                 $dayDoc  += count($docsL);
                 $groups[] = [
-                    'transport'  => $g['transport'],
-                    'driver'     => $g['driver'],
+                    'transport'    => $g['transport'],
+                    'driver'       => $g['driver'],
+                    'id_transport' => $g['id_transport'] ?? '',
                     'bills'      => $bills,
                     'docs'       => $docsL,
                     'bill_count' => count($bills),

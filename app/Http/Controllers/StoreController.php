@@ -718,6 +718,15 @@ class StoreController extends Controller
         return $q;
     }
 
+    /**
+     * เลขปี พ.ศ. 2 หลักของปีปัจจุบัน สำหรับกรอง "เลขบิล (PO)" — PO รูปแบบ YYMM-xxxx
+     * เช่น ปี 2569 -> "69" (บิลปีเก่า 68/67 ไม่ต้องดึง)
+     */
+    private function currentPoYearPrefix(): string
+    {
+        return str_pad((string) ((Carbon::now()->year + 543) % 100), 2, '0', STR_PAD_LEFT);
+    }
+
     private function recentLocations()
     {
         return internal_po::whereNotNull('location_at')
@@ -920,6 +929,18 @@ class StoreController extends Controller
         $legacyHeads   = $this->buildLegacyPendingLocationRows($request); 
 
         $allHeads = $internalHeads->concat($externalHeads)->concat($legacyHeads);
+
+        // ดึงเฉพาะ "เลขบิล (PO)" ปีปัจจุบันขึ้นไป — PO รูปแบบ YYMM-xxxx (YY = ปี พ.ศ. 2 หลัก)
+        // บิลปีเก่า (เช่น 68xx, 67xx) ไม่ต้องดึงมาแสดง ; ถ้าผู้ใช้ค้นหา PONum เองจะไม่กรอง (ค้นย้อนหลังได้)
+        if (!$request->filled('PONum')) {
+            $curYy = (int) $this->currentPoYearPrefix();
+            $allHeads = $allHeads->filter(function ($h) use ($curYy) {
+                $po = preg_replace('/^PO/i', '', (string) $h->po_display);
+                if (!preg_match('/^(\d{2})/', $po, $m)) return true;   // รูปแบบไม่เข้าเกณฑ์ -> เก็บไว้
+                return (int) $m[1] >= $curYy;
+            })->values();
+        }
+
         if ($poType = $request->input('po_type')) {
             $allHeads = $allHeads->filter(function ($h) use ($poType) {
                 $hasA = str_contains((string) $h->po_display, 'A');
@@ -2192,6 +2213,8 @@ class StoreController extends Controller
             ->whereNotNull('store.PO')->where('store.PO', '<>', '')
             ->whereNotNull('store.SO')->where('store.SO', '<>', '')
             ->when($request->filled('PONum'), fn ($q) => $q->where('store.PO', 'LIKE', '%' . $request->input('PONum') . '%'))
+            // ไม่มีค้นหา PONum -> ดึงเฉพาะ PO ปีปัจจุบันขึ้นไป (YYMM-xxxx) บิลปีเก่าไม่ต้องดึง (70 ปีอนาคตก็ดึง)
+            ->when(!$request->filled('PONum'), fn ($q) => $q->whereRaw('LEFT(store.PO, 2) >= ?', [$this->currentPoYearPrefix()]))
             ->when($request->filled('SONum'), fn ($q) => $q->where('store.SO', 'LIKE', '%' . $request->input('SONum') . '%'))
             ->get();
 
