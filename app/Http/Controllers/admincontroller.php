@@ -218,11 +218,18 @@ class AdminController extends Controller
                 }
             }
 
-            $item->deli_name = $log->driver_name ?? null;
-            $item->deli_time = $log->check_time ?? null;
-            $item->deli_receiver = $log->check_name ?? null;
+            $item->deli_name      = $log->driver_name ?? null;
+            $item->transport_name = $log->transport_name ?? null;
+            $item->deli_time      = $log->check_time ?? null;
+            $item->deli_receiver  = $log->check_name ?? null;
 
-            $sendDate = self::toTime($log->delivery_date ?? null) ?? self::toTime($item->date_of_dali ?? null);
+            // ประเภทขนส่ง: อ่านตรงจาก tblbill.transport_type ('company' = ขนส่งโดยบริษัท, 'private' = ขนส่งเอกชน)
+            $tType = strtolower(trim((string) ($item->transport_type ?? '')));
+            $item->transport_type  = in_array($tType, ['company', 'private'], true) ? $tType : null;
+            $item->transport_label = $item->transport_type === 'company' ? 'ขนส่งโดยบริษัท'
+                                   : ($item->transport_type === 'private' ? 'ขนส่งเอกชน' : null);
+
+            $sendDate = self::toTime($log->time_pick ?? null) ?? self::toTime($item->date_of_dali ?? null);
             $item->route_send_date = $sendDate ? $sendDate->format('d/m/Y') : null;
 
             $d = self::stageDurations($item->time, $pTime, $log->time_pick ?? null, $log->check_time ?? null);
@@ -935,72 +942,6 @@ class AdminController extends Controller
         }
 
         return view('admin.adminroute', compact('bill', 'message'));
-    }
-
-    /* ============ จัดการข้อมูลลูกค้า (custdetail): idcust / namecust / formtype / note ============ */
-
-    // แสดงฟอร์มจัดการข้อมูลลูกค้า
-    public function custdetailForm(Request $request)
-    {
-        $user = $this->requireLogin($request, 'custdetail');
-        return view('admin.custdetail', ['creator' => $user->name ?? '']);
-    }
-
-    // ค้นข้อมูลเดิมของ idcust (ไว้เติมฟอร์มอัตโนมัติเวลาแก้ไข)
-    public function custdetailLookup(Request $request)
-    {
-        $this->requireLogin($request, 'custdetail');
-        $idcust = trim((string) $request->input('idcust'));
-        if ($idcust === '') {
-            return response()->json(['found' => false]);
-        }
-        // เทียบแบบตัดช่องว่างหัวท้าย เผื่อ idcust ในฐานข้อมูลมีเว้นวรรคติดมา
-        $row = DB::table('custdetail')->whereRaw('TRIM(idcust) = ?', [$idcust])->first();
-        if (!$row) {
-            return response()->json(['found' => false]);
-        }
-        return response()->json([
-            'found'    => true,
-            'idcust'   => $row->idcust,
-            'namecust' => $row->namecust,
-            'formtype' => $row->formtype,
-            'note'     => $row->note,
-        ]);
-    }
-
-    // บันทึก: ถ้า idcust มีอยู่แล้ว -> update, ถ้าไม่มี -> insert (ตัดช่องว่างหัวท้าย idcust)
-    public function custdetailSave(Request $request)
-    {
-        $this->requireLogin($request, 'custdetail');
-
-        $data = $request->validate([
-            'idcust'   => 'required|string|max:255',
-            'namecust' => 'nullable|string|max:255',
-            'formtype' => 'nullable|string|max:255',
-            'note'     => 'nullable|string',
-        ]);
-
-        $idcust = trim($data['idcust']);   // บางทีรหัสลูกค้าติดช่องว่างหัวท้ายมา
-        if ($idcust === '') {
-            return response()->json(['ok' => false, 'message' => 'กรุณากรอกรหัสลูกค้า'], 422);
-        }
-
-        $payload = [
-            'namecust' => isset($data['namecust']) ? trim((string) $data['namecust']) : null,
-            'formtype' => $data['formtype'] ?? null,
-            'note'     => $data['note'] ?? null,
-        ];
-
-        // เทียบแบบตัดช่องว่างหัวท้าย เผื่อ idcust เดิมในฐานข้อมูลมีเว้นวรรคติดมา
-        $existing = DB::table('custdetail')->whereRaw('TRIM(idcust) = ?', [$idcust])->first();
-        if ($existing) {
-            DB::table('custdetail')->where('idcust', $existing->idcust)
-                ->update(array_merge($payload, ['idcust' => $idcust]));   // normalize idcust ให้ไม่มีช่องว่าง
-            return response()->json(['ok' => true, 'mode' => 'update', 'message' => 'อัปเดตข้อมูลลูกค้า ' . $idcust . ' เรียบร้อย']);
-        }
-
-        DB::table('custdetail')->insert(array_merge($payload, ['idcust' => $idcust]));
-        return response()->json(['ok' => true, 'mode' => 'insert', 'message' => 'เพิ่มข้อมูลลูกค้า ' . $idcust . ' เรียบร้อย']);
     }
 
     public function history(Request $request)

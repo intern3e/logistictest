@@ -227,6 +227,9 @@
         .stage-card:has(.stage-avg.slow) { border-color: #fecaca; }
 
         .send-date { color: #1e40af; font-weight: 600; }
+        .transport-type { display: inline-block; font-weight: 700; }
+        .transport-type.transport-company { color: #0369a1; }
+        .transport-type.transport-private { color: #9333ea; }
         .status-meta { font-size: 11px; color: #64748b; margin-top: 4px; line-height: 1.5; display: table; margin-left: auto; margin-right: auto; text-align: left; }
         .alert-message { padding: 12px; background-color: #fee2e2; color: #991b1b; border-radius: 8px; margin-bottom: 15px; font-size: 14px; }
 
@@ -742,7 +745,7 @@
                                     $routeLines = [];
                                     if ($item->route_done && !empty($item->route_time)) $routeLines[] = '<i class="fa-regular fa-clock"></i> ' . e($item->route_time);
                                     if ($item->route_done && !empty($item->route_name)) $routeLines[] = '<i class="fa-solid fa-user"></i> ผู้จัด: ' . e($item->route_name);
-                                    if (!empty($item->route_send_date)) $routeLines[] = '<span class="send-date"><i class="fa-regular fa-calendar"></i> ส่งวันที่ ' . e($item->route_send_date) . '</span>';
+                                    if ($item->route_done && !empty($item->route_send_date)) $routeLines[] = '<span class="send-date"><i class="fa-regular fa-calendar"></i> ส่งวันที่ ' . e($item->route_send_date) . '</span>';
                                 @endphp
                                 @if(count($routeLines)) <div class="status-meta">{!! implode('<br>', $routeLines) !!}</div> @endif
                             @endif
@@ -763,16 +766,30 @@
                                     };
                                 @endphp
                                 <span class="badge {{ $deliBadge }}"><i class="fa-solid fa-truck"></i> {{ $item->statusdeli }}</span>
-                                @if(!empty($item->deli_time) || !empty($item->deli_name) || !empty($item->deli_receiver))
-                                    <div class="status-meta">
-                                        @if(!empty($item->deli_time)) <i class="fa-regular fa-clock"></i> {{ \Carbon\Carbon::parse($item->deli_time)->format('Y-m-d H:i') }} @endif
-                                        @if(!empty($item->deli_name)) <br><i class="fa-solid fa-user"></i> คนขับ: {{ $item->deli_name }} @endif
-                                        @if(!empty($item->deli_receiver)) <br><i class="fa-solid fa-user-check"></i> คนรับ: {{ $item->deli_receiver }} @endif
-                                    </div>
-                                @endif
+                                @php
+                                    $deliLines = [];
+                                    if (!empty($item->transport_label)) {
+                                        $tIcon = $item->transport_type === 'company' ? 'fa-truck-fast' : 'fa-people-carry-box';
+                                        $deliLines[] = '<span class="transport-type transport-' . e($item->transport_type) . '"><i class="fa-solid ' . $tIcon . '"></i> ' . e($item->transport_label) . '</span>';
+                                    }
+                                    if (!empty($item->deli_time)) $deliLines[] = '<i class="fa-regular fa-clock"></i> ' . e(\Carbon\Carbon::parse($item->deli_time)->format('Y-m-d H:i'));
+                                    if ($item->transport_type === 'private' && !empty($item->transport_name)) $deliLines[] = '<i class="fa-solid fa-truck"></i> ผู้ขนส่ง: ' . e($item->transport_name);
+                                    elseif (!empty($item->deli_name)) $deliLines[] = '<i class="fa-solid fa-user"></i> คนขับ: ' . e($item->deli_name);
+                                    if (!empty($item->deli_receiver)) $deliLines[] = '<i class="fa-solid fa-user-check"></i> คนรับ: ' . e($item->deli_receiver);
+                                @endphp
+                                @if(count($deliLines)) <div class="status-meta">{!! implode('<br>', $deliLines) !!}</div> @endif
                             @else
                                 <span class="badge pending"><i class="fa-solid fa-clock"></i> รอดำเนินการ</span>
-                                @if(!empty($item->deli_name)) <div class="status-meta"><i class="fa-solid fa-user"></i> คนขับ: {{ $item->deli_name }}</div> @endif
+                                @php
+                                    $deliLines = [];
+                                    if (!empty($item->transport_label)) {
+                                        $tIcon = $item->transport_type === 'company' ? 'fa-truck-fast' : 'fa-people-carry-box';
+                                        $deliLines[] = '<span class="transport-type transport-' . e($item->transport_type) . '"><i class="fa-solid ' . $tIcon . '"></i> ' . e($item->transport_label) . '</span>';
+                                    }
+                                    if ($item->transport_type === 'private' && !empty($item->transport_name)) $deliLines[] = '<i class="fa-solid fa-truck"></i> ผู้ขนส่ง: ' . e($item->transport_name);
+                                    elseif (!empty($item->deli_name)) $deliLines[] = '<i class="fa-solid fa-user"></i> คนขับ: ' . e($item->deli_name);
+                                @endphp
+                                @if(count($deliLines)) <div class="status-meta">{!! implode('<br>', $deliLines) !!}</div> @endif
                             @endif
                             </div>
                         </td>
