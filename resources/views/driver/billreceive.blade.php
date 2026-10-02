@@ -362,7 +362,9 @@ a { color: inherit; text-decoration: none; }
     <div style="font-weight:700;font-size:17px;margin-bottom:4px;">เปลี่ยนคนขับ / ขนส่ง</div>
     <div id="changeBillLabel" style="color:#64748b;font-size:12.5px;margin-bottom:16px;line-height:1.5;"></div>
     <label style="display:block;font-size:12.5px;font-weight:700;color:#64748b;margin-bottom:6px;">คนขับ (ผู้รับผิดชอบ)</label>
-    <select id="changeDriver" style="width:100%;padding:10px 12px;border:1px solid #dee2e6;border-radius:8px;font-family:inherit;font-size:14px;margin-bottom:14px;"></select>
+    <input type="text" id="changeDriver" list="changeDriverList" autocomplete="off" placeholder="เลือกหรือพิมพ์ชื่อ (เว้นว่าง = คงเดิม)" style="width:100%;padding:10px 12px;border:1px solid #dee2e6;border-radius:8px;font-family:inherit;font-size:14px;margin-bottom:6px;">
+    <datalist id="changeDriverList"></datalist>
+    <div id="changeDriverHint" style="display:none;font-size:11.5px;color:#0ea5e9;margin-bottom:12px;">* เลือก "เซลล์ไปส่งเอง" พิมพ์ชื่อเซลล์ได้อิสระ</div>
     <label style="display:block;font-size:12.5px;font-weight:700;color:#64748b;margin-bottom:6px;">ขนส่ง (วิธีการจัดส่ง)</label>
     <select id="changeTransport" style="width:100%;padding:10px 12px;border:1px solid #dee2e6;border-radius:8px;font-family:inherit;font-size:14px;margin-bottom:8px;"></select>
     <div style="font-size:12px;color:#94a3b8;margin-bottom:16px;">* ยืนยันแล้วจะบันทึกงานนี้เป็น "จัดส่งสำเร็จ" พร้อมจดว่าเปลี่ยนคนขับ/ขนส่งจากใครเป็นใคร</div>
@@ -878,10 +880,19 @@ function openChangeDriver(i){
   changeIdx = i;
   document.getElementById('changeBillLabel').innerHTML =
     `บิล <b>${esc(r.bill_no||'-')}</b><br>คนขับเดิม: <b>${esc(r.driver_name||'-')}</b> · ขนส่งเดิม: <b>${esc(r.transport_name||'-')}</b>`;
-  fillChangeSelect('changeDriver', RESPONSIBLE_PERSONS, r.driver_name);
+  // คนขับ = input พิมพ์ได้ (มี datalist แนะนำ) ; เลือก "เซลล์ไปส่งเอง" พิมพ์ชื่อเซลล์เองได้
+  document.getElementById('changeDriverList').innerHTML = RESPONSIBLE_PERSONS.map(o => `<option value="${esc(o)}">`).join('');
+  document.getElementById('changeDriver').value = r.driver_name || '';
   fillChangeSelect('changeTransport', DELIVERY_METHODS, r.transport_name);
+  syncChangeDriverHint();
   document.getElementById('changeModal').style.display = 'flex';
 }
+// แสดงคำใบ้เมื่อขนส่ง = เซลล์ไปส่งเอง (พิมพ์ชื่อได้อิสระ)
+function syncChangeDriverHint(){
+  const t = (document.getElementById('changeTransport').value || '').trim();
+  document.getElementById('changeDriverHint').style.display = (t === 'เซลล์ไปส่งเอง') ? 'block' : 'none';
+}
+document.getElementById('changeTransport').addEventListener('change', syncChangeDriverHint);
 function closeChangeDriver(){ document.getElementById('changeModal').style.display = 'none'; changeIdx = null; }
 async function confirmChangeDriver(){
   if(changeIdx === null) return;
@@ -889,6 +900,13 @@ async function confirmChangeDriver(){
   const driver    = document.getElementById('changeDriver').value.trim();
   const transport = document.getElementById('changeTransport').value.trim();
   if(!driver && !transport){ toast('กรุณาเลือกคนขับหรือขนส่งใหม่', true); return; }
+  // ขนส่งผลลัพธ์จริง = ที่เลือกใหม่ หรือคงเดิมถ้าไม่เปลี่ยน
+  const effTransport = transport || (r.transport_name||'').trim();
+  if(effTransport === 'เซลล์ไปส่งเอง'){
+    if(!driver){ toast('เลือก "เซลล์ไปส่งเอง" กรุณาระบุชื่อเซลล์ที่ไปส่งเอง', true); return; }
+  } else if(driver && RESPONSIBLE_PERSONS.indexOf(driver) === -1){
+    toast('กรุณาเลือกผู้รับผิดชอบจากรายการที่มีให้', true); return;
+  }
   if(!confirm('ยืนยันเปลี่ยนคนขับ/ขนส่ง และบันทึกงานนี้เป็น "จัดส่งสำเร็จ" ?')) return;
   const btn = document.getElementById('changeConfirmBtn'); btn.disabled = true;
   try{
