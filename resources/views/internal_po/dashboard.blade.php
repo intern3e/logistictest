@@ -424,7 +424,12 @@
                 @endif
             </td>
             <td class="col-key">@if ($loop->first)<span class="ref-link">{{ $h->internal_id }}</span>@endif</td>
-            <td class="col-key">@if ($loop->first){{ $h->SO_id }}@endif</td>
+            <td class="col-key">
+                @if ($loop->first && !empty($h->SO_id))
+                    <a href="http://server_update:8000/sodetail?SONum={{ urlencode($h->SO_id) }}" target="_blank"
+                    style="font-weight:600;color:#2853d5;text-decoration:none;" title="เปิดรายละเอียด SO">{{ $h->SO_id }}</a>
+                @endif
+            </td>
             <td class="col-key">{{ $line->item_id ?: '—' }}</td>
             <td>{{ $line->item_name }}</td>
             <td class="center">{{ rtrim(rtrim(number_format((float) $line->item_quantity, 2), '0'), '.') }}</td>
@@ -463,7 +468,12 @@
         <tr class="{{ $cls }}" data-internal-id="{{ $h->internal_id }}">
             <td class="center"></td>
             <td class="col-key"><span class="ref-link">{{ $h->internal_id }}</span></td>
-            <td class="col-key">{{ $h->SO_id }}</td>
+            <td class="col-key">
+                @if (!empty($h->SO_id))
+                    <a href="http://server_update:8000/sodetail?SONum={{ urlencode($h->SO_id) }}" target="_blank"
+                    style="font-weight:600;color:#2853d5;text-decoration:none;" title="เปิดรายละเอียด SO">{{ $h->SO_id }}</a>
+                @endif
+            </td>
             <td class="col-key" colspan="3" style="color:#999;">— ไม่มีไส้ใน —</td>
             <td class="cust-cell">{{ $h->customer_name }}</td>
             <td class="col-key">

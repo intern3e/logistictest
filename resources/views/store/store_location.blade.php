@@ -946,6 +946,11 @@
                     <option value="internal" {{ request('po_type') === 'internal' ? 'selected' : '' }}>ภายใน</option>
                     <option value="external" {{ request('po_type') === 'external' ? 'selected' : '' }}>ภายนอก</option>
                 </select>
+                <select id="filterHandler">
+                    <option value="">ผู้จัดการทั้งหมด</option>
+                    <option value="โอ">โอ</option>
+                    <option value="ฟิว">ฟิว</option>
+                </select>
                 <button type="button" class="btn-ghost" id="btnClear">ล้าง</button>
             </div>
             
@@ -999,7 +1004,8 @@
                                 data-so="{{ $h->so_id }}"
                                 data-po="{{ $h->po_display }}"
                                 data-customer="{{ $h->customer_name }}"
-                                data-po-type="{{ $poType }}">
+                                data-po-type="{{ $poType }}"
+                                data-handler="{{ $h->claimed_by ?? '' }}">
                                 <td class="center">
                                     @if ($canSelect)<input type="checkbox" class="chkLine" value="{{ $checkboxVal }}">@endif
                                 </td>
@@ -1469,6 +1475,7 @@ const searchSO = document.getElementById('searchSO');
 const searchPO = document.getElementById('searchPO');
 const searchCustomer = document.getElementById('searchCustomer');
 const filterPoType = document.getElementById('filterPoType');
+const filterHandler = document.getElementById('filterHandler');
 const btnClear = document.getElementById('btnClear');
 
 function liveFilter() {
@@ -1476,6 +1483,7 @@ function liveFilter() {
     const poQ = searchPO.value.trim().toLowerCase();
     const custQ = searchCustomer.value.trim().toLowerCase();
     const typeQ = filterPoType.value;
+    const handlerQ = filterHandler.value;
 
     const rows = document.querySelectorAll('#tableBody tr[data-done]');
     let visibleCount = 0;
@@ -1486,13 +1494,15 @@ function liveFilter() {
         const po = (row.dataset.po || '').toLowerCase();
         const cust = (row.dataset.customer || '').toLowerCase();
         const type = row.dataset.poType || '';
+        const handler = (row.dataset.handler || '').trim();
 
         const matchSO = !soQ || so.includes(soQ);
         const matchPO = !poQ || po.includes(poQ);
         const matchCust = !custQ || cust.includes(custQ);
         const matchType = !typeQ || type === typeQ;
+        const matchHandler = !handlerQ || handler === handlerQ;
 
-        if (matchSO && matchPO && matchCust && matchType) {
+        if (matchSO && matchPO && matchCust && matchType && matchHandler) {
             row.classList.remove('hidden-row');
             const chk = row.querySelector('.chkLine');
             if (chk) chk.disabled = (row.dataset.done === '1');
@@ -1518,12 +1528,14 @@ searchSO.addEventListener('input', liveFilter);
 searchPO.addEventListener('input', liveFilter);
 searchCustomer.addEventListener('input', liveFilter);
 filterPoType.addEventListener('change', liveFilter);
+filterHandler.addEventListener('change', liveFilter);
 
 btnClear.addEventListener('click', () => {
     searchSO.value = '';
     searchPO.value = '';
     searchCustomer.value = '';
     filterPoType.value = '';
+    filterHandler.value = '';
     liveFilter();
 });
 
