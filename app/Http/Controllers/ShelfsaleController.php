@@ -223,6 +223,19 @@ class ShelfsaleController extends Controller
                 ->map(fn ($p) => preg_replace('/^PO/i', '', (string) $p))
                 ->all()
         );
+        // มูลค่า PO ภายใน = ผลรวม internal_poline.item_total (PO ภายในไม่มีใน MSSQL POHD)
+        $internalPriceByPo = [];
+        if ($internalHeads->isNotEmpty()) {
+            $intIds = $internalHeads->pluck('internal_id')->filter()->unique()->values()->all();
+            $sums = DB::table('internal_poline')
+                ->whereIn('internal_id', $intIds)
+                ->select('internal_id', DB::raw('SUM(item_total) as total'))
+                ->groupBy('internal_id')
+                ->pluck('total', 'internal_id');
+            foreach ($sums as $iid => $tot) {
+                $internalPriceByPo[preg_replace('/^PO/i', '', (string) $iid)] = (float) $tot;
+            }
+        }
 
         // --- ของเก่า: 3e store — ของ "บนชั้น" ใช้คอลัมน์ Area (เป็น id ของชั้น) + ยังไม่เช็คเอาท์ ---
         //   Area = รหัสชั้น -> แปลชื่อชั้นจากตาราง area (areaName)
@@ -482,7 +495,7 @@ class ShelfsaleController extends Controller
 
         // ===== รวมเป็น 1 แถวต่อ 1 (PO + SO + รอบ) — แยกตาม "รอบรับเข้า" (po_receive_id) เพื่อไม่รวมรอบเก่า+ใหม่เป็นแถวเดียว =====
         $rows = $items->groupBy(fn ($it) => preg_replace('/^PO/i', '', (string) $it->po) . '|' . (string) $it->so . '|' . (string) ($it->po_receive_id ?? ''))
-            ->map(function ($group) use ($priceByDocu, $shipByDocu, $namesByPo, $orderedByPo, $now, $soBelongs, $extractQty) {
+            ->map(function ($group) use ($priceByDocu, $shipByDocu, $namesByPo, $orderedByPo, $now, $soBelongs, $extractQty, $internalPriceByPo) {
                 $first    = $group->first();
                 $cleanPo  = preg_replace('/^PO/i', '', (string) $first->po);
                 // จำนวนที่สั่งของสินค้าชื่อนี้ใน PO นี้ (PODT.GoodQty2)
@@ -494,7 +507,10 @@ class ShelfsaleController extends Controller
                 $isLegacy = $group->every(fn ($it) => empty($it->line_id));
                 $docu     = 'PO' . $cleanPo;
 
-                $price = (float) (optional($priceByDocu->get($docu))->NetAmnt ?? 0);
+                // PO ภายใน: ใช้มูลค่าจากผลรวม item_total ; PO ภายนอก: ใช้ NetAmnt จาก MSSQL POHD
+                $price = isset($internalPriceByPo[$cleanPo])
+                    ? $internalPriceByPo[$cleanPo]
+                    : (float) (optional($priceByDocu->get($docu))->NetAmnt ?? 0);
                 $ship  = optional($shipByDocu->get('SO' . $first->so))->ShipDate;
                 $dueDays = null;
                 if (filled($ship)) {
