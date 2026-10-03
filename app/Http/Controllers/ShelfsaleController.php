@@ -184,6 +184,46 @@ class ShelfsaleController extends Controller
             })
             ->values();
 
+        // --- ของใหม่ (PO ภายใน รหัส A): internal_po + internal_poline (บนชั้น = มี location) ---
+        //   PO ภายในระบบใหม่เก็บแยกจาก po_receives จึงต้องดึงเพิ่มเอง
+        //   ชื่อสินค้าดึงจาก internal_poline ตอนท้าย (เส้นทางเดียวกับงานเก่า) -> ตั้ง line_id=null กัน id ชนกับ po_receives_line
+        $intQ = \App\Models\internal_po::query()
+            ->whereIn('status', [\App\Models\internal_po::ST_STORED, \App\Models\internal_po::ST_CHECKOUT])
+            ->whereNotNull('location')->where('location', '!=', '');
+        if ($fShelf !== '') $intQ->where('location', 'LIKE', "%{$fShelf}%");
+        if ($fPo !== '')    $intQ->where('internal_id', 'LIKE', "%{$fPo}%");
+        if ($fSo !== '')    $intQ->where('SO_id', 'LIKE', "%{$fSo}%");
+        if ($fStatus === 'checkedout') {
+            $intQ->whereNotNull('checkout_at');
+        } elseif ($fStatus !== 'all') {   // pending (ยังไม่เช็คเอาท์)
+            $intQ->whereNull('checkout_at');
+        }
+        $internalHeads = $intQ->get();
+        $internalItems = $internalHeads->map(function ($h) {
+            $recvAt = $h->location_at ?: ($h->pick_at ?: ($h->timestamp ?? null));
+            return (object) [
+                'so'            => $h->SO_id,
+                'po'            => $h->internal_id,
+                'shelf'         => $h->location,
+                'received_at'   => filled($recvAt) ? Carbon::parse($recvAt) : null,
+                'good_name'     => null,   // ดึงชื่อจาก internal_poline ตอนท้าย
+                'recv_qty'      => null,
+                'line_id'       => null,
+                'po_receive_id' => null,
+                'checkout_by'   => $h->checkout_by,
+                'checkout_at'   => filled($h->checkout_at) ? Carbon::parse($h->checkout_at) : null,
+                'cust_id'       => $h->customer_code,
+                'cust_name'     => $h->customer_name,
+                'sale'          => $h->create_by,
+            ];
+        })->values();
+        // set PO ภายใน (clean) สำหรับกันซ้ำกับ 3e store
+        $internalPoSet = array_flip(
+            $internalHeads->pluck('internal_id')->filter()
+                ->map(fn ($p) => preg_replace('/^PO/i', '', (string) $p))
+                ->all()
+        );
+
         // --- ของเก่า: 3e store — ของ "บนชั้น" ใช้คอลัมน์ Area (เป็น id ของชั้น) + ยังไม่เช็คเอาท์ ---
         //   Area = รหัสชั้น -> แปลชื่อชั้นจากตาราง area (areaName)
         $poInNewSet = array_flip(
@@ -222,7 +262,10 @@ class ShelfsaleController extends Controller
 
             // จำกัดผลลัพธ์ของเก่ากันดึงมหาศาลในโหมด checkout (ของที่เช็คเอาท์แล้วมีเป็นแสน)
             $legacyRows = $legQ->limit(3000)->get(['SO', 'PO', 'Area', 'DATEAREA', 'DATECHECKOUT'])
-                ->reject(fn ($row) => isset($poInNewSet[preg_replace('/^PO/i', '', (string) $row->PO)]))
+                ->reject(function ($row) use ($poInNewSet, $internalPoSet) {
+                    $clean = preg_replace('/^PO/i', '', (string) $row->PO);
+                    return isset($poInNewSet[$clean]) || isset($internalPoSet[$clean]);
+                })
                 ->values();
 
             // แปลรหัสชั้น (Area) -> ชื่อชั้น (areaName)
@@ -246,7 +289,7 @@ class ShelfsaleController extends Controller
             ]);
         }
 
-        $items = $newItems->concat($legacyItems)->sortByDesc('received_at')->values();
+        $items = $newItems->concat($internalItems)->concat($legacyItems)->sortByDesc('received_at')->values();
 
         if ($items->isEmpty()) {
             return response()->json(['ok' => true, 'rows' => []]);

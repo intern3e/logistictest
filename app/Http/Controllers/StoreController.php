@@ -2045,6 +2045,20 @@ class StoreController extends Controller
         $receiveId = $request->filled('po_receive_id') ? (int) $request->input('po_receive_id') : null;
 
         try {
+            // PO ภายใน (รหัส A): จัดการที่ตาราง internal_po (location เดียวทั้งใบ) — ทำเหมือน PO ภายนอก
+            //   internal_id = เลข PO ดิบ (ไม่มี prefix PO) ; ไม่มี line_id/po_receive_id
+            if ($lineId === null && $receiveId === null) {
+                $internal = internal_po::where('internal_id', $poClean)->first();
+                if ($internal) {
+                    if (filled($internal->checkout_at) || $internal->status === internal_po::ST_CHECKOUT) {
+                        return response()->json(['ok' => false, 'message' => 'PO ภายในนี้ถูกเช็คของออกไปแล้ว ย้ายชั้นไม่ได้'], 409);
+                    }
+                    $internal->location = $shelf;
+                    $internal->save();
+                    return response()->json(['ok' => true, 'message' => 'ย้ายชั้นเรียบร้อย']);
+                }
+            }
+
             // ย้ายรายสินค้า (งานใหม่): อัปเดตเฉพาะไส้ในบรรทัดนั้น
             if ($lineId !== null) {
                 $line = PoReceiveLine::where('id', $lineId)->whereNull('cancelled_at')->first();
@@ -2134,6 +2148,22 @@ class StoreController extends Controller
         $poReceiveId = $request->input('po_receive_id');
 
         try {
+            // PO ภายใน (รหัส A): เช็คเอาท์ที่ตาราง internal_po — ทำเหมือน PO ภายนอก
+            if (!$poReceiveId) {
+                $internal = internal_po::where('internal_id', $poClean)->first();
+                if ($internal) {
+                    if (filled($internal->checkout_at) || $internal->status === internal_po::ST_CHECKOUT) {
+                        return response()->json(['ok' => false, 'message' => 'PO ภายในนี้เช็คเอาท์ไปแล้ว'], 409);
+                    }
+                    $internal->update([
+                        'checkout_by' => $authUser->name,
+                        'checkout_at' => Carbon::now(),
+                        'status'      => internal_po::ST_CHECKOUT,
+                    ]);
+                    return response()->json(['ok' => true, 'message' => 'เช็คเอาท์เรียบร้อย']);
+                }
+            }
+
             // ระบุ "รอบ" (po_receive_id) -> เช็คเอาท์เฉพาะรอบนั้น (รับเข้าหลายรอบ = เช็คเอาท์แยกรอบ)
             if ($poReceiveId) {
                 $hdr = PoReceive::where('id', $poReceiveId)->whereNull('checkout_by')->first();
