@@ -73,6 +73,33 @@
         .f-date input { width: 128px; }
         .f-com { flex: 0 1 270px; }
         .f-com select { flex: 1; cursor: pointer; text-overflow: ellipsis; }
+        /* ===== ดรอปดาวน์บริษัท (แบบสวย) ===== */
+        .f-com { position: relative; cursor: pointer; user-select: none; }
+        .f-com.cd-ready select { display: none; }
+        .cd-btn { flex: 1; min-width: 0; height: 100%; border: 0; background: transparent; padding: 0; text-align: left; font: inherit; font-size: .9rem;
+                  color: var(--ink-900); cursor: pointer; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; outline: 0; }
+        .f-com:not(.cd-ready) .cd-btn, .f-com:not(.cd-ready) .cd-caret { display: none; }
+        .cd-caret { flex: none; display: inline-flex; color: var(--ink-500); }
+        .cd-caret svg { width: 17px; height: 17px; transition: transform .15s; }
+        .f-com.open .cd-caret svg { transform: rotate(180deg); }
+        .f-com.open { background: #fff; border-color: var(--brand); box-shadow: 0 0 0 3px var(--brand-50); }
+        .cd-panel { display: none; position: absolute; left: 0; top: calc(100% + 6px); min-width: 100%; width: max-content; max-width: min(440px, 92vw); z-index: 300;
+                    background: #fff; border: 1px solid var(--ink-150); border-radius: 12px; box-shadow: 0 12px 32px rgba(15,23,42,.16); padding: 6px; cursor: default; }
+        .f-com.open .cd-panel { display: block; }
+        .cd-search { display: flex; align-items: center; gap: 8px; height: 38px; padding: 0 10px; margin-bottom: 4px; border: 1px solid var(--line); border-radius: 8px; background: var(--ink-050); color: var(--ink-300); }
+        .cd-search:focus-within { background: #fff; border-color: var(--ink-300); }
+        .cd-search input { flex: 1; min-width: 0; border: 0; outline: 0; background: transparent; font: inherit; font-size: .88rem; color: var(--ink-900); }
+        .cd-list { max-height: min(360px, 55vh); overflow-y: auto; }
+        .cd-group { padding: 8px 10px 4px; font-size: .74rem; font-weight: 700; color: var(--ink-300); letter-spacing: .2px; display: flex; align-items: center; gap: 6px; }
+        .cd-group svg { width: 13px; height: 13px; }
+        .cd-item { display: flex; align-items: center; gap: 10px; padding: 9px 10px; border-radius: 8px; font-size: .9rem; color: var(--ink-900); cursor: pointer; white-space: nowrap; }
+        .cd-item:hover, .cd-item.hl { background: var(--ink-100); }
+        .cd-item .ck { width: 15px; height: 15px; visibility: hidden; color: var(--ink-900); }
+        .cd-item.sel { font-weight: 600; background: var(--brand-50); }
+        .cd-item.sel .ck { visibility: visible; }
+        .cd-item.all { color: var(--ink-700); }
+        .cd-sep { height: 1px; background: var(--line); margin: 4px 6px; }
+        .cd-empty { padding: 14px; text-align: center; color: var(--ink-500); font-size: .88rem; }
 
         .chip {
             height: 40px; flex: none; display: inline-flex; align-items: center; gap: 7px; padding: 0 12px;
@@ -374,7 +401,7 @@
 
             <label class="chip"><input type="checkbox" id="allDates" {{ $allDates ? 'checked' : '' }}>ทั้งหมด</label>
 
-            <div class="fld f-com" title="บริษัท">
+            <div class="fld f-com" id="comBox" title="บริษัท">
                 <svg class="i" viewBox="0 0 24 24"><rect x="4" y="2" width="16" height="20" rx="2"/><path d="M9 22v-4h6v4M8 6h.01M16 6h.01M12 6h.01M12 10h.01M12 14h.01M16 10h.01M16 14h.01M8 10h.01M8 14h.01"/></svg>
                 <select id="headcom" name="headcom" form="autoSearchForm" onchange="if(window.submitFilters){submitFilters()}else{document.getElementById('autoSearchForm').submit()}">
                     <option value="">ทุกบริษัท</option>
@@ -390,6 +417,13 @@
                     <option value="บริษัท เทคเพียร์ เอ็นจิเนียริ่ง จำกัด">บริษัท เทคเพียร์ เอ็นจิเนียริ่ง จำกัด</option>
                     <option value="บริษัท เดชา อิเล็คทริค แอนด์ คอนสตรัคชั่น จำกัด">บริษัท เดชา อิเล็คทริค แอนด์ คอนสตรัคชั่น จำกัด</option>
                 </select>
+                {{-- ดรอปดาวน์แบบสวย: แสดงแทน select ด้านบน (select ยังเป็นตัวเก็บค่า/ส่งค่าเหมือนเดิม) --}}
+                <button type="button" class="cd-btn" id="comBtn" aria-haspopup="listbox"><span id="comText">ทุกบริษัท</span></button>
+                <span class="cd-caret"><svg class="i" viewBox="0 0 24 24"><path d="m6 9 6 6 6-6"/></svg></span>
+                <div class="cd-panel" id="comPanel" role="listbox">
+                    <div class="cd-search"><svg class="i" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg><input type="text" id="comFilter" placeholder="พิมพ์ชื่อบริษัท..." autocomplete="off"></div>
+                    <div class="cd-list" id="comList"></div>
+                </div>
             </div>
 
             {{-- ช่องค้นหาเดียว: ระบบเดาให้ว่าเป็น เลขเอกสาร / SO / ชื่อลูกค้า แล้วส่งเป็น search / so / com ตามเดิม --}}
@@ -544,6 +578,73 @@
             headcomSel.value = cur;
         }
         if (headcomSel) { saveRecentHeadcom(headcomSel.value); arrangeHeadcom(); }
+
+        // ===== ดรอปดาวน์บริษัทแบบสวย (อ่านตัวเลือก/กลุ่มจาก select เดิม แล้วเลือกค่าเข้า select) =====
+        (function () {
+            const box = document.getElementById('comBox'), btn = document.getElementById('comBtn'), txt = document.getElementById('comText');
+            const list = document.getElementById('comList'), filter = document.getElementById('comFilter');
+            if (!box || !headcomSel || !btn) return;
+            box.classList.add('cd-ready');
+            const ICK = '<svg class="i ck" viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></svg>';
+            const IC_CLOCK = '<svg class="i" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>';
+            const IC_BLD = '<svg class="i" viewBox="0 0 24 24"><rect x="4" y="2" width="16" height="20" rx="2"/><path d="M9 22v-4h6v4"/></svg>';
+            const esc = s => String(s).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+            let hl = -1;
+            function item(o, cls) {
+                return '<div class="cd-item' + (cls || '') + (o.value === headcomSel.value ? ' sel' : '') + '" role="option" data-val="' + esc(o.value) + '">' + ICK + esc(o.textContent) + '</div>';
+            }
+            function render() {
+                const q = filter.value.trim().toLowerCase();
+                const match = o => !q || o.textContent.toLowerCase().indexOf(q) !== -1;
+                let html = '';
+                const all = headcomSel.querySelector('option[value=""]');
+                if (all && !q) html += item(all, ' all') + '<div class="cd-sep"></div>';
+                const groups = headcomSel.querySelectorAll('optgroup');
+                if (groups.length) {
+                    groups.forEach((g, gi) => {
+                        const opts = Array.from(g.querySelectorAll('option')).filter(match);
+                        if (!opts.length) return;
+                        html += '<div class="cd-group">' + (gi === 0 ? IC_CLOCK : IC_BLD) + esc(g.label) + '</div>' + opts.map(o => item(o)).join('');
+                    });
+                } else {
+                    html += Array.from(headcomSel.querySelectorAll('option')).filter(o => o.value && match(o)).map(o => item(o)).join('');
+                }
+                list.innerHTML = html || '<div class="cd-empty">ไม่พบบริษัท</div>';
+                hl = -1;
+            }
+            function sync() { const o = headcomSel.options[headcomSel.selectedIndex]; txt.textContent = o ? o.textContent : 'ทุกบริษัท'; }
+            function open() { filter.value = ''; render(); box.classList.add('open'); setTimeout(() => filter.focus(), 0);
+                              const s = list.querySelector('.sel'); if (s) s.scrollIntoView({ block: 'nearest' }); }
+            function close() { box.classList.remove('open'); }
+            function pick(v) { close(); if (headcomSel.value === v) return; headcomSel.value = v; sync(); headcomSel.dispatchEvent(new Event('change')); }
+            box.addEventListener('mousedown', e => {
+                if (e.target.closest('.cd-search')) return;
+                const it = e.target.closest('.cd-item');
+                e.preventDefault();
+                if (it) { pick(it.dataset.val); return; }
+                box.classList.contains('open') ? close() : open();
+            });
+            filter.addEventListener('input', render);
+            const keys = e => {
+                const items = Array.from(list.querySelectorAll('.cd-item'));
+                if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
+                    e.preventDefault();
+                    if (!box.classList.contains('open')) { open(); return; }
+                    hl = e.key === 'ArrowDown' ? Math.min(hl + 1, items.length - 1) : Math.max(hl - 1, 0);
+                    items.forEach((it, i) => it.classList.toggle('hl', i === hl));
+                    if (items[hl]) items[hl].scrollIntoView({ block: 'nearest' });
+                } else if (e.key === 'Enter') {
+                    e.preventDefault();
+                    if (!box.classList.contains('open')) { open(); return; }
+                    const it = items[hl] || (filter.value.trim() && items.length === 1 ? items[0] : null);
+                    if (it) pick(it.dataset.val);
+                } else if (e.key === 'Escape') { close(); btn.focus(); }
+            };
+            btn.addEventListener('keydown', keys);
+            filter.addEventListener('keydown', keys);
+            document.addEventListener('mousedown', e => { if (!box.contains(e.target)) close(); });
+            sync();
+        })();
 
         window.clearFilters = function clearFilters() {
             window.location.href = @json(route('document.dashboarddoc'));
