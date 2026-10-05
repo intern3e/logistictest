@@ -71,7 +71,8 @@ class BillDocCheckController extends Controller
         elseif ($type !== '')      $query->where('bill_type', $type);
 
         if ($status === 'has')               $query->where('has_document', true);
-        elseif ($status === 'missing')       $query->where('has_document', false)->where('in_system', true);
+        elseif ($status === 'missing')       $query->where('has_document', false)->where('not_found', false)->where('in_system', true);
+        elseif ($status === 'notfound')      $query->where('not_found', true);
         elseif ($status === 'mismatch')      $query->where('match_status', BillDocCheck::M_MISMATCH);
         elseif ($status === 'doc_no_system') $query->where('match_status', BillDocCheck::M_DOC_NO_SYS);
         elseif ($status === 'cancelled')     $query->where('cancelled', true);
@@ -81,8 +82,8 @@ class BillDocCheckController extends Controller
             $query->where('bill_no', 'LIKE', "%{$q}%");   // ค้นเฉพาะเลขบิล
         }
 
-        // ติ๊กแล้ว (มีเอกสาร) ลงไปอยู่ล่างสุด ; ที่ยังไม่ติ๊กอยู่บน
-        $rows = $query->orderBy('has_document')->orderBy('bill_no')->limit(5000)->get()->map(fn ($r) => $this->rowOut($r));
+        // ตรวจแล้ว (พบ หรือ ไม่พบ) ลงไปอยู่ล่างสุด ; ที่ยังไม่ตรวจอยู่บน
+        $rows = $query->orderByRaw('(has_document OR not_found) asc')->orderBy('bill_no')->limit(5000)->get()->map(fn ($r) => $this->rowOut($r));
 
         return response()->json([
             'ok'      => true,
@@ -339,8 +340,9 @@ class BillDocCheckController extends Controller
         }
 
         if ($data['has']) {
-            // คนยืนยันด้วยตา = ถือว่าตรง
+            // คนยืนยันด้วยตา = ถือว่าตรง (เคลียร์ "ไม่พบ")
             $row->has_document = true;
+            $row->not_found    = false;
             $row->match_status = $row->in_system ? BillDocCheck::M_MATCHED : BillDocCheck::M_DOC_NO_SYS;
             $row->check_source = 'manual';
             $row->checked_by   = $user->name;
@@ -348,6 +350,43 @@ class BillDocCheckController extends Controller
         } else {
             $row->has_document = false;
             $row->match_status = $row->in_system ? BillDocCheck::M_MISSING_DOC : BillDocCheck::M_DOC_NO_SYS;
+            $row->check_source = 'manual';
+            $row->checked_by   = $user->name;
+            $row->checked_at   = now();
+        }
+        $row->save();
+
+        return response()->json(['ok' => true, 'row' => $this->rowOut($row), 'summary' => $this->summaryFor($period)]);
+    }
+
+    /** ติ๊ก/ยกเลิก "ไม่พบบิล" (ยืนยันหาแล้วไม่เจอ) — ติ๊กไม่พบ = เคลียร์ "พบเอกสาร" */
+    public function markNotFound(Request $request)
+    {
+        $user = $this->requireLogin($request);
+        if (!$this->canUse($user)) {
+            return response()->json(['ok' => false, 'message' => 'ไม่มีสิทธิ์'], 403);
+        }
+        $data = $request->validate([
+            'period'  => 'required|string',
+            'bill_no' => 'required|string',
+            'val'     => 'required|boolean',
+        ]);
+        $period = $this->normPeriod($data['period']);
+
+        $row = BillDocCheck::where('period', $period)->where('bill_no', trim($data['bill_no']))->first();
+        if (!$row) {
+            return response()->json(['ok' => false, 'message' => 'ไม่พบเลขบิลนี้ในรายการของเดือน'], 404);
+        }
+
+        if ($data['val']) {
+            $row->not_found    = true;
+            $row->has_document = false;   // ไม่พบ = ไม่มีเอกสาร
+            $row->match_status = $row->in_system ? BillDocCheck::M_MISSING_DOC : BillDocCheck::M_DOC_NO_SYS;
+            $row->check_source = 'manual';
+            $row->checked_by   = $user->name;
+            $row->checked_at   = now();
+        } else {
+            $row->not_found    = false;
             $row->check_source = 'manual';
             $row->checked_by   = $user->name;
             $row->checked_at   = now();
@@ -380,11 +419,12 @@ class BillDocCheckController extends Controller
         $row->note = $note !== '' ? $note : null;
 
         if ($note !== '') {
-            // มีหมายเหตุ -> ติ๊กว่าพบเอกสารอัตโนมัติ (ถ้ายังไม่ติ๊ก)
+            // มีหมายเหตุ -> ติ๊กว่าพบเอกสารอัตโนมัติ (ถ้ายังไม่ติ๊ก) + เคลียร์ "ไม่พบ"
             if (!$row->has_document) {
                 $row->has_document = true;
                 $row->match_status = $row->in_system ? BillDocCheck::M_MATCHED : BillDocCheck::M_DOC_NO_SYS;
             }
+            $row->not_found    = false;
             $row->check_source = 'manual';
             $row->checked_by   = $user->name;
             $row->checked_at   = now();
@@ -547,6 +587,7 @@ class BillDocCheckController extends Controller
             'cancel_reason' => $r->cancel_reason,
             'in_system'     => (bool) $r->in_system,
             'has_document'  => (bool) $r->has_document,
+            'not_found'     => (bool) $r->not_found,
             'match_status'  => $r->match_status,
             'check_source'  => $r->check_source,
             'confidence'    => $r->confidence !== null ? (float) $r->confidence : null,

@@ -95,6 +95,10 @@ tr:hover td{background:#fafbff}
 .ig-name{color:var(--ink);font-size:13px;line-height:1.35;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;word-break:break-word}
 .ig-num{white-space:nowrap;color:var(--ink2);font-family:'JetBrains Mono',monospace;font-size:12px;text-align:right}
 .ig-amt{color:var(--ink);font-weight:600;font-size:12.5px}
+.ck-row{display:flex;flex-direction:column;gap:5px;align-items:flex-start}
+.ck-lbl{display:flex;align-items:center;gap:5px;font-size:12.5px;font-weight:600;cursor:pointer;white-space:nowrap}
+.ck-found{color:var(--green)}
+.ck-nf{color:var(--red)}
 .type-foot{margin-top:8px;font-size:12px;color:var(--ink2);display:flex;align-items:center;gap:6px}
 .type-sel{padding:5px 8px;border:1px solid #dee2e6;border-radius:8px;font-family:inherit;font-size:12px}
 .note-inp{display:block;width:100%;margin-top:8px;padding:7px 9px;border:1px solid #dee2e6;border-radius:8px;font-family:inherit;font-size:12.5px;line-height:1.4;resize:vertical;min-height:38px;white-space:pre-wrap;word-break:break-word;overflow-wrap:anywhere}
@@ -156,8 +160,9 @@ table.hide-cancel tr.is-cancelled{display:none}
   </div>
   <div class="tabs" id="statusTabs">
     <div class="tab active" data-status="">ทุกสถานะ</div>
-    <div class="tab" data-status="missing">ไม่มีเอกสาร</div>
+    <div class="tab" data-status="missing">ยังไม่ตรวจ</div>
     <div class="tab" data-status="has">มีเอกสาร</div>
+    <div class="tab" data-status="notfound">ไม่พบบิล</div>
     <div class="tab" data-status="noted">มีหมายเหตุ</div>
     <div class="tab" data-status="cancelled">ยกเลิก</div>
   </div>
@@ -188,6 +193,7 @@ const URL_SYNC = "{{ route('billdoccheck.sync') }}";
 const URL_TICK = "{{ route('billdoccheck.tick') }}";
 const URL_TYPE = "{{ route('billdoccheck.type') }}";
 const URL_NOTE = "{{ route('billdoccheck.note') }}";
+const URL_NOTFOUND = "{{ route('billdoccheck.notfound') }}";
 
 const $ = id => document.getElementById(id);
 let curType = '', curStatus = '', busy = false;
@@ -264,8 +270,10 @@ function render(rows){
   const tb=$('tbody');
   if(!rows||!rows.length){tb.innerHTML='<tr><td colspan="4" class="empty">ไม่มีรายการตามเงื่อนไข</td></tr>';return;}
   tb.innerHTML = rows.map(r=>{
-    const chk = `<input type="checkbox" class="chk" ${r.has_document?'checked':''} onchange="onTick('${esc(r.bill_no)}',this.checked)">`;
+    const chk = `<label class="ck-lbl ck-found"><input type="checkbox" class="chk chk-found" ${r.has_document?'checked':''} onchange="onTick('${esc(r.bill_no)}',this.checked)"> พบ</label>`;
+    const nf  = `<label class="ck-lbl ck-nf"><input type="checkbox" class="chk chk-nf" ${r.not_found?'checked':''} onchange="onNotFound('${esc(r.bill_no)}',this.checked)"> ไม่พบ</label>`;
     const by = byHtml(r);
+    const done = (r.has_document||r.not_found) ? 1 : 0;
     // เลขบิล: ยกเลิก = แดง + ป้ายยกเลิก + เหตุผล อยู่ใต้เลขบิล
     const billCls = r.cancelled ? 'bill-cancelled' : '';
     let billSub = r.so_no ? `<div class="src">SO ${esc(r.so_no)}</div>` : '';
@@ -275,9 +283,9 @@ function render(rows){
     }
     const custLine = `<div class="cust-line">${esc(r.customer_name||'-')}</div>${r.customer_id?`<div class="src">${esc(r.customer_id)}</div>`:''}`;
     const rowCls = (r.cancelled?'is-cancelled ':'') + (r.bill_type==='สินค้า' ? 'row-goods' : (r.bill_type==='บริการ' ? 'row-service' : ''));
-    return `<tr data-bill="${esc(r.bill_no)}" data-has="${r.has_document?1:0}" class="${rowCls}">
+    return `<tr data-bill="${esc(r.bill_no)}" data-done="${done}" class="${rowCls}">
       <td class="c">
-        <div>${chk}</div>
+        <div class="ck-row">${chk}${nf}</div>
         <textarea class="note-inp" rows="1" placeholder="หมายเหตุ... (ใส่ยาวได้)"
             oninput="autoGrow(this)"
             onchange="onNote('${esc(r.bill_no)}',this.value)">${esc(r.note||'')}</textarea>
@@ -321,7 +329,7 @@ function reorderRows(){
   const tb=$('tbody');
   const trs=[...tb.querySelectorAll('tr[data-bill]')];
   trs.sort((a,b)=>{
-    const ha=a.dataset.has==='1'?1:0, hb=b.dataset.has==='1'?1:0;
+    const ha=a.dataset.done==='1'?1:0, hb=b.dataset.done==='1'?1:0;
     if(ha!==hb) return ha-hb;
     return a.dataset.bill.localeCompare(b.dataset.bill);
   });
@@ -333,20 +341,26 @@ function applyRowChange(billNo,r){
   const tb=$('tbody');
   const tr=tb.querySelector('tr[data-bill="'+String(billNo).replace(/"/g,'\\"')+'"]');
   if(!tr){ return; }
-  const cb=tr.querySelector('input.chk'); if(cb) cb.checked=!!r.has_document;
-  tr.dataset.has = r.has_document?'1':'0';
+  const cbF=tr.querySelector('input.chk-found'); if(cbF) cbF.checked=!!r.has_document;
+  const cbN=tr.querySelector('input.chk-nf');    if(cbN) cbN.checked=!!r.not_found;
+  tr.dataset.done = (r.has_document||r.not_found)?'1':'0';
   const ni=tr.querySelector('.note-inp'); if(ni && document.activeElement!==ni){ ni.value=r.note||''; autoGrow(ni); }
   tr.cells[tr.cells.length-1].innerHTML = byHtml(r);
   // ถ้าแถวไม่เข้าเงื่อนไขแท็บปัจจุบันแล้ว -> ดีดออกจากตาราง
   let remove=false;
-  if(curStatus==='missing' && r.has_document) remove=true;
+  if(curStatus==='missing' && (r.has_document||r.not_found)) remove=true;
   else if(curStatus==='has' && !r.has_document) remove=true;
+  else if(curStatus==='notfound' && !r.not_found) remove=true;
   else if(curStatus==='noted' && !(r.note&&String(r.note).trim())) remove=true;
   if(remove){ tr.style.transition='opacity .25s,transform .25s'; tr.style.opacity='0'; tr.style.transform='translateX(20px)'; setTimeout(()=>tr.remove(),240); return; }
   reorderRows(); flashRow(tr);
 }
 async function onTick(billNo,has){
   try{ const d=await post(URL_TICK,{period:period(),bill_no:billNo,has:has}); renderCards(d.summary); applyRowChange(billNo,d.row); toast(has?'ติ๊กว่าพบเอกสารแล้ว':'ยกเลิกการติ๊ก','ok'); }
+  catch(e){ toast(e.message,'err'); load(); }
+}
+async function onNotFound(billNo,val){
+  try{ const d=await post(URL_NOTFOUND,{period:period(),bill_no:billNo,val:val}); renderCards(d.summary); applyRowChange(billNo,d.row); toast(val?'ทำเครื่องหมาย "ไม่พบบิล"':'ยกเลิก "ไม่พบบิล"','ok'); }
   catch(e){ toast(e.message,'err'); load(); }
 }
 async function onType(billNo,type){

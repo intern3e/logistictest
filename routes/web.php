@@ -176,6 +176,13 @@ Route::post('/billdoccheck/sync',   [BillDocCheckController::class, 'syncErp'])-
 Route::post('/billdoccheck/tick',   [BillDocCheckController::class, 'tick'])->name('billdoccheck.tick');
 Route::post('/billdoccheck/type',   [BillDocCheckController::class, 'setType'])->name('billdoccheck.type');
 Route::post('/billdoccheck/note',   [BillDocCheckController::class, 'setNote'])->name('billdoccheck.note');
+Route::post('/billdoccheck/notfound', [BillDocCheckController::class, 'markNotFound'])->name('billdoccheck.notfound');
+
+// สรุป PO ที่เชื่อมกับ SO -> หน้า/Excel/PDF
+use App\Http\Controllers\SoPoExportController;
+Route::get('/sopoexport',       [SoPoExportController::class, 'page'])->name('sopoexport.page');
+Route::get('/sopoexport/excel', [SoPoExportController::class, 'excel'])->name('sopoexport.excel');
+Route::get('/sopoexport/pdf',   [SoPoExportController::class, 'pdf'])->name('sopoexport.pdf');
 
 use App\Http\Controllers\CarserviceController;
 Route::get('/dashboardcarservice', [CarserviceController::class, 'dashboardcarsevice']);
