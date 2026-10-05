@@ -177,6 +177,7 @@ Route::post('/billdoccheck/tick',   [BillDocCheckController::class, 'tick'])->na
 Route::post('/billdoccheck/type',   [BillDocCheckController::class, 'setType'])->name('billdoccheck.type');
 Route::post('/billdoccheck/note',   [BillDocCheckController::class, 'setNote'])->name('billdoccheck.note');
 Route::post('/billdoccheck/notfound', [BillDocCheckController::class, 'markNotFound'])->name('billdoccheck.notfound');
+Route::post('/billdoccheck/notsigned', [BillDocCheckController::class, 'markNotSigned'])->name('billdoccheck.notsigned');
 
 // สรุป PO ที่เชื่อมกับ SO -> หน้า/Excel/PDF
 use App\Http\Controllers\SoPoExportController;

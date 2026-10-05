@@ -72,36 +72,79 @@ class SoPoExportController extends Controller
                 }
             }
 
+            // ชุด GoodID ที่เป็นบริการ (EMGood.GoodTypeFlag='S') — ไว้จัดประเภท PO
+            $serviceGoodIds = [];
+            try {
+                $serviceGoodIds = array_flip(
+                    DB::connection(self::ERP)->table('EMGood')->where('GoodTypeFlag', 'S')
+                        ->pluck('GoodID')->map(fn ($x) => (int) $x)->all()
+                );
+            } catch (\Throwable $e) {}
+
             // PODT: ไส้ในราย PO (ตาม POID)
             if (!empty($poidToPo)) {
                 foreach (array_chunk(array_keys($poidToPo), 1000) as $chunk) {
                     $dts = DB::connection(self::ERP)->table('PODT')
                         ->whereIn('POID', $chunk)
                         ->where('CancelFlag', '<>', 'Y')
-                        ->selectRaw('POID, RTRIM(GoodName) as good_name, GoodQty2 as qty, GoodPrice2 as price, GoodAmnt as amnt')
+                        ->selectRaw('POID, GoodID, RTRIM(GoodName) as good_name, GoodQty2 as qty, GoodPrice2 as price, GoodAmnt as amnt')
                         ->orderBy('POID')->orderBy('ListNo')
                         ->get();
                     foreach ($dts as $d) {
                         $po = $poidToPo[$d->POID] ?? null;
                         if ($po === null || !isset($pos[$po])) continue;
                         $pos[$po]['lines'][] = [
-                            'name'   => trim((string) $d->good_name),
-                            'qty'    => (float) $d->qty,
-                            'price'  => round((float) $d->price, 2),
-                            'amount' => round((float) $d->amnt, 2),
+                            'good_id' => (int) $d->GoodID,
+                            'name'    => trim((string) $d->good_name),
+                            'qty'     => (float) $d->qty,
+                            'price'   => round((float) $d->price, 2),
+                            'amount'  => round((float) $d->amnt, 2),
                         ];
                     }
                 }
             }
+
+            // จัดประเภทจาก "ชื่อรายการ" เป็นหลัก (GoodID ใน ERP เชื่อถือไม่ได้ — คนคีย์สินค้าใต้โค้ดบริการ/กลับกันบ่อย)
+            //   บรรทัดเป็น "บริการ" เมื่อชื่อขึ้นต้นด้วย ค่า / งาน (ค่าขนส่ง ค่าแรง ค่าบริการ งานติดตั้ง งานรื้อถอน ฯลฯ)
+            $isServiceLine = function ($ln) {
+                $n = ltrim((string) ($ln['name'] ?? ''));
+                return (bool) preg_match('/^(ค่า|งาน)/u', $n);
+            };
+
+            // จัดประเภทแต่ละ PO: มีบรรทัดที่เป็น "สินค้า" อย่างน้อย 1 = สินค้า ; ทุกบรรทัดเป็นบริการ = บริการ
+            foreach ($pos as $po => &$pp) {
+                $type = 'สินค้า';
+                if (!empty($pp['lines'])) {
+                    $hasGoods = false;
+                    foreach ($pp['lines'] as $ln) {
+                        if (!$isServiceLine($ln)) { $hasGoods = true; break; }
+                    }
+                    $type = $hasGoods ? 'สินค้า' : 'บริการ';
+                }
+                $pp['type'] = $type;
+            }
+            unset($pp);
         }
 
         $pos = array_values($pos);
         usort($pos, fn ($a, $b) => strcmp($a['po'], $b['po']));
 
-        $tot = ['before' => 0.0, 'vat' => 0.0, 'after' => 0.0, 'count' => count($pos)];
-        foreach ($pos as $p) { $tot['before'] += $p['before']; $tot['vat'] += $p['vat']; $tot['after'] += $p['after']; }
+        // แยกกลุ่ม สินค้า / บริการ + ยอดรวมแต่ละกลุ่ม
+        $goods = array_values(array_filter($pos, fn ($p) => ($p['type'] ?? 'สินค้า') !== 'บริการ'));
+        $service = array_values(array_filter($pos, fn ($p) => ($p['type'] ?? '') === 'บริการ'));
+        $sum = function ($arr) {
+            $s = ['before' => 0.0, 'vat' => 0.0, 'after' => 0.0, 'count' => count($arr)];
+            foreach ($arr as $p) { $s['before'] += $p['before']; $s['vat'] += $p['vat']; $s['after'] += $p['after']; }
+            return $s;
+        };
 
-        return ['so' => $soNum, 'pos' => $pos, 'totals' => $tot, 'printed_at' => Carbon::now()->addYears(543)->format('d/m/Y H:i')];
+        return [
+            'so' => $soNum, 'pos' => $pos,
+            'goods' => $goods, 'service' => $service,
+            'goods_total' => $sum($goods), 'service_total' => $sum($service),
+            'totals' => $sum($pos),
+            'printed_at' => Carbon::now()->addYears(543)->format('d/m/Y H:i'),
+        ];
     }
 
     /** หน้าแสดงผล (มีปุ่ม Excel / PDF) */

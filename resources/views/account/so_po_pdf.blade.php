@@ -7,66 +7,83 @@
   @font-face{ font-family:"THSarabun"; font-weight:bold;
     src:url(data:font/truetype;charset=utf-8;base64,{!! $fontBold !!}) format("truetype"); }
   *{font-family:"THSarabun",sans-serif}
-  body{font-size:17px;color:#1f2937;margin:0}
-  h1{font-size:20px;margin:0 0 2px}
-  .sub{color:#555;font-size:14px;margin-bottom:8px}
-  .po{border:1px solid #cbd5e1;border-radius:4px;margin-bottom:8px;padding:6px 8px;page-break-inside:avoid;break-inside:avoid}
-  tr{page-break-inside:avoid}
-  .po-sum{page-break-inside:avoid}
-  .po-head{background:#eff6ff;padding:5px 7px;border-radius:3px;font-weight:bold;font-size:16px}
-  .po-head .r{float:right}
-  table{width:100%;border-collapse:collapse;margin-top:5px;table-layout:fixed}
-  th,td{border:1px solid #d1d5db;padding:5px 7px;font-size:14.5px;word-wrap:break-word;word-break:break-word;overflow-wrap:break-word}
-  th{background:#f1f5f9}
-  td.r,th.r{text-align:right}
-  td.name{white-space:normal}
-  .po-sum{margin-top:5px;font-size:15px;font-weight:bold}
-  .po-sum table{width:300px;margin-left:auto;margin-top:0;table-layout:auto}
-  .po-sum td{border:none;padding:2px 6px}
-  .po-sum td.k{text-align:left;color:#555;font-weight:normal}
-  .po-sum td.val{text-align:right}
-  .po-sum .b{color:#2563eb}.po-sum .v{color:#d97706}.po-sum .s{color:#16a34a}
-  .grand{margin-top:10px;background:#111827;color:#fff;padding:10px;border-radius:4px;font-weight:bold;font-size:16px}
-  .grand .r{float:right}
+  @page{ margin:14mm 10mm; }
+  body{font-size:14px;color:#1f2937;margin:0}
+  h1{font-size:19px;margin:0 0 2px}
+  .sub{color:#555;font-size:13px;margin-bottom:10px}
+  h2{font-size:17px;margin:10px 0 4px;padding:5px 9px;border-radius:4px;color:#fff}
+  h2.goods{background:#1d4ed8}
+  h2.service{background:#b45309}
+  table{width:100%;border-collapse:collapse}
+  th,td{border:1px solid #d1d5db;padding:2px 6px;font-size:13.5px;vertical-align:top;line-height:1.12}
+  th{background:#f1f5f9;font-weight:bold}
+  td.r,th.r{text-align:right;white-space:nowrap}
+  td.c,th.c{text-align:center;white-space:nowrap}
+  td.ven{word-break:break-word;overflow-wrap:break-word}
+  .it{font-size:11.5px;color:#334155;padding-left:6px;line-height:1.1}
+  .itq{color:#2563eb;white-space:nowrap}
+  .po-no{font-weight:bold;white-space:nowrap}
+  .sub-tot td{background:#eef2ff;font-weight:bold}
+  .grand td{background:#111827;color:#fff;font-weight:bold;font-size:15px}
 </style></head><body>
-  <h1>สรุป PO ที่เชื่อมกับ SO {{ $so }}</h1>
-  <div class="sub">ไม่รวม PO ที่ยกเลิก · จำนวน {{ $totals['count'] }} PO · พิมพ์ {{ $printed_at }}</div>
+  <h1>สรุป PO ที่เชื่อมกับ SO {{ $so }} <span style="font-size:13px;font-weight:normal;color:#777">(ไม่รวม PO ยกเลิก · {{ $totals['count'] }} PO · วันที่เอกสาร)</span></h1>
 
-  @foreach($pos as $p)
-  <div class="po">
-    <div class="po-head">
-      {{ $p['po'] }} — {{ $p['vendor_name'] }} ({{ $p['vendor_id'] }})
-      <span class="r">วันที่เอกสาร {{ $p['date'] ?: '-' }}</span>
-    </div>
+  @php
+    $block = function($title, $cls, $list, $stot) use ($m) {
+      return [$title,$cls,$list,$stot];
+    };
+  @endphp
+
+  @foreach([['ขายสินค้า','goods',$goods,$goods_total],['ค่าแรง / ค่าบริการ','service',$service,$service_total]] as $sec)
+    @php [$title,$cls,$list,$stot] = $sec; @endphp
+    <h2 class="{{ $cls }}" @if($cls==='service') style="page-break-before:always" @endif>PO {{ $title }} ({{ $stot['count'] }} รายการ)</h2>
     <table>
-      <thead><tr><th>รายการสินค้า</th><th class="r" style="width:70px">จำนวน</th><th class="r" style="width:110px">ราคา/หน่วย</th><th class="r" style="width:120px">ยอด</th></tr></thead>
-      <tbody>
-        @forelse($p['lines'] as $ln)
+      <thead>
         <tr>
-          <td class="name">{{ $ln['name'] ?: '-' }}</td>
-          <td class="r">{{ rtrim(rtrim(number_format($ln['qty'],4),'0'),'.') }}</td>
-          <td class="r">{{ $m($ln['price']) }}</td>
-          <td class="r">{{ $m($ln['amount']) }}</td>
+          <th style="width:78px">PO</th>
+          <th>ผู้ขาย / รายการสินค้า</th>
+          <th class="c" style="width:72px">วันที่เอกสาร</th>
+          <th class="r" style="width:80px">ก่อน VAT</th>
+          <th class="r" style="width:64px">VAT</th>
+          <th class="r" style="width:86px">รวม</th>
         </tr>
+      </thead>
+      <tbody>
+        @forelse($list as $p)
+          <tr>
+            <td class="po-no">{{ $p['po'] }}</td>
+            <td class="ven">
+              <div style="font-weight:bold">{{ $p['vendor_name'] ?: '-' }} <span style="color:#777;font-weight:normal">({{ $p['vendor_id'] }})</span></div>
+              @if(!empty($p['lines']))
+                @foreach($p['lines'] as $ln)
+                  <div class="it">• {{ $ln['name'] ?: '-' }} <span class="itq">[{{ rtrim(rtrim(number_format($ln['qty'],2),'0'),'.') }} x {{ $m($ln['price']) }} = {{ $m($ln['amount']) }}]</span></div>
+                @endforeach
+              @endif
+            </td>
+            <td class="c">{{ $p['date'] ?: '-' }}</td>
+            <td class="r">{{ $m($p['before']) }}</td>
+            <td class="r">{{ $m($p['vat']) }}</td>
+            <td class="r">{{ $m($p['after']) }}</td>
+          </tr>
         @empty
-        <tr><td colspan="4">- ไม่มีรายการ -</td></tr>
+          <tr><td colspan="6" class="c" style="color:#999">- ไม่มี -</td></tr>
         @endforelse
+        <tr class="sub-tot">
+          <td colspan="3" class="r">รวม {{ $title }}</td>
+          <td class="r">{{ $m($stot['before']) }}</td>
+          <td class="r">{{ $m($stot['vat']) }}</td>
+          <td class="r">{{ $m($stot['after']) }}</td>
+        </tr>
       </tbody>
     </table>
-    <div class="po-sum">
-      <table>
-        <tr><td class="k">ก่อน VAT</td><td class="val b">{{ $m($p['before']) }}</td></tr>
-        <tr><td class="k">VAT</td><td class="val v">{{ $m($p['vat']) }}</td></tr>
-        <tr><td class="k">รวม</td><td class="val s">{{ $m($p['after']) }}</td></tr>
-      </table>
-    </div>
-  </div>
   @endforeach
 
-  <div class="grand">
-    <div style="margin-bottom:4px">รวมทั้งหมด {{ $totals['count'] }} PO</div>
-    <div>ก่อน VAT : {{ $m($totals['before']) }}</div>
-    <div>VAT : {{ $m($totals['vat']) }}</div>
-    <div>รวมทั้งสิ้น : {{ $m($totals['after']) }}</div>
-  </div>
+  <table style="margin-top:12px">
+    <tr class="grand">
+      <td colspan="3" class="r">รวมทั้งหมด {{ $totals['count'] }} PO</td>
+      <td class="r">{{ $m($totals['before']) }}</td>
+      <td class="r">{{ $m($totals['vat']) }}</td>
+      <td class="r">{{ $m($totals['after']) }}</td>
+    </tr>
+  </table>
 </body></html>

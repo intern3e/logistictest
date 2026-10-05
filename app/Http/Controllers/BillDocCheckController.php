@@ -73,6 +73,7 @@ class BillDocCheckController extends Controller
         if ($status === 'has')               $query->where('has_document', true);
         elseif ($status === 'missing')       $query->where('has_document', false)->where('not_found', false)->where('in_system', true);
         elseif ($status === 'notfound')      $query->where('not_found', true);
+        elseif ($status === 'notsigned')     $query->where('not_signed', true);
         elseif ($status === 'mismatch')      $query->where('match_status', BillDocCheck::M_MISMATCH);
         elseif ($status === 'doc_no_system') $query->where('match_status', BillDocCheck::M_DOC_NO_SYS);
         elseif ($status === 'cancelled')     $query->where('cancelled', true);
@@ -83,7 +84,12 @@ class BillDocCheckController extends Controller
         }
 
         // ตรวจแล้ว (พบ หรือ ไม่พบ) ลงไปอยู่ล่างสุด ; ที่ยังไม่ตรวจอยู่บน
-        $rows = $query->orderByRaw('(has_document OR not_found) asc')->orderBy('bill_no')->limit(5000)->get()->map(fn ($r) => $this->rowOut($r));
+        $models = $query->orderByRaw('(has_document OR not_found) asc')->orderBy('bill_no')->limit(5000)->get();
+
+        // รายละเอียดจากระบบ logistic (tblbill + transaction_transport) เชื่อมด้วย bill_issue_no = เลขบิล (ERP InvNo)
+        $detail = $this->logisticDetail($models->pluck('bill_no')->all());
+
+        $rows = $models->map(fn ($r) => $this->rowOut($r, $detail[$r->bill_no] ?? null));
 
         return response()->json([
             'ok'      => true,
@@ -122,8 +128,9 @@ class BillDocCheckController extends Controller
                 'after'  => (float) (clone $q)->sum('amount'),
             ];
         };
-        // ยอดขาย = บิลที่ไม่ยกเลิก ; ยกเลิกแยกต่างหาก
-        $valid     = (clone $base)->where('cancelled', false);
+        // ยอดขาย = บิลที่ไม่ยกเลิก "และไม่ใช่ไม่พบเอกสาร" (ไม่พบเอกสาร = ไม่เอามาคิดยอด)
+        $valid     = (clone $base)->where('cancelled', false)->where('not_found', false);
+        $cancel    = (clone $base)->where('cancelled', true);
         $data = [
             'period'      => $period,
             'period_thai' => $this->periodThai($period),
@@ -133,9 +140,14 @@ class BillDocCheckController extends Controller
             'service'     => $agg((clone $valid)->where('bill_type', self::serviceOrGoods('service'))),
             'untyped'     => $agg((clone $valid)->whereNull('bill_type')),
             'valid_total' => $agg((clone $valid)),
-            'cancelled'   => $agg((clone $base)->where('cancelled', true)),
+            // ยกเลิก แยกเป็น ขายสินค้า / บริการ
+            'cancelled'         => $agg((clone $cancel)),
+            'cancelled_goods'   => $agg((clone $cancel)->where('bill_type', self::serviceOrGoods('goods'))),
+            'cancelled_service' => $agg((clone $cancel)->where('bill_type', self::serviceOrGoods('service'))),
             'has_document' => (clone $valid)->where('has_document', true)->count(),
             'missing_doc'  => (clone $valid)->where('has_document', false)->count(),
+            'not_found'    => (clone $base)->where('cancelled', false)->where('not_found', true)->count(),
+            'not_signed'   => (clone $valid)->where('not_signed', true)->count(),
         ];
         return view('account.bill_doc_report', $data);
     }
@@ -349,11 +361,46 @@ class BillDocCheckController extends Controller
             $row->checked_at   = now();
         } else {
             $row->has_document = false;
+            $row->not_signed   = false;   // ไม่พบแล้ว -> เคลียร์ "ไม่ได้เซ็น"
             $row->match_status = $row->in_system ? BillDocCheck::M_MISSING_DOC : BillDocCheck::M_DOC_NO_SYS;
             $row->check_source = 'manual';
             $row->checked_by   = $user->name;
             $row->checked_at   = now();
         }
+        $row->save();
+
+        return response()->json(['ok' => true, 'row' => $this->rowOut($row), 'summary' => $this->summaryFor($period)]);
+    }
+
+    /** ติ๊ก/ยกเลิก "พบแต่ไม่ได้เซ็นบิล" — ติ๊ก = ถือว่าพบเอกสารแล้ว (has_document) แต่ยังไม่เซ็น */
+    public function markNotSigned(Request $request)
+    {
+        $user = $this->requireLogin($request);
+        if (!$this->canUse($user)) {
+            return response()->json(['ok' => false, 'message' => 'ไม่มีสิทธิ์'], 403);
+        }
+        $data = $request->validate([
+            'period'  => 'required|string',
+            'bill_no' => 'required|string',
+            'val'     => 'required|boolean',
+        ]);
+        $period = $this->normPeriod($data['period']);
+        $row = BillDocCheck::where('period', $period)->where('bill_no', trim($data['bill_no']))->first();
+        if (!$row) {
+            return response()->json(['ok' => false, 'message' => 'ไม่พบเลขบิลนี้ในรายการของเดือน'], 404);
+        }
+
+        if ($data['val']) {
+            $row->not_signed   = true;
+            $row->has_document = true;    // พบเอกสารแล้ว แต่ไม่เซ็น
+            $row->not_found    = false;
+            $row->match_status = $row->in_system ? BillDocCheck::M_MATCHED : BillDocCheck::M_DOC_NO_SYS;
+        } else {
+            $row->not_signed   = false;
+        }
+        $row->check_source = 'manual';
+        $row->checked_by   = $user->name;
+        $row->checked_at   = now();
         $row->save();
 
         return response()->json(['ok' => true, 'row' => $this->rowOut($row), 'summary' => $this->summaryFor($period)]);
@@ -381,6 +428,7 @@ class BillDocCheckController extends Controller
         if ($data['val']) {
             $row->not_found    = true;
             $row->has_document = false;   // ไม่พบ = ไม่มีเอกสาร
+            $row->not_signed   = false;
             $row->match_status = $row->in_system ? BillDocCheck::M_MISSING_DOC : BillDocCheck::M_DOC_NO_SYS;
             $row->check_source = 'manual';
             $row->checked_by   = $user->name;
@@ -567,9 +615,71 @@ class BillDocCheckController extends Controller
         ];
     }
 
-    private function rowOut(BillDocCheck $r): array
+    /**
+     * รายละเอียดจากระบบ logistic ต่อเลขบิล (ERP InvNo) :
+     *   tblbill.bill_issue_no = เลขบิล -> ผู้เปิด(emp_name)+เวลา(time), so_detail_id, รับบิล(status_bill*)
+     *   transaction_transport.bill_id = so_detail_id -> ขนส่ง/คนขับ/รับเข้า(check_name,check_time,status)
+     *   ถ้า bill_issue_no ซ้ำ -> เอาแถวล่าสุด (id มากสุด)
+     */
+    private function logisticDetail(array $billNos): array
+    {
+        $billNos = array_values(array_filter(array_unique($billNos)));
+        if (empty($billNos)) return [];
+
+        // 1) tblbill (เอาล่าสุดต่อ bill_issue_no)
+        $byBill = [];
+        $soDetailIds = [];
+        foreach (array_chunk($billNos, 1000) as $chunk) {
+            $rows = DB::table('tblbill')
+                ->whereIn('bill_issue_no', $chunk)
+                ->orderBy('time')   // วนทับ -> แถวเวลาใหม่สุด(ล่าสุด)ชนะ
+                ->get(['bill_issue_no', 'emp_name', 'time', 'so_detail_id', 'transport_type',
+                       'status_bill', 'status_bill_by', 'status_bill_time']);
+            foreach ($rows as $b) {
+                $key = trim((string) $b->bill_issue_no);
+                if ($key === '') continue;
+                $byBill[$key] = $b;
+                if (!empty($b->so_detail_id)) $soDetailIds[] = $b->so_detail_id;
+            }
+        }
+
+        // 2) transaction_transport (ล่าสุดต่อ bill_id = so_detail_id)
+        $bySoDetail = [];
+        $soDetailIds = array_values(array_unique($soDetailIds));
+        foreach (array_chunk($soDetailIds, 1000) as $chunk) {
+            $tx = DB::table('transaction_transport')
+                ->whereIn('bill_id', $chunk)
+                ->orderBy('id')
+                ->get(['bill_id', 'transport_name', 'driver_name', 'name_pick', 'time_pick',
+                       'check_name', 'check_time', 'status']);
+            foreach ($tx as $t) $bySoDetail[$t->bill_id] = $t;
+        }
+
+        $out = [];
+        foreach ($byBill as $key => $b) {
+            $tx = !empty($b->so_detail_id) ? ($bySoDetail[$b->so_detail_id] ?? null) : null;
+            $fmt = fn ($d) => $d ? \Carbon\Carbon::parse($d)->format('d/m/Y H:i') : null;
+            $out[$key] = [
+                'opener'         => trim((string) ($b->emp_name ?? '')) ?: null,
+                'opened_at'      => $fmt($b->time ?? null),
+                'transport'      => ($tx && trim((string) $tx->transport_name) !== '') ? trim((string) $tx->transport_name)
+                                      : (trim((string) ($b->transport_type ?? '')) ?: null),
+                'driver'         => $tx ? (trim((string) $tx->driver_name) ?: null) : null,
+                'received_by'    => $tx ? (trim((string) $tx->check_name) ?: null) : null,
+                'received_at'    => $tx ? $fmt($tx->check_time ?? null) : null,
+                'receive_status' => $tx ? (trim((string) $tx->status) ?: null) : null,
+                'bill_received_by'  => trim((string) ($b->status_bill_by ?? '')) ?: null,
+                'bill_received_at'  => $fmt($b->status_bill_time ?? null),
+                'bill_received_st'  => trim((string) ($b->status_bill ?? '')) ?: null,
+            ];
+        }
+        return $out;
+    }
+
+    private function rowOut(BillDocCheck $r, ?array $detail = null): array
     {
         return [
+            'detail'        => $detail,
             'id'            => $r->id,
             'bill_no'       => $r->bill_no,
             'so_no'         => $r->so_no,
@@ -588,6 +698,7 @@ class BillDocCheckController extends Controller
             'in_system'     => (bool) $r->in_system,
             'has_document'  => (bool) $r->has_document,
             'not_found'     => (bool) $r->not_found,
+            'not_signed'    => (bool) $r->not_signed,
             'match_status'  => $r->match_status,
             'check_source'  => $r->check_source,
             'confidence'    => $r->confidence !== null ? (float) $r->confidence : null,

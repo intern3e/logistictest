@@ -17,7 +17,7 @@ class BillDocCheck extends Model
         'bill_type', 'bill_date', 'customer_id', 'customer_name',
         'amount', 'amount_before_vat', 'vat_amount',
         'cancelled', 'sys_status', 'cancel_reason', 'items', 'in_system',
-        'has_document', 'not_found', 'match_status', 'check_source', 'confidence',
+        'has_document', 'not_found', 'not_signed', 'match_status', 'check_source', 'confidence',
         'doc_amount', 'doc_date', 'doc_customer', 'doc_file',
         'note', 'checked_by', 'checked_at',
     ];
@@ -36,6 +36,7 @@ class BillDocCheck extends Model
         'in_system'    => 'boolean',
         'has_document' => 'boolean',
         'not_found'    => 'boolean',
+        'not_signed'   => 'boolean',
     ];
 
     // ประเภทบิล

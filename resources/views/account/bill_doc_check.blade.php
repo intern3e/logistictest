@@ -99,12 +99,16 @@ tr:hover td{background:#fafbff}
 .ck-lbl{display:flex;align-items:center;gap:5px;font-size:12.5px;font-weight:600;cursor:pointer;white-space:nowrap}
 .ck-found{color:var(--green)}
 .ck-nf{color:var(--red)}
+.ck-ns{color:var(--amber)}
 .type-foot{margin-top:8px;font-size:12px;color:var(--ink2);display:flex;align-items:center;gap:6px}
 .type-sel{padding:5px 8px;border:1px solid #dee2e6;border-radius:8px;font-family:inherit;font-size:12px}
 .note-inp{display:block;width:100%;margin-top:8px;padding:7px 9px;border:1px solid #dee2e6;border-radius:8px;font-family:inherit;font-size:12.5px;line-height:1.4;resize:vertical;min-height:38px;white-space:pre-wrap;word-break:break-word;overflow-wrap:anywhere}
 .note-inp:focus{outline:none;border-color:var(--primary);background:#f8faff}
 .bill-cust{margin-top:8px;padding-top:6px;border-top:1px dotted var(--line)}
 .cust-line{font-weight:600;color:var(--ink);white-space:normal;word-break:break-word;line-height:1.35}
+.bill-detail{margin-top:6px;padding-top:6px;border-top:1px dotted var(--line);font-size:12px;color:var(--ink2)}
+.dt-ln{line-height:1.5}
+.dt-k{color:#94a3b8;font-weight:600}
 tr.flash td{animation:flashbg 1.1s ease}
 @keyframes flashbg{0%{background:#fde68a}60%{background:#fef3c7}100%{background:transparent}}
 /* เลขบิลเขียว (เหมือนยอดรวมหลัง VAT) ; ยกเลิก = แดง (ทับ) */
@@ -162,6 +166,7 @@ table.hide-cancel tr.is-cancelled{display:none}
     <div class="tab active" data-status="">ทุกสถานะ</div>
     <div class="tab" data-status="missing">ยังไม่ตรวจ</div>
     <div class="tab" data-status="has">มีเอกสาร</div>
+    <div class="tab" data-status="notsigned">พบ·ไม่เซ็น</div>
     <div class="tab" data-status="notfound">ไม่พบบิล</div>
     <div class="tab" data-status="noted">มีหมายเหตุ</div>
     <div class="tab" data-status="cancelled">ยกเลิก</div>
@@ -194,6 +199,7 @@ const URL_TICK = "{{ route('billdoccheck.tick') }}";
 const URL_TYPE = "{{ route('billdoccheck.type') }}";
 const URL_NOTE = "{{ route('billdoccheck.note') }}";
 const URL_NOTFOUND = "{{ route('billdoccheck.notfound') }}";
+const URL_NOTSIGNED = "{{ route('billdoccheck.notsigned') }}";
 
 const $ = id => document.getElementById(id);
 let curType = '', curStatus = '', busy = false;
@@ -272,6 +278,7 @@ function render(rows){
   tb.innerHTML = rows.map(r=>{
     const chk = `<label class="ck-lbl ck-found"><input type="checkbox" class="chk chk-found" ${r.has_document?'checked':''} onchange="onTick('${esc(r.bill_no)}',this.checked)"> พบ</label>`;
     const nf  = `<label class="ck-lbl ck-nf"><input type="checkbox" class="chk chk-nf" ${r.not_found?'checked':''} onchange="onNotFound('${esc(r.bill_no)}',this.checked)"> ไม่พบ</label>`;
+    const ns  = `<label class="ck-lbl ck-ns"><input type="checkbox" class="chk chk-ns" ${r.not_signed?'checked':''} onchange="onNotSigned('${esc(r.bill_no)}',this.checked)"> พบ·ไม่เซ็น</label>`;
     const by = byHtml(r);
     const done = (r.has_document||r.not_found) ? 1 : 0;
     // เลขบิล: ยกเลิก = แดง + ป้ายยกเลิก + เหตุผล อยู่ใต้เลขบิล
@@ -285,12 +292,12 @@ function render(rows){
     const rowCls = (r.cancelled?'is-cancelled ':'') + (r.bill_type==='สินค้า' ? 'row-goods' : (r.bill_type==='บริการ' ? 'row-service' : ''));
     return `<tr data-bill="${esc(r.bill_no)}" data-done="${done}" class="${rowCls}">
       <td class="c">
-        <div class="ck-row">${chk}${nf}</div>
+        <div class="ck-row">${chk}${nf}${ns}</div>
         <textarea class="note-inp" rows="1" placeholder="หมายเหตุ... (ใส่ยาวได้)"
             oninput="autoGrow(this)"
             onchange="onNote('${esc(r.bill_no)}',this.value)">${esc(r.note||'')}</textarea>
       </td>
-      <td><b class="mono bill-no ${billCls}">${esc(r.bill_no)}</b>${billSub}<div class="bill-cust">${custLine}</div></td>
+      <td><b class="mono bill-no ${billCls}">${esc(r.bill_no)}</b>${billSub}<div class="bill-cust">${custLine}</div>${detailHtml(r.detail)}</td>
       <td>${itemsCell(r)}</td>
       <td>${by}</td>
     </tr>`;
@@ -321,6 +328,23 @@ async function load(){
 }
 
 function autoGrow(el){ el.style.height='auto'; el.style.height=(el.scrollHeight+2)+'px'; }
+function detailHtml(d){
+  if(!d) return '';
+  const row=(label,val)=> (val!=null&&String(val).trim()!=='') ? `<div class="dt-ln"><span class="dt-k">${label}</span> ${esc(val)}</div>` : '';
+  let parts='';
+  parts+=row('ผู้เปิด:', d.opener? (d.opener+(d.opened_at?(' · '+d.opened_at):'')) : null);
+  parts+=row('ขนส่ง:', d.transport);
+  parts+=row('คนขับ:', d.driver);
+  if(d.received_by||d.received_at||d.receive_status){
+    const r=[d.received_by, d.received_at, d.receive_status].filter(x=>x&&String(x).trim()!=='').join(' · ');
+    parts+=row('รับเข้า:', r);
+  }
+  if(d.bill_received_by||d.bill_received_at||d.bill_received_st){
+    const r=[d.bill_received_by, d.bill_received_at, d.bill_received_st].filter(x=>x&&String(x).trim()!=='').join(' · ');
+    parts+=row('รับบิล:', r);
+  }
+  return parts ? `<div class="bill-detail">${parts}</div>` : '';
+}
 function byHtml(r){
   return r.checked_by ? `${esc(r.checked_by)}<div class="src">${esc(r.check_source||'')}${r.checked_at?' · '+esc(r.checked_at):''}${r.confidence!=null?' · '+r.confidence+'%':''}</div>` : '-';
 }
@@ -343,6 +367,7 @@ function applyRowChange(billNo,r){
   if(!tr){ return; }
   const cbF=tr.querySelector('input.chk-found'); if(cbF) cbF.checked=!!r.has_document;
   const cbN=tr.querySelector('input.chk-nf');    if(cbN) cbN.checked=!!r.not_found;
+  const cbS=tr.querySelector('input.chk-ns');    if(cbS) cbS.checked=!!r.not_signed;
   tr.dataset.done = (r.has_document||r.not_found)?'1':'0';
   const ni=tr.querySelector('.note-inp'); if(ni && document.activeElement!==ni){ ni.value=r.note||''; autoGrow(ni); }
   tr.cells[tr.cells.length-1].innerHTML = byHtml(r);
@@ -351,6 +376,7 @@ function applyRowChange(billNo,r){
   if(curStatus==='missing' && (r.has_document||r.not_found)) remove=true;
   else if(curStatus==='has' && !r.has_document) remove=true;
   else if(curStatus==='notfound' && !r.not_found) remove=true;
+  else if(curStatus==='notsigned' && !r.not_signed) remove=true;
   else if(curStatus==='noted' && !(r.note&&String(r.note).trim())) remove=true;
   if(remove){ tr.style.transition='opacity .25s,transform .25s'; tr.style.opacity='0'; tr.style.transform='translateX(20px)'; setTimeout(()=>tr.remove(),240); return; }
   reorderRows(); flashRow(tr);
@@ -361,6 +387,10 @@ async function onTick(billNo,has){
 }
 async function onNotFound(billNo,val){
   try{ const d=await post(URL_NOTFOUND,{period:period(),bill_no:billNo,val:val}); renderCards(d.summary); applyRowChange(billNo,d.row); toast(val?'ทำเครื่องหมาย "ไม่พบบิล"':'ยกเลิก "ไม่พบบิล"','ok'); }
+  catch(e){ toast(e.message,'err'); load(); }
+}
+async function onNotSigned(billNo,val){
+  try{ const d=await post(URL_NOTSIGNED,{period:period(),bill_no:billNo,val:val}); renderCards(d.summary); applyRowChange(billNo,d.row); toast(val?'ทำเครื่องหมาย "พบ·ไม่เซ็น"':'ยกเลิก "พบ·ไม่เซ็น"','ok'); }
   catch(e){ toast(e.message,'err'); load(); }
 }
 async function onType(billNo,type){

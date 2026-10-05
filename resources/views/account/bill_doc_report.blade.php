@@ -100,7 +100,21 @@ td.c{text-align:center}
         <td class="money">{{ _m($valid_total['after']) }}</td>
       </tr>
       <tr class="row-cancel">
-        <td class="l">บิลยกเลิก</td>
+        <td class="l">บิลยกเลิก — ขายสินค้า</td>
+        <td class="c">{{ number_format($cancelled_goods['count']) }}</td>
+        <td class="money">{{ _m($cancelled_goods['before']) }}</td>
+        <td class="money">{{ _m($cancelled_goods['vat']) }}</td>
+        <td class="money">{{ _m($cancelled_goods['after']) }}</td>
+      </tr>
+      <tr class="row-cancel">
+        <td class="l">บิลยกเลิก — บริการ</td>
+        <td class="c">{{ number_format($cancelled_service['count']) }}</td>
+        <td class="money">{{ _m($cancelled_service['before']) }}</td>
+        <td class="money">{{ _m($cancelled_service['vat']) }}</td>
+        <td class="money">{{ _m($cancelled_service['after']) }}</td>
+      </tr>
+      <tr class="row-cancel" style="font-weight:700">
+        <td class="l">รวมบิลยกเลิก</td>
         <td class="c">{{ number_format($cancelled['count']) }}</td>
         <td class="money">{{ _m($cancelled['before']) }}</td>
         <td class="money">{{ _m($cancelled['vat']) }}</td>
@@ -111,11 +125,13 @@ td.c{text-align:center}
 
   <div class="docbar">
     <div class="docbox"><div class="k">มีเอกสารแล้ว</div><div class="v" style="color:#16a34a">{{ number_format($has_document) }}</div></div>
+    <div class="docbox"><div class="k">พบแต่ไม่ได้เซ็นบิล</div><div class="v" style="color:#d97706">{{ number_format($not_signed) }}</div></div>
     <div class="docbox"><div class="k">ยังไม่มีเอกสาร</div><div class="v" style="color:#dc2626">{{ number_format($missing_doc) }}</div></div>
+    <div class="docbox"><div class="k">ไม่พบเอกสาร (ไม่คิดยอด)</div><div class="v" style="color:#6b7280">{{ number_format($not_found) }}</div></div>
   </div>
 
   <div class="note">
-    * ยอดขายคำนวณจากบิลที่ไม่ถูกยกเลิก · ประเภทสินค้า/บริการแยกจาก EMGood (GoodTypeFlag) · มูลค่ารวม VAT จาก NetAmnt
+    * ยอดขายคำนวณจากบิลที่ไม่ถูกยกเลิก และไม่ใช่ "ไม่พบเอกสาร" · ประเภทสินค้า/บริการแยกจากชื่อรายการ · มูลค่ารวม VAT จาก NetAmnt
   </div>
 
   <div class="sign">
