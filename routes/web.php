@@ -166,6 +166,17 @@ Route::get('/dashboardcheckbillsolve', [checkbillController::class, 'dashboardso
 Route::get('/dashboardcheckbill', [checkbillController::class, 'dashboard']);
 Route::post('/updatestatusdeli', [checkbillController::class, 'updatestatusdeli'])->name('updatestatusdeli');
 
+// ===== ตรวจเอกสารบิล vs ระบบ (งานบัญชี) =====
+use App\Http\Controllers\BillDocCheckController;
+Route::get('/billdoccheck',         [BillDocCheckController::class, 'index'])->name('billdoccheck.index');
+Route::get('/billdoccheck/data',    [BillDocCheckController::class, 'data'])->name('billdoccheck.data');
+Route::get('/billdoccheck/report',  [BillDocCheckController::class, 'report'])->name('billdoccheck.report');
+Route::get('/billdoccheck/report-pdf', [BillDocCheckController::class, 'reportPdf'])->name('billdoccheck.reportpdf');
+Route::post('/billdoccheck/sync',   [BillDocCheckController::class, 'syncErp'])->name('billdoccheck.sync');
+Route::post('/billdoccheck/tick',   [BillDocCheckController::class, 'tick'])->name('billdoccheck.tick');
+Route::post('/billdoccheck/type',   [BillDocCheckController::class, 'setType'])->name('billdoccheck.type');
+Route::post('/billdoccheck/note',   [BillDocCheckController::class, 'setNote'])->name('billdoccheck.note');
+
 use App\Http\Controllers\CarserviceController;
 Route::get('/dashboardcarservice', [CarserviceController::class, 'dashboardcarsevice']);
 

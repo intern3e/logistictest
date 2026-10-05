@@ -20,5 +20,8 @@ Route::middleware('auth:sanctum')->get('/user', function (Request $request) {
     return $request->user();
 });
 Route::get('/idbilldelivery', [api::class, 'apibilldeli']);
+
+// ===== bot/OCR ภายนอกยิงผลการอ่านเอกสารบิลเข้ามา (ตรวจกับระบบ) =====
+Route::post('/billdoccheck/match', [\App\Http\Controllers\BillDocCheckController::class, 'botMatch']);
 Route::post('/callstatus/bulk', [CallbackController::class, 'callstatusBulk']);
 Route::post('/callstatussuccess/bulk', [CallbackController::class, 'callstatussuccess']);
