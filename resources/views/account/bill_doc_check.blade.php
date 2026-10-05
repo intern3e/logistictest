@@ -103,8 +103,15 @@ tr:hover td{background:#fafbff}
 .cust-line{font-weight:600;color:var(--ink);white-space:normal;word-break:break-word;line-height:1.35}
 tr.flash td{animation:flashbg 1.1s ease}
 @keyframes flashbg{0%{background:#fde68a}60%{background:#fef3c7}100%{background:transparent}}
-/* เลขบิลยกเลิก = แดง */
+/* เลขบิลเขียว (เหมือนยอดรวมหลัง VAT) ; ยกเลิก = แดง (ทับ) */
+.bill-no{color:var(--green);font-size:15px}
 .bill-cancelled{color:var(--red)}
+/* พื้นหลังแถวตามประเภท: สินค้า=ฟ้าอ่อน, บริการ=เหลืองอ่อน */
+tr.row-goods td{background:#eff6ff}
+tr.row-service td{background:#fffbeb}
+/* ซ่อนบิลยกเลิก */
+.chk-hide{display:flex;align-items:center;gap:6px;font-size:13px;font-weight:600;color:var(--ink2);cursor:pointer;align-self:flex-end;padding-bottom:9px}
+table.hide-cancel tr.is-cancelled{display:none}
 .cancel-tag{display:inline-block;margin-top:4px;background:#111827;color:#fff;font-size:11px;font-weight:700;padding:2px 9px;border-radius:999px}
 .cancel-reason{margin-top:3px;font-size:12px;color:var(--red);line-height:1.4;white-space:normal}
 /* จำนวนเงิน = ชิดขวา ตรงคอลัมน์ยอด */
@@ -134,6 +141,7 @@ tr.flash td{animation:flashbg 1.1s ease}
       </div>
       <button class="btn btn-primary" id="btnReload">โหลดใหม่</button>
       <button class="btn" id="btnPdf">สรุป PDF</button>
+      <label class="chk-hide"><input type="checkbox" id="hideCancel"> ซ่อนบิลยกเลิก</label>
     </div>
 
   </div>
@@ -266,19 +274,25 @@ function render(rows){
       billSub += `<div class="cancel-reason">${r.cancel_reason?('เหตุผล: '+esc(r.cancel_reason)):'ไม่ระบุเหตุผล'}</div>`;
     }
     const custLine = `<div class="cust-line">${esc(r.customer_name||'-')}</div>${r.customer_id?`<div class="src">${esc(r.customer_id)}</div>`:''}`;
-    return `<tr data-bill="${esc(r.bill_no)}" data-has="${r.has_document?1:0}">
+    const rowCls = (r.cancelled?'is-cancelled ':'') + (r.bill_type==='สินค้า' ? 'row-goods' : (r.bill_type==='บริการ' ? 'row-service' : ''));
+    return `<tr data-bill="${esc(r.bill_no)}" data-has="${r.has_document?1:0}" class="${rowCls}">
       <td class="c">
         <div>${chk}</div>
         <textarea class="note-inp" rows="1" placeholder="หมายเหตุ... (ใส่ยาวได้)"
             oninput="autoGrow(this)"
             onchange="onNote('${esc(r.bill_no)}',this.value)">${esc(r.note||'')}</textarea>
       </td>
-      <td><b class="mono ${billCls}">${esc(r.bill_no)}</b>${billSub}<div class="bill-cust">${custLine}</div></td>
+      <td><b class="mono bill-no ${billCls}">${esc(r.bill_no)}</b>${billSub}<div class="bill-cust">${custLine}</div></td>
       <td>${itemsCell(r)}</td>
       <td>${by}</td>
     </tr>`;
   }).join('');
   tb.querySelectorAll('textarea.note-inp').forEach(t=>{ if(t.value.trim()) autoGrow(t); });
+  applyHideCancel();
+}
+function applyHideCancel(){
+  const on = $('hideCancel').checked;
+  document.querySelector('.table-wrap table').classList.toggle('hide-cancel', on);
 }
 
 async function load(){
@@ -336,7 +350,10 @@ async function onTick(billNo,has){
   catch(e){ toast(e.message,'err'); load(); }
 }
 async function onType(billNo,type){
-  try{ await post(URL_TYPE,{period:period(),bill_no:billNo,type:type||null}); toast('บันทึกประเภทแล้ว','ok'); }
+  try{ await post(URL_TYPE,{period:period(),bill_no:billNo,type:type||null}); toast('บันทึกประเภทแล้ว','ok');
+    const tr=$('tbody').querySelector('tr[data-bill="'+String(billNo).replace(/"/g,'\\"')+'"]');
+    if(tr){ tr.classList.remove('row-goods','row-service'); if(type==='สินค้า')tr.classList.add('row-goods'); else if(type==='บริการ')tr.classList.add('row-service'); }
+  }
   catch(e){ toast(e.message,'err'); }
 }
 async function onNote(billNo,note){
@@ -357,6 +374,12 @@ $('btnReload').addEventListener('click', syncAndLoad);
 $('fPeriod').addEventListener('change', syncAndLoad);
 $('btnPdf').addEventListener('click', ()=>{
   window.open("{{ route('billdoccheck.reportpdf') }}?period="+encodeURIComponent(period()), '_blank');
+});
+// ซ่อน/แสดง บิลยกเลิก (ฝั่ง client) + จำค่าไว้
+try{ $('hideCancel').checked = localStorage.getItem('bdc_hideCancel')==='1'; }catch(e){}
+$('hideCancel').addEventListener('change', ()=>{
+  try{ localStorage.setItem('bdc_hideCancel', $('hideCancel').checked?'1':'0'); }catch(e){}
+  applyHideCancel();
 });
 
 let qTimer=null;
