@@ -144,8 +144,8 @@ table.hide-cancel tr.is-cancelled{display:none}
         <input type="month" id="fPeriod" value="{{ $thisPeriod }}">
       </div>
       <div class="fld" style="flex:1;min-width:200px">
-        <label>ค้นหา (เลขบิล เท่านั้น)</label>
-        <input type="text" id="fQ" placeholder="พิมพ์เลขบิล...">
+        <label>ค้นหา / กระโดดเลขรันนิ่ง (เช่น 1100 = แสดงตั้งแต่ 1100)</label>
+        <input type="text" id="fQ" placeholder="พิมพ์เลขรันนิ่ง เช่น 1100 แล้วขึ้นตั้งแต่เลขนั้น" inputmode="numeric">
       </div>
       <button class="btn btn-primary" id="btnReload">โหลดใหม่</button>
       <button class="btn" id="btnPdf">สรุป PDF</button>
@@ -427,7 +427,12 @@ $('hideCancel').addEventListener('change', ()=>{
 });
 
 let qTimer=null;
-$('fQ').addEventListener('input', ()=>{clearTimeout(qTimer);qTimer=setTimeout(load,350);});
+// จำค่าค้นหาไว้ (ไม่หายเวลากดปุ่ม/รีโหลดหน้า)
+try{ const sv=localStorage.getItem('bdc_q'); if(sv) $('fQ').value=sv; }catch(e){}
+$('fQ').addEventListener('input', ()=>{
+  try{ localStorage.setItem('bdc_q', $('fQ').value); }catch(e){}
+  clearTimeout(qTimer); qTimer=setTimeout(load,350);
+});
 
 document.querySelectorAll('#typeTabs .tab').forEach(t=>t.addEventListener('click',()=>{
   document.querySelectorAll('#typeTabs .tab').forEach(x=>x.classList.remove('active'));

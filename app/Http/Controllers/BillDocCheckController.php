@@ -80,7 +80,12 @@ class BillDocCheckController extends Controller
         elseif ($status === 'noted')         $query->whereNotNull('note')->where('note', '<>', '');
 
         if ($q !== '') {
-            $query->where('bill_no', 'LIKE', "%{$q}%");   // ค้นเฉพาะเลขบิล
+            if (ctype_digit($q)) {
+                // พิมพ์ตัวเลขล้วน = เลขรันนิ่ง -> แสดงตั้งแต่เลขนี้เป็นต้นไป (เลขท้ายหลัง '-')
+                $query->whereRaw("CAST(SUBSTRING_INDEX(bill_no, '-', -1) AS UNSIGNED) >= ?", [(int) $q]);
+            } else {
+                $query->where('bill_no', 'LIKE', "%{$q}%");   // ค้นแบบมีตัวอักษร = substring
+            }
         }
 
         // ตรวจแล้ว (พบ หรือ ไม่พบ) ลงไปอยู่ล่างสุด ; ที่ยังไม่ตรวจอยู่บน
@@ -617,26 +622,26 @@ class BillDocCheckController extends Controller
 
     /**
      * รายละเอียดจากระบบ logistic ต่อเลขบิล (ERP InvNo) :
-     *   tblbill.bill_issue_no = เลขบิล -> ผู้เปิด(emp_name)+เวลา(time), so_detail_id, รับบิล(status_bill*)
+     *   tblbill.billid = เลขบิล -> ผู้เปิด(emp_name)+เวลา(time), so_detail_id, รับบิล(status_bill*)
      *   transaction_transport.bill_id = so_detail_id -> ขนส่ง/คนขับ/รับเข้า(check_name,check_time,status)
-     *   ถ้า bill_issue_no ซ้ำ -> เอาแถวล่าสุด (id มากสุด)
+     *   ถ้า billid ซ้ำ -> เอาแถวล่าสุด (time ใหม่สุด)
      */
     private function logisticDetail(array $billNos): array
     {
         $billNos = array_values(array_filter(array_unique($billNos)));
         if (empty($billNos)) return [];
 
-        // 1) tblbill (เอาล่าสุดต่อ bill_issue_no)
+        // 1) tblbill (เอาล่าสุดต่อ billid)
         $byBill = [];
         $soDetailIds = [];
         foreach (array_chunk($billNos, 1000) as $chunk) {
             $rows = DB::table('tblbill')
-                ->whereIn('bill_issue_no', $chunk)
+                ->whereIn('billid', $chunk)
                 ->orderBy('time')   // วนทับ -> แถวเวลาใหม่สุด(ล่าสุด)ชนะ
-                ->get(['bill_issue_no', 'emp_name', 'time', 'so_detail_id', 'transport_type',
+                ->get(['billid', 'emp_name', 'time', 'so_detail_id', 'transport_type',
                        'status_bill', 'status_bill_by', 'status_bill_time']);
             foreach ($rows as $b) {
-                $key = trim((string) $b->bill_issue_no);
+                $key = trim((string) $b->billid);
                 if ($key === '') continue;
                 $byBill[$key] = $b;
                 if (!empty($b->so_detail_id)) $soDetailIds[] = $b->so_detail_id;
