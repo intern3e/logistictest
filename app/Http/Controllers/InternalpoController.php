@@ -161,8 +161,10 @@ private function legacyPoQuery(Request $request, string $statusFilter)
 
         if ($chunk->isEmpty()) break;
 
-        $migrated = internal_po::whereIn('internal_id', $chunk->pluck('PO'))->pluck('internal_id')->flip();
-        $result = $result->concat($chunk->reject(fn ($r) => $migrated->has($r->PO)));
+        // ตัดเฉพาะที่ "ย้ายเข้าระบบใหม่จริง" = เลข PO + SO ตรงกัน (ถ้าเลขชนกันแต่คนละ SO = คนละใบ ให้แสดงทั้งคู่)
+        $pairs = internal_po::whereIn('internal_id', $chunk->pluck('PO'))->get(['internal_id', 'SO_id'])
+            ->map(fn ($x) => $x->internal_id . '|' . $x->SO_id)->flip();
+        $result = $result->concat($chunk->reject(fn ($r) => $pairs->has($r->PO . '|' . $r->SO)));
 
         $offset += $chunk->count();
 
@@ -170,10 +172,11 @@ private function legacyPoQuery(Request $request, string $statusFilter)
         if ($chunk->count() < $batch) break;
     }
 
-    return $result->unique('PO')->take($need)->values()->map(fn ($r) => (object) [
+    return $result->unique(fn ($r) => $r->PO . '|' . $r->SO)->take($need)->values()->map(fn ($r) => (object) [
         'internal_id' => $r->PO,
         'SO_id'       => $r->SO,
         'status'      => $status,
+        'is_legacy'   => true,   // มาจากระบบเก่า (3e)
     ]);
 }
 

@@ -423,7 +423,10 @@
                     <input type="checkbox" checked disabled title="จัดแล้ว">
                 @endif
             </td>
-            <td class="col-key">@if ($loop->first)<span class="ref-link">{{ $h->internal_id }}</span>@endif</td>
+            <td class="col-key">@if ($loop->first)<span class="ref-link">{{ $h->internal_id }}</span>
+                @php $isLegacy = $h->is_legacy ?? false; @endphp
+                <span style="display:inline-block;margin-top:2px;padding:1px 7px;border-radius:999px;font-size:11px;font-weight:700;{{ $isLegacy ? 'background:#fef3c7;color:#b45309' : 'background:#dbeafe;color:#1d4ed8' }}">{{ $isLegacy ? 'ระบบเก่า' : 'ระบบใหม่' }}</span>
+            @endif</td>
             <td class="col-key">
                 @if ($loop->first && !empty($h->SO_id))
                     <a href="http://server_update:8000/sodetail?SONum={{ urlencode($h->SO_id) }}" target="_blank"
@@ -467,7 +470,10 @@
     @empty
         <tr class="{{ $cls }}" data-internal-id="{{ $h->internal_id }}">
             <td class="center"></td>
-            <td class="col-key"><span class="ref-link">{{ $h->internal_id }}</span></td>
+            <td class="col-key"><span class="ref-link">{{ $h->internal_id }}</span>
+                @php $isLegacy = $h->is_legacy ?? false; @endphp
+                <span style="display:inline-block;margin-top:2px;padding:1px 7px;border-radius:999px;font-size:11px;font-weight:700;{{ $isLegacy ? 'background:#fef3c7;color:#b45309' : 'background:#dbeafe;color:#1d4ed8' }}">{{ $isLegacy ? 'ระบบเก่า' : 'ระบบใหม่' }}</span>
+            </td>
             <td class="col-key">
                 @if (!empty($h->SO_id))
                     <a href="http://server_update:8000/sodetail?SONum={{ urlencode($h->SO_id) }}" target="_blank"
