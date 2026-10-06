@@ -563,6 +563,12 @@ class ShelfsaleController extends Controller
                 ];
             })->values();
 
+        // โหมด pending (ค้นด้วย ชั้น/Sale ไม่ได้ค้น PO/SO) -> ตัดแถวที่เช็คเอาท์แล้วออกให้หมด
+        //   กันเคสที่ resolveHeader รีโซลฟ์ต่างกันตามชุดผลลัพธ์ แล้วของเช็คเอาท์หลุดมาแสดง
+        if ($fStatus === 'pending') {
+            $rows = $rows->reject(fn ($r) => $r['is_checkedout'])->values();
+        }
+
         // เรียง: "ยังไม่เช็คเอาท์" ขึ้นก่อน -> ตามด้วย "เช็คเอาท์แล้ว" ; ในกลุ่มเรียงกำหนดส่งไกลสุดขึ้นก่อน
         $rows = $rows->sortBy(function ($r) {
             $base = $r['is_checkedout'] ? 1e13 : 0;
