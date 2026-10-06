@@ -648,7 +648,7 @@ class BillDocCheckController extends Controller
             }
         }
 
-        // 2) transaction_transport (ล่าสุดต่อ bill_id = so_detail_id)
+        // 2) transaction_transport (ล่าสุดต่อ bill_id = so_detail_id) — แหล่งหลัก
         $bySoDetail = [];
         $soDetailIds = array_values(array_unique($soDetailIds));
         foreach (array_chunk($soDetailIds, 1000) as $chunk) {
@@ -660,22 +660,64 @@ class BillDocCheckController extends Controller
             foreach ($tx as $t) $bySoDetail[$t->bill_id] = $t;
         }
 
+        // 3) bill_status_history (db3e) — fallback เมื่อไม่เจอใน transaction_transport ; คีย์ด้วย BillNo = เลขบิล
+        $histByBill = [];
+        try {
+            foreach (array_chunk($billNos, 1000) as $chunk) {
+                $hs = DB::connection(self::ERP_CONNECTION)->table('bill_status_history')
+                    ->whereIn('BillNo', $chunk)
+                    ->orderBy('BillInDate')   // วนทับ -> ล่าสุดชนะ
+                    ->get(['BillNo', 'BillInReason', 'BillInByDesc', 'BillInBy', 'BillInDate', 'DeliveryMethodDesc', 'ChangedBy', 'ChangedDate']);
+                foreach ($hs as $h) {
+                    $k = trim((string) $h->BillNo);
+                    if ($k !== '') $histByBill[$k] = $h;
+                }
+            }
+        } catch (\Throwable $e) {
+            Log::warning('billcheck bill_status_history fallback failed: ' . $e->getMessage());
+        }
+
+        $fmt = fn ($d) => $d ? \Carbon\Carbon::parse($d)->format('d/m/Y H:i') : null;
         $out = [];
-        foreach ($byBill as $key => $b) {
-            $tx = !empty($b->so_detail_id) ? ($bySoDetail[$b->so_detail_id] ?? null) : null;
-            $fmt = fn ($d) => $d ? \Carbon\Carbon::parse($d)->format('d/m/Y H:i') : null;
+        foreach ($billNos as $key) {
+            $b  = $byBill[$key] ?? null;
+            $tx = ($b && !empty($b->so_detail_id)) ? ($bySoDetail[$b->so_detail_id] ?? null) : null;
+            $h  = $histByBill[$key] ?? null;
+            if (!$b && !$tx && !$h) continue;   // ไม่มีข้อมูลเลย -> ไม่แสดง
+
+            // ขนส่ง/คนขับ/รับเข้า : ใช้ transaction_transport เป็นหลัก ถ้าไม่เจอค่อยใช้ bill_status_history
+            if ($tx) {
+                $transport = trim((string) $tx->transport_name) ?: (trim((string) ($b->transport_type ?? '')) ?: null);
+                $driver    = trim((string) $tx->driver_name) ?: null;
+                $recvBy    = trim((string) $tx->check_name) ?: null;
+                $recvAt    = $fmt($tx->check_time ?? null);
+                $recvSt    = trim((string) $tx->status) ?: null;
+                $src       = 'transport';
+            } elseif ($h) {
+                $transport = trim((string) ($h->DeliveryMethodDesc ?? '')) ?: null;
+                $driver    = null;   // bill_status_history ไม่มีคนขับ
+                $recvBy    = trim((string) ($h->BillInByDesc ?: ($h->BillInBy ?? ''))) ?: null;
+                $recvAt    = $fmt($h->BillInDate ?? null);
+                $recvSt    = trim((string) ($h->BillInReason ?? '')) ?: null;
+                $src       = 'history';
+            } else {
+                $transport = trim((string) ($b->transport_type ?? '')) ?: null;
+                $driver = $recvBy = $recvAt = $recvSt = null;
+                $src = 'tblbill';
+            }
+
             $out[$key] = [
-                'opener'         => trim((string) ($b->emp_name ?? '')) ?: null,
-                'opened_at'      => $fmt($b->time ?? null),
-                'transport'      => ($tx && trim((string) $tx->transport_name) !== '') ? trim((string) $tx->transport_name)
-                                      : (trim((string) ($b->transport_type ?? '')) ?: null),
-                'driver'         => $tx ? (trim((string) $tx->driver_name) ?: null) : null,
-                'received_by'    => $tx ? (trim((string) $tx->check_name) ?: null) : null,
-                'received_at'    => $tx ? $fmt($tx->check_time ?? null) : null,
-                'receive_status' => $tx ? (trim((string) $tx->status) ?: null) : null,
-                'bill_received_by'  => trim((string) ($b->status_bill_by ?? '')) ?: null,
-                'bill_received_at'  => $fmt($b->status_bill_time ?? null),
-                'bill_received_st'  => trim((string) ($b->status_bill ?? '')) ?: null,
+                'opener'         => $b ? (trim((string) ($b->emp_name ?? '')) ?: null) : null,
+                'opened_at'      => $b ? $fmt($b->time ?? null) : null,
+                'transport'      => $transport,
+                'driver'         => $driver,
+                'received_by'    => $recvBy,
+                'received_at'    => $recvAt,
+                'receive_status' => $recvSt,
+                'received_src'   => $src,
+                'bill_received_by'  => $b ? (trim((string) ($b->status_bill_by ?? '')) ?: null) : null,
+                'bill_received_at'  => $b ? $fmt($b->status_bill_time ?? null) : null,
+                'bill_received_st'  => $b ? (trim((string) ($b->status_bill ?? '')) ?: null) : null,
             ];
         }
         return $out;
