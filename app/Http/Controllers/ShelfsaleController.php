@@ -172,6 +172,7 @@ class ShelfsaleController extends Controller
                     'checkout_at' => optional($h)->checkout_time,
                     '_has_header' => (bool) $h,
                     '_checked'    => filled(optional($h)->checkout_time),
+                    'src'         => 'new',
                 ];
             })
             // header ถูกยกเลิก/ไม่พบ (global scope notCancelled) -> ตัดออก (เหมือนเดิมที่ whereHas ตัด)
@@ -215,11 +216,13 @@ class ShelfsaleController extends Controller
                 'cust_id'       => $h->customer_code,
                 'cust_name'     => $h->customer_name,
                 'sale'          => $h->create_by,
+                'src'           => 'new',
             ];
         })->values();
-        // set PO ภายใน (clean) สำหรับกันซ้ำกับ 3e store
+        // set PO ภายใน (clean) สำหรับกันซ้ำกับ 3e store — ใช้ "ทุกสถานะ" (รวมที่เช็คเอาท์แล้ว)
+        //   เพราะ 3e store เป็นข้อมูลค้าง (ไม่อัปเดตเมื่อเช็คเอาท์ในระบบใหม่) PO ที่อยู่ในระบบใหม่จึงต้องไม่ยึด 3e store
         $internalPoSet = array_flip(
-            $internalHeads->pluck('internal_id')->filter()
+            \App\Models\internal_po::pluck('internal_id')->filter()
                 ->map(fn ($p) => preg_replace('/^PO/i', '', (string) $p))
                 ->all()
         );
@@ -299,6 +302,7 @@ class ShelfsaleController extends Controller
                 'po_receive_id' => null,
                 'checkout_by' => null,   // ระบบเก่า: ไม่มีชื่อผู้เช็คเอาท์ (แสดงแค่เวลา)
                 'checkout_at' => filled($row->DATECHECKOUT) ? Carbon::parse($row->DATECHECKOUT) : null,
+                'src'         => 'legacy',
             ]);
         }
 
@@ -559,6 +563,7 @@ class ShelfsaleController extends Controller
                     'checkout_by'   => $first->checkout_by ?: null,
                     'checkout_at'   => filled($coAt) ? Carbon::parse($coAt)->format('d/m/Y H:i') : null,
                     'po_receive_id' => $first->po_receive_id ?? null,   // รอบ (header) — ใช้เช็คเอาท์แยกรอบ
+                    'is_legacy'   => (($first->src ?? '') === 'legacy'),   // มาจากระบบเก่า (3e) หรือระบบใหม่
                     '_ship_ts'    => filled($ship) ? Carbon::parse($ship)->timestamp : null,
                 ];
             })->values();

@@ -569,6 +569,11 @@
         if (!so || so === '-') return '<span class="ref-link">-</span>';
         return '<a class="ref-link" href="http://server_update:8000/sodetail?SONum=' + encodeURIComponent(so) + '" target="_blank" rel="noopener">' + esc(so) + '</a>';
     }
+    // ป้ายที่มา: ติดเฉพาะ "ระบบเก่า" (3e) ; ระบบใหม่ไม่ต้องติดป้าย
+    function srcBadge(r){
+        if (!r.is_legacy) return '';
+        return ' <span style="display:inline-block;margin-left:6px;padding:1px 7px;border-radius:999px;font-size:.72rem;font-weight:700;background:#fef3c7;color:#b45309">ระบบเก่า</span>';
+    }
 
     const SHELF_OPTIONS = @json($shelfOptions ?? []);
     const SALE_OPTIONS  = @json($saleOptions ?? []);
@@ -843,7 +848,7 @@
         return '<div class="it st-' + st + (quickFilter !== 'all' && quickFilter !== st ? ' hidden-row' : '') + '" data-st="' + st + '">'
             + '<div class="it-main num' + (co ? ' has-co' : '') + '">'
             +   '<span class="c-so"><span class="k">SO</span>' + soLink(r.so) + '</span>'
-            +   '<span class="c-po" title="' + esc(r.po || '-') + '"><span class="k">PO</span>' + esc(r.po || '-') + '</span>'
+            +   '<span class="c-po" title="' + esc(r.po || '-') + '"><span class="k">PO</span>' + esc(r.po || '-') + srcBadge(r) + '</span>'
             +   who + ship
             +   '<span class="c-st">' + pill + '</span>'
             +   co
