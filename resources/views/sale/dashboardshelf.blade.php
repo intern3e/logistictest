@@ -464,8 +464,9 @@
         </div>
     </div>
 </div>
+@endif
 
-<!-- Modal ดูสินค้า (Popup) -->
+<!-- Modal ดูสินค้า (Popup) — แสดงทุก role (role sale ก็กดดูสินค้าได้) -->
 <div id="productModal" class="modal-overlay">
     <div class="modal-box modal-box-lg">
         <div class="modal-title">
@@ -494,7 +495,6 @@
         </div>
     </div>
 </div>
-@endif
 
 <!-- กล่องยืนยัน / แจ้งเตือน (แทน confirm / alert ของเบราว์เซอร์) -->
 <div id="uiDialog" class="ui-dlg-overlay" aria-hidden="true">
