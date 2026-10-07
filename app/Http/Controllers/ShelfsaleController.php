@@ -59,13 +59,59 @@ class ShelfsaleController extends Controller
         //   ตอนค้นด้วย PO/SO ; ฝั่ง manage มีคอลัมน์ "จัดการ" (ปุ่ม) แยกอีกคอลัมน์
         $showCheckout = true;
 
-        // dropdown Sale — เหมือนเดิม (ดึงจาก 3e so) แต่ cache 30 นาที กัน groupBy เต็มตารางทุกครั้ง
-        $saleOptions = Cache::remember('shelfsale_sale_options', 1800, function () {
-            return DB::connection(self::LEGACY_CONNECTION)->table('so')
-                ->whereNotNull('createdBy')->where('createdBy', '!=', '')
-                ->groupBy('createdBy')
-                ->pluck('createdBy')
-                ->sort()->values();
+        // dropdown Sale — เฉพาะ "เซลล์ที่มีของค้างอยู่บนชั้น" (ยังไม่เช็คเอาท์) เท่านั้น
+        //   ตรวจแบบเบา: หา so_id ที่มีของบนชั้น (ระบบใหม่ po_receives + internal_po) -> map เป็นชื่อ Sale (3e so.createdBy)
+        //   cache 5 นาที กันคิวนี้ทำงานถี่เกินตอนเปิดหน้า
+        $saleOptions = Cache::remember('shelfsale_sale_options_active', 300, function () {
+            try {
+                // 1) so ที่มี "line บนชั้น" ใน header ที่ยังไม่เช็คเอาท์ (ระบบใหม่)
+                $pendingIdToSo = PoReceive::whereNull('checkout_time')->pluck('so_id', 'id');
+                $soNew = collect();
+                if ($pendingIdToSo->isNotEmpty()) {
+                    $shelfHeaderIds = PoReceiveLine::whereNotNull('shelf')->where('shelf', '!=', '')
+                        ->whereIn('po_receive_id', $pendingIdToSo->keys()->all())
+                        ->distinct()->pluck('po_receive_id')->filter()->all();
+                    $soNew = collect($shelfHeaderIds)->map(fn ($id) => $pendingIdToSo->get($id))->filter()->unique();
+                }
+                // 2) PO ภายใน (รหัส A) ระบบใหม่ ที่ขึ้นชั้นแล้วยังไม่เช็คเอาท์
+                $soInt = \App\Models\internal_po::where('status', \App\Models\internal_po::ST_STORED)
+                    ->whereNotNull('location')->where('location', '!=', '')
+                    ->whereNotNull('so_id')->where('so_id', '!=', '')
+                    ->distinct()->pluck('so_id');
+
+                // 3) ของเก่า: 3e store (PO ภายใน/ภายนอกของเก่า) ที่ยังไม่เช็คเอาท์ (DATECHECKOUT ว่าง)
+                //    ตัด PO ที่ย้ายเข้าระบบใหม่/PO ภายในระบบใหม่แล้ว (3e store เป็นข้อมูลค้าง ไม่อัปเดตตอนเช็คเอาท์ในระบบใหม่)
+                $poInNewSet = array_flip(
+                    PoReceive::pluck('po_id')->filter()
+                        ->map(fn ($p) => preg_replace('/^PO/i', '', (string) $p))->all()
+                );
+                $internalPoSet = array_flip(
+                    \App\Models\internal_po::pluck('internal_id')->filter()
+                        ->map(fn ($p) => preg_replace('/^PO/i', '', (string) $p))->all()
+                );
+                $soLegacy = DB::connection(self::LEGACY_CONNECTION)->table('store')
+                    ->whereIn('statusArea', ['0', '1'])
+                    ->whereNotNull('Area')->where('Area', '<>', '')
+                    ->where(function ($q) { $q->whereNull('DATECHECKOUT')->orWhere('DATECHECKOUT', ''); })
+                    ->whereNotNull('SO')->where('SO', '<>', '')
+                    ->limit(8000)->get(['SO', 'PO'])
+                    ->reject(function ($r) use ($poInNewSet, $internalPoSet) {
+                        $clean = preg_replace('/^PO/i', '', (string) $r->PO);
+                        return isset($poInNewSet[$clean]) || isset($internalPoSet[$clean]);
+                    })
+                    ->pluck('SO')->filter()->unique();
+
+                $allSo = $soNew->merge($soInt)->merge($soLegacy)->filter()->unique()->values();
+                if ($allSo->isEmpty()) return collect();
+
+                // 3) map so -> ชื่อ Sale (createdBy) จาก 3e — แค่ตรวจว่ามี ไม่ต้องระบุจำนวน
+                return DB::connection(self::LEGACY_CONNECTION)->table('so')
+                    ->whereIn('SONum', $allSo->all())
+                    ->whereNotNull('createdBy')->where('createdBy', '!=', '')
+                    ->distinct()->pluck('createdBy')->sort()->values();
+            } catch (\Throwable $e) {
+                return collect();   // ต่อ 3e ไม่ได้ -> ไม่ขึ้นชื่อ (กันหน้าพัง)
+            }
         });
 
         $shelfOptions = collect(self::SHELF_OPTIONS);

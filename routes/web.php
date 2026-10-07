@@ -170,6 +170,7 @@ Route::post('/updatestatusdeli', [checkbillController::class, 'updatestatusdeli'
 use App\Http\Controllers\BillDocCheckController;
 Route::get('/billdoccheck',         [BillDocCheckController::class, 'index'])->name('billdoccheck.index');
 Route::get('/billdoccheck/data',    [BillDocCheckController::class, 'data'])->name('billdoccheck.data');
+Route::get('/billdoccheck/summary', [BillDocCheckController::class, 'summary'])->name('billdoccheck.summary');
 Route::get('/billdoccheck/report',  [BillDocCheckController::class, 'report'])->name('billdoccheck.report');
 Route::get('/billdoccheck/report-pdf', [BillDocCheckController::class, 'reportPdf'])->name('billdoccheck.reportpdf');
 Route::post('/billdoccheck/sync',   [BillDocCheckController::class, 'syncErp'])->name('billdoccheck.sync');
@@ -178,6 +179,13 @@ Route::post('/billdoccheck/type',   [BillDocCheckController::class, 'setType'])-
 Route::post('/billdoccheck/note',   [BillDocCheckController::class, 'setNote'])->name('billdoccheck.note');
 Route::post('/billdoccheck/notfound', [BillDocCheckController::class, 'markNotFound'])->name('billdoccheck.notfound');
 Route::post('/billdoccheck/notsigned', [BillDocCheckController::class, 'markNotSigned'])->name('billdoccheck.notsigned');
+
+// เช็คเอกสาร PO (mobile_app ติ๊ก -> หน้าสรุป account)
+use App\Http\Controllers\PoDocCheckController;
+Route::get('/podoccheck',       [PoDocCheckController::class, 'index'])->name('podoccheck.index');
+Route::get('/podoccheck/data',  [PoDocCheckController::class, 'data'])->name('podoccheck.data');
+Route::get('/podoccheck/get',   [PoDocCheckController::class, 'get'])->name('podoccheck.get');
+Route::post('/podoccheck/save', [PoDocCheckController::class, 'save'])->name('podoccheck.save');
 
 // สรุป PO ที่เชื่อมกับ SO -> หน้า/Excel/PDF
 use App\Http\Controllers\SoPoExportController;
@@ -505,6 +513,7 @@ use App\Http\Controllers\MobilePoappController;
 Route::match(['get', 'post'], '/mobile-app', [MobilePoappController::class, 'index'])->name('mobile.app');
 Route::get('/api/getPODetail', [MobilePoappController::class, 'getPODetail'])->name('mobile.po.detail');
 Route::get('/api/poBySupplier', [MobilePoappController::class, 'poBySupplier'])->name('mobile.po.bySupplier');
+Route::get('/api/poByCustomer', [MobilePoappController::class, 'poByCustomer'])->name('mobile.po.byCustomer');
 Route::post('/api/receivePO', [MobilePoappController::class, 'receivePO'])->name('mobile.po.receive');
 Route::get('/api/receivePO/history', [MobilePoappController::class, 'history'])->name('mobile.po.receive.history');
 Route::post('/api/receivePO/cancel', [MobilePoappController::class, 'cancelReceive']);
@@ -525,6 +534,8 @@ use App\Http\Controllers\WrongBillController;
 Route::get('/wrongbill',       [WrongBillController::class, 'index']);
 Route::get('/wrongbill/data',  [WrongBillController::class, 'data'])->name('wrongbill.data');
 Route::post('/wrongbill/solve',[WrongBillController::class, 'solve'])->name('wrongbill.solve');
+Route::post('/wrongbill/approve',[WrongBillController::class, 'toggleApprove'])->name('wrongbill.approve');
+Route::post('/wrongbill/dismiss',[WrongBillController::class, 'dismiss'])->name('wrongbill.dismiss');
 
 Route::get('/dashboardmanual', function () {
     return view('manual.dashboardmanual');

@@ -38,19 +38,66 @@ class MobilePoappController extends Controller
      */
     public function poBySupplier(Request $request)
     {
-        $request->validate(['sup' => 'required|string|max:100']);
-        $sup = trim($request->query('sup'));
+        $sup   = trim((string) $request->query('sup', ''));
+        $supId = trim((string) $request->query('supid', ''));
+        if ($sup === '' && $supId === '') {
+            return response()->json(['ok' => false, 'message' => 'กรุณาระบุชื่อหรือรหัสซัพ'], 422);
+        }
 
-        $rows = DB::connection(self::LEGACY_CONNECTION)->table('polist')
-            ->where('VendorName', 'LIKE', '%' . $sup . '%')
+        $q = DB::connection(self::LEGACY_CONNECTION)->table('polist')
             ->whereRaw("UPPER(TRIM(COALESCE(POstatus, ''))) NOT IN ('COMPLETED', 'CANCELLED')")
-            ->whereNotNull('PONum')->where('PONum', '<>', '')
-            ->orderByDesc('PONum')
-            ->limit(500)
+            ->whereNotNull('PONum')->where('PONum', '<>', '');
+        if ($sup !== '')   $q->where('VendorName', 'LIKE', '%' . $sup . '%');
+        if ($supId !== '') $q->where('VendorID', 'LIKE', '%' . $supId . '%');
+
+        $rows = $q->orderByDesc('PONum')->limit(500)
             ->get(['PONum', 'VendorName', 'SONum', 'POstatus']);
 
+        return response()->json(['ok' => true, 'items' => $this->decoratePoRows($rows)]);
+    }
+
+    /**
+     * ค้นหา PO ของลูกค้า (ที่ยังไม่รับเข้า) — ค้นด้วยรหัสลูกค้า (code=so.CustID) และ/หรือ ชื่อลูกค้า (name=so.CustName)
+     *   ลูกค้า -> so.SONum -> polist.SONum -> เหลือเฉพาะ PO ที่ยังไม่ completed/cancelled และยังไม่เช็คเอาท์ในระบบใหม่
+     */
+    public function poByCustomer(Request $request)
+    {
+        $code = trim((string) $request->query('code', ''));
+        $name = trim((string) $request->query('name', ''));
+        if ($code === '' && $name === '') {
+            return response()->json(['ok' => false, 'message' => 'กรุณาระบุรหัสหรือชื่อลูกค้า'], 422);
+        }
+
+        // 1) หาเลข SO ของลูกค้าจากตาราง so (DB เก่า 3e)
+        $soQ = DB::connection(self::LEGACY_CONNECTION)->table('so')
+            ->whereNotNull('SONum')->where('SONum', '<>', '');
+        if ($code !== '') $soQ->where('CustID', 'LIKE', '%' . $code . '%');
+        if ($name !== '') $soQ->where('CustName', 'LIKE', '%' . $name . '%');
+        $sonums = $soQ->orderByDesc('SONum')->limit(3000)
+            ->pluck('SONum')->unique()->values()->all();
+
+        if (empty($sonums)) {
+            return response()->json(['ok' => true, 'items' => []]);
+        }
+
+        // 2) หา PO ที่ผูกกับ SO เหล่านั้น เฉพาะที่ยัง active
+        $rows = DB::connection(self::LEGACY_CONNECTION)->table('polist')
+            ->whereIn('SONum', $sonums)
+            ->whereRaw("UPPER(TRIM(COALESCE(POstatus, ''))) NOT IN ('COMPLETED', 'CANCELLED')")
+            ->whereNotNull('PONum')->where('PONum', '<>', '')
+            ->orderByDesc('PONum')->limit(500)
+            ->get(['PONum', 'VendorName', 'SONum', 'POstatus']);
+
+        return response()->json(['ok' => true, 'items' => $this->decoratePoRows($rows)]);
+    }
+
+    /**
+     * ร่วม: จากรายการ polist (PONum, VendorName, SONum, POstatus) -> ตัดที่เช็คเอาท์ในระบบใหม่แล้ว
+     *   + เติมชื่อสินค้า/ยอดรวม แล้วคืน array พร้อมส่งหน้าบ้าน
+     */
+    private function decoratePoRows(\Illuminate\Support\Collection $rows): array
+    {
         // ตัด PO ที่ "รับเข้า + เช็คเอาท์" ในระบบใหม่แล้วออก (polist ระบบเก่าไม่ sync สถานะนี้)
-        // เหลือเฉพาะงานที่ยังไม่ได้รับจริง ๆ
         $candidates = $rows->pluck('PONum')
             ->flatMap(fn ($p) => [$p, 'PO' . $p])->unique()->values()->all();
         $checkedOut = PoReceive::whereIn('po_id', $candidates)
@@ -72,20 +119,17 @@ class MobilePoappController extends Controller
             $detailByPo = $detailByPo->merge($this->fetchPoItemsFromHttp($missing));
         }
 
-        return response()->json([
-            'ok'    => true,
-            'items' => $rows->map(function ($r) use ($detailByPo) {
-                $d = $detailByPo->get($r->PONum, []);
-                return [
-                    'po_num'      => $r->PONum,
-                    'vendor_name' => $r->VendorName,
-                    'so_num'      => $r->SONum,
-                    'status'      => $r->POstatus,
-                    'products'    => $d['items'] ?? [],
-                    'amount'      => (float) ($d['amount'] ?? 0),
-                ];
-            })->values(),
-        ]);
+        return $rows->map(function ($r) use ($detailByPo) {
+            $d = $detailByPo->get($r->PONum, []);
+            return [
+                'po_num'      => $r->PONum,
+                'vendor_name' => $r->VendorName,
+                'so_num'      => $r->SONum,
+                'status'      => $r->POstatus,
+                'products'    => $d['items'] ?? [],
+                'amount'      => (float) ($d['amount'] ?? 0),
+            ];
+        })->values()->all();
     }
 
     /**

@@ -91,9 +91,34 @@
         .btn-changebill:hover{background:var(--danger-light)}
         .btn-tempdoc{background:var(--canvas);border-color:var(--c-hold);color:var(--c-hold)}
         .btn-tempdoc:hover{background:var(--warning-light)}
+        .btn-approve{background:#16a34a;border-color:#16a34a;color:#fff}
+        .btn-approve:hover{background:#15803d}
+        .btn-unapprove{background:var(--canvas);border-color:#16a34a;color:#16a34a}
+        .btn-unapprove:hover{background:#dcfce7}
+        .btn-block{background:#dc2626;border-color:#dc2626;color:#fff}
+        .btn-block:hover{background:#b91c1c}
         .btn-undo{background:var(--canvas);border-color:var(--border);color:var(--muted)}
         .btn-undo:hover{background:#f3f4f6;color:var(--ink)}
         .actions-cell{display:flex;gap:6px;justify-content:center;flex-wrap:wrap}
+        /* แท็บ 3 หมวด: บิลผิด / ค้างบิล / แก้ไขแล้ว */
+        .cat-tabs{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px}
+        .cat-tab{display:inline-flex;align-items:center;gap:7px;padding:9px 18px;border:1px solid var(--border);background:#fff;border-radius:999px;cursor:pointer;font-family:inherit;font-size:14px;font-weight:600;color:var(--muted);transition:all .15s}
+        .cat-tab:hover{background:#f8fafc}
+        .cat-tab .cat-dot{width:9px;height:9px;border-radius:50%}
+        .cat-tab[data-tab=wrong] .cat-dot{background:#dc2626}
+        .cat-tab[data-tab=hold] .cat-dot{background:#d97706}
+        .cat-tab[data-tab=done] .cat-dot{background:#16a34a}
+        .cat-tab.active{color:#fff;border-color:transparent}
+        .cat-tab[data-tab=wrong].active{background:#dc2626}
+        .cat-tab[data-tab=hold].active{background:#d97706}
+        .cat-tab[data-tab=done].active{background:#16a34a}
+        .cat-tab.active .cat-dot{background:#fff}
+        .cat-tab .cat-cnt{font-size:12px;font-weight:700;background:rgba(0,0,0,.08);padding:1px 8px;border-radius:999px;min-width:20px;text-align:center}
+        .cat-tab.active .cat-cnt{background:rgba(255,255,255,.25)}
+        /* ปุ่มจัดการของผิด */
+        .btn-dismiss{background:#fff;border-color:#9ca3af;color:#374151}
+        .btn-dismiss:hover{background:#f3f4f6}
+        .gate-box{display:flex;flex-direction:column;gap:5px;align-items:stretch;min-width:150px}
         .empty-wrapper{display:flex;align-items:center;justify-content:center;height:440px;width:100%}
         .empty-state{text-align:center;color:var(--muted);font-size:15px;font-style:italic}
         .loading-state{display:flex;flex-direction:column;align-items:center;gap:10px;width:min(300px,80%)}
@@ -153,26 +178,16 @@
             </div>
         </div>
 
-        <div class="tab-row">
-            <label class="tab-lbl" for="fType">ประเภท:</label>
-            <select id="fType">
-                <option value="all">ทั้งหมด</option>
-                <option value="wrong">ของผิด</option>
-                <option value="hold">ค้างบิล</option>
-            </select>
-            <label class="tab-lbl" for="fKind" style="margin-left:8px;">ชนิดบิล:</label>
-            <select id="fKind">
-                <option value="all">ทั้งหมด</option>
-                <option value="bill">บิลส่งของ</option>
-                <option value="doc">บิลชั่วคราว</option>
-            </select>
-            <label class="tab-lbl" for="fStatus" style="margin-left:8px;">สถานะ:</label>
-            <select id="fStatus">
-                <option value="open">ยังไม่แก้</option>
-                <option value="fixed">แก้แล้ว · รอผล</option>
-                <option value="cleared">เคลียร์แล้ว</option>
-                <option value="all">ทั้งหมด</option>
-            </select>
+        <div class="cat-tabs" id="catTabs">
+            <button type="button" class="cat-tab active" data-tab="wrong" id="tab-wrong" name="tab-wrong">
+                <span class="cat-dot"></span>บิลผิด<span class="cat-cnt" id="cnt-wrong">0</span>
+            </button>
+            <button type="button" class="cat-tab" data-tab="hold" id="tab-hold" name="tab-hold">
+                <span class="cat-dot"></span>ค้างบิล<span class="cat-cnt" id="cnt-hold">0</span>
+            </button>
+            <button type="button" class="cat-tab" data-tab="done" id="tab-done" name="tab-done">
+                <span class="cat-dot"></span>แก้ไขแล้ว<span class="cat-cnt" id="cnt-done">0</span>
+            </button>
         </div>
 
         <div class="table-scroll">
@@ -225,6 +240,8 @@
     const DATA_URL  = "{{ route('wrongbill.data') }}";
     @if($canSolve)
     const SOLVE_URL = "{{ route('wrongbill.solve') }}";
+    const APPROVE_URL = "{{ route('wrongbill.approve') }}";
+    const DISMISS_URL = "{{ route('wrongbill.dismiss') }}";
     @endif
     const CSRF      = document.querySelector('meta[name="csrf-token"]').content;
     const CAN_SOLVE = {{ ($canSolve ?? false) ? 'true' : 'false' }};
@@ -240,9 +257,9 @@
     const btnClear = document.getElementById('btnClear');
     const openCountEl = document.getElementById('openCount');
 
-    let currentType = 'all';
+    let currentType = 'wrong';     // แท็บเริ่มต้น: บิลผิด
     let currentStatus = 'open';
-    let currentKind = 'all';   // all | bill (บิลส่งของ) | doc (บิลชั่วคราว)
+    let currentKind = 'all';       // คงไว้ (ส่งค่า all เสมอ)
 
     function esc(s){ return String(s ?? '').replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m])); }
     function escJs(s){ return String(s ?? '').replace(/\\/g,'\\\\').replace(/'/g,"\\'"); }
@@ -291,6 +308,7 @@
         if (r.solve_method === 'resend')     return 'ส่งใหม่ (เลขบิลเดิม)';
         if (r.solve_method === 'changebill') return 'เปลี่ยนเป็นบิล <span class="chip chip-blue">'+esc(r.solve_target)+'</span>';
         if (r.solve_method === 'tempdoc')    return 'เอกสารชั่วคราว <span class="chip chip-blue">'+esc(r.solve_target)+'</span>';
+        if (r.solve_method === 'dismiss')    return 'เตะออกจากของผิด';
         return '';
     }
     function solveCell(r){
@@ -302,24 +320,59 @@
         if (r.solve_at)  h += '<div class="solve-info">เมื่อ: '+esc(r.solve_at)+'</div>';
         return h;
     }
+    // กล่องบล็อก/อนุมัติ ราย SO (admin เท่านั้น + ต้องมี so) — บล็อกจับตาม so
+    //   บล็อก (approved=0) -> ฝั่ง server_update so/show ปุ่มบันทึกข้อมูลจัดส่งกลายเป็น "กรุณาติดต่อผู้ดูแลระบบของผิด"
+    //   อนุมัติ (approved=1) หรือยังไม่ตั้งค่า -> จัดส่งได้
+    //   data-act ไว้ให้ bot กดอัตโนมัติ: block | unblock
+    function approveHtml(r){
+        if (!r.can_manage || !r.has_so) return '';          // ไม่มี so = ไม่มีบล็อก (เตะออกอย่างเดียว)
+        const so = escJs(r.so_id);
+        if (r.blocked){
+            return '<div class="solve-info" style="color:#dc2626">บล็อกจัดส่ง'+(r.approved_by?' · โดย '+esc(r.approved_by):'')+(r.approved_at?' · '+esc(r.approved_at):'')+'</div>'
+                 + '<button type="button" class="btn btn-approve" data-act="unblock" data-so="'+esc(r.so_id)+'" onclick="toggleApprove(this,\''+so+'\',true)">อนุมัติให้จัดส่ง</button>';
+        }
+        if (r.approved){
+            return '<div class="solve-info" style="color:#16a34a">อนุมัติแล้ว'+(r.approved_by?' · โดย '+esc(r.approved_by):'')+(r.approved_at?' · '+esc(r.approved_at):'')+'</div>'
+                 + '<button type="button" class="btn btn-block" data-act="block" data-so="'+esc(r.so_id)+'" onclick="toggleApprove(this,\''+so+'\',false)">บล็อกการจัดส่ง</button>';
+        }
+        return '<div class="solve-info">จัดส่งได้ (ยังไม่ตั้งค่า)</div>'
+             + '<button type="button" class="btn btn-block" data-act="block" data-so="'+esc(r.so_id)+'" onclick="toggleApprove(this,\''+so+'\',false)">บล็อกการจัดส่ง</button>';
+    }
+    // คอลัมน์จัดการ (admin เท่านั้น) : บล็อก/ปลดบล็อก (ถ้ามี so) + ปุ่มแก้ + เตะออกจากของผิด
     function actionsCell(r){
-        if (!CAN_SOLVE) return '';
+        if (!CAN_SOLVE) return '';                           // ไม่ใช่ admin -> ไม่มีคอลัมน์จัดการ
         let btns = '';
         if (r.state === 'open'){
             if (r.problem === 'ค้างบิล'){
-                btns = '<button type="button" class="btn btn-tempdoc" onclick="openTarget(\'tempdoc\',\''+escJs(r.job_key)+'\',\''+escJs(r.bill_no)+'\')">เปิดเอกสารชั่วคราว</button>';
-            } else {
-                // ของผิด
-                if (r.type === 'bill'){
-                    btns += '<button type="button" class="btn btn-resend" onclick="doResend(\''+escJs(r.job_key)+'\',\''+escJs(r.bill_no)+'\')">ส่งใหม่เลขบิลเดิม</button>';
-                }
-                btns += '<button type="button" class="btn btn-changebill" onclick="openTarget(\'changebill\',\''+escJs(r.job_key)+'\',\''+escJs(r.bill_no)+'\')">เปลี่ยนเลขบิล</button>';
+                btns += '<button type="button" class="btn btn-tempdoc" data-act="tempdoc" data-job="'+esc(r.job_key)+'" onclick="openTarget(\'tempdoc\',\''+escJs(r.job_key)+'\',\''+escJs(r.bill_no)+'\')">เปิดเอกสารชั่วคราว</button>';
+            } else if (r.type === 'bill'){
+                btns += '<button type="button" class="btn btn-resend" data-act="resend" data-job="'+esc(r.job_key)+'" onclick="doResend(\''+escJs(r.job_key)+'\',\''+escJs(r.bill_no)+'\')">ส่งใหม่เลขบิลเดิม</button>';
             }
+            btns += '<button type="button" class="btn btn-dismiss" data-act="dismiss" data-job="'+esc(r.job_key)+'" onclick="doDismiss(this,\''+escJs(r.job_key)+'\')">เตะออกจากของผิด</button>';
         } else {
-            // แก้แล้ว/เคลียร์แล้ว -> ยกเลิกการแก้ไขไม่ได้ (ล็อกไว้)
             btns = '<span class="dash">—</span>';
         }
-        return '<td><div class="actions-cell">'+btns+'</div></td>';
+        const gate = (r.state === 'open') ? approveHtml(r) : '';
+        return '<td><div class="gate-box">'+gate+'<div class="actions-cell">'+btns+'</div></div></td>';
+    }
+    async function toggleApprove(btn, soId, val){
+        btn.disabled = true;
+        try{
+            const res = await fetch(APPROVE_URL, { method:'POST', headers:{'Content-Type':'application/json','X-CSRF-TOKEN':CSRF,'Accept':'application/json'}, body:JSON.stringify({ so_id:soId, approved:val }) });
+            const d = await res.json().catch(()=>null);
+            if (!res.ok || !d || !d.ok){ alert((d&&d.message)||'ไม่สำเร็จ'); btn.disabled=false; return; }
+            search();   // รีโหลดให้ปุ่ม/สถานะอัปเดต
+        }catch(e){ alert('ผิดพลาด: '+e.message); btn.disabled=false; }
+    }
+    async function doDismiss(btn, jobKey){
+        if (!confirm('เตะงานนี้ออกจากของผิด?\nจะย้ายไปหมวด "แก้ไขแล้ว" และปลดบล็อก SO ให้จัดส่งได้')) return;
+        btn.disabled = true;
+        try{
+            const res = await fetch(DISMISS_URL, { method:'POST', headers:{'Content-Type':'application/json','X-CSRF-TOKEN':CSRF,'Accept':'application/json'}, body:JSON.stringify({ job_key:jobKey }) });
+            const d = await res.json().catch(()=>null);
+            if (!res.ok || !d || !d.ok){ alert((d&&d.message)||'ไม่สำเร็จ'); btn.disabled=false; return; }
+            search();
+        }catch(e){ alert('ผิดพลาด: '+e.message); btn.disabled=false; }
     }
     function rowHtml(r){
         const cust = '<div><b>'+esc(r.customer_name||'-')+'</b></div>'+(r.customer_code?'<div class="solve-info">'+esc(r.customer_code)+'</div>':'');
@@ -353,7 +406,14 @@
             const data = await res.json(); stopProgress();
             if (!res.ok || !data.ok){ setMsg((data&&data.message)||'ค้นหาไม่สำเร็จ'); return; }
             const rows = data.rows || [];
-            openCountEl.textContent = rows.filter(r => r.state === 'open').length;
+            if (data.counts){
+                document.getElementById('cnt-wrong').textContent = data.counts.wrong;
+                document.getElementById('cnt-hold').textContent  = data.counts.hold;
+                document.getElementById('cnt-done').textContent  = data.counts.done;
+                openCountEl.textContent = data.counts.wrong + data.counts.hold;
+            } else {
+                openCountEl.textContent = rows.filter(r => r.state === 'open').length;
+            }
             if (rows.length === 0){ setMsg('ไม่พบงานตามเงื่อนไข'); return; }
             if (mainTable) mainTable.classList.remove('is-empty');
             tbody.innerHTML = rows.map(rowHtml).join('');
@@ -363,12 +423,19 @@
     let searchDebounce=null;
     function scheduleSearch(delay=450){ if(searchDebounce)clearTimeout(searchDebounce); searchDebounce=setTimeout(()=>search(),delay); }
 
-    const fType = document.getElementById('fType');
-    const fStatus = document.getElementById('fStatus');
-    fType.addEventListener('change', () => { currentType = fType.value; search(); });
-    fStatus.addEventListener('change', () => { currentStatus = fStatus.value; search(); });
-    const fKind = document.getElementById('fKind');
-    if (fKind) fKind.addEventListener('change', () => { currentKind = fKind.value; search(); });
+    // แท็บ 3 หมวด -> กำหนด type/status
+    const TAB_MAP = {
+        wrong: { type:'wrong', status:'open' },
+        hold:  { type:'hold',  status:'open' },
+        done:  { type:'all',   status:'done' },
+    };
+    document.querySelectorAll('#catTabs .cat-tab').forEach(t => t.addEventListener('click', () => {
+        document.querySelectorAll('#catTabs .cat-tab').forEach(x => x.classList.remove('active'));
+        t.classList.add('active');
+        const m = TAB_MAP[t.dataset.tab] || TAB_MAP.wrong;
+        currentType = m.type; currentStatus = m.status;
+        search();
+    }));
     btnClear.addEventListener('click', () => {
         if(searchDebounce)clearTimeout(searchDebounce);
         if (fSale) fSale.value=''; fCust.value=''; fBill.value='';

@@ -374,7 +374,7 @@ class BillDocCheckController extends Controller
         }
         $row->save();
 
-        return response()->json(['ok' => true, 'row' => $this->rowOut($row), 'summary' => $this->summaryFor($period)]);
+        return response()->json(['ok' => true, 'row' => $this->rowOut($row), 'summary' => $this->maybeSummary($request, $period)]);
     }
 
     /** ติ๊ก/ยกเลิก "พบแต่ไม่ได้เซ็นบิล" — ติ๊ก = ถือว่าพบเอกสารแล้ว (has_document) แต่ยังไม่เซ็น */
@@ -408,7 +408,7 @@ class BillDocCheckController extends Controller
         $row->checked_at   = now();
         $row->save();
 
-        return response()->json(['ok' => true, 'row' => $this->rowOut($row), 'summary' => $this->summaryFor($period)]);
+        return response()->json(['ok' => true, 'row' => $this->rowOut($row), 'summary' => $this->maybeSummary($request, $period)]);
     }
 
     /** ติ๊ก/ยกเลิก "ไม่พบบิล" (ยืนยันหาแล้วไม่เจอ) — ติ๊กไม่พบ = เคลียร์ "พบเอกสาร" */
@@ -446,7 +446,7 @@ class BillDocCheckController extends Controller
         }
         $row->save();
 
-        return response()->json(['ok' => true, 'row' => $this->rowOut($row), 'summary' => $this->summaryFor($period)]);
+        return response()->json(['ok' => true, 'row' => $this->rowOut($row), 'summary' => $this->maybeSummary($request, $period)]);
     }
 
     /** เพิ่ม/แก้ไข/ลบ หมายเหตุ — มีหมายเหตุ = ติ๊ก "พบเอกสาร" อัตโนมัติ */
@@ -484,7 +484,7 @@ class BillDocCheckController extends Controller
         }
         $row->save();
 
-        return response()->json(['ok' => true, 'row' => $this->rowOut($row), 'summary' => $this->summaryFor($period)]);
+        return response()->json(['ok' => true, 'row' => $this->rowOut($row), 'summary' => $this->maybeSummary($request, $period)]);
     }
 
     /** ตั้งประเภทบิล (สินค้า/บริการ) แบบ manual */
@@ -581,6 +581,24 @@ class BillDocCheckController extends Controller
         }
 
         return ($amountOk && $dateOk) ? BillDocCheck::M_MATCHED : BillDocCheck::M_MISMATCH;
+    }
+
+    /** endpoint สรุปตัวเลขของเดือน (เบา ๆ) — ให้ฝั่งหน้าเรียกแยกหลังคิวบันทึกว่าง */
+    public function summary(Request $request)
+    {
+        $user = $this->requireLogin($request);
+        if (!$this->canUse($user)) {
+            return response()->json(['ok' => false, 'message' => 'ไม่มีสิทธิ์'], 403);
+        }
+        $period = $this->normPeriod($request->input('period'));
+        return response()->json(['ok' => true, 'summary' => $this->summaryFor($period)]);
+    }
+
+    /** คืน summary เฉพาะเมื่อไม่ได้ขอข้ามไว้ (nosum) — ลดภาระตอนกดรัว ๆ */
+    private function maybeSummary(Request $request, string $period): ?array
+    {
+        if ($request->boolean('nosum')) return null;
+        return $this->summaryFor($period);
     }
 
     /** สรุปตัวเลขของเดือน */

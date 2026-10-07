@@ -546,6 +546,15 @@
     }
     .filter-btn:active{background:#D6E2FC;transform:scale(0.96)}
     .filter-btn svg{width:14px;height:14px;flex-shrink:0}
+/* เช็คเอกสาร PO */
+.doc-check{margin:12px 16px;padding:14px 16px;border:1px solid #dbe3ef;border-radius:14px;background:#f8fafc}
+.doc-main{display:flex;align-items:center;gap:10px;font-size:16px;font-weight:700;color:#1f2937;cursor:pointer}
+.doc-main input{width:22px;height:22px}
+.doc-types{margin-top:12px;padding-top:12px;border-top:1px dashed #cbd5e1;display:flex;flex-direction:column;gap:10px}
+.doc-types-label{font-size:13px;color:#64748b}
+.doc-type{display:flex;align-items:center;gap:9px;font-size:15px;color:#1f2937;cursor:pointer}
+.doc-type input{width:20px;height:20px}
+.doc-saved{margin-top:8px;font-size:12.5px;color:#16a34a;min-height:16px}
 </style>
 </head>
 <body>
@@ -568,9 +577,18 @@
         <button id="btnSearch" onclick="searchPO()">ค้นหา</button>
     </div>
     <div class="searchrow">
-        <input type="text" id="supInput" placeholder="ชื่อซัพพลายเออร์" autocomplete="off"
+        <input type="text" id="supIdInput" placeholder="รหัสซัพ" autocomplete="off" style="flex:4"
+               onkeydown="if(event.key==='Enter')searchSupplier()">
+        <input type="text" id="supInput" placeholder="ชื่อซัพพลายเออร์" autocomplete="off" style="flex:6"
                onkeydown="if(event.key==='Enter')searchSupplier()">
         <button id="btnSup" onclick="searchSupplier()">ค้นหาซัพ</button>
+    </div>
+    <div class="searchrow">
+        <input type="text" id="custIdInput" placeholder="รหัสลูกค้า" autocomplete="off" style="flex:4"
+               onkeydown="if(event.key==='Enter')searchCustomer()">
+        <input type="text" id="custNameInput" placeholder="ชื่อลูกค้า" autocomplete="off" style="flex:6"
+               onkeydown="if(event.key==='Enter')searchCustomer()">
+        <button id="btnCust" onclick="searchCustomer()">ค้นหาลูกค้า</button>
     </div>
     <div id="supResult" class="sup-result"></div>
 </div>
@@ -629,6 +647,20 @@
                 <input type="number" id="sheetQty" value="1" min="1" inputmode="numeric" onchange="clampSheet()">
                 <button type="button" onclick="stepSheet(1)">+</button>
             </div>
+        </div>
+        <!-- เช็คเอกสาร PO (ได้รับเอกสารไหม + ชนิดเอกสาร) — อยู่ใต้ช่องเลือกเครื่องพิมพ์ -->
+        <div id="docCheckBox" class="doc-check" style="display:none;margin-top:10px">
+          <label class="doc-main">
+            <input type="checkbox" id="docHas" onchange="onDocHasChange()">
+            <span>ได้รับเอกสาร</span>
+          </label>
+          <div id="docTypes" class="doc-types" style="display:none">
+            <div class="doc-types-label">เลือกชนิดเอกสารที่ได้รับ (เลือกได้หลายอย่าง หรือไม่เลือกก็ได้)</div>
+            <label class="doc-type"><input type="checkbox" id="docTax" onchange="saveDocCheck()"> ใบกำกับภาษี</label>
+            <label class="doc-type"><input type="checkbox" id="docReceipt" onchange="saveDocCheck()"> ใบเสร็จ</label>
+            <label class="doc-type"><input type="checkbox" id="docDelivery" onchange="saveDocCheck()"> ใบส่งของ</label>
+          </div>
+          <div id="docSaved" class="doc-saved"></div>
         </div>
     </div>
 </div>
@@ -698,6 +730,9 @@
 </div>
 <script>
 const API_URL = '{{ url('/api/getPODetail') }}';
+const DOC_SAVE_URL = '{{ url('/podoccheck/save') }}';
+const DOC_GET_URL  = '{{ url('/podoccheck/get') }}';
+let docCtx = { po:'', so:'', vendor:'' };
 const RECEIVE_URL = '{{ url('/api/receivePO') }}';
 const HISTORY_URL = '{{ url('/api/receivePO/history') }}';
 const CANCEL_URL = '{{ url('/api/receivePO/cancel') }}';
@@ -1096,34 +1131,60 @@ function showNotFound(poNumber){
 }
 
 /* ========== Search PO ========== */
+// ค้นหา PO ด้วยซัพ — ชื่อ (supInput) และ/หรือ รหัสซัพ (supIdInput)
 async function searchSupplier(){
     const sup = $('supInput').value.trim();
+    const supid = $('supIdInput').value.trim();
     const box = $('supResult');
-    if(!sup){ toast('กรุณาพิมพ์ชื่อซัพก่อน','error'); return; }
-    box.innerHTML = '<div style="padding:10px;color:#888;">กำลังค้นหา PO ของ ' + esc(sup) + ' ...</div>';
+    if(!sup && !supid){ toast('กรุณาพิมพ์ชื่อหรือรหัสซัพก่อน','error'); return; }
+    box.innerHTML = '<div style="padding:10px;color:#888;">กำลังค้นหา PO ของ ' + esc(sup||supid) + ' ...</div>';
     try{
-        const res = await fetch(`/api/poBySupplier?sup=${encodeURIComponent(sup)}`, {headers:{'Accept':'application/json'}});
+        const qs = new URLSearchParams();
+        if(sup) qs.set('sup', sup);
+        if(supid) qs.set('supid', supid);
+        const res = await fetch('/api/poBySupplier?' + qs.toString(), {headers:{'Accept':'application/json'}});
         const j = await res.json().catch(()=>null);
-        const items = (j && j.items) || [];
-        if(!items.length){ box.innerHTML = '<div style="padding:10px;color:#c0392b;">ไม่พบ PO ของซัพนี้</div>'; return; }
-        const fmt = n => (Number(n)||0).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});
-        box.innerHTML = items.map(it => {
-            const rows = (it.products||[]).map(p =>
-                `<tr><td>${esc(p.name)}</td><td class="sup-qty">${p.qty}</td></tr>`).join('');
-            const table = rows
-                ? `<table class="sup-po-table"><thead><tr><th>ชื่อสินค้า</th><th class="sup-qty">จำนวน</th></tr></thead><tbody>${rows}</tbody></table>`
-                : '';
-            return `<button type="button" class="sup-po-item" onclick="pickPO('${esc(it.po_num)}')">`
-              + `<div class="sup-po-top">`
-              +   `<span class="sup-po-num">${esc(it.po_num)}</span>`
-              +   `<span class="sup-po-vendor">${esc(it.vendor_name||'')}</span>`
-              +   (it.so_num ? `<span class="sup-po-so">SO ${esc(it.so_num)}</span>` : '')
-              + `</div>`
-              + table
-              + `<div class="sup-po-amount">ยอด: <b>${fmt(it.amount)}</b> ฿</div>`
-              + `</button>`;
-        }).join('');
+        renderPoResult((j && j.items) || [], box, 'ไม่พบ PO ของซัพนี้');
     }catch(e){ box.innerHTML = '<div style="padding:10px;color:#c0392b;">ค้นหาไม่สำเร็จ</div>'; }
+}
+
+// ค้นหา PO ของลูกค้า (ที่ยังไม่รับเข้า) — รหัสลูกค้า (custIdInput) และ/หรือ ชื่อลูกค้า (custNameInput)
+async function searchCustomer(){
+    const code = $('custIdInput').value.trim();
+    const name = $('custNameInput').value.trim();
+    const box = $('supResult');
+    if(!code && !name){ toast('กรุณาพิมพ์รหัสหรือชื่อลูกค้าก่อน','error'); return; }
+    box.innerHTML = '<div style="padding:10px;color:#888;">กำลังค้นหา PO ของลูกค้า ' + esc(name||code) + ' ...</div>';
+    try{
+        const qs = new URLSearchParams();
+        if(code) qs.set('code', code);
+        if(name) qs.set('name', name);
+        const res = await fetch('/api/poByCustomer?' + qs.toString(), {headers:{'Accept':'application/json'}});
+        const j = await res.json().catch(()=>null);
+        renderPoResult((j && j.items) || [], box, 'ไม่พบ PO ที่ยังไม่รับเข้าของลูกค้านี้');
+    }catch(e){ box.innerHTML = '<div style="padding:10px;color:#c0392b;">ค้นหาไม่สำเร็จ</div>'; }
+}
+
+// render ผลการค้นหา PO (ใช้ร่วมกันระหว่างค้นหาซัพ/ลูกค้า)
+function renderPoResult(items, box, emptyMsg){
+    if(!items.length){ box.innerHTML = '<div style="padding:10px;color:#c0392b;">' + esc(emptyMsg||'ไม่พบ PO') + '</div>'; return; }
+    const fmt = n => (Number(n)||0).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});
+    box.innerHTML = items.map(it => {
+        const rows = (it.products||[]).map(p =>
+            `<tr><td>${esc(p.name)}</td><td class="sup-qty">${p.qty}</td></tr>`).join('');
+        const table = rows
+            ? `<table class="sup-po-table"><thead><tr><th>ชื่อสินค้า</th><th class="sup-qty">จำนวน</th></tr></thead><tbody>${rows}</tbody></table>`
+            : '';
+        return `<button type="button" class="sup-po-item" onclick="pickPO('${esc(it.po_num)}')">`
+          + `<div class="sup-po-top">`
+          +   `<span class="sup-po-num">${esc(it.po_num)}</span>`
+          +   `<span class="sup-po-vendor">${esc(it.vendor_name||'')}</span>`
+          +   (it.so_num ? `<span class="sup-po-so">SO ${esc(it.so_num)}</span>` : '')
+          + `</div>`
+          + table
+          + `<div class="sup-po-amount">ยอด: <b>${fmt(it.amount)}</b> ฿</div>`
+          + `</button>`;
+    }).join('');
 }
 function pickPO(po){
     $('poInput').value = po;
@@ -1184,6 +1245,9 @@ async function searchPO(){
         historyDetailMap = history.detailMap;
         historyRows = history.rows || [];
         editPONum = data.DocuNo;
+
+        // เช็คเอกสาร PO: แสดง checkbox + โหลดค่าที่เคยติ๊กไว้
+        showDocCheck(data.DocuNo, (data._soInfo && data._soInfo.SONum) || '', data.VendorName || '');
 
         data.ms_podt = data.ms_podt.map(it => {
             const ordered  = parseFloat(it.AppvQty2 || it.GoodQty2 || 0);
@@ -1995,6 +2059,59 @@ function showCheckedOutPO(poNumber, body){
     $('poInput').value = poFromQuery;
     searchPO();
 })();
+// ===== เช็คเอกสาร PO =====
+function showDocCheck(po, so, vendor){
+  if(!po){ document.getElementById('docCheckBox').style.display='none'; return; }
+  docCtx = { po: po, so: so||'', vendor: vendor||'' };
+  const box = document.getElementById('docCheckBox');
+  box.style.display = 'block';
+  document.getElementById('docSaved').textContent = '';
+  // รีเซ็ตก่อน
+  document.getElementById('docHas').checked = false;
+  document.getElementById('docTax').checked = false;
+  document.getElementById('docReceipt').checked = false;
+  document.getElementById('docDelivery').checked = false;
+  document.getElementById('docTypes').style.display = 'none';
+  // โหลดค่าที่เคยติ๊กไว้
+  fetch(DOC_GET_URL + '?po_id=' + encodeURIComponent(po), {headers:{'Accept':'application/json'}})
+    .then(r=>r.json()).then(d=>{
+      if(d && d.ok && d.row){
+        const types = d.row.doc_types || [];
+        document.getElementById('docHas').checked = !!d.row.has_document;
+        document.getElementById('docTax').checked = types.indexOf('tax') !== -1;
+        document.getElementById('docReceipt').checked = types.indexOf('receipt') !== -1;
+        document.getElementById('docDelivery').checked = types.indexOf('delivery') !== -1;
+        document.getElementById('docTypes').style.display = d.row.has_document ? 'flex' : 'none';
+      }
+    }).catch(()=>{});
+}
+function onDocHasChange(){
+  const has = document.getElementById('docHas').checked;
+  document.getElementById('docTypes').style.display = has ? 'flex' : 'none';
+  if(!has){
+    document.getElementById('docTax').checked=false;
+    document.getElementById('docReceipt').checked=false;
+    document.getElementById('docDelivery').checked=false;
+  }
+  saveDocCheck();
+}
+async function saveDocCheck(){
+  if(!docCtx.po) return;
+  const types = [];
+  if(document.getElementById('docTax').checked) types.push('tax');
+  if(document.getElementById('docReceipt').checked) types.push('receipt');
+  if(document.getElementById('docDelivery').checked) types.push('delivery');
+  const payload = {
+    po_id: docCtx.po, so_id: docCtx.so, vendor_name: docCtx.vendor,
+    has_document: document.getElementById('docHas').checked,
+    doc_types: types,
+  };
+  try{
+    const r = await fetch(DOC_SAVE_URL, {method:'POST',headers:{'Content-Type':'application/json','X-CSRF-TOKEN':CSRF_TOKEN,'Accept':'application/json'},body:JSON.stringify(payload)});
+    const d = await r.json().catch(()=>null);
+    document.getElementById('docSaved').textContent = (d && d.ok) ? '✓ บันทึกเอกสารแล้ว' : 'บันทึกไม่สำเร็จ';
+  }catch(e){ document.getElementById('docSaved').textContent = 'บันทึกไม่สำเร็จ'; }
+}
 </script>
 </body>
 </html>

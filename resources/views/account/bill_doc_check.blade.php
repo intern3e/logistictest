@@ -87,6 +87,10 @@ tr:hover td{background:#fafbff}
 .toast.ok{background:var(--green)}
 @keyframes pop{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
 .spin{display:inline-block;width:14px;height:14px;border:2px solid #fff;border-top-color:transparent;border-radius:50%;animation:sp .7s linear infinite;vertical-align:-2px}
+/* ป้ายสถานะบันทึกเบื้องหลัง (มุมขวาล่าง) */
+.save-stat{position:fixed;right:20px;bottom:24px;z-index:9998;display:flex;align-items:center;gap:8px;padding:9px 15px;border-radius:999px;font-size:13px;font-weight:700;color:#fff;box-shadow:0 8px 24px rgba(0,0,0,.2)}
+.save-stat.busy{background:var(--primary)}
+.save-stat.done{background:var(--green)}
 @keyframes sp{to{transform:rotate(360deg)}}
 /* รายการสินค้าแบบตาราง 4 คอลัมน์: รายการ | จำนวน | ราคา | ยอด (ตรงคอลัมน์กันทุกแถว) */
 .items-grid{display:grid;grid-template-columns:1fr 60px 90px 100px;gap:6px 10px;align-items:start}
@@ -189,11 +193,13 @@ table.hide-cancel tr.is-cancelled{display:none}
   </div>
 </div>
 
+<div class="save-stat" id="saveStat" style="display:none"></div>
 <div class="toast-wrap" id="toastWrap"></div>
 
 <script>
 const CSRF = document.querySelector('meta[name="csrf-token"]').content;
 const URL_DATA = "{{ route('billdoccheck.data') }}";
+const URL_SUMMARY = "{{ route('billdoccheck.summary') }}";
 const URL_SYNC = "{{ route('billdoccheck.sync') }}";
 const URL_TICK = "{{ route('billdoccheck.tick') }}";
 const URL_TYPE = "{{ route('billdoccheck.type') }}";
@@ -202,6 +208,7 @@ const URL_NOTFOUND = "{{ route('billdoccheck.notfound') }}";
 const URL_NOTSIGNED = "{{ route('billdoccheck.notsigned') }}";
 
 const $ = id => document.getElementById(id);
+const ME = @json($loginName);
 let curType = '', curStatus = '', busy = false;
 
 function esc(s){return (s==null?'':String(s)).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
@@ -378,32 +385,97 @@ function applyRowChange(billNo,r){
   else if(curStatus==='notfound' && !r.not_found) remove=true;
   else if(curStatus==='notsigned' && !r.not_signed) remove=true;
   else if(curStatus==='noted' && !(r.note&&String(r.note).trim())) remove=true;
-  if(remove){ tr.style.transition='opacity .25s,transform .25s'; tr.style.opacity='0'; tr.style.transform='translateX(20px)'; setTimeout(()=>tr.remove(),240); return; }
-  reorderRows(); flashRow(tr);
+  if(remove){ tr.remove(); return; }   // เอาออกทันที -> งานถัดไปเด้งขึ้นมาเลย ไม่รอเฟด
+  // ย้ายเฉพาะแถวนี้ (ไม่ re-append ทั้งตาราง) -> เร็วแม้มีหลายร้อยแถว
+  if(tr.dataset.done==='1'){ tb.appendChild(tr); }   // ติ๊กเสร็จ -> ดีดลงล่างสุด งานถัดไปขึ้นแทนทันที
+  else { reorderRows(); }                              // กลับมา "ยังไม่เสร็จ" (นาน ๆ ที) ค่อยจัดเรียงเต็ม
+  flashRow(tr);
 }
-async function onTick(billNo,has){
-  try{ const d=await post(URL_TICK,{period:period(),bill_no:billNo,has:has}); renderCards(d.summary); applyRowChange(billNo,d.row); toast(has?'ติ๊กว่าพบเอกสารแล้ว':'ยกเลิกการติ๊ก','ok'); }
-  catch(e){ toast(e.message,'err'); load(); }
+/* ───────── กดล่วงหน้าได้ทันที (optimistic) + บันทึกเป็นคิวข้างหลัง ─────────
+   กด "พบ"/"ไม่พบ"/"พบ·ไม่เซ็น"/หมายเหตุ -> อัปเดตหน้าทันที ไม่รอ server
+   แล้วค่อยส่งบันทึกเป็นคิวตามลำดับ (รวบบิลเดียวกัน) โดยข้ามการคำนวณสรุป (nosum)
+   พอคิวว่าง ค่อยรีเฟรชการ์ดสรุปทีเดียว */
+function nowStr(){const d=new Date(),p=n=>String(n).padStart(2,'0');return p(d.getDate())+'/'+p(d.getMonth()+1)+'/'+d.getFullYear()+' '+p(d.getHours())+':'+p(d.getMinutes());}
+function readState(billNo){
+  const tr=$('tbody').querySelector('tr[data-bill="'+String(billNo).replace(/"/g,'\\"')+'"]');
+  const q=s=>tr?tr.querySelector(s):null;
+  const g=q('input.chk-found'),n=q('input.chk-nf'),s=q('input.chk-ns'),ni=q('.note-inp');
+  return {has_document:!!(g&&g.checked),not_found:!!(n&&n.checked),not_signed:!!(s&&s.checked),note:ni?ni.value:''};
 }
-async function onNotFound(billNo,val){
-  try{ const d=await post(URL_NOTFOUND,{period:period(),bill_no:billNo,val:val}); renderCards(d.summary); applyRowChange(billNo,d.row); toast(val?'ทำเครื่องหมาย "ไม่พบบิล"':'ยกเลิก "ไม่พบบิล"','ok'); }
-  catch(e){ toast(e.message,'err'); load(); }
+// จำลองผลลัพธ์ฝั่ง server ไว้ล่วงหน้า (ให้ตรงกับ logic ใน controller)
+function optimistic(action,st,p){
+  const r=Object.assign({},st);
+  if(action==='tick'){ if(p.has){r.has_document=true;r.not_found=false;} else {r.has_document=false;r.not_signed=false;} }
+  else if(action==='notfound'){ if(p.val){r.not_found=true;r.has_document=false;r.not_signed=false;} else {r.not_found=false;} }
+  else if(action==='notsigned'){ if(p.val){r.not_signed=true;r.has_document=true;r.not_found=false;} else {r.not_signed=false;} }
+  else if(action==='note'){ r.note=p.note; if(p.note&&p.note.trim()){r.has_document=true;r.not_found=false;} }
+  r.checked_by=ME; r.check_source='manual'; r.checked_at=nowStr(); r.confidence=null;
+  return r;
 }
-async function onNotSigned(billNo,val){
-  try{ const d=await post(URL_NOTSIGNED,{period:period(),bill_no:billNo,val:val}); renderCards(d.summary); applyRowChange(billNo,d.row); toast(val?'ทำเครื่องหมาย "พบ·ไม่เซ็น"':'ยกเลิก "พบ·ไม่เซ็น"','ok'); }
-  catch(e){ toast(e.message,'err'); load(); }
+
+const SAVE_WORKERS=4;                    // ส่งขนานได้สูงสุด 4 ตัว
+const saveQ=[], saveKeys=new Map(), inFlight=new Set();
+let workers=0, errCount=0, sumTimer=null;
+function pendCount(){ return saveQ.length+workers; }
+function updSaveStat(){
+  const el=$('saveStat'); if(!el)return;
+  const pend=pendCount();
+  if(pend>0){ el.className='save-stat busy'; el.innerHTML='<span class="spin"></span> กำลังบันทึก… '+pend; el.style.display='flex'; clearTimeout(el._t); }
+  else { el.className='save-stat done'; el.textContent='✓ บันทึกครบแล้ว'; el.style.display='flex'; clearTimeout(el._t); el._t=setTimeout(()=>{el.style.display='none';},1200); }
 }
-async function onType(billNo,type){
-  try{ await post(URL_TYPE,{period:period(),bill_no:billNo,type:type||null}); toast('บันทึกประเภทแล้ว','ok');
-    const tr=$('tbody').querySelector('tr[data-bill="'+String(billNo).replace(/"/g,'\\"')+'"]');
-    if(tr){ tr.classList.remove('row-goods','row-service'); if(type==='สินค้า')tr.classList.add('row-goods'); else if(type==='บริการ')tr.classList.add('row-service'); }
+function enqueueSave(url,body,billNo){
+  const key=url+'|'+billNo;
+  if(saveKeys.has(key)){ saveKeys.get(key).body=body; }   // รวบ: ทับด้วยค่าล่าสุดของบิล/การกระทำเดียวกัน
+  else { const item={key,url,body,billNo}; saveKeys.set(key,item); saveQ.push(item); }
+  updSaveStat(); pump();
+}
+// หยิบงานถัดไปที่บิลยังไม่มีตัวกำลังส่งอยู่ (กันบิลเดียวกันส่งชนกัน -> รักษาลำดับ)
+function takeNext(){
+  for(let i=0;i<saveQ.length;i++){ if(!inFlight.has(saveQ[i].billNo)) return saveQ.splice(i,1)[0]; }
+  return null;
+}
+function pump(){
+  while(workers<SAVE_WORKERS){
+    const item=takeNext(); if(!item) break;
+    saveKeys.delete(item.key); inFlight.add(item.billNo); workers++; updSaveStat();
+    post(item.url, Object.assign({nosum:1}, item.body))
+      .catch(()=>{ errCount++; })
+      .finally(()=>{ workers--; inFlight.delete(item.billNo); updSaveStat(); afterSave(); });
   }
-  catch(e){ toast(e.message,'err'); }
 }
-async function onNote(billNo,note){
-  try{ const d=await post(URL_NOTE,{period:period(),bill_no:billNo,note:note}); renderCards(d.summary); applyRowChange(billNo,d.row);
-    toast(note.trim()?'บันทึกหมายเหตุ + ติ๊กอัตโนมัติ':'ลบหมายเหตุแล้ว','ok'); }
-  catch(e){ toast(e.message,'err'); load(); }
+function afterSave(){
+  if(saveQ.length){ pump(); return; }
+  if(workers>0) return;                 // ยังมีตัวค้างส่งอยู่
+  if(errCount){ toast('บันทึกไม่สำเร็จ '+errCount+' รายการ กำลังรีเฟรช','err'); errCount=0; clearTimeout(sumTimer); sumTimer=setTimeout(load,200); return; }
+  clearTimeout(sumTimer); sumTimer=setTimeout(refreshSummary,250);
+}
+async function refreshSummary(){
+  try{ const u=new URL(URL_SUMMARY,location.origin); u.searchParams.set('period',period());
+    const r=await fetch(u,{headers:{'Accept':'application/json'}}); const d=await r.json();
+    if(d&&d.ok) renderCards(d.summary);
+  }catch(e){}
+}
+
+function onTick(billNo,has){
+  applyRowChange(billNo, optimistic('tick', readState(billNo), {has}));
+  enqueueSave(URL_TICK, {period:period(),bill_no:billNo,has:has}, billNo);
+}
+function onNotFound(billNo,val){
+  applyRowChange(billNo, optimistic('notfound', readState(billNo), {val}));
+  enqueueSave(URL_NOTFOUND, {period:period(),bill_no:billNo,val:val}, billNo);
+}
+function onNotSigned(billNo,val){
+  applyRowChange(billNo, optimistic('notsigned', readState(billNo), {val}));
+  enqueueSave(URL_NOTSIGNED, {period:period(),bill_no:billNo,val:val}, billNo);
+}
+function onType(billNo,type){
+  const tr=$('tbody').querySelector('tr[data-bill="'+String(billNo).replace(/"/g,'\\"')+'"]');
+  if(tr){ tr.classList.remove('row-goods','row-service'); if(type==='สินค้า')tr.classList.add('row-goods'); else if(type==='บริการ')tr.classList.add('row-service'); }
+  enqueueSave(URL_TYPE, {period:period(),bill_no:billNo,type:type||null}, billNo);
+}
+function onNote(billNo,note){
+  applyRowChange(billNo, optimistic('note', readState(billNo), {note}));
+  enqueueSave(URL_NOTE, {period:period(),bill_no:billNo,note:note}, billNo);
 }
 
 // เลือกเดือน / โหลดใหม่ = ดึงบิลจากระบบ (sync) แล้วแสดงให้ครบอัตโนมัติ
