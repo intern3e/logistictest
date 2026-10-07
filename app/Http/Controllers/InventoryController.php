@@ -211,6 +211,7 @@ class InventoryController extends Controller
             'location'  => $r['location'] ?? $r['item_location'] ?? '',
             'brand'     => $r['brand'] ?? $r['item_brand'] ?? '',
             'privilege' => $r['privilege'] ?? $r['item_privilege'] ?? '',
+            'category'  => $r['category'] ?? $r['item_category'] ?? '',
         ])->values();
 
         try {
@@ -285,6 +286,7 @@ class InventoryController extends Controller
                 'location'  => $r['location'] ?? $r['item_location'] ?? '',
                 'brand'     => $r['brand'] ?? $r['item_brand'] ?? '',
                 'privilege' => $r['privilege'] ?? $r['item_privilege'] ?? '',
+                'category'  => $r['category'] ?? $r['item_category'] ?? '',
             ])->sortBy(fn($i) => (str_starts_with(strtoupper($i['iditem']), 'SKU-') ? '0' : '1')
                 . explode('-', $i['iditem'])[0]
                 . str_pad(intval(last(explode('-', explode('.', $i['iditem'])[0]))), 10, '0', STR_PAD_LEFT)
@@ -330,6 +332,7 @@ class InventoryController extends Controller
                 'location'  => $r['location'] ?? $r['item_location'] ?? '',
                 'brand'     => $r['brand'] ?? $r['item_brand'] ?? '',
                 'privilege' => $r['privilege'] ?? $r['item_privilege'] ?? '',
+                'category'  => $r['category'] ?? $r['item_category'] ?? '',
             ]);
 
             if ($name) $items = $items->filter(fn($i) => str_contains(mb_strtolower($i['name']), $name));
@@ -419,8 +422,9 @@ class InventoryController extends Controller
             'quantity' => intval($d['quantity'] ?? 0),
             'typeitem' => $d['typeitem'] ?? 'คลัง', 
             'location' => $d['location'] ?? '-',
-            'brand' => $d['brand'] ?? '', 
+            'brand' => $d['brand'] ?? '',
             'privilege' => $d['privilege'] ?? '',
+            'category' => $d['category'] ?? '',
         ]);
         
         $this->clearItemsCache();
@@ -440,8 +444,9 @@ class InventoryController extends Controller
             'quantity' => intval($d['quantity'] ?? 0), 
             'typeitem' => $d['typeitem'] ?? 'คลัง',
             'location' => $d['location'] ?? '-', 
-            'brand' => $d['brand'] ?? '', 
+            'brand' => $d['brand'] ?? '',
             'privilege' => $d['privilege'] ?? '',
+            'category' => $d['category'] ?? '',
         ]);
         
         $this->clearItemsCache();
@@ -466,6 +471,7 @@ class InventoryController extends Controller
             'location' => $d['location'] ?? '-',
             'brand' => $d['brand'] ?? '',
             'privilege' => $d['privilege'] ?? '',
+            'category' => $d['category'] ?? '',
         ];
 
         $this->api('PUT', '/items/' . urlencode($id), $new);
@@ -474,6 +480,7 @@ class InventoryController extends Controller
         $changes = $this->diffFields([
             'name' => 'ชื่อสินค้า', 'quantity' => 'จำนวน', 'typeitem' => 'ประเภท',
             'location' => 'สถานที่เก็บ', 'brand' => 'ยี่ห้อ', 'privilege' => 'บริษัท',
+            'category' => 'หมวดหมู่',
         ], [
             'name' => $old['name'] ?? ($old['item_name'] ?? ''),
             'quantity' => $old['quantity'] ?? ($old['item_quantity'] ?? ''),
@@ -481,6 +488,7 @@ class InventoryController extends Controller
             'location' => $old['location'] ?? ($old['item_location'] ?? ''),
             'brand' => $old['brand'] ?? ($old['item_brand'] ?? ''),
             'privilege' => $old['privilege'] ?? ($old['item_privilege'] ?? ''),
+            'category' => $old['category'] ?? ($old['item_category'] ?? ''),
         ], $new);
 
         if (!empty($changes)) {
@@ -1162,6 +1170,7 @@ class InventoryController extends Controller
                 'location'  => $r['location'] ?? $r['item_location'] ?? '',
                 'brand'     => $r['brand'] ?? $r['item_brand'] ?? '',
                 'privilege' => $r['privilege'] ?? $r['item_privilege'] ?? '',
+                'category'  => $r['category'] ?? $r['item_category'] ?? '',
             ])->filter(function ($i) use ($vehicleIds) {
                 $base = explode('.', $i['iditem'])[0]; // รองรับ sub-item เช่น 3E-000002.1
                 return in_array($i['iditem'], $vehicleIds) || in_array($base, $vehicleIds);

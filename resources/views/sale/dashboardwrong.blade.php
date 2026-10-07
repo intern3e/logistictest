@@ -308,7 +308,7 @@
         if (r.solve_method === 'resend')     return 'ส่งใหม่ (เลขบิลเดิม)';
         if (r.solve_method === 'changebill') return 'เปลี่ยนเป็นบิล <span class="chip chip-blue">'+esc(r.solve_target)+'</span>';
         if (r.solve_method === 'tempdoc')    return 'เอกสารชั่วคราว <span class="chip chip-blue">'+esc(r.solve_target)+'</span>';
-        if (r.solve_method === 'dismiss')    return 'เตะออกจากของผิด';
+        if (r.solve_method === 'dismiss')    return 'เคลียร์ข้อมูล';
         return '';
     }
     function solveCell(r){
@@ -344,15 +344,16 @@
         let btns = '';
         if (r.state === 'open'){
             if (r.problem === 'ค้างบิล'){
+                // ค้างบิล: เปิดเอกสารชั่วคราว (เขียนเลขแล้วหายเอง) — ไม่มีบล็อก
                 btns += '<button type="button" class="btn btn-tempdoc" data-act="tempdoc" data-job="'+esc(r.job_key)+'" onclick="openTarget(\'tempdoc\',\''+escJs(r.job_key)+'\',\''+escJs(r.bill_no)+'\')">เปิดเอกสารชั่วคราว</button>';
-            } else if (r.type === 'bill'){
-                btns += '<button type="button" class="btn btn-resend" data-act="resend" data-job="'+esc(r.job_key)+'" onclick="doResend(\''+escJs(r.job_key)+'\',\''+escJs(r.bill_no)+'\')">ส่งใหม่เลขบิลเดิม</button>';
             }
-            btns += '<button type="button" class="btn btn-dismiss" data-act="dismiss" data-job="'+esc(r.job_key)+'" onclick="doDismiss(this,\''+escJs(r.job_key)+'\')">เตะออกจากของผิด</button>';
+            // เคลียร์ข้อมูล (เดิม "เตะออก") — ได้ทั้งของผิด/ค้างบิล
+            btns += '<button type="button" class="btn btn-dismiss" data-act="dismiss" data-job="'+esc(r.job_key)+'" onclick="doDismiss(this,\''+escJs(r.job_key)+'\')">เคลียร์ข้อมูล</button>';
         } else {
             btns = '<span class="dash">—</span>';
         }
-        const gate = (r.state === 'open') ? approveHtml(r) : '';
+        // บล็อก/ปลดบล็อก: เฉพาะ "สินค้าผิด" (ค้างบิลไม่มีบล็อก)
+        const gate = (r.state === 'open' && r.problem === 'สินค้าผิด') ? approveHtml(r) : '';
         return '<td><div class="gate-box">'+gate+'<div class="actions-cell">'+btns+'</div></div></td>';
     }
     async function toggleApprove(btn, soId, val){
@@ -365,7 +366,7 @@
         }catch(e){ alert('ผิดพลาด: '+e.message); btn.disabled=false; }
     }
     async function doDismiss(btn, jobKey){
-        if (!confirm('เตะงานนี้ออกจากของผิด?\nจะย้ายไปหมวด "แก้ไขแล้ว" และปลดบล็อก SO ให้จัดส่งได้')) return;
+        if (!confirm('เคลียร์ข้อมูลงานนี้?\nจะย้ายไปหมวด "แก้ไขแล้ว" และปลดบล็อก SO ให้จัดส่งได้')) return;
         btn.disabled = true;
         try{
             const res = await fetch(DISMISS_URL, { method:'POST', headers:{'Content-Type':'application/json','X-CSRF-TOKEN':CSRF,'Accept':'application/json'}, body:JSON.stringify({ job_key:jobKey }) });

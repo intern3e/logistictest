@@ -670,8 +670,8 @@ private function hydrateLegacyPageItems(\Illuminate\Support\Collection $lightIte
     public function changeItem(Request $request)
     {
         $authUser = Auth::guard('web')->user();
-        if (!$authUser || !in_array($authUser->role, ['admin', 'stock'], true)) {
-            return response()->json(['ok' => false, 'message' => 'เฉพาะ admin/stock เท่านั้นที่เปลี่ยนสินค้าได้'], 403);
+        if (!$authUser || !in_array($authUser->role, ['admin', 'stock', 'store'], true)) {
+            return response()->json(['ok' => false, 'message' => 'เฉพาะ admin/stock/store เท่านั้นที่เปลี่ยนสินค้าได้'], 403);
         }
 
         $request->validate([

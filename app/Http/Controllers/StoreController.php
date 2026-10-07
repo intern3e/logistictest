@@ -2233,7 +2233,7 @@ class StoreController extends Controller
         // งานที่ "ยังไม่ขึ้นชั้น" = Area ว่าง (ยังไม่ระบุสถานที่เก็บ) + ยังไม่เช็คเอาท์ (DATECHECKOUT ว่าง)
         // ถ้า Area มีค่า = ของขึ้นชั้นแล้ว (แปลชื่อชั้นได้จาก table area) → ไม่ดึงมาแสดงในงานค้าง
         $rows = DB::connection(self::LEGACY_CONNECTION)->table('store')
-            ->select('store.ID', 'store.PO', 'store.SO', 'store.DATEBOX', 'store.boxS')
+            ->select('store.ID', 'store.PO', 'store.SO', 'store.DATEBOX', 'store.boxS', 'store.BOX')
             ->where(function ($q) {
                 $q->whereNull('store.Area')->orWhere('store.Area', '');
             })
@@ -2293,7 +2293,20 @@ class StoreController extends Controller
             if ($rows->isEmpty()) return collect();
         }
 
-        return $rows->map(function ($r) use ($resolveCustomerName) {
+        // store.BOX = เลข (ID ของ box) -> ชื่อผู้จัดการจาก table box (3e) ; ถ้ามี BOX = มีคนจัดการแล้ว
+        $boxIds = $rows->pluck('BOX')->filter(fn ($b) => $b !== null && trim((string) $b) !== '')
+            ->map(fn ($b) => trim((string) $b))->unique()->values()->all();
+        $boxNames = collect();
+        if (!empty($boxIds)) {
+            $boxNames = DB::connection(self::LEGACY_CONNECTION)->table('box')
+                ->whereIn('ID', $boxIds)->pluck('boxName', 'ID');
+        }
+
+        return $rows->map(function ($r) use ($resolveCustomerName, $boxNames) {
+            // ผู้จัดการ: ดึงชื่อจาก box table ตามเลข store.BOX
+            $boxKey  = ($r->BOX !== null && trim((string) $r->BOX) !== '') ? trim((string) $r->BOX) : null;
+            $manager = $boxKey ? ($boxNames[$boxKey] ?? null) : null;
+            $hasMgr  = filled($manager);
             return (object) [
                 'type'          => 'legacy',
                 'id'            => $r->ID,
@@ -2306,9 +2319,10 @@ class StoreController extends Controller
                 'packed_by'     => $r->boxS ?: null,
                 'packed_at'     => $r->DATEBOX,
                 'todo'          => true,
-                'claimed'       => false,
-                'claimed_by'    => null,
-                'claimed_at'    => null,
+                // มี BOX (ผู้จัดการจาก box) = ถือว่าถูกจัดการแล้วโดยคนนั้น
+                'claimed'       => $hasMgr,
+                'claimed_by'    => $manager,
+                'claimed_at'    => $hasMgr ? $r->DATEBOX : null,
                 'finished'      => false,
                 'finished_by'   => null,
                 'finished_at'   => null,

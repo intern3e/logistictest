@@ -13,6 +13,7 @@ class internal_poline extends Model
         'internal_id', 'SO_id', 'item_id', 'item_name',
         'item_quantity', 'item_average', 'item_total',
         'picked_at', 'picked_by',
+        'wait_goods',   // note: รอของเข้า (รายตัว/line)
     ];
 
     protected $casts = [
@@ -20,6 +21,7 @@ class internal_poline extends Model
         'item_average'  => 'float',
         'item_total'    => 'float',
         'picked_at'     => 'datetime',
+        'wait_goods'    => 'boolean',
     ];
 
     public function head()

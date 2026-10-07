@@ -378,7 +378,7 @@
 
     @php
         $curRole = optional(auth('web')->user())->role;
-        $canChangeItem = in_array($curRole, ['admin', 'stock'], true);
+        $canChangeItem = in_array($curRole, ['admin', 'stock', 'store'], true);
         $canCancelLine = in_array($curRole, ['admin', 'stock', 'store'], true);
         $canEditQty    = in_array($curRole, ['admin', 'stock', 'store'], true);
         $canManageLine = $canChangeItem || $canCancelLine || $canEditQty;
@@ -434,7 +434,7 @@
                 @endif
             </td>
             <td class="col-key">{{ $line->item_id ?: '—' }}</td>
-            <td>{{ $line->item_name }}</td>
+            <td>{{ $line->item_name }}@if (!empty($line->wait_goods)) <span style="display:inline-block;padding:1px 7px;border-radius:999px;font-size:11px;font-weight:700;background:#ffe4b5;color:#b45309;">รอของเข้า</span>@endif</td>
             <td class="center">{{ rtrim(rtrim(number_format((float) $line->item_quantity, 2), '0'), '.') }}</td>
             <td class="cust-cell">@if ($loop->first){{ $h->customer_name }}@endif</td>
             <td class="col-key">

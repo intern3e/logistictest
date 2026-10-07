@@ -190,8 +190,9 @@ class WrongBillController extends Controller
         $keyOf = function ($r) {
             return (string) ($r['so_id'] ?? '');
         };
-        $openKeys = $rows->filter(fn ($r) => $r['state'] === 'open')->map($keyOf)->filter()->unique()->values()->all();
-        $resolvedKeys = $rows->filter(fn ($r) => $r['state'] !== 'open')->map($keyOf)->filter()->unique()->values()->all();
+        //   เฉพาะ "สินค้าผิด" เท่านั้นที่บล็อก — ค้างบิลไม่บล็อก (เปิดเอกสารชั่วคราวแล้วจะหายเอง)
+        $openKeys = $rows->filter(fn ($r) => $r['state'] === 'open' && $r['problem'] === self::ST_WRONG)->map($keyOf)->filter()->unique()->values()->all();
+        $resolvedKeys = $rows->filter(fn ($r) => !($r['state'] === 'open' && $r['problem'] === self::ST_WRONG))->map($keyOf)->filter()->unique()->values()->all();
         $resolvedKeys = array_values(array_diff($resolvedKeys, $openKeys));   // ถ้ายังมี open อยู่ ไม่ลบ
         try {
             if (!empty($openKeys)) {
@@ -337,14 +338,14 @@ class WrongBillController extends Controller
             if (!$b) return response()->json(['ok' => false, 'message' => 'ไม่พบบิล'], 404);
             $soId = $b->so_id;
             Bill::where('so_detail_id', $b->so_detail_id)->update([
-                'solve' => 'เตะออก', 'solve_by' => $actor, 'solve_at' => $now,
+                'solve' => 'เคลียร์ข้อมูล', 'solve_by' => $actor, 'solve_at' => $now,
             ]);
         } elseif ($type === 'doc') {
             $d = Docbills::where('doc_id', $no)->first(['doc_id', 'so_id']);
             if (!$d) return response()->json(['ok' => false, 'message' => 'ไม่พบเอกสาร'], 404);
             $soId = $d->so_id;
             Docbills::where('doc_id', $no)->update([
-                'solve' => 'เตะออก', 'solve_by' => $actor, 'solve_at' => $now,
+                'solve' => 'เคลียร์ข้อมูล', 'solve_by' => $actor, 'solve_at' => $now,
             ]);
         } else {
             return response()->json(['ok' => false, 'message' => 'ชนิดงานไม่ถูกต้อง'], 422);
@@ -395,7 +396,7 @@ class WrongBillController extends Controller
 
         if ($solve === '' || $solveAt === null) { $row['solve_method'] = ''; return; }
 
-        if (mb_strpos($solve, 'เตะออก') === 0) {
+        if (mb_strpos($solve, 'เคลียร์') === 0 || mb_strpos($solve, 'เตะออก') === 0) {
             $row['solve_method'] = 'dismiss';
             $row['solve_target'] = '';
         } elseif (mb_strpos($solve, 'ส่งใหม่') === 0) {

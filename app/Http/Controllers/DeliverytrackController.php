@@ -39,7 +39,23 @@ class DeliverytrackController extends Controller
     {
         if (!$user) return false;
         if (in_array($user->role, ['admin', 'store', 'stock', 'accounting'], true)) return true;
+        if ($this->isReadonlyViewer($user)) return true;   // sale/support/sale_assistant = เข้าดูได้ (อย่างเดียว)
         return strcasecmp(trim((string) ($user->name ?? '')), 'FILM') === 0;
+    }
+
+    /** role ที่ "ดูอย่างเดียว" — sale/support/sale_assistant (เด้งไปหน้าสรุป, กดจัดการไม่ได้) */
+    private function isReadonlyViewer($user): bool
+    {
+        return $user && in_array($user->role ?? '', ['sale', 'support', 'sale_assistant'], true);
+    }
+
+    /** กันไม่ให้ readonly viewer ทำ action — คืน response 403 ถ้าเป็น viewer, ไม่งั้น null */
+    private function blockReadonly()
+    {
+        if ($this->isReadonlyViewer(Auth::guard('web')->user())) {
+            abort(403, 'คุณมีสิทธิ์ดูอย่างเดียว ไม่สามารถทำรายการนี้ได้');
+        }
+        return null;
     }
 
     /**
@@ -69,6 +85,11 @@ class DeliverytrackController extends Controller
     public function index(Request $request)
     {
         if ($resp = $this->checkAccess()) return $resp;
+
+        // sale/support/sale_assistant: หน้าจ่ายงานใช้ไม่ได้ -> เด้งไปหน้าสรุป (ดูอย่างเดียว)
+        if ($this->isReadonlyViewer(Auth::guard('web')->user())) {
+            return redirect()->route('deliverytrack.summary');
+        }
 
         // statuspdf = '6' คือบิลที่ถูกยกเลิก — ไม่ต้องดึงมาจ่ายงาน
         $bills = Bill::whereNotNull('emp_picker')->where('emp_picker', '!=', '')
@@ -297,6 +318,7 @@ class DeliverytrackController extends Controller
     public function store(Request $request)
     {
         if ($resp = $this->checkAccess()) return $resp;
+        if ($resp = $this->blockReadonly()) return $resp;
         $validated = $request->validate([
             'jobs' => 'required|array|min:1', 'jobs.*' => 'required|string',
             'driver_name' => 'nullable|string|max:255', 'transport_name' => 'required|string|max:255', 'delivery_date' => 'required|date',
@@ -346,6 +368,12 @@ class DeliverytrackController extends Controller
         $date   = $request->input('date');
         $billId = trim((string) $request->input('bill_id', ''));
 
+        // ไม่ได้เลือกวันที่/ไม่ได้ค้นเลขบิล -> ดีฟอลต์ "วันนี้" (กันโหลด transaction_delivery ทั้งหมด = ช้ามาก)
+        //   ช่องวันที่ใน UI ก็ดีฟอลต์เป็นวันนี้อยู่แล้ว จึงสอดคล้องกัน
+        if ($billId === '' && !filled($date)) {
+            $date = Carbon::now()->format('Y-m-d');
+        }
+
         $query = transaction_delivery::query()->orderBy('id');
 
         if ($billId !== '') {
@@ -378,6 +406,7 @@ class DeliverytrackController extends Controller
             'boxesByDate'   => $boxesByDate,
             'loggedInName'  => $this->loggedInName(),
             'canCancelJobs' => $this->canCancelAssignment(Auth::guard('web')->user()),
+            'canManage'     => !$this->isReadonlyViewer(Auth::guard('web')->user()),   // viewer = ดูอย่างเดียว
         ]);
     }
 
@@ -613,7 +642,7 @@ class DeliverytrackController extends Controller
     {
         $user = Auth::guard('web')->user();
         if (!$user) return response()->json(['ok' => false, 'message' => 'เซสชันหมดอายุ กรุณาเข้าสู่ระบบใหม่'], 401);
-        if (!$this->hasDeliveryAccess($user)) {
+        if (!$this->hasDeliveryAccess($user) || $this->isReadonlyViewer($user)) {
             return response()->json(['ok' => false, 'message' => 'ไม่มีสิทธิ์ดำเนินการ'], 403);
         }
 
@@ -645,7 +674,7 @@ class DeliverytrackController extends Controller
     {
         $user = Auth::guard('web')->user();
         if (!$user) return response()->json(['ok' => false, 'message' => 'เซสชันหมดอายุ กรุณาเข้าสู่ระบบใหม่'], 401);
-        if (!$this->hasDeliveryAccess($user)) {
+        if (!$this->hasDeliveryAccess($user) || $this->isReadonlyViewer($user)) {
             return response()->json(['ok' => false, 'message' => 'ไม่มีสิทธิ์ดำเนินการ'], 403);
         }
 
@@ -676,6 +705,7 @@ class DeliverytrackController extends Controller
     public function printSelectedPickup(Request $request)
     {
         if ($resp = $this->checkAccess()) return $resp;
+        if ($resp = $this->blockReadonly()) return $resp;
         $ids  = array_values(array_filter((array) $request->input('ids', [])));
         $date = $request->input('date');
 
@@ -710,6 +740,7 @@ class DeliverytrackController extends Controller
     public function printGroup(Request $request)
     {
         if ($resp = $this->checkAccess()) return $resp;
+        if ($resp = $this->blockReadonly()) return $resp;
         $date = $request->input('date');
         $transport = $request->input('transport');
         $driver = $request->input('driver');
@@ -764,6 +795,7 @@ class DeliverytrackController extends Controller
     public function printAllGroups(Request $request)
     {
         if ($resp = $this->checkAccess()) return $resp;
+        if ($resp = $this->blockReadonly()) return $resp;
 
         // ค่าจาก query string: อาจเป็นวันที่จริง (Y-m-d), 'ไม่ระบุวันที่', หรือว่าง (ไม่ได้ระบุเลย)
         $rawDate = $request->input('date');

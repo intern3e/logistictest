@@ -729,10 +729,12 @@
             </div>
         </div>
         <div class="page-header-user">
+            @if ($canManage ?? true)
             <a href="{{ route('deliverytrack') }}" class="btn-ghost">
                 <svg width="14" height="14" viewBox="0 0 16 16" fill="none"><path d="M10 3L5 8l5 5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
                 กลับไปหน้าจ่ายงาน
             </a>
+            @endif
         </div>
     </div>
 
@@ -760,7 +762,7 @@
                 <input type="date" id="filterDate" name="date" title="กรองตามวันที่ (ส่งของ=วันจัดส่ง · รับเอง=วันจ่ายงาน)" aria-label="กรองตามวันที่ (ส่งของ=วันจัดส่ง · รับเอง=วันจ่ายงาน)" value="{{ ($billId ?? '') !== '' ? $date : ($date ?: $todayKey) }}">
             </div>
             <div class="filter-field">
-                <input type="text" id="filterBillId" name="bill_id" value="{{ $billId ?? '' }}" placeholder="เช่น 6901-01149" aria-label="ค้นหาเลขบิล / SO / PO" autocomplete="off"
+                <input type="text" id="filterBillId" name="bill_id" value="{{ $billId ?? '' }}" placeholder="เลขบิล" aria-label="ค้นหาเลขบิล / SO / PO" autocomplete="off"
                        style="border:1px solid var(--line-strong);border-radius:var(--radius-sm);padding:9px 12px;font-size:.95rem;font-family:inherit;color:var(--ink);background:var(--surface);min-width:190px;">
             </div>
             <div class="filter-actions">
@@ -811,7 +813,7 @@
 
                 <span class="date-group-count">{{ collect($boxes)->sum('total_items') }} รายการ</span>
 
-                @if (count($boxes) > 0)
+                @if (count($boxes) > 0 && ($canManage ?? true))
                     <a class="btn-print-group" target="_blank" href="{{ route('deliverytrack.printAllGroups', ['date' => $dateKey]) }}">
                         <svg width="15" height="15" viewBox="0 0 16 16" fill="none"><path d="M4 6V2h8v4M4 11H2.75A.75.75 0 0 1 2 10.25v-3.5A.75.75 0 0 1 2.75 6h10.5a.75.75 0 0 1 .75.75v3.5a.75.75 0 0 1-.75.75H12M4 9h8v5H4V9Z" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
                         ปริ้นทั้งหมด ({{ count($boxes) }} คัน)
@@ -868,7 +870,7 @@
                                                                 @foreach ($cust['items'] as $item)
                                                                     @php $isPo = ($item['type'] ?? '') === 'po'; $isDone = !empty($item['is_complete']); @endphp
                                                                     <div class="stop-row" data-type="{{ $item['type'] ?? '' }}" data-complete="{{ $isDone ? 1 : 0 }}" data-transport="{{ $item['transport_type'] ?? '' }}" data-billid="{{ $item['id'] }}">
-                                                                        @if ($isPo)
+                                                                        @if ($isPo && ($canManage ?? true))
                                                                             <input type="checkbox" class="pickup-select" value="{{ $item['id'] }}"
                                                                                    {{ $isDone ? 'disabled' : '' }} onchange="updatePickupCount()">
                                                                         @endif
@@ -886,7 +888,9 @@
                                                                             {{-- เลขขนส่ง แยกทีละบิล (แสดง/แก้ได้ทั้งขนส่งบริษัทและเอกชน) --}}
                                                                             <span class="row-transport private-only">
                                                                                 เลขขนส่ง: <b class="row-transport-val" data-tp-billid="{{ $item['id'] }}">{{ $item['id_transport'] ?: '—' }}</b>
+                                                                                @if ($canManage ?? true)
                                                                                 <button type="button" class="btn-row-transport" data-billid="{{ $item['id'] }}" onclick="editRowTransportId(this)">แก้</button>
+                                                                                @endif
                                                                             </span>
                                                                         @endunless
                                                                         @if (!empty($canCancelJobs))
@@ -906,6 +910,7 @@
                                                         </div>
                                                     @endforeach
 
+                                                    @if ($canManage ?? true)
                                                     <div class="box-actions">
                                                         @if (!empty($canCancelJobs))
                                                         <button type="button" class="btn-cancel-box" onclick="cancelBoxAssignment('{{ $boxKey }}')">ยกเลิกงานที่เลือก / คืนคิว</button>
@@ -915,6 +920,7 @@
                                                             ปริ้นใบงาน (A4)
                                                         </a>
                                                     </div>
+                                                    @endif
                                                 </div>
                                             </div>
                                         </div>

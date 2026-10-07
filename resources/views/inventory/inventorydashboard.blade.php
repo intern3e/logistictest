@@ -262,7 +262,7 @@
   <div class="tbl-wrap">
     <table id="dt">
       <colgroup><col style="width:170px"><col style="width:340px"><col style="width:90px"><col style="width:120px"><col style="width:150px"><col style="width:140px">@if($authRole!=='viewer')<col style="width:160px">@endif</colgroup>
-      <thead><tr><th>ID Item</th><th>ชื่อสินค้า</th><th>จำนวน</th><th>ยี่ห้อ</th><th>สถานที่เก็บ</th><th>ประเภท / บริษัท</th>@if($authRole!=='viewer')<th>จัดการ</th>@endif</tr></thead>
+      <thead><tr><th>ID Item</th><th>ชื่อสินค้า</th><th>จำนวน</th><th>ยี่ห้อ</th><th>สถานที่เก็บ</th><th>ประเภท / บริษัท / หมวดหมู่</th>@if($authRole!=='viewer')<th>จัดการ</th>@endif</tr></thead>
       <tbody id="tb"></tbody>
     </table>
   </div>
@@ -377,6 +377,8 @@ function eh(s){return(s||'').replace(/&/g,'&amp;').replace(/"/g,'&quot;').replac
 function ci(s){return(s||'').replace(/[^a-zA-Z0-9]/g,'_')}
 function tBadge(t){if(!t)return'<span class="badge b-klang">-</span>';return t==='คลัง'?'<span class="badge b-klang">คลัง</span>':t==='ทรัพย์สินบริษัท'?'<span class="badge b-asset">ทรัพย์สิน</span>':`<span class="badge b-klang">${t}</span>`}
 function pBadge(p){if(!p)return'<span class="badge b-all">-</span>';const c=PM[p.trim()]||'b-all';const f=COMPANIES.find(x=>x.code===p.trim());return`<span class="badge ${c}">${f?f.code+' · '+f.label:p}</span>`}
+function cBadge(c){return c&&String(c).trim()?`<span class="badge b-all" title="หมวดหมู่">${eh(c)}</span>`:''}
+function bldCat(v,id){return`<input type="text" id="${id}" value="${eh(v||'')}" placeholder="หมวดหมู่" class="finput">`}
 function bldType(s,id){return`<select id="${id}" class="finput"><option value="คลัง" ${s==='คลัง'?'selected':''}>คลัง</option><option value="ทรัพย์สินบริษัท" ${s==='ทรัพย์สินบริษัท'?'selected':''}>ทรัพย์สินบริษัท</option></select>`}
 function bldPriv(s,id){return`<select id="${id}" class="finput"><option value="" ${!s?'selected':''} disabled>-- บริษัท --</option>${COMPANIES.map(c=>`<option value="${c.code}" ${s===c.code?'selected':''}>${c.code} · ${c.label}</option>`).join('')}</select>`}
 
@@ -458,7 +460,7 @@ function render(){
     const expBtn=hasSub?`<button class="expand-btn${isExp?' open':''}" onclick="toggleExp('${ej(key)}',this)">&#9658;</button>`:`<span style="display:inline-block;width:24px;margin-right:6px"></span>`;
     const addSub=CAN_ADD?`<button class="add-sub-btn" onclick="toggleSubForm('${ej(key)}')" title="เพิ่มรายการย่อย">+</button>`:'';
     
-    let h=`<td><div class="id-cell">${expBtn}${addSub}<strong>${item.iditem}</strong></div></td><td><span class="name-link" onclick="openTx('${ej(item.iditem)}','${ej(item.name)}')">${item.name}</span></td><td><strong>${parseInt(item.quantity)||0}</strong></td><td>${item.brand||'-'}</td><td>${item.location||'-'}</td><td><div class="badge-wrap">${tBadge(item.typeitem)}${pBadge(item.privilege)}</div></td>`;
+    let h=`<td><div class="id-cell">${expBtn}${addSub}<strong>${item.iditem}</strong></div></td><td><span class="name-link" onclick="openTx('${ej(item.iditem)}','${ej(item.name)}')">${item.name}</span></td><td><strong>${parseInt(item.quantity)||0}</strong></td><td>${item.brand||'-'}</td><td>${item.location||'-'}</td><td><div class="badge-wrap">${tBadge(item.typeitem)}${pBadge(item.privilege)}${cBadge(item.category)}</div></td>`;
     
     if(ROLE!=='viewer'){
       let btns='';
@@ -483,7 +485,7 @@ function render(){
         str.className='sub-row'+(isExp?'':' hide');
         str.dataset.so=key;
         
-        let sh=`<td style="padding-left:48px;color:#6b7280;font-size:13px">${sub.iditem}</td><td><span class="name-link" onclick="openTx('${ej(sub.iditem)}','${ej(sub.name)}')">${sub.name}</span></td><td><strong>${parseInt(sub.quantity)||0}</strong></td><td>${sub.brand||'-'}</td><td>${sub.location||'-'}</td><td><div class="badge-wrap">${tBadge(sub.typeitem||item.typeitem)}${pBadge(sub.privilege||item.privilege)}</div></td>`;
+        let sh=`<td style="padding-left:48px;color:#6b7280;font-size:13px">${sub.iditem}</td><td><span class="name-link" onclick="openTx('${ej(sub.iditem)}','${ej(sub.name)}')">${sub.name}</span></td><td><strong>${parseInt(sub.quantity)||0}</strong></td><td>${sub.brand||'-'}</td><td>${sub.location||'-'}</td><td><div class="badge-wrap">${tBadge(sub.typeitem||item.typeitem)}${pBadge(sub.privilege||item.privilege)}${cBadge(sub.category||item.category)}</div></td>`;
         
         if(ROLE!=='viewer'){
           let sbtns='';
@@ -657,7 +659,7 @@ function addRow(){
   isEditingRow=true;
   const tb=document.getElementById('tb'),tr=document.createElement('tr');
   tr.style.background='#EEF2FF';
-  tr.innerHTML=`<td><em style="color:#6b7280;font-size:12px">auto</em></td><td><input type="text" id="nName" placeholder="ชื่อสินค้า" class="finput"></td><td><input type="number" id="nQty" value="0" readonly class="finput"></td><td><input type="text" id="nBrand" placeholder="ยี่ห้อ" class="finput" oninput="showAc(this,'brand')"></td><td><input type="text" id="nLoc" placeholder="สถานที่เก็บ" class="finput" oninput="showAc(this,'location')"></td><td style="overflow:visible;white-space:normal"><div style="display:flex;flex-direction:column;gap:8px">${bldType('คลัง','nType')}${bldPriv('','nPriv')}</div></td><td style="overflow:visible"><div class="act-btns"><button class="btn btn-save" onclick="saveNew()">บันทึก</button><button class="btn btn-can" onclick="isEditingRow=false;loadPage(pg,false);flushItemsPendingRefresh()">ยกเลิก</button></div></td>`;
+  tr.innerHTML=`<td><em style="color:#6b7280;font-size:12px">auto</em></td><td><input type="text" id="nName" placeholder="ชื่อสินค้า" class="finput"></td><td><input type="number" id="nQty" value="0" readonly class="finput"></td><td><input type="text" id="nBrand" placeholder="ยี่ห้อ" class="finput" oninput="showAc(this,'brand')"></td><td><input type="text" id="nLoc" placeholder="สถานที่เก็บ" class="finput" oninput="showAc(this,'location')"></td><td style="overflow:visible;white-space:normal"><div style="display:flex;flex-direction:column;gap:8px">${bldType('คลัง','nType')}${bldPriv('','nPriv')}${bldCat('','nCat')}</div></td><td style="overflow:visible"><div class="act-btns"><button class="btn btn-save" onclick="saveNew()">บันทึก</button><button class="btn btn-can" onclick="isEditingRow=false;loadPage(pg,false);flushItemsPendingRefresh()">ยกเลิก</button></div></td>`;
   tb.prepend(tr);
   scrollTo(0,0);
 }
@@ -667,7 +669,7 @@ async function saveNew(){
   if(!pr){alert('กรุณาเลือกบริษัท');return;}
   if(!nm){alert('กรุณากรอกชื่อ');return;}
   try{
-    await API.post('/api/items',{name:nm,typeitem:document.getElementById('nType').value,location:document.getElementById('nLoc').value.trim(),brand:document.getElementById('nBrand').value.trim(),quantity:'0',privilege:pr});
+    await API.post('/api/items',{name:nm,typeitem:document.getElementById('nType').value,location:document.getElementById('nLoc').value.trim(),brand:document.getElementById('nBrand').value.trim(),quantity:'0',privilege:pr,category:(document.getElementById('nCat').value||'').trim()});
     toast('เพิ่มสินค้าเรียบร้อย');
     isEditingRow=false;
     await loadPage(pg,false);
@@ -684,7 +686,7 @@ async function saveSub(pid){
   const par=products.find(p=>(p._pid||p.iditem)===pid);
   if(!par) return;
   try{
-    await API.post('/api/items/sub',{parentId:pid,name:nm,brand:(document.getElementById('sb_'+cid)?.value||'').trim()||par.brand||'',location:(document.getElementById('sl_'+cid)?.value||'').trim()||par.location||'',typeitem:par.typeitem||'คลัง',quantity:'0',privilege:par.privilege||''});
+    await API.post('/api/items/sub',{parentId:pid,name:nm,brand:(document.getElementById('sb_'+cid)?.value||'').trim()||par.brand||'',location:(document.getElementById('sl_'+cid)?.value||'').trim()||par.location||'',typeitem:par.typeitem||'คลัง',quantity:'0',privilege:par.privilege||'',category:par.category||''});
     toast('เพิ่มรายการย่อยเรียบร้อย');
     openSubKey=null;
     isEditingRow=false;
@@ -702,7 +704,7 @@ function editRow(i){
   if(!row) return;
   const uid=ci(item.iditem);
   row.style.background='#EEF2FF';
-  row.innerHTML=`<td><strong>${item.iditem}</strong></td><td><input type="text" id="eN_${uid}" value="${eh(item.name)}" class="finput"></td><td><input type="number" id="eQ_${uid}" value="${item.quantity}" class="finput"></td><td><input type="text" id="eB_${uid}" value="${eh(item.brand||'')}" class="finput" oninput="showAc(this,'brand')"></td><td><input type="text" id="eL_${uid}" value="${eh(item.location||'')}" class="finput" oninput="showAc(this,'location')"></td><td style="overflow:visible;white-space:normal"><div style="display:flex;flex-direction:column;gap:8px">${bldType(item.typeitem,'eT_'+uid)}${bldPriv(item.privilege||'','eP_'+uid)}</div></td><td style="overflow:visible"><div class="act-btns"><button class="btn btn-save" onclick="saveEdit(${i})">บันทึก</button><button class="btn btn-can" onclick="isEditingRow=false;render();flushItemsPendingRefresh()">ยกเลิก</button></div></td>`;
+  row.innerHTML=`<td><strong>${item.iditem}</strong></td><td><input type="text" id="eN_${uid}" value="${eh(item.name)}" class="finput"></td><td><input type="number" id="eQ_${uid}" value="${item.quantity}" class="finput"></td><td><input type="text" id="eB_${uid}" value="${eh(item.brand||'')}" class="finput" oninput="showAc(this,'brand')"></td><td><input type="text" id="eL_${uid}" value="${eh(item.location||'')}" class="finput" oninput="showAc(this,'location')"></td><td style="overflow:visible;white-space:normal"><div style="display:flex;flex-direction:column;gap:8px">${bldType(item.typeitem,'eT_'+uid)}${bldPriv(item.privilege||'','eP_'+uid)}${bldCat(item.category||'','eC_'+uid)}</div></td><td style="overflow:visible"><div class="act-btns"><button class="btn btn-save" onclick="saveEdit(${i})">บันทึก</button><button class="btn btn-can" onclick="isEditingRow=false;render();flushItemsPendingRefresh()">ยกเลิก</button></div></td>`;
 }
 
 async function saveEdit(i){
@@ -710,7 +712,7 @@ async function saveEdit(i){
   if(!pr){alert('กรุณาเลือกบริษัท');return;}
   if(!nm){alert('กรุณากรอกชื่อ');return;}
   try{
-    await API.put('/api/items/'+encodeURIComponent(item.iditem),{name:nm,quantity:document.getElementById('eQ_'+uid).value,typeitem:document.getElementById('eT_'+uid).value,location:document.getElementById('eL_'+uid).value.trim(),brand:document.getElementById('eB_'+uid).value.trim(),privilege:pr});
+    await API.put('/api/items/'+encodeURIComponent(item.iditem),{name:nm,quantity:document.getElementById('eQ_'+uid).value,typeitem:document.getElementById('eT_'+uid).value,location:document.getElementById('eL_'+uid).value.trim(),brand:document.getElementById('eB_'+uid).value.trim(),privilege:pr,category:(document.getElementById('eC_'+uid).value||'').trim()});
     toast('บันทึกสำเร็จ');
     isEditingRow=false;
     await loadPage(pg,false);
@@ -748,7 +750,7 @@ function editSub(pid,si){
   if(!subTr) return;
   const uid=ci(sub.iditem);
   subTr.style.background='#EEF2FF';
-  subTr.innerHTML=`<td style="padding-left:48px"><strong>${sub.iditem}</strong></td><td><input type="text" id="seN_${uid}" value="${eh(sub.name)}" class="finput"></td><td><input type="number" id="seQ_${uid}" value="${sub.quantity}" class="finput"></td><td><input type="text" id="seB_${uid}" value="${eh(sub.brand||'')}" class="finput" oninput="showAc(this,'brand')"></td><td><input type="text" id="seL_${uid}" value="${eh(sub.location||'')}" class="finput" oninput="showAc(this,'location')"></td><td style="overflow:visible;white-space:normal"><div style="display:flex;flex-direction:column;gap:8px">${bldType(sub.typeitem,'seT_'+uid)}${bldPriv(sub.privilege||'','seP_'+uid)}</div></td><td style="overflow:visible"><div class="act-btns"><button class="btn btn-save" onclick="saveSubEdit('${ej(pid)}',${si})">บันทึก</button><button class="btn btn-can" onclick="isEditingRow=false;render();flushItemsPendingRefresh()">ยกเลิก</button></div></td>`;
+  subTr.innerHTML=`<td style="padding-left:48px"><strong>${sub.iditem}</strong></td><td><input type="text" id="seN_${uid}" value="${eh(sub.name)}" class="finput"></td><td><input type="number" id="seQ_${uid}" value="${sub.quantity}" class="finput"></td><td><input type="text" id="seB_${uid}" value="${eh(sub.brand||'')}" class="finput" oninput="showAc(this,'brand')"></td><td><input type="text" id="seL_${uid}" value="${eh(sub.location||'')}" class="finput" oninput="showAc(this,'location')"></td><td style="overflow:visible;white-space:normal"><div style="display:flex;flex-direction:column;gap:8px">${bldType(sub.typeitem,'seT_'+uid)}${bldPriv(sub.privilege||'','seP_'+uid)}${bldCat(sub.category||'','seC_'+uid)}</div></td><td style="overflow:visible"><div class="act-btns"><button class="btn btn-save" onclick="saveSubEdit('${ej(pid)}',${si})">บันทึก</button><button class="btn btn-can" onclick="isEditingRow=false;render();flushItemsPendingRefresh()">ยกเลิก</button></div></td>`;
 }
 
 async function saveSubEdit(pid,si){
@@ -757,7 +759,7 @@ async function saveSubEdit(pid,si){
   const uid=ci(sub.iditem),nm=document.getElementById('seN_'+uid).value.trim();
   if(!nm){alert('กรุณากรอกชื่อ');return;}
   try{
-    await API.put('/api/items/'+encodeURIComponent(sub.iditem),{name:nm,quantity:document.getElementById('seQ_'+uid).value,brand:document.getElementById('seB_'+uid).value.trim(),location:document.getElementById('seL_'+uid).value.trim(),typeitem:document.getElementById('seT_'+uid).value,privilege:document.getElementById('seP_'+uid)?.value||''});
+    await API.put('/api/items/'+encodeURIComponent(sub.iditem),{name:nm,quantity:document.getElementById('seQ_'+uid).value,brand:document.getElementById('seB_'+uid).value.trim(),location:document.getElementById('seL_'+uid).value.trim(),typeitem:document.getElementById('seT_'+uid).value,privilege:document.getElementById('seP_'+uid)?.value||'',category:(document.getElementById('seC_'+uid)?.value||'').trim()});
     toast('บันทึกสำเร็จ');
     isEditingRow=false;
     await loadPage(pg,false);
