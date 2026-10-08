@@ -411,8 +411,9 @@
                 <span class="st-dot"></span>
                 <select id="filterHandler" class="dd-native" tabindex="-1" aria-hidden="true">
                     <option value="">ผู้จัดการทั้งหมด</option>
-                    <option value="โอ">โอ</option>
-                    <option value="ฟิว">ฟิว</option>
+                    @foreach (($managerOptions ?? []) as $mg)
+                        <option value="{{ $mg }}">{{ $mg }}</option>
+                    @endforeach
                 </select>
                 <button type="button" class="dd-btn" aria-haspopup="listbox"><span class="dd-text">ผู้จัดการทั้งหมด</span></button>
                 <span class="caret"><svg class="i" viewBox="0 0 24 24"><path d="m6 9 6 6 6-6"/></svg></span>

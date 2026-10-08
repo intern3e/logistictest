@@ -954,6 +954,15 @@ class StoreController extends Controller
         })->values();
         $totalTodo = $allHeads->where('todo', true)->count();
 
+        // รายชื่อ "ผู้จัดการ" สำหรับ dropdown filter — ดึงชื่อที่มีจริงทั้งหมด (ทุกหน้า)
+        //   claimed_by: internal/external = pick_by ; legacy = ชื่อจาก box (store.BOX -> box.boxName)
+        $managerOptions = $allHeads->pluck('claimed_by')
+            ->map(fn ($x) => trim((string) $x))
+            ->filter()
+            ->unique()
+            ->sort(fn ($a, $b) => strcmp($a, $b))
+            ->values();
+
         $perPage = self::LOCATION_PER_PAGE;
         $page    = max(1, (int) $request->input('page', 1));
         $heads   = new LengthAwarePaginator(
@@ -1017,7 +1026,7 @@ class StoreController extends Controller
 
         $locations = $this->recentLocations();
 
-        return view('store.store_location', compact('heads', 'locations', 'creator', 'totalTodo'));
+        return view('store.store_location', compact('heads', 'locations', 'creator', 'totalTodo', 'managerOptions'));
     }
 
     public function legacyItemsForPo(Request $request)
@@ -1203,7 +1212,12 @@ class StoreController extends Controller
         }
 
         $soSummaries = $this->buildSoSummaries($soIds, $soNum, $poNum, $billDate);
-        
+
+        // ★ 1.5 ไม่มี "เลขบิล" ข้างใน (dn_no) -> ไม่ต้องแสดง block ของ SO นั้น
+        $soSummaries = $soSummaries->filter(function ($s) {
+            return collect($s->bills)->contains(fn ($b) => filled($b->dn_no ?? null));
+        })->values();
+
         // ★ 2. กรองข้อมูลตาม filter_status ที่เลือก
         if ($filterStatus === 'pending') {
             // เก็บเฉพาะรายการที่ยังจัดการไม่เสร็จ (all_done == false)

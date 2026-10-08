@@ -656,8 +656,7 @@
           </label>
           <div id="docTypes" class="doc-types" style="display:none">
             <div class="doc-types-label">เลือกชนิดเอกสารที่ได้รับ (เลือกได้หลายอย่าง หรือไม่เลือกก็ได้)</div>
-            <label class="doc-type"><input type="checkbox" id="docTax" onchange="saveDocCheck()"> ใบกำกับภาษี</label>
-            <label class="doc-type"><input type="checkbox" id="docReceipt" onchange="saveDocCheck()"> ใบเสร็จ</label>
+            <label class="doc-type"><input type="checkbox" id="docTaxReceipt" onchange="saveDocCheck()"> ใบกำกับภาษี / ใบเสร็จ</label>
             <label class="doc-type"><input type="checkbox" id="docDelivery" onchange="saveDocCheck()"> ใบส่งของ</label>
           </div>
           <div id="docSaved" class="doc-saved"></div>
@@ -2066,22 +2065,23 @@ function showDocCheck(po, so, vendor){
   const box = document.getElementById('docCheckBox');
   box.style.display = 'block';
   document.getElementById('docSaved').textContent = '';
-  // รีเซ็ตก่อน
-  document.getElementById('docHas').checked = false;
-  document.getElementById('docTax').checked = false;
-  document.getElementById('docReceipt').checked = false;
+  // ค่าเริ่มต้น: ติ๊ก "ได้รับเอกสาร" + "ใบกำกับภาษี/ใบเสร็จ" อัตโนมัติตอนเข้ามา (ถ้าไม่ได้รับ user กดออกเอง)
+  document.getElementById('docHas').checked = true;
+  document.getElementById('docTaxReceipt').checked = true;
   document.getElementById('docDelivery').checked = false;
-  document.getElementById('docTypes').style.display = 'none';
-  // โหลดค่าที่เคยติ๊กไว้
+  document.getElementById('docTypes').style.display = 'flex';
+  // โหลดค่าที่เคยบันทึกไว้ — มี record ใช้ค่านั้น ; ยังไม่มี (รายการใหม่) = บันทึก auto-ติ๊กไว้เลย
   fetch(DOC_GET_URL + '?po_id=' + encodeURIComponent(po), {headers:{'Accept':'application/json'}})
     .then(r=>r.json()).then(d=>{
       if(d && d.ok && d.row){
         const types = d.row.doc_types || [];
         document.getElementById('docHas').checked = !!d.row.has_document;
-        document.getElementById('docTax').checked = types.indexOf('tax') !== -1;
-        document.getElementById('docReceipt').checked = types.indexOf('receipt') !== -1;
+        document.getElementById('docTaxReceipt').checked = (types.indexOf('tax') !== -1) || (types.indexOf('receipt') !== -1);
         document.getElementById('docDelivery').checked = types.indexOf('delivery') !== -1;
         document.getElementById('docTypes').style.display = d.row.has_document ? 'flex' : 'none';
+      } else {
+        // ยังไม่มี record -> บันทึกค่า default (ได้รับเอกสาร = ติ๊ก) อัตโนมัติ
+        saveDocCheck();
       }
     }).catch(()=>{});
 }
@@ -2089,8 +2089,7 @@ function onDocHasChange(){
   const has = document.getElementById('docHas').checked;
   document.getElementById('docTypes').style.display = has ? 'flex' : 'none';
   if(!has){
-    document.getElementById('docTax').checked=false;
-    document.getElementById('docReceipt').checked=false;
+    document.getElementById('docTaxReceipt').checked=false;
     document.getElementById('docDelivery').checked=false;
   }
   saveDocCheck();
@@ -2098,8 +2097,8 @@ function onDocHasChange(){
 async function saveDocCheck(){
   if(!docCtx.po) return;
   const types = [];
-  if(document.getElementById('docTax').checked) types.push('tax');
-  if(document.getElementById('docReceipt').checked) types.push('receipt');
+  // ใบกำกับภาษี/ใบเสร็จ รวมเป็นเช็คเดียว -> เก็บทั้ง tax และ receipt
+  if(document.getElementById('docTaxReceipt').checked){ types.push('tax'); types.push('receipt'); }
   if(document.getElementById('docDelivery').checked) types.push('delivery');
   const payload = {
     po_id: docCtx.po, so_id: docCtx.so, vendor_name: docCtx.vendor,

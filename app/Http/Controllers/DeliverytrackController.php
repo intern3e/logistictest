@@ -43,10 +43,13 @@ class DeliverytrackController extends Controller
         return strcasecmp(trim((string) ($user->name ?? '')), 'FILM') === 0;
     }
 
-    /** role ที่ "ดูอย่างเดียว" — sale/support/sale_assistant (เด้งไปหน้าสรุป, กดจัดการไม่ได้) */
+    /** role ที่ "ดูอย่างเดียว" — sale/support/sale_assistant (เด้งไปหน้าสรุป, กดจัดการไม่ได้)
+     *  ยกเว้นผู้ใช้ชื่อ FILM = เต็มสิทธิ์ ไม่ถือเป็น readonly (ไม่เด้ง + จัดการได้) */
     private function isReadonlyViewer($user): bool
     {
-        return $user && in_array($user->role ?? '', ['sale', 'support', 'sale_assistant'], true);
+        if (!$user) return false;
+        if (strcasecmp(trim((string) ($user->name ?? '')), 'FILM') === 0) return false;
+        return in_array($user->role ?? '', ['sale', 'support', 'sale_assistant'], true);
     }
 
     /** กันไม่ให้ readonly viewer ทำ action — คืน response 403 ถ้าเป็น viewer, ไม่งั้น null */
