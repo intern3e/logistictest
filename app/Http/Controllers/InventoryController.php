@@ -333,6 +333,7 @@ class InventoryController extends Controller
                 'brand'     => $r['brand'] ?? $r['item_brand'] ?? '',
                 'privilege' => $r['privilege'] ?? $r['item_privilege'] ?? '',
                 'category'  => $r['category'] ?? $r['item_category'] ?? '',
+                'image'     => $r['image'] ?? $r['item_image'] ?? '',
             ]);
 
             if ($name) $items = $items->filter(fn($i) => str_contains(mb_strtolower($i['name']), $name));
@@ -425,6 +426,7 @@ class InventoryController extends Controller
             'brand' => $d['brand'] ?? '',
             'privilege' => $d['privilege'] ?? '',
             'category' => $d['category'] ?? '',
+            'image' => $d['image'] ?? '',
         ]);
         
         $this->clearItemsCache();
@@ -447,6 +449,7 @@ class InventoryController extends Controller
             'brand' => $d['brand'] ?? '',
             'privilege' => $d['privilege'] ?? '',
             'category' => $d['category'] ?? '',
+            'image' => $d['image'] ?? '',
         ]);
         
         $this->clearItemsCache();
@@ -472,6 +475,9 @@ class InventoryController extends Controller
             'brand' => $d['brand'] ?? '',
             'privilege' => $d['privilege'] ?? '',
             'category' => $d['category'] ?? '',
+            'image' => array_key_exists('image', $d)
+                ? (string) ($d['image'] ?? '')
+                : ($old['image'] ?? ($old['item_image'] ?? '')),
         ];
 
         $this->api('PUT', '/items/' . urlencode($id), $new);
@@ -480,7 +486,7 @@ class InventoryController extends Controller
         $changes = $this->diffFields([
             'name' => 'ชื่อสินค้า', 'quantity' => 'จำนวน', 'typeitem' => 'ประเภท',
             'location' => 'สถานที่เก็บ', 'brand' => 'ยี่ห้อ', 'privilege' => 'บริษัท',
-            'category' => 'หมวดหมู่',
+            'category' => 'หมวดหมู่', 'image' => 'รูปสินค้า',
         ], [
             'name' => $old['name'] ?? ($old['item_name'] ?? ''),
             'quantity' => $old['quantity'] ?? ($old['item_quantity'] ?? ''),
@@ -489,6 +495,7 @@ class InventoryController extends Controller
             'brand' => $old['brand'] ?? ($old['item_brand'] ?? ''),
             'privilege' => $old['privilege'] ?? ($old['item_privilege'] ?? ''),
             'category' => $old['category'] ?? ($old['item_category'] ?? ''),
+            'image' => $old['image'] ?? ($old['item_image'] ?? ''),
         ], $new);
 
         if (!empty($changes)) {
@@ -927,6 +934,34 @@ class InventoryController extends Controller
         }
     }
  
+    // ═══════════════ ITEM: UPLOAD IMAGE → GOOGLE DRIVE (ใช้ GAS ตัวเดียวกับ PR) ═══════════════
+
+    public function uploadItemImage(Request $request)
+    {
+        $this->guardRole(['admin', 'user']);
+        $dataUrl = (string) $request->input('image', '');
+        $name = preg_replace('/[^A-Za-z0-9_\-]/', '', (string) $request->input('fileName', 'item_' . time())) ?: ('item_' . time());
+        if (strlen($dataUrl) < 100) {
+            return response()->json(['success' => false, 'error' => 'ไม่พบไฟล์รูป'], 422);
+        }
+        // รองรับ GAS ทั้งแบบรับ base64 ล้วน และแบบรับ data URL (ลองแบบล้วนก่อน ไม่ได้ค่อยลองอีกแบบ)
+        $raw = preg_replace('/^data:[^;]+;base64,/', '', $dataUrl);
+        foreach (array_unique([$raw, $dataUrl]) as $payload) {
+            try {
+                $res = Http::asForm()->timeout(90)->post($this->gasUploadUrl, [
+                    'action'   => 'upload',
+                    'image'    => $payload,
+                    'fileName' => $name,
+                ]);
+                $url = $res->json('url') ?? '';
+                if ($url) return response()->json(['success' => true, 'url' => $url]);
+            } catch (\Throwable $e) {
+                Log::warning('uploadItemImage → GAS failed: ' . $e->getMessage());
+            }
+        }
+        return response()->json(['success' => false, 'error' => 'อัปโหลดรูปไม่สำเร็จ'], 502);
+    }
+
     // ═══════════════ PR: SAVE (สร้างใบขอซื้อ) ═══════════════
  
     public function savePr(Request $request)

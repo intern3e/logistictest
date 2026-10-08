@@ -416,7 +416,7 @@ private function hydrateLegacyPageItems(\Illuminate\Support\Collection $lightIte
         // ของเก่าติ๊กเลือกทั้งใบ (checkbox เดียวแทนทั้ง PO) → เอาทุกบรรทัดของ PO นั้นมา
         $lineIds = array_merge(
             $lineIds,
-            internal_poline::whereIn('internal_id', $poIds)->pluck('id')->map(fn ($v) => (string) $v)->all()
+            internal_poline::whereIn('internal_id', $poIds)->whereNull('cancelled_at')->pluck('id')->map(fn ($v) => (string) $v)->all()
         );
     }
 
@@ -425,8 +425,8 @@ private function hydrateLegacyPageItems(\Illuminate\Support\Collection $lightIte
         abort(404, 'ไม่พบรายการที่เลือก');
     }
 
-    // ดึงเฉพาะไส้ในที่ถูกติ๊กเลือกจริง ๆ เท่านั้น (ไม่ดึงบรรทัดอื่นของ PO เดียวกันที่ไม่ได้เลือก)
-    $lines = internal_poline::whereIn('id', $lineIds)->orderBy('id')->get();
+    // ดึงเฉพาะไส้ในที่ถูกติ๊กเลือกจริง ๆ และยังไม่ถูกยกเลิก (ไม่ดึงบรรทัดอื่นของ PO เดียวกันที่ไม่ได้เลือก)
+    $lines = internal_poline::whereIn('id', $lineIds)->whereNull('cancelled_at')->orderBy('id')->get();
 
     $headsById = internal_po::whereIn('internal_id', $lines->pluck('internal_id')->unique())
         ->get()
@@ -487,7 +487,7 @@ private function hydrateLegacyPageItems(\Illuminate\Support\Collection $lightIte
             $this->ensureLegacyInternalPoMigrated($poIds);
             $lineIds = array_merge(
                 $lineIds,
-                internal_poline::whereIn('internal_id', $poIds)->pluck('id')->map(fn ($v) => (string) $v)->all()
+                internal_poline::whereIn('internal_id', $poIds)->whereNull('cancelled_at')->pluck('id')->map(fn ($v) => (string) $v)->all()
             );
         }
 
@@ -763,20 +763,32 @@ private function hydrateLegacyPageItems(\Illuminate\Support\Collection $lightIte
             return response()->json(['ok' => false, 'message' => 'รายการนี้จัดเสร็จไปแล้ว ยกเลิกไม่ได้'], 409);
         }
 
+        if (!empty($line->cancelled_at)) {
+            return response()->json(['ok' => false, 'message' => 'รายการนี้ถูกยกเลิกไปแล้ว'], 409);
+        }
+
         $internalId = $line->internal_id;
         $itemName   = $line->item_name;
-        $line->delete();
+        // ไม่ลบทิ้ง: เก็บว่าใครยกเลิก/เมื่อไหร่ ไว้เป็นหลักฐาน (status = ยกเลิก ระดับไส้ใน)
+        $line->cancelled_at = Carbon::now()->toDateTimeString();
+        $line->cancelled_by = $authUser->name;
+        $line->save();
 
         $finished    = false;
         $cancelledPo = false;
-        $total   = internal_poline::where('internal_id', $internalId)->count();
-        $pickedN = internal_poline::where('internal_id', $internalId)->whereNotNull('picked_at')->count();
+        // นับเฉพาะไส้ในที่ยังไม่ถูกยกเลิก (active)
+        $total   = internal_poline::where('internal_id', $internalId)->whereNull('cancelled_at')->count();
+        $pickedN = internal_poline::where('internal_id', $internalId)->whereNull('cancelled_at')->whereNotNull('picked_at')->count();
 
         if ($total === 0) {
             // ยกเลิกไส้ในจนหมด และไม่เคยจัดเลย (ไส้ในที่จัดแล้วยกเลิกไม่ได้) → ปิด PO เป็นสถานะ "ยกเลิก" (จะไม่ขึ้นในหน้าจัด)
             $affected = internal_po::where('internal_id', $internalId)
                 ->where('status', internal_po::ST_PENDING)
-                ->update(['status' => internal_po::ST_CANCEL]);
+                ->update([
+                    'status'  => internal_po::ST_CANCEL,
+                    'pick_by' => $authUser->name,
+                    'pick_at' => Carbon::now()->toDateTimeString(),
+                ]);
             $cancelledPo = $affected > 0;
         } elseif ($pickedN === $total) {
             // ลบไส้ในแล้ว ที่เหลือ "จัดครบทุกอัน" → ปิดงานเป็น FINISH เพื่อให้ไปต่อที่ store/location ได้

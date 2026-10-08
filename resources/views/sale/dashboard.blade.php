@@ -19,7 +19,7 @@
             --r-card:12px; --r-field:8px;
         }
         *{box-sizing:border-box;margin:0;padding:0}
-        html{font-size:clamp(14.5px,0.3vw + 10.5px,17px)}
+        html{font-size:clamp(13px,0.3vw + 9px,16px)}
         html,body{background:var(--page-bg);font-family:'Sarabun','Segoe UI',Tahoma,sans-serif;color:var(--ink);line-height:1.5;-webkit-font-smoothing:antialiased}
         body{min-height:100vh;overflow-x:hidden}
         a{color:inherit}
@@ -29,7 +29,7 @@
         /* ===== แถบบน (หัว + ตัวกรอง แถวเดียว) ===== */
         .top-banner{display:flex;align-items:center;gap:14px;flex-wrap:wrap;background:#fff;border:1px solid var(--line);border-radius:var(--r-card);
                     margin:15px 15px 12px;padding:12px 16px 12px 18px;box-shadow:var(--shadow);position:sticky;top:10px;z-index:100}
-        .top-banner .h1{flex:none;display:flex;align-items:center;gap:10px;font-weight:800;font-size:clamp(19px,.8vw + 10px,23px);letter-spacing:-.3px;white-space:nowrap;color:var(--ink);text-decoration:none}
+        .top-banner .h1{flex:none;display:flex;align-items:center;gap:10px;font-weight:800;font-size:clamp(18px,.8vw + 9px,22px);letter-spacing:-.3px;white-space:nowrap;color:var(--ink);text-decoration:none}
         .top-banner .logo{width:38px;height:38px;border-radius:10px;background:var(--primary);color:#fff;display:flex;align-items:center;justify-content:center;box-shadow:0 4px 10px rgba(26,79,214,.28)}
         .top-banner .logo svg{width:19px;height:19px}
         .vsep{width:1px;height:28px;background:var(--line);flex:none}

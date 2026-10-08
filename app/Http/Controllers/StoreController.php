@@ -1213,10 +1213,14 @@ class StoreController extends Controller
 
         $soSummaries = $this->buildSoSummaries($soIds, $soNum, $poNum, $billDate);
 
-        // ★ 1.5 ไม่มี "เลขบิล" ข้างใน (dn_no) -> ไม่ต้องแสดง block ของ SO นั้น
-        $soSummaries = $soSummaries->filter(function ($s) {
-            return collect($s->bills)->contains(fn ($b) => filled($b->dn_no ?? null));
-        })->values();
+        // ★ 1.5 กรอง SO ที่ไม่มี "เลขบิล" (dn_no) ข้างใน
+        //   - ดูรายวัน (ไม่ได้ค้นหา): ไม่มีบิลข้างใน -> ไม่ต้องแสดง block ของ SO นั้น
+        //   - ค้นหา (SO/PO/เลขบิล): แสดง block SO ด้วย แม้ไม่มีบิลข้างใน
+        if (!$hasSoOrPoSearch) {
+            $soSummaries = $soSummaries->filter(function ($s) {
+                return collect($s->bills)->contains(fn ($b) => filled($b->dn_no ?? null));
+            })->values();
+        }
 
         // ★ 2. กรองข้อมูลตาม filter_status ที่เลือก
         if ($filterStatus === 'pending') {
@@ -2330,7 +2334,8 @@ class StoreController extends Controller
                 'items'         => null,
                 'total_qty'     => null,
                 'location'      => null,
-                'packed_by'     => $r->boxS ?: null,
+                // pick (รับโดย): ดึงชื่อผู้จัดการจาก box + เวลา DATEBOX ลงคอลัมน์นี้ด้วย
+                'packed_by'     => $hasMgr ? $manager : ($r->boxS ?: null),
                 'packed_at'     => $r->DATEBOX,
                 'todo'          => true,
                 // มี BOX (ผู้จัดการจาก box) = ถือว่าถูกจัดการแล้วโดยคนนั้น

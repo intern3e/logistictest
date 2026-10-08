@@ -410,20 +410,23 @@
     @endphp
     @forelse ($lines as $line)
         @php
-            $lineId   = $line->id ?? null;
-            $picked   = !empty($line->picked_at);
-            $chkVal   = $lineId ? ('line:' . $lineId) : ('po:' . $h->internal_id);
-            $lineCls  = $cancel ? 'cancelled' : (($picked || !$todo) ? 'done' : '');
+            $lineId        = $line->id ?? null;
+            $picked        = !empty($line->picked_at);
+            $lineCancelled = !empty($line->cancelled_at);
+            $chkVal        = $lineId ? ('line:' . $lineId) : ('po:' . $h->internal_id);
+            $lineCls       = ($cancel || $lineCancelled) ? 'cancelled' : (($picked || !$todo) ? 'done' : '');
         @endphp
         <tr class="{{ $lineCls }}" data-internal-id="{{ $h->internal_id }}">
             <td class="center">
-                @if ($todo && !$picked)
+                @if ($lineCancelled)
+                    {{-- ไส้ในถูกยกเลิกแล้ว — ไม่ให้เลือก --}}
+                @elseif ($todo && !$picked)
                     <input type="checkbox" class="chkLine" value="{{ $chkVal }}">
                 @elseif ($picked)
                     <input type="checkbox" checked disabled title="จัดแล้ว">
                 @endif
             </td>
-            <td class="col-key">@if ($loop->first)<span class="ref-link">{{ $h->internal_id }}</span>
+            <td class="col-key">@if ($loop->first)<span class="ref-link" style="cursor:pointer;" title="ดูข้อมูลการยกเลิก" onclick="showCancelInfo('{{ $h->internal_id }}')">{{ $h->internal_id }}</span>
                 @php $isLegacy = $h->is_legacy ?? false; @endphp
                 <span style="display:inline-block;margin-top:2px;padding:1px 7px;border-radius:999px;font-size:11px;font-weight:700;{{ $isLegacy ? 'background:#fef3c7;color:#b45309' : 'background:#dbeafe;color:#1d4ed8' }}">{{ $isLegacy ? 'ระบบเก่า' : 'ระบบใหม่' }}</span>
             @endif</td>
@@ -434,7 +437,7 @@
                 @endif
             </td>
             <td class="col-key">{{ $line->item_id ?: '—' }}</td>
-            <td>{{ $line->item_name }}@if (!empty($line->wait_goods)) <span style="display:inline-block;padding:1px 7px;border-radius:999px;font-size:11px;font-weight:700;background:#ffe4b5;color:#b45309;">รอของเข้า</span>@endif</td>
+            <td>{{ $line->item_name }}@if (!empty($line->wait_goods)) <span style="display:inline-block;padding:1px 7px;border-radius:999px;font-size:11px;font-weight:700;background:#ffe4b5;color:#b45309;">รอของเข้า</span>@endif @if ($lineCancelled)<span style="display:inline-block;padding:1px 7px;border-radius:999px;font-size:11px;font-weight:700;background:#fee2e2;color:#b91c1c;">ยกเลิกโดย {{ $line->cancelled_by ?: '—' }}{{ $line->cancelled_at ? ' · ' . \Carbon\Carbon::parse($line->cancelled_at)->format('d/m/Y H:i') : '' }}</span>@endif</td>
             <td class="center">{{ rtrim(rtrim(number_format((float) $line->item_quantity, 2), '0'), '.') }}</td>
             <td class="cust-cell">@if ($loop->first){{ $h->customer_name }}@endif</td>
             <td class="col-key">
@@ -449,8 +452,8 @@
             </td>
             @if ($canManageLine)
                 <td class="center" style="white-space:nowrap;">
-                    {{-- แสดงปุ่มตาม "ไส้ในยังไม่จัด (picked_at ว่าง) + PO ไม่ถูกยกเลิก" ไม่ผูกกับสถานะหัว PO --}}
-                    @if ($lineId && !$picked && !$cancel)
+                    {{-- แสดงปุ่มตาม "ไส้ในยังไม่จัด (picked_at ว่าง) + ยังไม่ถูกยกเลิก + PO ไม่ถูกยกเลิก" ไม่ผูกกับสถานะหัว PO --}}
+                    @if ($lineId && !$picked && !$cancel && !$lineCancelled)
                         @if ($canChangeItem)
                             <button type="button" class="btn-line btn-line-change"
                                     onclick="openChangeItem({{ $lineId }})">เปลี่ยนสินค้า</button>
@@ -470,7 +473,7 @@
     @empty
         <tr class="{{ $cls }}" data-internal-id="{{ $h->internal_id }}">
             <td class="center"></td>
-            <td class="col-key"><span class="ref-link">{{ $h->internal_id }}</span>
+            <td class="col-key"><span class="ref-link" style="cursor:pointer;" title="ดูข้อมูลการยกเลิก" onclick="showCancelInfo('{{ $h->internal_id }}')">{{ $h->internal_id }}</span>
                 @php $isLegacy = $h->is_legacy ?? false; @endphp
                 <span style="display:inline-block;margin-top:2px;padding:1px 7px;border-radius:999px;font-size:11px;font-weight:700;{{ $isLegacy ? 'background:#fef3c7;color:#b45309' : 'background:#dbeafe;color:#1d4ed8' }}">{{ $isLegacy ? 'ระบบเก่า' : 'ระบบใหม่' }}</span>
             </td>
@@ -564,6 +567,16 @@
     </div>
 </div>
 
+<div class="modal-overlay" id="cancelInfoModal" hidden>
+    <div class="modal-box" style="max-width:520px;">
+        <div class="modal-header">
+            <span class="modal-title" id="cancelInfoTitle">ข้อมูลการยกเลิก</span>
+            <button type="button" class="modal-close" onclick="closeCancelInfo()" aria-label="ปิด">&times;</button>
+        </div>
+        <div id="cancelInfoBody" style="padding:14px 22px;"></div>
+    </div>
+</div>
+
 <script>
 const FINISH_URL       = "{{ route('internal_po.pick.submit') }}";
 const CANCEL_URL       = "{{ route('internal_po.cancel') }}";
@@ -576,7 +589,27 @@ const CSRF             = document.querySelector('meta[name="csrf-token"]').conte
 
 const PO_ITEMS = {
     @foreach ($heads as $h)
-        "{{ $h->internal_id }}": @json($h->lines->map(fn ($it) => ['name' => $it->item_name, 'qty' => (float) $it->item_quantity])),
+        "{{ $h->internal_id }}": @json($h->lines->filter(fn ($it) => empty($it->cancelled_at))->map(fn ($it) => ['name' => $it->item_name, 'qty' => (float) $it->item_quantity])->values()),
+    @endforeach
+};
+
+// ข้อมูลการยกเลิก (ใครยกเลิก/เมื่อไหร่) — หัว PO (ยกเลิกทั้งใบ) + รายไส้ใน
+const PO_CANCEL_INFO = {
+    @foreach ($heads as $h)
+        @php
+            $cancelLines = ($h->lines ?? collect())->filter(fn ($l) => !empty($l->cancelled_at))
+                ->map(fn ($l) => [
+                    'name' => $l->item_name,
+                    'by'   => $l->cancelled_by ?: '—',
+                    'at'   => $l->cancelled_at ? \Carbon\Carbon::parse($l->cancelled_at)->format('d/m/Y H:i') : '—',
+                ])->values();
+            $headCancel = ($h->status === \App\Models\internal_po::ST_CANCEL)
+                ? ['by' => ($h->pick_by ?: '—'), 'at' => (!empty($h->pick_at) ? \Carbon\Carbon::parse($h->pick_at)->format('d/m/Y H:i') : '—')]
+                : null;
+        @endphp
+        @if ($headCancel || $cancelLines->isNotEmpty())
+            "{{ $h->internal_id }}": @json(['head' => $headCancel, 'lines' => $cancelLines]),
+        @endif
     @endforeach
 };
 
@@ -714,11 +747,54 @@ function openItemsModal(internalId) {
 function closeItemsModal() {
     document.getElementById('itemsModal').hidden = true;
 }
+
+function escHtmlCI(s) {
+    return String(s == null ? '' : s).replace(/[&<>"']/g, function (m) {
+        return { '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[m];
+    });
+}
+function showCancelInfo(internalId) {
+    const info = PO_CANCEL_INFO[internalId] || null;
+    document.getElementById('cancelInfoTitle').textContent = 'ข้อมูลการยกเลิก - PO ' + internalId;
+    const body = document.getElementById('cancelInfoBody');
+
+    if (!info) {
+        body.innerHTML = '<div class="modal-empty">PO นี้ยังไม่ถูกยกเลิก</div>';
+        document.getElementById('cancelInfoModal').hidden = false;
+        return;
+    }
+
+    let html = '';
+    // แสดงบล็อก "ยกเลิกทั้งใบ" เฉพาะเมื่อมีชื่อผู้ยกเลิกจริง (ไม่โชว์ถ้าว่าง — · —)
+    if (info.head && info.head.by && info.head.by !== '—') {
+        html += '<div style="padding:10px 12px;margin-bottom:10px;border:1px solid #fecaca;background:#fff5f5;border-radius:8px;">'
+             +  '<div style="font-weight:700;color:#b91c1c;margin-bottom:2px;">ยกเลิกทั้งใบ</div>'
+             +  '<div style="font-size:13px;color:#1e293b;">โดย <b>' + escHtmlCI(info.head.by) + '</b> · ' + escHtmlCI(info.head.at) + '</div>'
+             +  '</div>';
+    }
+    if (info.lines && info.lines.length) {
+        html += '<div style="font-weight:700;color:#6b7280;font-size:12px;text-transform:uppercase;letter-spacing:.3px;margin:6px 0 4px;">ข้อมูลการยกเลิก</div>';
+        html += info.lines.map(function (l) {
+            return '<div style="display:flex;justify-content:space-between;gap:10px;padding:8px 10px;border-bottom:1px solid #f1f5f9;">'
+                 + '<span style="color:#1e293b;">' + escHtmlCI(l.name) + '</span>'
+                 + '<span style="color:#b91c1c;white-space:nowrap;font-size:12.5px;">' + escHtmlCI(l.by) + ' · ' + escHtmlCI(l.at) + '</span>'
+                 + '</div>';
+        }).join('');
+    }
+    body.innerHTML = html || '<div class="modal-empty">PO นี้ยังไม่ถูกยกเลิก</div>';
+    document.getElementById('cancelInfoModal').hidden = false;
+}
+function closeCancelInfo() {
+    document.getElementById('cancelInfoModal').hidden = true;
+}
+document.getElementById('cancelInfoModal').addEventListener('click', function (e) {
+    if (e.target === this) closeCancelInfo();
+});
 document.getElementById('itemsModal').addEventListener('click', function (e) {
     if (e.target === this) closeItemsModal();
 });
 document.addEventListener('keydown', function (e) {
-    if (e.key === 'Escape') closeItemsModal();
+    if (e.key === 'Escape') { closeItemsModal(); closeCancelInfo(); }
 });
 </script>
 <script>

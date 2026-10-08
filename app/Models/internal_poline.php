@@ -14,6 +14,7 @@ class internal_poline extends Model
         'item_quantity', 'item_average', 'item_total',
         'picked_at', 'picked_by',
         'wait_goods',   // note: รอของเข้า (รายตัว/line)
+        'cancelled_at', 'cancelled_by',   // ยกเลิกไส้ใน (ไม่ลบทิ้ง): ใครยกเลิก/เมื่อไหร่
     ];
 
     protected $casts = [
@@ -22,6 +23,7 @@ class internal_poline extends Model
         'item_total'    => 'float',
         'picked_at'     => 'datetime',
         'wait_goods'    => 'boolean',
+        'cancelled_at'  => 'datetime',
     ];
 
     public function head()

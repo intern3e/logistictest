@@ -471,8 +471,8 @@
                                 $totalQty    = $h->total_qty;
                                 $location    = $h->location;
                                 $checkboxVal = $h->type . ':' . $h->id;
-                                $isClaimed   = $h->type === 'external' && ($h->claimed ?? false);
-                                $isFinished  = $h->type === 'external' && ($h->finished ?? false);
+                                $isClaimed   = in_array($h->type, ['external', 'legacy'], true) && ($h->claimed ?? false);
+                                $isFinished  = in_array($h->type, ['external', 'legacy'], true) && ($h->finished ?? false);
                                 $poType      = str_contains((string) $h->po_display, 'A') ? 'internal' : 'external';
                                 // internal_po: PENDING+claim แล้ว = กำลังจัดการ (ต้องกด "จัดการเสร็จสิ้น") / FINISH = พร้อมระบุตำแหน่ง
                                 $rowStatus       = $h->status ?? null;
@@ -500,7 +500,7 @@
                                 data-po="{{ $h->po_display }}"
                                 data-customer="{{ $h->customer_name }}"
                                 data-po-type="{{ $poType }}"
-                                data-handler="{{ $h->claimed_by ?? '' }}">
+                                data-handler="{{ trim((string) ($h->claimed_by ?? '')) }}">
                                 <td class="c-chk">
                                     @if ($canSelect)<input type="checkbox" class="chkLine" value="{{ $checkboxVal }}">@endif
                                 </td>
@@ -541,8 +541,9 @@
                                     <div class="manage">
                                     @if ($h->type === 'external' || $h->type === 'legacy')
                                         @if ($isClaimed)
-                                            {{-- do_it: มีคนเอาของออกไปทำ (ยังไม่กดรับคืน) --}}
-                                            <button type="button" class="btn-finish-claim" data-po="{{ $h->id }}" data-checkbox="{{ $h->type }}:{{ $h->id }}"><svg class="i" viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></svg>จัดการเสร็จสิ้น</button>
+                                            {{-- do_it: มีคนเอาของออกไปทำ (ยังไม่กดรับคืน)
+                                                 legacy = ชื่อผู้จัดการมาจาก box (ระบบเก่า) -> ปุ่มนี้ commit งานค้างเข้าระบบใหม่ใต้ชื่อคนนั้น --}}
+                                            <button type="button" class="btn-finish-claim" data-po="{{ $h->id }}" data-type="{{ $h->type }}" data-do-by="{{ $h->claimed_by }}" data-checkbox="{{ $h->type }}:{{ $h->id }}"><svg class="i" viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></svg>จัดการเสร็จสิ้น</button>
                                             <div class="muted">เอาไปทำโดย {{ $h->claimed_by ?: '—' }}{{ $h->claimed_at ? ' · ' . \Carbon\Carbon::parse($h->claimed_at)->format('d/m/Y H:i') : '' }}</div>
                                         @elseif ($isFinished)
                                             {{-- ผู้ดูแลกดรับของกลับแล้ว (sus) → พร้อมระบุตำแหน่ง --}}
@@ -908,6 +909,11 @@ document.querySelectorAll('.btn-finish-claim').forEach(btn => {
         };
         if (btn.dataset.internal === '1') {
             postClaimAction(FINISH_INTERNAL_URL, btn.dataset.po, btn, opts, 'internal_id', {}, autoLoc);
+        } else if (btn.dataset.type === 'legacy') {
+            // legacy: ยังไม่มี record ใน po_receives (po_id จริง) — ชื่อผู้จัดการมาจาก box (ระบบเก่า)
+            // กดปุ่มนี้ = commit งานค้างเข้าระบบใหม่ใต้ชื่อคนนั้น (legacyClaim: store_id + do_by)
+            const doBy = btn.dataset.doBy || '';
+            postClaimAction(LEGACY_CLAIM_URL, btn.dataset.po, btn, opts, 'store_id', { do_by: doBy }, autoLoc);
         } else {
             postClaimAction(FINISH_URL, btn.dataset.po, btn, opts, 'po_id', {}, autoLoc);
         }
