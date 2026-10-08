@@ -1245,9 +1245,6 @@ async function searchPO(){
         historyRows = history.rows || [];
         editPONum = data.DocuNo;
 
-        // เช็คเอกสาร PO: แสดง checkbox + โหลดค่าที่เคยติ๊กไว้
-        showDocCheck(data.DocuNo, (data._soInfo && data._soInfo.SONum) || '', data.VendorName || '');
-
         data.ms_podt = data.ms_podt.map(it => {
             const ordered  = parseFloat(it.AppvQty2 || it.GoodQty2 || 0);
             const received = findQtyFromMap(history.qtyMap, normName(it.GoodName));
@@ -1371,6 +1368,8 @@ async function searchPO(){
         data.ms_podt = hasRemaining;
         currentPO = data;
         renderPO(data);
+        // เช็คเอกสาร PO: แสดง checkbox + auto-ติ๊ก (เรียกหลัง renderPO เพื่อให้ค่าติดจริง ไม่ถูกเขียนทับ)
+        showDocCheck(data.DocuNo, (data._soInfo && data._soInfo.SONum) || '', data.VendorName || '');
     }catch(err){
         clearResult();
         $('stateBox').innerHTML = '<div class="icon"></div><span class="err">เชื่อมต่อ server ไม่ได้<br>' + esc(err.message) + '</span>';
