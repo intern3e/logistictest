@@ -234,6 +234,43 @@
         </div>
     </div>
 </div>
+
+<!-- Modal ส่งใหม่เลขบิลเดิม : จ่ายใหม่ที่นี่เลย (assign) หรือ คืนไปหน้าจ่ายงานขนส่ง (return) -->
+<div id="redoModal" class="modal-overlay">
+    <div class="modal-box" style="max-width:460px;">
+        <div class="modal-head">
+            <div class="modal-icon" style="background:#eaf0fc;color:#2853d5;">↻</div>
+            <div>
+                <div class="modal-title">ส่งใหม่เลขบิลเดิม</div>
+                <div class="modal-sub" id="redoLabel"></div>
+            </div>
+        </div>
+
+        <label style="display:flex;gap:10px;align-items:flex-start;border:1px solid var(--border);border-radius:10px;padding:12px 14px;margin-bottom:10px;cursor:pointer;" id="redoOptAssign">
+            <input type="radio" name="redoMode" value="assign" checked style="margin-top:3px;">
+            <div><b style="display:block;">เลือกเองเลย</b><span style="font-size:12.5px;color:var(--muted);">กำหนดผู้รับผิดชอบ วิธีการจัดส่ง และวันที่ไปส่งที่นี่</span></div>
+        </label>
+        <div id="redoFields" style="padding:2px 2px 6px;">
+            <label class="modal-label" for="redoDriver">ผู้รับผิดชอบ (คนขับ)</label>
+            <input type="text" id="redoDriver" list="redoDriverList" placeholder="เลือกหรือพิมพ์ชื่อ (เว้นว่างได้)" autocomplete="off">
+            <datalist id="redoDriverList"></datalist>
+            <label class="modal-label" for="redoTransport" style="margin-top:8px;">วิธีการจัดส่ง</label>
+            <select id="redoTransport" style="width:100%;padding:11px 12px;border:1px solid var(--border);border-radius:8px;font-family:inherit;font-size:14px;margin-bottom:6px;"></select>
+            <label class="modal-label" for="redoDate" style="margin-top:8px;">วันที่ไปส่ง</label>
+            <input type="date" id="redoDate">
+        </div>
+
+        <label style="display:flex;gap:10px;align-items:flex-start;border:1px solid var(--border);border-radius:10px;padding:12px 14px;margin-bottom:6px;cursor:pointer;" id="redoOptReturn">
+            <input type="radio" name="redoMode" value="return" style="margin-top:3px;">
+            <div><b style="display:block;">กลับไปเลือกใหม่ที่หน้าจ่ายงานขนส่ง</b><span style="font-size:12.5px;color:var(--muted);">คืนงานไปหน้าจ่ายงาน แล้วค่อยเลือกคนขับ/วันที่ที่นั่น</span></div>
+        </label>
+
+        <div class="modal-actions">
+            <button type="button" class="btn-ghost" onclick="closeRedo()">ยกเลิก</button>
+            <button type="button" class="btn-primary" id="redoConfirmBtn" onclick="confirmRedo()">ยืนยันส่งใหม่</button>
+        </div>
+    </div>
+</div>
 @endif
 
 <script>
@@ -248,6 +285,8 @@
     const SEE_ALL   = {{ ($seeAll ?? false) ? 'true' : 'false' }};
     const COLSPAN   = {{ $canSolve ? 7 : 6 }};
     const SALE_OPTIONS = @json($saleOptions ?? []);
+    const DELIVERY_METHODS    = @json($deliveryMethods ?? []);
+    const RESPONSIBLE_PERSONS = @json($responsiblePersons ?? []);
 
     const tbody     = document.getElementById('tableBody');
     const mainTable = document.getElementById('mainTable');
@@ -343,6 +382,10 @@
         if (!CAN_SOLVE) return '';                           // ไม่ใช่ admin -> ไม่มีคอลัมน์จัดการ
         let btns = '';
         if (r.state === 'open'){
+            // ส่งใหม่เลขบิลเดิม (เฉพาะบิล) — เลือก assign/return เหมือนหน้า billreceive
+            if (r.type === 'bill'){
+                btns += '<button type="button" class="btn btn-resend" data-act="resend" data-job="'+esc(r.job_key)+'" onclick="openRedo(\''+escJs(r.job_key)+'\',\''+escJs(r.bill_no)+'\',\''+escJs(r.driver||'')+'\')">ส่งใหม่เลขบิลเดิม</button>';
+            }
             if (r.problem === 'ค้างบิล'){
                 // ค้างบิล: เปิดเอกสารชั่วคราว (เขียนเลขแล้วหายเอง) — ไม่มีบล็อก
                 btns += '<button type="button" class="btn btn-tempdoc" data-act="tempdoc" data-job="'+esc(r.job_key)+'" onclick="openTarget(\'tempdoc\',\''+escJs(r.job_key)+'\',\''+escJs(r.bill_no)+'\')">เปิดเอกสารชั่วคราว</button>';
@@ -457,10 +500,53 @@
             return data;
         }catch(e){ console.error(e); alert('เกิดข้อผิดพลาดในการเชื่อมต่อ'); return false; }
     }
-    async function doResend(jobKey, billNo){
-        if (!confirm('ส่งใหม่ด้วยเลขบิลเดิม '+billNo+' ?\nงานจะถูกคืนไปหน้าจ่ายงานขนส่งเพื่อจ่ายให้คนขับใหม่ (บันทึกว่าเคยผิด 1 ครั้ง)')) return;
-        await postSolve({ job_key:jobKey, mode:'resend' });
+    // ส่งใหม่เลขบิลเดิม -> เปิด modal เลือก assign (จ่ายที่นี่เลย) / return (คืนไปหน้าจ่ายงาน)
+    let redoJob = null;
+    function syncRedoMode(){
+        const m = (document.querySelector('input[name="redoMode"]:checked')||{}).value || 'assign';
+        const a = document.getElementById('redoOptAssign'), rt = document.getElementById('redoOptReturn');
+        a.style.borderColor  = m==='assign' ? 'var(--primary)' : 'var(--border)';
+        a.style.background   = m==='assign' ? 'var(--primary-light)' : '';
+        rt.style.borderColor = m==='return' ? 'var(--primary)' : 'var(--border)';
+        rt.style.background  = m==='return' ? 'var(--primary-light)' : '';
+        document.getElementById('redoFields').style.display = m==='assign' ? 'block' : 'none';
     }
+    function openRedo(jobKey, billNo, driver){
+        redoJob = jobKey;
+        document.getElementById('redoLabel').textContent = 'บิล ' + billNo + (driver ? ' · คนขับเดิม ' + driver : '');
+        document.getElementById('redoDriverList').innerHTML = RESPONSIBLE_PERSONS.map(o => '<option value="'+esc(o)+'">').join('');
+        document.getElementById('redoDriver').value = driver || '';
+        document.getElementById('redoTransport').innerHTML = '<option value="">— เลือกวิธีการจัดส่ง —</option>'
+            + DELIVERY_METHODS.map(o => '<option value="'+esc(o)+'">'+esc(o)+'</option>').join('');
+        const d = new Date(); d.setDate(d.getDate()+1);   // ค่าเริ่มต้น = พรุ่งนี้
+        document.getElementById('redoDate').value = d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
+        const assignRadio = document.querySelector('input[name="redoMode"][value="assign"]');
+        if (assignRadio) assignRadio.checked = true;
+        syncRedoMode();
+        document.getElementById('redoModal').style.display = 'flex';
+    }
+    function closeRedo(){ const m=document.getElementById('redoModal'); if(m)m.style.display='none'; redoJob=null; }
+    async function confirmRedo(){
+        if (!redoJob) return;
+        const mode = (document.querySelector('input[name="redoMode"]:checked')||{}).value || 'assign';
+        const payload = { job_key:redoJob, mode:'resend', redo_mode:mode };
+        if (mode === 'assign'){
+            const driver    = document.getElementById('redoDriver').value.trim();
+            const transport = document.getElementById('redoTransport').value.trim();
+            const date      = document.getElementById('redoDate').value;
+            if (!transport){ alert('กรุณาเลือกวิธีการจัดส่ง'); return; }
+            if (!date){ alert('กรุณาเลือกวันที่ไปส่ง'); return; }
+            if (transport === 'เซลล์ไปส่งเอง' && !driver){ alert('เลือก "เซลล์ไปส่งเอง" กรุณาระบุชื่อเซลล์ที่ไปส่งเอง'); return; }
+            if (transport !== 'เซลล์ไปส่งเอง' && driver && RESPONSIBLE_PERSONS.indexOf(driver) === -1){ alert('กรุณาเลือกผู้รับผิดชอบจากรายการที่มีให้'); return; }
+            Object.assign(payload, { redo_driver:driver, redo_transport:transport, redo_date:date });
+        }
+        const btn = document.getElementById('redoConfirmBtn'); btn.disabled = true;
+        const data = await postSolve(payload, false);
+        btn.disabled = false;
+        if (data){ closeRedo(); search(); }
+    }
+    document.querySelectorAll('input[name="redoMode"]').forEach(r => r.addEventListener('change', syncRedoMode));
+    document.getElementById('redoModal').addEventListener('click', function(e){ if(e.target===this) closeRedo(); });
     async function doUndo(jobKey){
         if (!confirm('ยกเลิกการแก้ไข และกลับไปสถานะ "ยังไม่แก้" ?')) return;
         await postSolve({ job_key:jobKey, mode:'clear' });
@@ -491,8 +577,8 @@
         if (data){ closeTarget(); search(); }
     }
     document.getElementById('targetModal').addEventListener('click', function(e){ if(e.target===this) closeTarget(); });
-    document.addEventListener('keydown', e => { if(e.key==='Escape') closeTarget(); });
-    window.doResend=doResend; window.doUndo=doUndo; window.openTarget=openTarget; window.closeTarget=closeTarget; window.confirmTarget=confirmTarget;
+    document.addEventListener('keydown', e => { if(e.key==='Escape'){ closeTarget(); closeRedo(); } });
+    window.openRedo=openRedo; window.closeRedo=closeRedo; window.confirmRedo=confirmRedo; window.doUndo=doUndo; window.openTarget=openTarget; window.closeTarget=closeTarget; window.confirmTarget=confirmTarget;
     @endif
 
     search();   // โหลดทันที (sale = ของตัวเอง, อื่น ๆ = ทั้งหมด)

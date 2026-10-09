@@ -833,10 +833,12 @@ const Q_LABEL = { auto:'อัตโนมัติ', so:'เลข SO', po:'เ
 function detectQType(q){
     q = (q || '').trim();
     if (!q) return '';
-    if (/^po/i.test(q) || q.includes('-') || /^A\d/i.test(q)) return 'po';     // PO เช่น PO6909-02397, 6910-A0092
-    if (/^so/i.test(q)) return 'so';
+    if (/^po/i.test(q)) return 'po';                                           // ขึ้นต้น PO
+    if (/^so/i.test(q)) return 'so';                                           // ขึ้นต้น SO
     if (/^[a-z]/i.test(q)) return 'bill';                                      // ขึ้นต้นด้วยตัวอักษรอื่น = เลขบิล
-    return 'so';                                                               // ตัวเลข / มี "/" = SO
+    if (/^\d{5,}-/.test(q)) return 'bill';                                     // 5 หลักขึ้นไป + ขีด = เลขบิล (เช่น 46910-01160)
+    if (q.includes('-') || /^A\d/i.test(q)) return 'po';                       // 4 หลัก + ขีด = PO (เช่น 6909-02397, 6910-A0116)
+    return 'so';                                                               // ตัวเลขล้วน / มี "/" = SO
 }
 function currentQType(){
     const mode = document.getElementById('qType').dataset.mode;

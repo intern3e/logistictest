@@ -411,6 +411,73 @@ class InventoryController extends Controller
             return response()->json(['data' => [], 'subs' => [], 'total' => 0, 'page' => 1, 'lastPage' => 1, 'brands' => [], 'locations' => []], 500);
         }
     }
+
+    /**
+     * สินค้าขายดี: เรียงตาม "จำนวนครั้งที่ขายออก" (นับจำนวน transaction type=ขายสินค้าออก ต่อ item_id)
+     * ไม่ใช่ผลรวมจำนวนชิ้นที่ขาย
+     */
+    public function getTopSellingItems(Request $request)
+    {
+        try {
+            $limit = max(1, min(500, (int) $request->input('limit', 200)));
+
+            // นับ "จำนวนครั้ง" ที่ขายออกต่อ item_id — ทำครั้งเดียวแล้ว cache (ข้อมูล transaction เยอะ)
+            //   ใช้ raw rows + plain array (เร็วกว่าการ map ทุกแถวเป็น Collection)
+            $computed = Cache::remember('top_selling_counts', 600, function () {
+                $counts = [];
+                $names  = [];
+                foreach ($this->fetchAllTransactionsRaw() as $r) {
+                    if (($r['transaction_type'] ?? '') !== 'ขายสินค้าออก') continue;
+                    $id = $r['item_id'] ?? '';
+                    if ($id === '') continue;
+                    $counts[$id] = ($counts[$id] ?? 0) + 1;
+                    // เก็บชื่อจาก transaction ไว้เผื่อสินค้าถูกลบไปแล้ว
+                    if (!isset($names[$id]) && !empty($r['item_name'])) {
+                        $names[$id] = $r['item_name'];
+                    }
+                }
+                arsort($counts);   // เรียงจำนวนครั้ง มาก -> น้อย
+                return ['counts' => $counts, 'names' => $names];
+            });
+
+            $top = array_slice($computed['counts'], 0, $limit, true);
+            if (empty($top)) {
+                return response()->json(['data' => [], 'total' => 0]);
+            }
+
+            // ดึงรายละเอียดสินค้า (cache เดิม) แล้ว index ด้วย id เพื่อ lookup เฉพาะที่ติด top
+            $rawItems = Cache::remember('all_items_list', 60, function () {
+                return $this->api('GET', '/items') ?? [];
+            });
+            $itemsById = [];
+            foreach ($rawItems as $it) {
+                $iid = $it['iditem'] ?? $it['item_id'] ?? '';
+                if ($iid !== '') $itemsById[$iid] = $it;
+            }
+
+            $data = [];
+            foreach ($top as $id => $count) {
+                $it = $itemsById[$id] ?? null;
+                $data[] = [
+                    'iditem'     => $id,
+                    'name'       => $it['name'] ?? $it['item_name'] ?? ($computed['names'][$id] ?? $id),
+                    'quantity'   => $it['quantity']  ?? $it['item_quantity']  ?? 0,
+                    'typeitem'   => $it['typeitem']  ?? $it['item_type']      ?? '',
+                    'location'   => $it['location']  ?? $it['item_location']  ?? '',
+                    'brand'      => $it['brand']     ?? $it['item_brand']     ?? '',
+                    'privilege'  => $it['privilege'] ?? $it['item_privilege'] ?? '',
+                    'category'   => $it['category']  ?? $it['item_category']  ?? '',
+                    'sell_count' => $count,
+                ];
+            }
+
+            return response()->json(['data' => $data, 'total' => count($data)]);
+        } catch (\Throwable $e) {
+            Log::error('getTopSellingItems error: ' . $e->getMessage());
+            return response()->json(['data' => [], 'total' => 0], 500);
+        }
+    }
+
     public function addProduct(Request $request)
     {
         $this->guardRole(['admin', 'user']);
@@ -606,6 +673,8 @@ class InventoryController extends Controller
     private function clearTxCache(): void {
         Cache::forget('all_transactions');
         Cache::forget('all_transactions_raw');
+        // หมายเหตุ: ไม่ล้าง 'top_selling_counts' ที่นี่ ปล่อยให้หมดอายุตาม TTL เอง
+        //   (อันดับขายดีเป็นข้อมูลนิ่ง ยอมให้ช้ากว่าความจริงเล็กน้อยเพื่อความเร็ว ไม่ต้องคำนวณใหม่ทุกบิล)
     }
 
     public function getTransactionPage(Request $request)

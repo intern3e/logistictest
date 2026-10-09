@@ -921,4 +921,93 @@ class BillreceiveController extends Controller
             'message' => 'เปลี่ยนเป็นคนขับ "' . $finalDriver . '" / ขนส่ง "' . $finalTransport . '" และบันทึกจัดส่งสำเร็จแล้ว',
         ]);
     }
+
+    /**
+     * ค้างบิล / สินค้าผิด -> เปลี่ยนเป็น "รับสำเร็จ" โดยจ่ายงานใหม่:
+     *   เลือกผู้รับผิดชอบ / วิธีการจัดส่ง / วันที่ไปส่ง
+     *   soft-cancel รอบเดิม (เก็บเป็นประวัติ) แล้วสร้างแถวจ่ายงานใหม่ 1 แถว
+     *   โดย name_pick = ผู้จ่ายงานใหม่ (ผู้ใช้ปัจจุบัน) และตั้งสถานะจัดส่งสำเร็จ + check_name เป็นคนนั้นทันที
+     */
+    public function reSuccess(Request $request)
+    {
+        [$user, $err] = $this->requireEditorApi();
+        if ($err) return $err;
+
+        $validated = $request->validate([
+            'job_key'        => 'required|string',
+            'tx_ids'         => 'required|array|min:1',
+            'tx_ids.*'       => 'integer',
+            'driver_name'    => 'nullable|string|max:255',
+            'transport_name' => 'required|string|max:255',
+            'delivery_date'  => 'required|date',
+        ]);
+
+        [$type, $rawId] = array_pad(explode(':', $validated['job_key'], 2), 2, null);
+        if (!$rawId || !in_array($type, ['bill', 'doc', 'unknown'], true)) {
+            return response()->json(['ok' => false, 'message' => 'รูปแบบงานไม่ถูกต้อง'], 422);
+        }
+        $billid = ($type === 'bill') ? $rawId : null;
+
+        $newDriver    = trim((string) ($validated['driver_name'] ?? ''));
+        $newTransport = trim((string) $validated['transport_name']);
+        $newDate      = $validated['delivery_date'];
+
+        // กติกาเดียวกับหน้าจ่ายงาน (DeliverytrackController@store)
+        if ($newTransport === 'เซลล์ไปส่งเอง' && $newDriver === '') {
+            return response()->json(['ok' => false, 'message' => 'เลือก "เซลล์ไปส่งเอง" กรุณาระบุชื่อเซลล์ที่ไปส่งเองด้วย'], 422);
+        }
+        if ($newTransport !== 'เซลล์ไปส่งเอง' && $newDriver !== ''
+            && !in_array($newDriver, config('delivery.responsible_persons', []), true)) {
+            return response()->json(['ok' => false, 'message' => 'กรุณาเลือกผู้รับผิดชอบจากรายการที่มีให้เท่านั้น'], 422);
+        }
+
+        $deliveries = transaction_delivery::whereIn('id', $validated['tx_ids'])->get();
+        if ($deliveries->isEmpty()) {
+            return response()->json(['ok' => false, 'message' => 'ไม่พบรายการจ่ายงานนี้'], 404);
+        }
+
+        $userName  = $this->userName($user);
+        $now       = Carbon::now();
+        $rep       = $deliveries->sortByDesc('time_pick')->first();
+        $oldStatus = (string) ($rep->status ?? '-');
+
+        DB::transaction(function () use ($deliveries, $rep, $userName, $now, $newDriver, $newTransport, $newDate, $oldStatus, $type, $billid, $rawId) {
+            // soft-cancel รอบเดิม (ค้างบิล/สินค้าผิด) -> เก็บเป็นประวัติ
+            foreach ($deliveries as $d) {
+                $d->cancelled_at = $now;
+                $d->cancelled_by = $userName;
+                $d->save();
+            }
+            // สร้างรอบใหม่: มีคนจ่ายงานใหม่กับบิลนี้ + รับสำเร็จโดยคนนั้นทันที
+            transaction_delivery::create([
+                'bill_id'        => $rep->bill_id,
+                'name_pick'      => $userName,            // ผู้จ่ายงานใหม่ = ผู้ใช้ปัจจุบัน
+                'time_pick'      => $now,
+                'delivery_date'  => $newDate,
+                'transport_name' => $newTransport,
+                'driver_name'    => $newDriver !== '' ? $newDriver : null,
+                'status'         => self::DELI_STATUS_OK, // จัดส่งสำเร็จ
+                'check_name'     => $userName,
+                'check_time'     => $now,
+                'note'           => 'จ่ายงานใหม่+รับสำเร็จ (เดิม: ' . $oldStatus . ') จ่ายให้ '
+                                    . ($newDriver ?: '-') . ' / ' . $newTransport
+                                    . ' วันที่ ' . Carbon::parse($newDate)->format('d/m/Y')
+                                    . ' โดย ' . $userName,
+                'id_transport'   => $rep->id_transport,
+            ]);
+            // อัปเดตไส้ในบิล/เอกสาร -> จัดส่งสำเร็จ
+            if ($type === 'bill') {
+                DB::table('tblbill')->where('billid', $billid)->update(['statusdeli' => self::DELI_STATUS_OK]);
+            } elseif ($type === 'doc') {
+                DB::table('docbills')->where('doc_id', $rawId)->update(['statusdeli' => self::DELI_STATUS_OK]);
+            }
+        });
+
+        Log::info("billreceive.reSuccess {$validated['job_key']} ({$oldStatus}) -> OK · {$newDriver}/{$newTransport} {$newDate} by {$userName}");
+        return response()->json([
+            'ok'      => true,
+            'message' => 'จ่ายงานใหม่ให้ ' . ($newDriver ?: $newTransport) . ' วันที่ '
+                       . Carbon::parse($newDate)->format('d/m/Y') . ' และบันทึกรับสำเร็จแล้ว',
+        ]);
+    }
 }

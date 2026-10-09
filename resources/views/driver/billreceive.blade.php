@@ -375,6 +375,26 @@ a { color: inherit; text-decoration: none; }
   </div>
 </div>
 
+<!-- Modal เปลี่ยนเป็นสำเร็จ (ค้างบิล/สินค้าผิด -> จ่ายงานใหม่ + รับสำเร็จ) -->
+<div id="reSuccessModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:1000;align-items:center;justify-content:center;padding:16px;">
+  <div style="background:#fff;border-radius:14px;padding:22px;width:min(94vw,440px);box-shadow:0 20px 50px rgba(0,0,0,.3);">
+    <div style="font-weight:700;font-size:17px;margin-bottom:4px;">เปลี่ยนเป็นสำเร็จ (จ่ายงานใหม่)</div>
+    <div id="reSuccessLabel" style="color:#64748b;font-size:12.5px;margin-bottom:16px;line-height:1.5;"></div>
+    <label style="display:block;font-size:12.5px;font-weight:700;color:#64748b;margin-bottom:6px;">ผู้รับผิดชอบ (คนขับ)</label>
+    <input type="text" id="reSuccessDriver" list="reSuccessDriverList" autocomplete="off" placeholder="เลือกหรือพิมพ์ชื่อ (เว้นว่างได้)" style="width:100%;padding:10px 12px;border:1px solid #dee2e6;border-radius:8px;font-family:inherit;font-size:14px;margin-bottom:12px;">
+    <datalist id="reSuccessDriverList"></datalist>
+    <label style="display:block;font-size:12.5px;font-weight:700;color:#64748b;margin-bottom:6px;">วิธีการจัดส่ง (ขนส่ง)</label>
+    <select id="reSuccessTransport" style="width:100%;padding:10px 12px;border:1px solid #dee2e6;border-radius:8px;font-family:inherit;font-size:14px;margin-bottom:12px;"></select>
+    <label style="display:block;font-size:12.5px;font-weight:700;color:#64748b;margin-bottom:6px;">วันที่ไปส่ง</label>
+    <input type="date" id="reSuccessDate" style="width:100%;padding:10px 12px;border:1px solid #dee2e6;border-radius:8px;font-family:inherit;font-size:14px;margin-bottom:10px;">
+    <div style="font-size:12px;color:#94a3b8;margin-bottom:16px;">* ยืนยันแล้วจะจดเป็นการจ่ายงานใหม่กับบิลนี้ และบันทึก "จัดส่งสำเร็จ" โดยผู้ใช้ปัจจุบันทันที</div>
+    <div style="display:flex;gap:10px;justify-content:flex-end;">
+      <button type="button" class="act" onclick="closeReSuccess()">ยกเลิก</button>
+      <button type="button" class="act ok" id="reSuccessConfirmBtn" onclick="confirmReSuccess()">ยืนยัน (บันทึกสำเร็จ)</button>
+    </div>
+  </div>
+</div>
+
 <!-- Modal ส่งใหม่: จ่ายใหม่ที่นี่เลย หรือ คืนไปเลือกใหม่ที่หน้าจ่ายงานขนส่ง -->
 <div class="modal-overlay" id="redoModal">
   <div class="modal-box" style="max-width:460px;position:relative;">
@@ -425,6 +445,7 @@ a { color: inherit; text-decoration: none; }
 const DATA_URL    = "{{ route('billreceive.data') }}";
 const CONFIRM_URL = "{{ route('billreceive.confirm') }}";
 const CHANGE_URL  = "{{ route('billreceive.changeDriver') }}";
+const RESUCCESS_URL = "{{ route('billreceive.reSuccess') }}";
 const CSRF = document.querySelector('meta[name="csrf-token"]').content;
 const CAN_EDIT = {{ ($canEdit ?? false) ? 'true' : 'false' }};   // admin/store/accounting = รับเข้า/เปลี่ยนคนขับได้
 const DELIVERY_METHODS    = @json($deliveryMethods ?? []);
@@ -652,10 +673,10 @@ function render(){
     } else if(received){
       // รับเข้าแล้ว -> แสดงผลตามสถานะ + ให้กลับมากด "สำเร็จ" ได้ (เช่น ค้างบิล/สินค้าผิด -> เปลี่ยนเป็นสำเร็จภายหลัง)
       const noteLine = (r.note && (si.cls==='wrong' || si.cls==='hold')) ? ` · ${esc(r.note)}` : '';
-      // "เปลี่ยนเป็นสำเร็จ" แสดงเฉพาะงานที่ค้างบิลเท่านั้น
-      const canReSuccess = (((r.status||'').trim()) === 'ค้างบิล');
+      // "เปลี่ยนเป็นสำเร็จ" แสดงกับงานที่ค้างบิล และ สินค้าผิด (จ่ายงานใหม่ + รับสำเร็จ)
+      const canReSuccess = ['ค้างบิล','สินค้าผิด'].includes(((r.status||'').trim()));
       actions = `<div class="job-result ${si.cls}">✓ ${esc(si.txt)} · ${esc(r.check_name||'-')}${r.check_time?' · '+esc(r.check_time):''}${noteLine}</div>`
-        + ((CAN_EDIT && canReSuccess) ? `<button type="button" class="act ok" onclick="armClick(this,${i},'ok')">เปลี่ยนเป็นสำเร็จ</button>` : '');
+        + ((CAN_EDIT && canReSuccess) ? `<button type="button" class="act ok" onclick="openReSuccess(${i})" title="จ่ายงานใหม่ (เลือกคนขับ/วันส่ง/ขนส่ง) แล้วบันทึกรับสำเร็จ">เปลี่ยนเป็นสำเร็จ</button>` : '');
     } else if(redispatched){
       // งานต้นทางที่ถูกจ่ายใหม่ไปวันอื่นแล้ว -> ไม่มีปุ่ม แสดงว่าย้ายไปวันไหน
       actions = `<div class="job-redispatched">↻ จ่ายใหม่ไปวันที่ ${esc(r.redispatched_to)}</div>`;
@@ -926,6 +947,57 @@ async function confirmChangeDriver(){
   finally{ btn.disabled = false; }
 }
 document.getElementById('changeModal').addEventListener('click', function(e){ if(e.target===this) closeChangeDriver(); });
+
+/* ===== เปลี่ยนเป็นสำเร็จ (ค้างบิล/สินค้าผิด -> จ่ายงานใหม่ + รับสำเร็จ) ===== */
+let reSuccessIdx = null;
+function openReSuccess(i){
+  if(!CAN_EDIT) return;
+  const r = currentRows[i];
+  if(!r) return;
+  reSuccessIdx = i;
+  document.getElementById('reSuccessLabel').innerHTML =
+    `บิล <b>${esc(r.bill_no||'-')}</b> · สถานะเดิม <b>${esc((r.status||'-'))}</b><br>คนขับเดิม: <b>${esc(r.driver_name||'-')}</b> · ขนส่งเดิม: <b>${esc(r.transport_name||'-')}</b>`;
+  document.getElementById('reSuccessDriverList').innerHTML = RESPONSIBLE_PERSONS.map(o => `<option value="${esc(o)}">`).join('');
+  document.getElementById('reSuccessDriver').value = r.driver_name || '';
+  // ขนส่ง: ค่าเดิมเป็นค่าเริ่มต้นถ้ามี
+  const cur = (r.transport_name||'').trim();
+  const methods = DELIVERY_METHODS.slice();
+  if(cur && methods.indexOf(cur) === -1) methods.unshift(cur);
+  document.getElementById('reSuccessTransport').innerHTML = '<option value="">— เลือกวิธีการจัดส่ง —</option>'
+    + methods.map(o => `<option value="${esc(o)}" ${o===cur?'selected':''}>${esc(o)}</option>`).join('');
+  // วันที่ไปส่ง: ค่าเริ่มต้น = วันนี้
+  document.getElementById('reSuccessDate').value = new Date().toISOString().split('T')[0];
+  document.getElementById('reSuccessModal').style.display = 'flex';
+}
+function closeReSuccess(){ document.getElementById('reSuccessModal').style.display = 'none'; reSuccessIdx = null; }
+document.getElementById('reSuccessModal').addEventListener('click', function(e){ if(e.target===this) closeReSuccess(); });
+async function confirmReSuccess(){
+  if(reSuccessIdx === null) return;
+  const r = currentRows[reSuccessIdx];
+  const driver    = document.getElementById('reSuccessDriver').value.trim();
+  const transport = document.getElementById('reSuccessTransport').value.trim();
+  const date      = document.getElementById('reSuccessDate').value;
+  if(!transport){ toast('กรุณาเลือกวิธีการจัดส่ง', true); return; }
+  if(!date){ toast('กรุณาเลือกวันที่ไปส่ง', true); return; }
+  if(transport === 'เซลล์ไปส่งเอง' && !driver){ toast('เลือก "เซลล์ไปส่งเอง" กรุณาระบุชื่อเซลล์ที่ไปส่งเอง', true); return; }
+  if(transport !== 'เซลล์ไปส่งเอง' && driver && RESPONSIBLE_PERSONS.indexOf(driver) === -1){
+    toast('กรุณาเลือกผู้รับผิดชอบจากรายการที่มีให้', true); return;
+  }
+  const btn = document.getElementById('reSuccessConfirmBtn'); btn.disabled = true;
+  try{
+    const res = await fetch(RESUCCESS_URL, {
+      method:'POST',
+      headers:{'Content-Type':'application/json','Accept':'application/json','X-Requested-With':'XMLHttpRequest','X-CSRF-TOKEN':CSRF},
+      body: JSON.stringify({ job_key:r.job_key, tx_ids:r.tx_ids, driver_name:driver, transport_name:transport, delivery_date:date })
+    });
+    const data = await res.json().catch(()=>null);
+    if(!res.ok || !data || !data.ok){ toast((data&&data.message)||'บันทึกไม่สำเร็จ', true); btn.disabled=false; return; }
+    toast(data.message || 'จ่ายงานใหม่ + บันทึกรับสำเร็จแล้ว');
+    closeReSuccess();
+    loadData();
+  }catch(e){ toast('ผิดพลาด: '+e.message, true); }
+  finally{ btn.disabled = false; }
+}
 
 document.getElementById('btnSearch').addEventListener('click', doSearch);
 document.getElementById('btnClear').addEventListener('click', ()=>{

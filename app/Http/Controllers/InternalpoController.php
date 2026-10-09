@@ -517,8 +517,9 @@ private function hydrateLegacyPageItems(\Illuminate\Support\Collection $lightIte
 
                 $finished = [];
                 foreach ($affectedPoIds as $poId) {
-                    $total   = internal_poline::where('internal_id', $poId)->count();
-                    $pickedN = internal_poline::where('internal_id', $poId)->whereNotNull('picked_at')->count();
+                    // นับเฉพาะไส้ในที่ยังไม่ถูกยกเลิก (active) — ไส้ในที่ยกเลิกไม่นับรวมในการปิดงาน
+                    $total   = internal_poline::where('internal_id', $poId)->whereNull('cancelled_at')->count();
+                    $pickedN = internal_poline::where('internal_id', $poId)->whereNull('cancelled_at')->whereNotNull('picked_at')->count();
                     if ($total > 0 && $pickedN === $total) {
                         $head = internal_po::where('internal_id', $poId)
                             ->where('status', internal_po::ST_PENDING)

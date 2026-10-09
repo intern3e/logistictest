@@ -407,6 +407,11 @@
         $cancel   = $h->status === \App\Models\internal_po::ST_CANCEL;
         $cls      = $cancel ? 'cancelled' : (!$todo ? 'done' : '');
         $lines    = $h->lines ?? collect();
+        // หัว PO ที่ยังไม่ถูกยกเลิก (รอดำเนินการ/จัดเสร็จ): ซ่อนไส้ในที่ถูกยกเลิก ไม่ให้แสดง
+        //   (ดูประวัติใครยกเลิกได้จากการกดเลข PO) ; ในมุมมอง "ยกเลิก" (ทั้งใบ) ยังแสดงครบ
+        if (!$cancel) {
+            $lines = collect($lines)->filter(fn ($l) => empty($l->cancelled_at))->values();
+        }
     @endphp
     @forelse ($lines as $line)
         @php

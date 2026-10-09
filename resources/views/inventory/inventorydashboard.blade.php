@@ -257,6 +257,7 @@
       <select id="sPriv" onchange="applyFilter()"><option value="">ทุกบริษัท</option><option value="3E">3E</option><option value="3IN">3IN</option><option value="3EM">3EM</option><option value="3EL">3EL</option><option value="HD">HD</option><option value="EP">EP</option><option value="3P">3P</option><option value="AE&T">AE&T</option></select>
       <select id="sType" onchange="applyFilter()"><option value="">ทุกประเภท</option><option value="คลัง">คลัง</option><option value="ทรัพย์สินบริษัท">ทรัพย์สินบริษัท</option></select>
       <button class="btn btn-clr" onclick="clearFilter()">ล้างตัวกรอง</button>
+      <button class="btn" id="btnTop200" style="background:#f59e0b;color:#fff" onclick="toggleTop200()">Top 200 ขายดี</button>
     </div>
   </div>
   <div class="tbl-wrap">
@@ -320,6 +321,8 @@ let uBrands=[],uLocs=[],products=[],subs={},filtered=[],pg=1,totalItems=0;
 const PG=50;
 let exMap={},openSubKey=null;
 let filterTimeout=null;
+let topMode=false;   // true = กำลังแสดงสินค้าขายดี (Top 200) เรียงตามจำนวนครั้งที่ขาย
+let loadSeq=0;       // กันผลโหลดเก่า (async) มา render ทับผลใหม่ (เช่น กด Top200 ระหว่างโหลดปกติ)
 let currentFilters={id:'',name:'',brand:'',location:'',priv:'',type:''};
 let progressInterval = null;
 let isEditingRow = false; // true ขณะกำลังเพิ่ม/แก้ไขแถว เพื่อกัน auto-refresh ทับข้อมูลที่กำลังพิมพ์
@@ -390,6 +393,7 @@ function debounceFilter(){
 }
 
 async function loadPage(page=1,showLoader=true){
+  const seq=++loadSeq;
   if(showLoader) showOv();
   try{
     const params=new URLSearchParams({
@@ -402,14 +406,17 @@ async function loadPage(page=1,showLoader=true){
       priv:currentFilters.priv||'',
       type:currentFilters.type||''
     });
-    
+
     const res=await API.get('/api/items/paged?'+params.toString());
-    
+    if(seq!==loadSeq) return;   // มีการโหลดใหม่แทรกเข้ามา -> ทิ้งผลเก่า ไม่ render ทับ
+
+    topMode=false;              // โหลดปกติ -> ออกจากโหมดขายดี
+    setTop200BtnActive(false);
     products=res.data||[];
     subs=res.subs||{};
     totalItems=res.total||0;
     pg=res.page||1;
-    
+
     render();
   }catch(e){
     console.error('Error loading data:',e);
@@ -434,8 +441,42 @@ function applyFilter(){
 function clearFilter(){
   ['sId','sName','sBrand','sLoc','sPriv','sType'].forEach(id=>document.getElementById(id).value='');
   currentFilters={id:'',name:'',brand:'',location:'',priv:'',type:''};
+  topMode=false;
+  setTop200BtnActive(false);
   pg=1;
   loadPage(1,true);
+}
+
+function setTop200BtnActive(on){
+  const b=document.getElementById('btnTop200');
+  if(!b) return;
+  if(on){ b.textContent='← กลับรายการปกติ'; b.style.background='#6b7280'; }
+  else  { b.textContent='Top 200 ขายดี';     b.style.background='#f59e0b'; }
+}
+
+function toggleTop200(){
+  if(topMode){ clearFilter(); return; }  // ออกจากโหมดขายดี -> กลับรายการปกติ
+  loadTop200();
+}
+
+async function loadTop200(){
+  const seq=++loadSeq;
+  showOv('กำลังจัดอันดับสินค้าขายดี...');
+  try{
+    const res=await API.get('/api/items/top-selling?limit=200');
+    if(seq!==loadSeq) return;   // มีการโหลดใหม่แทรกเข้ามา -> ทิ้งผลเก่า
+    products=res.data||[];
+    subs={};
+    totalItems=products.length;
+    pg=1;
+    topMode=true;
+    setTop200BtnActive(true);
+    render();
+  }catch(e){
+    console.error('Error loading top-selling:',e);
+    toast('โหลดสินค้าขายดีล้มเหลว: '+e.message,true);
+  }
+  hideOv();
 }
 
 function render(){
@@ -457,21 +498,23 @@ function render(){
     const tr=document.createElement('tr');
     tr.dataset.pid=key;
     
-    const expBtn=hasSub?`<button class="expand-btn${isExp?' open':''}" onclick="toggleExp('${ej(key)}',this)">&#9658;</button>`:`<span style="display:inline-block;width:24px;margin-right:6px"></span>`;
-    const addSub=CAN_ADD?`<button class="add-sub-btn" onclick="toggleSubForm('${ej(key)}')" title="เพิ่มรายการย่อย">+</button>`:'';
-    
-    let h=`<td><div class="id-cell">${expBtn}${addSub}<strong>${item.iditem}</strong></div></td><td><span class="name-link" onclick="openTx('${ej(item.iditem)}','${ej(item.name)}')">${item.name}</span></td><td><strong>${parseInt(item.quantity)||0}</strong></td><td>${item.brand||'-'}</td><td>${item.location||'-'}</td><td><div class="badge-wrap">${tBadge(item.typeitem)}${pBadge(item.privilege)}${cBadge(item.category)}</div></td>`;
-    
+    const expBtn=(hasSub&&!topMode)?`<button class="expand-btn${isExp?' open':''}" onclick="toggleExp('${ej(key)}',this)">&#9658;</button>`:`<span style="display:inline-block;width:24px;margin-right:6px"></span>`;
+    const addSub=(CAN_ADD&&!topMode)?`<button class="add-sub-btn" onclick="toggleSubForm('${ej(key)}')" title="เพิ่มรายการย่อย">+</button>`:'';
+    const rank=topMode?`<span class="badge" style="background:#f59e0b;color:#fff;margin-right:6px">#${i+1}</span>`:'';
+    const sellBadge=(topMode&&item.sell_count!=null)?` <span class="badge b-hd" title="จำนวนครั้งที่ขายออก">ขาย ${item.sell_count} ครั้ง</span>`:'';
+
+    let h=`<td><div class="id-cell">${rank}${expBtn}${addSub}<strong>${item.iditem}</strong></div></td><td><span class="name-link" onclick="openTx('${ej(item.iditem)}','${ej(item.name)}')">${item.name}</span>${sellBadge}</td><td><strong>${parseInt(item.quantity)||0}</strong></td><td>${item.brand||'-'}</td><td>${item.location||'-'}</td><td><div class="badge-wrap">${tBadge(item.typeitem)}${pBadge(item.privilege)}${cBadge(item.category)}</div></td>`;
+
     if(ROLE!=='viewer'){
       let btns='';
-      if(CAN_EDIT) btns=`<button class="btn btn-edit" onclick="editRow(${i})">แก้ไข</button><button class="btn btn-del" onclick="delRow(${i})">ลบ</button>`;
+      if(CAN_EDIT&&!topMode) btns=`<button class="btn btn-edit" onclick="editRow(${i})">แก้ไข</button><button class="btn btn-del" onclick="delRow(${i})">ลบ</button>`;
       h+=`<td><div class="act-btns">${btns}</div></td>`;
     }
     
     tr.innerHTML=h;
     tb.appendChild(tr);
-    
-    if(CAN_ADD){
+
+    if(CAN_ADD&&!topMode){
       const ftr=document.createElement('tr');
       ftr.className='sub-form-row'+(isOpen?'':' hide');
       ftr.dataset.sf=key;
@@ -503,10 +546,18 @@ function render(){
 }
 
 function renderPg(){
-  const tot=Math.max(1,Math.ceil(totalItems/PG));
   const el=document.getElementById('paging');
   el.innerHTML='';
-  
+
+  if(topMode){
+    const s=document.createElement('span');
+    s.className='pg-info';
+    s.textContent=`สินค้าขายดี ${totalItems} อันดับ (เรียงตามจำนวนครั้งที่ขายออก)`;
+    el.appendChild(s);
+    return;
+  }
+
+  const tot=Math.max(1,Math.ceil(totalItems/PG));
   if(tot<=1) return;
   
   if(pg>1){
@@ -621,12 +672,14 @@ function isBusyEditingItems(){
 function requestItemsSilentRefresh(){
   clearTimeout(itemsRefreshDebounce);
   itemsRefreshDebounce = setTimeout(() => {
+    if (topMode) return;   // โหมดขายดีเป็นมุมมองอิสระ ไม่ให้ refresh ทับ
     if (isBusyEditingItems()) { itemsRefreshPending = true; return; }
     loadPage(pg, false);
   }, 300);
 }
 
 function flushItemsPendingRefresh(){
+  if (topMode) return;
   if (!itemsRefreshPending || isBusyEditingItems()) return;
   itemsRefreshPending = false;
   loadPage(pg, false);

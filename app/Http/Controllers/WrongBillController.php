@@ -66,7 +66,11 @@ class WrongBillController extends Controller
 
         return view('sale.dashboardwrong', compact(
             'creator', 'autoLoad', 'canSolve', 'saleOptions', 'isSale', 'seeAll'
-        ) + ['loginName' => $creator]);
+        ) + [
+            'loginName'          => $creator,
+            'deliveryMethods'    => config('delivery.methods', []),
+            'responsiblePersons' => config('delivery.responsible_persons', []),
+        ]);
     }
 
     /**
@@ -500,6 +504,12 @@ class WrongBillController extends Controller
             'job_key'  => 'required|string',
             'mode'     => 'required|string|in:resend,changebill,tempdoc',
             'target'   => 'nullable|string|max:100',
+            // ส่งใหม่เลขบิลเดิม: เลือกวิธี (เหมือนหน้า billreceive)
+            //   return = คืนไปหน้าจ่ายงานขนส่ง, assign = จ่ายใหม่ที่นี่เลย (คนขับ/ขนส่ง/วันที่)
+            'redo_mode'      => 'nullable|string|in:return,assign',
+            'redo_driver'    => 'nullable|string|max:255',
+            'redo_transport' => 'nullable|string|max:255',
+            'redo_date'      => 'nullable|date',
         ]);
 
         [$type, $rawId] = array_pad(explode(':', $validated['job_key'], 2), 2, null);
@@ -519,15 +529,38 @@ class WrongBillController extends Controller
 
         // หมายเหตุ: ปิดการ "ยกเลิกการแก้ไข" (mode=clear) แล้ว — แก้ไปแล้วย้อนกลับไม่ได้
 
-        // ── ส่งใหม่เลขบิลเดิม (ของผิด) : soft-cancel รอบที่ผิด คืนงานไปหน้าจ่ายงาน ──
+        // ── ส่งใหม่เลขบิลเดิม (ของผิด/ค้างบิล) : soft-cancel รอบเดิม แล้ว ──
+        //   - return (ค่าเดิม): คืนงานไปหน้าจ่ายงานขนส่ง ให้เลือกคนขับ/วันใหม่ที่นั่น
+        //   - assign: จ่ายงานใหม่ที่นี่เลย (ผู้รับผิดชอบ / วิธีการจัดส่ง / วันที่ไปส่ง) -> สร้างแถวจ่ายงานใหม่ทันที
         if ($validated['mode'] === 'resend') {
             if ($type !== 'bill') {
                 return response()->json(['ok' => false, 'message' => 'ส่งใหม่เลขบิลเดิมใช้ได้กับบิลเท่านั้น'], 422);
             }
+            $redoMode     = $validated['redo_mode'] ?? 'return';
+            $newDriver    = trim((string) ($validated['redo_driver'] ?? ''));
+            $newTransport = trim((string) ($validated['redo_transport'] ?? ''));
+            $newDate      = $validated['redo_date'] ?? null;
+
+            if ($redoMode === 'assign') {
+                if ($newTransport === '') {
+                    return response()->json(['ok' => false, 'message' => 'กรุณาเลือกวิธีการจัดส่ง'], 422);
+                }
+                if (!$newDate) {
+                    return response()->json(['ok' => false, 'message' => 'กรุณาเลือกวันที่ไปส่ง'], 422);
+                }
+                if ($newTransport === 'เซลล์ไปส่งเอง' && $newDriver === '') {
+                    return response()->json(['ok' => false, 'message' => 'เลือก "เซลล์ไปส่งเอง" กรุณาระบุชื่อเซลล์ที่ไปส่งเองด้วย'], 422);
+                }
+                if ($newTransport !== 'เซลล์ไปส่งเอง' && $newDriver !== ''
+                    && !in_array($newDriver, config('delivery.responsible_persons', []), true)) {
+                    return response()->json(['ok' => false, 'message' => 'กรุณาเลือกผู้รับผิดชอบจากรายการที่มีให้เท่านั้น'], 422);
+                }
+            }
+
             $soIds = Bill::where('billid', $rawId)->pluck('so_detail_id');
-            DB::transaction(function () use ($soIds, $userName, $now, $item) {
+            DB::transaction(function () use ($soIds, $userName, $now, $item, $redoMode, $newDriver, $newTransport, $newDate) {
                 $deliveries = transaction_delivery::whereIn('bill_id', $soIds)
-                    ->where('status', self::ST_WRONG)->get();
+                    ->whereIn('status', [self::ST_WRONG, self::ST_HOLD])->get();
                 foreach ($deliveries as $d) {
                     $wentDate = $d->delivery_date ? Carbon::parse($d->delivery_date)->format('d/m/Y')
                         : (optional($d->time_pick)->format('d/m/Y') ?: '-');
@@ -536,16 +569,41 @@ class WrongBillController extends Controller
                     $d->check_time   = $now;
                     $d->cancelled_at = $now;
                     $d->cancelled_by = $userName;
-                    $d->note         = 'ของผิด -> ส่งใหม่เลขบิลเดิม (เคยไปวันที่ ' . $wentDate . ' · คนขับ ' . ($d->driver_name ?: '-') . ') สั่งโดย ' . $userName;
+                    $d->note         = 'ของผิด/ค้างบิล -> ส่งใหม่เลขบิลเดิม (เคยไปวันที่ ' . $wentDate . ' · คนขับ ' . ($d->driver_name ?: '-') . ') สั่งโดย ' . $userName
+                                     . ($redoMode === 'assign'
+                                        ? ' · จ่ายใหม่ให้ ' . ($newDriver ?: '-') . ' / ' . $newTransport . ' วันที่ ' . Carbon::parse($newDate)->format('d/m/Y')
+                                        : '');
                     $d->save();
                 }
+
+                // assign: จ่ายงานใหม่ 1 แถวต่อ bill_id (เหมือนหน้าจ่ายงาน) — ข้ามถ้ายังมีงาน active
+                if ($redoMode === 'assign') {
+                    foreach ($deliveries->pluck('bill_id')->filter()->unique() as $billId) {
+                        if (transaction_delivery::where('bill_id', $billId)->exists()) continue;
+                        transaction_delivery::create([
+                            'bill_id'        => $billId,
+                            'name_pick'      => $userName,
+                            'time_pick'      => $now,
+                            'delivery_date'  => $newDate,
+                            'transport_name' => $newTransport,
+                            'driver_name'    => $newDriver !== '' ? $newDriver : null,
+                            'check_name'     => null,
+                            'check_time'     => null,
+                            'status'         => '0',
+                            'note'           => null,
+                        ]);
+                    }
+                }
+
                 $item->solve    = 'ส่งใหม่';
                 $item->solve_by = $userName;
                 $item->solve_at = $now;
                 $item->save();
             });
-            Log::info("wrongbill.solve resend {$validated['job_key']} by {$userName}");
-            return response()->json(['ok' => true, 'message' => 'คืนงานไปหน้าจ่ายงานขนส่งแล้ว — ไปจ่ายให้คนขับใหม่ (เลขบิลเดิม) · จะเคลียร์เมื่อรอบใหม่ส่งสำเร็จ']);
+            Log::info("wrongbill.solve resend({$redoMode}) {$validated['job_key']} by {$userName}");
+            return response()->json(['ok' => true, 'message' => $redoMode === 'assign'
+                ? ('จ่ายงานใหม่ (เลขบิลเดิม) ให้ ' . ($newDriver ?: $newTransport) . ' วันที่ ' . Carbon::parse($newDate)->format('d/m/Y') . ' แล้ว · จะเคลียร์เมื่อรอบใหม่ส่งสำเร็จ')
+                : 'คืนงานไปหน้าจ่ายงานขนส่งแล้ว — ไปจ่ายให้คนขับใหม่ (เลขบิลเดิม) · จะเคลียร์เมื่อรอบใหม่ส่งสำเร็จ']);
         }
 
         // ── เปลี่ยนเลขบิล / เปิดเอกสารชั่วคราว : เก็บเลขปลายทาง ──

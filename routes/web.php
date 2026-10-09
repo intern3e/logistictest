@@ -379,6 +379,7 @@ Route::get('/billreceive/doc-items', [BillreceiveController::class, 'docItems'])
 Route::get('/billreceive/data',     [BillreceiveController::class, 'data'])->name('billreceive.data');
 Route::post('/billreceive/confirm', [BillreceiveController::class, 'confirm'])->name('billreceive.confirm');
 Route::post('/billreceive/change-driver', [BillreceiveController::class, 'changeDriver'])->name('billreceive.changeDriver');
+Route::post('/billreceive/re-success', [BillreceiveController::class, 'reSuccess'])->name('billreceive.reSuccess');
 
 
 use App\Http\Controllers\SoItemController;
@@ -443,7 +444,8 @@ Route::get('/inventory',              [InventoryController::class, 'entry']);
  
 // API: Items
 Route::get('/api/items/pagedata',      [InventoryController::class, 'getPageData']);
-Route::get('/api/items/paged',         [InventoryController::class, 'getPagedItems']); 
+Route::get('/api/items/paged',         [InventoryController::class, 'getPagedItems']);
+Route::get('/api/items/top-selling',   [InventoryController::class, 'getTopSellingItems']);
 Route::post('/api/items',              [InventoryController::class, 'addProduct']);
 Route::post('/api/items/sub',          [InventoryController::class, 'addSubProduct']);
 Route::put('/api/items/{id}',          [InventoryController::class, 'updateProduct']);
