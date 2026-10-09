@@ -491,6 +491,7 @@ class ShelfsaleController extends Controller
                 try {
                     $logiLines = DB::table('internal_poline')   // default connection = ฐาน logistic
                         ->whereIn('internal_id', $stillMissing)
+                        ->whereNull('cancelled_at')   // ไม่เอาไส้ในที่ถูกยกเลิก
                         ->get(['internal_id', 'item_name', 'item_quantity']);
                     foreach ($logiLines as $ln) {
                         $clean = preg_replace('/^PO/i', '', (string) $ln->internal_id);

@@ -910,12 +910,12 @@ class StoreController extends Controller
                 'so_id'         => $h->SO_id,
                 'customer_name' => $h->customer_name,
                 'status'        => $h->status,
-                'items'         => $h->lines->map(fn ($it) => (object) [
+                'items'         => $h->lines->filter(fn ($it) => empty($it->cancelled_at))->map(fn ($it) => (object) [
                     'item_name'     => $it->item_name,
                     'item_quantity' => $it->item_quantity,
                     'so'            => $it->SO_id ?? $h->SO_id,
-                ]),
-                'total_qty'  => $h->lines->sum('item_quantity'),
+                ])->values(),
+                'total_qty'  => $h->lines->filter(fn ($it) => empty($it->cancelled_at))->sum('item_quantity'),
                 'location'   => $h->location,
                 'packed_by'  => $h->pick_by,
                 'packed_at'  => $h->pick_at,
@@ -1445,10 +1445,10 @@ class StoreController extends Controller
 
         $internalHeads = $internalHeadsRaw
             ->map(function ($h) use ($fallbackLinesByPoNum) {
-                $items = $h->lines->map(fn ($it) => (object) [
+                $items = $h->lines->filter(fn ($it) => empty($it->cancelled_at))->map(fn ($it) => (object) [
                     'item_name'     => $it->item_name,
                     'item_quantity' => $it->item_quantity,
-                ]);
+                ])->values();
 
                 if ($items->isEmpty()) {
                     $items = $fallbackLinesByPoNum->get($h->internal_id, collect())
