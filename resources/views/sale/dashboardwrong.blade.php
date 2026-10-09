@@ -140,6 +140,18 @@
         .modal-actions{display:flex;gap:10px;justify-content:flex-end;margin-top:8px}
         .btn-primary{padding:9px 18px;border:none;border-radius:8px;cursor:pointer;font-family:inherit;font-size:14px;font-weight:600;background:var(--primary);color:#fff}
         .btn-primary:hover{filter:brightness(.95)}
+        /* ส่งใหม่ (ให้ UI เหมือนหน้า billreceive) */
+        .redo-opt{display:flex;gap:10px;align-items:flex-start;border:1px solid var(--border);border-radius:10px;padding:12px 14px;margin-bottom:10px;cursor:pointer}
+        .redo-opt:hover{border-color:var(--primary)}
+        .redo-opt.active{border-color:var(--primary);background:var(--primary-light)}
+        .redo-opt input{margin-top:3px;width:16px;height:16px;cursor:pointer;flex-shrink:0}
+        .redo-opt b{display:block;font-size:14px;color:var(--ink)}
+        .redo-opt span{font-size:12.5px;color:var(--muted)}
+        .redo-fields{display:none;padding:4px 2px 6px}
+        .redo-fields.open{display:block}
+        .redo-fields label{display:block;font-size:12.5px;font-weight:700;color:var(--muted);margin:10px 0 6px}
+        .redo-fields input,.redo-fields select{width:100%;height:40px;padding:0 12px;border:1px solid var(--border);border-radius:8px;font-family:inherit;font-size:14px;color:var(--ink);background:#fff;margin-bottom:0}
+        .redo-fields input:focus,.redo-fields select:focus{outline:none;border-color:var(--primary);box-shadow:0 0 0 3px var(--primary-light)}
         @media (max-width:768px){
             .top-banner{padding:10px 16px} main{padding:14px 14px 32px}
             .toolbar input[type=search],.toolbar select{min-width:100%;flex:1 1 100%}
@@ -192,15 +204,14 @@
 
         <div class="table-scroll">
             <div class="table-inner">
-                @php $colspan = $canSolve ? 7 : 6; @endphp
+                @php $colspan = $canSolve ? 6 : 5; @endphp
                 <table id="mainTable" class="is-empty">
                     <thead>
-                        <tr>
+                        <tr id="headRow">
                             <th>เลขบิล / SO</th>
                             <th style="text-align:left;">ลูกค้า</th>
                             <th>ผู้เปิดบิล</th>
                             <th>ปัญหา</th>
-                            <th>วิธีแก้ / ใครแก้ / เมื่อ</th>
                             <th>สถานะ</th>
                             @if($canSolve)<th>จัดการ</th>@endif
                         </tr>
@@ -237,32 +248,29 @@
 
 <!-- Modal ส่งใหม่เลขบิลเดิม : จ่ายใหม่ที่นี่เลย (assign) หรือ คืนไปหน้าจ่ายงานขนส่ง (return) -->
 <div id="redoModal" class="modal-overlay">
-    <div class="modal-box" style="max-width:460px;">
-        <div class="modal-head">
-            <div class="modal-icon" style="background:#eaf0fc;color:#2853d5;">↻</div>
-            <div>
-                <div class="modal-title">ส่งใหม่เลขบิลเดิม</div>
-                <div class="modal-sub" id="redoLabel"></div>
-            </div>
-        </div>
+    <div class="modal-box" style="max-width:460px;position:relative;">
+        <button type="button" aria-label="ปิด" onclick="closeRedo()"
+            style="position:absolute;top:14px;right:14px;width:32px;height:32px;border:none;background:#f1f5f9;color:#475569;border-radius:8px;font-size:18px;line-height:1;cursor:pointer;">&times;</button>
+        <div class="modal-title">ส่งใหม่เลขบิลเดิม</div>
+        <div class="modal-sub" id="redoLabel" style="margin:6px 0 18px;"></div>
 
-        <label style="display:flex;gap:10px;align-items:flex-start;border:1px solid var(--border);border-radius:10px;padding:12px 14px;margin-bottom:10px;cursor:pointer;" id="redoOptAssign">
-            <input type="radio" name="redoMode" value="assign" checked style="margin-top:3px;">
-            <div><b style="display:block;">เลือกเองเลย</b><span style="font-size:12.5px;color:var(--muted);">กำหนดผู้รับผิดชอบ วิธีการจัดส่ง และวันที่ไปส่งที่นี่</span></div>
+        <label class="redo-opt active" id="redoOptAssign">
+            <input type="radio" name="redoMode" value="assign" checked>
+            <div><b>เลือกเองเลย</b><span>กำหนดผู้รับผิดชอบ วิธีการจัดส่ง และวันที่ไปส่งที่นี่</span></div>
         </label>
-        <div id="redoFields" style="padding:2px 2px 6px;">
-            <label class="modal-label" for="redoDriver">ผู้รับผิดชอบ (คนขับ)</label>
+        <div class="redo-fields open" id="redoFields">
+            <label for="redoDriver">ผู้รับผิดชอบ</label>
             <input type="text" id="redoDriver" list="redoDriverList" placeholder="เลือกหรือพิมพ์ชื่อ (เว้นว่างได้)" autocomplete="off">
             <datalist id="redoDriverList"></datalist>
-            <label class="modal-label" for="redoTransport" style="margin-top:8px;">วิธีการจัดส่ง</label>
-            <select id="redoTransport" style="width:100%;padding:11px 12px;border:1px solid var(--border);border-radius:8px;font-family:inherit;font-size:14px;margin-bottom:6px;"></select>
-            <label class="modal-label" for="redoDate" style="margin-top:8px;">วันที่ไปส่ง</label>
+            <label for="redoTransport">วิธีการจัดส่ง</label>
+            <select id="redoTransport"></select>
+            <label for="redoDate">วันที่ไปส่ง</label>
             <input type="date" id="redoDate">
         </div>
 
-        <label style="display:flex;gap:10px;align-items:flex-start;border:1px solid var(--border);border-radius:10px;padding:12px 14px;margin-bottom:6px;cursor:pointer;" id="redoOptReturn">
-            <input type="radio" name="redoMode" value="return" style="margin-top:3px;">
-            <div><b style="display:block;">กลับไปเลือกใหม่ที่หน้าจ่ายงานขนส่ง</b><span style="font-size:12.5px;color:var(--muted);">คืนงานไปหน้าจ่ายงาน แล้วค่อยเลือกคนขับ/วันที่ที่นั่น</span></div>
+        <label class="redo-opt" id="redoOptReturn">
+            <input type="radio" name="redoMode" value="return">
+            <div><b>กลับไปเลือกใหม่ที่หน้าจ่ายงานขนส่ง</b><span>คืนงานไปหน้าจ่ายงาน แล้วค่อยเลือกคนขับ/วันที่ที่นั่น</span></div>
         </label>
 
         <div class="modal-actions">
@@ -283,7 +291,21 @@
     const CSRF      = document.querySelector('meta[name="csrf-token"]').content;
     const CAN_SOLVE = {{ ($canSolve ?? false) ? 'true' : 'false' }};
     const SEE_ALL   = {{ ($seeAll ?? false) ? 'true' : 'false' }};
-    const COLSPAN   = {{ $canSolve ? 7 : 6 }};
+    // แท็บ "แก้ไขแล้ว" (done) ซ่อนคอลัมน์ สถานะ + จัดการ
+    function isDoneView(){ return currentStatus === 'done'; }
+    function currentColspan(){
+        let n = 4;                               // เลขบิล/SO, ลูกค้า, ผู้เปิดบิล, ปัญหา
+        if (!isDoneView()) n += 1;               // สถานะ
+        if (CAN_SOLVE && !isDoneView()) n += 1;  // จัดการ
+        return n;
+    }
+    function renderHead(){
+        const done = isDoneView();
+        let h = '<th>เลขบิล / SO</th><th style="text-align:left;">ลูกค้า</th><th>ผู้เปิดบิล</th><th>ปัญหา</th>';
+        if (!done) h += '<th>สถานะ</th>';
+        if (CAN_SOLVE && !done) h += '<th>จัดการ</th>';
+        const hr = document.getElementById('headRow'); if (hr) hr.innerHTML = h;
+    }
     const SALE_OPTIONS = @json($saleOptions ?? []);
     const DELIVERY_METHODS    = @json($deliveryMethods ?? []);
     const RESPONSIBLE_PERSONS = @json($responsiblePersons ?? []);
@@ -328,8 +350,8 @@
     }
     if (fSale) attachSuggest(fSale, document.getElementById('saleSuggest'), SALE_OPTIONS, () => search());
 
-    function setMsg(text){ if(mainTable) mainTable.classList.add('is-empty'); tbody.innerHTML = '<tr><td colspan="'+COLSPAN+'"><div class="empty-wrapper"><div class="empty-state">'+esc(text)+'</div></div></td></tr>'; }
-    function setLoading(text){ if(mainTable) mainTable.classList.add('is-empty'); tbody.innerHTML = '<tr><td colspan="'+COLSPAN+'"><div class="empty-wrapper"><div class="loading-state"><div class="progress-track"><div class="progress-fill" id="progressFill"></div></div><div class="progress-label" id="progressLabel">'+esc(text)+' 0%</div></div></div></td></tr>'; }
+    function setMsg(text){ if(mainTable) mainTable.classList.add('is-empty'); tbody.innerHTML = '<tr><td colspan="'+currentColspan()+'"><div class="empty-wrapper"><div class="empty-state">'+esc(text)+'</div></div></td></tr>'; }
+    function setLoading(text){ if(mainTable) mainTable.classList.add('is-empty'); tbody.innerHTML = '<tr><td colspan="'+currentColspan()+'"><div class="empty-wrapper"><div class="loading-state"><div class="progress-track"><div class="progress-fill" id="progressFill"></div></div><div class="progress-label" id="progressLabel">'+esc(text)+' 0%</div></div></div></td></tr>'; }
     let progressTimer=null;
     function startProgress(text){ if(progressTimer)clearInterval(progressTimer); let pct=0; progressTimer=setInterval(()=>{ pct+=(90-pct)*0.15+0.6; if(pct>90)pct=90; const f=document.getElementById('progressFill'),l=document.getElementById('progressLabel'); if(f)f.style.width=pct.toFixed(0)+'%'; if(l)l.textContent=text+' '+pct.toFixed(0)+'%'; },120); }
     function stopProgress(){ if(progressTimer){clearInterval(progressTimer);progressTimer=null;} }
@@ -420,22 +442,31 @@
     }
     function rowHtml(r){
         const cust = '<div><b>'+esc(r.customer_name||'-')+'</b></div>'+(r.customer_code?'<div class="solve-info">'+esc(r.customer_code)+'</div>':'');
-        const prob = problemBadge(r)
+        let prob = problemBadge(r)
             + (r.reason?'<div class="reason-cell">'+esc(r.reason)+'</div>':'')
             + (r.wrong_by?'<div class="solve-info">โดย '+esc(r.wrong_by)+(r.wrong_time?' · '+esc(r.wrong_time):'')+'</div>':'')
             + (r.driver?'<div class="solve-info">คนขับ: '+esc(r.driver)+'</div>':'');
-        return '<tr>'
+        // แท็บแก้ไขแล้ว: แสดงวิธีแก้ + ใครเคลียร์/แก้ + เมื่อไหร่ ใต้ปัญหา
+        if (isDoneView() && r.solve_method){
+            prob += '<div class="solve-info" style="margin-top:5px;color:var(--success-dark);font-weight:600;">'+methodLabel(r)
+                + (r.solve_by?' · โดย <b>'+esc(r.solve_by)+'</b>':'')
+                + (r.solve_at?' · '+esc(r.solve_at):'')+'</div>';
+        }
+        let html = '<tr>'
             + '<td class="num bill-cell" style="border-left-color:'+esc(r.border||'#dcdcdc')+';"><div class="ref-link">'+esc(r.bill_no||'-')+'</div>'+(r.so_id?'<div>'+soLink(r.so_id)+'</div>':'')+'</td>'
             + '<td class="cell-left">'+cust+'</td>'
             + '<td>'+(r.emp_name?esc(r.emp_name):'<span class="dash">-</span>')+'</td>'
-            + '<td>'+prob+'</td>'
-            + '<td>'+solveCell(r)+'</td>'
-            + '<td>'+stateBadge(r)+'</td>'
-            + actionsCell(r)
-            + '</tr>';
+            + '<td>'+prob+'</td>';
+        // แท็บ "แก้ไขแล้ว" (done) ไม่แสดงคอลัมน์ สถานะ + จัดการ
+        if (!isDoneView()){
+            html += '<td>'+stateBadge(r)+'</td>' + actionsCell(r);
+        }
+        html += '</tr>';
+        return html;
     }
 
     async function search(){
+        renderHead();   // อัปเดตหัวตารางตามแท็บ (ซ่อน สถานะ/จัดการ ในแท็บแก้ไขแล้ว)
         const params = new URLSearchParams();
         if (fSale) params.set('sale', fSale.value.trim());
         params.set('customer', fCust.value.trim());
@@ -453,7 +484,8 @@
             if (data.counts){
                 document.getElementById('cnt-wrong').textContent = data.counts.wrong;
                 document.getElementById('cnt-hold').textContent  = data.counts.hold;
-                document.getElementById('cnt-done').textContent  = data.counts.done;
+                const cntDoneEl = document.getElementById('cnt-done');
+                if (cntDoneEl && data.counts.done !== undefined) cntDoneEl.textContent = data.counts.done;
                 openCountEl.textContent = data.counts.wrong + data.counts.hold;
             } else {
                 openCountEl.textContent = rows.filter(r => r.state === 'open').length;
@@ -504,12 +536,9 @@
     let redoJob = null;
     function syncRedoMode(){
         const m = (document.querySelector('input[name="redoMode"]:checked')||{}).value || 'assign';
-        const a = document.getElementById('redoOptAssign'), rt = document.getElementById('redoOptReturn');
-        a.style.borderColor  = m==='assign' ? 'var(--primary)' : 'var(--border)';
-        a.style.background   = m==='assign' ? 'var(--primary-light)' : '';
-        rt.style.borderColor = m==='return' ? 'var(--primary)' : 'var(--border)';
-        rt.style.background  = m==='return' ? 'var(--primary-light)' : '';
-        document.getElementById('redoFields').style.display = m==='assign' ? 'block' : 'none';
+        document.getElementById('redoOptAssign').classList.toggle('active', m==='assign');
+        document.getElementById('redoOptReturn').classList.toggle('active', m==='return');
+        document.getElementById('redoFields').classList.toggle('open', m==='assign');
     }
     function openRedo(jobKey, billNo, driver){
         redoJob = jobKey;

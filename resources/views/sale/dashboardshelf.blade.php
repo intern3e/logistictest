@@ -487,6 +487,63 @@
             .ftbl .manage{width:100%}
             .ftbl .manage .btn-view{flex:1}
         }
+        /* ===== ตารางตามแบบ: ชั้นวาง | กำหนดส่ง | สถานะ | SO | PO | Sale | มูลค่า | สินค้า | เช็คเอาท์ | จัดการ ===== */
+        .ftbl th{border-right:0;padding:12px 16px}
+        .ftbl th.th-r{text-align:right}
+        .ftbl td{border-right:0;border-bottom:0;padding:13px 16px}
+        .ftbl tbody tr:nth-child(even){background:#f8fafc}
+        .ftbl tbody tr:hover{background:#eef3fe}
+        .ftbl tbody tr.it > td:first-child{box-shadow:none}
+        .ftbl .dim{color:var(--faint)}
+        .ftbl .t-shelf{color:var(--primary);font-weight:700;white-space:nowrap}
+        .ftbl .t-due{font-weight:700;white-space:nowrap;font-variant-numeric:tabular-nums;color:var(--ink-700)}
+        .ftbl .it.st-over  .t-due{background:var(--danger-light);color:var(--danger-dark);box-shadow:inset 3px 0 0 var(--danger-dark)}
+        .ftbl .it.st-today .t-due{background:var(--warning-light);color:var(--warning-dark);box-shadow:inset 3px 0 0 var(--warning)}
+        .ftbl .it.st-up    .t-due{background:#ecfdf5;color:var(--success-dark);box-shadow:inset 3px 0 0 var(--success)}
+        .ftbl .it.st-done  .t-due{color:var(--muted)}
+        .ftbl .t-due .due-date{display:block;line-height:1.3}
+        .ftbl .t-due .st-txt{display:block;margin-top:2px;font-size:.8rem;font-weight:600;line-height:1.3}
+        .ftbl .t-due .dim{display:none}
+        .ftbl .st-txt{font-weight:700;white-space:nowrap}
+        .ftbl .st-txt.due-overdue{background:none;color:var(--danger-dark);animation:none}
+        .ftbl .st-txt.due-today{background:none;color:var(--warning-dark)}
+        .ftbl .st-txt.due-upcoming{background:none;color:var(--success-dark)}
+        .ftbl .st-txt.due-done{background:none;color:var(--muted)}
+        .ftbl .t-so{white-space:nowrap}
+        .ftbl .t-so .ref-link{color:var(--primary);font-weight:700;border-bottom:0;text-decoration:underline;text-underline-offset:3px}
+        .ftbl .t-po{white-space:nowrap}
+        .ftbl .po-chip{color:var(--primary);font-weight:700;font-variant-numeric:tabular-nums}
+        .ftbl .so-who{display:block;max-width:240px;margin:3px auto 0;font-size:.82rem;color:var(--ink-700);
+                      white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+        .ftbl .t-who .c-who{color:var(--ink-700);font-weight:400;max-width:280px}
+        .ftbl .t-price{text-align:right;white-space:nowrap;font-variant-numeric:tabular-nums;color:var(--ink)}
+        .btn-prod{height:32px;padding:0 12px;border:1px solid var(--border);border-radius:var(--r-field);background:#fff;color:var(--ink-700);
+                  font:inherit;font-size:.86rem;font-weight:600;white-space:nowrap;cursor:pointer;transition:all .15s ease}
+        .btn-prod:hover{border-color:var(--primary);color:var(--primary-dark);background:var(--primary-light)}
+        .ftbl .t-chk{color:var(--muted);font-size:.84rem;white-space:nowrap}
+        .ftbl .co-by{display:inline-flex;flex-direction:column;align-items:center;line-height:1.35}
+        .ftbl .co-by b{color:var(--ink-700);font-weight:700}
+        .ftbl .co-by small{font-size:.76rem;color:var(--faint)}
+        .ftbl .co-by svg{width:14px;height:14px}
+        .ftbl .manage{gap:4px}
+        .btn-o{height:32px;padding:0 12px;border:1px solid;border-radius:var(--r-field);background:#fff;font:inherit;font-size:.84rem;font-weight:600;
+               white-space:nowrap;cursor:pointer;transition:all .15s ease}
+        .btn-o-move{color:var(--primary);border-color:#8aa6ee}
+        .btn-o-move:hover{background:var(--primary-light);border-color:var(--primary)}
+        .btn-o-out{color:var(--danger-dark);border-color:#f19c9c}
+        .btn-o-out:hover{background:var(--danger-light);border-color:var(--danger)}
+        .btn-o:disabled{opacity:.55;cursor:progress}
+        @media (max-width:760px){
+            .ftbl td{padding:0}
+            .ftbl tbody tr:nth-child(even){background:#fff}
+            .ftbl .it .t-due{background:none !important;box-shadow:none !important}
+            .ftbl .t-due .st-txt{display:inline;margin:0 0 0 6px}
+            .ftbl .t-due .due-date{display:inline}
+            .ftbl .t-price{text-align:left}
+            .ftbl .co-by{align-items:flex-start}
+            .ftbl .so-who{margin:2px 0 0;max-width:none;white-space:normal}
+            .ftbl .manage .btn-o{flex:1;height:38px}
+        }
     </style>
 </head>
 <body>
@@ -887,44 +944,47 @@
         if (r.due_days === null || r.due_days === undefined) return { cls:'due-none', txt:'-' };
         if (r.due_days > 0)  return { cls:'due-upcoming', txt:'อีก ' + r.due_days + ' วัน' };
         if (r.due_days === 0) return { cls:'due-today', txt:'ครบวันนี้' };
-        return { cls:'due-overdue', txt:'เลยกำหนด ' + Math.abs(r.due_days) + ' วัน' };
+        return { cls:'due-overdue', txt:'เลย ' + Math.abs(r.due_days) + ' วัน' };
     }
 
+    // คอลัมน์: ชั้นวาง | กำหนดส่ง+สถานะ | SO+Sale/ลูกค้า | PO | มูลค่า | สินค้า | เช็คเอาท์ | จัดการ
     function itemHtml(r, i){
         const d  = dueCell(r);
         const st = rowState(r);
-        const pill = r.is_checkedout
-            ? '<span class="pill due-done">เช็คเอาท์แล้ว</span>'
-            : (d.txt !== '-' ? '<span class="pill ' + d.cls + '">' + esc(d.txt) + '</span>' : '');
+        const status = r.is_checkedout
+            ? '<span class="st-txt due-done">เช็คเอาท์แล้ว</span>'
+            : (d.txt !== '-' ? '<span class="st-txt ' + d.cls + '">' + esc(d.txt) + '</span>' : '<span class="dim">-</span>');
 
-        const who = CAN_MANAGE
-            ? '<span class="c-who" title="Sale ' + esc(r.sale || '-') + '"><span class="k">Sale</span>' + esc(r.sale || '-') + '</span>'
-            : '<span class="c-who" title="' + esc(r.cust_name || '-') + '"><span class="k">ลูกค้า</span>' + esc(r.cust_name || '-') + '</span>';
-        const ship = '<span class="c-ship"><span class="k">ส่ง</span>' + (r.ship_date ? esc(r.ship_date) : '-') + '</span>';
-        const co = (SHOW_CHECKOUT && r.is_checkedout)
-            ? '<span class="c-co">เช็คเอาท์โดย ' + (r.checkout_by ? '<b>' + esc(r.checkout_by) + '</b>' : '— (ระบบเก่า)')
-              + (r.checkout_at ? ' ' + esc(r.checkout_at) : '') + '</span>'
-            : '';
+        const whoTxt = CAN_MANAGE ? (r.sale || '-') : (r.cust_name || '-');
 
-        const productBtn = '<button type="button" class="btn-view" onclick="openProductModal(' + i + ', \'' + escJs(r.po) + '\', \'' + escJs(r.so) + '\')">'
-            + IC_BOX + 'สินค้า <span class="cnt">' + (r.item_count || 0) + '</span></button>';
-        const price = CAN_SEE_PRICE ? '<span class="it-price">' + fmtBaht(r.price) + '<span class="u">฿</span></span>' : '';
+        // เช็คเอาท์: ใคร / เมื่อไร (ยังไม่เช็คเอาท์ = "-")
+        let co = '<span class="dim">-</span>';
+        if (r.is_checkedout) {
+            co = SHOW_CHECKOUT
+                ? '<span class="co-by">' + (r.checkout_by ? '<b>' + esc(r.checkout_by) + '</b>' : 'ระบบเก่า')
+                  + (r.checkout_at ? '<small>' + esc(r.checkout_at) + '</small>' : '') + '</span>'
+                : '<span class="co-by">' + IC_CHECK + 'แล้ว</span>';
+        }
+
+        const productBtn = '<button type="button" class="btn-prod" onclick="openProductModal(' + i + ', \'' + escJs(r.po) + '\', \'' + escJs(r.so) + '\')">'
+            + 'ดูสินค้า (' + (r.item_count || 0) + ')</button>';
 
         const manage = CAN_MANAGE
             ? (r.is_checkedout
                 ? '<span class="done-note">' + IC_CHECK + 'เช็คเอาท์แล้ว</span>'
-                : '<div class="manage"><button type="button" class="btn-view btn-move" onclick="openMove(\'' + escJs(r.po) + '\',\'' + escJs(r.so) + '\')">' + IC_MOVE + 'ย้ายชั้น</button>'
-                  + '<button type="button" class="btn-view btn-checkout" onclick="doCheckout(this,\'' + escJs(r.po) + '\',\'' + escJs(r.so) + '\',' + (r.po_receive_id || 'null') + ')">' + IC_OUT + 'เช็คเอาท์</button></div>')
+                : '<div class="manage"><button type="button" class="btn-o btn-o-move" onclick="openMove(\'' + escJs(r.po) + '\',\'' + escJs(r.so) + '\')">ย้ายชั้น</button>'
+                  + '<button type="button" class="btn-o btn-o-out" onclick="doCheckout(this,\'' + escJs(r.po) + '\',\'' + escJs(r.so) + '\',' + (r.po_receive_id || 'null') + ')">เช็คเอาท์</button></div>')
             : '';
 
         return '<tr class="it st-' + st + (quickFilter !== 'all' && quickFilter !== st ? ' hidden-row' : '') + '" data-st="' + st + '">'
-            + '<td class="t-so" data-label="SO"><span class="c-so">' + soLink(r.so) + '</span></td>'
-            + '<td class="t-po" data-label="PO"><span class="c-po" title="' + esc(r.po || '-') + '">' + esc(r.po || '-') + srcBadge(r) + '</span></td>'
-            + '<td class="t-who" data-label="' + (CAN_MANAGE ? 'Sale' : 'ลูกค้า') + '">' + who + '</td>'
-            + '<td class="t-ship" data-label="วันส่ง">' + ship + '</td>'
-            + '<td class="t-st" data-label="สถานะ">' + pill + (co ? '<div class="t-co">' + co + '</div>' : '') + '</td>'
+            + '<td class="t-shelf" data-label="ชั้นวาง">' + esc(r.shelf || '-') + '</td>'
+            + '<td class="t-due" data-label="กำหนดส่ง / สถานะ"><span class="due-date">' + (r.ship_date ? esc(r.ship_date) : '-') + '</span>' + status + '</td>'
+            + '<td class="t-so" data-label="SO / ' + (CAN_MANAGE ? 'Sale' : 'ลูกค้า') + '">' + soLink(r.so)
+            +   '<span class="so-who" title="' + esc(whoTxt) + '">' + esc(whoTxt) + '</span></td>'
+            + '<td class="t-po" data-label="PO">' + (r.po ? '<span class="po-chip">' + esc(r.po) + '</span>' : '<span class="dim">-</span>') + srcBadge(r) + '</td>'
+            + (CAN_SEE_PRICE ? '<td class="t-price" data-label="มูลค่า">' + fmtBaht(r.price) + '</td>' : '')
             + '<td class="t-prod" data-label="สินค้า">' + productBtn + '</td>'
-            + (CAN_SEE_PRICE ? '<td class="t-price" data-label="มูลค่า">' + price + '</td>' : '')
+            + '<td class="t-chk" data-label="เช็คเอาท์">' + co + '</td>'
             + (CAN_MANAGE ? '<td class="t-manage">' + manage + '</td>' : '')
             + '</tr>';
     }
@@ -948,8 +1008,9 @@
         if (rows.length === 0) return '';
         // ตารางจริง: หัวตารางสีฟ้า + เส้นตาราง (คอลัมน์ตรงกันอัตโนมัติ)
         let html = '<div class="flat-table-wrapper"><div class="ftbl-scroll"><table class="ftbl"><thead><tr>'
-            + '<th>SO</th><th>PO</th><th>' + (CAN_MANAGE ? 'Sale' : 'ลูกค้า') + '</th><th>วันส่ง</th><th>สถานะ</th><th>สินค้า</th>'
-            + (CAN_SEE_PRICE ? '<th>มูลค่า</th>' : '')
+            + '<th>ชั้นวาง</th><th>กำหนดส่ง / สถานะ</th><th>SO / ' + (CAN_MANAGE ? 'Sale' : 'ลูกค้า') + '</th><th>PO</th>'
+            + (CAN_SEE_PRICE ? '<th class="th-r">มูลค่า</th>' : '')
+            + '<th>สินค้า</th><th>เช็คเอาท์</th>'
             + (CAN_MANAGE ? '<th>จัดการ</th>' : '')
             + '</tr></thead><tbody>';
         rows.forEach((r, i) => { html += itemHtml(r, i); });

@@ -39,10 +39,11 @@ class WrongBillController extends Controller
         return ['admin', 'support', 'sale_assistant', 'accounting', 'stock', 'store'];
     }
 
-    /** เฉพาะ admin เท่านั้นที่จัดการได้ (บล็อก/ปลดบล็อก/เตะออก) */
+    /** จัดการได้ (บล็อก/ปลดบล็อก/ส่งใหม่/เคลียร์): เฉพาะ admin หรือผู้ใช้ชื่อ jun */
     private function canManage($user): bool
     {
-        return ($user->role ?? '') === 'admin';
+        if (($user->role ?? '') === 'admin') return true;
+        return strtolower(trim((string) ($user->name ?? ''))) === 'jun';
     }
 
     public function index()
@@ -154,6 +155,7 @@ class WrongBillController extends Controller
             if (!isset($rows[$key])) {
                 $rows[$key] = $this->baseRow('bill', $b->billid, $b->so_id, $b->customer_id, $b->customer_name, $b->sale_name, $b->emp_name);
             }
+            $rows[$key]['_bill_id'] = $b->so_detail_id;   // ใช้ดึง note เดิมของงานที่แก้แล้ว
             $this->applySolve($rows[$key], $b->solve, $b->solve_by, $b->solve_at);
         }
         // 2.3 งานแก้แล้ว (doc)
@@ -162,7 +164,37 @@ class WrongBillController extends Controller
             if (!isset($rows[$key])) {
                 $rows[$key] = $this->baseRow('doc', $doc->doc_id, $doc->so_id ?? '', $doc->id_com, $doc->com_name, $doc->contact_name, $doc->emp_name);
             }
+            $rows[$key]['_bill_id'] = $doc->doc_id;       // doc: bill_id = doc_id
             $this->applySolve($rows[$key], $doc->solve, $doc->solve_by, $doc->solve_at);
+        }
+
+        // งานที่แก้แล้วยังไม่มี note/ผู้แจ้ง -> ดึงจาก transaction_transport เดิมของบิลนั้น (รวมที่ยกเลิกแล้ว)
+        $needNote = [];
+        foreach ($rows as $key => $r) {
+            if (($r['reason'] ?? '') === '' && !empty($r['_bill_id'] ?? null)) {
+                $needNote[(string) $r['_bill_id']][] = $key;
+            }
+        }
+        if (!empty($needNote)) {
+            $noteRows = DB::table('transaction_transport')   // ไม่ผ่าน global scope -> รวมแถวที่ยกเลิกด้วย
+                ->whereIn('bill_id', array_keys($needNote))
+                ->whereIn('status', [self::ST_WRONG, self::ST_HOLD])
+                ->orderByDesc('check_time')
+                ->get(['bill_id', 'note', 'check_name', 'check_time']);
+            $noteByBill = [];
+            foreach ($noteRows as $nr) {
+                $bid = (string) $nr->bill_id;
+                if (!isset($noteByBill[$bid])) $noteByBill[$bid] = $nr;   // อันล่าสุด (เรียง desc)
+            }
+            foreach ($needNote as $bid => $keys) {
+                if (!isset($noteByBill[$bid])) continue;
+                $nr = $noteByBill[$bid];
+                foreach ($keys as $key) {
+                    $rows[$key]['reason'] = (string) ($nr->note ?? '');
+                    if (($rows[$key]['wrong_by'] ?? '') === '')   $rows[$key]['wrong_by']   = (string) ($nr->check_name ?? '');
+                    if (($rows[$key]['wrong_time'] ?? '') === '') $rows[$key]['wrong_time'] = $nr->check_time ? Carbon::parse($nr->check_time)->format('Y-m-d H:i') : '';
+                }
+            }
         }
 
         $rows = collect($rows)->values();

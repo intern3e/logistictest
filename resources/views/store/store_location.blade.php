@@ -102,7 +102,7 @@
         /* ===== ตาราง: หัวตารางสีฟ้า + เส้นตาราง ===== */
         .table-scroll{background:#fff;border:1px solid var(--line);border-radius:var(--r-card);overflow:hidden;box-shadow:var(--shadow)}
         .table-inner{overflow-x:auto;-webkit-overflow-scrolling:touch;width:100%}
-        table{width:100%;min-width:760px;border-collapse:collapse;background:#fff}
+        table{width:100%;min-width:860px;border-collapse:collapse;background:#fff}
         th,td{border-bottom:1px solid var(--border);border-right:1px solid var(--line);padding:11px 14px;text-align:center;font-size:.92rem;vertical-align:middle}
         th:last-child,td:last-child{border-right:0}
         thead th{background:var(--primary);color:#fff;font-weight:700;font-size:.84rem;border-right-color:rgba(255,255,255,.18);border-bottom:0;white-space:nowrap}
@@ -217,7 +217,31 @@
         .items-tbl .nm{text-align:left;font-weight:500}
         .items-tbl .col-fit{width:1%;white-space:nowrap;text-align:right;font-variant-numeric:tabular-nums;font-weight:700}
         .items-modal-empty,.items-modal-loading{padding:34px 10px;text-align:center;color:var(--muted)}
-        .items-modal-loading .spin{width:30px;height:30px;margin:0 auto 10px;border-radius:50%;border:3px solid var(--primary-light);border-top-color:var(--primary);animation:spin .8s linear infinite}
+
+        /* ===== ตัวโหลดข้อมูล (วงแหวนหมุน) ===== */
+        @keyframes ldr{to{transform:rotate(360deg)}}
+        @keyframes ldrRev{to{transform:rotate(-360deg)}}
+        .ld-spin{position:relative;width:var(--ld,92px);height:var(--ld,92px);margin:0 auto}
+        .ld-spin i{position:absolute;border-radius:50%;
+                   -webkit-mask:radial-gradient(farthest-side,transparent calc(100% - var(--w)),#000 calc(100% - var(--w) + 1px));
+                           mask:radial-gradient(farthest-side,transparent calc(100% - var(--w)),#000 calc(100% - var(--w) + 1px))}
+        .ld-spin i:nth-child(1){inset:0;--w:8.5%;background:conic-gradient(from 20deg,rgba(17,24,39,0) 0deg,rgba(17,24,39,.35) 90deg,#111827 250deg,rgba(17,24,39,.15) 330deg,rgba(17,24,39,0) 360deg);filter:blur(2px);animation:ldr 1.15s linear infinite}
+        .ld-spin i:nth-child(2){inset:10%;--w:6%;background:conic-gradient(from 200deg,rgba(17,24,39,0) 0deg,#111827 120deg,rgba(17,24,39,.2) 220deg,rgba(17,24,39,0) 300deg);filter:blur(2.2px);animation:ldrRev 1.6s linear infinite}
+        .ld-spin i:nth-child(3){inset:-11%;--w:3.5%;background:conic-gradient(from 0deg,rgba(17,24,39,0) 0deg,rgba(17,24,39,.35) 60deg,rgba(17,24,39,0) 130deg,rgba(17,24,39,0) 200deg,rgba(17,24,39,.25) 250deg,rgba(17,24,39,0) 300deg);filter:blur(4px);animation:ldr 2.4s linear infinite}
+        .ld-box{display:flex;flex-direction:column;align-items:center;gap:22px;text-align:center}
+        .ld-title{margin-top:26px;font-size:1.6rem;font-weight:600;color:#3f3f46}
+        .ld-sub{margin-top:-12px;font-size:1.1rem;color:#a1a1aa;line-height:1.5;max-width:320px}
+        /* ตัวโหลดทับตาราง: ระหว่างรอข้อมูลสินค้าของแต่ละใบ */
+        .table-scroll{position:relative}
+        .table-loading{position:absolute;inset:0;z-index:20;background:rgba(255,255,255,.94);display:flex;align-items:flex-start;justify-content:center;padding:var(--tl-pad,120px) 16px 24px;border-radius:inherit;transition:opacity .25s,visibility .25s}
+        .table-scroll:has(.table-loading:not(.hide)){min-height:360px}
+        .table-loading.hide{opacity:0;visibility:hidden}
+        .table-loading .ld-title{margin-top:18px;font-size:1.3rem}
+        .table-loading .ld-sub{font-size:1rem}
+        .items-modal-loading{padding:40px 10px 34px}
+        .items-modal-loading .ld-spin{--ld:64px}
+        .items-modal-loading .ld-title{margin-top:10px;font-size:1.1rem}
+        .items-modal-loading .ld-sub{font-size:.9rem}
         @keyframes spin{to{transform:rotate(360deg)}}
 
         /* ===== กล่องยืนยัน / แจ้งเตือน (แทน confirm / alert) ===== */
@@ -269,24 +293,47 @@
 
 
         /* ===== แบบ D: ตารางซ้าย + แผงขึ้นชั้นขวา ===== */
-        .split{display:grid;grid-template-columns:minmax(0,1fr) 400px;gap:14px;align-items:start}
+        /* ===== หน้าต่างระบุตำแหน่ง (แบบเดียวกับหน้าต่างจัดเสร็จ) — id="locModal" เดิม ===== */
+        .split{display:block}
         .split-main{min-width:0}
-        .loc-panel{position:sticky;top:var(--stick-top,162px);background:#fff;border:1px solid var(--line);border-radius:14px;box-shadow:var(--shadow);overflow:hidden;transition:box-shadow .2s}
-        .loc-panel.flash{box-shadow:0 0 0 4px #c7d6fb,var(--shadow)}
-        .lp-head{display:flex;align-items:center;gap:10px;background:var(--primary);color:#fff;padding:14px 16px;font-weight:800;font-size:1.08rem}
-        .lp-head svg{width:20px;height:20px}
-        .lp-head .lp-cnt{margin-left:auto;background:#fff;color:var(--primary);border-radius:999px;padding:1px 12px;font-size:.88rem;font-variant-numeric:tabular-nums}
-        .lp-close{display:none;width:34px;height:34px;border:0;border-radius:8px;background:rgba(255,255,255,.18);color:#fff;align-items:center;justify-content:center}
-        .lp-body{padding:14px 16px 16px}
-        .lp-label{font-size:.8rem;font-weight:700;color:var(--muted);margin:2px 0 6px}
-        .sel-chips{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:12px;max-height:96px;overflow-y:auto}
-        .sel-chip{display:inline-flex;align-items:center;gap:6px;height:28px;padding:0 4px 0 11px;border-radius:999px;background:var(--primary-light);color:var(--primary);font-weight:700;font-size:.82rem;white-space:nowrap}
-        .sel-chip button{width:20px;height:20px;border:0;border-radius:50%;background:#fff;color:var(--primary);display:inline-flex;align-items:center;justify-content:center;font-size:.9rem;line-height:1}
-        .sel-chip button:hover{background:var(--danger);color:#fff}
-        .sel-empty{font-size:.86rem;color:var(--faint);background:var(--page-bg);border:1px dashed var(--border);border-radius:10px;padding:10px 12px;margin-bottom:12px}
-        .loc-panel .hint{margin:0 0 12px}
+        .lp-backdrop{position:fixed;inset:0;z-index:990;background:rgba(15,23,42,.55);opacity:0;visibility:hidden;transition:opacity .15s,visibility .15s}
+        .lp-backdrop.open{opacity:1;visibility:visible}
+        .loc-panel{position:fixed;left:50%;top:50%;z-index:1000;width:min(96vw,580px);max-height:92vh;display:flex;flex-direction:column;background:#fff;border-radius:16px;box-shadow:0 24px 60px rgba(0,0,0,.3);overflow:hidden;
+                   transform:translate(-50%,-48%) scale(.98);opacity:0;visibility:hidden;transition:transform .15s ease-out,opacity .15s,visibility .15s}
+        .loc-panel.open{transform:translate(-50%,-50%);opacity:1;visibility:visible}
+        .lp-head{display:flex;align-items:center;gap:12px;padding:16px 20px;border-bottom:1px solid var(--line)}
+        .lp-ic{width:42px;height:42px;border-radius:11px;flex:none;background:var(--success-light);color:var(--success);display:flex;align-items:center;justify-content:center}
+        .lp-ic svg{width:21px;height:21px;stroke-width:2.4}
+        .lp-title{font-size:1.18rem;font-weight:800}
+        .lp-sub{font-size:.84rem;color:var(--muted)}
+        .lp-close{margin-left:auto;width:34px;height:34px;border:0;border-radius:8px;background:var(--soft);color:var(--muted);display:inline-flex;align-items:center;justify-content:center;flex:none}
+        .lp-close svg{width:16px;height:16px}
+        .lp-close:hover{background:var(--border);color:var(--ink)}
+        .lp-body{padding:16px 20px;overflow-y:auto;min-height:0}
+        .lp-label{font-size:.82rem;font-weight:700;color:var(--muted);margin:10px 0 6px}
+        .lp-label:first-child{margin-top:0}
+        .sel-chips{border:1px solid var(--line);border-radius:12px;overflow:hidden;max-height:170px;overflow-y:auto}
+        .sel-chips[hidden]{display:none}
+        .sel-row{display:grid;grid-template-columns:auto 1fr auto auto;gap:10px;align-items:center;padding:9px 8px 9px 14px;border-bottom:1px solid var(--line);font-size:.9rem}
+        .sel-row:last-child{border-bottom:0}
+        .sel-row b{white-space:nowrap}
+        .sel-row .nm{color:var(--ink-700);min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+        .sel-row .so{font-size:.82rem;font-weight:700;color:var(--primary);white-space:nowrap}
+        .sel-row button{width:26px;height:26px;border:0;border-radius:7px;background:transparent;color:var(--faint);font-size:1rem;line-height:1}
+        .sel-row button:hover{background:var(--danger-light);color:var(--danger)}
+        .loc-panel .hint{margin:10px 0 0}
         .loc-panel .hint:empty{display:none}
         .loc-panel #locSuggest,#recentChips{display:none !important}
+        .lp-foot{padding:14px 20px 18px;border-top:1px solid var(--line);background:var(--page-bg)}
+        /* ปุ่ม "ระบุตำแหน่ง (N)" บนส่วนหัว */
+        .go-loc{flex:none;height:40px;display:inline-flex;align-items:center;gap:8px;padding:0 8px 0 14px;border:0;border-radius:10px;background:var(--success);color:#fff;font-weight:800;font-size:1rem;white-space:nowrap;box-shadow:0 4px 12px rgba(22,163,74,.25);transition:.15s}
+        .go-loc svg{width:17px;height:17px}
+        .go-loc b{min-width:28px;height:28px;padding:0 8px;border-radius:999px;background:#fff;color:var(--success-dark);display:inline-flex;align-items:center;justify-content:center;font-variant-numeric:tabular-nums}
+        .go-loc:hover:not(:disabled){background:var(--success-dark);transform:translateY(-1px)}
+        .go-loc:disabled{background:#e2e8f0;color:var(--muted);box-shadow:none;cursor:not-allowed;opacity:1}
+        .go-loc:disabled b{color:var(--faint)}
+        @keyframes pop{0%{transform:scale(1)}40%{transform:scale(1.08)}100%{transform:scale(1)}}
+        .go-loc.bump{animation:pop .25s ease-out}
         .loc-search{position:relative}
         .loc-search svg{position:absolute;left:13px;top:50%;transform:translateY(-50%);width:17px;height:17px;color:var(--faint)}
         #inpLocation{width:100%;height:44px;padding:0 14px 0 40px;border:1px solid var(--line);border-radius:var(--r-field);background:var(--page-bg);font-size:1rem;font-weight:600;outline:0;transition:.15s}
@@ -295,34 +342,33 @@
         .zone{height:32px;padding:0 12px;border:1px solid var(--line);border-radius:999px;background:#fff;font-size:.85rem;font-weight:700;color:var(--ink-700);transition:.15s}
         .zone:hover{background:var(--soft)}
         .zone.on{background:var(--ink);border-color:var(--ink);color:#fff}
-        .shelf-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;align-content:start;max-height:calc(100vh - 520px);min-height:150px;overflow-y:auto;padding:2px}
+        .shelf-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;align-content:start;max-height:min(300px,34vh);min-height:110px;overflow-y:auto;padding:2px}
         .shelf{height:50px;border:1px solid var(--line);border-radius:9px;background:#fff;font-weight:800;font-size:1rem;color:var(--ink);padding:0 4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;transition:.12s}
         .shelf:hover{border-color:var(--primary);color:var(--primary);background:#f5f8ff}
         .shelf.recent{border-color:#c7d6fb;background:#f5f8ff}
         .shelf.on{background:var(--primary);border-color:var(--primary);color:#fff;box-shadow:0 4px 12px rgba(26,79,214,.3)}
         .shelf-empty{grid-column:1/-1;padding:22px;text-align:center;color:var(--muted);font-size:.9rem}
-        .lp-save{margin-top:14px;width:100%;height:50px;border:0;border-radius:10px;background:var(--success);color:#fff;font-weight:800;font-size:1.04rem;display:flex;align-items:center;justify-content:center;gap:8px;box-shadow:0 4px 14px rgba(22,163,74,.25);transition:.15s}
+        .lp-save{width:100%;height:52px;border:0;border-radius:10px;background:var(--success);color:#fff;font-weight:800;font-size:1.04rem;display:flex;align-items:center;justify-content:center;gap:8px;box-shadow:0 4px 14px rgba(22,163,74,.25);transition:.15s}
         .lp-save svg{width:19px;height:19px;stroke-width:2.6}
         .lp-save:hover{background:var(--success-dark)}
         .lp-save:disabled{background:#cbd5e1;box-shadow:none;cursor:not-allowed}
-        .lp-backdrop{display:none}
         tbody tr[data-stage]:has(.chkLine){cursor:pointer}
         tbody tr:has(.chkLine:checked) td{background:#e3ebfd}
         .po-line{display:flex;align-items:center;gap:6px;justify-content:center}
         .pso{display:flex;flex-direction:column;align-items:center;gap:2px}
-        .btn-view-items.ic{width:28px;padding:0;justify-content:center}
+        td.c-items{white-space:nowrap}
+        td.c-items .btn-view-items{height:34px;padding:0 12px;font-size:.84rem;font-weight:700;color:var(--primary);border-color:#c7d6fb}
+        td.c-items .btn-view-items svg{width:15px;height:15px}
+        .btn-view-items .cnt.loading{color:var(--faint);background:var(--soft)}
+        .btn-view-items .cnt{min-width:20px;height:20px;padding:0 6px;border-radius:999px;background:var(--primary-light);color:var(--primary);font-size:.74rem;font-weight:800;display:inline-flex;align-items:center;justify-content:center}
         .meta-line{font-size:.8rem;color:var(--faint);margin-top:3px;display:flex;flex-wrap:wrap;gap:4px 6px;align-items:center}
         .meta-line .sep{color:var(--border)}
         /* จอไม่กว้าง: แผงกลายเป็นแผ่นเลื่อนขึ้นจากด้านล่าง (กดปุ่มลอย "ระบุตำแหน่ง") */
         @media (min-width:1101px){ #btnMain{display:none !important} }
-        @media (max-width:1100px){
-            .split{grid-template-columns:1fr}
-            .loc-panel{position:fixed;left:0;right:0;bottom:0;top:auto;z-index:300;border-radius:18px 18px 0 0;max-height:92vh;overflow-y:auto;transform:translateY(105%);transition:transform .22s ease-out;box-shadow:0 -10px 40px rgba(15,23,42,.25)}
+        @media (max-width:1000px){ .go-loc{flex:1 1 auto;justify-content:center} }
+        @media (max-width:560px){
+            .loc-panel{left:0;right:0;top:auto;bottom:0;width:auto;border-radius:18px 18px 0 0;transform:translateY(105%)}
             .loc-panel.open{transform:none}
-            .lp-close{display:inline-flex}
-            .lp-backdrop{display:block;position:fixed;inset:0;z-index:290;background:rgba(15,23,42,.5);opacity:0;visibility:hidden;transition:.2s}
-            .lp-backdrop.open{opacity:1;visibility:visible}
-            .shelf-grid{max-height:40vh}
         }
         @media (max-width:560px){ .shelf-grid{grid-template-columns:repeat(3,1fr)} }
 
@@ -331,7 +377,8 @@
         .tools .fld:not(.dd) input{font-size:.92rem}
         .tools .fld:not(.dd) > svg{width:15px;height:15px}
         .tools{flex-wrap:wrap}
-        .tools .dd{flex:0 0 175px}
+        .tools .dd{flex:0 0 auto;min-width:175px}
+        @media (min-width:1851px){ .tools .fld:not(.dd){max-width:560px} }
         @media (max-width:1850px){ .tools{order:3;flex-basis:100%} .vsep{display:none} .tools .dd{flex-basis:190px} }
         @media (max-width:1000px){
             .top-banner{position:static}
@@ -350,27 +397,51 @@
             .search-btn .sb-kbd{display:none}
             .float-action{width:calc(100% - 32px);justify-content:space-between}
         }
-        /* จอเล็ก: ตาราง -> การ์ดทีละใบ */
-        @media (max-width:760px){
-            table{min-width:0}
-            thead{display:none}
-            table,tbody{display:block}
-            tbody tr{position:relative;display:grid;grid-template-columns:1fr 1fr;gap:10px 14px;padding:14px 16px;border-bottom:1px solid var(--line)}
-            tbody tr:has(td.empty){display:block;padding:0}
-            td{display:block;border:0 !important;padding:0;text-align:left}
-            td[data-label]::before{content:attr(data-label);display:block;font-size:.72rem;font-weight:600;color:var(--faint);margin-bottom:2px}
+        /* จอเล็ก/แท็บเล็ต: ตาราง -> การ์ดทีละใบ */
+        @media (max-width:900px){
+            .table-scroll table{min-width:0}
+            .table-scroll thead{display:none}
+            .table-scroll table,.table-scroll tbody{display:block}
+            .table-scroll tbody tr{position:relative;display:grid;grid-template-columns:1fr 1fr;gap:10px 14px;padding:14px 16px;border-bottom:1px solid var(--line)}
+            .table-scroll tbody tr:has(td.empty){display:block;padding:0}
+            .table-scroll tbody tr[hidden],.table-scroll tbody tr.hidden-row{display:none !important}
+            td.c-items{text-align:left}
+            .table-scroll td{display:block;border:0 !important;padding:0;text-align:left}
+            .table-scroll td[data-label]::before{content:attr(data-label);display:block;font-size:.72rem;font-weight:600;color:var(--faint);margin-bottom:2px}
             td.c-chk{position:absolute;top:12px;right:14px;width:auto}
             td.c-chk input{width:22px;height:22px}
             td.c-po{grid-column:1/-1;padding-right:36px}
             .pso{align-items:flex-start}
             td.c-stage{grid-column:1/-1}
             .act-row{justify-content:flex-start}
-            tr[data-stage]{box-shadow:inset 4px 0 0 var(--sc)}
-            tr[data-stage] td.c-chk{box-shadow:none}
+            .table-scroll tr[data-stage]{box-shadow:inset 4px 0 0 var(--sc)}
+            .table-scroll tr[data-stage] td.c-chk{box-shadow:none}
             .po-cell{flex-direction:row;flex-wrap:wrap;align-items:center;gap:8px}
             td.c-manage{grid-column:1/-1}
             .manage{align-items:flex-start}
             .cust-cell .nm{max-width:none}
+        }
+        @media (min-width:561px) and (max-width:900px){
+            .table-scroll tbody tr{grid-template-columns:minmax(0,1.6fr) minmax(0,1fr) minmax(0,1fr)}
+            td.c-po{grid-column:1/-1}
+            td.c-stage{grid-column:auto}
+            td.c-manage{grid-column:1/-1}
+        }
+        @media (max-width:480px){
+            .table-scroll td.cust-cell{grid-column:1/-1}
+        }
+        /* จอกลาง (1101–1850): ให้ช่องค้นหา + ตัวกรอง + ปุ่มระบุตำแหน่ง อยู่แถวเดียวกัน */
+        @media (min-width:1001px) and (max-width:1850px){
+            .tools{flex-wrap:nowrap}
+            .tools .fld:not(.dd){min-width:180px;flex:1 1 260px}
+            .tools .dd{min-width:0;flex:0 1 175px}
+            .tools .dd .dd-text{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+            .tools .search-btn .sb-kbd{display:none}
+        }
+        @media (min-width:1001px) and (max-width:1200px){
+            .tools{flex-wrap:wrap}
+            .tools .fld:not(.dd){flex:1 1 calc(100% - 150px)}
+            .tools .dd{flex:1 1 200px}
         }
         @media (prefers-reduced-motion:reduce){ .todo-alert,.float-action{animation:none} }
     </style>
@@ -433,6 +504,8 @@
                 <div class="dd-panel" role="listbox"></div>
             </div>
             <button type="button" class="btn-icon reset" id="btnClear" title="ล้างตัวกรอง"><svg class="i" viewBox="0 0 24 24"><path d="M3 12a9 9 0 1 0 3-6.7L3 8"/><path d="M3 3v5h5"/></svg></button>
+            {{-- ปุ่มหลัก: ติ๊กรายการแล้วกด -> เปิดหน้าต่างระบุตำแหน่ง --}}
+            <button type="button" class="go-loc" id="btnOpenLoc" onclick="openModal()" disabled title="ติ๊กรายการในตารางก่อน"><svg class="i" viewBox="0 0 24 24"><path d="M12 21s-7-6.2-7-11.5A7 7 0 0 1 19 9.5C19 14.8 12 21 12 21z"/><circle cx="12" cy="9.5" r="2.5"/></svg>ระบุตำแหน่ง <b id="selCountTop">0</b></button>
         </div>
         <div class="banner-right">
             <div class="todo-alert{{ $totalTodo ? '' : ' zero' }}" id="todoBlock" title="จำนวนใบที่รอระบุตำแหน่ง">
@@ -451,6 +524,13 @@
         <div class="split">
         <div class="split-main">
         <div class="table-scroll">
+            <div class="table-loading hide" id="tableLoading" aria-live="polite">
+                <div class="ld-box">
+                    <div class="ld-spin" style="--ld:110px"><i></i><i></i><i></i></div>
+                    <div class="ld-title">กำลังโหลดข้อมูล...</div>
+                    
+                </div>
+            </div>
             <div class="table-inner">
                 <table>
                     <thead>
@@ -458,6 +538,7 @@
                             <th style="width:52px;"><input type="checkbox" id="chkAll" title="เลือกทั้งหมด"></th>
                             <th>PO / SO</th>
                             <th>ลูกค้า / ร้านค้า</th>
+                            <th style="width:1%">รายการสินค้า</th>
                             <th>สถานะ</th>
                             <th>จัดการ</th>
                         </tr>
@@ -508,11 +589,6 @@
                                     <div class="pso">
                                         <div class="po-line">
                                             <span class="ref-link">{{ $h->po_display }}</span>
-                                            {{-- ปุ่มดูสินค้า: มี items แล้วฝังไว้ (ไม่ต้อง fetch) / ไม่มี = โหลดตอนกด
-                                                 ส่ง data-so ไปด้วย เพราะ PO เดียวกันมีได้หลาย SO → ต้องกรองให้เห็นเฉพาะ SO ของแถวนี้ --}}
-                                            <button type="button" class="btn-view-items ic" title="ดูสินค้า @if ($items) ({{ $items->count() }} รายการ) @endif"
-                                                data-po="{{ $h->po_display }}" data-so="{{ $h->so_id }}"
-                                                @if ($itemsJson !== null) data-items='@json($itemsJson)' @endif><svg class="i" viewBox="0 0 24 24"><path d="M21 8 12 3 3 8v8l9 5 9-5z"/><path d="m3 8 9 5 9-5M12 13v8"/></svg></button>
                                         </div>
                                         @if (!empty($h->so_id))
                                             <a class="so-link" href="http://server_update:8000/sodetail?SONum={{ urlencode($h->so_id) }}" target="_blank" title="เปิดรายละเอียด SO">{{ $h->so_id }}</a>
@@ -533,6 +609,13 @@
                                         <span class="sep">·</span><span>Sale {{ $h->sale ?: '—' }}</span>
                                         <span class="sep">·</span><span>รับโดย {{ $h->packed_by ?: '—' }}{{ $h->packed_at ? ' ' . \Carbon\Carbon::parse($h->packed_at)->format('d/m H:i') : '' }}</span>
                                     </div>
+                                </td>
+                                <td class="c-items" data-label="รายการสินค้า">
+                                    {{-- ปุ่มดูสินค้า: มี items แล้วฝังไว้ (ไม่ต้อง fetch) / ไม่มี = โหลดตอนกด
+                                         ส่ง data-so ไปด้วย เพราะ PO เดียวกันมีได้หลาย SO → ต้องกรองให้เห็นเฉพาะ SO ของแถวนี้ --}}
+                                    <button type="button" class="btn-view-items"
+                                        data-po="{{ $h->po_display }}" data-so="{{ $h->so_id }}"
+                                        @if ($itemsJson !== null) data-items='@json($itemsJson)' @endif><svg class="i" viewBox="0 0 24 24"><path d="M21 8 12 3 3 8v8l9 5 9-5z"/><path d="m3 8 9 5 9-5M12 13v8"/></svg>ดูสินค้า<span class="cnt">{{ $items ? $items->count() : '…' }}</span></button>
                                 </td>
                                 <td class="c-stage" data-label="สถานะ">
                                     <span class="spill">{{ $stageLabel }}</span>
@@ -582,9 +665,9 @@
                                 </td>
                             </tr>
                         @empty
-                            <tr><td colspan="5" class="empty"><svg class="i" viewBox="0 0 24 24"><path d="M3 21V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v16"/><path d="M3 11h18M3 17h18"/></svg>ไม่มีรายการที่รอระบุตำแหน่ง</td></tr>
+                            <tr><td colspan="6" class="empty"><svg class="i" viewBox="0 0 24 24"><path d="M3 21V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v16"/><path d="M3 11h18M3 17h18"/></svg>ไม่มีรายการที่รอระบุตำแหน่ง</td></tr>
                         @endforelse
-                        <tr class="no-match" hidden><td colspan="5" class="empty">ไม่มีใบในสถานะนี้</td></tr>
+                        <tr class="no-match" hidden><td colspan="6" class="empty">ไม่มีใบในสถานะนี้</td></tr>
                     </tbody>
                 </table>
             </div>
@@ -609,10 +692,15 @@
         @endif
         </div>
 
-        {{-- แผงขึ้นชั้น (id="locModal" เดิม — openModal() / confirmLoc() ใช้ได้เหมือนเดิม) --}}
+        {{-- หน้าต่างระบุตำแหน่ง (id="locModal" เดิม — openModal() / confirmLoc() ใช้ได้เหมือนเดิม) --}}
         <div class="lp-backdrop" id="lpBackdrop" onclick="closePanel()"></div>
-        <aside class="loc-panel" id="locModal" aria-label="ระบุตำแหน่งจัดเก็บ">
-            <div class="lp-head"><svg class="i" viewBox="0 0 24 24"><path d="M12 21s-7-6.2-7-11.5A7 7 0 0 1 19 9.5C19 14.8 12 21 12 21z"/><circle cx="12" cy="9.5" r="2.5"/></svg>ขึ้นชั้น<span class="lp-cnt" id="lpCount">0 ใบ</span>
+        <aside class="loc-panel" id="locModal" role="dialog" aria-modal="true" aria-label="ระบุตำแหน่งจัดเก็บ">
+            <div class="lp-head">
+                <span class="lp-ic"><svg class="i" viewBox="0 0 24 24"><path d="M12 21s-7-6.2-7-11.5A7 7 0 0 1 19 9.5C19 14.8 12 21 12 21z"/><circle cx="12" cy="9.5" r="2.5"/></svg></span>
+                <div>
+                    <div class="lp-title">ระบุตำแหน่ง <span id="lpCount">0 ใบ</span></div>
+                    <div class="lp-sub">เลือกชั้นวาง แล้วกดบันทึก (ทุกใบที่เลือกใช้ชั้นเดียวกัน)</div>
+                </div>
                 <button type="button" class="lp-close" onclick="closePanel()" title="ปิด"><svg class="i" viewBox="0 0 24 24"><path d="M18 6 6 18M6 6l12 12"/></svg></button>
             </div>
             <div class="lp-body">
@@ -633,6 +721,8 @@
                         <span class="chip" onclick="pickLoc(this)">{{ $loc }}</span>
                     @endforeach
                 </div>
+            </div>
+            <div class="lp-foot">
                 <button type="button" class="btn-primary lp-save" onclick="confirmLoc()">บันทึกตำแหน่ง</button>
             </div>
         </aside>
@@ -808,7 +898,15 @@ function refreshBtn() {
     const n = selectedIds().length;
     document.getElementById('selCount').textContent = n;
     document.getElementById('btnMain').hidden = (n === 0);
+    const top = document.getElementById('selCountTop'), go = document.getElementById('btnOpenLoc');
+    if (top) top.textContent = n;
+    if (go) {
+        if (n > 0 && go.disabled) { go.classList.remove('bump'); void go.offsetWidth; go.classList.add('bump'); }
+        go.disabled = (n === 0);
+        go.title = n ? 'ระบุตำแหน่ง ' + n + ' ใบ' : 'ติ๊กรายการในตารางก่อน';
+    }
     renderSelChips();
+    if (n === 0 && document.getElementById('locModal').classList.contains('open')) closePanel();
 }
 // ใบที่เลือก -> โชว์ในแผงขึ้นชั้น (กด × เพื่อเอาออก)
 function renderSelChips() {
@@ -817,11 +915,11 @@ function renderSelChips() {
     document.getElementById('selChips').innerHTML = ids.length
         ? ids.map(v => {
             const tr = document.querySelector('.chkLine[value="' + v.replace(/"/g, '\\"') + '"]')?.closest('tr');
-            return '<span class="sel-chip">' + esc(tr?.dataset.po || v) + '<button type="button" data-v="' + esc(v) + '" title="เอาออก">×</button></span>';
+            return '<div class="sel-row"><b>' + esc(tr?.dataset.po || v) + '</b><span class="nm">' + esc(tr?.dataset.customer || '') + '</span><span class="so">' + esc(tr?.dataset.so || '') + '</span><button type="button" data-v="' + esc(v) + '" title="เอาออก">×</button></div>';
           }).join('')
         : '';
     document.getElementById('selChips').hidden = !ids.length;
-    if (!ids.length) setHint('ติ๊กเลือกใบทางซ้าย (หรือกดที่แถว) แล้วเลือกชั้นวาง', false);
+    if (!ids.length) setHint('', false);
     else if (!document.getElementById('dlgHint').dataset.err) setHint('', false);
     updateSaveBtn();
 }
@@ -1005,7 +1103,7 @@ document.querySelectorAll('.btn-view-items').forEach(btn => {
         }
 
         // ไม่มี → โหลดจาก server (ส่ง so ไปด้วยเพื่อกรองฝั่ง server ในอนาคต + กรองซ้ำฝั่ง client)
-        itemsModalBody.innerHTML = '<div class="items-modal-loading"><div class="spin"></div>กำลังโหลด...</div>';
+        itemsModalBody.innerHTML = '<div class="items-modal-loading ld-box"><div class="ld-spin"><i></i><i></i><i></i></div><div class="ld-title">กำลังโหลดข้อมูล...</div><div class="ld-sub">กรุณารอสักครู่</div></div>';
         try {
             const res = await fetch(LEGACY_ITEMS_URL + '?po=' + encodeURIComponent(po) + (so ? '&so=' + encodeURIComponent(so) : ''), {
                 headers: { 'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest' }
@@ -1019,6 +1117,53 @@ document.querySelectorAll('.btn-view-items').forEach(btn => {
         }
     });
 });
+
+// ===== จำนวนรายการสินค้าบนปุ่ม "ดูสินค้า" (นับแบบเดียวกับที่หน้าต่างแสดง = กรองตาม SO ของแถว) =====
+function filterItemsBySo(items, filterSo) {
+    items = items || [];
+    const want = normSo(filterSo);
+    if (want && items.some(it => normSo(soOfItem(it)) !== '')) items = items.filter(it => normSo(soOfItem(it)) === want);
+    return items;
+}
+function setItemCount(btn, n) {
+    let c = btn.querySelector('.cnt');
+    if (!c) { c = document.createElement('span'); c.className = 'cnt'; btn.appendChild(c); }
+    c.classList.toggle('loading', n === null);
+    c.textContent = n === null ? '…' : n;
+}
+(function loadItemCounts() {
+    const queue = [];
+    document.querySelectorAll('.btn-view-items').forEach(btn => {
+        if (btn.dataset.items) {
+            try { setItemCount(btn, filterItemsBySo(JSON.parse(btn.dataset.items), btn.dataset.so).length); } catch (e) {}
+        } else { setItemCount(btn, null); queue.push(btn); }
+    });
+    // ไม่มีข้อมูลฝังไว้ -> โหลดทุกใบพร้อมกันทีเดียว แล้วเก็บไว้ในปุ่ม (กดดูแล้วไม่ต้องโหลดซ้ำ)
+    // ระหว่างรอ: โชว์ตัวโหลดทับตาราง (ครบแล้ว หรือเกิน 10 วินาที -> ซ่อน)
+    const tl = document.getElementById('tableLoading'), prog = document.getElementById('tlProg');
+    let left = queue.length;
+    const tick = () => { if (prog) prog.textContent = left ? '(' + (queue.length - left) + '/' + queue.length + ')' : ''; if (left <= 0 && tl) tl.classList.add('hide'); };
+    if (tl && queue.length) {
+        // คลุมเฉพาะตาราง แต่ให้วงหมุนอยู่กลางจอที่มองเห็น
+        tl.classList.remove('hide');
+        const box = tl.querySelector('.ld-box'), top = tl.getBoundingClientRect().top;
+        tl.style.setProperty('--tl-pad', Math.max(24, innerHeight / 2 - top - box.offsetHeight / 2) + 'px');
+        tick(); setTimeout(() => tl.classList.add('hide'), 10000); }
+    queue.forEach(async btn => {
+        const po = btn.dataset.po, so = btn.dataset.so || '';
+        try {
+            const res = await fetch(LEGACY_ITEMS_URL + '?po=' + encodeURIComponent(po) + (so ? '&so=' + encodeURIComponent(so) : ''), {
+                headers: { 'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest' }
+            });
+            const data = await res.json();
+            if (res.ok && data.ok) {
+                btn.dataset.items = JSON.stringify(data.items || []);
+                setItemCount(btn, filterItemsBySo(data.items, so).length);
+            } else { btn.querySelector('.cnt')?.remove(); }
+        } catch (e) { btn.querySelector('.cnt')?.remove(); }
+        left--; tick();
+    });
+})();
 // กดพื้นหลังเพื่อปิดป๊อปอัพ
 itemsModal.addEventListener('click', e => { if (e.target === itemsModal) itemsModal.close(); });
 
@@ -1035,14 +1180,9 @@ function openModal() {
     if (!currentUser())        { uiToast('กรุณาระบุชื่อผู้ดำเนินการ', 'error'); return; }
     if (!selectedIds().length) { uiToast('ยังไม่ได้เลือกรายการ', 'error'); return; }
     renderSelChips(); renderShelves();
-    const p = document.getElementById('locModal');
-    if (window.matchMedia('(max-width:1100px)').matches) {
-        p.classList.add('open'); document.getElementById('lpBackdrop').classList.add('open');
-    } else {
-        p.classList.remove('flash'); void p.offsetWidth; p.classList.add('flash');
-        setTimeout(() => p.classList.remove('flash'), 900);
-        if (window.matchMedia('(pointer:fine)').matches) document.getElementById('inpLocation').focus({ preventScroll: true });
-    }
+    document.getElementById('locModal').classList.add('open');
+    document.getElementById('lpBackdrop').classList.add('open');
+    if (window.matchMedia('(pointer:fine)').matches) setTimeout(() => document.getElementById('inpLocation').focus({ preventScroll: true }), 60);
 }
 function closePanel() {
     document.getElementById('locModal').classList.remove('open');
@@ -1223,7 +1363,6 @@ function initDropdown(box) {
     return api;
 }
 function syncDropdowns() { dropdowns.forEach(d => d.sync()); }
-initDropdown(document.getElementById('ddPoType'));
 // เติมรายชื่อผู้จัดการใน "filter" แบบ dynamic จากชื่อที่มีจริงในรายการ (รวมชื่อจาก box)
 // — ส่วน select "เลือกจัดการ" (claim-select) ยังคงมีแค่ โอ/ฟิว เหมือนเดิม ไม่แตะ
 (function populateHandlerFilter(){
@@ -1243,6 +1382,7 @@ initDropdown(document.getElementById('ddPoType'));
         }
     });
 })();
+initDropdown(document.getElementById('ddPoType'));
 initDropdown(document.getElementById('ddHandler'));
 initDropdown(document.getElementById('ddStage'));
 document.addEventListener('click', e => { if (!e.target.closest('.dd')) dropdowns.forEach(d => d.close()); });
@@ -1323,5 +1463,6 @@ liveFilter();
     openModal();
 })();
 </script>
+
 </body>
 </html>
