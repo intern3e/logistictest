@@ -565,9 +565,7 @@ class WrongBillController extends Controller
         //   - return (ค่าเดิม): คืนงานไปหน้าจ่ายงานขนส่ง ให้เลือกคนขับ/วันใหม่ที่นั่น
         //   - assign: จ่ายงานใหม่ที่นี่เลย (ผู้รับผิดชอบ / วิธีการจัดส่ง / วันที่ไปส่ง) -> สร้างแถวจ่ายงานใหม่ทันที
         if ($validated['mode'] === 'resend') {
-            if ($type !== 'bill') {
-                return response()->json(['ok' => false, 'message' => 'ส่งใหม่เลขบิลเดิมใช้ได้กับบิลเท่านั้น'], 422);
-            }
+            // รองรับทั้งบิล (tblbill) และเอกสารชั่วคราว SP (docbills) — รวม SP ที่ไม่ได้เชื่อม SO
             $redoMode     = $validated['redo_mode'] ?? 'return';
             $newDriver    = trim((string) ($validated['redo_driver'] ?? ''));
             $newTransport = trim((string) ($validated['redo_transport'] ?? ''));
@@ -589,9 +587,12 @@ class WrongBillController extends Controller
                 }
             }
 
-            $soIds = Bill::where('billid', $rawId)->pluck('so_detail_id');
-            DB::transaction(function () use ($soIds, $userName, $now, $item, $redoMode, $newDriver, $newTransport, $newDate) {
-                $deliveries = transaction_delivery::whereIn('bill_id', $soIds)
+            // bill: delivery.bill_id = tblbill.so_detail_id ; doc: delivery.bill_id = doc_id ตรง ๆ
+            $billIds = ($type === 'bill')
+                ? Bill::where('billid', $rawId)->pluck('so_detail_id')->all()
+                : [$rawId];
+            DB::transaction(function () use ($billIds, $userName, $now, $item, $redoMode, $newDriver, $newTransport, $newDate) {
+                $deliveries = transaction_delivery::whereIn('bill_id', $billIds)
                     ->whereIn('status', [self::ST_WRONG, self::ST_HOLD])->get();
                 foreach ($deliveries as $d) {
                     $wentDate = $d->delivery_date ? Carbon::parse($d->delivery_date)->format('d/m/Y')

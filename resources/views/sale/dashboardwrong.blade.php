@@ -404,8 +404,8 @@
         if (!CAN_SOLVE) return '';                           // ไม่ใช่ admin -> ไม่มีคอลัมน์จัดการ
         let btns = '';
         if (r.state === 'open'){
-            // ส่งใหม่เลขบิลเดิม (เฉพาะบิล) — เลือก assign/return เหมือนหน้า billreceive
-            if (r.type === 'bill'){
+            // ส่งใหม่เลขบิลเดิม (บิล + เอกสารชั่วคราว SP รวมที่ไม่ได้เชื่อม SO) — เลือก assign/return เหมือนหน้า billreceive
+            if (r.type === 'bill' || r.type === 'doc'){
                 btns += '<button type="button" class="btn btn-resend" data-act="resend" data-job="'+esc(r.job_key)+'" onclick="openRedo(\''+escJs(r.job_key)+'\',\''+escJs(r.bill_no)+'\',\''+escJs(r.driver||'')+'\')">ส่งใหม่เลขบิลเดิม</button>';
             }
             if (r.problem === 'ค้างบิล'){
