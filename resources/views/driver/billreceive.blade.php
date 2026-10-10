@@ -673,10 +673,18 @@ function render(){
     } else if(received){
       // รับเข้าแล้ว -> แสดงผลตามสถานะ + ให้กลับมากด "สำเร็จ" ได้ (เช่น ค้างบิล/สินค้าผิด -> เปลี่ยนเป็นสำเร็จภายหลัง)
       const noteLine = (r.note && (si.cls==='wrong' || si.cls==='hold')) ? ` · ${esc(r.note)}` : '';
-      // "เปลี่ยนเป็นสำเร็จ" แสดงกับงานที่ค้างบิล และ สินค้าผิด (จ่ายงานใหม่ + รับสำเร็จ)
-      const canReSuccess = ['ค้างบิล','สินค้าผิด'].includes(((r.status||'').trim()));
+      // "เปลี่ยนเป็นสำเร็จ":
+      //   ค้างบิล -> เปลี่ยนเป็นรับสำเร็จตรง ๆ (ไม่สร้าง row คนขับใหม่)
+      //   สินค้าผิด -> จ่ายงานใหม่ (เลือกคนขับ/วันส่ง/ขนส่ง) แล้วรับสำเร็จ
+      const _st = (r.status||'').trim();
+      let reBtn = '';
+      if (CAN_EDIT && _st === 'ค้างบิล') {
+        reBtn = `<button type="button" class="act ok" onclick="armClick(this,${i},'ok')" title="เปลี่ยนเป็นรับสำเร็จ (เลขบิลเดิม ไม่สร้างงานคนขับใหม่)">เปลี่ยนเป็นสำเร็จ</button>`;
+      } else if (CAN_EDIT && _st === 'สินค้าผิด') {
+        reBtn = `<button type="button" class="act ok" onclick="openReSuccess(${i})" title="จ่ายงานใหม่ (เลือกคนขับ/วันส่ง/ขนส่ง) แล้วบันทึกรับสำเร็จ">เปลี่ยนเป็นสำเร็จ</button>`;
+      }
       actions = `<div class="job-result ${si.cls}">✓ ${esc(si.txt)} · ${esc(r.check_name||'-')}${r.check_time?' · '+esc(r.check_time):''}${noteLine}</div>`
-        + ((CAN_EDIT && canReSuccess) ? `<button type="button" class="act ok" onclick="openReSuccess(${i})" title="จ่ายงานใหม่ (เลือกคนขับ/วันส่ง/ขนส่ง) แล้วบันทึกรับสำเร็จ">เปลี่ยนเป็นสำเร็จ</button>` : '');
+        + reBtn;
     } else if(redispatched){
       // งานต้นทางที่ถูกจ่ายใหม่ไปวันอื่นแล้ว -> ไม่มีปุ่ม แสดงว่าย้ายไปวันไหน
       actions = `<div class="job-redispatched">↻ จ่ายใหม่ไปวันที่ ${esc(r.redispatched_to)}</div>`;
