@@ -813,6 +813,12 @@ if ($isSpecialCustomer) {
                 $pdf->SetXY(155, 2);
                 $pdf->Cell(50, 10, "{$so_detail_id}", 0, 0, 'R');
 
+                // ข้อความแจ้งการชำระเงิน (ปั้มเป็นรูป PNG เพื่อให้ภาษาไทยคมชัด) — เฉพาะหน้าแรก
+                $payNoteImage = storage_path("app/public/template/payment_note.png");
+                if ($pageNo === 1 && file_exists($payNoteImage)) {
+                    $pdf->Image($payNoteImage, 11, 153, 92, 0, 'PNG');
+                }
+
                 $x = 45;
                 $y = 237;
                 $w = 22;
