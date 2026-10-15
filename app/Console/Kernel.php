@@ -12,7 +12,8 @@ class Kernel extends ConsoleKernel
      */
     protected function schedule(Schedule $schedule): void
     {
-        // $schedule->command('inspire')->hourly();
+        // ไม่ตั้ง schedule — ใช้ lazy-sync ตอนผู้ใช้เข้าหน้า (รวบเลขบิลในหน้าแล้วเช็ค ERP ทีเดียว)
+        // command 'bills:sync-cancelled' ยังเรียกเองได้ถ้าต้องการ sync ย้อนหลังทั้งก้อน
     }
 
     /**

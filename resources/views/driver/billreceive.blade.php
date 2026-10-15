@@ -664,8 +664,13 @@ function render(){
     const received = isReceived(r);
     const isHistory = !!r.cancelled;                          // แถวประวัติ (รอบเก่าที่ถูกแทนที่/ยกเลิก) -> อ่านอย่างเดียว
     const redispatched = !received && !isHistory && !!r.redispatched_to;   // ถูกจ่ายใหม่ไปวันหลังแล้ว
+    const billCancelled = !!r.bill_cancelled;                 // บิลถูกยกเลิกใน ERP (DocuStatus='C') -> แสดงแต่กดไม่ได้
     let actions;
-    if(isHistory){
+    if(billCancelled){
+      // บิลถูกยกเลิก: แสดงบิลไว้ แต่กดอะไรไม่ได้ ขึ้นข้อความชัดเจน + หมายเหตุการยกเลิก (ถ้ามี)
+      const cRemark = (r.bill_cancel_remark||'').trim();
+      actions = `<div class="job-result wrong" style="font-weight:700;">⛔ บิลนี้ถูกยกเลิกไปแล้ว${cRemark?` · หมายเหตุ: ${esc(cRemark)}`:''}</div>`;
+    } else if(isHistory){
       // ประวัติรอบเก่า: เช่น สินค้าผิด/ส่งใหม่ -> ถูกจ่ายใหม่แล้ว = แสดงผลลัพธ์รอบนั้น ไม่มีปุ่ม/ติ๊ก
       const hi = statusInfo(r.status);
       actions = `<div class="job-redispatched" title="${r.cancelled_at?'ถูกแทนที่/จ่ายใหม่เมื่อ '+esc(r.cancelled_at)+(r.cancelled_by?' โดย '+esc(r.cancelled_by):''):''}">↻ ประวัติ: ${esc(hi.txt)}`
@@ -700,16 +705,17 @@ function render(){
     }
 
     // เช็คบ็อกซ์ (bulk) เฉพาะ editor + งานที่ยังไม่รับเข้า ; สำเร็จ/ค้างบิล/สินค้าผิด/ถูกจ่ายใหม่ = ติ๊กไม่ได้
-    const bulkable = CAN_EDIT && !redispatched && !received && !isHistory;
+    const bulkable = CAN_EDIT && !redispatched && !received && !isHistory && !billCancelled;
     const chk = bulkable
       ? `<input type="checkbox" class="job-chk" ${selectedBulk.has(i)?'checked':''} onchange="toggleBulk(${i},this.checked)" title="เลือกเพื่อตั้งสถานะพร้อมกัน" style="width:16px;height:16px;align-self:center;cursor:pointer;flex-shrink:0;">`
       : '';
-    return `<div class="job type-${r.type} ${received||redispatched||isHistory?'done':''}" id="job-${i}">
+    return `<div class="job type-${r.type} ${received||redispatched||isHistory||billCancelled?'done':''}" id="job-${i}"${billCancelled?' style="background:#fff5f5;"':''}>
       ${chk}
       <div class="job-main">
         <div class="job-line1">
           <span class="job-type" title="${esc(typeTitle)}">${esc(typeLabel)}</span>
-          <span class="job-bill">${esc(r.bill_no||'-')}</span>
+          <span class="job-bill" ${billCancelled?'style="text-decoration:line-through;color:#c62828;"':''}>${esc(r.bill_no||'-')}</span>
+          ${billCancelled?'<span class="badge wrong">ยกเลิก</span>':''}
           ${r.customer_code?`<span class="job-code">${esc(r.customer_code)}</span>`:''}
           <span class="job-cust" title="${esc((r.so_id?'SO '+r.so_id+' · ':'')+(r.customer_name||''))}">${r.so_id?`<b>SO ${esc(r.so_id)}</b> · `:''}${esc(r.customer_name||'-')}</span>
         </div>

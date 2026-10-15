@@ -85,19 +85,25 @@ class ShelfsaleController extends Controller
                     PoReceive::pluck('po_id')->filter()
                         ->map(fn ($p) => preg_replace('/^PO/i', '', (string) $p))->all()
                 );
-                $internalPoSet = array_flip(
-                    \App\Models\internal_po::pluck('internal_id')->filter()
-                        ->map(fn ($p) => preg_replace('/^PO/i', '', (string) $p))->all()
-                );
+                // งานภายในที่อยู่ในระบบใหม่แล้ว -> จับคู่ด้วย (เลข PO + SO) ; รองรับ legacy_po (งานที่ถูกออกเลขใหม่ตอนชน)
+                //   ใช้ SO ด้วย เพื่อให้ "เลข PO ซ้ำแต่คนละ SO = คนละงาน" ไม่ถูกกรองออก
+                $internalMigrated = [];
+                foreach (\App\Models\internal_po::get(['internal_id', 'legacy_po', 'SO_id']) as $m) {
+                    $mso = (string) $m->SO_id;
+                    $internalMigrated[preg_replace('/^PO/i', '', (string) $m->internal_id) . '|' . $mso] = true;
+                    if (filled($m->legacy_po)) {
+                        $internalMigrated[preg_replace('/^PO/i', '', (string) $m->legacy_po) . '|' . $mso] = true;
+                    }
+                }
                 $soLegacy = DB::connection(self::LEGACY_CONNECTION)->table('store')
                     ->whereIn('statusArea', ['0', '1'])
                     ->whereNotNull('Area')->where('Area', '<>', '')
                     ->where(function ($q) { $q->whereNull('DATECHECKOUT')->orWhere('DATECHECKOUT', ''); })
                     ->whereNotNull('SO')->where('SO', '<>', '')
                     ->limit(8000)->get(['SO', 'PO'])
-                    ->reject(function ($r) use ($poInNewSet, $internalPoSet) {
+                    ->reject(function ($r) use ($poInNewSet, $internalMigrated) {
                         $clean = preg_replace('/^PO/i', '', (string) $r->PO);
-                        return isset($poInNewSet[$clean]) || isset($internalPoSet[$clean]);
+                        return isset($poInNewSet[$clean]) || isset($internalMigrated[$clean . '|' . (string) $r->SO]);
                     })
                     ->pluck('SO')->filter()->unique();
 
@@ -267,11 +273,16 @@ class ShelfsaleController extends Controller
         })->values();
         // set PO ภายใน (clean) สำหรับกันซ้ำกับ 3e store — ใช้ "ทุกสถานะ" (รวมที่เช็คเอาท์แล้ว)
         //   เพราะ 3e store เป็นข้อมูลค้าง (ไม่อัปเดตเมื่อเช็คเอาท์ในระบบใหม่) PO ที่อยู่ในระบบใหม่จึงต้องไม่ยึด 3e store
-        $internalPoSet = array_flip(
-            \App\Models\internal_po::pluck('internal_id')->filter()
-                ->map(fn ($p) => preg_replace('/^PO/i', '', (string) $p))
-                ->all()
-        );
+        // งานภายในที่อยู่ในระบบใหม่แล้ว -> จับคู่ด้วย (เลข PO + SO) ; รองรับ legacy_po (งานที่ถูกออกเลขใหม่ตอนชน)
+        //   ใช้ "ทุกสถานะ" (รวมเช็คเอาท์แล้ว) เพราะ 3e store เป็นข้อมูลค้าง ไม่อัปเดตเมื่อเช็คเอาท์ในระบบใหม่
+        $internalMigrated = [];
+        foreach (\App\Models\internal_po::get(['internal_id', 'legacy_po', 'SO_id']) as $m) {
+            $mso = (string) $m->SO_id;
+            $internalMigrated[preg_replace('/^PO/i', '', (string) $m->internal_id) . '|' . $mso] = true;
+            if (filled($m->legacy_po)) {
+                $internalMigrated[preg_replace('/^PO/i', '', (string) $m->legacy_po) . '|' . $mso] = true;
+            }
+        }
         // มูลค่า PO ภายใน = ผลรวม internal_poline.item_total (PO ภายในไม่มีใน MSSQL POHD)
         $internalPriceByPo = [];
         if ($internalHeads->isNotEmpty()) {
@@ -324,9 +335,9 @@ class ShelfsaleController extends Controller
 
             // จำกัดผลลัพธ์ของเก่ากันดึงมหาศาลในโหมด checkout (ของที่เช็คเอาท์แล้วมีเป็นแสน)
             $legacyRows = $legQ->limit(3000)->get(['SO', 'PO', 'Area', 'DATEAREA', 'DATECHECKOUT'])
-                ->reject(function ($row) use ($poInNewSet, $internalPoSet) {
+                ->reject(function ($row) use ($poInNewSet, $internalMigrated) {
                     $clean = preg_replace('/^PO/i', '', (string) $row->PO);
-                    return isset($poInNewSet[$clean]) || isset($internalPoSet[$clean]);
+                    return isset($poInNewSet[$clean]) || isset($internalMigrated[$clean . '|' . (string) $row->SO]);
                 })
                 ->values();
 

@@ -37,17 +37,34 @@ return [
             'mysql_3e' => [
             'driver' => 'mysql',
             'url' => env('DATABASE_URL_3E'),
-            'host' => env('DB_HOST_3E', '127.0.0.1'),
-            'port' => env('DB_PORT_3E', '3306'),
-            'database' => env('DB_DATABASE_3E', 'forge'),
-            'username' => env('DB_USERNAME_3E', 'forge'),
-            'password' => env('DB_PASSWORD_3E', ''),
+            // READ  -> ถ้าตั้ง DB_*_3E_READ จะอ่านจาก "โคลน" (เช่น 192.168.1.148) ;
+            //          ถ้าไม่ตั้ง จะ fallback ไปใช้ค่าหลัก (พฤติกรรมเดิม 100%)
+            // WRITE -> ใช้ค่าหลัก (3e จริง) เสมอ เพราะ printwarehouse ต้อง insert ลงตัวจริงเท่านั้น
+            'read' => [
+                'host'      => env('DB_HOST_3E_READ', env('DB_HOST_3E', '127.0.0.1')),
+                'port'      => env('DB_PORT_3E_READ', env('DB_PORT_3E', '3306')),
+                'database'  => env('DB_DATABASE_3E_READ', env('DB_DATABASE_3E', 'forge')),
+                'username'  => env('DB_USERNAME_3E_READ', env('DB_USERNAME_3E', 'forge')),
+                'password'  => env('DB_PASSWORD_3E_READ', env('DB_PASSWORD_3E', '')),
+                'charset'   => env('DB_CHARSET_3E_READ', env('DB_CHARSET_3E', 'utf8')),
+                'collation' => env('DB_COLLATION_3E_READ', env('DB_COLLATION_3E', 'utf8_general_ci')),
+            ],
+            'write' => [
+                'host'      => env('DB_HOST_3E', '127.0.0.1'),
+                'port'      => env('DB_PORT_3E', '3306'),
+                'database'  => env('DB_DATABASE_3E', 'forge'),
+                'username'  => env('DB_USERNAME_3E', 'forge'),
+                'password'  => env('DB_PASSWORD_3E', ''),
+                'charset'   => env('DB_CHARSET_3E', 'utf8'),
+                'collation' => env('DB_COLLATION_3E', 'utf8_general_ci'),
+            ],
+            'sticky' => true,
             'unix_socket' => env('DB_SOCKET_3E', ''),
-            'charset' => 'utf8',
-            'collation' => 'utf8_general_ci',
+            'charset' => env('DB_CHARSET_3E', 'utf8'),
+            'collation' => env('DB_COLLATION_3E', 'utf8_general_ci'),
             'prefix' => '',
             'prefix_indexes' => true,
-            'strict' => false, 
+            'strict' => false,
             'engine' => null,
             'options' => extension_loaded('pdo_mysql') ? array_filter([
                 PDO::MYSQL_ATTR_SSL_CA => env('MYSQL_ATTR_SSL_CA'),
@@ -81,16 +98,26 @@ return [
             'prefix_indexes' => true,
            
         ],
+        // อ่านอย่างเดียว (ไม่มี write จากฝั่ง logistic เลย)
+        // สลับไปอ่านจาก "โคลน" (MySQL ที่ 192.168.1.148) โดยตั้งใน .env:
+        //   DB_DRIVER_MS=mysql  DB_HOST_MS=192.168.1.148  DB_PORT_MS=3306
+        //   DB_USERNAME_MS=logistic_ro  DB_PASSWORD_MS=...  DB_CHARSET_MS=utf8mb4  DB_COLLATION_MS=utf8mb4_general_ci
+        // ถ้าไม่ตั้ง -> ยังเป็น sqlsrv ชี้ .115 ตามเดิม (dev ไม่เปลี่ยน)
         'mssql_account03' => [
-            'driver'   => 'sqlsrv',
-            'host'     => env('DB_HOST_MS', '192.168.1.115'),
-            'port'     => env('DB_PORT_MS', '1433'),
-            'database' => env('DB_DATABASE_MS', 'account03'),
-            'username' => env('DB_USERNAME_MS', 'powerbi'),
-            'password' => env('DB_PASSWORD_MS', 'powerbi'),
-            'charset'  => 'utf8',
-            'prefix'   => '',
+            'driver'    => env('DB_DRIVER_MS', 'sqlsrv'),
+            'host'      => env('DB_HOST_MS', '192.168.1.115'),
+            'port'      => env('DB_PORT_MS', '1433'),
+            'database'  => env('DB_DATABASE_MS', 'account03'),
+            'username'  => env('DB_USERNAME_MS', 'powerbi'),
+            'password'  => env('DB_PASSWORD_MS', 'powerbi'),
+            'charset'   => env('DB_CHARSET_MS', 'utf8'),
+            'collation' => env('DB_COLLATION_MS', 'utf8_general_ci'),
+            'prefix'    => '',
             'prefix_indexes' => true,
+            'strict'    => false,
+            'options'   => extension_loaded('pdo_mysql') ? array_filter([
+                PDO::MYSQL_ATTR_SSL_CA => env('MYSQL_ATTR_SSL_CA'),
+            ]) : [],
         ],
 
     ],

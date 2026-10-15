@@ -1256,8 +1256,19 @@ async function fetchSODetails(soNum){
         document.getElementById('customer_tel').value = soDetails.ContTel;
         document.getElementById('sale_name').value    = SoStatus.createdBy || '';
         document.getElementById('sale-chip-value').textContent = SoStatus.createdBy || '—';
-        const billData = data.Bills[0][billId];
-        const items = billData.items;
+        // หาบิลตามเลขที่ส่งมา (billId = DocuNo)
+        // ถ้าหาไม่เจอ (เช่น บิลยังไม่มีเลข -> key เป็น "") และมี "บิลเดียว" ให้ใช้บิลนั้นเลย
+        // จะได้ดึงรายการสินค้า + วันกำหนดส่ง (DocuDate) มาได้
+        const billsMap = (data.Bills && data.Bills[0]) ? data.Bills[0] : {};
+        let billData = billsMap[billId];
+        if(!billData){
+            const billKeys = Object.keys(billsMap);
+            if(billKeys.length === 1){
+                billData = billsMap[billKeys[0]];
+            }
+        }
+        if(!billData){ return; }   // ไม่พบบิล -> ไม่ทำต่อ
+        const items = billData.items || [];
         let deliveryDate = billData.DocuDate;
         if(deliveryDate){
             let [datePart] = deliveryDate.split(' ');

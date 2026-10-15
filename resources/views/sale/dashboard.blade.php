@@ -521,6 +521,7 @@ window.addEventListener('load', () => {
                                 <span class="pill st-doing">กำลังดำเนินการ</span>
                             @elseif($item->statuspdf == 6)
                                 <span class="pill st-cancel">ยกเลิก</span>
+                                @if(!empty($item->cancel_remark))<span class="sub" title="หมายเหตุการยกเลิก">หมายเหตุ: {{ $item->cancel_remark }}</span>@endif
                             @elseif($item->statuspdf == 3)
                                 <span class="pill st-noprint">ไม่ปริ้นบิล</span>
                             @else

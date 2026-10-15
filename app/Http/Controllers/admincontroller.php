@@ -493,6 +493,9 @@ class AdminController extends Controller
             return $item;
         });
 
+        // lazy-sync: เช็คบิลยกเลิกจาก ERP เฉพาะแถวในหน้านี้ -> statuspdf='6' + cancel_remark
+        \App\Services\BillCancellation::applyToModels($bill->getCollection());
+
         $moneyAllSum = self::sumPrices($prices, $moneyAll->all());
         $moneyDaySum = self::sumPrices($prices, $moneyDay->all());
 

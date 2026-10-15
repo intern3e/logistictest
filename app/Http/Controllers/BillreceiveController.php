@@ -544,6 +544,18 @@ class BillreceiveController extends Controller
             ];
         })->values();
 
+        // ── บิลที่ถูกยกเลิกใน ERP (SOINVHD.DocuStatus='C') — เฉพาะบิลจริง (ไม่ใช่บิลชั่วคราว doc) ──
+        //   ใช้ service กลาง: ตรวจ ERP + sync tblbill.statuspdf='6' + หมายเหตุ แล้วคืน [เลขบิล => หมายเหตุ]
+        $billNos = $rows->where('type', '!=', 'doc')->pluck('bill_no')->filter()->unique()->values()->all();
+        $cancelledBills = \App\Services\BillCancellation::sync($billNos);
+        $rows = $rows->map(function ($r) use ($cancelledBills) {
+            $no = trim((string) $r['bill_no']);
+            $isCancelled = ($r['type'] !== 'doc') && array_key_exists($no, $cancelledBills);
+            $r['bill_cancelled']     = $isCancelled;
+            $r['bill_cancel_remark'] = $isCancelled ? (string) $cancelledBills[$no] : '';
+            return $r;
+        })->values();
+
         // กรองชนิดบิล: bill = บิลส่งของ (company/private) , doc = บิลชั่วคราว
         if ($kind === 'bill') {
             $rows = $rows->filter(fn ($r) => ($r['type'] ?? '') !== 'doc')->values();

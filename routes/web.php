@@ -187,6 +187,16 @@ Route::get('/podoccheck/data',  [PoDocCheckController::class, 'data'])->name('po
 Route::get('/podoccheck/get',   [PoDocCheckController::class, 'get'])->name('podoccheck.get');
 Route::post('/podoccheck/save', [PoDocCheckController::class, 'save'])->name('podoccheck.save');
 
+use App\Http\Controllers\PoSupplierDocController;
+// ไม่มีหน้าแยก — ฟังก์ชันอัปโหลด/OCR ฝังอยู่ในหน้า /podoccheck ; ด้านล่างเป็น API ที่หน้านั้นเรียก
+Route::get('/posupplierdocs/data',        [PoSupplierDocController::class, 'data'])->name('posupplierdocs.data');
+Route::post('/posupplierdocs/upload',     [PoSupplierDocController::class, 'upload'])->name('posupplierdocs.upload');
+Route::post('/posupplierdocs/process/{id}/{page}', [PoSupplierDocController::class, 'processPage'])->name('posupplierdocs.process');
+Route::get('/posupplierdocs/pdf/{id}',    [PoSupplierDocController::class, 'pdf'])->name('posupplierdocs.pdf');
+Route::get('/posupplierdocs/txt/{id}',    [PoSupplierDocController::class, 'txt'])->name('posupplierdocs.txt');
+Route::post('/posupplierdocs/assign/{id}', [PoSupplierDocController::class, 'assign'])->name('posupplierdocs.assign');
+Route::post('/posupplierdocs/delete/{id}', [PoSupplierDocController::class, 'destroy'])->name('posupplierdocs.delete');
+
 // สรุป PO ที่เชื่อมกับ SO -> หน้า/Excel/PDF
 use App\Http\Controllers\SoPoExportController;
 Route::get('/sopoexport',       [SoPoExportController::class, 'page'])->name('sopoexport.page');

@@ -305,6 +305,17 @@ class WrongBillController extends Controller
             return $r;
         })->values();
 
+        // บิลที่ถูกยกเลิกใน ERP (เฉพาะบิลจริง ไม่ใช่บิลชั่วคราว doc) -> แสดงว่ายกเลิก + หมายเหตุ
+        $cancelBillNos = $rows->where('type', 'bill')->pluck('bill_no')->filter()->unique()->values()->all();
+        $cancelledMap  = \App\Services\BillCancellation::sync($cancelBillNos);
+        $rows = $rows->map(function ($r) use ($cancelledMap) {
+            $no  = trim((string) ($r['bill_no'] ?? ''));
+            $isC = ($r['type'] ?? '') === 'bill' && array_key_exists($no, $cancelledMap);
+            $r['bill_cancelled']     = $isC;
+            $r['bill_cancel_remark'] = $isC ? (string) $cancelledMap[$no] : '';
+            return $r;
+        })->values();
+
         return response()->json(['ok' => true, 'rows' => $rows, 'counts' => $counts]);
     }
 

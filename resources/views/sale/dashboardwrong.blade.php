@@ -402,6 +402,7 @@
     // คอลัมน์จัดการ (admin เท่านั้น) : บล็อก/ปลดบล็อก (ถ้ามี so) + ปุ่มแก้ + เตะออกจากของผิด
     function actionsCell(r){
         if (!CAN_SOLVE) return '';                           // ไม่ใช่ admin -> ไม่มีคอลัมน์จัดการ
+        if (r.bill_cancelled) return '<td><span style="color:#c92a2a;font-weight:700;">⛔ ยกเลิกแล้ว</span></td>';   // บิลยกเลิก -> กดอะไรไม่ได้
         let btns = '';
         if (r.state === 'open'){
             // ส่งใหม่เลขบิลเดิม (บิล + เอกสารชั่วคราว SP รวมที่ไม่ได้เชื่อม SO) — เลือก assign/return เหมือนหน้า billreceive
@@ -452,8 +453,12 @@
                 + (r.solve_by?' · โดย <b>'+esc(r.solve_by)+'</b>':'')
                 + (r.solve_at?' · '+esc(r.solve_at):'')+'</div>';
         }
+        const cancelBadge = r.bill_cancelled
+            ? '<div style="margin-top:3px;color:#c92a2a;font-weight:700;font-size:12px;">⛔ ยกเลิกแล้ว</div>'
+              + ((r.bill_cancel_remark||'').trim() ? '<div style="color:#c92a2a;font-size:11px;">หมายเหตุ: '+esc(r.bill_cancel_remark)+'</div>' : '')
+            : '';
         let html = '<tr>'
-            + '<td class="num bill-cell" style="border-left-color:'+esc(r.border||'#dcdcdc')+';"><div class="ref-link">'+esc(r.bill_no||'-')+'</div>'+(r.so_id?'<div>'+soLink(r.so_id)+'</div>':'')+'</td>'
+            + '<td class="num bill-cell" style="border-left-color:'+(r.bill_cancelled?'#c92a2a':esc(r.border||'#dcdcdc'))+';"><div class="ref-link">'+esc(r.bill_no||'-')+'</div>'+(r.so_id?'<div>'+soLink(r.so_id)+'</div>':'')+cancelBadge+'</td>'
             + '<td class="cell-left">'+cust+'</td>'
             + '<td>'+(r.emp_name?esc(r.emp_name):'<span class="dash">-</span>')+'</td>'
             + '<td>'+prob+'</td>';

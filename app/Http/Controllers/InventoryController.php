@@ -423,13 +423,20 @@ class InventoryController extends Controller
 
             // นับ "จำนวนครั้ง" ที่ขายออกต่อ item_id — ทำครั้งเดียวแล้ว cache (ข้อมูล transaction เยอะ)
             //   ใช้ raw rows + plain array (เร็วกว่าการ map ทุกแถวเป็น Collection)
-            $computed = Cache::remember('top_selling_counts', 600, function () {
+            //   v2: เก็บ "รูปแรกจาก transaction" ของแต่ละสินค้าไว้ด้วย (วนข้อมูลรอบเดียวกัน ไม่เพิ่มเวลา)
+            //   หน้าเว็บจะได้ไม่ต้องเรียก /api/transaction/by-item ทีละสินค้าเพื่อหารูป
+            $computed = Cache::remember('top_selling_counts_v2', 600, function () {
                 $counts = [];
                 $names  = [];
+                $pics   = [];
                 foreach ($this->fetchAllTransactionsRaw() as $r) {
-                    if (($r['transaction_type'] ?? '') !== 'ขายสินค้าออก') continue;
                     $id = $r['item_id'] ?? '';
                     if ($id === '') continue;
+                    // รูปแรกที่เจอของสินค้านี้ (ทุกประเภท transaction) — ลำดับเดียวกับที่หน้าเว็บเคยหาเอง
+                    if (!isset($pics[$id]) && !empty($r['pic'])) {
+                        $pics[$id] = $r['pic'];
+                    }
+                    if (($r['transaction_type'] ?? '') !== 'ขายสินค้าออก') continue;
                     $counts[$id] = ($counts[$id] ?? 0) + 1;
                     // เก็บชื่อจาก transaction ไว้เผื่อสินค้าถูกลบไปแล้ว
                     if (!isset($names[$id]) && !empty($r['item_name'])) {
@@ -437,7 +444,9 @@ class InventoryController extends Controller
                     }
                 }
                 arsort($counts);   // เรียงจำนวนครั้ง มาก -> น้อย
-                return ['counts' => $counts, 'names' => $names];
+                // เก็บรูปเฉพาะสินค้าที่เคยขาย (ประหยัดพื้นที่ cache)
+                $pics = array_intersect_key($pics, $counts);
+                return ['counts' => $counts, 'names' => $names, 'pics' => $pics];
             });
 
             $top = array_slice($computed['counts'], 0, $limit, true);
@@ -467,6 +476,8 @@ class InventoryController extends Controller
                     'brand'      => $it['brand']     ?? $it['item_brand']     ?? '',
                     'privilege'  => $it['privilege'] ?? $it['item_privilege'] ?? '',
                     'category'   => $it['category']  ?? $it['item_category']  ?? '',
+                    // รูป: รูปของสินค้าก่อน ถ้าไม่มีใช้รูปแรกจากประวัติเข้า-ออก ('' = ไม่มีรูป)
+                    'image'      => ($it['image'] ?? $it['item_image'] ?? '') ?: ($computed['pics'][$id] ?? ''),
                     'sell_count' => $count,
                 ];
             }

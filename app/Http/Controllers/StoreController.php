@@ -1880,7 +1880,21 @@ class StoreController extends Controller
 
                 // PO ที่มี A (งานภายใน) -> เก็บ/เช็คเอาท์ที่ internal_po ไม่ใช่ po_receives
                 if ($this->isInternalPoNumber($row->PO)) {
-                    $head = internal_po::firstOrNew(['internal_id' => $row->PO]);
+                    $rawPo = (string) $row->PO;
+                    // หา head เดิมของงานนี้ (เลข PO เดิม + SO เดียวกัน) รองรับทั้ง legacy_po และ internal_id
+                    $head = internal_po::where('SO_id', $soId)
+                        ->where(function ($q) use ($rawPo) {
+                            $q->where('legacy_po', $rawPo)->orWhere('internal_id', $rawPo);
+                        })
+                        ->first();
+                    if (!$head) {
+                        // ยังไม่เคยดึงเข้าระบบใหม่ -> สร้างใหม่ (ออกเลขใหม่ถ้าเลขเดิมชนกับงานอื่น กัน PK ซ้ำ)
+                        [$newId, $legacyPo] = $this->resolveInternalIdForLegacy($rawPo);
+                        $head = new internal_po();
+                        $head->internal_id = $newId;
+                        $head->legacy_po   = $legacyPo;
+                    }
+                    $useId               = $head->internal_id;   // internal_id จริง (อาจเป็นเลขใหม่)
                     $head->SO_id         = $soId;
                     $head->status        = internal_po::ST_CHECKOUT;
                     $head->checkout_by   = $user;
@@ -1902,10 +1916,10 @@ class StoreController extends Controller
                     }
                     $head->save();
 
-                    if (internal_poline::where('internal_id', $row->PO)->count() === 0) {
+                    if (internal_poline::where('internal_id', $useId)->count() === 0) {
                         foreach ($itemsByPo->get($row->PO, collect()) as $line) {
                             internal_poline::create([
-                                'internal_id'   => $row->PO,
+                                'internal_id'   => $useId,
                                 'SO_id'         => $soId,
                                 'item_name'     => $line->item_name,
                                 'item_quantity' => $line->item_quantity,
@@ -2066,7 +2080,13 @@ class StoreController extends Controller
             // PO ภายใน (รหัส A): จัดการที่ตาราง internal_po (location เดียวทั้งใบ) — ทำเหมือน PO ภายนอก
             //   internal_id = เลข PO ดิบ (ไม่มี prefix PO) ; ไม่มี line_id/po_receive_id
             if ($lineId === null && $receiveId === null) {
-                $internal = internal_po::where('internal_id', $poClean)->first();
+                // หาด้วย internal_id + SO (ถ้ามี) เพื่อไม่ให้ไปโดนงานอื่นที่เลข PO ภายในซ้ำกันแต่คนละ SO
+                //   ถ้าไม่เจอ (เช่น งานเก่าเลขชน ยังไม่ถูกดึงเข้าระบบใหม่) จะไหลไป migrate ด้านล่าง (ออกเลขใหม่ให้เอง)
+                $internal = internal_po::where('internal_id', $poClean)
+                    ->when($so !== null, fn ($q) => $q->where(function ($w) use ($so) {
+                        $w->where('SO_id', $so)->orWhereNull('SO_id');
+                    }))
+                    ->first();
                 if ($internal) {
                     if (filled($internal->checkout_at) || $internal->status === internal_po::ST_CHECKOUT) {
                         return response()->json(['ok' => false, 'message' => 'PO ภายในนี้ถูกเช็คของออกไปแล้ว ย้ายชั้นไม่ได้'], 409);
@@ -2168,7 +2188,12 @@ class StoreController extends Controller
         try {
             // PO ภายใน (รหัส A): เช็คเอาท์ที่ตาราง internal_po — ทำเหมือน PO ภายนอก
             if (!$poReceiveId) {
-                $internal = internal_po::where('internal_id', $poClean)->first();
+                // หาด้วย internal_id + SO (ถ้ามี) กันไปโดนงานอื่นที่เลข PO ภายในซ้ำกันแต่คนละ SO
+                $internal = internal_po::where('internal_id', $poClean)
+                    ->when($so !== null, fn ($q) => $q->where(function ($w) use ($so) {
+                        $w->where('SO_id', $so)->orWhereNull('SO_id');
+                    }))
+                    ->first();
                 if ($internal) {
                     if (filled($internal->checkout_at) || $internal->status === internal_po::ST_CHECKOUT) {
                         return response()->json(['ok' => false, 'message' => 'PO ภายในนี้เช็คเอาท์ไปแล้ว'], 409);
@@ -2272,11 +2297,25 @@ class StoreController extends Controller
         $alreadyMigrated = PoReceive::whereIn('po_id', $poIdsCandidate)->pluck('po_id')->flip();
         // งานภายใน (PO มี A) ที่ถูก claim ไปแล้วจะอยู่ที่ internal_po ไม่ใช่ po_receives
         // ต้องกรองออกด้วย ไม่งั้นจะโผล่ซ้ำให้กด "จัดการ" ได้อีก
-        $rawPoCandidate    = $rows->pluck('PO')->unique()->values()->all();
-        $migratedInternal  = internal_po::whereIn('internal_id', $rawPoCandidate)->pluck('internal_id')->flip();
-        $rows = $rows->reject(fn ($r) => $alreadyMigrated->has('PO' . $r->PO) || $migratedInternal->has($r->PO))->values();
+        // งานภายใน (PO มี A) ที่ถูก claim ไปแล้วจะอยู่ที่ internal_po ไม่ใช่ po_receives
+        // ต้องกรองออกด้วย ไม่งั้นจะโผล่ซ้ำให้กด "จัดการ" ได้อีก
+        //   จับคู่ด้วย (เลข PO เดิม + SO) -> เลข PO ซ้ำแต่คนละ SO = คนละงาน ยังต้องแสดงให้กดได้
+        //   รองรับทั้ง legacy_po (งานที่ถูกออกเลขใหม่ตอนชน) และ internal_id (ข้อมูลเก่า/เลขไม่ชน)
+        $rawPoCandidate = $rows->pluck('PO')->unique()->values()->all();
+        $migratedKeys   = collect();
+        foreach (
+            internal_po::where(function ($q) use ($rawPoCandidate) {
+                $q->whereIn('legacy_po', $rawPoCandidate)->orWhereIn('internal_id', $rawPoCandidate);
+            })->get(['internal_id', 'legacy_po', 'SO_id']) as $m
+        ) {
+            if (filled($m->legacy_po)) $migratedKeys->put($m->legacy_po . '|' . $m->SO_id, true);
+            $migratedKeys->put($m->internal_id . '|' . $m->SO_id, true);
+        }
+        $rows = $rows->reject(fn ($r) =>
+            $alreadyMigrated->has('PO' . $r->PO) || $migratedKeys->has($r->PO . '|' . $r->SO)
+        )->values();
         if ($rows->isEmpty()) return collect();
-        $rows = $rows->unique('PO')->values();
+        $rows = $rows->unique(fn ($r) => $r->PO . '|' . $r->SO)->values();
 
         $soIdsAll = $rows->pluck('SO')->unique()->values()->all();
 
@@ -2459,6 +2498,34 @@ class StoreController extends Controller
     }
 
     /**
+     * งานภายในจากระบบเก่า (เลข PO เดิม + SO นี้) ถูกดึงเข้าระบบใหม่ไปแล้วหรือยัง
+     *   - จับคู่ด้วย legacy_po (งานที่ถูกออกเลขใหม่) หรือ internal_id (ข้อมูลเก่า/เลขไม่ชน) + SO เดียวกัน
+     *   - ใช้ SO ด้วย เพื่อให้ "เลข PO ซ้ำแต่คนละงาน (คนละ SO)" ไม่ถูกมองว่าดึงไปแล้ว
+     */
+    private function legacyInternalAlreadyMigrated(string $rawPo, $soId): bool
+    {
+        return internal_po::where('SO_id', $soId)
+            ->where(function ($q) use ($rawPo) {
+                $q->where('legacy_po', $rawPo)->orWhere('internal_id', $rawPo);
+            })
+            ->exists();
+    }
+
+    /**
+     * ตัดสิน internal_id ที่จะใช้ตอนดึงงานภายในจากระบบเก่าเข้าระบบใหม่
+     *   - ปกติใช้เลข PO เดิม
+     *   - ถ้าเลขเดิมชนกับงานอื่นในระบบใหม่ (PK internal_id ซ้ำ) -> ออกเลขใหม่ในระบบใหม่อัตโนมัติ
+     *   คืน [internal_id ที่จะใช้, เลข PO เดิม (legacy_po)]
+     */
+    private function resolveInternalIdForLegacy(string $rawPo): array
+    {
+        if (internal_po::where('internal_id', $rawPo)->exists()) {
+            return [internal_po::genInternalId(), $rawPo];
+        }
+        return [$rawPo, $rawPo];
+    }
+
+    /**
      * สร้าง internal_po + internal_poline จาก 1 แถวของตาราง store (งานภายใน)
      * ใช้ร่วมกันทั้งตอน "จัดการ" (claim, ไม่มี location) และตอน "ระบุตำแหน่ง" (มี location)
      * internal_id = เลข PO ดิบ (ไม่มี prefix "PO") เช่น 6907-A0115
@@ -2473,12 +2540,17 @@ class StoreController extends Controller
         string $user,
         \Carbon\Carbon $now,
         ?string $location = null
-    ): bool {
-        $internalId = $row->PO; // เลข PO ดิบ = internal_id เช่น 6907-A0115
+    ) {
+        $rawPo = (string) $row->PO; // เลข PO ดิบจากระบบเก่า เช่น 6907-A0115
 
-        if (internal_po::where('internal_id', $internalId)->exists()) {
+        // งานใบนี้ (เลข PO เดิม + SO เดียวกัน) ถูกดึงเข้าระบบใหม่ไปแล้ว -> ไม่สร้างซ้ำ
+        if ($this->legacyInternalAlreadyMigrated($rawPo, $row->SO)) {
             return false;
         }
+
+        // เลข PO ภายในเดิมชนกับงานอื่นในระบบใหม่ (คนละ SO) -> ออกเลขใหม่อัตโนมัติ กัน PK ซ้ำ
+        //   เก็บเลขเดิมไว้ที่ legacy_po เพื่อ trace + กันงานเดิมโผล่ให้กดซ้ำ
+        [$internalId, $legacyPo] = $this->resolveInternalIdForLegacy($rawPo);
 
         // ไม่มี location = แค่ "กำลังจัดการ" (claim) -> ST_PENDING (ยังต้องกด "จัดการเสร็จสิ้น" ก่อน)
         //   ไส้ในยังไม่ปักหมุด (picked_at = null) เหมือน flow ของ external
@@ -2487,6 +2559,7 @@ class StoreController extends Controller
 
         internal_po::create([
             'internal_id'   => $internalId,
+            'legacy_po'     => $legacyPo,
             'SO_id'         => $row->SO,
             'POref'         => $poref,
             'customer_name' => $custName,
@@ -2512,7 +2585,8 @@ class StoreController extends Controller
             ]);
         }
 
-        return true;
+        // คืน internal_id ที่ใช้จริง (อาจเป็นเลขใหม่ถ้าชน) เพื่อให้ผู้เรียกแจ้งผู้ใช้ได้
+        return $internalId;
     }
 
     public function legacyClaim(Request $request)
@@ -2554,9 +2628,11 @@ class StoreController extends Controller
                 $poId       = 'PO' . $row->PO;
                 $isInternal = $this->isInternalPoNumber($row->PO);
 
-                // กันซ้ำ: งานภายในเช็คที่ internal_po, งานปกติเช็คที่ po_receives
+                // กันซ้ำ: งานภายในเช็คที่ internal_po (เลข PO เดิม + SO เดียวกัน = งานเดิม),
+                //         งานปกติเช็คที่ po_receives
+                //   หมายเหตุ: ถ้าเลข PO ภายในซ้ำแต่คนละ SO ไม่ถือว่าซ้ำ -> createInternalFromLegacyRow จะออกเลขใหม่ให้เอง
                 if ($isInternal) {
-                    if (internal_po::where('internal_id', $row->PO)->exists()) {
+                    if ($this->legacyInternalAlreadyMigrated((string) $row->PO, $row->SO)) {
                         return ['ok' => false, 'message' => 'PO นี้มีคนกำลังจัดการอยู่แล้ว หรือถูกย้ายไปแล้ว'];
                     }
                 } else {
@@ -2589,7 +2665,7 @@ class StoreController extends Controller
 
                 // PO ที่มี A (งานภายใน) -> เก็บที่ internal_po ไม่ใช่ po_receives
                 if ($isInternal) {
-                    $this->createInternalFromLegacyRow(
+                    $newInternalId = $this->createInternalFromLegacyRow(
                         $row,
                         $lines,
                         $billMeta->{self::TBLBILL_POREF_COLUMN} ?? null,
@@ -2598,7 +2674,12 @@ class StoreController extends Controller
                         $doBy,
                         $now
                     );
-                    return ['ok' => true, 'message' => 'เริ่มจัดการงานแล้ว'];
+                    // ถ้าเลข PO เดิมชนกับงานในระบบใหม่ จะได้เลขใหม่ -> แจ้งผู้ใช้
+                    $msg = 'เริ่มจัดการงานแล้ว';
+                    if ($newInternalId && (string) $newInternalId !== (string) $row->PO) {
+                        $msg = 'เริ่มจัดการงานแล้ว (เลข PO ภายในซ้ำ เปลี่ยนเป็น ' . $newInternalId . ')';
+                    }
+                    return ['ok' => true, 'message' => $msg];
                 }
 
                 PoReceive::create([

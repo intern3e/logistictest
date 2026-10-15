@@ -100,6 +100,9 @@ public function dashboard(Request $request)
         return $item;
     });
 
+    // lazy-sync: รวบเลขบิลในหน้านี้ เช็คบิลยกเลิกจาก ERP ทีเดียว -> statuspdf='6' + cancel_remark
+    \App\Services\BillCancellation::applyToModels($bill->getCollection());
+
     if ($bill->isEmpty()) {
         $message = $isSearching
             ? 'ไม่พบข้อมูลที่ค้นหา (ค้นทุกวันแล้ว)'

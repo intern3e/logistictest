@@ -399,7 +399,7 @@ table a:hover {
                 </button>
             </td>
             <td>{{ $alldetailId }}</td>
-            <td>{{ $billid }}</td>
+            <td>{{ $billid }}@if(($item->statuspdf ?? null) == 6)<br><span style="color:#c92a2a;font-weight:700;">⛔ ยกเลิกแล้ว</span>@if(!empty($item->cancel_remark))<br><span style="color:#c92a2a;font-size:11px;">หมายเหตุ: {{ $item->cancel_remark }}</span>@endif @endif</td>
             <td>{{ $customerName }}</td>
             <td>{{ $customerTel }}</td>
             <td>{{ $dateOfDali }}</td>

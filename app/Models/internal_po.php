@@ -13,7 +13,7 @@ class internal_po extends Model
     public    $timestamps   = false;
 
     protected $fillable = [
-        'internal_id', 'SO_id', 'POref','customer_code',
+        'internal_id', 'legacy_po', 'SO_id', 'POref','customer_code',
         'customer_name', 'create_by', 'timestamp',
         'status',
         'pick_by',     'pick_at',      // ด่าน 1: จัดเสร็จ
