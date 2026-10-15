@@ -1226,9 +1226,15 @@ class AdminController extends Controller
         }
 
         try {
+            // ยกเลิกจากหน้าแอดมิน: จดว่าใคร/เมื่อไหร่ไว้เป็นหมายเหตุ (ถ้ายังไม่มีหมายเหตุ)
+            $who = optional(auth('web')->user())->name ?: '-';
             DB::table('tblbill')
                 ->whereIn('so_detail_id', $soDetailIds)
                 ->update(['statuspdf' => '6']);
+            DB::table('tblbill')
+                ->whereIn('so_detail_id', $soDetailIds)
+                ->where(function ($q) { $q->whereNull('cancel_remark')->orWhere('cancel_remark', ''); })
+                ->update(['cancel_remark' => 'ยกเลิกจากหน้าแอดมิน โดย ' . $who . ' · ' . now()->format('d/m/Y H:i')]);
 
             return response()->json(['success' => true]);
         } catch (\Exception $e) {

@@ -43,6 +43,19 @@ class SyncCancelledBills extends Command
         }
 
         $this->info("เสร็จ: พบ+ซิงก์บิลยกเลิก {$cancelledTotal} ใบ");
+
+        // เติมหมายเหตุให้บิลที่มาร์คยกเลิกไว้แล้วแต่หมายเหตุยังว่าง (ดึงจาก SOInvHDRemark / log ERP)
+        $needRemark = DB::table('tblbill')
+            ->where('statuspdf', BillCancellation::CANCELLED_STATUSPDF)
+            ->where(function ($q) { $q->whereNull('cancel_remark')->orWhere('cancel_remark', ''); })
+            ->whereNotNull('billid')->where('billid', '<>', '')
+            ->where('time', '>=', $since)
+            ->pluck('billid');
+        $this->info("เติมหมายเหตุบิลยกเลิก {$needRemark->count()} ใบ...");
+        foreach ($needRemark->chunk($chunk) as $group) {
+            BillCancellation::sync($group->all());
+        }
+        $this->info('เติมหมายเหตุเสร็จ');
         return self::SUCCESS;
     }
 }

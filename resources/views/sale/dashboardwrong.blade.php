@@ -402,14 +402,15 @@
     // คอลัมน์จัดการ (admin เท่านั้น) : บล็อก/ปลดบล็อก (ถ้ามี so) + ปุ่มแก้ + เตะออกจากของผิด
     function actionsCell(r){
         if (!CAN_SOLVE) return '';                           // ไม่ใช่ admin -> ไม่มีคอลัมน์จัดการ
-        if (r.bill_cancelled) return '<td><span style="color:#c92a2a;font-weight:700;">⛔ ยกเลิกแล้ว</span></td>';   // บิลยกเลิก -> กดอะไรไม่ได้
+        // บิลยกเลิก: ยังบล็อก/ปลดบล็อก SO + เคลียร์ข้อมูลได้เหมือนเดิม — ซ่อนแค่ปุ่มที่ใช้เลขบิลเดิม (บิลเป็นโมฆะแล้ว)
+        const cancelled = !!r.bill_cancelled;
         let btns = '';
         if (r.state === 'open'){
             // ส่งใหม่เลขบิลเดิม (บิล + เอกสารชั่วคราว SP รวมที่ไม่ได้เชื่อม SO) — เลือก assign/return เหมือนหน้า billreceive
-            if (r.type === 'bill' || r.type === 'doc'){
+            if (!cancelled && (r.type === 'bill' || r.type === 'doc')){
                 btns += '<button type="button" class="btn btn-resend" data-act="resend" data-job="'+esc(r.job_key)+'" onclick="openRedo(\''+escJs(r.job_key)+'\',\''+escJs(r.bill_no)+'\',\''+escJs(r.driver||'')+'\')">ส่งใหม่เลขบิลเดิม</button>';
             }
-            if (r.problem === 'ค้างบิล'){
+            if (!cancelled && r.problem === 'ค้างบิล'){
                 // ค้างบิล: เปิดเอกสารชั่วคราว (เขียนเลขแล้วหายเอง) — ไม่มีบล็อก
                 btns += '<button type="button" class="btn btn-tempdoc" data-act="tempdoc" data-job="'+esc(r.job_key)+'" onclick="openTarget(\'tempdoc\',\''+escJs(r.job_key)+'\',\''+escJs(r.bill_no)+'\')">เปิดเอกสารชั่วคราว</button>';
             }
@@ -420,7 +421,8 @@
         }
         // บล็อก/ปลดบล็อก: เฉพาะ "สินค้าผิด" (ค้างบิลไม่มีบล็อก)
         const gate = (r.state === 'open' && r.problem === 'สินค้าผิด') ? approveHtml(r) : '';
-        return '<td><div class="gate-box">'+gate+'<div class="actions-cell">'+btns+'</div></div></td>';
+        const cTag = cancelled ? '<div style="color:#c92a2a;font-weight:700;margin-bottom:4px;">⛔ บิลยกเลิกแล้ว</div>' : '';
+        return '<td><div class="gate-box">'+cTag+gate+'<div class="actions-cell">'+btns+'</div></div></td>';
     }
     async function toggleApprove(btn, soId, val){
         btn.disabled = true;
