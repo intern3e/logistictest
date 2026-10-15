@@ -1168,7 +1168,7 @@ class StoreController extends Controller
     {
         if (!$user) return false;
         if (in_array($user->role ?? '', ['admin', 'stock', 'store'], true)) return true;
-        $allowedNames = ['joyindy', 'jun', 'aom', 'ladda', 'wunwun', 'kae'];
+        $allowedNames = ['joyindy', 'jun', 'aom', 'ladda', 'wunwun', 'kae','แต๋น'];
         return in_array(strtolower(trim((string) ($user->name ?? ''))), $allowedNames, true);
     }
 

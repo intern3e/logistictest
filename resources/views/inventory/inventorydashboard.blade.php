@@ -472,6 +472,7 @@
     .top-list-h{margin:0 0 10px 4px;font-size:15px;font-weight:600}
     .top-list-h[hidden],.tbl-wrap[hidden],.top-swiper[hidden],.top-empty[hidden]{display:none}
     .top-head p b{color:var(--accent);font-weight:600}
+    .top-head p:empty{display:none}
     .top-empty{display:flex;flex-direction:column;align-items:center;gap:6px;padding:56px 16px 64px;text-align:center}
     .top-empty b{font-size:17px;font-weight:600}
     .top-empty span{color:var(--slate)}
@@ -482,7 +483,7 @@
     .cat-head h3{font-size:20px;font-weight:700;letter-spacing:-.01em}
     .cat-head span{font-size:13.5px;color:var(--slate)}
     .cat-head span b{color:var(--ink)}
-    .cat-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:18px}
+    .cat-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(max(210px,calc((100% - 90px)/6)),1fr));gap:18px}
     .ccard{display:flex;flex-direction:column;border:1px solid var(--line-soft);border-radius:18px;background:var(--surface);overflow:hidden;box-shadow:0 0 0 1px var(--card-ring),var(--card-shadow,none);transition:transform .25s var(--ease),box-shadow .25s}
     .ccard:hover{transform:translateY(-3px);box-shadow:0 0 0 1px var(--card-ring),var(--shadow-lift)}
     .ccard .tc-body{padding:12px 14px 14px;gap:5px}
@@ -491,6 +492,33 @@
     .ccard .tc-meta>span:first-child{max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
     .cat-wrap{scroll-margin-top:96px}
     @media(max-width:760px){.cat-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}.cat-head h3{font-size:18px}}
+    /* จัดกลุ่มแคตตาล็อกตามหมวดหมู่ */
+    .cat-grid.grouped{display:block}
+    .cat-group{margin-bottom:30px}
+    .cat-group:last-child{margin-bottom:0}
+    .cat-group-h{display:flex;align-items:center;gap:10px;margin:0 4px 14px}
+    .cat-group-h .dot{width:10px;height:10px;border-radius:3px;background:var(--accent);flex:0 0 auto}
+    .cat-group-h .nm{font-size:16px;font-weight:700;letter-spacing:-.01em}
+    .cat-group-h .ct{font-size:12.5px;color:var(--slate);white-space:nowrap}
+    .cat-group-h .ln{flex:1;height:1px;background:var(--line-soft)}
+    /* แต่ละประเภทแสดงแถวเดียว เลื่อนแนวนอนดู · กด "ดูทั้งหมด" เพื่อขยายเป็นตารางทั้งประเภท */
+    .cat-grid-in{display:flex;gap:16px;overflow-x:auto;scroll-snap-type:x proximity;padding:6px 4px 16px;margin:0 -4px;scrollbar-width:none;-ms-overflow-style:none;overscroll-behavior-x:contain;-webkit-overflow-scrolling:touch}
+    .cat-grid-in::-webkit-scrollbar{display:none;height:0}
+    .cat-grid-in>.ccard{flex:0 0 220px;scroll-snap-align:start}
+    .cat-group.open .cat-grid-in{display:grid;grid-template-columns:repeat(auto-fill,minmax(max(210px,calc((100% - 90px)/6)),1fr));gap:18px;overflow:visible;scroll-snap-type:none}
+    .cat-group.open .cat-grid-in>.ccard{flex:none}
+    .cat-grid-in{cursor:grab}
+    .cat-grid-in.dragging{cursor:grabbing;scroll-snap-type:none;user-select:none}
+    .cat-grid-in img{-webkit-user-drag:none;user-select:none}
+    .cat-group.open .cat-grid-in{cursor:auto}
+    .cat-nav{display:flex;gap:6px;flex:0 0 auto}
+    .cat-arr{width:30px;height:30px;border:1px solid var(--line);border-radius:50%;background:var(--surface);color:var(--ink);font-size:18px;line-height:1;cursor:pointer;display:grid;place-items:center;transition:background .2s}
+    .cat-arr:hover{background:var(--surface-2)}
+    .cat-all{flex:0 0 auto;height:30px;padding:0 14px;border:1px solid var(--line);border-radius:999px;background:var(--surface);color:var(--accent);font-size:13px;font-weight:600;font-family:inherit;cursor:pointer;transition:background .2s}
+    .cat-all:hover{background:var(--surface-2)}
+    .cat-group.open .cat-nav{display:none}
+    .fld[hidden]{display:none}
+    @media(max-width:760px){.cat-grid-in>.ccard{flex-basis:170px}.cat-nav{display:none}.cat-group-h{flex-wrap:wrap}}
     /* ถ้าโหลด Swiper ไม่ได้: เลื่อนแนวนอนธรรมดา */
     .top-swiper.no-swiper .swiper-wrapper{display:flex;gap:20px;overflow-x:auto;scroll-snap-type:x mandatory;padding:0 16px 8px}
     .top-swiper.no-swiper .swiper-slide{flex:0 0 280px;scroll-snap-align:center}
@@ -503,6 +531,40 @@
       .top-swiper .swiper-slide{width:250px}
       .top-swiper .swiper-button-prev,.top-swiper .swiper-button-next{display:none}
     }
+    /* การ์ดอุปกรณ์ไฟฟ้า (.ccard.ext) */
+    .ccard.ext .tc-media{background:#fff}
+    .ccard.ext .tc-media img{object-fit:contain;padding:8%}
+    .cc-dots{position:absolute;left:0;right:0;bottom:10px;display:flex;justify-content:center;gap:6px}
+    .cc-dots button{width:8px;height:8px;padding:0;border:none;border-radius:50%;background:rgba(29,32,35,.22);cursor:pointer;transition:background .2s,transform .2s}
+    .cc-dots button:hover{transform:scale(1.25)}
+    .cc-dots button.on{background:var(--accent)}
+    /* ===================== ดูรูปใหญ่ (lightbox) ===================== */
+    .tcard .tc-media:has(img.ready),.ccard .tc-media:has(img.ready){cursor:zoom-in}
+    .lb{position:fixed;inset:0;z-index:6000;display:flex;flex-direction:column;background:rgba(10,11,13,.93);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);animation:fadeIn .2s var(--ease);color:#fff;touch-action:pan-y}
+    .lb[hidden]{display:none}
+    .lb-top{display:flex;align-items:center;gap:12px;padding:14px 18px;flex:none}
+    .lb-info{min-width:0;flex:1}
+    .lb-name{font-size:16px;font-weight:600;line-height:1.3;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+    .lb-sub{margin-top:2px;font-size:12.5px;color:rgba(255,255,255,.62);display:flex;gap:10px;align-items:center}
+    .lb-rank{padding:1px 8px;border-radius:999px;background:var(--accent);color:#fff;font-weight:700;font-size:12px}
+    .lb-x,.lb-nav{border:none;cursor:pointer;color:#fff;background:rgba(255,255,255,.14);display:grid;place-items:center;transition:background .2s,transform .2s}
+    .lb-x:hover,.lb-nav:hover{background:rgba(255,255,255,.26)}
+    .lb-x{width:40px;height:40px;border-radius:50%;font-size:22px;line-height:1;flex:none}
+    .lb-stage{position:relative;flex:1;min-height:0;display:flex;align-items:center;justify-content:center;padding:0 72px}
+    .lb-img{max-width:100%;max-height:100%;min-width:min(100%,78vmin);min-height:min(100%,78vmin);object-fit:contain;border-radius:10px;background:#fff;box-shadow:0 30px 80px -20px rgba(0,0,0,.7);user-select:none;-webkit-user-drag:none}
+    .lb-nav{position:absolute;top:50%;transform:translateY(-50%);width:46px;height:46px;border-radius:50%;font-size:22px}
+    .lb-nav:hover{transform:translateY(-50%) scale(1.08)}
+    .lb-prev{left:16px}.lb-next{right:16px}
+    .lb-nav[hidden]{display:none}
+    .lb-bot{flex:none;display:flex;flex-direction:column;align-items:center;gap:10px;padding:12px 16px 18px}
+    .lb-count{font-size:13px;color:rgba(255,255,255,.7)}
+    .lb-thumbs{display:flex;gap:8px;max-width:100%;overflow-x:auto;padding:2px}
+    .lb-thumbs button{flex:none;width:58px;height:58px;padding:0;border:2px solid transparent;border-radius:10px;overflow:hidden;background:#fff;cursor:pointer;opacity:.6;transition:opacity .2s,border-color .2s}
+    .lb-thumbs button:hover{opacity:.9}
+    .lb-thumbs button.on{opacity:1;border-color:var(--accent)}
+    .lb-thumbs img{width:100%;height:100%;object-fit:cover;display:block}
+    @media(max-width:640px){.lb-stage{padding:0 8px}.lb-nav{width:38px;height:38px}.lb-prev{left:8px}.lb-next{right:8px}.lb-thumbs button{width:48px;height:48px}}
+    @media(prefers-reduced-motion:reduce){.lb{animation:none}}
   </style>
 </head>
 <body>
@@ -520,6 +582,20 @@
 <div class="toast" id="toast" role="status" aria-live="polite"></div>
 
 <!-- ประวัติเข้า-ออกของสินค้า -->
+<!-- ดูรูปสินค้าใหญ่ (กดที่รูปในการ์ด) -->
+<div class="lb" id="lb" hidden role="dialog" aria-modal="true" aria-label="ดูรูปสินค้า">
+  <div class="lb-top">
+    <div class="lb-info"><div class="lb-name" id="lbName"></div><div class="lb-sub"><span class="lb-rank" id="lbRank" hidden></span><span id="lbSub"></span></div></div>
+    <button type="button" class="lb-x" id="lbClose" aria-label="ปิด">&times;</button>
+  </div>
+  <div class="lb-stage" id="lbStage">
+    <button type="button" class="lb-nav lb-prev" id="lbPrev" aria-label="รูปก่อนหน้า">&#10094;</button>
+    <img class="lb-img" id="lbImg" alt="">
+    <button type="button" class="lb-nav lb-next" id="lbNext" aria-label="รูปถัดไป">&#10095;</button>
+  </div>
+  <div class="lb-bot"><div class="lb-count" id="lbCount"></div><div class="lb-thumbs" id="lbThumbs"></div></div>
+</div>
+
 <div class="tx-ov" id="txOv" role="dialog" aria-modal="true" aria-labelledby="txTitle">
   <div class="tx-modal">
     <div class="tx-head">
@@ -582,6 +658,7 @@
       <div class="row-in"><input type="search" id="sBrand" placeholder="ทุกยี่ห้อ" oninput="debounceFilter();renderBrandDD()" autocomplete="off" enterkeyhint="search" role="combobox" aria-expanded="false" aria-controls="brandDD" aria-autocomplete="list"><svg class="chev" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg></div>
       <div class="bdd" id="brandDD" role="listbox" hidden></div>
     </div>
+    <div class="fld fld-sel" id="catSeg" hidden><label for="sCat">ประเภทสินค้า</label><select id="sCat" onchange="applyFilter()"><option value="">ทุกประเภท</option></select><i></i></div>
     <div class="fld"><label for="sLoc">สถานที่เก็บ</label><input type="search" id="sLoc" placeholder="ชั้น / โกดัง" oninput="debounceFilter()" autocomplete="off" enterkeyhint="search"></div>
     <div class="fld fld-sel"><label for="sPriv">บริษัท</label><select id="sPriv" onchange="applyFilter()"><option value="">ทุกบริษัท</option><option value="3E">3E</option><option value="3IN">3IN</option><option value="3EM">3EM</option><option value="3EL">3EL</option><option value="HD">HD</option><option value="EP">EP</option><option value="3P">3P</option><option value="AE&T">AE&T</option></select><i></i></div>
     <div class="fld fld-sel"><label for="sType">ประเภท</label><select id="sType" onchange="applyFilter()"><option value="">ทุกประเภท</option><option value="คลัง">คลัง</option><option value="ทรัพย์สินบริษัท">ทรัพย์สินบริษัท</option></select><i></i></div>
@@ -599,10 +676,9 @@
       <span class="top-badge"><svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l2.2 6.3L20.5 10l-6.3 2.2L12 18.5l-2.2-6.3L3.5 10l6.3-1.7z"/><path d="M19 15l.9 2.6 2.6.9-2.6.9L19 22l-.9-2.6-2.6-.9 2.6-.9z" opacity=".6"/></svg>สินค้าขายดี</span>
       <span class="top-count" id="topCount"></span>
       <div class="top-head">
-        <h2>Top 200 ขายดี</h2>
-        <p id="topSub">สุ่มสินค้าขายดีมาแสดง</p>
+        <p id="topSub"></p>
       </div>
-      <div class="top-empty" id="topEmpty" hidden><b>ไม่พบสินค้าขายดีที่ค้นหา</b><span>ลองพิมพ์ชื่อให้สั้นลง หรือกด “ล้างตัวกรอง”</span></div>
+      <div class="top-empty" id="topEmpty" hidden><b>ไม่พบสินค้าที่ค้นหา</b><span>ลองพิมพ์ชื่อให้สั้นลง หรือกด “ล้างตัวกรอง”</span></div>
       <div class="swiper top-swiper" id="topSwiper">
         <div class="swiper-wrapper" id="topSlides"></div>
         <div class="swiper-pagination"></div>
@@ -627,6 +703,17 @@
   <div id="paging"></div>
 </div>
 
+<script>
+/* ========== ข้อมูลอุปกรณ์ไฟฟ้า 96 รายการ + รูปจริงทุกมุม (ลิงก์ Drive) ==========
+   ELEC_DATA: code = รหัส, name = ชื่อ, category = หมวด, spec = สเปก, images = รหัสไฟล์ Google Drive ของรูปจริง (จากชีต · รูปแรก = รูปหน้าปก) */
+const ELEC_DATA=[{"code":"mv220wbp6dv2bb","name":"Leetechตู้CA416W ขนาด130x181x109 มม.","category":"กล่องและตู้ไฟ","spec":"130x181x109 มม.","images":["1fYI2da4U48IS2Lg_uwE4HRACbeT4Tk5C","1bvntlxaQSGGVxMz7hdk4T01-DQ6-l6jX"]},{"code":"mv22536jis1gdm","name":"Schyller boxes ขนาด150x220x75mm.","category":"กล่องและตู้ไฟ","spec":"150x220x75 มม.","images":["1AnxTns40eWRBoW12r1P8Rqc0eTC2DxZ-","1kr5RQnszHIpS_5gRaJC_iAb2uIwE9gWg"]},{"code":"mv229af7oanzkd","name":"Box ลอย 2x4นิ้ว","category":"กล่องและตู้ไฟ","spec":"2x4 นิ้ว","images":["1_4BCy5N1tWP30jkoxry9prtsNBnAIVGB","1xm9LR8GsAwxPgeEbxpYwf3mIOG7F1rsr"]},{"code":"mv22byeh7dievs","name":"Leetechกล่องWB 305G ขนาด70x120x50มม.","category":"กล่องและตู้ไฟ","spec":"70x120x50 มม.","images":["1dBaPwZKqbwAQ9PgUGTPke0otdSDaquzr","1wqCzP8cDC-_PdJZqZ1Q9knKag9uSC3Vi"]},{"code":"mv22h54csghkpl","name":"Leetechกล่องWB414Wขนาด 100x100x77มม.","category":"กล่องและตู้ไฟ","spec":"100x100x77 มม.","images":["1FfrPrWM4CunRzlmxHpnZA0socPdRufKK","1JAfA9n8UX4NlMfGbGr71qm0ppceFsyPk"]},{"code":"mv22iwsvmipyrn","name":"Leetech บ็อกซ์BR003 ขนาด92x127x62มม.","category":"กล่องและตู้ไฟ","spec":"92x127x62 มม.","images":["1RifnBX0nnjz3fla1bM0TnH4feXywlqki","1kRJ1EInh_2YOE0d4sps8IWctu8-CqIoo"]},{"code":"mv22lym3wgcc8z","name":"NAN O-201Wขนาด74.8x125x48.5มม.","category":"กล่องและตู้ไฟ","spec":"74.8x125x48.5 มม.","images":["1MrxLBAhges9tY5dIuTKms-7zBitRHZp_","1ohwhejVdXr0qDJ1v7IM5KuJRuvKcfvIx"]},{"code":"mv22tok2u2kjna","name":"SENTOSHIบล็อกสนาม(ยางพารา)","category":"กล่องและตู้ไฟ","spec":"","images":["1xUO1TvLNoAOb9dzw4m4D_UB9Q6ZThzRI","1HuLQ7NEYtzkfNdhaa2ZMq8cxtquROYd2"]},{"code":"mv2328od6bfg8p","name":"ULตู้ไฟรางไฟ KAPJ 206NWขนาด 204x204x102","category":"กล่องและตู้ไฟ","spec":"204x204x102","images":["1mb6y5wLYuk_0096ukCezH0K2UOWUF751","1A8peKLPhc6hHpwyvKxUkSFbWqLhBGHjs"]},{"code":"mv23549ipvw2rp","name":"NAN นาโนบ๊อกลอยคุณภาพเหนือมาตรฐาน","category":"กล่องและตู้ไฟ","spec":"","images":["1adS6H4LlIZPbt2br4JIjqH8oG3TW3HaL","1UFBmL7hkWDjticdri08CfpfNjttirSpo"]},{"code":"mv23bf6su910q0","name":"NAN0-207กล่องกันน้ำสีขาว 8x12x4 ขนาด 200x300x104.5มม.","category":"กล่องและตู้ไฟ","spec":"8x12x4","images":["1OS3VT2fEztYJOerqLMlkkYH57EDEga_F","1Bc1zoSCagBL1g3h76XtaoMv9yZICo6ou"]},{"code":"mv23goxu3alxuq","name":"NANO กล่องพักสายไฟกันน้ำ ขนาด6x8","category":"กล่องและตู้ไฟ","spec":"6x8","images":["1HOG6wsxMfwbEm19JURAlnFrgcZhvEffA","1vejLOjoWvAEd2I1acpuYJSwQc1ZI0IPF","1j__mhczhcoD0jjwbR9sPqAsC6avVL-p9"]},{"code":"mv23jbtgyv8ma1","name":"TTM กล่องกันน้ำ ขนาด2x4นิ้ว","category":"กล่องและตู้ไฟ","spec":"2x4 นิ้ว","images":["1MHWjIqtVjjevJYC7nMmi1W4jT-gXEp2k","1-QjW4hVLCt0EIkOJz028K3iZuNdfAiJr","1FtEEhfQ56k9DB66SUrPxe2llnooqL8q2"]},{"code":"mv23s6xxexz5li","name":"CT-380-7C (ขาว) 380x7.6mm","category":"เคเบิ้ลไทร์","spec":"380x7.6 มม.","images":["1Kyc44ngjxSHl8DGzUCL6n4uwyN1isvBN","1FeBdO7SY-RS1Kyj4QN4LK5c3SM95n-BL"]},{"code":"mv23uf1a7ju0xz","name":"CT-385-4C (ขาว) 385-4.8mm","category":"เคเบิ้ลไทร์","spec":"","images":["1SfUOUI6SM-1I1YJu-84LD9P-9USUkmcU","1rm3Bnydm45KVS_7j5Bw5RcVRlo6vheoK"]},{"code":"mv23w5qwnli67r","name":"CT-310-4C (ขาว) 310x4.8mm","category":"เคเบิ้ลไทร์","spec":"310x4.8 มม.","images":["1tBY7P7CuNmEzO64PHNfNrnw8CT_dWy_h","102j_yu6-etuX24T1PBZAI_LW4qmc1BJN"]},{"code":"mv23xmlqeooyzv","name":"CT-310B-4C (ดำ) 310x4.8mm","category":"เคเบิ้ลไทร์","spec":"310x4.8 มม.","images":["1PlJjn0bRGdF7l3kSgc9qZemBNknSTt-6","1VFWehg6ZcWpUs40EO4sSpk4ZfNhb_E0i"]},{"code":"mv23z73s3uu0zx","name":"CT-200-3C (ขาว) 203x3.2","category":"เคเบิ้ลไทร์","spec":"203x3.2","images":["1Totti4gbHEpaxW72s4E745k4tkd6YVh9","1I3RxHxKmmCGv4_cIxE2U78TdaJKTliIM"]},{"code":"mv240vgcr9jrwi","name":"CT-200B-3C (ดำ) 203x3.2mm","category":"เคเบิ้ลไทร์","spec":"203x3.2 มม.","images":["1cebo6IECeRZcI1sOCdlOn6GNmc7PliHl","1sKywGmNGaTxI8BSRarGwzZz65TvworH6"]},{"code":"mv251eo9v4eatu","name":"CT-150-3C (ขาว) 150x3.6mm","category":"เคเบิ้ลไทร์","spec":"150x3.6 มม.","images":["13Fwy1GhxqhMdnz6I8Yf1_pyn47_N3Udq","1xM43ZJQtzbp9OVKy-76FmVwQp4wf5pDs"]},{"code":"mv252d4vn8ih6e","name":"CT-150B-3C (ดำ) 150x3.6mm","category":"เคเบิ้ลไทร์","spec":"150x3.6 มม.","images":["1BQ6bdvw9lNEamyOm2H0DnGMzli8vam_I","1Hcxx8i0GR_EjDGwU-avodeG_8jHhmtb2"]},{"code":"mv253rv9c5qzw6","name":"CT-250B-4C (ดำ) 250x4.8mm","category":"เคเบิ้ลไทร์","spec":"250x4.8 มม.","images":["1OjMVNOUPPvLtGk4_EVsnOg4BowHTssum","13nqDkl2ODmqkDdEfSchrN1fu9wV63HIK"]},{"code":"mv254u6stg9bcc","name":"CT-250-4C (ขาว) 250x4.8mm","category":"เคเบิ้ลไทร์","spec":"250x4.8 มม.","images":["1b4M7nHKk9BmFMcFFY2PwRz_smMuwwA34","19xd5_zlYO6s9HsaOHJoV0x9E2NjmJ-UF"]},{"code":"mv256k3ed346ei","name":"CT-100B-2C (ดำ) 100mmx2.5mm","category":"เคเบิ้ลไทร์","spec":"100x2.5 มม.","images":["1__KTHue6NSu31lhZ-YePXgtNK5lRzEOQ","1H8xImsEOpx3WyLhJU13SDYwWPgACfLIv"]},{"code":"mv257n3kydtlxj","name":"CT-100-2C (ขาว) 100x2.5mm","category":"เคเบิ้ลไทร์","spec":"100x2.5 มม.","images":["1UZ4nEToD7REFd-OFKmbJbRrNsXC3E7mp","1GvVuz_CouV_ZeVTM4gUjcVsKgVYVzpM2"]},{"code":"mv4p1v8jia8ewu","name":"รางปีกนก","category":"รางและโครงยึด","spec":"","images":["1ipPnW5DClY1Vecrno6HKONXBp97axX8Y","1G7qXKcY-ufWHrfvOsdwsq76a90v1doW0","1vWnUmPq2e2ZKB-U-08rd7h_2SMQ2OEW-"]},{"code":"mv4p48gteyviqi","name":"รางเทอร์มินอล (อลูมิเนียม)","category":"รางและโครงยึด","spec":"","images":["1M5f89-jE8Kpgtg3r4_Ww127mdVxbpNA9"]},{"code":"mv4peapvexa6rz","name":"เทปพันสายไฟ3M TEMFLEX","category":"เทปพันสายไฟ","spec":"","images":["1LfF280QIlYGARBeiD-NaICa9t-T0lIB0","1rttTeaYFvrOzc5opSGJas3sAwTB8HVyj","1wcNCTNqr4JCHyoxKOP3ee_YTNww36ANK"]},{"code":"mv4pgcap5r6eah","name":"เทปพันสายไฟ YAZAKI (สีน้ำตาล)","category":"เทปพันสายไฟ","spec":"","images":["1nn_TuNWXJ6sgCeX_N2TPahz-Se8j9DGk","1jDMelsgiKPhG05p0vlZRLhT61qYrxbJo"]},{"code":"mv4pk9kjrgdg4j","name":"P1709-BOX 20A-125V","category":"สวิตช์และปลั๊ก","spec":"20A 125V","images":["1S1qRsvRVxfnkqEB3rAFSIrMt83y-X7LI","1s_VuKRGTbtcewoSB56sZBnOZzSHvixyd","1iiOA4GAEcGPlFyXencoFdGcL9715Bxm_","1aFSxxi1mLiaG5-D5kArLxPkQSr6hcmLS"]},{"code":"mv4pmrgmv6qfqj","name":"HALOSHI MODEL007 15A-220V","category":"สวิตช์และปลั๊ก","spec":"15A 220V","images":["1CyCBTMe6fJ_KEh_GQTDUQpibUfL_lMGn","1HqfxrJofjY92RMcmbDOQ_H2JFdefUl1x"]},{"code":"mv4qdvfo3wdmw2","name":"เคเบิ้ลแกลน PG21 สีดำ","category":"เคเบิ้ลแกลน","spec":"","images":["17WsdW6Rf1lgrjrk7TEkQind0NeePpTx-","1G6oGulsJAuUdGgKLBUJg0zd1aELD_GOO","1oWHxHl-eswADG47p1sJ2QD4PJXw8JQBB","117S1Rgvi5Wijlx7BAM1tvf76Yu5cIHHF"]},{"code":"mv4qhaxe6z4yne","name":"เคเบิ้ลแกลน VONYE 3/8","category":"เคเบิ้ลแกลน","spec":"","images":["1S-LF07LOYKFVFKm6ccjm3C0hotf2Vm35","1pejTqkM936zO-3GUGvyPj_7Sgmnwgq6k","1y4hh7jxXn0IQJXb9D1MDka5zaGzdHz43"]},{"code":"mv4qj2e16heyr4","name":"เคเบิ้ลแกลน GRIPONE G1/2 สีดำ","category":"เคเบิ้ลแกลน","spec":"","images":["1RitAkN78PncuhRtLmioo3AUoYgiIzke2","1NfAQhaFKywTN9UR4roDSxFRhRNEHRacl"]},{"code":"mv4qlea7pik7q3","name":"เคเบิ้ลแกลน PG9 สีดำ","category":"เคเบิ้ลแกลน","spec":"","images":["1Hja6SRHvEnp6sEdeb0tzHwDOB5eOuVai","19qDoaRqcNXTt7kFTnPZyOMiolK5MZNgB","1iETO1pptKYc0XAFg_8GGRZwqhSCIsuhv"]},{"code":"mv4qqsxal9wvcw","name":"เคเบิ้ลแกลน M22X1.5 สีดำ","category":"เคเบิ้ลแกลน","spec":"","images":["1PNl_pDOlEeMLA1Scc6hWX5vAkjcgN1BY","10ODl7_5Q8NDq3mefIY3HXHtsUcBN-ZQP"]},{"code":"mv4qrnzeko290z","name":"เคเบิ้ลแกลน PG13.5 สีดำ","category":"เคเบิ้ลแกลน","spec":"","images":["1qAVm6GX5EPhefA3Yvd9qCHd91BVNTRvW","1-LC0tYbPyApqKkDY7W4KPLiFm_0CvDW7"]},{"code":"mv4qucnucq4bcr","name":"เคเบิ้ลแกลน PG16E สีดำ","category":"เคเบิ้ลแกลน","spec":"","images":["1xAqnuOq9RodkIh-OOc3ZlnGFS1nHkuZz","1VCULbL-lI71KVpSaisRIdIpZ-xgIczSP"]},{"code":"mv4qvjp50ucqr2","name":"เคเบิ้ลแกลน GRIPONE สีดำ","category":"เคเบิ้ลแกลน","spec":"","images":["1hLLtEVst54cqBUs5pELXQMZtMa4A9z0l","14nO8Lu0Bp0NlqIeA9Rz88Cx7roxoeXuF","1bz0fxMeK4_NOeEBpY6GNWg_2Lcz6kh83"]},{"code":"mv4qxaf08vwxic","name":"เคเบิ้ลแกลน PG16 สีดำ","category":"เคเบิ้ลแกลน","spec":"","images":["1nTFRFv-Dn-azaLvW0DOnqhbGtODu5AK3","1B-CYTVrdkdhoUJ5wOiRFO2EHG8D3Sje3","1UGWdOiA3LGuVWZG8DERIgpQr5DvSjAhi"]},{"code":"mv4r0gphsj7tbs","name":"เคเบิ้ลแกลน M25/1.4 สีเทา","category":"เคเบิ้ลแกลน","spec":"","images":["1ux0jHflpTtYOxeodcD_jGAmM55RD2-Hx","1sKtaOqC-FEnGcKma6kqafkz6kUmTqYAu","1_sKdZ0RhDK46xWuVEWzrDSiuyttGZUxK"]},{"code":"mv4r1sc7ku32ms","name":"เคเบิ้ลแกลน M25x1.5 สีเทา","category":"เคเบิ้ลแกลน","spec":"","images":["1pXuyfM1pyv9iZbDt2FgHfHX3KELLlw0R","1X52lESzZbRhtU6L3osSmXvgIAit9eRqn","11XnA5ZXyUiQQ_gkuNZpVV46GnKLzV2hX"]},{"code":"mv4wyyuu0mijqf","name":"ชิ้นส่วน เคเบิ้ลแกลน สีเทา","category":"เคเบิ้ลแกลน","spec":"","images":["1jecLkzasmcYoYo-w47HgRaMyOdmuTEYW","156Opf775Tyj8fnUD2c80EHYDmGHQgARE"]},{"code":"mv4x1r7xw1pzas","name":"เคเบิ้ลแกลน PG7 สีเทา","category":"เคเบิ้ลแกลน","spec":"","images":["1217FUABlg3deYKPMExQuPMfMYy-CZdzw","1k9JvQsqsrj8KPwsnBtBrG1loMN3899Zu"]},{"code":"mv4x3mn003ivh2","name":"เคเบิ้ลแกลน PG9 สีเทา","category":"เคเบิ้ลแกลน","spec":"","images":["1F9OHFY8KGOZaJHD9qoHpzsJCnNCK8Fs4","1mhNsb2EHWAHmAn_oIKVYdaVe92cNHs_M"]},{"code":"mv4x75dpqphcoq","name":"เคเบิ้ลแกลน SKINOP M20x1.5 สีเทา","category":"เคเบิ้ลแกลน","spec":"","images":["1J16J64LoGKBNzK6Y5Wcr7e5ssn8AR1zK","1voNh0iS_gsfi3qbt-CJb-ulHcJ6PXn5w"]},{"code":"mv4x993k4p19ze","name":"เคเบิ้ลแกลน PC9","category":"เคเบิ้ลแกลน","spec":"","images":["1V_0xMIcRP98eTtGGHbb2swl9Ywnow_J1","1oR1oMrs493F9BwsSGs7dZHwFW0zbGmfq"]},{"code":"mv4ypnfume7vh0","name":"หางปลา CL10-6","category":"หางปลา","spec":"","images":["1PKAA4FsK4gByljH3yXJP2ReZ-qQJEkHV","1NNuODaSHclUHpGiGUxZ-_QRNvxL4ikm4","1T-vFmjvEzMtqWDMIrXmEK2JEUFR_5TBW","1NJMdP3UnSepqyjkB7J_MzaaBrtpp_r4g"]},{"code":"mv4yss19qxg7n5","name":"หางปลา CL35-6","category":"หางปลา","spec":"","images":["1NjmdYV_oBgLumE25qmGzjpDNgbE1n3Pw","1TPt5EnE6W2VM8PtozDDRGCI2Bs-xDlmM","16zE8rGvJhDLCMEGyPuNAfm02mg6avMA7"]},{"code":"mv4ywea89aj4bf","name":"หางปลา CL25-10","category":"หางปลา","spec":"","images":["1ueqdL_lgsY2eq4oS5moyhFzFJMzkVhqo","1-GBX6X-VZt5TW9AEjJ23yeV9f6oZKGiv","1xYo-ib4hQwVS-nWXhF5S5BHcjZ28GusM"]},{"code":"mv4yyt6157viyd","name":"หางปลา CL95-12","category":"หางปลา","spec":"","images":["1Clhw8Kal_MIOKWrKLjUAN_nccN1eXg74","11hTFD7fE6iHQOyQvlg5w81FQHNNqyHwu","1hdDdPqwLoxKamfnP1yel5RLjU4SI9rsO"]},{"code":"mv4z2o58i9na2d","name":"หางปลา CL35-8","category":"หางปลา","spec":"","images":["1OYXEjgE4q4SrPO7Yix8rjPTe0n6YDAaN","1GhE6fbVlZVGJIN1E-pSfNC_VUE1P6jal","1pC4xBlSk4UbKRRcCP235fbRdo6MQ-Qky"]},{"code":"mv4z614gp9sjt3","name":"หางปลาCL120-10","category":"หางปลา","spec":"","images":["1IZ6N5-VV78vr46r3k7_7TZBN56bYmHJu","1G09it9lh6hcRjjes59y1hSg4rn9WL79h"]},{"code":"mv4zaogde9pdpf","name":"หางปลาCL70-12","category":"หางปลา","spec":"","images":["16NzkjYQ0_g6LQnQFcrCfBpPRBRyX9L8c","15KIolKjkoTP_ZXQ3rfcSq_9y6JT1MS5-"]},{"code":"mv4zw9ytcs5gaj","name":"หางปลา Y2.5-4S","category":"หางปลา","spec":"","images":["1-GDL7tIKu2F91wcDlSCHeqz1JjkyMsgD","1dX4KBYWoRWURqeBtmrIbe5kTQuIInf11"]},{"code":"mv4zzoe109o90y","name":"หางปลา Y2.5-3S","category":"หางปลา","spec":"","images":["1dpKb87hgQk2FPmNEpB2KgW3NzZU6_o7Z","1YsBLOSzICXoff3-K1gkoMlFGMQRThb4i"]},{"code":"mv504ot79vpptq","name":"หางปลา CL16-8","category":"หางปลา","spec":"","images":["1u_OwkjHbKiGaBn8mbGxPbxTkr0C5qki8","1p0g67BYXjynWFkwkP1lRRpxioYpVI0N6"]},{"code":"mv50bjgvp8ne0k","name":"หางปลา CL150-12","category":"หางปลา","spec":"","images":["1Gg6yLUV5FjNZ-G0DnZMxELUAKmXRTba9","1GmWQZcbw21Xxf2Q_i6X9Bu3jLyTBaPt6"]},{"code":"mv51lu0m0c5sjd","name":"หางปลากลม 8-10","category":"หางปลา","spec":"","images":["1YqZvEKJ0Ipt3fCdi4LDQ0M6kixD96nWz","1TrrYMqv7eKu9XGfq-029SE0Sh3XgGJV2"]},{"code":"mv51nqggw1pekz","name":"หางปลากลม 25-12","category":"หางปลา","spec":"","images":["1YB7bNKpnUgzGNepppzkLDpINGIWPG7av","1ao1s8cj1QngHFpcJMl9iEBsfcRYYOuPZ"]},{"code":"mv51pjnrxvq5kf","name":"หางปลากลม 4-5","category":"หางปลา","spec":"","images":["1joc8qRgy6QiRFM2pyMR6e4-r_bQEpyLy","1qC6D4s7B4AGIcfOds2iuYwHStcqH76mk"]},{"code":"mv51uiqz5qityq","name":"หางปลาSC35-10","category":"หางปลา","spec":"","images":["1s554sVZo836GSvnkK-iq0i_cF1YGD9bX","1_eT9Hi0umtbguLkXIFZuUxon_m8VrZlf"]},{"code":"mv51vti4vt280n","name":"หางปลาST50-6","category":"หางปลา","spec":"","images":["1_7yuDukbXG2ZzfjMU9_NBL5uFGjXpldy","1-Pz_I1Q6PtlxOA7dBTzRyxbJqwp341kz"]},{"code":"mv51xstk2ji4gz","name":"หางปลากลม10-8 10mm","category":"หางปลา","spec":"","images":["1LvCtbu8ZYcL-JzGPQwlBr1eKXNBLmKtz","1186sEL89GN4_8iCgASQzTkRZ6f-tB7yV"]},{"code":"mv7qw7ec05ix1v","name":"แอลอีดี โคมพาเนล DAYLIGHT6,500K 24WATT","category":"หลอดไฟและโคม","spec":"24W","images":["1Tj54ZnuHzrlh33gFVG--y9XWwkPndxcv","1P7ZJ6qfjvCusjOkOM6DbAo0mpwbGs5Vg","1jwXX8wnN4HPfUgdorH1A2CIq5hOTnxSH"]},{"code":"mv7qyixl3v1sev","name":"แอลอีดี โคมพาเนล DAYLIGHT6,500K 18WATT","category":"หลอดไฟและโคม","spec":"18W","images":["1Qlcy2Acm24vskvwU0HKDWcKE9x7t7jhr","1MIGDO3VUYmvFYCF-oKHfBPWBwK3hYCkA","1p4Fi4KqnjPHAHjLh9VNdpjjswE9_nTP-"]},{"code":"mv7r0k7uyqn6x3","name":"แอลอีดี โคมพาเนล DAYLIGHT 6,500K 12WATT","category":"หลอดไฟและโคม","spec":"12W","images":["1FJxe9q3_wwYz9WLaSRXowqklJzPUJ0of","1K-p-iU_lY2DaoOmtVRo3zuy3DOwfDnJl","1onTowAAFCUepFIqsBOTpoFDFRVRHV7ly"]},{"code":"mv7r2y2pmdd1ii","name":"แอลอีดี ไฮเบย์ 300WATT","category":"หลอดไฟและโคม","spec":"300W","images":["15P1RiHfhZmnHip2bGBn-UKoNIfLDxTYK","1t9VBrYQCzgbHZF9tARVexUcVuj0BN5VL","14QDH1FUKk_ulT5nEzPlCdsjLWQVlab8j"]},{"code":"mv7r4mhitly9ci","name":"แอลอีดี ไฮเบย์ 200WATT","category":"หลอดไฟและโคม","spec":"200W","images":["13fTd5a1-9ZTIm31IRZFPQZnc_T1oupq9","1BPNQq6bUmY8YbGCkQBvlDg42iSCTA2M2","1mC7ZpHplaMZ809ULhypAQckar6NIApFa"]},{"code":"mv7r627fsoz6qf","name":"แอลอีดี ไฮเบย์ 100WATT","category":"หลอดไฟและโคม","spec":"100W","images":["1HivST3ByozV8f_rr-EGjD9yngFpm5-kP","1NKOXdfF5Mxp3z9l-CzTVjktPbLssQJRf","16FjLTHwwwokbcUj6Mi9OSySThhzhGgCL"]},{"code":"mv7r8g2kqjzl8p","name":"BEST LED FLOODLIGT 50WATT","category":"หลอดไฟและโคม","spec":"50W","images":["19OV-Wt3j0rV9hc7FaYG05jInCPWxmO35","18Tyn93R6N22-RBDp36PwfCQPuNSJmco6","1ZkwdqyZ_mms6D30gunEpMBXv6JjoDaKO"]},{"code":"mv7r9fldxeq9gt","name":"BEST LED FLOODLIGT 100WATT","category":"หลอดไฟและโคม","spec":"100W","images":["175MhlStba8iGyRVJpFYnC8Day4Eo0xzn","1W71-XYDNAr4kiYIApnZ-TkcVXvG66Vtq","1qpeGsHIk4BVJHA7Y-y5GX70VdyY1V27F"]},{"code":"mv7raknjyz7i67","name":"BEST LED FLOODLIGT 200WATT","category":"หลอดไฟและโคม","spec":"200W","images":["1xDjH0lPFFUpQb5Aa0UJgZD0qxXmOOlhI","1cr-Niwel76KIytBSk8YXOQ213CKIPDzx","1ZkK2khcRLeLj6S4Z8ORBTsW_z-Yx7ot0"]},{"code":"mv7rbwp3sq9cjr","name":"BEST LED FLOODLIGT 400WATT","category":"หลอดไฟและโคม","spec":"400W","images":["19vFK7f8FxHfo4FM1_IDQmdx7MGuxrgKW","17ctY7bIZIUGwBtk9l3PdWRKNBisS1LyH","1yj07XJw5u8XgjSxvTJPp14-WI3EaZpbN"]},{"code":"mv7ri4ec6lxx5p","name":"LUGA 18W/6500K ขนาด28x1200x28 มิลลิเมตร","category":"หลอดไฟและโคม","spec":"28x1200x28 มม. · 18W","images":["1vm70SURGsE2vSyf0e9U7aw2mymoqnpqr","1NjurTpDopzchQI3mTLldcj62q6nzdzsh","121a0e8CUR7BkO3YeEu7q8pIgxoW4OOK5","101gt4dnWGEWAKZn2VV5SzDUVIcOX61xw","1AQK7G_Eao75SgOKKna3RVMFoVEuGLki4"]},{"code":"mv7rn6tx5z3wlv","name":"หลอด T8 รุ่น อีโค่2IN1","category":"หลอดไฟและโคม","spec":"","images":["16OHwGzvOyWun3s6oIdgk2qymg3rC2ne0","1RKb9j43gTYry4oNWyby5PcMzqInYEcKu","1q6ykYd687qPgqX6pRpV3dmxOuR_DxR_X","1E1CPdCf-ZPrqY8IKcXPkenKpZ9nACdSA"]},{"code":"mv7rpcrz7roi75","name":"B-FT8G13-18D","category":"หลอดไฟและโคม","spec":"","images":["1u1D5TRt1x8NBW3n-ijRkhzDdPJs7s0pe","1yDDwwPTNiQJp64zh8cD6aEcDCcE0OXnq","1pHYVbvVYGBYhx4O1Qhbf5xKbNhu7dQ1B","1r9dj0DuTz4n0-Hrq9t0WqPFNux5iWcEQ"]},{"code":"mv7rsbrnftdk5c","name":"EXOLINK DE LEDTUBE 1200MM 18W 765 T8 G13","category":"หลอดไฟและโคม","spec":"18W","images":["1WqsdwuQkvPqBZIWv_VY9wh9Au0xWc8kk","15fdAUqLxjWM8GCOShrQ7UV23bMVSC9XU","1t5r5OOpoJiVo6bJyMGcefypwc7EKZwMx","10wRbZCo0zNBcSpYJVVcYDXGIVlZltZXt"]},{"code":"mv7ru89m6wm589","name":"หลอดT8 รุ่นอีโค่ 2IN1(แบบสั้น)","category":"หลอดไฟและโคม","spec":"","images":["1M3HYowkHs_NCdmGESb9eWIIYvPUvzWOe","1K7SKu7ofg1crobwr5t5jAp3fj02WhfCY","1mYj0BTUdfSokaqI6B_SpZqwo0SyiX7FU"]},{"code":"mv7rxbwzmvnexm","name":"ECOFIT LEDTUBE (แบบเล็ก)","category":"หลอดไฟและโคม","spec":"","images":["1vCtba4imubru6bojk4MAvj4IRG6mWwIw","1nDhbAaBCOls3tynP4PEjIQfNcrmwtCN5","1_ypX3_lr84mr_2bwScU6CDYZSfhgVSyB"]},{"code":"mv7rykn8lrpfu1","name":"ECOFIT LEDTUBE","category":"หลอดไฟและโคม","spec":"","images":["18TOgK910rTJWcLqetfI9ms7WW75CeCJh","1rYgKzppH44ibAIc6x0mY5ybL6OAr8uRK","1LsmsYx2D90OU7Xto4spjPhAe6pOqrdOy","1BzyVV7E3tuyDP7Ahi53u08rw5Vv28RBN"]},{"code":"mv7s14i7d2lu1u","name":"3ELIGHT T8 G13 220VAC 18W 2200M","category":"หลอดไฟและโคม","spec":"18W","images":["1UQarGniJ7YXKTU-L-q1G5R5nmgnGJYQf","1mJoyp8WY9D_ZmfM8-jm_l4Ni0xHYkmvI","1WXn1xhH6tUoSxyDogX5cZ1_fTI54Yv90"]},{"code":"mv7s6z6hwuw830","name":"BLACK LIGHT 18W","category":"หลอดไฟและโคม","spec":"18W","images":["17dk9OSIeG6z9DXo_eijgcXzrkcbOecuQ","1ZwQIrVEzuozb8znWmG5CPuJfMHnsi7Hj","1w1qlmBZq0NVymUCF99SqgenY98AR0GE2"]},{"code":"mv7s9bdzt6v1jw","name":"หลอดฟลูออเรสเซนต์ T8 18W","category":"หลอดไฟและโคม","spec":"18W","images":["1XiVyAQLeZ6xa76Ky7QwMLFkbbOD2pG8V","1hCAiifq94Np0PyFyPjLICUIEQ7OEj59Y","1dTahWuRx7fOo7dTHzYAOvjEV1pIcmUh0"]},{"code":"mv7sbnncyhbgjg","name":"TOSHIBA FL18W T8 EX","category":"หลอดไฟและโคม","spec":"","images":["1RrYk7WfnO48Tl-pweP82GNc8fF0UT-Ao","1uNw_a6TIR_OF-a1dirOw02yzaE3Jr_Nv","1PaqUmGnNol_g3QO0lSgFF66DbwgJ5Dc0"]},{"code":"mv7sfxj5pv5x9d","name":"PHILIPS BN058C LED9/CW L900 GM","category":"หลอดไฟและโคม","spec":"","images":["1vCw-TU5O6kzqcH8CycpCLtGYOwAH1S24","16D3EnUMC6zsd62Em2_WT9LnEZGF3RHe6","1I26E4QYT_HEg6n_tfStdQogPtH_oMLx7","1MMAlHaJA9PQIz80VAzYdgZDqCymlJhDp"]},{"code":"mv7sjckoz5j2h5","name":"IWC-LED-T8-360-30W-3000LM-WH","category":"หลอดไฟและโคม","spec":"","images":["1-WfwJEtE9GCeIw3JqEaTgWe0f8pEqolN","1OKYHIlOkvA2ADWfWVh4_OpxMth7bTMi9","1BrW_J-P8ov-LdNH4zmJCKsM5B8n5K8HZ"]},{"code":"mv7smjsfi5guv3","name":"หลอดฟลูออเรสเซนซ์ 36 วัตต์","category":"หลอดไฟและโคม","spec":"36W","images":["1iqutveEEttAwiuI029nl1VAAjpmwjTw3","1AkUBCLAYMIVIdZTFb9m_FSzN7bVHoV13","1rSXrRlm0uD2_0EHmDHkm8b1cUMikztJz"]},{"code":"mv7srrs6cno267","name":"รางตู้แร็ก","category":"รางและโครงยึด","spec":"","images":["1suSD36po6qOXYqzdOQzuwvNMWrTi0xSw","14sGD-olHDI8y6nfxtBHKtEGhfErrztGs","1zrhAiXn9xDna5fBOirpCXxzHUUi5FD5T"]},{"code":"mv7suv06qogk2k","name":"เสาแขวนชั้นวางสินค้าแบบเจาะรู 20x20","category":"รางและโครงยึด","spec":"20x20","images":["1gBuzACvmd2q0B1FmweNzgSPxmQkJeUc0","17kl9stTBnr0aOUs2zxQWTitHuW-qKFly","12kSNN9PlNOBrn3QfAbBM088lU84PmfLd","1sUj__vqNnN4FqhybkiOE7wejkUCkFJMl"]},{"code":"mv7sxcydul6zd7","name":"รางเหล็กเจาะรู WD-8040-8","category":"รางและโครงยึด","spec":"","images":["1CUuNvg3y_QHB5YPc7944Rvp6ebsz7tJf","1Hk7StpjJnRPdtzptn_JISsjPn4GWo3z4","1fKHIPzLs-suCk-yHNhVoM2QRcsj4Bwa8","1nzMbSOFUr2esGwX1kXqTfCOtv1tS0z-d"]},{"code":"mv7t70o7sq1d84","name":"WEG6803WK","category":"หลอดไฟและโคม","spec":"","images":["1xg9-ZV1yIP2Q83uD6FYSNlimCMZam_PS","1lfvDa0IDLWst05hFlhYmkqJVR7KIZm6Y"]},{"code":"mv7t9lmpws02vu","name":"WEG68029WK","category":"หลอดไฟและโคม","spec":"","images":["1U6tcY86pCl8b1QijOPZICrpKhIedw23p","1b9SAgWE4FbCBgHaMcQU1_A_vUEgsHPQy"]},{"code":"mv7tacu2z4mawm","name":"WEG6802WK","category":"หลอดไฟและโคม","spec":"","images":["1FfHlvnKBIlRNK85KG701O91j4F7XZ4T7","1R5AU6bts7nvXXs7Ae9Dk5JYm848v_9Q1"]},{"code":"mv7tgthran6p86","name":"PHILIPS ESSENTIAL TH SUPER80 14W 4000K T5","category":"หลอดไฟและโคม","spec":"14W","images":["1zD-6ANkgdt4NHh-81EFcVNFUc0g8AQtA","1Qq2Lj3XpLXzFX50OAbQ2Gxj9IgxAlcvN","1l-A1Srh32HO8wjVaV3hkFszTfjFaDUyh","1RiK-PMp-7XOypT9-25oKTBd9V0iA6MDx"]},{"code":"mv7tldc5ftjval","name":"PHILIPS ESSENTIAL SUPER 80 LONG LIFE 14W 6500K T5","category":"หลอดไฟและโคม","spec":"14W","images":["1ODIslJi3YwyjwtIAfAYVZo3MI8gghFed","1kzkAE5KwmnktRo72VHe_nsapFRGpdbjE","1APy6Gf5czy3jNGPpX470gIcWfuZ7nBgK","13CvQ2HG30NsZ5PhtMxmrI8uqBCXbwuZw"]}];
+// ELEC_IMG เลิกใช้แล้ว: รูปอุปกรณ์ไฟฟ้าใช้ลิงก์ Google Drive จากชีตโดยตรง (ดู elecImgUrl)
+const elecImgUrl=id=>`https://lh3.googleusercontent.com/d/${id}=w${TOP_IMG_W}`;
+/* ========== รูป Top 200 ขายดี (ฝังในไฟล์นี้) ==========
+   TOP_PIC: รหัสสินค้า → รหัสรูป (อยู่ใน TOP_IMG หรือ ELEC_IMG) · ใช้แทนรูปเดิมของสินค้านั้น */
+const TOP_PIC={};   // เลิกใช้รูปที่เลือก/หยิบมาจากสินค้าอื่นแล้ว: ใช้เฉพาะรูปของสินค้านั้นเอง
+const TOP_IMG={};
+</script>
 <script>
 const $=(id)=>document.getElementById(id);
 const CSRF=document.querySelector('meta[name="csrf-token"]').content;
@@ -681,7 +768,7 @@ let exMap={},openSubKey=null;
 let filterTimeout=null;
 let topMode=false;   // true = กำลังแสดงสินค้าขายดี (Top 200) เรียงตามจำนวนครั้งที่ขาย
 let loadSeq=0;       // กันผลโหลดเก่า (async) มา render ทับผลใหม่ (เช่น กด Top200 ระหว่างโหลดปกติ)
-let currentFilters={id:'',name:'',brand:'',location:'',priv:'',type:''};
+let currentFilters={id:'',name:'',brand:'',cat:'',location:'',priv:'',type:''};
 let progressInterval = null;
 let isEditingRow = false; // true ขณะกำลังเพิ่ม/แก้ไขแถว เพื่อกัน auto-refresh ทับข้อมูลที่กำลังพิมพ์
 
@@ -695,7 +782,7 @@ function hideOv(){
   clearInterval(progressInterval);
   document.getElementById('progressBar').style.width = '100%';
   document.getElementById('ovPercent').textContent = '100%';
-  
+
   setTimeout(() => {
     document.getElementById('ov').classList.remove('on');
     setTimeout(() => {
@@ -709,9 +796,9 @@ function startProgressSimulation(){
   let progress = 0;
   const bar = document.getElementById('progressBar');
   const text = document.getElementById('ovPercent');
-  
+
   clearInterval(progressInterval);
-  
+
   progressInterval = setInterval(() => {
     if (progress < 30) {
       progress += Math.random() * 15;
@@ -720,11 +807,11 @@ function startProgressSimulation(){
     } else if (progress < 90) {
       progress += Math.random() * 3;
     } else {
-      progress = 90; 
+      progress = 90;
     }
-    
+
     if (progress > 90) progress = 90;
-    
+
     bar.style.width = Math.floor(progress) + '%';
     text.textContent = Math.floor(progress) + '%';
   }, 150);
@@ -806,6 +893,7 @@ function applyFilter(){
     id:(document.getElementById('sId').value||'').trim(),
     name:(document.getElementById('sName').value||'').trim(),
     brand:(document.getElementById('sBrand').value||'').trim(),
+    cat:document.getElementById('sCat').value,
     location:(document.getElementById('sLoc').value||'').trim(),
     priv:document.getElementById('sPriv').value,
     type:document.getElementById('sType').value
@@ -817,10 +905,10 @@ function applyFilter(){
 }
 
 function clearFilter(){
-  ['sId','sName','sBrand','sLoc','sPriv','sType'].forEach(id=>document.getElementById(id).value='');
+  ['sId','sName','sBrand','sCat','sLoc','sPriv','sType'].forEach(id=>document.getElementById(id).value='');
   syncSelects();
   markSelects();
-  currentFilters={id:'',name:'',brand:'',location:'',priv:'',type:''};
+  currentFilters={id:'',name:'',brand:'',cat:'',location:'',priv:'',type:''};
   if(topMode){ topApplyFilter(); return; } // ล้างตัวกรองแต่ยังอยู่ในโหมด Top 200
   pg=1;
   loadPage(1,true);
@@ -841,6 +929,13 @@ function setTop200BtnActive(on){
   $('pageTitle').textContent=on?'Top 200 ขายดี':'ค้นหาสินค้า';
   document.title=(on?'Top 200 ขายดี':'ค้นหาสินค้า')+' - 3E TRADING';
   if($('addBtn')) $('addBtn').hidden=on;
+  // ตัวกรองยี่ห้อ ↔ ประเภทสินค้า: โหมด Top 200 (แคตตาล็อก) ใช้ "ประเภทสินค้า", โหมดค้นหาปกติใช้ "ยี่ห้อ"
+  const bs=$('brandSeg'),cs=$('catSeg');
+  if(bs&&cs){
+    bs.hidden=on;cs.hidden=!on;
+    if(on){ if($('sBrand').value){$('sBrand').value='';currentFilters.brand='';} }
+    else if($('sCat').value){ $('sCat').value='';currentFilters.cat='';try{syncSelects();}catch(e){} }
+  }
   if(!on) hideTopCarousel();
 }
 // เมนู "Top 200 ขายดี": แสดงในหน้านี้ (ที่อยู่หน้าเว็บมี #top200 เปิดตรงๆ หรือรีเฟรชแล้วยังอยู่หน้าเดิม)
@@ -871,12 +966,12 @@ async function loadTop200(){
   try{
     const res=await API.get('/api/items/top-selling?limit=200');
     if(seq!==loadSeq) return;   // มีการโหลดใหม่แทรกเข้ามา -> ทิ้งผลเก่า
-    topAll=res.data||[];
+    topAll=(res.data||[]).map((it,idx)=>({...it,_rank:idx+1}));  // อันดับขายดีจริง (1 = ขายดีที่สุด) ติดไปกับสินค้า ไม่เปลี่ยนตามการสุ่ม/กรอง
     subs={};
     pg=1;
     topMode=true;
     applyFilterValues();
-    // มีคำค้น: แสดงเฉพาะสินค้าขายดีที่ตรง/ใกล้เคียง เรียงตามความตรง / ไม่มีคำค้น: สุ่มลำดับ
+    // มีคำค้น: แสดงเฉพาะสินค้าขายดีที่ตรง/ใกล้เคียง เรียงตามความตรง / ไม่มีคำค้น: เรียงอันดับ 1-200
     const topItems=topFilterList();
     products=topItems;totalItems=topItems.length;
     // โหลดรูป 20 ใบแรกให้เสร็จก่อน แล้วค่อยแสดงการ์ด (ตัวโหลดเต็มจอยังแสดงอยู่ระหว่างนี้)
@@ -938,30 +1033,212 @@ function topMediaInner(i){
   }
   return `<div class="tc-ph loading">${TOP_PH}<span>กำลังโหลดรูป</span></div>`;
 }
-function topSlideHTML(it,i){
+// ป้ายอันดับขายดี: 1-3 ได้สีทอง/เงิน/ทองแดง
+function topRankBadge(it){
+  if(!it||!it._rank) return '';
+  const r=it._rank,c=r<=3?' r'+r:'';
+  return `<span class="tc-rank${c}" title="สินค้าขายดีอันดับที่ ${r} จาก 200">#${r}</span>`;
+}
+function topSellBadge(it){
+  return (it&&it.sell_count!=null)?`<span class="tc-sell" title="จำนวนครั้งที่ขายออก">ขาย <b>${Number(it.sell_count).toLocaleString('en-US')}</b> ครั้ง</span>`:'';
+}
+const MAX_IMG=3;   // รูปต่อสินค้าสูงสุด 3 รูป
+function topMetaHTML(it){
+  if(it._elec) return `<span>${eh(it.spec||it.category||'')}</span><span>สอบถามราคา</span>`;
   const q=parseInt(it.quantity)||0;
+  return `<span>${eh(it.iditem)}${it.brand?' · '+eh(it.brand):''}</span><span>คงเหลือ <strong class="${q<=0?'zero':''}">${q.toLocaleString('en-US')}</strong></span>`;
+}
+function topSlideHTML(it,i){
   return `<div class="swiper-slide" data-i="${i}">
     <div class="tcard" role="group" aria-label="${eh(it.name)}">
-      <div class="tc-media">${topMediaInner(i)}</div>
+      <div class="tc-media">${topMediaInner(i)}${topRankBadge(it)}${topSellBadge(it)}</div>
       <div class="tc-body">
         <div class="tc-name" title="${eh(it.name)}">${eh(it.name)}</div>
-        <div class="tc-meta"><span>${eh(it.iditem)}${it.brand?' · '+eh(it.brand):''}</span><span>คงเหลือ <strong class="${q<=0?'zero':''}">${q.toLocaleString('en-US')}</strong></span></div>
+        <div class="tc-meta">${topMetaHTML(it)}</div>
       </div>
     </div>
   </div>`;
 }
+// จัดกลุ่มแคตตาล็อกเป็น 20 หมวดตามที่กำหนด (เรียงตามลำดับนี้)
+// ลำดับการตัดสิน: ชื่อหมวดที่ตั้งไว้ → อ่านจากชื่อสินค้า (กฎเรียงตามลำดับ ตัวแรกที่ตรงชนะ) → หมวด 20
+const CAT_LABELS=[
+  'PLC (ตัวเครื่อง / I-O / โมดูล)',
+  'หลอดและโคมไฟ (LED / ฟลูออเรสเซนต์)',
+  'คอนแทคเตอร์ / โอเวอร์โหลด / หน้าสัมผัสเสริม',
+  'รีเลย์และซ็อกเก็ตรีเลย์',
+  'ปุ่มกด / สวิตช์ / ไฟสัญญาณ (หน้าตู้ควบคุม)',
+  'เบรกเกอร์ / อุปกรณ์ป้องกันวงจร',
+  'ตู้ กล่อง และรางเดินสาย / รางเทอร์มินอล',
+  'เคเบิ้ลแกลน',
+  'หางปลา / ขั้วต่อสาย',
+  'เคเบิ้ลไทร์ (สายรัด)',
+  'แบตเตอรี่ PLC / เซอร์โว',
+  'ลิมิตสวิตช์ / พร็อกซิมิตี้เซนเซอร์',
+  'ปลั๊ก / สวิตช์ไฟอาคาร',
+  'HMI (หน้าจอสัมผัส)',
+  'เทปพันสายไฟ',
+  'ไทเมอร์ / เคาน์เตอร์ / เทมป์คอนโทรลเลอร์ / มิเตอร์',
+  'ของใช้ทำความสะอาด / สำนักงาน',
+  'รางแร็ค / ชั้นวาง / โครงเหล็กเจาะรู',
+  'พาวเวอร์ซัพพลาย',
+  'ยังระบุประเภทไม่ได้ (ต้องตรวจสอบ)'
+];
+const CAT_L=n=>CAT_LABELS[n-1];
+const KIND_RULES=[
+  [17,/น้ำยา\s*(?:ล้าง|ถู|ปรับผ้า|ซัก|ทำความสะอาด|ฆ่าเชื้อ|เช็ด|ขัด)|ผงซัก|ซักฟอก|ปรับผ้านุ่ม|ปรับผ้า|สบู่|แชมพู|ครีมอาบ|ยาสีฟัน|แอลกอฮอล์|ALCOHOL|เจลล้างมือ|ผ้าเช็ด|ผ้าไมโคร|ถุงขยะ|ทิชชู|กระดาษชำระ|กระดาษเช็ด|ไม้ถู|ไม้กวาด|แปรงขัด|แปรงล้าง|ฟองน้ำ|ถุงมือยาง|น้ำยาห้องน้ำ|SUNLIGHT|ซันไลต์|HYGIENE|ไฮยีน|BREEZE|บรีส|COMFORT|คอมฟอร์ท|DETERGENT|เปา\s*(?:\d|เอ็ม)|FABRIC\s*SOFT|DISH\s*(?:WASH|SOAP)/i],
+  [11,/แบตเตอรี่|แบต|BATTERY|\b[AQ]\d?BAT|\bER\d{4,5}|\bCR\d{4}|ถ่าน|ลิเธียม|LITHIUM|\bUPS\b/i],
+  [15,/เทป|TAPE|TEMFLEX|YAZAKI|SCOTCH/i],
+  [8,/แกลน|GLAND|GRIPONE|VONYE|SKINTOP|SKINOP/i],
+  [10,/^CT-|\bCT-\d|ไทร์|CABLE\s*TIE|เข็มขัดรัด|ELECTRIC\s*TIE|สายรัด/i],
+  [9,/หางปลา|\bLUG\b|RING\s*TERMINAL|หัวสาย|หัวเข็ม|เส้นทอง|ปลอกสาย/i],
+  [18,/แร็ค|แร็ก|RACK|ชั้นวาง|เสาแขวน|เหล็กเจาะรู|โครงเหล็ก|C-?CHANNEL|ซีแชนแนล|แขวนท่อ|ชั้นเหล็ก/i],
+  [7,/ราง|RAIL|DUCT|WIREWAY|วายเวย์/i],
+  [9,/ขั้วต่อ|คอนเนคเตอร์|คอนเนกเตอร์|CONNECTOR|TERMINAL|เทอร์มินอล|\bNCS-?\d|\bNC-?\d{3}|\bGX\d|AVIATION|เอวิเอชั่น|แจ็ค|JACK|\bTB-?\d|\bUK-?\d|\bPT-?\d|WAGO|วาโก้/i],
+  [3,/คอนแทค|แมกเนติก|แม็กเนติก|CONTACTOR|MAGNETIC|โอเวอร์โหลด|OVERLOAD|หน้าสัมผัสเสริม|\bAUX\b|\bSD-?Q\d|\bSC-?N?\d|\bSN-?\d|\bLC1|\bLRD|\bCJX|\bTH-?[NT]\d|\bBMF/i],
+  [6,/เบรกเกอร์|เบรคเกอร์|BREAKER|\bMCB\b|\bMCCB\b|\bRCBO\b|\bELCB\b|\bRCD\b|ฟิวส์|FUSE|เซฟตี้สวิตช์|SAFETY\s*SWITCH|กันดูด|ตัดไฟรั่ว|\bSH\d{3}|\bS20\d|\bDZ47|\bNXB|\bNB1-?\d|\bSPD\b|เซอร์จ|SURGE|ไฟกระชาก|ฟ้าผ่า|RSEN|NOISE\s*FILTER|EMI\s*FILTER|ฟิลเตอร์|ตัวกรอง|\bNFB/i],
+  [12,/ลิมิต|LIMIT|พร็อกซิมิตี้|PROXIMITY|เซนเซอร์|เซ็นเซอร์|SENSOR|โฟโต้|PHOTO|\bLJ\d|\bPR\d{2}|\bE2E|\bE3[ZFS]|\bXS\d|\bXCK|\bZ-?15|ตาแมว/i],
+  [4,/รีเลย์|RELAY|\bMY\d|\bLY\d|\bRH\d|\bG2R|\bPYF|\bPF\d{3}|\bRXM|\bRPM|\bJQX|\bHH5|\bPTF|\bSSR\b|SOLID\s*STATE|โซลิดสเตต/i],
+  [13,/ปลั๊ก|PLUG|เต้ารับ|เต้าเสียบ|HALOSHI|P1709|หน้ากาก|สวิตช์ไฟ|สวิทช์ไฟ|\bWNG|\bWTW/i],
+  [4,/ซ็อกเก็ต|ซ็อกเก็ท|ซอกเก็ต|SOCKET/i],
+  [14,/HMI|หน้าจอสัมผัส|ทัชสกรีน|TOUCH\s*SCREEN|\bGT\d{2}|\bMT\d{4}|\bTK\d{4}|\bDOP-|\bPWS\d|\bGP\d{4}/i],
+  [1,/\bPLC\b|พีแอลซี|\bFX\d|MELSEC|\bCP1[EHL]|\bCJ[12]\b|\bS7-?\d{3,4}|\bLOGO!?|\bZEN-|\bDVP|\bAFPX|\bFP0R|\bI\/O\b|IO\s*MODULE|โมดูล/i],
+  [19,/เพาเวอร์ซัพพลาย|พาวเวอร์ซัพพลาย|POWER\s*SUPPLY|SWITCHING|สวิตชิ่ง|หม้อแปลง|TRANSFORMER|อะแดปเตอร์|ADAPTER|ADAPTOR|\bSDR-|\bNDR-|\bMDR-|\bHDR-|\bS8V[KS]|\bLRS-|\bDR-\d/i],
+  [16,/ไทเมอร์|ไทม์เมอร์|TIMER|เคาน์เตอร์|เคาท์เตอร์|COUNTER|เทมป์|TEMP|เทอร์โม|THERMO|มิเตอร์|METER|\bH3Y|\bH3CR|\bH5CX|\bE5[CEA]|\bTC[4-9]|\bTHB/i],
+  [5,/ปุ่มกด|ปุ่ม|PUSH\s*BUTTON|SELECTOR|ซีเล็คเตอร์|ไพลอต|ไพล็อต|PILOT|ไฟสัญญาณ|BUZZER|บัซเซอร์|ไซเรน|สวิตช์|สวิทช์|SWITCH|\bLA\d{2}|\bXB\d|\bAR\d{2}|\bAD\d{2}/i],
+  [7,/กล่อง|บ็อก|บ๊อก|บล็อก|BOX|ตู้|CABINET|ENCLOSURE|TAMCO|RECKON|SCHYLLER|SENTOSHI|LEETECH|NANO?-?\d|NAN\b/i],
+  [2,/หลอด|โคม|ไฟฉุกเฉิน|ไฟส่อง|ดาวน์ไลท์|DOWNLIGHT|ฟลัด|FLOOD|ไฮเบย์|HIGH\s*BAY|พาเนล|PANEL|\bLED\b|แอลอีดี|\bT[58]\b|\bTL5\b|\bTL-?D\b|LIGHTING|BLACK\s*LIGHT|LUGA|ECOFIT|EXOLINK|แสงสว่าง|สปอตไลท์|SPOT\s*LIGHT/i],
+  [17,/ปากกา|ดินสอ|ยางลบ|กระดาษ|สมุด|แฟ้ม|ลวดเย็บ|แม็กเย็บ|เครื่องคิดเลข|กรรไกร|คัตเตอร์|ไม้บรรทัด|ซองจดหมาย|ตรายาง|หมึก|\bINK\b|TONER|\bA4\b|เครื่องพิมพ์/i]
+];
+function catRuleOf(text){const s=String(text||'');const r=KIND_RULES.find(([,re])=>re.test(s));return r?CAT_L(r[0]):'';}
+// หมวดของสินค้า: '' ถ้ายังไม่รู้ (จะถูกจัดเข้าหมวด 20 ตอนแสดงผล)
+function catBaseKey(it){
+  if(/\bWEG\s*-?\d/i.test(String(it.name||'')+' '+String(it.code||''))) return CAT_L(2);   // Panasonic WEG อยู่หมวดหลอดและโคมไฟ
+  const s=String(it.category??'').trim();
+  if(CAT_LABELS.includes(s)) return s;
+  // ชื่อหมวดเก่าที่กว้างเกินไป ("รางและโครงยึด") ให้ดูจากชื่อสินค้าแทน; "อื่นๆ / Others / Miscellaneous" ถือว่าไม่มีหมวด
+  if(s&&s!=='-'&&s!=='รางและโครงยึด'){const r=catRuleOf(s);if(r) return r;}
+  return catRuleOf(it.name);
+}
+function catResolveKeys(items){
+  const unk=[];
+  const keys=items.map((it,i)=>{const k=catBaseKey(it);if(k) return k;unk.push((it.iditem||'')+' '+(it.name||''));return CAT_L(20);});
+  if(unk.length&&window.console&&console.info) console.info('[catalog] ยังระบุประเภทไม่ได้ '+unk.length+' รายการ',unk);
+  return keys;
+}
+const catExpanded=new Set();   // ประเภทที่กด "ดูทั้งหมด" ไว้ (จำไว้ตอนวาดใหม่)
+function renderCatalog(items){
+  const grid=$('catGrid');
+  if(!items||!items.length){grid.classList.remove('grouped');grid.innerHTML='';$('catCount').innerHTML='';return;}
+  const groups=new Map(),keys=catResolveKeys(items);
+  items.forEach((it,i)=>{const k=keys[i];(groups.get(k)||groups.set(k,[]).get(k)).push({it,i});});
+  const names=[...groups.keys()].sort((a,b)=>{const ia=CAT_LABELS.indexOf(a),ib=CAT_LABELS.indexOf(b);return (ia<0?99:ia)-(ib<0?99:ib)||a.localeCompare(b,'th');});
+  grid.classList.add('grouped');
+  grid.innerHTML=names.map(nm=>{
+    const arr=groups.get(nm),open=catExpanded.has(nm);
+    const cards=arr.map(x=>catCardHTML(x.it,x.i)).join('');
+    return `<section class="cat-group${open?' open':''}" data-nm="${eh(nm)}"><div class="cat-group-h"><span class="dot"></span><span class="nm">${eh(nm)}</span><span class="ct">${arr.length.toLocaleString('en-US')} รายการ</span><span class="ln"></span><span class="cat-nav"><button type="button" class="cat-arr" data-d="-1" aria-label="เลื่อนไปทางซ้าย">&#8249;</button><button type="button" class="cat-arr" data-d="1" aria-label="เลื่อนไปทางขวา">&#8250;</button></span><button type="button" class="cat-all" aria-expanded="${open}">${open?'ย่อ':'ดูทั้งหมด'}</button></div><div class="cat-grid-in">${cards}</div></section>`;
+  }).join('');
+  $('catCount').innerHTML=`ทั้งหมด <b>${items.length.toLocaleString('en-US')}</b> รายการ · <b>${names.length}</b> หมวดหมู่`;
+}
+// ลากด้วยเมาส์เพื่อเลื่อนแถวไปซ้าย/ขวา (กดค้างแล้วลาก) · ลากแล้วไม่เปิดรูปใหญ่โดยไม่ตั้งใจ
+(function(){
+  const g=$('catGrid');let row=null,sx=0,sl=0,moved=false;
+  g.addEventListener('pointerdown',e=>{
+    if(e.pointerType!=='mouse'||e.button!==0) return;
+    const r=e.target.closest('.cat-grid-in');
+    if(!r||r.closest('.cat-group.open')||e.target.closest('.cc-dots')) return;
+    row=r;sx=e.clientX;sl=r.scrollLeft;moved=false;
+  });
+  window.addEventListener('pointermove',e=>{
+    if(!row) return;
+    const dx=e.clientX-sx;
+    if(!moved&&Math.abs(dx)>5){moved=true;row.classList.add('dragging');}
+    if(moved){row.scrollLeft=sl-dx;e.preventDefault();}
+  });
+  const end=()=>{if(!row) return;row.classList.remove('dragging');row=null;if(moved) setTimeout(()=>{moved=false;},0);};
+  window.addEventListener('pointerup',end);window.addEventListener('pointercancel',end);
+  g.addEventListener('click',e=>{if(moved){e.stopPropagation();e.preventDefault();}},true);   // ลากเสร็จ ไม่นับเป็นการกด
+  g.addEventListener('dragstart',e=>e.preventDefault());
+})();
+// ปุ่มเลื่อนซ้าย/ขวา และ "ดูทั้งหมด / ย่อ" ของแต่ละประเภท
+$('catGrid').addEventListener('click',e=>{
+  const sec=e.target.closest('.cat-group');if(!sec) return;
+  const all=e.target.closest('.cat-all');
+  if(all){
+    const nm=sec.dataset.nm,open=!sec.classList.contains('open');
+    sec.classList.toggle('open',open);
+    if(open) catExpanded.add(nm); else catExpanded.delete(nm);
+    all.textContent=open?'ย่อ':'ดูทั้งหมด';all.setAttribute('aria-expanded',open);
+    if(!open){sec.querySelector('.cat-grid-in').scrollLeft=0;sec.scrollIntoView({block:'nearest'});}
+    return;
+  }
+  const arr=e.target.closest('.cat-arr');
+  if(arr){const row=sec.querySelector('.cat-grid-in');row.scrollBy({left:+arr.dataset.d*Math.max(240,row.clientWidth*.85),behavior:'smooth'});}
+});
 // การ์ดแคตตาล็อก (ใช้รูปชุดเดียวกับการ์ดเลื่อน)
 function catCardHTML(it,i){
-  const q=parseInt(it.quantity)||0;
+  if(it._ext) return elecCardHTML(it);   // การ์ดอุปกรณ์ไฟฟ้า
   return `<article class="ccard" data-i="${i}">
-    <div class="tc-media">${topMediaInner(i)}</div>
+    <div class="tc-media">${topMediaInner(i)}${topRankBadge(it)}${topSellBadge(it)}</div>
     <div class="tc-body">
       <div class="tc-name" title="${eh(it.name)}">${eh(it.name)}</div>
-      <div class="tc-meta"><span>${eh(it.iditem)}${it.brand?' · '+eh(it.brand):''}</span><span>คงเหลือ <strong class="${q<=0?'zero':''}">${q.toLocaleString('en-US')}</strong></span></div>
+      <div class="tc-meta">${topMetaHTML(it)}</div>
     </div>
   </article>`;
 }
-// หารูปของสินค้า: ใช้รูปในข้อมูลสินค้าก่อน ถ้าไม่มีค่อยดูจากประวัติเข้า-ออก
+/* ========== แคตตาล็อกอุปกรณ์ไฟฟ้า 96 รายการ: รวมเข้าแคตตาล็อกด้านล่าง Top 200 ========== */
+// ข้อมูลและรูป (ELEC_DATA / ELEC_IMG) ฝังไว้ใน <script> ก่อนหน้านี้ ไม่ต้องมีไฟล์แยก
+const elecItems=ELEC_DATA.map(x=>{const o={...x,_ext:true};o.category=catBaseKey(o)||o.category||CAT_L(20);return o;});
+const elecReady=Promise.resolve();
+// ตอนค้นหา: สินค้า 102 รายการเข้าไปอยู่ในการ์ดเลื่อนด้านบนด้วย (แปลงเป็นรูปแบบเดียวกับสินค้าขายดี ใช้ระบบรูป/จุดสลับ/รูปใหญ่ชุดเดียวกัน)
+const elecTopCache=new Map();
+function elecAsTop(it){
+  if(!elecTopCache.has(it.code)){
+    const urls=(it.images||[]).slice(0,MAX_IMG).map(elecImgUrl);
+    elecTopCache.set(it.code,{iditem:it.code,name:it.name,brand:'',category:it.category,spec:it.spec||'',image:urls[0]||'',images:urls,_elec:true});
+  }
+  return elecTopCache.get(it.code);
+}
+// กรองตามช่องค้นหาเดียวกับ Top 200 (ไม่มีบริษัท/ประเภท/สถานที่เก็บ → ถ้าเลือกตัวกรองพวกนั้นจะไม่แสดง)
+function elecFiltered(){
+  const f=currentFilters,has=v=>(v||'').trim(),inc=(v,q)=>topNorm(v).includes(topNorm(q));
+  if(f.priv||f.type||has(f.location)) return [];
+  return elecItems.filter(it=>
+    (!has(f.name)||inc(it.name+' '+it.category+' '+(it.spec||''),f.name))&&
+    (!has(f.brand)||inc(it.name,f.brand))&&
+    (!has(f.cat)||it.category===f.cat)&&
+    (!has(f.id)||inc(it.code,f.id)));
+}
+function elecCardHTML(it){
+  const imgs=(it.images||[]).slice(0,MAX_IMG);   // รหัสไฟล์ Drive ของรูปจริง (สูงสุด 3 รูป)
+  const dots=imgs.length>1?`<div class="cc-dots">${imgs.map((_,k)=>`<button type="button" class="${k?'':'on'}" data-k="${k}" aria-label="ดูรูปที่ ${k+1}"></button>`).join('')}</div>`:'';
+  const media=imgs.length
+    ?`<img class="ready" src="${elecImgUrl(imgs[0])}" alt="${eh(it.name)}" loading="lazy" decoding="async">`
+    :`<div class="tc-ph">${TOP_PH}<span>ยังไม่มีรูปสินค้า</span></div>`;
+  return `<article class="ccard ext" data-code="${eh(it.code)}" data-imgs="${eh(JSON.stringify(imgs))}">
+    <div class="tc-media">${media}${dots}</div>
+    <div class="tc-body">
+      <div class="tc-name" title="${eh(it.name)}">${eh(it.name)}</div>
+      <div class="tc-meta"><span>${eh(it.spec||it.category||'')}</span><span>${imgs.length>1?'รูป <strong>'+imgs.length+'</strong> มุม':'สอบถามราคา'}</span></div>
+    </div>
+  </article>`;
+}
+// กดจุดใต้รูป = สลับมุมรูป
+$('catGrid').addEventListener('click',e=>{
+  const b=e.target.closest('.cc-dots button');if(!b) return;
+  const card=b.closest('.ccard'),img=card.querySelector('.tc-media img');
+  const imgs=JSON.parse(card.dataset.imgs||'[]');
+  if(img&&imgs[+b.dataset.k]) img.src=elecImgUrl(imgs[+b.dataset.k]);
+  card.querySelectorAll('.cc-dots button').forEach(x=>x.classList.toggle('on',x===b));
+});
+// ถ้าไฟล์อุปกรณ์ไฟฟ้าโหลดเสร็จหลังเปิด Top 200 แล้ว: วาดแคตตาล็อกใหม่
+elecReady.then(()=>{
+  if(!topMode) return;
+  const list=window.__topItems||[],catItems=catalogItems(list);
+  renderCatalog(catItems);
+  $('catWrap').hidden=!catItems.length;
+});
+// หารูปของสินค้า: TOP_PIC (รหัสสินค้าตรง) → รูปจากคลัง (ชื่อ/รุ่นตรง) → รูปในข้อมูลสินค้า → ประวัติเข้า-ออก → รูปจากคลัง (ประเภทเดียวกัน)
 async function topImageOf(it){
   if(topImgCache.has(it.iditem)) return topImgCache.get(it.iditem);
   let src=it.image||it.img||'';
@@ -980,6 +1257,7 @@ async function topImageOf(it){
     }
   }
   src=topDirectUrl(src);
+  // ไม่มีรูปของสินค้านี้ → แสดง "ยังไม่มีรูปสินค้า" (ไม่ยืมรูปสินค้าอื่น)
   topImgCache.set(it.iditem,src);
   return src;
 }
@@ -1047,13 +1325,160 @@ function topLoadAround(center){
   if(center%TOP_BATCH>=TOP_BATCH-5&&!topBatches.has(b+1)) topLoadBatch(b+1);
   topLoadVisible();
 }
+/* ========== ดูรูปใหญ่: กดที่รูปในการ์ด → เปิดรูปใหญ่ / ถ้ามีหลายรูปกดเลื่อนดูได้ ========== */
+const topBig=u=>/googleusercontent\.com\/d\//.test(u)?u.replace(/=w\d+$/,'=w1600'):u;   // รูป Drive ขอขนาดใหญ่
+const topImgKey=u=>String(u||'').replace(/=w\d+$/,'');                                  // ใช้เทียบว่าเป็นรูปเดียวกัน
+const topTxImgs=new Map();   // iditem → Promise รายการรูปจากประวัติเข้า-ออก
+function topTxImages(id){
+  if(!topTxImgs.has(id)) topTxImgs.set(id,
+    API.get('/api/transaction/by-item/'+encodeURIComponent(id))
+      .then(rows=>(Array.isArray(rows)?rows:[]).flatMap(r=>String(r['รูปประกอบ']||'').match(/https?:\/\/[^\s,;|]+/g)||[]).map(topDirectUrl).filter(Boolean))
+      .catch(()=>[]));
+  return topTxImgs.get(id);
+}
+// รูปที่รู้ทันที: รูปหลักของการ์ด + ทุกมุมของรูปในคลัง (ถ้าใช้รูปจากคลัง) + รูปอื่นที่เซิร์ฟเวอร์ส่งมา
+function topGalleryBase(it){
+  const out=[],add=u=>{if(u&&!out.some(x=>topImgKey(x)===topImgKey(u))) out.push(u);};
+  const main=topReady.get(it.iditem)||'';
+  add(main);
+  [].concat(it.images||[]).forEach(u=>{if(typeof u==='string') add(topDirectUrl(u));});
+  return out.slice(0,MAX_IMG);
+}
+const lb={it:null,list:[],i:0};
+function lbRender(){
+  const n=lb.list.length,u=lb.list[lb.i]||'',img=$('lbImg');
+  img.onerror=()=>{img.onerror=null;img.src=u;};   // รูปใหญ่โหลดไม่ได้ → ใช้รูปเดิม
+  img.src=topBig(u);
+  img.alt=lb.it?lb.it.name:'';
+  $('lbCount').textContent=n>1?`รูปที่ ${lb.i+1} / ${n}`:'';
+  $('lbPrev').hidden=$('lbNext').hidden=n<2;
+  const th=$('lbThumbs');
+  th.hidden=n<2;
+  th.innerHTML=n<2?'':lb.list.map((x,k)=>`<button type="button" class="${k===lb.i?'on':''}" data-k="${k}" aria-label="ดูรูปที่ ${k+1}"><img src="${eh(x)}" alt="" loading="lazy" decoding="async"></button>`).join('');
+  th.querySelector('button.on')?.scrollIntoView({block:'nearest',inline:'center'});
+}
+function lbGo(d){const n=lb.list.length;if(n<2) return;lb.i=(lb.i+d+n)%n;lbRender();}
+function lbOpen(it,preset,start){
+  const list=preset||topGalleryBase(it);
+  if(!list.length) return;
+  lb.it=it;lb.list=list;lb.i=start||0;
+  $('lbName').textContent=it.name||'';
+  $('lbSub').textContent=it._sub!=null?it._sub:[it.iditem,it.brand].filter(Boolean).join(' · ');
+  const rk=$('lbRank');rk.hidden=!it._rank;rk.textContent=it._rank?`ขายดีอันดับ ${it._rank}`:'';
+  $('lb').hidden=false;
+  document.body.style.overflow='hidden';
+  try{topSwiper&&topSwiper.autoplay&&topSwiper.autoplay.stop();}catch(e){}
+  lbRender();
+  // รูปอื่นของสินค้านี้จากประวัติเข้า-ออก: ทยอยเพิ่มเมื่อโหลดเสร็จ
+  if(preset) return;   // การ์ดอุปกรณ์ไฟฟ้า: ใช้รูปทุกมุมของสินค้านั้นเลย
+  if(it._elec) return;
+  topTxImages(it.iditem).then(extra=>{
+    if(lb.it!==it||$('lb').hidden) return;
+    let added=false;
+    extra.forEach(u=>{if(lb.list.length<MAX_IMG&&!lb.list.some(x=>topImgKey(x)===topImgKey(u))){lb.list.push(u);added=true;}});
+    if(added) lbRender();
+  });
+}
+function lbClose(){
+  if($('lb').hidden) return;
+  $('lb').hidden=true;$('lbImg').removeAttribute('src');lb.it=null;
+  document.body.style.overflow='';
+  try{topSwiper&&topSwiper.autoplay&&topSwiper.autoplay.start();}catch(e){}
+}
+function topOpenFromEvent(e){
+  if(e.target.closest('.cc-dots')) return;   // จุดสลับมุมรูปบนการ์ด ไม่เปิดรูปใหญ่
+  const m=e.target.closest('.tc-media');if(!m) return;
+  const host=m.closest('.swiper-slide,.ccard');if(!host) return;
+  if(host.classList.contains('ext')){   // การ์ดอุปกรณ์ไฟฟ้า: เปิดรูปทุกมุม เริ่มที่มุมที่กำลังแสดงอยู่
+    const ed=ELEC_DATA.find(x=>x.code===host.dataset.code);if(!ed) return;
+    const list=(ed.images||[]).slice(0,MAX_IMG).map(elecImgUrl);
+    const on=[...host.querySelectorAll('.cc-dots button')].findIndex(b=>b.classList.contains('on'));
+    lbOpen({name:ed.name,_sub:[ed.category,ed.spec].filter(Boolean).join(' · ')},list,Math.max(0,on));
+    return;
+  }
+  const it=(window.__topItems||[])[+host.dataset.i];
+  if(!it||!m.querySelector('img.ready')) return;   // ยังไม่มีรูป → ไม่เปิด
+  const gl=topGalList.get(it.iditem);
+  if(gl&&gl.length>1){   // มีรูปหลายมุมแล้ว: เปิดรูปใหญ่ที่มุมที่กำลังแสดงอยู่
+    const on=[...host.querySelectorAll('.cc-dots button')].findIndex(b=>b.classList.contains('on'));
+    lbOpen(it,gl,Math.max(0,on));return;
+  }
+  lbOpen(it);
+}
+/* ===== จุดสลับรูปบนการ์ดสินค้าขายดี =====
+   รูปอื่นของสินค้ามาจากประวัติเข้า-ออก (โหลดทีละรายการเมื่อการ์ดเลื่อนมาใกล้จอ) ถ้ามีมากกว่า 1 รูป แสดงจุดใต้รูปเหมือนการ์ดอุปกรณ์ไฟฟ้า */
+const topGalCache=new Map(),topGalList=new Map();
+function topGallery(it,i){
+  const id=it.iditem;
+  if(!topGalCache.has(id)) topGalCache.set(id,
+    Promise.resolve(topLoadIdx(i)).catch(()=>{}).then(()=>it._elec?[]:topTxImages(id)).then(extra=>{
+      const list=topGalleryBase(it);
+      (extra||[]).forEach(u=>{if(list.length<MAX_IMG&&!list.some(x=>topImgKey(x)===topImgKey(u))) list.push(u);});
+      topGalList.set(id,list);return list;
+    }).catch(()=>{const l=topGalleryBase(it);topGalList.set(id,l);return l;}));
+  return topGalCache.get(id);
+}
+function topDotsFill(node){
+  const i=+node.dataset.i,it=(window.__topItems||[])[i];if(!it) return;
+  topGallery(it,i).then(list=>{
+    if(!node.isConnected||list.length<2) return;
+    const m=node.querySelector('.tc-media');if(!m||m.querySelector('.cc-dots')) return;
+    m.insertAdjacentHTML('beforeend',`<div class="cc-dots">${list.map((_,k)=>`<button type="button" class="${k?'':'on'}" data-k="${k}" aria-label="ดูรูปที่ ${k+1}"></button>`).join('')}</div>`);
+  });
+}
+const topDotsIO=('IntersectionObserver' in window)?new IntersectionObserver(es=>es.forEach(en=>{
+  if(en.isIntersecting){topDotsIO.unobserve(en.target);topDotsFill(en.target);}
+}),{rootMargin:'300px'}):null;
+function topDotsScan(){
+  document.querySelectorAll('#catGrid .ccard[data-i]:not(.ext):not([data-dots]), #topSlides .swiper-slide[data-i]:not([data-dots])').forEach(n=>{
+    n.dataset.dots='1';
+    if(topDotsIO) topDotsIO.observe(n); else topDotsFill(n);
+  });
+}
+let topDotsTimer=0;
+const topDotsMO=new MutationObserver(()=>{clearTimeout(topDotsTimer);topDotsTimer=setTimeout(topDotsScan,60);});
+topDotsMO.observe($('catGrid'),{childList:true,subtree:true});
+topDotsMO.observe($('topSlides'),{childList:true,subtree:true});
+function topDotsClick(e){
+  const b=e.target.closest('.cc-dots button');if(!b) return;
+  const host=b.closest('.ccard,.swiper-slide');if(!host||host.classList.contains('ext')) return;
+  const it=(window.__topItems||[])[+host.dataset.i],list=it&&topGalList.get(it.iditem);
+  const u=list&&list[+b.dataset.k];if(!u) return;
+  const m=host.querySelector('.tc-media');let img=m.querySelector('img');
+  if(!img){img=new Image();img.alt='';img.decoding='async';m.querySelector('.tc-ph')?.remove();m.prepend(img);}
+  img.classList.add('ready');img.src=u;
+  host.querySelectorAll('.cc-dots button').forEach(x=>x.classList.toggle('on',x===b));
+}
+$('catGrid').addEventListener('click',topDotsClick);
+$('topSlides').addEventListener('click',topDotsClick);
+topDotsScan();
+$('topSlides').addEventListener('click',topOpenFromEvent);
+$('catGrid').addEventListener('click',topOpenFromEvent);
+$('lbClose').addEventListener('click',lbClose);
+$('lbPrev').addEventListener('click',()=>lbGo(-1));
+$('lbNext').addEventListener('click',()=>lbGo(1));
+$('lbThumbs').addEventListener('click',e=>{const b=e.target.closest('button[data-k]');if(!b) return;lb.i=+b.dataset.k;lbRender();});
+$('lb').addEventListener('click',e=>{if(e.target===$('lb')||e.target===$('lbStage')) lbClose();});   // กดพื้นหลังเพื่อปิด
+document.addEventListener('keydown',e=>{
+  if($('lb').hidden) return;
+  if(e.key==='Escape'||e.key==='ArrowLeft'||e.key==='ArrowRight'){
+    e.preventDefault();e.stopImmediatePropagation();
+    if(e.key==='Escape') lbClose(); else lbGo(e.key==='ArrowLeft'?-1:1);
+  }
+},true);
+// ปัดซ้าย/ขวาบนมือถือเพื่อเปลี่ยนรูป
+(()=>{let x0=null;const st=$('lbStage');
+  st.addEventListener('pointerdown',e=>{x0=e.clientX;});
+  st.addEventListener('pointerup',e=>{if(x0==null) return;const dx=e.clientX-x0;x0=null;if(Math.abs(dx)>50) lbGo(dx<0?1:-1);});
+  st.addEventListener('pointercancel',()=>{x0=null;});
+})();
 /* ---------- ค้นหาในสินค้าขายดี: ตรงก่อน ถ้าไม่มีค่อยหาที่ใกล้เคียง ---------- */
 let topAll=[];          // สินค้าขายดีทั้งหมดที่โหลดมา (ยังไม่กรอง)
 let topMatchMode='';    // '' = ไม่มีคำค้น, 'match' = เจอที่ตรง, 'near' = เจอแต่ที่ใกล้เคียง, 'none' = ไม่เจอ
 function applyFilterValues(){
   currentFilters={
     id:($('sId').value||'').trim(),name:($('sName').value||'').trim(),brand:($('sBrand').value||'').trim(),
-    location:($('sLoc').value||'').trim(),priv:$('sPriv').value,type:$('sType').value
+    location:($('sLoc').value||'').trim(),priv:$('sPriv').value,type:$('sType').value,cat:$('sCat').value
   };
 }
 const topNorm=v=>String(v??'').toLowerCase().replace(/[\s\-_/.,()"'#]+/g,'');
@@ -1085,18 +1510,23 @@ function topNameScore(it,q){
   for(let i=0;i+nq.length<=nn.length;i+=Math.max(1,Math.floor(nq.length/3))) best=Math.max(best,topSimilar(nq,nn.slice(i,i+nq.length+1)));
   return best>=0.5?Math.round(best*35):0; // คล้ายกัน = ใกล้เคียง (คะแนนต่ำกว่า 40 เสมอ)
 }
+// รายการในแคตตาล็อก: ตอนค้นหา สินค้า 102 รายการอยู่ในรายการเลื่อนแล้ว (items) / ไม่ค้นหา เพิ่มต่อท้ายสินค้าขายดี
+function catalogItems(items){return hasFilter()?items:items.concat(elecFiltered());}
 function topFilterList(){
   const f=currentFilters,has=v=>(v||'').trim();
   const inc=(v,q)=>topNorm(v).includes(topNorm(q));
   let list=topAll.filter(it=>
     (!has(f.id)||inc(it.iditem,f.id))&&
     (!has(f.brand)||inc(it.brand,f.brand))&&
+    (!has(f.cat)||(catBaseKey(it)||CAT_L(20))===f.cat)&&
     (!has(f.location)||inc(it.location,f.location))&&
     (!f.priv||(it.privilege||'').trim()===f.priv)&&
     (!f.type||(it.typeitem||'')===f.type));
   const q=has(f.name);
-  if(!q){topMatchMode=hasFilter()?(list.length?'match':'none'):'';return hasFilter()?list:topShuffle(list);}
-  const scored=list.map(it=>({it,sc:topNameScore(it,q)})).filter(x=>x.sc>0).sort((a,b)=>b.sc-a.sc);
+  const elecTop=hasFilter()?elecFiltered().map(elecAsTop):[];   // สินค้า 102 รายการที่ตรงตัวกรอง
+  if(!q){list=list.concat(elecTop);topMatchMode=hasFilter()?(list.length?'match':'none'):'';return hasFilter()?list:list.slice().sort((x,y)=>(x._rank||0)-(y._rank||0));}   // ไม่ค้นหา: เรียงอันดับ 1-200
+  const scored=list.map(it=>({it,sc:topNameScore(it,q)})).filter(x=>x.sc>0)
+    .concat(elecTop.map(it=>({it,sc:Math.max(topNameScore(it,q),40)}))).sort((a,b)=>b.sc-a.sc);
   topMatchMode=!scored.length?'none':(scored[0].sc>=40?'match':'near');
   // ถ้ามีที่ตรง แสดงเฉพาะที่ตรง / ถ้าไม่มีเลย แสดงที่ใกล้เคียงที่สุด
   return (topMatchMode==='match'?scored.filter(x=>x.sc>=40):scored.slice(0,30)).map(x=>x.it);
@@ -1153,19 +1583,19 @@ function showTopCarousel(items){
   $('topListH').hidden=true;
   document.querySelector('.tbl-wrap').hidden=!!topAll.length; // โหมด Top 200: แสดงเฉพาะการ์ด ไม่แสดงตาราง
   $('topSub').innerHTML=
-    topMatchMode==='none'?`ไม่พบสินค้าขายดีที่ตรงหรือใกล้เคียงกับ “${eh(q||'ตัวกรอง')}”`:
-    topMatchMode==='near'?`ไม่พบชื่อที่ตรงกับ “${eh(q)}” · แสดงสินค้าขายดีที่<b>ใกล้เคียง</b>`:
-    topMatchMode==='match'?(q?`สินค้าขายดีที่ตรงกับ “${eh(q)}”`:'สินค้าขายดีตามตัวกรอง'):
-    'สุ่มสินค้าขายดีมาแสดง';
+    topMatchMode==='none'?`ไม่พบสินค้าที่ตรงหรือใกล้เคียงกับ “${eh(q||'ตัวกรอง')}”`:
+    topMatchMode==='near'?`ไม่พบชื่อที่ตรงกับ “${eh(q)}” · แสดงสินค้าที่<b>ใกล้เคียง</b>`:
+    topMatchMode==='match'?(q?`สินค้าที่ตรงกับ “${eh(q)}” (รวมสินค้าขายดีและสินค้าอื่น)`:'สินค้าตามตัวกรอง'):
+    '';
   $('topEmpty').hidden=!!items.length;
   $('topSwiper').hidden=!items.length;
   $('topCount').innerHTML=`ทั้งหมด<b>${items.length}</b>รายการ`;
   if(topSwiper){topSwiper.destroy(true,true);topSwiper=null;}
   $('topSlides').innerHTML=items.map(topSlideHTML).join('');
-  // แคตตาล็อกด้านล่าง: สินค้าชุดเดียวกับการ์ดเลื่อน (กรองตามคำค้นเหมือนกัน)
-  $('catGrid').innerHTML=items.map(catCardHTML).join('');
-  $('catCount').innerHTML=`ทั้งหมด <b>${items.length.toLocaleString('en-US')}</b> รายการ`;
-  $('catWrap').hidden=!items.length;
+  // แคตตาล็อกด้านล่าง: จัดกลุ่มตามหมวดหมู่ (สินค้าขายดี + อุปกรณ์ไฟฟ้า กรองตามคำค้นเหมือนกัน)
+  const catItems=catalogItems(items);
+  renderCatalog(catItems);
+  $('catWrap').hidden=!catItems.length;
   if(!items.length) return;
   const el=$('topSwiper');
   const start=()=>{
@@ -1193,7 +1623,7 @@ function hideTopCarousel(){
   topBgToken++;
   if(topSwiper){topSwiper.destroy(true,true);topSwiper=null;}
   $('topWrap').hidden=true;$('topListH').hidden=true;$('topSlides').innerHTML='';
-  $('catWrap').hidden=true;$('catGrid').innerHTML='';
+  $('catWrap').hidden=true;$('catGrid').classList.remove('grouped');$('catGrid').innerHTML='';
   document.querySelector('.tbl-wrap').hidden=false;
 }
 
@@ -1222,7 +1652,7 @@ function render(){
 
     const expBtn=(hasSub&&!topMode)?`<button class="expand-btn${isExp?' open':''}" onclick="toggleExp('${ej(key)}',this)" title="แสดงรายการย่อย (${subs[key].length})" aria-label="แสดงรายการย่อย">${ICN.chev}</button>`:(topMode?'':`<span class="exp-gap"></span>`);
     const addSub=(CAN_ADD&&!topMode)?`<button class="add-sub-btn" onclick="toggleSubForm('${ej(key)}')" title="เพิ่มรายการย่อย" aria-label="เพิ่มรายการย่อย">${ICN.plus}</button>`:'';
-    const rank=topMode?`<span class="rank">#${i+1}</span>`:'';
+    const rank=(topMode&&item._rank)?`<span class="rank" title="ขายดีอันดับที่ ${item._rank}">#${item._rank}</span>`:'';
     const sellBadge=(topMode&&item.sell_count!=null)?`<span class="badge b-hd sell" title="จำนวนครั้งที่ขายออก">ขาย ${item.sell_count} ครั้ง</span>`:'';
 
     let h=`<td><div class="id-cell">${rank}${expBtn}${addSub}<strong>${eh(item.iditem)}</strong></div></td><td><button type="button" class="name-link" onclick="openTx('${ej(item.iditem)}','${ej(item.name)}')">${eh(item.name)}</button>${sellBadge}</td><td class="c">${fmtQty(item.quantity)}</td><td class="c">${eh(item.brand||'-')}</td><td class="c loc">${eh(item.location||'-')}</td>${infoCells(item.typeitem,item.privilege,item.category)}`;
@@ -1362,7 +1792,7 @@ function renderTxModal(data){
 
 /* ========== ตัวช่วยเพิ่มเติม ========== */
 function setMiniLoad(on){document.getElementById('miniLoad')?.classList.toggle('on',!!on)}
-const FILTER_IDS=['sId','sName','sBrand','sLoc','sPriv','sType'];
+const FILTER_IDS=['sId','sName','sBrand','sCat','sLoc','sPriv','sType'];
 function hasFilter(){return FILTER_IDS.some(id=>($(id).value||'').trim())}
 function markSelects(){$('clrBtn').hidden=!hasFilter();}
 // บรรทัดจำนวนรายการบนแถบบน
@@ -1391,13 +1821,17 @@ function collectOptions(res){
   addOptions([...(res.data||[]),...Object.values(res.subs||{}).flat()],res.brands,res.locations);
 }
 // โหลดยี่ห้อ/สถานที่ของสินค้าทั้งหมดเบื้องหลังครั้งเดียว (หน้านี้โหลดทีละ 50 รายการ ตัวเลือกจะได้ครบ)
+// ยี่ห้อ/สถานที่เก็บของ "สินค้า" (เดิมดึงจาก /api/vehicles-items ซึ่งเป็นข้อมูลรถบริษัท รายการยี่ห้อเลยกลายเป็นยี่ห้อรถ)
+// ใช้ /api/items/paged แทน: เซิร์ฟเวอร์ส่งรายการยี่ห้อ/สถานที่ของสินค้ามาให้ (brands / locations)
+// ถ้าเซิร์ฟเวอร์ไม่ส่งรายการยี่ห้อมา ค่อยไล่เก็บจากสินค้าทุกหน้าแทน
 async function preloadAllOptions(){
   try{
-    const url=p=>'/api/vehicles-items?'+new URLSearchParams({limit:200,page:p}).toString();
-    const first=await API.get(url(1));
-    const last=Math.max(1,parseInt(first.lastPage)||1);
+    const url=p=>'/api/items/paged?'+new URLSearchParams({limit:200,page:p}).toString();
     const take=r=>addOptions([...(r.data||[]),...Object.values(r.subs||{}).flat()],r.brands,r.locations);
+    const first=await API.get(url(1));
     take(first);
+    if((first.brands||[]).length) return;           // ได้รายการยี่ห้อจากเซิร์ฟเวอร์ครบแล้ว
+    const last=Math.max(1,parseInt(first.lastPage)||1);
     for(let p=2;p<=last;p++) take(await API.get(url(p)));
   }catch(e){console.warn('preload brand/location options failed',e);}
 }
@@ -1577,6 +2011,8 @@ enhanceSelect($('sPriv'),v=>{
   const c=COMPANIES.find(x=>x.code===v);
   return `<span class="dd-code ${PM[v]||'b-all'}">${eh(v)}</span><span class="dd-name">${eh(c?c.label:v)}</span>`;
 });
+CAT_LABELS.forEach(l=>{const o=document.createElement('option');o.value=l;o.textContent=l;$('sCat').appendChild(o);});
+enhanceSelect($('sCat'),(v,t)=>v?`<span class="dd-name">${eh(t)}</span>`:`<span class="dd-ic">${DD_ALL_IC}</span><span class="dd-name">ทุกประเภท</span>`);
 enhanceSelect($('sType'),(v,t)=>{
   if(!v) return `<span class="dd-ic">${DD_ALL_IC}</span><span class="dd-name">ทุกประเภท</span>`;
   return `<span class="dd-dot ${v==='คลัง'?'k-klang':'k-asset'}"></span><span class="dd-name">${eh(t)}</span>`;
